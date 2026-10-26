@@ -94,6 +94,7 @@ class Program:
         self.body = []
         self.checks = []
         self.data = []
+        self.memory_checks = []
         self._ident = 0
 
     def kernel(self, cg):
@@ -109,6 +110,7 @@ class Program:
         return self._ident
 
     def check_word(self, base, offset, expect):
+        self.memory_checks.append((base + offset, expect & 0xffffffff))
         n = self.next_ident()
         self.checks.append(f"    s.ld.w    s21, [s20, #{offset}]")
         self.checks.append(f"    .assert_eq s21, #{expect & 0xffffffff:#010x},"
@@ -210,11 +212,38 @@ def run(program, *, extra_args=(), max_cycles=200000, bench='fast'):
     if asm.returncode != 0:
         return False, f"assembling failed:\n{asm.stderr}{asm.stdout}"
 
+    # TTIR kernels already contain exit. Appended assertion instructions
+    # cannot check their outputs, so also compare the actual memory after
+    # core/LSU idle without changing any compiled instruction.
+    dump_args = []
+    if program.memory_checks:
+        first = min(addr for addr, _ in program.memory_checks) & ~7
+        end = (max(addr for addr, _ in program.memory_checks) + 4 + 7) & ~7
+        dumpf = os.path.join(BUILD, f"cc_{program.name}.dump")
+        if os.path.exists(dumpf):
+            os.remove(dumpf)
+        dump_args = [f'+dump={dumpf}', f'+dumpfirst={first // 8}',
+                     f'+dumpcount={(end - first) // 8}']
     proc = subprocess.run(
         ['vvp', bench_path(bench), f"+hex={hexf}",
-         f"+maxcycles={max_cycles}", *extra_args],
+         f"+maxcycles={max_cycles}", *dump_args, *extra_args],
         capture_output=True, text=True)
     ok = 'PASS' in proc.stdout and 'FAIL' not in proc.stdout
+    if ok and program.memory_checks:
+        if not os.path.exists(dumpf):
+            return False, proc.stdout + '\nFAIL: RTL memory dump missing'
+        try:
+            with open(dumpf) as fh:
+                memory = b''.join(int(line.strip(), 16).to_bytes(8, 'little')
+                                  for line in fh if line.strip())
+        except ValueError:
+            return False, proc.stdout + '\nFAIL: RTL memory dump contains unknown bits'
+        for addr, expected in program.memory_checks:
+            offset = addr - first
+            actual = int.from_bytes(memory[offset:offset + 4], 'little')
+            if offset + 4 > len(memory) or actual != expected:
+                return False, (proc.stdout + f'\nFAIL: memory[{addr:#x}] '
+                               f'got {actual:#010x}, expected {expected:#010x}')
     return ok, proc.stdout
 
 

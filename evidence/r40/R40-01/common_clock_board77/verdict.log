@@ -1,0 +1,3 @@
+77 records -> /tmp/tmpceccacdk/b39.jsonl
+R40-01.device-time  fail  points: {'pass': 77}; S_geo 0.5872; diagnostic over the 77 that ran: S_geo 0.5872, 0 cycle-identical, worst op.transpose/medium/fp32-r160-c256 0.128
+R40-01.device  capability-pass  77/77 pass on the device; 0 capacity-exceeded on this image (resident tensors in the on-chip heap)

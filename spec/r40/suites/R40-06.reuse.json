@@ -1,0 +1,106 @@
+{
+ "schema": "tnca-r40-subset/1",
+ "name": "R40-06.reuse",
+ "rule": "medium, large and hbm GEMM-family and attention points with arithmetic intensity >= 16 FLOP/B",
+ "points": [
+  {
+   "id": "model.mlp/large/fp16-t512-d2048",
+   "sha256": "172c6551c70bc50f6afcf659b68118e46f984905727f7e9e5dff7b307faf8c80",
+   "family": "mlp",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.mlp/medium/fp16-t128-d128",
+   "sha256": "e902898ba8ac399b55fbd6fb1f451a8c1e0f3aed4a37d03c72be9d26518ab1cf",
+   "family": "mlp",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+   "sha256": "db38a0023846910da67c8f869dfe922dfa0eaeaa1cea70ff09aec2629711e3a1",
+   "family": "attention_prefill",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+   "sha256": "8126b8242b0e6524a5f4844ac470b2d4048ffd10874c89760b10b3630ad76c01",
+   "family": "attention_prefill",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.bmm/large/fp16-b32-m512-k64-n512",
+   "sha256": "e0e58dfd7071795c5bbf6e36965ae41b242a9c7c8f58be9f8c5265a59beced12",
+   "family": "bmm",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.bmm/medium/fp16-b16-m64-k32-n64",
+   "sha256": "b377b0e53eab312336e85287a3ed0ab7c463c58977085140b2a8466dbb5fe595",
+   "family": "bmm",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+   "family": "linear",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.linear/large/fp16-m512-k2048-n8192",
+   "sha256": "b3df7442af7433483b3e6b20a5003785ed305bab9953d33f74162e7464869867",
+   "family": "linear",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.linear/medium/fp16-m128-k320-n256",
+   "sha256": "af00fd1e34ac660423c1cc3d8cc4d10443a9c2f9e69080514274b96db068693d",
+   "family": "linear",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+   "family": "matmul",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/large/fp16-m2048-k2048-n2048",
+   "sha256": "ae48d791bb5e7b11c5016645c80f5c3e2bb701e6939467a2f072bffa17a60ba1",
+   "family": "matmul",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/large/fp32-m2048-k2048-n2048",
+   "sha256": "b80814817436064b26635364fd6ec185caf99fada72664c34465f28a666e83fb",
+   "family": "matmul",
+   "tier": "large",
+   "dtype": "fp32"
+  },
+  {
+   "id": "op.matmul/medium/fp16-m128-k192-n128",
+   "sha256": "5fcd1986d57a317c831dfb5bb8b3334475169939d8e9c957ba15f7f06e8cef5a",
+   "family": "matmul",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/medium/fp32-m128-k192-n128",
+   "sha256": "6b6b368b24dfedbd7c53df61c1f1d6359500ce485dc4bd6c126abcb626626505",
+   "family": "matmul",
+   "tier": "medium",
+   "dtype": "fp32"
+  }
+ ],
+ "sha256": "ba5b8b42e26b314bff21911e92840a57924eb252199d04efea3950970e2e6642"
+}

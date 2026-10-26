@@ -1,0 +1,27 @@
+{
+  "scope": "Mechanical extraction by agy, independently checked by primary agent; no gate decisions or source changes",
+  "model": "gemini-3.8-flash-high",
+  "effort": "high",
+  "result_sha256": "505367c8b88b0db08b7278a37f92954fc927f92cc74359fffc8b868ef7a61008",
+  "checks": [
+    {
+      "directory": "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017",
+      "input_hashes": {
+        "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017/timing.rpt": "58d78b168de2e703815b9bc80585917db67e46012d9a74aee3284a5da2ef685b",
+        "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017/route_status.rpt": "edf4083821bd0594b367e2d69ed2119071246066832706fef0c0b66b6f058dad",
+        "/tmp/r40_latest_module_reports/r40_tlw_predicate_module_20261017/critical_paths.rpt": "c248f2b071ce086f726980882f5a3d6fa63e206337f1dbc8a4872845759d1d6c"
+      },
+      "verified": "All quoted lines, hashes, summary columns, route counts and first-path values independently matched raw reports"
+    },
+    {
+      "directory": "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017",
+      "input_hashes": {
+        "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017/timing.rpt": "27625b77147145455642ecffae78e5c5968c9ca994973f93f6091c88e77e834d",
+        "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017/route_status.rpt": "3ad66a269e486557c18f7749abf2593acffc86376f23ff10591a6e4b2b0379e4",
+        "/tmp/r40_latest_module_reports/r40_hit_owner_module_20261017/critical_paths.rpt": "65d751b166a8ec2d89aa7ee02ab4163ac36b060ceb885e687408dc4a8726399e"
+      },
+      "verified": "All quoted lines, hashes, summary columns, route counts and first-path values independently matched raw reports"
+    }
+  ],
+  "required_gate_promotions": []
+}

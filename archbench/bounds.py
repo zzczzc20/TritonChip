@@ -48,6 +48,13 @@ r38_score = _r38('score')
 
 
 def tnca_peak(profile):
+    if profile.endswith('/hbm'):
+        from tnca.device import base_profile
+        # HBM changes the backing memory, while this profile still has
+        # the same single core and its shared 64-bit memory ingress.
+        peak = _r38_peaks.spec_peak(base_profile(profile))
+        peak['profile'] = profile
+        return peak
     return _r38_peaks.spec_peak(profile)
 
 

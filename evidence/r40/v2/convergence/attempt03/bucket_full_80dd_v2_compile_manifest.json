@@ -1,0 +1,6 @@
+{
+  "path": "/home/zhongchun/r40_bucket_full_80dd_v2_compile_attempt2/compiler_evidence.tar.gz",
+  "sha256": "c3bac0aae2208dfbba54359b43d633185212d2805e8bdd79f0b2e916447ceecc",
+  "bytes": 3448125,
+  "scope": "Complete actual TNCA compile-only containers, wrapper/FX/TTIR/TNCA IR/assembly bundles and skipped launches; every device open forbidden; no numerical or performance claim"
+}

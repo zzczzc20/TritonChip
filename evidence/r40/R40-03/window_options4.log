@@ -1,0 +1,5 @@
+PASS environment=0, selected=0, lowering=default off
+PASS environment=0, selected=1, lowering=1
+PASS environment=1, selected=1, lowering=1
+PASS environment=1, selected=0, lowering=0
+r40-window-options-tests PASS (4/4)

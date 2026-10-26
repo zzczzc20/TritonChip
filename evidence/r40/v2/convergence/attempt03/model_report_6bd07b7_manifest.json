@@ -1,0 +1,8 @@
+{
+  "path": "/home/zzhouch/tnca_evidence_r40_guarded_6bd07b7/model_report.json.gz",
+  "raw_sha256": "51a505f2d9eb2bc962b435535da7756ceb7911969ee480d34380dc2ac2250951",
+  "sha256": "121380587e28adce1eb3d56fb5d817b47f8feaed4d445cff28b27768c491991b",
+  "bytes": 1117970,
+  "raw_bytes": 17815409,
+  "scope": "Complete original guarded model report, all 65 calls, copies/events/numerics retained; not performance or fixed-bucket acceptance"
+}

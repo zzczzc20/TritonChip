@@ -1,0 +1,8 @@
+{
+  "root": "/home/zzhouch/tnca_large_layer_exact_decode_6bd07b7",
+  "pid": 2366121,
+  "harness_sha256": "07bbf8be1c89f804f248077e9d620287dbfc93c3f09e53cc325f0c63548aecac",
+  "controller_sha256": "cb65827163b5e1cd9f1b00f8b6a68c2fa53eb4940061782ed79d6f466b565902",
+  "reference_sha256": "77f6b2b90a34b2a4042106d63d370955a500e0378cc12d663867c5e9eb83e015",
+  "scope": "Original full 16-layer decode, exact original native-host weights and inputs; CPU reference on GB10; extra returned boundaries may affect fusion, diagnosis only; waits for current board owner"
+}

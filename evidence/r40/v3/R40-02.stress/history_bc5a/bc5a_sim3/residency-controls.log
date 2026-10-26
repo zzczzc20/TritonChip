@@ -1,0 +1,12 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+W1019 02:55:49.196000 2571373 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+PASS resident: graph correctness and transfer audit
+PASS per-kernel: graph correctness and transfer audit
+Traceback (most recent call last):
+  File "/home/zhongchun/r40v3_capgate_bc5a/tools/r40/residency_tests.py", line 97, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/zhongchun/r40v3_capgate_bc5a/tools/r40/residency_tests.py", line 58, in main
+    assert all(a == artifacts[0] for a in artifacts), 'policy changed compiled artifacts'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: policy changed compiled artifacts

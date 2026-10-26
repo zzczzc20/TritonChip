@@ -1,0 +1,1489 @@
+{
+ "gates": {
+  "R40-03.tiles": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "auditor runs on the delivery product tree",
+     "ok": true,
+     "local": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "delivery": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75"
+    },
+    {
+     "name": "identity amendment: delivery tree and its complete product diff from 80dd (only these files differ; their delivered hashes are the ones audited)",
+     "ok": true,
+     "delivery_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "diff_from_80dd": [
+      "python/tnca/inductor.py",
+      "python/tnca/triton_backend/compiler.py"
+     ],
+     "file_sha256": {
+      "python/tnca/inductor.py": "d1a28be248d5581dbcce60491c9f5a752fda9d77ffa209bf7e458cea152a6f0a",
+      "python/tnca/triton_backend/compiler.py": "3818f5688b7d40c9f995de309738555c848e03e7f11977ce1220554e9e191f36"
+     },
+     "amendment_sha256": "97686070f1b352bdc519e900e3fb6ef27853bf6a596f73950d638dbd77e730cb"
+    },
+    {
+     "name": "runner manifest schema",
+     "ok": true,
+     "manifest": "evidence/r40/v3/R40-03.tiles/run/manifest_tiles_pipeline_extra.json",
+     "sha256": "1f1db869fc5d3cd0abc232ed787c468bd3a12af3a1932a78a6a9bc40c85ba4c6",
+     "runner_sha256": "053be41d8cf0f1363eec7b35a3140a18a07f2c8bbb873b345688e519401532fc"
+    },
+    {
+     "name": "run closed by the runner (complete) or finalized after a deliberate stop (partial)",
+     "ok": true,
+     "status": "complete",
+     "jobs_not_run": []
+    },
+    {
+     "name": "run bound to the delivery product tree before and after",
+     "ok": true,
+     "before": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "after": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "expected": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "host": "gx10-6646",
+     "root": "/home/zhongchun/r40v3_tpc"
+    },
+    {
+     "name": "product imports resolved inside the immutable run copy",
+     "ok": true,
+     "origins": {
+      "tnca": "/home/zhongchun/r40v3_tpc/python/tnca/__init__.py",
+      "tnca_cc": "/home/zhongchun/r40v3_tpc/compiler/python/tnca_cc/__init__.py",
+      "triton": "3.8.0",
+      "torch": "2.14.0+cu130",
+      "backends": [
+       "triton.backends.amd",
+       "triton.backends.nvidia",
+       "tnca.triton_backend"
+      ],
+      "ok": true
+     }
+    },
+    {
+     "name": "locked toolchain (torch 2.14.0, Triton 3.8.0)",
+     "ok": true
+    },
+    {
+     "name": "every recipe line of make r40-tiles is in the run (make -n text)",
+     "ok": true,
+     "fragments": [
+      "tools/r40/tiles_tests.py --width $width",
+      "tools/r40/reduction_tests.py --width $width",
+      "tools/r40/fold_tests.py --width $width",
+      "reduction_tests.py --width $width --rows 2",
+      "fold_tests.py --width 32 --rows 2 --index-bias 1099511627776",
+      "gemm_tiles_tests.py --columns $columns",
+      "gemm_tiles_tests.py --columns $columns --depth 32 --dtype $dtype",
+      "TNCA_WINDOW_REUSE=1 TNCA_HOST_TIMEOUT=172800",
+      "gemm_tiles_tests.py --columns 64 --depth 32",
+      "gemm_tiles_tests.py --columns 16 --depth 64 --dtype $dtype",
+      "window_options_tests.py",
+      "compile_switch_tests.py",
+      "packed_window_options_tests.py",
+      "bank_tests.py --enabled $mode",
+      "TNCA_BANK_ALLOC=0 TNCA_WINDOW_REUSE=0 TNCA_PACKED_WINDOW_UNPACK=0",
+      "contract_tests.py"
+     ]
+    },
+    {
+     "name": "make r40-tiles: tiles_w16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 87.3,
+     "log": "tiles_w16.log",
+     "log_sha256": "0422510263f775f4106af8729ede2b8bc39f0569fd4004d2bfdae4d596ce3d80",
+     "marker": "r40-tiles-tests PASS \\(12/12\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/tiles_tests.py --width 16",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: tiles_w32",
+     "ok": true,
+     "exit": 0,
+     "seconds": 119.5,
+     "log": "tiles_w32.log",
+     "log_sha256": "75869019e1e5f934717a933a6e0461c9eb8a467225d3dbaaf610ca258b251072",
+     "marker": "r40-tiles-tests PASS \\(12/12\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/tiles_tests.py --width 32",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: tiles_w64",
+     "ok": true,
+     "exit": 0,
+     "seconds": 122.4,
+     "log": "tiles_w64.log",
+     "log_sha256": "3db31989eec51276570090a180bbd310b434b2bdf6ff17e24cf3fc473e7c83c6",
+     "marker": "r40-tiles-tests PASS \\(12/12\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/tiles_tests.py --width 64",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: tiles_w128",
+     "ok": true,
+     "exit": 0,
+     "seconds": 156.9,
+     "log": "tiles_w128.log",
+     "log_sha256": "39de365b27d145e356076a1ed665745be200c8d073b9cb09dc889fa8b9073434",
+     "marker": "r40-tiles-tests PASS \\(12/12\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/tiles_tests.py --width 128",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: reduction_w16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 669.2,
+     "log": "reduction_w16.log",
+     "log_sha256": "8d4e464e0a27bdd0a284ab2c8559317bd01d2ef939ac351498481c293536f0c6",
+     "marker": "r40-reduction-tests PASS \\(20/20\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/reduction_tests.py --width 16",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: reduction_w32",
+     "ok": true,
+     "exit": 0,
+     "seconds": 797.6,
+     "log": "reduction_w32.log",
+     "log_sha256": "d69c5c2001121c9c346bbf0ee09c3342acecb25613d032725d2e436cbbf2fa0e",
+     "marker": "r40-reduction-tests PASS \\(20/20\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/reduction_tests.py --width 32",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: reduction_w64",
+     "ok": true,
+     "exit": 0,
+     "seconds": 750.6,
+     "log": "reduction_w64.log",
+     "log_sha256": "6b1fc014bf5ef970362a2f24005103614800915f83d71d0a1d485ed1ca555a38",
+     "marker": "r40-reduction-tests PASS \\(20/20\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/reduction_tests.py --width 64",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: reduction_w128",
+     "ok": true,
+     "exit": 0,
+     "seconds": 743.6,
+     "log": "reduction_w128.log",
+     "log_sha256": "2e0d2f025f4fc8a85f566e7568e02389d0357b4409d672f81e58e4f3218cf24c",
+     "marker": "r40-reduction-tests PASS \\(20/20\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/reduction_tests.py --width 128",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: fold_w16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 163.1,
+     "log": "fold_w16.log",
+     "log_sha256": "3b289e43151cb2b979e09ab7a7d81c58385f89a4e0516bfef0cce74b64256615",
+     "marker": "r40-fold-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/fold_tests.py --width 16",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: fold_w32",
+     "ok": true,
+     "exit": 0,
+     "seconds": 160.6,
+     "log": "fold_w32.log",
+     "log_sha256": "d50b8eefa1b95475f9d2f7eaf8990d0eba44aacd82584e2baa52087362f02819",
+     "marker": "r40-fold-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/fold_tests.py --width 32",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: fold_w64",
+     "ok": true,
+     "exit": 0,
+     "seconds": 155.5,
+     "log": "fold_w64.log",
+     "log_sha256": "15c2d69da309074db0517c1c94d9ee202a8609d10fc490e0b51e66fb821862c7",
+     "marker": "r40-fold-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/fold_tests.py --width 64",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: fold_w128",
+     "ok": true,
+     "exit": 0,
+     "seconds": 255.0,
+     "log": "fold_w128.log",
+     "log_sha256": "53f385b5931e440b16f77748d598d2f49b5055e60675da2cc860c7af4d8b43e6",
+     "marker": "r40-fold-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/fold_tests.py --width 128",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: reduction_w16_rows2",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1086.0,
+     "log": "reduction_w16_rows2.log",
+     "log_sha256": "5d0b2ec727887397b6547146b8c520ff946c3eae9418eef8c5b5055add10f181",
+     "marker": "r40-reduction-tests PASS \\(20/20\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/reduction_tests.py --width 16 --rows 2",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: reduction_w32_rows2",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1430.2,
+     "log": "reduction_w32_rows2.log",
+     "log_sha256": "7b73366ba356a2ccbdb6407c92d8c9b5a6cf9f85203170f79532f69a4c9bb471",
+     "marker": "r40-reduction-tests PASS \\(20/20\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/reduction_tests.py --width 32 --rows 2",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: reduction_w64_rows2",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1474.3,
+     "log": "reduction_w64_rows2.log",
+     "log_sha256": "4359dfb414c04959c8e5d38fa91490244eb074c6e38f489e0f02de4cb943aab1",
+     "marker": "r40-reduction-tests PASS \\(20/20\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/reduction_tests.py --width 64 --rows 2",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: fold_w32_rows2_bias40",
+     "ok": true,
+     "exit": 0,
+     "seconds": 317.1,
+     "log": "fold_w32_rows2_bias40.log",
+     "log_sha256": "152d667c873c0cbc44981b73a660bb541ad8062920a88dc7cf4377c07a1f3268",
+     "marker": "r40-fold-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/fold_tests.py --width 32 --rows 2 --index-bias 1099511627776",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: gemm_n16_k16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1882.2,
+     "log": "gemm_n16_k16.log",
+     "log_sha256": "7be77a28d80de9c527fae0c341f0939fd800a95350dc069baf07b7573fbe052b",
+     "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 16",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: gemm_n32_k16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2559.3,
+     "log": "gemm_n32_k16.log",
+     "log_sha256": "bb42a87896ec45633c5f01e041dc60f62a9e29530c42e45f2d9429d6b7ae3a10",
+     "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 32",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: gemm_n64_k16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 3497.1,
+     "log": "gemm_n64_k16.log",
+     "log_sha256": "c55ad6129e97c8f113cb21bf4e9cbbc2883961180b7f826cef833c4fa7feb706",
+     "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 64",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: gemm_n16_k32_float16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2460.7,
+     "log": "gemm_n16_k32_float16.log",
+     "log_sha256": "0253da2c2dfcc7800e26e63e4abed082f55b59448c23c0ee51c33c6360579599",
+     "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 16 --depth 32 --dtype float16",
+     "env": {
+      "TNCA_HOST_TIMEOUT": "172800"
+     }
+    },
+    {
+     "name": "make r40-tiles: gemm_n16_k32_bfloat16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2423.5,
+     "log": "gemm_n16_k32_bfloat16.log",
+     "log_sha256": "1ad738a14fd37aa7da112c469ff24ac262360d4495599bc6108f3dc4c90fc6e9",
+     "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 16 --depth 32 --dtype bfloat16",
+     "env": {
+      "TNCA_HOST_TIMEOUT": "172800"
+     }
+    },
+    {
+     "name": "make r40-tiles: gemm_n32_k32_float16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2736.4,
+     "log": "gemm_n32_k32_float16.log",
+     "log_sha256": "bb0805bd3c1bf2a6a9e9663c16df6c3df370b9b35d345505c4f7d7a366913b4c",
+     "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 32 --depth 32 --dtype float16",
+     "env": {
+      "TNCA_HOST_TIMEOUT": "172800"
+     }
+    },
+    {
+     "name": "make r40-tiles: gemm_n32_k32_bfloat16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2262.4,
+     "log": "gemm_n32_k32_bfloat16.log",
+     "log_sha256": "d25260de0f45e49a67be35a7d245c1a30483f5671a4cf3540ed481da8650d682",
+     "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 32 --depth 32 --dtype bfloat16",
+     "env": {
+      "TNCA_HOST_TIMEOUT": "172800"
+     }
+    },
+    {
+     "name": "make r40-tiles: gemm_n64_k32_window",
+     "ok": true,
+     "exit": 0,
+     "seconds": 3227.0,
+     "log": "gemm_n64_k32_window.log",
+     "log_sha256": "065c6233dce2fa72ca19c85f139702ce9f5ba14adfc7e8836a0dbc9c55ae3040",
+     "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 64 --depth 32",
+     "env": {
+      "TNCA_WINDOW_REUSE": "1",
+      "TNCA_HOST_TIMEOUT": "172800"
+     }
+    },
+    {
+     "name": "make r40-tiles: gemm_n16_k64_window_float16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2488.4,
+     "log": "gemm_n16_k64_window_float16.log",
+     "log_sha256": "e2430936f4751d5da89c7bc89211a0066388d1d10fe78087501c815bc8dbb7dc",
+     "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 16 --depth 64 --dtype float16",
+     "env": {
+      "TNCA_WINDOW_REUSE": "1",
+      "TNCA_HOST_TIMEOUT": "172800"
+     }
+    },
+    {
+     "name": "make r40-tiles: gemm_n16_k64_window_bfloat16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2350.3,
+     "log": "gemm_n16_k64_window_bfloat16.log",
+     "log_sha256": "0a61021ec9c8a811f90b157be23d30c5c55fa9234ad08bed2a909630375f6c4f",
+     "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 16 --depth 64 --dtype bfloat16",
+     "env": {
+      "TNCA_WINDOW_REUSE": "1",
+      "TNCA_HOST_TIMEOUT": "172800"
+     }
+    },
+    {
+     "name": "make r40-tiles: window_options",
+     "ok": true,
+     "exit": 0,
+     "seconds": 0.3,
+     "log": "window_options.log",
+     "log_sha256": "c0c91c7a100050abcc2bbe54d6a8003276183fc524ef4bc01a32bced731199dc",
+     "marker": "PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/window_options_tests.py",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: compile_switch",
+     "ok": true,
+     "exit": 0,
+     "seconds": 0.3,
+     "log": "compile_switch.log",
+     "log_sha256": "8f4143193103cbd2f7b228049c65e0ce93c11ca390a00dd7a2d7b40c28e0803f",
+     "marker": "PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/compile_switch_tests.py",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: packed_window_options",
+     "ok": true,
+     "exit": 0,
+     "seconds": 0.1,
+     "log": "packed_window_options.log",
+     "log_sha256": "b6a161abed43b9a0dba9259cd451b39b20b10425ac13cc14786554c0e6fac7f1",
+     "marker": "\\nOK\\n",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "python3 tools/r40/packed_window_options_tests.py",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: bank_0",
+     "ok": true,
+     "exit": 0,
+     "seconds": 153.7,
+     "log": "bank_0.log",
+     "log_sha256": "a1912028eb1ccc641f7017038a048e64f77040bbdebfa6d6af3f8b99331cb20e",
+     "marker": "r40-bank-tests PASS \\(3/3\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/bank_tests.py --enabled 0 --out /home/zhongchun/r40v3_tpc_runs/all/bank_0.ledger.json",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: bank_1",
+     "ok": true,
+     "exit": 0,
+     "seconds": 155.8,
+     "log": "bank_1.log",
+     "log_sha256": "b82098c1e70ba6f08425785f633c37ede7cf92f7cc9e2271bb14685c94103f22",
+     "marker": "r40-bank-tests PASS \\(3/3\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/bank_tests.py --enabled 1 --out /home/zhongchun/r40v3_tpc_runs/all/bank_1.ledger.json",
+     "env": {}
+    },
+    {
+     "name": "make r40-tiles: contract",
+     "ok": true,
+     "exit": 0,
+     "seconds": 117.7,
+     "log": "contract.log",
+     "log_sha256": "d7b6a512b53ebf7784bef8580aad3f9c3e526e7303a94981047acc89aa5bd6b2",
+     "marker": "r40-contract-tests PASS \\(447/447 byte-identical to B39\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/contract_tests.py",
+     "env": {
+      "TNCA_BANK_ALLOC": "0",
+      "TNCA_WINDOW_REUSE": "0",
+      "TNCA_PACKED_WINDOW_UNPACK": "0"
+     }
+    },
+    {
+     "name": "test harness files behind each accepted result equal the repository copies",
+     "ok": true,
+     "files": {
+      "tools/r40/tiles_tests.py": "67067cc35bc50c24aa3f60ec81c6b7749ae998b6e6b3faae1fcca7a4854ace84",
+      "tools/r40/reduction_tests.py": "5004a59514692a4130ed10c631df7e613bf79b24be084490111b2c48a793d00c",
+      "tools/r40/fold_tests.py": "b811ae9391712e72ffc76d47759f2d93cd06db18b480ac53361226b4561327f2",
+      "tools/r40/gemm_tiles_tests.py": "6fdc54fbbe54f1950de46deadf2af520aa5345f906106ee7e3c4e041d01db8ee",
+      "tools/r40/bank_tests.py": "60825573a02ff104021e0f41442a3a507715de81a3129969ffc22eff0844d88a",
+      "tools/r40/window_options_tests.py": "a4f547b690e32964c157e117ac689d928798f47791420c6c707010a642082070",
+      "tools/r40/compile_switch_tests.py": "b25bf8a9c108d84822880328a36aaef661b8add4207bfd7f4854cba30bdfe417",
+      "tools/r40/packed_window_options_tests.py": "470819ab81a0bfeb0dc955c04626aafff7cd2902f06d7a9ce4abe362e37b1a1c",
+      "tools/r40/contract_tests.py": "e8ed9bec6528a20dfeb8a9f75f159437cd894b67117da18eccdfae86bbefc774",
+      "tools/r38/harness.py": "81f37b83f59cb1b7aa2ae3896f1e1c8ada951ea57c86626fab20a4f825c4c401",
+      "tools/r37/upstream_cases.py": "4ceb155411655fda4131cbb59f1191b28beac11886392b1d1732c399aeac0685",
+      "tools/r37/upstream.py": "e457e5f03f468ec30ec6a410421b89fc021222a4862dd255e51310dbfb10fc2a"
+     },
+     "differ": {}
+    },
+    {
+     "name": "tails 17/31/33/65/127 across registers, masked select/load/store, widths 16/32/64/128",
+     "ok": true,
+     "tails": {
+      "16": [
+       17,
+       31,
+       33,
+       65,
+       127
+      ],
+      "32": [
+       17,
+       31,
+       33,
+       65,
+       127
+      ],
+      "64": [
+       17,
+       31,
+       33,
+       65,
+       127
+      ],
+      "128": [
+       17,
+       31,
+       33,
+       65,
+       127
+      ]
+     }
+    },
+    {
+     "name": "existing dtypes fp16/bf16/i8/i16/i32 (fp32 graphs above)",
+     "ok": true,
+     "dtypes": {
+      "16": [
+       "torch.float16",
+       "torch.bfloat16",
+       "torch.int8",
+       "torch.int16",
+       "torch.int32"
+      ],
+      "32": [
+       "torch.float16",
+       "torch.bfloat16",
+       "torch.int8",
+       "torch.int16",
+       "torch.int32"
+      ],
+      "64": [
+       "torch.float16",
+       "torch.bfloat16",
+       "torch.int8",
+       "torch.int16",
+       "torch.int32"
+      ],
+      "128": [
+       "torch.float16",
+       "torch.bfloat16",
+       "torch.int8",
+       "torch.int16",
+       "torch.int32"
+      ]
+     }
+    },
+    {
+     "name": "int64 values beyond 32 bits at every width; int64 argmax indices + 2^40",
+     "ok": true
+    },
+    {
+     "name": "strided offset alias with in-place stores at every width",
+     "ok": true
+    },
+    {
+     "name": "reductions sum/amax/RMSNorm/softmax/LayerNorm 20/20 per width, two-row 16/32/64",
+     "ok": true,
+     "counts": {
+      "reduction_w16": 20,
+      "reduction_w32": 20,
+      "reduction_w64": 20,
+      "reduction_w128": 20,
+      "reduction_w16_rows2": 20,
+      "reduction_w32_rows2": 20,
+      "reduction_w64_rows2": 20
+     }
+    },
+    {
+     "name": "logical GEMM tiles over MMA fragments: 16x16/32/64x16, 16x16/32x32 (fp16, bf16), 16x64x32, 16x16x64 (fp16, bf16), tails 17x65x33 and 33x31x65",
+     "ok": true,
+     "tiles": [
+      "16x16x16",
+      "16x16x32",
+      "16x16x64",
+      "16x32x16",
+      "16x32x32",
+      "16x64x16",
+      "16x64x32"
+     ]
+    },
+    {
+     "name": "register pressure triggers a private-scratch vector spill (128-wide int64) and the artifact reserves at least the planned scratch",
+     "ok": true,
+     "spills": [
+      {
+       "plan": {
+        "estimated_peak_before": 66,
+        "estimated_unspilled_peak": 52,
+        "loads": 42,
+        "scratch_bytes": 896,
+        "slots": 14,
+        "stores": 14,
+        "tier": "per-program scratch"
+       },
+       "scratch": 896
+      }
+     ]
+    },
+    {
+     "name": "full VRF triggers a legal K64 -> 2 x K32 MMA retile (fp16 and bf16), actual machine K encoding asserted by the test",
+     "ok": true,
+     "retile_audits": {
+      "gemm_n16_k64_window_float16": 4,
+      "gemm_n16_k64_window_bfloat16": 4
+     }
+    },
+    {
+     "name": "window reuse ledger equals the window definitions decoded from the executed machine code, and every role reserves at least those registers",
+     "ok": true,
+     "audits": {
+      "gemm_n64_k32_window": 4,
+      "gemm_n16_k64_window_float16": 4,
+      "gemm_n16_k64_window_bfloat16": 4
+     }
+    },
+    {
+     "name": "bank allocation off/on: physical ledger reproduced from the verified assembly of the executed artifact",
+     "ok": true,
+     "banks": {
+      "bank_0": true,
+      "bank_1": true
+     }
+    },
+    {
+     "name": "layout run: runner manifest schema",
+     "ok": true,
+     "manifest": "evidence/r40/v3/R40-03.tiles/layout_run/manifest_tiles_pipeline_extra.json",
+     "sha256": "1f1db869fc5d3cd0abc232ed787c468bd3a12af3a1932a78a6a9bc40c85ba4c6",
+     "runner_sha256": "053be41d8cf0f1363eec7b35a3140a18a07f2c8bbb873b345688e519401532fc"
+    },
+    {
+     "name": "layout run: run closed by the runner (complete) or finalized after a deliberate stop (partial)",
+     "ok": true,
+     "status": "complete",
+     "jobs_not_run": []
+    },
+    {
+     "name": "layout run: run bound to the delivery product tree before and after",
+     "ok": true,
+     "before": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "after": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "expected": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "host": "gx10-6646",
+     "root": "/home/zhongchun/r40v3_tpc"
+    },
+    {
+     "name": "layout run: product imports resolved inside the immutable run copy",
+     "ok": true,
+     "origins": {
+      "tnca": "/home/zhongchun/r40v3_tpc/python/tnca/__init__.py",
+      "tnca_cc": "/home/zhongchun/r40v3_tpc/compiler/python/tnca_cc/__init__.py",
+      "triton": "3.8.0",
+      "torch": "2.14.0+cu130",
+      "backends": [
+       "triton.backends.amd",
+       "triton.backends.nvidia",
+       "tnca.triton_backend"
+      ],
+      "ok": true
+     }
+    },
+    {
+     "name": "layout run: locked toolchain (torch 2.14.0, Triton 3.8.0)",
+     "ok": true
+    },
+    {
+     "name": "test harness files that ran equal the repository copies",
+     "ok": true,
+     "files": {
+      "tools/r40/v3_layout_tests.py": "0992e9c14fd6190fe080cdd55d84eb0997d308b62b2935c4e51f005ded0b52c7"
+     },
+     "differ": {}
+    },
+    {
+     "name": "transpose/stride layouts: layout_w16",
+     "ok": true,
+     "exit": 0,
+     "seconds": 1919.2,
+     "log": "layout_w16.log",
+     "log_sha256": "1f56c6fe08936b3b3bf0ef9e69e96e216c934195df0abfc2ac7e42d9fe97f730",
+     "marker": "r40-v3-layout PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_layout_tests.py --width 16 --json /home/zhongchun/r40v3_tpc_runs/all/layout_w16.report.json",
+     "env": {}
+    },
+    {
+     "name": "transpose/stride layouts: layout_w32",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2702.2,
+     "log": "layout_w32.log",
+     "log_sha256": "c377f3012b3d1f5310fb17d23d3abbcfeb4d4f0cdc3b73582113ddcfc16f2fbd",
+     "marker": "r40-v3-layout PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_layout_tests.py --width 32 --json /home/zhongchun/r40v3_tpc_runs/all/layout_w32.report.json",
+     "env": {}
+    },
+    {
+     "name": "transpose/stride layouts: layout_w64",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2802.1,
+     "log": "layout_w64.log",
+     "log_sha256": "8e9e8cb247bbd8f4723a2625a6ae60288c0d5cee47b3c62836f861d331370ea0",
+     "marker": "r40-v3-layout PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_layout_tests.py --width 64 --json /home/zhongchun/r40v3_tpc_runs/all/layout_w64.report.json",
+     "env": {}
+    },
+    {
+     "name": "transpose/stride layouts: layout_w128",
+     "ok": true,
+     "exit": 0,
+     "seconds": 2859.7,
+     "log": "layout_w128.log",
+     "log_sha256": "e29686e8406ec34480355162ee0562ae0746d1d164336de5e0b7baaa44de44cc",
+     "marker": "r40-v3-layout PASS",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_layout_tests.py --width 128 --json /home/zhongchun/r40v3_tpc_runs/all/layout_w128.report.json",
+     "env": {}
+    },
+    {
+     "name": "transpose/stride layouts at widths 16/32/64/128: transposed pointwise reads (fp32, fp16), transposed + contiguous operands, a column-strided 2-D view",
+     "ok": true,
+     "results": {
+      "16": {
+       "transpose_pointwise_f32": "PASS",
+       "transpose_pointwise_f16": "PASS",
+       "transpose_plus_contiguous": "PASS",
+       "column_strided_view": "PASS"
+      },
+      "32": {
+       "transpose_pointwise_f32": "PASS",
+       "transpose_pointwise_f16": "PASS",
+       "transpose_plus_contiguous": "PASS",
+       "column_strided_view": "PASS"
+      },
+      "64": {
+       "transpose_pointwise_f32": "PASS",
+       "transpose_pointwise_f16": "PASS",
+       "transpose_plus_contiguous": "PASS",
+       "column_strided_view": "PASS"
+      },
+      "128": {
+       "transpose_pointwise_f32": "PASS",
+       "transpose_pointwise_f16": "PASS",
+       "transpose_plus_contiguous": "PASS",
+       "column_strided_view": "PASS"
+      }
+     }
+    },
+    {
+     "name": "transpose/stride layouts at widths 16/32/64/128: linear with its [n, k] weight (B transposed) and mm with a transposed A, wide logical tiles",
+     "ok": true,
+     "results": {
+      "16": {
+       "linear_transposed_weight": "PASS",
+       "mm_transposed_a": "PASS"
+      },
+      "32": {
+       "linear_transposed_weight": "PASS",
+       "mm_transposed_a": "PASS"
+      },
+      "64": {
+       "linear_transposed_weight": "PASS",
+       "mm_transposed_a": "PASS"
+      },
+      "128": {
+       "linear_transposed_weight": "PASS",
+       "mm_transposed_a": "PASS"
+      }
+     }
+    },
+    {
+     "name": "transpose/stride layouts at widths 16/32/64/128: cumsum scan kept at 16 lanes above a 16 cap (the bc5a narrow-block retile)",
+     "ok": true,
+     "results": {
+      "16": {
+       "cumsum_scan_retile": "PASS"
+      },
+      "32": {
+       "cumsum_scan_retile": "PASS"
+      },
+      "64": {
+       "cumsum_scan_retile": "PASS"
+      },
+      "128": {
+       "cumsum_scan_retile": "PASS"
+      }
+     }
+    },
+    {
+     "name": "transpose/stride layouts at widths 16/32/64/128: reductions (sum, amax) over a transposed / non-innermost axis",
+     "ok": true,
+     "results": {
+      "16": {
+       "transpose_sum": "PASS",
+       "transpose_amax": "PASS"
+      },
+      "32": {
+       "transpose_sum": "PASS",
+       "transpose_amax": "PASS"
+      },
+      "64": {
+       "transpose_sum": "PASS",
+       "transpose_amax": "PASS"
+      },
+      "128": {
+       "transpose_sum": "PASS",
+       "transpose_amax": "PASS"
+      }
+     }
+    },
+    {
+     "name": "transpose/stride layouts at widths 16/32/64/128: int64 beyond 32 bits read transposed (2-D tile under register/code pressure)",
+     "ok": true,
+     "results": {
+      "16": {
+       "int64_transposed": "PASS"
+      },
+      "32": {
+       "int64_transposed": "PASS"
+      },
+      "64": {
+       "int64_transposed": "PASS"
+      },
+      "128": {
+       "int64_transposed": "PASS"
+      }
+     }
+    }
+   ],
+   "detail": "tails/transpose/stride/mask/int64/alias/dtypes, register-block reductions, logical GEMM tiles, bank allocation, legal spill and K retile with machine-checked ledgers; RTL simulation of the delivered core and offline compilation on an immutable copy of files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75; no board time, no performance claim",
+   "written": "2026-10-19T15:52:10+00:00",
+   "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image": "not-applicable: RTL simulation / compilation",
+   "clock": "not-applicable",
+   "measured_performance": false,
+   "run_host": "gx10-6646",
+   "run_root": "/home/zhongchun/r40v3_tpc",
+   "run_started": "2026-10-19T08:03:42+00:00",
+   "run_finished": "2026-10-19T13:29:51+00:00",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  },
+  "R40-03.contract": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "auditor runs on the delivery product tree",
+     "ok": true,
+     "local": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "delivery": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75"
+    },
+    {
+     "name": "identity amendment: delivery tree and its complete product diff from 80dd (only these files differ; their delivered hashes are the ones audited)",
+     "ok": true,
+     "delivery_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "diff_from_80dd": [
+      "python/tnca/inductor.py",
+      "python/tnca/triton_backend/compiler.py"
+     ],
+     "file_sha256": {
+      "python/tnca/inductor.py": "d1a28be248d5581dbcce60491c9f5a752fda9d77ffa209bf7e458cea152a6f0a",
+      "python/tnca/triton_backend/compiler.py": "3818f5688b7d40c9f995de309738555c848e03e7f11977ce1220554e9e191f36"
+     },
+     "amendment_sha256": "97686070f1b352bdc519e900e3fb6ef27853bf6a596f73950d638dbd77e730cb"
+    },
+    {
+     "name": "runner manifest schema",
+     "ok": true,
+     "manifest": "evidence/r40/v3/R40-03.contract/run/manifest_tiles_pipeline_extra.json",
+     "sha256": "1f1db869fc5d3cd0abc232ed787c468bd3a12af3a1932a78a6a9bc40c85ba4c6",
+     "runner_sha256": "053be41d8cf0f1363eec7b35a3140a18a07f2c8bbb873b345688e519401532fc"
+    },
+    {
+     "name": "run closed by the runner (complete) or finalized after a deliberate stop (partial)",
+     "ok": true,
+     "status": "complete",
+     "jobs_not_run": []
+    },
+    {
+     "name": "run bound to the delivery product tree before and after",
+     "ok": true,
+     "before": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "after": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "expected": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "host": "gx10-6646",
+     "root": "/home/zhongchun/r40v3_tpc"
+    },
+    {
+     "name": "product imports resolved inside the immutable run copy",
+     "ok": true,
+     "origins": {
+      "tnca": "/home/zhongchun/r40v3_tpc/python/tnca/__init__.py",
+      "tnca_cc": "/home/zhongchun/r40v3_tpc/compiler/python/tnca_cc/__init__.py",
+      "triton": "3.8.0",
+      "torch": "2.14.0+cu130",
+      "backends": [
+       "triton.backends.amd",
+       "triton.backends.nvidia",
+       "tnca.triton_backend"
+      ],
+      "ok": true
+     }
+    },
+    {
+     "name": "locked toolchain (torch 2.14.0, Triton 3.8.0)",
+     "ok": true
+    },
+    {
+     "name": "disabled-option legacy artifact contract: contract",
+     "ok": true,
+     "exit": 0,
+     "seconds": 117.7,
+     "log": "contract.log",
+     "log_sha256": "d7b6a512b53ebf7784bef8580aad3f9c3e526e7303a94981047acc89aa5bd6b2",
+     "marker": "r40-contract-tests PASS \\(447/447 byte-identical to B39\\)",
+     "marker_found": true,
+     "log_unmodified": true,
+     "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/contract_tests.py",
+     "env": {
+      "TNCA_BANK_ALLOC": "0",
+      "TNCA_WINDOW_REUSE": "0",
+      "TNCA_PACKED_WINDOW_UNPACK": "0"
+     }
+    },
+    {
+     "name": "test harness files that ran equal the repository copies",
+     "ok": true,
+     "files": {
+      "tools/r40/contract_tests.py": "e8ed9bec6528a20dfeb8a9f75f159437cd894b67117da18eccdfae86bbefc774",
+      "tools/r38/harness.py": "81f37b83f59cb1b7aa2ae3896f1e1c8ada951ea57c86626fab20a4f825c4c401",
+      "tools/r37/upstream_cases.py": "4ceb155411655fda4131cbb59f1191b28beac11886392b1d1732c399aeac0685",
+      "tools/r37/upstream.py": "e457e5f03f468ec30ec6a410421b89fc021222a4862dd255e51310dbfb10fc2a"
+     },
+     "differ": {}
+    },
+    {
+     "name": "all 447 frozen B39 artifacts (149 cases x O0/O1/O2) byte-identical, no DIFF",
+     "ok": true
+    },
+    {
+     "name": "new switches off in the contract job (bank allocation, window reuse, packed unpack)",
+     "ok": true
+    },
+    {
+     "name": "reference is the independently rebuilt frozen B39 software commit, complete inventory, no performance claim",
+     "ok": true,
+     "reference": "evidence/r40/R40-03/contract_reference.json",
+     "sha256": "bfc911d430df80c3b80c83ee7dcde6706babed11f4d44b01a48503bba5bc8616",
+     "commit": "be877793a4a5c1c522c0da65cc80a3fe921c0bda"
+    },
+    {
+     "name": "default caps unchanged: block 16, GEMM tile 16,16,16, reduction rows 1",
+     "ok": true
+    },
+    {
+     "name": "lowering code (strings, names, imports; comments/docstrings excluded) never names a U280/U50 PC or SLR, an xclbin, ArchBench/Tilebench or a frozen point/family id: shared tiles are chosen by shape/dtype/IR/target capability",
+     "ok": true,
+     "files": 51,
+     "hits": [],
+     "file_sha256": {
+      "compiler/python/tnca_cc/__init__.py": "f46bb25c1a600506f9b0d6d37f2652e23305860424ca325bbdf605e744a87bf3",
+      "compiler/python/tnca_cc/_datapath.py": "003ffc72fc0377f69cb015aed99435ce845e394fe2d137f9a010a274e8f39b5d",
+      "compiler/python/tnca_cc/asm.py": "b44cd246c4c7bec4b9dfe5cb8c76b440db5e361ad6d634a5ab41e8f5c79cfdc0",
+      "compiler/python/tnca_cc/bankcost.py": "ff9250052d4e998230b2dbb99fadff851deee4a405c19aa531c7182d6efb57ab",
+      "compiler/python/tnca_cc/codegen.py": "538c499896c6a9d048fff495f935f67c2c9223f8746786a9f2521ad7a096a6e8",
+      "compiler/python/tnca_cc/dco.py": "5a5e24e034cb9f3e32e01481dfa3a5a4d3f9708782994d5c827f0346e37696be",
+      "compiler/python/tnca_cc/descriptors.py": "ed9b2394b24143fdfe71d00be2a28ded3bb8c5a86e61c6ebf9b83698df9141d3",
+      "compiler/python/tnca_cc/diagnostics.py": "2edb821d65a57b0fb9ce93c2ca681b63c49ddf3ba480f708bf250f364c73d5ea",
+      "compiler/python/tnca_cc/footprints.py": "211e85e13068c949a217b30d85d6052aec86478887964eb015489c3b32b34611",
+      "compiler/python/tnca_cc/frontend.py": "efcf818c019ed77a6d5c508f81ee8a1d8e25996581a12a92963f8bc7dc7b7c61",
+      "compiler/python/tnca_cc/gemm.py": "7801da9bbf3239599347c22f9b66ffb4949e78b265c74efa023c988983085f54",
+      "compiler/python/tnca_cc/ir.py": "2ad7bc7f6a21fc388b4d748f1a4a4d7dfb547e4db967ef20857f46e83e8fe475",
+      "compiler/python/tnca_cc/isa.py": "102bfb66aa8b71f3122e1903c7441c95c8c0f301e8c68f5068db790cb580068b",
+      "compiler/python/tnca_cc/kernels.py": "37f24654a82ab89c4d984d55ae247d0a8738fbfa009abe965f322921f97719c7",
+      "compiler/python/tnca_cc/layout.py": "c28e7ad1b26db301684b2bc2296057c4d883e7f92b6c50b58f951f675fa8960c",
+      "compiler/python/tnca_cc/mathlib.py": "b6539d201959c7cd70da3bd4607c11d9c9e1a022ead24d291aa0232d238c1f2d",
+      "compiler/python/tnca_cc/optimization.py": "afdb4f0efed7d80125a0a6d71be4324db3115adf910de4cf10f5ed6ae56bd0d3",
+      "compiler/python/tnca_cc/packed.py": "ab8214370be3ee95d52e0672b088403e361c917585c8d86e4e762e13de2becf6",
+      "compiler/python/tnca_cc/partition.py": "7fe668f77b8262e63ce953301f627f90e2d7dec1790c3fe06c838f34c7ccaa54",
+      "compiler/python/tnca_cc/pipeline.py": "51976196957e939dbd2f4ff4114aa4a233feeedb5de9fe13f48aa76f8612757c",
+      "compiler/python/tnca_cc/protocol.py": "dbb4b9ca0b47fad4ec8d5773c9082e44236d0bd61cdb65a36b9d8581a6713ce6",
+      "compiler/python/tnca_cc/proton.py": "1c1e637381b9aa66099db8f8205f07b5a3f46ece08a5a068b7efed226294549c",
+      "compiler/python/tnca_cc/rctx_spmd.py": "d722a67c07045625753521039eb361c8172100433631913337b530fa7f91e747",
+      "compiler/python/tnca_cc/register_blocks.py": "c43204e8affe512b6406abbd754646bfe8b60a11db3744290ddb7d33729103ed",
+      "compiler/python/tnca_cc/report.py": "3cab74bd89018d01e2eab623fe86ba0fa756d0064f022427949b9dcba396d6bd",
+      "compiler/python/tnca_cc/schedule.py": "396dd034fb2046900a2e97a4efd5fae3eb4af985832674279b1baf18c647519a",
+      "compiler/python/tnca_cc/target.py": "09e1fdb636fa62d74e93d194d116d830310688310f9ba4e6b5eba1494f1d8c79",
+      "compiler/python/tnca_cc/tiles.py": "f747144486d1d8b3d492122ec510d79dd9dd1a0211db5bbd8298a94360593c80",
+      "compiler/python/tnca_cc/triton_options.py": "3b6a9204e1b0007667c0213dbcbe19479d5b5fbb6e34b2e2e03b8bda85a355d5",
+      "compiler/python/tnca_cc/upstream/__init__.py": "a439838fb4f5de2c0a3f918221855a8389e346dcecc39d5588e07640eb5ec0db",
+      "compiler/python/tnca_cc/upstream/bridge.py": "c7b3e0aaa254ea0e761e2873136b59d182e617f840522f5a24c237a9039552b4",
+      "compiler/python/tnca_cc/upstream/layout.py": "c00ab860e55aa7e75075337c8b9bb43966e9be7e45338370584b7a44eae70fed",
+      "compiler/python/tnca_cc/upstream/passes.py": "b90bd25ebef169f6a9e10142e951de3bb03177ddf24e5f4bc7845ccc86cd251f",
+      "compiler/python/tnca_cc/upstream/version.py": "f57cd837ea8ed4e760cb7ef41d77342bbbe9150f9fc27ee399054c364e68c025",
+      "compiler/python/tnca_cc/vector_spill.py": "91e5b794bef007d965dfaa63690a0ff213d118cd07c810b1c62d10a7179ce5fe",
+      "compiler/python/tnca_cc/wide.py": "44a5cf1456e1a09c6611871fea7bfba6216c79a0804ace21bdbe6bdb608bc5e6",
+      "compiler/python/tnca_cc/window_lifetime.py": "08a7e2ca8eff18bbee82e5f86466fb5242383c7d8e90afed6f199ced4fac0400",
+      "python/tnca/triton_backend/__init__.py": "a4f86fefec717c82454fe091f78921298de069535e78961f6d3a5b48376cc559",
+      "python/tnca/triton_backend/compiler.py": "3818f5688b7d40c9f995de309738555c848e03e7f11977ce1220554e9e191f36",
+      "python/tnca/triton_backend/driver.py": "bfe714736b5f127743b187988c77e70d60d32de359d30f1746ba82310ff2756f",
+      "python/tnca/triton_backend/libdevice.py": "d7ce01d81cf147fcc7d5eea3ce051c1ffd28104540500f7d6a40e2c7acd62b02",
+      "python/tnca/torch_device/__init__.py": "9ed8ec4ffc3654f8bdbfa2d1c5694d93bde2d7d93dd393a85859c4c364511c64",
+      "python/tnca/torch_device/copy.py": "a0ad371424257a1184f7267fbd5d24d78aed7462ed1b1bc83612865816fd56d8",
+      "python/tnca/torch_device/graph.py": "96507cc1fee9c805b7e6f71137001e659e1ea6f4921b3e9ab353b02f1c0f6548",
+      "python/tnca/torch_device/inductor_device.py": "af2e42ee952ca31d3183de21482c2931b29af9b6bd53991742dff59f087ee1ea",
+      "python/tnca/torch_device/policy.py": "be674f761a1712a3d238cbda715833a04c5ad1c3879b28ec44192e8bf62621a2",
+      "python/tnca/inductor.py": "d1a28be248d5581dbcce60491c9f5a752fda9d77ffa209bf7e458cea152a6f0a",
+      "python/tnca/aot.py": "f6fc417becc32a08d37912523c375f704e1680d8364c15bf756391291ae8ffaa",
+      "python/tnca/online_attention.py": "f5d4089ddc0087c07d82304cf1b7d9055c92658c328f158f9dfd2fd3be31365c",
+      "python/tnca/costmodel.py": "71e4e96300c61f04a4c1e4018d3f0c1ea28da5c598857628119d3852c70e423c",
+      "python/tnca/autotune.py": "2263438442743ac653a7e44004c3a1019b5da1e6afc6645b639deb8315aece45"
+     },
+     "pattern": "u280|u50|alveo|xclbin|\\bslr\\d*\\b|\\bhbm_?pc|\\bpc\\d+\\b|archbench|tilebench|^(op|model)\\.[a-z_0-9]+(/|$)|/(tiny|small|medium|large|hbm)/"
+    }
+   ],
+   "detail": "disabled-option B39 artifact contract and capability-only dispatch; RTL simulation of the delivered core and offline compilation on an immutable copy of files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75; no board time, no performance claim",
+   "written": "2026-10-19T15:52:10+00:00",
+   "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image": "not-applicable: RTL simulation / compilation",
+   "clock": "not-applicable",
+   "measured_performance": false,
+   "run_host": "gx10-6646",
+   "run_root": "/home/zhongchun/r40v3_tpc",
+   "run_started": "2026-10-19T08:03:42+00:00",
+   "run_finished": "2026-10-19T13:29:51+00:00",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  },
+  "R40-03.wide-blocks": {
+   "status": "no-significant-gain",
+   "checks": [
+    {
+     "name": "R40-03.wide-blocks: complete accepted comparison",
+     "ok": true,
+     "detail": ""
+    },
+    {
+     "name": "R40-03.wide-blocks: 95% CI lower bound of S_geo > 1",
+     "ok": false,
+     "ci95": [
+      0.9697484084753974,
+      1.2661158195278321
+     ],
+     "s_geo": 1.1570558876682873
+    }
+   ],
+   "detail": "R40-03.wide-blocks: S_geo 1.1571 CI [0.9697, 1.2661], v2 target 1.3 missed",
+   "written": "2026-10-20T00:27:51+00:00",
+   "identity": {
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "clock_hz": 90000000,
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "backend": "fpga-u280-multicore",
+    "hbm_bytes": 4294967296,
+    "backend_args_shape": {
+     "image_profile": "core-vrf-sync-v5",
+     "core_count": 3,
+     "memory_ports": 3,
+     "hbm_dma": true,
+     "hbm_bytes": 4294967296,
+     "device_clock": true
+    },
+    "identity_amendment": "doc/r40_v3/identity_amendment.json"
+   },
+   "experiments": {
+    "R40-03.wide-blocks": {
+     "status": "no-significant-gain",
+     "s_geo": 1.1570558876682873,
+     "ci95": [
+      0.9697484084753974,
+      1.2661158195278321
+     ],
+     "s_geo_balanced_weighted": 1.1356451138515278,
+     "target": 1.3,
+     "target_met": false,
+     "worst": {
+      "point": "op.rope/medium/fp16-b1-h8-s128-d32",
+      "speedup": 0.9420314075775441
+     },
+     "regress_2pct": [
+      "op.layernorm/medium/fp16-r128-d512",
+      "op.rope/medium/fp16-b1-h8-s128-d32"
+     ],
+     "regress_5pct": [
+      "op.rope/medium/fp16-b1-h8-s128-d32"
+     ],
+     "points": [
+      {
+       "point": "op.add/hbm/fp16-n67108864",
+       "a": 708611817,
+       "b": 448534087,
+       "speedup": 1.5798393868780813,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.add/medium/fp16-n49152",
+       "a": 516130,
+       "b": 326351,
+       "speedup": 1.5815180587772062,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.argmax/medium/fp16-r32-v4096",
+       "a": 485065,
+       "b": 484428,
+       "speedup": 1.0013149528928964,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.copy/hbm/fp16-n67108864",
+       "a": 487619843,
+       "b": 322565623,
+       "speedup": 1.5116919108270876,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.cumsum/medium/fp32-r128-c256",
+       "a": 321236,
+       "b": 321295,
+       "speedup": 0.9998163681352028,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.gelu_tanh/medium/fp16-n65536",
+       "a": 852021,
+       "b": 757804,
+       "speedup": 1.1243289821642535,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.layernorm/medium/fp16-r128-d512",
+       "a": 802950,
+       "b": 836277,
+       "speedup": 0.9601483718911318,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+       "a": 335180664,
+       "b": 279175105,
+       "speedup": 1.200610863923558,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.rmsnorm/medium/fp16-r128-d512",
+       "a": 626445,
+       "b": 565022,
+       "speedup": 1.1087090414178562,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.rope/medium/fp16-b1-h8-s128-d32",
+       "a": 8832803,
+       "b": 9376336,
+       "speedup": 0.9420314075775441,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.silu/hbm/fp16-n67108864",
+       "a": 740485891,
+       "b": 643610537,
+       "speedup": 1.1505185953784345,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.silu/medium/fp16-n65536",
+       "a": 714075,
+       "b": 622282,
+       "speedup": 1.1475102927611598,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.softmax/hbm/fp16-r4096-c8192",
+       "a": 654970994,
+       "b": 607943796,
+       "speedup": 1.077354515844093,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.softmax/medium/fp16-r80-c512",
+       "a": 786265,
+       "b": 767702,
+       "speedup": 1.02417995524305,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.swiglu/medium/fp16-n49152",
+       "a": 671089,
+       "b": 561059,
+       "speedup": 1.1961112824141489,
+       "n_a": 3,
+       "n_b": 3
+      }
+     ],
+     "timing": "graph-makespan",
+     "vary": [
+      "TNCA_MAX_BLOCK"
+     ],
+     "compared_vary": [
+      "TNCA_MAX_BLOCK",
+      "platform.inductor.max_block"
+     ],
+     "control": "16",
+     "candidate": "64",
+     "baseline": "B40-S",
+     "config_a": "5c023f1aee8ad9cb",
+     "config_b": "5c023f1aee8ad9cb",
+     "inputs": {
+      "control": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-03.wide-blocks.control.jsonl",
+       "sha256": "c2bc49b148f81694ae1bae0fc9a3005fcec076e562a5f412cd043f8b7351fdd8"
+      },
+      "candidate": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-03.wide-blocks.candidate.jsonl",
+       "sha256": "d5ba15bf5b221bfd53c0dbf8e32cefb763fb9ba819c0da4052b07cd2798f91f2"
+      }
+     }
+    }
+   },
+   "judgement": "/home/zzhouch/tnca_v3_judge_final/judgement.json",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211",
+   "judgement_copy": "evidence/r40/v3/campaign_fe1b/judgement.json"
+  },
+  "R40-03.gemm-tile": {
+   "status": "no-significant-gain",
+   "checks": [
+    {
+     "name": "R40-03.gemm-tile: complete accepted comparison",
+     "ok": true,
+     "detail": ""
+    },
+    {
+     "name": "R40-03.gemm-tile: 95% CI lower bound of S_geo > 1",
+     "ok": false,
+     "ci95": [
+      0.2022802985377632,
+      0.44422134945190594
+     ],
+     "s_geo": 0.3032559152499337
+    }
+   ],
+   "detail": "R40-03.gemm-tile: S_geo 0.3033 CI [0.2023, 0.4442], v2 target 1.15 missed",
+   "written": "2026-10-20T00:27:51+00:00",
+   "identity": {
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "clock_hz": 90000000,
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "backend": "fpga-u280-multicore",
+    "hbm_bytes": 4294967296,
+    "backend_args_shape": {
+     "image_profile": "core-vrf-sync-v5",
+     "core_count": 3,
+     "memory_ports": 3,
+     "hbm_dma": true,
+     "hbm_bytes": 4294967296,
+     "device_clock": true
+    },
+    "identity_amendment": "doc/r40_v3/identity_amendment.json"
+   },
+   "experiments": {
+    "R40-03.gemm-tile": {
+     "status": "no-significant-gain",
+     "s_geo": 0.3032559152499337,
+     "ci95": [
+      0.2022802985377632,
+      0.44422134945190594
+     ],
+     "s_geo_balanced_weighted": 0.3410603656988168,
+     "target": 1.15,
+     "target_met": false,
+     "worst": {
+      "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+      "speedup": 0.11033062867296131
+     },
+     "regress_2pct": [
+      "model.mlp/medium/fp16-t128-d128",
+      "op.gemv/hbm/fp16-k4096-n11008",
+      "op.gemv/medium/fp16-k320-n448",
+      "op.linear/hbm/fp16-m512-k4096-n11008",
+      "op.linear/medium/fp16-m128-k320-n256",
+      "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "op.matmul/medium/fp16-m128-k192-n128",
+      "op.matmul/medium/fp32-m128-k192-n128"
+     ],
+     "regress_5pct": [
+      "model.mlp/medium/fp16-t128-d128",
+      "op.gemv/hbm/fp16-k4096-n11008",
+      "op.gemv/medium/fp16-k320-n448",
+      "op.linear/hbm/fp16-m512-k4096-n11008",
+      "op.linear/medium/fp16-m128-k320-n256",
+      "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "op.matmul/medium/fp16-m128-k192-n128",
+      "op.matmul/medium/fp32-m128-k192-n128"
+     ],
+     "points": [
+      {
+       "point": "model.mlp/medium/fp16-t128-d128",
+       "a": 12566203,
+       "b": 38814926,
+       "speedup": 0.32374666900047677,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+       "a": 5571360,
+       "b": 5369551,
+       "speedup": 1.037583961861988,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.gemv/hbm/fp16-k4096-n11008",
+       "a": 248601676,
+       "b": 820796141,
+       "speedup": 0.302878709562549,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.gemv/medium/fp16-k320-n448",
+       "a": 714730,
+       "b": 2431450,
+       "speedup": 0.2939521684591499,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+       "a": 5898829151,
+       "b": 53465018934,
+       "speedup": 0.11033062867296131,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.linear/medium/fp16-m128-k320-n256",
+       "a": 1949349,
+       "b": 11876126,
+       "speedup": 0.16414014132217863,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+       "a": 11485322149,
+       "b": 43659747174,
+       "speedup": 0.2630643302451296,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.matmul/medium/fp16-m128-k192-n128",
+       "a": 567592,
+       "b": 2131537,
+       "speedup": 0.2662829685808879,
+       "n_a": 3,
+       "n_b": 3
+      },
+      {
+       "point": "op.matmul/medium/fp32-m128-k192-n128",
+       "a": 1739551,
+       "b": 3042593,
+       "speedup": 0.5717330579541858,
+       "n_a": 3,
+       "n_b": 3
+      }
+     ],
+     "timing": "graph-makespan",
+     "vary": [
+      "TNCA_GEMM_TILE"
+     ],
+     "compared_vary": [
+      "TNCA_GEMM_TILE",
+      "platform.inductor.gemm_tile"
+     ],
+     "control": "16,16,16",
+     "candidate": "16,32,16",
+     "baseline": "B40-S",
+     "config_a": "d1fb8f857ea23084",
+     "config_b": "d1fb8f857ea23084",
+     "inputs": {
+      "control": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-03.gemm-tile.control.jsonl",
+       "sha256": "a6dfbc3063596125a7d566909d51da0e80ce43664c9a1d7f734830acbbbd4ec3"
+      },
+      "candidate": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-03.gemm-tile.candidate.jsonl",
+       "sha256": "0961493028bfcd38052c97ac9fb0aac63b9464879929ad985385ac4b86ac65f4"
+      }
+     }
+    }
+   },
+   "judgement": "/home/zzhouch/tnca_v3_judge_final/judgement.json",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211",
+   "judgement_copy": "evidence/r40/v3/campaign_fe1b/judgement.json"
+  }
+ }
+}

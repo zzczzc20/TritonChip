@@ -1,0 +1,34 @@
+{
+    "schema_version": {
+        "schema": "JSON",
+        "creation_date": "Thu Oct 15 00:25:54 2026 GMT"
+    },
+    "devices": [
+        {
+            "interface_type": "pcie",
+            "device_id": "0000:04:00.1",
+            "device_status": "HEALTHY",
+            "dynamic_regions": [
+                {
+                    "id": "0",
+                    "xclbin_uuid": "826E9146-9F38-6EDB-A226-255A4071EA25",
+                    "compute_units": [
+                        {
+                            "name": "tnca_u50:tnca_u50_1",
+                            "base_address": "0xc00000",
+                            "usage": "0",
+                            "type": "PL",
+                            "status": {
+                                "bit_mask": "0x4",
+                                "bits_set": [
+                                    "IDLE"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+

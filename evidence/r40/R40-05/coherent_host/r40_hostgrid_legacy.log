@@ -1,0 +1,6 @@
+iverilog -g2012 -g2005 -I rtl/common -y rtl/common -y rtl/core -y rtl/gen -y rtl/nuca -y rtl/noc -y rtl/tile -y rtl/fpga -y rtl -I rtl/noc -o sim/build/tb_top.vvp tb/top/tb_tnca_top.v rtl/tnca_top.v \
+   tb/common/tnca_dram_model.v
+  BASE-TOP-t10_mesh-single-role PASS   cycles=18591
+  BASE-TOP-t10_mesh-all-roles PASS   cycles=29075
+  BASE-TOP-t24_amo_mesh-single-role PASS   cycles=1488
+  BASE-TOP-t24_amo_mesh-all-roles PASS   cycles=2829

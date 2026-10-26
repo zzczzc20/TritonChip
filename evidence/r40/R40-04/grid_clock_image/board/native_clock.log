@@ -1,0 +1,3 @@
+PASS single: 2 kernels, active=10244, graph_span=456968, epoch=0
+PASS batched: 2 kernels, active=10248, graph_span=251106, epoch=0
+r40-device-clock-native-tests PASS (2/2)

@@ -1,0 +1,36 @@
+{
+ "gates": {
+  "R40-03.contract": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "all frozen 149 cases at O0/O1/O2: 447 B39 artifacts byte-identical, options disabled",
+     "ok": true
+    },
+    {
+     "name": "reference covers frozen baseline commit and full case inventory (asserted by retained runner)",
+     "ok": true
+    },
+    {
+     "name": "shared new lowering is selected by shape/type/target capabilities, with no board or benchmark identity dispatch (source review)",
+     "ok": true
+    }
+   ],
+   "detail": "disabled-option legacy profile contract; no physical image, tile functional, or performance signoff",
+   "written": "2026-10-15T03:57:08+00:00",
+   "inputs": {
+    "evidence/r40/v2/R40-03/contract/run.log": "d7b6a512b53ebf7784bef8580aad3f9c3e526e7303a94981047acc89aa5bd6b2",
+    "evidence/r40/v2/R40-03/contract/run.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "evidence/r40/v2/R40-03/contract/run.sh": "249278b144a2ea6a078434d76f6c8523697d868e14abe7b5dcc140e7af658f87",
+    "evidence/r40/R40-03/contract_reference.json": "bfc911d430df80c3b80c83ee7dcde6706babed11f4d44b01a48503bba5bc8616"
+   },
+   "software_commit": "85fa7d82377d2f28efa19a042f88b6c23ab9e35d",
+   "software_tree": "files:2e1c5342c0eeb24b99d6fc82eb6f82499c8f7b91f4742a6604459222a0c896ee",
+   "image": "not-applicable: software artifact compatibility",
+   "clock": "not-measured",
+   "measured_performance": false,
+   "contract_version": 2,
+   "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8"
+  }
+ }
+}

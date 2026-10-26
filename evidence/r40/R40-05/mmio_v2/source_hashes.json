@@ -1,0 +1,20 @@
+{
+  "rtl/fpga/tnca_multicore_fpga.v": "0da465cdec5797993787fa3c3753f884731c39104c2617e851ab180bbcd393e1",
+  "rtl/fpga/tnca_multicore_mmio.v": "b95b99d4b1d0ee3d0b0eb36a3a2632dd0029fff76f25277e1f592e9d841e49a2",
+  "rtl/fpga/tnca_multicore_axi.v": "50794b15f86ddf8f341db6794a147c9c72111ef1f529c0f18424574edf243870",
+  "rtl/fpga/tnca_line_axi.v": "7d923cf6db84b57f19ba987d4779bcdebb2ebf32b2ef98109f7a54873b6bf2b3",
+  "rtl/fpga/tnca_line_link.v": "3f6bded1b4b73b4dcbce47c5849ec8b9b586240130ccd06e79f7f2f507664cd8",
+  "rtl/nuca/tnca_mem_ports.v": "420ce282c76169d2b6eadfb5abb8a30f959a57c7c73502e5f515d41f1c8ddb4f",
+  "python/tnca/backends/u50.py": "a97d62e48f3350e61c3a2d4fa82bf85e80695f80dd85cfde1128a3b9426e5032",
+  "python/tnca/backends/multicore_mmio.py": "fe6bcfca9051de599d072a216b2173fca538a02a0e2ac64684a0b9030d800cb0",
+  "python/tnca/backends/multicore_mmio_sim.py": "69b891a9ac686d65bb398e127ddca64b402ba274d91fac51acdf4a94edc1be2c",
+  "python/tnca/backend.py": "062ff35891dd04ba7c763344f0de866d082299d71bc47b8384fe2f2586a9b5d4",
+  "tb/fpga/tnca_multicore_regs.v": "aeb27e8ba9ec696235f7183324ada3b7a3a82131ca884f204d12aa9ba9d42265",
+  "tb/core/progs/r40_grid_mmio_memory.s": "a9c71fc77f41cd4e102b08d6942b7a3a5f79f5d6e4624061c4093150447fc328",
+  "tools/r40/multicore_mmio_tests.py": "4b26b002fefbb5d2d964d1161c4248c21694d5cfe346170d21a0d4024484a354",
+  "tools/r40/multicore_mmio_synth_tests.py": "6a949c1857c38b757ac348914a83a71ce6368132db219449f40c281fc750c4c4",
+  "tools/r40/multicore_mmio_option_tests.py": "4f7d43ad80b6c3f2fbc6b9d548deb0ed8fc42c1b1c13814f39e710592ec16cad",
+  "tools/r40/native_memory_ports_tests.py": "8b32d03fd7b68e4ed8b4106bee4b8122ef0a37d88ad696cb4eb44408e2d3f731",
+  "tools/r40/native_multicore_features.py": "e3ca0a2eed7715c6b491f83db5d521065154166dfd0ca88e3006f2df2edb00b6",
+  "spec/r40/multicore_mmio_v2.json": "cca895d2dac0f59a46e4bf56d402698e1dc8216c11f72b9a275a46e50dbb7636"
+}

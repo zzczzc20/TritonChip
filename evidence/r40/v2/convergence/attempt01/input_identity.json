@@ -1,0 +1,20 @@
+{
+  "source_commit": "cf330dc64b6e1df535c31c9bb1a5d735e6bc0fb7",
+  "source_archive_sha256": "9050487dbff7675c859e3401849ee023137c4607f3ccb17654585def72c20869",
+  "files": {
+    "evidence/r40/v2/convergence/attempt01/image.tcl": "41492b08fbc7ac0b4addd1f7815f504f11c56e7d68fa78a142f14db88615e3b9",
+    "evidence/r40/v2/convergence/attempt01/image.json": "7cfac58c6374a2442b157761f60a491124c00926a9b33c89dfaec32601dae5aa",
+    "fpga/u280_multicore_hbm.cfg": "6b329812c44ce5c4c7dbfcf065046e676f06d072b36c33933b1b037434695155",
+    "flow/fpga/place_r40_multicore.tcl": "45c02aadefdc9b45cd6fe41636e1573eddbaa827d2ece22d5acd936a5ad0f030",
+    "flow/fpga/link.sh": "65262d6f74127a860e0bb02f2abfdf0f43774dada57726249891c8f50a108ab1",
+    "flow/fpga/package_xo.tcl": "4bc5a405726809933be32c16dc5181707078a2ef0aeff384868bcc4556870dcc",
+    "flow/fpga/run_r40_attempt01.sh": "f9db388a027a79580aa894c9baf836a6dc8d2188a191860d2b15b97eb51a0998",
+    "spec/r40/v2/lock.json": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8"
+  },
+  "clock_target_hz": 100000000,
+  "tools": "Vivado/Vitis 2023.2",
+  "part": "xcu280-fsvh2892-2L-e",
+  "platform": "xilinx_u280_gen3x16_xdma_1_202211_1",
+  "image_sha256": null,
+  "qualification": "not-measured"
+}

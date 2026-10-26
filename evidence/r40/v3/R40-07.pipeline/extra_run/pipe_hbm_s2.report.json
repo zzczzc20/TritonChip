@@ -1,0 +1,354 @@
+{
+ "schema": "tnca-r40-v3-pipeline-matrix/1",
+ "profile": "core-vrf-sync-v5/hbm",
+ "memory": "hbm",
+ "plusargs": "+engtrace +trace",
+ "stages": 2,
+ "roles": "2 (forced legal split)",
+ "cases": [
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 2,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    117
+   ],
+   "rings": [
+    {
+     "consumer_ops": 310,
+     "direct": true,
+     "producer_ops": 202,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "044bb57d01fa43b20082be2f6391319340fd60c3ef84012d5f9cfff0672f8335"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 117,
+     "mma_cycles": 933,
+     "dma_cycles": 822,
+     "overlap_cycles": 546
+    }
+   ],
+   "overlap_cycles": 546
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 2,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    130
+   ],
+   "rings": [
+    {
+     "consumer_ops": 309,
+     "direct": true,
+     "producer_ops": 201,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "4e2b0e8c19f59fa42f1969032ffb09934aa827a242f15083a437b274b337e9a8"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 130,
+     "mma_cycles": 4976,
+     "dma_cycles": 4384,
+     "overlap_cycles": 4067
+    }
+   ],
+   "overlap_cycles": 4067
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 2,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    143
+   ],
+   "rings": [
+    {
+     "consumer_ops": 353,
+     "direct": false,
+     "producer_ops": 1469,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "e67305bf2c5b2044474cd3afc9bf2e6341967e08d0aeb3605f08415c10f3e556"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 143,
+     "mma_cycles": 21196,
+     "dma_cycles": 18657,
+     "overlap_cycles": 1218
+    }
+   ],
+   "overlap_cycles": 1218
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 2,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    156
+   ],
+   "rings": [
+    {
+     "consumer_ops": 425,
+     "direct": true,
+     "producer_ops": 203,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "beef90f75a2796af2a146a21a25ccd6bb4bd2bb331bd8eafe06ac865114a6891"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 156,
+     "mma_cycles": 933,
+     "dma_cycles": 822,
+     "overlap_cycles": 546
+    }
+   ],
+   "overlap_cycles": 546
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 2,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    169
+   ],
+   "rings": [
+    {
+     "consumer_ops": 424,
+     "direct": true,
+     "producer_ops": 202,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "95a33031df1542530e4d4a2221416fda35c3e885f2fa5379358887aeeb3f3e31"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 169,
+     "mma_cycles": 4976,
+     "dma_cycles": 4384,
+     "overlap_cycles": 4067
+    }
+   ],
+   "overlap_cycles": 4067
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 2,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 3.814697265625e-06,
+   "sequences": [
+    182
+   ],
+   "rings": [
+    {
+     "consumer_ops": 468,
+     "direct": false,
+     "producer_ops": 1470,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "babd7fc96b9725cfc3467d1e69b95cac39121b1e011542865b8d6fca4533dc3a"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 182,
+     "mma_cycles": 21194,
+     "dma_cycles": 18657,
+     "overlap_cycles": 1218
+    }
+   ],
+   "overlap_cycles": 1218
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 2,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    195
+   ],
+   "rings": [
+    {
+     "consumer_ops": 425,
+     "direct": true,
+     "producer_ops": 203,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "7a4e5e2db86afb4e7ab77e14959b38aa5eb513b7d82b884da7436e2b55e27e49"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 195,
+     "mma_cycles": 933,
+     "dma_cycles": 885,
+     "overlap_cycles": 588
+    }
+   ],
+   "overlap_cycles": 588
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 2,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    208
+   ],
+   "rings": [
+    {
+     "consumer_ops": 424,
+     "direct": true,
+     "producer_ops": 202,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "fb40e50f1531304171f0fc8e832609e395fc4412e7523d19956fb9513167081d"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 208,
+     "mma_cycles": 4976,
+     "dma_cycles": 4720,
+     "overlap_cycles": 4382
+    }
+   ],
+   "overlap_cycles": 4382
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 2,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 1.9073486328125e-06,
+   "sequences": [
+    221
+   ],
+   "rings": [
+    {
+     "consumer_ops": 468,
+     "direct": false,
+     "producer_ops": 1502,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "9809241f53f22271408687308eb6d5819a4afd7d7dee8d99cea00627517bbf78"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 221,
+     "mma_cycles": 21235,
+     "dma_cycles": 18663,
+     "overlap_cycles": 234
+    }
+   ],
+   "overlap_cycles": 234
+  }
+ ],
+ "engine_log_sha256": "ffc0dc6a7f88790a5493e0b5d25db62f5b642bddb5b9d2b1ebc60d79c580f448",
+ "ok": true
+}

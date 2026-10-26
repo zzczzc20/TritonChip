@@ -71,7 +71,15 @@ class RegisterAllocator:
     def scalar(self):
         return self._take('s', self._s_free, 'scalar')
 
-    def vector(self):
+    def vector(self, cost=None, banks=0):
+        if cost is not None and self._v_free:
+            # Bound the search to the first bank-sized group of free names.
+            # Windows and role slices have already been removed from this pool.
+            if banks < 1:
+                raise Diagnostic('bank allocation requires a positive bank count')
+            candidate = min(self._v_free[:banks], key=lambda i: (cost(i), i))
+            self._v_free.remove(candidate)
+            self._v_free.insert(0, candidate)
         return self._take('v', self._v_free, 'vector')
 
     def predicate(self):

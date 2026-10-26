@@ -1,0 +1,15 @@
+{
+ "name": "layout_w128",
+ "group": "extra",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_layout_tests.py --width 128 --json /home/zhongchun/r40v3_tpc_runs/all/layout_w128.report.json",
+ "env": {},
+ "start": "2026-10-19T10:43:23+00:00",
+ "end": "2026-10-19T11:31:03+00:00",
+ "seconds": 2859.7,
+ "exit": 0,
+ "marker": "r40-v3-layout PASS",
+ "marker_found": true,
+ "ok": true,
+ "log": "layout_w128.log",
+ "log_sha256": "e29686e8406ec34480355162ee0562ae0746d1d164336de5e0b7baaa44de44cc"
+}

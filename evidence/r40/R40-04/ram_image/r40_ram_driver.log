@@ -1,0 +1,10 @@
+=== v++ finished rc=0 at Tue Oct 13 13:19:19 HKT 2026 ===
+link.sh: AUTO-FREQ-SCALING-08 only: timing closed with slack and the
+         requested frequencies were kept:
+         ADVISORY: [AUTO-FREQ-SCALING-08] For clock clk_kernel_00_unbuffered_net, the auto scaled frequency 102.1 MHz exceeds the original specified frequency. The compiler will select the original specified frequency of 100.0 MHz.
+         ADVISORY: [AUTO-FREQ-SCALING-08] For clock hbm_aclk, the auto scaled frequency 453.5 MHz exceeds the original specified frequency. The compiler will select the original specified frequency of 450.0 MHz.
+
+link.sh: OK -- /home/zzhouch/tnca_build/u280_r40ram/tnca_u280.xclbin
+         kernel clock 100 MHz, DEV_DIV 1, device clock 100 MHz
+         bitstream is in the .xclbin; loading it is a separate decision
+         and has not been taken.

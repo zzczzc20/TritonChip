@@ -1,0 +1,17 @@
+[
+  {
+    "detail": "target, backend, implementation and platform are separate",
+    "id": "R36-BE-01",
+    "passed": true
+  },
+  {
+    "detail": "the same artifact, both bindings, the same cycles",
+    "id": "R36-BE-02",
+    "passed": true
+  },
+  {
+    "detail": "unknown and unimplemented backends refuse, and nothing is substituted",
+    "id": "R36-BE-03",
+    "passed": true
+  }
+]

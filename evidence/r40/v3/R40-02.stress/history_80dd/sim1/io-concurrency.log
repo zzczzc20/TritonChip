@@ -1,0 +1,3 @@
+PASS 4 threads, 128 uploads + 128 downloads, exact bytes and sequences
+PASS removing whole-operation locks is detected despite request lock
+r40-io-concurrency-tests PASS (2/2)

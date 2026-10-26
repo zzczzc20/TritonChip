@@ -1,0 +1,174 @@
+{
+  "status": "capability-pass",
+  "checks": [
+    {
+      "name": "cuda-host:import_orders",
+      "ok": true,
+      "detail": "compiles in a fresh process with device first, triton first, after a CPU-tensor compile"
+    },
+    {
+      "name": "cuda-host:concurrent_registration",
+      "ok": true,
+      "detail": "OK 8 threads registered once"
+    },
+    {
+      "name": "cuda-host:worker_process",
+      "ok": true,
+      "detail": "OK a spawned worker registered and computed on its own session"
+    },
+    {
+      "name": "cuda-host:storage",
+      "ok": true,
+      "detail": "storage at 0x20000; 6 views alias it"
+    },
+    {
+      "name": "cuda-host:copies",
+      "ok": true,
+      "detail": "8 dtypes round trip; strided writes and fills touch only their elements"
+    },
+    {
+      "name": "cuda-host:module",
+      "ok": true,
+      "detail": "4 parameters on tnca"
+    },
+    {
+      "name": "cuda-host:refusals",
+      "ok": true,
+      "detail": "eager op refused; mixed host/device graph refused"
+    },
+    {
+      "name": "cuda-host:compile_graphs",
+      "ok": true,
+      "detail": "pointwise: 27 launch(es), 6152 B resident; reduction: 1 launch(es), 6400 B resident; norm: 1 launch(es), 1152 B resident; gemm: 1 launch(es), 9472 B resident; sdpa: 7 launch(es), 28672 B resident"
+    },
+    {
+      "name": "cuda-host:compile_views",
+      "ok": true,
+      "detail": "1 launch(es) over transposed and offset views"
+    },
+    {
+      "name": "cuda-host:eviction",
+      "ok": true,
+      "detail": "88 graphs; 1 module(s) unloaded to make room; resident data intact"
+    },
+    {
+      "name": "cuda-host:mixed_devices",
+      "ok": true,
+      "detail": "2 rounds of CUDA and tnca graphs in one process, then a CPU-tensor graph"
+    },
+    {
+      "name": "cuda-host:cache_hits",
+      "ok": true,
+      "detail": "recompiled after a reset: the same artifact 8d1780a1afdd (Triton's cache)"
+    },
+    {
+      "name": "cuda-host:checkpoint",
+      "ok": true,
+      "detail": "a tnca state_dict saves, and loads to cpu and to tnca"
+    },
+    {
+      "name": "cuda-host:unsupported_dtypes",
+      "ok": true,
+      "detail": "refused: complex64, complex128, fp64 compute (TNCALaunchError)"
+    },
+    {
+      "name": "cuda-host:properties",
+      "ok": true,
+      "detail": "TNCA core-vrf-sync-v5: 1 core(s), 4 contexts, 16 lanes"
+    },
+    {
+      "name": "cuda-host:policy",
+      "ok": true,
+      "detail": "templates, variance, cat, bmm, realize installed; tnca is not a GPU type"
+    },
+    {
+      "name": "no-cuda-host:import_orders",
+      "ok": true,
+      "detail": "compiles in a fresh process with device first, triton first, after a CPU-tensor compile"
+    },
+    {
+      "name": "no-cuda-host:concurrent_registration",
+      "ok": true,
+      "detail": "OK 8 threads registered once"
+    },
+    {
+      "name": "no-cuda-host:worker_process",
+      "ok": true,
+      "detail": "OK a spawned worker registered and computed on its own session"
+    },
+    {
+      "name": "no-cuda-host:storage",
+      "ok": true,
+      "detail": "storage at 0x20000; 6 views alias it"
+    },
+    {
+      "name": "no-cuda-host:copies",
+      "ok": true,
+      "detail": "8 dtypes round trip; strided writes and fills touch only their elements"
+    },
+    {
+      "name": "no-cuda-host:module",
+      "ok": true,
+      "detail": "4 parameters on tnca"
+    },
+    {
+      "name": "no-cuda-host:refusals",
+      "ok": true,
+      "detail": "eager op refused; mixed host/device graph refused"
+    },
+    {
+      "name": "no-cuda-host:compile_graphs",
+      "ok": true,
+      "detail": "pointwise: 27 launch(es), 6152 B resident; reduction: 1 launch(es), 6400 B resident; norm: 1 launch(es), 1152 B resident; gemm: 1 launch(es), 9472 B resident; sdpa: 7 launch(es), 28672 B resident"
+    },
+    {
+      "name": "no-cuda-host:compile_views",
+      "ok": true,
+      "detail": "1 launch(es) over transposed and offset views"
+    },
+    {
+      "name": "no-cuda-host:eviction",
+      "ok": true,
+      "detail": "88 graphs; 1 module(s) unloaded to make room; resident data intact"
+    },
+    {
+      "name": "no-cuda-host:mixed_devices",
+      "ok": true,
+      "detail": "skipped: no CUDA device on this host"
+    },
+    {
+      "name": "no-cuda-host:cache_hits",
+      "ok": true,
+      "detail": "recompiled after a reset: the same artifact b782341f4d84 (Triton's cache)"
+    },
+    {
+      "name": "no-cuda-host:checkpoint",
+      "ok": true,
+      "detail": "a tnca state_dict saves, and loads to cpu and to tnca"
+    },
+    {
+      "name": "no-cuda-host:unsupported_dtypes",
+      "ok": true,
+      "detail": "refused: complex64, complex128, fp64 compute (TNCALaunchError)"
+    },
+    {
+      "name": "no-cuda-host:properties",
+      "ok": true,
+      "detail": "TNCA core-vrf-sync-v5: 1 core(s), 4 contexts, 16 lanes"
+    },
+    {
+      "name": "no-cuda-host:policy",
+      "ok": true,
+      "detail": "templates, variance, cat, bmm, realize installed; tnca is not a GPU type"
+    }
+  ],
+  "error": null,
+  "inputs": {
+    "evidence/r40/v3/R40-01.mixed-device/cuda_host_fe1b.json": "91be26750f3ef5032de379d24407194b59637ef079795a2ce119ba79da8e28f8",
+    "evidence/r40/v3/R40-01.mixed-device/no_cuda_host_fe1b.json": "1b95cd2d5fb29473becd85b1ea1aa2529d432e38a0b87d35c080b0109c95cff1"
+  },
+  "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "scope": "Full device coexistence capability; no board performance or unrelated gate claim"
+}

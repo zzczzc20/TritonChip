@@ -1,0 +1,354 @@
+{
+ "schema": "tnca-r40-v3-pipeline-matrix/1",
+ "profile": "core-vrf-sync-v5/slow",
+ "memory": "slow",
+ "plusargs": "+engtrace +trace",
+ "stages": 2,
+ "roles": "2 (forced legal split)",
+ "cases": [
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 2,
+   "memory": "slow",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    117
+   ],
+   "rings": [
+    {
+     "consumer_ops": 310,
+     "direct": true,
+     "producer_ops": 202,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "b44a01b6aca1b1cbeb04130da74ec008769ca1a580e417e5154b0422593e3936"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 117,
+     "mma_cycles": 933,
+     "dma_cycles": 954,
+     "overlap_cycles": 602
+    }
+   ],
+   "overlap_cycles": 602
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 2,
+   "memory": "slow",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    130
+   ],
+   "rings": [
+    {
+     "consumer_ops": 309,
+     "direct": true,
+     "producer_ops": 201,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "9c58308b84d436eb88dca4a5d20a16793747ff828118bea4e0b00077eb7df5e5"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 130,
+     "mma_cycles": 4976,
+     "dma_cycles": 5129,
+     "overlap_cycles": 4525
+    }
+   ],
+   "overlap_cycles": 4525
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 2,
+   "memory": "slow",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    143
+   ],
+   "rings": [
+    {
+     "consumer_ops": 353,
+     "direct": false,
+     "producer_ops": 1469,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "085bbadd5008eda9ec986aba749b7db07926b9b461e9cb95ed0ef000ef90f8c0"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 143,
+     "mma_cycles": 21203,
+     "dma_cycles": 21731,
+     "overlap_cycles": 2104
+    }
+   ],
+   "overlap_cycles": 2104
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 2,
+   "memory": "slow",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    156
+   ],
+   "rings": [
+    {
+     "consumer_ops": 425,
+     "direct": true,
+     "producer_ops": 203,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "337aa3b7a0644274dad649811450b8ec934e56cf9369d8fab8d038c0e7ad1b19"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 156,
+     "mma_cycles": 933,
+     "dma_cycles": 957,
+     "overlap_cycles": 606
+    }
+   ],
+   "overlap_cycles": 606
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 2,
+   "memory": "slow",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    169
+   ],
+   "rings": [
+    {
+     "consumer_ops": 424,
+     "direct": true,
+     "producer_ops": 202,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "7741bcea74d904420fde85f9311467944393fef0e64046d804938dd872a3edc9"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 169,
+     "mma_cycles": 4976,
+     "dma_cycles": 5185,
+     "overlap_cycles": 4514
+    }
+   ],
+   "overlap_cycles": 4514
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 2,
+   "memory": "slow",
+   "ok": true,
+   "max_abs_err": 3.814697265625e-06,
+   "sequences": [
+    182
+   ],
+   "rings": [
+    {
+     "consumer_ops": 468,
+     "direct": false,
+     "producer_ops": 1470,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "8d688a5d9eab22c59c9cc535e2bd892c15b434f6d4a60667b561c737adb40c83"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 182,
+     "mma_cycles": 21223,
+     "dma_cycles": 21814,
+     "overlap_cycles": 4829
+    }
+   ],
+   "overlap_cycles": 4829
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 2,
+   "memory": "slow",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    195
+   ],
+   "rings": [
+    {
+     "consumer_ops": 425,
+     "direct": true,
+     "producer_ops": 203,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "fd73dc04c14e62fdfb39374702d6883beb0d3b2df8dde32c5da84a5736d5d005"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 195,
+     "mma_cycles": 933,
+     "dma_cycles": 1087,
+     "overlap_cycles": 605
+    }
+   ],
+   "overlap_cycles": 605
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 2,
+   "memory": "slow",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    208
+   ],
+   "rings": [
+    {
+     "consumer_ops": 424,
+     "direct": true,
+     "producer_ops": 202,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "b1944a8ab1dc2b591d297710651d9080090e3fc92e2cab420664dbd94ef6fc3e"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 208,
+     "mma_cycles": 4976,
+     "dma_cycles": 5937,
+     "overlap_cycles": 4517
+    }
+   ],
+   "overlap_cycles": 4517
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 2,
+   "memory": "slow",
+   "ok": true,
+   "max_abs_err": 1.9073486328125e-06,
+   "sequences": [
+    221
+   ],
+   "rings": [
+    {
+     "consumer_ops": 468,
+     "direct": false,
+     "producer_ops": 1502,
+     "ring_windows": 4,
+     "stages": 2
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "8392563d6a5effe655da9908203930c96cced3d406248d44a37549ef7abdf186"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 221,
+     "mma_cycles": 21216,
+     "dma_cycles": 21717,
+     "overlap_cycles": 2223
+    }
+   ],
+   "overlap_cycles": 2223
+  }
+ ],
+ "engine_log_sha256": "f221fd74525592c3e9fcdb4fa526863aa3f8dca1ee6847a5f53dd2e18cc6b1fc",
+ "ok": true
+}

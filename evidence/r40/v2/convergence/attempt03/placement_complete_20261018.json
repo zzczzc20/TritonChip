@@ -1,0 +1,55 @@
+{
+  "observed_utc": "2026-10-18T02:37:21.061530+00:00",
+  "scope": "full image post-placement observation, not routed timing or board qualification",
+  "source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+  "configuration_sha256": "2795cb283b85befb262fd1fd6547669421b9a7fb76df89c02fef0a314b27bf1b",
+  "placement_complete": true,
+  "terminal_marker": null,
+  "phases": [
+    "Phase 4.2 Post Placement Cleanup",
+    "Phase 4.2 Post Placement Cleanup | Checksum: 2156bd774",
+    "Phase 4.3 Placer Reporting",
+    "Phase 4.3.1 Print Estimated Congestion",
+    "Phase 4.3.1 Print Estimated Congestion | Checksum: 2156bd774",
+    "Phase 4.3 Placer Reporting | Checksum: 2156bd774",
+    "Phase 4.4 Final Placement Cleanup",
+    "Phase 4 Post Placement Optimization and Clean-Up | Checksum: 117b69613"
+  ],
+  "tail": [
+    "Time (s): cpu = 06:17:14 ; elapsed = 02:32:10 . Memory (MB): peak = 22594.605 ; gain = 7083.008 ; free physical = 2582 ; free virtual = 20092",
+    "Phase 4 Post Placement Optimization and Clean-Up | Checksum: 117b69613",
+    "",
+    "Time (s): cpu = 06:17:29 ; elapsed = 02:32:25 . Memory (MB): peak = 22594.605 ; gain = 7083.008 ; free physical = 2586 ; free virtual = 20096",
+    "Ending Placer Task | Checksum: 7ad10daa",
+    "",
+    "Time (s): cpu = 06:17:45 ; elapsed = 02:32:40 . Memory (MB): peak = 22594.605 ; gain = 7083.008 ; free physical = 2584 ; free virtual = 20094",
+    "405 Infos, 430 Warnings, 2 Critical Warnings and 0 Errors encountered.",
+    "place_design completed successfully",
+    "place_design: Time (s): cpu = 06:21:38 ; elapsed = 02:34:07 . Memory (MB): peak = 22594.605 ; gain = 7115.023 ; free physical = 2587 ; free virtual = 20097",
+    "source /home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/scripts/impl_1/_full_place_post.tcl",
+    "report_utilization: Time (s): cpu = 00:01:41 ; elapsed = 00:01:42 . Memory (MB): peak = 22594.605 ; gain = 0.000 ; free physical = 2575 ; free virtual = 20085",
+    "report_utilization: Time (s): cpu = 00:01:07 ; elapsed = 00:01:08 . Memory (MB): peak = 22594.605 ; gain = 0.000 ; free physical = 2556 ; free virtual = 20067",
+    "Command: phys_opt_design",
+    "Attempting to get a license for feature 'Implementation' and/or device 'xcu280'",
+    "INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xcu280'",
+    "",
+    "Starting Initial Update Timing Task"
+  ],
+  "owned_processes": "    PID     ELAPSED STAT COMMAND\n1917223    05:17:07 Ss   bash /home/zzhouch/tnca_src_r40_attempt03_54249f7/flow/fpga/run_r40_attempt01.sh /home/zzhouch/tnca_build/r40_attempt03_20261017 /home/zzhouch/tnca_src_r40_attempt03_54249f7/evidence/r40/v2/convergence/attempt03/image.tcl\n1926388    04:53:14 Ss   python3 /home/zzhouch/tnca_reports_r40_attempt03_c2427cf/tools/r40/watch_implementation.py --build /home/zzhouch/tnca_build/r40_attempt03_20261017 --runner-pid 1917223 --out /home/zzhouch/tnca_build/r40_attempt03_followup_cachecuts --final-cache-cuts\n1939407    03:14:55 Sl   /tools/Xilinx/Vivado/2023.2/bin/unwrapped/lnx64.o/vivado -log level0_wrapper.vdi -applog -product Vivado -messageDb vivado.pb -mode batch -source level0_wrapper.tcl -notrace",
+  "slr_report_path": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/slr_util_placed.rpt",
+  "slr_report_sha256": "c23013217024da6cacaecdfac55c6f829d85e78cbf26bd87ca0c6fc191a805f6",
+  "report_files": [
+    [
+      "slr_util_placed.rpt",
+      6825
+    ],
+    [
+      "full_util_placed.rpt",
+      28732
+    ]
+  ],
+  "image_sha256": null,
+  "timing_qualification": "not-measured",
+  "cdc_qualification": "not-measured",
+  "required_gate_promotions": []
+}

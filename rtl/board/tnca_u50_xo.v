@@ -262,7 +262,22 @@ module tnca_u50_xo #(
         .s_axi_tnca_rdata(s_axi_tnca_rdata),
         .s_axi_tnca_rresp(s_axi_tnca_rresp),
         .s_axi_tnca_rvalid(s_axi_tnca_rvalid),
-        .s_axi_tnca_rready(s_axi_tnca_rready)
+        .s_axi_tnca_rready(s_axi_tnca_rready),
+
+        // R40-04's AXI master: not part of this image (DATA_AXI = 0, the
+        // device's memory is the on-chip RAM). Its inputs held idle, its
+        // outputs -- driven idle inside -- left open. rtl/board/tnca_hbm_xo.v
+        // is the image that has one.
+        .m_axi_hbm_awready(1'b0), .m_axi_hbm_wready(1'b0),
+        .m_axi_hbm_bvalid(1'b0), .m_axi_hbm_bid(5'd0), .m_axi_hbm_bresp(2'd0),
+        .m_axi_hbm_arready(1'b0),
+        .m_axi_hbm_rvalid(1'b0), .m_axi_hbm_rdata(64'd0), .m_axi_hbm_rid(5'd0),
+        .m_axi_hbm_rresp(2'd0), .m_axi_hbm_rlast(1'b0),
+        .m_axi_hbm_awvalid(), .m_axi_hbm_awaddr(), .m_axi_hbm_awid(), .m_axi_hbm_awlen(),
+        .m_axi_hbm_awsize(), .m_axi_hbm_awburst(), .m_axi_hbm_wvalid(), .m_axi_hbm_wdata(),
+        .m_axi_hbm_wstrb(), .m_axi_hbm_wlast(), .m_axi_hbm_bready(), .m_axi_hbm_arvalid(),
+        .m_axi_hbm_araddr(), .m_axi_hbm_arid(), .m_axi_hbm_arlen(), .m_axi_hbm_arsize(),
+        .m_axi_hbm_arburst(), .m_axi_hbm_rready()
     );
 
 endmodule

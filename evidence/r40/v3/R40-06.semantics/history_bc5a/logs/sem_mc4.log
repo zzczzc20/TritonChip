@@ -1,0 +1,5 @@
+W1019 02:35:08.879000 2513265 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  PASS  mc4 pointwise {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=4 outlets=[{'port': 0, 'read_lines': 1099, 'write_lines': 267}]
+  PASS  mc4 softmax {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=4 outlets=[{'port': 0, 'read_lines': 2185, 'write_lines': 864}]
+SEMANTICS PASS mc4
+EXIT=0

@@ -102,6 +102,8 @@ def main():
     ap.add_argument('--source', type=Path, default=ROOT.parent / 'Tilebench')
     ap.add_argument('--profile', default='core-sim')
     ap.add_argument('--levels', nargs='+', type=int, default=[0, 1, 2])
+    ap.add_argument('--reference', type=Path, default=FROZEN,
+                    help='frozen cycle/profile contract for --check; never rewritten')
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument('--run', action='store_true')
     mode.add_argument('--freeze', action='store_true')
@@ -137,7 +139,9 @@ def main():
         return 0
 
     # --check
-    frozen = json.loads(FROZEN.read_text())
+    frozen = json.loads(args.reference.read_text())
+    if frozen['profile'] != args.profile or frozen['level'] != 2:
+        ap.error('reference must match the selected profile and O2')
     runs = [run_level(2, args.source, args.profile, OUT / f'baseline_check_{i}.json') for i in (1, 2)]
     bad = problems_with(runs[0]) + problems_with(runs[1])
     a, b = cycles_of(runs[0]), cycles_of(runs[1])

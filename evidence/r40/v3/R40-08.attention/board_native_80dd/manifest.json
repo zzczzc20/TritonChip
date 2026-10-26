@@ -1,0 +1,39 @@
+{
+ "u280_tiny.jsonl.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_runs_r40_probe90_0958db2_4gib/native/u280_tiny.jsonl",
+  "raw_sha256": "a9b9e0b3046860cebd2313fbf3f50c3122b6a75b9cb14d7ed32dc08208b8cc15",
+  "raw_bytes": 1891423,
+  "sha256": "4c3b581e6fd127f8f719672d7c38e0d0e3aa24017ade3c8981ccbdbecc809b51"
+ },
+ "u280_small.jsonl.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_runs_r40_probe90_0958db2_4gib/native/u280_small.jsonl",
+  "raw_sha256": "e6c7809aedc4f7cba4b49420fe220965d7ed05dce1117849f07b42007dad3faa",
+  "raw_bytes": 1882770,
+  "sha256": "326884f3ff32801a2a875115d35345ad503fb9541e6fca81645025040557f179"
+ },
+ "u280_medium.jsonl.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_runs_r40_probe90_0958db2_4gib/native/u280_medium.jsonl",
+  "raw_sha256": "dece4a328f06cd8aa3037d537d38b19b7c22a7b48ceca908ee936e598d55b9c8",
+  "raw_bytes": 1882227,
+  "sha256": "641fe36013a3aa1ac86a13fc528678469b7f3247cc2645abe54b43a6e2f5e217"
+ },
+ "hbm14.jsonl.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_runs_r40_probe90_0958db2_4gib/hbm14.jsonl",
+  "raw_sha256": "715fca49058bd9b8c5a848d7c03bf82d7eed2ea5ad222baf9d7e9db759f23feb",
+  "raw_bytes": 1160844,
+  "sha256": "5adc7d0de15c6c44a2e5ab7c0d06b23844194f081c09ed5055c2afb2d9ae95fe"
+ },
+ "delivery.json.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_runs_r40_probe90_0958db2_4gib/delivery.json",
+  "raw_sha256": "4aa48a50ce69b752dd82134aa74d991ebc9e7721fbe77bff8651d09ab8ba2049",
+  "raw_bytes": 62530,
+  "sha256": "5fc5c3f09122ba73d09439f3d6470f186e4abb5374cb7465229bb0b0e30812dc"
+ },
+ "_scope": "Final functional delivery on the v3 identity (tree 80dd, image a88ebdf5, 90 MHz): native77 tiny/small/medium stages and original HBM14, one untimed warmup + one steady functional call; raw hashes verified against the FPGA host copies on 2026-10-19",
+ "large24.jsonl.gz": {
+  "source": "acf3019:/home/zzhouch/tnca_v3_functional/large24.jsonl",
+  "raw_sha256": "7681584a654fa5e67719124677bf67413c361d2fb0635903008e8d243f74b005",
+  "raw_bytes": 2201582,
+  "sha256": "cbb296c49b16762d10be6fdb1fa80e954a880b3f93b22f52fdd4a209c8cd865c"
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "name": "rctx_roles_s2",
+ "group": "pipeline",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python -c \"from tnca import device; device.prepare('core-vrf-sync-v5')\" && /home/zhongchun/tc_env/torchenv/bin/python tools/r39/rctx_roles_tests.py",
+ "env": {
+  "TNCA_RCTX_STAGES": "2"
+ },
+ "start": "2026-10-19T10:12:36+00:00",
+ "end": "2026-10-19T10:23:15+00:00",
+ "seconds": 639.1,
+ "exit": 0,
+ "marker": "r39-rctx-roles-tests \\[core-vrf-sync-v5\\]  PASS",
+ "marker_found": true,
+ "ok": true,
+ "log": "rctx_roles_s2.log",
+ "log_sha256": "c5036abff75cd8b5a01026eb8f40d45b93d9fceb224d36b8419be03b871b6ae5"
+}

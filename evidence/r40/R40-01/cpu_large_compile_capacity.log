@@ -1,0 +1,5 @@
+capacity-exceeded  op.layernorm/large/fp16-r512-d2048                         time=None eta=None err=None [4.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      the largest launch needs 4202496 bytes of arguments; the device heap is 393216
+0/1 compile in 5s -> sim/build/r40/cpu_large_compile_capacity.jsonl
+EXIT:1

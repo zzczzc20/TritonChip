@@ -1,0 +1,142 @@
+{
+ "families": [
+  "add",
+  "copy",
+  "embedding",
+  "gemv",
+  "linear",
+  "llama_decode",
+  "llama_prefill",
+  "matmul",
+  "rmsnorm",
+  "silu",
+  "softmax",
+  "transpose"
+ ],
+ "points": [
+  {
+   "dtype": "fp16",
+   "family": "llama_decode",
+   "id": "model.llama_decode/hbm/fp16-b1-p512",
+   "kind": "model",
+   "sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "llama_prefill",
+   "id": "model.llama_prefill/hbm/fp16-b1-s512",
+   "kind": "model",
+   "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "add",
+   "id": "op.add/hbm/fp16-n67108864",
+   "kind": "op",
+   "sha256": "4c8c739081452e9ef3c1c8870031ae89ae86a9cc09e262fea5a7ccfc202bc85e",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "copy",
+   "id": "op.copy/hbm/fp16-n67108864",
+   "kind": "op",
+   "sha256": "985db43ad808d2f7bf11454bab05e082416c27d6284be0707cefe0d3db071027",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "embedding",
+   "id": "op.embedding/hbm/fp16-v65536-d2048-t8192",
+   "kind": "op",
+   "sha256": "998ca4722412f6fa8c35b160c96e92e34582656b7cb917ff0f47157b69ced5a6",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "gemv",
+   "id": "op.gemv/hbm/fp16-k4096-n11008",
+   "kind": "op",
+   "sha256": "a65683795c4c05baf3c758fe40b6d0d6bc5994a11c2340fd17fbbc04d576baa9",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "linear",
+   "id": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "kind": "op",
+   "sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "matmul",
+   "id": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "kind": "op",
+   "sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+   "track": [
+    "llm",
+    "general"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "rmsnorm",
+   "id": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "kind": "op",
+   "sha256": "cf35f8341664c0affaf6d5401ac648fa1782fc02e09715b23b1498639d2579d5",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "silu",
+   "id": "op.silu/hbm/fp16-n67108864",
+   "kind": "op",
+   "sha256": "ac289d78c2b64352cffab211799e71984b2403633d6fbeee25bd6aa538bd27fd",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "family": "softmax",
+   "id": "op.softmax/hbm/fp16-r4096-c8192",
+   "kind": "op",
+   "sha256": "a97f2905a204dcf4d0108822bd6a1ca1bc94dfc04e226ba243efe81ee160443b",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp32",
+   "family": "transpose",
+   "id": "op.transpose/hbm/fp32-r8192-c8192",
+   "kind": "op",
+   "sha256": "178a8b5508f1155d44907970a91aa0a030aeec79618fa7b124df3a320579eb56",
+   "track": [
+    "general"
+   ]
+  }
+ ],
+ "schema": "archbench-suite/1",
+ "sha256": "36e3634fe6f70da3903704dbbd8e7a8e904e067aa6acbda60c627eae0eade277",
+ "tier": "hbm"
+}

@@ -1,0 +1,7 @@
+[
+ "/home/zzhouch/tc_env/torchenv/bin/python",
+ "/home/zzhouch/tnca_src_r40_v3x2/tools/r40/native_inventory.py",
+ "--native",
+ "/home/zzhouch/tnca_runs_r40_v3x2/native",
+ "--evidence"
+]

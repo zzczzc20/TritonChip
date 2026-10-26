@@ -1,0 +1,14 @@
+{
+  "observed_utc": "2026-10-18T01:49:48.299479+00:00",
+  "source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+  "run_id": 39069298432,
+  "conclusion": "cancelled",
+  "successful_jobs": 12,
+  "cancelled_job": 117503581118,
+  "started_utc": "2026-10-17T21:04:15Z",
+  "completed_utc": "2026-10-17T23:04:40Z",
+  "cause": "120-minute job limit reached while running serial MMIO/native tests",
+  "raw_log_sha256": "2fb7afad52d99ee30400872928c1a499bd02a1ffcdb6cbbbf4be14c37efaec34",
+  "qualification": "not-passed",
+  "remedy": "Schedule all existing checks and six original simulation commands as independent CI lanes, with unchanged assertions and per-lane two-hour limit. No FPGA implementation or source changes."
+}

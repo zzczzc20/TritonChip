@@ -1,0 +1,143 @@
+{
+  "observed_utc": "2026-10-17T14:07:50.428529+00:00",
+  "observer": {
+    "scope": "report extraction only; no synthesis/place/route/load/retry",
+    "gate_status": "not-measured",
+    "build": "/home/zzhouch/tnca_build/r40_attempt02_20261016",
+    "runner_pid": 1425802,
+    "image_sha256": null,
+    "steps": [
+      {
+        "name": "failed_checkpoint",
+        "command": [
+          "vivado",
+          "-mode",
+          "batch",
+          "-log",
+          "/home/zzhouch/tnca_build/r40_attempt02_followup/failed_checkpoint.vivado.log",
+          "-journal",
+          "/home/zzhouch/tnca_build/r40_attempt02_followup/failed_checkpoint.vivado.jou",
+          "-source",
+          "/home/zzhouch/tnca_src_r40_attempt02_0c39793/flow/fpga/diagnose_r40_checkpoint.tcl",
+          "-tclargs",
+          "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed_error.dcp",
+          "/home/zzhouch/tnca_build/r40_attempt02_followup/failed_checkpoint_reports"
+        ],
+        "script_sha256": "8720ae40cc6ba4c88bbd5faf383662141c238bb15aa08479fe74675e86ab98ae",
+        "pid": 1740443,
+        "exit_code": 0
+      }
+    ],
+    "watcher_sha256": "dc44a21b105fba2abe1f6f2f9a3f8cf89f2c493e92c84e3ead40c08ce293fb85",
+    "status": "implementation-failed-evidence-retained-no-retry",
+    "observed_utc": "2026-10-17T13:52:51.557489+00:00",
+    "implementation_exit_code": 1,
+    "checkpoint": "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed_error.dcp",
+    "checkpoint_sha256": "b5be49c0529b92a76ed084964cb51a2eec541744f235dfaf9ab7c98c5ee77612"
+  },
+  "files": {
+    "r40_attempt02_followup/state.json": {
+      "bytes": 1535,
+      "sha256": "8729c3ea68f99ed9662b4e48f614720bd50f7482539a57ac37d611347888c55c"
+    },
+    "r40_attempt02_followup/failed_checkpoint.log": {
+      "bytes": 52967,
+      "sha256": "12b5ebdf69a590dbdb9b6c3d9ffdbeb289133ba803a1b20de4428ddda614edf1"
+    },
+    "r40_attempt02_followup/failed_checkpoint_reports/checks.rpt": {
+      "bytes": 3513,
+      "sha256": "aca0d045316923c541a433917f29bcaa5900eba84bb26f9099fc53669f244f04"
+    },
+    "r40_attempt02_followup/failed_checkpoint_reports/clock_interaction.rpt": {
+      "bytes": 128065,
+      "sha256": "dcb4e91b3d23a2fb1bc5972637c03e1a3dbbfe343af85189b5a7d49442acb8f3"
+    },
+    "r40_attempt02_followup/failed_checkpoint_reports/congestion.rpt": {
+      "bytes": 31671,
+      "sha256": "e648d5b265992f3afc98c4e7895e8e88c40859e9c0cb2262da6c254076c5b4c7"
+    },
+    "r40_attempt02_followup/failed_checkpoint_reports/critical_cones_ranked.tsv": {
+      "bytes": 540,
+      "sha256": "db499a8df685703b721a191348bccd27ac0b7a501f3b491b61ffb011b76d1811"
+    },
+    "r40_attempt02_followup/failed_checkpoint_reports/critical_paths.rpt": {
+      "bytes": 851023,
+      "sha256": "c293c5fd35e8bdd0ce57562f9ffe963b979d0054a413d51473ed56a879424f15"
+    },
+    "r40_attempt02_followup/failed_checkpoint_reports/report_status.tsv": {
+      "bytes": 484,
+      "sha256": "cf6eedd80d4128a8b0e74474c57c3c0be84b98e12492fb8d09cb6c6619c3def5"
+    },
+    "r40_attempt02_followup/failed_checkpoint_reports/route_status.rpt": {
+      "bytes": 1574,
+      "sha256": "679161781e8dd12ef0fa0f4f7c53ce088329848c708f5df4fc9418354734e62f"
+    },
+    "r40_attempt02_followup/failed_checkpoint_reports/timing.rpt": {
+      "bytes": 2062077,
+      "sha256": "db1406ccc6836595827042dc1abbb0952d1566c8c73d2c9f372d71b3beb02d47"
+    },
+    "r40_attempt02_followup/failed_checkpoint_reports/utilization_hierarchy.rpt": {
+      "bytes": 113439,
+      "sha256": "ed5602508a59cd0cf59b3ea6ec5f4c7c25a443b08657e1cb59552b6722272691"
+    },
+    "r40_attempt02_followup/failed_checkpoint_reports/utilization_slr.rpt": {
+      "bytes": 6870,
+      "sha256": "f95ebee2c03f9b6619232b85c2c4cfe96781e352c1ca0dfde6f50a9ac2c1f798"
+    },
+    "r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/runme.log": {
+      "bytes": 491502,
+      "sha256": "a3970427a9c1697361cd492ab0f3025b8dc57b21902de95d53b12a2939ad24f2"
+    },
+    "r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/slr_util_placed.rpt": {
+      "bytes": 6825,
+      "sha256": "519463605da0fe2171b6aee18b622d621db92e2b3c806315365a009d117314ac"
+    },
+    "r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/full_util_placed.rpt": {
+      "bytes": 28732,
+      "sha256": "17c929d9ee650d07af288175815dea39a521239c5b94292929226980cee1234c"
+    },
+    "r40_attempt02_20261016/build/attempt.exit": {
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    }
+  },
+  "schema": "tnca-r40-terminal-implementation-failure/1",
+  "scope": "Actual terminal failed route and diagnostic timing; no loadable image or timing qualification",
+  "hardware_source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "clock_target_hz": 100000000,
+  "configuration_sha256": "41492b08fbc7ac0b4addd1f7815f504f11c56e7d68fa78a142f14db88615e3b9",
+  "archive": "terminal_reports.tar.gz",
+  "archive_sha256": "0bf0ec82144f3975cf80d33c48e218bf418cac72142f649e261558357b16e0fe",
+  "implementation_exit_code": 1,
+  "route_legal": false,
+  "route_error_counts": {
+    "resource_conflict_nets": 2,
+    "antenna_or_island_nets": 2
+  },
+  "conflicting_node": "INT_X79Y186/NN1_W_BEG7",
+  "conflicted_hbm_response_bits": [
+    91,
+    97
+  ],
+  "worst_sampled_kernel_path": {
+    "source": "slice2/tl_a_reg[0]",
+    "destination": "u_tmu/dq_id_reg[13][4]/CE",
+    "clock_period_ns": 10.0,
+    "slack_ns": -11.159,
+    "data_delay_ns": 20.561,
+    "logic_delay_ns": 2.52,
+    "net_delay_ns": 18.041,
+    "logic_levels": 30,
+    "scope": "worst of 30 sampled setup endpoints in retained routed-error DCP; 23 endpoints dq_id and 7 dead_valid; not complete legal-route timing qualification"
+  },
+  "image_sha256": null,
+  "fmax_hz": null,
+  "timing_qualification": "failed-100MHz-sampled-kernel-setup",
+  "cdc_qualification": "not-measured",
+  "required_gate_promotions": [],
+  "current_blocker": "No legal 100MHz three-core image: terminal route errors and 20.561ns sampled TLW-to-dead-update cone",
+  "next_command": "cat ~/tnca_build/r40_attempt02_physical_detail_20261017/runner.exit; tail -n 20 ~/tnca_build/r40_attempt02_physical_detail_20261017/stdout.log",
+  "on_success": "Use actual tag/owner cut paths, crossing contributors and conflicted HBM endpoints to validate structural corrections; then qualify the combined module candidate before considering reserved attempt3",
+  "on_failure": "Keep partial read-only reports and exact tool/DCP identities; correct the failed diagnostic query, not rerun implementation"
+}

@@ -1,0 +1,20 @@
+PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+  up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+  up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+  up to date: doc/isa/opcode-map.md
+PASS: all generated ISA files match the schema
+  up to date: doc/support_matrix.md
+PASS: target descriptions match the RTL parameters
+checked 218 shared constants against /home/zhongchun/tritonchip-r40-publication-final/rtl/common/tnca_defs.vh
+PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+  compiler-unit          PASS   96 tests
+  compiler-ir            SKIP   tnca-opt not found at /home/zhongchun/tritonchip-r40-publication-final/compiler/build/tools/tnca-opt/tnca-opt
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common -o sim/build/tb_core.vvp tb/core/tb_tnca_core.v
+  BASE-TRITON-CORE-test_add_kernel              PASS
+  BASE-TRITON-CORE-test_context_specialised_add_kernel PASS
+  BASE-TRITON-CORE-test_context_specialised_mul_add_kernel PASS
+  BASE-TRITON-CORE-test_mul_add_kernel          PASS
+  BASE-TRITON-CORE-test_unsupported_block_is_refused PASS
+  BASE-TRITON-CORE-test_wide_block_add_kernel   PASS
+  BASE-TRITON-CORE-test_wide_descriptor_shared_coordinates PASS
+  triton-e2e             PASS   7 test(s)

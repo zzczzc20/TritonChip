@@ -1,0 +1,12 @@
+{
+  "observed_utc": "2026-10-16T08:52:44.813708+00:00",
+  "gate_status": "not-measured",
+  "scope": "diagnostic Icarus harness only; no FPGA implementation",
+  "root": "/tmp/r40_mmio_journal26_first_unknown",
+  "runner_pid": 1340846,
+  "r40_mmio_journal26_build.exit": "0\n",
+  "r40_mmio_journal26_build.log": "/tmp/r40_mmio_journal26_first_unknown/sim/build/u50-sim/link-k__yqkda/multicore-mmio.vvp\n",
+  "r40_mmio_journal26_first_unknown_replay.exit": "1\n",
+  "r40_mmio_journal26_first_unknown_replay.log": "tnca_fpga_regs: up (words=147456)\nFIRST_UNKNOWN tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[0].u_tile.u_core @430200000 cycle=43010 running=0001 pc=0000000000000948 ctx=0 major=xx func=xx dst=0 rvalid=1 dvalid=1 xvalid=1 rsv=00000000 delay=X stall=x kill=1 books=0 mem=0 mul=x fp=x\nFATAL: rtl/core/tnca_core.v:2749: first unknown reservation or live decode state\n       Time: 430200000  Scope: tnca_multicore_board_regs.dut.device.system.shell.u_system.g_tile[0].u_tile.u_core\nMMIO journal replay FAIL\n",
+  "harness": "/tmp/r40_mmio_journal26_first_unknown/sim/build/u50-sim/link-k__yqkda/multicore-mmio.vvp"
+}

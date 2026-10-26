@@ -259,6 +259,11 @@ def gather_plan(imp, d, coords, extents):
 # ---------------------------------------------------------------------------
 
 def users_of(imp, value_id):
+    # Register chunks retain the original TTIR consumer contract. Treating
+    # a synthetic ID as unused could select a packed DMA window even when
+    # an arithmetic consumer needs individually unpacked elements.
+    if isinstance(value_id, tuple) and value_id[0] in ('register-chunk', 'register-row-chunk'):
+        value_id = value_id[1]
     return imp._value_users.get(value_id, [])
 
 
@@ -273,6 +278,9 @@ def window_consumers_ok(imp, rid, elem, cols):
     engine out for it.
     """
     if imp._ELEM_BYTES[elem] == 4 and cols == imp.target.vlen:
+        return True
+    if (getattr(imp, '_packed_window_unpack', False) and elem in ('f16', 'bf16')
+            and cols == imp.target.vlen):
         return True
     seen, work = set(), [rid]
     while work:

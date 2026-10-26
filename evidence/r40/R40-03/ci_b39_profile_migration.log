@@ -1,0 +1,8 @@
+CI run 38139803505, O2 job 114471197814
+2026-10-11T13:01:10.4582498Z AOT + Session: 149/149 cases; 45/45 operator/level pairs pass
+2026-10-11T13:26:31.1161124Z AOT + Session: 149/149 cases; 45/45 operator/level pairs pass
+2026-10-11T13:51:41.5223736Z AOT + Session: 149/149 cases; 45/45 operator/level pairs pass
+2026-10-11T13:51:41.5922679Z CHECK profile configuration differs from the frozen baseline
+2026-10-11T13:51:41.5923094Z baseline check: FAIL (149 cases, two runs)
+Only the historical profile hash failed; both complete numerical runs retained all 149 exact cycle values.
+New reference pins be877793a4a5c1c522c0da65cc80a3fe921c0bda core-sim config b8fb71a90255e476cbe9e948a10373bb8c3ea89da22ef77ea69341d77c156192.

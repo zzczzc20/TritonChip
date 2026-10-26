@@ -1,0 +1,33 @@
+{
+  "source_commit": "c920a1f5b8562f7a1a413c0e7e4efd7fa5536619",
+  "packaged_rtl_sources": 46,
+  "xo_sha256": "7cea9ca9dfb0d3a81b4504ac7d8eda4475d77164e788344e8df30f7ca2ca2a57",
+  "xclbin_sha256": "a3e43ced0b2918169bece31d7fdedbf34b195ec6dc7e4d1f5e67b83c6ea90978",
+  "xclbin_uuid": "826e9146-9f38-6edb-a226-255a4071ea25",
+  "physical_cores": 1,
+  "core_placement": "SLR1",
+  "kernel_clock_mhz": 100,
+  "hbm_clock_mhz": 450,
+  "local_limit_bytes": 524288,
+  "packaged_ram_words": 65536,
+  "wns_ns": 0.016,
+  "whs_ns": 0.006,
+  "bus_skew_violations": 0,
+  "unconstrained_internal_endpoints": 0,
+  "critical_cdc_paths": 58,
+  "tnca_endpoint_critical_cdc_paths": 0,
+  "slr1_resources": {
+    "lut": 295958,
+    "bram_tiles": 253.5,
+    "dsp": 171
+  },
+  "report_sha256": {
+    "bus_skew.rpt": "dc180cfa51ffdd6113fe67b45dc9b8a677daae1e6a4585c571bea06fbdff90c7",
+    "cdc.rpt": "60b38ddb570b0d599a9626ee825dfddee87cb5dc5e8511bff7cec9fa873b30b2",
+    "checks.rpt": "9b4a99c9f0279abf92d7382ab87eb699ee5205804aa8c0b441e2ce4adfd2b903",
+    "clock_interaction.rpt": "0a98fc5cd8594070e7ab1b66be29f881c1a68833da6dc843f68176284c70e349",
+    "timing.rpt": "8194b826df142d393db6a0bb00847e19d01d53ae1b43fdfc99d8a2bbc5eabdc9",
+    "utilization_slr.rpt": "00505900eefb4b8833ccb7813aa6b7095d528269da024c168a7111eeb73ee575"
+  },
+  "scope": "single-core hybrid diagnostic image; R40 not accepted"
+}

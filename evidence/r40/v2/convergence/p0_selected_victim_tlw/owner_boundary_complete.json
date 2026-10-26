@@ -1,0 +1,225 @@
+{
+  "files": {
+    "hit_owner_change.json": {
+      "sha256": "849da1c50d16591cd5722a1073d16753a396aab01558430a580c50074ed1ef53",
+      "bytes": 778
+    },
+    "identity.json": {
+      "sha256": "72c30e941586c5bf78e2c8eb69925953bf0b790a92ffa46a4993cabb5d0d23d4",
+      "bytes": 306
+    },
+    "results/epoch0_policy46_seed1.log": {
+      "sha256": "0eccd8eee5b4e33d85239d4823ab3d38fea18689e169a0eac8885cef8355f01a",
+      "bytes": 432
+    },
+    "results/epoch0_policy46_seed1_build.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "results/epoch0_policy46_seed7.log": {
+      "sha256": "f038de8fcbaf5f0351b3a737157ddab6f5eb94092f14b9c581137a5540c08231",
+      "bytes": 433
+    },
+    "results/epoch0_policy46_seed7_build.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "results/epoch0_policy78_seed1.log": {
+      "sha256": "b4eeefa72077c65760cef72c33b2bd43f6f1cc8770d12e588ca200ce231abe15",
+      "bytes": 432
+    },
+    "results/epoch0_policy78_seed1_build.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "results/epoch0_policy78_seed7.log": {
+      "sha256": "2a748dd374b53550c41284c228fb93fe34aa8addc0e0b0694518dbbd71496111",
+      "bytes": 433
+    },
+    "results/epoch0_policy78_seed7_build.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "results/epoch5_policy46_seed1.log": {
+      "sha256": "2a1ce17e54931f3e6cc274b002010ba7d126e566c7aed8f513ab9e93d78a3630",
+      "bytes": 435
+    },
+    "results/epoch5_policy46_seed1_build.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "results/epoch5_policy46_seed7.log": {
+      "sha256": "4e1e3300fa375d07a0c1ef6ebeccdfd5f4d574468769f4a9ff18f2fdc3a31081",
+      "bytes": 435
+    },
+    "results/epoch5_policy46_seed7_build.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "results/epoch5_policy78_seed1.log": {
+      "sha256": "931ea454394b309603464cf66452ea6e4cfaeac7301e139d5cf628769ca6c491",
+      "bytes": 436
+    },
+    "results/epoch5_policy78_seed1_build.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "results/epoch5_policy78_seed7.log": {
+      "sha256": "522942bdc178fda5157cce7b27b5b1dacc31a88e9a9c3d36a21e7f36184dfbf7",
+      "bytes": 436
+    },
+    "results/epoch5_policy78_seed7_build.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "results/mutation.log": {
+      "sha256": "dee7968123d91da52628127e127a002aa7cdf28efb745df48f1bda5f09afeff4",
+      "bytes": 243
+    },
+    "results/mutation_build.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "results/no_hit_epoch_guard.v": {
+      "sha256": "9973fec73d070276c68daace689f9a834cc93c8bcd901a7eb732fb8e9f76e125",
+      "bytes": 74621
+    },
+    "results/report.json": {
+      "sha256": "de9a4eff3f295201e6cf1468aa67e08cda50a8e829a932375dde4e90bb6c7c79",
+      "bytes": 4421
+    },
+    "rtl/common/tnca_amo.vh": {
+      "sha256": "1e18fa968eba2ff12e3df6b45c550a2a8b6797eb1300bfdee11beda77737b7cd",
+      "bytes": 2922
+    },
+    "rtl/common/tnca_dco_owner_registered.vh": {
+      "sha256": "a8d06b7cb702d9b54e14a7a0ec50eaeca1b4c34700a71adf46e12f3b2b4c340b",
+      "bytes": 1662
+    },
+    "rtl/common/tnca_defs.vh": {
+      "sha256": "0d4eaa5507a74c45048dc7481a5bbb97ae92d8a5ac15b01c0f37e84783a80c89",
+      "bytes": 20141
+    },
+    "rtl/common/tnca_perf_count.vh": {
+      "sha256": "00499e52d3214453385fadbf553a795c252e301add8c42cfbb93321183329391",
+      "bytes": 162
+    },
+    "rtl/common/tnca_perf_sel.vh": {
+      "sha256": "890eac0ece3c7377774db98f31a703ad93c43f80e70ad8456ba98ef5216fe6d1",
+      "bytes": 1003
+    },
+    "rtl/nuca/tnca_nuca_slice.v": {
+      "sha256": "94dc2b62de28e74b86dd1ff03fd59da548039c67931b51631a611621306b0801",
+      "bytes": 74649
+    },
+    "rtl/nuca/tnca_nuca_slice_before.v": {
+      "sha256": "a772d5dc59333a994d401b4e3dde6ac2f4b8549862d1e98857f7a7be39d931d0",
+      "bytes": 74597
+    },
+    "rtl/nuca/tnca_replicated_tmu.v": {
+      "sha256": "b1af44faa38d4d90978a2478cc752274bbb8398a897e3c706727356ed9d0d0ef",
+      "bytes": 2991
+    },
+    "rtl/nuca/tnca_tmu.v": {
+      "sha256": "da94fe33f872b03d27d93dee0521b92f5f50743396ff1b71138df5bf094a7280",
+      "bytes": 22041
+    },
+    "run.sh": {
+      "sha256": "efe93b22b4100940e99b7a4dc500ea0427e978a3050812f41339b2874341e34a",
+      "bytes": 140
+    },
+    "run_tests.py": {
+      "sha256": "17d318e4efa1dc8fc78526a593e964a5d0e4af73fd017b4124303a92733f1606",
+      "bytes": 2001
+    },
+    "runner.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "runner.log": {
+      "sha256": "1abc170a18e28ff108a288b0b5eff7348825fc6f4560a14a03bbc2344a63b4c9",
+      "bytes": 286
+    },
+    "tb/common/tnca_dram_model.v": {
+      "sha256": "37401a0a88d48d8226e1a4e94dd818b2d37dfaab12829c767603a3982f9bd5ac",
+      "bytes": 5422
+    },
+    "tb/nuca/tb_hit_owner.v": {
+      "sha256": "91f436e62a03eb9ee18a7c0fd76e4e04fff9c0173fcf8e371b67834e6f048e12",
+      "bytes": 30235
+    },
+    "tb/nuca/tb_nuca_data_atomic_widths.v": {
+      "sha256": "e8cb2f983fe2a83adc64c0edf063f85c4e7efdbc43ce6c4810a8748d19550c2d",
+      "bytes": 28128
+    },
+    "tb/nuca/tb_nuca_maintenance.v": {
+      "sha256": "32e4f159d4c9b3b20a9bc6192d372407332405f7f51444d8cbbb45a86f814546",
+      "bytes": 7718
+    },
+    "tb/nuca/tb_nuca_slice.v": {
+      "sha256": "d5bf59b106fa317860a64aaf7b03cd81db0f75b72b251d1d0a977e56820b2a35",
+      "bytes": 27270
+    },
+    "tb/nuca/tb_tmu_pipeline_quiet.v": {
+      "sha256": "ae4432c02855f2fa1579e566a45dc2888b18e37f2acb711df3964cd0019a5863",
+      "bytes": 8625
+    },
+    "tb/nuca/tb_tmu_replicated.v": {
+      "sha256": "645e37a4d700d091565b0b43f4fc0162aacd9a5666a4aa0303172be6a4f50639",
+      "bytes": 11167
+    }
+  },
+  "records": [
+    {
+      "name": "epoch0_policy46_seed1_pass",
+      "stdout": "---- nuca slice ----\nseed=1 trace_hash=421c0d6a4b8ded65 writes=1508\nissued=6000 reads_checked=4850 inflight_left=0\nhit=3127 miss=2853 merge=20 wb=1109 mshr_full=0 target_full=0 hit_past_block=0\nOWNER_EPOCH retries=0\npolicy=46 bypass=378 evict=2219 dead_evict=388 gear=0\nHIT_OWNER stable=8 stale_suppressed=0\nDATA_PIPELINE amo=1513 partial=1508 low32=377 high32=393\nPASS\ntb/nuca/tb_hit_owner.v:591: $finish called at 479246000 (1ps)\n"
+    },
+    {
+      "name": "epoch0_policy46_seed7_pass",
+      "stdout": "---- nuca slice ----\nseed=7 trace_hash=9b77c3d0f434f9b5 writes=1509\nissued=6000 reads_checked=4876 inflight_left=0\nhit=3047 miss=2934 merge=19 wb=1099 mshr_full=0 target_full=0 hit_past_block=3\nOWNER_EPOCH retries=0\npolicy=46 bypass=403 evict=2275 dead_evict=384 gear=0\nHIT_OWNER stable=13 stale_suppressed=0\nDATA_PIPELINE amo=1500 partial=1509 low32=376 high32=359\nPASS\ntb/nuca/tb_hit_owner.v:591: $finish called at 485886000 (1ps)\n"
+    },
+    {
+      "name": "epoch0_policy78_seed1_pass",
+      "stdout": "---- nuca slice ----\nseed=1 trace_hash=421c0d6a4b8ded65 writes=1508\nissued=6000 reads_checked=4850 inflight_left=0\nhit=3095 miss=2877 merge=28 wb=1095 mshr_full=0 target_full=0 hit_past_block=8\nOWNER_EPOCH retries=0\npolicy=78 bypass=469 evict=2152 dead_evict=664 gear=2\nHIT_OWNER stable=9 stale_suppressed=0\nDATA_PIPELINE amo=1513 partial=1508 low32=377 high32=393\nPASS\ntb/nuca/tb_hit_owner.v:591: $finish called at 480106000 (1ps)\n"
+    },
+    {
+      "name": "epoch0_policy78_seed7_pass",
+      "stdout": "---- nuca slice ----\nseed=7 trace_hash=9b77c3d0f434f9b5 writes=1509\nissued=6000 reads_checked=4876 inflight_left=0\nhit=3008 miss=2963 merge=29 wb=1092 mshr_full=0 target_full=0 hit_past_block=4\nOWNER_EPOCH retries=0\npolicy=78 bypass=450 evict=2257 dead_evict=687 gear=2\nHIT_OWNER stable=10 stale_suppressed=0\nDATA_PIPELINE amo=1500 partial=1509 low32=376 high32=359\nPASS\ntb/nuca/tb_hit_owner.v:591: $finish called at 487756000 (1ps)\n"
+    },
+    {
+      "name": "epoch5_policy46_seed1_pass",
+      "stdout": "---- nuca slice ----\nseed=1 trace_hash=421c0d6a4b8ded65 writes=1508\nissued=6000 reads_checked=4850 inflight_left=0\nhit=3123 miss=2854 merge=23 wb=1055 mshr_full=0 target_full=0 hit_past_block=4\nOWNER_EPOCH retries=1201\npolicy=46 bypass=977 evict=1621 dead_evict=836 gear=0\nHIT_OWNER stable=2 stale_suppressed=4\nDATA_PIPELINE amo=1513 partial=1508 low32=377 high32=393\nPASS\ntb/nuca/tb_hit_owner.v:591: $finish called at 511796000 (1ps)\n"
+    },
+    {
+      "name": "epoch5_policy46_seed7_pass",
+      "stdout": "---- nuca slice ----\nseed=7 trace_hash=9b77c3d0f434f9b5 writes=1509\nissued=6000 reads_checked=4876 inflight_left=0\nhit=3048 miss=2937 merge=15 wb=1055 mshr_full=0 target_full=0 hit_past_block=6\nOWNER_EPOCH retries=1199\npolicy=46 bypass=987 evict=1694 dead_evict=876 gear=0\nHIT_OWNER stable=5 stale_suppressed=4\nDATA_PIPELINE amo=1500 partial=1509 low32=376 high32=359\nPASS\ntb/nuca/tb_hit_owner.v:591: $finish called at 519046000 (1ps)\n"
+    },
+    {
+      "name": "epoch5_policy78_seed1_pass",
+      "stdout": "---- nuca slice ----\nseed=1 trace_hash=421c0d6a4b8ded65 writes=1508\nissued=6000 reads_checked=4850 inflight_left=0\nhit=3114 miss=2862 merge=24 wb=1083 mshr_full=0 target_full=0 hit_past_block=2\nOWNER_EPOCH retries=1153\npolicy=78 bypass=459 evict=2147 dead_evict=1533 gear=2\nHIT_OWNER stable=5 stale_suppressed=5\nDATA_PIPELINE amo=1513 partial=1508 low32=377 high32=393\nPASS\ntb/nuca/tb_hit_owner.v:591: $finish called at 513366000 (1ps)\n"
+    },
+    {
+      "name": "epoch5_policy78_seed7_pass",
+      "stdout": "---- nuca slice ----\nseed=7 trace_hash=9b77c3d0f434f9b5 writes=1509\nissued=6000 reads_checked=4876 inflight_left=0\nhit=3010 miss=2966 merge=24 wb=1092 mshr_full=0 target_full=0 hit_past_block=7\nOWNER_EPOCH retries=1255\npolicy=78 bypass=453 evict=2257 dead_evict=1646 gear=2\nHIT_OWNER stable=6 stale_suppressed=5\nDATA_PIPELINE amo=1500 partial=1509 low32=376 high32=359\nPASS\ntb/nuca/tb_hit_owner.v:591: $finish called at 525626000 (1ps)\n"
+    },
+    {
+      "name": "hit_epoch_guard_mutation_detected",
+      "stdout": "FATAL: tb/nuca/tb_hit_owner.v:265: stale HIT owner snapshot emitted a TLW hint\n       Time: 51070000  Scope: tb_nuca_slice\nFATAL: tb/nuca/tb_hit_owner.v:234: owner boundary observable-cycle mismatch\n       Time: 51070000  Scope: tb_nuca_slice\n"
+    }
+  ],
+  "scope": "Bounded exact before/after whole-slice observable-cycle and numeric validation; no new architecture state/cycle and no routed-image qualification",
+  "archive": "owner_boundary_complete.tar.gz",
+  "archive_sha256": "bdead4744558a69f2b6d2406d7def780871da9adec7ec41fb6bfe0d5d35a319d",
+  "reason": "Inactive-state live classifier mux still produced a real metadata->TLW STA arc after HIT snapshot reuse. Every cur_own consumer is after E_LOOK; capture independently uses request_owner_live. Always select the snapshot when registered-owner mode is enabled.",
+  "checks": "Before/after data/backing-request timing and values, TLW valid/address/drop, metadata write-valid and main cache counters compare cycle-by-cycle with fixed and concurrently changing metadata. Independent scalar oracle and guard mutation retained.",
+  "source_change": {
+    "scope": "Complete existing owner register boundary; no added state/cycle/interface",
+    "reason": "R6 post-opt timing still traverses live request-owner comparator -> TLW CE through the inactive-state fallback mux. All consumers are in HIT/MISS/RANK/ALLOC after E_LOOK; capture independently uses request_owner_live. Remove only the unused fallback arc.",
+    "rtl_sha256": "94dc2b62de28e74b86dd1ff03fd59da548039c67931b51631a611621306b0801",
+    "verification": "Require before/after data/TLW/performance cycle miter and independent numeric oracle with concurrent metadata changes, then mapped no-path check from live tensor table FFs to TLW FFs. No false-path exception."
+  },
+  "required_gate_promotions": [],
+  "mapped_cut_proof": "pending queued synth/opt-only screen; checkpoint saved before strict queries; no extra full module route",
+  "performance": "not-measured",
+  "production_rtl_sha256": "a68ada2fb61363faf6302250d25f37ce2a2ad91845b03aa8aec8984c3745ea4a"
+}

@@ -1,0 +1,5 @@
+# R40 v2 full native inventory after descriptor publication fix
+
+Complete frozen tiny/small/medium inventory: 77/77 pass on the unchanged hybrid U280 image from a clean source archive of 2b670c4. Every point has its frozen definition hash, native resident device execution, no fallback, zero kernel staging bytes and a recorded native memory snapshot. The v2 native_inventory.py audit reports R40-01.device capability-pass and binds it to the frozen v2 contract hash.
+
+This is a functional inventory, with one warmup and one steady sample per point. It does not meet the independent 5/30/3 matched CPU/native timing plan and does not close device-time, the mixed-host gate, or R40-01 as a whole. The exposed HBM window is explicitly 256 MiB on this legacy image; it does not satisfy the separate v2 HBM capacity/PC requirements. The pending three-core image is not represented by these records. The full run took 1066 seconds; compressed records/logs preserve exact bytes. run.sh records the environment and source location. Final-image/source checks still apply at R40-10.

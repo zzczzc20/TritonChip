@@ -1,0 +1,23 @@
+R2-09 grid mapping and admission
+  GRID-01  PASS  nine grids, each PID once, NPID the logical grid size
+    grid (0, 1, 1)  total=0 -> SUCCEEDED, kernel wrote nothing=True
+    grid (1, 1, 1)  total=1   -> SUCCEEDED, every PID exactly once=True
+    grid (3, 1, 1)  total=3   -> SUCCEEDED, every PID exactly once=True
+    grid (4, 1, 1)  total=4   -> SUCCEEDED, every PID exactly once=True
+    grid (5, 1, 1)  total=5   -> SUCCEEDED, every PID exactly once=True
+    grid (9, 1, 1)  total=9   -> SUCCEEDED, every PID exactly once=True
+    grid (17, 1, 1) total=17  -> SUCCEEDED, every PID exactly once=True
+    grid (2, 3, 1)  total=6   -> SUCCEEDED, 2 slot(s) written (gx=2), npid.x==2 everywhere=True, pid.x in range=True
+    grid (2, 2, 2)  total=8   -> SUCCEEDED, 2 slot(s) written (gx=2), npid.x==2 everywhere=True, pid.x in range=True
+  GRID-06  PASS  the mapping is a bijection; the edges are refused
+    195 grid shapes: the mapping is a bijection onto 0..total-1 in every one
+    (16, 16, 16)   -> 4096 distinct ids, bijective
+    (1, 1, 4096)   -> 4096 distinct ids, bijective
+    (4096, 1, 1)   -> 4096 distinct ids, bijective
+    (2, 2, 1024)   -> 4096 distinct ids, bijective
+    4097 programs                  -> [ADMISSION_REFUSED] 4097 programs exceeds the 4096 lim
+    a negative axis                -> [ADMISSION_REFUSED] grid.x = -1 is outside 0..2**32-1
+    past 2**32-1                   -> [ADMISSION_REFUSED] grid.x = 4294967296 is outside 0..
+    a product that overflows 4096  -> [ADMISSION_REFUSED] 8192 programs exceeds the 4096 lim
+
+  r2-grid-tests          PASS   2 check(s)

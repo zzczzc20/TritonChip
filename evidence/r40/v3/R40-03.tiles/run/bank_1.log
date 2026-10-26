@@ -1,0 +1,7 @@
+W1019 10:08:01.120000 3106998 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpc_runs/all/cache/bank_1/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  built 17676402 bytes
+PASS triad: bank_alloc=1, physical ledgers=[{'static_extra_reads': 0, 'sites': 0, 'moves': 0, 'device_cycles': 573, 'resources': {'accumulators': 0, 'barriers': 0, 'commands_outstanding': 'unknown', 'descriptors': 0, 'rf_private_per_role': {'role0': 27, 'role1': 27, 'role2': 27, 'role3': 27}, 'scratch_bytes': 0, 'shared_windows': []}, 'asm_sha256': 'f853c80c4d01f14ffba7557663da1ec2c01fb22591125a908f0fb9329871b62c'}]
+PASS layernorm: bank_alloc=1, physical ledgers=[{'static_extra_reads': 1, 'sites': 1, 'moves': 24, 'device_cycles': 3286, 'resources': {'accumulators': 0, 'barriers': 0, 'commands_outstanding': 'unknown', 'descriptors': 0, 'rf_private_per_role': {'role0': 31, 'role1': 31, 'role2': 31, 'role3': 31}, 'scratch_bytes': 0, 'shared_windows': []}, 'asm_sha256': 'e23420da65fe4c55d2eeefdb7980101d9e93c42e5a1fcd81b16bab5c0172bb7e'}]
+PASS f32-dot: bank_alloc=1, physical ledgers=[{'static_extra_reads': 110, 'sites': 110, 'moves': 0, 'device_cycles': 2385, 'resources': {'accumulators': 1, 'barriers': 2, 'commands_outstanding': 'unknown', 'descriptors': 2, 'rf_private_per_role': {'role0': 42, 'role1': 42}, 'scratch_bytes': 512, 'shared_windows': []}, 'asm_sha256': '9146e26283f57818c746d9fac457fb90726abe3534aac39dd94dfa30c0fdd8a6'}]
+r40-bank-tests PASS (3/3)

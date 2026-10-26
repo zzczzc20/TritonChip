@@ -69,6 +69,8 @@ def _publish(imp, dst, value, shape, elem):
 
 
 def lower(imp, op):
+    if _lower_rows(imp, op):
+        return True
     from .frontend import _parse_type, Unsupported
     b = imp.b
     vlen = imp.target.vlen
@@ -273,3 +275,139 @@ def _store(imp, operands):
         lo, hi = b.vmovi(c & 0xFFFFFFFF), b.vmovi((c >> 32) & 0xFFFFFFFF)
     b.scatter(addr, widx, lo, mask=mask, size='w')
     b.scatter(b.sbini('add', addr, 4), widx, hi, mask=mask, size='w')
+
+
+class _RowValue:
+    def __init__(self, value, row, shape, type_override=None):
+        self.value, self.row, self.shape = value, row, shape
+        self.type_override = type_override
+
+    def id(self):
+        return ('wide-row', self.value.id(), self.row)
+
+    def get_type(self):
+        import re
+        if self.type_override is not None:
+            return self.type_override
+        return re.sub(r'^tensor<\d+x\d+x', f'tensor<1x{self.shape[1]}x', str(self.value.get_type()))
+
+    def __getattr__(self, name):
+        return getattr(self.value, name)
+
+
+class _RowOp:
+    def __init__(self, op, values):
+        self.op, self.values = op, values
+
+    def get_operand(self, i):
+        return self.values[self.op.get_operand(i).id()]
+
+    def get_result(self, i):
+        return self.values[self.op.get_result(i).id()]
+
+    def __getattr__(self, name):
+        return getattr(self.op, name)
+
+
+def _lower_rows(imp, op):
+    """Exact low/high pairs per row for bounded 2-D integer arithmetic.
+
+    Narrowing of address offsets still checks every high word before the
+    ordinary tile pointer lowering consumes the low-word rows.
+    """
+    from .frontend import _parse_type, Unsupported
+    from .tiles import Tile
+    if getattr(imp, '_in_wide_row', False):
+        return False
+    values = ([op.get_operand(i) for i in range(op.get_num_operands())] +
+              [op.get_result(i) for i in range(op.get_num_results())])
+    wide_tiles = getattr(imp, '_wide_tiles', {})
+    shapes = [(v, *_parse_type(str(v.get_type()))) for v in values]
+    if not any((isinstance(shape, tuple) and shape[0] > 1 and elem == 'i64') or
+               v.id() in wide_tiles for v, shape, elem in shapes):
+        return False
+    if any(len(shape) != 2 for _, shape, _ in shapes if isinstance(shape, tuple)):
+        raise Unsupported('multi-row 64-bit lowering requires rank 2')
+    rows = max(shape[0] for _, shape, _ in shapes if isinstance(shape, tuple))
+    if rows > imp.target.vlen:
+        raise Unsupported('64-bit tile row count exceeds VLEN')
+    name = op.get_name()
+    if name == 'arith.constant':
+        return False
+    if name in ('tt.reshape', 'tt.bitcast'):
+        source_shape, _ = _parse_type(str(op.get_operand(0).get_type()))
+        result_shape, _ = _parse_type(str(op.get_result(0).get_type()))
+        if source_shape != result_shape:
+            raise Unsupported('multi-row 64-bit reshape requires an explicit lane mapping')
+    if name in ('tt.reduce', 'tt.scan'):
+        raise Unsupported(f'multi-row 64-bit {name} requires row memory/fold state')
+    if name == 'tt.addptr':
+        offs = op.get_operand(1)
+        shape, _ = _parse_type(str(offs.get_type()))
+        if offs.id() not in wide_tiles:
+            return False
+        lows = []
+        for lo, hi in wide_tiles[offs.id()]:
+            _check_narrow(imp, lo, hi, shape[1])
+            lows.append(lo)
+        imp._tiles[offs.id()] = Tile('rows', tuple(lows), rows, shape[1], 'i32')
+        return False
+    outputs = [[] for _ in range(op.get_num_results())]
+    imp._in_wide_row = True
+    try:
+        for row in range(rows):
+            mapped = {}
+            for v, shape, elem in shapes:
+                if not isinstance(shape, tuple):
+                    mapped[v.id()] = v
+                    continue
+                use_row = row if shape[0] > 1 else 0
+                view = _RowValue(v, use_row, shape)
+                mapped[v.id()] = view
+                if v.id() in imp._ptr2d:
+                    base, pointee, offset = imp._ptr2d[v.id()]
+                    index = imp._offset_row(offset)(use_row)
+                    imp._ptr2d[view.id()] = (base, pointee,
+                        Tile('lazy', lambda r, index=index: index, 1, shape[1], 'i32'))
+                if v.id() in imp._ptr_base:
+                    imp._ptr_base[view.id()] = imp._ptr_base[v.id()]
+                if v.id() in wide_tiles:
+                    imp._wide[view.id()] = wide_tiles[v.id()][use_row]
+                elif v.id() in imp._wide:
+                    imp._wide[view.id()] = imp._wide[v.id()]
+                elif v.id() in imp._pending_const:
+                    imp._pending_const[view.id()] = imp._pending_const[v.id()]
+                elif (v.id() in imp._tiles or v.id() in imp._v or
+                      v.id() in imp._affine):
+                    get = imp._row_getter(v, shape[0], elem)
+                    val = get(use_row)
+                    imp._tiles[view.id()] = Tile('lazy', lambda r, val=val: val, 1, shape[1], elem)
+            # Expanding a row-index vector into a column selects its lane.
+            if name == 'tt.expand_dims' and op.get_int_attr('axis') == 1:
+                src = op.get_operand(0)
+                if src.id() in imp._wide:
+                    lo, hi = imp._wide[src.id()]
+                    view = _RowValue(src, row, (rows, 1), type_override='tensor<1xi64>')
+                    imp._wide[view.id()] = tuple(imp.b.splat(imp.b.vextract(x, row)) for x in (lo, hi))
+                    mapped[src.id()] = view
+            view_op = _RowOp(op, mapped)
+            if not lower(imp, view_op):
+                raise Unsupported(f'multi-row 64-bit operation {name}')
+            for i in range(op.get_num_results()):
+                dst = view_op.get_result(i)
+                shape, elem = _parse_type(str(dst.get_type()))
+                if elem == 'i64':
+                    outputs[i].append(imp._wide[dst.id()])
+                else:
+                    outputs[i].append(imp._row_getter(dst, 1, elem)(0))
+    finally:
+        imp._in_wide_row = False
+    for i, result in enumerate(outputs):
+        dst = op.get_result(i)
+        shape, elem = _parse_type(str(dst.get_type()))
+        if elem == 'i64':
+            wide_tiles[dst.id()] = result
+        else:
+            imp._tiles[dst.id()] = Tile('rows', tuple(result), rows, shape[1], elem)
+    imp._wide_tiles = wide_tiles
+    return True

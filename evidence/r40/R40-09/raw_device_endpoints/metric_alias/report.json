@@ -1,0 +1,42 @@
+{
+  "observed_utc": "2026-10-18T01:54:35.499533+00:00",
+  "scope": "post-measurement tool validation and reuse of prior original numeric RTL capture; no device rerun or board qualification",
+  "root": "/home/zhongchun/r40_graph_metric_alias_20261018",
+  "overrides": {
+    "archbench/platforms/tnca.py": "78d003e091a4d73f69a18611765f207687598c93a14f8f790899327f0fba1f5e",
+    "python/tnca/device_timing.py": "1363e5cd20b3739f5c2926ebfc329c301a1b7d869c3eb16fcf7adada08ca33b1",
+    "tools/r40/ablate.py": "3dff80a89b278b53c09f8ca47cae24bc97da742ba380aeaa818c4e6b11b76067",
+    "tools/r40/device_clock_tests.py": "17ba44fa58434c7c73f00c0742f5f806537653ec10948f99c85d0d30c824a96b",
+    "tools/r40/protocol_tests.py": "a617c3a1d36ce929e1f554e444183cad4478d81b5c81f7ad70b41fb85559ff0f"
+  },
+  "results": {
+    "clock": {
+      "exit_code": 0,
+      "log": "/home/zhongchun/r40_graph_metric_alias_20261018/clock.log",
+      "sha256": "c261548289db97f23dd1eda3128a87ab10d0953c8cc634b51e32ca6e969e52f6",
+      "tail": "..................\n----------------------------------------------------------------------\nRan 18 tests in 1.281s\n\nOK\n"
+    },
+    "protocol": {
+      "exit_code": 0,
+      "log": "/home/zhongchun/r40_graph_metric_alias_20261018/protocol.log",
+      "sha256": "4a32885f2ec9df18b4e1c5c353bb4898ec2964f1fd234a4ee5b693328fa56b5a",
+      "tail": "te g-other)\n  PASS  acceptance: a pass without checks              expect fail             got fail (/tmp/tmpwmm1_rlj/ev.json: capability-pass without the checks that support it)\n  PASS  acceptance: a pass with a failing check        expect fail             got fail (/tmp/tmpwmm1_rlj/ev.json: capability-pass with failing checks ['x'])\n  PASS  acceptance: a capability gate claiming perf-pass expect fail             got fail (a capability gate reported perf-pass)\n  PASS  acceptance: the command failed                 expect fail             got fail (true exited 1)\n  PASS  acceptance: all present                        expect capability-pass  got capability-pass ()\nr40-protocol  PASS  (42/42)\n"
+    },
+    "raw_capture": {
+      "exit_code": 1,
+      "log": "/home/zhongchun/r40_graph_metric_alias_20261018/raw_capture.log",
+      "sha256": "04be07fbd6925d13ffa048f78017f717134696c0dfeb20705d9ba3012bcf6c79",
+      "tail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'ablate'\n"
+    }
+  },
+  "required_gate_promotions": [],
+  "standalone_capture_path_correction": {
+    "exit_code": 0,
+    "log": "/home/zhongchun/r40_graph_metric_alias_20261018/raw_capture_corrected_path.log",
+    "sha256": "ac42d8a3c347dc45194b698a8ae5f03b1629d7aaf3d4aa5e4a20ded065d6fdf9",
+    "text": "('graph-makespan', [2318, 2317])\n",
+    "correction": "Add tools/r40 to standalone Python command PYTHONPATH; initial failed import log retained; no source or raw device data change"
+  },
+  "archive_sha256": "982c9b09e2e5740d2c46b96b293be5a37186e5983ab6938a0cf87edb8eb4fa99",
+  "local_protocol_log_sha256": "d0c2f0ae6c29f98b21e89fa0bafbb4fde678fb22a65d43eca0f3cf1d40b6a7f4"
+}

@@ -1,0 +1,28 @@
+{
+  "schema": "tnca-complete-functional-run-launch/1",
+  "observed_utc": "2026-10-18T15:08:33.017162+00:00",
+  "pid": 2349572,
+  "root": "/home/zzhouch/tnca_prepare_conditional3c403a4_full",
+  "output": "/home/zzhouch/tnca_runs_r40_conditional90_3c403a4_full",
+  "command": [
+    "/home/zzhouch/tc_env/torchenv/bin/python",
+    "-u",
+    "/home/zzhouch/tnca_src_r40_conditional_3c403a4_full/tools/r40/conditional_delivery.py",
+    "--xclbin",
+    "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/preserved-tnca_u280.xclbin",
+    "--image-sha256",
+    "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "--software-tree-sha256",
+    "files:cbc1340e1135ac301bfe6c39488bb3eb2b1571aafad46920e070ae701c58da52",
+    "--operating-clock-evidence",
+    "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json",
+    "--out",
+    "/home/zzhouch/tnca_runs_r40_conditional90_3c403a4_full"
+  ],
+  "files_sha256": {
+    "preflight.py": "677432c628563fa34440ae582e59a9b8ccfbcdb09c5ea25fbda66d34ea95bc0b",
+    "controller.py": "718c8686e4c6a27df28d6ad331664e7bb894dcc2c8cdecd20f38609113f88c01",
+    "run.sh": "5d3ee84deeb02ce49b0642060320787b6e5c123b2952cdbe2a8cc386911d6b09"
+  },
+  "scope": "complete dependency archive, entrypoint imports and native extension preflight before unchanged original full delivery; one board job; no synthesis/programming or workload reduction"
+}

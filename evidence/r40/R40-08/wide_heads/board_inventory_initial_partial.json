@@ -1,0 +1,260 @@
+{
+  "schema": "tnca-online-sdpa-checkpoint/1",
+  "measured_performance": false,
+  "full_inventory": true,
+  "results": [
+    {
+      "case": "decode_tail",
+      "head_dim": 16,
+      "status": "pass",
+      "tensor_allocations": [
+        32
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "7beb44709623f7373e2ad90e6d6621e80afe7bd13a8b38bb136fad9087abdbcc",
+          "descriptor_loads": 2,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 33,
+              "role1": 33
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 1,
+      "steady_tensor_transfers": 0
+    },
+    {
+      "case": "prefill_causal_tail",
+      "head_dim": 16,
+      "status": "pass",
+      "tensor_allocations": [
+        96
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "62584346f6004509d6f6d787c4e34386d1ba1499b0b9c6c8f1a73a44535ef594",
+          "descriptor_loads": 2,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 33,
+              "role1": 33
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 1,
+      "steady_tensor_transfers": 0
+    },
+    {
+      "case": "bool_all_mask_row",
+      "head_dim": 16,
+      "status": "pass",
+      "tensor_allocations": [
+        120,
+        192
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "0d133b79d1dbe0dc077c3b0483b41d934b6efaabe5aa6ca4d138bb5850380b99",
+          "descriptor_loads": 2,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 33,
+              "role1": 33
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 2,
+      "steady_tensor_transfers": 0
+    },
+    {
+      "case": "float_all_mask_row",
+      "head_dim": 16,
+      "status": "pass",
+      "tensor_allocations": [
+        96
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "d7740251c82af95a6584f382ac11b1961e0c4792f5c729e1f881bc0038a1eb35",
+          "descriptor_loads": 2,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 33,
+              "role1": 33
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 1,
+      "steady_tensor_transfers": 0
+    },
+    {
+      "case": "strided_batch_heads",
+      "head_dim": 16,
+      "status": "pass",
+      "tensor_allocations": [
+        384
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "9a62a513c0d5d0f3753de763676ccf8b4fbab31d16eedba2e4355639bbc4a883",
+          "descriptor_loads": 2,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 33,
+              "role1": 33
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 1,
+      "steady_tensor_transfers": 0
+    },
+    {
+      "case": "bf16_tail",
+      "head_dim": 16,
+      "status": "pass",
+      "tensor_allocations": [
+        32
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "40ff9c2874ecbb011be6b8e475b37c71dd6141071fcc001a83f0749c864baf80",
+          "descriptor_loads": 2,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 33,
+              "role1": 33
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 1,
+      "steady_tensor_transfers": 0
+    },
+    {
+      "case": "gqa_tail",
+      "head_dim": 16,
+      "status": "pass",
+      "tensor_allocations": [
+        384
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "f1cce169261963bc82897f649db10db7f4ce53b0cd8e5a397b3e172f4766a402",
+          "descriptor_loads": 2,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 33,
+              "role1": 33
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 1,
+      "steady_tensor_transfers": 0
+    },
+    {
+      "case": "mqa_causal_tail",
+      "head_dim": 16,
+      "status": "pass",
+      "tensor_allocations": [
+        384
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "e4c51b86d8474346ccef9c4e580b31c29f5e2f2d40f0bc69742e86b8330dad13",
+          "descriptor_loads": 2,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 33,
+              "role1": 33
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 1,
+      "steady_tensor_transfers": 0
+    },
+    {
+      "case": "long_prefill_tail",
+      "head_dim": 16,
+      "status": "pass",
+      "tensor_allocations": [
+        544
+      ],
+      "online_artifacts": [
+        {
+          "artifact": "3a59cfc54cd3ad3ba52fb56d922fd21c91f7bc5671be9d8e64c1b9b19a29c0c5",
+          "descriptor_loads": 2,
+          "resources": {
+            "accumulators": 0,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 33,
+              "role1": 33
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "kernels": 1,
+      "steady_tensor_transfers": 0
+    }
+  ]
+}

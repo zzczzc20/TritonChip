@@ -1,0 +1,525 @@
+{
+  "schema": "tnca-performance-inspection/1",
+  "status": "audited-diagnostic",
+  "identity": {
+    "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+    "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+    "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+    "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "clock_hz": 100000000,
+    "backend": "sim-file",
+    "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+    "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+  },
+  "overhead": {
+    "identity": {
+      "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+      "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+      "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+      "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+      "clock_hz": 100000000,
+      "backend": "sim-file",
+      "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+      "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+    },
+    "pairs": [
+      {
+        "order": "AB",
+        "identity": {
+          "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+          "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+          "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+          "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+          "clock_hz": 100000000,
+          "backend": "sim-file",
+          "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+          "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+        },
+        "baseline_cycles": 147,
+        "instrumented_cycles": 261,
+        "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+        "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+      },
+      {
+        "order": "BA",
+        "identity": {
+          "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+          "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+          "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+          "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+          "clock_hz": 100000000,
+          "backend": "sim-file",
+          "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+          "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+        },
+        "baseline_cycles": 147,
+        "instrumented_cycles": 261,
+        "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+        "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+      },
+      {
+        "order": "AB",
+        "identity": {
+          "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+          "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+          "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+          "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+          "clock_hz": 100000000,
+          "backend": "sim-file",
+          "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+          "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+        },
+        "baseline_cycles": 147,
+        "instrumented_cycles": 261,
+        "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+        "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+      },
+      {
+        "order": "BA",
+        "identity": {
+          "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+          "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+          "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+          "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+          "clock_hz": 100000000,
+          "backend": "sim-file",
+          "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+          "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+        },
+        "baseline_cycles": 147,
+        "instrumented_cycles": 261,
+        "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+        "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+      },
+      {
+        "order": "AB",
+        "identity": {
+          "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+          "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+          "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+          "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+          "clock_hz": 100000000,
+          "backend": "sim-file",
+          "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+          "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+        },
+        "baseline_cycles": 147,
+        "instrumented_cycles": 261,
+        "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+        "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+      },
+      {
+        "order": "BA",
+        "identity": {
+          "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+          "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+          "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+          "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+          "clock_hz": 100000000,
+          "backend": "sim-file",
+          "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+          "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+        },
+        "baseline_cycles": 147,
+        "instrumented_cycles": 261,
+        "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+        "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+      }
+    ],
+    "relative_deltas": [
+      0.7755102040816326,
+      0.7755102040816326,
+      0.7755102040816326,
+      0.7755102040816326,
+      0.7755102040816326,
+      0.7755102040816326
+    ],
+    "median_relative_overhead": 0.7755102040816326,
+    "observed_relative_range": [
+      0.7755102040816326,
+      0.7755102040816326
+    ],
+    "pair_count": 6,
+    "range_interpretation": "observed calibration range, not a probabilistic coverage guarantee",
+    "region_timing_error_bound_cycles": null,
+    "region_error_interpretation": "whole-program perturbation does not bound each region error",
+    "worst_absolute_relative_change": 0.7755102040816326,
+    "max_relative_overhead": 0.01,
+    "status": "perturbed-use-coarser-scopes",
+    "performance_status": "diagnostic-only; no corrected performance claim"
+  },
+  "scope_cycles": [
+    136
+  ],
+  "baseline_counter_diagnosis": [
+    {
+      "label": "pair-0",
+      "programs": [
+        {
+          "fractions": {
+            "perf_x_hazard": 0.020833333333333332,
+            "perf_x_lsu": 0.0,
+            "perf_x_fpu": 0.0,
+            "perf_x_mtx": 0.0,
+            "perf_x_txf": 0.0,
+            "perf_x_fence": 0.0,
+            "perf_x_arrive": 0.0,
+            "perf_x_rsv": 0.0,
+            "perf_x_wb": 0.006944444444444444,
+            "perf_x_vrf": 0.0,
+            "perf_x_vrfwb": 0.0,
+            "issue": 0.9444444444444444,
+            "frontend": 0.027777777777777776
+          },
+          "bottlenecks": [
+            "issue",
+            "frontend",
+            "perf_x_hazard",
+            "perf_x_wb",
+            "perf_x_lsu",
+            "perf_x_fpu",
+            "perf_x_mtx",
+            "perf_x_txf",
+            "perf_x_fence",
+            "perf_x_arrive",
+            "perf_x_rsv",
+            "perf_x_vrf",
+            "perf_x_vrfwb"
+          ],
+          "eliminate_one_component_speedup_ceiling": {
+            "perf_x_hazard": 1.0212765957446808,
+            "perf_x_lsu": 1.0,
+            "perf_x_fpu": 1.0,
+            "perf_x_mtx": 1.0,
+            "perf_x_txf": 1.0,
+            "perf_x_fence": 1.0,
+            "perf_x_arrive": 1.0,
+            "perf_x_rsv": 1.0,
+            "perf_x_wb": 1.006993006993007,
+            "perf_x_vrf": 1.0,
+            "perf_x_vrfwb": 1.0
+          },
+          "interpretation": "counter attribution; overlapping mechanisms and critical paths require traces",
+          "performance_status": "diagnostic-only"
+        }
+      ]
+    },
+    {
+      "label": "pair-1",
+      "programs": [
+        {
+          "fractions": {
+            "perf_x_hazard": 0.020833333333333332,
+            "perf_x_lsu": 0.0,
+            "perf_x_fpu": 0.0,
+            "perf_x_mtx": 0.0,
+            "perf_x_txf": 0.0,
+            "perf_x_fence": 0.0,
+            "perf_x_arrive": 0.0,
+            "perf_x_rsv": 0.0,
+            "perf_x_wb": 0.006944444444444444,
+            "perf_x_vrf": 0.0,
+            "perf_x_vrfwb": 0.0,
+            "issue": 0.9444444444444444,
+            "frontend": 0.027777777777777776
+          },
+          "bottlenecks": [
+            "issue",
+            "frontend",
+            "perf_x_hazard",
+            "perf_x_wb",
+            "perf_x_lsu",
+            "perf_x_fpu",
+            "perf_x_mtx",
+            "perf_x_txf",
+            "perf_x_fence",
+            "perf_x_arrive",
+            "perf_x_rsv",
+            "perf_x_vrf",
+            "perf_x_vrfwb"
+          ],
+          "eliminate_one_component_speedup_ceiling": {
+            "perf_x_hazard": 1.0212765957446808,
+            "perf_x_lsu": 1.0,
+            "perf_x_fpu": 1.0,
+            "perf_x_mtx": 1.0,
+            "perf_x_txf": 1.0,
+            "perf_x_fence": 1.0,
+            "perf_x_arrive": 1.0,
+            "perf_x_rsv": 1.0,
+            "perf_x_wb": 1.006993006993007,
+            "perf_x_vrf": 1.0,
+            "perf_x_vrfwb": 1.0
+          },
+          "interpretation": "counter attribution; overlapping mechanisms and critical paths require traces",
+          "performance_status": "diagnostic-only"
+        }
+      ]
+    },
+    {
+      "label": "pair-2",
+      "programs": [
+        {
+          "fractions": {
+            "perf_x_hazard": 0.020833333333333332,
+            "perf_x_lsu": 0.0,
+            "perf_x_fpu": 0.0,
+            "perf_x_mtx": 0.0,
+            "perf_x_txf": 0.0,
+            "perf_x_fence": 0.0,
+            "perf_x_arrive": 0.0,
+            "perf_x_rsv": 0.0,
+            "perf_x_wb": 0.006944444444444444,
+            "perf_x_vrf": 0.0,
+            "perf_x_vrfwb": 0.0,
+            "issue": 0.9444444444444444,
+            "frontend": 0.027777777777777776
+          },
+          "bottlenecks": [
+            "issue",
+            "frontend",
+            "perf_x_hazard",
+            "perf_x_wb",
+            "perf_x_lsu",
+            "perf_x_fpu",
+            "perf_x_mtx",
+            "perf_x_txf",
+            "perf_x_fence",
+            "perf_x_arrive",
+            "perf_x_rsv",
+            "perf_x_vrf",
+            "perf_x_vrfwb"
+          ],
+          "eliminate_one_component_speedup_ceiling": {
+            "perf_x_hazard": 1.0212765957446808,
+            "perf_x_lsu": 1.0,
+            "perf_x_fpu": 1.0,
+            "perf_x_mtx": 1.0,
+            "perf_x_txf": 1.0,
+            "perf_x_fence": 1.0,
+            "perf_x_arrive": 1.0,
+            "perf_x_rsv": 1.0,
+            "perf_x_wb": 1.006993006993007,
+            "perf_x_vrf": 1.0,
+            "perf_x_vrfwb": 1.0
+          },
+          "interpretation": "counter attribution; overlapping mechanisms and critical paths require traces",
+          "performance_status": "diagnostic-only"
+        }
+      ]
+    },
+    {
+      "label": "pair-3",
+      "programs": [
+        {
+          "fractions": {
+            "perf_x_hazard": 0.020833333333333332,
+            "perf_x_lsu": 0.0,
+            "perf_x_fpu": 0.0,
+            "perf_x_mtx": 0.0,
+            "perf_x_txf": 0.0,
+            "perf_x_fence": 0.0,
+            "perf_x_arrive": 0.0,
+            "perf_x_rsv": 0.0,
+            "perf_x_wb": 0.006944444444444444,
+            "perf_x_vrf": 0.0,
+            "perf_x_vrfwb": 0.0,
+            "issue": 0.9444444444444444,
+            "frontend": 0.027777777777777776
+          },
+          "bottlenecks": [
+            "issue",
+            "frontend",
+            "perf_x_hazard",
+            "perf_x_wb",
+            "perf_x_lsu",
+            "perf_x_fpu",
+            "perf_x_mtx",
+            "perf_x_txf",
+            "perf_x_fence",
+            "perf_x_arrive",
+            "perf_x_rsv",
+            "perf_x_vrf",
+            "perf_x_vrfwb"
+          ],
+          "eliminate_one_component_speedup_ceiling": {
+            "perf_x_hazard": 1.0212765957446808,
+            "perf_x_lsu": 1.0,
+            "perf_x_fpu": 1.0,
+            "perf_x_mtx": 1.0,
+            "perf_x_txf": 1.0,
+            "perf_x_fence": 1.0,
+            "perf_x_arrive": 1.0,
+            "perf_x_rsv": 1.0,
+            "perf_x_wb": 1.006993006993007,
+            "perf_x_vrf": 1.0,
+            "perf_x_vrfwb": 1.0
+          },
+          "interpretation": "counter attribution; overlapping mechanisms and critical paths require traces",
+          "performance_status": "diagnostic-only"
+        }
+      ]
+    },
+    {
+      "label": "pair-4",
+      "programs": [
+        {
+          "fractions": {
+            "perf_x_hazard": 0.020833333333333332,
+            "perf_x_lsu": 0.0,
+            "perf_x_fpu": 0.0,
+            "perf_x_mtx": 0.0,
+            "perf_x_txf": 0.0,
+            "perf_x_fence": 0.0,
+            "perf_x_arrive": 0.0,
+            "perf_x_rsv": 0.0,
+            "perf_x_wb": 0.006944444444444444,
+            "perf_x_vrf": 0.0,
+            "perf_x_vrfwb": 0.0,
+            "issue": 0.9444444444444444,
+            "frontend": 0.027777777777777776
+          },
+          "bottlenecks": [
+            "issue",
+            "frontend",
+            "perf_x_hazard",
+            "perf_x_wb",
+            "perf_x_lsu",
+            "perf_x_fpu",
+            "perf_x_mtx",
+            "perf_x_txf",
+            "perf_x_fence",
+            "perf_x_arrive",
+            "perf_x_rsv",
+            "perf_x_vrf",
+            "perf_x_vrfwb"
+          ],
+          "eliminate_one_component_speedup_ceiling": {
+            "perf_x_hazard": 1.0212765957446808,
+            "perf_x_lsu": 1.0,
+            "perf_x_fpu": 1.0,
+            "perf_x_mtx": 1.0,
+            "perf_x_txf": 1.0,
+            "perf_x_fence": 1.0,
+            "perf_x_arrive": 1.0,
+            "perf_x_rsv": 1.0,
+            "perf_x_wb": 1.006993006993007,
+            "perf_x_vrf": 1.0,
+            "perf_x_vrfwb": 1.0
+          },
+          "interpretation": "counter attribution; overlapping mechanisms and critical paths require traces",
+          "performance_status": "diagnostic-only"
+        }
+      ]
+    },
+    {
+      "label": "pair-5",
+      "programs": [
+        {
+          "fractions": {
+            "perf_x_hazard": 0.020833333333333332,
+            "perf_x_lsu": 0.0,
+            "perf_x_fpu": 0.0,
+            "perf_x_mtx": 0.0,
+            "perf_x_txf": 0.0,
+            "perf_x_fence": 0.0,
+            "perf_x_arrive": 0.0,
+            "perf_x_rsv": 0.0,
+            "perf_x_wb": 0.006944444444444444,
+            "perf_x_vrf": 0.0,
+            "perf_x_vrfwb": 0.0,
+            "issue": 0.9444444444444444,
+            "frontend": 0.027777777777777776
+          },
+          "bottlenecks": [
+            "issue",
+            "frontend",
+            "perf_x_hazard",
+            "perf_x_wb",
+            "perf_x_lsu",
+            "perf_x_fpu",
+            "perf_x_mtx",
+            "perf_x_txf",
+            "perf_x_fence",
+            "perf_x_arrive",
+            "perf_x_rsv",
+            "perf_x_vrf",
+            "perf_x_vrfwb"
+          ],
+          "eliminate_one_component_speedup_ceiling": {
+            "perf_x_hazard": 1.0212765957446808,
+            "perf_x_lsu": 1.0,
+            "perf_x_fpu": 1.0,
+            "perf_x_mtx": 1.0,
+            "perf_x_txf": 1.0,
+            "perf_x_fence": 1.0,
+            "perf_x_arrive": 1.0,
+            "perf_x_rsv": 1.0,
+            "perf_x_wb": 1.006993006993007,
+            "perf_x_vrf": 1.0,
+            "perf_x_vrfwb": 1.0
+          },
+          "interpretation": "counter attribution; overlapping mechanisms and critical paths require traces",
+          "performance_status": "diagnostic-only"
+        }
+      ]
+    }
+  ],
+  "region_timing_error_bound_cycles": null,
+  "performance_gate": "not-measured",
+  "analysis_sources_sha256": {
+    "tools/performance_harness/audit.py": "c984904b174c34d03a29cee01eb3f4611212419eef9efb16ca8b2e76d7093b16",
+    "python/tnca/proton.py": "0331f4d99d2c5f32986577cd8b5ef34cd9f716038048083ff9b3c1ecd5bed734",
+    "python/tnca/costmodel.py": "71e4e96300c61f04a4c1e4018d3f0c1ea28da5c598857628119d3852c70e423c"
+  },
+  "input_sha256": {
+    "/tmp/r40_performance_harness_review/report.json": "4188ab57ad5349f44c9b264fda5041c420eae89879099eeefdfc7d2e99c682ce",
+    "/tmp/r40_performance_harness_review/capture.bin": "c93194b7a58e6600a9027089aacbeda710d72321a456417dd367fb313df5bb44",
+    "/tmp/r40_performance_harness_review/trace.chrome_trace": "73d68d30670c84010410463504edad51832a0bada5975deabb70a122fd94e294",
+    "/tmp/r40_performance_harness_review/runs.json": "540a42cbf3e2c3550f3afbdcaa0247fc29609923b6206ec59e84d19c0c2095b4",
+    "/tmp/r40_performance_harness_review/cost.json": "719cb7aa9580c1847bf5f9b31678afde839de021bb931ce258ec1fdf87f3d3cd"
+  },
+  "screens": {
+    "same-binary-single-issue-core": {
+      "schema": "tnca-resource-screen/1",
+      "identity": {
+        "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+        "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+        "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+        "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+        "clock_hz": 100000000,
+        "backend": "sim-file",
+        "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+        "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+      },
+      "demand": {
+        "single-program/issue": {
+          "work": 136,
+          "unit": "instructions",
+          "source": "raw baseline perf_issued, frozen binary 0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b"
+        }
+      },
+      "candidate": {
+        "single-program/issue": {
+          "per_cycle": 1,
+          "unit": "instructions",
+          "source": "RTL tnca_core single issue; unchanged ISA/code hypothesis"
+        }
+      },
+      "lower_bound_cycles": 136.0,
+      "resource_lower_bounds": {
+        "single-program/issue": 136.0
+      },
+      "limiting_resources": [
+        "single-program/issue"
+      ],
+      "decision": "reject-impossible-budget",
+      "cycle_budget": 73.5,
+      "predicted_cycles": null,
+      "predicted_speedup": null,
+      "placement": "not-measured",
+      "timing": "not-measured",
+      "uncertainty": "one-sided optimistic bound; omitted bottlenecks can only worsen it"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "tnca-r40-isolated-worker-checkpoint/1",
+  "functional_only": true,
+  "measured_performance": false,
+  "board_base_commit": "f2b081e",
+  "files": {
+    "python/tnca/autotune.py": "2263438442743ac653a7e44004c3a1019b5da1e6afc6645b639deb8315aece45",
+    "compiler/python/tnca_cc/rctx_spmd.py": "d722a67c07045625753521039eb361c8172100433631913337b530fa7f91e747"
+  },
+  "xclbin_sha256": "a3e43ced0b2918169bece31d7fdedbf34b195ec6dc7e4d1f5e67b83c6ea90978",
+  "profile": "core-vrf-sync-v5",
+  "backend": "fpga-u280"
+}

@@ -1,0 +1,261 @@
+{
+ "schema": "tnca-systemc-m1-validation/1",
+ "binaries": {
+  "tnca-chip": "28d7110cd57b7678a3998308df12391cc75803746e00e15aefcc8fce4fba372b",
+  "tnca-numeric-probe": "ae1bab06888192ac42bd2a331b601adee38f9bcaa7157e9d8a1c20affce518c9",
+  "tnca-tlm": "66d75bc672d0bc70db175ee263f6d6b7601e5d8d2611dcfc349235c2c5688a89"
+ },
+ "validations": {
+  "validate_numeric": {
+   "returncode": 0,
+   "wall_s": 14.014,
+   "status": "passed"
+  },
+  "validate_chip": {
+   "returncode": 0,
+   "wall_s": 0.501,
+   "status": "passed"
+  },
+  "validate_roles": {
+   "returncode": 0,
+   "wall_s": 0.461,
+   "status": "passed"
+  },
+  "validate_dma": {
+   "returncode": 0,
+   "wall_s": 0.886,
+   "status": "passed"
+  },
+  "validate_matrix": {
+   "returncode": 0,
+   "wall_s": 6.569,
+   "status": "passed"
+  },
+  "validate": {
+   "returncode": 0,
+   "wall_s": 15.979,
+   "status": "passed"
+  },
+  "validate_monitor": {
+   "returncode": 0,
+   "wall_s": 19.988,
+   "status": "passed"
+  }
+ },
+ "detail": {
+  "validate_numeric": {
+   "results": {
+    "formats": {
+     "returncode": 0,
+     "result": {
+      "checked": 866495,
+      "mismatches": 0
+     },
+     "vectors_sha256": "2a0647ca18c86dd4ae580f35e92cd7abc623917d4e6d5aefd9583cd7df428802"
+    },
+    "mul": {
+     "returncode": 0,
+     "result": {
+      "checked": 20049,
+      "mismatches": 0
+     },
+     "vectors_sha256": "29f4e799c5a1cbd6b109aa2a4a8923cfd655a968713c71b296441aa7d967186b"
+    },
+    "ints": {
+     "returncode": 0,
+     "result": {
+      "checked": 172912,
+      "mismatches": 0
+     },
+     "vectors_sha256": "5c2873b85433caa8d13089b885b926252dfb75882708edd364ce9ab9f18f7cc9"
+    },
+    "sfu": {
+     "returncode": 0,
+     "result": {
+      "checked": 78586,
+      "mismatches": 0
+     },
+     "vectors_sha256": "6951434009beec767a47cb9f39ed45d67b17feae4b1876bff26b86f01cddad3f"
+    }
+   },
+   "float_to_integer_rtl_vs_isa": {
+    "vectors": 172912,
+    "divergent": 17015,
+    "note": "rtl/core/tnca_vector_fpu.v differs from ISA sec 8.4 in four places: (1) |x| in [2^24, 2^31) converts to 0/+-1 in every mode (8-bit `csh` wraps), (2) odd |x| in [2^23, 2^24) round up under rne (`chalf` is 0 when csh = 0), (3) unsigned x in [2^31, 2^32) saturates to 0xffffffff, (4) unsigned negative x in (-1, 0) gives 0xffffffff under rne (x < -0.5) and rmi. The model follows the RTL; none of these conversions occurs in the frozen suites (opcode inventory)",
+    "examples": [
+     {
+      "signed": 0,
+      "mode": 2,
+      "input": "bf000000",
+      "isa": "00000000",
+      "rtl": "ffffffff"
+     },
+     {
+      "signed": 0,
+      "mode": 0,
+      "input": "4f000000",
+      "isa": "80000000",
+      "rtl": "ffffffff"
+     },
+     {
+      "signed": 0,
+      "mode": 1,
+      "input": "4f000000",
+      "isa": "80000000",
+      "rtl": "ffffffff"
+     },
+     {
+      "signed": 0,
+      "mode": 2,
+      "input": "4f000000",
+      "isa": "80000000",
+      "rtl": "ffffffff"
+     },
+     {
+      "signed": 0,
+      "mode": 3,
+      "input": "4f000000",
+      "isa": "80000000",
+      "rtl": "ffffffff"
+     },
+     {
+      "signed": 0,
+      "mode": 2,
+      "input": "8d249da9",
+      "isa": "00000000",
+      "rtl": "ffffffff"
+     },
+     {
+      "signed": 0,
+      "mode": 2,
+      "input": "986aad8e",
+      "isa": "00000000",
+      "rtl": "ffffffff"
+     },
+     {
+      "signed": 1,
+      "mode": 0,
+      "input": "cd8a22cb",
+      "isa": "eebba6a0",
+      "rtl": "00000000"
+     },
+     {
+      "signed": 1,
+      "mode": 1,
+      "input": "cd8a22cb",
+      "isa": "eebba6a0",
+      "rtl": "ffffffff"
+     },
+     {
+      "signed": 1,
+      "mode": 2,
+      "input": "cd8a22cb",
+      "isa": "eebba6a0",
+      "rtl": "ffffffff"
+     },
+     {
+      "signed": 1,
+      "mode": 3,
+      "input": "cd8a22cb",
+      "isa": "eebba6a0",
+      "rtl": "00000000"
+     },
+     {
+      "signed": 0,
+      "mode": 2,
+      "input": "b18b33d2",
+      "isa": "00000000",
+      "rtl": "ffffffff"
+     }
+    ]
+   }
+  },
+  "validate_matrix": {
+   "results": {
+    "mma": {
+     "mma-f16-k16": {
+      "dtype": "f16",
+      "K": 16,
+      "cycles": 3871,
+      "matrix_engine_busy_cycles": 329
+     },
+     "mma-f16-k32": {
+      "dtype": "f16",
+      "K": 32,
+      "cycles": 5583,
+      "matrix_engine_busy_cycles": 1105
+     },
+     "mma-f16-k64": {
+      "dtype": "f16",
+      "K": 64,
+      "cycles": 8525,
+      "matrix_engine_busy_cycles": 2161
+     },
+     "mma-bf16-k16": {
+      "dtype": "bf16",
+      "K": 16,
+      "cycles": 3871,
+      "matrix_engine_busy_cycles": 329
+     },
+     "mma-bf16-k32": {
+      "dtype": "bf16",
+      "K": 32,
+      "cycles": 5583,
+      "matrix_engine_busy_cycles": 1105
+     },
+     "mma-bf16-k64": {
+      "dtype": "bf16",
+      "K": 64,
+      "cycles": 8525,
+      "matrix_engine_busy_cycles": 2161
+     },
+     "mma-e5m2-k16": {
+      "dtype": "e5m2",
+      "K": 16,
+      "cycles": 3371,
+      "matrix_engine_busy_cycles": 325
+     },
+     "mma-e5m2-k32": {
+      "dtype": "e5m2",
+      "K": 32,
+      "cycles": 4143,
+      "matrix_engine_busy_cycles": 601
+     },
+     "mma-e5m2-k64": {
+      "dtype": "e5m2",
+      "K": 64,
+      "cycles": 6639,
+      "matrix_engine_busy_cycles": 2161
+     },
+     "mma-e4m3-k16": {
+      "dtype": "e4m3",
+      "K": 16,
+      "cycles": 3371,
+      "matrix_engine_busy_cycles": 325
+     },
+     "mma-e4m3-k32": {
+      "dtype": "e4m3",
+      "K": 32,
+      "cycles": 4143,
+      "matrix_engine_busy_cycles": 601
+     },
+     "mma-e4m3-k64": {
+      "dtype": "e4m3",
+      "K": 64,
+      "cycles": 6639,
+      "matrix_engine_busy_cycles": 2161
+     }
+    },
+    "rslice": {
+     "sliced": 2440,
+     "unsliced_failed": true
+    },
+    "faults": {
+     "trap": "MODEL_FAULT status=1 code=64",
+     "illegal": "ILLEGAL_INSTRUCTION"
+    }
+   },
+   "oracle": "tools/model/fp32.py mma_ref/fma_ref with tools/model/floatfmt.py widening (exact Fractions)"
+  }
+ }
+}

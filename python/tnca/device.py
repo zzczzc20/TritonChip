@@ -50,6 +50,11 @@ BENCH_NAME = {
     'core-vrf-sync-v4/slow': 'tnca_device_vrf4_slow.vvp',
     'core-vrf-sync-v5': 'tnca_device_vrf5.vvp',
     'core-vrf-sync-v5/slow': 'tnca_device_vrf5_slow.vvp',
+    # R40-04: external memory. Every address from the heap up goes through
+    # rtl/fpga/tnca_axi_bridge.v to an AXI memory, as on the U280's HBM image;
+    # the architecture is v5's. Its timing is the AXI model's (+axi_* plusargs,
+    # TNCA_DEVICE_PLUSARGS).
+    'core-vrf-sync-v5/hbm': 'tnca_device_vrf5_hbm.vvp',
 }
 
 # Parameters a profile's device is elaborated with. Both profiles come from
@@ -62,7 +67,13 @@ _SLOW = ['-P', 'tnca_device.MEM_LATENCY=7',
 # Which microarchitecture a profile's device is is no longer said here: the
 # profile itself is compiled into it, as one generated header
 # (profiles.uarch_header). What is left is the platform's own business, the
-# memory model a '/slow' variant runs on.
+# memory model a variant runs on: '/slow' above, and '/hbm' below.
+#
+# R40-04: the AXI window of the /hbm memory mode, in 64-bit words (32 MiB).
+HBM_SIM_WORDS = 1 << 22
+HBM_LOCAL_LIMIT = 0x20000
+_HBM = ['-P', 'tnca_device.DATA_AXI=1', '-P', f'tnca_device.AXI_WORDS={HBM_SIM_WORDS}',
+        '-P', f'tnca_device.LOCAL_LIMIT={HBM_LOCAL_LIMIT}']
 
 
 # R39 ablations of the hardware switches on the device simulation:
@@ -73,7 +84,16 @@ _SLOW = ['-P', 'tnca_device.MEM_LATENCY=7',
 # overrides are part of the cache key, and archbench records them with
 # `--set` like any other knob.
 RTL_SWITCHES = ('VRF_BYPASS', 'FE_NOBUBBLE', 'VRF_PREFETCH', 'RCTX_SWITCH', 'LSU_INFLIGHT',
-                'FPU_OVERLAP', 'MTX_ABUF')
+                'FPU_OVERLAP', 'MTX_ABUF',
+                # R40-04's AXI mechanisms, for an /hbm memory mode
+                # (tb/device/tnca_device.v): burst lines, buffered lines,
+                # lines ahead, writes in flight
+                'AXI_RAM_CACHE', 'AXI_LOCAL_PIPE', 'AXI_LINE', 'AXI_LB_N', 'AXI_PF', 'AXI_WAIT_N', 'AXI_OUT_N')
+# Of those, the ones that belong to the /hbm memory mode's bench rather than to
+# the device: they are parameters of tb/device/tnca_device.v (its AXI bridge),
+# so they go there by -P like the memory model's own, not into the header.
+BENCH_SWITCHES = ('AXI_RAM_CACHE', 'AXI_LOCAL_PIPE', 'AXI_LINE', 'AXI_LB_N', 'AXI_PF',
+                  'AXI_WAIT_N', 'AXI_OUT_N')
 
 
 def rtl_overrides():
@@ -91,13 +111,31 @@ def rtl_overrides():
 
 def bench_params(profile):
     """The -P arguments this profile's device is elaborated with: the memory
-    model only. The profile, and any TNCA_RTL_PARAMS ablation, is the header."""
-    return list(_SLOW) if profile.endswith('/slow') else []
+    model only -- a variant's, and any TNCA_RTL_PARAMS ablation of the /hbm
+    bench's AXI bridge (BENCH_SWITCHES). The profile, and every other
+    ablation, is the header."""
+    params = list(_SLOW) if profile.endswith('/slow') else []
+    if profile.endswith('/hbm'):
+        params += _HBM
+    for k, v in rtl_overrides():
+        if k in BENCH_SWITCHES:
+            params += ['-P', f'tnca_device.{k}={v}']
+    return params
 
 
 def uarch_header(profile):
     """The generated header this profile's device is compiled with."""
-    return profiles.uarch_header(base_profile(profile), rtl_overrides())
+    return profiles.uarch_header(base_profile(profile),
+                                 [(k, v) for k, v in rtl_overrides() if k not in BENCH_SWITCHES])
+
+
+def memory_limit(profile):
+    """The end of the device memory a Session's heap may use, in bytes: the
+    512 KiB the on-chip devices have, or for an /hbm memory mode the AXI
+    window above the on-chip region."""
+    if profile.endswith('/hbm'):
+        return HBM_LOCAL_LIMIT + HBM_SIM_WORDS * 8
+    return 0x80000
 
 
 def base_profile(name):
@@ -463,7 +501,10 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
              '-y', os.path.join(rtl, 'core'),
              '-y', os.path.join(rtl, 'common'),
              '-y', os.path.join(rtl, 'gen'),
-             '-y', os.path.join(tb, 'common')]
+             '-y', os.path.join(tb, 'common'),
+             # rtl/fpga for the AXI bridge an /hbm memory mode puts in front
+             # of its memory; a module there is only elaborated if named.
+             '-y', os.path.join(rtl, 'fpga')]
             + bench_params(profile)
             + ['-o', target, source, shell])
     if verbose:

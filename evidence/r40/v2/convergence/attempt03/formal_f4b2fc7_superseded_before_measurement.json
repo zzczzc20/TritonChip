@@ -1,0 +1,15 @@
+{
+  "status": "superseded-before-measurement",
+  "software_tree": "files:3520df32c20aefcc593c0da6ff80ab2e9aa03556ecb1a942ac709a916903bec7",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "clock_hz": 90000000,
+  "hbm_bytes": 4294967296,
+  "deadline_cycles": 24000000000,
+  "completed": [],
+  "required_gate_promotions": [],
+  "scope": "Serial original runtime experiments and full three-block audits; same image/product; no synthesis, programming or workload shrink",
+  "observed_utc": "2026-10-18T20:38:40.615177+00:00",
+  "upstream_status": "running",
+  "upstream_current": "full-original-functional-delivery",
+  "reason": "Signed download range repair changes product identity; rebind all formal measurements before any board experiment starts"
+}

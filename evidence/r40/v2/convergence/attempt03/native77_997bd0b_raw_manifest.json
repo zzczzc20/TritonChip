@@ -1,0 +1,8 @@
+{
+  "schema": "tnca-complete-native77-raw-archive/1",
+  "observed_utc": "2026-10-18T19:46:20.565613+00:00",
+  "path": "/home/zzhouch/tnca_evidence_r40_native77_997bd0b/native77_hbm_failure_raw.tar.gz",
+  "bytes": 25909168,
+  "sha256": "4df9c181bcaf03000bbefabd3b6c445e9e883888fa80519763a2368d229637bb",
+  "scope": "Complete original native77 raw records, compiler bundles, final checkpoint, physical capability audit and original HBM14 failure; HBM14 and full generation model are not passed"
+}

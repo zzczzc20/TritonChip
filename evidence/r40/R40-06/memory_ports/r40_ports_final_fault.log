@@ -1,0 +1,5 @@
+GRID REAL CORES PASS N=1 memory=1 ports=1 phase=0 programs=455 cycles=42700
+GRID REAL CORES PASS N=1 memory=1 ports=1 phase=1 programs=455 cycles=78849
+GRID COHERENT HOST PASS N=1 downloads=457 uploads=2
+SINGLE MEMORY PROTOCOL FAULT PASS
+tb/top/tb_grid_cores.v:147: $finish called at 841040000 (1ps)

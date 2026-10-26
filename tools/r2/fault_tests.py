@@ -17,10 +17,12 @@ working has not drained; it has died politely.
 """
 import argparse
 import os
+import signal
 import struct
 import sys
 import tempfile
 import time
+from unittest.mock import patch
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
@@ -396,9 +398,32 @@ def err05(log):
         # been answered, with a status that would be believed if the
         # transport looked only at the newest line in the file.
         stale_seq = max(1, s.dev.seq - 3)
-        with open(s.dev.rsp, 'w') as fh:
-            fh.write(f"{stale_seq} 1 255 4095" + chr(10))   # FAULT, trap 0xff
-        reply = s.dev.ping()
+        def pause_device():
+            # Synchronize the injection with the real reader. Without this,
+            # a fast RTL PING overwrites the forged file before the host ever
+            # observes it, so the assertion tests OS scheduling instead.
+            os.kill(s.dev.proc.pid, signal.SIGSTOP)
+            _, state = os.waitpid(s.dev.proc.pid, os.WUNTRACED)
+            assert os.WIFSTOPPED(state), 'device did not stop for reply injection'
+
+        pause_device()
+        observed = []
+        read_reply = s.dev._read_reply
+        def read_stale_then_resume():
+            got = read_reply()
+            if not observed:
+                observed.append(got.seq if got else None)
+                os.kill(s.dev.proc.pid, signal.SIGCONT)
+            return got
+        try:
+            with open(s.dev.rsp, 'w') as fh:
+                fh.write(f"{stale_seq} 1 255 4095" + chr(10))   # FAULT, trap 0xff
+            with patch.object(s.dev, '_read_reply', side_effect=read_stale_then_resume):
+                reply = s.dev.ping()
+        finally:
+            os.kill(s.dev.proc.pid, signal.SIGCONT)
+        ok &= observed == [stale_seq]
+        log.append(f"    stale sequence actually observed: {observed == [stale_seq]}")
         log.append(f"    forged a FAULT reply for sequence {stale_seq}, then "
                    f"asked for {reply.seq}")
         log.append(f"    the transport returned: {reply} "
@@ -407,15 +432,19 @@ def err05(log):
 
         # A reply from ahead of the request is impossible without something
         # else writing the mailbox, and is reported rather than accepted.
-        with open(s.dev.rsp, 'w') as fh:
-            fh.write(f"{s.dev.seq + 100} 0 0 0" + chr(10))
+        pause_device()
         try:
-            s.dev.ping()
-            log.append("    a reply from the future: ACCEPTED (bad)")
-            ok = False
-        except DeviceLost as e:
-            log.append(f"    a reply ahead of the request -> [{e.code}] "
-                       f"{e.message[:48]}")
+            with open(s.dev.rsp, 'w') as fh:
+                fh.write(f"{s.dev.seq + 100} 0 0 0" + chr(10))
+            try:
+                s.dev.ping()
+                log.append("    a reply from the future: ACCEPTED (bad)")
+                ok = False
+            except DeviceLost as e:
+                log.append(f"    a reply ahead of the request -> [{e.code}] "
+                           f"{e.message[:48]}")
+        finally:
+            os.kill(s.dev.proc.pid, signal.SIGCONT)
         s.poisoned = True
 
         # And an old EPOCH's handles are refused, which is the other half of

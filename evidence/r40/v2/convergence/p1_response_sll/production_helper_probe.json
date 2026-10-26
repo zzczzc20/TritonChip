@@ -1,0 +1,86 @@
+{
+  "files": {
+    "r40_response_guidance_probe_20261017/probe.tcl": {
+      "sha256": "386a058e8c9b0534d56c0dd97acdd1e9d5f24db667c7bcc502a8c83f6e0706db",
+      "bytes": 4726
+    },
+    "r40_response_guidance_probe_20261017/stdout.log": {
+      "sha256": "a8951c31a02e60a51fe5f6fa8ded0df5171e20ac7718ba4e7c6046115af54e6f",
+      "bytes": 6303
+    },
+    "r40_response_guidance_probe_20261017/identity.json": {
+      "sha256": "c53db30ac00c3fd746b85a1ad94632c9378b6f5d755ea1d62e6d910d8c14c167",
+      "bytes": 271
+    },
+    "r40_response_guidance_probe_20261017/runner.exit": {
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2
+    },
+    "r40_response_guidance_probe_20261017/wait_and_probe.py": {
+      "sha256": "4895a4fe2db48faeeeb386779de4b2842e3f1bfb2422c873f91d96ab9c2443aa",
+      "bytes": 944
+    },
+    "r40_response_guidance_probe_v2_20261017/probe.tcl": {
+      "sha256": "b17b7a2ba480fb09e7c04f32cf0902fafa7e7b39abc7eccac3321151719a7b20",
+      "bytes": 5098
+    },
+    "r40_response_guidance_probe_v2_20261017/stdout.log": {
+      "sha256": "828cb6a9cf8a39223cdc920315a971de1b680a18e8400363ee9efdbe829dedbd",
+      "bytes": 7323
+    },
+    "r40_response_guidance_probe_v2_20261017/guidance_applied.tsv": {
+      "sha256": "f0e52923953f155dc1b5f721c0bffe6aaafbf014cd07918038c6b9e82f86a8dd",
+      "bytes": 35998
+    },
+    "r40_response_guidance_probe_v2_20261017/identity.json": {
+      "sha256": "d125c159e6bea732667f67a4643fce47f655a5875793643b81f6f0bd12c87d1e",
+      "bytes": 271
+    },
+    "r40_response_guidance_probe_v2_20261017/runner.exit": {
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "bytes": 2
+    },
+    "r40_response_guidance_probe_v2_20261017/wait_and_probe.py": {
+      "sha256": "4895a4fe2db48faeeeb386779de4b2842e3f1bfb2422c873f91d96ab9c2443aa",
+      "bytes": 944
+    },
+    "r40_response_guidance_probe_v3_20261017/probe.tcl": {
+      "sha256": "5e62d0688d1cc9fcf3b673b5ef14c46adeb4a9b908c2255f7b39d512611bd58f",
+      "bytes": 3060
+    },
+    "r40_response_guidance_probe_v3_20261017/stdout.log": {
+      "sha256": "29f450300eadaf6e2503f386fb8338658ef336ee756f01fcd5cab04e4c197283",
+      "bytes": 7046
+    },
+    "r40_response_guidance_probe_v3_20261017/guidance_applied.tsv": {
+      "sha256": "f0e52923953f155dc1b5f721c0bffe6aaafbf014cd07918038c6b9e82f86a8dd",
+      "bytes": 35998
+    },
+    "r40_response_guidance_probe_v3_20261017/identity.json": {
+      "sha256": "927471439377f77e27b5a688730543d310a2e61d6987c26751e8458e0d858bcf",
+      "bytes": 271
+    },
+    "r40_response_guidance_probe_v3_20261017/runner.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "r40_response_guidance_probe_v3_20261017/wait_and_probe.py": {
+      "sha256": "4895a4fe2db48faeeeb386779de4b2842e3f1bfb2422c873f91d96ab9c2443aa",
+      "bytes": 944
+    }
+  },
+  "guided_registers": 1034,
+  "final_exit_code": 0,
+  "schema": "tnca-r40-production-sll-helper-probe/1",
+  "archive": "production_helper_probe.tar.gz",
+  "archive_sha256": "fe28e4c006a77a3b46cf45bc80d9ac611f9cc09ff3e969e68421e3f335c93eea",
+  "scope": "Exact production helper executed in Vivado2023.2 on retained small control DCP. In-memory attributes only; no implementation or checkpoint write.",
+  "prior_failures": {
+    "first": "concat converted Vivado cell collection into invalid set_property objects; corrected to one cell/collection per call",
+    "second": "helper body accidentally substituted into success-marker text by a broad string replacement; actual517pairs/1034attribute checks passed before marker syntax error; fixed exact placeholder replacement"
+  },
+  "next_command": "Audit final full-image actual LOC/BEL and all response setup/hold paths",
+  "on_success": "Use targeted existing-FF guidance in final physical binding; retain complete image clock/CDC/route qualification",
+  "on_failure": "Keep actual offending link/path and fix only diagnosed guidance; do not change clock/cores/workload",
+  "required_gate_promotions": []
+}

@@ -1,0 +1,2 @@
+PASS op.attention_decode/tiny/fp16-b1-h2-l16-d16
+r40-frozen-residency-suite PASS (1/1; full_inventory=False)

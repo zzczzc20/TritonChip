@@ -1,0 +1,2 @@
+HARDWARE MULTICORE METRICS {"cores": [{"completed": 257, "core": 0, "issued": 257, "occupied_cycles": 50044}], "peak_active": 1}
+NATIVE MULTICORE TORCH PASS cores=1 elements=4097 kernels=1 whole_grid_launches=1 tensor_staging=0

@@ -1,0 +1,4 @@
+MMIO CACHE HANDOFF PASS disabled
+tb/fpga/tb_mmio_cache_handoff.v:37: $finish called at 142000 (1ps)
+MMIO CACHE HANDOFF PASS snapshot drain range faults reset
+tb/fpga/tb_mmio_cache_handoff.v:63: $finish called at 981000 (1ps)

@@ -1,0 +1,561 @@
+{
+ "schema": "tnca-r40-final-implementation-plan/1",
+ "recorded_utc": "2026-10-19T11:15:00Z",
+ "state": "plan-only; no RTL change, no Vivado run, no board access",
+ "repo_head": "b34daa6",
+ "baseline": {
+  "attempt": 3,
+  "hardware_source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "operating_clock_hz": 90000000,
+  "vpp_autoscaled_mhz": 90.8,
+  "timing_100mhz": {
+   "report": "hw_bb_locked_timing_summary_routed.rpt",
+   "report_sha256": "be756df0aae8ccbbf39c5e390f0808fac27e7e6e9056b33189604ca5f4e228b3",
+   "kernel_clock": "clk_kernel_00_unbuffered_net",
+   "wns_ns": -1.002,
+   "tns_ns": -6679.026,
+   "failing_endpoints": 17332,
+   "total_endpoints": 1056119,
+   "whs_ns": 0.0,
+   "hold_failing_endpoints": 0,
+   "kernel_wns_at_90mhz_ns": 0.11,
+   "progression": [
+    {
+     "stage": "post-place estimate",
+     "wns_ns": -1.154,
+     "tns_ns": -2861.803
+    },
+    {
+     "stage": "post phys_opt_design",
+     "wns_ns": -1.129,
+     "tns_ns": -2849.127
+    },
+    {
+     "stage": "router initial",
+     "wns_ns": -0.559,
+     "tns_ns": -543.923
+    },
+    {
+     "stage": "router global iteration 0",
+     "wns_ns": -2.23,
+     "tns_ns": -12545.532
+    },
+    {
+     "stage": "end of route",
+     "wns_ns": -1.006,
+     "tns_ns": -7114.495
+    },
+    {
+     "stage": "router post-route physopt",
+     "wns_ns": -1.002,
+     "tns_ns": -6679.026
+    }
+   ]
+  },
+  "utilization_routed": {
+   "clb_percent": {
+    "SLR0": 95.24,
+    "SLR1": 88.39,
+    "SLR2": 85.41
+   },
+   "lut_percent": {
+    "SLR0": 73.45,
+    "SLR1": 75.24,
+    "SLR2": 65.21
+   },
+   "ff_percent": {
+    "SLR0": 18.16,
+    "SLR1": 16.71,
+    "SLR2": 12.2
+   },
+   "ramb36": {
+    "SLR0": 130,
+    "SLR1": 145,
+    "SLR2": 114,
+    "per_slr_capacity": 672
+   },
+   "uram": 0,
+   "dsp": {
+    "SLR0": 171,
+    "SLR1": 189,
+    "SLR2": 175
+   },
+   "sll": {
+    "SLR0_SLR1": {
+     "used": 14392,
+     "available": 23040,
+     "percent": 62.47
+    },
+    "SLR1_SLR2": {
+     "used": 8077,
+     "available": 23040,
+     "percent": 35.06
+    },
+    "laguna_registered_approx": 2580
+   },
+   "router_localized_sll_warning_route_35_3311": false,
+   "initial_estimated_congestion_level": 6,
+   "high_pin_utilization_clbs": 2061
+  },
+  "runtime": {
+   "link_started_utc": "2026-10-17T21:20:46Z",
+   "vpp_finished_utc": "2026-10-18T08:24:57Z",
+   "end_to_end": "11h04m",
+   "kernel_synth_design": "1h08m",
+   "link_design": "18m37s",
+   "opt_design": "11m35s",
+   "place_design": "2h34m07s",
+   "phys_opt_design": "19m10s",
+   "route_design": "4h42m30s",
+   "write_bitstream": "25m41s",
+   "route_peak_memory_gb": 30.9,
+   "route_min_free_physical_mb": 421
+  }
+ },
+ "correctness": {
+  "rtl_tb_commits_after_54249f7f": [],
+  "flow_commits_after_54249f7f": [
+   "c2427cf",
+   "9a8e3e6",
+   "18466e2",
+   "da76111",
+   "5fdcffd"
+  ],
+  "flow_commits_effect": "post-route audit/diagnose Tcl only; not synthesis/placement inputs",
+  "bound_input_comparison": {
+   "inputs": 105,
+   "byte_identical_to_head": 103,
+   "differing": [
+    "flow/fpga/audit_r40_placed_cores.tcl",
+    "flow/fpga/diagnose_r40_checkpoint.tcl"
+   ]
+  },
+  "decoder_fix": {
+   "commit": "3d08eeb",
+   "subject": "r40: keep illegal opcode classification from poisoning other contexts",
+   "in_attempt1_cf330dc": false,
+   "in_attempt2_0c39793": true,
+   "in_attempt3_54249f7f": true,
+   "loaded_image_contains": true,
+   "final_image": "inherit; rerun its native configuration regressions on the final candidate"
+  },
+  "changes": [
+   {
+    "id": "M4",
+    "title": "vector FPU float-to-int conversion per ISA sec 8.4",
+    "file": "rtl/core/tnca_vector_fpu.v:368-416",
+    "defects": [
+     "8-bit csh wraps for |x| in [2^24,2^31) -> 0/+-1",
+     "csh==0 makes chalf 0 -> odd |x| in [2^23,2^24) rounds up under rne",
+     "u32 saturates at cexp>=158 -> [2^31,2^32) wrongly 0xffffffff",
+     "u32 negative x in (-1,0) -> 0xffffffff under rne(x<-0.5)/rmi"
+    ],
+    "evidence": "evidence/r40/v3/systemc_m1/README.md sec 7; 17015 of 172912 vectors",
+    "frozen_suite_use": false,
+    "in_loaded_image": "defective",
+    "design": "single 32-bit right shift of {cman,8'b0} by sh=158-cexp (no wrap), explicit sh==0 tie guard, s32 saturate cexp>=158, u32 saturate cexp>=159, u32 negatives -> 0",
+    "resource_delta": "neutral or lower (32-bit instead of 64-bit shifter per lane)",
+    "recommendation": "include",
+    "condition": "oracle 0 diffs vs ISA-text reference; vector_fpu OOC worst path not worse; else drop to erratum"
+   },
+   {
+    "id": "C1",
+    "title": "MSHR service snapshot",
+    "commit": "658c811",
+    "branch": "r40-ms-service-snapshot",
+    "file": "rtl/nuca/tnca_nuca_slice.v",
+    "in_loaded_image": false,
+    "functional_evidence": "cycle miter vs 54249f7f + independent oracle + mutation (functional_report.json)",
+    "physical_evidence": null,
+    "recommendation": "conditional-include",
+    "condition": "census shows slice MSHR/data-RAM families failing, or slice OOC WNS < +1.0 ns"
+   },
+   {
+    "id": "stash1",
+    "title": "MEM_PORTS in tnca_top (r40-memory-ports batch)",
+    "recommendation": "exclude",
+    "reason": "superseded by merged multicore memory ports"
+   },
+   {
+    "id": "tmu_page",
+    "title": "relocate TMU MMIO page out of device window",
+    "recommendation": "exclude",
+    "reason": "software reservation 1a7c643 audited; relocation changes compiler dco.py and runtime map"
+   }
+  ]
+ },
+ "timing_100mhz": {
+  "reported_coverage": {
+   "paths": 10,
+   "endpoint_fraction": 0.000577,
+   "tns_fraction": 0.001465
+  },
+  "known_groups": [
+   {
+    "source": "control/memory_active_ports_reg[*]",
+    "destination": "g_tile[0]/u_core/g_lsu_pair.u_lsu/g_unit[*].u/pending_reg",
+    "reported": 2,
+    "worst_slack_ns": -1.002,
+    "levels": 14,
+    "logic_ns": 0.872,
+    "route_ns": 10.311,
+    "slr_hops": [
+     "1->2",
+     "2->1",
+     "1->0"
+    ]
+   },
+   {
+    "source": "control/memory_active_ports_reg[*]",
+    "destination": "g_tile[0]/u_core/g_lsu_pair.u_lsu/g_unit[*].u/partial_reg",
+    "reported": 1,
+    "worst_slack_ns": -0.994,
+    "levels": 14,
+    "logic_ns": 0.955,
+    "route_ns": 10.22,
+    "slr_hops": [
+     "1->2",
+     "2->1",
+     "1->0"
+    ]
+   },
+   {
+    "source": "control/memory_active_ports_reg[*]",
+    "destination": "g_tile[0]/u_core/u_txf/xbuf_reg (R)",
+    "reported": 7,
+    "worst_slack_ns": -0.974,
+    "levels": 16,
+    "logic_ns": 0.869,
+    "route_ns": 9.915,
+    "slr_hops": [
+     "1->2",
+     "2->1",
+     "1->0"
+    ]
+   }
+  ],
+  "cone": [
+   "memory_active_ports (SLR1)",
+   "tnca_memory_mode single_port/legal_source",
+   "outlet_rsp_valid fo517",
+   "home_link[2] idle (SLR1->SLR2->SLR1)",
+   "all_idle",
+   "host_allow (SLR1->SLR0)",
+   "tile0 idle_host_mux use_host fo233",
+   "core c_ready",
+   "LSU pending/partial, txf xbuf/t_i3"
+  ],
+  "phys_opt_evidence": "post-place phys_opt critical-path phase processed 40 nets, all g_tile[0].u_tile/u_core/u_txf (xbuf, t_i3)",
+  "census": {
+   "script": "tools/r40/census_failing_endpoints.tcl",
+   "grouper": "tools/r40/group_failing_paths.py",
+   "command": "vivado -mode batch -nojournal -source tools/r40/census_failing_endpoints.tcl -tclargs <A3 level0_wrapper_routed.dcp> <fresh_out> 25000",
+   "core_query": "get_timing_paths -setup -group clk_kernel_00_unbuffered_net -max_paths 25000 -nworst 1 -unique_pins -slack_lesser_than 0",
+   "extras": [
+    "report_design_analysis -timing -setup -max_paths 25000 -show_all (+ -csv)",
+    "report_design_analysis -logic_level_distribution",
+    "residual what-if: in-memory exclusion of the known cone, never saved"
+   ],
+   "estimated_cost": {
+    "wall_min": [
+     50,
+     70
+    ],
+    "cpu_hours": 1.5,
+    "threads": 2,
+    "peak_rss_gb": [
+     17,
+     19
+    ]
+   },
+   "measured_basis": "90 MHz audit on same DCP: open_checkpoint 10.5-12.4 min/13.6 GB, update_timing 10.6 min/16.2 GB",
+   "precondition": "board campaign idle and >= 24 GB free on FPGA host; owner approval",
+   "host_state_observed": "62 GB total, ~19 GB available, other users' Vivado jobs ~40 GB RSS"
+  },
+  "fixes": [
+   {
+    "id": "M1",
+    "file": "rtl/noc/tnca_idle_host_mux.v",
+    "change": "registered host grant; c_ready = n_ready && !host_busy; host request issued the cycle after grant",
+    "removes": "host_allow from tile0 c_ready/LSU/txf (fo233 net, all 10 reported endpoints)",
+    "cost": "+1 cycle per host word access; few FF",
+    "recommendation": "include"
+   },
+   {
+    "id": "M2",
+    "file": "rtl/tnca_top.v:257 + tile0 host mux",
+    "change": "host_allow registered at source (SLR1) and in tile0 (SLR0)",
+    "invariant": "host_allow consumed only while h_valid; MMIO serialization keeps its inputs constant then",
+    "assertion": "grant while live host_allow==0 is fatal",
+    "recommendation": "include"
+   },
+   {
+    "id": "M3",
+    "files": [
+     "rtl/fpga/tnca_multicore_mmio.v",
+     "rtl/fpga/tnca_memory_mode.v",
+     "rtl/fpga/tnca_line_axi.v"
+    ],
+    "change": "registered local copies of memory_active_ports (single_port), axi_base, axi_size (and size-64), admission_limit; 2-cycle MMIO settle after any such write",
+    "invariant": "copies settle before any admission; assertion on mismatch with traffic",
+    "cost": "~600 FF mostly SLR0 adapters, LUT <= 0",
+    "recommendation": "include"
+   },
+   {
+    "id": "C2",
+    "file": "rtl/common/tnca_line_link.v",
+    "change": "per-stage registered occupancy; drop redundant m_rsp_valid idle term",
+    "condition": "structural audit or residual census still shows a two-SLR idle cone",
+    "recommendation": "conditional"
+   }
+  ],
+  "proof": {
+   "structural_audit": "tools/r40/audit_cross_slr_cones.tcl on A3 ulp_tnca_u50_1_0.dcp (before) and candidate synth_r40_multicore.tcl synth.dcp (after), with place_r40_multicore.tcl hook dry-run",
+   "pass_criteria": [
+    "no tile endpoint in combinational fanout of memory_active_ports",
+    "no tile*/core/* endpoint in fanout of host_allow",
+    "no tile endpoint in fanout of home_link_idle",
+    "longest path through these nets <= 6 LUT levels, register-bounded within two adjacent SLR pblocks",
+    "placement hook succeeds on new hierarchy"
+   ],
+   "residual_rule": "launch only if residual what-if census WNS >= 0 on A3 routes, or each residual group has a committed fix with unit OOC WNS >= +1.0 ns, and structural audit passes; otherwise report and do not launch"
+  },
+  "residual_candidate_classes": [
+   {
+    "class": "slice MSHR -> data RAM",
+    "evidence": "R4 module 18 levels 9.203 ns (7.757 net), module WNS +0.361",
+    "fix": "C1"
+   },
+   {
+    "class": "high-fanout per-core enables/resets moved to BUFG",
+    "evidence": "runme.log BUFG insertion: ln_wlo 4080, lane_addr ~1700-1760, VRF d_valid 1653, dispatch queue reset/instret ~4725, TMU tb clear 1081, txf t_rank 1014",
+    "fix": "registered replication per region; no DONT_TOUCH"
+   },
+   {
+    "class": "SLR0 congested region paths",
+    "evidence": "initial congestion level 6, CLEM_X27..66 Y77..143",
+    "fix": "add no SLR0 logic; census decides"
+   }
+  ]
+ },
+ "routing_risk": {
+  "a3_contains": [
+   "SSI_SpreadSLLs",
+   "whole-SLR pblocks",
+   "USER_SLL_REG response pairs",
+   "local TMU replicas",
+   "registered TMU writes and TLW pipe",
+   "registered victim select/rank",
+   "cache data pipeline",
+   "balanced victim tree",
+   "synchronous tag bank",
+   "slice KEEP_HIERARCHY"
+  ],
+  "a3_lacks": [
+   "registered FIFO heads (screen rejected them)"
+  ],
+  "history": [
+   {
+    "run": "09ebe06",
+    "clb": [
+     97.59,
+     96.54,
+     86.54
+    ],
+    "peak_sll_column": "204% SLR1-2 / 123% SLR0-1",
+    "result": "congestion level 7"
+   },
+   {
+    "run": "A1 cf330dc",
+    "clb": [
+     95.83,
+     90.81,
+     87.37
+    ],
+    "peak_sll_column": "203% / 112%",
+    "result": "route failed congestion level 7"
+   },
+   {
+    "run": "A2 0c39793",
+    "clb": [
+     93.53,
+     87.7,
+     86.07
+    ],
+    "peak_sll_column": "213% / 124%",
+    "result": "2 resource-conflict + 2 antenna nets"
+   },
+   {
+    "run": "A3 54249f7f",
+    "clb": [
+     95.24,
+     88.39,
+     85.41
+    ],
+    "peak_sll_column": "no Route 35-3311 warning",
+    "result": "routed; WNS -1.002"
+   }
+  ],
+  "new_change_effects": {
+   "M1": "0 SLL, +few FF",
+   "M2": "0 SLL (crossing becomes registered)",
+   "M3": "0 SLL (crossings become reg->reg), ~+600 FF",
+   "M4": "0 SLL, LUT <= 0",
+   "C1": "0 SLL, ~+60 FF/slice"
+  },
+  "risks": [
+   "SLR0 CLB headroom ~0.6 pt vs A1 failure",
+   "placement-hook fatal on renamed hierarchy (~1.2 h into link)",
+   "host memory: route peak 30.9 GB on 62 GB shared host",
+   "hold slack 0.000 (router detours)",
+   "placer perturbation from netlist changes"
+  ]
+ },
+ "optional_features": [
+  {
+   "id": "a",
+   "title": "R40-07.matrix MMA overlap",
+   "gate": "S_geo >= 1.2 (v3 deferred, target)",
+   "estimated_s_geo": [
+    1.02,
+    1.05
+   ],
+   "resource": "+300 FF, +0.5-1k LUT per core",
+   "recommendation": "exclude",
+   "reason": "cannot reach 1.2x"
+  },
+  {
+   "id": "a2",
+   "title": "R40-07.matrix 2 rows/cycle + prefetch",
+   "estimated_s_geo_ceiling": [
+    1.1,
+    1.13
+   ],
+   "resource": "+20-30k LUT, +4-6k FF, +32-48 DSP per core; SLR0 CLB ~98%",
+   "recommendation": "exclude",
+   "reason": "fails 1.2x and enters A1 failure regime; R41-04 targets 1.5"
+  },
+  {
+   "id": "b",
+   "title": "code store 256 KiB",
+   "gate": "none",
+   "resource": "+32 RAMB36 per core",
+   "side_effect": "MEM_BASE 0x20000 -> >=0x40000 changes all device data addresses (runtime, compiler, tb/device, archbench)",
+   "recommendation": "exclude",
+   "reason": "no gate; refused kernels have fallbacks; int64 case still exceeds 240 KiB wide-code limit"
+  },
+  {
+   "id": "c",
+   "title": "32 B/core/cycle ingress",
+   "gate": "R40-04.ingress deferred (v3); R41-05",
+   "resource": "~+860 SLL per boundary, +10-20k LUT per SLR",
+   "recommendation": "exclude",
+   "reason": "very high risk on the A1/A2 failure mechanism; measured core ceiling 2.3-3.7 B/cycle"
+  }
+ ],
+ "verification": {
+  "contract_rules": {
+   "r40_3.4_l146": "inherit R39 merge gates: make r37, core/core-vrf/core-slowmem/core-ooo/top/nuca, r38-baseline-check, r38-profiler, r38-torch, r38-tdesc, R39 role/pair",
+   "r40_3.4_l150": "lint/elaboration -> directed fast/slow/ooo/backpressure -> OOC -> link; report per-SLR+chip LUT/FF/BRAM/URAM/DSP, SLR crossings, post-route setup/hold, CDC, DRC; no silent tool down-clock sign-off"
+  },
+  "rtl_gb10": [
+   {
+    "step": "lint",
+    "cmd": "make lint + explicit elaboration of rtl/board/tnca_multicore_hbm_xo.v (not covered by make lint)"
+   },
+   {
+    "step": "core",
+    "cmd": "make core core-vrf core-slowmem core-ooo core-r39sw5; decoder set make -j3 core core-vrf core-slowmem + tb_decoder",
+    "note": "core-r39sw5 (image profile) not in CI"
+   },
+   {
+    "step": "M4",
+    "cmd": "tb_vector_fpu_oracle 172912 vectors vs ISA-text reference (0 diffs); new directed large-magnitude/u32-negative/4-mode test; t03_fp, t21_cvt, tb_cvt_xls"
+   },
+   {
+    "step": "M1/M2",
+    "cmd": "tools/r40/coherent_host_tests.py extended (#1 c_ready probe, random interleave, stale-grant assertion); make r40-coherent-host"
+   },
+   {
+    "step": "M3",
+    "cmd": "tools/r40/memory_control_tests.py; tools/r40/line_axi_tests.py; make r40-memory-ports r40-line-axi r40-cache-maintenance r40-multicore-dma; new settle-window test; copy-mismatch assertions"
+   },
+   {
+    "step": "native four configurations",
+    "cmd": "python3 tools/r40/memory_control_tests.py --native --python ~/tc_env/torchenv/bin/python --out <fresh>",
+    "configs": [
+     "3/8",
+     "1/8",
+     "1/1",
+     "3/1"
+    ],
+    "note": "CI runs without --native"
+   },
+   {
+    "step": "nuca/tmu",
+    "cmd": "make nuca nuca-dco (+CI variant with DCO_REGISTERED_RANGES=1 REGISTER_VICTIM_OWNER=1 EPOCH_CHURN=1); tb_tmu_registered_ranges PORTS=3,8; rebased 658c811 miter"
+   },
+   {
+    "step": "system",
+    "cmd": "make mesh top r40-core-parameters r40-multicore-shell r40-grid-deadline r40-grid-dispatch r40-multicore-mmio-checks r40-physical-grid-transport r40-multicore-native-smoke r40-physical-chunks r40-pipeline-checks; multicore_mmio_tests.py 1/1, 3/3, 3/3 --pipeline 2 --board-top; native_memory_ports_tests.py; native_multicore_features.py [--pair]"
+   },
+   {
+    "step": "image-geometry simulation (new, required)",
+    "reason": "benches use SETS=16/WAYS=4 (slice) or SETS=4/WAYS=2 with DCO_LOCAL_REPLICAS/NUCA_REGISTER_VICTIM_*/CACHE_DATA_PIPELINE/TLW_PIPE/REGISTER_WRITES at 0 (board TB); image uses SETS=32 WAYS=8 and those at 1/2",
+    "cmd": "3-core board-top run with exact image.tcl parameters on coherent-host, memory-control and cache-maintenance scenarios"
+   }
+  ],
+  "rtl_cost_estimate": "R40 lanes ~8 h serial on CI runners -> ~2.5-3 h on 4 GB10 cores, core/NUCA ~1 h; exact-source GitHub CI must pass",
+  "ooc_fpga_host": [
+   "census of A3 DCP (tools/r40/census_failing_endpoints.tcl)",
+   "kernel OOC synth flow/fpga/synth_r40_multicore.tcl (~1h10m, 8.5 GB)",
+   "flow/fpga/audit_r40_multicore_placement.tcl hook dry-run",
+   "tools/r40/audit_cross_slr_cones.tcl before (A3 ulp_tnca_u50_1_0.dcp) / after",
+   "flow/synth/vivado_ooc.sh unit estimates (~5 min/unit)",
+   "module P&R via screen_local_tmu_rank.tcl (promote from attempt03 archive into flow/fpga; <=~51 min): vector_fpu, slice+TMU (C1), line_axi (M3), host mux+LSU (M1)",
+   "per residual census group unit OOC"
+  ],
+  "mechanism_change_definition": "connectivity of the A3 cone removed in the structural audit and residual census measured; area reduction alone never accepted"
+ },
+ "build": {
+  "flow": "flow/fpga/run_r40_attempt01.sh with new image.tcl/image.json (A3 params + new); SSI_SpreadSLLs, place_r40_multicore.tcl, link.sh unchanged; no new XDC exception",
+  "sequence": [
+   "freeze candidate commit",
+   "exact-source CI",
+   "immutable archive + input-hash preflight",
+   "budget reservation",
+   "launch detached",
+   "post-route audit"
+  ],
+  "expected_duration_h": 11,
+  "launch_preconditions": [
+   ">= 40 GB free on FPGA host",
+   "no census/OOC jobs during link",
+   "board campaign not perturbed or owner-approved"
+  ],
+  "observer_gap": "watch_implementation.py runs only diagnose_r40_checkpoint.tcl on non-zero exit (A3 exit 3); must also run audit_r40_image.tcl, audit_r40_operating_clock.tcl DCP OUT 100 placement, and census_failing_endpoints.tcl when WNS<0",
+  "link_exit_codes": {
+   "3": "auto frequency scaling",
+   "4/5": "xclbin readback unreadable or not 100 MHz"
+  },
+  "post_route_criteria": [
+   "WNS>=0 TNS=0 WHS>=0 THS=0, 0 PW failures, 0 route errors",
+   "cores and local TMUs 0/1/2 in SLR0/1/2, 0 unplaced",
+   "CDC Criticals reviewed by endpoint, 0 in TNCA hierarchy",
+   "unconstrained pins limited to 7 in/3 out board management",
+   "DRC 0 errors/critical",
+   "per-SLR resources and SLL matrix vs A3",
+   "image SHA"
+  ],
+  "load": "owner decision: program.sh --check, packaged-HBM preflight, program.sh --go with explicit OK, clock counter [100,500,450,0], board_checkpoint.py"
+ },
+ "open_questions": [
+  "Milestone ownership: v3 says no further R40 implementation/programming; is this the deferred next implementation or does it need an identity amendment?",
+  "Accept a v++-scaled image above 90.8 MHz as fallback if 100 MHz is missed?",
+  "Approve and schedule the read-only census (~1 h, ~18 GB) on the FPGA host after the board campaign",
+  "Accept M4 (FPU conversion fix) in the final image or keep as erratum?",
+  "Pre-authorize C1 if census shows slice RAM families failing",
+  "Keep A3 tool flow exactly, or add post-route phys_opt_design?"
+ ]
+}

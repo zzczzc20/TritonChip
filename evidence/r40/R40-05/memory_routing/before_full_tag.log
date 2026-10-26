@@ -1,0 +1,4 @@
+GRID REAL CORES PASS N=1 memory=1 phase=0 programs=455 cycles=41723
+DEBUG expected=0000000000001000 actual=0000000000001018 address=0000000000010000 dram0=0000000000001018
+FATAL: tb/top/tb_grid_cores.v:79: actual core execution failed status=1 faults=1 total=1 pc=00000000000001e8
+       Time: 418190000  Scope: tb_grid_cores.$ivl_for_loop3

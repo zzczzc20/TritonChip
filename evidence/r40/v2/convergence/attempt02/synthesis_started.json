@@ -1,0 +1,78 @@
+{
+  "schema": "tnca-r40-kernel-synthesis-start/1",
+  "observed_utc": "2026-10-16T22:43:39.333449+00:00",
+  "gate_status": "not-measured",
+  "source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
+  "build_root": "/home/zzhouch/tnca_build/r40_attempt02_20261016",
+  "kernel_run": "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.runs/ulp_tnca_u50_1_0_synth_1",
+  "log_head": [
+    "",
+    "*** Running vivado",
+    "    with args -log ulp_tnca_u50_1_0.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source ulp_tnca_u50_1_0.tcl",
+    "",
+    "",
+    "****** Vivado v2023.2 (64-bit)",
+    "  **** SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023",
+    "  **** IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023",
+    "  **** SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023",
+    "    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.",
+    "    ** Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.",
+    "",
+    "source ulp_tnca_u50_1_0.tcl -notrace",
+    "INFO: Dispatch client connection id - 35895",
+    "create_project: Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1354.203 ; gain = 36.836 ; free physical = 10031 ; free virtual = 32371",
+    "INFO: [IP_Flow 19-234] Refreshing IP repositories",
+    "INFO: [IP_Flow 19-1700] Loaded user IP repository '/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/int/xo/ip_repo/tnca_com_kernel_tnca_u50_1_0'.",
+    "INFO: [IP_Flow 19-1700] Loaded user IP repository '/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/iprepo'.",
+    "INFO: [IP_Flow 19-1700] Loaded user IP repository '/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/ipcache'.",
+    "INFO: [IP_Flow 19-1700] Loaded user IP repository '/tools/Xilinx/Vitis/2023.2/data/ip'.",
+    "INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/tools/Xilinx/Vivado/2023.2/data/ip'.",
+    "WARNING: [IP_Flow 19-1663] Duplicate IP found for 'xilinx.com:ip:axi_clk_metadata_adapter:1.0'. The one found in IP location '/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/iprepo/ipdefs/other_ipdefs/axi_clk_metadata_adapter_v1_0' will take precedence over the same IP in location /home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/iprepo/ipdefs/pxi_ii_infra/axi_clk_metadata_adapter_v1_0",
+    "WARNING: [IP_Flow 19-1663] Duplicate IP found for 'xilinx.com:ip:axis_clk_metadata_adapter:1.0'. The one found in IP location '/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/iprepo/ipdefs/other_ipdefs/axis_clk_metadata_adapter_v1_0' will take precedence over the same IP in location /home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/iprepo/ipdefs/pxi_ii_infra/axis_clk_metadata_adapter_v1_0",
+    "WARNING: [IP_Flow 19-1663] Duplicate IP found for 'xilinx.com:ip:clk_metadata_adapter:1.0'. The one found in IP location '/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/iprepo/ipdefs/other_ipdefs/clk_metadata_adapter_v1_0' will take precedence over the same IP in location /home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/iprepo/ipdefs/pxi_ii_infra/clk_metadata_adapter_v1_0",
+    "WARNING: [IP_Flow 19-1663] Duplicate IP found for 'xilinx.com:ip:pipeline_reg:1.0'. The one found in IP location '/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/iprepo/ipdefs/other_ipdefs/pipeline_reg_v1_0' will take precedence over the same IP in location /home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/iprepo/ipdefs/pxi_ii_infra/pipeline_reg_v1_0",
+    "WARNING: [IP_Flow 19-1663] Duplicate IP found for 'xilinx.com:ip:shell_utils_build_info:1.0'. The one found in IP location '/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/.local/hw_platform/iprepo/ipdefs/other_ipdefs/shell_utils_build_info_v1_0' will take precedence over the same IP in the Xilinx installed IP."
+  ],
+  "last_phase_markers": [
+    "Starting synth_design",
+    "Starting RTL Elaboration : Time (s): cpu = 00:00:05 ; elapsed = 00:00:05 . Memory (MB): peak = 3145.227 ; gain = 387.711 ; free physical = 7890 ; free virtual = 30231"
+  ],
+  "imported_sources": {
+    "rtl/tile/tnca_tile.v": {
+      "imported_path": "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.gen/my_rm/bd/ulp/ipshared/0942/src/tnca_tile.v",
+      "sha256": "c0079db0cfcb91d462e2036e253bdaa4daef1e1fc897c95c0fd3b5d6c3eed45b",
+      "matches_frozen_source": true
+    },
+    "rtl/nuca/tnca_nuca_slice.v": {
+      "imported_path": "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.gen/my_rm/bd/ulp/ipshared/0942/src/tnca_nuca_slice.v",
+      "sha256": "f509b36e86785d376846013e0da122e697632bc088f925ae019a46b15ef21d02",
+      "matches_frozen_source": true
+    },
+    "rtl/nuca/tnca_tmu.v": {
+      "imported_path": "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.gen/my_rm/bd/ulp/ipshared/0942/src/tnca_tmu.v",
+      "sha256": "c09a71109e6cc7a5ecf330cce01d5c02d38446892b198b0c4e396fcb40e0dccc",
+      "matches_frozen_source": true
+    },
+    "rtl/core/tnca_decoder.v": {
+      "imported_path": "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.gen/my_rm/bd/ulp/ipshared/0942/src/tnca_decoder.v",
+      "sha256": "fad46133110797293a9086f5c486cfaeb2dae30f6df3ebc393afe4f96f0499ce",
+      "matches_frozen_source": true
+    }
+  },
+  "errors_observed_so_far": [],
+  "warning_counts_so_far": {
+    "WARNING: [IP_Flow 19-1663]": 5,
+    "WARNING: [Synth 8-6901]": 34,
+    "WARNING: [Synth 8-589]": 8,
+    "WARNING: [Synth 8-7071]": 100,
+    "WARNING: [Synth 8-7023]": 8,
+    "WARNING: [Synth 8-693]": 2,
+    "WARNING: [Synth 8-6014]": 100,
+    "WARNING: [Synth 8-3936]": 5,
+    "WARNING: [Synth 8-4767]": 2,
+    "WARNING: [Synth 8-7129]": 100
+  },
+  "runner_live": true,
+  "terminal_exit": null,
+  "qualification": "in-progress source-identity verification only; not synthesis completion or physical qualification"
+}

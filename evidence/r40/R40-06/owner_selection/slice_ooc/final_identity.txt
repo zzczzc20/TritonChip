@@ -1,0 +1,4 @@
+9d11a4582ee172d1a818efb77c43df3150b776763aba238045699bd3cef09260  /home/zzhouch/tnca_build/r40_owner_slice_ooc_cbb6402_03/candidate/ooc/synth.dcp
+0
+    PID     ELAPSED %CPU   RSS
+ 594866    09:44:20  241 31615852

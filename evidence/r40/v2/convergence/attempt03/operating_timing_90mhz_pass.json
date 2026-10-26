@@ -1,0 +1,46 @@
+{
+  "schema": "tnca-operating-timing-checkpoint/1",
+  "observed_utc": "2026-10-18T14:29:13.368628+00:00",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "requested_clock_hz": 90000000,
+  "measured_clock_hz": null,
+  "wns_ns": 0.016,
+  "tns_ns": 0.0,
+  "setup_failing_endpoints": 0,
+  "whs_ns": 0.0,
+  "ths_ns": 0.0,
+  "hold_failing_endpoints": 0,
+  "wpws_ns": 0.0,
+  "tpws_ns": 0.0,
+  "pulse_width_failing_endpoints": 0,
+  "timing_constraints_met": true,
+  "route_errors": 0,
+  "fully_routed_nets": 1160009,
+  "raw_timing_summary": [
+    "    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  ",
+    "    -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  ",
+    "      0.016        0.000                      0              1494088        0.000        0.000                      0              1492237        0.000        0.000                       0                503322  ",
+    "",
+    "",
+    "All user specified timing constraints are met.",
+    "",
+    ""
+  ],
+  "route_report": "Design Route Status\n                                               :      # nets :\n   ------------------------------------------- : ----------- :\n   # of logical nets.......................... :     2194432 :\n       # of nets not needing routing.......... :     1034423 :\n           # of internally routed nets........ :      951170 :\n           # of nets with no loads............ :       83253 :\n       # of routable nets..................... :     1160009 :\n           # of nets with fixed routing....... :      217434 :\n           # of fully routed nets............. :     1160009 :\n       # of nets with routing errors.......... :           0 :\n   ------------------------------------------- : ----------- :\n\n",
+  "files": {
+    "timing.rpt": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/timing.rpt",
+      "sha256": "44f9d0b37543264e0310d2df90ad8aed26450bc39745bc26bd593a2bd6cacbe2"
+    },
+    "route_status.rpt": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/route_status.rpt",
+      "sha256": "3bec995e393d8eb6906ba31cbdc228f3b7888065a78aeb596776b2f2802ef201"
+    },
+    "clocks_operating.rpt": {
+      "path": "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/operating-clock-audit-v2/clocks_operating.rpt",
+      "sha256": "b237a9b765b67936c890a53ac52e908012c113b1e6d5f33371fc8df9db04bf6e"
+    }
+  },
+  "scope": "completed report components at analysis clock; CDC/DRC/actual placement review and post-load actual clock are still pending",
+  "required_gate_promotions": []
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "tnca-r40-multicore-mmio/2",
+  "identity_magic": "0x00020000544e4341",
+  "legacy_identity": "0x00010000544e4341 remains unchanged; v2 host refuses it before writes",
+  "registers": "existing 64-bit mailbox/window offsets in backends/u50.py; common-clock version/start/end/sequence at E0/E8/F0/F8",
+  "opcode_field": "host permits 0..255; RTL matches the full request register, so oversized/unknown operations never truncate into a different command",
+  "physical_operations": "10/11/12/13/14/16/17 follow physical_grid_transport_extension.json",
+  "legacy_launch": "3/8/9 refused; opcode10 independently advertises the streaming physical-grid budget",
+  "doorbell": "only an idle, drained device with no host access pending accepts req_seq > served; fields are snapshotted; stale or busy doorbells are dropped and require an explicit fresh ring",
+  "completion": "response sequence is published after matching global done_id and adapter/link drain; global cycles split into low/high32; AXI faults produce status1",
+  "host_window": "coherent 8-byte word access through private code RAM or unique NUCA homes; aligned bounds checked before issue; address/data/byte enables are latched while stalled",
+  "memory_window": "one host-allocated global AXI window is broadcast to all independent masters; platform must connect every master to the same accessible allocation; configuration changes require idle/drained state",
+  "dma": "bypass refused until explicit ownership-transfer hardware is implemented; neither duplicated simulator arrays nor multiple ports establish physical capacity",
+  "clock": "free-running counter includes host/submission gaps, retained sequence-bound launch endpoints; reset starts a new backend epoch",
+  "remaining": [
+    "AXI-Lite platform crossing/top and kernel packaging",
+    "three-SLR placement, timing and CDC",
+    "matching board image deployment/native Torch verification",
+    "coherent bulk DMA and explicit lost-response platform recovery",
+    "frozen makespan/performance and R40 full acceptance"
+  ]
+}

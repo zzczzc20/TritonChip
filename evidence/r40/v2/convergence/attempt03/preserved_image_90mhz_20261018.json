@@ -1,0 +1,19 @@
+{
+  "schema": "tnca-image-preservation/1",
+  "observed_utc": "2026-10-18T08:31:00.922092+00:00",
+  "artifacts": [
+    {
+      "source": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tnca_u280.xclbin",
+      "backup": "/home/zzhouch/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+      "bytes": 79202018,
+      "sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083"
+    },
+    {
+      "source": "/home/zzhouch/tnca_build/r40_attempt03_20261017/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_i_ulp_my_rm_partial.bit",
+      "backup": "/home/zzhouch/tnca_images/r40_attempt03_90mhz_a88ebdf5/level0_i_ulp_my_rm_partial.bit",
+      "bytes": 79094414,
+      "sha256": "1c2dfd57a4e215574b4f6d017526c1c5415a9b49b8bff37148b5f9ba1b418857"
+    }
+  ],
+  "scope": "read-only copies of terminal generated image/bitstream; no programming or qualification"
+}

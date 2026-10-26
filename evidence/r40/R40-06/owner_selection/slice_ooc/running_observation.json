@@ -1,0 +1,37 @@
+{
+  "observed_utc": "2026-10-15T12:17:36.551361+00:00",
+  "run": {
+    "schema": "tnca-slice-ooc-run/1",
+    "status": "running",
+    "pid": 884014,
+    "experiment_sha256": "2296767455135bd16435f03edf122d58c85535e711f46f9f968c094e4cf29dad",
+    "supervisor_sha256": "c0a5c35dade7effbbdf2682132cf13ba7df6dc70def3d6d4bea49f5a1576ecd1",
+    "runner_sha256": "a5214bda8513ad9470734e4e3e46ebc467a9ca4917779de681dc8d51737b2931",
+    "baseline_reuse": {
+      "root": "/home/zzhouch/tnca_build/r40_owner_slice_ooc_b81f04d_02",
+      "status": "dependency-match",
+      "experiment_sha256": "e8e501fc77fdb5cf05ce0807f18afb60ae45cba53735c6ed0d9bde55338e828c",
+      "run_sha256": "b4382cd8a9b5e7bfe3fe3d90d348d6e374401daa31250b120c1233e6c6e5b4b2",
+      "used_dependency_sha256": {
+        "baseline.v": "8fdc27836dfb2dcdd4a45b617ec3d41a2676b42422f4a5679767046f3eeb76ba",
+        "common/tnca_defs.vh": "0d4eaa5507a74c45048dc7481a5bbb97ae92d8a5ac15b01c0f37e84783a80c89",
+        "common/tnca_amo.vh": "1e18fa968eba2ff12e3df6b45c550a2a8b6797eb1300bfdee11beda77737b7cd",
+        "synth.tcl": "f7e604b92718781b4244543cf31905a6c58ad74c308f2e4afe0d981dd03b4bd6"
+      },
+      "artifact_sha256": {
+        "baseline/ooc/utilization.rpt": "7ffc0d7d225233b40c5d1f5c4eb0a16f4b232ce3121719f5eab94b71537ff611",
+        "baseline/ooc/timing.rpt": "b41235f7c33706721e21c7c8644ecf7b9b78d978e3a3cb4107601b29d184c1ca",
+        "baseline/ooc/critical_paths.rpt": "f9cf04f31fdb6f7a814ca07fe676afca24e5d97a2e82252d61a0afd5bc2db9bf",
+        "baseline/ooc/check_timing.rpt": "f1c97c2ee8002b02a0a3f9674d92a96e8ade33a0ba0527f94997a145976e1d19",
+        "baseline/ooc/synth.dcp": "c8c93ee85f34a6c91b16afdc864506b1d3c2b5a2b69ee32f22cb0d806a0f217c"
+      }
+    },
+    "per_variant_timeout_seconds": 1800,
+    "results": [],
+    "gate_status": "not-measured"
+  },
+  "process_snapshot": "    PID    PPID     ELAPSED %CPU   RSS COMMAND\n 594866  594843    09:35:06  240 31640184 /tools/Xilinx/Vivado/2023.2/bin/unwrapped/lnx64.o/vivado -log level0_wrapper.vdi -applog -product Vivado -messageDb vivado.pb -mode batch -source level0_wrapper.tcl -notrace\n 884056  884035       04:55  104 3418920 /tools/Xilinx/Vivado/2023.2/bin/unwrapped/lnx64.o/vivado -mode batch -notrace -nojournal -log vivado.log -source /home/zzhouch/tnca_build/r40_owner_slice_ooc_cbb6402_03/input/synth.tcl -tclargs /home/zzhouch/tnca_build/r40_owner_slice_ooc_cbb6402_03/input/candidate.v /home/zzhouch/tnca_build/r40_owner_slice_ooc_cbb6402_03/input/common /home/zzhouch/tnca_build/r40_owner_slice_ooc_cbb6402_03/candidate/ooc\n",
+  "observer_log": "BASELINE DEPENDENCIES VERIFIED; START corrected candidate\n",
+  "root": "/home/zzhouch/tnca_build/r40_owner_slice_ooc_cbb6402_03",
+  "gate_status": "not-measured"
+}

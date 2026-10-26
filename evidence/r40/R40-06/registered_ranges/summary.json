@@ -1,0 +1,48 @@
+{
+  "schema": "tnca-registered-range-evidence/1",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "source_sha256": {
+    "rtl/nuca/tnca_nuca_slice.v": "892085210a6c85b39554130ae1bee473f48c406a4fed29f01a4299d1e97418f9",
+    "rtl/nuca/tnca_tmu.v": "29c326b4cc7da6c928ed41119416880362704b8d0b544889b6ad99daeb144ea3",
+    "rtl/common/tnca_dco_owner_registered.vh": "a8d06b7cb702d9b54e14a7a0ec50eaeca1b4c34700a71adf46e12f3b2b4c340b",
+    "tools/r40/dco_registered_ranges.py": "6a9945835cff56b01819ee78dca326c49ab5f78d13dfb20ebdb2661d9ad4de70",
+    "tools/r40/dco_owner_order_proof.py": "e86e88d0099096315fe69fc066b8f0c6a7f8a7b8b6fe0c215842d6e9f9615817",
+    "tools/r40/dco_owner_screen.py": "9d548049f6dbfacaa64493863f7b85f1d548fefa4934808d43bf31e1abaa0ad9"
+  },
+  "joint_input_sha256": {
+    "rtl/nuca/tnca_tmu.v": "29c326b4cc7da6c928ed41119416880362704b8d0b544889b6ad99daeb144ea3",
+    "rtl/nuca/tnca_nuca_slice.v": "892085210a6c85b39554130ae1bee473f48c406a4fed29f01a4299d1e97418f9",
+    "rtl/common/tnca_defs.vh": "0d4eaa5507a74c45048dc7481a5bbb97ae92d8a5ac15b01c0f37e84783a80c89",
+    "rtl/common/tnca_amo.vh": "1e18fa968eba2ff12e3df6b45c550a2a8b6797eb1300bfdee11beda77737b7cd",
+    "rtl/common/tnca_dco_owner_registered.vh": "a8d06b7cb702d9b54e14a7a0ec50eaeca1b4c34700a71adf46e12f3b2b4c340b",
+    "flow/fpga/synth_r40_range_slice.tcl": "1c460588fc820ab808e148f905358b307aea9c2918229eaf07a5a3f2ecc89ee6",
+    "flow/fpga/tnca_range_slice_ooc.v": "e9318be866018ed7d20f6445433efd128d54961760a28d9b64caddda3306ff2b"
+  },
+  "proof_status": "compositional-proof-pass",
+  "mutations_detected": {
+    "source_alias": true,
+    "stale_endpoint": true,
+    "port_alias": true,
+    "drop_overflow": true
+  },
+  "gate_status": "not-measured",
+  "image_sha256": null,
+  "measured_clock_hz": null,
+  "graph_speedup": null,
+  "baseline": {
+    "lut": 83353,
+    "ff": 33843,
+    "estimated_wns_ns": -6.333
+  },
+  "registered": {
+    "lut": 78543,
+    "ff": 33818,
+    "estimated_wns_ns": -6.037
+  },
+  "artifacts": {
+    "README.md": "312f756ae7b3c4048cd2498f094d842635045d63afcf2755c777c5d6185471dd",
+    "functional_and_proof.tar.gz": "9ca717818f7129640f9e9b227d77dd457a40a1a9f0c83acc68e5cfa1f5bf41eb",
+    "joint_ooc.tar.gz": "f0284364aa99441cc3e735ccbd6b8863b2c58e0707038eb886f63f90131b40aa",
+    "package_audit.json": "e02ab7dc74c57dde42b4ac04af2f70f6ae2d58e84c65f993261f97696a9329e4"
+  }
+}

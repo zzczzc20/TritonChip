@@ -1,0 +1,28 @@
+{
+  "root": "/home/zzhouch/tnca_large_layer_decode_6bd07b7",
+  "pid": 2365318,
+  "command": [
+    "/home/zzhouch/tc_env/torchenv/bin/python",
+    "-u",
+    "/home/zzhouch/tnca_large_layer_decode_6bd07b7/large_layer_diagnostic.py",
+    "--source-root",
+    "/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal",
+    "--kind",
+    "decode",
+    "--reference",
+    "/tmp/r40_layer_decode_reference_6bd07b7.pt",
+    "--software-tree",
+    "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "--xclbin",
+    "/home/zzhouch/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+    "--image-sha256",
+    "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "--operating-clock-evidence",
+    "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json",
+    "--out",
+    "/home/zzhouch/tnca_large_layer_decode_6bd07b7/native"
+  ],
+  "harness_sha256": "9dfd9d5910f8431d1ae3c01516da2d69e6f6bfaecda5f6cc36d6fdfcdf324d1c",
+  "reference_sha256": "5261b006a3f8e90dea9b37e896f8100c8b5a4db780c45c9951512e3d8a697afd",
+  "scope": "Original full decode with additional returned boundaries; CPU reference on GB10, strict original model/input hashes before device execution; diagnosis only"
+}

@@ -1,0 +1,7 @@
+{
+  "root": "/home/zhongchun/r40_large_layer_exact_native_6bd07b7",
+  "pid": 2422499,
+  "harness_sha256": "42bd911c9c77ef3221ba3d7577f8609d3ee82438da938f876433fdb7e5670d68",
+  "controller_sha256": "a46014d153154c93dada5a352bf8dd586270c5429a8b33c1c1ff56c7e885b95e",
+  "scope": "Exact byte-identical native-host original dataset; copy and CPU FP16/FP32 full-layer reference on GB10, no hardware execution"
+}

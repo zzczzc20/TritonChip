@@ -1,0 +1,5 @@
+prepare (True, ['already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-hbm-a8f9e2a0291d254a-d369fb6f1cc4-axi_lb_n16-axi_line8-axi_local_pipe1-axi_out_n16-axi_ram_cache1-axi_wait_n32/tnca_device_vrf5_hbm.vvp'])
+returncode 0
+W1013 08:25:15.577000 242660 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+OK 3 x 128 KiB tensors from 0x1820000, 24 MiB into the device; pointwise and reduction right
+

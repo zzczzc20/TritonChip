@@ -71,6 +71,18 @@ def syn01(log, ctx):
                        f"declared {want_bits}")
             ok = False
 
+    # Every accumulator FP32 element has one reset-valid tag. Account for
+    # all of them separately, rather than adding them to the 16 KiB data RF
+    # or hiding them when they cross the control-array size heuristic.
+    arf = rep['tops'].get('tnca_acc_rf')
+    if arf and arf['ok']:
+        tags = [m for m in arf['small_arrays'] if m['name'] == 'valid']
+        tag_bits = sum(m['bits'] for m in tags)
+        expected_tags = DECLARED['tnca_acc_rf'] // 32
+        log.append(f"    accumulator valid tags: {tag_bits} bit(s) in {len(tags)} "
+                   f"control array(s), expected {expected_tags}, outside data capacity")
+        ok &= tag_bits == expected_tags and len(tags) == 1
+
     # The bits that are NOT data memory are listed rather than absorbed.
     oc = rep['tops'].get('tnca_operand_collector')
     if oc and oc['ok']:

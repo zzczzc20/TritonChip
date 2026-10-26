@@ -1,0 +1,8 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+PASS resident: graph correctness and transfer audit
+PASS per-kernel: graph correctness and transfer audit
+PASS residency/staging artifact identity
+PASS resident: strided offset aliases and in-place update
+PASS per-kernel: strided offset aliases and in-place update
+PASS unsupported transfer policy refused
+r40-residency-tests PASS (6/6)

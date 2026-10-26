@@ -1,0 +1,901 @@
+{
+ "schema": "tnca-r40-hbm-coverage/1",
+ "what": "capacity, compile coverage and measurement of the large and hbm points (the existing tiers are measured in B39 itself)",
+ "sweep": {
+  "source": "hbm_compile.jsonl",
+  "sha256": "71b4368e98de0d95eb15a9938c3612647297604b5cd53ca903deaab090544694",
+  "platform": {
+   "kind": "tnca",
+   "name": "tnca:core-vrf-sync-v5@sim-file",
+   "profile": "core-vrf-sync-v5",
+   "backend": "sim-file",
+   "backend_args": {},
+   "opt_level": 2,
+   "inductor": {
+    "cpu_backend": "triton",
+    "max_block": 16,
+    "persistent_reductions": false,
+    "compile_threads": 1,
+    "max_autotune_gemm_backends": "TRITON",
+    "tensor_descriptors": true,
+    "no_x_dim": true
+   },
+   "knobs": {
+    "TNCA_LLVM": "/home/zhongchun/.triton/llvm/llvm-macos-arm64"
+   },
+   "device_id": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-12f77d2216a6"
+  }
+ },
+ "summary": {
+  "points": 36,
+  "compiled": 35,
+  "fits_b39": 0,
+  "measured": 0
+ },
+ "points": [
+  {
+   "id": "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+   "sha256": "00aa4913f2bc61ce6dd9506d093c08b17a70150f56e0f50dfbc763120b914262",
+   "tier": "large",
+   "family": "gpt2_block",
+   "working_set_bytes": 27289600,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 13,
+    "kernels": 13,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 33554432,
+    "max_launch_kernel": "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_6",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "model.llama_decode/large/fp16-b1-p512",
+   "sha256": "ca2a458450b5f19010b5207c158946500e055f2874dfd3344dca6f89dd4df111",
+   "tier": "large",
+   "family": "llama_decode",
+   "working_set_bytes": 2488699400,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 337,
+    "kernels": 44,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 525597184,
+    "max_launch_kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_t_view_42",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "model.llama_prefill/large/fp16-b1-s512",
+   "sha256": "94d49ce2811ec2c20c73bb69401d68770f044dbc7e2437d98e2a06eaf78ff5fc",
+   "tier": "large",
+   "family": "llama_prefill",
+   "working_set_bytes": 2473986560,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 306,
+    "kernels": 25,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 533733376,
+    "max_launch_kernel": "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_18",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "model.mlp/large/fp16-t512-d2048",
+   "sha256": "172c6551c70bc50f6afcf659b68118e46f984905727f7e9e5dff7b307faf8c80",
+   "tier": "large",
+   "family": "mlp",
+   "working_set_bytes": 71323648,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 2,
+    "kernels": 2,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 44056576,
+    "max_launch_kernel": "triton_tem_fused_addmm_gelu_t_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "model.resnet_block/large/fp32-n8-c64-hw56",
+   "sha256": "61e0f8e38220a848d7c71e8b8d449c3d3bfe82a178b780c464b0a3ebcc5b4227",
+   "tier": "large",
+   "family": "resnet_block",
+   "working_set_bytes": 13142016,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 6,
+    "kernels": 5,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 19416064,
+    "max_launch_kernel": "triton_tem_fused__native_batch_norm_legit_no_training_add_convolution_relu_4",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.add/large/fp16-n16777216",
+   "sha256": "d7c9131ab9a798ffa7ae4730d4634aa55452bf3135aab65821640d13037c31dc",
+   "tier": "large",
+   "family": "add",
+   "working_set_bytes": 100663296,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 100663296,
+    "max_launch_kernel": "triton_poi_fused_add_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.argmax/large/fp16-r64-v128256",
+   "sha256": "aa3f01579d30258c54a5a8fb9aff820c7b0f61261008f96e8af7e88e3cc8e319",
+   "tier": "large",
+   "family": "argmax",
+   "working_set_bytes": 16417280,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 16417280,
+    "max_launch_kernel": "triton_red_fused_argmax_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+   "sha256": "30a25aa8093be0e8ee638f450538233458f46c6eb78b7fb5e8c249964deed8de",
+   "tier": "large",
+   "family": "attention_decode",
+   "working_set_bytes": 16785408,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 3,
+    "kernels": 3,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 8655008,
+    "max_launch_kernel": "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_2",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+   "sha256": "db38a0023846910da67c8f869dfe922dfa0eaeaa1cea70ff09aec2629711e3a1",
+   "tier": "large",
+   "family": "attention_prefill",
+   "working_set_bytes": 8388608,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 7,
+    "kernels": 7,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 67108864,
+    "max_launch_kernel": "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.bmm/large/fp16-b32-m512-k64-n512",
+   "sha256": "e0e58dfd7071795c5bbf6e36965ae41b242a9c7c8f58be9f8c5265a59beced12",
+   "tier": "large",
+   "family": "bmm",
+   "working_set_bytes": 20971520,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 20971520,
+    "max_launch_kernel": "triton_tem_fused_bmm_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64",
+   "sha256": "ac5500bbd29522175a90d9e048124099e0c472d75fd6f7ff686acfb4c9ef7257",
+   "tier": "large",
+   "family": "conv2d",
+   "working_set_bytes": 12992512,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 3,
+    "kernels": 3,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 12992512,
+    "max_launch_kernel": "triton_tem_fused_convolution_2",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.embedding/large/fp16-v128256-d2048-t512",
+   "sha256": "b3c5aa89bf7e8c4f9c75193eeef3b26330c9e11982e7a12a7f9f683c8d4cacd8",
+   "tier": "large",
+   "family": "embedding",
+   "working_set_bytes": 4198400,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 528459776,
+    "max_launch_kernel": "triton_poi_fused_embedding_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.gelu_tanh/large/fp16-n16777216",
+   "sha256": "dd8ccfe9bcf29e90a8b02f20f8c12f28286e281539f7ef7f880c1015ed906bd4",
+   "tier": "large",
+   "family": "gelu_tanh",
+   "working_set_bytes": 67108864,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 67108864,
+    "max_launch_kernel": "triton_poi_fused_gelu_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.gemv/large/fp16-k2048-n8192",
+   "sha256": "64a0e23adfc8fbb0c372c9f03887c28c06f2218b81f7516290a22ae9aaf03a89",
+   "tier": "large",
+   "family": "gemv",
+   "working_set_bytes": 33574912,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 33574912,
+    "max_launch_kernel": "triton_tem_fused_mm_t_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.layernorm/large/fp16-r512-d2048",
+   "sha256": "5c9f5381dae062887b93bebe407bc77fc49c13f1d785ee1633cd8315ff0e5e38",
+   "tier": "large",
+   "family": "layernorm",
+   "working_set_bytes": 4202496,
+   "compile": {
+    "ok": false,
+    "status": "compile-failure",
+    "launches": 0,
+    "kernels": 0,
+    "problem": "torch._inductor.exc.InductorError: UnsupportedError: [UNSUPPORTED] no TNCA lowering for TTIR operation 'scf.if'\n  at: TTIR function 'triton_red_fused_native_layer_norm_0'\n  diagnostic: no TNCA lowering for TTIR operation 'scf.if'\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n\n caused by UnsupportedError: [UNSUPPORTED] no TNCA lowering for TTIR operation 'scf.if'\n  at: TTIR function 'triton_red_fused_native_layer_norm_0'\n  diagnostic: no TNCA lowering for TTIR operation 'scf.if'\n caused by Unsupported: no TNCA lowering for TTIR operation 'scf.if'"
+   },
+   "capacity": {
+    "max_launch_bytes": null,
+    "max_launch_kernel": null,
+    "b39_heap_bytes": 393216,
+    "fits_b39": null
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.linear/large/fp16-m512-k2048-n8192",
+   "sha256": "b3df7442af7433483b3e6b20a5003785ed305bab9953d33f74162e7464869867",
+   "tier": "large",
+   "family": "linear",
+   "working_set_bytes": 44056576,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 44056576,
+    "max_launch_kernel": "triton_tem_fused_addmm_t_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.matmul/large/fp16-m2048-k2048-n2048",
+   "sha256": "ae48d791bb5e7b11c5016645c80f5c3e2bb701e6939467a2f072bffa17a60ba1",
+   "tier": "large",
+   "family": "matmul",
+   "working_set_bytes": 25165824,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 25165824,
+    "max_launch_kernel": "triton_tem_fused_mm_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.matmul/large/fp32-m2048-k2048-n2048",
+   "sha256": "b80814817436064b26635364fd6ec185caf99fada72664c34465f28a666e83fb",
+   "tier": "large",
+   "family": "matmul",
+   "working_set_bytes": 50331648,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 50331648,
+    "max_launch_kernel": "triton_tem_fused_mm_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.rmsnorm/large/fp16-r512-d2048",
+   "sha256": "dd487cb1794ad197ab5eff4a4c9e0d8996f9d9cc431f3ab3f432070f9bb6b609",
+   "tier": "large",
+   "family": "rmsnorm",
+   "working_set_bytes": 4198400,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 4198400,
+    "max_launch_kernel": "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.rope/large/fp16-b1-h32-s512-d64",
+   "sha256": "5e6f381bf38baf7df55a8a0f63870f72cf9ef6d5a09be02da78ce55442cb58af",
+   "tier": "large",
+   "family": "rope",
+   "working_set_bytes": 4325376,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 3,
+    "kernels": 3,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 6422528,
+    "max_launch_kernel": "triton_poi_fused_add_mul_2",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.silu/large/fp16-n16777216",
+   "sha256": "23f3153bf547121552015ea1a6b3af5282113962775f09d32fb0c6dc3e305b57",
+   "tier": "large",
+   "family": "silu",
+   "working_set_bytes": 67108864,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 67108864,
+    "max_launch_kernel": "triton_poi_fused_silu_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.softmax/large/fp16-r4096-c4096",
+   "sha256": "978edb42f8926f1330546ebfcd4360d0e168fb4271f955a17e2ef2acc5afca5d",
+   "tier": "large",
+   "family": "softmax",
+   "working_set_bytes": 67108864,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 134217728,
+    "max_launch_kernel": "triton_red_fused__softmax_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.swiglu/large/fp16-n16777216",
+   "sha256": "f809d77b9aa35fada1e9986c7c66581a9a26ab25b3c8d2535b9ce00d8ff01af4",
+   "tier": "large",
+   "family": "swiglu",
+   "working_set_bytes": 100663296,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 100663296,
+    "max_launch_kernel": "triton_poi_fused_mul_silu_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.transpose/large/fp32-r4096-c4096",
+   "sha256": "477491c3729f1e52270d07a9aa1c924de2821dfe659d5b78d460fd10a1ecbc5c",
+   "tier": "large",
+   "family": "transpose",
+   "working_set_bytes": 134217728,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 134217728,
+    "max_launch_kernel": "triton_poi_fused_clone_t_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "model.llama_decode/hbm/fp16-b1-p512",
+   "sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16",
+   "tier": "hbm",
+   "family": "llama_decode",
+   "working_set_bytes": 157899272,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 88,
+    "kernels": 33,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 65602048,
+    "max_launch_kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_t_view_31",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "model.llama_prefill/hbm/fp16-b1-s512",
+   "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1",
+   "tier": "hbm",
+   "family": "llama_prefill",
+   "working_set_bytes": 156848640,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 78,
+    "kernels": 25,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 69736448,
+    "max_launch_kernel": "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_18",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.add/hbm/fp16-n67108864",
+   "sha256": "4c8c739081452e9ef3c1c8870031ae89ae86a9cc09e262fea5a7ccfc202bc85e",
+   "tier": "hbm",
+   "family": "add",
+   "working_set_bytes": 402653184,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 402653184,
+    "max_launch_kernel": "triton_poi_fused_add_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.copy/hbm/fp16-n67108864",
+   "sha256": "985db43ad808d2f7bf11454bab05e082416c27d6284be0707cefe0d3db071027",
+   "tier": "hbm",
+   "family": "copy",
+   "working_set_bytes": 268435456,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 268435456,
+    "max_launch_kernel": "triton_poi_fused_clone_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.embedding/hbm/fp16-v65536-d2048-t8192",
+   "sha256": "998ca4722412f6fa8c35b160c96e92e34582656b7cb917ff0f47157b69ced5a6",
+   "tier": "hbm",
+   "family": "embedding",
+   "working_set_bytes": 67174400,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 302514176,
+    "max_launch_kernel": "triton_poi_fused_embedding_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.gemv/hbm/fp16-k4096-n11008",
+   "sha256": "a65683795c4c05baf3c758fe40b6d0d6bc5994a11c2340fd17fbbc04d576baa9",
+   "tier": "hbm",
+   "family": "gemv",
+   "working_set_bytes": 90207744,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 90207744,
+    "max_launch_kernel": "triton_tem_fused_mm_t_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+   "tier": "hbm",
+   "family": "linear",
+   "working_set_bytes": 105666048,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 105666048,
+    "max_launch_kernel": "triton_tem_fused_addmm_t_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+   "tier": "hbm",
+   "family": "matmul",
+   "working_set_bytes": 100663296,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 100663296,
+    "max_launch_kernel": "triton_tem_fused_mm_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "sha256": "cf35f8341664c0affaf6d5401ac648fa1782fc02e09715b23b1498639d2579d5",
+   "tier": "hbm",
+   "family": "rmsnorm",
+   "working_set_bytes": 134225920,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 134225920,
+    "max_launch_kernel": "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.silu/hbm/fp16-n67108864",
+   "sha256": "ac289d78c2b64352cffab211799e71984b2403633d6fbeee25bd6aa538bd27fd",
+   "tier": "hbm",
+   "family": "silu",
+   "working_set_bytes": 268435456,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 268435456,
+    "max_launch_kernel": "triton_poi_fused_silu_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.softmax/hbm/fp16-r4096-c8192",
+   "sha256": "a97f2905a204dcf4d0108822bd6a1ca1bc94dfc04e226ba243efe81ee160443b",
+   "tier": "hbm",
+   "family": "softmax",
+   "working_set_bytes": 134217728,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 268435456,
+    "max_launch_kernel": "triton_red_fused__softmax_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  },
+  {
+   "id": "op.transpose/hbm/fp32-r8192-c8192",
+   "sha256": "178a8b5508f1155d44907970a91aa0a030aeec79618fa7b124df3a320579eb56",
+   "tier": "hbm",
+   "family": "transpose",
+   "working_set_bytes": 536870912,
+   "compile": {
+    "ok": true,
+    "status": "capacity-exceeded",
+    "launches": 1,
+    "kernels": 1,
+    "problem": null
+   },
+   "capacity": {
+    "max_launch_bytes": 536870912,
+    "max_launch_kernel": "triton_poi_fused_clone_t_0",
+    "b39_heap_bytes": 393216,
+    "fits_b39": false
+   },
+   "measured": {
+    "status": "not-measured",
+    "why": "no TNCA image with external memory yet (R40-04)"
+   }
+  }
+ ]
+}

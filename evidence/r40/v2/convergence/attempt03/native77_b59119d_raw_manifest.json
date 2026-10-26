@@ -1,0 +1,16 @@
+{
+  "schema": "tnca-complete-native77-raw-archive/1",
+  "observed_utc": "2026-10-18T20:33:42.545054+00:00",
+  "path": "/home/zzhouch/tnca_evidence_r40_native77_b59119d/native77_raw.tar.gz",
+  "bytes": 16030966,
+  "sha256": "ca20d0a113bbcb1d1aa1d5bd5e09da38405233a81da58bf688ef14bee70a0e00",
+  "scope": "Complete repaired-source original native77 raw records, compiler bundles and final 4GiB checkpoint; active HBM/model files deliberately excluded to preserve a consistent completed inventory",
+  "local_archive_audit": {
+    "original_points": 77,
+    "all_original_points_pass": true,
+    "compiler_bundle_files_sha256_verified": 6447,
+    "archive_file_entries": 7306,
+    "capability_audit_archived_inputs_sha256_verified": 4,
+    "qualified_clock_raw_evidence": "Retained separately in qualified90_raw.tar.gz and qualified_clock90_after_load.json"
+  }
+}

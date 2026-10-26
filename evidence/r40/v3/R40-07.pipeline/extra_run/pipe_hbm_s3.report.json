@@ -1,0 +1,354 @@
+{
+ "schema": "tnca-r40-v3-pipeline-matrix/1",
+ "profile": "core-vrf-sync-v5/hbm",
+ "memory": "hbm",
+ "plusargs": "+engtrace +trace",
+ "stages": 3,
+ "roles": "2 (forced legal split)",
+ "cases": [
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 3,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    117
+   ],
+   "rings": [
+    {
+     "consumer_ops": 328,
+     "direct": true,
+     "producer_ops": 221,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "633a50e14c03e047d5b3ca59791b9daa9ba9d6980bd68a3f59db1d85245dde6c"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 117,
+     "mma_cycles": 933,
+     "dma_cycles": 822,
+     "overlap_cycles": 407
+    }
+   ],
+   "overlap_cycles": 407
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 3,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    130
+   ],
+   "rings": [
+    {
+     "consumer_ops": 327,
+     "direct": true,
+     "producer_ops": 220,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "90c1c1dca95cabc593098f5210ce206d639ce8473f7c54f66bee218750f1ef16"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 130,
+     "mma_cycles": 4976,
+     "dma_cycles": 4384,
+     "overlap_cycles": 3895
+    }
+   ],
+   "overlap_cycles": 3895
+  },
+  {
+   "graph": "mm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 3,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    143
+   ],
+   "rings": [
+    {
+     "consumer_ops": 373,
+     "direct": false,
+     "producer_ops": 2100,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "d4c28304b6f4464ff0b7435fda1f147872d9f232d7da9cf6a02f2cb93dc5749b"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 143,
+     "mma_cycles": 21201,
+     "dma_cycles": 18648,
+     "overlap_cycles": 4265
+    }
+   ],
+   "overlap_cycles": 4265
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 3,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    156
+   ],
+   "rings": [
+    {
+     "consumer_ops": 443,
+     "direct": true,
+     "producer_ops": 222,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "1ad8ab204ffcd67c7b6d344dd7efaa66709dd2046dffc2d143849918e5e8b0cb"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 156,
+     "mma_cycles": 933,
+     "dma_cycles": 822,
+     "overlap_cycles": 407
+    }
+   ],
+   "overlap_cycles": 407
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 3,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    169
+   ],
+   "rings": [
+    {
+     "consumer_ops": 442,
+     "direct": true,
+     "producer_ops": 221,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "76266809e42fd83b20b87d612afbc562a6bb4a6c6ca1b99249ffabfb8c813f74"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 169,
+     "mma_cycles": 4976,
+     "dma_cycles": 4384,
+     "overlap_cycles": 3895
+    }
+   ],
+   "overlap_cycles": 3895
+  },
+  {
+   "graph": "addmm",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 3,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 3.814697265625e-06,
+   "sequences": [
+    182
+   ],
+   "rings": [
+    {
+     "consumer_ops": 488,
+     "direct": false,
+     "producer_ops": 2101,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "00a8eabbbf7e9c3c07f8d3a4e4da5b0a5f67c48e9c91e91cf59d2789a33f2150"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 182,
+     "mma_cycles": 21202,
+     "dma_cycles": 18649,
+     "overlap_cycles": 4318
+    }
+   ],
+   "overlap_cycles": 4318
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    48
+   ],
+   "stages": 3,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    195
+   ],
+   "rings": [
+    {
+     "consumer_ops": 443,
+     "direct": true,
+     "producer_ops": 222,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "63159a694f8d9f2116778e4f9d42b4e55a9016287a8f2d97e7800d01c15f23f3"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 195,
+     "mma_cycles": 933,
+     "dma_cycles": 885,
+     "overlap_cycles": 428
+    }
+   ],
+   "overlap_cycles": 428
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    16,
+    16,
+    256
+   ],
+   "stages": 3,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 0.0,
+   "sequences": [
+    208
+   ],
+   "rings": [
+    {
+     "consumer_ops": 442,
+     "direct": true,
+     "producer_ops": 221,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "8674eb55026a1ef1e5b2cd255eb59bcd04918219aa324e774bf32b2316e49ea3"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 208,
+     "mma_cycles": 4976,
+     "dma_cycles": 4720,
+     "overlap_cycles": 4123
+    }
+   ],
+   "overlap_cycles": 4123
+  },
+  {
+   "graph": "linear",
+   "shape": [
+    17,
+    31,
+    257
+   ],
+   "stages": 3,
+   "memory": "hbm",
+   "ok": true,
+   "max_abs_err": 1.9073486328125e-06,
+   "sequences": [
+    221
+   ],
+   "rings": [
+    {
+     "consumer_ops": 488,
+     "direct": false,
+     "producer_ops": 2149,
+     "ring_windows": 6,
+     "stages": 3
+    }
+   ],
+   "refusals": [],
+   "artifacts": [
+    "2b58e89f68476a67ca9d26fec8c50706567dfd775c1e9d1e76eb4b1bc24f71a8"
+   ],
+   "launches": 1,
+   "trace": [
+    {
+     "seq": 221,
+     "mma_cycles": 21202,
+     "dma_cycles": 18633,
+     "overlap_cycles": 4318
+    }
+   ],
+   "overlap_cycles": 4318
+  }
+ ],
+ "engine_log_sha256": "d0da3eb4c475a37c033401bc49aa911a7d00040cb1797dfd660590f0122ae989",
+ "ok": true
+}

@@ -1,0 +1,2 @@
+FATAL: /tmp/tb_barrier_epoch.v:39: generation truncated at 65536
+       Time: 2621431000  Scope: tb_barrier_epoch

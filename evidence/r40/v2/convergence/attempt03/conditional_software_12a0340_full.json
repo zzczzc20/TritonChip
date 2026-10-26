@@ -1,0 +1,12 @@
+{
+  "schema": "tnca-complete-conditional-snapshot/1",
+  "commit": "12a0340",
+  "software_tree": "files:3cd958b8e17ad47b21e195cbae768630af6a6c49e31797e12daa3ca4ec81093b",
+  "archive_sha256": "452b2a061fe4a9710f23cd7df7b9d21d7090a12ded394966d763f146c2eb146a",
+  "archive_bytes": 2233232,
+  "source": "/home/zzhouch/tnca_src_r40_conditional_12a0340_full",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "reason": "complete tracked tools dependency tree; initial archive omitted tools/r38 imported by archbench.bounds",
+  "scope": "same committed compiler/runtime and unchanged workload definitions; fresh complete package; failed first run preserved; no device/programming operation",
+  "historical_bounds_sha256": "42f224030264f93cf79a209d0082bae6b955ccd521ef8a2a4cfaf9e75807c40a"
+}

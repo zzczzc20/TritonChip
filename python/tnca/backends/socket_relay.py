@@ -31,6 +31,7 @@ import time
 from ..errors import TncaError
 from .. import backend as _backend
 from ..backend import Backend, REFERENCE_AVAILABLE
+from ..transport import serialized_io
 
 PROTOCOL_VERSION = 1
 
@@ -98,6 +99,8 @@ class SocketBackend(Backend):
         self.epoch = epoch
         self.seq = 0
         self.history = []
+        import threading
+        self._io_lock = threading.RLock()
         self._address = address       # given: connect; absent: start one
         self._sock = None
         self._relay = None
@@ -200,6 +203,7 @@ class SocketBackend(Backend):
             self._relay is None or self._relay.poll() is None)
 
     # -- requests -----------------------------------------------------------
+    @serialized_io
     def _call(self, obj, payload=b''):
         if self._sock is None:
             raise TncaError('this backend is not connected',
@@ -225,6 +229,7 @@ class SocketBackend(Backend):
                        'exists')
         return head, data
 
+    @serialized_io
     def upload(self, addr, data):
         # Checked HERE, before anything goes on the wire. This binding
         # used to send an unaligned address, let the device raise, and
@@ -236,6 +241,7 @@ class SocketBackend(Backend):
                               'nbytes': len(data)}, bytes(data))
         return self._reply(head)
 
+    @serialized_io
     def download(self, addr, nbytes):
         _backend.check_transfer(addr, nbytes, what='download')
         head, data = self._call({'op': 'download', 'addr': int(addr),
@@ -248,6 +254,7 @@ class SocketBackend(Backend):
                        'answer: the caller asked for a range')
         return self._reply(head), data
 
+    @serialized_io
     def launch(self, pc, arg_base, role_mask=1, pid=(0, 0, 0),
                npid=(1, 1, 1)):
         head, _ = self._call({'op': 'launch', 'pc': int(pc),

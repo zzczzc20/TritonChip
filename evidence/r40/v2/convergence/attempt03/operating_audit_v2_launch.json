@@ -1,0 +1,9 @@
+{
+  "schema": "tnca-operating-audit-v2-launch/1",
+  "observed_utc": "2026-10-18T13:58:03.710403+00:00",
+  "supervisor_pid": 2344500,
+  "root": "/home/zzhouch/tnca_reports_r40_operating_v2",
+  "worker_sha256": "e95f7a2da984e8478ffb7f8eacbacb50d8f11cbfb2c219c1d56f5ef7d91c6976",
+  "probe_result": "R40_PERIOD_PROBE master_ns=10.000 operating_ns=11.111 expected_ns=11.11111111111111",
+  "scope": "one report-only DCP read with timing update and precision-aware identity check; no new implementation"
+}

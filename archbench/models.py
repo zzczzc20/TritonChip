@@ -207,6 +207,13 @@ LLAMA = {
     # Llama-3.2-1B's shape (its embeddings are tied; here the head is a
     # separate matrix, which changes no FLOP and only the weight bytes).
     'large': (LlamaCfg(dim=2048, n_layers=16, n_heads=32, n_kv_heads=8, ffn=8192, vocab=128256), 1, 512, 512),
+    # R40-00: the decoder R40-09 runs as an application (archbench.generate
+    # --tier hbm: a 512-token prompt, then 64 greedy steps). Four layers and
+    # 211 MiB of weights (149 MiB read per token: the embedding table is a
+    # gather) -- past the 64 MiB R40-09 asks for and the whole NUCA many
+    # times over -- with a sixteenth of the work per token of `large`'s 1B
+    # parameters, so that thirty timed samples on the board stay practical.
+    'hbm': (LlamaCfg(dim=1024, n_layers=4, n_heads=16, n_kv_heads=4, ffn=2816, vocab=32000), 1, 512, 512),
 }
 
 

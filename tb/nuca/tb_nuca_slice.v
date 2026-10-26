@@ -19,6 +19,11 @@
 `timescale 1ns/1ps
 
 module tb_nuca_slice;
+    parameter DCO_REGISTERED_RANGES = 0;
+    parameter SYNC_TAG_BANK = 1;
+    parameter BALANCED_VICTIM = 1;
+    parameter REGISTER_VICTIM_OWNER = 0;
+    parameter EPOCH_CHURN = 0;
 
     parameter DRAM_LAT   = 40;
     parameter DRAM_STALL = 1;
@@ -28,16 +33,17 @@ module tb_nuca_slice;
     // -- replacement, bypass and dead-block prediction move only where a line
     // lives, never what it holds.
     parameter POLICY     = 0;
+    parameter MAINTENANCE = 0;
 
     localparam ADDR_W     = 64;
     localparam LINE_BYTES = 64;
     localparam LINE_BITS  = 512;
     localparam WORD_BITS  = 64;
     localparam WORD_BYTES = 8;
-    localparam SETS       = 16;
-    localparam SET_W      = 4;
-    localparam WAYS       = 4;
-    localparam WAY_W      = 2;
+    parameter SETS       = 16;
+    parameter SET_W      = 4;
+    parameter WAYS       = 4;
+    parameter WAY_W      = 2;
     localparam MSHR_N     = 4;
     localparam MSHR_W     = 2;
     localparam TARGET_N   = 8;
@@ -103,6 +109,7 @@ module tb_nuca_slice;
     wire [63:0]             tl_addr;
 
     tnca_nuca_slice #(
+        .MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(WORD_BITS), .WORD_BYTES(WORD_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
@@ -112,6 +119,7 @@ module tb_nuca_slice;
         .SLICE_ID(SLICE_ID), .DCO_T(2)
     ) dut (
         .clk(clk), .rst_n(rst_n),
+        .maint_valid(1'b0), .maint_base(64'd0), .maint_size(64'd0),
         .req_ready(req_ready), .req_valid(req_valid), .req_addr(req_addr),
         .req_we(req_we), .req_be(req_be), .req_wdata(req_wdata),
         .req_src(req_src), .req_tag(req_tag),
@@ -126,11 +134,12 @@ module tb_nuca_slice;
         .perf_hit(perf_hit), .perf_miss(perf_miss), .perf_merge(perf_merge),
         .perf_mshr_full(perf_mshr_full), .perf_target_full(perf_target_full),
         .perf_wb(perf_wb), .perf_hit_past_block(perf_hit_past_block),
-        .dco_cfg(dco_cfg),
+        .dco_owner_epoch(owner_epoch), .dco_cfg(dco_cfg),
         .dco_t_valid(2'b11),
         .dco_t_base({64'd0, T_BYP}),
         .dco_t_size({64'd0, T_BYP}),
-        .dco_t_bypass(2'b01), .dco_t_lsb({6'd0, 6'd9}),
+        .dco_t_end({1'b1, 64'd0, ({1'b0,T_BYP}+{1'b0,T_BYP})}),
+        .dco_t_bypass({owner_bypass_flip,1'b1}), .dco_t_lsb({6'd0, 6'd9}),
         .dco_dead_valid(dead_v), .dco_dead_id(dead_id), .dco_slow(dco_slow),
         .tmu_wr_valid(tmw_valid), .tmu_wr_ready(1'b1), .tmu_wr_off(),
         .tmu_wr_data(), .tmu_wr_src(), .tmu_rd_off(), .tmu_rd_data(64'd0),
@@ -139,6 +148,29 @@ module tb_nuca_slice;
         .perf_bypass(perf_bypass), .perf_evict(perf_evict),
         .perf_dead_evict(perf_dead_evict), .perf_gear(perf_gear)
     );
+
+    reg owner_epoch=0, owner_bypass_flip=0;
+    integer owner_cycles=0, owner_retries=0;
+    reg expect_owner_retry=0;
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            owner_epoch<=0; owner_bypass_flip<=0; owner_cycles<=0;
+            owner_retries<=0; expect_owner_retry<=0;
+        end else begin
+            owner_cycles<=owner_cycles+1;
+            if (EPOCH_CHURN && dut.est==1 && owner_cycles%4==0) begin
+                owner_epoch<=~owner_epoch;
+                owner_bypass_flip<=~owner_bypass_flip;
+            end
+            expect_owner_retry <= REGISTER_VICTIM_OWNER && dut.est==3 &&
+                                  dut.owner_epoch_q != owner_epoch;
+            if (REGISTER_VICTIM_OWNER && dut.est==3 && dut.owner_epoch_q != owner_epoch)
+                owner_retries<=owner_retries+1;
+        end
+    end
+    always @(negedge clk)
+        if (rst_n && expect_owner_retry && dut.est!==1)
+            $fatal(1,"stale owner classification consumed instead of retried");
 
     integer dk;
     integer dseed;
@@ -353,6 +385,9 @@ module tb_nuca_slice;
         $display("hit=%0d miss=%0d merge=%0d wb=%0d mshr_full=%0d target_full=%0d hit_past_block=%0d",
                  perf_hit, perf_miss, perf_merge, perf_wb,
                  perf_mshr_full, perf_target_full, perf_hit_past_block);
+        if (EPOCH_CHURN && REGISTER_VICTIM_OWNER && owner_retries==0)
+            $fatal(1,"owner epoch mutation was not exercised");
+        $display("OWNER_EPOCH retries=%0d",owner_retries);
         $display("policy=%0d bypass=%0d evict=%0d dead_evict=%0d gear=%0d",
                  POLICY, perf_bypass, perf_evict, perf_dead_evict, perf_gear);
 

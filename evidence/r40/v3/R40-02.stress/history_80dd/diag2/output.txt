@@ -1,0 +1,11 @@
+# diag_copy_origin.py on GB10, tree files:80dd1a82..., core-vrf-sync-v5 RTL (sim-file), 2026-10-19T02:2x UTC
+# Why sim1/batch-1000 failed: the first compiled call's launch log also holds Inductor's one-time
+# SDPA pattern-matcher initialization (fuse_attention._sfdp_init traces example tensors on the device,
+# each Tensor.copy_ is a native _copy_kernel launch). The steady call launches only the 3 graph kernels.
+FIRST Counter({'_copy_kernel': 26, 'triton_red_fused_native_layer_norm_0': 1, 'triton_tem_fused_mm_native_layer_norm_1': 1, 'triton_red_fused__softmax_2': 1})
+SECOND ['triton_red_fused_native_layer_norm_0', 'triton_tem_fused_mm_native_layer_norm_1', 'triton_red_fused__softmax_2']
+ORIGIN 2 joint_graph.py:711:joint_graph_passes <- pattern_matcher.py:3019:lazy_init <- joint_graph.py:88:lazy_init <- fuse_attention.py:1512:_sfdp_init <- fuse_attention.py:1138:_get_sfdp_patterns <- eval_frame.py:1548:_fn
+(... 13 _get_sfdp_patterns origins, 2 copies each ...)
+# Fix (harness only, tools/r40/batch_tests.py): compile with one call, take the single-submit reference
+# from the steady call, and assert the steady graph launches no device copies. sim2 (80dd) and the
+# delivery run bc5a_sim3 use the fixed harness.

@@ -1,0 +1,32 @@
+{
+  "profile": "core-vrf-sync-v5",
+  "variant": "hbm",
+  "parameters": {
+    "USE_BANKED_VRF": 1,
+    "VRF_BYPASS": 1,
+    "FE_NOBUBBLE": 1,
+    "VRF_PREFETCH": 1,
+    "RCTX_SWITCH": 2,
+    "LSU_INFLIGHT": 2,
+    "FPU_OVERLAP": 1,
+    "RSLICE": 1,
+    "RPAIR": 1,
+    "MTX_ABUF": 1,
+    "HAS_TENSOR_XPOSE": 1,
+    "NUM_RCTX": 4,
+    "RCTX_W": 2,
+    "VREGS_PER_RCTX": 64,
+    "HAS_SFU": 1,
+    "HAS_ATOMICS": 1,
+    "HAS_SYS_ATOMICS": 0,
+    "LOCAL_LIMIT": 524288,
+    "AXI_LINE": 8,
+    "AXI_OUT_N": 16,
+    "AXI_LB_N": 16,
+    "AXI_WAIT_N": 32,
+    "AXI_PF": 1,
+    "AXI_LOCAL_PIPE": 1,
+    "AXI_RAM_CACHE": 1
+  },
+  "profiles_sha256": "4bd11c8980ec8e1bea65d937fd615bad0c257105a00d22f92065def388d36188"
+}

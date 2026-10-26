@@ -1,0 +1,37 @@
+[
+  {
+    "detail": "a fault is FAILED, with a trap code and a PC",
+    "id": "ERR-01",
+    "passed": true
+  },
+  {
+    "detail": "a drained fault leaves the session usable",
+    "id": "ERR-02",
+    "passed": true
+  },
+  {
+    "detail": "the deadline poisons, the queue fails, recover() works",
+    "id": "ERR-03",
+    "passed": true
+  },
+  {
+    "detail": "a new epoch, every old handle refused, and work again",
+    "id": "ERR-04",
+    "passed": true
+  },
+  {
+    "detail": "a stale reply is ignored; one from the future is reported",
+    "id": "ERR-05",
+    "passed": true
+  },
+  {
+    "detail": "a dead device is DEVICE_LOST, reaped, and recoverable",
+    "id": "ERR-06",
+    "passed": true
+  },
+  {
+    "detail": "16 alternating tasks, no leak, no task reported wrongly",
+    "id": "ERR-07",
+    "passed": true
+  }
+]

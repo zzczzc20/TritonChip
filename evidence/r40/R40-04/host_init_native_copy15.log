@@ -1,0 +1,20 @@
+/home/zhongchun/tritonchip-r40-clock/python/tnca/device.py:472: RuntimeWarning: the staged copy under /home/zhongchun/tritonchip-r40-clock/python/tnca/data differs from the working tree in ['rtl']. The runtime reads the staged copy, so it is about to build a device from sources that are not the ones you edited. Run `make r2-stage-data`.
+  warn_if_staged_copy_is_stale()
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-ba09d41820d5/tnca_device_vrf5.vvp
+W1013 01:02:09.913000 180558 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+PASS torch.float16: 1 native copy launch(es), tensor transfers=0
+PASS torch.bfloat16: 1 native copy launch(es), tensor transfers=0
+PASS torch.float32: 1 native copy launch(es), tensor transfers=0
+PASS torch.float64: 1 native copy launch(es), tensor transfers=0
+PASS torch.int8: 1 native copy launch(es), tensor transfers=0
+PASS torch.uint8: 1 native copy launch(es), tensor transfers=0
+PASS torch.int16: 1 native copy launch(es), tensor transfers=0
+PASS torch.int32: 1 native copy launch(es), tensor transfers=0
+PASS torch.int64: 1 native copy launch(es), tensor transfers=0
+PASS torch.bool: 1 native copy launch(es), tensor transfers=0
+PASS strided gaps: 1 native copy launch(es), tensor transfers=0
+PASS broadcast: 1 native copy launch(es), tensor transfers=0
+PASS dtype conversion: 1 native copy launch(es), tensor transfers=0
+PASS disjoint storage aliases: 2 native copy launch(es), tensor transfers=0
+PASS storage resize: prefix preserved, tensor transfers=0
+r40-device-copy-tests PASS (15/15), overlap refused

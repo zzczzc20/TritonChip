@@ -1,0 +1,177 @@
+`timescale 1ns/1ps
+// Executes real tnca_core EXIT pipelines; does not replace Torch/board acceptance.
+module tb_grid_cores;
+parameter N=3;
+parameter MEMORY=0;
+parameter HOST=0;
+parameter PORTS=1;
+parameter INJECT_BAD_SOURCE=0;
+parameter MAINTENANCE=0;
+parameter PIPELINE=0;
+parameter DCO_REGISTERED_RANGES=0;
+reg cache_valid=0,memory_drained=0;
+reg [63:0] cache_base=0,cache_size=0;
+wire cache_ready,cache_done;
+reg hv=0,hw=0;reg [63:0] ha=0,hd=0;reg [7:0] hbe=8'hff;
+wire hr,hrv,hb;wire [63:0] hrd;
+localparam MX=N>4?4:N;
+localparam SW=N>4?$clog2(N):2;
+reg clk=0;always #5 clk=~clk;
+reg rst_n=0,valid=0,ack=0;
+reg [63:0] launch_pc=0;
+wire ready,done;wire [3:0] status;
+wire [N*32-1:0] issued,completed;
+wire [N-1:0] faults;
+wire [N*64-1:0] imem_addr;
+reg [N*64-1:0] imem_data;
+reg [N-1:0] prev_launch=0;
+reg [63:0] program_mem[0:255];
+reg [1023:0] hexfile;
+wire [PORTS-1:0] pv,pr,pw,rv,pfault;
+wire [PORTS*64-1:0] pa,preads,pwrites;
+wire [PORTS*512-1:0] pd,rd;
+wire [PORTS*3-1:0] pt,rt;
+wire [PORTS*SW-1:0] ps,rs;
+wire mr,mready,mwe,mrv;
+wire [63:0] ma;
+wire [511:0] mw,md;
+wire [2:0] mt,mrt;
+wire [SW-1:0] ms,mrs;
+tnca_dram_model #(.SRC_W(SW),.TAG_W(3),.LINES(2048),.LATENCY(11),.RANDOM_STALL(1),.REORDER(1)) ram (
+.clk(clk),.rst_n(rst_n),.req_valid(mr),.req_ready(mready),.req_addr(ma),.req_we(mwe),
+.req_wdata(mw),.req_tag(mt),.req_src(ms),.rsp_valid(mrv),.rsp_tag(mrt),.rsp_src(mrs),.rsp_rdata(md));
+generate if(PORTS>1)begin: g_memory_ports
+ for(genvar p=0;p<PORTS;p=p+1)begin: g_controller
+  tnca_dram_model #(.SRC_W(SW),.TAG_W(3),.LINES(2048),.LATENCY(11+p*7),.RANDOM_STALL(1),.REORDER(1)) ram(
+   .clk(clk),.rst_n(rst_n),.req_valid(pv[p]),.req_ready(pr[p]),.req_addr(pa[p*64+:64]),
+   .req_we(pw[p]),.req_wdata(pd[p*512+:512]),.req_tag(pt[p*3+:3]),.req_src(ps[p*SW+:SW]),
+   .rsp_valid(rv[p]),.rsp_tag(rt[p*3+:3]),.rsp_src(rs[p*SW+:SW]),.rsp_rdata(rd[p*512+:512]));
+ end
+end endgenerate
+reg stalled=0;
+reg [63:0] stalled_addr;
+reg [SW-1:0] stalled_src;
+reg [2:0] stalled_tag;
+reg stalled_we;
+reg [511:0] stalled_data;
+always @(posedge clk) if(rst_n) begin
+ if(stalled && (!mr || ma!=stalled_addr || ms!=stalled_src || mt!=stalled_tag || mwe!=stalled_we || mw!=stalled_data))$fatal(1,"memory request changed under backpressure");
+ stalled<=mr && !mready;stalled_addr<=ma;stalled_src<=ms;
+ stalled_tag<=mt;stalled_we<=mwe;stalled_data<=mw;
+end
+integer seen[0:454];integer total=0,cycles=0;
+tnca_top #(.DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),.CACHE_MAINTENANCE(MAINTENANCE),.NOC_LINK_STAGES(PIPELINE),.DISPATCH_STAGES(PIPELINE),.MEM_HOME_STAGES(PIPELINE),.MEM_PORTS(PORTS),.NX(MX),.NY(N/MX),.GLOBAL_GRID(1),.HOST_ACCESS(HOST),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut (
+.clk(clk),.rst_n(rst_n),.launch_valid(1'b0),.launch_pc(launch_pc),.launch_role_mask(2'b01),
+.cache_maint_valid(cache_valid),.cache_maint_base(cache_base),.cache_maint_size(cache_size),
+.cache_maint_memory_drained(memory_drained),.cache_maint_ready(cache_ready),.cache_maint_done(cache_done),
+.launch_arg_base(64'h1000),.launch_vbase(14'd0),.grid_valid(valid),.grid_ready(ready),
+.grid_abort(1'b0),.grid_abort_status(4'd0),.grid_slice(4'd0),.grid_id(64'd17),.grid_arg_stride(64'h100),.grid_x(32'd13),.grid_y(32'd7),.grid_z(32'd5),
+.grid_cores({N{1'b1}}),.grid_done_valid(done),.grid_done_ready(ack),.grid_done_status(status),
+.host_valid(hv),.host_we(hw),.host_addr(ha),.host_wdata(hd),.host_be(hbe),
+.host_ready(hr),.host_rsp_valid(hrv),.host_rsp_data(hrd),.host_busy(hb),
+.grid_issued(issued),.grid_completed(completed),.fault_valid(faults),.imem_addr(imem_addr),
+.imem_data(imem_data),.ports_req_valid(pv),.ports_req_ready(pr),.ports_req_addr(pa),.ports_req_we(pw),
+.ports_req_wdata(pd),.ports_req_tag(pt),.ports_req_src(ps),.ports_rsp_valid(rv),
+.ports_rsp_tag(rt),.ports_rsp_src(rs),.ports_rsp_rdata(rd),.memory_protocol_fault(pfault),
+.memory_reads(preads),.memory_writes(pwrites),.mem_req_valid(mr),.mem_req_ready(mready),.mem_req_addr(ma),
+.mem_req_we(mwe),.mem_req_wdata(mw),.mem_req_tag(mt),.mem_req_src(ms),
+.mem_rsp_valid(mrv),.mem_rsp_tag(mrt),.mem_rsp_src(mrs),.mem_rsp_rdata(md));
+always @(posedge clk)begin
+ for(integer t=0;t<N;t=t+1)
+  imem_data[t*64+:64]<=MEMORY ? program_mem[(imem_addr[t*64+:64]>>3)%256] : 64'h021f000000000000;
+ prev_launch<=dut.tile_launch;
+ if(HOST && hb && ready)$fatal(1,"grid admitted while host outstanding");
+ if(HOST && hr && (|dut.dispatch_busy))$fatal(1,"host access admitted during grid");
+ cycles=cycles+1;
+ if(N==8 && MEMORY && cycles%1000==0)begin
+  $display("GRID progress cycles=%0d accepted=%0d busy=%h",cycles,total,dut.dispatch_busy);$fflush();
+ end
+ if(cycles>100000)$fatal(1,"core drain timeout");
+end
+for(genvar c=0;c<N;c=c+1)begin: monitor
+ integer key;
+ always @(negedge clk)if(rst_n && prev_launch[c])begin
+  key=dut.g_tile[c].u_tile.u_core.pid_x+13*(dut.g_tile[c].u_tile.u_core.pid_y+7*dut.g_tile[c].u_tile.u_core.pid_z);
+  if(dut.g_tile[c].u_tile.u_core.arg_base!=64'h1000+c*256)$fatal(1,"actual core private args wrong");
+  if(key<0 || key>454 || seen[key])$fatal(1,"actual core duplicate PID");
+  seen[key]=1;total=total+1;
+  if(dut.g_tile[c].u_tile.u_core.npid_x!=13 || dut.g_tile[c].u_tile.u_core.npid_y!=7 || dut.g_tile[c].u_tile.u_core.npid_z!=5)$fatal(1,"actual core grid wrong");
+ end
+end
+task host_word;
+ input write_enable;input [63:0] address,value;input [7:0] mask;
+ begin
+  @(negedge clk);hv=1;hw=write_enable;ha=address;hd=value;hbe=mask;
+  @(posedge clk);while(!hr)@(posedge clk);
+  @(negedge clk);hv=0;valid=1;
+  #1;if(ready)$fatal(1,"launch request accepted during host transfer");
+  while(!hrv)begin @(negedge clk);if(ready)$fatal(1,"launch escaped host drain gate");end
+  valid=0;
+  if(!write_enable && hrd!==value)$fatal(1,"coherent host download mismatch addr=%h got=%h expected=%h",address,hrd,value);
+  @(negedge clk);
+ end
+endtask
+initial begin
+ if(MEMORY) begin
+  for(integer w=0;w<256;w=w+1)program_mem[w]=64'h021f000000000000;
+  if(!$value$plusargs("hex=%s",hexfile))$fatal(1,"missing memory kernel");
+  $readmemh(hexfile,program_mem);
+ end
+ for(integer k=0;k<455;k=k+1)seen[k]=0;
+ repeat(5)@(negedge clk);rst_n=1;
+ for(integer phase=0;phase<(MEMORY?2:1);phase=phase+1)begin
+  for(integer k=0;k<455;k=k+1)seen[k]=0;
+  total=0;launch_pc=phase*256;valid=1;
+  @(negedge clk);valid=0;
+  if(HOST)begin hv=1;@(negedge clk);if(hr)$fatal(1,"host concurrent request accepted");hv=0;end
+  wait(done);@(negedge clk);
+  if(status!=0) $display("DEBUG expected=%h actual=%h address=%h dram0=%h",dut.g_tile[0].u_tile.u_core.u_srf.mem[1],dut.g_tile[0].u_tile.u_core.u_srf.mem[6],dut.g_tile[0].u_tile.u_core.u_srf.mem[5],ram.mem[1024][63:0]);
+  if(status!=0 || faults!=0 || total!=455 || !dut.all_idle)$fatal(1,"actual core execution failed status=%0d faults=%h total=%0d pc=%h",status,faults,total,dut.g_tile[0].u_tile.u_core.fault_pc);
+  for(integer k=0;k<455;k=k+1)if(!seen[k])$fatal(1,"actual core missing PID");
+  for(integer k=0;k<N;k=k+1)if(issued[k*32+:32]==0 || issued[k*32+:32]!=completed[k*32+:32])$fatal(1,"inactive or undrained core");
+  if(MEMORY)for(integer port=0;port<PORTS;port=port+1)
+   if(preads[port*64+:64]==0)$fatal(1,"controller has no real read traffic");
+  if(MEMORY && pwrites==0)$fatal(1,"no real dirty writeback traffic");
+  if(pfault!=0)$fatal(1,"memory controller source ownership fault");
+  $display("GRID REAL CORES PASS N=%0d memory=%0d ports=%0d phase=%0d programs=%0d cycles=%0d",N,MEMORY,PORTS,phase,total,cycles);
+  ack=1;@(negedge clk);ack=0;
+ end
+ if(HOST)begin
+  for(integer k=0;k<455;k=k+1)host_word(0,65536+k*8,4096+k,8'hff);
+  host_word(1,65536,64'hfedcba9876543210,8'hff);
+  host_word(0,65536,64'hfedcba9876543210,8'hff);
+  host_word(1,65536,64'h1234,8'h03);
+  host_word(0,65536,64'hfedcba9876541234,8'hff);
+  $display("GRID COHERENT HOST PASS N=%0d downloads=457 uploads=2",N);
+ end
+ if(MAINTENANCE)begin
+  if(!HOST || !MEMORY || PORTS!=1)$fatal(1,"ownership test requires coherent host and single backing store");
+  @(negedge clk);cache_valid=1;cache_base=65537;cache_size=455*8-1;
+  @(posedge clk);while(!cache_ready)@(posedge clk);
+  @(negedge clk);cache_valid=0;cache_base=0;cache_size=0;
+  repeat(1000)begin
+   @(negedge clk);if(cache_done || dut.all_idle || ready)$fatal(1,"ownership granted before physical drain");
+  end
+  hv=1;valid=1;@(negedge clk);
+  if(hr || ready)$fatal(1,"host/grid admitted during ownership transfer");
+  hv=0;valid=0;memory_drained=1;
+  wait(cache_done);@(negedge clk);
+  for(integer k=0;k<455;k=k+1)
+   if(ram.mem[1024+k/8][(k%8)*64+:64] !== (k==0 ? 64'hfedcba9876541234 : 64'd4096+k))
+    $fatal(1,"dirty global result missing from backing memory at PID %0d",k);
+  // A one-byte DMA update must supersede the now-invalidated home copy.
+  ram.mem[1024][15:8]=8'hab;
+  host_word(0,65536,64'hfedcba987654ab34,8'hff);
+  $display("GLOBAL CACHE HANDOFF PASS N=%0d dirty_results=455 partial_dma=1",N);
+ end
+ if(INJECT_BAD_SOURCE)begin
+  force dut.mem_rsp_valid=1'b1;force dut.mem_rsp_src=N;
+  @(posedge clk);#1;if(pfault!=1)$fatal(1,"single-controller invalid source not latched");
+  release dut.mem_rsp_valid;release dut.mem_rsp_src;
+  @(negedge clk);valid=1;@(negedge clk);valid=0;wait(done);@(negedge clk);
+  if(status!=1 || issued!=0 || completed!=0)$fatal(1,"dispatch continued after controller protocol fault");
+  $display("SINGLE MEMORY PROTOCOL FAULT PASS");
+ end
+ $finish;
+end
+endmodule

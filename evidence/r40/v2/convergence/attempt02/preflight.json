@@ -1,0 +1,91 @@
+{
+  "schema": "tnca-r40-final-candidate-preflight/1",
+  "gate_status": "not-measured",
+  "qualification": "ready for bounded final full-system attempt, not final acceptance",
+  "hypothesis": "Synchronous tag banks and owner flops cut the lookup chain; balanced victim min shortens its remaining ladder; KEEP_HIERARCHY on cache instances prevents private cache logic being reconstructed under central TMU and forced across SLRs",
+  "clock_target_hz": 100000000,
+  "part": "xcu280-fsvh2892-2L-e",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "scope": "three actual slices with shared actual TMU, all maintenance inputs; rebuilt synthesis and opt_design; no cores/NoC/HBM platform; not routed timing, density, CDC, image or workload qualification",
+  "post_opt_results": {
+    "0": {
+      "worst_source": "g_tile[1].u_slice/victim_owner_q_reg[7][2]/C",
+      "worst_destination": "g_tile[1].u_slice/ms_wbadr_reg_0_7_0_13/RAMA/WE",
+      "logic_levels": 33,
+      "data_delay_ns": 8.383,
+      "logic_delay_ns": 2.587,
+      "estimated_net_delay_ns": 5.796,
+      "estimated_slack_ns": 1.374,
+      "lut": 99976,
+      "ff": 15509,
+      "foreign_combinational_consumers_by_cache": {
+        "0": 4144,
+        "1": 5208,
+        "2": 4153
+      },
+      "tag_primitive_hierarchy_counts": {
+        "RAM32M16": 96,
+        "LUT4": 24,
+        "FDRE": 1272,
+        "MUXF7": 14,
+        "LUT6": 62,
+        "LUT5": 2,
+        "RAMD32": 1344,
+        "RAMS32": 192,
+        "LUT1": 5,
+        "LUT3": 2
+      }
+    },
+    "1": {
+      "worst_source": "g_tile[1].u_slice/victim_owner_q_reg[7][2]/C",
+      "worst_destination": "g_tile[1].u_slice/ms_wbadr_reg_0_7_0_13/RAMA/WE",
+      "logic_levels": 33,
+      "data_delay_ns": 8.344,
+      "logic_delay_ns": 2.465,
+      "estimated_net_delay_ns": 5.879,
+      "estimated_slack_ns": 1.413,
+      "lut": 100039,
+      "ff": 15524,
+      "foreign_combinational_consumers_by_cache": {},
+      "tag_primitive_hierarchy_counts": {
+        "RAM32M16": 96,
+        "LUT4": 24,
+        "FDRE": 1272,
+        "MUXF7": 14,
+        "LUT6": 62,
+        "LUT5": 2,
+        "RAMD32": 1344,
+        "RAMS32": 192,
+        "LUT1": 5,
+        "LUT3": 2
+      }
+    }
+  },
+  "archives": {
+    "hierarchy_screen.tar.gz": "1ae4f4ce5ad36aaacc96858ca1655c83aaab54000f7696205ae3804a54ece374",
+    "postopt_screen.tar.gz": "b77a8983adff5afb3ee03ab45d80ade8d79d232a5b7eeef569a790b31ad783f9"
+  },
+  "production_attribute": "rtl/tile/tnca_tile.v:u_slice KEEP_HIERARCHY=yes; existing six code-link DONT_TOUCH objects preserved",
+  "configuration": {
+    "json": "image.json",
+    "tcl": "image.tcl",
+    "same_geometry_as_attempt01": true,
+    "same_placement_directive": "SSI_SpreadSLLs",
+    "cores": 3,
+    "physical_outlets": 3,
+    "hbm_pc_binding": "HBM[0:31]",
+    "sets": 32,
+    "ways": 8
+  },
+  "source_inputs": {
+    "rtl/tile/tnca_tile.v": "c0079db0cfcb91d462e2036e253bdaa4daef1e1fc897c95c0fd3b5d6c3eed45b",
+    "rtl/nuca/tnca_nuca_slice.v": "f509b36e86785d376846013e0da122e697632bc088f925ae019a46b15ef21d02",
+    "rtl/nuca/tnca_tmu.v": "c09a71109e6cc7a5ecf330cce01d5c02d38446892b198b0c4e396fcb40e0dccc",
+    "rtl/core/tnca_decoder.v": "fad46133110797293a9086f5c486cfaeb2dae30f6df3ebc393afe4f96f0499ce"
+  },
+  "image_sha256": null,
+  "fmax_hz": null,
+  "route_status": "not-measured",
+  "cdc_qualification": "not-measured",
+  "remaining_full_implementations_before_launch": 1
+}

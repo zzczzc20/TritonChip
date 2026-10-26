@@ -1,10 +1,10 @@
 """
 TNCA IR -> assembly.
 
-The second half of the bring-up path of compiler_overview.md sec 11.1. There
-is no general machine optimiser here, on purpose (这一阶段不建设复杂的通用
-寄存器优化器); allocation is a linear scan over last uses, and scheduling is
-program order.
+The second half of the bring-up path of compiler_overview.md sec 11.1.
+The default allocator is a linear scan over last uses. An opt-in bank
+preference uses the profile's declared bank geometry; it changes temporary
+register placement while preserving the same lifetime and ownership checks.
 
 What is not simplified is ownership. Three things run alongside the walk:
 
@@ -83,16 +83,23 @@ class CodeGen:
     """Lower one role's region to assembly."""
 
     def __init__(self, kernel, target, builder=None, *, check_protocol=True,
-                 opt_level=0):
+                 opt_level=0, bank_alloc=False, window_reuse=False):
         # Phase 3.5 section 4.3. At 0 this is B0: every lowering decision
         # below is the one the stage was frozen with, so O0 and B0 emit
         # the same bytes. From 1 up, a lowering may choose a cheaper form
         # for the same meaning.
         self.opt_level = int(opt_level or 0)
+        self.window_reuse = bool(window_reuse)
         self.kernel = kernel
         self.target = target
         self.b = builder or AsmBuilder(target, kernel.name)
         self.alloc = RegisterAllocator(target)
+        self._bank_reads = {}
+        if bank_alloc:
+            from .bankcost import geometry
+            self.bank_banks = geometry(target)
+        else:
+            self.bank_banks = 0
         self.own = OwnershipChecker()
         self.protocol = ProtocolModel(
             depth=max(1, len(kernel.windows)),
@@ -129,6 +136,15 @@ class CodeGen:
             a.reg = i
         for i, d in enumerate(k.descriptors):
             d.reg = i
+
+        if self.window_reuse:
+            from .window_lifetime import assign
+            self._compute_last_uses(k.role(0).region.ops)
+            count = assign(k, t.vregs_per_rctx, self._last_use)
+            if count:
+                self.alloc.reserve_vector(t.vregs_per_rctx - count, count)
+            self.window_registers = count
+            return
 
         # Windows are contiguous vector ranges, packed from the top of the
         # file downwards so role-local temporaries get the low registers.
@@ -193,7 +209,15 @@ class CodeGen:
         if v.kind == SCALAR:
             v.reg = self.alloc.scalar()
         elif v.kind == VECTOR:
-            v.reg = self.alloc.vector()
+            cost = None
+            if self.bank_banks:
+                neighbors = self._bank_reads.get(id(v), ())
+                def cost(candidate):
+                    # Only currently mapped co-read values inform this choice.
+                    return sum(weight for other, weight in neighbors
+                               if other.reg is not None and
+                               other.reg % self.bank_banks == candidate % self.bank_banks)
+            v.reg = self.alloc.vector(cost, self.bank_banks)
         elif v.kind == PRED:
             v.reg = self.alloc.predicate()
         elif v.kind in (EVENT, TOKEN):
@@ -300,6 +324,18 @@ class CodeGen:
         role = self.kernel.role(role_index)
         ops = role.region.ops
         self._compute_last_uses(ops)
+        if self.bank_banks:
+            edges = {}
+            for op in ops:
+                reads = {id(v): v for v in op.operands
+                         if getattr(v, 'kind', None) == VECTOR}
+                for key, value in reads.items():
+                    neighbors = edges.setdefault(key, {})
+                    for other_key, other in reads.items():
+                        if other_key != key:
+                            old = neighbors.get(other_key, (other, 0))
+                            neighbors[other_key] = (other, old[1] + 1)
+            self._bank_reads = {key: tuple(values.values()) for key, values in edges.items()}
         for i, op in enumerate(ops):
             getattr(self, f"_op_{op.kind}", self._unhandled)(op)
             self._free_dead(i, ops)
@@ -377,6 +413,12 @@ class CodeGen:
     # ---- scalar ops -------------------------------------------------------
     def _op_comment(self, op):
         self.b.comment(op.attrs['text'])
+
+    def _op_proton_timestamp(self, op):
+        # Effectful: clocks must never be CSE'd or treated as PURE specials.
+        v = op.results[0]
+        self._alloc(v)
+        self._emit('s.rdspecial', f's{v.reg}', 'clock')
 
     def _op_label(self, op):
         self.b.label(op.attrs['name'])
@@ -1165,7 +1207,8 @@ class CodeGen:
         self._emit('a.vread', f"v{v.reg}", f"a{acc.reg}", f"s{row.reg}")
 
 
-def emit_roles(kernel, target, *, check_protocol=False, opt_level=0):
+def emit_roles(kernel, target, *, check_protocol=False, opt_level=0, bank_alloc=False,
+               window_reuse=False):
     """A kernel of several roles as one program (R39-12, Mode A).
 
     Every context starts at the same PC (a launch has one); each reads
@@ -1181,10 +1224,13 @@ def emit_roles(kernel, target, *, check_protocol=False, opt_level=0):
     per context and need no such care.
     """
     import copy
+    if window_reuse:
+        raise ResourceError('window lifetime reuse requires a single IR role')
     if len(kernel.roles) != 2:
         raise Diagnostic(f"{len(kernel.roles)} roles; this emits two")
     trial = copy.deepcopy(kernel)
-    cg = CodeGen(trial, target, check_protocol=check_protocol, opt_level=opt_level)
+    cg = CodeGen(trial, target, check_protocol=check_protocol, opt_level=opt_level,
+                 bank_alloc=bank_alloc)
     cg.assign_shared()
     cg.run(0)
     need = cg.alloc.max_vector + 1
@@ -1193,7 +1239,8 @@ def emit_roles(kernel, target, *, check_protocol=False, opt_level=0):
         raise ResourceError(f"role 0 needs {need} vector registers below the windows at v{top}")
     texts, gens = [], []
     for r, (lo, hi) in ((0, (top - need, top)), (1, (0, top - need))):
-        g = CodeGen(kernel, target, check_protocol=check_protocol, opt_level=opt_level)
+        g = CodeGen(kernel, target, check_protocol=check_protocol, opt_level=opt_level,
+                    bank_alloc=bank_alloc)
         g.assign_shared()
         g.alloc.limit_vectors(lo, hi)
         g.run(r)

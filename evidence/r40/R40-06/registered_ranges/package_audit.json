@@ -1,0 +1,17 @@
+{
+  "status": "package-header-and-rtl-pass",
+  "xo": "/home/zzhouch/tnca_build/r40_ranges_package24/xo/tnca_u50.xo",
+  "xo_sha256": "f79f9f219ae8ebc2710a4c8cc8eaf4fa1850b4610b68d5b53838d6c44f27284a",
+  "header_members": [
+    "ip_repo/tnca_com_kernel_tnca_u50_1_0/src/tnca_dco_owner_registered.vh"
+  ],
+  "header_sha256": "a8d06b7cb702d9b54e14a7a0ec50eaeca1b4c34700a71adf46e12f3b2b4c340b",
+  "rtl": {
+    "ip_repo/tnca_com_kernel_tnca_u50_1_0/src/tnca_nuca_slice.v": "892085210a6c85b39554130ae1bee473f48c406a4fed29f01a4299d1e97418f9",
+    "ip_repo/tnca_com_kernel_tnca_u50_1_0/src/tnca_tmu.v": "29c326b4cc7da6c928ed41119416880362704b8d0b544889b6ad99daeb144ea3"
+  },
+  "parameter": "DCO_REGISTERED_RANGES=1",
+  "clock_target_hz": 100000000,
+  "gate_status": "not-measured",
+  "loadable_image_sha256": null
+}

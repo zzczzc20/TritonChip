@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- One shared window: hbm0/hbm1/hbm2 must be the identical buffer. -->
+<root versionMajor="1" versionMinor="6">
+  <kernel name="tnca_u50" language="ip_c" vlnv="tnca.com:kernel:tnca_u50:1.0"
+          attributes="" preferredWorkGroupSizeMultiple="0" workGroupSize="1"
+          interrupt="false" hwControlProtocol="ap_ctrl_none">
+    <ports>
+      <port name="s_axi_tnca" mode="slave" range="0x1000" dataWidth="32"
+            portType="addressable" base="0x0"/>
+      <port name="m_axi_hbm0" mode="master" range="0xFFFFFFFFFFFFFFFF" dataWidth="256" portType="addressable" base="0x0"/>
+      <port name="m_axi_hbm1" mode="master" range="0xFFFFFFFFFFFFFFFF" dataWidth="256" portType="addressable" base="0x0"/>
+      <port name="m_axi_hbm2" mode="master" range="0xFFFFFFFFFFFFFFFF" dataWidth="256" portType="addressable" base="0x0"/>
+    </ports>
+    <args>
+      <arg name="hbm0" addressQualifier="1" id="0" port="m_axi_hbm0" size="0x8" offset="0xA8" hostOffset="0x0" hostSize="0x8" type="void*"/>
+      <arg name="hbm1" addressQualifier="1" id="1" port="m_axi_hbm1" size="0x8" offset="0x100" hostOffset="0x0" hostSize="0x8" type="void*"/>
+      <arg name="hbm2" addressQualifier="1" id="2" port="m_axi_hbm2" size="0x8" offset="0x108" hostOffset="0x0" hostSize="0x8" type="void*"/>
+    </args>
+  </kernel>
+</root>

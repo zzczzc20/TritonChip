@@ -1,0 +1,122 @@
+{
+  "observed_utc": "2026-10-18T01:51:33.101735+00:00",
+  "scope": "partial live functional RTL inventory; not physical acceptance",
+  "raw_file": "/home/zhongchun/r40_final_native77_a1fed22_20261017/native77_results/raw.jsonl",
+  "raw_prefix_sha256": "08d42d0aa3731210bfb397ec1bb6b2219ed0a2cb4096430ab96ed66ca9a305bf",
+  "raw_prefix_bytes": 65422,
+  "rows": 3,
+  "point_statuses": [
+    {
+      "point_id": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+      "status": "pass"
+    },
+    {
+      "point_id": "model.llama_decode/tiny/fp16-b1-p16",
+      "status": "pass"
+    },
+    {
+      "point_id": "model.llama_decode/medium/fp16-b1-p256",
+      "status": "timeout"
+    }
+  ],
+  "failures": [
+    {
+      "schema": "archbench-torch-record/2",
+      "point_id": "model.llama_decode/medium/fp16-b1-p256",
+      "point_sha256": "dafdc2dd0f86b5b55e3922d2a91c44987ee1df0311ee6e3b57369fc3fb0fe0d5",
+      "kind": "model",
+      "family": "llama_decode",
+      "tier": "medium",
+      "dtype": "fp16",
+      "track": [
+        "llm"
+      ],
+      "platform": {
+        "kind": "tnca",
+        "name": "tnca:core-vrf-sync-v5@fpga-multicore-sim",
+        "profile": "core-vrf-sync-v5",
+        "backend": "fpga-multicore-sim",
+        "backend_args": {
+          "core_count": 3,
+          "memory_ports": 3,
+          "memory_bytes": 8388608,
+          "link_stages": 2,
+          "noc_link_stages": 2,
+          "dispatch_stages": 2,
+          "home_stages": 2,
+          "code_stages": 2,
+          "board_top": true,
+          "maintenance": true,
+          "memory_controls": true,
+          "hbm_dma": true
+        },
+        "opt_level": 2,
+        "inductor": {
+          "cpu_backend": "triton",
+          "max_block": 16,
+          "persistent_reductions": false,
+          "compile_threads": 1,
+          "max_autotune_gemm_backends": "TRITON",
+          "tensor_descriptors": true,
+          "no_x_dim": true,
+          "reduction_rows": 1,
+          "gemm_tile": [
+            16,
+            16,
+            16
+          ],
+          "device": "tnca"
+        },
+        "knobs": {
+          "TNCA_ACTIVE_CORES": "3",
+          "TNCA_TORCH_DEVICE": "native",
+          "TNCA_TRANSFER_POLICY": "resident"
+        },
+        "device_id": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea",
+        "image": "sim:core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea",
+        "clock_policy": null,
+        "image_sha256": null,
+        "software_tree": "files:5ef02b7b336a36c8508cd608e9bb148399fd6da69e6594e004ddde700f0f89fb",
+        "toolchain": {
+          "torch": "2.14.0+cu130",
+          "triton": "3.8.0",
+          "python": "3.12.3 (main, Nov  6 2025, 13:44:16) [GCC 13.3.0]"
+        }
+      },
+      "evidence_level": "measured-rtl",
+      "status": "timeout",
+      "problems": [
+        "tnca.errors.Timeout: [WAIT_TIMEOUT] job 36 is still RUNNING after 7200.0s\n  job: 36\n  state: RUNNING\n  try: the task has not been cancelled and has not succeeded; wait again, or let the device deadline decide\n"
+      ],
+      "fallbacks": [],
+      "kernels": [],
+      "correctness": null,
+      "time": null,
+      "demand": {
+        "macs": 2090496,
+        "fp_ops": 0.0,
+        "sfu_ops": 6168,
+        "read_bytes": 3657480,
+        "write_bytes": 2304
+      },
+      "bound": null,
+      "eta": null,
+      "host": {
+        "wall_s": 8998.72,
+        "launches": 35,
+        "process_s": 9406.8,
+        "log": "/home/zhongchun/r40_final_native77_a1fed22_20261017/native77_results/raw_logs/model.llama_decode__medium__fp16-b1-p256.log"
+      },
+      "counters": null,
+      "env": {
+        "torch": "2.14.0+cu130",
+        "triton": "3.8.0",
+        "python": "3.12.3",
+        "machine": "aarch64",
+        "host": "gx10-6646"
+      },
+      "timestamp": "2026-10-17T22:08:50+00:00"
+    }
+  ],
+  "required_gate_promotions": []
+}

@@ -1,0 +1,29 @@
+{
+ "schema": "tnca-r40-subset/1",
+ "name": "R40-01.representatives",
+ "rule": "R40-01 acceptance 3: the medium fp16 matmul (GEMM), softmax (reduction) and add (pointwise), whose descriptor code and device events are shown",
+ "points": [
+  {
+   "id": "op.add/medium/fp16-n49152",
+   "sha256": "d93003fba972fe2516663455b54617bf43536590b601707e44b194ff5705ccb7",
+   "family": "add",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/medium/fp16-m128-k192-n128",
+   "sha256": "5fcd1986d57a317c831dfb5bb8b3334475169939d8e9c957ba15f7f06e8cef5a",
+   "family": "matmul",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.softmax/medium/fp16-r80-c512",
+   "sha256": "966020f31402593850ac045f3105fe20a58f0e27872ca7557a1c4329cad0c725",
+   "family": "softmax",
+   "tier": "medium",
+   "dtype": "fp16"
+  }
+ ],
+ "sha256": "71abb6bf4354e24cb553f5f49caad7868ffc9184f0836ac1a57f6f3823c1dff5"
+}

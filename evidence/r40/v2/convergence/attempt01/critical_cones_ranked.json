@@ -1,0 +1,46 @@
+{
+  "scope": "deduplicated families within the reported worst 30 endpoints; not exhaustive critical-path enumeration",
+  "source_report_sha256": "e55b878b2f993689386dc96da1aa185f38843b9f5dbbaf1a6e43567e500ebde7",
+  "normalization": "array bits and replicas grouped; generated RAM fragments and RAM primitive pins collapsed to storage family; each group retains its worst reported endpoint",
+  "cones": [
+    {
+      "source_family": "u_tmu/tb_reg[*][*]/C",
+      "destination_storage_family": "g_tile[*].u_tile/u_slice/ms_wbadr_reg",
+      "reported_endpoint_count": 17,
+      "worst": {
+        "slack": "Slack (VIOLATED) :        -19.631ns  (required time - arrival time)",
+        "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+        "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_28_41/RAMG/I",
+        "path_group": "clk_kernel_00_unbuffered_net",
+        "data_path_delay": "28.999ns  (logic 3.447ns (11.887%)  route 25.552ns (88.113%))",
+        "logic_levels": "53  (CARRY8=8 LUT2=1 LUT3=5 LUT4=5 LUT5=10 LUT6=20 MUXF7=2 MUXF8=2)"
+      }
+    },
+    {
+      "source_family": "g_tile[*].u_tile/u_slice/cur_addr_reg[*]_replica/C",
+      "destination_storage_family": "g_tile[*].u_tile/u_slice/tl_a_reg[*]",
+      "reported_endpoint_count": 4,
+      "worst": {
+        "slack": "Slack (VIOLATED) :        -19.560ns  (required time - arrival time)",
+        "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+        "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/tl_a_reg[0]/CE",
+        "path_group": "clk_kernel_00_unbuffered_net",
+        "data_path_delay": "28.852ns  (logic 3.465ns (12.010%)  route 25.387ns (87.990%))",
+        "logic_levels": "57  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=19 MUXF7=1)"
+      }
+    },
+    {
+      "source_family": "g_tile[*].u_tile/u_slice/cur_addr_reg[*]_replica/C",
+      "destination_storage_family": "g_tile[*].u_tile/u_slice/ms_wbadr_reg",
+      "reported_endpoint_count": 9,
+      "worst": {
+        "slack": "Slack (VIOLATED) :        -19.556ns  (required time - arrival time)",
+        "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+        "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMA/WE",
+        "path_group": "clk_kernel_00_unbuffered_net",
+        "data_path_delay": "28.918ns  (logic 3.737ns (12.923%)  route 25.181ns (87.077%))",
+        "logic_levels": "62  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=22 MUXF7=2 MUXF8=1)"
+      }
+    }
+  ]
+}

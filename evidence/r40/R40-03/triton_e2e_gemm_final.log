@@ -1,0 +1,8 @@
+  BASE-TRITON-CORE-test_add_kernel              PASS
+  BASE-TRITON-CORE-test_context_specialised_add_kernel PASS
+  BASE-TRITON-CORE-test_context_specialised_mul_add_kernel PASS
+  BASE-TRITON-CORE-test_mul_add_kernel          PASS
+  BASE-TRITON-CORE-test_unsupported_block_is_refused PASS
+  BASE-TRITON-CORE-test_wide_block_add_kernel   PASS
+  BASE-TRITON-CORE-test_wide_descriptor_shared_coordinates PASS
+  triton-e2e             PASS   7 test(s)

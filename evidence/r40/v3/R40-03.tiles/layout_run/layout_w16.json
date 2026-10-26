@@ -1,0 +1,15 @@
+{
+ "name": "layout_w16",
+ "group": "extra",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_layout_tests.py --width 16 --json /home/zhongchun/r40v3_tpc_runs/all/layout_w16.report.json",
+ "env": {},
+ "start": "2026-10-19T10:35:02+00:00",
+ "end": "2026-10-19T11:07:01+00:00",
+ "seconds": 1919.2,
+ "exit": 0,
+ "marker": "r40-v3-layout PASS",
+ "marker_found": true,
+ "ok": true,
+ "log": "layout_w16.log",
+ "log_sha256": "1f56c6fe08936b3b3bf0ef9e69e96e216c934195df0abfc2ac7e42d9fe97f730"
+}

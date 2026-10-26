@@ -1,0 +1,8 @@
+STEP journal_replay: /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/replay_mmio_journal.py --journal /home/zhongchun/r40v3_hbmnuca_fe1b/sim/build/u50-sim/link-rfy6ff4c/journal --out /home/zhongchun/r40v3_hbmnuca_runs/fe1b/journal_replay --runtime /home/zhongchun/tc_env/bin/vvp --cap-seconds 14400
+START 2026-10-19T10:06:49Z
+tnca_fpga_regs: up (words=147456)
+MMIO_JOURNAL_REPLAY_PASS batches=5164 time=3462027000
+./tb/fpga/tnca_mmio_journal.vh:114: $finish called at 3462027000 (1ps)
+MMIO journal replay PASS
+END 2026-10-19T10:24:34Z
+EXIT=0

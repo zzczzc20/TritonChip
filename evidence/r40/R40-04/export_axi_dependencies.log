@@ -1,0 +1,42 @@
+R3.6 Gate B: the public RTL, and an export that stands on its own
+  R36-RTL-01  PASS  the package elaborates and runs a program from elsewhere
+    built 34 synthesizable file(s), 3 simulation file(s)
+    copied to /tmp/tnca-elsewhere-okrcujts/hardware, which is not under /home/zhongchun/tritonchip-r40-ci
+    paths leading out of the package, in code rather than in comments: 0
+    symlinks out of the package: 0
+    elaborate.sh: elaborate: 34 synthesizable file(s), top tnca_shell
+    smoke: the host port stayed closed for all 30 busy cycle(s)
+    smoke: SMOKE PASS
+    smoke: tnca_smoke.v:280: $finish called at 896000 (1ps)
+    binding: binding: elaborated tnca_device -> /tmp/tmp.pdmSh6ybEm/device.vvp
+    manifest fields: 9/9, 25 parameter(s), 3 tool version(s)
+    undeclared blackboxes: 0
+    the claim is 'engineering-ready', and it is not platform-verified: True
+    listed 41, present 41, undeclared [], missing []
+
+  R36-RTL-02  PASS  the ports carry the contract under latency, backpressure and reordering
+    built 34 synthesizable file(s), 3 simulation file(s)
+    copied to /tmp/tnca-elsewhere-us3dzj97/hardware, which is not under /home/zhongchun/tritonchip-r40-ci
+    latency 1: PASS, 23 cycle(s) to run the program
+    latency 4: PASS, 26 cycle(s) to run the program
+    latency 1, backpressure: PASS, 29 cycle(s) to run the program
+    latency 4, backpressure, reordering: PASS, 27 cycle(s) to run the program
+    the export publishes a timing contract for 6 interface(s) in classes ['control', 'data', 'fetch', 'status']
+    every class the standard names is covered: True 
+    each names its ports and its rules: True 
+    and the ports it names exist on the top: True 
+    a slower memory really is slower: 23 -> 26 (yes)
+    backpressure really costs cycles: 23 -> 29 (yes)
+    and the answers are the same in every one of them, which is the property: the timing is not assumed
+
+  R36-RTL-03  PASS  no simulator in the synthesizable path, one implementation
+    built 34 synthesizable file(s), 3 simulation file(s)
+    copied to /tmp/tnca-elsewhere-6vfre0z9/hardware, which is not under /home/zhongchun/tritonchip-r40-ci
+    simulator-only constructs in the synthesizable set: 0
+    simulation files: ['sim/tnca_axi_mem_model.v', 'sim/tnca_device.v', 'sim/tnca_mem_model.v']
+    each one declared with a reason: True ([])
+    the whole exported hierarchy elaborates and connects: clean
+    `proc; check -assert` on tnca_shell: no latch, no combinational loop, no multiple driver, no width problem: clean
+    the binding instantiates tnca_shell: True; the package defines it 1 time(s)
+
+  r36-rtl-tests          PASS   3 check(s)

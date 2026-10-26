@@ -1,0 +1,19 @@
+{
+  "root": "/home/zzhouch/tnca_delivery_probe_0958db2_4gib",
+  "source": "/home/zzhouch/tnca_src_r40_probe_0958db2",
+  "snapshot": {
+    "commit": "0958db2",
+    "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+    "parent_source": "/home/zzhouch/tnca_src_r40_bucket_05db000",
+    "file_sha256": {
+      "tools/r40/hbm_board.py": "d22ba9213521c81b8b4d3b3ee3f3a99ceb838ff25d96e9cb5c7e67d610fb74a0",
+      "tools/r40/hbm_address.py": "c3069280e46db27b8d6451c940641d34e0cd01990e0456e3c9523fc782b7b15d",
+      "tools/r40/hbm_probe_storage_tests.py": "299975ad1535e7e3b18900d6f158653bd891d3c92d80352b5b80759b9fab1051",
+      "tools/r40/bucket_model_acceptance.py": "f72d5179e7552f92f9c7b2fc804fd16ba7a5c43e804bcdae4c57560735ff491f"
+    },
+    "scope": "Same committed product and bucket producer; corrected external probe planner and new acceptance auditor only; original failure and complete prefill remain preserved"
+  },
+  "pid": 2369990,
+  "controller_sha256": "214b52d72e654d7b722a3761d07cf12cf0c803ccfeb8d2687a5f390256041462",
+  "scope": "Resume from the specifically repaired probe stage; retain actual successful original prefill without rerunning it; original native77/HBM14/full fixed-bucket generation and large24/transfer24; same image and 90MHz, no synthesis/load"
+}

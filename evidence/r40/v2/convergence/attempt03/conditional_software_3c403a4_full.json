@@ -1,0 +1,12 @@
+{
+  "schema": "tnca-complete-conditional-snapshot/1",
+  "commit": "3c403a4",
+  "software_tree": "files:cbc1340e1135ac301bfe6c39488bb3eb2b1571aafad46920e070ae701c58da52",
+  "archive_sha256": "bf3b4d286522e252586eed79f0a8180b25b33820f7e496ba6d983b218e8e9a13",
+  "archive_bytes": 2235140,
+  "source": "/home/zzhouch/tnca_src_r40_conditional_3c403a4_full",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "reason": "immutable snapshot fixes inventory child compiler and assembler precedence; all tracked tools included",
+  "scope": "same committed compiler/runtime and unchanged workload definitions; fresh complete package; failed first run preserved; no device/programming operation",
+  "historical_bounds_sha256": "42f224030264f93cf79a209d0082bae6b955ccd521ef8a2a4cfaf9e75807c40a"
+}

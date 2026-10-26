@@ -1,0 +1,7 @@
+{
+  "pid": 2306364,
+  "root": "/home/zhongchun/r40_cuda_conformance_997bd0b",
+  "source": "/home/zhongchun/r40_cuda_conformance_997bd0b_source",
+  "controller_sha256": "dacb9c18d928ffc46c23ed71f50a35bc480493b62a8a8d107e02ee1364bbf4ab",
+  "scope": "GB10-only complete CUDA-host device conformance; no FPGA-host workload or device access"
+}

@@ -1,0 +1,53 @@
+{
+  "schema": "tnca-frozen-pipeline-control-functional/1",
+  "captured_utc": "2026-10-16T06:48:53.040530+00:00",
+  "gate_status": "not-measured",
+  "phases": {
+    "options": {
+      "exit_code": 0,
+      "status": "completed"
+    },
+    "torch": {
+      "exit_code": 0,
+      "status": "completed"
+    },
+    "stage2": {
+      "exit_code": 0,
+      "status": "completed"
+    },
+    "stage3": {
+      "exit_code": 0,
+      "status": "completed"
+    },
+    "contract": {
+      "exit_code": 0,
+      "status": "completed"
+    }
+  },
+  "source_sha256": {
+    "source13/python/tnca/aot.py": "f6fc417becc32a08d37912523c375f704e1680d8364c15bf756391291ae8ffaa",
+    "source13/python/tnca/triton_backend/compiler.py": "bb02740ae431c13f9f031efe60b298ab43cde03d6e638bb06ab556521209f2c7",
+    "source13/compiler/python/tnca_cc/partition.py": "7fe668f77b8262e63ce953301f627f90e2d7dec1790c3fe06c838f34c7ccaa54",
+    "source13/tools/r39/rctx_roles_tests.py": "ae097cc9124ea780a75244179e3e0bc695074162379853caccf1a66e7d69f23a",
+    "source13/tools/r40/native_pipeline_tests.py": "50bbed4b7008871959b3f9558729f43f735f5dfb613945a15280d1b06a876de3",
+    "source13/tools/r40/pipeline_stage_options_tests.py": "709ae0559a1d4f5f99c214e8417a0e4c7ab1843ebc9a68c693387a7b5b0a7fa2",
+    "source13/spec/r40/v2/lock.json": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+    "source17/python/tnca/aot.py": "f6fc417becc32a08d37912523c375f704e1680d8364c15bf756391291ae8ffaa",
+    "source17/python/tnca/triton_backend/compiler.py": "7e23e35253b62871756c16586f778927135c3c4073a533cb1ae3671d972d8701",
+    "source17/compiler/python/tnca_cc/partition.py": "7fe668f77b8262e63ce953301f627f90e2d7dec1790c3fe06c838f34c7ccaa54",
+    "source17/tools/r39/rctx_roles_tests.py": "ae097cc9124ea780a75244179e3e0bc695074162379853caccf1a66e7d69f23a",
+    "source17/tools/r40/native_pipeline_tests.py": "50bbed4b7008871959b3f9558729f43f735f5dfb613945a15280d1b06a876de3",
+    "source17/tools/r40/pipeline_stage_options_tests.py": "f01c866a21642d562c233cc42db7a9a832a0852d2e04136fc699e915d588ad2b",
+    "source17/spec/r40/v2/lock.json": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8"
+  },
+  "versions": "{\"python\": \"3.12.3 (main, Nov  6 2025, 13:44:16) [GCC 13.3.0]\", \"torch\": \"2.14.0+cu130\", \"triton\": \"3.8.0\"}",
+  "raw_archive": "functional_evidence.tar.gz",
+  "raw_archive_sha256": "7fdaf0fa6268165bc4818bd79dbcecf1472884f793471fdfcc488bce3567adf2",
+  "source_base_commit": "34820bf6a78cffd91d45aab1209550d5d8de27f2",
+  "performance_measurement": false,
+  "backend": "sim-file",
+  "profile": "core-vrf-sync-v5",
+  "physical_image_sha256": null,
+  "physical_clock_hz": null,
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8"
+}

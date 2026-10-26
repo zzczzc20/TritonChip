@@ -1,0 +1,61 @@
+{
+  "status": "reference-only",
+  "gate_status": "not-measured",
+  "native_status": "not-measured",
+  "performance": "not-measured",
+  "library_software_tree": "files:bd04f1ecc57ad18bc2813c1743b28df07d616f946502d35d2978ea133c0f383e",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "harness_sha256": "244110c288f5f916da726cab67344b50e8e10a9e2a34693130597341bd6d8612",
+  "weights_sha256": "fd5d2a3dda614c77243f6baba3de71f7eddb225382b9102af255a7e3fca60743",
+  "weight_bytes": 221267968,
+  "workload": {
+    "harness": "python -m archbench.generate --tier hbm --new 64",
+    "what": "a decoder used the way a model is used: one prefill, then greedy decode steps, each fed the device's own token and cache (R40-09: >= 4 layers, >= 64 MiB of weights, prefill >= 512, >= 64 decode steps)",
+    "model": {
+      "dim": 1024,
+      "n_layers": 4,
+      "n_heads": 16,
+      "n_kv_heads": 4,
+      "ffn": 2816,
+      "vocab": 32000,
+      "eps": 1e-05,
+      "dtype": "fp16",
+      "batch": 1,
+      "weights": "random: archbench.models.Llama(cfg, archbench.ops.gen(seed), \"fp16\")",
+      "seed": 0,
+      "weight_bytes": 221267968
+    },
+    "points": {
+      "prefill": {
+        "id": "model.llama_prefill/hbm/fp16-b1-s512",
+        "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1"
+      },
+      "decode": {
+        "id": "model.llama_decode/hbm/fp16-b1-p512",
+        "sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16"
+      }
+    },
+    "prefill": 512,
+    "decode_steps": 64,
+    "reference": "eager PyTorch in binary32 on the CPU: every step against the reference given the same inputs (the device's own tokens and cache) at tolerance 0.05, and the generated ids against a generation run wholly in the reference, a differing id accepted only where the reference's two logits nearly tie (archbench/generate.py)",
+    "report": [
+      "TTFT",
+      "decode median and p95 ms/token",
+      "tokens/s",
+      "peak HBM",
+      "input/output/weight/KV traffic"
+    ]
+  },
+  "matched_frozen_prefix_tokens": 64,
+  "supplemental_token": [
+    [
+      4437
+    ]
+  ],
+  "comparison": "original frozen generate.py IEEE fp32 CPU reference equals both state-wrapper reference runs",
+  "source_sha256": "fb7c1db1d80614487da0aee715611dd6a256cda79d8c88f6d45764229c9fde83",
+  "all_reference_exits": 0,
+  "native_precondition": "qualified final three-core image and successful original >=64 MiB Torch vertical checkpoint",
+  "native_branch_review": "completion/quiesce/CPU handoff and validation transfers recorded; not yet executed on final image",
+  "raw_archive_sha256": "84bf47c9bf41a5a8ca5c137566461cdaab89c19a86456364320c063c41f10bf9"
+}

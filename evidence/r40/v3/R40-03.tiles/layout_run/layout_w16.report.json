@@ -1,0 +1,457 @@
+{
+ "schema": "tnca-r40-v3-layout/1",
+ "width": 16,
+ "profile": "core-vrf-sync-v5",
+ "cases": [
+  {
+   "name": "transpose_pointwise_f32",
+   "width": 16,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     33,
+     127
+    ]
+   ],
+   "dtypes": [
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "5b2a812c26666958d821a10464e14eee8b4eb2e3877cc62d9e20a212e6472b19",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 1,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 9,
+       "role1": 9
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "transpose_pointwise_f16",
+   "width": 16,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     17,
+     65
+    ]
+   ],
+   "dtypes": [
+    "torch.float16"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "10b0f930e44d4f53aa0ed7c75b64a1bad46676020cbc6990f1c60ccdb3249aa9",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 9,
+       "role1": 9
+      },
+      "scratch_bytes": 1024,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "transpose_plus_contiguous",
+   "width": 16,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     65,
+     33
+    ],
+    [
+     33,
+     65
+    ]
+   ],
+   "dtypes": [
+    "torch.float32",
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "3acbef55358fe16e7930852e7701c87ccf95f77d9a7a354505f5e235c8fa3f6e",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 1,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 9,
+       "role1": 9
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "column_strided_view",
+   "width": 16,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     31,
+     130
+    ]
+   ],
+   "dtypes": [
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "dedfeef55a721a166de675013f232eed61bd2198556a2fb281cacb7df1123cdd",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 6,
+       "role1": 6,
+       "role2": 6,
+       "role3": 6
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "int64_transposed",
+   "width": 16,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     65,
+     33
+    ]
+   ],
+   "dtypes": [
+    "torch.int64"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "aaafc0e6b7bc319a132d24e233c571bc5746da1142c82c1c461ebb1cbaebe117",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 40,
+       "role1": 40,
+       "role2": 40,
+       "role3": 40
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "transpose_sum",
+   "width": 16,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     127,
+     33
+    ]
+   ],
+   "dtypes": [
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "527896069d15497b640bdb45f77b617088bdf8b25ab9e694a35b79624d70885b",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 12,
+       "role1": 12,
+       "role2": 12,
+       "role3": 12
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    },
+    {
+     "artifact": "95c4a3d67c46d4c6337fac657b1dbc8fb0e2a6adac7825f4dc08f127009b965a",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 8,
+       "role1": 8,
+       "role2": 8,
+       "role3": 8
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 2
+  },
+  {
+   "name": "transpose_amax",
+   "width": 16,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     65,
+     17
+    ]
+   ],
+   "dtypes": [
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "a965b9af8da06a9696c2a29075028cc1635dadd7da8539ee6efae31dbc9e414c",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 12,
+       "role1": 12,
+       "role2": 12,
+       "role3": 12
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    },
+    {
+     "artifact": "4a09413298aa603ac58d86ebc5d90cd96b00d45ede05b5bbe156b428bc1a50a3",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 7,
+       "role1": 7,
+       "role2": 7,
+       "role3": 7
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 2
+  },
+  {
+   "name": "cumsum_scan_retile",
+   "width": 16,
+   "gemm_tile": null,
+   "shapes": [
+    [
+     3,
+     127
+    ]
+   ],
+   "dtypes": [
+    "torch.float32"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "6ab4911a462c8d7c2511aa6654b35511ef005013fa17482bf247476a471ed11c",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 0,
+      "barriers": 0,
+      "commands_outstanding": "unknown",
+      "descriptors": 0,
+      "rf_private_per_role": {
+       "role0": 12,
+       "role1": 12,
+       "role2": 12,
+       "role3": 12
+      },
+      "scratch_bytes": 0,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "linear_transposed_weight",
+   "width": 16,
+   "gemm_tile": [
+    16,
+    16,
+    16
+   ],
+   "shapes": [
+    [
+     17,
+     33
+    ],
+    [
+     65,
+     33
+    ],
+    [
+     65
+    ]
+   ],
+   "dtypes": [
+    "torch.float16",
+    "torch.float16",
+    "torch.float16"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "58122ac92117b38b7c4bef37e02c7ce16185a771a0b6cb1c9789e2afbbaa8b5c",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 1,
+      "barriers": 3,
+      "commands_outstanding": "unknown",
+      "descriptors": 2,
+      "rf_private_per_role": {
+       "role0": 16,
+       "role1": 16
+      },
+      "scratch_bytes": 5632,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  },
+  {
+   "name": "mm_transposed_a",
+   "width": 16,
+   "gemm_tile": [
+    16,
+    16,
+    16
+   ],
+   "shapes": [
+    [
+     33,
+     17
+    ],
+    [
+     33,
+     65
+    ]
+   ],
+   "dtypes": [
+    "torch.float16",
+    "torch.float16"
+   ],
+   "ok": true,
+   "kernels": [
+    {
+     "artifact": "495e82626bd8c6d0346330cde4ce38fdb622a63d4e6a75560d376aa92b779679",
+     "widths": [],
+     "gemm_tiles": [],
+     "reductions": [],
+     "spill": {},
+     "resources": {
+      "accumulators": 1,
+      "barriers": 3,
+      "commands_outstanding": "unknown",
+      "descriptors": 2,
+      "rf_private_per_role": {
+       "role0": 15,
+       "role1": 15
+      },
+      "scratch_bytes": 5632,
+      "shared_windows": []
+     }
+    }
+   ],
+   "launches": 1
+  }
+ ],
+ "ok": true
+}

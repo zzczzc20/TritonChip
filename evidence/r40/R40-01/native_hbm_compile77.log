@@ -1,0 +1,156 @@
+not-measured       model.mlp/tiny/fp16-t16-d64                                time=None eta=None err=None [12.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.gpt2_block/tiny/fp16-d64-h4-b1-s16                   time=None eta=None err=None [18.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.add/tiny/fp16-n1000                                     time=None eta=None err=None [7.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.resnet_block/tiny/fp32-n1-c8-hw8                     time=None eta=None err=None [15.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.llama_decode/tiny/fp16-b1-p16                        time=None eta=None err=None [29.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.llama_prefill/tiny/fp16-b1-s16                       time=None eta=None err=None [31.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.add/tiny/fp32-n256                                      time=None eta=None err=None [7.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.argmax/tiny/fp16-r2-v256                                time=None eta=None err=None [6.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.attention_decode/tiny/fp16-b1-h2-l16-d16                time=None eta=None err=None [7.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.attention_prefill/tiny/fp16-b1-h2-s16-d16               time=None eta=None err=None [8.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.bmm/tiny/fp16-b2-m16-k16-n16                            time=None eta=None err=None [6.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8                    time=None eta=None err=None [8.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.cumsum/tiny/fp32-r4-c64                                 time=None eta=None err=None [6.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.gelu_tanh/tiny/fp16-n256                                time=None eta=None err=None [6.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.embedding/tiny/fp16-v256-d64-t16                        time=None eta=None err=None [9.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.gemv/tiny/fp16-k64-n64                                  time=None eta=None err=None [7.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.layernorm/tiny/fp16-r4-d64                              time=None eta=None err=None [6.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.linear/tiny/fp16-m16-k64-n64                            time=None eta=None err=None [7.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.matmul/tiny/fp16-m16-k32-n16                            time=None eta=None err=None [6.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.rmsnorm/tiny/fp16-r4-d64                                time=None eta=None err=None [6.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.matmul/tiny/fp32-m16-k32-n16                            time=None eta=None err=None [6.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.rope/tiny/fp16-b1-h2-s16-d16                            time=None eta=None err=None [6.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.silu/tiny/fp16-n256                                     time=None eta=None err=None [7.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.softmax/tiny/fp16-r4-c64                                time=None eta=None err=None [6.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.softmax/tiny/fp32-r3-c37                                time=None eta=None err=None [6.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.swiglu/tiny/fp16-n256                                   time=None eta=None err=None [6.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.transpose/tiny/fp32-r32-c32                             time=None eta=None err=None [7.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.mlp/small/fp16-t64-d128                              time=None eta=None err=None [29.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.gpt2_block/small/fp16-d128-h4-b1-s64                 time=None eta=None err=None [44.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.resnet_block/small/fp32-n1-c16-hw16                  time=None eta=None err=None [16.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.add/small/fp16-n16384                                   time=None eta=None err=None [11.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.argmax/small/fp16-r8-v2048                              time=None eta=None err=None [9.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.attention_decode/small/fp16-b1-h4-l256-d32              time=None eta=None err=None [17.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.attention_prefill/small/fp16-b1-h4-s64-d32              time=None eta=None err=None [13.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.bmm/small/fp16-b8-m64-k32-n64                           time=None eta=None err=None [11.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.conv2d/small/fp32-n1-cin16-h16-w16-cout16               time=None eta=None err=None [10.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.cumsum/small/fp32-r64-c256                              time=None eta=None err=None [11.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.gelu_tanh/small/fp16-n16384                             time=None eta=None err=None [9.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.embedding/small/fp16-v1024-d128-t64                     time=None eta=None err=None [27.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.layernorm/small/fp16-r64-d256                           time=None eta=None err=None [9.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.gemv/small/fp16-k256-n512                               time=None eta=None err=None [27.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.linear/small/fp16-m64-k256-n256                         time=None eta=None err=None [19.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.matmul/small/fp16-m64-k128-n128                         time=None eta=None err=None [10.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.rmsnorm/small/fp16-r64-d256                             time=None eta=None err=None [9.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.matmul/small/fp32-m64-k128-n128                         time=None eta=None err=None [14.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.llama_prefill/small/fp16-b1-s64                      time=None eta=None err=None [156.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.rope/small/fp16-b1-h4-s64-d32                           time=None eta=None err=None [9.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.llama_decode/small/fp16-b1-p128                      time=None eta=None err=None [162.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.silu/small/fp16-n16384                                  time=None eta=None err=None [9.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.swiglu/small/fp16-n16384                                time=None eta=None err=None [11.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.softmax/small/fp16-r64-c512                             time=None eta=None err=None [12.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.transpose/small/fp32-r128-c256                          time=None eta=None err=None [17.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.mlp/medium/fp16-t128-d128                            time=None eta=None err=None [30.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.gpt2_block/medium/fp16-d160-h5-b1-s64                time=None eta=None err=None [63.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.resnet_block/medium/fp32-n1-c24-hw16                 time=None eta=None err=None [20.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.add/medium/fp16-n49152                                  time=None eta=None err=None [21.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.argmax/medium/fp16-r32-v4096                            time=None eta=None err=None [28.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.attention_prefill/medium/fp16-b1-h4-s96-d32             time=None eta=None err=None [16.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.attention_decode/medium/fp16-b1-h8-l256-d32             time=None eta=None err=None [28.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24              time=None eta=None err=None [12.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.bmm/medium/fp16-b16-m64-k32-n64                         time=None eta=None err=None [18.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.cumsum/medium/fp32-r128-c256                            time=None eta=None err=None [17.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.embedding/medium/fp16-v1024-d128-t256                   time=None eta=None err=None [28.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.gelu_tanh/medium/fp16-n65536                            time=None eta=None err=None [17.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.layernorm/medium/fp16-r128-d512                         time=None eta=None err=None [18.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.gemv/medium/fp16-k320-n448                              time=None eta=None err=None [29.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.matmul/medium/fp16-m128-k192-n128                       time=None eta=None err=None [14.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.linear/medium/fp16-m128-k320-n256                       time=None eta=None err=None [27.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.matmul/medium/fp32-m128-k192-n128                       time=None eta=None err=None [23.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.rmsnorm/medium/fp16-r128-d512                           time=None eta=None err=None [17.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.rope/medium/fp16-b1-h8-s128-d32                         time=None eta=None err=None [13.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.silu/medium/fp16-n65536                                 time=None eta=None err=None [18.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.softmax/medium/fp16-r80-c512                            time=None eta=None err=None [13.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.swiglu/medium/fp16-n49152                               time=None eta=None err=None [23.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       op.transpose/medium/fp32-r160-c256                         time=None eta=None err=None [19.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.llama_prefill/medium/fp16-b1-s64                     time=None eta=None err=None [300.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+not-measured       model.llama_decode/medium/fp16-b1-p256                     time=None eta=None err=None [318.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+77/77 compile in 554s -> sim/build/r40/native_hbm_compile77.jsonl
+EXIT:0

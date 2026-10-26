@@ -67,6 +67,27 @@ module tnca_device;
     parameter MEM_LATENCY    = 1;
     parameter RANDOM_STALL   = 0;
     parameter MEM_REORDER    = 0;
+    // R40-04: external memory. Every address at or above LOCAL_LIMIT goes
+    // through rtl/fpga/tnca_axi_bridge.v to an AXI memory of AXI_WORDS words
+    // (tb/common/tnca_axi_mem_model.v, +axi_* plusargs for its timing), the
+    // way the U280 image reaches HBM; the memory model keeps the code and
+    // everything below LOCAL_LIMIT. 0: the device as it always was.
+    parameter DATA_AXI       = 0;
+    parameter LOCAL_LIMIT    = 64'h20000;
+    parameter AXI_WORDS      = 1 << 22;
+    parameter [63:0] AXI_BASE = 64'h40_0000_0000;
+    // The burst mechanism (rtl/fpga/tnca_fpga_top.v AXI_LINE): 0 is one 8-byte
+    // beat per access (tnca_axi_bridge), otherwise lines of that many beats
+    // (tnca_axi_bridge_lb). TNCA_RTL_PARAMS sets them for an A/B.
+    parameter AXI_LINE       = 0;
+    parameter AXI_LB_N       = 8;
+    parameter AXI_PF         = 1;
+    parameter AXI_LOCAL_PIPE = 0;
+    parameter AXI_RAM_CACHE  = 0;
+    parameter AXI_WAIT_N     = 8;
+    parameter AXI_OUT_N      = 8;
+    // What the mailbox's range checks measure against.
+    localparam [63:0] TOTAL_WORDS = DATA_AXI ? (LOCAL_LIMIT / 8 + AXI_WORDS) : WORDS;
 
     localparam [3:0] CMD_NOP     = 4'd0;
     localparam [3:0] CMD_LAUNCH  = 4'd1;
@@ -167,6 +188,104 @@ module tnca_device;
         .mem_rsp_rdata(mrsp_rdata)
     );
 
+    // A command was served (UPLOAD, DOWNLOAD, LAUNCH, ...): tnca_mmio's
+    // axi_inv, for a bridge that buffers lines (tnca_axi_bridge_lb). Here the
+    // host's transfers go through the bridge, so nothing depends on it; it is
+    // raised as the board raises it so the two run the same RTL the same way.
+    reg axi_inv = 1'b0;
+    always @(posedge clk) if (axi_inv) axi_inv <= 1'b0;
+
+    // The memory model's data port: the shell's, or the bridge's local side.
+    wire        l_req_valid, l_req_ready, l_req_we, l_req_amo, l_rsp_valid;
+    wire [63:0] l_req_addr, l_req_wdata, l_req_cmp, l_rsp_rdata;
+    wire [7:0]  l_req_be;
+    wire [3:0]  l_req_aop;
+    wire [LSU_TAG_W-1:0] l_req_tag, l_rsp_tag;
+
+    generate if (DATA_AXI) begin : g_axi
+        wire awvalid, awready, wvalid, wready, bvalid, bready, arvalid, arready;
+        wire rvalid, rready, rlast, wlast, axi_err, axi_stray;
+        wire [63:0] awaddr, araddr, wdata, rdata;
+        wire [7:0] wstrb, awlen, arlen;
+        wire [2:0] awsize, arsize;
+        wire [1:0] awburst, arburst, bresp, rresp;
+        wire [LSU_TAG_W-1:0] awid, arid, bid, rid;
+        if (AXI_LINE == 0) begin : g_one
+        tnca_axi_bridge #(.TAG_W(LSU_TAG_W), .OUT_N(AXI_OUT_N), .LOCAL_LIMIT(LOCAL_LIMIT)) u_bridge (
+            .clk(clk), .rst_n(rst_n),
+            .req_valid(mreq_valid), .req_ready(mreq_ready), .req_addr(mreq_addr),
+            .req_we(mreq_we), .req_be(mreq_be), .req_wdata(mreq_wdata), .req_tag(mreq_tag),
+            .req_amo(mreq_amo), .req_aop(mreq_aop), .req_cmp(mreq_cmp),
+            .rsp_valid(mrsp_valid), .rsp_tag(mrsp_tag), .rsp_rdata(mrsp_rdata),
+            .l_req_valid(l_req_valid), .l_req_ready(l_req_ready), .l_req_addr(l_req_addr),
+            .l_req_we(l_req_we), .l_req_be(l_req_be), .l_req_wdata(l_req_wdata),
+            .l_req_tag(l_req_tag), .l_req_amo(l_req_amo), .l_req_aop(l_req_aop),
+            .l_req_cmp(l_req_cmp),
+            .l_rsp_valid(l_rsp_valid), .l_rsp_tag(l_rsp_tag), .l_rsp_rdata(l_rsp_rdata),
+            .axi_base(AXI_BASE), .axi_size(64'd8 * AXI_WORDS), .inv(axi_inv), .axi_err(axi_err),
+            .axi_stray(axi_stray),
+            .cnt_rd(), .cnt_wr(), .cnt_rd_lat(), .cnt_rbeat(),
+            .m_awvalid(awvalid), .m_awready(awready), .m_awaddr(awaddr), .m_awid(awid),
+            .m_awlen(awlen), .m_awsize(awsize), .m_awburst(awburst),
+            .m_wvalid(wvalid), .m_wready(wready), .m_wdata(wdata), .m_wstrb(wstrb),
+            .m_wlast(wlast), .m_bvalid(bvalid), .m_bready(bready), .m_bid(bid), .m_bresp(bresp),
+            .m_arvalid(arvalid), .m_arready(arready), .m_araddr(araddr), .m_arid(arid),
+            .m_arlen(arlen), .m_arsize(arsize), .m_arburst(arburst),
+            .m_rvalid(rvalid), .m_rready(rready), .m_rdata(rdata), .m_rid(rid),
+            .m_rresp(rresp), .m_rlast(rlast)
+        );
+        end else begin : g_line
+        tnca_axi_bridge_lb #(.TAG_W(LSU_TAG_W), .OUT_N(AXI_OUT_N), .LOCAL_LIMIT(LOCAL_LIMIT),
+                .LINE_BEATS(AXI_LINE), .LB_N(AXI_LB_N), .WAIT_N(AXI_WAIT_N), .PF(AXI_PF), .LOCAL_PIPE(AXI_LOCAL_PIPE), .RAM_CACHE(AXI_RAM_CACHE)) u_bridge (
+            .clk(clk), .rst_n(rst_n),
+            .req_valid(mreq_valid), .req_ready(mreq_ready), .req_addr(mreq_addr),
+            .req_we(mreq_we), .req_be(mreq_be), .req_wdata(mreq_wdata), .req_tag(mreq_tag),
+            .req_amo(mreq_amo), .req_aop(mreq_aop), .req_cmp(mreq_cmp),
+            .rsp_valid(mrsp_valid), .rsp_tag(mrsp_tag), .rsp_rdata(mrsp_rdata),
+            .l_req_valid(l_req_valid), .l_req_ready(l_req_ready), .l_req_addr(l_req_addr),
+            .l_req_we(l_req_we), .l_req_be(l_req_be), .l_req_wdata(l_req_wdata),
+            .l_req_tag(l_req_tag), .l_req_amo(l_req_amo), .l_req_aop(l_req_aop),
+            .l_req_cmp(l_req_cmp),
+            .l_rsp_valid(l_rsp_valid), .l_rsp_tag(l_rsp_tag), .l_rsp_rdata(l_rsp_rdata),
+            .axi_base(AXI_BASE), .axi_size(64'd8 * AXI_WORDS), .inv(axi_inv), .axi_err(axi_err),
+            .axi_stray(axi_stray),
+            .cnt_rd(), .cnt_wr(), .cnt_rd_lat(), .cnt_rbeat(),
+            .m_awvalid(awvalid), .m_awready(awready), .m_awaddr(awaddr), .m_awid(awid),
+            .m_awlen(awlen), .m_awsize(awsize), .m_awburst(awburst),
+            .m_wvalid(wvalid), .m_wready(wready), .m_wdata(wdata), .m_wstrb(wstrb),
+            .m_wlast(wlast), .m_bvalid(bvalid), .m_bready(bready), .m_bid(bid), .m_bresp(bresp),
+            .m_arvalid(arvalid), .m_arready(arready), .m_araddr(araddr), .m_arid(arid),
+            .m_arlen(arlen), .m_arsize(arsize), .m_arburst(arburst),
+            .m_rvalid(rvalid), .m_rready(rready), .m_rdata(rdata), .m_rid(rid),
+            .m_rresp(rresp), .m_rlast(rlast)
+        );
+        end
+        tnca_axi_mem_model #(.WORDS(AXI_WORDS), .BASE(AXI_BASE), .ID_W(LSU_TAG_W)) u_axi_mem (
+            .clk(clk), .rst_n(rst_n),
+            .awvalid(awvalid), .awready(awready), .awaddr(awaddr), .awid(awid),
+            .wvalid(wvalid), .wready(wready), .wdata(wdata), .wstrb(wstrb),
+            .bvalid(bvalid), .bready(bready), .bid(bid), .bresp(bresp),
+            .arvalid(arvalid), .arready(arready), .araddr(araddr), .arid(arid), .arlen(arlen),
+            .rvalid(rvalid), .rready(rready), .rdata(rdata), .rid(rid), .rresp(rresp),
+            .rlast(rlast)
+        );
+        // The model answers OKAY to everything, so either flag is a bridge bug.
+        reg told = 1'b0;
+        always @(posedge clk)
+            if ((axi_err || axi_stray) && !told) begin
+                $display("DEVICE AXI ERROR err=%0d stray=%0d", axi_err, axi_stray);
+                told <= 1'b1;
+            end
+    end else begin : g_mem
+        assign l_req_valid = mreq_valid;   assign mreq_ready = l_req_ready;
+        assign l_req_addr  = mreq_addr;    assign l_req_we   = mreq_we;
+        assign l_req_be    = mreq_be;      assign l_req_wdata = mreq_wdata;
+        assign l_req_tag   = mreq_tag;     assign l_req_amo  = mreq_amo;
+        assign l_req_aop   = mreq_aop;     assign l_req_cmp  = mreq_cmp;
+        assign mrsp_valid  = l_rsp_valid;  assign mrsp_tag   = l_rsp_tag;
+        assign mrsp_rdata  = l_rsp_rdata;
+    end endgenerate
+
     tnca_mem_model #(
         .WORDS(WORDS), .MEM_DW(64), .MEM_BYTES(8), .TAG_W(LSU_TAG_W),
         .LATENCY(MEM_LATENCY), .RANDOM_STALL(RANDOM_STALL),
@@ -174,11 +293,11 @@ module tnca_device;
     ) u_mem (
         .clk(clk), .rst_n(rst_n),
         .imem_addr(imem_addr), .imem_data(imem_data),
-        .req_valid(mreq_valid), .req_ready(mreq_ready),
-        .req_addr(mreq_addr), .req_we(mreq_we),
-        .req_be(mreq_be), .req_wdata(mreq_wdata), .req_tag(mreq_tag),
-        .req_amo(mreq_amo), .req_aop(mreq_aop), .req_cmp(mreq_cmp),
-        .rsp_valid(mrsp_valid), .rsp_tag(mrsp_tag), .rsp_rdata(mrsp_rdata)
+        .req_valid(l_req_valid), .req_ready(l_req_ready),
+        .req_addr(l_req_addr), .req_we(l_req_we),
+        .req_be(l_req_be), .req_wdata(l_req_wdata), .req_tag(l_req_tag),
+        .req_amo(l_req_amo), .req_aop(l_req_aop), .req_cmp(l_req_cmp),
+        .rsp_valid(l_rsp_valid), .rsp_tag(l_rsp_tag), .rsp_rdata(l_rsp_rdata)
     );
 
     //==========================================================================
@@ -436,7 +555,7 @@ module tnca_device;
 
         // The handshake that proves the device came up. A host that never
         // sees this knows the difference between "slow" and "never started".
-        $display("DEVICE READY words=%0d rctx=%0d", WORDS, NUM_RCTX);
+        $display("DEVICE READY words=%0d rctx=%0d", TOTAL_WORDS, NUM_RCTX);
         write_response(0, 0, 0, 0);
 
         forever begin
@@ -450,11 +569,12 @@ module tnca_device;
                 $fclose(fh);
                 if (n == 8 && seq > served) begin
                     served = seq;
+                    if (DATA_AXI) axi_inv <= 1'b1;
                     status = 0; r0 = 0; r1 = 0;
                     case (op)
                         1: begin                       // UPLOAD
                             if (a0 < 0 || a0 % 8 != 0 || a1 <= 0 ||
-                                (a0/8 + a1) > WORDS) status = 3;
+                                (a0/8 + a1) > TOTAL_WORDS) status = 3;
                             else begin
                                 fh = $fopen(up_path, "r");
                                 if (fh == 0) status = 3;
@@ -471,7 +591,7 @@ module tnca_device;
                         end
                         2: begin                       // DOWNLOAD
                             if (a0 < 0 || a0 % 8 != 0 || a1 <= 0 ||
-                                (a0/8 + a1) > WORDS) status = 3;
+                                (a0/8 + a1) > TOTAL_WORDS) status = 3;
                             else begin
                                 fh = $fopen(down_path, "w");
                                 for (j = 0; j < a1; j = j + 1) begin
@@ -488,6 +608,12 @@ module tnca_device;
                                    a3 & 32'hFFFF, (a3 >> 16) & 32'hFFFF,
                                    a4 & 32'hFFFF, (a4 >> 16) & 32'hFFFF,
                                    a5 & 32'hFFFF, (a5 >> 16) & 32'hFFFF);
+                        // R40 negotiated extension; legacy opcode 3 is unchanged.
+                        8: begin r0 = 32; r1 = 16777216; end
+                        9: run_cmd(CMD_LAUNCH, a0, a1, a2,
+                                   a3[31:0], a3[63:32],
+                                   a4[31:0], a4[63:32],
+                                   a5[31:0], a5[63:32]);
                         4: run_cmd(CMD_QUIESCE, 64'd0, 64'd0, 0,
                                    0, 0, 0, 1, 1, 1);
                         5: begin                       // SHUTDOWN

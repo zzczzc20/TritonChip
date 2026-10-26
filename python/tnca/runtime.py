@@ -34,6 +34,7 @@ one is a fault.
 """
 import json
 import os
+import operator
 import struct
 import threading
 import time
@@ -50,6 +51,10 @@ from .errors import (AdmissionError, ArgumentError, ArtifactError,
 WORD = 8
 MAX_UNFINISHED = 8          # the contract's floor; this is exactly it
 DEFAULT_ALIGN = 64
+# All shipped NUCA images decode this 4 KiB page before external memory.
+# A host DMA can write its backing BO, but a core load reads TMU registers.
+# Keep the hole even when the allocated HBM window extends beyond 2 GiB.
+DEVICE_RESERVED_RANGES = ((0x7fff0000, 0x7fff1000),)
 
 # States
 SUBMITTED, VALIDATED, QUEUED = 'SUBMITTED', 'VALIDATED', 'QUEUED'
@@ -88,6 +93,25 @@ class Buffer:
                 f"{'' if self.valid else ' INVALID'}>")
 
 
+def _active_core_mask(physical_grid, explicit_mask):
+    """Frozen ablation knob is a core count; transport uses a low-bit mask."""
+    value = os.environ.get('TNCA_ACTIVE_CORES')
+    if value is None:
+        return explicit_mask
+    if not physical_grid:
+        raise ValueError('TNCA_ACTIVE_CORES requires a physical-grid backend')
+    try:
+        count = int(value)
+    except ValueError:
+        raise ValueError('TNCA_ACTIVE_CORES must be a count in 1..16') from None
+    if not 1 <= count <= 16:
+        raise ValueError('TNCA_ACTIVE_CORES must be a count in 1..16')
+    mask = (1 << count) - 1
+    if explicit_mask is not None and explicit_mask != mask:
+        raise ValueError('TNCA_ACTIVE_CORES conflicts with explicit active_cores mask')
+    return mask
+
+
 class Event:
     """One submitted task. Exactly one terminal state, ever."""
 
@@ -101,9 +125,10 @@ class Event:
         self.device_cycles = None
         # One entry per program, in linear order. `device_cycles` is their
         # sum because the runtime launches a grid one program at a time;
-        # that sum is serial-grid time, not the makespan of a device that
-        # runs programs concurrently.
+        # that sum is serial-grid time. Physical-grid sessions instead report
+        # the global makespan and leave program_cycles unset.
         self.program_cycles = None
+        self.device_timing = None
         # Session(counters=True): {'available', 'programs', 'total'}; None
         # when counters were not asked for. See _counter_summary.
         self.counters = None
@@ -147,6 +172,8 @@ class Module:
         self.params = params
         self.epoch = epoch
         self.name = manifest['identity']['kernel_name']
+        self.code_size = 0           # bytes reserved in the code region
+        self.alive = True            # False once unloaded
 
     def __repr__(self):
         return f"<Module {self.name!r} @{self.code_addr:#x}>"
@@ -172,11 +199,27 @@ class _Allocator:
     along earlier launches' storages.
     """
 
-    def __init__(self, base, limit):
+    def __init__(self, base, limit, *, reserved=()):
         self.base = base
         self.limit = limit
+        self.reserved = tuple((max(base, lo), min(limit, hi))
+                              for lo, hi in sorted(reserved)
+                              if lo < limit and hi > base)
+        if any(lo >= hi for lo, hi in self.reserved) or any(
+                a[1] > b[0] for a, b in zip(self.reserved, self.reserved[1:])):
+            raise ValueError('invalid or overlapping reserved address ranges')
         self.next = base
         self.free_list = []
+        self.high_water = 0
+
+    @property
+    def used(self):
+        excluded = sum(max(0, min(self.next, hi) - lo) for lo, hi in self.reserved)
+        return self.next - self.base - excluded - sum(size for _addr, size in self.free_list)
+
+    @property
+    def capacity(self):
+        return self.limit - self.base - sum(hi - lo for lo, hi in self.reserved)
 
     def alloc(self, size, align=DEFAULT_ALIGN):
         if size <= 0:
@@ -197,18 +240,35 @@ class _Allocator:
                 if blocksize > prefix + need:
                     rest.append((aligned + need, blocksize - prefix - need))
                 self.free_list[i:i + 1] = rest
+                self.high_water = max(self.high_water, self.used)
                 return aligned, need
         addr = (self.next + align - 1) // align * align
+        # An allocation must fit wholly within one ordinary-memory interval.
+        # Preserve usable prefixes for smaller future allocations. Compute
+        # first so an out-of-memory request cannot change allocator state.
+        for lo, hi in self.reserved:
+            if addr < hi and addr + need > lo:
+                addr = (hi + align - 1) // align * align
         if addr + need > self.limit:
             raise BufferError(
                 f"out of device memory: {size} bytes needs {need} and "
                 f"{self.limit - addr} remain",
                 remedy='free a buffer, or use a profile with more memory')
-        if addr > self.next:
+        cursor = self.next
+        for lo, hi in self.reserved:
+            if hi <= cursor:
+                continue
+            if lo >= addr:
+                break
+            if cursor < lo:
+                self.free_list.append((cursor, lo - cursor))
+            cursor = min(addr, hi)
+        if addr > cursor:
             # The bytes skipped to align are free too. Left out, they would
             # sit between two blocks and stop them ever merging.
-            self.free_list.append((self.next, addr - self.next))
+            self.free_list.append((cursor, addr - cursor))
         self.next = addr + need
+        self.high_water = max(self.high_water, self.used)
         return addr, need
 
     def release(self, addr, size):
@@ -218,8 +278,14 @@ class _Allocator:
                 merged[-1] = (merged[-1][0], merged[-1][1] + n)
             else:
                 merged.append((a, n))
-        if merged and merged[-1][0] + merged[-1][1] == self.next:
-            self.next = merged.pop()[0]
+        while True:
+            if merged and merged[-1][0] + merged[-1][1] == self.next:
+                self.next = merged.pop()[0]
+                continue
+            prior = next((lo for lo, hi in self.reserved if hi == self.next), None)
+            if prior is None:
+                break
+            self.next = prior
         self.free_list = merged
 
 
@@ -262,12 +328,35 @@ class Session:
     _counter = 0
 
     def __init__(self, profile='core-sim', *, bench=None, workdir=None,
-                 code_base=0, heap_base=0x20000, heap_limit=0x80000,
+                 code_base=0, heap_base=0x20000, heap_limit=None,
                  deadline_cycles=2_000_000, host_timeout=600.0, trace=False,
-                 backend='sim-file', counters=False, **backend_kwargs):
+                 backend='sim-file', counters=False, large_grid=None, physical_grid=None,
+                 active_cores=None, **backend_kwargs):
         Session._counter += 1
         self.id = Session._counter
         self.profile = profile
+        if large_grid is None:
+            value = os.environ.get('TNCA_LARGE_GRID', '0')
+            if value not in ('0', '1'):
+                raise ValueError('TNCA_LARGE_GRID must be 0 or 1')
+            large_grid = value == '1'
+        if not isinstance(large_grid, bool):
+            raise ValueError('large_grid must be a bool')
+        self.large_grid = large_grid
+        from . import backend as _backend
+        if physical_grid is None:
+            physical_grid = _backend.physical_grid(backend)
+        if _backend.physical_grid(backend) and not physical_grid:
+            raise ValueError('this backend requires physical_grid=True')
+        if not isinstance(physical_grid, bool):
+            raise ValueError('physical_grid must be a bool')
+        active_cores = _active_core_mask(physical_grid, active_cores)
+        if active_cores is not None and not physical_grid:
+            raise ValueError('active_cores requires physical_grid=True')
+        self.physical_grid = physical_grid
+        self._requested_active_cores = active_cores
+        self._physical_core_count = 1
+        self.active_cores = None
         # Phase 3.6 section 3.1: the profile is a COMPILE target and the
         # backend is how this host reaches a device. They were one thing
         # and are now two, because a target that meant "this simulator
@@ -304,7 +393,7 @@ class Session:
         from . import device as _device
         self.bench = bench
         if bench is None and _backend.needs_elaborator(self.backend_name):
-            self.bench = _device.require(profile)
+            self.bench = _backend.prepare_bench(self.backend_name, profile, **backend_kwargs)
 
         self._workdir = workdir
         self._deadline = deadline_cycles
@@ -326,8 +415,13 @@ class Session:
         self._events = OrderedDict()
         self._next_buffer = 0
         self._next_job = 0
-        self._code_next = code_base
-        self._heap = _Allocator(heap_base, heap_limit)
+        explicit_limit = heap_limit is not None
+        if heap_limit is None:
+            # The profile's memory: 512 KiB on chip, or an /hbm memory mode's
+            # AXI window (R40-04).
+            heap_limit = _device.memory_limit(profile)
+        self._code = _Allocator(code_base, heap_base, reserved=DEVICE_RESERVED_RANGES)
+        self._heap = _Allocator(heap_base, heap_limit, reserved=DEVICE_RESERVED_RANGES)
         self._worker = None
         self._stop = threading.Event()
 
@@ -337,7 +431,33 @@ class Session:
                                 host_timeout=host_timeout, trace=trace,
                                 epoch=self.epoch, **self._backend_kwargs)
         self.dev.start()
+        self._negotiate_physical_grid()
+        # A board with external memory says how much it gave the device
+        # (R40-04: the AXI window's buffer); that, not the profile's simulated
+        # size, is where the heap ends.
+        mem = getattr(self.dev, 'memory_bytes', None)
+        if mem and not explicit_limit:
+            self._heap = _Allocator(heap_base, mem, reserved=DEVICE_RESERVED_RANGES)
         self._start_worker()
+
+    def _negotiate_physical_grid(self):
+        if not self.physical_grid:
+            return
+        try:
+            query = getattr(self.dev, 'physical_grid_capability', None)
+            capability = query() if query else None
+            if capability is None:
+                raise AdmissionError('image does not support physical grid dispatch')
+            cores, _limit = capability
+            mask = ((1 << cores) - 1 if self._requested_active_cores is None
+                    else operator.index(self._requested_active_cores))
+            if mask <= 0 or mask >= 1 << cores:
+                raise AdmissionError('active_cores exceeds the physical grid capability')
+            self._physical_core_count = cores
+            self.active_cores = mask
+        except Exception:
+            self.dev.stop()
+            raise
 
     # ---- housekeeping -----------------------------------------------------
     def _snapshot(self):
@@ -374,6 +494,20 @@ class Session:
     def unfinished(self):
         with self._lock:
             return [e for e in self._events.values() if not e.terminal]
+
+    @property
+    def memory_stats(self):
+        """Actual reserved bytes, including retired leases and task scratch."""
+        with self._lock:
+            return dict(epoch=self.epoch, heap_capacity_bytes=self._heap.capacity,
+                        heap_reserved_ranges=list(self._heap.reserved),
+                        heap_allocated_bytes=self._heap.used, heap_peak_bytes=self._heap.high_water,
+                        code_allocated_bytes=self._code.used, code_peak_bytes=self._code.high_water)
+
+    @property
+    def latest_event(self):
+        with self._lock:
+            return next(reversed(self._events.values()), None)
 
     # ---- buffers ----------------------------------------------------------
     def allocate(self, nbytes, *, name=None):
@@ -426,8 +560,10 @@ class Session:
         self._check_usable()
         with self._lock:
             self._validate_buffer(buf, why='download')
+            if not buf.valid:
+                raise BufferError(f'download: {buf.name} was written by a failed task')
             nbytes = buf.size - offset if nbytes is None else nbytes
-            if offset < 0 or offset + nbytes > buf.size:
+            if nbytes < 0 or offset < 0 or offset + nbytes > buf.size:
                 raise BufferError(
                     f"download of {nbytes} bytes at offset {offset} runs "
                     f"past {buf.name} ({buf.size} bytes)")
@@ -443,6 +579,22 @@ class Session:
             self._validate_buffer(buf, why='free')
             buf.alive = False
             self._heap.release(buf.addr, buf.reserved)
+            return True
+
+    def retire(self, buf):
+        """Drop storage ownership; recycle its bytes after the final lease.
+
+        Unlike free(), this is for an allocator destructor while asynchronous
+        tasks still reference the storage. Queued tasks retain their leases;
+        new submissions cannot use the retired handle.
+        """
+        self._check_usable()
+        with self._lock:
+            if not isinstance(buf, Buffer) or buf.session_id != self.id or buf.epoch != self.epoch or not buf.alive:
+                raise BufferError('retire: not a live buffer of this session and epoch')
+            buf.alive = False
+            if not buf.leases:
+                self._heap.release(buf.addr, buf.reserved)
             return True
 
     # ---- modules ----------------------------------------------------------
@@ -506,17 +658,41 @@ class Session:
             raise ArtifactError('the artifact has no code segment')
 
         with self._lock:
-            addr = self._code_next
-            if addr + len(code) > self._heap.base:
-                raise BufferError('compiled code overlaps the device heap; increase heap_base')
+            # The code region is allocated like the heap (first fit, freed
+            # space reused): with nothing ever unloaded it places modules one
+            # after another, 64-byte aligned, exactly as before; unload()
+            # gives a module's space back (R40-01: tensors resident in the
+            # heap outlive the code that last used them).
+            try:
+                addr, size = self._code.alloc(len(code), align=64)
+            except BufferError:
+                raise BufferError('compiled code overlaps the device heap; increase heap_base') \
+                    from None
             reply = self.dev.upload(addr, code)
             if not reply.ok:
+                self._code.release(addr, size)
                 raise TncaError(f"could not place code: {reply}",
                                 code='ARTIFACT_INVALID')
-            self._code_next = (addr + len(code) + 63) // 64 * 64
             mod = Module(path, man, addr, params, self.epoch)
+            mod.code_size = size
             self._modules.append(mod)
             return mod
+
+    def unload(self, module):
+        """Give a module's code space back. Refused while a task of it is
+        unfinished; the module may not be submitted afterwards."""
+        self._check_usable()
+        with self._lock:
+            if module.epoch != self.epoch or not module.alive:
+                return False
+            if any(not e.terminal for e in self._events.values()):
+                # Conservative: a task records its kernel by name, not by
+                # module, so any unfinished task keeps every module loaded.
+                raise BufferBusy(f'{module.name}: tasks are unfinished; unload waits for none')
+            module.alive = False
+            self._modules.remove(module)
+            self._code.release(module.code_addr, module.code_size)
+            return True
 
     # ---- submission -------------------------------------------------------
     def submit(self, module, args, *, grid=(1, 1, 1), depends_on=()):
@@ -525,6 +701,8 @@ class Session:
             if module.epoch != self.epoch:
                 raise AdmissionError(
                     'that module was loaded in a previous epoch')
+            if not module.alive:
+                raise AdmissionError(f'{module.name} has been unloaded')
             if len(self.unfinished) >= MAX_UNFINISHED:
                 raise QueueFull(
                     f"{MAX_UNFINISHED} tasks are already unfinished",
@@ -532,22 +710,51 @@ class Session:
                     remedy='wait for one to finish; this does not block and '
                            'does not discard an older task')
 
-            gx, gy, gz = (int(g) for g in grid)
+            if self.physical_grid:
+                try:
+                    gx, gy, gz = (operator.index(g) for g in grid)
+                except (TypeError, ValueError) as exc:
+                    raise AdmissionError('physical grid must contain three integer axes') from exc
+            else:
+                gx, gy, gz = (int(g) for g in grid)
             for axis, g in zip('xyz', (gx, gy, gz)):
                 if g < 0 or g > 0xFFFFFFFF:
                     raise AdmissionError(
                         f"grid.{axis} = {g} is outside 0..2**32-1")
             total = gx * gy * gz
-            if total > 4096:
+            if not self.physical_grid and module.manifest.get('execution', {}).get('dynamic_constraints', {}).get('program_partition') == 'physical-x-chunk-v1':
+                raise AdmissionError('physical chunk artifact requires physical grid dispatch')
+            limit = 4096
+            if self.physical_grid:
+                limit = self.dev.physical_grid_capability()[1]
+                p2r = module.manifest.get('execution', {}).get('program_to_role', {'0': ['role0']})
+                partition=module.manifest.get('execution', {}).get('dynamic_constraints', {}).get('program_partition')
+                if partition == 'physical-x-chunk-v1':
+                    width=len(p2r)
+                    roles_per_program=len(p2r.get('0', []))
+                    expected={str(i):[f'role{j}' for j in range(i*roles_per_program,(i+1)*roles_per_program)] for i in range(width)}
+                    capability=self.dev.physical_chunk_capability()
+                    if width not in (1,2,4) or roles_per_program not in (1,2) or width*roles_per_program>4 or p2r!=expected or capability is None or width>capability:
+                        raise AdmissionError('physical chunk partition does not match the device capability')
+                elif partition is not None or p2r != {'0': ['role0']}:
+                    raise AdmissionError('physical dispatch requires a per-program artifact or negotiated physical-x-chunk-v1 partition')
+            if total > limit and self.large_grid:
+                query = getattr(self.dev, 'large_grid_limit', None)
+                if query is not None:
+                    try:
+                        limit = query() or limit
+                    except DeviceLost:
+                        self.poisoned = True
+                        raise
+            if total > limit:
                 raise AdmissionError(
-                    f"{total} programs exceeds the 4096 limit",
+                    f"{total} programs exceeds the {limit} limit",
                     where=f"{module.manifest['identity']['kernel_name']} "
                           f"grid {gx}x{gy}x{gz}",
-                    detail={'requested': total, 'limit': 4096,
+                    detail={'requested': total, 'limit': limit,
                             'grid': [gx, gy, gz]},
-                    remedy='split the work across several launches; the '
-                           'limit is the grid the transport encodes, '
-                           'sixteen bits per axis with a 4096 cap')
+                    remedy='large grids require large_grid=True and an image '
+                           'advertising the R40 GRID_CAP extension')
 
             # Resolve and validate every argument BEFORE anything starts.
             resolved, leased = self._resolve(module, args)
@@ -589,7 +796,10 @@ class Session:
             slots = abi.block_size(len(module.params)) + (8 if scratch else 0)
             map_start = (slots + 255) // 256 * 256
             scratch_start = map_start + 256 * len(maps)
-            arg_addr, reserved = self._heap.alloc(max(scratch_start + scratch, slots, WORD), align=256)
+            arg_size = max(scratch_start + scratch, slots, WORD)
+            arg_stride = (arg_size + 255) // 256 * 256 if self.physical_grid else 0
+            arg_addr, reserved = self._heap.alloc(arg_stride * self._physical_core_count
+                                                  if self.physical_grid else arg_size, align=256)
             # Scratch is handed over zero-filled: the upload covers it, so a
             # TensorMap the kernel builds there needs only its non-zero words
             # stored (compile option sparse_tensormaps).
@@ -603,7 +813,21 @@ class Session:
             if scratch:
                 struct.pack_into('<Q', block, abi.block_size(len(module.params)), arg_addr+scratch_start)
 
-            task = dict(event=ev, module=module, block=block,
+            if self.physical_grid:
+                table = bytearray(arg_stride * self._physical_core_count)
+                for core in range(self._physical_core_count):
+                    core_args = dict(resolved)
+                    core_base = arg_addr + core * arg_stride
+                    core_block = bytearray(block)
+                    for i, (name, _data) in enumerate(maps):
+                        core_args[name] = core_base + map_start + 256*i
+                    core_block[:abi.block_size(len(module.params))] = abi.encode_block(module.params, core_args)
+                    if scratch:
+                        struct.pack_into('<Q', core_block, abi.block_size(len(module.params)), core_base + scratch_start)
+                    table[core*arg_stride:core*arg_stride+len(core_block)] = core_block
+                block = table
+
+            task = dict(event=ev, module=module, block=block, arg_stride=arg_stride,
                         arg_addr=arg_addr, allocation=(arg_addr, reserved), grid=(gx, gy, gz),
                         depends_on=list(depends_on), leased=leased,
                         # Kept so a failure can be saved and run again
@@ -648,7 +872,7 @@ class Session:
                         remedy='pass a handle from this session; a host '
                                'address is not a device address')
                 if buf.session_id != self.id or buf.epoch != self.epoch \
-                        or not buf.alive:
+                        or not buf.alive or not buf.valid:
                     raise ArgumentError(
                         f"{name!r}: {buf.name} is not a live buffer of this "
                         f"session and epoch")
@@ -741,6 +965,9 @@ class Session:
             if task['block']:
                 self.dev.upload(task['arg_addr'], task['block'])
             ev._to(RUNNING)
+            if self.physical_grid:
+                self._run_physical_grid(task)
+                return
             # R39-05 Mode B: a kernel whose manifest maps programs onto
             # `per` Role Contexts runs a whole row of the grid in one launch,
             # context r looping over programs r, r + per, ... (the kernel
@@ -757,6 +984,7 @@ class Session:
             total = launches_x * gy * gz
             cycles = 0
             per_program = []
+            device_times = []
             probe = self._counters is not None
             deltas = []
             for linear in range(total):
@@ -790,6 +1018,8 @@ class Session:
                                         pid=(x, y, z), npid=(gx, gy, gz))
                 cycles += reply.r0
                 per_program.append(reply.r0)
+                stamp = getattr(reply, 'device_timing', None)
+                device_times.append(dict(stamp, session_id=self.id) if stamp else None)
                 if probe and reply.status == T.ST_OK:
                     after = self._snapshot()
                     deltas.append(dict(
@@ -821,6 +1051,8 @@ class Session:
             self.dev.quiesce()
             ev.device_cycles = cycles
             ev.program_cycles = per_program
+            from .device_timing import clock_span
+            ev.device_timing = clock_span(device_times)
             if self._counters is not None:
                 ev.counters = (_counter_summary(deltas) if probe
                                else {'available': False})
@@ -839,6 +1071,41 @@ class Session:
                 if not ev.terminal:
                     self._finish(task, FAILED, e)
 
+    def _run_physical_grid(self, task):
+        ev = task['event']
+        execution=task['module'].manifest.get('execution', {})
+        mapping=execution.get('program_to_role', {'0':['role0']})
+        width=len(mapping);rpp=len(mapping['0'])
+        mask=(1<<(width*rpp))-1
+        if rpp==2:mask|=1<<28
+        if width>1:mask|=(1<<31)|((width.bit_length()-1)<<29)
+        reply = self.dev.launch_grid(task['module'].code_addr, task['arg_addr'], task['grid'],
+                                     arg_stride=task['arg_stride'], active_cores=self.active_cores,
+                                     role_mask=mask, group_width=width)
+        if reply.status == T.ST_TIMEOUT:
+            raise DeviceLost('physical grid deadline expired; epoch must be recovered')
+        if reply.status != T.ST_OK:
+            ev._to(FAILING)
+            if not self.dev.quiesce().ok:
+                raise DeviceLost('physical grid fault did not quiesce the device')
+            ev._to(DRAINING)
+            with self._lock:
+                self._finish(task, FAILED, TncaError('physical grid refused or faulted',
+                                                   code='KERNEL_FAULT', detail={'status': reply.status}))
+            return
+        ev._to(DRAINING)
+        if not self.dev.quiesce().ok:
+            raise DeviceLost('physical grid completion did not quiesce the device')
+        ev.device_cycles = (reply.r0 & 0xFFFFFFFF) | ((reply.r1 & 0xFFFFFFFF) << 32)
+        ev.program_cycles = None  # global makespan; no fabricated per-program samples
+        stamp = getattr(reply, 'device_timing', None)
+        from .device_timing import clock_span
+        ev.device_timing = clock_span([dict(stamp, session_id=self.id)] if stamp else [None])
+        if self._counters is not None:
+            ev.counters = {'available': False}
+        with self._lock:
+            self._finish(task, SUCCEEDED)
+
     def _finish(self, task, state, error=None):
         ev = task['event']
         if not ev.terminal:
@@ -848,6 +1115,8 @@ class Session:
             self._heap.release(*allocation)
         for buf in task['leased']:
             buf.leases = max(0, buf.leases - 1)
+            if not buf.leases and not buf.alive:
+                self._heap.release(buf.addr, buf.reserved)
             if state == FAILED:
                 # Not a rollback -- the contract does not promise one. A
                 # marker, so an ordinary read cannot consume it as a result.
@@ -910,8 +1179,8 @@ class Session:
             self._buffers.clear()
             self._modules.clear()
             self._next_job = 0
-            self._code_next = 0
-            self._heap = _Allocator(self._heap.base, self._heap.limit)
+            self._code = _Allocator(self._code.base, self._code.limit, reserved=self._code.reserved)
+            self._heap = _Allocator(self._heap.base, self._heap.limit, reserved=self._heap.reserved)
             self.poisoned = False
             self.dev = _open_device(self.backend_name, self.bench,
                                     workdir=self._workdir,
@@ -920,6 +1189,7 @@ class Session:
                                     trace=self._trace, epoch=self.epoch,
                                     **self._backend_kwargs)
             self.dev.start()
+            self._negotiate_physical_grid()
         self._start_worker()
         return self.epoch
 

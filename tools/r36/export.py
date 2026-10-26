@@ -61,6 +61,7 @@ SEARCH = [os.path.join(ROOT, 'rtl'),
           os.path.join(ROOT, 'rtl', 'nuca'),
           os.path.join(ROOT, 'rtl', 'noc'),
           os.path.join(ROOT, 'rtl', 'tile'),
+          os.path.join(ROOT, 'rtl', 'fpga'),
           os.path.join(ROOT, 'tb', 'common'),
           os.path.join(ROOT, 'tb', 'device')]
 
@@ -515,6 +516,15 @@ def export(outdir, *, program_words, result_addr, expected):
     synth_files, synth_incs, synth_edges = walk(SYNTH_TOP, modules,
                                                 includes)
     sim_files, sim_incs, sim_edges = walk(SIM_TOP, modules, includes)
+    # The binding's optional AXI path uses real, synthesizable bridges.
+    # Deliver those dependencies as RTL even when the shell itself does
+    # not instantiate them; behavioural memory remains simulation-only.
+    synth_files.update({k: v for k, v in sim_files.items()
+                        if os.path.commonpath([v, os.path.join(ROOT, 'rtl')])
+                        == os.path.join(ROOT, 'rtl')})
+    synth_incs.update({k: v for k, v in sim_incs.items()
+                       if os.path.commonpath([v, os.path.join(ROOT, 'rtl')])
+                       == os.path.join(ROOT, 'rtl')})
     # Everything the simulation binding needs that the synthesizable set
     # does not already have.
     sim_only = {k: v for k, v in sim_files.items() if k not in synth_files}
@@ -681,6 +691,11 @@ def export(outdir, *, program_words, result_addr, expected):
     ]
 
     manifest['simulation_only_behaviour'] = [
+        {'file': 'sim/tnca_axi_mem_model.v',
+         'what': 'initial blocks and behavioural AXI memory',
+         'why': 'the reference AXI memory responder, including latency '
+                'and backpressure stimulus; a platform supplies its '
+                'external memory controller instead.'},
         {'file': 'sim/tnca_mem_model.v',
          'what': '$readmemh, $fopen and $fwrite',
          'why': 'a behavioural memory with an image loader. A platform '

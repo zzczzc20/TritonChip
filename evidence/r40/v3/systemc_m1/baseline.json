@@ -1,0 +1,36 @@
+{
+ "schema": "tnca-systemc-m1-baseline/1",
+ "binary_build": "~/tlm_m1/build0 (unchanged pre-M1 source)",
+ "validations": {
+  "validate_numeric": {
+   "returncode": 0,
+   "wall_s": 11.027,
+   "status": "passed"
+  },
+  "validate_chip": {
+   "returncode": 0,
+   "wall_s": 0.345,
+   "status": "passed"
+  },
+  "validate_roles": {
+   "returncode": 0,
+   "wall_s": 0.356,
+   "status": "passed"
+  },
+  "validate_dma": {
+   "returncode": 0,
+   "wall_s": 0.494,
+   "status": "passed"
+  },
+  "validate": {
+   "returncode": 0,
+   "wall_s": 13.117,
+   "status": "passed"
+  },
+  "validate_monitor": {
+   "returncode": 0,
+   "wall_s": 15.565,
+   "status": "passed"
+  }
+ }
+}

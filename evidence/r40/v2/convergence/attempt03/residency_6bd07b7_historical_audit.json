@@ -1,0 +1,23 @@
+{
+  "status": "capability-pass",
+  "checks": [
+    {
+      "name": "all frozen graphs with actual transfer positive controls",
+      "ok": true
+    },
+    {
+      "name": "full original model, zero steady transfers and completion visibility",
+      "ok": true
+    }
+  ],
+  "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "inputs": {
+    "evidence/r40/v2/convergence/attempt03/residency_graphs24_6bd07b7_complete.json": "262e4eeeec123ad9edddfc613bd30ecdd48b62ac9b4e823bf0ef7ad18ada3eeb",
+    "evidence/r40/v2/convergence/attempt03/residency_graphs24_6bd07b7_launch.json": "fa8cc5ea0bd0eefc95d551ef19e5dd0799de0d570f14ed124a805055218b5c08",
+    "evidence/r40/v2/convergence/attempt03/model_report_6bd07b7.json.gz": "121380587e28adce1eb3d56fb5d817b47f8feaed4d445cff28b27768c491991b",
+    "evidence/r40/v2/convergence/attempt03/model_report_6bd07b7_manifest.json": "aa1d3d55b3b57dfb10734b9758a3b4fc15a252fdbbe6ac7dd4d177c1ceaf2f39"
+  },
+  "scope": "Zero-transfer capability only; no performance, fixed-bucket decode or complete R40 claim"
+}

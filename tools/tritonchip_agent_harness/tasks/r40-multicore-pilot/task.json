@@ -2,8 +2,8 @@
   "schema": "tritonchip-agent-task/1",
   "task_id": "r40-multicore-pilot",
   "kind": "cross-layer",
-  "note": "Pilot on R40's three-core U280 machine (spec/devices/u280-3core-r40.json: three core-vrf-sync-v5 cores, NUCA, three HBM outlets, 90 MHz), starting from PR9 at 83e59b8, a descendant of main with R40 (PR #10) merged. The score is the evaluator's own simulation of the image's top level, built from the candidate's description in a device container of its own; each launch's cycles are the control block's MMIO endpoints, kept where the candidate's code cannot reach them, and a launch that reports completion before its memory traffic drains fails. Validated before use by known-answer submissions (VALIDATION.md). Certification of a hardware-changing candidate on the card is not yet wired for multicore.",
-  "base_commit": "83e59b83b5018bc57db1607d4d7f379627f5c0cc",
+  "note": "Pilot on R40's three-core U280 machine (spec/devices/u280-3core-r40.json: three core-vrf-sync-v5 cores, NUCA, three HBM outlets, 90 MHz), starting from PR9 at 6b36db5, a descendant of main with R40 (PR #10) merged. The score is the evaluator's own simulation of the image's top level, built from the candidate's description in a device container of its own; each launch's cycles are the control block's MMIO endpoints, kept where the candidate's code cannot reach them, and a launch that reports completion before its memory traffic drains fails. Validated before use by known-answer submissions (VALIDATION.md). Certification of a hardware-changing candidate on the card is not yet wired for multicore.",
+  "base_commit": "6b36db5a069792686c5bbbeb8b713364c5bb5519",
   "design": [
     "compiler/",
     "python/tnca/",
@@ -92,9 +92,9 @@
     ],
     "jobs": 6,
     "timeout_seconds": 3600,
-    "drain_cycles": null,
+    "drain_cycles": 8,
     "platform": {
-      "commit": "83e59b83b5018bc57db1607d4d7f379627f5c0cc",
+      "commit": "6b36db5a069792686c5bbbeb8b713364c5bb5519",
       "paths": [
         "python/tnca/backends/multicore_mmio.py",
         "python/tnca/backends/multicore_mmio_sim.py",

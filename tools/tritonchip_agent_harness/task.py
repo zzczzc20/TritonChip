@@ -63,6 +63,19 @@ def load_task(path: Path) -> Task:
     for k in ("profile", "validation", "final", "jobs", "timeout_seconds"):
         if k not in ev:
             raise TaskError(f"{path}: evaluation.{k} is missing")
+    device = ev.get("device")
+    if device is not None:
+        # A multicore task: the machine is spec/devices/<device>.json, run in the
+        # board-top bench behind a mailbox (evaluator._measure_multicore). That
+        # bench and its observer are the platform's, so the task must pin one;
+        # without it the points would run on the host's own simulator.
+        if not isinstance(device, str) or not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", device):
+            raise TaskError(f"{path}: evaluation.device must name a description in spec/devices")
+        if not ev.get("platform"):
+            raise TaskError(f"{path}: evaluation.device needs evaluation.platform (the board-top bench and its observer)")
+        drain = ev.get("drain_cycles")
+        if drain is not None and (isinstance(drain, bool) or not isinstance(drain, int) or drain < 0):
+            raise TaskError(f"{path}: evaluation.drain_cycles must be a non-negative whole number of cycles")
     services = dict(v.get("services") or {})
     unknown_services = set(services) - {"score", "fpga_quick", "fpga_slow"}
     if unknown_services:

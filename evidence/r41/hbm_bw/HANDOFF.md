@@ -78,3 +78,15 @@ The card is shared with other users (`eeyhui` and `cliufc` run long jobs). Rules
 - Board counters: the AXI window counters (`R_AXI_RD`, `R_AXI_WR`, `R_AXI_LAT`, `R_AXI_RBEAT`) in `python/tnca/backends/u50.py`, and the outlet and home-slice counters in the R40 records.
 - Measured baseline: `evidence/r41/stage2/board/results.md` and `evidence/r41/stage2/roofline/points.json`.
 - The clock is 100 MHz; the U280 HBM2 runs at 450 MHz. Wider outlets, more outlets and deeper outstanding windows all cost area in SLR0, so use SLR1 and SLR2 where possible.
+
+## 7. Author clarification: end-to-end throughput and operator-speed acceptance
+
+These requirements were added by the author on 2026-10-26 and govern the remaining work.
+
+1. **The bandwidth gain must be realizable end to end.** Establish a throughput guarantee at every level: memory controller → AXI outlets → NoC → NUCA/cache → core data path (including the LSU and vector register file) → standard torch operator. Analyse and measure each level using counters, the SystemC/TLM model and RTL. After each widening, show that the next level can absorb the delivered traffic. No intervening level may remain the bottleneck. An algebraic port ceiling or an isolated stream-engine result is insufficient.
+2. **Operator speed is the delivery criterion.** Standard torch element-wise operators on TNCA must run several times faster on the board, with unchanged numerical semantics. Report direct speedup ratios such as “vector add is N times faster”, and equivalent results for add, mul, silu, gelu, copy and the other memory-bound ArchBench points. Use the 100 MHz image measurements in `evidence/r41/stage2/board/results.md` and `evidence/r41/stage2/roofline/points.json` as the baseline. Reporting that streaming bandwidth reached 100 GB/s does not satisfy acceptance.
+3. **Compute-bound GEMM need not improve.** Given the FPGA's low compute-to-memory ratio, normal compute-bound GEMM shapes may gain little from added bandwidth. That is acceptable. Memory-bound points must convert the memory-system improvements into several-times operator speedups, measured through torch on the board, with numerics unchanged.
+
+Keep **100 GB/s**, not 100 Gbit/s, as the memory-system design target. The N-times operator-speedup requirement is the actual acceptance gate. Continue committing and pushing milestones to `origin/r41-hbm-bw`; all existing worktree, full-run-budget and shared-card rules remain in force.
+
+The author also requested an actual connection check: use the `gb` helper to reach GB10, then verify the FPGA-host hop through `fp` with `hostname`. If first-hop askpass/password authentication stalls, report the exact stalled hop honestly rather than assuming connectivity.

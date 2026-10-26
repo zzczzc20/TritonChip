@@ -164,7 +164,19 @@ PLATFORMS_DIR=${XILINX_PLATFORMS:-/opt/xilinx/platforms}
 # The header says why it is not the platform default of 300; the four checks at
 # the bottom of this file are what make sure it is this number that reaches the
 # .xclbin.
-EXPECT_MHZ=100
+#
+# A target names its own clock (R40's three-core image closes at 90 MHz, not
+# 100): TNCA_KERNEL_MHZ, the same number package_xo.tcl declares as the
+# kernel's FREQ_HZ. Unset, it is 100, as before. A build that cannot close at
+# the clock it asked for is still refused below: the tool moving the clock is
+# a failed build, whatever the number.
+EXPECT_MHZ=${TNCA_KERNEL_MHZ:-100}
+case "$EXPECT_MHZ" in
+''|*[!0-9]*) echo "link.sh: TNCA_KERNEL_MHZ must be a whole number of MHz, not '$EXPECT_MHZ'" >&2; exit 2 ;;
+esac
+if [ "$EXPECT_MHZ" -lt 10 ] || [ "$EXPECT_MHZ" -gt 650 ]; then
+    echo "link.sh: TNCA_KERNEL_MHZ=$EXPECT_MHZ is outside the platform's 10..650 MHz" >&2; exit 2
+fi
 
 XO=$OUT/tnca_u50.xo
 XCLBIN=$OUT/tnca_${BOARD}.xclbin

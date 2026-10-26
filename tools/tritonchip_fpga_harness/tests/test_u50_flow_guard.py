@@ -61,6 +61,22 @@ class U50FlowGuardTests(unittest.TestCase):
         self.assertNotIn("v++", proc.stderr)
         self.assertNotIn("v++", proc.stdout)
 
+    def test_kernel_clock_is_checked_before_vendor_launch(self) -> None:
+        # A target's clock reaches link.sh as TNCA_KERNEL_MHZ. A malformed or
+        # out-of-range one stops before anything else; a valid one goes on to
+        # the next preflight (here, the missing XO).
+        for value, expected in (("abc", "must be a whole number of MHz"),
+                                ("9", "outside the platform's 10..650 MHz"),
+                                ("90", "tnca_u50.xo")):
+            with self.subTest(value=value):
+                with tempfile.TemporaryDirectory(prefix="tnca-clock-") as td:
+                    env = dict(os.environ, TNCA_KERNEL_MHZ=value)
+                    env.pop("TNCA_BOARD", None)
+                    proc = subprocess.run(["bash", str(LINK), td], cwd=REPO, env=env,
+                                          text=True, capture_output=True, check=False)
+                self.assertEqual(proc.returncode, 2, proc.stderr)
+                self.assertIn(expected, proc.stderr)
+
     def test_packaged_variant_file_is_parsed(self) -> None:
         # package_xo.tcl writes the variant it packaged next to the XO. The
         # on-chip build used to write an empty line, which link.sh refused as
@@ -101,10 +117,13 @@ class U50FlowGuardTests(unittest.TestCase):
 
     def test_u50_clock_contract_is_visible_in_flow(self) -> None:
         text = LINK.read_text(encoding="utf-8")
-        expected_clock = re.search(r"(?m)^EXPECT_MHZ=(\d+)$", text)
+        # The clock is the target's (TNCA_KERNEL_MHZ), 100 MHz when unset.
+        expected_clock = re.search(r"(?m)^EXPECT_MHZ=\$\{TNCA_KERNEL_MHZ:-(\d+)\}$", text)
         self.assertIsNotNone(expected_clock)
-        self.assertIn(f"EXPECT_MHZ={expected_clock.group(1)}", text)
+        self.assertEqual(expected_clock.group(1), "100")
         self.assertIn("--kernel_frequency 0:$EXPECT_MHZ", text)
+        package = (REPO / "flow" / "fpga" / "package_xo.tcl").read_text(encoding="utf-8")
+        self.assertIn("::env(TNCA_KERNEL_MHZ)", package)
         # The board wrapper divider is part of the flow contract; the harness
         # must retain it in the run manifest instead of inferring the device
         # clock from the kernel clock alone.

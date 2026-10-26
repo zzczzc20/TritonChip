@@ -17,7 +17,7 @@ REPO = Path(__file__).resolve().parents[3]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from tools.tritonchip_fpga_harness.adapters.u50 import U50Adapter, U50Config
+from tools.tritonchip_fpga_harness.adapters.u50 import CommandResult, U50Adapter, U50Config, flow_clock
 
 
 class U50ArtifactTest(unittest.TestCase):
@@ -26,7 +26,7 @@ class U50ArtifactTest(unittest.TestCase):
         # current directory so the test is safe under unittest discovery and
         # when invoked from a CI workspace wrapper.
         link_text = (REPO / "flow/fpga/link.sh").read_text(encoding="utf-8")
-        clock = int(re.search(r"(?m)^EXPECT_MHZ=(\d+)$", link_text).group(1))
+        clock = flow_clock(link_text)[0]
         wrapper_text = (REPO / "rtl/board/tnca_u50_xo.v").read_text(encoding="utf-8")
         divider_match = re.search(r"parameter\s+DEV_DIV\s*=\s*(\d+)|BUFGCE_DIVIDE\s*\((\d+)\)", wrapper_text)
         divider = int(next(value for value in divider_match.groups() if value is not None))
@@ -99,6 +99,31 @@ class U50ArtifactTest(unittest.TestCase):
         names = {check.name for check in result.checks}
         self.assertIn("flow_clock_contract", names)
         self.assertIn("device_divider_contract", names)
+
+    def test_a_target_clock_reaches_the_flow(self) -> None:
+        # A target names its own clock (R40's three-core image runs at 90 MHz).
+        # The flow takes it from TNCA_KERNEL_MHZ, so the preflight accepts a
+        # clock other than the flow's default and every command carries it.
+        seen: list[dict[str, str] | None] = []
+
+        def executor(argv, *, cwd, env, log_path, timeout_s):
+            seen.append(env)
+            return CommandResult(tuple(argv), 1, "", "", str(log_path), False)
+
+        adapter = U50Adapter(U50Config(REPO, expected_ap_clk_mhz=90, expected_device_divider=self.divider),
+                             executor=executor)
+        with tempfile.TemporaryDirectory() as td:
+            result = adapter.preflight(Path(td) / "run", dry_run=True)
+            self.assertTrue(result.ok, result.as_dict())
+            adapter.run(Path(td) / "run", mode="package", require_vendor_tools=False)
+        self.assertEqual(adapter.command_environment()["TNCA_KERNEL_MHZ"], "90")
+        self.assertTrue(seen)
+        self.assertEqual(seen[0]["TNCA_KERNEL_MHZ"], "90")
+
+    def test_a_fixed_flow_clock_must_match_the_target(self) -> None:
+        self.assertEqual(flow_clock("EXPECT_MHZ=100\n"), (100, False))
+        self.assertEqual(flow_clock("EXPECT_MHZ=${TNCA_KERNEL_MHZ:-100}\n"), (100, True))
+        self.assertEqual(flow_clock("no clock here\n"), (None, False))
 
 
 if __name__ == "__main__":

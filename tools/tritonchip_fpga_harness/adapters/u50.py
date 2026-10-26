@@ -186,6 +186,19 @@ class U50Run:
         }
 
 
+# link.sh's kernel clock: a fixed `EXPECT_MHZ=<n>`, or, since a target names
+# its own clock, `EXPECT_MHZ=${TNCA_KERNEL_MHZ:-<n>}` with <n> the default.
+_FLOW_CLOCK = re.compile(r"(?m)^EXPECT_MHZ=(?:\$\{TNCA_KERNEL_MHZ:-(\d+)\}|(\d+))\s*$")
+
+
+def flow_clock(link_text: str) -> tuple[int | None, bool]:
+    """(the flow's default kernel clock in MHz, whether it takes TNCA_KERNEL_MHZ)."""
+    m = _FLOW_CLOCK.search(link_text)
+    if m is None:
+        return None, False
+    return int(m.group(1) or m.group(2)), m.group(1) is not None
+
+
 class U50Adapter:
     """Call and verify the repository's U50 package/link flow."""
 
@@ -212,6 +225,13 @@ class U50Adapter:
         except OSError:
             return None
         return p.stdout.strip() if p.returncode == 0 else None
+
+    def command_environment(self) -> dict[str, str]:
+        """The flow's environment: the target's, and the kernel clock it names
+        (TNCA_KERNEL_MHZ, read by link.sh and package_xo.tcl)."""
+        env = dict(self.config.environment)
+        env["TNCA_KERNEL_MHZ"] = str(self.config.expected_ap_clk_mhz)
+        return env
 
     def package_command(self, build_dir: Path) -> tuple[str, ...]:
         c = self.config
@@ -278,32 +298,42 @@ class U50Adapter:
 
         # The profile is a contract for the checked-in flow, not a free-form
         # label.  Catch a stale profile before spending hours in Vivado.
+        # A flow that takes TNCA_KERNEL_MHZ builds whatever clock the target
+        # names (run() passes it); a flow that fixes one must fix this one.
         flow_text = self._read_text(c.link_script or Path(""))
-        flow_match = re.search(r"(?m)^EXPECT_MHZ=(\d+)\s*$", flow_text)
+        flow_default, flow_takes = flow_clock(flow_text)
         add(
             "flow_clock_contract",
-            flow_match is not None and int(flow_match.group(1)) == c.expected_ap_clk_mhz,
-            (f"EXPECT_MHZ={flow_match.group(1)}" if flow_match else "EXPECT_MHZ missing")
+            flow_takes or flow_default == c.expected_ap_clk_mhz,
+            ("EXPECT_MHZ missing" if flow_default is None else
+             f"EXPECT_MHZ from TNCA_KERNEL_MHZ (default {flow_default})" if flow_takes else
+             f"EXPECT_MHZ={flow_default}")
             + f", expected {c.expected_ap_clk_mhz}",
         )
         package_text = self._read_text(c.package_script or Path(""))
+        package_takes = re.search(r"::env\(TNCA_KERNEL_MHZ\)", package_text) is not None
         package_match = re.search(r"(?m)^\s*set\s+AP_CLK_HZ\s+(\d+)\s*$", package_text)
         add(
             "package_clock_contract",
-            package_match is not None and int(package_match.group(1)) == c.expected_ap_clk_mhz * 1_000_000,
-            (f"AP_CLK_HZ={package_match.group(1)}" if package_match else "AP_CLK_HZ missing")
+            package_takes or (package_match is not None
+                              and int(package_match.group(1)) == c.expected_ap_clk_mhz * 1_000_000),
+            ("AP_CLK_HZ from TNCA_KERNEL_MHZ" if package_takes else
+             f"AP_CLK_HZ={package_match.group(1)}" if package_match else "AP_CLK_HZ missing")
             + f", expected {c.expected_ap_clk_mhz * 1_000_000}",
         )
+        # Out-of-context synthesis while packaging: a constraint at least as
+        # tight as the target's clock (ooc.xdc stays at 10 ns for every target
+        # up to 100 MHz).
         xdc = c.repo / "flow/fpga/ooc.xdc"
         xdc_text = self._read_text(xdc)
         period_match = re.search(r"(?m)^\s*create_clock\s+-period\s+([0-9.]+)", xdc_text)
         expected_period = 1000.0 / c.expected_ap_clk_mhz
-        period_ok = period_match is not None and abs(float(period_match.group(1)) - expected_period) < 0.002
+        period_ok = period_match is not None and float(period_match.group(1)) <= expected_period + 0.002
         add(
             "ooc_clock_contract",
             period_ok,
             (f"period={period_match.group(1)}" if period_match else "create_clock missing")
-            + f", expected {expected_period:.3f}",
+            + f", at most {expected_period:.3f}",
         )
         wrapper = c.repo / "rtl/board/tnca_u50_xo.v"
         wrapper_text = self._read_text(wrapper)
@@ -433,7 +463,7 @@ class U50Adapter:
             cr = self._executor(
                 argv,
                 cwd=self.config.repo,
-                env=self.config.environment or None,
+                env=self.command_environment(),
                 log_path=log,
                 timeout_s=timeout_s,
             )

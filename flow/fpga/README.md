@@ -373,6 +373,16 @@ The second cleared the routing congestion of an SLR whose CLBs were 97.7 % used.
 the files. This is now the flow's default: 100 MHz in the four places, and
 `DEV_DIV = 1`.
 
+**A target's own clock.** R40's three-core image closes at 90 MHz, not 100.
+The kernel clock is therefore an input of the build: `TNCA_KERNEL_MHZ` (whole
+MHz, 10..650) sets what `link.sh` asks v++ for (`--kernel_frequency`) and checks
+in the `.xclbin`, and the `FREQ_HZ` `package_xo.tcl` declares. Unset, it is 100,
+as above. `ooc.xdc` stays at 10 ns: the out-of-context synthesis while packaging
+is constrained at least as tightly as any target up to 100 MHz. A build that
+cannot close at the clock it named still fails, because the tool moving the
+clock is still refused; naming a lower clock is a decision recorded with the
+target, never a retry.
+
 
 R40 three-core HBM packaging uses `multicore-hbm`,
 `rtl/board/tnca_multicore_hbm_xo.v`, and `fpga/kernel_multicore_hbm.xml`.

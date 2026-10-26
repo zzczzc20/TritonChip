@@ -80,8 +80,21 @@ set VERSION 1.0
 # Keeping this number in step with link.sh is not cosmetic: it is the frequency
 # the IP declares, and a kernel whose metadata claims 300 while its link asks
 # for 150 is a kernel with two answers to one question. flow/fpga/ooc.xdc
-# constrains the same figure for out-of-context synthesis.
-set AP_CLK_HZ 100000000
+# constrains 100 MHz for out-of-context synthesis, at least as tight as any
+# target's clock.
+#
+# The figure is TNCA_KERNEL_MHZ when the build names one (link.sh asks v++ for
+# the same), 100 MHz otherwise.
+set AP_CLK_MHZ 100
+if {[info exists ::env(TNCA_KERNEL_MHZ)] && $::env(TNCA_KERNEL_MHZ) ne ""} {
+    set AP_CLK_MHZ $::env(TNCA_KERNEL_MHZ)
+    if {![string is integer -strict $AP_CLK_MHZ] || $AP_CLK_MHZ < 10 || $AP_CLK_MHZ > 650} {
+        puts "TNCA_PKG_ERROR TNCA_KERNEL_MHZ must be a whole number of MHz in 10..650, not '$AP_CLK_MHZ'"
+        exit 2
+    }
+}
+set AP_CLK_HZ [expr {$AP_CLK_MHZ * 1000000}]
+puts "TNCA_PKG_AP_CLK_HZ=$AP_CLK_HZ"
 
 set IPDIR  $OUT/ip_repo/tnca_com_kernel_${NAME}_1_0
 set KXML   $OUT/kernel.xml

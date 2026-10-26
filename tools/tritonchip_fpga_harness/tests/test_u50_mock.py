@@ -25,6 +25,7 @@ from tools.tritonchip_fpga_harness.adapters.u50 import (
     U50Adapter,
     U50Config,
     execute_command,
+    flow_clock,
 )
 
 
@@ -69,7 +70,7 @@ class U50MockFlowTests(unittest.TestCase):
         platforms = root / "platforms"
         (platforms / "xilinx_u50_gen3x16_xdma_5_202210_1").mkdir(parents=True)
         link_text = (REPO / "flow/fpga/link.sh").read_text(encoding="utf-8")
-        clock = int(re.search(r"(?m)^EXPECT_MHZ=(\d+)$", link_text).group(1))
+        clock = flow_clock(link_text)[0]
         wrapper_text = (REPO / "rtl/board/tnca_u50_xo.v").read_text(encoding="utf-8")
         divider_match = re.search(r"parameter\s+DEV_DIV\s*=\s*(\d+)|BUFGCE_DIVIDE\s*\((\d+)\)", wrapper_text)
         divider = int(next(value for value in divider_match.groups() if value is not None))

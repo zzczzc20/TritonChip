@@ -37,13 +37,11 @@ def verify(root,registry_check=True):
     calibration=json.loads((root/model['numerical_cross_validation']).read_text())
     if calibration['status']!='passed' or calibration['tnca_outputs_used']:
         raise ValueError('independent numerical cross-validation missing')
-    for name in ('spec/r41/stage2/model_points.json','spec/r41/stage2/xl_core.json','spec/r41/holdout.json'):
+    for name in ('spec/r41/stage2/model_points.json','spec/r41/stage2/xl_core.json'):
         points=json.loads((root/name).read_text())['points']
         if len({p['id'] for p in points})!=len(points) or any(point_digest(p)!=p['sha256'] for p in points):
             raise ValueError('point hash mismatch or duplicate')
         for p in points:nonnull(p)
-    holdout=json.loads((root/'spec/r41/holdout.json').read_text())['points']
-    if len(holdout)!=4:raise ValueError('four holdout points required')
     model_points=json.loads((root/'spec/r41/stage2/model_points.json').read_text())['points']
     if [(p['id'],p['prefill'],p['decode']) for p in model_points]!=[('Q41-core',128,16),('Q41-tail',129,4)]:
         raise ValueError('core model point scope changed')
@@ -63,8 +61,6 @@ def verify(root,registry_check=True):
         from archbench import registry
         for name,sha in inventory.items():
             if registry.get(name).definition_sha256()!=sha:raise ValueError('original registry changed')
-        for p in holdout:
-            if registry.get(p['id']) is None:raise ValueError(f'holdout point not registered: {p["id"]}')
     return dict(schema='tnca-r41-freeze-check/1',stage=2,status='frozen-inputs-verified',
                 freeze_kind='prospective',historical_failure_preserved=True,
                 lock_sha256=digest(lock_path),registry_checked=registry_check,

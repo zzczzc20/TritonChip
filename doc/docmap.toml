@@ -435,14 +435,3 @@ sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.jso
 path = "evidence/r41/acceptance/STATUS.md"
 depends_on = ["doc/r41_tasks_and_acceptance.md"]
 sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
-
-[[doc]]
-path = "evidence/r41/stage2/policy/README.md"
-depends_on = ["doc/r41_tasks_and_acceptance.md"]
-sources = ["evidence/r41/stage2/policy/", "tools/performance_harness/p1_policy_study.py"]
-
-[[doc]]
-path = "evidence/r41/stage2/locality/README.md"
-depends_on = ["doc/r41_tasks_and_acceptance.md"]
-sources = ["evidence/r41/stage2/locality/", "python/tnca/locality.py", "tools/performance_harness/locality_case.py"]
-

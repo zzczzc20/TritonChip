@@ -1,7 +1,0 @@
-{
-  "status": "passed",
-  "points": 113,
-  "unchanged": 113,
-  "changed": 0,
-  "reconciliation": "mapped tnca-sim-vrf-v5-x8 to banked2 in spec/r39_sched_model.json"
-}

@@ -253,7 +253,9 @@ struct Launch {
 };
 struct Outcome {unsigned status=STATUS_OK,code=0;u64 pc=0,retired=0;std::string why;};
 
+struct CycleCore;
 struct Core : sc_module {
+    std::unique_ptr<CycleCore> cyc;   // core_model=1: the cycle-level core (cycle_core.inc)
     // Core trace (tools/performance_harness/align/README.md section 2), the
     // validation path's view of this core: TNCA_MODEL_CORE_TRACE names the
     // file, TNCA_MODEL_CORE_TRACE_CORE (default 0) the core. Off otherwise.
@@ -267,6 +269,11 @@ struct Core : sc_module {
         std::string file=std::string(path)=="1"?x.directory+"/core_trace.txt":std::string(path);
         core_trace.open(file);require(bool(core_trace),"cannot create the core trace");
         core_trace<<"TNCA_CORE_TRACE 1 core="<<id<<"\n";
+        tensor.trace_beat=[this](u64 at,bool store,u64 addr,unsigned be,u64 data,u64 when,u64 got){
+            const u64 tag=16|(trace_tag++<<5);char line[160];
+            std::snprintf(line,sizeof line,"Q %llu %u %016llx %02x %llu 0 %016llx\nP %llu %llu %016llx\n",
+                (unsigned long long)at,store?1U:0U,(unsigned long long)addr,be,(unsigned long long)tag,(unsigned long long)data,
+                (unsigned long long)when,(unsigned long long)tag,(unsigned long long)got);core_trace<<line;};
     }
     ~Core(){if(core_trace){core_trace<<"END "<<trace_launches<<' '<<x.now()<<"\n";core_trace.close();}}
     tlm_utils::simple_initiator_socket<Core> memory;
@@ -342,7 +349,10 @@ struct Core : sc_module {
         for(unsigned r=0;r<4;++r){c_role_issued[r]=&x.counts[key("role_"+std::to_string(r)+"_issued")];c_role_completed[r]=&x.counts[key("role_"+std::to_string(r)+"_completed")];}
         tracing=x.monitor_mode=="trace";
         start_roles();start_completions();
+        if(ctx.c.v.count("core_model") && ctx.c.get("core_model")==1)cycle_core_attach();
     }
+    void cycle_core_attach();
+    Outcome cycle_program(const Launch& l);
     u64 cycles_of(sc_time t)const{return x.to_cycles(t);}
     void verify_async_token(u64 token){
         unsigned index=unsigned(token&65535);arch(index<32,trapcode::barrier,"BARRIER_FAULT: asynchronous token index");
@@ -877,6 +887,7 @@ struct Core : sc_module {
     }
     Outcome program(const Launch& l){
         require(l.roles>0 && l.roles<16,"invalid role mask");
+        if(cyc)return cycle_program(l);
         require(role_remaining==0,"program started on a core with contexts still running");
         tensor.reset();
         for(auto& barrier:barriers)barrier.reset();
@@ -899,6 +910,10 @@ struct Core : sc_module {
     }
     void report_classes(){for(unsigned k=0;k<unsigned(K::Count);++k)if(class_counts[k])x.counts[key("class_")+kind_name(K(k))]=class_counts[k];}
 };
+
+#include "cycle_core.inc"
+void Core::cycle_core_attach(){require(tm!=nullptr || true,"");cyc.reset(new CycleCore(*this));}
+Outcome Core::cycle_program(const Launch& l){require(tm!=nullptr,"core_model=1 requires memory_model=1");return cyc->program(l);}
 
 //==============================================================================
 // The chip: cores, NoC, NUCA homes, HBM; grid dispatch and host access.

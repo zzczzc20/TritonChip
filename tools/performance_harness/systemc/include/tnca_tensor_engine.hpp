@@ -35,6 +35,8 @@ struct TensorEngine : sc_module {
     // Timeline path (memory_model=1): the core's memory port and the analytic
     // memory system; the engine's RF port and tag window are timelines too.
     TimelineMemory* tm=nullptr;Timeline* port=nullptr;Timeline rf_tl;
+    // align/README.md: the core trace's Q/P records for this engine's beats (tag bit 4 set)
+    std::function<void(u64,bool,u64,unsigned,u64,u64,u64)> trace_beat;
     // core_pipeline=1 (tnca_tensor.v): setup 2+rank, a load box unit holds
     // one of NTAG/2 slots until written to the window, a store reads each
     // window register (S_SREAD) before its words, then the engine drains.
@@ -57,6 +59,7 @@ struct TensorEngine : sc_module {
             while(window.size()>=cap){auto m=std::min_element(window.begin(),window.end());t=std::max(t,*m);window.erase(m);}
             u64 at=port->reserve(t,1,now);t=at+1;u64 value=0;
             u64 when=tm->word(core,beat.first,store,beat.second.value,store?beat.second.mask:255,at,value);
+            if(trace_beat)trace_beat(at,store,beat.first,store?beat.second.mask:0,beat.second.value,when,value);
             window.push_back(when);done=std::max(done,when);beat.second.value=value;
             if(store){if(!writes)writes=&x.counts[write_key];++*writes;}else{if(!reads)reads=&x.counts[read_key];++*reads;}
         }

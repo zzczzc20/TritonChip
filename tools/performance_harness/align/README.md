@@ -82,6 +82,21 @@ monitor compiled into a private copy of the bench (`RUN_DIR/bench/`), and
 ArchBench run does; `RUN_DIR/traces/<point>.trace` is the trace;
 `RUN_DIR/manifest.json` names the bench, its compiler and the source tree.
 
+### 3.1b Recording the model
+
+```sh
+python3 tools/performance_harness/align/record_model.py --binary BUILD/tnca-chip --out RUN_MODEL \
+    --config tools/performance_harness/systemc/configs/r40-board-cycle.cfg \
+    --suite spec/r40/suites/existing.json --tier tiny --jobs 6 [--replay RUN_RTL]
+```
+
+`record_model_container.sh` runs it inside the toolchain image with the host's
+model build mounted; `TNCA_REPLAY_DIR=RUN_RTL` turns on the replay. Without
+`--replay` the model predicts (its own memory system); with it every point's
+model process replays the RTL's recorded LSU beats (CYCLE_CORE.md), which is
+the validation path of the first slice. The configuration
+`r40-board-cycle.cfg` is the M2 board structure with `core_model=1`.
+
 ### 3.2 Comparing
 
 ```sh

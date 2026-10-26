@@ -30,18 +30,23 @@ sys.path.insert(0, str(HERE))
 from record_rtl import slug  # noqa: E402
 
 
-def collect(out):
-    """results.json rows -> traces/<slug>.trace; returns {point: status}."""
-    results = json.loads((out / 'results.json').read_text())
+def collect(out, run_dirs=None):
+    """results.json rows (of RUN_DIR, or of each per-point run dir) -> RUN_DIR/traces/<slug>.trace."""
+    rows = []
+    for rd in (run_dirs or [out]):
+        if (rd / 'results.json').exists():
+            for row in json.loads((rd / 'results.json').read_text())['points']:
+                row['_out'] = rd
+                rows.append(row)
     traces = out / 'traces'
-    traces.mkdir(exist_ok=True)
+    traces.mkdir(parents=True, exist_ok=True)
     status = {}
-    for row in results['points']:
+    for row in rows:
         point = row['key'].split('@')[0]
         dirs = [Path(d) for d in row.get('model_dirs') or []]
         found = [d / 'core_trace.txt' for d in dirs if (d / 'core_trace.txt').exists()]
         if not found:
-            run_dir = out / 'runs' / row['key'].replace('/', '__').replace('@', '__')
+            run_dir = row['_out'] / 'runs' / row['key'].replace('/', '__').replace('@', '__')
             found = sorted((run_dir / 'model').glob('model-*/core_trace.txt'))
         if len(found) == 1:
             shutil.copyfile(found[0], traces / f'{slug(point)}.trace')
@@ -66,25 +71,49 @@ def main():
     ap.add_argument('--python', default=sys.executable, help='the Torch/Triton interpreter')
     ap.add_argument('--env', action='append', default=[], help='KEY=VALUE for every run (run_graphs.py --env)')
     ap.add_argument('--collect-only', action='store_true')
+    ap.add_argument('--replay', help='an RTL recording (record_rtl.py RUN_DIR): every point replays its trace '
+                                     '(TNCA_MODEL_CORE_REPLAY), one run_graphs.py call per point')
     args = ap.parse_args()
     out = Path(args.out).resolve()
-    if not args.collect_only:
+    points = list(args.point)
+    if args.suite:
+        suite = json.loads(Path(args.suite).read_text())
+        points += [p['id'] for p in suite['points'] if not args.tier or p.get('tier') in set(args.tier)]
+
+    def run_graphs(run_out, pts, env):
         cmd = [args.python, str(SYSTEMC / 'run_graphs.py'), '--source-root', str(ROOT), '--binary', args.binary,
-               '--config', args.config, '--out', str(out), '--jobs', str(args.jobs), '--timeout', str(args.timeout),
+               '--config', args.config, '--out', str(run_out), '--jobs', str(args.jobs), '--timeout', str(args.timeout),
                '--env', 'TNCA_MODEL_CORE_TRACE=1']
-        for kv in args.env:
+        for kv in list(args.env) + env:
             cmd += ['--env', kv]
-        if args.suite:
-            cmd += ['--suite', args.suite]
-            for t in args.tier:
-                cmd += ['--tier', t]
-        for p in args.point:
+        for p in pts:
             cmd += ['--point', p]
         print(' '.join(cmd), flush=True)
         r = subprocess.run(cmd, cwd=ROOT)
         if r.returncode:
             print(f'run_graphs.py exited {r.returncode}', file=sys.stderr)
-    status = collect(out)
+
+    run_dirs = None
+    if args.replay:
+        replay = Path(args.replay).resolve()
+        run_dirs = []
+        jobs = []
+        for p in points:
+            trace = replay / 'traces' / f'{slug(p)}.trace'
+            rd = out / 'per_point' / slug(p)
+            run_dirs.append(rd)
+            if not trace.exists():
+                print(f'no RTL trace for {p}: {trace}', file=sys.stderr)
+                continue
+            if not args.collect_only:
+                jobs.append((rd, p, [f'TNCA_MODEL_CORE_REPLAY={trace}']))
+        if jobs:
+            import concurrent.futures as cf
+            with cf.ThreadPoolExecutor(max_workers=args.jobs) as pool:
+                list(pool.map(lambda j: run_graphs(j[0], [j[1]], j[2]), jobs))
+    elif not args.collect_only:
+        run_graphs(out, points, [])
+    status = collect(out, run_dirs)
     missing = [p for p, s in status.items() if not s['trace']]
     print(f'{len(status) - len(missing)} of {len(status)} model traces collected' + (f'; missing: {missing}' if missing else ''))
     return 1 if missing or not status else 0

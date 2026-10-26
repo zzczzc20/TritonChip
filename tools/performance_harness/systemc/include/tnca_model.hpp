@@ -82,6 +82,9 @@ struct Config {
             "lsu_setup_cycles","lsu_vector_load_extra","lsu_complete_cycles","lsu_writeback_cycles",
             "fp_compare_latency","shuffle_scalar_latency","reduction_vector_extra","dma_store_register_cycles","dma_drain_cycles",
             "vrf_prefetch","fp_reduction_vector_extra","time_quantum"};
+        // core_model (optional, default 0): 1 selects the cycle-level core (src/cycle_core.inc).
+        u64 core_model=0;if(v.count("core_model")){core_model=v.at("core_model");v.erase("core_model");}
+        require(core_model<=1,"core_model is 0 (event-driven core) or 1 (cycle-level core)");
         require(v.size()==keys.size(),"configuration key count mismatch (unknown or missing key)");
         for(auto& k:keys)require(v.count(k),"missing configuration: "+k);
         cache_hot();
@@ -96,6 +99,8 @@ struct Config {
         require(get("mtx_abuf")<=1 && get("lsu_slots")<=64 && get("lsu_beat_slots")<=64,"invalid core engine configuration");
         require(get("memory_model")<=1,"memory_model is 0 (detailed TLM) or 1 (timeline)");
         require(get("time_quantum")==0 || get("memory_model")==1,"time_quantum needs the timeline memory (memory_model=1)");
+        require(core_model==0 || get("memory_model")==1,"core_model=1 needs the timeline memory (memory_model=1)");
+        v["core_model"]=core_model;
         require(get("nx")*get("ny")<=16,"at most 16 homes");
         require(get("sets")<=65536 && (get("sets")&(get("sets")-1))==0,"sets must be power of two <=65536");
         require(get("ways")<=32 && get("mshrs")<=256 && get("targets")<=4096,"unreasonable cache geometry");

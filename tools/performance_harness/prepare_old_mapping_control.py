@@ -54,6 +54,11 @@ def prepare(source, destination, report_path):
         raise ValueError('source is not the exact frozen Stage 1 product')
     text=(source/REGISTER_BLOCKS).read_text()
     changed,removed=remove_projected_users(text)
+    manifest=json.loads((source/'spec/r41/stage1/experiments/board-gemm-tile.json').read_text())
+    mapping=manifest['board']['memory_map']
+    map_source=source/mapping['source']
+    if sha(map_source)!=mapping['source_sha256']:
+        raise ValueError('frozen board-map reference identity differs')
     # These are outside the product hash and unnecessary for execution.
     def ignore(directory,names):
         skip={'.git','__pycache__','.pytest_cache'}
@@ -61,6 +66,9 @@ def prepare(source, destination, report_path):
             skip|={'sim','evidence'}
         return set(names)&skip
     shutil.copytree(source,destination,ignore=ignore)
+    map_destination=destination/mapping['source']
+    map_destination.parent.mkdir(parents=True,exist_ok=True)
+    shutil.copy2(map_source,map_destination)
     if software_tree(destination,refresh=True)!=FROZEN_TREE:
         raise ValueError('copied source identity differs before the ablation')
     (destination/REGISTER_BLOCKS).write_text(changed)
@@ -78,6 +86,7 @@ def prepare(source, destination, report_path):
                 source_file_sha256=REGISTER_BLOCKS_SHA,control_file_sha256=sha(destination/REGISTER_BLOCKS),
                 removed_method=removed,removed_method_sha256=hashlib.sha256(removed.encode()).hexdigest(),
                 preparation_script_sha256=sha(__file__),
+                board_map_reference=dict(path=mapping['source'],sha256=sha(map_destination)),
                 scope='negative control removes only virtual-column SSA-user projection; numerical and performance checks still required',
                 unchanged='all other product files, including runtime, Inductor templates, references, ISA and RTL')
     report_path.parent.mkdir(parents=True,exist_ok=True)

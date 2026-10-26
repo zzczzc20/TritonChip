@@ -1,0 +1,334 @@
+2026-10-26T08:26:20Z slot 1 start (avail 34 GB): env -u TNCA_IMAGE_CONFIG /tools/Xilinx/Vivado/2023.2/bin/vivado -mode batch -nojournal -nolog -source /home/zzhouch/r41_hbmbw_binding_v1/src/flow/fpga/package_xo.tcl -tclargs /home/zzhouch/r41_hbmbw_binding_v1/src /home/zzhouch/r41_hbmbw_binding_v1/xo xcu280-fsvh2892-2L-e stream-hbm
+
+****** Vivado v2023.2 (64-bit)
+  **** SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+  **** IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+  **** SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source /home/zzhouch/r41_hbmbw_binding_v1/src/flow/fpga/package_xo.tcl
+# set ROOT [file normalize [lindex $::argv 0]]
+# set OUT  [file normalize [lindex $::argv 1]]
+# set PART    [expr {[llength $::argv] > 2 ? [lindex $::argv 2] : "xcu50-fsvh2104-2-e"}]
+# set VARIANT [expr {[llength $::argv] > 3 ? [lindex $::argv 3] : ""}]
+# if {$VARIANT eq "hbm"} {
+#     set TOP     tnca_hbm_xo
+#     set KSRC    kernel_hbm.xml
+#     set BUSIFS  s_axi_tnca:m_axi_hbm
+# } elseif {$VARIANT eq "multicore-hbm"} {
+#     set TOP     tnca_multicore_hbm_xo
+#     set KSRC    kernel_multicore_hbm.xml
+#     set BUSIFS  s_axi_tnca:m_axi_hbm0:m_axi_hbm1:m_axi_hbm2
+# } elseif {$VARIANT eq "stream-hbm"} {
+#     set TOP     tnca_stream_hbm_xo
+#     set KSRC    kernel_stream_hbm.xml
+#     set buses [list s_axi_tnca]
+#     for {set p 0} {$p < 32} {incr p} {lappend buses m_axi_pc$p}
+#     set BUSIFS [join $buses :]
+# } elseif {$VARIANT eq ""} {
+#     set TOP     tnca_u50_xo
+#     set KSRC    kernel.xml
+#     set BUSIFS  s_axi_tnca
+# } else {
+#     puts "TNCA_PKG_ERROR unknown variant '$VARIANT' (none, hbm, multicore-hbm, stream-hbm)"
+#     exit 2
+# }
+# puts "TNCA_PKG_VARIANT=[expr {$VARIANT eq {} ? {onchip} : $VARIANT}] TOP=$TOP"
+TNCA_PKG_VARIANT=stream-hbm TOP=tnca_stream_hbm_xo
+# set VENDOR  tnca.com
+# set LIB     kernel
+# set NAME    [expr {$VARIANT eq "stream-hbm" ? "tnca_stream" : "tnca_u50"}]
+# set VERSION 1.0
+# set AP_CLK_HZ 100000000
+# set IPDIR  $OUT/ip_repo/tnca_com_kernel_${NAME}_1_0
+# set KXML   $OUT/kernel.xml
+# set XO     $OUT/${NAME}.xo
+# file mkdir $OUT
+# file copy -force $ROOT/fpga/$KSRC $KXML
+# set RTL [list]
+# foreach d {common core gen nuca noc tile fpga} {
+#     foreach f [lsort [glob -nocomplain $ROOT/rtl/$d/*.v]] {
+#         lappend RTL $f
+#     }
+# }
+# foreach f [lsort [glob -nocomplain $ROOT/rtl/*.v]] {
+#     lappend RTL $f
+# }
+# lappend RTL $ROOT/rtl/board/$TOP.v
+# set INCS [list $ROOT/rtl/common $ROOT/rtl/noc]
+# set HEADERS [list]
+# foreach d $INCS {
+#     foreach f [lsort [glob -nocomplain $d/*.vh]] {lappend HEADERS $f}
+# }
+# puts "TNCA_PKG_ROOT=$ROOT"
+TNCA_PKG_ROOT=/home/zzhouch/r41_hbmbw_binding_v1/src
+# puts "TNCA_PKG_FILES=[llength $RTL]"
+TNCA_PKG_FILES=82
+# puts "TNCA_PKG_HEADERS=[llength $HEADERS]"
+TNCA_PKG_HEADERS=6
+# create_project -force tnca_xo $OUT/proj -part $PART
+create_project: Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1339.773 ; gain = 40.805 ; free physical = 27714 ; free virtual = 38922
+# add_files -norecurse $RTL
+# add_files -norecurse $HEADERS
+# set_property IS_GLOBAL_INCLUDE false [get_files $HEADERS]
+# set_property FILE_TYPE SystemVerilog [get_files $RTL]
+# foreach d $INCS {
+#     set_property include_dirs $INCS [current_fileset]
+# }
+# add_files -fileset constrs_1 -norecurse $ROOT/flow/fpga/ooc.xdc
+# set_property USED_IN {synthesis out_of_context} [get_files $ROOT/flow/fpga/ooc.xdc]
+# set_property top $TOP [current_fileset]
+# update_compile_order -fileset sources_1
+# ipx::package_project -root_dir $IPDIR -vendor $VENDOR -library $LIB \
+#     -taxonomy /KernelIP -import_files
+WARNING: [IP_Flow 19-4656] Synthesis file group is packaged with a Dependency property value '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/common' although it may not be recognized as a synthesis -include_dir property after IP delivery.
+WARNING: [IP_Flow 19-4656] Synthesis file group is packaged with a Dependency property value '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/noc' although it may not be recognized as a synthesis -include_dir property after IP delivery.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/common/tnca_elastic_link.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/common/tnca_line_link.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/common/tnca_lzc.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/common/tnca_popc.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_acc_rf.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_barrier.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_core.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_decoder.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_fp32_fma.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_fpu_multi.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_lsu.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_lsu_pair.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_matrix.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_mem_mux.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_mul64.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_operand_collector.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_pmac_lane.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_pred_rf.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_rf_bank.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_scalar_alu.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_scalar_rf.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_sfu.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_tensor.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_vector_alu.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_vector_fpu.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_vector_rf.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/core/tnca_vrf_banked.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_cvt_comb_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_cvt_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fdp_f2_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fdp_v1_f1_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fdp_v2d_f1_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fdp_v2l_f1_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fdp_v3_f1_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fdp_v3_f2_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fma_align_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fma_alignp_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fma_l3_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fma_norm_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_fma_round_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_narrow_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_sfu_exp2_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_sfu_log2_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_sfu_rcp_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_sfu_rsqrt_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_widen_pair_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/gen/tnca_widen_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/nuca/tnca_cache_handoff.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/nuca/tnca_mem_arbiter.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/nuca/tnca_mem_ports.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/nuca/tnca_nuca_slice.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/nuca/tnca_replicated_tmu.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/nuca/tnca_tmu.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/noc/tnca_core_ni.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/noc/tnca_idle_host_mux.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/noc/tnca_mesh.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/noc/tnca_router.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/noc/tnca_slice_ni.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/tile/tnca_tile.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_axi_bridge.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_axi_bridge_lb.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_axi_line_ram.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_fpga_mem.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_fpga_top.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_line_axi.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_memory_mode.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_mmio.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_multicore_axi.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_multicore_fpga.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_multicore_mmio.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/fpga/tnca_u50_top.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/tnca_grid_deadline.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/tnca_grid_dispatch.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/tnca_multicore_shell.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/tnca_shell.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/tnca_top.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/common/tnca_amo.vh'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/common/tnca_dco_owner_registered.vh'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/common/tnca_defs.vh'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/common/tnca_perf_count.vh'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/common/tnca_perf_sel.vh'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/zzhouch/r41_hbmbw_binding_v1/src/rtl/noc/tnca_noc_pkg.vh'.
+WARNING: [IP_Flow 19-5101] Packaging a component with a SystemVerilog top file is not fully supported. Please refer to UG1118 'Creating and Packaging Custom IP'.
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1704] No user IP repositories specified
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/tools/Xilinx/Vivado/2023.2/data/ip'.
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc0' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc1' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc10' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc11' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc12' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc13' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc14' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc15' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc16' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc17' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc18' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc19' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc2' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc20' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc21' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc22' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc23' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc24' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc25' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc26' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc27' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc28' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc29' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc3' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc30' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc31' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc4' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc5' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc6' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc7' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc8' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_pc9' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 's_axi_tnca' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'ap_rst_n' of definition 'xilinx.com:signal:reset:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'ap_clk' of definition 'xilinx.com:signal:clock:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-4728] Bus Interface 'ap_rst_n': Added interface parameter 'POLARITY' with value 'ACTIVE_LOW'.
+INFO: [IP_Flow 19-4728] Bus Interface 'ap_clk': Added interface parameter 'ASSOCIATED_RESET' with value 'ap_rst_n'.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc0': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc1': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc10': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc11': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc12': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc13': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc14': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc15': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc16': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc17': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc18': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc19': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc2': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc20': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc21': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc22': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc23': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc24': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc25': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc26': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc27': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc28': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc29': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc3': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc30': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc31': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc4': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc5': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc6': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc7': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc8': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_pc9': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 's_axi_tnca': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-5661] Bus Interface 'ap_clk' does not have any bus interfaces associated with it.
+WARNING: [IP_Flow 19-11770] Clock interface 'ap_clk' has no FREQ_HZ parameter.
+INFO: [IP_Flow 19-2181] Payment Required is not set for this core.
+INFO: [IP_Flow 19-2187] The Product Guide file is missing.
+# set core [ipx::current_core]
+# set_property name $NAME $core
+# set_property version $VERSION $core
+# set clk_if [ipx::get_bus_interfaces ap_clk -of_objects $core]
+# proc tnca_busparam {busif name value {resolve ""}} {
+#     set p [ipx::get_bus_parameters $name -of_objects $busif]
+#     if {[llength $p] == 0} {
+#         set p [ipx::add_bus_parameter $name $busif]
+#         puts "TNCA_PKG_PARAM $name: created"
+#     } else {
+#         puts "TNCA_PKG_PARAM $name: already present"
+#     }
+#     if {[catch {set_property value $value $p} why]} {
+#         puts "TNCA_PKG_PARAM $name: value refused -- $why"
+#         return
+#     }
+#     puts "TNCA_PKG_PARAM $name: value = [get_property value $p]"
+#     if {$resolve ne ""} {
+#         if {[catch {set_property value_resolve_type $resolve $p} why]} {
+#             puts "TNCA_PKG_PARAM $name: resolve type refused -- $why"
+#         } else {
+#             puts "TNCA_PKG_PARAM $name: resolve = [get_property value_resolve_type $p]"
+#         }
+#     }
+# }
+# tnca_busparam $clk_if ASSOCIATED_BUSIF $BUSIFS
+TNCA_PKG_PARAM ASSOCIATED_BUSIF: created
+TNCA_PKG_PARAM ASSOCIATED_BUSIF: value = s_axi_tnca:m_axi_pc0:m_axi_pc1:m_axi_pc2:m_axi_pc3:m_axi_pc4:m_axi_pc5:m_axi_pc6:m_axi_pc7:m_axi_pc8:m_axi_pc9:m_axi_pc10:m_axi_pc11:m_axi_pc12:m_axi_pc13:m_axi_pc14:m_axi_pc15:m_axi_pc16:m_axi_pc17:m_axi_pc18:m_axi_pc19:m_axi_pc20:m_axi_pc21:m_axi_pc22:m_axi_pc23:m_axi_pc24:m_axi_pc25:m_axi_pc26:m_axi_pc27:m_axi_pc28:m_axi_pc29:m_axi_pc30:m_axi_pc31
+# if {$VARIANT in {multicore-hbm stream-hbm}} {
+#     tnca_busparam $clk_if ASSOCIATED_RESET ap_rst_n
+#     set reset_if [ipx::get_bus_interfaces ap_rst_n -of_objects $core]
+#     if {[llength $reset_if] != 1} {error "multicore HBM reset interface missing"}
+#     tnca_busparam $reset_if POLARITY ACTIVE_LOW
+#     foreach bus [split $BUSIFS :] {
+#         if {[llength [ipx::get_bus_interfaces $bus -of_objects $core]] != 1} {
+#             error "multicore HBM interface $bus missing"
+#         }
+#     }
+# }
+TNCA_PKG_PARAM ASSOCIATED_RESET: already present
+TNCA_PKG_PARAM ASSOCIATED_RESET: value = ap_rst_n
+TNCA_PKG_PARAM POLARITY: already present
+TNCA_PKG_PARAM POLARITY: value = ACTIVE_LOW
+# tnca_busparam $clk_if FREQ_HZ $AP_CLK_HZ user
+TNCA_PKG_PARAM FREQ_HZ: created
+TNCA_PKG_PARAM FREQ_HZ: value = 100000000
+TNCA_PKG_PARAM FREQ_HZ: resolve = user
+# if {[info exists ::env(TNCA_IMAGE_CONFIG)]} {
+#     source $::env(TNCA_IMAGE_CONFIG)
+#     dict for {name value} $TNCA_IMAGE_PARAMS {
+#         set up [ipx::get_user_parameters $name -of_objects $core]
+#         set mp [ipx::get_hdl_parameters $name -of_objects $core]
+#         if {[llength $up] != 1 || [llength $mp] != 1} {
+#             error "TNCA_IMAGE_CONFIG: parameter $name is not exposed by $TOP"
+#         }
+#         set_property value $value $up
+#         set_property value $value $mp
+#         puts "TNCA_IMAGE_PARAM $name=$value"
+#     }
+# }
+# ipx::create_xgui_files $core
+# ipx::update_checksums $core
+# ipx::save_core $core
+# puts "TNCA_PKG_IP=$IPDIR"
+TNCA_PKG_IP=/home/zzhouch/r41_hbmbw_binding_v1/xo/ip_repo/tnca_com_kernel_tnca_stream_1_0
+# set fh [open $IPDIR/component.xml r]
+# set xml [read $fh]
+# close $fh
+# foreach {tag id} {ASSOC ASSOCIATED_BUSIF FREQ FREQ_HZ} {
+#     if {[regexp "BUSIFPARAM_VALUE\\.AP_CLK\\.$id\">(\[^<\]*)" $xml -> v]} {
+#         puts "TNCA_PKG_XML_$tag=$v"
+#     } else {
+#         puts "TNCA_PKG_XML_$tag=NOT IN component.xml"
+#     }
+# }
+TNCA_PKG_XML_ASSOC=s_axi_tnca:m_axi_pc0:m_axi_pc1:m_axi_pc2:m_axi_pc3:m_axi_pc4:m_axi_pc5:m_axi_pc6:m_axi_pc7:m_axi_pc8:m_axi_pc9:m_axi_pc10:m_axi_pc11:m_axi_pc12:m_axi_pc13:m_axi_pc14:m_axi_pc15:m_axi_pc16:m_axi_pc17:m_axi_pc18:m_axi_pc19:m_axi_pc20:m_axi_pc21:m_axi_pc22:m_axi_pc23:m_axi_pc24:m_axi_pc25:m_axi_pc26:m_axi_pc27:m_axi_pc28:m_axi_pc29:m_axi_pc30:m_axi_pc31
+TNCA_PKG_XML_FREQ=100000000
+# package_xo -kernel_xml $KXML -kernel_name $NAME \
+#     -ip_directory $IPDIR -xo_path $XO -force
+WARNING: [Vivado 12-4404] The CPU emulation flow in v++ is only supported when using a packaged XO file that contains C-model files, none were found.
+# set variant_file [open $OUT/tnca_variant.txt w]
+# puts $variant_file $VARIANT
+# close $variant_file
+# puts "TNCA_PKG_DONE=$XO"
+TNCA_PKG_DONE=/home/zzhouch/r41_hbmbw_binding_v1/xo/tnca_stream.xo
+INFO: [Common 17-206] Exiting Vivado at Mon Oct 26 16:26:43 2026...
+2026-10-26T08:26:53Z slot 1 end exit 0
+ad8f585585dc96fb26b090724f0a3dfa289eafbc3d75e482e13dca862f71fa7a  /home/zzhouch/r41_hbmbw_binding_v1/xo/tnca_stream.xo

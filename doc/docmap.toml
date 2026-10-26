@@ -425,3 +425,8 @@ sources = ["python/tnca/hbm_layout.py", "python/tnca/backends/multicore_mmio.py"
 path = "evidence/r41/hbm_bw/bank/README.md"
 depends_on = ["evidence/r41/hbm_bw/layout/README.md", "evidence/r41/hbm_bw/stream/README.md"]
 sources = ["rtl/fpga/tnca_stream_bank.v", "tb/fpga/tb_stream_bank.v", "tools/r41/hbm_bank_tests.py", "flow/fpga/screen_r41_hbm_bank.tcl", "evidence/r41/hbm_bw/bank/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/binding/README.md"
+depends_on = ["evidence/r41/hbm_bw/bank/README.md"]
+sources = ["rtl/board/tnca_stream_hbm_xo.v", "fpga/kernel_stream_hbm.xml", "fpga/u280_multicore_stream.cfg", "flow/fpga/package_xo.tcl", "flow/fpga/link.sh", "tools/r41/generate_stream_binding.py", "tools/r41/stream_binding_tests.py", "tools/r41/audit_stream_package.py", "evidence/r41/hbm_bw/binding/"]

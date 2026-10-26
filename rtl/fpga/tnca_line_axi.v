@@ -17,7 +17,7 @@
 module tnca_line_axi #(
  parameter SRC_W=2,TAG_W=3,OUT_N=8,DATA_W=256,DYNAMIC_LIMIT=0,
  parameter ID_W=(OUT_N>1?$clog2(OUT_N):1),
- parameter MEM_BASE=64'h20000,WRITE_RESPONSES=0,PIPELINED_ISSUE=0
+ parameter MEM_BASE=64'h20000,WRITE_RESPONSES=0,PIPELINED_ISSUE=0,HBM_STRIPED=0
 )(
  input wire clk,rst_n,
  input wire [7:0] admission_limit,
@@ -77,13 +77,17 @@ module tnca_line_axi #(
  wire [63:0] size_bound=axi_size-64,base_bound=64'hffffffffffffffc0-axi_base;
  always @(posedge clk)begin
   base_q<=axi_base;
-  window_ok_q<=axi_base[5:0]==0 && axi_size>=64;
+  window_ok_q<=axi_base[5:0]==0 && axi_size>=64 &&
+    (!HBM_STRIPED || (axi_base==0 && axi_size==64'h200000000));
   bound_q<=size_bound<base_bound ? size_bound : base_bound;
   limit_q<=admission_limit;
   limit_ok_q<=admission_limit>=1 && admission_limit<=OUT_N;
  end
  wire admission_ok=!DYNAMIC_LIMIT || (limit_ok_q && active_count<limit_q);
  wire [63:0] offset=req_addr-MEM_BASE;
+ // Page striping is a bijection of the full 8 GiB allocation. Logical
+ // addresses remain the ownership/hazard key; only the AXI address changes.
+ wire [63:0] bus_offset=HBM_STRIPED ? {31'd0,offset[16:12],offset[32:17],offset[11:0]} : offset;
  wire legal_address=req_addr>=MEM_BASE && req_addr[5:0]==0 && window_ok_q && offset<=bound_q;
 `ifndef SYNTHESIS
  reg [63:0] size_shadow;
@@ -165,7 +169,7 @@ module tnca_line_axi #(
    // A full pending queue refuses admission, even if it drains this cycle.
    if(req_valid && req_ready)begin
     active[free_slot]<=1;writing[free_slot]<=req_we;sent[free_slot]<=0;
-    address[free_slot]<=req_addr;bus_address[free_slot]<=base_q+offset;line[free_slot]<=req_wdata;
+    address[free_slot]<=req_addr;bus_address[free_slot]<=base_q+bus_offset;line[free_slot]<=req_wdata;
     source[free_slot]<=req_src;tag[free_slot]<=req_tag;rbeat[free_slot]<=0;
     if(!issue_valid || (PIPELINED_ISSUE && issue_done && !pending_valid))begin
      issue_slot<=free_slot;issue_valid<=1;aw_done<=0;w_done<=0;wbeat<=0;

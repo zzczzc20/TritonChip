@@ -12,7 +12,7 @@
 `default_nettype none
 module tnca_multicore_mmio #(
  parameter N=3,PORTS=3,NUM_RCTX=4,PHYS_W=8,CODE_WORDS=16384,
- parameter MEMORY_CONTROLS=0,AXI_OUT_N=8,
+ parameter MEMORY_CONTROLS=0,AXI_OUT_N=8,HBM_STRIPED=0,
  parameter MEM_BASE=64'h20000,REG_ADDR_W=8,CACHE_MAINTENANCE=0
 )(
  input wire clk,rst_n,input wire [REG_ADDR_W-1:0] reg_addr,
@@ -81,9 +81,11 @@ module tnca_multicore_mmio #(
    8'ha8,9'h100,9'h108:reg_rdata=axi_base;8'hb0:reg_rdata=axi_size;
    8'hb8:reg_rdata=((MEM_BASE>>12)<<32) | 64'd2 | ((|axi_fault)?64'd1:64'd0) |
                   (CACHE_MAINTENANCE!=0 ? 64'd16 : 64'd0) |
-                  (MEMORY_CONTROLS!=0 ? 64'd32 : 64'd0);
+                  (MEMORY_CONTROLS!=0 ? 64'd32 : 64'd0) |
+                  (HBM_STRIPED!=0 ? 64'd64 : 64'd0);
    // R_AXI_STAT 63:32 is LOCAL_LIMIT in 4 KiB pages, as in v1.
    9'h110:if(MEMORY_CONTROLS)reg_rdata={48'd0,memory_active_ports,memory_outstanding};
+   9'h120:if(HBM_STRIPED)reg_rdata=64'h5234315300010c05;
    9'h118:if(MEMORY_CONTROLS)reg_rdata=64'h5234304d00010000 | (PORTS<<8) | AXI_OUT_N;
    8'he0:reg_rdata=1;8'he8:reg_rdata=launch_start;
    8'hf0:reg_rdata=launch_end;8'hf8:reg_rdata=launch_sequence;
@@ -91,6 +93,9 @@ module tnca_multicore_mmio #(
   endcase
  end
  generate
+  if(HBM_STRIPED && REG_ADDR_W<9)begin:g_bad_striped_registers
+   tnca_invalid_striped_register_geometry invalid_configuration();
+  end
   if(MEMORY_CONTROLS && (REG_ADDR_W<9 || AXI_OUT_N<1 || AXI_OUT_N>255 || PORTS>255))begin:g_bad_memory_controls
    tnca_invalid_memory_control_geometry invalid_configuration();
   end

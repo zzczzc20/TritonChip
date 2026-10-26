@@ -204,7 +204,7 @@
    "note": "R40 carry-over ledger"
   },
   "S1-01.unified_experiment_resume_dedup_failures": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "compile",
     "board"
@@ -218,9 +218,19 @@
      "binds": {
       "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
      }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-anchors/report.json",
+     "sha256": "66698f72c850c36994d700978cf704de3c396fcc9e1512ac98ec161a85d82fe6",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "experiment-report"
     }
    ],
-   "note": "runner with exact resume, failure preservation and identity-complete board keys exists (test_experiment.py); no fpga step has run through it yet"
+   "note": "Six physical manifests completed through the registered runner; existing runner failure/resume tests retained."
   },
   "S1-01.native_systemc_real_artifacts_common_session": {
    "claim": "pass",
@@ -277,7 +287,7 @@
    "note": "monitor modes leave numerics, cycles and counters unchanged; bounded trace reports drops"
   },
   "S1-01.fast_and_ramulator2_paths": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "systemc",
     "board"
@@ -300,9 +310,28 @@
      "binds": {
       "git_commit": "a0c9e7252160dc237ef81d96114f3e617616cde5"
      }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-prospective/prospective/formal.jsonl",
+     "sha256": "d0f64ffbbc7307ed6e710a40f1bbfa7ff5a26423a5c5d2fd1e7e845a31c5a345",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/board/metrics.json",
+     "sha256": "0e092d6a1391ce97c9c5dff18ed7a47e4eba6fac3719ef7f821af436a1eb0aa6",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
     }
    ],
-   "note": "both paths switchable and smoke-tested; the residuals they resolve and their simulation cost need board data"
+   "note": "Both paths evaluated against board and simulator costs; slow fixed-point predictions remain inconclusive, with two subset arms not run. No accuracy qualification claimed."
   },
   "S1-01.dependency_and_address_map_provenance": {
    "claim": "pass",
@@ -352,9 +381,19 @@
      "sha256": "55817a5793b2beb291f9ddf175a69931eea618d88b3ff999d1e2c36a3bb2507a",
      "kind": "doc",
      "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-prospective/prospective/formal.jsonl",
+     "sha256": "d0f64ffbbc7307ed6e710a40f1bbfa7ff5a26423a5c5d2fd1e7e845a31c5a345",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
     }
    ],
-   "note": "pinned SystemC 3.0.2 and Ramulator2 c6c7a5de; PC map from the actual B40 BO allocation (address_map.md); bank/row map taken from the image's own HBM IP configuration (ROW_BANK_COLUMN, BG interleave, USER_MC0_ADDR_BIT) and implemented, checked by the controller_address_map bridge test; controller queueing/lookahead/ECC recorded as not modelled"
+   "note": "Pinned dependencies and actual B40 board configuration retained; qualified physical records bind the exported map."
   },
   "S1-01.no_latency_double_counting": {
    "claim": "pass",
@@ -416,14 +455,34 @@
    "note": "Ramulator completion queues, retries, write completion and turnaround; maintenance drains accepted traffic"
   },
   "S1-01.calibration_validation_holdout_separation": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "systemc",
     "board"
    ],
    "final_identity": false,
-   "evidence": [],
-   "note": "model remains uncalibrated; holdout sealed and unused; calibration/validation residuals need board records"
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/prospective-prediction-v2.json",
+     "sha256": "eff75a74abb9e7d5a49e2375313343ade18d3a922b9651e7622f4c5eeccd7766",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-prospective/prospective/formal.jsonl",
+     "sha256": "d0f64ffbbc7307ed6e710a40f1bbfa7ff5a26423a5c5d2fd1e7e845a31c5a345",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    }
+   ],
+   "note": "Sealed predictions compared without fitting. Diagnostic reuse removes unseen status; sealed holdout was not run or fitted. Full model stays uncalibrated."
   },
   "S1-01.out_of_domain_refusal": {
    "claim": "pass",
@@ -483,7 +542,7 @@
    "note": "git archive of 25094197f6e6 (sha256 6361cd4e...) unpacked on GB10 with fresh Torch extension, Triton and Inductor caches; the 19-step harness-smoke manifest completed (model configure/build, slow fixed-point qualification, process lifetime, DRAM boundaries, Ramulator mechanisms, native artifacts, monitor invariance, slow path, timing status, representative IR); history: the earlier d1feb89 archive run (kickoff/archive-d1feb89-harness-evidence.tgz) is on an older tree and is not counted"
   },
   "S1-01.case_gemm_fragment": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "systemc",
     "rtl",
@@ -502,12 +561,30 @@
        "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
       ]
      }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-gemm-tile/gemm/formal.jsonl",
+     "sha256": "a48296d52af7bb40024e009dce035941c08f99b60e44b089d8ca922c648548cd",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/bitwise-k-order/rtl-bitwise-v1-evidence.tgz",
+     "sha256": "6d1f3ad8f33342125755a33c1edd0980ce033c2d16df1a37d73068ee42ff4bf6",
+     "kind": "rtl",
+     "binds": {
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2"
+     }
     }
    ],
-   "note": "model/RTL fragment case done; board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log)"
+   "note": "Closed-negative performance study: all 18 configurations correct; wide tile slower on 8/9. Structural repair is separate from speedup."
   },
   "S1-01.case_memory_service": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "systemc",
     "rtl",
@@ -523,12 +600,31 @@
       "git_commit": "a0c9e7252160dc237ef81d96114f3e617616cde5",
       "software_tree": "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
      }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-memory-service/report.json",
+     "sha256": "495d3d3e75e93205644d46519512be6aaa25674b918eb177e067c5aca63b85a1",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "experiment-report"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/memory-service-v1-evidence.tgz",
+     "sha256": "55275a6f401856f4c1f495cd238da99221245d69ac35c4d608e66fff2b820a28",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
     }
    ],
-   "note": "model/RTL service cohorts done; board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log) (spec/r41/stage1/experiments/board-memory-service.json)"
+   "note": "Closed bounded study with board cohort and historical model/RTL mechanisms. Matching-source absolute model residual remains unavailable; no physical overlap counter or new default gain is asserted."
   },
   "S1-01.case_pipeline_admission": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "systemc",
     "rtl",
@@ -547,9 +643,28 @@
        "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
       ]
      }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-pipeline-admission/report.json",
+     "sha256": "d217b2c60e2efe3744b4b7e85222e745a1011320fb8786e872122adcdd7468ce",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "experiment-report"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/pipeline-admission-v2-evidence.tgz",
+     "sha256": "b8dad47d247bc6819e858c3dbcaaf96f9e66008a7ee5f6576015d773bf254554",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
     }
    ],
-   "note": "model/RTL ring cohorts done; board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log) (spec/r41/stage1/experiments/board-pipeline-admission.json)"
+   "note": "Closed bounded study with board cohort and historical model/RTL mechanisms. Matching-source absolute model residual remains unavailable; no physical overlap counter or new default gain is asserted."
   },
   "S1-01.negative_case": {
    "claim": "pass",
@@ -591,7 +706,7 @@
    "note": "third ring stage overlaps more yet runs slower (RTL); 3/8 outlets slower than 1/8 (RTL)"
   },
   "S1-01.prospective_prediction_board_residual": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "systemc",
     "board"
@@ -644,9 +759,28 @@
       "software_tree": "files:8c7139023d76d8572a82faef65312ce03bb439def8475792de826f44acb956ee"
      },
      "note": "v2 sealed: 9 R40-03 GEMM points x {16,16,16; 16,32,16} x fast/slow"
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-prospective/prospective/formal.jsonl",
+     "sha256": "d0f64ffbbc7307ed6e710a40f1bbfa7ff5a26423a5c5d2fd1e7e845a31c5a345",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/prospective-prediction-v2.json",
+     "sha256": "eff75a74abb9e7d5a49e2375313343ade18d3a922b9651e7622f4c5eeccd7766",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
     }
    ],
-   "note": "v2 predictions sealed before the board on tree c2c96d3 (v1 kept as history, not comparable); board runs registered (board-prospective.json, board-gemm-tile.json), not run"
+   "note": "Residuals recomputed from measured records and executable identities: fast +1.94%/-3.13%; slow inconclusive. No prediction substitutes for measurement."
   },
   "S1-01.matched_rtl_speed_measurement": {
    "claim": "pass",
@@ -944,13 +1078,24 @@
    "note": "generated code and dynamic counters show the per-row accumulator traffic removed"
   },
   "S1-02.original_gemm_subset_retest": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "board"
    ],
    "final_identity": true,
-   "evidence": [],
-   "note": "board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log) (board-gemm-tile.json)"
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-gemm-tile/gemm/formal.jsonl",
+     "sha256": "a48296d52af7bb40024e009dce035941c08f99b60e44b089d8ca922c648548cd",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    }
+   ],
+   "note": "Nine frozen subset points, both tiles: 18 numerical passes. Performance hypothesis fails on eight points."
   },
   "S1-02.old_mapping_and_conservative_baseline_comparisons": {
    "claim": "not-measured",
@@ -960,19 +1105,17 @@
    "final_identity": true,
    "evidence": [
     {
-     "path": "evidence/r41/stage1/fragments/fragments-old-vs-fixed.json",
-     "sha256": "7576a338d8d172cb38fc9b5ce9c60fab54c8ea601f94ed35c841f13b77e19305",
-     "kind": "systemc",
+     "path": "evidence/r41/stage1/board/out/board-gemm-tile/gemm/formal.jsonl",
+     "sha256": "a48296d52af7bb40024e009dce035941c08f99b60e44b089d8ca922c648548cd",
+     "kind": "board",
      "binds": {
-      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
-      "software_tree": [
-       "files:c6750cbb1721e0a456486988e2facb0b9cbbcee56d06164b28ecbbd76ae3e8a9",
-       "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
-      ]
-     }
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
     }
    ],
-   "note": "model comparisons exist; board comparison against the fe1b old mapping and the 16,16,16 arm is registered (board-gemm-tile.json), not run"
+   "note": "Current 16x16 control measured, but no matched final-source old-mapping board comparison is established. Historical model comparisons are retained, not upgraded to board measurements."
   },
   "S1-03.barrier_ordering_audit_and_negative_cases": {
    "claim": "pass",
@@ -1090,7 +1233,7 @@
    "note": "graph budget; a hung candidate compiler is terminated at its deadline"
   },
   "S1-03.device_drain_recovery": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "board"
    ],
@@ -1103,9 +1246,19 @@
      "binds": {
       "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029"
      }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/deadline-expiry/report.json",
+     "sha256": "504375229f12941c20a505927b844d7c1044874e3a15ce4f056f08f0ab542a83",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "deadline-expiry"
     }
    ],
-   "note": "board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log) (board-tune-qualification.json deadline-expiry)"
+   "note": "Forced deadline poisons session at unchanged epoch; limits restored, recover advances epoch, stale handle refused and output correct. Error text is DEVICE_LOST despite expiry label other."
   },
   "S1-03.isolated_tuning_samples": {
    "claim": "pass",
@@ -1162,7 +1315,7 @@
    "note": "cache key covers source, shapes, placements, tree, image, map and clock; actual cache hit"
   },
   "S1-03.device_endpoint_ranking": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "board"
    ],
@@ -1175,9 +1328,39 @@
      "binds": {
       "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
      }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-first/formal.jsonl",
+     "sha256": "5327e80c916e5a688e728fecb5e03088260f32aa93574226a182dc47e9357460",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-rerun/formal.jsonl",
+     "sha256": "50d1a06c44c204bdbd601852a3fa99d637bc600193a770000ff819b07d18050b",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-check.json",
+     "sha256": "d6d75d3e9e09c17fa547de4d5c3c1360780522e45a5da886336545bef74972bf",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "tune-check"
     }
    ],
-   "note": "RTL endpoint ranking only (injected functional identity); board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log) (board-tune-qualification.json)"
+   "note": "Three kernels ranked; three cached selections reused; no tuning samples in formal launch counts."
   },
   "S1-03.uncertainty_fallback": {
    "claim": "pass",
@@ -1490,26 +1673,68 @@
    ],
    "final_identity": true,
    "evidence": [],
-   "note": "board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log) (board-original-suite.json)",
+   "note": "Original-suite first attempt interrupted by external card reload. Lead schedules rerun; ingest only after completion. No Stage 2 or historical measurement substitutes for the Stage 1 final suite.",
    "coverage": "original_suites"
   },
   "S1-05.fragment_path_actually_used": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "board"
    ],
    "final_identity": true,
-   "evidence": [],
-   "note": "board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log) (board-gemm-tile.json)"
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-gemm-tile/gemm/formal.jsonl",
+     "sha256": "a48296d52af7bb40024e009dce035941c08f99b60e44b089d8ca922c648548cd",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    }
+   ],
+   "note": "Measured candidate artifacts match sealed executable identities; native fp16 matmul uses two accumulators. Numerical capability passes, performance hypothesis fails."
   },
   "S1-05.tuning_and_fallback_integrated": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "board"
    ],
    "final_identity": true,
-   "evidence": [],
-   "note": "board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log) (board-tune-qualification.json)"
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-first/formal.jsonl",
+     "sha256": "5327e80c916e5a688e728fecb5e03088260f32aa93574226a182dc47e9357460",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-rerun/formal.jsonl",
+     "sha256": "50d1a06c44c204bdbd601852a3fa99d637bc600193a770000ff819b07d18050b",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-check.json",
+     "sha256": "d6d75d3e9e09c17fa547de4d5c3c1360780522e45a5da886336545bef74972bf",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "tune-check"
+    }
+   ],
+   "note": "Physical endpoint ranking/cache/sample isolation and forced recovery qualified; conservative fallback regression evidence retained in S1-03."
   },
   "S1-05.three_harness_cases": {
    "derived_from": [
@@ -1526,44 +1751,95 @@
    ],
    "final_identity": true,
    "evidence": [],
-   "note": "section 6.5 judgement on the frozen matched set needs the final board suite (board-original-suite.json)"
+   "note": "Original-suite first attempt interrupted by external card reload. Lead schedules rerun; ingest only after completion. No Stage 2 or historical measurement substitutes for the Stage 1 final suite."
   },
   "S1-05.clean_archive_fresh_cache_rebuild": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "compile",
     "board"
    ],
    "final_identity": true,
-   "evidence": [],
-   "note": "final git archive, fresh caches and frozen board points (board-anchors.json) not run"
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-anchors/anchors/formal.jsonl",
+     "sha256": "3f4ead48fd388a7d7a4e6bf0c4bd6b9a23e0e0c960e627d82856d886f6c44a43",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/archive-25094197f6e6-report.json",
+     "sha256": "e0aa638563cbc04befa5ddb6db133a057fcdf03d200cbb3e6ea1dbc49c43d655",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Final-source clean archive smoke on GB10 plus physical anchors rebuilt with experiment-local caches."
   },
   "S1-05.frozen_board_anchor_reproduction": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "board"
    ],
    "final_identity": true,
-   "evidence": [],
-   "note": "board work registered, not run: the shared U280 holds another image (kickoff/restore90-check-*.log) (board-anchors.json)"
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-anchors/anchors/formal.jsonl",
+     "sha256": "3f4ead48fd388a7d7a4e6bf0c4bd6b9a23e0e0c960e627d82856d886f6c44a43",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    }
+   ],
+   "note": "Three frozen anchors across three independent interleaved sessions; measured identity and numerical checks pass; descriptive cycle spreads documented."
   },
   "S1-05.stage1_report": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "doc"
    ],
    "final_identity": true,
-   "evidence": [],
-   "note": "doc/r41_stage1_report.md not written"
+   "evidence": [
+    {
+     "path": "doc/r41_stage1_report.md",
+     "sha256": "f64cf9b93d978c1988fcbc24ec54f0dad30b0a89316113c2ade26d34dcecff41",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Evidence-qualified closeout report for frozen product; stage remains not accepted."
   },
   "S1-05.stage2_ready_blocker_list": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "doc"
    ],
    "final_identity": true,
-   "evidence": [],
-   "note": "Stage 2 ready/blocker list not written"
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/stage2_readiness.md",
+     "sha256": "a01b7aa0363c2801b9169c981188badc452e8ddca6666b7b835abdcfa73cf64e",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Stage 1 board results and remaining Stage 2 boundaries documented."
   }
  }
 }

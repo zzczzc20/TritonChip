@@ -15,3 +15,27 @@ This answers S1-05 item 8. Each row names the Stage 2 package, what Stage 1 esta
 
 The Stage 1 board batch (`launches/board_queue.sh`) fills the rows that depend on board measurement. This list is
 updated with those results in the Stage 1 report.
+
+## Board closeout update, 2026-10-26 UTC
+
+The frozen Stage 1 product is `25094197f6e6`, software
+`files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a`.
+The [Stage 1 report](../../../../doc/r41_stage1_report.md) and
+[board evidence](board/README.md) supersede the pending-board statements above.
+The earlier table records Stage 1 preparation; it is not a current Stage 2
+completion claim. Later [Stage 2 board results](../stage2/board/results.md)
+are a separate 100 MHz / 8 GiB product and cannot substitute for the Stage 1 suite.
+
+| Package | Stage 1 board input now available | Remaining boundary |
+|---|---|---|
+| S2-01 clock/anchors | 9/9 numerical sessions on 90 MHz B40; graph cycle ranges 0.035%, 1.54%, 0.614% | Use the independent Stage 2 identity and timing evidence for 100 MHz |
+| S2-02 memory service | 9 functional cases; depth 1→8 median cycles 17,000→15,870; three outlets 15,836 | Additional outlet gain unconfirmed; model-source/cache domains differ, absolute model residual unavailable; keep defaults |
+| S2-03 pipeline/locality | 48 numerical rows; tail-mm stage 3 slower than stage 2 in all repetitions (median +3.60%) | Physical overlap not directly measured; stage-3 addmm bindings differ. No locality implementation pass; Mode A default-off |
+| S2-05 GEMM/selector | 18/18 GEMM configurations numerical; wide candidate slower on 8/9 points. Three tuning selections and three cache hits; deadline recovery passes | General wide-tile no-slower hypothesis fails; no default promotion or subset ≥1.15× target pass. Full-suite nonregression pending |
+| Model profile | Prospective fast residual +1.94%/−3.13%; ratio error +5.23%. GEMM fast median absolute 6.44%, p95 21.95% | Model remains uncalibrated; slow predictions inconclusive/not-run. Diagnostics are no longer unseen holdout; no refit performed |
+| S2-04 full model | No new Stage 1 full-model board evidence | Earlier compile estimates and six blockers do not become capability passes; consult Stage 2 evidence for later progress |
+| Stage 1 sign-off | Six completed manifests archived and judged on the frozen identity | Original-suite and full-set nonregression stay **not-measured**; matched old-mapping comparison also unestablished. Stage 1 not accepted |
+
+**ORIGINAL-SUITE PLACEHOLDER:** first attempt interrupted by external card reload;
+lead schedules the rerun. Read-only ingest command is in `board/README.md`.
+Do not launch a board experiment or alter the shared host queues to fill this row.

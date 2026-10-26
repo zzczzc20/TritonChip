@@ -56,8 +56,18 @@ class AcceptanceTests(unittest.TestCase):
         path = self.evidence(f'records-{len(list(self.dir.glob("records-*")))}.jsonl', rows)
         return dict(claim='pass', requires=['board'], evidence=[self.entry(path, format='archbench-jsonl', **entry)])
 
-    def test_current_index_passes_no_board_item(self):
-        result = acceptance.evaluate(REPO)
+    def test_missing_board_evidence_passes_no_board_item(self):
+        # Model the pre-board state explicitly: the live evidence index gains
+        # valid board measurements as campaigns finish.
+        items = {
+            item_id: dict(copy.deepcopy(item), evidence=[
+                e for e in item.get('evidence', []) if e['kind'] != 'board'])
+            for item_id, item in self.real['items'].items()
+            if 'board' in (item.get('requires') or [])
+        }
+        items['S1-05.all_stage1_required'] = copy.deepcopy(
+            self.real['items']['S1-05.all_stage1_required'])
+        result = acceptance.evaluate(REPO, self.index(items))
         self.assertEqual(result['required'], 61)
         rows = {r['id']: r for r in result['items']}
         self.assertEqual(set(rows), set(acceptance.required_ids(json.loads((REPO/'spec/r41/stage1/plan.json').read_text()))))

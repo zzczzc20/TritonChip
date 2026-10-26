@@ -28,6 +28,6 @@
 ## What this does not say
 - **Absolute speed:** the GB10 is about 600× faster in time on the same points (geometric mean of device-time ratios, 1/0.0016). The two rooflines differ by about 6,000× in FLOP/s. Efficiency is comparable between the platforms; absolute performance is not.
 - **TNCA roofline:** it is the single-core spec bound that ArchBench uses for eta, although the board runs three cores. A three-core roofline would be higher, and TNCA's gap larger, except where the work cannot use all three cores. The memory roof is the core's 8 B/cycle port, not the HBM peak, so it is a conservative ceiling.
-- **Dropped points:** 11 of the 113 TNCA 100 MHz points and 9 GB10 points are missing from the plot because they have no FLOP or byte demand (pure data movement or skipped), or no passing record.
+- **Dropped points:** 11 of the 113 points have zero FLOP demand (pure data movement such as `embedding` and `transpose`), so they have no place on a FLOP roofline. The GPU file has 115 records for the 113 points (two points appear twice); the same 11 zero-FLOP records are dropped, which leaves 104. The TNCA 90 MHz set also plots 104 points.
 - **Time basis:** TNCA time is the serial-grid device cycle count, the basis of eta. GB10 time is CUPTI device activity with a cold L2.
 - **Data:** the 100 MHz points are `s2-original-suite` from the Stage 2 board run. The 90 MHz points and the GB10 points are the R40 v3 delivery records (`evidence/r40/v3/gpu_comparison`). The Stage 1 `board-original-suite` rerun on the 90 MHz image has not finished.

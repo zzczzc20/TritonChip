@@ -1,0 +1,18 @@
+{
+ "name": "gemm_n16_k64_window_float16",
+ "group": "tiles",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 16 --depth 64 --dtype float16",
+ "env": {
+  "TNCA_WINDOW_REUSE": "1",
+  "TNCA_HOST_TIMEOUT": "172800"
+ },
+ "start": "2026-10-19T09:42:41+00:00",
+ "end": "2026-10-19T10:24:09+00:00",
+ "seconds": 2488.4,
+ "exit": 0,
+ "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+ "marker_found": true,
+ "ok": true,
+ "log": "gemm_n16_k64_window_float16.log",
+ "log_sha256": "e2430936f4751d5da89c7bc89211a0066388d1d10fe78087501c815bc8dbb7dc"
+}

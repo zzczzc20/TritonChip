@@ -1,0 +1,12 @@
+{
+  "source": "3299288",
+  "cache": "fresh mktemp TNCA_CACHE, built once before launching",
+  "exit_code": 0,
+  "ring_cases": 16,
+  "native_cases": 8,
+  "stage_overlap_cycles": {
+    "2": 1272,
+    "3": 1664
+  },
+  "ci_fix": "af6c169"
+}

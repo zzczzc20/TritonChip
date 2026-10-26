@@ -1,0 +1,44 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-ba09d41820d5/tnca_device_vrf5.vvp
+W1012 02:01:58.827000 4177661 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+Traceback (most recent call last):
+  File "/home/zhongchun/tritonchip-r40-k32/tools/r40/gemm_tiles_tests.py", line 69, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/zhongchun/tritonchip-r40-k32/tools/r40/gemm_tiles_tests.py", line 46, in main
+    out = compiled(da,db,dc)
+          ^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1261, in compile_wrapper
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tritonchip-r40-k32/tools/r40/gemm_tiles_tests.py", line 37, in <lambda>
+    for name, fn in [('mm', lambda a,b,c: a @ b),
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py", line 1289, in forward
+    return compiled_fn(full_args)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 1189, in runtime_wrapper
+    result = _codegen_runtime_wrapper(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/codegen.py:codegen(runtime_wrapper_orchestration)", line 8, in _runtime_wrapper
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 828, in __call__
+    return self.current_callable(inputs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/torchinductor_zhongchun/4i/c4inievk53hwrla53vbt7incewss4wjo6dgu7k5owiyhl6ffjwcf.py", line 173, in call
+    triton_tem_fused_mm_0.run(arg0_1, arg1_1, buf0, 6, 1, 1, stream=raw_stream0)
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/runtime/triton_heuristics.py", line 2558, in run
+    result = launcher(*args, **kwargs, stream=stream)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 5, in launcher
+  File "/home/zhongchun/tritonchip-r40-k32/python/tnca/triton_backend/driver.py", line 237, in __call__
+    runs = [self._launch_once(session, module, values, grid, guard, poison,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tritonchip-r40-k32/python/tnca/triton_backend/driver.py", line 411, in _launch_once
+    session.wait(event)
+  File "/home/zhongchun/tritonchip-r40-k32/python/tnca/runtime.py", line 957, in wait
+    raise Timeout(
+tnca.errors.Timeout: [WAIT_TIMEOUT] job 1 is still RUNNING after 600.0s
+  job: 1
+  state: RUNNING
+  try: the task has not been cancelled and has not succeeded; wait again, or let the device deadline decide

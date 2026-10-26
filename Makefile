@@ -1144,8 +1144,8 @@ r3-model-tests:
 # longer in the tree. That is audit F04 again, in a second place: a stale
 # artefact presented as a test result.
 $(R2_DATA_STAMP): $(RTL_DEPS) $(wildcard $(TB)/common/*.v) \
-                  $(wildcard $(TB)/common/*.vh) $(TB)/device/tnca_device.v \
-                  $(wildcard spec/*.json) $(wildcard compiler/targets/*.json) \
+                  $(wildcard $(TB)/common/*.vh) $(wildcard $(TB)/device/*.v) \
+                  $(wildcard spec/*.json) $(wildcard spec/r40/*.json) $(wildcard compiler/targets/*.json) \
                   $(wildcard isa/*.json) \
                   tools/asm/tnca_asm.py tools/asm/tnca_isa.py
 	@$(MAKE) --no-print-directory r2-stage-data
@@ -1155,6 +1155,7 @@ r2-stage-data:
 	@mkdir -p $(R2_DATA)/spec $(R2_DATA)/compiler/targets $(R2_DATA)/isa
 	@cp spec/*.json $(R2_DATA)/spec/
 	@mkdir -p $(R2_DATA)/spec/r38 && cp spec/r38/*.json $(R2_DATA)/spec/r38/
+	@mkdir -p $(R2_DATA)/spec/r40 && cp spec/r40/*.json $(R2_DATA)/spec/r40/
 	@cp compiler/targets/*.json $(R2_DATA)/compiler/targets/
 	@cp isa/*.json $(R2_DATA)/isa/
 	@mkdir -p $(R2_DATA)/rtl $(R2_DATA)/tb
@@ -1340,6 +1341,10 @@ r38-baseline: $(R2_DATA_STAMP) | dirs
 r38-baseline-check: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r38/baseline.py --check --source $(TILEBENCH_SOURCE)
 
+.PHONY: r40-baseline-check
+r40-baseline-check: $(R2_DATA_STAMP) | dirs
+	@TNCA_BANK_ALLOC=0 $(TRITON_PYTHON) tools/r38/baseline.py --check --source $(TILEBENCH_SOURCE) --reference spec/r40/b39/core_sim_cycles.json
+
 r38-profiler: $(R2_DATA_STAMP) | dirs
 	@$(TRITON_PYTHON) tools/r38/profiler_tests.py
 
@@ -1373,6 +1378,192 @@ archbench-u50sim: $(R2_DATA_STAMP) | dirs
 archbench-gpu:
 	@mkdir -p $(ARCHBENCH_OUT) && rm -f $(ARCHBENCH_OUT)/gpu.jsonl
 	@$(TORCH_PYTHON) -m archbench.run --platform gpu --tier tiny small large --out $(ARCHBENCH_OUT)/gpu.jsonl
+
+# R40 (doc/r40_tasks_and_acceptance.md). Each gate's evidence is
+# $(BUILD)/r40/<work package>.json, judged by tools/r40/acceptance.py.
+# R40-00: the protocol, the frozen B39 baseline (spec/r40/baseline.json) and
+# the plan, subsets and ablation matrix frozen before any R40 measurement.
+.PHONY: r40-protocol r40-freeze r40-freeze-check r40-api-lock r40-hbm-coverage \
+        r40-b39-gates r40-b39 r40-acceptance
+# Acceptance 1 and 3: every manipulation of a comparison refused, identity 1;
+# nothing missing passes a gate. Protocol/manifest checks need no torch or board.
+r40-protocol:
+	@$(PYTHON) tools/r40/contract_v2_tests.py
+	@$(PYTHON) tools/r40/device_time_v2_tests.py
+	@$(PYTHON) tools/r40/acceptance_runner_tests.py
+	@$(PYTHON) tools/r40/audit_xo_sources_tests.py
+	@$(PYTHON) tools/r40/attention_checks_tests.py
+	@$(PYTHON) tools/r40/protocol_tests.py --evidence
+# Write the plan, subsets and ablation matrix (an amendment once frozen).
+r40-freeze:
+	@$(TORCH_PYTHON) tools/r40/freeze.py
+r40-api-lock:
+	@$(TORCH_PYTHON) tools/r40/api_lock.py --out spec/r40/api_lock.json
+# The large and hbm points through the standard path, compiled, none run:
+# compile coverage and capacity, recorded in spec/r40/hbm_coverage.json.
+R40_COVERAGE_PROFILE ?= core-vrf-sync-v5
+r40-hbm-coverage: $(R2_DATA_STAMP) | dirs
+	@mkdir -p $(BUILD)/r40 && rm -f $(BUILD)/r40/hbm_compile.jsonl
+	@$(TORCH_PYTHON) -m archbench.run --platform tnca --profile $(R40_COVERAGE_PROFILE) --tier large hbm \
+	   --compile-only --jobs $(ARCHBENCH_JOBS) --out $(BUILD)/r40/hbm_compile.jsonl || true
+	@$(TORCH_PYTHON) tools/r40/hbm_coverage.py $(BUILD)/r40/hbm_compile.jsonl
+# The plan, subsets, suites, API lock, B39 records and HBM coverage as frozen.
+r40-freeze-check:
+	@$(TORCH_PYTHON) tools/r40/freeze.py --check --evidence
+# R39's merge gates on this tree, against the counts frozen with B39.
+r40-b39-gates: $(R2_DATA_STAMP) | dirs
+	@TORCH_PYTHON=$(TORCH_PYTHON) TRITON_PYTHON=$(TRITON_PYTHON) \
+	   $(PYTHON) tools/r40/b39_gates.py --run --out $(BUILD)/r40/b39_gates_run.json; \
+	 $(PYTHON) tools/r40/b39_gates.py --check $(BUILD)/r40/b39_gates_run.json --evidence
+# Acceptance 2: B39 rerun on its image (B39_RERUN: the frozen commit's
+# records, u280_<tier>.jsonl) and the R40-00 tree's protocol-2 run
+# (B39_P2), with the gate run above.
+B39_RERUN ?= $(BUILD)/r40/b39_rerun
+B39_P2 ?= $(BUILD)/r40/b39_p2
+r40-b39:
+	@$(PYTHON) tools/r40/b39_repro.py --b39 $(B39_RERUN) --p2 $(B39_P2) \
+	   --gates $(BUILD)/r40/b39_gates_run.json --evidence
+r40-acceptance:
+	@$(PYTHON) tools/r40/acceptance.py --json $(BUILD)/r40/acceptance.json
+
+.PHONY: r40-v2-contract-check r40-v2-acceptance
+r40-v2-contract-check:
+	@$(PYTHON) tools/r40/contract_v2.py
+r40-v2-acceptance: r40-v2-contract-check
+	@$(PYTHON) tools/r40/acceptance.py --plan spec/r40/v2/plan.json --json $(BUILD)/r40/v2/acceptance.json
+.PHONY: r40-v3-contract-check r40-v3-acceptance
+# R40 v3: the one-time relaxation for delivery on the 90 MHz image
+# (doc/r40_tasks_and_acceptance_v3.md). Gate evidence: sim/build/r40/v3, or
+# unchanged capability evidence bound to v2 and the v3 delivery identity.
+r40-v3-contract-check:
+	@cd tools/r40 && $(PYTHON) contract_v3.py
+R40_EVIDENCE_ROOT ?= $(BUILD)/r40
+r40-v3-acceptance: r40-v3-contract-check
+	@R40_CONTRACT=v3 $(PYTHON) tools/r40/acceptance.py --plan doc/r40_v3/plan.json \
+	  --evidence-root $(R40_EVIDENCE_ROOT) --json $(BUILD)/r40/v3/acceptance.json
+.PHONY: r40-device-time-v2
+# Three complete interleaved board blocks per side; no legacy B39 evidence.
+R40_V2_CONTROL ?= $(BUILD)/r40/v2/device/control0.jsonl $(BUILD)/r40/v2/device/control1.jsonl $(BUILD)/r40/v2/device/control2.jsonl
+R40_V2_NATIVE ?= $(BUILD)/r40/v2/device/native0.jsonl $(BUILD)/r40/v2/device/native1.jsonl $(BUILD)/r40/v2/device/native2.jsonl
+r40-device-time-v2: r40-v2-contract-check
+	@$(PYTHON) tools/r40/device_time_v2.py --control $(R40_V2_CONTROL) --native $(R40_V2_NATIVE) \
+	  --json $(BUILD)/r40/v2/device_time.json --evidence
+# R40-01: the tnca PyTorch device (doc/r40_tnca_device.md). The device tests
+# on this host -- run once on a host with CUDA and once on one without
+# (acceptance 2) -- then the native suite's records (R40_NATIVE: the
+# u280_<tier>.jsonl of `archbench.run --set TNCA_TORCH_DEVICE=native` on the
+# B39 image) against B39 (acceptance 1 and 3).
+R40_NATIVE ?= $(BUILD)/r40/native
+.PHONY: r40-device
+r40-device: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r40/properties_tests.py
+	@$(TORCH_PYTHON) tools/r40/device_tests.py --evidence
+ifeq ($(R40_CONTRACT),v2)
+	@$(PYTHON) tools/r40/native_inventory.py --native $(R40_NATIVE) --evidence
+	@$(MAKE) r40-device-time-v2
+else
+	@$(PYTHON) tools/r40/device_time.py --native $(R40_NATIVE) --evidence
+endif
+# R40-02 capability checkpoint. Frozen performance and asynchronous stress
+# remain not-measured until their independent runners supply the evidence.
+.PHONY: r40-residency
+r40-residency: $(R2_DATA_STAMP) | dirs
+	@$(PYTHON) tools/r40/child_exec_tests.py
+	@$(PYTHON) tools/r40/io_concurrency_tests.py
+	@$(TORCH_PYTHON) tools/r40/lifetime_tests.py
+	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/allocation_pressure_tests.py
+	@$(TORCH_PYTHON) tools/r40/residency_tests.py --evidence
+	@$(TORCH_PYTHON) tools/r40/device_copy_tests.py
+	@$(TORCH_PYTHON) tools/r40/batch_tests.py --calls 1000
+	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/recovery_tests.py
+	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/replay_tests.py --replays 1000
+	@$(TORCH_PYTHON) tools/r40/frozen_residency_tests.py --point op.attention_decode/tiny/fp16-b1-h2-l16-d16
+
+# Full frozen transfer-correctness inventory. RTL runs can take days; keep
+# each attempt in a fresh directory and run heavy suites on the jump host.
+.PHONY: r40-frozen-residency
+R40_RESIDENCY_OUT ?= $(BUILD)/r40/frozen_residency_suite
+R40_RESIDENCY_JOBS ?= 2
+r40-frozen-residency: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r40/frozen_residency_suite.py \
+	   --jobs $(R40_RESIDENCY_JOBS) --out $(R40_RESIDENCY_OUT)
+# Growing state is separate from fixed-input frozen transfer audits.
+.PHONY: r40-decode-residency
+R40_DECODE_STEPS ?= 64
+R40_HOST_TIMEOUT ?= 172800
+r40-decode-residency: $(R2_DATA_STAMP) | dirs
+	@TNCA_PROFILE=core-vrf-sync-v5/hbm TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) \
+	   $(TORCH_PYTHON) tools/r40/decode_residency_tests.py --steps $(R40_DECODE_STEPS)
+.PHONY: r40-bucket-decode
+r40-bucket-decode: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r40/bucket_decode_tests.py
+	@TNCA_PROFILE=core-vrf-sync-v5/hbm TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) \
+	   $(TORCH_PYTHON) tools/r40/decode_residency_tests.py --steps $(R40_DECODE_STEPS) --bucket
+# R40-03 correctness checkpoint; frozen performance gates remain independent
+# of these standard Torch register-block, reduction and GEMM checks.
+.PHONY: r40-tiles
+r40-tiles: $(R2_DATA_STAMP) | dirs
+	@for width in 16 32 64 128; do $(TORCH_PYTHON) tools/r40/tiles_tests.py --width $$width || exit $$?; done
+	@for width in 16 32 64 128; do $(TORCH_PYTHON) tools/r40/reduction_tests.py --width $$width || exit $$?; $(TORCH_PYTHON) tools/r40/fold_tests.py --width $$width || exit $$?; done
+	@for width in 16 32 64; do $(TORCH_PYTHON) tools/r40/reduction_tests.py --width $$width --rows 2 || exit $$?; done
+	@$(TORCH_PYTHON) tools/r40/fold_tests.py --width 32 --rows 2 --index-bias 1099511627776
+	@for columns in 16 32 64; do $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns $$columns || exit $$?; done
+	@for columns in 16 32; do for dtype in float16 bfloat16; do TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns $$columns --depth 32 --dtype $$dtype || exit $$?; done; done
+	@TNCA_WINDOW_REUSE=1 TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns 64 --depth 32
+	@for dtype in float16 bfloat16; do TNCA_WINDOW_REUSE=1 TNCA_HOST_TIMEOUT=$(R40_HOST_TIMEOUT) $(TORCH_PYTHON) tools/r40/gemm_tiles_tests.py --columns 16 --depth 64 --dtype $$dtype || exit $$?; done
+	@$(TRITON_PYTHON) tools/r40/window_options_tests.py
+	@$(TRITON_PYTHON) tools/r40/compile_switch_tests.py
+	@$(PYTHON) tools/r40/packed_window_options_tests.py
+	@for mode in 0 1; do $(TORCH_PYTHON) tools/r40/bank_tests.py --enabled $$mode --out $(BUILD)/r40/bank_$$mode.json || exit $$?; done
+	@TNCA_BANK_ALLOC=0 TNCA_WINDOW_REUSE=0 TNCA_PACKED_WINDOW_UNPACK=0 $(TRITON_PYTHON) tools/r40/contract_tests.py
+
+.PHONY: r40-packed-window-unpack
+r40-packed-window-unpack: $(R2_DATA_STAMP) | dirs
+	@PYTHONPATH=compiler/python $(PYTHON) -m unittest discover -s compiler/test -p test_packed_window_unpack.py
+	@$(PYTHON) tools/r40/packed_window_options_tests.py
+	@$(TRITON_PYTHON) tools/r40/packed_window_snapshot_tests.py
+
+.PHONY: r40-online-attention
+r40-online-attention: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r40/sdpa_configuration_tests.py
+	@$(TORCH_PYTHON) tools/r40/online_attention_tests.py
+# R40-04: single-core HBM (rtl/fpga/tnca_axi_bridge.v). What runs without a
+# board: the bridge against a reference under late, reordered, backpressured,
+# refusing and reset AXI traffic, its mutations, and the tnca device on the
+# simulated /hbm memory mode. The board's measurements are added by their own
+# runs; until then the gates say not-measured.
+.PHONY: r40-barrier-epoch
+r40-barrier-epoch: | dirs
+	@mkdir -p $(BUILD)/r40
+	@$(IVERILOG) $(IVFLAGS) -s tb_barrier_epoch -o $(BUILD)/r40/barrier_epoch.vvp \
+	  $(RTL)/core/tnca_barrier.v $(TB)/core/tb_barrier_epoch.v
+	@$(VVP) $(BUILD)/r40/barrier_epoch.vvp
+	@$(IVERILOG) $(IVFLAGS) -DEPOCH_EXHAUST -s tb_barrier_epoch \
+	  -o $(BUILD)/r40/barrier_exhaust.vvp $(RTL)/core/tnca_barrier.v $(TB)/core/tb_barrier_epoch.v
+	@$(VVP) $(BUILD)/r40/barrier_exhaust.vvp
+
+.PHONY: r40-hbm
+r40-hbm: $(R2_DATA_STAMP) r40-barrier-epoch | dirs
+	@$(PYTHON) tools/r40/hbm_topology_tests.py
+	@$(PYTHON) tools/r40/tensor_bounds_tests.py --log $(BUILD)/r40/tensor_bounds_formal.log
+	@$(PYTHON) tools/r40/ram_cache_inference_tests.py
+	@TORCH_PYTHON=$(TORCH_PYTHON) $(PYTHON) tools/r40/hbm_tests.py --evidence
+
+.PHONY: r40-large-grid
+r40-large-grid: $(R2_DATA_STAMP) | dirs
+	@$(PYTHON) tools/r40/large_grid_tests.py
+	@$(TRITON_PYTHON) tools/r40/large_grid_rtl_tests.py
+
+.PHONY: r40-core-parameters
+r40-core-parameters: | dirs
+	@$(PYTHON) tools/r40/core_parameter_tests.py
+
+.PHONY: r40-device-clock
+r40-device-clock: $(R2_DATA_STAMP) | dirs
+	@$(TORCH_PYTHON) tools/r40/device_clock_tests.py
+	@$(TORCH_PYTHON) tools/r40/host_copy_tests.py
+	@$(PYTHON) tools/r36/fpga_tests.py --only R36-FPGA-08
+	@$(TORCH_PYTHON) tools/r40/device_clock_native_tests.py
 
 # One suite, every backend. This is the suite a downstream branch runs.
 r36-conformance: $(R2_DATA_STAMP) | dirs
@@ -1880,3 +2071,169 @@ r1-acceptance: r1-gate-selftest
 r1-verify-evidence:
 	@test -n "$(EVIDENCE)" || { echo "usage: make r1-verify-evidence EVIDENCE=<dir>"; exit 2; }
 	@$(PYTHON) tools/r1/verify_evidence.py $(EVIDENCE)
+
+# Scheduler protocol and real-core execution diagnostics. Native Torch and
+# routed multi-SLR performance remain separate R40-05 acceptance requirements.
+.PHONY: r40-grid-dispatch
+r40-grid-dispatch: | dirs
+	@$(PYTHON) tools/r40/grid_dispatch_tests.py
+
+.PHONY: r40-coherent-host
+r40-coherent-host: | dirs
+	@$(PYTHON) tools/r40/coherent_host_tests.py
+
+.PHONY: r40-multicore-shell
+r40-multicore-shell: r40-grid-deadline | dirs
+	@$(PYTHON) tools/r40/multicore_shell_tests.py
+
+.PHONY: r40-grid-deadline
+r40-grid-deadline: | dirs
+	@mkdir -p $(BUILD)/r40
+	@$(IVERILOG) $(IVFLAGS) -s tb_grid_deadline -o $(BUILD)/r40/grid_deadline.vvp \
+	  $(RTL)/tnca_grid_deadline.v $(TB)/tb_grid_deadline.v
+	@$(VVP) $(BUILD)/r40/grid_deadline.vvp
+
+# Mailbox protocol diagnostic. Standard Torch multicore acceptance is separate.
+.PHONY: r40-physical-grid-transport
+r40-physical-grid-transport: | dirs
+	@$(TRITON_PYTHON) tools/r40/physical_grid_option_tests.py
+	@$(TRITON_PYTHON) tools/r40/multicore_transport_tests.py
+	@$(TRITON_PYTHON) tools/r40/large_grid_tests.py
+
+.PHONY: r40-physical-grid-runtime
+r40-physical-grid-runtime: | dirs
+	@$(TRITON_PYTHON) tools/r40/physical_grid_runtime_tests.py
+
+# Real native Torch smoke; this is not the complete board/performance gate.
+.PHONY: r40-multicore-backend r40-multicore-native-smoke
+r40-multicore-backend: | dirs
+	@$(TRITON_PYTHON) tools/r40/physical_grid_runtime_tests.py --automatic --cores 3
+	@$(TRITON_PYTHON) tools/r36/conformance.py --backends sim-multicore --require-measured
+
+r40-multicore-native-smoke: | dirs
+	@$(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 3
+	@$(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 8
+
+.PHONY: r40-physical-chunks
+r40-physical-chunks: r40-grid-dispatch | dirs
+	@$(PYTHON) tools/r40/physical_chunk_tests.py
+	@$(TRITON_PYTHON) tools/r40/physical_chunk_runtime_tests.py --cores 3
+	@TNCA_RCTX_SPMD=1 TNCA_PHYSICAL_CHUNKS=1 $(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 3
+	@TNCA_RCTX_SPMD=1 TNCA_PHYSICAL_CHUNKS=1 $(TRITON_PYTHON) tools/r40/native_multicore_tests.py --cores 8
+	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --cores 3
+	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --cores 3 --pair
+
+# Multi-controller functionality; HBM bandwidth/locality acceptance is separate.
+.PHONY: r40-memory-ports
+r40-memory-ports: | dirs
+	@$(TRITON_PYTHON) tools/r40/memory_port_option_tests.py
+	@$(PYTHON) tools/r40/memory_ports_tests.py
+	@$(TRITON_PYTHON) tools/r40/native_memory_ports_tests.py --cores 3 --ports 2
+	@$(TRITON_PYTHON) tools/r40/native_memory_ports_tests.py --cores 3 --ports 3
+
+# Full-line AXI plumbing; board placement and performance remain separate gates.
+.PHONY: r40-line-axi
+r40-line-axi: | dirs
+	@$(PYTHON) tools/r40/line_axi_tests.py
+	@$(PYTHON) tools/r40/multicore_axi_tests.py
+	@$(PYTHON) tools/r40/multicore_axi_tests.py --cores 3 --write-delay 300
+
+# Versioned register path; shared board host binding driven by the AXI RTL.
+.PHONY: r40-multicore-mmio r40-multicore-mmio-checks
+r40-multicore-mmio-checks: | dirs
+	@$(PYTHON) tools/r40/runner_source_tests.py
+	@$(PYTHON) tools/r40/operating_clock_tests.py
+	@$(PYTHON) tools/r40/storage_owner_tests.py
+	@$(PYTHON) tools/r40/copy_range_tests.py
+	@$(PYTHON) tools/r40/reserved_memory_tests.py
+	@$(PYTHON) tools/r40/board_ablation_tests.py
+	@$(PYTHON) tools/r40/board_ablation_acceptance_tests.py
+	@$(PYTHON) tools/r40/device_conformance_acceptance_tests.py
+	@$(PYTHON) tools/r40/residency_acceptance_tests.py
+	@$(PYTHON) tools/r40/conditional_delivery_tests.py
+	@$(PYTHON) tools/r40/multicore_board_acceptance_tests.py
+	@$(PYTHON) tools/r40/hbm_probe_storage_tests.py
+	@$(PYTHON) tools/r40/physical_grid_clock_tests.py
+	@$(PYTHON) tools/r40/autotune_policy_tests.py
+	@$(PYTHON) tools/r40/autotune_worker_tests.py
+	@$(TRITON_PYTHON) tools/r40/code_cache_epoch_tests.py
+	@$(TRITON_PYTHON) tools/r40/bucket_decode_tests.py
+	@$(PYTHON) tools/r40/code_link_tests.py
+	@$(PYTHON) tools/r40/mesh_pipeline_tests.py
+	@$(PYTHON) tools/r40/multicore_mmio_synth_tests.py
+	@$(PYTHON) tools/r40/placed_core_audit_tests.py
+	@$(PYTHON) tools/r40/multicore_mmio_option_tests.py
+
+# Keep the complete local entry point; CI schedules these independent lanes separately.
+r40-multicore-mmio: r40-multicore-mmio-checks
+	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 1 --ports 1
+	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 3 --ports 3
+	@$(TRITON_PYTHON) tools/r40/multicore_mmio_tests.py --cores 3 --ports 3 --pipeline 2 --board-top
+	@$(TRITON_PYTHON) tools/r40/native_memory_ports_tests.py --backend fpga-multicore-sim --cores 3 --ports 3 --pipeline 2 --board-top
+	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pipeline 2 --board-top
+	@$(TRITON_PYTHON) tools/r40/native_multicore_features.py --backend fpga-multicore-sim --cores 3 --pair --pipeline 2 --board-top
+
+# Formal package entry points: functionality alone never signs off a package.
+# The evidence judge also requires physical placement, board measurements and
+# every performance gate from the frozen plan. Missing evidence exits nonzero.
+.PHONY: r40-multicore r40-nuca r40-pipeline r40-pipeline-checks r40-cache-maintenance r40-multicore-dma
+r40-multicore: r40-core-parameters r40-multicore-shell \
+  r40-physical-grid-transport r40-multicore-backend \
+  r40-multicore-native-smoke r40-physical-chunks r40-multicore-mmio
+	@$(PYTHON) tools/r40/acceptance.py --wp R40-05
+
+r40-cache-maintenance:
+	@$(PYTHON) tools/r40/cache_maintenance_tests.py --global-grid
+
+r40-multicore-dma:
+	@$(PYTHON) tools/r40/multicore_mmio_option_tests.py
+	@$(PYTHON) tools/r40/dma_handoff_guard_tests.py
+	@mkdir -p $(BUILD)/r40
+	@for enabled in 0 1; do $(IVERILOG) $(IVFLAGS) -s tb_mmio_cache_handoff \
+	  -Ptb_mmio_cache_handoff.ENABLE=$$enabled -o $(BUILD)/r40/mmio_handoff$$enabled.vvp \
+	  $(RTL)/fpga/tnca_multicore_mmio.v $(TB)/fpga/tb_mmio_cache_handoff.v || exit $$?; \
+	  $(VVP) $(BUILD)/r40/mmio_handoff$$enabled.vvp || exit $$?; done
+	@$(PYTHON) tools/r40/multicore_dma_tests.py --cores 1 --ports 1 --pipeline 0
+	@$(PYTHON) tools/r40/multicore_dma_tests.py --cores 3 --ports 3 --pipeline 2 --board-top
+	@CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/native_memory_ports_tests.py \
+	  --backend fpga-multicore-sim --cores 3 --ports 3 --pipeline 2 --board-top --dma
+	@CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/recovery_tests.py --multicore-dma
+
+r40-nuca: r40-coherent-host r40-memory-ports r40-line-axi r40-cache-maintenance r40-multicore-dma
+	@$(PYTHON) tools/r40/acceptance.py --wp R40-06
+
+# Ring tests are mechanism diagnostics. Standard Torch overlap, frozen
+# long-K/matrix A/B and policy measurements must supply the package evidence.
+r40-pipeline-checks: $(R2_DATA_STAMP) r40-barrier-epoch
+	@$(PYTHON) tools/r40/engine_overlap_tests.py
+	@$(TRITON_PYTHON) tools/r40/pipeline_stage_options_tests.py
+	@$(TRITON_PYTHON) -c "from tnca import device; device.prepare('core-vrf-sync-v5')"
+	@for stages in 2 3; do CUDA_VISIBLE_DEVICES= TNCA_RCTX_STAGES=$$stages \
+	  $(TRITON_PYTHON) tools/r39/rctx_roles_tests.py || exit $$?; \
+	  r40_trace_dir=$$(mktemp -d $(BUILD)/r40/pipeline$$stages.XXXXXX) || exit $$?; \
+	  CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/native_pipeline_tests.py \
+	    --stages $$stages --trace-dir "$$r40_trace_dir" --require-overlap || exit $$?; done
+
+r40-pipeline: r40-pipeline-checks
+	@$(PYTHON) tools/r40/acceptance.py --wp R40-07
+
+# Functional tuning checks; frozen holdout/model evidence is still required.
+.PHONY: r40-autotune-checks r40-autotune
+r40-autotune-checks:
+	@$(PYTHON) tools/r40/autotune_policy_tests.py
+	@$(PYTHON) tools/r40/autotune_worker_tests.py
+	@$(PYTHON) tools/r40/physical_grid_clock_tests.py
+	@CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/autotune_native_tests.py
+
+r40-autotune: r40-autotune-checks
+	@$(PYTHON) tools/r40/acceptance.py --wp R40-09
+
+.PHONY: r40-attention-checks r40-attention
+R40_ATTENTION_PROFILE ?= core-vrf-sync-v5/hbm
+r40-attention-checks: $(R2_DATA_STAMP) | dirs
+	@r40_attention_dir=$$(mktemp -d $(BUILD)/r40/attention.XXXXXX) || exit $$?; \
+	  CUDA_VISIBLE_DEVICES= $(TORCH_PYTHON) tools/r40/attention_checks.py \
+	    --profile $(R40_ATTENTION_PROFILE) --out "$$r40_attention_dir/results"
+
+r40-attention: r40-attention-checks
+	@$(PYTHON) tools/r40/acceptance.py --wp R40-08

@@ -11,6 +11,8 @@
 `include "tnca_noc_pkg.vh"
 
 module tnca_slice_ni #(
+    parameter NX    = 2,
+    parameter NY    = 2,
     parameter XW    = 2,
     parameter YW    = 2,
     parameter TAG_W = 5,
@@ -83,8 +85,8 @@ module tnca_slice_ni #(
 
     // The requester's tile id decodes to mesh coordinates here, which is the
     // only place in the design that knows the topology.
-    wire [XW-1:0] dst_x = rsp_src[0];
-    wire [YW-1:0] dst_y = rsp_src[1];
+    wire [XW-1:0] dst_x = rsp_src % NX;
+    wire [YW-1:0] dst_y = rsp_src / NX;
 
     assign net_in_valid_rsp = rsp_valid;
     assign net_in_flit_rsp  = {dst_y, dst_x, rsp_payload};

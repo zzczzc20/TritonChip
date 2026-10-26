@@ -1,0 +1,19 @@
+{
+  "observed_utc": "2026-10-18T02:21:41.903334+00:00",
+  "scope": "metadata and cached-extension inventory only; no Torch import, build, FPGA load or device operation",
+  "python": "/home/zzhouch/tc_env/torchenv/bin/python",
+  "exit_code": 0,
+  "versions": {
+    "torch": "2.14.0+cpu",
+    "triton": "3.8.0",
+    "python": "3.10.12 (main, Aug 31 2026, 10:18:17) [GCC 11.4.0]"
+  },
+  "error": "",
+  "extension_cache": "/home/zzhouch/.cache/tnca/r40_checkpoint642_extensions",
+  "shared_objects": [
+    {
+      "path": "/home/zzhouch/.cache/tnca/r40_checkpoint642_extensions/tnca_device_ext/tnca_device_ext.so",
+      "bytes": 465112
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "status": "complete-review-required",
+  "scope": "Original full large Llama CPU precision diagnosis; no TNCA/board execution or gate promotion",
+  "torch": "2.14.0+cu130",
+  "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+  "threads": 8,
+  "results": [
+    {
+      "point_id": "model.llama_decode/large/fp16-b1-p512",
+      "point_sha256": "ca2a458450b5f19010b5207c158946500e055f2874dfd3344dca6f89dd4df111",
+      "tolerance": 0.05,
+      "comparison": {
+        "ok": true,
+        "detail": "",
+        "max_rel_err": 0.0035487343973571754
+      },
+      "fp16_cpu_seconds": 14.556225118227303,
+      "fp32_reference_seconds": 12.924960684031248
+    },
+    {
+      "point_id": "model.llama_prefill/large/fp16-b1-s512",
+      "point_sha256": "94d49ce2811ec2c20c73bb69401d68770f044dbc7e2437d98e2a06eaf78ff5fc",
+      "tolerance": 0.05,
+      "comparison": {
+        "ok": true,
+        "detail": "",
+        "max_rel_err": 0.003219042020565951
+      },
+      "fp16_cpu_seconds": 15.534209704957902,
+      "fp32_reference_seconds": 14.54613815434277
+    }
+  ],
+  "observed_utc": "2026-10-19T00:17:33.907956+00:00",
+  "current": "model.llama_prefill/large/fp16-b1-s512"
+}

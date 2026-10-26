@@ -1,0 +1,14 @@
+{
+  "rtl/tnca_multicore_shell.v": "8eea2632259bd3bea31ee85bef3442678bde7c78045c5f19e2a843060a0bdfe9",
+  "rtl/fpga/tnca_multicore_axi.v": "c78649282dfeacc49836726a85b2d19a20c6d2776900ff6862e453ee46c05017",
+  "rtl/fpga/tnca_multicore_fpga.v": "bfeba995ee4ffa83fb9d97c2926464f5a416337f8d6654bd91a7c847388f8598",
+  "rtl/fpga/tnca_multicore_mmio.v": "ffb534343872753c14bc98a6c125fb61b71854478843dc0cc56defcee6e3506d",
+  "rtl/board/tnca_multicore_hbm_xo.v": "e6ffc4446e1fe0eb5680d9cbda53c6cb04710c8814e601126c2101866daa3ed8",
+  "python/tnca/backends/multicore_mmio.py": "035db3a96ea031622e04599e70cdf8d8048507c79b9180ac110617793581bd0b",
+  "python/tnca/backends/multicore_mmio_sim.py": "8f783542355a554e8fa2683b63a607f80b22dd2ccd5b47979b1e9d353f6cd196",
+  "tb/fpga/tnca_multicore_regs.v": "334ee879e63a45683520a425e16f4e6e0383854289ed513d5706b1320bc0b153",
+  "tb/fpga/tnca_multicore_board_regs.v": "9780f0e8da150e74eb17f65ef26f12b7a5d70c4dfbe76a3f1daa685867458bc5",
+  "tb/fpga/tnca_multicore_dma.vh": "93036c2668775b1a15facf66771f20875e5a7d03b602de92e7ebb5c7f2ec8d6f",
+  "tools/r40/multicore_dma_tests.py": "9e032191a29e043286d5900943290dba0f154d8600bb015a561341742550c476",
+  "tools/r40/native_memory_ports_tests.py": "a7bcb48750305b8d62af6986b50c3f34d386b7bf14d8cf68186c0e9650b52905"
+}

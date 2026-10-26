@@ -1,0 +1,44 @@
+{
+  "host_class": "cuda-host",
+  "backend": "fpga-multicore-sim",
+  "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+  "live_source_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+  "test_harness_sha256": "7c68246ffecac14c789009184a1af4fd5d8b0bd656a7a2bf8f00862fe1c6791a",
+  "controller": "from pathlib import Path\nimport subprocess,os,json,datetime,sys,hashlib,time\np=Path(__file__).parent;h=Path.home();s=h/'r40_runtime_ownerfix_6bd07b7_source'\nsys.path[:0]=[str(s),str(s/'python'),str(s/'compiler/python'),str(s/'tools/asm'),str(s/'tools/r40')]\nfrom archbench.provenance import software_tree\nimport contract_v2\ncontract_v2.verify();assert software_tree(refresh=True)=='files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436'\nenv=dict(os.environ,MAX_JOBS='1',OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',TNCA_PROFILE='core-vrf-sync-v5',TNCA_HOST_TIMEOUT='1800',TNCA_DEADLINE='200000000',TORCH_EXTENSIONS_DIR=str(h/'.cache/tnca/r40_ownerfix_a382_extensions'),PYTHONPATH=os.pathsep.join(str(s/d) for d in ('','python','compiler/python','tools/asm')))\nfor k in ('TNCA_OPERATING_CLOCK_EVIDENCE','TNCA_DATA_DIR','TNCA_TRITON','TNCA_BACKEND','TNCA_BACKEND_ARGS','TNCA_ACTIVE_CORES','CUDA_VISIBLE_DEVICES'):env.pop(k,None)\nstate=dict(status='running',software_tree=software_tree(),completed=[],scope='GB10-only original recovery/address-reuse regression and complete CUDA-host conformance on repaired product source; no FPGA host or physical card',required_gate_promotions=[])\ndef save():\n state['observed_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat();(p/'state.json').write_text(json.dumps(state,indent=2)+chr(10))\nstages=[('storage-owner-unit',[str(h/'tc_env/torchenv/bin/python'),str(s/'tools/r40/storage_owner_tests.py')],dict(env)),('signed-copy-range',[str(h/'tc_env/torchenv/bin/python'),str(s/'tools/r40/copy_range_tests.py')],dict(env)),('native-recovery',[str(h/'tc_env/torchenv/bin/python'),'-u',str(s/'tools/r40/recovery_tests.py'),'--multicore-dma'],dict(env,CUDA_VISIBLE_DEVICES='')),('cuda-device-conformance',[str(h/'tc_env/torchenv/bin/python'),'-u',str(s/'tools/r40/device_tests.py')],dict(env,TNCA_BACKEND='fpga-multicore-sim',TNCA_BACKEND_ARGS=json.dumps(dict(core_count=3,memory_ports=3,memory_bytes=8388608,maintenance=True,hbm_dma=True,board_top=True,noc_link_stages=2,dispatch_stages=2,home_stages=2,code_stages=2))))]\nstate['status']='queued-behind-prior-conformance';save()\nupstream=h/'r40_runtime_ownerfix_a3820e5/state.json'\nwhile True:\n d=json.loads(upstream.read_text());state['upstream_status']=d['status'];save()\n if d['status']=='complete-review-required':break\n if d['status']!='running':\n  state.update(status='upstream-failure-preserved',error='Prior conformance failed; diagnose first');save();raise SystemExit(1)\n time.sleep(30)\nstate['status']='running';save()\nfor name,command,childenv in stages:\n state['current']=name;save()\n with (p/(name+'.log')).open('x') as f:\n  q=subprocess.Popen(command,cwd=s,env=childenv,stdout=f,stderr=subprocess.STDOUT);state['child_pid']=q.pid;save();code=q.wait()\n state['completed'].append(dict(name=name,exit_code=code));save()\n if code:state.update(status='failure-preserved',exit_code=code);save();raise SystemExit(code)\nstate.update(status='complete-review-required',exit_code=0);save()\n",
+  "controller_sha256": "1e6fa2c47c7214b16b8d294f524c7f3de7f934fcc103183042966bbe8d526e25",
+  "launch_controller_sha256": "1e6fa2c47c7214b16b8d294f524c7f3de7f934fcc103183042966bbe8d526e25",
+  "controller_state": {
+    "status": "complete-review-required",
+    "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+    "completed": [
+      {
+        "name": "storage-owner-unit",
+        "exit_code": 0
+      },
+      {
+        "name": "signed-copy-range",
+        "exit_code": 0
+      },
+      {
+        "name": "native-recovery",
+        "exit_code": 0
+      },
+      {
+        "name": "cuda-device-conformance",
+        "exit_code": 0
+      }
+    ],
+    "scope": "GB10-only original recovery/address-reuse regression and complete CUDA-host conformance on repaired product source; no FPGA host or physical card",
+    "required_gate_promotions": [],
+    "observed_utc": "2026-10-18T21:33:32.688195+00:00",
+    "upstream_status": "complete-review-required",
+    "current": "cuda-device-conformance",
+    "child_pid": 2387536,
+    "exit_code": 0
+  },
+  "stage_name": "cuda-device-conformance",
+  "log": "  PASS  import_orders    compiles in a fresh process with device first, triton first, after a CPU-tensor compile\n  PASS  concurrent_registration OK 8 threads registered once\n  PASS  worker_process   OK a spawned worker registered and computed on its own session\n  PASS  storage          storage at 0x20000; 6 views alias it\n  PASS  copies           8 dtypes round trip; strided writes and fills touch only their elements\n  PASS  module           4 parameters on tnca\n  PASS  refusals         eager op refused; mixed host/device graph refused\n  PASS  compile_graphs   pointwise: 27 launch(es), 6152 B resident; reduction: 1 launch(es), 6400 B resident; norm: 1 launch(es), 1152 B resident; gemm: 1 launch(es), 9472 B resident; sdpa: 7 launch(es), 28672 B resident\n  PASS  compile_views    1 launch(es) over transposed and offset views\n  PASS  eviction         88 graphs; 1 module(s) unloaded to make room; resident data intact\n  PASS  mixed_devices    2 rounds of CUDA and tnca graphs in one process, then a CPU-tensor graph\n  PASS  cache_hits       recompiled after a reset: the same artifact 7d58f77d04e4 (Triton's cache)\n  PASS  checkpoint       a tnca state_dict saves, and loads to cpu and to tnca\n  PASS  unsupported_dtypes refused: complex64, complex128, fp64 compute (TNCALaunchError)\n  PASS  properties       TNCA core-vrf-sync-v5: 1 core(s), 4 contexts, 16 lanes\n  PASS  policy           templates, variance, cat, bmm, realize installed; tnca is not a GPU type\nr40-device-tests  PASS  (16/16)\n",
+  "log_sha256": "8f404d15da79087f4fb10c8963b27216f0ae591f326d3c1db01b6b786fc6105c",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "observed_utc": "2026-10-19T00:14:34.729295+00:00"
+}

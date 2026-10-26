@@ -1,0 +1,81 @@
+The backend conformance suite
+  5 case(s) in 5 group(s), against 3 backend(s)
+    sim-file CONF-LIFE    PASS  open, query, quiesce, close
+      ok  [liveness] alive after open: the process exists
+      ok  [declaration] capabilities: ['bench', 'concurrent_requests', 'launch_is_idempotent', 'me
+      ok  [protocol] PING: seq 1, status 0, served 1
+      ok  [protocol] QUIESCE on an idle device: seq 2, status 0, 0 cycle(s)
+      ok  [protocol] an operation the device does not have: status 3
+    sim-file CONF-XFER    PASS  upload, download, alignment, range
+      ok  [protocol] UPLOAD: seq 4, status 0, 4 word(s)
+      ok  [protocol+oracle] DOWNLOAD returns what went in: oracle: the four words the host wrote; 
+      ok  [oracle] a single word at an offset: oracle: 0xfedcba9876543210
+      ok  [protocol] an unaligned upload: [ARGUMENT_INVALID] refused
+      ok  [protocol] an unaligned download: [ARGUMENT_INVALID] refused
+      ok  [protocol] a transfer past the end of memory: status 3
+    sim-file CONF-COMPAT  PASS  what the backend claims to be
+      ok  [declaration] the backend says what it is: medium 'a shared directory', reaches 'the RTL
+      ok  [registry] no backend claims platform-verified: states ['interface-defined', 'reference-
+    sim-file CONF-DONE    PASS  a launch that succeeds, and what it reports
+      ok  [protocol] LAUNCH: seq 10, status 0, 23 cycle(s)
+      ok  [protocol] the declared completion counters are nonzero: 23 cycles and 10 retired
+      ok  [oracle] the kernel wrote what the oracle says: oracle: 0xdefaced, got 0xdefaced
+      ok  [protocol+oracle] a second launch in the same session: no restart in between; the oracle
+    sim-file CONF-FAULT   PASS  a launch that traps, and after it
+      ok  [protocol] a trapping kernel is a FAULT: status 1, seq 16
+      ok  [protocol] the fault carries a code and a pc: code 0x40 at pc 0x6050, from seq 16
+      ok  [protocol] the session still works after a fault: status 0
+
+    sim-socket CONF-LIFE    PASS  open, query, quiesce, close
+      ok  [liveness] alive after open: the process exists
+      ok  [declaration] capabilities: ['concurrent_requests', 'launch_is_idempotent', 'medium', 'n
+      ok  [protocol] PING: seq 1, status 0, served 1
+      ok  [protocol] QUIESCE on an idle device: seq 2, status 0, 0 cycle(s)
+      ok  [declaration] an operation the device does not have: not offered: this binding has no op
+    sim-socket CONF-XFER    PASS  upload, download, alignment, range
+      ok  [protocol] UPLOAD: seq 3, status 0, 4 word(s)
+      ok  [protocol+oracle] DOWNLOAD returns what went in: oracle: the four words the host wrote; 
+      ok  [oracle] a single word at an offset: oracle: 0xfedcba9876543210
+      ok  [protocol] an unaligned upload: [ARGUMENT_INVALID] refused
+      ok  [protocol] an unaligned download: [ARGUMENT_INVALID] refused
+      ok  [protocol] a transfer past the end of memory: status 3
+    sim-socket CONF-COMPAT  PASS  what the backend claims to be
+      ok  [declaration] the backend says what it is: medium 'tcp', reaches 'the same RTL as sim-fi
+      ok  [registry] no backend claims platform-verified: states ['interface-defined', 'reference-
+    sim-socket CONF-DONE    PASS  a launch that succeeds, and what it reports
+      ok  [protocol] LAUNCH: seq 9, status 0, 23 cycle(s)
+      ok  [protocol] the declared completion counters are nonzero: 23 cycles and 10 retired
+      ok  [oracle] the kernel wrote what the oracle says: oracle: 0xdefaced, got 0xdefaced
+      ok  [protocol+oracle] a second launch in the same session: no restart in between; the oracle
+    sim-socket CONF-FAULT   PASS  a launch that traps, and after it
+      ok  [protocol] a trapping kernel is a FAULT: status 1, seq 15
+      ok  [protocol] the fault carries a code and a pc: code 0x40 at pc 0x6050, from seq 15
+      ok  [protocol] the session still works after a fault: status 0
+
+    sim-multicore CONF-LIFE    PASS  open, query, quiesce, close
+      ok  [liveness] alive after open: the process exists
+      ok  [declaration] capabilities: ['bench', 'completion_counters', 'concurrent_requests', 'fau
+      ok  [protocol] PING: seq 2, status 0, served 2
+      ok  [protocol] QUIESCE on an idle device: seq 3, status 0, 0 cycle(s)
+      ok  [protocol] an operation the device does not have: status 3
+    sim-multicore CONF-XFER    PASS  upload, download, alignment, range
+      ok  [protocol] UPLOAD: seq 5, status 0, 4 word(s)
+      ok  [protocol+oracle] DOWNLOAD returns what went in: oracle: the four words the host wrote; 
+      ok  [oracle] a single word at an offset: oracle: 0xfedcba9876543210
+      ok  [protocol] an unaligned upload: [ARGUMENT_INVALID] refused
+      ok  [protocol] an unaligned download: [ARGUMENT_INVALID] refused
+      ok  [protocol] a transfer past the end of memory: status 3
+    sim-multicore CONF-COMPAT  PASS  what the backend claims to be
+      ok  [declaration] the backend says what it is: medium 'a shared directory', reaches 'the RTL
+      ok  [registry] no backend claims platform-verified: states ['interface-defined', 'reference-
+    sim-multicore CONF-DONE    PASS  a launch that succeeds, and what it reports
+      ok  [protocol] LAUNCH: seq 11, status 0, 34 cycle(s)
+      ok  [protocol] the declared completion counters are nonzero: global makespan 34
+      ok  [oracle] the kernel wrote what the oracle says: oracle: 0xdefaced, got 0xdefaced
+      ok  [protocol+oracle] a second launch in the same session: no restart in between; the oracle
+    sim-multicore CONF-FAULT   PASS  a launch that traps, and after it
+      ok  [protocol] a trapping kernel is a FAULT: status 1, seq 17
+      ok  [declaration] fault detail is explicitly unavailable: physical-grid completion reports s
+      ok  [protocol] the session still works after a fault: status 0
+
+  conformance            PASS   3 of 3 backend(s) measured

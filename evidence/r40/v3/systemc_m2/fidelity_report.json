@@ -1,0 +1,3110 @@
+{
+ "pairs": [
+  {
+   "point": "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 1120319914,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 1106649555,
+   "rel_err": -0.012202192274875514,
+   "launch_rel_err": {
+    "n": 13,
+    "median_abs": 0.12130640423153219,
+    "p95_abs": 0.15418836830527863
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "model.llama_decode/hbm/fp16-b1-p512",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 206541921,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 204568086,
+   "rel_err": -0.009556582946664857,
+   "launch_rel_err": {
+    "n": 84,
+    "median_abs": 0.05535006205082259,
+    "p95_abs": 0.3416590389016018
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "model.llama_decode/large/fp16-b1-p512",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 2606305867,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 2625358627,
+   "rel_err": 0.007310254809782079,
+   "launch_rel_err": {
+    "n": 337,
+    "median_abs": 0.0571369090427344,
+    "p95_abs": 0.26051551971311354
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "model.llama_prefill/hbm/fp16-b1-s512",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 4499366017,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 4308248944,
+   "rel_err": -0.04247644496533521,
+   "launch_rel_err": {
+    "n": 78,
+    "median_abs": 0.12416898936782213,
+    "p95_abs": 0.18611309500840637
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "model.llama_prefill/large/fp16-b1-s512",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 57627698130,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 59272543931,
+   "rel_err": 0.02854262541060479,
+   "launch_rel_err": {
+    "n": 306,
+    "median_abs": 0.11898026008682683,
+    "p95_abs": 0.18371609492418534
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "model.mlp/large/fp16-t512-d2048",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 1206412982,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 1384845187,
+   "rel_err": 0.14790308763438026,
+   "launch_rel_err": {
+    "n": 2,
+    "median_abs": 0.14818764967625492,
+    "p95_abs": 0.1552040346889928
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "model.resnet_block/large/fp32-n8-c64-hw56",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 1058318846,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 966020445,
+   "rel_err": -0.08721228139218075,
+   "launch_rel_err": {
+    "n": 5,
+    "median_abs": 0.05571480039252035,
+    "p95_abs": 0.08796688882627797
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 244002160,
+   "board_records": 2,
+   "board_spread": 0.0001523552086588086,
+   "model_graph_cycles": 178416277,
+   "rel_err": -0.2687922229868785,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.2687922169934251,
+    "p95_abs": 0.2687922169934251
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.add/large/fp16-n16777216",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 61019089,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 44001652,
+   "rel_err": -0.27888710367340946,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.2788870800377593,
+    "p95_abs": 0.2788870800377593
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.argmax/large/fp16-r64-v128256",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 11764113,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 9552630,
+   "rel_err": -0.1879855285307103,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.1879853904812697,
+    "p95_abs": 0.1879853904812697
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 29933489,
+   "board_records": 2,
+   "board_spread": 0.00030724784538147226,
+   "model_graph_cycles": 27192696,
+   "rel_err": -0.09156276436736126,
+   "launch_rel_err": {
+    "n": 3,
+    "median_abs": 0.07708482775664027,
+    "p95_abs": 0.13924349920906048
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 1294523344,
+   "board_records": 2,
+   "board_spread": 0.00014168072043666444,
+   "model_graph_cycles": 1151389930,
+   "rel_err": -0.11056843019742409,
+   "launch_rel_err": {
+    "n": 7,
+    "median_abs": 0.1126057511684587,
+    "p95_abs": 0.1517379031062509
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.bmm/large/fp16-b32-m512-k64-n512",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 832906552,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 771666067,
+   "rel_err": -0.07352623755083632,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.07352623532615994,
+    "p95_abs": 0.07352623532615994
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 500562425,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 456774439,
+   "rel_err": -0.08747757285217723,
+   "launch_rel_err": {
+    "n": 3,
+    "median_abs": 0.0729722974491105,
+    "p95_abs": 0.08784616411103315
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 162838983,
+   "board_records": 2,
+   "board_spread": 0.00016838719755453153,
+   "model_graph_cycles": 119232773,
+   "rel_err": -0.2677872902215313,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.2677872812284425,
+    "p95_abs": 0.2677872812284425
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.embedding/hbm/fp16-v65536-d2048-t8192",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 317097014,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 297692808,
+   "rel_err": -0.06119327884935555,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.06119327292809684,
+    "p95_abs": 0.06119327292809684
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.embedding/large/fp16-v128256-d2048-t512",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 19827129,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 18610087,
+   "rel_err": -0.0613826641265107,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.061382569446395335,
+    "p95_abs": 0.061382569446395335
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.gelu_tanh/large/fp16-n16777216",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 72179966,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 69131691,
+   "rel_err": -0.042231593736134485,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.04223156719778912,
+    "p95_abs": 0.04223156719778912
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.gemv/hbm/fp16-k4096-n11008",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 79060342,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 81585582,
+   "rel_err": 0.03194066628247067,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.03194069238761179,
+    "p95_abs": 0.03194069238761179
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.gemv/large/fp16-k2048-n8192",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 29995314,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 30418763,
+   "rel_err": 0.014117171768896968,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.014117239387274919,
+    "p95_abs": 0.014117239387274919
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.layernorm/large/fp16-r512-d2048",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 4843340,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 4185807,
+   "rel_err": -0.13576023983449437,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.1357598829567542,
+    "p95_abs": 0.1357598829567542
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 1764663701,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 1208453643,
+   "rel_err": -0.31519323352364914,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.31519323274751626,
+    "p95_abs": 0.31519323274751626
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.linear/large/fp16-m512-k2048-n8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 575489336,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 679771730,
+   "rel_err": 0.18120647504057313,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.18120647914562393,
+    "p95_abs": 0.18120647914562393
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 4251391617,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 4241695033,
+   "rel_err": -0.0022808023521583756,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.002280801882797146,
+    "p95_abs": 0.002280801882797146
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.matmul/large/fp16-m2048-k2048-n2048",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 534106345,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 524807654,
+   "rel_err": -0.017409811898040643,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.017409808218660304,
+    "p95_abs": 0.017409808218660304
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.matmul/large/fp32-m2048-k2048-n2048",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 1561999734,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 1666938115,
+   "rel_err": 0.06718207354060919,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.06718207490703974,
+    "p95_abs": 0.06718207490703974
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 112776553,
+   "board_records": 2,
+   "board_spread": 0.00023632571922995376,
+   "model_graph_cycles": 100868000,
+   "rel_err": -0.10559422755189192,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.10559421169033623,
+    "p95_abs": 0.10559421169033623
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rmsnorm/large/fp16-r512-d2048",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 3535531,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 3149936,
+   "rel_err": -0.10906282535777512,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.10906232136690153,
+    "p95_abs": 0.10906232136690153
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rope/large/fp16-b1-h32-s512-d64",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 10289535,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 7787587,
+   "rel_err": -0.24315462263357868,
+   "launch_rel_err": {
+    "n": 3,
+    "median_abs": 0.2109722528460118,
+    "p95_abs": 0.28732100668686955
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 242454247,
+   "board_records": 2,
+   "board_spread": 3.544173841590822e-05,
+   "model_graph_cycles": 212318991,
+   "rel_err": -0.12429254745123108,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.1242615025325346,
+    "p95_abs": 0.1242615025325346
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.silu/large/fp16-n16777216",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 60543719,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 53070504,
+   "rel_err": -0.12343501726413603,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.123434988307705,
+    "p95_abs": 0.123434988307705
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 224298073,
+   "board_records": 2,
+   "board_spread": 0.0010332366965988156,
+   "model_graph_cycles": 215608132,
+   "rel_err": -0.038742825044243694,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.03774858298872033,
+    "p95_abs": 0.03774858298872033
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.softmax/large/fp16-r4096-c4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 111963038,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 108481398,
+   "rel_err": -0.031096333774008524,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.03109631646644523,
+    "p95_abs": 0.03109631646644523
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.swiglu/large/fp16-n16777216",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 78742745,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 65982457,
+   "rel_err": -0.1620503323830024,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.1620503110997797,
+    "p95_abs": 0.1620503110997797
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.transpose/hbm/fp32-r8192-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 387676666,
+   "board_records": 2,
+   "board_spread": 0.001190958962693927,
+   "model_graph_cycles": 345822806,
+   "rel_err": -0.10796074066526357,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.10796073606328804,
+    "p95_abs": 0.10796073606328804
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.transpose/large/fp32-r4096-c4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "board_graph_cycles": 96643630,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 86948453,
+   "rel_err": -0.1003188415004693,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.100318822881939,
+    "p95_abs": 0.100318822881939
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 677723258,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 478200599,
+   "rel_err": -0.2944013749635843,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.2944013728813225,
+    "p95_abs": 0.2944013728813225
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 243964985,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 178416277,
+   "rel_err": -0.26868080269797734,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.2686807967026973,
+    "p95_abs": 0.2686807967026973
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 714337361,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 521495915,
+   "rel_err": -0.26995850494231677,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.26995850289834833,
+    "p95_abs": 0.26995850289834833
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "64",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 448534087,
+   "board_records": 2,
+   "board_spread": 1.3599858242212034e-07,
+   "model_graph_cycles": 352117904,
+   "rel_err": -0.21495842968117604,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.2149584261806993,
+    "p95_abs": 0.2149584261806993
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 708611817,
+   "board_records": 2,
+   "board_spread": 1.003934711407727e-05,
+   "model_graph_cycles": 535453909,
+   "rel_err": -0.24436215124535526,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.24436214911262805,
+    "p95_abs": 0.24436214911262805
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 683835035,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 475290262,
+   "rel_err": -0.30496356917425266,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.30496356714149214,
+    "p95_abs": 0.30496356714149214
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 458274502,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 291462382,
+   "rel_err": -0.36400043919528385,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.3640004364196568,
+    "p95_abs": 0.3640004364196568
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 162811563,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 119232773,
+   "rel_err": -0.2676639742104804,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.26766396521436214,
+    "p95_abs": 0.26766396521436214
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 491785808,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 320101738,
+   "rel_err": -0.3491033437874238,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.34910334114035,
+    "p95_abs": 0.34910334114035
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "64",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 322565623,
+   "board_records": 2,
+   "board_spread": 8.525397016656049e-06,
+   "model_graph_cycles": 251674708,
+   "rel_err": -0.21977207099964277,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.2197720661620043,
+    "p95_abs": 0.2197720661620043
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 487619843,
+   "board_records": 2,
+   "board_spread": 5.241788324844688e-06,
+   "model_graph_cycles": 348114776,
+   "rel_err": -0.28609390902084353,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.28609390609271784,
+    "p95_abs": 0.28609390609271784
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 442137542,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 288837009,
+   "rel_err": -0.34672589056009184,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.34672588760501993,
+    "p95_abs": 0.34672588760501993
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.gemv/hbm/fp16-k4096-n11008",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 248601613,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 233352353,
+   "rel_err": -0.061340149068139796,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.06134014151662114,
+    "p95_abs": 0.06134014151662114
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.gemv/hbm/fp16-k4096-n11008",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 248601676,
+   "board_records": 2,
+   "board_spread": 1.0965332349569517e-05,
+   "model_graph_cycles": 233352353,
+   "rel_err": -0.06134038694091507,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.06134037938940025,
+    "p95_abs": 0.06134037938940025
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.gemv/large/fp16-k2048-n8192",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 92837896,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 87210698,
+   "rel_err": -0.060613157368409123,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.060613137131266676,
+    "p95_abs": 0.060613137131266676
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.gemv/large/fp16-k2048-n8192",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 92837890,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 87210698,
+   "rel_err": -0.06061309665697917,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.06061307641983411,
+    "p95_abs": 0.06061307641983411
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 5898829217,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 6436786992,
+   "rel_err": 0.09119738090562862,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.09119738127559945,
+    "p95_abs": 0.09119738127559945
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 5898829151,
+   "board_records": 2,
+   "board_spread": 1.1668417280458374e-06,
+   "model_graph_cycles": 6436786992,
+   "rel_err": 0.09119739311466625,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.0911973934846371,
+    "p95_abs": 0.0911973934846371
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.linear/large/fp16-m512-k2048-n8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 2201434749,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 2426117736,
+   "rel_err": 0.10206206979428396,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.10206207079550562,
+    "p95_abs": 0.10206207079550562
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.linear/large/fp16-m512-k2048-n8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 2201441018,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 2426117736,
+   "rel_err": 0.10205893147394786,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.1020589324751638,
+    "p95_abs": 0.1020589324751638
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 11485324666,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 10796755910,
+   "rel_err": -0.05995204976994422,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.059952049606248725,
+    "p95_abs": 0.059952049606248725
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 11485322149,
+   "board_records": 2,
+   "board_spread": 4.3185554011054497e-07,
+   "model_graph_cycles": 10796755910,
+   "rel_err": -0.05995184375911927,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.05995184359542371,
+    "p95_abs": 0.05995184359542371
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.matmul/large/fp16-m2048-k2048-n2048",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 1450544152,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 1366547244,
+   "rel_err": -0.05790717082564199,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.05790716952669107,
+    "p95_abs": 0.05790716952669107
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.matmul/large/fp16-m2048-k2048-n2048",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 1450544411,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 1366547244,
+   "rel_err": -0.05790733903975588,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.05790733774080543,
+    "p95_abs": 0.05790733774080543
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 325489221,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 276132832,
+   "rel_err": -0.1516375529990285,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.15163754778618335,
+    "p95_abs": 0.15163754778618335
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 112749901,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 100868000,
+   "rel_err": -0.1053828065002026,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.10538279063114726,
+    "p95_abs": 0.10538279063114726
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 333610412,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 285777130,
+   "rel_err": -0.14338066283135073,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.14338065769590344,
+    "p95_abs": 0.14338065769590344
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "64",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 279181825,
+   "board_records": 2,
+   "board_spread": 2.4070334807790587e-05,
+   "model_graph_cycles": 229783891,
+   "rel_err": -0.1769382158025509,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.17691839805643414,
+    "p95_abs": 0.17691839805643414
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 335180664,
+   "board_records": 2,
+   "board_spread": 0.00031376809970159856,
+   "model_graph_cycles": 287210381,
+   "rel_err": -0.1431176918964514,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.1431176867834935,
+    "p95_abs": 0.1431176867834935
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 326030246,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 275335615,
+   "rel_err": -0.15549057678532072,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.15549057160476193,
+    "p95_abs": 0.15549057160476193
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 721864852,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 632122377,
+   "rel_err": -0.1243203277612968,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.12432032533513718,
+    "p95_abs": 0.12432032533513718
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 242454247,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 212318991,
+   "rel_err": -0.12429254745123108,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.1242925402275386,
+    "p95_abs": 0.1242925402275386
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 748798099,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 673602068,
+   "rel_err": -0.10042230489156197,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.10042230248883766,
+    "p95_abs": 0.10042230248883766
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "64",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 643610537,
+   "board_records": 2,
+   "board_spread": 8.78170830817209e-06,
+   "model_graph_cycles": 474107300,
+   "rel_err": -0.26336305460455817,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.26336305231548146,
+    "p95_abs": 0.26336305231548146
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 740485891,
+   "board_records": 2,
+   "board_spread": 1.8740397580377397e-05,
+   "model_graph_cycles": 701737185,
+   "rel_err": -0.052328756659591774,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.05232875409999879,
+    "p95_abs": 0.05232875409999879
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 711352481,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 619860494,
+   "rel_err": -0.1286169507293811,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.12861694827944783,
+    "p95_abs": 0.12861694827944783
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 583310761,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 569822532,
+   "rel_err": -0.023123573062284034,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.02312356971286381,
+    "p95_abs": 0.02312356971286381
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 224298073,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 215608132,
+   "rel_err": -0.038742825044243694,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.038742816472995885,
+    "p95_abs": 0.038742816472995885
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 618366344,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 604906301,
+   "rel_err": -0.021767101541994658,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.021767098378067933,
+    "p95_abs": 0.021767098378067933
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "64",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 607971312,
+   "board_records": 2,
+   "board_spread": 4.52587144440789e-05,
+   "model_graph_cycles": 657292440,
+   "rel_err": 0.08112410409259574,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.08117304015114266,
+    "p95_abs": 0.08117304015114266
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 654970994,
+   "board_records": 2,
+   "board_spread": 1.768933297220182e-05,
+   "model_graph_cycles": 617820913,
+   "rel_err": -0.05672019271131265,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.056720189830941396,
+    "p95_abs": 0.056720189830941396
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 584279692,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 569483741,
+   "rel_err": -0.025323404531403772,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.025323401195068068,
+    "p95_abs": 0.025323401195068068
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.transpose/hbm/fp32-r8192-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 642976018,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 537730051,
+   "rel_err": -0.16368568041988776,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.16368567781850202,
+    "p95_abs": 0.16368567781850202
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.transpose/hbm/fp32-r8192-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 387214959,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 345822806,
+   "rel_err": -0.10689709175207769,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.10689708713912102,
+    "p95_abs": 0.10689708713912102
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.transpose/hbm/fp32-r8192-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 868804978,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 810955701,
+   "rel_err": -0.06658488206774524,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.06658487991901188,
+    "p95_abs": 0.06658487991901188
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.transpose/hbm/fp32-r8192-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 1675051128,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 1986325093,
+   "rel_err": 0.1858295306911969,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.18582953210706954,
+    "p95_abs": 0.18582953210706954
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.transpose/hbm/fp32-r8192-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "2",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "8",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 647690881,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 511497735,
+   "rel_err": -0.21027491662338227,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.21027491418479585,
+    "p95_abs": 0.21027491418479585
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "64",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 448534087,
+   "board_records": 2,
+   "board_spread": 1.3599858242212034e-07,
+   "model_graph_cycles": 352117904,
+   "rel_err": -0.21495842968117604,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.2149584261806993,
+    "p95_abs": 0.2149584261806993
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 708611817,
+   "board_records": 2,
+   "board_spread": 1.003934711407727e-05,
+   "model_graph_cycles": 535453909,
+   "rel_err": -0.24436215124535526,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.24436214911262805,
+    "p95_abs": 0.24436214911262805
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "64",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 322565623,
+   "board_records": 2,
+   "board_spread": 8.525397016656049e-06,
+   "model_graph_cycles": 251674708,
+   "rel_err": -0.21977207099964277,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.2197720661620043,
+    "p95_abs": 0.2197720661620043
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "split": "holdout",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 487619843,
+   "board_records": 2,
+   "board_spread": 5.241788324844688e-06,
+   "model_graph_cycles": 348114776,
+   "rel_err": -0.28609390902084353,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.28609390609271784,
+    "p95_abs": 0.28609390609271784
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.gemv/hbm/fp16-k4096-n11008",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 820796141,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 1660191358,
+   "rel_err": 1.0226597995177464,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 1.022659804446278,
+    "p95_abs": 1.022659804446278
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.gemv/hbm/fp16-k4096-n11008",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 248601676,
+   "board_records": 2,
+   "board_spread": 1.0965332349569517e-05,
+   "model_graph_cycles": 233352353,
+   "rel_err": -0.06134038694091507,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.06134037938940025,
+    "p95_abs": 0.06134037938940025
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 53465018934,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 51890746401,
+   "rel_err": -0.029444907425233757,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.029444907388927584,
+    "p95_abs": 0.029444907388927584
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 5898829151,
+   "board_records": 2,
+   "board_spread": 1.1668417280458374e-06,
+   "model_graph_cycles": 6436786992,
+   "rel_err": 0.09119739311466625,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.0911973934846371,
+    "p95_abs": 0.0911973934846371
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 43659747174,
+   "board_records": 1,
+   "board_spread": 0.0,
+   "model_graph_cycles": 38212120805,
+   "rel_err": -0.12477457433019995,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.12477457429010694,
+    "p95_abs": 0.12477457429010694
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 11485322149,
+   "board_records": 2,
+   "board_spread": 4.3185554011054497e-07,
+   "model_graph_cycles": 10796755910,
+   "rel_err": -0.05995184375911927,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.05995184359542371,
+    "p95_abs": 0.05995184359542371
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "64",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 279181825,
+   "board_records": 2,
+   "board_spread": 2.4070334807790587e-05,
+   "model_graph_cycles": 229783891,
+   "rel_err": -0.1769382158025509,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.17691839805643414,
+    "p95_abs": 0.17691839805643414
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 335180664,
+   "board_records": 2,
+   "board_spread": 0.00031376809970159856,
+   "model_graph_cycles": 287210381,
+   "rel_err": -0.1431176918964514,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.1431176867834935,
+    "p95_abs": 0.1431176867834935
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "64",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 643610537,
+   "board_records": 2,
+   "board_spread": 8.78170830817209e-06,
+   "model_graph_cycles": 474107300,
+   "rel_err": -0.26336305460455817,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.26336305231548146,
+    "p95_abs": 0.26336305231548146
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 740485891,
+   "board_records": 2,
+   "board_spread": 1.8740397580377397e-05,
+   "model_graph_cycles": 701737185,
+   "rel_err": -0.052328756659591774,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.05232875409999879,
+    "p95_abs": 0.05232875409999879
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "64",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 607971312,
+   "board_records": 2,
+   "board_spread": 4.52587144440789e-05,
+   "model_graph_cycles": 657292440,
+   "rel_err": 0.08112410409259574,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.08117304015114266,
+    "p95_abs": 0.08117304015114266
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "split": "calibration",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_PIPELINE": "1",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_RTL_MEM_PORTS": "1",
+    "TNCA_RTL_OUTSTANDING": "1",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "per-kernel",
+    "TNCA_TUNE": "0",
+    "TNCA_WINDOW_REUSE": "0"
+   },
+   "board_graph_cycles": 654970994,
+   "board_records": 2,
+   "board_spread": 1.768933297220182e-05,
+   "model_graph_cycles": 617820913,
+   "rel_err": -0.05672019271131265,
+   "launch_rel_err": {
+    "n": 1,
+    "median_abs": 0.056720189830941396,
+    "p95_abs": 0.056720189830941396
+   },
+   "model": {
+    "binary_sha256": "2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d",
+    "config_sha256": "dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796",
+    "config": "cfgs/final.cfg"
+   }
+  }
+ ],
+ "unmatched": [],
+ "splits": {
+  "calibration": {
+   "n": 60,
+   "median_abs": 0.09138007874101375,
+   "p95_abs": 0.26336305460455817,
+   "mean_signed": -0.045978758228353844
+  },
+  "holdout": {
+   "n": 39,
+   "median_abs": 0.21495842968117604,
+   "p95_abs": 0.34696363588282503,
+   "mean_signed": -0.1651205895018101
+  },
+  "other": {
+   "n": 0,
+   "median_abs": null,
+   "p95_abs": null,
+   "mean_signed": null
+  }
+ },
+ "fidelity": "uncalibrated",
+ "why": "holdout median 0.215 / p95 0.347 exceed 0.1 / 0.2",
+ "limits": {
+  "median_abs": 0.1,
+  "p95_abs": 0.2
+ },
+ "schema": "tnca-systemc-fidelity/1",
+ "dataset": {
+  "path": "board_all.json",
+  "sha256": "89e4d1112aae9079a901d5394dbb5c907cc415730c84b6aee5da7f2ce51e737b"
+ },
+ "predictions": {
+  "path": "final/predictions_final.jsonl",
+  "sha256": "2bee00a7d56fe3a70cc94995b82ec955bff4717ecca80a848c1a45faafc4ea7a"
+ },
+ "fit_report": "fit_report.json"
+}

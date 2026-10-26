@@ -1,0 +1,218 @@
+{
+  "schema": "tnca-failed-route-critical-paths/1",
+  "gate_status": "not-measured",
+  "scope": "Failed, substantially unrouted design; timing includes estimates and is not signoff",
+  "source_archive_sha256": "b74085d8476f19cc5e3fcb623187b069dd18caf6f2cb77bf92c12fb540a716d1",
+  "paths": [
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMA/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMA_D1/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMB/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMB_D1/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMC/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMC_D1/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMD/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMD_D1/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAME/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAME_D1/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMF/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMF_D1/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMG/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMG_D1/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMH/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.776,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[1][0]_rep_replica_1/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMH_D1/WE",
+      "data_path": "50.082ns  (logic 6.148ns (12.276%)  route 43.934ns (87.724%))",
+      "logic_levels": "91  (CARRY8=30 LUT1=1 LUT3=7 LUT4=9 LUT5=12 LUT6=32)"
+    },
+    {
+      "slack_ns": -40.762,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/perf_evict1[-1111111111]_replica_55/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMC/I",
+      "data_path": "50.259ns  (logic 7.291ns (14.507%)  route 42.968ns (85.493%))",
+      "logic_levels": "103  (CARRY8=36 LUT2=2 LUT3=6 LUT4=11 LUT5=12 LUT6=31 MUXF7=3 MUXF8=2)"
+    },
+    {
+      "slack_ns": -40.737,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/perf_evict1[-1111111111]_replica_55/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_56_63/RAMA_D1/I",
+      "data_path": "50.211ns  (logic 7.300ns (14.539%)  route 42.911ns (85.461%))",
+      "logic_levels": "103  (CARRY8=36 LUT2=2 LUT3=6 LUT4=11 LUT5=12 LUT6=31 MUXF7=3 MUXF8=2)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMA/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMA_D1/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMB/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMB_D1/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMC/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMC_D1/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMD/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMD_D1/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAME/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAME_D1/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMF/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack_ns": -40.668,
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/tag_mem_reg[481][41]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMF_D1/WE",
+      "data_path": "50.263ns  (logic 7.211ns (14.347%)  route 43.052ns (85.653%))",
+      "logic_levels": "98  (CARRY8=31 LUT2=2 LUT3=6 LUT4=12 LUT5=12 LUT6=33 MUXF7=1 MUXF8=1)"
+    }
+  ]
+}

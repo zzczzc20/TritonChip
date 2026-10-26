@@ -1,0 +1,6 @@
+{
+  "root": "/home/zhongchun/r40_large_numeric_diagnosis_6bd07b7",
+  "pid": 2419523,
+  "script_sha256": "b2cfd127ba0833b4330dd0a40c791f2acf0471b84ab0d1ab9735b45c2e8208d5",
+  "scope": "GB10 CPU-only original full-shape half-vs-FP32 precision diagnosis; no FPGA-server load"
+}

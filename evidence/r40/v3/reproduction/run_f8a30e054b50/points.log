@@ -1,0 +1,4 @@
+pass               op.add/hbm/fp16-n67108864                                  time=243988610cycles eta=0.2063 err=0.00024740227610094015 [93.8s]
+pass               op.matmul/medium/fp16-m128-k192-n128                       time=234635cycles eta=0.419 err=0.00030617228042415754 [12.7s]
+pass               model.llama_decode/hbm/fp16-b1-p512                        time=170540745cycles eta=0.1157 err=0.0016481212249269185 [60.2s]
+3/3 pass in 167s -> /home/zzhouch/tnca_v3_reproduce/run_f8a30e054b50/points.jsonl

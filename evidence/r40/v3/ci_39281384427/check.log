@@ -1,0 +1,1491 @@
+﻿2026-10-19T15:55:40.6268369Z Current runner version: '2.337.0'
+2026-10-19T15:55:40.6294481Z ##[group]Runner Image Provisioner
+2026-10-19T15:55:40.6295678Z Hosted Compute Agent
+2026-10-19T15:55:40.6296426Z Version: 20261012.601
+2026-10-19T15:55:40.6297083Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+2026-10-19T15:55:40.6297901Z Build Date: 2026-10-12T17:48:21Z
+2026-10-19T15:55:40.6298638Z Worker ID: {81a7e0da-2307-4643-abc8-3447c52f55d8}
+2026-10-19T15:55:40.6299387Z Region: eastus2
+2026-10-19T15:55:40.6299981Z Cloud: Azure
+2026-10-19T15:55:40.6300509Z ##[endgroup]
+2026-10-19T15:55:40.6302492Z ##[group]Operating System
+2026-10-19T15:55:40.6303341Z Ubuntu
+2026-10-19T15:55:40.6303874Z 24.04.5
+2026-10-19T15:55:40.6304417Z LTS
+2026-10-19T15:55:40.6304981Z ##[endgroup]
+2026-10-19T15:55:40.6305889Z ##[group]Runner Image
+2026-10-19T15:55:40.6306701Z Image: ubuntu-24.04
+2026-10-19T15:55:40.6307292Z Version: 20261012.334.1
+2026-10-19T15:55:40.6308708Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-19T15:55:40.6310283Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261012.334
+2026-10-19T15:55:40.6311421Z ##[endgroup]
+2026-10-19T15:55:40.6312510Z ##[group]GITHUB_TOKEN Permissions
+2026-10-19T15:55:40.6314730Z Contents: read
+2026-10-19T15:55:40.6315357Z Metadata: read
+2026-10-19T15:55:40.6316249Z ##[endgroup]
+2026-10-19T15:55:40.6318401Z Secret source: Actions
+2026-10-19T15:55:40.6319517Z Cache mode: write
+2026-10-19T15:55:40.6320478Z Prepare workflow directory
+2026-10-19T15:55:40.6734480Z Prepare all required actions
+2026-10-19T15:55:40.6785029Z Getting action download info
+2026-10-19T15:55:40.9196351Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-19T15:55:41.1245072Z Complete job name: lint, unit, core, system, compiler
+2026-10-19T15:55:41.2170023Z ##[group]Run actions/checkout@v4
+2026-10-19T15:55:41.2170929Z with:
+2026-10-19T15:55:41.2171377Z   repository: zzczzc20/TritonChip
+2026-10-19T15:55:41.2175751Z   token: ***
+2026-10-19T15:55:41.2176205Z   ssh-strict: true
+2026-10-19T15:55:41.2176637Z   ssh-user: git
+2026-10-19T15:55:41.2177085Z   persist-credentials: true
+2026-10-19T15:55:41.2177567Z   clean: true
+2026-10-19T15:55:41.2178015Z   sparse-checkout-cone-mode: true
+2026-10-19T15:55:41.2178537Z   fetch-depth: 1
+2026-10-19T15:55:41.2178970Z   fetch-tags: false
+2026-10-19T15:55:41.2179406Z   show-progress: true
+2026-10-19T15:55:41.2179869Z   lfs: false
+2026-10-19T15:55:41.2180286Z   submodules: false
+2026-10-19T15:55:41.2180732Z   set-safe-directory: true
+2026-10-19T15:55:41.2181238Z   allow-unsafe-pr-checkout: false
+2026-10-19T15:55:41.2182015Z env:
+2026-10-19T15:55:41.2182449Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:55:41.2182966Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:55:41.2183459Z ##[endgroup]
+2026-10-19T15:55:41.3222496Z Syncing repository: zzczzc20/TritonChip
+2026-10-19T15:55:41.3224724Z ##[group]Getting Git version info
+2026-10-19T15:55:41.3226211Z Working directory is '/home/runner/work/TritonChip/TritonChip'
+2026-10-19T15:55:41.3227560Z [command]/usr/bin/git version
+2026-10-19T15:55:41.3305894Z git version 2.55.0
+2026-10-19T15:55:41.3330818Z ##[endgroup]
+2026-10-19T15:55:41.3358468Z Temporarily overriding HOME='/home/runner/work/_temp/4275b260-2a68-47aa-9ea2-62d93da0738b' before making global git config changes
+2026-10-19T15:55:41.3361627Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T15:55:41.3364199Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/TritonChip/TritonChip
+2026-10-19T15:55:41.3418538Z Deleting the contents of '/home/runner/work/TritonChip/TritonChip'
+2026-10-19T15:55:41.3424303Z ##[group]Initializing the repository
+2026-10-19T15:55:41.3430638Z [command]/usr/bin/git init /home/runner/work/TritonChip/TritonChip
+2026-10-19T15:55:41.3524511Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-19T15:55:41.3526976Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-19T15:55:41.3529383Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-19T15:55:41.3531024Z hint: call:
+2026-10-19T15:55:41.3531736Z hint:
+2026-10-19T15:55:41.3532960Z hint: 	git config --global init.defaultBranch <name>
+2026-10-19T15:55:41.3534053Z hint:
+2026-10-19T15:55:41.3534886Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-19T15:55:41.3536644Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-19T15:55:41.3537730Z hint:
+2026-10-19T15:55:41.3538173Z hint: 	git branch -m <name>
+2026-10-19T15:55:41.3538660Z hint:
+2026-10-19T15:55:41.3539303Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-19T15:55:41.3540692Z Initialized empty Git repository in /home/runner/work/TritonChip/TritonChip/.git/
+2026-10-19T15:55:41.3543638Z [command]/usr/bin/git remote add origin https://github.com/zzczzc20/TritonChip
+2026-10-19T15:55:41.3591524Z ##[endgroup]
+2026-10-19T15:55:41.3592634Z ##[group]Disabling automatic garbage collection
+2026-10-19T15:55:41.3596263Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-19T15:55:41.3631061Z ##[endgroup]
+2026-10-19T15:55:41.3632194Z ##[group]Setting up auth
+2026-10-19T15:55:41.3640159Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T15:55:41.3681154Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T15:55:41.4053405Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T15:55:41.4099061Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T15:55:41.4346708Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T15:55:41.4374108Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T15:55:41.4611045Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-19T15:55:41.4653294Z ##[endgroup]
+2026-10-19T15:55:41.4654336Z ##[group]Fetching the repository
+2026-10-19T15:55:41.4664532Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +108b707db03cc95ab9e084d00ff7f3d4075df396:refs/remotes/pull/7/merge
+2026-10-19T15:55:44.7052382Z From https://github.com/zzczzc20/TritonChip
+2026-10-19T15:55:44.7053676Z  * [new ref]         108b707db03cc95ab9e084d00ff7f3d4075df396 -> pull/7/merge
+2026-10-19T15:55:44.7056671Z ##[endgroup]
+2026-10-19T15:55:44.7057803Z ##[group]Determining the checkout info
+2026-10-19T15:55:44.7058979Z ##[endgroup]
+2026-10-19T15:55:44.7065077Z [command]/usr/bin/git sparse-checkout disable
+2026-10-19T15:55:44.7117769Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-19T15:55:44.7149986Z ##[group]Checking out the ref
+2026-10-19T15:55:44.7155177Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/7/merge
+2026-10-19T15:55:45.4078330Z Note: switching to 'refs/remotes/pull/7/merge'.
+2026-10-19T15:55:45.4078818Z 
+2026-10-19T15:55:45.4079152Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-10-19T15:55:45.4079776Z changes and commit them, and you can discard any commits you make in this
+2026-10-19T15:55:45.4080407Z state without impacting any branches by switching back to a branch.
+2026-10-19T15:55:45.4080790Z 
+2026-10-19T15:55:45.4081118Z If you want to create a new branch to retain commits you create, you may
+2026-10-19T15:55:45.4081731Z do so (now or later) by using -c with the switch command. Example:
+2026-10-19T15:55:45.4082060Z 
+2026-10-19T15:55:45.4082204Z   git switch -c <new-branch-name>
+2026-10-19T15:55:45.4082738Z 
+2026-10-19T15:55:45.4082910Z Or undo this operation with:
+2026-10-19T15:55:45.4083139Z 
+2026-10-19T15:55:45.4083269Z   git switch -
+2026-10-19T15:55:45.4083451Z 
+2026-10-19T15:55:45.4083747Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-10-19T15:55:45.4084132Z 
+2026-10-19T15:55:45.4084573Z HEAD is now at 108b707 Merge 3b73efb10088435b5fa8b403adaaa4e4c95defac into b5c606d54384f6febb8949936537c49cafb75c5c
+2026-10-19T15:55:45.4107943Z ##[endgroup]
+2026-10-19T15:55:45.4153598Z [command]/usr/bin/git log -1 --format=%H
+2026-10-19T15:55:45.4180582Z 108b707db03cc95ab9e084d00ff7f3d4075df396
+2026-10-19T15:55:45.4448664Z ##[group]Run set -euo pipefail
+2026-10-19T15:55:45.4449125Z [36;1mset -euo pipefail[0m
+2026-10-19T15:55:45.4449441Z [36;1msudo apt-get update -qq[0m
+2026-10-19T15:55:45.4449837Z [36;1msudo apt-get install -y --no-install-recommends \[0m
+2026-10-19T15:55:45.4450316Z [36;1m  iverilog yosys build-essential cmake ninja-build \[0m
+2026-10-19T15:55:45.4450759Z [36;1m  python3 python3-venv \[0m
+2026-10-19T15:55:45.4451112Z [36;1m  libmlir-20-dev mlir-20-tools llvm-20-dev[0m
+2026-10-19T15:55:45.4451491Z [36;1miverilog -V | sed -n '1p'[0m
+2026-10-19T15:55:45.4451811Z [36;1mmake --version | sed -n '1p'[0m
+2026-10-19T15:55:45.4702727Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:55:45.4703158Z env:
+2026-10-19T15:55:45.4703475Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:55:45.4703841Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:55:45.4704177Z ##[endgroup]
+2026-10-19T15:55:50.5088165Z Reading package lists...
+2026-10-19T15:55:50.7424246Z Building dependency tree...
+2026-10-19T15:55:50.7432240Z Reading state information...
+2026-10-19T15:55:50.8972995Z python3 is already the newest version (3.12.3-0ubuntu2.1).
+2026-10-19T15:55:50.8973629Z python3-venv is already the newest version (3.12.3-0ubuntu2.1).
+2026-10-19T15:55:50.8974135Z The following additional packages will be installed:
+2026-10-19T15:55:50.8977733Z   cmake-data libclang-cpp20 libjsoncpp25 libmlir-20 librhash0 llvm-20
+2026-10-19T15:55:50.8980028Z   llvm-20-linker-tools llvm-20-runtime llvm-20-tools yosys-abc
+2026-10-19T15:55:50.8987791Z Suggested packages:
+2026-10-19T15:55:50.8988198Z   cmake-doc cmake-format elpa-cmake-mode gtkwave llvm-20-doc
+2026-10-19T15:55:50.8988641Z Recommended packages:
+2026-10-19T15:55:50.8988901Z   xdot
+2026-10-19T15:55:50.9338991Z The following NEW packages will be installed:
+2026-10-19T15:55:50.9341961Z   build-essential cmake cmake-data iverilog libclang-cpp20 libjsoncpp25
+2026-10-19T15:55:50.9345890Z   libmlir-20 libmlir-20-dev librhash0 llvm-20 llvm-20-dev llvm-20-linker-tools
+2026-10-19T15:55:50.9347892Z   llvm-20-runtime llvm-20-tools mlir-20-tools ninja-build yosys yosys-abc
+2026-10-19T15:55:50.9533985Z 0 upgraded, 18 newly installed, 0 to remove and 78 not upgraded.
+2026-10-19T15:55:50.9534775Z Need to get 178 MB of archives.
+2026-10-19T15:55:50.9535369Z After this operation, 1284 MB of additional disk space will be used.
+2026-10-19T15:55:50.9536400Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-10-19T15:55:51.0728396Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 build-essential amd64 12.10ubuntu1 [4928 B]
+2026-10-19T15:55:51.1789261Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libjsoncpp25 amd64 1.9.5-6build1 [82.8 kB]
+2026-10-19T15:55:51.2903460Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 librhash0 amd64 1.4.3-3build1 [129 kB]
+2026-10-19T15:55:51.3979873Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake-data all 3.28.3-1build7 [2155 kB]
+2026-10-19T15:55:51.6147632Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 cmake amd64 3.28.3-1build7 [11.2 MB]
+2026-10-19T15:55:52.4189890Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 iverilog amd64 12.0-2build2 [2126 kB]
+2026-10-19T15:55:52.7183814Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libclang-cpp20 amd64 1:20.1.2-0ubuntu1~24.04.3 [14.2 MB]
+2026-10-19T15:55:53.3232939Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libmlir-20 amd64 1:20.1.2-0ubuntu1~24.04.3 [13.0 MB]
+2026-10-19T15:55:54.0172489Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 libmlir-20-dev amd64 1:20.1.2-0ubuntu1~24.04.3 [28.3 MB]
+2026-10-19T15:55:55.1993391Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-runtime amd64 1:20.1.2-0ubuntu1~24.04.3 [558 kB]
+2026-10-19T15:55:55.3280584Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-linker-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [1338 kB]
+2026-10-19T15:55:55.4866127Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20 amd64 1:20.1.2-0ubuntu1~24.04.3 [19.8 MB]
+2026-10-19T15:55:56.3076925Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [515 kB]
+2026-10-19T15:55:56.4376823Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 llvm-20-dev amd64 1:20.1.2-0ubuntu1~24.04.3 [50.7 MB]
+2026-10-19T15:55:58.3702295Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 mlir-20-tools amd64 1:20.1.2-0ubuntu1~24.04.3 [24.8 MB]
+2026-10-19T15:55:59.4082808Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 ninja-build amd64 1.11.1-2 [129 kB]
+2026-10-19T15:55:59.5259357Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 yosys-abc amd64 0.33-5build2 [5829 kB]
+2026-10-19T15:55:59.9373547Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 yosys amd64 0.33-5build2 [3222 kB]
+2026-10-19T15:56:01.0368567Z Fetched 178 MB in 10s (18.1 MB/s)
+2026-10-19T15:56:01.0605827Z Selecting previously unselected package build-essential.
+2026-10-19T15:56:01.0880348Z (Reading database ... 
+2026-10-19T15:56:01.0881097Z (Reading database ... 5%
+2026-10-19T15:56:01.0881573Z (Reading database ... 10%
+2026-10-19T15:56:01.0881926Z (Reading database ... 15%
+2026-10-19T15:56:01.0882255Z (Reading database ... 20%
+2026-10-19T15:56:01.0882551Z (Reading database ... 25%
+2026-10-19T15:56:01.0882851Z (Reading database ... 30%
+2026-10-19T15:56:01.0883271Z (Reading database ... 35%
+2026-10-19T15:56:01.0883703Z (Reading database ... 40%
+2026-10-19T15:56:01.0884149Z (Reading database ... 45%
+2026-10-19T15:56:01.0884589Z (Reading database ... 50%
+2026-10-19T15:56:01.0948918Z (Reading database ... 55%
+2026-10-19T15:56:01.2109865Z (Reading database ... 60%
+2026-10-19T15:56:01.4165857Z (Reading database ... 65%
+2026-10-19T15:56:01.6050574Z (Reading database ... 70%
+2026-10-19T15:56:01.8068219Z (Reading database ... 75%
+2026-10-19T15:56:01.9677335Z (Reading database ... 80%
+2026-10-19T15:56:02.1617611Z (Reading database ... 85%
+2026-10-19T15:56:02.3616792Z (Reading database ... 90%
+2026-10-19T15:56:02.5598481Z (Reading database ... 95%
+2026-10-19T15:56:02.5599098Z (Reading database ... 100%
+2026-10-19T15:56:02.5599849Z (Reading database ... 203540 files and directories currently installed.)
+2026-10-19T15:56:02.5645874Z Preparing to unpack .../00-build-essential_12.10ubuntu1_amd64.deb ...
+2026-10-19T15:56:02.5673776Z Unpacking build-essential (12.10ubuntu1) ...
+2026-10-19T15:56:02.5914541Z Selecting previously unselected package libjsoncpp25:amd64.
+2026-10-19T15:56:02.6043837Z Preparing to unpack .../01-libjsoncpp25_1.9.5-6build1_amd64.deb ...
+2026-10-19T15:56:02.6063358Z Unpacking libjsoncpp25:amd64 (1.9.5-6build1) ...
+2026-10-19T15:56:02.6284657Z Selecting previously unselected package librhash0:amd64.
+2026-10-19T15:56:02.6416184Z Preparing to unpack .../02-librhash0_1.4.3-3build1_amd64.deb ...
+2026-10-19T15:56:02.6426785Z Unpacking librhash0:amd64 (1.4.3-3build1) ...
+2026-10-19T15:56:02.6658620Z Selecting previously unselected package cmake-data.
+2026-10-19T15:56:02.6786173Z Preparing to unpack .../03-cmake-data_3.28.3-1build7_all.deb ...
+2026-10-19T15:56:02.6855659Z Unpacking cmake-data (3.28.3-1build7) ...
+2026-10-19T15:56:03.2228148Z Selecting previously unselected package cmake.
+2026-10-19T15:56:03.2373367Z Preparing to unpack .../04-cmake_3.28.3-1build7_amd64.deb ...
+2026-10-19T15:56:03.2382340Z Unpacking cmake (3.28.3-1build7) ...
+2026-10-19T15:56:03.4044662Z Selecting previously unselected package iverilog.
+2026-10-19T15:56:03.4174676Z Preparing to unpack .../05-iverilog_12.0-2build2_amd64.deb ...
+2026-10-19T15:56:03.4184238Z Unpacking iverilog (12.0-2build2) ...
+2026-10-19T15:56:03.4836251Z Selecting previously unselected package libclang-cpp20.
+2026-10-19T15:56:03.4969274Z Preparing to unpack .../06-libclang-cpp20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:03.4978161Z Unpacking libclang-cpp20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:03.7371054Z Selecting previously unselected package libmlir-20:amd64.
+2026-10-19T15:56:03.7502458Z Preparing to unpack .../07-libmlir-20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:03.7511874Z Unpacking libmlir-20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:03.9917369Z Selecting previously unselected package libmlir-20-dev:amd64.
+2026-10-19T15:56:04.0053993Z Preparing to unpack .../08-libmlir-20-dev_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:04.0062450Z Unpacking libmlir-20-dev:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.3240694Z Selecting previously unselected package llvm-20-runtime.
+2026-10-19T15:56:05.3378971Z Preparing to unpack .../09-llvm-20-runtime_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:05.3387161Z Unpacking llvm-20-runtime (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.3677493Z Selecting previously unselected package llvm-20-linker-tools.
+2026-10-19T15:56:05.3808164Z Preparing to unpack .../10-llvm-20-linker-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:05.3817241Z Unpacking llvm-20-linker-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.4198306Z Selecting previously unselected package llvm-20.
+2026-10-19T15:56:05.4330596Z Preparing to unpack .../11-llvm-20_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:05.4339564Z Unpacking llvm-20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.7693508Z Selecting previously unselected package llvm-20-tools.
+2026-10-19T15:56:05.7827450Z Preparing to unpack .../12-llvm-20-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:05.7837042Z Unpacking llvm-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:05.8875160Z Selecting previously unselected package llvm-20-dev.
+2026-10-19T15:56:05.9013183Z Preparing to unpack .../13-llvm-20-dev_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:05.9021759Z Unpacking llvm-20-dev (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:07.3234319Z Selecting previously unselected package mlir-20-tools.
+2026-10-19T15:56:07.3380353Z Preparing to unpack .../14-mlir-20-tools_1%3a20.1.2-0ubuntu1~24.04.3_amd64.deb ...
+2026-10-19T15:56:07.3390239Z Unpacking mlir-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:07.7623244Z Selecting previously unselected package ninja-build.
+2026-10-19T15:56:07.7757262Z Preparing to unpack .../15-ninja-build_1.11.1-2_amd64.deb ...
+2026-10-19T15:56:07.7764614Z Unpacking ninja-build (1.11.1-2) ...
+2026-10-19T15:56:07.7991746Z Selecting previously unselected package yosys-abc.
+2026-10-19T15:56:07.8123472Z Preparing to unpack .../16-yosys-abc_0.33-5build2_amd64.deb ...
+2026-10-19T15:56:07.8131013Z Unpacking yosys-abc (0.33-5build2) ...
+2026-10-19T15:56:07.8888675Z Selecting previously unselected package yosys.
+2026-10-19T15:56:07.9020596Z Preparing to unpack .../17-yosys_0.33-5build2_amd64.deb ...
+2026-10-19T15:56:07.9027786Z Unpacking yosys (0.33-5build2) ...
+2026-10-19T15:56:08.0123616Z Setting up yosys-abc (0.33-5build2) ...
+2026-10-19T15:56:08.0141613Z Setting up llvm-20-runtime (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:08.0170848Z Setting up ninja-build (1.11.1-2) ...
+2026-10-19T15:56:08.0188130Z Setting up llvm-20-linker-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:08.0204621Z Setting up llvm-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:08.0221463Z Setting up iverilog (12.0-2build2) ...
+2026-10-19T15:56:08.0237838Z Setting up libclang-cpp20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:08.0255022Z Setting up llvm-20 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:08.0272617Z Setting up llvm-20-dev (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:08.0288792Z Setting up libjsoncpp25:amd64 (1.9.5-6build1) ...
+2026-10-19T15:56:08.0305295Z Setting up librhash0:amd64 (1.4.3-3build1) ...
+2026-10-19T15:56:08.0323555Z Setting up build-essential (12.10ubuntu1) ...
+2026-10-19T15:56:08.0339928Z Setting up cmake-data (3.28.3-1build7) ...
+2026-10-19T15:56:08.0401143Z Setting up libmlir-20:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:08.0418234Z Setting up libmlir-20-dev:amd64 (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:08.0434228Z Setting up yosys (0.33-5build2) ...
+2026-10-19T15:56:08.1791195Z Setting up mlir-20-tools (1:20.1.2-0ubuntu1~24.04.3) ...
+2026-10-19T15:56:08.1807802Z Setting up cmake (3.28.3-1build7) ...
+2026-10-19T15:56:08.1828677Z Processing triggers for systemd (255.4-1ubuntu8.17) ...
+2026-10-19T15:56:08.2179813Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-10-19T15:56:08.2214284Z Not building database; man-db/auto-update is not 'true'.
+2026-10-19T15:56:08.2226395Z Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
+2026-10-19T15:56:09.0284915Z 
+2026-10-19T15:56:09.0285679Z Running kernel seems to be up-to-date.
+2026-10-19T15:56:09.0286360Z 
+2026-10-19T15:56:09.0286574Z No services need to be restarted.
+2026-10-19T15:56:09.0286902Z 
+2026-10-19T15:56:09.0287040Z No containers need to be restarted.
+2026-10-19T15:56:09.0287288Z 
+2026-10-19T15:56:09.0287475Z No user sessions are running outdated binaries.
+2026-10-19T15:56:09.0287763Z 
+2026-10-19T15:56:09.0288019Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-10-19T15:56:10.0867046Z Icarus Verilog version 12.0 (stable) ()
+2026-10-19T15:56:10.0890880Z GNU Make 4.3
+2026-10-19T15:56:10.0942805Z ##[group]Run make r1-doctor
+2026-10-19T15:56:10.0943117Z [36;1mmake r1-doctor[0m
+2026-10-19T15:56:10.1017480Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:56:10.1017741Z env:
+2026-10-19T15:56:10.1017965Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:56:10.1018227Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:56:10.1018464Z ##[endgroup]
+2026-10-19T15:56:10.6816969Z   host: Linux x86_64 (python 3.12.3)
+2026-10-19T15:56:10.6817703Z     python3    Python 3.12.3
+2026-10-19T15:56:10.6818135Z     iverilog   Icarus Verilog version 12.0 (stable) ()
+2026-10-19T15:56:10.6818755Z     vvp        Icarus Verilog runtime version 12.0 (stable) ()
+2026-10-19T15:56:10.6819424Z     yosys      Yosys 0.33 (git sha1 2584903a060)
+2026-10-19T15:56:10.6819951Z     git        git version 2.55.0
+2026-10-19T15:56:10.6820359Z     make       GNU Make 4.3
+2026-10-19T15:56:10.6820810Z     g++        g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+2026-10-19T15:56:10.6821307Z     cmake      cmake version 3.31.6
+2026-10-19T15:56:10.6821791Z     ninja      1.13.2
+2026-10-19T15:56:10.6822018Z 
+2026-10-19T15:56:10.6822294Z   r1-doctor              PASS   platform matches the lock
+2026-10-19T15:56:10.6822906Z     below the reference runner: 4 vCPU < 8; 84 GiB free < 100
+2026-10-19T15:56:10.6823577Z     R1-09 still requires TWO independent environments; this checks one.
+2026-10-19T15:56:10.6824121Z   lock:
+2026-10-19T15:56:10.6824518Z     yosys: Yosys 0.33 (git sha1 2584903a060) is below the locked 0.52
+2026-10-19T15:56:10.6825247Z     TRITON_PYTHON=/home/runner/src/tritonenv/bin/python does not exist
+2026-10-19T15:56:10.6827091Z     NOT LOCKED: The development platform (macOS arm64) runs a Triton built from source at a different version from the acceptance wheel; the acceptance environment is the one this file pins
+2026-10-19T15:56:10.6829520Z     NOT LOCKED: rtl/gen is re-checked only where XLS can run: `make r1-check-generated` reports it as not re-checked unless R1_XLS=1, and on an acceptance environment that needs tools/xls/fetch_xls.sh to have run
+2026-10-19T15:56:10.6905765Z ##[group]Run make r1-check-generated
+2026-10-19T15:56:10.6906275Z [36;1mmake r1-check-generated[0m
+2026-10-19T15:56:10.6976091Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:56:10.6976342Z env:
+2026-10-19T15:56:10.6976543Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:56:10.6976797Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:56:10.6977031Z ##[endgroup]
+2026-10-19T15:56:10.7378634Z PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+2026-10-19T15:56:10.7643447Z   up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+2026-10-19T15:56:10.7644109Z   up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+2026-10-19T15:56:10.7644583Z   up to date: doc/isa/opcode-map.md
+2026-10-19T15:56:10.7645004Z PASS: all generated ISA files match the schema
+2026-10-19T15:56:10.8428652Z   up to date: doc/support_matrix.md
+2026-10-19T15:56:10.8751622Z PASS: target descriptions match the RTL parameters
+2026-10-19T15:56:10.9065670Z checked 218 shared constants against /home/runner/work/TritonChip/TritonChip/rtl/common/tnca_defs.vh
+2026-10-19T15:56:10.9066859Z PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+2026-10-19T15:56:10.9342607Z spec: 173 required cases, 0 problem(s)
+2026-10-19T15:56:10.9393483Z   r1-check-generated     NOTE   rtl/gen not re-checked  (needs the XLS host; set R1_XLS=1)
+2026-10-19T15:56:10.9432086Z ##[group]Run make r1-inventory
+2026-10-19T15:56:10.9432404Z [36;1mmake r1-inventory[0m
+2026-10-19T15:56:10.9432649Z [36;1mmake r2-inventory[0m
+2026-10-19T15:56:10.9502113Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:56:10.9502368Z env:
+2026-10-19T15:56:10.9502570Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:56:10.9502834Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:56:10.9503087Z ##[endgroup]
+2026-10-19T15:56:10.9854727Z spec: 173 required cases, 0 problem(s)
+2026-10-19T15:56:11.0230610Z spec: 84 semantic case(s) -> 170 execution ID(s) after expanding profile and seed, 0 problem(s)
+2026-10-19T15:56:11.0231276Z     R2-01: 3
+2026-10-19T15:56:11.0231521Z     R2-02: 5
+2026-10-19T15:56:11.0231755Z     R2-03: 5
+2026-10-19T15:56:11.0232011Z     R2-04: 5
+2026-10-19T15:56:11.0232240Z     R2-05: 6
+2026-10-19T15:56:11.0232468Z     R2-06: 6
+2026-10-19T15:56:11.0232695Z     R2-07: 4
+2026-10-19T15:56:11.0232924Z     R2-08: 7
+2026-10-19T15:56:11.0233152Z     R2-09: 7
+2026-10-19T15:56:11.0233444Z     R2-10: 6
+2026-10-19T15:56:11.0233671Z     R2-11: 7
+2026-10-19T15:56:11.0233899Z     R2-12: 4
+2026-10-19T15:56:11.0234127Z     R2-13: 14
+2026-10-19T15:56:11.0234359Z     R2-14: 5
+2026-10-19T15:56:11.0306209Z ##[group]Run make lint
+2026-10-19T15:56:11.0306496Z [36;1mmake lint[0m
+2026-10-19T15:56:11.0375887Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:56:11.0376150Z env:
+2026-10-19T15:56:11.0376353Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:56:11.0376638Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:56:11.0396124Z ##[endgroup]
+2026-10-19T15:56:26.4042675Z lint: all 68 files elaborate
+2026-10-19T15:56:26.4083426Z ##[group]Run make r40-grid-dispatch
+2026-10-19T15:56:26.4083754Z [36;1mmake r40-grid-dispatch[0m
+2026-10-19T15:56:26.4084024Z [36;1mmake r40-coherent-host[0m
+2026-10-19T15:56:26.4084268Z [36;1mmake r40-multicore-shell[0m
+2026-10-19T15:56:26.4152181Z shell: /usr/bin/bash -e {0}
+2026-10-19T15:56:26.4152426Z env:
+2026-10-19T15:56:26.4152629Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T15:56:26.4152883Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T15:56:26.4153119Z ##[endgroup]
+2026-10-19T15:56:26.5373200Z R40 MEMORY ARBITER PASS N=1
+2026-10-19T15:56:26.5373681Z tb/tb_mem_arbiter_r40.v:45: $finish called at 101000 (1ps)
+2026-10-19T15:56:26.5524257Z R40 MEMORY ARBITER PASS N=2
+2026-10-19T15:56:26.5524846Z tb/tb_mem_arbiter_r40.v:45: $finish called at 121000 (1ps)
+2026-10-19T15:56:26.5676031Z R40 MEMORY ARBITER PASS N=3
+2026-10-19T15:56:26.5676618Z tb/tb_mem_arbiter_r40.v:45: $finish called at 141000 (1ps)
+2026-10-19T15:56:26.5828254Z R40 MEMORY ARBITER PASS N=4
+2026-10-19T15:56:26.5828822Z tb/tb_mem_arbiter_r40.v:45: $finish called at 160000 (1ps)
+2026-10-19T15:56:26.5987021Z R40 MEMORY ARBITER PASS N=8
+2026-10-19T15:56:26.5987938Z tb/tb_mem_arbiter_r40.v:45: $finish called at 240000 (1ps)
+2026-10-19T15:56:28.7579591Z PASS N=1 invalid grid refused
+2026-10-19T15:56:28.7580087Z PASS N=1 invalid grid refused
+2026-10-19T15:56:28.7580503Z PASS N=1 invalid grid refused
+2026-10-19T15:56:28.7580971Z PASS N=1 grid=1x1x1 issued=1 fault=-1
+2026-10-19T15:56:28.7581497Z PASS N=1 grid=19x1x1 issued=19 fault=-1
+2026-10-19T15:56:28.7581978Z PASS N=1 grid=13x7x5 issued=455 fault=-1
+2026-10-19T15:56:28.7582462Z PASS N=1 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T15:56:28.7582950Z PASS N=1 grid=0x3x2 issued=0 fault=-1
+2026-10-19T15:56:28.7583397Z PASS N=1 grid=101x3x2 issued=1 fault=0
+2026-10-19T15:56:28.7583772Z PASS N=1 grid=47x2x1 issued=94 fault=-1
+2026-10-19T15:56:28.7584053Z PASS N=1 grid=101x3x2 issued=1 fault=-2
+2026-10-19T15:56:28.7584321Z PASS N=1 grid=23x2x1 issued=46 fault=-1
+2026-10-19T15:56:28.7584615Z PASS N=1 grid=5x2x3 issued=30 fault=-1
+2026-10-19T15:56:28.7584900Z PASS N=1 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T15:56:28.7585193Z PASS N=1 grid=17x3x2 issued=102 fault=-1
+2026-10-19T15:56:28.7587279Z PASS N=1 grid=1x1x1 issued=1 fault=-1
+2026-10-19T15:56:28.7587558Z GRID DISPATCH PASS
+2026-10-19T15:56:28.7587844Z tb/tb_grid_dispatch.v:124: $finish called at 1552680000 (1ps)
+2026-10-19T15:56:30.6163352Z PASS N=2 invalid grid refused
+2026-10-19T15:56:30.6164119Z PASS N=2 invalid grid refused
+2026-10-19T15:56:30.6164598Z PASS N=2 invalid grid refused
+2026-10-19T15:56:30.6165028Z PASS N=2 grid=1x1x1 issued=1 fault=-1
+2026-10-19T15:56:30.6165878Z PASS N=2 grid=19x1x1 issued=19 fault=-1
+2026-10-19T15:56:30.6166388Z PASS N=2 grid=13x7x5 issued=455 fault=-1
+2026-10-19T15:56:30.6166851Z PASS N=2 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T15:56:30.6167316Z PASS N=2 grid=0x3x2 issued=0 fault=-1
+2026-10-19T15:56:30.6167753Z PASS N=2 grid=101x3x2 issued=2 fault=0
+2026-10-19T15:56:30.6168218Z PASS N=2 grid=101x3x2 issued=2 fault=1
+2026-10-19T15:56:30.6168651Z PASS N=2 grid=47x2x1 issued=94 fault=-1
+2026-10-19T15:56:30.6169089Z PASS N=2 grid=101x3x2 issued=2 fault=-2
+2026-10-19T15:56:30.6169539Z PASS N=2 grid=23x2x1 issued=46 fault=-1
+2026-10-19T15:56:30.6169976Z PASS N=2 grid=5x2x3 issued=30 fault=-1
+2026-10-19T15:56:30.6170413Z PASS N=2 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T15:56:30.6170868Z PASS N=2 grid=17x3x2 issued=102 fault=-1
+2026-10-19T15:56:30.6171310Z PASS N=2 grid=1x1x1 issued=1 fault=-1
+2026-10-19T15:56:30.6171728Z GRID DISPATCH PASS
+2026-10-19T15:56:30.6172178Z tb/tb_grid_dispatch.v:124: $finish called at 773660000 (1ps)
+2026-10-19T15:56:32.4073793Z PASS N=3 invalid grid refused
+2026-10-19T15:56:32.4074285Z PASS N=3 invalid grid refused
+2026-10-19T15:56:32.4074699Z PASS N=3 invalid grid refused
+2026-10-19T15:56:32.4075112Z PASS N=3 grid=1x1x1 issued=1 fault=-1
+2026-10-19T15:56:32.4076013Z PASS N=3 grid=19x1x1 issued=19 fault=-1
+2026-10-19T15:56:32.4076998Z PASS N=3 grid=13x7x5 issued=455 fault=-1
+2026-10-19T15:56:32.4077496Z PASS N=3 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T15:56:32.4077967Z PASS N=3 grid=0x3x2 issued=0 fault=-1
+2026-10-19T15:56:32.4078380Z PASS N=3 grid=101x3x2 issued=3 fault=0
+2026-10-19T15:56:32.4078693Z PASS N=3 grid=101x3x2 issued=3 fault=1
+2026-10-19T15:56:32.4078950Z PASS N=3 grid=101x3x2 issued=3 fault=2
+2026-10-19T15:56:32.4079213Z PASS N=3 grid=47x2x1 issued=94 fault=-1
+2026-10-19T15:56:32.4079495Z PASS N=3 grid=101x3x2 issued=3 fault=-2
+2026-10-19T15:56:32.4079758Z PASS N=3 grid=23x2x1 issued=46 fault=-1
+2026-10-19T15:56:32.4080018Z PASS N=3 grid=5x2x3 issued=30 fault=-1
+2026-10-19T15:56:32.4080283Z PASS N=3 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T15:56:32.4080568Z PASS N=3 grid=17x3x2 issued=102 fault=-1
+2026-10-19T15:56:32.4080844Z PASS N=3 grid=1x1x1 issued=1 fault=-1
+2026-10-19T15:56:32.4081099Z GRID DISPATCH PASS
+2026-10-19T15:56:32.4081384Z tb/tb_grid_dispatch.v:124: $finish called at 515350000 (1ps)
+2026-10-19T15:56:34.2981041Z PASS N=4 invalid grid refused
+2026-10-19T15:56:34.2981544Z PASS N=4 invalid grid refused
+2026-10-19T15:56:34.2981957Z PASS N=4 invalid grid refused
+2026-10-19T15:56:34.2982937Z PASS N=4 grid=1x1x1 issued=1 fault=-1
+2026-10-19T15:56:34.2983413Z PASS N=4 grid=19x1x1 issued=19 fault=-1
+2026-10-19T15:56:34.2983894Z PASS N=4 grid=13x7x5 issued=455 fault=-1
+2026-10-19T15:56:34.2984369Z PASS N=4 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T15:56:34.2984821Z PASS N=4 grid=0x3x2 issued=0 fault=-1
+2026-10-19T15:56:34.2985120Z PASS N=4 grid=101x3x2 issued=2 fault=0
+2026-10-19T15:56:34.2985755Z PASS N=4 grid=101x3x2 issued=3 fault=1
+2026-10-19T15:56:34.2986181Z PASS N=4 grid=101x3x2 issued=4 fault=2
+2026-10-19T15:56:34.2986444Z PASS N=4 grid=101x3x2 issued=4 fault=3
+2026-10-19T15:56:34.2986705Z PASS N=4 grid=47x2x1 issued=94 fault=-1
+2026-10-19T15:56:34.2986972Z PASS N=4 grid=101x3x2 issued=4 fault=-2
+2026-10-19T15:56:34.2987233Z PASS N=4 grid=23x2x1 issued=46 fault=-1
+2026-10-19T15:56:34.2987507Z PASS N=4 grid=5x2x3 issued=30 fault=-1
+2026-10-19T15:56:34.2987791Z PASS N=4 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T15:56:34.2988073Z PASS N=4 grid=17x3x2 issued=102 fault=-1
+2026-10-19T15:56:34.2988348Z PASS N=4 grid=1x1x1 issued=1 fault=-1
+2026-10-19T15:56:34.2988602Z GRID DISPATCH PASS
+2026-10-19T15:56:34.2988882Z tb/tb_grid_dispatch.v:124: $finish called at 406520000 (1ps)
+2026-10-19T15:56:36.2502696Z PASS N=8 invalid grid refused
+2026-10-19T15:56:36.2503174Z PASS N=8 invalid grid refused
+2026-10-19T15:56:36.2503586Z PASS N=8 invalid grid refused
+2026-10-19T15:56:36.2504001Z PASS N=8 grid=1x1x1 issued=1 fault=-1
+2026-10-19T15:56:36.2504475Z PASS N=8 grid=19x1x1 issued=19 fault=-1
+2026-10-19T15:56:36.2504950Z PASS N=8 grid=13x7x5 issued=455 fault=-1
+2026-10-19T15:56:36.2505754Z PASS N=8 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T15:56:36.2506304Z PASS N=8 grid=0x3x2 issued=0 fault=-1
+2026-10-19T15:56:36.2506737Z PASS N=8 grid=101x3x2 issued=3 fault=0
+2026-10-19T15:56:36.2507121Z PASS N=8 grid=101x3x2 issued=5 fault=1
+2026-10-19T15:56:36.2507420Z PASS N=8 grid=101x3x2 issued=7 fault=2
+2026-10-19T15:56:36.2507698Z PASS N=8 grid=101x3x2 issued=8 fault=3
+2026-10-19T15:56:36.2507980Z PASS N=8 grid=101x3x2 issued=9 fault=4
+2026-10-19T15:56:36.2508237Z PASS N=8 grid=101x3x2 issued=9 fault=5
+2026-10-19T15:56:36.2508495Z PASS N=8 grid=101x3x2 issued=10 fault=6
+2026-10-19T15:56:36.2508755Z PASS N=8 grid=101x3x2 issued=11 fault=7
+2026-10-19T15:56:36.2509033Z PASS N=8 grid=47x2x1 issued=94 fault=-1
+2026-10-19T15:56:36.2509299Z PASS N=8 grid=101x3x2 issued=8 fault=-2
+2026-10-19T15:56:36.2509564Z PASS N=8 grid=23x2x1 issued=46 fault=-1
+2026-10-19T15:56:36.2509826Z PASS N=8 grid=5x2x3 issued=30 fault=-1
+2026-10-19T15:56:36.2510092Z PASS N=8 grid=6145x1x1 issued=6145 fault=-1
+2026-10-19T15:56:36.2510373Z PASS N=8 grid=17x3x2 issued=102 fault=-1
+2026-10-19T15:56:36.2510644Z PASS N=8 grid=1x1x1 issued=1 fault=-1
+2026-10-19T15:56:36.2510917Z GRID DISPATCH PASS
+2026-10-19T15:56:36.2511209Z tb/tb_grid_dispatch.v:124: $finish called at 212600000 (1ps)
+2026-10-19T15:56:39.5714536Z GRID REAL CORES PASS N=1 memory=0 ports=1 phase=0 programs=455 cycles=3646
+2026-10-19T15:56:39.5715224Z tb/top/tb_grid_cores.v:175: $finish called at 36470000 (1ps)
+2026-10-19T15:56:44.9399531Z GRID REAL CORES PASS N=2 memory=0 ports=1 phase=0 programs=455 cycles=1830
+2026-10-19T15:56:44.9400318Z tb/top/tb_grid_cores.v:175: $finish called at 18310000 (1ps)
+2026-10-19T15:56:52.4179907Z GRID REAL CORES PASS N=3 memory=0 ports=1 phase=0 programs=455 cycles=1223
+2026-10-19T15:56:52.4180707Z tb/top/tb_grid_cores.v:175: $finish called at 12240000 (1ps)
+2026-10-19T15:57:02.2744730Z GRID REAL CORES PASS N=4 memory=0 ports=1 phase=0 programs=455 cycles=920
+2026-10-19T15:57:02.2746179Z tb/top/tb_grid_cores.v:175: $finish called at 9210000 (1ps)
+2026-10-19T15:57:21.9041989Z GRID REAL CORES PASS N=8 memory=0 ports=1 phase=0 programs=455 cycles=468
+2026-10-19T15:57:21.9042737Z tb/top/tb_grid_cores.v:175: $finish called at 4690000 (1ps)
+2026-10-19T15:58:30.0514795Z GRID REAL CORES PASS N=1 memory=1 ports=1 phase=0 programs=455 cycles=42700
+2026-10-19T15:58:30.0515891Z GRID REAL CORES PASS N=1 memory=1 ports=1 phase=1 programs=455 cycles=78849
+2026-10-19T15:58:30.0517316Z tb/top/tb_grid_cores.v:175: $finish called at 788500000 (1ps)
+2026-10-19T15:59:45.3221984Z GRID REAL CORES PASS N=2 memory=1 ports=1 phase=0 programs=455 cycles=22569
+2026-10-19T15:59:45.3222979Z GRID REAL CORES PASS N=2 memory=1 ports=1 phase=1 programs=455 cycles=41478
+2026-10-19T15:59:45.3223954Z tb/top/tb_grid_cores.v:175: $finish called at 414790000 (1ps)
+2026-10-19T16:01:19.0651891Z GRID REAL CORES PASS N=3 memory=1 ports=1 phase=0 programs=455 cycles=14911
+2026-10-19T16:01:19.0654178Z GRID REAL CORES PASS N=3 memory=1 ports=1 phase=1 programs=455 cycles=27371
+2026-10-19T16:01:19.0655290Z tb/top/tb_grid_cores.v:175: $finish called at 273720000 (1ps)
+2026-10-19T16:03:25.9810243Z GRID REAL CORES PASS N=4 memory=1 ports=1 phase=0 programs=455 cycles=12162
+2026-10-19T16:03:25.9813276Z GRID REAL CORES PASS N=4 memory=1 ports=1 phase=1 programs=455 cycles=22396
+2026-10-19T16:03:25.9814358Z tb/top/tb_grid_cores.v:175: $finish called at 223970000 (1ps)
+2026-10-19T16:04:09.3160125Z GRID progress cycles=1000 accepted=72 busy=ff
+2026-10-19T16:04:36.0668100Z GRID progress cycles=2000 accepted=136 busy=ff
+2026-10-19T16:05:02.1730786Z GRID progress cycles=3000 accepted=200 busy=ff
+2026-10-19T16:05:28.3414489Z GRID progress cycles=4000 accepted=264 busy=ff
+2026-10-19T16:05:54.4973745Z GRID progress cycles=5000 accepted=328 busy=ff
+2026-10-19T16:06:20.7596098Z GRID progress cycles=6000 accepted=392 busy=ff
+2026-10-19T16:06:47.1984053Z GRID progress cycles=7000 accepted=455 busy=da
+2026-10-19T16:07:04.7946838Z GRID REAL CORES PASS N=8 memory=1 ports=1 phase=0 programs=455 cycles=7014
+2026-10-19T16:07:04.7947554Z GRID progress cycles=8000 accepted=80 busy=ff
+2026-10-19T16:07:24.2534401Z GRID progress cycles=9000 accepted=160 busy=ff
+2026-10-19T16:07:42.7787120Z GRID progress cycles=10000 accepted=240 busy=ff
+2026-10-19T16:07:59.9327696Z GRID progress cycles=11000 accepted=320 busy=ff
+2026-10-19T16:08:17.5206343Z GRID progress cycles=12000 accepted=400 busy=ff
+2026-10-19T16:08:30.6724365Z GRID REAL CORES PASS N=8 memory=1 ports=1 phase=1 programs=455 cycles=12761
+2026-10-19T16:08:30.6725126Z tb/top/tb_grid_cores.v:175: $finish called at 127620000 (1ps)
+2026-10-19T16:08:30.7707040Z r40-grid-dispatch-tests PASS (20 configurations, registered_ranges=0)
+2026-10-19T16:08:30.8250982Z IDLE HOST MUX PASS
+2026-10-19T16:08:30.8251464Z tb/tb_idle_host_mux.v:35: $finish called at 141000 (1ps)
+2026-10-19T16:10:11.0150230Z GRID REAL CORES PASS N=3 memory=1 ports=1 phase=0 programs=455 cycles=14911
+2026-10-19T16:10:11.0151106Z GRID REAL CORES PASS N=3 memory=1 ports=1 phase=1 programs=455 cycles=27371
+2026-10-19T16:10:11.0151813Z GRID COHERENT HOST PASS N=3 downloads=457 uploads=2
+2026-10-19T16:10:11.0152428Z tb/top/tb_grid_cores.v:175: $finish called at 335040000 (1ps)
+2026-10-19T16:10:11.0705309Z r40-coherent-host-tests PASS
+2026-10-19T16:10:11.0959668Z GRID DEADLINE PASS
+2026-10-19T16:10:11.0960000Z tb/tb_grid_deadline.v:21: $finish called at 360000 (1ps)
+2026-10-19T16:11:46.6581073Z MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+2026-10-19T16:11:46.6581831Z MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+2026-10-19T16:11:46.6582411Z MULTICORE SHELL GRID PASS N=1 id=13 status=2 cycles=1663
+2026-10-19T16:11:46.6583088Z MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=39158
+2026-10-19T16:11:46.6583708Z MULTICORE SHELL GRID PASS N=1 id=12 status=0 cycles=74422
+2026-10-19T16:11:46.6584282Z MULTICORE PERSISTENT SHELL PASS N=1
+2026-10-19T16:11:46.6584884Z tb/device/tb_multicore_shell.v:83: $finish called at 796070000 (1ps)
+2026-10-19T16:13:59.8720914Z MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+2026-10-19T16:13:59.8721587Z MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+2026-10-19T16:13:59.8722194Z MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1673
+2026-10-19T16:13:59.8722819Z MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=14663
+2026-10-19T16:13:59.8723468Z MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=26806
+2026-10-19T16:13:59.8723988Z MULTICORE PERSISTENT SHELL PASS N=3
+2026-10-19T16:13:59.8725010Z tb/device/tb_multicore_shell.v:83: $finish called at 328750000 (1ps)
+2026-10-19T16:21:20.7975333Z MULTICORE SHELL GRID PASS N=8 id=9 status=3 cycles=1552
+2026-10-19T16:21:20.7976465Z MULTICORE SHELL GRID PASS N=8 id=10 status=3 cycles=1560
+2026-10-19T16:21:20.7977175Z MULTICORE SHELL GRID PASS N=8 id=13 status=2 cycles=1705
+2026-10-19T16:21:20.7977870Z MULTICORE SHELL GRID PASS N=8 id=11 status=0 cycles=7734
+2026-10-19T16:21:20.7978570Z MULTICORE SHELL GRID PASS N=8 id=12 status=0 cycles=13365
+2026-10-19T16:21:20.7979202Z MULTICORE PERSISTENT SHELL PASS N=8
+2026-10-19T16:21:20.7979652Z tb/device/tb_multicore_shell.v:83: $finish called at 203670000 (1ps)
+2026-10-19T16:21:20.8773226Z r40-multicore-shell-tests PASS
+2026-10-19T16:21:20.8880982Z ##[group]Run for ports in 3 8; do
+2026-10-19T16:21:20.8881356Z [36;1mfor ports in 3 8; do[0m
+2026-10-19T16:21:20.8881728Z [36;1m  iverilog -g2012 -I rtl/common -s tb_tmu_registered_ranges \[0m
+2026-10-19T16:21:20.8882333Z [36;1m    -Ptb_tmu_registered_ranges.PORTS=$ports \[0m
+2026-10-19T16:21:20.8882702Z [36;1m    -o /tmp/r40-tmu-ranges-$ports.vvp \[0m
+2026-10-19T16:21:20.8883229Z [36;1m    tb/nuca/tb_tmu_registered_ranges.v rtl/nuca/tnca_tmu.v[0m
+2026-10-19T16:21:20.8883626Z [36;1m  vvp /tmp/r40-tmu-ranges-$ports.vvp[0m
+2026-10-19T16:21:20.8883902Z [36;1mdone[0m
+2026-10-19T16:21:20.8884724Z [36;1mmake nuca-dco IVFLAGS='-g2012 -I rtl/common -Ptb_nuca_slice.DCO_REGISTERED_RANGES=1'[0m
+2026-10-19T16:21:20.8885329Z [36;1m# Exercise the staged owner with metadata changing at E_LOOK edges.[0m
+2026-10-19T16:21:20.8886236Z [36;1mmake nuca-dco DCO_POLICIES='2 74' DCO_SEEDS='1 7' \[0m
+2026-10-19T16:21:20.8887294Z [36;1m  IVFLAGS='-g2012 -I rtl/common -Ptb_nuca_slice.DCO_REGISTERED_RANGES=1 -Ptb_nuca_slice.REGISTER_VICTIM_OWNER=1 -Ptb_nuca_slice.EPOCH_CHURN=1'[0m
+2026-10-19T16:21:20.8954608Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:21:20.8954854Z env:
+2026-10-19T16:21:20.8955056Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:21:20.8955326Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:21:20.8955800Z ##[endgroup]
+2026-10-19T16:21:20.9716221Z TMU REGISTERED RANGES PASS ports=3 requester_width=5 commits=42 invariant_checks=899
+2026-10-19T16:21:20.9716944Z tb/nuca/tb_tmu_registered_ranges.v:177: $finish called at 1850000 (1ps)
+2026-10-19T16:21:21.0569634Z TMU REGISTERED RANGES PASS ports=8 requester_width=5 commits=42 invariant_checks=899
+2026-10-19T16:21:21.0570380Z tb/nuca/tb_tmu_registered_ranges.v:177: $finish called at 1850000 (1ps)
+2026-10-19T16:21:23.3484374Z   DCO-NUCA-policy1-seed1 PASS   
+2026-10-19T16:21:23.3499603Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:21:23.3500038Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:21:23.3500491Z       hit=1036 miss=948 merge=16 wb=232 mshr_full=523 target_full=1 hit_past_block=383
+2026-10-19T16:21:25.6199450Z   DCO-NUCA-policy1-seed7 PASS   
+2026-10-19T16:21:25.6217038Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:21:25.6217642Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:21:25.6218088Z       hit=1015 miss=968 merge=17 wb=232 mshr_full=572 target_full=2 hit_past_block=397
+2026-10-19T16:21:27.9123697Z   DCO-NUCA-policy2-seed1 PASS   
+2026-10-19T16:21:27.9140180Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:21:27.9140802Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:21:27.9141498Z       hit=1013 miss=964 merge=23 wb=235 mshr_full=536 target_full=1 hit_past_block=408
+2026-10-19T16:21:30.2700153Z   DCO-NUCA-policy2-seed7 PASS   
+2026-10-19T16:21:30.2715117Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:21:30.2716013Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:21:30.2716591Z       hit=963 miss=999 merge=38 wb=247 mshr_full=640 target_full=2 hit_past_block=469
+2026-10-19T16:21:32.5913891Z   DCO-NUCA-policy46-seed1 PASS   
+2026-10-19T16:21:32.5929357Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:21:32.5930100Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:21:32.5930533Z       hit=1010 miss=966 merge=24 wb=226 mshr_full=602 target_full=2 hit_past_block=472
+2026-10-19T16:21:34.8940050Z   DCO-NUCA-policy46-seed7 PASS   
+2026-10-19T16:21:34.8954888Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:21:34.8955984Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:21:34.8956980Z       hit=974 miss=989 merge=37 wb=231 mshr_full=645 target_full=2 hit_past_block=489
+2026-10-19T16:21:37.1921673Z   DCO-NUCA-policy62-seed1 PASS   
+2026-10-19T16:21:37.1937607Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:21:37.1938249Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:21:37.1939694Z       hit=1013 miss=964 merge=23 wb=226 mshr_full=578 target_full=1 hit_past_block=448
+2026-10-19T16:21:39.4882154Z   DCO-NUCA-policy62-seed7 PASS   
+2026-10-19T16:21:39.4898840Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:21:39.4899511Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:21:39.4899972Z       hit=981 miss=986 merge=33 wb=231 mshr_full=608 target_full=2 hit_past_block=459
+2026-10-19T16:21:42.3805056Z   DCO-NUCA-policy74-seed1 PASS   
+2026-10-19T16:21:42.3819751Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:21:42.3820383Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:21:42.3820997Z       hit=315 miss=1437 merge=248 wb=229 mshr_full=1142 target_full=10 hit_past_block=787
+2026-10-19T16:21:45.1581622Z   DCO-NUCA-policy74-seed7 PASS   
+2026-10-19T16:21:45.1598603Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:21:45.1599251Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:21:45.1599848Z       hit=445 miss=1357 merge=198 wb=241 mshr_full=1007 target_full=5 hit_past_block=680
+2026-10-19T16:21:47.5393648Z   DCO-NUCA-policy2-seed1 PASS   
+2026-10-19T16:21:47.5408998Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:21:47.5409467Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:21:47.5409907Z       hit=1012 miss=968 merge=20 wb=235 mshr_full=462 target_full=0 hit_past_block=301
+2026-10-19T16:21:49.9442050Z   DCO-NUCA-policy2-seed7 PASS   
+2026-10-19T16:21:49.9460693Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:21:49.9461142Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:21:49.9461574Z       hit=963 miss=999 merge=38 wb=247 mshr_full=501 target_full=0 hit_past_block=324
+2026-10-19T16:21:52.9601075Z   DCO-NUCA-policy74-seed1 PASS   
+2026-10-19T16:21:52.9619925Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:21:52.9620318Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:21:52.9620789Z       hit=315 miss=1464 merge=221 wb=229 mshr_full=979 target_full=0 hit_past_block=639
+2026-10-19T16:21:55.7670628Z   DCO-NUCA-policy74-seed7 PASS   
+2026-10-19T16:21:55.7686019Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:21:55.7686914Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:21:55.7687896Z       hit=447 miss=1359 merge=194 wb=241 mshr_full=800 target_full=1 hit_past_block=471
+2026-10-19T16:21:55.7730328Z ##[group]Run python3 tools/r40/memory_control_tests.py --out /tmp/r40-memory-controls
+2026-10-19T16:21:55.7730941Z [36;1mpython3 tools/r40/memory_control_tests.py --out /tmp/r40-memory-controls[0m
+2026-10-19T16:21:55.7797937Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:21:55.7798183Z env:
+2026-10-19T16:21:55.7798382Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:21:55.7798642Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:21:55.7798872Z ##[endgroup]
+2026-10-19T16:21:55.8507098Z memory_mode_build: PASS
+2026-10-19T16:21:55.9215748Z memory_mode: PASS
+2026-10-19T16:21:55.9443774Z mmio_0_build: PASS
+2026-10-19T16:21:55.9589126Z mmio_0: PASS
+2026-10-19T16:21:55.9820212Z mmio_1_build: PASS
+2026-10-19T16:21:55.9968649Z mmio_1: PASS
+2026-10-19T16:21:56.0197416Z line_limit1_stages0_build: PASS
+2026-10-19T16:21:56.2416788Z line_limit1_stages0: PASS
+2026-10-19T16:21:56.2646865Z line_limit1_stages2_build: PASS
+2026-10-19T16:21:56.5870849Z line_limit1_stages2: PASS
+2026-10-19T16:21:56.6102011Z line_limit8_stages0_build: PASS
+2026-10-19T16:21:56.6819999Z line_limit8_stages0: PASS
+2026-10-19T16:21:56.7051616Z line_limit8_stages2_build: PASS
+2026-10-19T16:21:56.8770340Z line_limit8_stages2: PASS
+2026-10-19T16:21:57.1494260Z host: PASS
+2026-10-19T16:21:57.2714638Z legacy_options: PASS
+2026-10-19T16:21:57.2719628Z RUNTIME MEMORY CONTROLS FUNCTIONAL PASS; board performance not-measured
+2026-10-19T16:21:57.2821662Z ##[group]Run make unit
+2026-10-19T16:21:57.2821925Z [36;1mmake unit[0m
+2026-10-19T16:21:57.2888827Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:21:57.2889089Z env:
+2026-10-19T16:21:57.2889298Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:21:57.2889565Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:21:57.2889813Z ##[endgroup]
+2026-10-19T16:21:57.3046208Z iverilog -g2005 -I rtl/common -o sim/build/tb_fp32_fma.vvp tb/core/tb_fp32_fma.v rtl/core/tnca_fp32_fma.v rtl/gen/tnca_fma_xls.v rtl/gen/tnca_fma_l3_xls.v rtl/common/tnca_elastic_link.v rtl/common/tnca_fifo.v rtl/common/tnca_line_link.v rtl/common/tnca_lzc.v rtl/common/tnca_popc.v
+2026-10-19T16:21:57.3470704Z iverilog -g2005 -I rtl/common -P tb_fp32_fma.FMA_LAT=3 -o sim/build/tb_fp32_fma_l3.vvp tb/core/tb_fp32_fma.v rtl/core/tnca_fp32_fma.v rtl/gen/tnca_fma_xls.v rtl/gen/tnca_fma_l3_xls.v rtl/common/tnca_elastic_link.v rtl/common/tnca_fifo.v rtl/common/tnca_line_link.v rtl/common/tnca_lzc.v rtl/common/tnca_popc.v
+2026-10-19T16:21:57.3889786Z python3 tools/model/gen_fma_vectors.py -o sim/build/fma_vectors.txt -n 20000
+2026-10-19T16:21:58.4626935Z 41240 vectors -> sim/build/fma_vectors.txt
+2026-10-19T16:21:58.4685091Z iverilog -g2005 -I rtl/common -o sim/build/tb_decoder.vvp tb/core/tb_decoder.v rtl/core/tnca_decoder.v
+2026-10-19T16:21:58.4861294Z python3 tools/model/gen_decoder_vectors.py -o sim/build/dec_vectors.txt
+2026-10-19T16:21:58.5339976Z 773 vectors -> sim/build/dec_vectors.txt
+2026-10-19T16:21:58.5396018Z iverilog -g2005 -I rtl/common -o sim/build/tb_bitops.vvp tb/core/tb_bitops.v rtl/common/tnca_elastic_link.v rtl/common/tnca_fifo.v rtl/common/tnca_line_link.v rtl/common/tnca_lzc.v rtl/common/tnca_popc.v
+2026-10-19T16:21:58.6108033Z iverilog -g2005 -I rtl/common -o sim/build/tb_mul64.vvp tb/core/tb_mul64.v rtl/core/tnca_mul64.v
+2026-10-19T16:21:58.6188754Z python3 tb/core/progs/gen_t03_fp.py
+2026-10-19T16:21:58.6476598Z 330 lines, 193 checks -> /home/runner/work/TritonChip/TritonChip/tb/core/progs/t03_fp.s
+2026-10-19T16:21:58.6518643Z python3 tb/core/progs/gen_t11_matrix.py
+2026-10-19T16:21:59.7226331Z 71 checks -> /home/runner/work/TritonChip/TritonChip/tb/core/progs/t11_matrix.s
+2026-10-19T16:21:59.7275157Z python3 tb/core/progs/gen_t12_tensor.py
+2026-10-19T16:21:59.9742846Z 17 checks -> /home/runner/work/TritonChip/TritonChip/tb/core/progs/t12_tensor.s
+2026-10-19T16:21:59.9795192Z iverilog -g2005 -o sim/build/tb_cvt_xls.vvp tb/xls/tb_cvt_xls.v rtl/gen/tnca_cvt_xls.v rtl/gen/tnca_cvt_comb_xls.v
+2026-10-19T16:22:00.0065481Z python3 tools/model/gen_cvt_vectors.py -o sim/build/cvt_xls_vectors.txt
+2026-10-19T16:22:15.1226250Z 866495 vectors -> sim/build/cvt_xls_vectors.txt (657920 exhaustive, 208575 from binary32)
+2026-10-19T16:22:15.1296717Z iverilog -g2005 -o sim/build/tb_sfu_xls.vvp tb/xls/tb_sfu_xls.v rtl/gen/tnca_sfu_exp2_xls.v rtl/gen/tnca_sfu_log2_xls.v rtl/gen/tnca_sfu_rcp_xls.v rtl/gen/tnca_sfu_rsqrt_xls.v
+2026-10-19T16:22:15.1829066Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -o sim/build/tb_sfu_core.vvp tb/core/tb_sfu_core.v
+2026-10-19T16:22:15.2463228Z python3 tools/model/gen_sfu_vectors.py -o sim/build/sfu_vectors.txt -n 6000
+2026-10-19T16:22:16.5356438Z 16740 vectors -> sim/build/sfu_vectors.txt (6000 inputs x 4 ops, plus 48 sec 8.8 specials)
+2026-10-19T16:22:16.5415278Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen \
+2026-10-19T16:22:16.5416376Z    -o sim/build/tb_fpu_multi.vvp tb/xls/tb_fpu_multi.v
+2026-10-19T16:22:16.5710526Z python3 tools/model/gen_fpu_multi_vectors.py -o sim/build/fpu_multi_vectors.txt -n 1500
+2026-10-19T16:22:16.8278441Z 5012 vectors -> sim/build/fpu_multi_vectors.txt (5 formats; FP8 exhaustive in a)
+2026-10-19T16:22:43.9303594Z   bitops                 PASS   tb_bitops: 60471 checks, 0 failures
+2026-10-19T16:22:45.7419689Z   mul64                  PASS   tb_mul64: 60000 checks, 0 failures
+2026-10-19T16:22:53.5456671Z   fp32_fma               PASS   tb_fp32_fma: 41240 vectors, 0 failures
+2026-10-19T16:23:01.4931456Z   fp32_fma (latency 3)   PASS   tb_fp32_fma: 41240 vectors, 0 failures
+2026-10-19T16:23:01.5312996Z   decoder                PASS   tb_decoder: 773 vectors, 0 failures
+2026-10-19T16:23:46.0046122Z   cvt_xls                PASS   tb_cvt_xls: 866495 vectors x 2 instances (pipelined, unpipelined), 0 failures
+2026-10-19T16:23:47.8145749Z   sfu_xls                PASS   tb_sfu_xls: 16740 vectors within 2^-22 (exp2=3462 log2=3633 rcp=6011 rsqrt=3634), 431 exact, 0 outside
+2026-10-19T16:23:50.4541193Z   sfu_core               PASS   tb_sfu_core: 1042 batches of 16 lanes (16672 vectors), 0 failures
+2026-10-19T16:23:51.8622052Z   fpu_multi              PASS   tb_fpu_multi: 5012 vectors, 0 failures
+2026-10-19T16:23:55.6919056Z   asm round-trip        PASS   43083 instructions, 50 programs, 0 mismatches
+2026-10-19T16:23:55.7031743Z ##[group]Run make fma-deep
+2026-10-19T16:23:55.7032265Z [36;1mmake fma-deep[0m
+2026-10-19T16:23:55.7130736Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:23:55.7131228Z env:
+2026-10-19T16:23:55.7131590Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:23:55.7132056Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:23:55.7132479Z ##[endgroup]
+2026-10-19T16:23:55.7330744Z python3 tools/model/gen_fma_vectors.py -o sim/build/fma_deep.txt \
+2026-10-19T16:23:55.7331212Z    -n 400000 --seed 424242
+2026-10-19T16:24:12.1380012Z 516240 vectors -> sim/build/fma_deep.txt
+2026-10-19T16:26:04.3853185Z   fp32_fma (deep)        PASS   tb_fp32_fma: 516240 vectors, 0 failures
+2026-10-19T16:27:57.9282672Z   fp32_fma (deep, latency 3) PASS   tb_fp32_fma: 516240 vectors, 0 failures
+2026-10-19T16:27:57.9343326Z ##[group]Run make core
+2026-10-19T16:27:57.9343600Z [36;1mmake core[0m
+2026-10-19T16:27:57.9343818Z [36;1mmake core-slowmem[0m
+2026-10-19T16:27:57.9344055Z [36;1mmake core-ooo[0m
+2026-10-19T16:27:57.9412154Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:27:57.9412408Z env:
+2026-10-19T16:27:57.9412614Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:27:57.9412883Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:27:57.9413131Z ##[endgroup]
+2026-10-19T16:27:58.0262836Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common -o sim/build/tb_core.vvp tb/core/tb_tnca_core.v
+2026-10-19T16:27:59.3202471Z python3 tools/asm/tnca_asm.py tb/core/progs/t00_scalar.s -o sim/build/t00_scalar.hex --lst sim/build/t00_scalar.lst --size 16384
+2026-10-19T16:27:59.3675983Z python3 tools/asm/tnca_asm.py tb/core/progs/t01_vector.s -o sim/build/t01_vector.hex --lst sim/build/t01_vector.lst --size 16384
+2026-10-19T16:27:59.4214448Z python3 tools/asm/tnca_asm.py tb/core/progs/t02_mem.s -o sim/build/t02_mem.hex --lst sim/build/t02_mem.lst --size 16384
+2026-10-19T16:27:59.4734474Z python3 tools/asm/tnca_asm.py tb/core/progs/t03_fp.s -o sim/build/t03_fp.hex --lst sim/build/t03_fp.lst --size 16384
+2026-10-19T16:27:59.5571224Z python3 tools/asm/tnca_asm.py tb/core/progs/t04_roles.s -o sim/build/t04_roles.hex --lst sim/build/t04_roles.lst --size 16384
+2026-10-19T16:27:59.6002291Z python3 tools/asm/tnca_asm.py tb/core/progs/t05_fault.s -o sim/build/t05_fault.hex --lst sim/build/t05_fault.lst --size 16384
+2026-10-19T16:27:59.6426542Z python3 tools/asm/tnca_asm.py tb/core/progs/t06_alu.s -o sim/build/t06_alu.hex --lst sim/build/t06_alu.lst --size 16384
+2026-10-19T16:27:59.7434223Z python3 tools/asm/tnca_asm.py tb/core/progs/t11_matrix.s -o sim/build/t11_matrix.hex --lst sim/build/t11_matrix.lst --size 16384
+2026-10-19T16:27:59.8102309Z python3 tools/asm/tnca_asm.py tb/core/progs/t12_tensor.s -o sim/build/t12_tensor.hex --lst sim/build/t12_tensor.lst --size 16384
+2026-10-19T16:27:59.8597482Z python3 tools/asm/tnca_asm.py tb/core/progs/t13_share.s -o sim/build/t13_share.hex --lst sim/build/t13_share.lst --size 16384
+2026-10-19T16:27:59.9025464Z python3 tools/asm/tnca_asm.py tb/core/progs/t14_caps.s -o sim/build/t14_caps.hex --lst sim/build/t14_caps.lst --size 16384
+2026-10-19T16:27:59.9738760Z wrote isa/tnca-isa-v0.1.json: 169 instructions, 20 majors, 25 special registers
+2026-10-19T16:27:59.9739627Z   note: described but unused operand kinds: ['wa']
+2026-10-19T16:28:00.0039604Z wrote compiler/targets/tnca-sim-v0.1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T16:28:00.0040911Z wrote compiler/targets/tnca-sim-4rctx.json: 4 RCTX, 32 logical vregs each, 128 physical
+2026-10-19T16:28:00.0041995Z wrote compiler/targets/tnca-sim-2x2.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T16:28:00.0043097Z wrote compiler/targets/tnca-sim-vrf-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T16:28:00.0044243Z wrote compiler/targets/tnca-sim-vrf-v2.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T16:28:00.0045309Z wrote compiler/targets/tnca-sim-vrf-v3.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T16:28:00.0046512Z wrote compiler/targets/tnca-sim-vrf-v4.json: 4 RCTX, 64 logical vregs each, 256 physical
+2026-10-19T16:28:00.0047565Z wrote compiler/targets/tnca-sim-vrf-v5.json: 4 RCTX, 64 logical vregs each, 256 physical
+2026-10-19T16:28:00.0048663Z wrote compiler/targets/tnca-sim-xpose-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+2026-10-19T16:28:00.0075246Z python3 tb/core/progs/gen_t15_target.py
+2026-10-19T16:28:00.0293101Z wrote /home/runner/work/TritonChip/TritonChip/tb/core/progs/t15_target.s: 10 target facts checked against the hardware
+2026-10-19T16:28:00.0331606Z python3 tools/asm/tnca_asm.py tb/core/progs/t15_target.s -o sim/build/t15_target.hex --lst sim/build/t15_target.lst --size 16384
+2026-10-19T16:28:00.0758945Z python3 tb/core/progs/gen_t16_vecadd.py
+2026-10-19T16:28:00.0989344Z wrote /home/runner/work/TritonChip/TritonChip/tb/core/progs/t16_vecadd.s: n=40, BLOCK=16, 3 programs, 8 masked tail lanes
+2026-10-19T16:28:00.1025260Z python3 tools/asm/tnca_asm.py tb/core/progs/t16_vecadd.s -o sim/build/t16_vecadd.hex --lst sim/build/t16_vecadd.lst --size 16384
+2026-10-19T16:28:00.1578832Z python3 tools/asm/tnca_asm.py tb/core/progs/t17_descfault.s -o sim/build/t17_descfault.hex --lst sim/build/t17_descfault.lst --size 16384
+2026-10-19T16:28:00.2023416Z python3 tools/asm/tnca_asm.py tb/core/progs/t18_squash.s -o sim/build/t18_squash.hex --lst sim/build/t18_squash.lst --size 16384
+2026-10-19T16:28:00.2454366Z python3 tools/asm/tnca_asm.py tb/core/progs/t19_waitgen0.s -o sim/build/t19_waitgen0.hex --lst sim/build/t19_waitgen0.lst --size 16384
+2026-10-19T16:28:00.2869757Z python3 tb/core/progs/gen_t20_sfu.py
+2026-10-19T16:28:00.3187836Z 187 lines, 40 checks -> /home/runner/work/TritonChip/TritonChip/tb/core/progs/t20_sfu.s
+2026-10-19T16:28:00.3229048Z python3 tools/asm/tnca_asm.py tb/core/progs/t20_sfu.s -o sim/build/t20_sfu.hex --lst sim/build/t20_sfu.lst --size 16384
+2026-10-19T16:28:00.3777305Z python3 tb/core/progs/gen_t21_cvt.py
+2026-10-19T16:28:00.4068055Z 382 lines, 32 checks -> /home/runner/work/TritonChip/TritonChip/tb/core/progs/t21_cvt.s
+2026-10-19T16:28:00.4104627Z python3 tools/asm/tnca_asm.py tb/core/progs/t21_cvt.s -o sim/build/t21_cvt.hex --lst sim/build/t21_cvt.lst --size 16384
+2026-10-19T16:28:00.4714496Z python3 tools/asm/tnca_asm.py tb/core/progs/t22_atomic.s -o sim/build/t22_atomic.hex --lst sim/build/t22_atomic.lst --size 16384
+2026-10-19T16:28:00.5523400Z python3 tools/asm/tnca_asm.py tb/core/progs/t23_amofault.s -o sim/build/t23_amofault.hex --lst sim/build/t23_amofault.lst --size 16384
+2026-10-19T16:28:00.5937753Z python3 tb/core/progs/gen_t25_mmasf.py
+2026-10-19T16:28:00.7265782Z 7 checks -> /home/runner/work/TritonChip/TritonChip/tb/core/progs/t25_mmasf.s
+2026-10-19T16:28:00.7307904Z python3 tools/asm/tnca_asm.py tb/core/progs/t25_mmasf.s -o sim/build/t25_mmasf.hex --lst sim/build/t25_mmasf.lst --size 16384
+2026-10-19T16:28:00.7776632Z python3 tools/asm/tnca_asm.py tb/core/progs/t28_count.s -o sim/build/t28_count.hex --lst sim/build/t28_count.lst --size 16384
+2026-10-19T16:28:00.8174842Z python3 tools/asm/tnca_asm.py tb/core/progs/t29_vrfbank.s -o sim/build/t29_vrfbank.hex --lst sim/build/t29_vrfbank.lst --size 16384
+2026-10-19T16:28:00.8602875Z python3 tools/asm/tnca_asm.py tb/core/progs/t33_tdesc_load.s -o sim/build/t33_tdesc_load.hex --lst sim/build/t33_tdesc_load.lst --size 16384
+2026-10-19T16:28:01.0571126Z python3 tools/asm/tnca_asm.py tb/core/progs/t34_tdesc_store.s -o sim/build/t34_tdesc_store.hex --lst sim/build/t34_tdesc_store.lst --size 16384
+2026-10-19T16:28:01.1993528Z python3 tools/asm/tnca_asm.py tb/core/progs/t36_reduce.s -o sim/build/t36_reduce.hex --lst sim/build/t36_reduce.lst --size 16384
+2026-10-19T16:28:01.3624567Z python3 tools/asm/tnca_asm.py tb/core/progs/t37_lsu_straddle.s -o sim/build/t37_lsu_straddle.hex --lst sim/build/t37_lsu_straddle.lst --size 16384
+2026-10-19T16:28:01.7066565Z python3 tools/asm/tnca_asm.py tb/core/progs/t38_wbfreeze.s -o sim/build/t38_wbfreeze.hex --lst sim/build/t38_wbfreeze.lst --size 16384
+2026-10-19T16:28:01.8082824Z python3 tools/asm/tnca_asm.py tb/core/progs/t39_freeze_drop.s -o sim/build/t39_freeze_drop.hex --lst sim/build/t39_freeze_drop.lst --size 16384
+2026-10-19T16:28:01.8976625Z python3 tools/asm/tnca_asm.py tb/core/progs/t39_switch.s -o sim/build/t39_switch.hex --lst sim/build/t39_switch.lst --size 16384
+2026-10-19T16:28:01.9443925Z python3 tools/asm/tnca_asm.py tb/core/progs/t39_isolate.s -o sim/build/t39_isolate.hex --lst sim/build/t39_isolate.lst --size 16384
+2026-10-19T16:28:01.9873878Z python3 tools/asm/tnca_asm.py tb/core/progs/t39_slice.s -o sim/build/t39_slice.hex --lst sim/build/t39_slice.lst --size 16384
+2026-10-19T16:28:02.0430826Z python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_frank.s -o sim/build/t35_tdesc_frank.hex --lst sim/build/t35_tdesc_frank.lst --size 16384
+2026-10-19T16:28:02.0869237Z python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_fpad2.s -o sim/build/t35_tdesc_fpad2.hex --lst sim/build/t35_tdesc_fpad2.lst --size 16384
+2026-10-19T16:28:02.1297411Z python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_fnanint.s -o sim/build/t35_tdesc_fnanint.hex --lst sim/build/t35_tdesc_fnanint.lst --size 16384
+2026-10-19T16:28:02.1724968Z python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_fsb.s -o sim/build/t35_tdesc_fsb.hex --lst sim/build/t35_tdesc_fsb.lst --size 16384
+2026-10-19T16:28:02.2154179Z python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_fblock.s -o sim/build/t35_tdesc_fblock.hex --lst sim/build/t35_tdesc_fblock.lst --size 16384
+2026-10-19T16:28:02.2599428Z python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_fclamp.s -o sim/build/t35_tdesc_fclamp.hex --lst sim/build/t35_tdesc_fclamp.lst --size 16384
+2026-10-19T16:28:04.1389223Z   t00_scalar             PASS   cycles=586 issued=290 hazard=116 lsu=0 wb=0 squash=42
+2026-10-19T16:28:07.4266034Z   t01_vector             PASS   cycles=943 issued=492 hazard=198 lsu=0 wb=0 squash=62
+2026-10-19T16:28:09.9887975Z   t02_mem                PASS   cycles=942 issued=353 hazard=309 lsu=83 wb=11 squash=40
+2026-10-19T16:28:19.1233113Z   t03_fp                 PASS   cycles=3069 issued=1431 hazard=748 lsu=37 wb=1 squash=194
+2026-10-19T16:28:20.3942202Z   t04_roles              PASS   cycles=142 issued=74 hazard=25 lsu=12 wb=1 squash=10
+2026-10-19T16:28:22.1854095Z   t05_fault              PASS   cycles=523 issued=228 hazard=15 lsu=8 wb=1 squash=68
+2026-10-19T16:28:31.5438246Z   t06_alu                PASS   cycles=4624 issued=2099 hazard=1201 lsu=360 wb=0 squash=187
+2026-10-19T16:28:40.5867950Z   t11_matrix             PASS   cycles=3520 issued=727 hazard=427 lsu=612 wb=0 squash=77
+2026-10-19T16:28:44.1985858Z   t12_tensor             PASS   cycles=1592 issued=213 hazard=120 lsu=0 wb=0 squash=23
+2026-10-19T16:28:45.6224058Z   t13_share              PASS   cycles=157 issued=71 hazard=29 lsu=22 wb=0 squash=10
+2026-10-19T16:28:47.5601652Z   t14_caps               PASS   cycles=864 issued=189 hazard=152 lsu=10 wb=3 squash=17
+2026-10-19T16:28:48.8246056Z   t15_target             PASS   cycles=184 issued=142 hazard=0 lsu=0 wb=0 squash=22
+2026-10-19T16:28:51.0827490Z   t16_vecadd             PASS   cycles=1023 issued=442 hazard=323 lsu=41 wb=48 squash=51
+2026-10-19T16:28:52.2561363Z   t17_descfault          PASS   cycles=115 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:28:54.6917513Z   t18_squash             PASS   cycles=1226 issued=458 hazard=469 lsu=2 wb=0 squash=107
+2026-10-19T16:28:55.8773059Z   t19_waitgen0           PASS   cycles=92 issued=47 hazard=19 lsu=0 wb=0 squash=5
+2026-10-19T16:28:59.1148238Z   t20_sfu                PASS   cycles=1282 issued=409 hazard=487 lsu=160 wb=1 squash=41
+2026-10-19T16:29:02.5028944Z   t21_cvt                PASS   cycles=1942 issued=572 hazard=1067 lsu=0 wb=0 squash=33
+2026-10-19T16:29:07.1659327Z   t22_atomic             PASS   cycles=3010 issued=1429 hazard=860 lsu=88 wb=171 squash=118
+2026-10-19T16:29:08.3127213Z   t23_amofault           PASS   cycles=58 issued=28 hazard=18 lsu=0 wb=2 squash=3
+2026-10-19T16:29:11.4620072Z   t25_mmasf              PASS   cycles=1290 issued=168 hazard=84 lsu=422 wb=0 squash=10
+2026-10-19T16:29:12.6044109Z   t28_count              PASS   cycles=14 issued=12 hazard=0 lsu=0 wb=0 squash=1
+2026-10-19T16:29:14.3047899Z   t29_vrfbank            PASS   cycles=496 issued=84 hazard=57 lsu=29 wb=0 squash=10
+2026-10-19T16:29:50.8955646Z   t33_tdesc_load         PASS   cycles=12057 issued=5096 hazard=2121 lsu=0 wb=0 squash=689
+2026-10-19T16:30:01.1390669Z   t34_tdesc_store        PASS   cycles=8039 issued=3087 hazard=2099 lsu=60 wb=400 squash=410
+2026-10-19T16:30:32.7757846Z   t36_reduce             PASS   cycles=8323 issued=4185 hazard=1880 lsu=0 wb=0 squash=545
+2026-10-19T16:31:25.0901535Z   t37_lsu_straddle       PASS   cycles=22051 issued=10186 hazard=6005 lsu=240 wb=577 squash=1345
+2026-10-19T16:31:45.9551776Z   t38_wbfreeze           PASS   cycles=3838 issued=1983 hazard=679 lsu=0 wb=0 squash=225
+2026-10-19T16:32:05.5476686Z   t39_freeze_drop        PASS   cycles=3446 issued=1647 hazard=684 lsu=26 wb=0 squash=173
+2026-10-19T16:32:09.8688340Z   t39_switch             PASS   cycles=2501 issued=850 hazard=231 lsu=637 wb=20 squash=118
+2026-10-19T16:32:16.5920220Z   t39_isolate            PASS   cycles=1666 issued=751 hazard=448 lsu=14 wb=0 squash=129
+2026-10-19T16:32:18.8632902Z   t39_slice              PASS   cycles=763 issued=109 hazard=59 lsu=105 wb=0 squash=8
+2026-10-19T16:32:20.0642308Z   t35_tdesc_frank        PASS   cycles=161 issued=34 hazard=15 lsu=0 wb=0 squash=1
+2026-10-19T16:32:21.2094862Z   t35_tdesc_fpad2        PASS   cycles=133 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:32:22.3581613Z   t35_tdesc_fnanint      PASS   cycles=133 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:32:23.5480075Z   t35_tdesc_fsb          PASS   cycles=140 issued=22 hazard=10 lsu=0 wb=0 squash=1
+2026-10-19T16:32:24.7123560Z   t35_tdesc_fblock       PASS   cycles=133 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:32:25.8699069Z   t35_tdesc_fclamp       PASS   cycles=133 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:32:25.9542059Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+2026-10-19T16:32:25.9542821Z    -P tb_tnca_core.MEM_LATENCY=7 -P tb_tnca_core.RANDOM_STALL=1 \
+2026-10-19T16:32:25.9543272Z    -o sim/build/tb_core_slow.vvp tb/core/tb_tnca_core.v
+2026-10-19T16:32:29.1163369Z   t00_scalar (slow mem)  PASS   cycles=586 issued=290 hazard=116 lsu=0 wb=0 squash=42
+2026-10-19T16:32:32.4969175Z   t01_vector (slow mem)  PASS   cycles=943 issued=492 hazard=198 lsu=0 wb=0 squash=62
+2026-10-19T16:32:35.1914845Z   t02_mem (slow mem)     PASS   cycles=1252 issued=353 hazard=525 lsu=177 wb=0 squash=40
+2026-10-19T16:32:44.8777555Z   t03_fp (slow mem)      PASS   cycles=3151 issued=1431 hazard=790 lsu=78 wb=0 squash=194
+2026-10-19T16:32:46.1540136Z   t04_roles (slow mem)   PASS   cycles=189 issued=74 hazard=47 lsu=37 wb=0 squash=10
+2026-10-19T16:32:47.9771008Z   t05_fault (slow mem)   PASS   cycles=535 issued=228 hazard=20 lsu=15 wb=0 squash=68
+2026-10-19T16:32:57.8289081Z   t06_alu (slow mem)     PASS   cycles=5289 issued=2099 hazard=1499 lsu=726 wb=1 squash=187
+2026-10-19T16:33:07.2039683Z   t11_matrix (slow mem)  PASS   cycles=4147 issued=727 hazard=451 lsu=1215 wb=0 squash=77
+2026-10-19T16:33:11.1779772Z   t12_tensor (slow mem)  PASS   cycles=2494 issued=213 hazard=120 lsu=0 wb=0 squash=23
+2026-10-19T16:33:12.6427398Z   t13_share (slow mem)   PASS   cycles=209 issued=71 hazard=43 lsu=60 wb=0 squash=10
+2026-10-19T16:33:14.6727017Z   t14_caps (slow mem)    PASS   cycles=1199 issued=189 hazard=195 lsu=35 wb=0 squash=17
+2026-10-19T16:33:15.9620254Z   t15_target (slow mem)  PASS   cycles=184 issued=142 hazard=0 lsu=0 wb=0 squash=22
+2026-10-19T16:33:18.3660543Z   t16_vecadd (slow mem)  PASS   cycles=1393 issued=442 hazard=653 lsu=78 wb=2 squash=51
+2026-10-19T16:33:19.5880355Z   t17_descfault (slow mem) PASS   cycles=354 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:33:22.0813656Z   t18_squash (slow mem)  PASS   cycles=1978 issued=458 hazard=921 lsu=263 wb=0 squash=107
+2026-10-19T16:33:23.2944771Z   t19_waitgen0 (slow mem) PASS   cycles=92 issued=47 hazard=19 lsu=0 wb=0 squash=5
+2026-10-19T16:33:26.6292156Z   t20_sfu (slow mem)     PASS   cycles=1495 issued=409 hazard=531 lsu=330 wb=0 squash=41
+2026-10-19T16:33:30.2866815Z   t21_cvt (slow mem)     PASS   cycles=2736 issued=572 hazard=1861 lsu=0 wb=0 squash=33
+2026-10-19T16:33:35.4251862Z   t22_atomic (slow mem)  PASS   cycles=3946 issued=1429 hazard=1528 lsu=340 wb=6 squash=118
+2026-10-19T16:33:36.5820023Z   t23_amofault (slow mem) PASS   cycles=71 issued=28 hazard=31 lsu=0 wb=0 squash=3
+2026-10-19T16:33:39.8194837Z   t25_mmasf (slow mem)   PASS   cycles=1717 issued=168 hazard=84 lsu=849 wb=0 squash=10
+2026-10-19T16:33:40.9267306Z   t28_count (slow mem)   PASS   cycles=14 issued=12 hazard=0 lsu=0 wb=0 squash=1
+2026-10-19T16:33:42.6180477Z   t29_vrfbank (slow mem) PASS   cycles=534 issued=84 hazard=57 lsu=67 wb=0 squash=10
+2026-10-19T16:34:20.3060705Z   t33_tdesc_load (slow mem) PASS   cycles=15853 issued=5096 hazard=2121 lsu=0 wb=0 squash=689
+2026-10-19T16:34:32.9214987Z   t34_tdesc_store (slow mem) PASS   cycles=12568 issued=3087 hazard=4461 lsu=114 wb=0 squash=410
+2026-10-19T16:35:03.8560719Z   t36_reduce (slow mem)  PASS   cycles=8445 issued=4185 hazard=2002 lsu=0 wb=0 squash=545
+2026-10-19T16:35:54.4554273Z   t37_lsu_straddle (slow mem) PASS   cycles=26588 issued=10186 hazard=10008 lsu=783 wb=0 squash=1345
+2026-10-19T16:36:13.8201116Z   t38_wbfreeze (slow mem) PASS   cycles=4628 issued=1983 hazard=679 lsu=0 wb=0 squash=225
+2026-10-19T16:36:31.5022717Z   t39_freeze_drop (slow mem) PASS   cycles=4160 issued=1650 hazard=956 lsu=41 wb=0 squash=176
+2026-10-19T16:36:36.1001606Z   t39_switch (slow mem)  PASS   cycles=3497 issued=850 hazard=431 lsu=1473 wb=1 squash=118
+2026-10-19T16:36:42.6743307Z   t39_isolate (slow mem) PASS   cycles=1698 issued=751 hazard=465 lsu=29 wb=0 squash=129
+2026-10-19T16:36:44.9919722Z   t39_slice (slow mem)   PASS   cycles=1159 issued=109 hazard=59 lsu=192 wb=0 squash=8
+2026-10-19T16:36:46.2221660Z   t35_tdesc_frank (slow mem) PASS   cycles=390 issued=34 hazard=15 lsu=0 wb=0 squash=1
+2026-10-19T16:36:47.4421342Z   t35_tdesc_fpad2 (slow mem) PASS   cycles=362 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:36:48.6511583Z   t35_tdesc_fnanint (slow mem) PASS   cycles=362 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:36:49.8690535Z   t35_tdesc_fsb (slow mem) PASS   cycles=369 issued=22 hazard=10 lsu=0 wb=0 squash=1
+2026-10-19T16:36:51.0798525Z   t35_tdesc_fblock (slow mem) PASS   cycles=362 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:36:52.3331543Z   t35_tdesc_fclamp (slow mem) PASS   cycles=362 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:36:52.4162194Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+2026-10-19T16:36:52.4163155Z    -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+2026-10-19T16:36:52.4164143Z    -P tb_tnca_core.MEM_REORDER=1 \
+2026-10-19T16:36:52.4164673Z    -o sim/build/tb_core_ooo.vvp tb/core/tb_tnca_core.v
+2026-10-19T16:36:55.5889336Z   t00_scalar (ooo mem)   PASS   cycles=586 issued=290 hazard=116 lsu=0 wb=0 squash=42
+2026-10-19T16:36:58.8789652Z   t01_vector (ooo mem)   PASS   cycles=943 issued=492 hazard=198 lsu=0 wb=0 squash=62
+2026-10-19T16:37:01.6449552Z   t02_mem (ooo mem)      PASS   cycles=1379 issued=353 hazard=641 lsu=188 wb=0 squash=40
+2026-10-19T16:37:10.8799889Z   t03_fp (ooo mem)       PASS   cycles=3183 issued=1431 hazard=810 lsu=89 wb=1 squash=194
+2026-10-19T16:37:12.1814857Z   t04_roles (ooo mem)    PASS   cycles=196 issued=74 hazard=54 lsu=37 wb=0 squash=10
+2026-10-19T16:37:13.9850239Z   t05_fault (ooo mem)    PASS   cycles=545 issued=228 hazard=26 lsu=19 wb=0 squash=68
+2026-10-19T16:37:23.7630548Z   t06_alu (ooo mem)      PASS   cycles=5338 issued=2099 hazard=1524 lsu=751 wb=1 squash=187
+2026-10-19T16:37:33.1581369Z   t11_matrix (ooo mem)   PASS   cycles=4310 issued=727 hazard=454 lsu=1375 wb=0 squash=77
+2026-10-19T16:37:37.2228239Z   t12_tensor (ooo mem)   PASS   cycles=2803 issued=213 hazard=120 lsu=0 wb=0 squash=23
+2026-10-19T16:37:38.6827488Z   t13_share (ooo mem)    PASS   cycles=220 issued=71 hazard=47 lsu=67 wb=0 squash=10
+2026-10-19T16:37:40.7827421Z   t14_caps (ooo mem)     PASS   cycles=1344 issued=189 hazard=211 lsu=42 wb=0 squash=17
+2026-10-19T16:37:42.1028317Z   t15_target (ooo mem)   PASS   cycles=184 issued=142 hazard=0 lsu=0 wb=0 squash=22
+2026-10-19T16:37:44.6054198Z   t16_vecadd (ooo mem)   PASS   cycles=1538 issued=442 hazard=777 lsu=97 wb=2 squash=51
+2026-10-19T16:37:45.8303181Z   t17_descfault (ooo mem) PASS   cycles=423 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:37:48.3380872Z   t18_squash (ooo mem)   PASS   cycles=2196 issued=458 hazard=1061 lsu=341 wb=0 squash=107
+2026-10-19T16:37:49.5149074Z   t19_waitgen0 (ooo mem) PASS   cycles=92 issued=47 hazard=19 lsu=0 wb=0 squash=5
+2026-10-19T16:37:52.8812623Z   t20_sfu (ooo mem)      PASS   cycles=1529 issued=409 hazard=536 lsu=359 wb=0 squash=41
+2026-10-19T16:37:56.5441043Z   t21_cvt (ooo mem)      PASS   cycles=2887 issued=572 hazard=2012 lsu=0 wb=0 squash=33
+2026-10-19T16:38:01.7657090Z   t22_atomic (ooo mem)   PASS   cycles=4353 issued=1429 hazard=1791 lsu=477 wb=1 squash=118
+2026-10-19T16:38:02.9167836Z   t23_amofault (ooo mem) PASS   cycles=70 issued=28 hazard=30 lsu=0 wb=0 squash=3
+2026-10-19T16:38:06.1385377Z   t25_mmasf (ooo mem)    PASS   cycles=1844 issued=168 hazard=84 lsu=976 wb=0 squash=10
+2026-10-19T16:38:07.2516949Z   t28_count (ooo mem)    PASS   cycles=14 issued=12 hazard=0 lsu=0 wb=0 squash=1
+2026-10-19T16:38:08.9537426Z   t29_vrfbank (ooo mem)  PASS   cycles=537 issued=84 hazard=57 lsu=70 wb=0 squash=10
+2026-10-19T16:38:47.1990942Z   t33_tdesc_load (ooo mem) PASS   cycles=17166 issued=5096 hazard=2121 lsu=0 wb=0 squash=689
+2026-10-19T16:39:00.0178732Z   t34_tdesc_store (ooo mem) PASS   cycles=14386 issued=3087 hazard=5559 lsu=129 wb=0 squash=410
+2026-10-19T16:39:30.5624520Z   t36_reduce (ooo mem)   PASS   cycles=8462 issued=4185 hazard=2019 lsu=0 wb=0 squash=545
+2026-10-19T16:40:21.8547912Z   t37_lsu_straddle (ooo mem) PASS   cycles=28275 issued=10186 hazard=11596 lsu=885 wb=0 squash=1345
+2026-10-19T16:40:41.4951684Z   t38_wbfreeze (ooo mem) PASS   cycles=4765 issued=1983 hazard=679 lsu=0 wb=0 squash=225
+2026-10-19T16:40:59.8612142Z   t39_freeze_drop (ooo mem) PASS   cycles=4155 issued=1650 hazard=784 lsu=73 wb=0 squash=176
+2026-10-19T16:41:04.4199978Z   t39_switch (ooo mem)   PASS   cycles=3745 issued=850 hazard=506 lsu=1650 wb=0 squash=118
+2026-10-19T16:41:10.9210660Z   t39_isolate (ooo mem)  PASS   cycles=1705 issued=751 hazard=466 lsu=35 wb=0 squash=129
+2026-10-19T16:41:13.2939242Z   t39_slice (ooo mem)    PASS   cycles=1280 issued=109 hazard=59 lsu=221 wb=0 squash=8
+2026-10-19T16:41:14.5657195Z   t35_tdesc_frank (ooo mem) PASS   cycles=470 issued=34 hazard=15 lsu=0 wb=0 squash=1
+2026-10-19T16:41:15.8133804Z   t35_tdesc_fpad2 (ooo mem) PASS   cycles=442 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:41:17.0527152Z   t35_tdesc_fnanint (ooo mem) PASS   cycles=442 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:41:18.3301796Z   t35_tdesc_fsb (ooo mem) PASS   cycles=449 issued=22 hazard=10 lsu=0 wb=0 squash=1
+2026-10-19T16:41:19.5676247Z   t35_tdesc_fblock (ooo mem) PASS   cycles=442 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:41:20.8082996Z   t35_tdesc_fclamp (ooo mem) PASS   cycles=442 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:41:20.8156750Z ##[group]Run make top
+2026-10-19T16:41:20.8157042Z [36;1mmake top[0m
+2026-10-19T16:41:20.8224383Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:41:20.8224633Z env:
+2026-10-19T16:41:20.8224829Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:41:20.8225081Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:41:20.8225311Z ##[endgroup]
+2026-10-19T16:41:20.9039819Z iverilog -g2012 -g2005 -I rtl/common -y rtl/common -y rtl/core -y rtl/gen -y rtl/nuca -y rtl/noc -y rtl/tile -y rtl/fpga -y rtl -I rtl/noc -o sim/build/tb_top.vvp tb/top/tb_tnca_top.v rtl/tnca_top.v \
+2026-10-19T16:41:20.9041137Z    tb/common/tnca_dram_model.v
+2026-10-19T16:41:26.1989994Z python3 tools/asm/tnca_asm.py tb/core/progs/t10_mesh.s -o sim/build/t10_mesh.hex --lst sim/build/t10_mesh.lst --size 16384
+2026-10-19T16:41:26.2427738Z python3 tools/asm/tnca_asm.py tb/core/progs/t24_amo_mesh.s -o sim/build/t24_amo_mesh.hex --lst sim/build/t24_amo_mesh.lst --size 16384
+2026-10-19T16:43:23.3394901Z   BASE-TOP-t10_mesh-single-role PASS   cycles=18591
+2026-10-19T16:46:56.4012626Z   BASE-TOP-t10_mesh-all-roles PASS   cycles=29075
+2026-10-19T16:47:10.9106796Z   BASE-TOP-t24_amo_mesh-single-role PASS   cycles=1488
+2026-10-19T16:47:34.3909711Z   BASE-TOP-t24_amo_mesh-all-roles PASS   cycles=2829
+2026-10-19T16:47:34.3968606Z ##[group]Run make nuca
+2026-10-19T16:47:34.3968895Z [36;1mmake nuca[0m
+2026-10-19T16:47:34.3969101Z [36;1mmake mesh[0m
+2026-10-19T16:47:34.3969301Z [36;1mmake nuca-dco[0m
+2026-10-19T16:47:34.4036744Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:47:34.4036988Z env:
+2026-10-19T16:47:34.4037302Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:47:34.4037560Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:47:34.4037792Z ##[endgroup]
+2026-10-19T16:47:36.8019901Z   BASE-NUCA-ooo-seed1    PASS   
+2026-10-19T16:47:36.8035032Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:47:36.8035791Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:47:36.8036230Z       hit=912 miss=1038 merge=50 wb=251 mshr_full=651 target_full=1 hit_past_block=475
+2026-10-19T16:47:39.1604066Z   BASE-NUCA-ooo-seed7    PASS   
+2026-10-19T16:47:39.1619434Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:47:39.1620134Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:47:39.1620743Z       hit=892 miss=1047 merge=61 wb=255 mshr_full=702 target_full=2 hit_past_block=515
+2026-10-19T16:47:41.4372170Z   BASE-NUCA-ooo-seed42   PASS   
+2026-10-19T16:47:41.4388257Z       seed=42 trace_hash=a4af42d73a6ede95 writes=504
+2026-10-19T16:47:41.4388662Z       issued=2000 reads_checked=1496 inflight_left=0
+2026-10-19T16:47:41.4389117Z       hit=933 miss=1024 merge=43 wb=262 mshr_full=636 target_full=0 hit_past_block=418
+2026-10-19T16:47:43.3538254Z   BASE-NUCA-fast-seed1   PASS   
+2026-10-19T16:47:43.3554281Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:47:43.3554675Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:47:43.3555108Z       hit=953 miss=1038 merge=9 wb=251 mshr_full=0 target_full=0 hit_past_block=0
+2026-10-19T16:47:45.2125834Z   BASE-NUCA-fast-seed7   PASS   
+2026-10-19T16:47:45.2140606Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:47:45.2141123Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:47:45.2141554Z       hit=945 miss=1047 merge=8 wb=255 mshr_full=0 target_full=0 hit_past_block=0
+2026-10-19T16:47:47.0687929Z   BASE-NUCA-fast-seed42  PASS   
+2026-10-19T16:47:47.0703785Z       seed=42 trace_hash=a4af42d73a6ede95 writes=504
+2026-10-19T16:47:47.0704497Z       issued=2000 reads_checked=1496 inflight_left=0
+2026-10-19T16:47:47.0707205Z       hit=968 miss=1024 merge=8 wb=262 mshr_full=0 target_full=0 hit_past_block=0
+2026-10-19T16:47:50.1890312Z   BASE-NUCA-slow-seed1   PASS   
+2026-10-19T16:47:50.1905873Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:47:50.1906733Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:47:50.1907729Z       hit=882 miss=1035 merge=83 wb=251 mshr_full=2102 target_full=9 hit_past_block=2123
+2026-10-19T16:47:53.2846863Z   BASE-NUCA-slow-seed7   PASS   
+2026-10-19T16:47:53.2861767Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:47:53.2862517Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:47:53.2863292Z       hit=867 miss=1043 merge=90 wb=254 mshr_full=2118 target_full=17 hit_past_block=2056
+2026-10-19T16:47:56.2988410Z   BASE-NUCA-slow-seed42  PASS   
+2026-10-19T16:47:56.3003924Z       seed=42 trace_hash=a4af42d73a6ede95 writes=504
+2026-10-19T16:47:56.3004521Z       issued=2000 reads_checked=1496 inflight_left=0
+2026-10-19T16:47:56.3005285Z       hit=906 miss=1020 merge=74 wb=262 mshr_full=2030 target_full=8 hit_past_block=1882
+2026-10-19T16:47:56.3763452Z iverilog -g2012 -g2005 -I rtl/common -y rtl/common -y rtl/core -y rtl/gen -y rtl/nuca -y rtl/noc -y rtl/tile -y rtl/fpga -y rtl -I rtl/noc -o sim/build/tb_mesh.vvp tb/noc/tb_mesh.v rtl/noc/tnca_mesh.v
+2026-10-19T16:49:09.3331478Z   BASE-MESH-2x2-seed1    PASS   
+2026-10-19T16:49:09.3346735Z       seed=1 trace_hash=233c128a6897cc3d
+2026-10-19T16:49:09.3347433Z       sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6426
+2026-10-19T16:50:22.2632627Z   BASE-MESH-2x2-seed7    PASS   
+2026-10-19T16:50:22.2649589Z       seed=7 trace_hash=46c76ae6e1dffeb1
+2026-10-19T16:50:22.2650064Z       sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6242
+2026-10-19T16:51:35.8461546Z   BASE-MESH-2x2-seed42   PASS   
+2026-10-19T16:51:35.8476131Z       seed=42 trace_hash=21d446c1263fbd9c
+2026-10-19T16:51:35.8476895Z       sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6255
+2026-10-19T16:51:38.1019106Z   DCO-NUCA-policy1-seed1 PASS   
+2026-10-19T16:51:38.1034506Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:51:38.1035139Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:51:38.1038896Z       hit=1036 miss=948 merge=16 wb=232 mshr_full=523 target_full=1 hit_past_block=383
+2026-10-19T16:51:40.2800101Z   DCO-NUCA-policy1-seed7 PASS   
+2026-10-19T16:51:40.2815641Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:51:40.2816253Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:51:40.2816943Z       hit=1015 miss=968 merge=17 wb=232 mshr_full=572 target_full=2 hit_past_block=397
+2026-10-19T16:51:42.5182034Z   DCO-NUCA-policy2-seed1 PASS   
+2026-10-19T16:51:42.5197534Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:51:42.5198156Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:51:42.5198887Z       hit=1013 miss=964 merge=23 wb=235 mshr_full=536 target_full=1 hit_past_block=408
+2026-10-19T16:51:44.7943291Z   DCO-NUCA-policy2-seed7 PASS   
+2026-10-19T16:51:44.7958882Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:51:44.7959518Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:51:44.7960267Z       hit=963 miss=999 merge=38 wb=247 mshr_full=640 target_full=2 hit_past_block=469
+2026-10-19T16:51:47.0329193Z   DCO-NUCA-policy46-seed1 PASS   
+2026-10-19T16:51:47.0344792Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:51:47.0345634Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:51:47.0346338Z       hit=1010 miss=966 merge=24 wb=226 mshr_full=602 target_full=2 hit_past_block=472
+2026-10-19T16:51:49.2639604Z   DCO-NUCA-policy46-seed7 PASS   
+2026-10-19T16:51:49.2655042Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:51:49.2655695Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:51:49.2656134Z       hit=974 miss=989 merge=37 wb=231 mshr_full=645 target_full=2 hit_past_block=489
+2026-10-19T16:51:51.4995960Z   DCO-NUCA-policy62-seed1 PASS   
+2026-10-19T16:51:51.5011215Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:51:51.5011978Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:51:51.5012552Z       hit=1013 miss=964 merge=23 wb=226 mshr_full=578 target_full=1 hit_past_block=448
+2026-10-19T16:51:53.7274368Z   DCO-NUCA-policy62-seed7 PASS   
+2026-10-19T16:51:53.7290154Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:51:53.7290607Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:51:53.7291052Z       hit=981 miss=986 merge=33 wb=231 mshr_full=608 target_full=2 hit_past_block=459
+2026-10-19T16:51:56.5334680Z   DCO-NUCA-policy74-seed1 PASS   
+2026-10-19T16:51:56.5350719Z       seed=1 trace_hash=177f11965447aacd writes=467
+2026-10-19T16:51:56.5351184Z       issued=2000 reads_checked=1533 inflight_left=0
+2026-10-19T16:51:56.5351630Z       hit=315 miss=1437 merge=248 wb=229 mshr_full=1142 target_full=10 hit_past_block=787
+2026-10-19T16:51:59.2519006Z   DCO-NUCA-policy74-seed7 PASS   
+2026-10-19T16:51:59.2536151Z       seed=7 trace_hash=e1243d7dee31195d writes=533
+2026-10-19T16:51:59.2536783Z       issued=2000 reads_checked=1467 inflight_left=0
+2026-10-19T16:51:59.2537586Z       hit=445 miss=1357 merge=198 wb=241 mshr_full=1007 target_full=5 hit_past_block=680
+2026-10-19T16:51:59.2581590Z ##[group]Run make core-vrf
+2026-10-19T16:51:59.2581894Z [36;1mmake core-vrf[0m
+2026-10-19T16:51:59.2582125Z [36;1mmake r38-xpose-rtl[0m
+2026-10-19T16:51:59.2582399Z [36;1mpython3 tools/r40/tensor_bounds_tests.py[0m
+2026-10-19T16:51:59.2651211Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:51:59.2651476Z env:
+2026-10-19T16:51:59.2651692Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:51:59.2651953Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:51:59.2652192Z ##[endgroup]
+2026-10-19T16:51:59.2940895Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+2026-10-19T16:51:59.2941415Z    -P tb_tnca_core.USE_BANKED_VRF=1 \
+2026-10-19T16:51:59.2941738Z    -o sim/build/tb_core_vrf.vvp tb/core/tb_tnca_core.v
+2026-10-19T16:52:02.4373678Z   t00_scalar (banked vrf) PASS   cycles=586 issued=290 hazard=116 lsu=0 wb=0 squash=42
+2026-10-19T16:52:06.9445777Z   t01_vector (banked vrf) PASS   cycles=1094 issued=492 hazard=164 lsu=0 wb=0 squash=62
+2026-10-19T16:52:10.1412847Z   t02_mem (banked vrf)   PASS   cycles=994 issued=353 hazard=304 lsu=82 wb=11 squash=40
+2026-10-19T16:52:22.3517937Z   t03_fp (banked vrf)    PASS   cycles=3323 issued=1431 hazard=463 lsu=37 wb=0 squash=194
+2026-10-19T16:52:23.6553104Z   t04_roles (banked vrf) PASS   cycles=142 issued=74 hazard=25 lsu=12 wb=1 squash=10
+2026-10-19T16:52:25.6991316Z   t05_fault (banked vrf) PASS   cycles=523 issued=228 hazard=15 lsu=8 wb=1 squash=68
+2026-10-19T16:52:36.8109898Z   t06_alu (banked vrf)   PASS   cycles=4811 issued=2099 hazard=1096 lsu=360 wb=4 squash=187
+2026-10-19T16:52:50.5576615Z   t11_matrix (banked vrf) PASS   cycles=4992 issued=727 hazard=360 lsu=612 wb=0 squash=77
+2026-10-19T16:52:56.1160731Z   t12_tensor (banked vrf) PASS   cycles=2164 issued=213 hazard=103 lsu=0 wb=0 squash=23
+2026-10-19T16:52:57.5747111Z   t13_share (banked vrf) PASS   cycles=165 issued=71 hazard=21 lsu=22 wb=0 squash=10
+2026-10-19T16:53:00.5320943Z   t14_caps (banked vrf)  PASS   cycles=1167 issued=189 hazard=155 lsu=10 wb=3 squash=17
+2026-10-19T16:53:01.8762507Z   t15_target (banked vrf) PASS   cycles=184 issued=142 hazard=0 lsu=0 wb=0 squash=22
+2026-10-19T16:53:04.7505027Z   t16_vecadd (banked vrf) PASS   cycles=1056 issued=442 hazard=341 lsu=41 wb=48 squash=51
+2026-10-19T16:53:05.8998671Z   t17_descfault (banked vrf) PASS   cycles=115 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:53:07.9834852Z   t18_squash (banked vrf) PASS   cycles=1049 issued=271 hazard=519 lsu=0 wb=0 squash=64
+2026-10-19T16:53:09.1774206Z   t19_waitgen0 (banked vrf) PASS   cycles=92 issued=47 hazard=19 lsu=0 wb=0 squash=5
+2026-10-19T16:53:13.0498641Z   t20_sfu (banked vrf)   PASS   cycles=1354 issued=409 hazard=451 lsu=160 wb=1 squash=41
+2026-10-19T16:53:17.4728978Z   t21_cvt (banked vrf)   PASS   cycles=2068 issued=572 hazard=1123 lsu=0 wb=0 squash=33
+2026-10-19T16:53:23.4701169Z   t22_atomic (banked vrf) PASS   cycles=3010 issued=1429 hazard=860 lsu=88 wb=171 squash=118
+2026-10-19T16:53:24.6370060Z   t23_amofault (banked vrf) PASS   cycles=58 issued=28 hazard=18 lsu=0 wb=2 squash=3
+2026-10-19T16:53:29.6989676Z   t25_mmasf (banked vrf) PASS   cycles=1889 issued=168 hazard=93 lsu=422 wb=0 squash=10
+2026-10-19T16:53:30.8049499Z   t28_count (banked vrf) PASS   cycles=14 issued=12 hazard=0 lsu=0 wb=0 squash=1
+2026-10-19T16:53:32.9646746Z   t29_vrfbank (banked vrf) PASS   cycles=779 issued=84 hazard=47 lsu=30 wb=0 squash=10
+2026-10-19T16:54:08.7900396Z   t33_tdesc_load (banked vrf) PASS   cycles=12729 issued=5096 hazard=777 lsu=0 wb=0 squash=689
+2026-10-19T16:54:22.9005054Z   t34_tdesc_store (banked vrf) PASS   cycles=8051 issued=3087 hazard=2099 lsu=60 wb=400 squash=410
+2026-10-19T16:54:50.9006661Z   t36_reduce (banked vrf) PASS   cycles=8923 issued=4185 hazard=904 lsu=0 wb=0 squash=545
+2026-10-19T16:55:50.2182606Z   t37_lsu_straddle (banked vrf) PASS   cycles=22915 issued=10186 hazard=4520 lsu=240 wb=577 squash=1345
+2026-10-19T16:56:04.2715658Z   t38_wbfreeze (banked vrf) PASS   cycles=5022 issued=1979 hazard=1007 lsu=0 wb=0 squash=221
+2026-10-19T16:56:22.0311478Z   t39_freeze_drop (banked vrf) PASS   cycles=4061 issued=1647 hazard=244 lsu=26 wb=0 squash=173
+2026-10-19T16:56:27.7203737Z   t39_switch (banked vrf) PASS   cycles=2648 issued=850 hazard=231 lsu=644 wb=2 squash=118
+2026-10-19T16:56:41.9729386Z   t39_isolate (banked vrf) PASS   cycles=2183 issued=751 hazard=530 lsu=14 wb=0 squash=129
+2026-10-19T16:56:45.1053549Z   t39_slice (banked vrf) PASS   cycles=1050 issued=109 hazard=64 lsu=105 wb=0 squash=8
+2026-10-19T16:56:46.3019596Z   t35_tdesc_frank (banked vrf) PASS   cycles=161 issued=34 hazard=15 lsu=0 wb=0 squash=1
+2026-10-19T16:56:47.4463073Z   t35_tdesc_fpad2 (banked vrf) PASS   cycles=133 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:56:48.5926201Z   t35_tdesc_fnanint (banked vrf) PASS   cycles=133 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:56:49.7539274Z   t35_tdesc_fsb (banked vrf) PASS   cycles=140 issued=22 hazard=10 lsu=0 wb=0 squash=1
+2026-10-19T16:56:50.9078420Z   t35_tdesc_fblock (banked vrf) PASS   cycles=133 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:56:52.0577925Z   t35_tdesc_fclamp (banked vrf) PASS   cycles=133 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:56:52.1324385Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+2026-10-19T16:56:52.1325212Z    -P tb_tnca_core.HAS_TENSOR_XPOSE=1 \
+2026-10-19T16:56:52.1326076Z    -o sim/build/tb_core_xpose.vvp tb/core/tb_tnca_core.v
+2026-10-19T16:56:53.1672324Z python3 tools/asm/tnca_asm.py tb/core/progs/t30_xpose.s -o sim/build/t30_xpose.hex --lst sim/build/t30_xpose.lst --size 16384
+2026-10-19T16:56:53.2589600Z python3 tools/asm/tnca_asm.py tb/core/progs/t31_xpose_illegal.s -o sim/build/t31_xpose_illegal.hex --lst sim/build/t31_xpose_illegal.lst --size 16384
+2026-10-19T16:56:53.3029042Z python3 tools/asm/tnca_asm.py tb/core/progs/t32_xpose_badsize.s -o sim/build/t32_xpose_badsize.hex --lst sim/build/t32_xpose_badsize.lst --size 16384
+2026-10-19T16:57:04.9471111Z   t30_xpose              PASS   cycles=3757 issued=1641 hazard=693 lsu=0 wb=0 squash=228
+2026-10-19T16:57:06.0951245Z   t31_xpose_illegal      PASS   cycles=113 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:57:07.2419994Z   t32_xpose_badsize      PASS   cycles=115 issued=18 hazard=7 lsu=0 wb=0 squash=1
+2026-10-19T16:57:07.3537366Z r40-tensor-bounds PASS: all 160 input bits, exact 64-bit wrap/sign/bounds
+2026-10-19T16:57:07.3633369Z ##[group]Run python3 tools/r38/gen_counters.py --check
+2026-10-19T16:57:07.3633824Z [36;1mpython3 tools/r38/gen_counters.py --check[0m
+2026-10-19T16:57:07.3634171Z [36;1mpython3 tools/r38/evidence_tests.py[0m
+2026-10-19T16:57:07.3634684Z [36;1mpython3 tools/r40/resources_tests.py[0m
+2026-10-19T16:57:07.3701404Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:57:07.3701674Z env:
+2026-10-19T16:57:07.3701892Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:57:07.3702181Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:57:07.3702439Z ##[endgroup]
+2026-10-19T16:57:07.4031631Z rtl/common/tnca_perf_sel.vh: up to date
+2026-10-19T16:57:07.4033278Z rtl/common/tnca_perf_count.vh: up to date
+2026-10-19T16:57:07.4945697Z evidence registry: 21 entries, PASS (6/6 mutations caught)
+2026-10-19T16:57:07.5686991Z test_actual_full_report_and_optional_packing_resources (__main__.ResourceEvidenceTests.test_actual_full_report_and_optional_packing_resources) ... ok
+2026-10-19T16:57:07.5909148Z test_build_identity_and_raw_inputs_are_bound (__main__.ResourceEvidenceTests.test_build_identity_and_raw_inputs_are_bound) ... ok
+2026-10-19T16:57:07.8101571Z test_cli_diagnostic_cannot_claim_image_timing_or_overwrite (__main__.ResourceEvidenceTests.test_cli_diagnostic_cannot_claim_image_timing_or_overwrite) ... ok
+2026-10-19T16:57:07.8104872Z test_column_order_and_missing_percentage_are_explicit (__main__.ResourceEvidenceTests.test_column_order_and_missing_percentage_are_explicit) ... ok
+2026-10-19T16:57:07.8126600Z test_conflicting_totals_refused (__main__.ResourceEvidenceTests.test_conflicting_totals_refused) ... ok
+2026-10-19T16:57:07.8307286Z test_corrupt_or_incomplete_sll_capacity_refused (__main__.ResourceEvidenceTests.test_corrupt_or_incomplete_sll_capacity_refused) ... ok
+2026-10-19T16:57:07.8313041Z test_density_threshold_is_configurable_and_not_a_gate (__main__.ResourceEvidenceTests.test_density_threshold_is_configurable_and_not_a_gate) ... ok
+2026-10-19T16:57:07.8405355Z test_local_sll_pressure_survives_aggregate_headroom (__main__.ResourceEvidenceTests.test_local_sll_pressure_survives_aggregate_headroom) ... ok
+2026-10-19T16:57:07.8408650Z test_slr_only_report_cannot_become_global_total (__main__.ResourceEvidenceTests.test_slr_only_report_cannot_become_global_total) ... ok
+2026-10-19T16:57:07.8462102Z test_synthesis_lut_footnote_keeps_explicit_global_column (__main__.ResourceEvidenceTests.test_synthesis_lut_footnote_keeps_explicit_global_column) ... ok
+2026-10-19T16:57:07.8463077Z 
+2026-10-19T16:57:07.8463296Z ----------------------------------------------------------------------
+2026-10-19T16:57:07.8463790Z Ran 10 tests in 0.279s
+2026-10-19T16:57:07.8463980Z 
+2026-10-19T16:57:07.8464074Z OK
+2026-10-19T16:57:07.8589887Z ##[group]Run make tnca-opt
+2026-10-19T16:57:07.8590187Z [36;1mmake tnca-opt[0m
+2026-10-19T16:57:07.8658244Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:57:07.8658507Z env:
+2026-10-19T16:57:07.8658718Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:57:07.8658985Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:57:07.8659233Z ##[endgroup]
+2026-10-19T16:57:10.6806866Z ninja: Entering directory `compiler/build'
+2026-10-19T16:57:10.7086937Z [1/16] Building TNCAInterfaces.h.inc...
+2026-10-19T16:57:10.7106124Z [2/16] Building TNCADialect.cpp.inc...
+2026-10-19T16:57:10.7106752Z [3/16] Building TNCAInterfaces.cpp.inc...
+2026-10-19T16:57:10.7135980Z [4/16] Building TNCADialect.h.inc...
+2026-10-19T16:57:10.7166062Z [5/16] Building TNCAOps.cpp.inc...
+2026-10-19T16:57:10.7172732Z [6/16] Building TNCAOps.h.inc...
+2026-10-19T16:57:10.7189344Z [7/16] Building TNCATypes.cpp.inc...
+2026-10-19T16:57:10.7208297Z [8/16] Building TNCATypes.h.inc...
+2026-10-19T16:57:11.8227030Z [9/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCASupport.cpp.o
+2026-10-19T16:57:13.9977627Z [10/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCAAsyncOps.cpp.o
+2026-10-19T16:57:15.8772318Z [11/16] Building CXX object lib/Dialect/TNCA/Transforms/CMakeFiles/obj.MLIRTNCATransforms.dir/VerifyAsyncOwnership.cpp.o
+2026-10-19T16:57:19.5854134Z [12/16] Building CXX object lib/Dialect/TNCA/IR/CMakeFiles/obj.MLIRTNCA.dir/TNCADialect.cpp.o
+2026-10-19T16:57:29.7663529Z [13/16] Linking CXX static library lib/Dialect/TNCA/IR/libMLIRTNCA.a
+2026-10-19T16:57:29.8740464Z [14/16] Linking CXX static library lib/Dialect/TNCA/Transforms/libMLIRTNCATransforms.a
+2026-10-19T16:57:40.1131911Z [15/16] Building CXX object tools/tnca-opt/CMakeFiles/tnca-opt.dir/tnca-opt.cpp.o
+2026-10-19T16:57:45.2777682Z [16/16] Linking CXX executable tools/tnca-opt/tnca-opt
+2026-10-19T16:57:45.2838484Z ##[group]Run make compiler
+2026-10-19T16:57:45.2838786Z [36;1mmake compiler[0m
+2026-10-19T16:57:45.2910261Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:57:45.2910534Z env:
+2026-10-19T16:57:45.2910752Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:57:45.2911035Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:57:45.2911297Z ##[endgroup]
+2026-10-19T16:57:45.3281243Z PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+2026-10-19T16:57:45.3541102Z   up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+2026-10-19T16:57:45.3541822Z   up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+2026-10-19T16:57:45.3542392Z   up to date: doc/isa/opcode-map.md
+2026-10-19T16:57:45.3542935Z PASS: all generated ISA files match the schema
+2026-10-19T16:57:45.4091252Z   up to date: doc/support_matrix.md
+2026-10-19T16:57:45.4415340Z PASS: target descriptions match the RTL parameters
+2026-10-19T16:57:45.4706112Z checked 218 shared constants against /home/runner/work/TritonChip/TritonChip/rtl/common/tnca_defs.vh
+2026-10-19T16:57:45.4707535Z PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+2026-10-19T16:57:45.7447452Z   compiler-unit          PASS   96 tests, 5 skipped
+2026-10-19T16:57:45.9885337Z   compiler-ir            PASS   6 file(s), 6 RUN case(s)
+2026-10-19T16:57:45.9967075Z ##[group]Run python3 tools/r1/resource_tests.py
+2026-10-19T16:57:45.9967471Z [36;1mpython3 tools/r1/resource_tests.py[0m
+2026-10-19T16:57:46.0034700Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:57:46.0034972Z env:
+2026-10-19T16:57:46.0035195Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:57:46.0035741Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:57:46.0036006Z ##[endgroup]
+2026-10-19T16:57:46.0982287Z R1-05/R1-06 resource footprint and async ownership
+2026-10-19T16:57:46.0982974Z   FP-01  PASS  12 combinations match the formula
+2026-10-19T16:57:46.0983433Z     f16   k16: A= 8 B= 8 VREG
+2026-10-19T16:57:46.0983821Z     f16   k32: A=16 B=16 VREG
+2026-10-19T16:57:46.0984162Z     f16   k64: A=32 B=32 VREG
+2026-10-19T16:57:46.0984497Z     bf16  k16: A= 8 B= 8 VREG
+2026-10-19T16:57:46.0984836Z     bf16  k32: A=16 B=16 VREG
+2026-10-19T16:57:46.0985159Z     bf16  k64: A=32 B=32 VREG
+2026-10-19T16:57:46.0985870Z     e5m2  k16: A= 4 B= 4 VREG
+2026-10-19T16:57:46.0986271Z     e5m2  k32: A= 8 B= 8 VREG
+2026-10-19T16:57:46.0986623Z     e5m2  k64: A=16 B=16 VREG
+2026-10-19T16:57:46.0986965Z     e4m3  k16: A= 4 B= 4 VREG
+2026-10-19T16:57:46.0987306Z     e4m3  k32: A= 8 B= 8 VREG
+2026-10-19T16:57:46.0987651Z     e4m3  k64: A=16 B=16 VREG
+2026-10-19T16:57:46.0988170Z   FP-02  PASS  a short window is refused and the diagnostic says by how much
+2026-10-19T16:57:46.0988845Z     24 short-window cases, all refused with K, dtype and size
+2026-10-19T16:57:46.0989423Z   FP-03  PASS  window lengths at and past the limit
+2026-10-19T16:57:46.0989941Z     exact(16)=True over(17)=True overbudget(64,64)=False
+2026-10-19T16:57:46.0990440Z       windows need more than 64 vector registers
+2026-10-19T16:57:46.0990926Z   FP-04  PASS  the audit reproduction, now refused
+2026-10-19T16:57:46.0991376Z     refused at compile time: True
+2026-10-19T16:57:46.0991895Z       the A window is 8 registers, but a 16x16x64 f16 fragment occupies 32
+2026-10-19T16:57:46.0992466Z   FP-05  PASS  coordinate runs never wrap
+2026-10-19T16:57:46.0992885Z     s1 rank1: ok s1
+2026-10-19T16:57:46.0993183Z     s62 rank1: ok s62
+2026-10-19T16:57:46.0993491Z     s1 rank2: ok s1..s2
+2026-10-19T16:57:46.0993990Z     s61 rank2: ok s61..s62
+2026-10-19T16:57:46.0994358Z     out-of-range bases refused: True
+2026-10-19T16:57:46.0994930Z   FP-06  PASS  overlap found on the physical range, not on identity
+2026-10-19T16:57:46.0995708Z     overlapping write refused: True
+2026-10-19T16:57:46.0996301Z       v.mov v56 writes v56, inside v56..v63 which command #mma0 is still reading
+2026-10-19T16:57:46.0997485Z   OWN-01  PASS  a write into an outstanding fragment is refused
+2026-10-19T16:57:46.0998192Z     window_put: before the wait -> refused; after -> accepted
+2026-10-19T16:57:46.0998939Z       v.mov v56 writes v56, inside v56..v63 which command #mma0 is still reading
+2026-10-19T16:57:46.0999752Z     plain vector write: before the wait -> refused; after -> accepted
+2026-10-19T16:57:46.1000583Z       v.mov v49 writes v49, inside v48..v55 which command #mma0 is still reading
+2026-10-19T16:57:46.1001343Z   OWN-02  PASS  a DMA target is not readable until it lands
+2026-10-19T16:57:46.1002172Z     read before the wait -> refused; after -> True
+2026-10-19T16:57:46.1002879Z       v.add reading v56 reads v56, inside v56..v63 which command #0 is still writing
+2026-10-19T16:57:46.1003754Z   OWN-03  PASS  a store source is live until the completion event (sec 13.4)
+2026-10-19T16:57:46.1004623Z     on a profile without the capability -> refused; on the default target -> emitted
+2026-10-19T16:57:46.1005382Z       target 'tnca-sim-v0.1' cannot emit t.st.async
+2026-10-19T16:57:46.1006264Z     overwrite before source-reusable -> refused; after -> True
+2026-10-19T16:57:46.1006891Z     concurrent READ of the source -> accepted
+2026-10-19T16:57:46.1007533Z       v.mov v56 writes v56, inside v56..v63 which command #0 is still reading
+2026-10-19T16:57:46.1008226Z   OWN-04  PASS  issue-time snapshot, proved in rtl/core/tnca_tensor.v:357
+2026-10-19T16:57:46.1009771Z     reusing the coordinate registers after issue: accepted
+2026-10-19T16:57:46.1010368Z   OWN-05  PASS  accumulator ordering
+2026-10-19T16:57:46.1010889Z     read before the wait -> refused; after -> True
+2026-10-19T16:57:46.1011542Z       a.vread a0 reads a0, inside a0 which command #mma0 is still writing
+2026-10-19T16:57:46.1012260Z   OWN-06  PASS  an outstanding command must be awaited
+2026-10-19T16:57:46.1012788Z     missing await -> refused
+2026-10-19T16:57:46.1013643Z       1 asynchronous command(s) still outstanding when the region ends; #mma0 (m.mma.async) holds v56..v63, v48..v55, a0
+2026-10-19T16:57:46.1014790Z   OWN-07  PASS  a shared range is freed by the last release, not the first
+2026-10-19T16:57:46.1015702Z     reuse after 0 of 2 releases -> refused
+2026-10-19T16:57:46.1016215Z     reuse after 1 of 2 releases -> refused
+2026-10-19T16:57:46.1016717Z     reuse after 2 of 2 releases -> accepted
+2026-10-19T16:57:46.1017572Z       0 of 2: v.mov v56 writes v56, inside v56..v63 which command #mma0 is still reading
+2026-10-19T16:57:46.1018546Z       1 of 2: v.mov v56 writes v56, inside v56..v63 which command #mma1 is still reading
+2026-10-19T16:57:46.1019408Z   OWN-08  PASS  overlap, aliasing and reads past the named base
+2026-10-19T16:57:46.1020008Z     write into the far end of B -> refused
+2026-10-19T16:57:46.1020635Z       v.mov v55 writes v55, inside v48..v55 which command #mma0 is still reading
+2026-10-19T16:57:46.1021420Z     k64: write 15 registers past the named base -> refused
+2026-10-19T16:57:46.1022194Z       v.mov v63 writes v63, inside v48..v63 which command #mma0 is still reading
+2026-10-19T16:57:46.1023013Z     k16: the same register, outside the footprint -> accepted
+2026-10-19T16:57:46.1023676Z     a second role writing into the same physical range -> refused
+2026-10-19T16:57:46.1024459Z   OWN-09  PASS  predication completes once; an error completion still wakes
+2026-10-19T16:57:46.1025191Z     predicated-off transfer is still armed and issued once: True
+2026-10-19T16:57:46.1026195Z     read before the masked transfer completes -> refused; after -> True
+2026-10-19T16:57:46.1027056Z       v.add reading v56 reads v56, inside v56..v63 which command #0 is still writing
+2026-10-19T16:57:46.1028133Z     error completion wakes the waiter: tb/core/progs/t35_tdesc_fpad2.s (present), run by `make core` with +expectfault=04
+2026-10-19T16:57:46.1029246Z   OWN-10  PASS  resource budgets refused at the limit, not past it
+2026-10-19T16:57:46.1030038Z      32 windows -> accepted
+2026-10-19T16:57:46.1030804Z      33 windows -> refused: plan needs 33 RF windows, target 'tnca-sim-v0.1' has 32
+2026-10-19T16:57:46.1031421Z      32 barriers -> accepted
+2026-10-19T16:57:46.1032000Z      33 barriers -> refused: plan needs 33 barriers, target 'tnca-sim-v0.1' has 32
+2026-10-19T16:57:46.1032792Z   OWN-11  PASS  cross-iteration reuse and an undrained loop exit
+2026-10-19T16:57:46.1033512Z     refill before the iteration's wait -> refused; after -> accepted
+2026-10-19T16:57:46.1034300Z       v.mov v56 writes v56, inside v56..v63 which command #mma0 is still reading
+2026-10-19T16:57:46.1035002Z     loop exits with a command outstanding -> refused
+2026-10-19T16:57:46.1036161Z       1 asynchronous command(s) still outstanding when the region ends; #mma0 (m.mma.async) holds v56..v63, v48..v55, a0
+2026-10-19T16:57:46.1037121Z   OWN-12  PASS  determinism across repeated compilation
+2026-10-19T16:57:46.1037703Z     two compilations of the same IR agree: True
+2026-10-19T16:57:46.1038072Z 
+2026-10-19T16:57:46.1038268Z   r1-resource-tests      PASS   18 check(s)
+2026-10-19T16:57:46.1116473Z ##[group]Run make r1-profile-tests
+2026-10-19T16:57:46.1116806Z [36;1mmake r1-profile-tests[0m
+2026-10-19T16:57:46.1183760Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:57:46.1184019Z env:
+2026-10-19T16:57:46.1184226Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:57:46.1184496Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:57:46.1184739Z ##[endgroup]
+2026-10-19T16:57:46.2520269Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+2026-10-19T16:57:46.2521272Z    -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 \
+2026-10-19T16:57:46.2521798Z    -P tb_tnca_core.VREGS_PER_RCTX=32 \
+2026-10-19T16:57:46.2522258Z    -o sim/build/tb_core4.vvp tb/core/tb_tnca_core.v
+2026-10-19T16:57:47.6113511Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+2026-10-19T16:57:47.6114662Z    -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -o sim/build/tb_core_r39hw.vvp tb/core/tb_tnca_core.v
+2026-10-19T16:57:48.6841329Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+2026-10-19T16:57:48.6842918Z    -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -P tb_tnca_core.RCTX_SWITCH=1 -P tb_tnca_core.LSU_INFLIGHT=2 -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 -o sim/build/tb_core_r39sw.vvp tb/core/tb_tnca_core.v
+2026-10-19T16:57:49.7652225Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+2026-10-19T16:57:49.7654829Z    -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -P tb_tnca_core.RCTX_SWITCH=1 -P tb_tnca_core.LSU_INFLIGHT=2 -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 -P tb_tnca_core.PHYS_W=8 -o sim/build/tb_core_r39sw4.vvp tb/core/tb_tnca_core.v
+2026-10-19T16:57:50.8532661Z iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+2026-10-19T16:57:50.8534517Z    -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -P tb_tnca_core.RCTX_SWITCH=2 -P tb_tnca_core.LSU_INFLIGHT=2 -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 -P tb_tnca_core.PHYS_W=8 -P tb_tnca_core.HAS_TENSOR_XPOSE=1 -P tb_tnca_core.RPAIR=1 -P tb_tnca_core.MTX_ABUF=1 -o sim/build/tb_core_r39sw5.vvp tb/core/tb_tnca_core.v
+2026-10-19T16:58:15.7654058Z R1-04 profile and capability: six checks against the real instances
+2026-10-19T16:58:15.7654900Z   CFG-01  PASS  capabilities and resources read back from the hardware
+2026-10-19T16:58:15.7655930Z     core-sim: 10 facts on sim/build/tb_core.vvp -> PASS
+2026-10-19T16:58:15.7656493Z     core-4r: 10 facts on sim/build/tb_core4.vvp -> PASS
+2026-10-19T16:58:15.7657028Z     system-2x2: 10 facts on sim/build/tb_top.vvp -> PASS
+2026-10-19T16:58:15.7658083Z     core-vrf-sync-v1: 10 facts on sim/build/tb_core_vrf.vvp -> PASS
+2026-10-19T16:58:15.7658877Z     core-vrf-sync-v2: 10 facts on sim/build/tb_core_r39hw.vvp -> PASS
+2026-10-19T16:58:15.7659643Z     core-vrf-sync-v3: 10 facts on sim/build/tb_core_r39sw.vvp -> PASS
+2026-10-19T16:58:15.7660392Z     core-vrf-sync-v4: 10 facts on sim/build/tb_core_r39sw4.vvp -> PASS
+2026-10-19T16:58:15.7661196Z     core-vrf-sync-v5: 10 facts on sim/build/tb_core_r39sw5.vvp -> PASS
+2026-10-19T16:58:15.7661909Z     core-xpose-v1: 10 facts on sim/build/tb_core_xpose.vvp -> PASS
+2026-10-19T16:58:15.7662554Z   CFG-02  PASS  target fields vs elaboration parameters
+2026-10-19T16:58:15.7663085Z     core-sim: 6 elaboration fields checked
+2026-10-19T16:58:15.7663541Z     core-4r: 6 elaboration fields checked
+2026-10-19T16:58:15.7664030Z     system-2x2: 6 elaboration fields checked
+2026-10-19T16:58:15.7664535Z     core-vrf-sync-v1: 6 elaboration fields checked
+2026-10-19T16:58:15.7665353Z     core-vrf-sync-v2: 6 elaboration fields checked
+2026-10-19T16:58:15.7666145Z     core-vrf-sync-v3: 6 elaboration fields checked
+2026-10-19T16:58:15.7666710Z     core-vrf-sync-v4: 6 elaboration fields checked
+2026-10-19T16:58:15.7667229Z     core-vrf-sync-v5: 6 elaboration fields checked
+2026-10-19T16:58:15.7667719Z     core-xpose-v1: 6 elaboration fields checked
+2026-10-19T16:58:15.7668209Z   CFG-03  PASS  SFU positive and negative
+2026-10-19T16:58:15.7668655Z     core-sim executes v.rsqrt.approx: True
+2026-10-19T16:58:15.7669163Z     compiler refuses sfu for system-2x2: True
+2026-10-19T16:58:15.7669677Z     system-2x2 refuses it in hardware: True
+2026-10-19T16:58:15.7670261Z   CFG-04  PASS  manifest checked before the first instruction
+2026-10-19T16:58:15.7670837Z     matching       -> 0 problem(s)
+2026-10-19T16:58:15.7671639Z     other profile  -> 3 problem(s): binary was compiled for profile 'core-sim', this machine is 'system-2x2'
+2026-10-19T16:58:15.7672960Z     stale config   -> 1 problem(s): configuration hash 000000000000 does not match this machine's b8fb71a90255 -- the profile 
+2026-10-19T16:58:15.7674186Z     other ISA      -> 1 problem(s): binary targets ISA 'v0.0', this machine implements '0.1'
+2026-10-19T16:58:15.7675214Z     needs sfu      -> 1 problem(s): binary requires capability 'sfu', which this profile does not have
+2026-10-19T16:58:15.7676229Z   CFG-05  PASS  illegal configurations refused
+2026-10-19T16:58:15.7677155Z     unknown topology       -> 1 problem(s): topology 'mesh-4x4' is not supported; rtl/noc/tnca_core_ni.v computes a 2-bit ho
+2026-10-19T16:58:15.7678341Z     rctx width too small   -> 1 problem(s): RCTX_W=1 cannot index NUM_RCTX=4: the index would wrap and two contexts would sh
+2026-10-19T16:58:15.7679662Z     rf base past the file  -> 1 problem(s): 4 contexts x 64 logical vregs exceeds 128 physical: the last context's base is p
+2026-10-19T16:58:15.7680561Z     core-sim               -> 0 problem(s)
+2026-10-19T16:58:15.7681057Z     core-4r                -> 0 problem(s)
+2026-10-19T16:58:15.7681557Z     system-2x2             -> 0 problem(s)
+2026-10-19T16:58:15.7682055Z     core-vrf-sync-v1       -> 0 problem(s)
+2026-10-19T16:58:15.7682560Z     core-vrf-sync-v2       -> 0 problem(s)
+2026-10-19T16:58:15.7683064Z     core-vrf-sync-v3       -> 0 problem(s)
+2026-10-19T16:58:15.7683581Z     core-vrf-sync-v4       -> 0 problem(s)
+2026-10-19T16:58:15.7684087Z     core-vrf-sync-v5       -> 0 problem(s)
+2026-10-19T16:58:15.7684590Z     core-xpose-v1          -> 0 problem(s)
+2026-10-19T16:58:15.7685199Z   CFG-06  PASS  four Role Contexts read back from the hardware
+2026-10-19T16:58:15.7688040Z     3 facts on sim/build/tb_core4.vvp -> PASS
+2026-10-19T16:58:15.7688407Z 
+2026-10-19T16:58:15.7688597Z   r1-profile-tests       PASS   6 check(s)
+2026-10-19T16:58:15.7799662Z ##[group]Run make r3-model-tests
+2026-10-19T16:58:15.7800203Z [36;1mmake r3-model-tests[0m
+2026-10-19T16:58:15.7899235Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:58:15.7899669Z env:
+2026-10-19T16:58:15.7900312Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:58:15.7900785Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:58:15.7901259Z ##[endgroup]
+2026-10-19T16:58:15.8529705Z R3-02 finite-resource performance model
+2026-10-19T16:58:15.8530490Z   MODEL-01  PASS  six graphs, six hand calculations, exact agreement
+2026-10-19T16:58:15.8531038Z     serial chain of 4                 4 cycles  (hand: 4)  agree
+2026-10-19T16:58:15.8531533Z         each op issues the cycle after its producer completes: 1+1+1+1
+2026-10-19T16:58:15.8532259Z     4 independent, 4 ALUs             1 cycles  (hand: 1)  agree
+2026-10-19T16:58:15.8533010Z         nothing depends on anything and nothing is scarce: one cycle
+2026-10-19T16:58:15.8533642Z     4 independent, 1 ALU              4 cycles  (hand: 4)  agree
+2026-10-19T16:58:15.8534588Z         one ALU, occupancy 1: four operations cannot overlap, whatever the issue width says
+2026-10-19T16:58:15.8535191Z     2 ops, 2 banks, 1 port each       2 cycles  (hand: 2)  agree
+2026-10-19T16:58:15.8536071Z         each op takes both banks' single port, so the second waits a cycle even with two ALUs and width 2
+2026-10-19T16:58:15.8536855Z     2 reads on a 1-port bank         -> 'impossible' reads 2 register(s) from bank 0 and a bank has 1 
+2026-10-19T16:58:15.8537463Z     2 reads, 4 banks, 1 port each     1 cycles  (hand: 1)  agree
+2026-10-19T16:58:15.8538000Z         four banks, four distinct registers, two units: both ops issue in cycle 0
+2026-10-19T16:58:15.8538543Z     4 transfers, queue depth 2        9 cycles  (hand: 9)  agree
+2026-10-19T16:58:15.8539083Z         depth 2 and latency 4: two in flight, the next pair waits for them to drain
+2026-10-19T16:58:15.8539674Z         the queue stalled 4 time(s), which is what a finite queue is for
+2026-10-19T16:58:15.8540202Z     fill -> use -> refill            14 cycles  (hand: 14)  agree
+2026-10-19T16:58:15.8540857Z         fill completes at 4, the MMA issues at 4 and completes at 10, the refill issues at 10 and completes at 14
+2026-10-19T16:58:15.8541515Z   MODEL-02  PASS  scarcity costs, and nothing is free
+2026-10-19T16:58:15.8541917Z     8 banks -> 1 cycles, 2 banks -> 4 cycles
+2026-10-19T16:58:15.8542281Z     latency 1 -> 1 cycles, latency 3 -> 3 cycles
+2026-10-19T16:58:15.8542783Z     a queue with no depth        -> refused: queue 'dma' has no depth. An unbounded queue
+2026-10-19T16:58:15.8543380Z     a unit that takes no time    -> refused: unit 'alu' occupies 0 cycles
+2026-10-19T16:58:15.8543911Z     a bank with no read port     -> refused: rf_read_ports_per_bank=0
+2026-10-19T16:58:15.8544419Z     a consumer of a 9-cycle transfer completes at 10 (hand: 10)
+2026-10-19T16:58:15.8545022Z   MODEL-03  PASS  nothing lost, no cycles, and no zero-cycle answer for an impossible machine
+2026-10-19T16:58:15.8545713Z     6 operations issued 6 time(s): conserved
+2026-10-19T16:58:15.8546146Z     a dependency cycle           -> a dependency cycle: a -> b -> a
+2026-10-19T16:58:15.8546661Z     an unknown dependency        -> 'a' depends on unknown 'ghost'
+2026-10-19T16:58:15.8547237Z     a unit the machine lacks     -> 'a' uses unit 'tensor-core', which this machine do
+2026-10-19T16:58:15.8547799Z     two operations with one name -> two operations named 'a'
+2026-10-19T16:58:15.8548351Z     a queue the machine lacks    -> 'a' uses queue 'nope', which this machine does not
+2026-10-19T16:58:15.8693583Z   MODEL-04  PASS  deterministic, bounded, and fast enough to be useful
+2026-10-19T16:58:15.8694505Z     the same input five times: [14, 14, 14, 14, 14] -> identical
+2026-10-19T16:58:15.8695027Z     swept 54 candidates in 0.01s (budget: 128 candidates, 60 s)
+2026-10-19T16:58:15.8696114Z     best: b8p2w4u4 at 8 cycles, bottleneck dependency
+2026-10-19T16:58:15.8697316Z     a sweep past the budget -> 162 candidates exceeds the 128 the contract allows. A sw
+2026-10-19T16:58:15.8698035Z   MODEL-05  PASS  cycles, bottleneck, machine, and never "RTL measured"
+2026-10-19T16:58:15.8698867Z     cycles=296  bottleneck=dependency  issued={'alu': 0, 'mma': 1, 'dma': 1, 'sfu': 0}
+2026-10-19T16:58:15.8699905Z     machine recorded: banks=1, units=['alu', 'dma', 'mma', 'sfu']
+2026-10-19T16:58:15.8700336Z     kind: 'model projection'
+2026-10-19T16:58:15.8700835Z     a rejected candidate: impossible -> 'f' uses unit 'dma', which this machine does not have (a
+2026-10-19T16:58:15.8701293Z 
+2026-10-19T16:58:15.8701423Z   r3-model-tests         PASS   5 check(s)
+2026-10-19T16:58:15.8823049Z ##[group]Run make r3-plan
+2026-10-19T16:58:15.8823526Z [36;1mmake r3-plan[0m
+2026-10-19T16:58:15.8893726Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:58:15.8894166Z env:
+2026-10-19T16:58:15.8894533Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:58:15.8894958Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:58:15.8895194Z ##[endgroup]
+2026-10-19T16:58:15.9351853Z R3-01 plan: budgets and caps, checked before any simulator starts
+2026-10-19T16:58:15.9353055Z   PLAN-02  PASS  16 workload(s) inside the contract's caps
+2026-10-19T16:58:15.9354053Z   PLAN-03  PASS  expands to exactly 32 performance run(s)
+2026-10-19T16:58:15.9354663Z     at the measured simulation rate that is about 10 minutes of RTL
+2026-10-19T16:58:15.9355343Z     (rate from doc/evidence/r3-timing-scout-macos.json; it is a simulation rate, not a clock)
+2026-10-19T16:58:15.9356613Z   PLAN-04  PASS  14 parameter(s) with a source, 7 recorded as unmeasured rather than 0
+2026-10-19T16:58:15.9357250Z   PLAN-01  PASS  R1 baseline: ACCEPTED on 97c0cf909c47
+2026-10-19T16:58:15.9357536Z 
+2026-10-19T16:58:15.9357665Z   r3-plan                PASS   4 check(s)
+2026-10-19T16:58:15.9444545Z ##[group]Run make r3-rf-tests
+2026-10-19T16:58:15.9444849Z [36;1mmake r3-rf-tests[0m
+2026-10-19T16:58:15.9512126Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:58:15.9512378Z env:
+2026-10-19T16:58:15.9512580Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:58:15.9512842Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:58:15.9513081Z ##[endgroup]
+2026-10-19T16:58:16.0281898Z R3-03 synchronous banked VRF
+2026-10-19T16:58:16.0282366Z   RF-01  PASS  8 KiB in 4 banks, mapping invertible
+2026-10-19T16:58:16.0282865Z     4 bank(s) x 32 row(s) x 16 lane(s) x 4 bytes = 8192 bytes (8 KiB)
+2026-10-19T16:58:16.0283335Z     the mapping is invertible for all 128 registers: True
+2026-10-19T16:58:16.0283736Z     registers per bank: [32, 32, 32, 32]
+2026-10-19T16:58:16.0284175Z     equal bases alias every name: True; disjoint bases share 0 register(s)
+2026-10-19T16:58:16.0284683Z     base=124, idx 0..7 -> [124, 125, 126, 127, 0, 1, 2, 3]
+2026-10-19T16:58:16.7166604Z   RF-02  PASS  three seeds, two latencies, every request compared
+2026-10-19T16:58:16.7167391Z     seed 1 spread latency 1 (139 request(s), 40 warm-up write(s)): 665 lane comparison(s), 1175 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7168337Z     seed 1 spread latency 2 (139 request(s), 40 warm-up write(s)): 649 lane comparison(s), 1159 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7169192Z     control: latency-1 responses checked against a latency-2 model -> DISAGREE (good)
+2026-10-19T16:58:16.7169932Z     seed 1 hot latency 1 (145 request(s), 40 warm-up write(s)): 944 lane comparison(s), 704 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7170814Z     seed 1 hot latency 2 (145 request(s), 40 warm-up write(s)): 928 lane comparison(s), 704 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7171715Z     seed 7 spread latency 1 (152 request(s), 40 warm-up write(s)): 813 lane comparison(s), 1123 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7172612Z     seed 7 spread latency 2 (152 request(s), 40 warm-up write(s)): 797 lane comparison(s), 1107 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7173498Z     seed 7 hot latency 1 (154 request(s), 40 warm-up write(s)): 1092 lane comparison(s), 700 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7174388Z     seed 7 hot latency 2 (154 request(s), 40 warm-up write(s)): 1092 lane comparison(s), 684 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7175896Z     seed 42 spread latency 1 (139 request(s), 40 warm-up write(s)): 638 lane comparison(s), 1170 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7176840Z     seed 42 spread latency 2 (139 request(s), 40 warm-up write(s)): 638 lane comparison(s), 1138 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7177771Z     seed 42 hot latency 1 (139 request(s), 40 warm-up write(s)): 1017 lane comparison(s), 583 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7178671Z     seed 42 hot latency 2 (139 request(s), 40 warm-up write(s)): 1001 lane comparison(s), 583 against never-written state (not compared), 0 problem(s)
+2026-10-19T16:58:16.7348039Z   RF-03  PASS  uninitialised state stays unknown
+2026-10-19T16:58:16.7348656Z     a register never written reads as X (unknown)
+2026-10-19T16:58:16.7599730Z   RF-04  PASS  one bank, one read, one response
+2026-10-19T16:58:16.7600633Z     four requests to one bank, every cycle: at most 1 accepted per cycle
+2026-10-19T16:58:16.7601562Z     latency 1: at most 1 response(s) in any cycle, 8 in total
+2026-10-19T16:58:16.7602321Z     latency 2: at most 1 response(s) in any cycle, 8 in total
+2026-10-19T16:58:16.8219346Z   RF-05  PASS  an impossible configuration refused, a masked write masked
+2026-10-19T16:58:16.8219852Z     100 registers in 8 banks of 12: refused at elaboration
+2026-10-19T16:58:16.8220520Z         tnca_vrf_banked: 8 banks x 12 = 96, not PHYS_VREGS=100
+2026-10-19T16:58:16.8221039Z     a 4-lane masked write over a full one: lanes 0..3 = [4096, 4097, 4098, 4099], lanes 4..5 = [8196, 8197]
+2026-10-19T16:58:16.8221714Z 
+2026-10-19T16:58:16.8222183Z   r3-rf-tests            PASS   5 check(s)
+2026-10-19T16:58:16.8318862Z ##[group]Run make r3-synth-tests
+2026-10-19T16:58:16.8319390Z [36;1mmake r3-synth-tests[0m
+2026-10-19T16:58:16.8389145Z shell: /usr/bin/bash -e {0}
+2026-10-19T16:58:16.8389399Z env:
+2026-10-19T16:58:16.8389600Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T16:58:16.8389904Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T16:58:16.8390139Z ##[endgroup]
+2026-10-19T17:01:48.0670804Z R3-10 structural synthesis of the storage
+2026-10-19T17:01:48.0671769Z   SYN-01  PASS  the declared capacity survives as memory, exactly
+2026-10-19T17:01:48.0672966Z     tnca_vrf_banked        65536 bit(s) in 4 memory object(s) = 100% of the declared 8 KiB
+2026-10-19T17:01:48.0674320Z     tnca_acc_rf            131072 bit(s) in 16 memory object(s) = 100% of the declared 16 KiB
+2026-10-19T17:01:48.0675870Z     accumulator valid tags: 4096 bit(s) in 1 control array(s), expected 4096, outside data capacity
+2026-10-19T17:01:48.0677495Z     collector: 162 flop bit(s) + 136 bit(s) in 5 control array(s), accounted separately and not added to any capacity
+2026-10-19T17:01:48.0678760Z   SYN-02  PASS  one read port, one write port, a clocked read, no array reset
+2026-10-19T17:01:48.0679616Z     g_bank[0].u_bank.mem: 1R/1W, synchronous read, read-first  ok
+2026-10-19T17:01:48.0680314Z     g_bank[1].u_bank.mem: 1R/1W, synchronous read, read-first  ok
+2026-10-19T17:01:48.0681003Z     g_bank[2].u_bank.mem: 1R/1W, synchronous read, read-first  ok
+2026-10-19T17:01:48.0681768Z     g_bank[3].u_bank.mem: 1R/1W, synchronous read, read-first  ok
+2026-10-19T17:01:48.0682759Z     4 bank(s), each one read port and one write port, which is what the arbitration in tnca_vrf_banked exists to ration
+2026-10-19T17:01:48.0683899Z     for contrast, tnca_vector_rf: 5R/130W, ASYNCHRONOUS read -- the structure this replaces
+2026-10-19T17:01:48.0685022Z     5 clocked block(s); 1 assign(s) the data array, and 0 of those mention reset
+2026-10-19T17:01:48.0685993Z     the data array is not cleared on reset: True
+2026-10-19T17:01:48.0686669Z   SYN-03  PASS  no latches, no unresolved findings, nothing left out
+2026-10-19T17:01:48.0687566Z     tnca_rf_bank             0 latch(es), 0 unresolved finding(s), 0 unexplained warning(s), 0 explained
+2026-10-19T17:01:48.0688553Z     tnca_vrf_banked          0 latch(es), 0 unresolved finding(s), 0 unexplained warning(s), 8 explained
+2026-10-19T17:01:48.0689821Z         explained: Replacing memory \bank_row_c with list of registers. See /home/runner/
+2026-10-19T17:01:48.0690719Z         explained: Replacing memory \bank_wdata_c with list of registers. See /home/runne
+2026-10-19T17:01:48.0691669Z     tnca_operand_collector   0 latch(es), 0 unresolved finding(s), 0 unexplained warning(s), 4 explained
+2026-10-19T17:01:48.0692608Z         explained: Replacing memory \port_slot with list of registers. See /home/runner/w
+2026-10-19T17:01:48.0693471Z         explained: Replacing memory \port_ent with list of registers. See /home/runner/wo
+2026-10-19T17:01:48.0694462Z     all 3 module(s) changed by R3-03 and R3-04 are in the run; none is recorded as zero gates because it was missing
+2026-10-19T17:01:48.0695695Z   SYN-04  PASS  memory-inferred, stated as such, with an interface contract
+2026-10-19T17:01:48.0696428Z     mapping: memory-inferred; no PDK, no FPGA RAM primitive
+2026-10-19T17:01:48.0697160Z     it claims no SRAM area, no frequency and no timing closure: True
+2026-10-19T17:01:48.0697831Z     the wrapper states the read latency: True
+2026-10-19T17:01:48.0698421Z     the wrapper states the read-during-write rule: True
+2026-10-19T17:01:48.0699051Z     the wrapper states the write mask granularity: True
+2026-10-19T17:01:48.0699730Z   SYN-05  PASS  four columns, and the ones with no library say so
+2026-10-19T17:01:48.0700506Z     module                      data memory  flop bits  logic cells            STA
+2026-10-19T17:01:48.0701250Z     tnca_acc_rf                    16.0 KiB          0          146   NOT MEASURED
+2026-10-19T17:01:48.0702024Z     tnca_operand_collector          0.0 KiB        162         1747   NOT MEASURED
+2026-10-19T17:01:48.0702959Z     tnca_rf_bank                    2.0 KiB        537        16216   NOT MEASURED
+2026-10-19T17:01:48.0703703Z     tnca_vector_rf                  8.0 KiB          0        31296   NOT MEASURED
+2026-10-19T17:01:48.0704474Z     tnca_vrf_banked                 8.0 KiB       2150        65239   NOT MEASURED
+2026-10-19T17:01:48.0705113Z     fmax: NOT MEASURED
+2026-10-19T17:01:48.0705705Z     area: NOT MEASURED
+2026-10-19T17:01:48.0706084Z     power: NOT MEASURED
+2026-10-19T17:01:48.0706934Z     the model clock is the simulation's, not a timing result; the structural cap is 1200s per top and nothing timed out
+2026-10-19T17:01:48.0707799Z 
+2026-10-19T17:01:48.0707989Z   r3-synth-tests         PASS   5 check(s)
+2026-10-19T17:01:48.0780129Z ##[group]Run make r1-gate-selftest
+2026-10-19T17:01:48.0780455Z [36;1mmake r1-gate-selftest[0m
+2026-10-19T17:01:48.0847590Z shell: /usr/bin/bash -e {0}
+2026-10-19T17:01:48.0847848Z env:
+2026-10-19T17:01:48.0848051Z   LLVM_PREFIX: /usr/lib/llvm-20
+2026-10-19T17:01:48.0848309Z   TNCA_LLVM: /usr/lib/llvm-20
+2026-10-19T17:01:48.0848544Z ##[endgroup]
+2026-10-19T17:01:53.9015120Z R1-02 gate self-test: ten injected failures, each must be detected
+2026-10-19T17:01:53.9016099Z   RUN-01   detected     make triton-e2e exit=2, make e2e exit=2
+2026-10-19T17:01:53.9016572Z   RUN-02   detected     strict=2 dev=0 ir_strict=1 import_error=FAIL
+2026-10-19T17:01:53.9017019Z   RUN-03   detected     assert=FAIL traceback_kept=True assembler_exit=1
+2026-10-19T17:01:53.9017438Z   RUN-04   detected     status=FAIL rc=7 ['simulator exit=7']
+2026-10-19T17:01:53.9017935Z   RUN-05   detected     silent=1 problem(s); both=1 problem(s); corrupt=1 problem(s)
+2026-10-19T17:01:53.9018502Z   RUN-06   detected     status=TIMEOUT orphans=[] elapsed=5.033s (cap 1s)
+2026-10-19T17:01:53.9019054Z   RUN-07   detected     empty=2; missing=1; duplicate=1; skip=1; xfail=1; xpass=1; notrun=2; clean=0
+2026-10-19T17:01:53.9019759Z   RUN-08   detected     missing_this_run='result.dump was not produced by this run'; previous run's file unaffected
+2026-10-19T17:01:53.9020310Z   RUN-09   detected     naive=0 guarded=1 offenders=[]
+2026-10-19T17:01:53.9020690Z   RUN-10   detected     a=INPUT-AAA b=INPUT-BBB separate_dirs=True
+2026-10-19T17:01:53.9021235Z 
+2026-10-19T17:01:53.9021382Z   r1-gate-selftest       PASS   10/10 injections detected
+2026-10-19T17:01:53.9203441Z Post job cleanup.
+2026-10-19T17:01:54.0146021Z [command]/usr/bin/git version
+2026-10-19T17:01:54.0194713Z git version 2.55.0
+2026-10-19T17:01:54.0240248Z Temporarily overriding HOME='/home/runner/work/_temp/06b4b1f4-9e8b-4d32-8d25-ed6b5801f618' before making global git config changes
+2026-10-19T17:01:54.0241680Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T17:01:54.0247284Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/TritonChip/TritonChip
+2026-10-19T17:01:54.0293909Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T17:01:54.0336577Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T17:01:54.0601019Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T17:01:54.0634377Z http.https://github.com/.extraheader
+2026-10-19T17:01:54.0645289Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-19T17:01:54.0682235Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T17:01:54.0960468Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T17:01:54.1002342Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T17:01:54.1416748Z Cleaning up orphan processes
+2026-10-19T17:01:54.1763467Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

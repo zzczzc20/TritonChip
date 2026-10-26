@@ -1,0 +1,106 @@
+{
+ "schema": "tnca-r40-subset/1",
+ "name": "hbm-core",
+ "rule": "R40-09 acceptance 3: the hbm tier (streaming, GEMM, transpose, gather, norm, decoder) and the large SDPA points",
+ "points": [
+  {
+   "id": "model.llama_decode/hbm/fp16-b1-p512",
+   "sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16",
+   "family": "llama_decode",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_prefill/hbm/fp16-b1-s512",
+   "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1",
+   "family": "llama_prefill",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.add/hbm/fp16-n67108864",
+   "sha256": "4c8c739081452e9ef3c1c8870031ae89ae86a9cc09e262fea5a7ccfc202bc85e",
+   "family": "add",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+   "sha256": "30a25aa8093be0e8ee638f450538233458f46c6eb78b7fb5e8c249964deed8de",
+   "family": "attention_decode",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+   "sha256": "db38a0023846910da67c8f869dfe922dfa0eaeaa1cea70ff09aec2629711e3a1",
+   "family": "attention_prefill",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.copy/hbm/fp16-n67108864",
+   "sha256": "985db43ad808d2f7bf11454bab05e082416c27d6284be0707cefe0d3db071027",
+   "family": "copy",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.embedding/hbm/fp16-v65536-d2048-t8192",
+   "sha256": "998ca4722412f6fa8c35b160c96e92e34582656b7cb917ff0f47157b69ced5a6",
+   "family": "embedding",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.gemv/hbm/fp16-k4096-n11008",
+   "sha256": "a65683795c4c05baf3c758fe40b6d0d6bc5994a11c2340fd17fbbc04d576baa9",
+   "family": "gemv",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+   "family": "linear",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+   "family": "matmul",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "sha256": "cf35f8341664c0affaf6d5401ac648fa1782fc02e09715b23b1498639d2579d5",
+   "family": "rmsnorm",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.silu/hbm/fp16-n67108864",
+   "sha256": "ac289d78c2b64352cffab211799e71984b2403633d6fbeee25bd6aa538bd27fd",
+   "family": "silu",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.softmax/hbm/fp16-r4096-c8192",
+   "sha256": "a97f2905a204dcf4d0108822bd6a1ca1bc94dfc04e226ba243efe81ee160443b",
+   "family": "softmax",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.transpose/hbm/fp32-r8192-c8192",
+   "sha256": "178a8b5508f1155d44907970a91aa0a030aeec79618fa7b124df3a320579eb56",
+   "family": "transpose",
+   "tier": "hbm",
+   "dtype": "fp32"
+  }
+ ],
+ "sha256": "3cb5de4b8ec17029a0c3ab518d63f7b6d98b6c04067f69fadd66928a392d074e"
+}

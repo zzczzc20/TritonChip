@@ -1,0 +1,20 @@
+{
+  "schema": "tnca-r40-attempt03-one-off-queue/1",
+  "state": "queued-preflight",
+  "queued_utc": "2026-10-17T21:20:13.505987+00:00",
+  "source_commit": "54249f7f7ac0cf8f5d1b82d8e63a3046d27522d3",
+  "source_archive_sha256": "6b254137501f4a3802c11f9e084e961c60724093a4da5654ce721b70a0d8db84",
+  "source_root": "/home/zzhouch/tnca_src_r40_attempt03_54249f7",
+  "build_root": "/home/zzhouch/tnca_build/r40_attempt03_20261017",
+  "configuration_sha256": "2795cb283b85befb262fd1fd6547669421b9a7fb76df89c02fef0a314b27bf1b",
+  "launcher_sha256": "978b57f4dc3c49c0140c602027f30e46fb8ddd8f9b68443c58d11951c6dd7ec8",
+  "module": "r40_hit_owner_module_20261017",
+  "mapped_cut": "r40_owner_boundary_synth_v2_20261017",
+  "clock_target_hz": 100000000,
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "maximum_full_attempts": 3,
+  "used": 2,
+  "remaining": 1,
+  "policy": "Wait existing route; verify accurate minmax/legal route/actual local state and tag roots, exact mapped cut and immutable inputs. Atomically reserve final attempt only when starting existing runner. CI in parallel; required before board loading/qualification. Existing observer reused.",
+  "timer_pid": 1917220
+}

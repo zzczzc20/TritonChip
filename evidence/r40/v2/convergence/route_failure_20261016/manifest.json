@@ -1,0 +1,18 @@
+{
+  "schema": "tnca-route-failure-evidence/1",
+  "gate_status": "not-measured",
+  "implementation_exit_code": 1,
+  "terminal_cause": "Route 35-3: global congestion level 7",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "artifacts": {
+    "README.md": "df716bf9ac4f12ada8fb2274941fe3216ce21bcf620f6d989f7eac7beb71e212",
+    "critical_paths.json": "3c13703c219816391a73f22a43612300b8a6c36089d7e6d4f3a38567dd3fafa3",
+    "diagnostic_reports_01.tar.gz": "b74085d8476f19cc5e3fcb623187b069dd18caf6f2cb77bf92c12fb540a716d1",
+    "diagnostic_reports_complete.tar.gz": "b5348e1a3f1fd2fde62c9b01a7877de4526e85b9cb6da6aa060fde4c31cdd77d",
+    "link.exit": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "next_candidate_hypotheses.md": "abfd65fbece2e5563df15121ed1f01866e18d7cda5a86f9618b5f452e4b72856",
+    "observation.json": "0623d326797149addbeea84ce55f138384f973306b2160e08de670f7a8a1c06d",
+    "runme.log.gz": "9be300b5dc42b3a6b50b4e610da448df16b8aea5e1429507d740aeac7e1a2878",
+    "time_metadata.json": "c6b827bc53d5be3e9405ce625b060e21921b92bb76572688461fb6485785447a"
+  }
+}

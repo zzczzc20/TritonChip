@@ -1,0 +1,273 @@
+{
+  "files": {
+    "diagnose_r40_checkpoint.tcl": {
+      "sha256": "1925e19752cec21d028ccf98644cf30b528aa1ffb58188f05ebc5403beddd2ee",
+      "bytes": 11527
+    },
+    "identity.json": {
+      "sha256": "71fe65d0102643e49a26e00d8ae29a8be49ab2cd0a1fafbbdde925e827b115f7",
+      "bytes": 473
+    },
+    "reports/critical_paths.rpt": {
+      "sha256": "3363aa1b0f3246b58579cb39cb2aed871d7134d703a26ea75b70e687361c122c",
+      "bytes": 324942
+    },
+    "reports/critical_paths_ranked.tsv": {
+      "sha256": "cf50b76f1ae732b0ba283ac99a90e4cf65535688b5b5c48a4c06b430b3f5a992",
+      "bytes": 3311
+    },
+    "reports/owner_input.rpt": {
+      "sha256": "2e7ad3df506f6c3b1a8247f731d1ce20d1c034478108b656efb232b5edcabf29",
+      "bytes": 27547
+    },
+    "reports/owner_input_ranked.tsv": {
+      "sha256": "8a888ab49397c6dcea132d44cfac96b429f0d16cc04f94cc0dc574a62c045db2",
+      "bytes": 228
+    },
+    "reports/owner_output.rpt": {
+      "sha256": "44d0974893c9d915049dcc407695ae46df78520701c4cb995d1dd4fcfd9d0644",
+      "bytes": 51125
+    },
+    "reports/owner_output_ranked.tsv": {
+      "sha256": "3e772a60f1ef47c362f644389a67de6d3c1d314d5f563f0ecac4bc4d112817df",
+      "bytes": 235
+    },
+    "reports/owner_to_pair.rpt": {
+      "sha256": "6ca5db8b75799352c0449695e87916640d14f3e6187832048c7e99da94c4f05c",
+      "bytes": 101283
+    },
+    "reports/owner_to_pair_ranked.tsv": {
+      "sha256": "1c32378d6d9b78e314fa2847933a37ef5e100f1368f81849145741665ca34790",
+      "bytes": 236
+    },
+    "reports/owner_to_selected.rpt": {
+      "sha256": "51da2795bf2898a2e288cf8ad03e1a710277d601b2ac63d461113d392b234527",
+      "bytes": 1604
+    },
+    "reports/pair_to_selected.rpt": {
+      "sha256": "0f7d3fc6b799a4e372154303e0816a5593cc20c63a98d8c8fc47f1262eda4dc5",
+      "bytes": 70836
+    },
+    "reports/pair_to_selected_ranked.tsv": {
+      "sha256": "73b7091b563224e2b9a277b5c717f1340a0ca59a6c8d334e875f6e81d6b81757",
+      "bytes": 800
+    },
+    "reports/register_boundaries.tsv": {
+      "sha256": "57395b7cc5f7bc65e979fab83b3a5f0183632cf5b9d6933bbc26c89162780381",
+      "bytes": 108450
+    },
+    "reports/request_owner_output.rpt": {
+      "sha256": "ebfeb26d06bbf04467adbd0339c893bbea4a084bf060b39cb5ab5ce92eb33a04",
+      "bytes": 40881
+    },
+    "reports/request_owner_output_ranked.tsv": {
+      "sha256": "bcc402781c1351d84f593905ccec58d30a1d19ede3c38fe8252b0436f9a564e0",
+      "bytes": 221
+    },
+    "reports/selected_output.rpt": {
+      "sha256": "de852ff8853230521aae0387903e344474b3fab953133f2b9dc041265eb67730",
+      "bytes": 78069
+    },
+    "reports/selected_output_ranked.tsv": {
+      "sha256": "da43d0f3c5aacd252bb07f06570fb049dfd6a759c24cefa39b660e861fb5d346",
+      "bytes": 228
+    },
+    "reports/tag_storage_cells.tsv": {
+      "sha256": "ee834a32a02d58a8e9a34868621f93c4e6d5b622eef163c83329404f14ea3deb",
+      "bytes": 272332
+    },
+    "reports/tag_storage_summary.tsv": {
+      "sha256": "99833d2cb3b86726f9a0f99bac5f5969dfd5ab5f2f43f5211e3cbd74376cded4",
+      "bytes": 763
+    },
+    "reports/tag_to_owner.rpt": {
+      "sha256": "368af7b712054ff6dc2322d951c19abd85d880b97fb5f7cbdfdd2f541560418f",
+      "bytes": 40159
+    },
+    "reports/tag_to_owner_ranked.tsv": {
+      "sha256": "145f56e5dc015dc6b4d91d8de83e0f7b1e4e48c1bce71ec6e1d16c47e437add5",
+      "bytes": 374
+    },
+    "run.sh": {
+      "sha256": "ea7874dac3d5707519923a7b8aab29958d00b0cefeede513cdc1131e06e95f9a",
+      "bytes": 486
+    },
+    "runner.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "stdout.log": {
+      "sha256": "b47d3b1533638118cff343858304db964cfece54d509307bed404feac9920150",
+      "bytes": 16768
+    },
+    "vivado.log": {
+      "sha256": "af09608280191e1093caea8a63968621a6d5d4f6e392a09220a43065dfd5d711",
+      "bytes": 17479
+    }
+  },
+  "identity": {
+    "scope": "Read-only report API/filters on retained predecessor module DCP; no synthesis/place/route or final-image qualification",
+    "script_sha256": "1925e19752cec21d028ccf98644cf30b528aa1ffb58188f05ebc5403beddd2ee",
+    "checkpoint": "/home/zzhouch/tnca_build/r40_hit_owner_module_20261017/reports/routed.dcp",
+    "checkpoint_sha256": "fb15eb29967a99135d8fe4728494177a1267c505b857625bac6224866158ff18",
+    "started_utc": "2026-10-17T21:39:09Z",
+    "runner_pid": 1925491
+  },
+  "scope": "Read-only final-cache-cuts mode verified against retained routed predecessor module; no full-image gate",
+  "exit_code": 0,
+  "archive": "final_cut_query_probe.tar.gz",
+  "archive_sha256": "a51585fd5c958d8c2b1e902c1058d30d553970b01e478c61bee5e7770d63c28a",
+  "mapped_tag_roots": {
+    "RAM32M16": 96
+  },
+  "register_boundaries": [
+    "request_owner",
+    "selected_way",
+    "tag",
+    "victim_owner",
+    "victim_pair"
+  ],
+  "first_path_samples": {
+    "owner_input": [
+      {
+        "slack_ns": 3.486,
+        "source": "g_tile[1].u_slice/est_reg[0]_rep__7/C",
+        "destination": "g_tile[1].u_slice/victim_owner_q_reg[7][0]/R",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 6.367,
+        "logic_delay_ns": 0.28,
+        "route_delay_ns": 6.087,
+        "logic_levels": 2,
+        "clock_period_ns": 10.0
+      }
+    ],
+    "tag_to_owner": [
+      {
+        "slack_ns": 3.749,
+        "source": "g_tile[0].u_slice/g_sync_tags.g_way[6].read_tag_reg[4]/C",
+        "destination": "g_tile[0].u_slice/victim_owner_q_reg[6][3]/D",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 6.024,
+        "logic_delay_ns": 0.776,
+        "route_delay_ns": 5.248,
+        "logic_levels": 9,
+        "clock_period_ns": 10.0
+      }
+    ],
+    "owner_output": [
+      {
+        "slack_ns": 2.156,
+        "source": "g_tile[0].u_slice/victim_owner_q_reg[0][3]/C",
+        "destination": "g_tile[0].u_slice/victim_pair_q_reg[0][6]/D",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 7.654,
+        "logic_delay_ns": 1.449,
+        "route_delay_ns": 6.205,
+        "logic_levels": 16,
+        "clock_period_ns": 10.0
+      }
+    ],
+    "request_owner_output": [
+      {
+        "slack_ns": 3.936,
+        "source": "g_tile[2].u_slice/request_owner_q_reg[3]/C",
+        "destination": "g_tile[2].u_slice/tl_a_reg[58]/CE",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 5.879,
+        "logic_delay_ns": 0.774,
+        "route_delay_ns": 5.105,
+        "logic_levels": 11,
+        "clock_period_ns": 10.0
+      }
+    ],
+    "critical_paths": [
+      {
+        "slack_ns": 0.361,
+        "source": "g_tile[1].u_slice/cur_ms_reg[1]_rep/C",
+        "destination": "g_tile[1].u_slice/data_mem_reg_r2_0_63_392_398/RAMC/I",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 9.203,
+        "logic_delay_ns": 1.446,
+        "route_delay_ns": 7.757,
+        "logic_levels": 18,
+        "clock_period_ns": 10.0
+      }
+    ],
+    "owner_to_pair": [
+      {
+        "slack_ns": 2.156,
+        "source": "g_tile[0].u_slice/victim_owner_q_reg[0][3]/C",
+        "destination": "g_tile[0].u_slice/victim_pair_q_reg[0][6]/D",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 7.654,
+        "logic_delay_ns": 1.449,
+        "route_delay_ns": 6.205,
+        "logic_levels": 16,
+        "clock_period_ns": 10.0
+      }
+    ],
+    "pair_to_selected": [
+      {
+        "slack_ns": 6.478,
+        "source": "g_tile[1].u_slice/victim_pair_q_reg[3][5]/C",
+        "destination": "g_tile[1].u_slice/selected_way_q_reg[0]_rep__0/D",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 3.471,
+        "logic_delay_ns": 1.069,
+        "route_delay_ns": 2.402,
+        "logic_levels": 7,
+        "clock_period_ns": 10.0
+      }
+    ],
+    "selected_output": [
+      {
+        "slack_ns": 3.739,
+        "source": "g_tile[1].u_slice/selected_way_q_reg[1]_rep__0/C",
+        "destination": "g_tile[1].u_slice/ms_wbadr_reg_0_7_28_41/RAMA/WE",
+        "path_type": "Setup (Max at Slow Process Corner)",
+        "requirement_ns": 10.0,
+        "data_delay_ns": 5.832,
+        "logic_delay_ns": 0.776,
+        "route_delay_ns": 5.056,
+        "logic_levels": 9,
+        "clock_period_ns": 10.0
+      }
+    ]
+  },
+  "direct_owner_to_selected": "No timing paths found; not a zero-delay measurement",
+  "expected_files": [
+    "critical_paths.rpt",
+    "critical_paths_ranked.tsv",
+    "owner_input.rpt",
+    "owner_input_ranked.tsv",
+    "owner_output.rpt",
+    "owner_output_ranked.tsv",
+    "owner_to_pair.rpt",
+    "owner_to_pair_ranked.tsv",
+    "owner_to_selected.rpt",
+    "pair_to_selected.rpt",
+    "pair_to_selected_ranked.tsv",
+    "register_boundaries.tsv",
+    "request_owner_output.rpt",
+    "request_owner_output_ranked.tsv",
+    "selected_output.rpt",
+    "selected_output_ranked.tsv",
+    "tag_storage_cells.tsv",
+    "tag_storage_summary.tsv",
+    "tag_to_owner.rpt",
+    "tag_to_owner_ranked.tsv"
+  ],
+  "required_gate_promotions": [],
+  "module_source_and_configuration_evidence": "r40_hit_owner_module_20261017.json",
+  "clock_target_hz": 100000000,
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "image_sha256": null,
+  "qualification": "not-measured"
+}

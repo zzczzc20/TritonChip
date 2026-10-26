@@ -1,0 +1,59 @@
+{
+  "schema": "tnca-r40-post-synthesis-observation/1",
+  "observed_utc": "2026-10-17T03:17:32.899982+00:00",
+  "source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
+  "source_archive_sha256": "9c37aa74471979b1e305fbc861045a426811e1e1a02ad59f77542536a18212b6",
+  "clock_target_hz": 100000000,
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "build_root": "/home/zzhouch/tnca_build/r40_attempt02_20261016",
+  "synthesis_complete": true,
+  "synthesis_resources": {
+    "luts": 821876,
+    "flip_flops": 236357,
+    "bram_tiles": 214.5,
+    "dsps": 531
+  },
+  "synthesis_checkpoint": {
+    "path": "/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tmp/link/vivado/vpl/prj/prj.runs/ulp_tnca_u50_1_0_synth_1/ulp_tnca_u50_1_0.dcp",
+    "bytes": 156828189,
+    "sha256": "3092bcadca1fec0a82a8ee830e372bddc7fe76c8980df6bb56645ff808a52b05"
+  },
+  "raw_synthesis": {
+    "archive": "synthesis_reports.tar.gz",
+    "sha256": "8cc5839ccfc6c5207cebce291c440e82e6188d1aedb1556c56829dde8a786dab",
+    "files": {
+      "runme.log": "d363f832993da0789606701a19e1b04bc49cf6674922872288952790c13ec4da",
+      "ulp_tnca_u50_1_0_utilization_synth.rpt": "284409deeccc289f946c4239d92c22b777d54eefa4294492afa86b2a1f2825c0",
+      "ulp_tnca_u50_1_0.tcl": "a16d67580b1932a555ef5d8b53f3dc74fe1ed67ce226abb1706a206f8b0ca3a7",
+      ".vivado.end.rst": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "physical_log_prefix": {
+    "archive": "placement_progress.log.gz",
+    "archive_sha256": "d31d4e12b50164cbafecb6bae1b9e2d244deb09f95a8485ffffa625a53689231",
+    "raw_sha256": "139c3eb2ddf5169da176ea1002d77f9236ee59d1754862fe033848e2a914b099",
+    "raw_bytes": 413391
+  },
+  "latest_placement_phase": "Phase 4.1 Post Commit Optimization",
+  "placement_complete": false,
+  "route_started": false,
+  "route_complete": false,
+  "runner_live": true,
+  "implementation_terminal": null,
+  "constraint_hashes": {
+    "fpga/u280_multicore_hbm.cfg": "6b329812c44ce5c4c7dbfcf065046e676f06d072b36c33933b1b037434695155",
+    "flow/fpga/place_r40_multicore.tcl": "45c02aadefdc9b45cd6fe41636e1573eddbaa827d2ece22d5acd936a5ad0f030",
+    "flow/fpga/ooc.xdc": "3224f3cda7f9d769d8f30f8fb15d12f9ea3bba4750851c15477f172472b6edeb",
+    "flow/fpga/link.sh": "65262d6f74127a860e0bb02f2abfdf0f43774dada57726249891c8f50a108ab1",
+    "evidence/r40/v2/convergence/attempt02/image.tcl": "41492b08fbc7ac0b4addd1f7815f504f11c56e7d68fa78a142f14db88615e3b9",
+    "spec/r1_profiles.json": "4bd11c8980ec8e1bea65d937fd615bad0c257105a00d22f92065def388d36188"
+  },
+  "sll_placement_messages": [
+    "WARNING: [Place 30-356] This design requires  15497  Super Long Lines (SLLs) out of 23040 for the crossing of SLR# 0 to SLR# 1."
+  ],
+  "gate_status": "not-measured",
+  "image_sha256": null,
+  "fmax_hz": null,
+  "cdc_qualification": "not-measured",
+  "qualification": "completed kernel synthesis and in-progress placement only; no routed timing, CDC, loadable-image or workload acceptance"
+}

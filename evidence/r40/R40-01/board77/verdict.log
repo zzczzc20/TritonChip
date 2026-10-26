@@ -1,0 +1,3 @@
+77 records -> /tmp/tmpnotxiqrz/b39.jsonl
+R40-01.device-time  fail  points: {'pass': 77}; refused (config); diagnostic refused: config: A and B differ beyond the declared knobs: knob TNCA_HBM_BYTES, knob TNCA_RCTX_SPMD
+R40-01.device  capability-pass  77/77 pass on the device; 0 capacity-exceeded on this image (resident tensors in the on-chip heap)

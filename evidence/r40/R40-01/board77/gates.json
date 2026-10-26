@@ -1,0 +1,576 @@
+{
+ "gates": {
+  "R40-01.device": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.llama_decode/medium/fp16-b1-p256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.llama_decode/small/fp16-b1-p128",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.llama_decode/tiny/fp16-b1-p16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.llama_prefill/medium/fp16-b1-s64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.llama_prefill/small/fp16-b1-s64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.llama_prefill/tiny/fp16-b1-s16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.mlp/medium/fp16-t128-d128",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.mlp/small/fp16-t64-d128",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.mlp/tiny/fp16-t16-d64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.resnet_block/medium/fp32-n1-c24-hw16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.resnet_block/small/fp32-n1-c16-hw16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "model.resnet_block/tiny/fp32-n1-c8-hw8",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.add/medium/fp16-n49152",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.add/small/fp16-n16384",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.add/tiny/fp16-n1000",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.add/tiny/fp32-n256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.argmax/medium/fp16-r32-v4096",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.argmax/small/fp16-r8-v2048",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.argmax/tiny/fp16-r2-v256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.attention_decode/small/fp16-b1-h4-l256-d32",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.bmm/medium/fp16-b16-m64-k32-n64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.bmm/small/fp16-b8-m64-k32-n64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.bmm/tiny/fp16-b2-m16-k16-n16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.cumsum/medium/fp32-r128-c256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.cumsum/small/fp32-r64-c256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.cumsum/tiny/fp32-r4-c64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.embedding/medium/fp16-v1024-d128-t256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.embedding/small/fp16-v1024-d128-t64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.embedding/tiny/fp16-v256-d64-t16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.gelu_tanh/medium/fp16-n65536",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.gelu_tanh/small/fp16-n16384",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.gelu_tanh/tiny/fp16-n256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.gemv/medium/fp16-k320-n448",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.gemv/small/fp16-k256-n512",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.gemv/tiny/fp16-k64-n64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.layernorm/medium/fp16-r128-d512",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.layernorm/small/fp16-r64-d256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.layernorm/tiny/fp16-r4-d64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.linear/medium/fp16-m128-k320-n256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.linear/small/fp16-m64-k256-n256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.linear/tiny/fp16-m16-k64-n64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.matmul/medium/fp16-m128-k192-n128",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.matmul/medium/fp32-m128-k192-n128",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.matmul/small/fp16-m64-k128-n128",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.matmul/small/fp32-m64-k128-n128",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.matmul/tiny/fp16-m16-k32-n16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.matmul/tiny/fp32-m16-k32-n16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.rmsnorm/medium/fp16-r128-d512",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.rmsnorm/small/fp16-r64-d256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.rmsnorm/tiny/fp16-r4-d64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.rope/medium/fp16-b1-h8-s128-d32",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.rope/small/fp16-b1-h4-s64-d32",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.rope/tiny/fp16-b1-h2-s16-d16",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.silu/medium/fp16-n65536",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.silu/small/fp16-n16384",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.silu/tiny/fp16-n256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.softmax/medium/fp16-r80-c512",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.softmax/small/fp16-r64-c512",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.softmax/tiny/fp16-r4-c64",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.softmax/tiny/fp32-r3-c37",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.swiglu/medium/fp16-n49152",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.swiglu/small/fp16-n16384",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.swiglu/tiny/fp16-n256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.transpose/medium/fp32-r160-c256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.transpose/small/fp32-r128-c256",
+     "ok": true,
+     "why": ""
+    },
+    {
+     "name": "op.transpose/tiny/fp32-r32-c32",
+     "ok": true,
+     "why": ""
+    }
+   ],
+   "detail": "77/77 pass on the device; 0 capacity-exceeded on this image (resident tensors in the on-chip heap)",
+   "written": "2026-10-13T08:18:36+00:00"
+  },
+  "R40-01.device-time": {
+   "status": "fail",
+   "checks": [
+    {
+     "name": "every frozen point measured",
+     "ok": false,
+     "why": "config: A and B differ beyond the declared knobs: knob TNCA_HBM_BYTES, knob TNCA_RCTX_SPMD"
+    }
+   ],
+   "detail": "points: {'pass': 77}; refused (config); diagnostic refused: config: A and B differ beyond the declared knobs: knob TNCA_HBM_BYTES, knob TNCA_RCTX_SPMD",
+   "written": "2026-10-13T08:18:36+00:00",
+   "diagnostic": null
+  },
+  "R40-01.mixed-device": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "cuda-host/sim-file/gx10-6646:storage",
+     "ok": true,
+     "detail": "storage at 0x20000; 6 views alias it"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:copies",
+     "ok": true,
+     "detail": "8 dtypes round trip; strided writes and fills touch only their elements"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:module",
+     "ok": true,
+     "detail": "4 parameters on tnca"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:refusals",
+     "ok": true,
+     "detail": "eager op refused; mixed host/device graph refused"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:compile_graphs",
+     "ok": true,
+     "detail": "pointwise: 1 launch(es), 6000 B resident; reduction: 1 launch(es), 6400 B resident; norm: 1 launch(es), 1152 B resident; gemm: 1 launch(es), 9472 B resident; sdpa: 7 launch(es), 28672 B resident"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:compile_views",
+     "ok": true,
+     "detail": "1 launch(es) over transposed and offset views"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:eviction",
+     "ok": true,
+     "detail": "93 graphs; 2 module(s) unloaded to make room; resident data intact"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:mixed_devices",
+     "ok": true,
+     "detail": "2 rounds of CUDA and tnca graphs in one process, then a CPU-tensor graph"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:import_orders",
+     "ok": true,
+     "detail": "compiles in a fresh process with device first, triton first, after a CPU-tensor compile"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:concurrent_registration",
+     "ok": true,
+     "detail": "OK 8 threads registered once"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:worker_process",
+     "ok": true,
+     "detail": "OK a spawned worker registered and computed on its own session"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:cache_hits",
+     "ok": true,
+     "detail": "recompiled after a reset: the same artifact 95adb7d640c0 (Triton's cache)"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:checkpoint",
+     "ok": true,
+     "detail": "a tnca state_dict saves, and loads to cpu and to tnca"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:unsupported_dtypes",
+     "ok": true,
+     "detail": "refused: complex64, complex128, fp64 compute (TNCALaunchError)"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:properties",
+     "ok": true,
+     "detail": "TNCA core-vrf-sync-v5: 1 core(s), 4 contexts, 16 lanes"
+    },
+    {
+     "name": "cuda-host/sim-file/gx10-6646:policy",
+     "ok": true,
+     "detail": "templates, variance, cat, bmm, realize installed; tnca is not a GPU type"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:import_orders",
+     "ok": true,
+     "detail": "compiles in a fresh process with device first, triton first, after a CPU-tensor compile"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:concurrent_registration",
+     "ok": true,
+     "detail": "OK 8 threads registered once"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:worker_process",
+     "ok": true,
+     "detail": "OK a spawned worker registered and computed on its own session"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:storage",
+     "ok": true,
+     "detail": "storage at 0x20000; 6 views alias it"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:copies",
+     "ok": true,
+     "detail": "8 dtypes round trip; strided writes and fills touch only their elements"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:module",
+     "ok": true,
+     "detail": "4 parameters on tnca"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:refusals",
+     "ok": true,
+     "detail": "eager op refused; mixed host/device graph refused"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:compile_graphs",
+     "ok": true,
+     "detail": "pointwise: 1 launch(es), 6000 B resident; reduction: 1 launch(es), 6400 B resident; norm: 1 launch(es), 1152 B resident; gemm: 1 launch(es), 9472 B resident; sdpa: 7 launch(es), 28672 B resident"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:compile_views",
+     "ok": true,
+     "detail": "1 launch(es) over transposed and offset views"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:eviction",
+     "ok": true,
+     "detail": "93 graphs; 2 module(s) unloaded to make room; resident data intact"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:mixed_devices",
+     "ok": true,
+     "detail": "skipped: no CUDA device on this host"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:cache_hits",
+     "ok": true,
+     "detail": "recompiled after a reset: the same artifact e8e96d92ceac (Triton's cache)"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:checkpoint",
+     "ok": true,
+     "detail": "a tnca state_dict saves, and loads to cpu and to tnca"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:unsupported_dtypes",
+     "ok": true,
+     "detail": "refused: complex64, complex128, fp64 compute (TNCALaunchError)"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:properties",
+     "ok": true,
+     "detail": "TNCA core-vrf-sync-v5: 1 core(s), 4 contexts, 16 lanes"
+    },
+    {
+     "name": "no-cuda-host/fpga-u280/acf3019:policy",
+     "ok": true,
+     "detail": "templates, variance, cat, bmm, realize installed; tnca is not a GPU type"
+    }
+   ],
+   "detail": "['cuda-host/sim-file/gx10-6646', 'no-cuda-host/fpga-u280/acf3019']; 32/32 checks",
+   "written": "2026-10-10T14:51:07+00:00"
+  }
+ }
+}

@@ -299,6 +299,21 @@ class TTIRImporter:
         self._value_users = self._users(ops)
         self._all_ops = ops
         self._op_pos = {id(o): i for i, o in enumerate(ops)}
+        records = [o for o in ops if o.get_name() == 'proton.record']
+        self._proton_phases = {}
+        if records:
+            # UnitAttr queries are absent from the pinned Python bindings.
+            # Read only start/end from this function's dialect printer; names
+            # and operation identity still come from the actual MLIR objects.
+            printed = str(module)
+            match = re.search(r'(?m)^  tt.func[^\n]*@' + re.escape(func_name) + r'\(', printed)
+            if match is None:
+                raise Unsupported('cannot locate Proton function effects')
+            body = re.split(r'(?m)^  }', printed[match.start():], maxsplit=1)[0]
+            phases = re.findall(r'(?m)^\s*proton\.record\s+(start|end)\s+"', body)
+            if len(phases) != len(records):
+                raise Unsupported('Proton printed effects do not match function operation identities')
+            self._proton_phases = {id(o): p for o, p in zip(records, phases)}
         self._trans_orders = self._read_trans_orders(module, func_name, ops)
         self._plan_transposes(ops)
 
@@ -351,7 +366,8 @@ class TTIRImporter:
                 continue
             from .packed import lower
             from .wide import lower as lower_wide
-            if lower_wide(self, op) or lower(self, op):
+            from .register_blocks import lower as lower_blocks
+            if lower_blocks(self, op) or lower_wide(self, op) or lower(self, op):
                 continue
             handler = getattr(self, '_op_' + name.replace('.', '_'), None)
             if handler is None:
@@ -542,15 +558,116 @@ class TTIRImporter:
         for key in self._pending_const.keys() - pending_values:
             self._v.pop(key, None)
 
+    # Operations a branch of an if-converted `scf.if` may not contain: both
+    # branches run, so neither may touch memory, fault, synchronise or loop.
+    _IFCONV_IMPURE = ('tt.load', 'tt.store', 'tt.descriptor_load', 'tt.descriptor_store',
+                      'tt.atomic_rmw', 'tt.atomic_cas', 'tt.call', 'tt.dot', 'tt.dot_scaled',
+                      'tt.assert', 'tt.print', 'tt.descriptor_gather', 'tt.descriptor_scatter',
+                      'arith.divsi', 'arith.divui', 'arith.remsi', 'arith.remui',
+                      'arith.ceildivsi', 'arith.ceildivui', 'arith.floordivsi')
+
+    class _SelectView:
+        """`arith.select(cond, then_i, else_i)` for the i-th result of an
+        if-converted `scf.if`, presented with the operation interface
+        _op_arith_select reads (operands, result, name)."""
+
+        def __init__(self, cond, a, b, result):
+            self._ops, self._result = (cond, a, b), result
+
+        def get_name(self):
+            return 'arith.select'
+
+        def get_operand(self, i):
+            return self._ops[i]
+
+        def get_num_operands(self):
+            return 3
+
+        def get_result(self, i):
+            return self._result
+
+        def get_num_results(self):
+            return 1
+
+    def _op_scf_if(self, op):
+        """`scf.if` on a scalar condition.
+
+        With results -- Inductor's Welford reduction, `if roffset == 0`
+        choosing between starting the running mean/M2 and updating them --
+        it is if-converted: both regions are pure (no memory access, no
+        possible fault, no loop), so both are lowered and each result is
+        `arith.select(cond, then, else)`, which is what `tl.where` would be.
+        Without results it is a branch around its region: there the region
+        is the point (a store under a condition), and nothing is selected.
+        """
+        then_ops = self._bodies.get(op.get_region(0).id(), [])
+        else_ops = (self._bodies.get(op.get_region(1).id(), [])
+                    if op.get_num_regions() > 1 else [])
+        cond = op.get_operand(0)
+        if op.get_num_results() == 0:
+            if else_ops and any(o.get_name() != 'scf.yield' for o in else_ops):
+                raise Unsupported('scf.if with an else region and no results')
+            caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
+            saved = {n: dict(getattr(self, n)) for n in caches if hasattr(self, n)}
+            saved_single = (self._scratch, self._lane0_mask)
+            pending_values = {k for k in self._pending_const if k in self._v}
+            end = self._control_label('endif')
+            c = self._condition_scalar(self._value(cond))
+            self.b.branch_nz(self.b.scmp('eq', c, self.b.const(0)), end)
+            for inner in then_ops:
+                if inner.get_name() != 'scf.yield':
+                    self._dispatch(inner)
+            self.b.label(end)
+            for n, cache in saved.items():
+                setattr(self, n, cache)
+            self._scratch, self._lane0_mask = saved_single
+            for key in self._pending_const.keys() - pending_values:
+                self._v.pop(key, None)
+            return
+        for inner in list(then_ops) + list(else_ops):
+            name = inner.get_name()
+            if name in self._IFCONV_IMPURE or (name != 'scf.yield' and inner.get_num_regions()):
+                raise Unsupported(
+                    f'scf.if whose branch contains {name}',
+                    because='an scf.if with results is lowered by running both branches and '
+                            'selecting, which is only right when neither touches memory, '
+                            'can fault or loops')
+        yields = []
+        for ops in (then_ops, else_ops):
+            out = None
+            for inner in ops:
+                if inner.get_name() == 'scf.yield':
+                    out = [inner.get_operand(i) for i in range(inner.get_num_operands())]
+                else:
+                    self._dispatch(inner)
+            if out is None or len(out) != op.get_num_results():
+                raise Unsupported('scf.if region without a yield of every result')
+            yields.append(out)
+        for i in range(op.get_num_results()):
+            self._op_arith_select(self._SelectView(cond, yields[0][i], yields[1][i],
+                                                   op.get_result(i)))
+
     def _dispatch(self, op):
         from .packed import lower
         from .wide import lower as lower_wide
-        if lower_wide(self, op) or lower(self, op):
+        from .register_blocks import lower as lower_blocks
+        if lower_blocks(self, op) or lower_wide(self, op) or lower(self, op):
             return
         handler = getattr(self, '_op_' + op.get_name().replace('.', '_'), None)
         if handler is None:
             raise Unsupported(f'no TNCA lowering for {op.get_name()}')
         handler(op)
+
+    def _op_proton_record(self, op):
+        """Preserve upstream Proton effects until explicit TNCA capture lowering.
+
+        The pinned Python binding exposes StringAttr but not UnitAttr queries;
+        use the dialect's printed start/end syntax for isStart (a UnitAttr).
+        """
+        phase = self._proton_phases.get(id(op))
+        if phase is None:
+            raise Unsupported('unrecognised upstream proton.record syntax')
+        self.b.proton_record(op.get_str_attr('name'), start=phase == 'start')
 
     def _op_scf_for(self, op):
         block, body = self._region_block(op)
@@ -675,14 +792,7 @@ class TTIRImporter:
                     else:
                         self.b._emit('assign', [], [dst, src])
             else:
-                from .packed import lower
-                from .wide import lower as lower_wide
-                if lower_wide(self, inner) or lower(self, inner):
-                    continue
-                handler = getattr(self, '_op_' + name.replace('.', '_'), None)
-                if handler is None:
-                    raise Unsupported(f"no TNCA lowering for TTIR operation {name!r}")
-                handler(inner)
+                self._dispatch(inner)
         nxt = self.b.sbin('add', iv, step)
         self.b._emit('assign', [], [iv, nxt])
         self.b.branch_nz(self.b.const(1), start)
@@ -1077,6 +1187,37 @@ class TTIRImporter:
         running value to live across a back edge in a register the body
         does not name, and the body is inlined rather than called.
         """
+        shape, _ = _parse_type(str(op.get_operand(0).get_type()))
+        if isinstance(shape, tuple) and shape[0] > 1:
+            if keep_partials:
+                raise Unsupported('multi-row scan requires row scan result mapping')
+            from .wide import _RowValue, _RowOp
+            rows, cols = shape
+            shapes = getattr(self, '_reduction_tiles', set())
+            shapes.add((rows, cols, 1))
+            self._reduction_tiles = shapes
+            outputs = [[] for _ in range(op.get_num_results())]
+            for row in range(rows):
+                mapped = {}
+                for i in range(op.get_num_operands()):
+                    src = op.get_operand(i)
+                    sshape, elem = _parse_type(str(src.get_type()))
+                    view = _RowValue(src, row, sshape)
+                    val = self._row_getter(src, rows, elem)(row)
+                    self._tiles[view.id()] = Tile('lazy', lambda r, val=val: val, 1, cols, elem)
+                    mapped[src.id()] = view
+                for i in range(op.get_num_results()):
+                    dst = op.get_result(i)
+                    mapped[dst.id()] = dst
+                self._fold(_RowOp(op, mapped), keep_partials=False)
+                for i in range(op.get_num_results()):
+                    outputs[i].append(self._v[op.get_result(i).id()])
+            for i in range(op.get_num_results()):
+                dst = op.get_result(i)
+                _, elem = _parse_type(str(dst.get_type()))
+                self._tiles[dst.id()] = Tile('col', tuple(outputs[i]), rows, 1, elem)
+                self._v.pop(dst.id(), None)
+            return
         nin = op.get_num_operands()
         lanes = [self._lanes_of(op.get_operand(i)) for i in range(nin)]
         vlen = len(lanes[0])
@@ -1601,7 +1742,11 @@ class TTIRImporter:
         if start:
             v = self.b.vbin('add', v, self.b.vmovi(start))
         self._v[op.get_result(0).id()] = v
-        self._offsets[op.get_result(0).id()] = ('arange' if not start else 'indexed', None)
+        rid = op.get_result(0).id()
+        self._offsets[rid] = ('arange' if not start else 'indexed', None)
+        if start and self.index_opt and getattr(op, '_register_chunk', False):
+            self._uscalar[rid] = self._const_scalar(start)
+            self._offsets[rid] = ('contiguous', rid)
 
     def _op_tt_splat(self, op):
         src = op.get_operand(0)
@@ -2982,6 +3127,28 @@ class TTIRImporter:
     def _tile_of(self, value):
         t = self._tiles.get(value.id())
         if t is None:
+            # Compose pointer-loaded chunks without rereading their source.
+            # The original TTIR value is an immutable snapshot even when
+            # subsequent stores alias its address.
+            shape, elem = _parse_type(str(value.get_type()))
+            if isinstance(shape, tuple) and len(shape) == 2:
+                rows, cols = shape
+                vid = value.id()
+                original, column = (vid[1], vid[2]) if isinstance(vid, tuple) \
+                    and vid[0] == 'register-chunk' else (vid, 0)
+                if rows > self.target.vlen:
+                    parts = [self._tiles.get(('register-row-chunk', original, r, column))
+                             for r in range(rows // self.target.vlen)]
+                    if parts and all(p is not None for p in parts):
+                        t = Tile('row-chunks', tuple(parts), rows, cols, elem)
+                elif cols > self.target.vlen:
+                    parts = [self._tiles.get(('register-chunk', original, c))
+                             for c in range(cols // self.target.vlen)]
+                    if parts and all(p is not None for p in parts):
+                        t = Tile('column-chunks', tuple(parts), rows, cols, elem)
+                if t is not None:
+                    self._tiles[vid] = t
+        if t is None:
             raise Unsupported(
                 f"a 2-D value that is not a tile (type {value.get_type()})",
                 because='a 16x16 block lives in a transfer-engine window or '
@@ -3153,7 +3320,7 @@ class TTIRImporter:
         bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
         tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
         self.b.comment('acc + tl.dot(a, b): accumulated in place (ISA sec 9C)')
-        self.b.mma_async(x.handle, a.handle, b.handle, tok,
+        self.b.mma_async(x.handle, a.handle, b.handle, tok, k=self._mma_k(a),
                          dtype=_FP8_FORMATS.get(a.dtype, a.dtype))
         self.b.barrier_wait(tok)
         tile = Tile('accumulator', x.handle, a.rows, b.cols, 'f32')
@@ -3180,8 +3347,8 @@ class TTIRImporter:
         # sec 8.4 reserves the pack that would put it there -- so it
         # goes out to memory and comes back through the engine, which
         # is the repack path a scratchpad-free design leaves.
-        a = self._as_fragment(a, 'the left operand of tl.dot')
-        b = self._as_fragment(b, 'the right operand of tl.dot')
+        fragments = iter(self._mma_fragments(a, b))
+        a, b = next(fragments)
         if a.dtype != b.dtype:
             raise Unsupported(
                 f"a tl.dot of {a.dtype} with {b.dtype}: ISA sec 9C's "
@@ -3198,6 +3365,8 @@ class TTIRImporter:
 
         fused = self._fuse_dot_add(op, a, b) if self.index_opt else None
         if fused is not None:
+            for left, right in fragments:
+                self._mma_into(fused.handle, left, right)
             return
         acc = self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
         # `tt.dot`'s third operand is the value accumulated into. Triton
@@ -3216,14 +3385,9 @@ class TTIRImporter:
                     row = self.b.vcvt('s32', 'f32', row)
                 self.b.acc_write(acc, self.b.const(r), row)
 
-        bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
-        tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
-        self.b.mma_async(acc, a.handle, b.handle, tok,
-                         dtype=_FP8_FORMATS.get(a.dtype, a.dtype))
-        # ISA sec 9C.3: the accumulator may not be read by the vector
-        # unit before the command completes, and its sources may not be
-        # overwritten. The wait is what makes both true.
-        self.b.barrier_wait(tok)
+        self._mma_into(acc, a, b)
+        for left, right in fragments:
+            self._mma_into(acc, left, right)
 
         _, rtype = _parse_type(str(op.get_result(0).get_type()))
         tile = Tile('accumulator', acc, a.rows, b.cols, 'f32')
@@ -3237,6 +3401,68 @@ class TTIRImporter:
                 lambda r: self.b.vcvt('f32', 's32', get(r)),
                 a.rows, b.cols, rtype)
         self._tiles[op.get_result(0).id()] = tile
+
+    def _mma_k(self, a):
+        k = f'k{max(16, a.cols)}'
+        if k not in self.target.mma['k_steps']:
+            raise Unsupported(f'MMA K={a.cols} is not implemented by this target')
+        return k
+
+    def _mma_into(self, acc, a, b):
+        bar = self.b.barrier(name=f"mma{len(self.kernel.barriers)}")
+        tok = self.b.barrier_arm(bar, arrivals=0, ops=1)
+        self.b.mma_async(acc, a.handle, b.handle, tok, k=self._mma_k(a),
+                         dtype=_FP8_FORMATS.get(a.dtype, a.dtype))
+        self.b.barrier_wait(tok)
+
+    def _mma_fragments(self, a, b):
+        """Retile immutable chunks when full operands leave no private VRF.
+
+        K advances in order into the same accumulator, preserving sec 9C's
+        binary32 product/sum order. No input is reloaded from its source.
+        """
+        from .footprints import fragment_registers
+        logical = a.cols
+        step = logical
+        if (getattr(self, '_window_reuse', False) and
+                a.dtype == b.dtype and a.dtype in ('f16', 'bf16') and
+                2 * fragment_registers(16, logical, 16) >= self.target.vregs_per_rctx):
+            candidates = [int(k[1:]) for k in self.target.mma['k_steps']
+                          if int(k[1:]) < logical and logical % int(k[1:]) == 0
+                          and 2 * fragment_registers(16, int(k[1:]), 16)
+                          < self.target.vregs_per_rctx]
+            if not candidates:
+                raise Unsupported('no MMA fragment leaves private vector registers')
+            step = max(candidates)
+        if step == logical:
+            yield (self._as_fragment(a, 'the left operand of tl.dot'),
+                   self._as_fragment(b, 'the right operand of tl.dot'))
+            return
+        if a.kind != 'column-chunks' or b.kind != 'row-chunks' or any(
+                p.kind == 'window' for p in a.handle + b.handle):
+            raise Unsupported('MMA resource retile requires immutable row/column chunks',
+                              remedy='snapshot packed input windows before retile')
+        plans = getattr(self, '_mma_retiles', set())
+        plans.add((logical, step))
+        self._mma_retiles = plans
+        cache = getattr(self, '_register_mma_fragment_cache', None)
+        for start in range(0, logical, step):
+            pair = []
+            for side, parent in enumerate((a, b)):
+                key = ('mma-k-slice', id(parent), side, start, step)
+                if cache is not None and key in cache:
+                    self._mma_fragment_reuses = getattr(self, '_mma_fragment_reuses', 0) + 1
+                    pair.append(cache[key])
+                    continue
+                parts = parent.handle[start // self.target.vlen:(start + step) // self.target.vlen]
+                tile = Tile(parent.kind, parts, parent.rows if side == 0 else step,
+                            step if side == 0 else parent.cols, parent.dtype,
+                            store=parent.store)
+                fragment = self._as_fragment_uncached(tile, 'resource-retiled tl.dot')
+                if cache is not None:
+                    cache[key] = fragment
+                pair.append(fragment)
+            yield tuple(pair)
 
     def _dot_f32(self, op, a, b):
         """Full binary32 dot through vector FMAs, with no FP16 narrowing.
@@ -3271,7 +3497,44 @@ class TTIRImporter:
             row, a.rows, b.cols, 'f32')
 
     def _as_fragment(self, tile, what):
+        cache = getattr(self, '_register_mma_fragment_cache', None)
+        if cache is None:
+            return self._as_fragment_uncached(tile, what)
+        key = id(tile)
+        if key not in cache:
+            cache[key] = self._as_fragment_uncached(tile, what)
+        else:
+            self._mma_fragment_reuses = getattr(self, '_mma_fragment_reuses', 0) + 1
+        return cache[key]
+
+    def _as_fragment_uncached(self, tile, what):
         """This tile in the layout `m.mma.async` reads."""
+        if tile.kind == 'row-chunks':
+            getters = [self._tile_row_getter(p) for p in tile.handle]
+            return self._rows_to_window(
+                lambda r: getters[r // self.target.vlen](r % self.target.vlen),
+                tile.handle[0].store, tile.dtype, tile.cols, nrows=tile.rows)
+        if tile.kind == 'column-chunks':
+            # Pack each row's K chunks into one row-major fragment. Narrow
+            # stores preserve lane bits; computed f32 rows convert explicitly.
+            esize = self._ELEM_BYTES[tile.dtype]
+            addr = self._spill_region(tile.rows * tile.cols * esize)
+            for column, part in enumerate(tile.handle):
+                get = self._tile_row_getter(part)
+                for r in range(tile.rows):
+                    v = get(r)
+                    if part.store != tile.dtype:
+                        v = self.b.vcvt(part.store, tile.dtype, v)
+                    offset = (r * tile.cols + column * self.target.vlen) * esize
+                    at = addr if offset == 0 else self.b.sbini('add', addr, offset)
+                    self.b.store(at, v, size=_SIZE_SUFFIX[esize])
+            self.b.fence()
+            desc = self._build_descriptor(base=addr, elem=tile.dtype,
+                extents=[tile.rows, tile.cols], byte_strides=[tile.cols * esize, esize],
+                block_shape=[tile.rows, tile.cols], what='K-wide matrix repack')
+            zero = self.b.const(0)
+            return self._dma_in(desc, [zero, zero], [tile.rows, tile.cols], tile.dtype,
+                                'K-wide matrix repack')
         if tile.dtype in ('i8', 'i32'):
             return self._integer_fragment(tile)
         if tile.kind == 'window':
@@ -3471,7 +3734,7 @@ class TTIRImporter:
         return self._lane0_mask
 
     def _broadcast_scalar(self, v, dtype):
-        return v if v.kind == VECTOR else self.b.splat(v, dtype=dtype)
+        return v if v.kind in (VECTOR, PRED) else self.b.splat(v, dtype=dtype)
 
     def _tile_row_getter(self, tile, elem=None):
         if tile.kind == 'spilled':
@@ -3490,6 +3753,24 @@ class TTIRImporter:
                 tile.handle[r], elem or tile.dtype)
         if tile.kind == 'accumulator':
             return lambda r: self.b.acc_read(tile.handle, self.b.const(r))
+        if (tile.kind == 'window' and getattr(self, '_packed_window_unpack', False)
+                and tile.store in ('f16', 'bf16') and tile.cols == self.target.vlen):
+            def unpack(r):
+                # The fragment packs two 16-bit elements in each 32-bit lane,
+                # and two VLEN-wide rows in each window register. Read that
+                # snapshot through existing v.get/v.put, never external memory.
+                packed = self.b.window_reg(tile.handle, r // 2, dtype='i32')
+                out = self.b.splat(self.b.const(0), dtype=tile.store)
+                mask = self.b.const(0xffff)
+                for pair in range(self.target.vlen // 2):
+                    word = self.b.vextract(packed, (r % 2) * (self.target.vlen // 2) + pair)
+                    low = self.b.sbin('and', word, mask)
+                    high = self.b.sbin('and', self.b.sbini('lshr', word, 16), mask)
+                    self.b.vinsert(out, 2 * pair, low)
+                    self.b.vinsert(out, 2 * pair + 1, high)
+                self._packed_unpack_rows = getattr(self, '_packed_unpack_rows', 0) + 1
+                return out
+            return unpack
         if tile.kind == 'window' and tile.desc is not None and self._ELEM_BYTES[tile.store] < 4:
             desc, coords = tile.desc
             base = self._descriptor_origin(desc, coords)
@@ -3618,6 +3899,9 @@ class TTIRImporter:
         """
         tile = self._tile_of(op.get_operand(0))
         axis = op.get_int_attr('axis')
+        shapes = getattr(self, '_reduction_tiles', set())
+        shapes.add((tile.rows, tile.cols, axis))
+        self._reduction_tiles = shapes
         get = self._tile_row_getter(tile, elem)
         rid = op.get_result(0).id()
 
@@ -3686,7 +3970,7 @@ class TTIRImporter:
         to a float -- is in a scalar register and gets a splat.
         """
         v = self._value(ttir_value)
-        if v.kind == VECTOR:
+        if v.kind in (VECTOR, PRED):
             return v
         return self.b.splat(v, dtype=elem)
 
@@ -4507,6 +4791,10 @@ class TTIRImporter:
 
     def _value(self, ttir_value):
         vid = ttir_value.id()
+        predicate = getattr(self, "_register_predicates", {}).get(vid)
+        if predicate is not None:
+            self._dispatch(predicate)
+            return self._v.pop(vid)
         v = self._v.get(vid)
         if v is not None:
             return v

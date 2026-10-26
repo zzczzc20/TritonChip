@@ -1,0 +1,36 @@
+driver_module	actual_endpoint_slrs	unique_connected_crossing_nets
+g_tile[2].u_tile/u_slice	SLR1 SLR2	2536
+u_tmu	SLR0 SLR1 SLR2	871
+u_tmu	SLR1 SLR2	590
+g_tile[0].u_tile/u_slice	SLR0 SLR1	259
+u_tmu	SLR0 SLR1	244
+level0_i/ulp/tnca_u50_1/inst/device/control	SLR0 SLR1	143
+level0_i/ulp/tnca_u50_1/inst/device/system/shell	SLR0 SLR1	71
+g_tile[1].u_tile/u_core	SLR0 SLR1	65
+g_tile[0].u_tile/u_core	SLR0 SLR1	65
+level0_i/ulp/tnca_u50_1/inst/registers	SLR0 SLR1	64
+g_home_link[2].g_pipeline.link	SLR1 SLR2	14
+g_tile[0].u_tile/g_host_mux.u_host	SLR0 SLR1	4
+g_tile[0].u_tile/u_slice	SLR0 SLR1 SLR2	3
+g_tile[2].u_tile/u_slice	SLR0 SLR1 SLR2	3
+g_tile[1].u_tile/u_slice	SLR1 SLR2	3
+g_tile[2].u_tile/u_slice	SLR0 SLR2	2
+g_dispatch.u_dispatch	SLR0 SLR1	2
+g_tile[0].u_tile/u_slice	SLR0 SLR2	2
+level0_i/ulp/tnca_u50_1/inst	SLR0 SLR1 SLR2	2
+	SLR0 SLR1	2
+g_tile[0].u_tile/u_cni	SLR0 SLR1	2
+g_tile[1].u_tile/u_slice	SLR0 SLR1 SLR2	2
+g_cache_handoff.g_home_link[2].command/g_stage[1].queue	SLR1 SLR2	2
+g_tile[0].u_tile/u_core	SLR0 SLR1 SLR2	1
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_deadline	SLR0 SLR1	1
+level0_i/ulp/tnca_u50_1/inst/device/system/g_outlet[1].link/g_stage[0].request	SLR0 SLR1	1
+g_cache_handoff.ownership	SLR0 SLR1	1
+g_dispatch.g_command_link[0].g_pipeline.completions/g_stage[0].queue	SLR0 SLR1	1
+g_tile[1].u_tile/u_core	SLR0 SLR1 SLR2	1
+g_home_link[0].g_pipeline.link/g_stage[0].request	SLR0 SLR1	1
+g_tile[1].u_tile/u_slice	SLR0 SLR1	1
+	SLR1 SLR2	1
+g_home_link[2].g_pipeline.link/g_stage[0].request	SLR1 SLR2	1
+g_dispatch.g_command_link[2].g_pipeline.completions/g_stage[0].queue	SLR1 SLR2	1
+g_tile[2].u_tile/u_core	SLR1 SLR2	1

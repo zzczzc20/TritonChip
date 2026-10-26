@@ -1,0 +1,1152 @@
+{
+ "gates": {
+  "R40-06.nuca": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "CI run 39281384427 head 3b73efb10088435b5fa8b403adaaa4e4c95defac",
+     "ok": true,
+     "head": "3b73efb10088435b5fa8b403adaaa4e4c95defac"
+    },
+    {
+     "name": "simulation evidence measured on the delivery tree",
+     "ok": true,
+     "tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75"
+    },
+    {
+     "name": "every executed harness/testbench path is the same git object at the delivery commit",
+     "ok": true,
+     "differ": []
+    },
+    {
+     "name": "Makefile: the delivery commit only adds the v3 contract targets and two unrelated unit tests",
+     "ok": true,
+     "changed_lines": []
+    },
+    {
+     "name": "CI markers used come only from RTL/host-driver scripts that neither import nor mention the compiler, Inductor, Torch or Triton",
+     "ok": true,
+     "scripts": [
+      "tools/r40/grid_dispatch_tests.py",
+      "tools/r40/coherent_host_tests.py",
+      "tools/r40/multicore_shell_tests.py",
+      "tools/r40/memory_ports_tests.py",
+      "tools/r40/line_axi_tests.py",
+      "tools/r40/multicore_axi_tests.py",
+      "tools/r40/cache_maintenance_tests.py",
+      "tools/r40/dma_handoff_guard_tests.py",
+      "tools/r40/multicore_dma_tests.py",
+      "tools/r40/multicore_mmio_tests.py",
+      "tools/r40/mesh_pipeline_tests.py",
+      "tools/r40/code_link_tests.py",
+      "tools/r40/multicore_mmio_option_tests.py"
+     ],
+     "offending": {}
+    },
+    {
+     "name": "simulation evidence measured on the delivery tree",
+     "ok": true,
+     "tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75"
+    },
+    {
+     "name": "GB10 delivery-tree runs: every executed testbench/harness file equals the delivery commit (f9da3d5) or this checkout",
+     "ok": true,
+     "files": 334,
+     "differ": [],
+     "absent": [],
+     "host": "GB10 (zhongchun@143.89.78.224)",
+     "path": "~/r40v3_hbmnuca_fe1b"
+    },
+    {
+     "name": "CI lane check succeeded",
+     "ok": true,
+     "job": 118156767958,
+     "log": "evidence/r40/v3/ci_39281384427/check.log",
+     "log_sha256": "56640b584d8b429940cb968b864cb1e694f3e1895cfa1c3247a906e6f226d70b"
+    },
+    {
+     "name": "CI lane memory succeeded",
+     "ok": true,
+     "job": 118156768288,
+     "log": "evidence/r40/v3/ci_39281384427/memory.log",
+     "log_sha256": "94349cde5decbb8b794bc769dc157b891d7513054b1291d82ed7e295d7c24848"
+    },
+    {
+     "name": "CI lane mmio-checks succeeded",
+     "ok": true,
+     "job": 118156768254,
+     "log": "evidence/r40/v3/ci_39281384427/mmio-checks.log",
+     "log_sha256": "bf9da75ca83b81a2888269a5627666b8a12732d52445aa5ba1c2ef9987a846b2"
+    },
+    {
+     "name": "GB10 delivery-tree step grid_transport_backend exited 0",
+     "ok": true,
+     "log": "evidence/r40/v3/memsys_gb10/grid_transport_backend.log",
+     "log_sha256": "304f17d4e6d895416b050759d70de82abc69e966825361d11c1fe5490d15a442",
+     "command": "STEP grid_transport_backend: make r40-physical-grid-transport r40-multicore-backend TRITON_PYTHON=/home/zhongchun/tc_env/torchenv/bin/python PYTHON=/home/zhongchun/tc_env/torchenv/bin/python"
+    },
+    {
+     "name": "GB10 delivery-tree step native_ports_3p2 exited 0",
+     "ok": true,
+     "log": "evidence/r40/v3/memsys_gb10/native_ports_3p2.log",
+     "log_sha256": "97298a289f5e7f2d36d59ec3edf69cef20bab8d465dff06b26bc7776fa160be9",
+     "command": "STEP native_ports_3p2: /home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_memory_ports_tests.py --cores 3 --ports 2"
+    },
+    {
+     "name": "GB10 delivery-tree step native_ports_3p3 exited 0",
+     "ok": true,
+     "log": "evidence/r40/v3/memsys_gb10/native_ports_3p3.log",
+     "log_sha256": "33ef1b54da1f363315cd9c91e209c8c7fc8a8afad37814bff9cf4768d69edf8c",
+     "command": "STEP native_ports_3p3: /home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_memory_ports_tests.py --cores 3 --ports 3"
+    },
+    {
+     "name": "GB10 delivery-tree step native_ports_board_dma exited 0",
+     "ok": true,
+     "log": "evidence/r40/v3/memsys_gb10/native_ports_board_dma.log",
+     "log_sha256": "5cb844ee7c23aaf1740e131aa90f0a3897faee1e997ec5a7cb8732bd2aa4ecf7",
+     "command": "STEP native_ports_board_dma: /home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_memory_ports_tests.py --backend fpga-multicore-sim --cores 3 --ports 3 --pipeline 2 --board-top --dma"
+    },
+    {
+     "name": "GB10 delivery-tree step recovery_multicore_dma exited 0",
+     "ok": true,
+     "log": "evidence/r40/v3/memsys_gb10/recovery_multicore_dma.log",
+     "log_sha256": "19f224de74d23159ed4767283379321033259a275f1f7ac4bbfb42c1aa8607bb",
+     "command": "STEP recovery_multicore_dma: /home/zhongchun/tc_env/torchenv/bin/python tools/r40/recovery_tests.py --multicore-dma"
+    },
+    {
+     "name": "cross-core producer/consumer through shared lines (a second grid reads every word the first wrote) on 1/2/3/4/8 cores and 1/2/3/4/8 outlets",
+     "ok": true,
+     "counts": {
+      "GRID REAL CORES PASS N=1 memory=1 ports=1 phase=1": 1,
+      "GRID REAL CORES PASS N=2 memory=1 ports=2 phase=1": 1,
+      "GRID REAL CORES PASS N=3 memory=1 ports=2 phase=1": 1,
+      "GRID REAL CORES PASS N=3 memory=1 ports=3 phase=1": 1,
+      "GRID REAL CORES PASS N=4 memory=1 ports=4 phase=1": 1,
+      "GRID REAL CORES PASS N=8 memory=1 ports=3 phase=1": 1,
+      "GRID REAL CORES PASS N=8 memory=1 ports=8 phase=1": 1
+     },
+     "missing": {}
+    },
+    {
+     "name": "same-line masked stores from several cores and masked coherent host writes",
+     "ok": true,
+     "counts": {
+      "GRID COHERENT HOST PASS N=(2|3|4|8) downloads=457 uploads=2": 8
+     },
+     "missing": {}
+    },
+    {
+     "name": "atomic reduction across three physical cores, exactly once",
+     "ok": true,
+     "counts": {
+      "exact_atomic_count=455": 1
+     },
+     "missing": {}
+    },
+    {
+     "name": "dirty eviction then coherent host copy; ownership handoff writes back all dirty results; partial DMA range preserved",
+     "ok": true,
+     "counts": {
+      "GLOBAL CACHE HANDOFF PASS N=3 dirty_results=455 partial_dma=1": 2,
+      "GRID COHERENT HOST PASS N=\\d downloads=457": 9
+     },
+     "missing": {}
+    },
+    {
+     "name": "DMA updates cache: range writeback/invalidate at every home; board-top DMA ownership with a resident Torch graph",
+     "ok": true,
+     "counts": {
+      "NUCA MAINTENANCE PASS": 6,
+      "CACHE HANDOFF PASS homes=(1|3|8)": 3,
+      "r40-cache-maintenance PASS \\(19/19\\)": 1,
+      "DMA HANDOFF GUARDS PASS \\(8/8\\)": 1,
+      "MMIO CACHE HANDOFF PASS snapshot drain range faults reset": 1,
+      "MULTICORE DMA OWNERSHIP PASS cores=3 ports=3 pipeline=2 board=True": 1,
+      "\"dma_ownership\": true": 2
+     },
+     "missing": {}
+    },
+    {
+     "name": "alias and dead/bypass/replacement hints keep every read equal to shadow memory",
+     "ok": true,
+     "counts": {
+      "DCO-NUCA-policy(1|2|46|62|74)-seed\\d+\\s+PASS": 24,
+      "PRESSURE PASS maintenance=1 policy=74": 2,
+      "TMU REGISTERED RANGES PASS ports=(3|8)": 2
+     },
+     "missing": {}
+    },
+    {
+     "name": "saturated reads/writes: late write responses, 8 outlets, 8 outstanding lines",
+     "ok": true,
+     "counts": {
+      "MULTICORE AXI PERSISTENT PASS N=3 ports=3 stages=2 write_delay=300": 1,
+      "MEMORY PORTS PASS N=8 P=8 responses=128": 1,
+      "LINE AXI PASS width=\\d+ slots=8 mode=0 ": 4,
+      "PRESSURE PASS maintenance=\\d policy=\\d+ seed=\\d+ requests=20000": 8
+     },
+     "missing": {}
+    },
+    {
+     "name": "fault drain: AXI faults latched, completion withheld until drain, recovery",
+     "ok": true,
+     "counts": {
+      "LINE AXI PASS width=(64|256) slots=3 mode=(1|2|4) ": 6,
+      "MULTICORE SHELL GRID PASS N=\\d id=14 status=1 ": 9,
+      "r40-recovery-tests PASS": 2
+     },
+     "missing": {}
+    },
+    {
+     "name": "no deadlock, lost response or starvation: arbitration fairness, exact response counts, packet conservation",
+     "ok": true,
+     "counts": {
+      "MEMORY PORTS PASS N=\\d P=\\d responses=\\d+": 15,
+      "R40 MEMORY ARBITER PASS N=\\d": 5,
+      "LINE AXI MATRIX PASS 35 configurations": 1,
+      "sent=20000 received=20000": 7
+     },
+     "missing": {}
+    },
+    {
+     "name": "RTL: every outlet of a native Torch graph carries reads and writes (2 and 3 outlets, board top with DMA)",
+     "ok": true,
+     "counts": {
+      "NATIVE MEMORY PORTS PASS \\{\"controller_traffic\"": 3
+     },
+     "missing": {}
+    },
+    {
+     "name": "board checkpoint bound to the delivery tree, image, measured 90 MHz and the contract lock",
+     "ok": true,
+     "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "image": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+     "clock_hz": 90000000,
+     "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8"
+    },
+    {
+     "name": "board: every active port and the PC group carry actual traffic on the delivery image",
+     "ok": true,
+     "outlets": [
+      {
+       "port": 0,
+       "read_lines": 2130039,
+       "write_lines": 704427
+      },
+      {
+       "port": 1,
+       "read_lines": 2088960,
+       "write_lines": 696235
+      },
+      {
+       "port": 2,
+       "read_lines": 2097114,
+       "write_lines": 696234
+      }
+     ],
+     "pc_group": "MBG[0:31]",
+     "tensor_pcs": [
+      0,
+      1
+     ]
+    }
+   ],
+   "detail": "v3 memory-system capability audit: 27/27 checks pass",
+   "written": "2026-10-20T00:50:17+00:00",
+   "auditor": "tools/r40/v3_memsys_gates.py",
+   "auditor_sha256": "9bbfee46288753506fd2bc3f130e49f8573c7dac62e6c72311c01b9b1ecc6764",
+   "delivery_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+   "clock_hz": 90000000,
+   "inputs": {
+    "evidence/r40/v3/ci_39281384427/check.log": "56640b584d8b429940cb968b864cb1e694f3e1895cfa1c3247a906e6f226d70b",
+    "evidence/r40/v3/ci_39281384427/chunks.log": "4561c7a6db8de7eee239157b066996e69fc36f928e596ae958f9fbb9931d9d93",
+    "evidence/r40/v3/ci_39281384427/memory.log": "94349cde5decbb8b794bc769dc157b891d7513054b1291d82ed7e295d7c24848",
+    "evidence/r40/v3/ci_39281384427/mmio-checks.log": "bf9da75ca83b81a2888269a5627666b8a12732d52445aa5ba1c2ef9987a846b2",
+    "evidence/r40/v3/ci_39281384427/native-features.log": "a1e3bf748e84ac30638ffd41f2d25b6020dc4631ffff7b6f9c6fe0bfde097d40",
+    "evidence/r40/v3/ci_39281384427/native-pair.log": "1bf2be6cb074a9d75d2402b8f1aecf25a04a1169f0d75c4c10741e0c729265e1",
+    "evidence/r40/v3/ci_39281384427/native-ports.log": "9c48ba9a507fa9d1e48ed22f326425926820681e579109537c6d10628907dbd7",
+    "evidence/r40/v3/ci_39281384427/native.log": "c3309bc425a07efb23f978c3dd76ffa26abd440a9c34233f7707c13cea4cc109",
+    "evidence/r40/v3/ci_39281384427/registers-1.log": "acb8af5f8a20ec12232dba8e81da48310351d66a296ba5f3d18cb755f3391ab4",
+    "evidence/r40/v3/ci_39281384427/registers-3.log": "d06575a23fb4e913a2dbba0a4b25a692b064d430c4c140736ff3652febf85c8b",
+    "evidence/r40/v3/ci_39281384427/registers-board.log": "9acc64db767838a5842365173eb7eda1f2e07043a2f79f18fa658fc6b291bc58",
+    "evidence/r40/v3/ci_39281384427/run.json": "8afbc34dd8b437715c41148e844004293a61e1198a0a054a54b581e25fa17450",
+    "evidence/r40/v3/ci_39281384427/transport.log": "c768e7007eefbe1e1747e13dba30123d219d9efbcc81a9635bb5528cfa7e0aa3",
+    "evidence/r40/v3/R40-06.semantics/bt3p3s2.json": "6933fb71822c91497f60327aff50507a1df29251e72d17090c8e56dd5d644ddf",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/bt3p3s2.json": "c4b40d083b8ad634a75a97e2211b09aee6f54963255c71c782394f0d0eb0b188",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/journal.tar.gz": "0cda30b2810b537244489f76e910f203ad8bb0caf67d1e911843450e106bb130",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/replay.log": "26fc751b68455a07620620a96e9aec2d24a68c53ba3c4d37b3f0b31403b1f401",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/replay.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/replay.stdout": "245a174678d30338ce12dba2868d081cfd827c93cd3a29e7841a15626a9f7251",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/report.json": "28a288a3e0e4fd18a7a8f5ad8d8fd4739f87141caff8c446bc9b952d141d349e",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/sources.json": "a72ecabbf6b55ea15f9ea5ad896719513f69cab68efadddbf67826f6071940a3",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_bt3p3s2.log": "428fcaffe70df4ce9442c95c5a3cc30f4e570825e04cf6fa6fcf2f18a70f42a9",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc1.log": "075c0e6004254627843b52c4262b57e1ef3e5031cacf2ae63c7ce0f4db8c8bce",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc2.log": "733ddc32fcdb359eb5e761fa6e2f6db21ac61abbd8cbc86e9e68c0dd213510ce",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc3p3.log": "c6826209cbd8f564391ae95f2505f18fc0870760d6688816ec8922aae0ab14e8",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc4.log": "e12adc9efd5a17e834cf86c6cc9d0f576633d57ce899d49b9b1f7c67b1ade989",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc8.log": "009af24095070bbc0c060c351c5841eb55bc41831f1369bf4d6033909974a797",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_regs3p1s0.log": "da3b05b1aeaf4ff059953f437f79ef1ba8531f1adfcdc9494df7563359aa85c5",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc1.json": "1a7a07f7b8fb8c3e0038ce3d56397ea0d3de1cb41d40831238a70efec63b962b",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc2.json": "f6cd4a9c8fd0b65f658cb676fe432cfec53a28e0d9d5da3539a615f135983867",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc3p3.json": "a7b231aaaa37a63e231089a19d7aa4e4fde335503e180b679e5b2aab28b929ae",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc4.json": "afcd52df6bb2f953dc4438358480ea34698137ae13009f9f142c6c92b0a27a74",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc8.json": "f1ea8c99b63f9861e29ecd5c7b8408c4e02a4edcf6aefc4427fc38ebf8b2f619",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/regs3p1s0.json": "c1a5994a7514c0734388ab433e5bccb2105e903f2e32f6e30278706acf286e05",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/sources.json": "a72ecabbf6b55ea15f9ea5ad896719513f69cab68efadddbf67826f6071940a3",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/journal.tar.gz": "a50434200964c9d18136403760fe3a45c79c77cf0d71966da2060a152425f42c",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/replay.log": "98c34f98549418dff3b03988defcbc7f9b46be3a6672034a2e38420270e84b83",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/replay.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/replay.stdout": "72883a8feece4c84a8a06ccf1bf9f69dea0ed18dea28d705777f9df3252de831",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/report.json": "76ae94f702f70373d03dfe38f76fca7bc9a805ddf303a80d6eb5004e34de378c",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/sources.json": "39493ca236b3e3f29809a8b06d7e4daaf41d4af4c4298730ef0f140fc5a83ada",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_bt3p3s2.log": "7898e135fe4c41150b734a0b253e2a678f2cec85ce4c96439ae56f4bd41dcda0",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc1.log": "35102bbca94a308db09df509aca356e28648c0e34b3f321e2f61849414b09b21",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc2.log": "5b4b0583d4cfaa4a67a0317c46ff41fa64cf3e46b8354ef15c8fcaabffdadff0",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc3p3.log": "4663f6bbfb3672c985e5af48fb331526238336a2afa8c9417fb49b67918bd823",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc4.log": "2d5a548628a59caf0ba3a2c7253e021f81f791a3e427ad2b1d7268b1db396518",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc8.log": "dc50ecd44812b62359ddf51b4d6b4b8fb014532b07f82078c151ed4b0e58b143",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_regs3p1s0.log": "b339a0b3eff50ee6aae4bf1baa87ab987934d1844ef634c943ab2136f107a43d",
+    "evidence/r40/v3/R40-06.semantics/mc1.json": "cd7565697f0ef68b46b8897a1b6a05b779c827d2fe71fac6893cfd2939c7489a",
+    "evidence/r40/v3/R40-06.semantics/mc2.json": "5ec238de42f7c88a21f489e0d21a16fc64e56fc625a43ca20eed8fdd99be2c45",
+    "evidence/r40/v3/R40-06.semantics/mc3p3.json": "2a6f011e0172bdd3273fcaac35a695430e3fb3a0cddd98cd848dd0cbeb6876f0",
+    "evidence/r40/v3/R40-06.semantics/mc4.json": "459ea522ec44c233dc6ad65466506d11ec8a31cdd659ee8a5019b4326f5b7056",
+    "evidence/r40/v3/R40-06.semantics/mc8.json": "60142d92fc345c842c83d31558f540affe5774d08f9e51794a23d35136f93ef3",
+    "evidence/r40/v3/R40-06.semantics/regs3p1s0.json": "dbb44d6a54f7b977c038df6bb862ea517722729217b084970311305c1b4c0cba",
+    "evidence/r40/v3/R40-06.semantics/sources.json": "39493ca236b3e3f29809a8b06d7e4daaf41d4af4c4298730ef0f140fc5a83ada",
+    "evidence/r40/v3/memsys_gb10/diagnostics/capacity_fe1b_t600.tar.gz": "7203532347853c699db47df7794e3ba4148b77a2c3b1528c0c2f20127f0a5b99",
+    "evidence/r40/v3/memsys_gb10/diagnostics/line8_capacity_80dd.tar.gz": "4007044d409cd13b68114e1bfa9dc6d09c7c9ff51aab651698495ae9d1c1412c",
+    "evidence/r40/v3/memsys_gb10/grid_transport_backend.log": "304f17d4e6d895416b050759d70de82abc69e966825361d11c1fe5490d15a442",
+    "evidence/r40/v3/memsys_gb10/history_80dd/r40_core_parameters_80dd.log": "af0c7297becad93322ec65bc9a95f0d0b2b9461cc1691bf009237188f39d1c83",
+    "evidence/r40/v3/memsys_gb10/history_80dd/sources_80dd.json": "b95b058ac78195b46f9467723727af1957e3d29e5c8dd33e8ff73944476ad2e7",
+    "evidence/r40/v3/memsys_gb10/history_bc5a/r40_core_parameters.log": "af0c7297becad93322ec65bc9a95f0d0b2b9461cc1691bf009237188f39d1c83",
+    "evidence/r40/v3/memsys_gb10/history_bc5a/r40_hbm.log": "3a08c6c8a09f8c2272bf5c3be7aace8d5b5654ad8d10bdc555506eea7ada0ca9",
+    "evidence/r40/v3/memsys_gb10/history_bc5a/sources.json": "5c21c951f0c0b2ebfa4db760b8734497b5ad6f93b965fdc29ab423463a307724",
+    "evidence/r40/v3/memsys_gb10/native_features_board.log": "05487fcadd79d95317eed0c410fa823765450e1ae15ba15a60b5d7b49f56ac72",
+    "evidence/r40/v3/memsys_gb10/native_pair_board.log": "d1417010483ee306f10c486064c2becf2fbf7e60ba116963e0c7fadd825f94c3",
+    "evidence/r40/v3/memsys_gb10/native_ports_3p2.log": "97298a289f5e7f2d36d59ec3edf69cef20bab8d465dff06b26bc7776fa160be9",
+    "evidence/r40/v3/memsys_gb10/native_ports_3p3.log": "33ef1b54da1f363315cd9c91e209c8c7fc8a8afad37814bff9cf4768d69edf8c",
+    "evidence/r40/v3/memsys_gb10/native_ports_board_dma.log": "5cb844ee7c23aaf1740e131aa90f0a3897faee1e997ec5a7cb8732bd2aa4ecf7",
+    "evidence/r40/v3/memsys_gb10/physical_chunks.log": "16b61cf3715f4e878ff734506a15a213fd8796128ed558e198e1816046fcc941",
+    "evidence/r40/v3/memsys_gb10/r40_core_parameters.log": "b862c16f0735cd1202f499b5274fabfc7fe31c064edf15cbd22e25366c946770",
+    "evidence/r40/v3/memsys_gb10/r40_hbm.log": "daf884033a4b77329ee86544562c414c6e5f625749852e0375c11e86896065f0",
+    "evidence/r40/v3/memsys_gb10/r40_hbm_80dd.log": "ae334e32a036ee6a42793bd98c480b9f7c18b5d8f040f43853aaf1d9d9ab8c73",
+    "evidence/r40/v3/memsys_gb10/r40_hbm_bc5a.log": "3a08c6c8a09f8c2272bf5c3be7aace8d5b5654ad8d10bdc555506eea7ada0ca9",
+    "evidence/r40/v3/memsys_gb10/r40_hbm_fe1b_t600.log": "898dde0a62be843a7dd267bccfe5661af2c7201001ed1dda46b49275157fa479",
+    "evidence/r40/v3/memsys_gb10/recovery_multicore_dma.log": "19f224de74d23159ed4767283379321033259a275f1f7ac4bbfb42c1aa8607bb",
+    "evidence/r40/v3/memsys_gb10/sources.json": "39493ca236b3e3f29809a8b06d7e4daaf41d4af4c4298730ef0f140fc5a83ada",
+    "evidence/r40/v3/R40-04.hbm/board_run_fe1b/window_samples.json": "fa36cf03ec9f9424bb73a855c0692abb92959878aa808cff4018cecb4637b5a0",
+    "evidence/r40/v3/R40-08.decode/board_model_fe1b/model_report.json.gz": "76a7a9438c2f5626f36664ecf785a43ffdcbadc0d638da435ac153c4885a93f6",
+    "evidence/r40/v3/R40-04.hbm/board_run_fe1b/large24.jsonl": "977de705160fde2ee99e23cfcca30b92dce889d457371afbcab0863fde9b9131"
+   },
+   "board_run": "evidence/r40/v3/R40-04.hbm/board_run_fe1b",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  },
+  "R40-06.semantics": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "simulation evidence measured on the delivery tree",
+     "ok": true,
+     "tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75"
+    },
+    {
+     "name": "semantics matrix: every executed testbench/harness file equals the delivery commit (f9da3d5) or this checkout",
+     "ok": true,
+     "files": 334,
+     "differ": [],
+     "absent": [],
+     "host": "GB10 (zhongchun@143.89.78.224)",
+     "path": "~/r40v3_hbmnuca_fe1b"
+    },
+    {
+     "name": "mc1: sim-multicore {\"core_count\": 1}: both graphs correct, resident, one whole-grid launch, every program once, every outlet used",
+     "ok": true,
+     "graphs": {
+      "pointwise": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      },
+      "softmax": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      }
+     },
+     "peak_active": {
+      "pointwise": 1,
+      "softmax": 1
+     },
+     "outlets": {
+      "pointwise": [
+       {
+        "port": 0,
+        "read_lines": 871,
+        "write_lines": 257
+       }
+      ],
+      "softmax": [
+       {
+        "port": 0,
+        "read_lines": 1117,
+        "write_lines": 526
+       }
+      ]
+     }
+    },
+    {
+     "name": "mc2: sim-multicore {\"core_count\": 2}: both graphs correct, resident, one whole-grid launch, every program once, every outlet used",
+     "ok": true,
+     "graphs": {
+      "pointwise": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      },
+      "softmax": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      }
+     },
+     "peak_active": {
+      "pointwise": 2,
+      "softmax": 2
+     },
+     "outlets": {
+      "pointwise": [
+       {
+        "port": 0,
+        "read_lines": 904,
+        "write_lines": 263
+       }
+      ],
+      "softmax": [
+       {
+        "port": 0,
+        "read_lines": 1485,
+        "write_lines": 625
+       }
+      ]
+     }
+    },
+    {
+     "name": "mc3p3: sim-multicore {\"core_count\": 3, \"memory_ports\": 3}: both graphs correct, resident, one whole-grid launch, every program once, every outlet used",
+     "ok": true,
+     "graphs": {
+      "pointwise": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      },
+      "softmax": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      }
+     },
+     "peak_active": {
+      "pointwise": 3,
+      "softmax": 3
+     },
+     "outlets": {
+      "pointwise": [
+       {
+        "port": 0,
+        "read_lines": 356,
+        "write_lines": 89
+       },
+       {
+        "port": 1,
+        "read_lines": 299,
+        "write_lines": 89
+       },
+       {
+        "port": 2,
+        "read_lines": 262,
+        "write_lines": 86
+       }
+      ],
+      "softmax": [
+       {
+        "port": 0,
+        "read_lines": 426,
+        "write_lines": 190
+       },
+       {
+        "port": 1,
+        "read_lines": 451,
+        "write_lines": 214
+       },
+       {
+        "port": 2,
+        "read_lines": 439,
+        "write_lines": 202
+       }
+      ]
+     }
+    },
+    {
+     "name": "mc4: sim-multicore {\"core_count\": 4}: both graphs correct, resident, one whole-grid launch, every program once, every outlet used",
+     "ok": true,
+     "graphs": {
+      "pointwise": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      },
+      "softmax": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      }
+     },
+     "peak_active": {
+      "pointwise": 4,
+      "softmax": 4
+     },
+     "outlets": {
+      "pointwise": [
+       {
+        "port": 0,
+        "read_lines": 1135,
+        "write_lines": 267
+       }
+      ],
+      "softmax": [
+       {
+        "port": 0,
+        "read_lines": 2313,
+        "write_lines": 875
+       }
+      ]
+     }
+    },
+    {
+     "name": "mc8: sim-multicore {\"core_count\": 8}: both graphs correct, resident, one whole-grid launch, every program once, every outlet used",
+     "ok": true,
+     "graphs": {
+      "pointwise": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      },
+      "softmax": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      }
+     },
+     "peak_active": {
+      "pointwise": 8,
+      "softmax": 8
+     },
+     "outlets": {
+      "pointwise": [
+       {
+        "port": 0,
+        "read_lines": 1115,
+        "write_lines": 274
+       }
+      ],
+      "softmax": [
+       {
+        "port": 0,
+        "read_lines": 2053,
+        "write_lines": 879
+       }
+      ]
+     }
+    },
+    {
+     "name": "bt3p3s2: fpga-multicore-sim {\"board_top\": true, \"code_stages\": 2, \"core_count\": 3, \"dispatch_stages\": 2, \"hbm_dma\": true, \"home_stages\": 2, \"journal\": true, \"maintenance\": true, \"memory_controls\": true, \"memory_ports\": 3, \"noc_link_stages\": 2}: both graphs correct, resident, one whole-grid launch, every program once, every outlet used",
+     "ok": true,
+     "graphs": {
+      "pointwise": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      },
+      "softmax": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      }
+     },
+     "peak_active": {
+      "pointwise": 3,
+      "softmax": 3
+     },
+     "outlets": {
+      "pointwise": [
+       {
+        "port": 0,
+        "read_lines": 351,
+        "write_lines": 83
+       },
+       {
+        "port": 1,
+        "read_lines": 284,
+        "write_lines": 82
+       },
+       {
+        "port": 2,
+        "read_lines": 256,
+        "write_lines": 81
+       }
+      ],
+      "softmax": [
+       {
+        "port": 0,
+        "read_lines": 395,
+        "write_lines": 177
+       },
+       {
+        "port": 1,
+        "read_lines": 402,
+        "write_lines": 194
+       },
+       {
+        "port": 2,
+        "read_lines": 429,
+        "write_lines": 189
+       }
+      ]
+     }
+    },
+    {
+     "name": "regs3p1s0: fpga-multicore-sim {\"core_count\": 3, \"memory_ports\": 1}: both graphs correct, resident, one whole-grid launch, every program once, every outlet used",
+     "ok": true,
+     "graphs": {
+      "pointwise": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      },
+      "softmax": {
+       "numerical": true,
+       "device_output": true,
+       "zero_tensor_staging": true,
+       "whole_grid_launch": true,
+       "no_per_program_launch": true,
+       "physical_grid": true,
+       "programs_exactly_once": true,
+       "every_outlet_traffic": true
+      }
+     },
+     "peak_active": {
+      "pointwise": 3,
+      "softmax": 3
+     },
+     "outlets": {
+      "pointwise": [
+       {
+        "port": 0,
+        "read_lines": 903,
+        "write_lines": 260
+       }
+      ],
+      "softmax": [
+       {
+        "port": 0,
+        "read_lines": 1293,
+        "write_lines": 610
+       }
+      ]
+     }
+    },
+    {
+     "name": "same model source, harness, product tree and compile options in every configuration; only the backend selection differs (no model, ISA or frontend change)",
+     "ok": true,
+     "harness_sha256": [
+      "76b259e5d286ef97809d5fee4798a9aa0add71d4f6a8ba15edf60a6b4a27772d"
+     ],
+     "env": [
+      "{\"TNCA_HOST_TIMEOUT\": \"7200\", \"TNCA_PROFILE\": \"core-vrf-sync-v5\", \"TNCA_TRITON\": \"1\"}"
+     ]
+    },
+    {
+     "name": "pointwise: bit-identical outputs across every core count, outlet count and memory model",
+     "ok": true,
+     "output_sha256": [
+      "00261615c2f9ac8bc8955d2cfbd782d1a7c382b2cc01ab15d2ce5914b803aa06"
+     ]
+    },
+    {
+     "name": "pointwise: the same compiled kernel artifacts in every configuration (no model, frontend or ISA change; only the runtime/backend parameters differ)",
+     "ok": true,
+     "artifacts": [
+      "[\"bfca046a17e88d7fe4f9bd22bd9b0955f43fdae4650be6d9cec7a80b52e51a49\"]"
+     ]
+    },
+    {
+     "name": "softmax: bit-identical outputs across every core count, outlet count and memory model",
+     "ok": true,
+     "output_sha256": [
+      "2f3cdcac5a2d63c71ec41abf22189dec8f66978ea508d692f60bb8f00fbdcc63"
+     ]
+    },
+    {
+     "name": "softmax: the same compiled kernel artifacts in every configuration (no model, frontend or ISA change; only the runtime/backend parameters differ)",
+     "ok": true,
+     "artifacts": [
+      "[\"88e4f515cdd61a7a27e156259e6ee565e3f3018b9b8c5731a075c283ea447c86\"]"
+     ]
+    },
+    {
+     "name": "matrix covers 1/2/3/4/8 cores, several outlet counts and two memory-latency models (DRAM model 11+7p cycles with stalls/reordering; AXI line model 25+19p cycles behind 0- or 2-stage links)",
+     "ok": true,
+     "cores": [
+      1,
+      2,
+      3,
+      4,
+      8
+     ],
+     "ports": [
+      1,
+      3
+     ],
+     "memory_models": [
+      "fpga-multicore-sim",
+      "sim-multicore"
+     ]
+    },
+    {
+     "name": "simulation evidence measured on the delivery tree",
+     "ok": true,
+     "tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75"
+    },
+    {
+     "name": "GB10 delivery-tree runs: every executed testbench/harness file equals the delivery commit (f9da3d5) or this checkout",
+     "ok": true,
+     "files": 334,
+     "differ": [],
+     "absent": [],
+     "host": "GB10 (zhongchun@143.89.78.224)",
+     "path": "~/r40v3_hbmnuca_fe1b"
+    },
+    {
+     "name": "GB10 delivery-tree step native_ports_3p2 exited 0",
+     "ok": true,
+     "log": "evidence/r40/v3/memsys_gb10/native_ports_3p2.log",
+     "log_sha256": "97298a289f5e7f2d36d59ec3edf69cef20bab8d465dff06b26bc7776fa160be9",
+     "command": "STEP native_ports_3p2: /home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_memory_ports_tests.py --cores 3 --ports 2"
+    },
+    {
+     "name": "GB10 delivery-tree step native_ports_3p3 exited 0",
+     "ok": true,
+     "log": "evidence/r40/v3/memsys_gb10/native_ports_3p3.log",
+     "log_sha256": "33ef1b54da1f363315cd9c91e209c8c7fc8a8afad37814bff9cf4768d69edf8c",
+     "command": "STEP native_ports_3p3: /home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_memory_ports_tests.py --cores 3 --ports 3"
+    },
+    {
+     "name": "GB10 delivery-tree step native_ports_board_dma exited 0",
+     "ok": true,
+     "log": "evidence/r40/v3/memsys_gb10/native_ports_board_dma.log",
+     "log_sha256": "5cb844ee7c23aaf1740e131aa90f0a3897faee1e997ec5a7cb8732bd2aa4ecf7",
+     "command": "STEP native_ports_board_dma: /home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_memory_ports_tests.py --backend fpga-multicore-sim --cores 3 --ports 3 --pipeline 2 --board-top --dma"
+    },
+    {
+     "name": "delivery tree: the 4097-element graph with 2 and 3 outlets and on the board top with DMA ownership",
+     "ok": true,
+     "counts": {
+      "NATIVE MEMORY PORTS PASS": 3,
+      "\"dma_ownership\": true": 1
+     },
+     "missing": {}
+    }
+   ],
+   "detail": "v3 memory-system capability audit: 21/21 checks pass",
+   "written": "2026-10-19T12:39:26+00:00",
+   "auditor": "tools/r40/v3_memsys_gates.py",
+   "auditor_sha256": "9bbfee46288753506fd2bc3f130e49f8573c7dac62e6c72311c01b9b1ecc6764",
+   "delivery_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+   "clock_hz": 90000000,
+   "inputs": {
+    "evidence/r40/v3/ci_39183153944/check.log": "5adbe134304c4ee65638a3446ccae3c5b551c548f839742d261cd782e555b8b2",
+    "evidence/r40/v3/ci_39183153944/chunks.log": "de67a2662ceb410118edb3a87345269cabbf538db15701074ae07f438aa850f5",
+    "evidence/r40/v3/ci_39183153944/memory.log": "b617f86ee2b1d7e285c9c59988538845cf222c7d7bfb578f6e4814f6b8706a94",
+    "evidence/r40/v3/ci_39183153944/mmio-checks.log": "bd7007605a06b20f359665c7dd77e274aef43f6179bf0466dc1ee5b03f53b5e8",
+    "evidence/r40/v3/ci_39183153944/native-features.log": "7ed036fa2484af75e1ecc377b99b93be30218eec09bd81c834be6b524ad37aad",
+    "evidence/r40/v3/ci_39183153944/native-pair.log": "3f902bff0e281fed802eaec4d49c72235add45d9ede5e16005996de8fce4878d",
+    "evidence/r40/v3/ci_39183153944/native-ports.log": "ebe89a49d17e6a619e1e3d4dd9d3ffd69e332cec71480dd942475fabd58cb6e7",
+    "evidence/r40/v3/ci_39183153944/native.log": "8065d72ffedb8a50ee9a3c9bc71b7e53834a0e89346b65816a914460898fa339",
+    "evidence/r40/v3/ci_39183153944/registers-1.log": "0e69c1741a00cdc8a70112a15d3ae4a659af1048fbdca12e5d3627564457381f",
+    "evidence/r40/v3/ci_39183153944/registers-3.log": "3679d5dd451d2bcc7207791df69d3548bdf3662d3121afc24d5882fb4a550afb",
+    "evidence/r40/v3/ci_39183153944/registers-board.log": "563a8341355395d36855030cbb677622bd3cdea52fbdf4a72e7fa62f9732e533",
+    "evidence/r40/v3/ci_39183153944/run.json": "429ed85a6e23ea16bc4df5744f523cfbd1c9d4046343281d8b27a55692ae0bdc",
+    "evidence/r40/v3/ci_39183153944/transport.log": "733668bed14e3a4ebb0a540d9f1408d5cdd11098a03b68c10c0a0db3617fe40d",
+    "evidence/r40/v3/R40-06.semantics/bt3p3s2.json": "6933fb71822c91497f60327aff50507a1df29251e72d17090c8e56dd5d644ddf",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/bt3p3s2.json": "c4b40d083b8ad634a75a97e2211b09aee6f54963255c71c782394f0d0eb0b188",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/journal.tar.gz": "0cda30b2810b537244489f76e910f203ad8bb0caf67d1e911843450e106bb130",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/replay.log": "26fc751b68455a07620620a96e9aec2d24a68c53ba3c4d37b3f0b31403b1f401",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/replay.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/replay.stdout": "245a174678d30338ce12dba2868d081cfd827c93cd3a29e7841a15626a9f7251",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/report.json": "28a288a3e0e4fd18a7a8f5ad8d8fd4739f87141caff8c446bc9b952d141d349e",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/journal_replay/sources.json": "a72ecabbf6b55ea15f9ea5ad896719513f69cab68efadddbf67826f6071940a3",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_bt3p3s2.log": "428fcaffe70df4ce9442c95c5a3cc30f4e570825e04cf6fa6fcf2f18a70f42a9",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc1.log": "075c0e6004254627843b52c4262b57e1ef3e5031cacf2ae63c7ce0f4db8c8bce",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc2.log": "733ddc32fcdb359eb5e761fa6e2f6db21ac61abbd8cbc86e9e68c0dd213510ce",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc3p3.log": "c6826209cbd8f564391ae95f2505f18fc0870760d6688816ec8922aae0ab14e8",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc4.log": "e12adc9efd5a17e834cf86c6cc9d0f576633d57ce899d49b9b1f7c67b1ade989",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_mc8.log": "009af24095070bbc0c060c351c5841eb55bc41831f1369bf4d6033909974a797",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/logs/sem_regs3p1s0.log": "da3b05b1aeaf4ff059953f437f79ef1ba8531f1adfcdc9494df7563359aa85c5",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc1.json": "1a7a07f7b8fb8c3e0038ce3d56397ea0d3de1cb41d40831238a70efec63b962b",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc2.json": "f6cd4a9c8fd0b65f658cb676fe432cfec53a28e0d9d5da3539a615f135983867",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc3p3.json": "a7b231aaaa37a63e231089a19d7aa4e4fde335503e180b679e5b2aab28b929ae",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc4.json": "afcd52df6bb2f953dc4438358480ea34698137ae13009f9f142c6c92b0a27a74",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/mc8.json": "f1ea8c99b63f9861e29ecd5c7b8408c4e02a4edcf6aefc4427fc38ebf8b2f619",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/regs3p1s0.json": "c1a5994a7514c0734388ab433e5bccb2105e903f2e32f6e30278706acf286e05",
+    "evidence/r40/v3/R40-06.semantics/history_bc5a/sources.json": "a72ecabbf6b55ea15f9ea5ad896719513f69cab68efadddbf67826f6071940a3",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/journal.tar.gz": "a50434200964c9d18136403760fe3a45c79c77cf0d71966da2060a152425f42c",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/replay.log": "98c34f98549418dff3b03988defcbc7f9b46be3a6672034a2e38420270e84b83",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/replay.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/replay.stdout": "72883a8feece4c84a8a06ccf1bf9f69dea0ed18dea28d705777f9df3252de831",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/report.json": "76ae94f702f70373d03dfe38f76fca7bc9a805ddf303a80d6eb5004e34de378c",
+    "evidence/r40/v3/R40-06.semantics/journal_replay/sources.json": "39493ca236b3e3f29809a8b06d7e4daaf41d4af4c4298730ef0f140fc5a83ada",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_bt3p3s2.log": "7898e135fe4c41150b734a0b253e2a678f2cec85ce4c96439ae56f4bd41dcda0",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc1.log": "35102bbca94a308db09df509aca356e28648c0e34b3f321e2f61849414b09b21",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc2.log": "5b4b0583d4cfaa4a67a0317c46ff41fa64cf3e46b8354ef15c8fcaabffdadff0",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc3p3.log": "4663f6bbfb3672c985e5af48fb331526238336a2afa8c9417fb49b67918bd823",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc4.log": "2d5a548628a59caf0ba3a2c7253e021f81f791a3e427ad2b1d7268b1db396518",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_mc8.log": "dc50ecd44812b62359ddf51b4d6b4b8fb014532b07f82078c151ed4b0e58b143",
+    "evidence/r40/v3/R40-06.semantics/logs/sem_regs3p1s0.log": "b339a0b3eff50ee6aae4bf1baa87ab987934d1844ef634c943ab2136f107a43d",
+    "evidence/r40/v3/R40-06.semantics/mc1.json": "cd7565697f0ef68b46b8897a1b6a05b779c827d2fe71fac6893cfd2939c7489a",
+    "evidence/r40/v3/R40-06.semantics/mc2.json": "5ec238de42f7c88a21f489e0d21a16fc64e56fc625a43ca20eed8fdd99be2c45",
+    "evidence/r40/v3/R40-06.semantics/mc3p3.json": "2a6f011e0172bdd3273fcaac35a695430e3fb3a0cddd98cd848dd0cbeb6876f0",
+    "evidence/r40/v3/R40-06.semantics/mc4.json": "459ea522ec44c233dc6ad65466506d11ec8a31cdd659ee8a5019b4326f5b7056",
+    "evidence/r40/v3/R40-06.semantics/mc8.json": "60142d92fc345c842c83d31558f540affe5774d08f9e51794a23d35136f93ef3",
+    "evidence/r40/v3/R40-06.semantics/regs3p1s0.json": "dbb44d6a54f7b977c038df6bb862ea517722729217b084970311305c1b4c0cba",
+    "evidence/r40/v3/R40-06.semantics/sources.json": "39493ca236b3e3f29809a8b06d7e4daaf41d4af4c4298730ef0f140fc5a83ada",
+    "evidence/r40/v3/memsys_gb10/diagnostics/capacity_fe1b_t600.tar.gz": "7203532347853c699db47df7794e3ba4148b77a2c3b1528c0c2f20127f0a5b99",
+    "evidence/r40/v3/memsys_gb10/diagnostics/line8_capacity_80dd.tar.gz": "4007044d409cd13b68114e1bfa9dc6d09c7c9ff51aab651698495ae9d1c1412c",
+    "evidence/r40/v3/memsys_gb10/grid_transport_backend.log": "304f17d4e6d895416b050759d70de82abc69e966825361d11c1fe5490d15a442",
+    "evidence/r40/v3/memsys_gb10/history_80dd/r40_core_parameters_80dd.log": "af0c7297becad93322ec65bc9a95f0d0b2b9461cc1691bf009237188f39d1c83",
+    "evidence/r40/v3/memsys_gb10/history_80dd/sources_80dd.json": "b95b058ac78195b46f9467723727af1957e3d29e5c8dd33e8ff73944476ad2e7",
+    "evidence/r40/v3/memsys_gb10/history_bc5a/r40_core_parameters.log": "af0c7297becad93322ec65bc9a95f0d0b2b9461cc1691bf009237188f39d1c83",
+    "evidence/r40/v3/memsys_gb10/history_bc5a/r40_hbm.log": "3a08c6c8a09f8c2272bf5c3be7aace8d5b5654ad8d10bdc555506eea7ada0ca9",
+    "evidence/r40/v3/memsys_gb10/history_bc5a/sources.json": "5c21c951f0c0b2ebfa4db760b8734497b5ad6f93b965fdc29ab423463a307724",
+    "evidence/r40/v3/memsys_gb10/native_features_board.log": "05487fcadd79d95317eed0c410fa823765450e1ae15ba15a60b5d7b49f56ac72",
+    "evidence/r40/v3/memsys_gb10/native_pair_board.log": "d1417010483ee306f10c486064c2becf2fbf7e60ba116963e0c7fadd825f94c3",
+    "evidence/r40/v3/memsys_gb10/native_ports_3p2.log": "97298a289f5e7f2d36d59ec3edf69cef20bab8d465dff06b26bc7776fa160be9",
+    "evidence/r40/v3/memsys_gb10/native_ports_3p3.log": "33ef1b54da1f363315cd9c91e209c8c7fc8a8afad37814bff9cf4768d69edf8c",
+    "evidence/r40/v3/memsys_gb10/native_ports_board_dma.log": "5cb844ee7c23aaf1740e131aa90f0a3897faee1e997ec5a7cb8732bd2aa4ecf7",
+    "evidence/r40/v3/memsys_gb10/physical_chunks.log": "16b61cf3715f4e878ff734506a15a213fd8796128ed558e198e1816046fcc941",
+    "evidence/r40/v3/memsys_gb10/r40_core_parameters.log": "b862c16f0735cd1202f499b5274fabfc7fe31c064edf15cbd22e25366c946770",
+    "evidence/r40/v3/memsys_gb10/r40_hbm.log": "daf884033a4b77329ee86544562c414c6e5f625749852e0375c11e86896065f0",
+    "evidence/r40/v3/memsys_gb10/r40_hbm_80dd.log": "ae334e32a036ee6a42793bd98c480b9f7c18b5d8f040f43853aaf1d9d9ab8c73",
+    "evidence/r40/v3/memsys_gb10/r40_hbm_bc5a.log": "3a08c6c8a09f8c2272bf5c3be7aace8d5b5654ad8d10bdc555506eea7ada0ca9",
+    "evidence/r40/v3/memsys_gb10/r40_hbm_fe1b_t600.log": "898dde0a62be843a7dd267bccfe5661af2c7201001ed1dda46b49275157fa479",
+    "evidence/r40/v3/memsys_gb10/recovery_multicore_dma.log": "19f224de74d23159ed4767283379321033259a275f1f7ac4bbfb42c1aa8607bb",
+    "evidence/r40/v3/memsys_gb10/sources.json": "39493ca236b3e3f29809a8b06d7e4daaf41d4af4c4298730ef0f140fc5a83ada"
+   },
+   "board_run": null,
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  },
+  "R40-06.streaming-scaling": {
+   "status": "no-significant-gain",
+   "checks": [
+    {
+     "name": "R40-06.streaming-cores: complete accepted comparison",
+     "ok": true,
+     "detail": ""
+    },
+    {
+     "name": "R40-06.streaming-cores: 95% CI lower bound of S_geo > 1",
+     "ok": true,
+     "ci95": [
+      2.152851186294992,
+      2.8543609006719155
+     ],
+     "s_geo": 2.5591914390225563
+    },
+    {
+     "name": "R40-06.ports: complete accepted comparison",
+     "ok": true,
+     "detail": ""
+    },
+    {
+     "name": "R40-06.ports: 95% CI lower bound of S_geo > 1",
+     "ok": false,
+     "ci95": [
+      0.9980961518824681,
+      1.0248498836397428
+     ],
+     "s_geo": 1.0073447963126603
+    }
+   ],
+   "detail": "R40-06.streaming-cores: S_geo 2.5592 CI [2.1529, 2.8544], v2 target 1.8 met; R40-06.ports: S_geo 1.0073 CI [0.9981, 1.0248], v2 target 1.3 missed",
+   "written": "2026-10-20T00:27:51+00:00",
+   "identity": {
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "clock_hz": 90000000,
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "backend": "fpga-u280-multicore",
+    "hbm_bytes": 4294967296,
+    "backend_args_shape": {
+     "image_profile": "core-vrf-sync-v5",
+     "core_count": 3,
+     "memory_ports": 3,
+     "hbm_dma": true,
+     "hbm_bytes": 4294967296,
+     "device_clock": true
+    },
+    "identity_amendment": "doc/r40_v3/identity_amendment.json"
+   },
+   "experiments": {
+    "R40-06.streaming-cores": {
+     "status": "perf-pass",
+     "s_geo": 2.5591914390225563,
+     "ci95": [
+      2.152851186294992,
+      2.8543609006719155
+     ],
+     "s_geo_balanced_weighted": 2.5591914390225563,
+     "target": 1.8,
+     "target_met": true,
+     "worst": {
+      "point": "op.transpose/hbm/fp32-r8192-c8192",
+      "speedup": 1.6708823984291086
+     },
+     "regress_2pct": [],
+     "regress_5pct": [],
+     "points": [
+      {
+       "point": "op.add/hbm/fp16-n67108864",
+       "a": 683831158,
+       "b": 243939243,
+       "speedup": 2.8032847425045095,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.copy/hbm/fp16-n67108864",
+       "a": 442139585,
+       "b": 162797381,
+       "speedup": 2.7158888078181063,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+       "a": 325837378,
+       "b": 112779126,
+       "speedup": 2.889163886586601,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.silu/hbm/fp16-n67108864",
+       "a": 711338712,
+       "b": 242470585,
+       "speedup": 2.9337113695667454,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.softmax/hbm/fp16-r4096-c8192",
+       "a": 584377815,
+       "b": 224280605,
+       "speedup": 2.605565536975433,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.transpose/hbm/fp32-r8192-c8192",
+       "a": 647679215,
+       "b": 387627050,
+       "speedup": 1.6708823984291086,
+       "n_a": 1,
+       "n_b": 1
+      }
+     ],
+     "timing": "graph-makespan",
+     "vary": [
+      "TNCA_ACTIVE_CORES"
+     ],
+     "compared_vary": [
+      "TNCA_ACTIVE_CORES"
+     ],
+     "control": "1",
+     "candidate": "3",
+     "baseline": "B40-N",
+     "config_a": "2a611b636bbd6739",
+     "config_b": "2a611b636bbd6739",
+     "inputs": {
+      "control": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-06.streaming-cores.control.jsonl",
+       "sha256": "e640d6ea768fb82a14d67132ebf33d5f811c0d795bc723f11786c0be6b98eaba"
+      },
+      "candidate": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-06.streaming-cores.candidate.jsonl",
+       "sha256": "c34accef0e244a158e8951aa366d9b08f9baa720daca12032be9deed15ed39a5"
+      }
+     }
+    },
+    "R40-06.ports": {
+     "status": "no-significant-gain",
+     "s_geo": 1.0073447963126603,
+     "ci95": [
+      0.9980961518824681,
+      1.0248498836397428
+     ],
+     "s_geo_balanced_weighted": 1.0073447963126603,
+     "target": 1.3,
+     "target_met": false,
+     "worst": {
+      "point": "op.copy/hbm/fp16-n67108864",
+      "speedup": 0.9975966996668085
+     },
+     "regress_2pct": [],
+     "regress_5pct": [],
+     "points": [
+      {
+       "point": "op.add/hbm/fp16-n67108864",
+       "a": 244170576,
+       "b": 243939243,
+       "speedup": 1.0009483222016886,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.copy/hbm/fp16-n67108864",
+       "a": 162406130,
+       "b": 162797381,
+       "speedup": 0.9975966996668085,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+       "a": 112643524,
+       "b": 112779126,
+       "speedup": 0.9987976321079133,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.silu/hbm/fp16-n67108864",
+       "a": 242153017,
+       "b": 242470585,
+       "speedup": 0.998690282369715,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.softmax/hbm/fp16-r4096-c8192",
+       "a": 223802155,
+       "b": 224280605,
+       "speedup": 0.9978667348431667,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.transpose/hbm/fp32-r8192-c8192",
+       "a": 407507332,
+       "b": 387627050,
+       "speedup": 1.0512871379848232,
+       "n_a": 1,
+       "n_b": 1
+      }
+     ],
+     "timing": "graph-makespan",
+     "vary": [
+      "TNCA_RTL_MEM_PORTS"
+     ],
+     "compared_vary": [
+      "TNCA_RTL_MEM_PORTS"
+     ],
+     "control": "1",
+     "candidate": "3",
+     "baseline": "B40-N",
+     "config_a": "515d52bf0e0dc1bc",
+     "config_b": "515d52bf0e0dc1bc",
+     "inputs": {
+      "control": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-06.ports.control.jsonl",
+       "sha256": "bee6509194a902ddeaead662c102adcf448a457063bcb074c368a7fe3020e73e"
+      },
+      "candidate": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-06.ports.candidate.jsonl",
+       "sha256": "c34accef0e244a158e8951aa366d9b08f9baa720daca12032be9deed15ed39a5"
+      }
+     }
+    }
+   },
+   "judgement": "/home/zzhouch/tnca_v3_judge_final/judgement.json",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211",
+   "judgement_copy": "evidence/r40/v3/campaign_fe1b/judgement.json"
+  }
+ }
+}

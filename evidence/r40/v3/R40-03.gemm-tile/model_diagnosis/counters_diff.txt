@@ -1,0 +1,52 @@
+== linear 16,16,16 vs 16,32,16; keys 175
+  core_0_dependency_wait_cycles                         1168260     20614526  x17.65
+  core_0_context_park_cycles                             807870     10048390  x12.44
+  home_0_engine_queue_cycles                             443754      8675102  x19.55
+  core_0_pipeline_freeze_cycles                           42625      4467007  x104.80
+  core_0_lsu_wait_cycles                                  36570      3927745  x107.40
+  home_0_resolution_cycles                              2251057      5413989  x2.41
+  home_0_engine_service_cycles                           439734      3437730  x7.82
+  core_0_instructions                                    244300      2941516  x12.04
+  core_0_memory_port_service_cycles                      354816      2801216  x7.89
+  outlet_0_wait_cycles                                  4062326      6286140  x1.55
+  core_0_issue_service_cycles                            118016      1466624  x12.43
+  core_0_class_salu                                      100842      1303274  x12.92
+  home_0_hits                                            102846      1006154  x9.78
+  core_0_class_lsu                                        13780       616532  x44.74
+  core_0_issue_queue_cycles                               52963       644151  x12.16
+  core_0_dma_admission_wait_cycles                       831659      1409834  x1.70
+  core_0_fence_drain_cycles                                6055       539262  x89.06
+  core_0_matrix_engine_wait_cycles                        16842       462694  x27.47
+  core_0_class_a_vread                                     4096       331776  x81.00
+  core_0_matrix_engine_busy_cycles                       795776      1085056  x1.36
+  core_0_matrix_engine_commands                            5376       256256  x47.67
+  core_0_class_a_row                                          0       245760  xinf
+  core_0_class_vint                                       33388       253548  x7.59
+  outlet_0_service_cycles                                 57666       140164  x2.43
+== matmul 16,16,16 vs 16,32,16; keys 171
+  core_0_dependency_wait_cycles                          386255      3707088  x9.60
+  core_0_context_park_cycles                             285175      2095720  x7.35
+  home_0_engine_queue_cycles                             183014      1241309  x6.78
+  core_0_pipeline_freeze_cycles                           27904       651313  x23.34
+  core_0_instructions                                     86988       705740  x8.11
+  core_0_lsu_wait_cycles                                  25031       575935  x23.01
+  home_0_resolution_cycles                               614455      1105888  x1.80
+  home_0_engine_service_cycles                           148744       511556  x3.44
+  core_0_memory_port_service_cycles                      107712       456320  x4.24
+  core_0_issue_service_cycles                             39360       348736  x8.86
+  core_0_class_salu                                       39018       314666  x8.06
+  core_0_issue_queue_cycles                               28247       271369  x9.61
+  outlet_0_wait_cycles                                    44405       178619  x4.02
+  home_0_hits                                             25708       135514  x5.27
+  core_0_matrix_engine_wait_cycles                         9707       117542  x12.11
+  core_0_class_lsu                                         4948       112340  x22.70
+  core_0_class_a_vread                                     2048       100352  x49.00
+  core_0_matrix_engine_busy_cycles                       239168       325952  x1.36
+  core_0_matrix_engine_commands                            1664        76928  x46.23
+  core_0_class_a_row                                          0        73728  xinf
+  core_0_fence_drain_cycles                                2872        75364  x26.24
+  core_0_class_vint                                       14060        51692  x3.68
+  core_0_memory_port_queue_cycles                           712        29342  x41.21
+  core_0_dma_admission_wait_cycles                       247263       273337  x1.11
+2402d46d9375558c5fc80d2689b9b03fc235817902d2bf38852492f4d6a3c98d  ../tnca-chip
+dc2c1763eafb7d022304ee820651465c4df04135a68381c0d3833ea7195eb796  ../final.cfg

@@ -1,0 +1,7 @@
+STEP native_ports_board_dma: /home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_memory_ports_tests.py --backend fpga-multicore-sim --cores 3 --ports 3 --pipeline 2 --board-top --dma
+START 2026-10-19T08:21:28Z
+W1019 08:21:30.408000 2995407 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+LEGACY COUNTER FAILURE REPRO {"actual_outlet_delta": [{"port": 0, "read_lines": 349, "write_lines": 83}, {"port": 1, "read_lines": 285, "write_lines": 82}, {"port": 2, "read_lines": 256, "write_lines": 81}], "corrected_legacy_api": "unavailable", "legacy_register_defaults": {"read_beats": 0, "read_cycles": 0, "reads": 0, "writes": 0}}
+NATIVE MEMORY PORTS PASS {"controller_traffic": [{"port": 0, "read_lines": 349, "write_lines": 83}, {"port": 1, "read_lines": 285, "write_lines": 82}, {"port": 2, "read_lines": 256, "write_lines": 81}], "cores": 3, "dma_ownership": true, "physical_activity": {"cores": [{"completed": 88, "core": 0, "issued": 88, "occupied_cycles": 22927}, {"completed": 84, "core": 1, "issued": 84, "occupied_cycles": 22165}, {"completed": 85, "core": 2, "issued": 85, "occupied_cycles": 22384}], "peak_active": 3}, "ports": 3, "zero_tensor_staging": true}
+END 2026-10-19T08:29:33Z
+EXIT=0

@@ -1,0 +1,55 @@
+{
+  "status": "replay-pass",
+  "scope": "DUT I/O and stop-history replay; excludes host/reference semantics and performance",
+  "gate_status": "not-measured",
+  "capture": {
+    "schema": "tnca-mmio-timed-journal/1",
+    "harness": "/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-toxt9tym/multicore-mmio.vvp",
+    "harness_sha256": "3c7b4d2dddf63a4cbd50106d4f5abb20f9013403f0c1e534d4323fc3de61c382",
+    "runtime": "/home/zhongchun/tc_env/bin/vvp",
+    "argv": [
+      "/home/zhongchun/tc_env/bin/vvp",
+      "/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-toxt9tym/multicore-mmio.vvp",
+      "+cmd=/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-toxt9tym/regs.cmd",
+      "+rsp=/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-toxt9tym/regs.rsp",
+      "+pollcycles=20",
+      "+intercycle=8",
+      "+watchdog=200000000",
+      "+assert_fatal",
+      "+journal=/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-toxt9tym/journal"
+    ],
+    "backend": "RTL MMIO v2: 3 cores, 3 AXI outlets",
+    "diagnostic_only": true,
+    "wall_time_overhead": "not-measured",
+    "source_root": "/home/zhongchun/r40v3_hbmnuca_bc5a",
+    "simulator_log": "/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-toxt9tym/regs.log"
+  },
+  "replay_harness_sha256": "3c7b4d2dddf63a4cbd50106d4f5abb20f9013403f0c1e534d4323fc3de61c382",
+  "diagnostic_override": false,
+  "capture_terminal": [
+    "T",
+    "3573816",
+    "1"
+  ],
+  "capture_failures": [],
+  "marker_problems": [],
+  "result": {
+    "name": "replay",
+    "argv": [
+      "/home/zhongchun/tc_env/bin/vvp",
+      "/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-toxt9tym/multicore-mmio.vvp",
+      "+cmd=/home/zhongchun/r40v3_hbmnuca_runs/bc5a/journal_replay/unused.cmd",
+      "+rsp=/home/zhongchun/r40v3_hbmnuca_runs/bc5a/journal_replay/actual.rsp",
+      "+replay=/home/zhongchun/r40v3_hbmnuca_bc5a/sim/build/u50-sim/link-toxt9tym/journal",
+      "+assert_fatal"
+    ],
+    "status": "PASS",
+    "returncode": 0,
+    "seconds": 2130.919,
+    "cap": 14400.0,
+    "notes": [],
+    "stdout": "../r40v3_hbmnuca_runs/bc5a/journal_replay/replay.stdout",
+    "stderr": "../r40v3_hbmnuca_runs/bc5a/journal_replay/replay.stderr",
+    "orphans": []
+  }
+}

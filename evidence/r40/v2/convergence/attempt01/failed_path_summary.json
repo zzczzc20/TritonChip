@@ -1,0 +1,247 @@
+{
+  "report": "/home/zzhouch/tnca_build/r40_attempt01_followup/failed_checkpoint_reports/critical_paths.rpt",
+  "report_sha256": "e55b878b2f993689386dc96da1aa185f38843b9f5dbbaf1a6e43567e500ebde7",
+  "scope": "failed substantially unrouted design; diagnostic paths only, no frequency qualification",
+  "paths": [
+    {
+      "slack": "Slack (VIOLATED) :        -19.631ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_28_41/RAMG/I",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.999ns  (logic 3.447ns (11.887%)  route 25.552ns (88.113%))",
+      "logic_levels": "53  (CARRY8=8 LUT2=1 LUT3=5 LUT4=5 LUT5=10 LUT6=20 MUXF7=2 MUXF8=2)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMA/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMA_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMB/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMB_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMC/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMC_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMD/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMD_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAME/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAME_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMF/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMF_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMG/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMG_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMH/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.572ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/u_tmu/tb_reg[0][63]/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_14_27/RAMH_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.806ns  (logic 3.507ns (12.175%)  route 25.299ns (87.825%))",
+      "logic_levels": "55  (CARRY8=8 LUT2=1 LUT3=6 LUT4=5 LUT5=12 LUT6=21 MUXF7=1 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.560ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/tl_a_reg[0]/CE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.852ns  (logic 3.465ns (12.010%)  route 25.387ns (87.990%))",
+      "logic_levels": "57  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=19 MUXF7=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.560ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/tl_a_reg[25]/CE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.852ns  (logic 3.465ns (12.010%)  route 25.387ns (87.990%))",
+      "logic_levels": "57  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=19 MUXF7=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.560ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/tl_a_reg[59]/CE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.852ns  (logic 3.465ns (12.010%)  route 25.387ns (87.990%))",
+      "logic_levels": "57  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=19 MUXF7=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.560ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/tl_a_reg[61]/CE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.852ns  (logic 3.465ns (12.010%)  route 25.387ns (87.990%))",
+      "logic_levels": "57  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=19 MUXF7=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.556ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMA/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.918ns  (logic 3.737ns (12.923%)  route 25.181ns (87.077%))",
+      "logic_levels": "62  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=22 MUXF7=2 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.556ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMA_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.918ns  (logic 3.737ns (12.923%)  route 25.181ns (87.077%))",
+      "logic_levels": "62  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=22 MUXF7=2 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.556ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMB/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.918ns  (logic 3.737ns (12.923%)  route 25.181ns (87.077%))",
+      "logic_levels": "62  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=22 MUXF7=2 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.556ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMB_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.918ns  (logic 3.737ns (12.923%)  route 25.181ns (87.077%))",
+      "logic_levels": "62  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=22 MUXF7=2 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.556ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMC/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.918ns  (logic 3.737ns (12.923%)  route 25.181ns (87.077%))",
+      "logic_levels": "62  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=22 MUXF7=2 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.556ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMC_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.918ns  (logic 3.737ns (12.923%)  route 25.181ns (87.077%))",
+      "logic_levels": "62  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=22 MUXF7=2 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.556ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMD/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.918ns  (logic 3.737ns (12.923%)  route 25.181ns (87.077%))",
+      "logic_levels": "62  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=22 MUXF7=2 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.556ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAMD_D1/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.918ns  (logic 3.737ns (12.923%)  route 25.181ns (87.077%))",
+      "logic_levels": "62  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=22 MUXF7=2 MUXF8=1)"
+    },
+    {
+      "slack": "Slack (VIOLATED) :        -19.556ns  (required time - arrival time)",
+      "source": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/cur_addr_reg[6]_replica_3/C",
+      "destination": "level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[0].u_tile/u_slice/ms_wbadr_reg_0_7_42_55/RAME/WE",
+      "path_group": "clk_kernel_00_unbuffered_net",
+      "data_path_delay": "28.918ns  (logic 3.737ns (12.923%)  route 25.181ns (87.077%))",
+      "logic_levels": "62  (CARRY8=11 LUT2=1 LUT3=6 LUT4=7 LUT5=12 LUT6=22 MUXF7=2 MUXF8=1)"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "status": "failed-preserved",
+  "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+  "phases": [],
+  "required_gate_promotions": [],
+  "numerical_correctness": "not-measured",
+  "native_execution": "not-measured",
+  "performance": "not-measured",
+  "harness_sha256": "48745af902bf8f7a2ad905a8083aba5c16d69666de1d345dc2d7b92113eef877",
+  "workload": {
+    "harness": "python -m archbench.generate --tier hbm --new 64",
+    "what": "a decoder used the way a model is used: one prefill, then greedy decode steps, each fed the device's own token and cache (R40-09: >= 4 layers, >= 64 MiB of weights, prefill >= 512, >= 64 decode steps)",
+    "model": {
+      "dim": 1024,
+      "n_layers": 4,
+      "n_heads": 16,
+      "n_kv_heads": 4,
+      "ffn": 2816,
+      "vocab": 32000,
+      "eps": 1e-05,
+      "dtype": "fp16",
+      "batch": 1,
+      "weights": "random: archbench.models.Llama(cfg, archbench.ops.gen(seed), \"fp16\")",
+      "seed": 0,
+      "weight_bytes": 221267968
+    },
+    "points": {
+      "prefill": {
+        "id": "model.llama_prefill/hbm/fp16-b1-s512",
+        "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1"
+      },
+      "decode": {
+        "id": "model.llama_decode/hbm/fp16-b1-p512",
+        "sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16"
+      }
+    },
+    "prefill": 512,
+    "decode_steps": 64,
+    "reference": "eager PyTorch in binary32 on the CPU: every step against the reference given the same inputs (the device's own tokens and cache) at tolerance 0.05, and the generated ids against a generation run wholly in the reference, a differing id accepted only where the reference's two logits nearly tie (archbench/generate.py)",
+    "report": [
+      "TTFT",
+      "decode median and p95 ms/token",
+      "tokens/s",
+      "peak HBM",
+      "input/output/weight/KV traffic"
+    ]
+  },
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "bucket_capacity": 576,
+  "generation_harness_sha256": "92bced6c6d64373a18b68b01f493e56bc3e8a792b0a8263429158c11918f97dd",
+  "torch": "2.14.0+cu130",
+  "triton": "3.8.0",
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r40_bucket_full_80dd_v2_compile/bucket_compile_coverage.py\", line 75, in main\n    _output,codes=run_and_get_code(compiled,*args)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/utils.py\", line 2743, in run_and_get_code\n    result = fn(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py\", line 563, in __call__\n    return super().__call__(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 1783, in _wrapped_call_impl\n    return self._call_impl(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 1794, in _call_impl\n    return forward_call(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py\", line 1278, in compile_wrapper\n    raise e.remove_dynamo_frames() from None  # see TORCHDYNAMO_VERBOSE=1\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py\", line 1154, in _compile_fx_inner\n    raise InductorError(e, currentframe()).with_traceback(\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py\", line 1146, in _compile_fx_inner\n    mb_compiled_graph = fx_codegen_and_compile(\n                        ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py\", line 2001, in fx_codegen_and_compile\n    return scheme.codegen_and_compile(gm, example_inputs, inputs_to_check, graph_kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py\", line 1749, in codegen_and_compile\n    compiled_module = graph.compile_to_module()\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/graph.py\", line 3060, in compile_to_module\n    return self._compile_to_module()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/graph.py\", line 3070, in _compile_to_module\n    mod = self._compile_to_module_lines(wrapper_code)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/graph.py\", line 3146, in _compile_to_module_lines\n    mod = PyCodeCache.load_by_key_path(\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/codecache.py\", line 4820, in load_by_key_path\n    mod = _reload_python_module(key, path, set_sys_modules=set_sys_modules)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/runtime/compile_tasks.py\", line 37, in _reload_python_module\n    exec(code, mod.__dict__, mod.__dict__)\n  File \"/tmp/torchinductor_zhongchun/fu/cfuaarbdufslarfjqxwtwrsoufqi4fbpqgpjxqxhsulzfib5bzyt.py\", line 61, in <module>\n    triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0 = async_compile.triton('triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0', '''\n                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/async_compile.py\", line 584, in triton\n    kernel.precompile(\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/runtime/triton_heuristics.py\", line 807, in precompile\n    self._make_launchers()\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/runtime/triton_heuristics.py\", line 1076, in _make_launchers\n    launcher, exc = self._make_launcher(result)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/runtime/triton_heuristics.py\", line 1051, in _make_launcher\n    return compile_result.make_launcher(), None\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/runtime/triton_heuristics.py\", line 3206, in make_launcher\n    binary._init_handles()\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/compiler.py\", line 466, in _init_handles\n    max_shared = max_shared_mem(device)\n                 ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/compiler.py\", line 135, in max_shared_mem\n    return driver.active.utils.get_device_properties(device)[\"max_shared_mem\"]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/r40_bucket_full_80dd_v2_source/python/tnca/triton_backend/driver.py\", line 559, in get_device_properties\n    p = properties(device)\n        ^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/r40_bucket_full_80dd_v2_source/python/tnca/torch_device/inductor_device.py\", line 50, in properties\n    heap = MEMORY.session(0)._heap\n           ^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/r40_bucket_full_80dd_v2_source/python/tnca/torch_device/__init__.py\", line 76, in session\n    return _Sessions.get(profile)\n           ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/r40_bucket_full_80dd_v2_compile/bucket_compile_coverage.py\", line 61, in forbidden\n    def forbidden(*args,**kwargs):raise RuntimeError('compiler preflight forbids every device session')\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntorch._inductor.exc.InductorError: RuntimeError: compiler preflight forbids every device session\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n"
+}

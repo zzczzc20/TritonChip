@@ -1,0 +1,8 @@
+STEP sem_mc3p3: /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/v3_semantics_matrix.py --config mc3p3 --out /home/zhongchun/r40v3_hbmnuca_runs/fe1b/semantics
+START 2026-10-19T08:53:12Z
+W1019 08:53:14.571000 3059788 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+  PASS  mc3p3 pointwise {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=3 outlets=[{'port': 0, 'read_lines': 356, 'write_lines': 89}, {'port': 1, 'read_lines': 299, 'write_lines': 89}, {'port': 2, 'read_lines': 262, 'write_lines': 86}]
+  PASS  mc3p3 softmax {"numerical": true, "device_output": true, "zero_tensor_staging": true, "whole_grid_launch": true, "no_per_program_launch": true, "physical_grid": true, "programs_exactly_once": true, "every_outlet_traffic": true} peak=3 outlets=[{'port': 0, 'read_lines': 426, 'write_lines': 190}, {'port': 1, 'read_lines': 451, 'write_lines': 214}, {'port': 2, 'read_lines': 439, 'write_lines': 202}]
+SEMANTICS PASS mc3p3
+END 2026-10-19T09:14:24Z
+EXIT=0

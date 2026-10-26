@@ -81,9 +81,14 @@ module tnca_core_ni #(
 
     // ---- home slice ---------------------------------------------------------
     wire [63:0] line = req_addr >> LINE_SH;
-    wire [1:0]  home = line[1:0] ^ line[3:2];
-    wire [XW-1:0] home_x = home[0];
-    wire [YW-1:0] home_y = home[1];
+    // Keep the frozen 2x2 mapping bit-for-bit. Other topologies reduce a
+    // bounded byte hash, rather than dividing a 64-bit address in the hot path.
+    wire [7:0] hash = line[7:0] ^ line[15:8] ^ line[23:16] ^ line[31:24]
+                    ^ line[39:32] ^ line[47:40] ^ line[55:48] ^ line[63:56];
+    wire [7:0] home = (NX==2 && NY==2) ? {6'd0,(line[1:0] ^ line[3:2])}
+                                                    : hash % (NX*NY);
+    wire [XW-1:0] home_x = home % NX;
+    wire [YW-1:0] home_y = home / NX;
 
     // ---- request injection --------------------------------------------------
     wire [PW-1:0] req_payload;

@@ -1,0 +1,6 @@
+STEP native_ports_3p3: /home/zhongchun/tc_env/torchenv/bin/python tools/r40/native_memory_ports_tests.py --cores 3 --ports 3
+START 2026-10-19T08:14:37Z
+W1019 08:14:38.735000 2988916 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+NATIVE MEMORY PORTS PASS {"controller_traffic": [{"port": 0, "read_lines": 364, "write_lines": 89}, {"port": 1, "read_lines": 296, "write_lines": 88}, {"port": 2, "read_lines": 259, "write_lines": 84}], "cores": 3, "dma_ownership": false, "physical_activity": {"cores": [{"completed": 88, "core": 0, "issued": 88, "occupied_cycles": 16970}, {"completed": 84, "core": 1, "issued": 84, "occupied_cycles": 16595}, {"completed": 85, "core": 2, "issued": 85, "occupied_cycles": 16780}], "peak_active": 3}, "ports": 3, "zero_tensor_staging": true}
+END 2026-10-19T08:21:28Z
+EXIT=0

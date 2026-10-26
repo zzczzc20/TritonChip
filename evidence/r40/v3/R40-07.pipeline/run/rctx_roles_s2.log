@@ -1,0 +1,11 @@
+  building core-vrf-sync-v5 -> /home/zhongchun/r40v3_tpc_runs/all/cache/rctx_roles_s2/devices/core-vrf-sync-v5-a8f9e2a0291d254a-2f12bdd465ea/tnca_device_vrf5.vvp
+  built 17676402 bytes
+  PASS  gemm_one_step            off    3885 cyc  on    3885 cyc   1.000x  roles 1->1
+  PASS  gemm_odd_steps           off    8821 cyc  on    8240 cyc   1.071x  roles 1->2
+  PASS  gemm_grid_3x2            off   56952 cyc  on   56162 cyc   1.014x  roles 1->2
+  PASS  gemm_five_programs       off   25401 cyc  on   25441 cyc   0.998x  roles 1->2
+  PASS  linear_one_program       off    3665 cyc  on    3128 cyc   1.172x  roles 1->2
+  PASS  linear_four_programs     off    9984 cyc  on   10165 cyc   0.982x  roles 1->2
+  PASS  linear_odd_steps_grid    off   15122 cyc  on   14690 cyc   1.029x  roles 1->2
+  PASS  gemm_carried_pointers    off   66096 cyc  on   66096 cyc   1.000x  roles 1->1
+r39-rctx-roles-tests [core-vrf-sync-v5]  PASS

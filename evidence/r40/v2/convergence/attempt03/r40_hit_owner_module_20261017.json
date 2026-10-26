@@ -1,0 +1,232 @@
+{
+  "files": {
+    "clockInfo.txt": {
+      "sha256": "eb1a88d58b2f1d9cc890d885816c8d76db0397c60c8e1cbff8201fe03050910b",
+      "bytes": 949
+    },
+    "identity.json": {
+      "sha256": "40933427da65ad43b0bb1bf929df0c5ad61db577f35a9599aa707c703f16d8d8",
+      "bytes": 3604
+    },
+    "reports/checks.rpt": {
+      "sha256": "1170b672d7628115865bf885401abd26b1036232130e5eaeda6047ce079372d7",
+      "bytes": 100307
+    },
+    "reports/critical_paths.rpt": {
+      "sha256": "65d751b166a8ec2d89aa7ee02ab4163ac36b060ceb885e687408dc4a8726399e",
+      "bytes": 324915
+    },
+    "reports/hit_word_capture.rpt": {
+      "sha256": "e907781d87f63c693782f740ceda46e39bc608118dcf8f7d5b7dcf01e73d075a",
+      "bytes": 77371
+    },
+    "reports/hit_word_consume.rpt": {
+      "sha256": "db92011b0a0c9886651c4f27b938889d1642472e30d061369a214c5589fe2a6f",
+      "bytes": 85633
+    },
+    "reports/local_inbox_commit.rpt": {
+      "sha256": "cae9db1a1f34584e437d8a65a8f8520fb2b96ad84948247d2d30ed029faf8086",
+      "bytes": 78449
+    },
+    "reports/mw_to_local_inbox.rpt": {
+      "sha256": "584fda1ece4860dfef95221fcb798e95a8f429fd47a630d973e6c92399a52f03",
+      "bytes": 60050
+    },
+    "reports/optimized_paths.rpt": {
+      "sha256": "ba7632686e09c338e916d79ca0ef7a683fb4df0202f94bae3713c908434b59b8",
+      "bytes": 254593
+    },
+    "reports/optimized_utilization.rpt": {
+      "sha256": "5f14e288a83f90f0f6799fcef1f1324ea8fd527c8fe2275f6aa7b46df640b5ab",
+      "bytes": 3028
+    },
+    "reports/owner_to_pair.rpt": {
+      "sha256": "f888ce4b1c4ea1a83ad9059ece46e6d87f1bf7528481e99decde126993056a04",
+      "bytes": 101256
+    },
+    "reports/owner_to_selected.rpt": {
+      "sha256": "7366e63eeb7f75df0903ac243c68869db83ff9f00caec51ff7278ad03581e386",
+      "bytes": 1577
+    },
+    "reports/pair_to_selected.rpt": {
+      "sha256": "742143f355e1f51f4203d9ada0edaaa28957ce41ccca85411bdc0e7873843b2d",
+      "bytes": 70809
+    },
+    "reports/placed_paths.rpt": {
+      "sha256": "36817e181b5e3f7d3675e7fbed16e621895c5f3bbd418862a97193bad01e7ffd",
+      "bytes": 312945
+    },
+    "reports/placed_timing.rpt": {
+      "sha256": "3e4f9b7792ad01d3581d0eb0be20956f76fecce544347318797c095da7473d78",
+      "bytes": 24360
+    },
+    "reports/placed_utilization_slr.rpt": {
+      "sha256": "d7ae32e16f8876a1d4feedbfef54d2a0cf23cb2ace4b38b5e92e3bb6331af0c6",
+      "bytes": 6516
+    },
+    "reports/registered_boundaries.tsv": {
+      "sha256": "a17cf394c71a8ab136556194ed4c92da1861c0e7cb3e7e962618a0039c67ac86",
+      "bytes": 19887
+    },
+    "reports/route_status.rpt": {
+      "sha256": "3ad66a269e486557c18f7749abf2593acffc86376f23ff10591a6e4b2b0379e4",
+      "bytes": 714
+    },
+    "reports/scope.txt": {
+      "sha256": "71f0bb83aa759e0dde406846d0344d2d264441fa007a0231d856d091b8cff61e",
+      "bytes": 373
+    },
+    "reports/selected_output.rpt": {
+      "sha256": "1f54443c72fbe380c019608245602a63157f6d7113efc5094e65dad5a3d8b4a2",
+      "bytes": 78042
+    },
+    "reports/tag_mapping.tsv": {
+      "sha256": "2535ad78e2b2259541d7e722a3948e246879b6fb8bd0c714f996042edfe805c0",
+      "bytes": 153280
+    },
+    "reports/timing.rpt": {
+      "sha256": "27625b77147145455642ecffae78e5c5968c9ca994973f93f6091c88e77e834d",
+      "bytes": 26023
+    },
+    "reports/tlw_classification.rpt": {
+      "sha256": "96183a71fa409955ad6db5b89c427a9fa7293b6a13358b9ac3185f1db626d281",
+      "bytes": 93562
+    },
+    "reports/tlw_raw_input.rpt": {
+      "sha256": "ff4be1851b2d89b405699896372140f408303e0dedc845d294c0bb3b5314e094",
+      "bytes": 60155
+    },
+    "reports/tlw_update.rpt": {
+      "sha256": "9c6be431863d7074fd54409d971cc19ba1ab328c80a58e15431d146043fc18f9",
+      "bytes": 111605
+    },
+    "reports/tmu_state_locations.tsv": {
+      "sha256": "a17c655e617c23efe96e3c1659dbbbb8fa818655e017b4ced026c15f0fa22004",
+      "bytes": 559087
+    },
+    "reports/utilization_hierarchy.rpt": {
+      "sha256": "e289ddf00a9ce82c1c561638ffaf99b93b1c3f73c70bce1b70d1f68d07323f16",
+      "bytes": 3144
+    },
+    "reports/utilization_slr.rpt": {
+      "sha256": "0f15b3a8ef21fd8b98a881532794316ac52e0064c91d427822c9f634b984dde4",
+      "bytes": 6498
+    },
+    "reports/wrapper.v": {
+      "sha256": "81342cc49335eecc1ced16603b5800ef889ffb6d30fea7515e70598b5e50aed4",
+      "bytes": 8693
+    },
+    "run.sh": {
+      "sha256": "1548ece5e564eeb843c719c325a45725e8219f27e6337cba54a910d7da0c2b1f",
+      "bytes": 446
+    },
+    "runner.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "source/flow/fpga/screen_local_tmu_rank.tcl": {
+      "sha256": "95ccda4b7febf0d16dfe61f09e274d1795652c17280185d45fde89dc9a11d5b6",
+      "bytes": 7913
+    },
+    "source/flow/fpga/screen_replicated_tmu.tcl": {
+      "sha256": "2b9f11efd72193701e04c1b8ba90b710c520653c7de366acdffb42206ba7a3fe",
+      "bytes": 5699
+    },
+    "source/flow/fpga/tnca_range_grid_ooc.v": {
+      "sha256": "e707f6e97022e1f33c46cb68f2f5dc913fd3cc79bf2e1e76dec6508aa01a0622",
+      "bytes": 8689
+    },
+    "source/formal_tlw.v": {
+      "sha256": "6e6f8e234ce55ec9579b3458c2015dc65ea1059df1ed1690eabc2068715fa27c",
+      "bytes": 1556
+    },
+    "source/hit_owner_change.json": {
+      "sha256": "849da1c50d16591cd5722a1073d16753a396aab01558430a580c50074ed1ef53",
+      "bytes": 778
+    },
+    "source/predicate_change.json": {
+      "sha256": "68dbe758d2585f1965eabbad5315bf4487e95549d3f10bcb4a7a37c3aff9754f",
+      "bytes": 1338
+    },
+    "source/rtl/common/tnca_amo.vh": {
+      "sha256": "1e18fa968eba2ff12e3df6b45c550a2a8b6797eb1300bfdee11beda77737b7cd",
+      "bytes": 2922
+    },
+    "source/rtl/common/tnca_dco_owner_registered.vh": {
+      "sha256": "a8d06b7cb702d9b54e14a7a0ec50eaeca1b4c34700a71adf46e12f3b2b4c340b",
+      "bytes": 1662
+    },
+    "source/rtl/common/tnca_defs.vh": {
+      "sha256": "0d4eaa5507a74c45048dc7481a5bbb97ae92d8a5ac15b01c0f37e84783a80c89",
+      "bytes": 20141
+    },
+    "source/rtl/common/tnca_perf_count.vh": {
+      "sha256": "00499e52d3214453385fadbf553a795c252e301add8c42cfbb93321183329391",
+      "bytes": 162
+    },
+    "source/rtl/common/tnca_perf_sel.vh": {
+      "sha256": "890eac0ece3c7377774db98f31a703ad93c43f80e70ad8456ba98ef5216fe6d1",
+      "bytes": 1003
+    },
+    "source/rtl/nuca/tnca_nuca_slice.v": {
+      "sha256": "beaf40276e0aa079007d96844fe8dae4082eb6a3b21a2b412f9fdd2cb21539da",
+      "bytes": 74590
+    },
+    "source/rtl/nuca/tnca_replicated_tmu.v": {
+      "sha256": "b1af44faa38d4d90978a2478cc752274bbb8398a897e3c706727356ed9d0d0ef",
+      "bytes": 2991
+    },
+    "source/rtl/nuca/tnca_tmu.v": {
+      "sha256": "da94fe33f872b03d27d93dee0521b92f5f50743396ff1b71138df5bf094a7280",
+      "bytes": 22041
+    },
+    "source/tb/common/tnca_dram_model.v": {
+      "sha256": "37401a0a88d48d8226e1a4e94dd818b2d37dfaab12829c767603a3982f9bd5ac",
+      "bytes": 5422
+    },
+    "source/tb/nuca/tb_nuca_data_atomic_widths.v": {
+      "sha256": "e8cb2f983fe2a83adc64c0edf063f85c4e7efdbc43ce6c4810a8748d19550c2d",
+      "bytes": 28128
+    },
+    "source/tb/nuca/tb_nuca_maintenance.v": {
+      "sha256": "32e4f159d4c9b3b20a9bc6192d372407332405f7f51444d8cbbb45a86f814546",
+      "bytes": 7718
+    },
+    "source/tb/nuca/tb_nuca_slice.v": {
+      "sha256": "d5bf59b106fa317860a64aaf7b03cd81db0f75b72b251d1d0a977e56820b2a35",
+      "bytes": 27270
+    },
+    "source/tb/nuca/tb_tmu_pipeline_quiet.v": {
+      "sha256": "ae4432c02855f2fa1579e566a45dc2888b18e37f2acb711df3964cd0019a5863",
+      "bytes": 8625
+    },
+    "source/tb/nuca/tb_tmu_replicated.v": {
+      "sha256": "645e37a4d700d091565b0b43f4fc0162aacd9a5666a4aa0303172be6a4f50639",
+      "bytes": 11167
+    },
+    "stdout.log": {
+      "sha256": "ed02d2309ee8b2607e5d880502684db8aae901af1fdfccff86f578c964847a1d",
+      "bytes": 250444
+    },
+    "vivado.log": {
+      "sha256": "3eb3db7ecd61942a3a3b873240d00ab6d1f0d842fb3c5612142d15fc94133196",
+      "bytes": 251800
+    }
+  },
+  "checkpoints": {
+    "placed.dcp": {
+      "sha256": "d388722a4b1889d5f4d4ab4231f4b8684611cd6dff78a45ffa17805052e8a818",
+      "bytes": 44568191,
+      "path": "/home/zzhouch/tnca_build/r40_hit_owner_module_20261017/reports/placed.dcp"
+    },
+    "routed.dcp": {
+      "sha256": "fb15eb29967a99135d8fe4728494177a1267c505b857625bac6224866158ff18",
+      "bytes": 61222583,
+      "path": "/home/zzhouch/tnca_build/r40_hit_owner_module_20261017/reports/routed.dcp"
+    }
+  },
+  "archive": "r40_hit_owner_module_20261017.tar.gz",
+  "archive_sha256": "ddf62e5843544afbe9c7473bd6d79e9991f1ee3e1ed94cd97f5eac8f9e40eeb3",
+  "scope": "Diagnostic module evidence; not full-image qualification",
+  "required_gate_promotions": []
+}

@@ -1,0 +1,33 @@
+the .xclbin
+  file   /home/zzhouch/tnca_build/u280_r40ram/tnca_u280.xclbin
+  size   56848893 bytes
+  sha256 62751b3ca79044655bcb617a805f7ca2d2360efb752bcf63280fb59f25417413
+  [ ok ] parses as an .xclbin
+  [ ok ] platform VBNV xilinx_u280_gen3x16_xdma_1_202211_1
+  [ ok ] interface UUID matches the shell contract
+  xclbin UUID e576c850-23ec-61c0-f728-74a1c19676ea
+
+the device
+  [ ok ] present at 0000:04:00.1
+  [ ok ] live shell interface UUID matches
+  [ ok ] idle: contexts 0, outstanding 0, no client
+  loaded now 78f04922-980e-d3cb-ee78-cf732d6ec13f
+
+other loaders
+  [ ok ] no other program/load running
+
+thermal
+  Thermals
+    Temperature    Celcius  
+    ------------------------
+    PCB Top Front  25       
+    PCB Top Rear   24       
+    FPGA           32       
+    FPGA HBM       27       
+  
+  
+  [ ok ] FPGA 32 C, under 85
+  [ ok ] HBM 27 C, under 80
+
+program.sh: all gates pass. Nothing was loaded (--check).
+         to load:  program.sh --go /home/zzhouch/tnca_build/u280_r40ram/tnca_u280.xclbin

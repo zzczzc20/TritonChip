@@ -36,7 +36,12 @@ u280)
     # crossing). SLR0 also holds the shell's fixed logic (~108k LUTs);
     # SLR1 was 19 % used. v++ adds the register slices for the control
     # port's crossing from the shell.
-    BOARD_VPP_OPTS="--connectivity.slr tnca_u50_1:SLR1"
+    if [ "${TNCA_KERNEL_VARIANT:-none}" = multicore-hbm ]; then
+        # Per-tile and link placement is supplied by the board Tcl hook.
+        BOARD_VPP_OPTS=
+    else
+        BOARD_VPP_OPTS="--connectivity.slr tnca_u50_1:SLR1"
+    fi
     ;;
 *)
     echo "boards.sh: unknown TNCA_BOARD '${TNCA_BOARD}' (u50, u280)" >&2

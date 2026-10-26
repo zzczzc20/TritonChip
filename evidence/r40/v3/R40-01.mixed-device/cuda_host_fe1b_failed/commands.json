@@ -1,0 +1,33 @@
+[
+  {
+    "name": "storage-owner-unit",
+    "command": [
+      "/home/zhongchun/tc_env/torchenv/bin/python",
+      "/home/zhongchun/r40v3_capgate_fe1b/tools/r40/storage_owner_tests.py"
+    ]
+  },
+  {
+    "name": "signed-copy-range",
+    "command": [
+      "/home/zhongchun/tc_env/torchenv/bin/python",
+      "/home/zhongchun/r40v3_capgate_fe1b/tools/r40/copy_range_tests.py"
+    ]
+  },
+  {
+    "name": "native-recovery",
+    "command": [
+      "/home/zhongchun/tc_env/torchenv/bin/python",
+      "-u",
+      "/home/zhongchun/r40v3_capgate_fe1b/tools/r40/recovery_tests.py",
+      "--multicore-dma"
+    ]
+  },
+  {
+    "name": "cuda-device-conformance",
+    "command": [
+      "/home/zhongchun/tc_env/torchenv/bin/python",
+      "-u",
+      "/home/zhongchun/r40v3_capgate_fe1b/tools/r40/device_tests.py"
+    ]
+  }
+]

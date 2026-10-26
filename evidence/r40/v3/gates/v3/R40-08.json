@@ -1,0 +1,364 @@
+{
+ "gates": {
+  "R40-08.prefill": {
+   "status": "no-significant-gain",
+   "checks": [
+    {
+     "name": "R40-08.prefill: complete accepted comparison",
+     "ok": true,
+     "detail": ""
+    },
+    {
+     "name": "R40-08.prefill: 95% CI lower bound of S_geo > 1",
+     "ok": false,
+     "ci95": [
+      0.9636219846197293,
+      1.0263713852249852
+     ],
+     "s_geo": 0.9901558912174244
+    }
+   ],
+   "detail": "R40-08.prefill: S_geo 0.9902 CI [0.9636, 1.0264], v2 target 1.5 missed",
+   "written": "2026-10-20T00:27:51+00:00",
+   "identity": {
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "clock_hz": 90000000,
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "backend": "fpga-u280-multicore",
+    "hbm_bytes": 4294967296,
+    "backend_args_shape": {
+     "image_profile": "core-vrf-sync-v5",
+     "core_count": 3,
+     "memory_ports": 3,
+     "hbm_dma": true,
+     "hbm_bytes": 4294967296,
+     "device_clock": true
+    },
+    "identity_amendment": "doc/r40_v3/identity_amendment.json"
+   },
+   "experiments": {
+    "R40-08.prefill": {
+     "status": "no-significant-gain",
+     "s_geo": 0.9901558912174244,
+     "ci95": [
+      0.9636219846197293,
+      1.0263713852249852
+     ],
+     "s_geo_balanced_weighted": 0.9990881679802068,
+     "target": 1.5,
+     "target_met": false,
+     "worst": {
+      "point": "model.llama_prefill/large/fp16-b1-s512",
+      "speedup": 0.9636219846197293
+     },
+     "regress_2pct": [
+      "model.llama_prefill/large/fp16-b1-s512"
+     ],
+     "regress_5pct": [],
+     "points": [
+      {
+       "point": "model.llama_prefill/hbm/fp16-b1-s512",
+       "a": 28542685510,
+       "b": 29080062818,
+       "speedup": 0.9815207652279425,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "model.llama_prefill/large/fp16-b1-s512",
+       "a": 369472477851,
+       "b": 383420556762,
+       "speedup": 0.9636219846197293,
+       "n_a": 1,
+       "n_b": 1
+      },
+      {
+       "point": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+       "a": 6029868013,
+       "b": 5874937766,
+       "speedup": 1.0263713852249852,
+       "n_a": 1,
+       "n_b": 1
+      }
+     ],
+     "timing": "graph-makespan",
+     "vary": [
+      "TNCA_SDPA"
+     ],
+     "compared_vary": [
+      "TNCA_SDPA"
+     ],
+     "control": "decomposed",
+     "candidate": "fused",
+     "baseline": "B40-S",
+     "config_a": "10a6c20b567cdbd5",
+     "config_b": "10a6c20b567cdbd5",
+     "inputs": {
+      "control": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-08.prefill.control.jsonl",
+       "sha256": "46af718c291ee516d54840c9cf6e37dd82231f8975292385f62829cff467671d"
+      },
+      "candidate": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-08.prefill.candidate.jsonl",
+       "sha256": "8761409cd569d7159ebed4f0300019b7b30a998fe7c574dd0478f8481c44674f"
+      }
+     }
+    }
+   },
+   "judgement": "/home/zzhouch/tnca_v3_judge_final/judgement.json",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211",
+   "judgement_copy": "evidence/r40/v3/campaign_fe1b/judgement.json"
+  },
+  "R40-08.attention": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "original attention/llama/GPT-2 graphs (15/15, existing suite) pass on the delivery board: native device, descriptors, zero fallback, zero host tensor bytes",
+     "ok": true,
+     "points": [
+      "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+      "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+      "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+      "model.llama_decode/medium/fp16-b1-p256",
+      "model.llama_decode/small/fp16-b1-p128",
+      "model.llama_decode/tiny/fp16-b1-p16",
+      "model.llama_prefill/medium/fp16-b1-s64",
+      "model.llama_prefill/small/fp16-b1-s64",
+      "model.llama_prefill/tiny/fp16-b1-s16",
+      "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+      "op.attention_decode/small/fp16-b1-h4-l256-d32",
+      "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+      "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+      "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+      "op.attention_prefill/tiny/fp16-b1-h2-s16-d16"
+     ],
+     "sources": {
+      "u280_medium.jsonl.gz": "d4fcc17648081bf3da4c0fca6e1888a4509aeeab082bb2d74cd7ec1245f7d4eb",
+      "u280_small.jsonl.gz": "566b8701936d2b66d167d38315c1f6f8a1a243c79b3772b758b8c1ac3e492b61",
+      "u280_tiny.jsonl.gz": "99e15d77ed1c4996f2dc715001532138b57ba6669abd77cb70592e99ed6469f8"
+     },
+     "max_rel_err": 0.0006211996078491211
+    },
+    {
+     "name": "larger frozen attention-family points in hbm14.jsonl.gz pass on the delivery board",
+     "ok": true,
+     "points": [
+      "model.llama_decode/hbm/fp16-b1-p512",
+      "model.llama_prefill/hbm/fp16-b1-s512",
+      "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+      "op.attention_prefill/large/fp16-b1-h32-s512-d64"
+     ],
+     "raw_sha256": "8b27b796715092c533e3992c7cafd276fcec6a9a0d36f988b1537905a006857a"
+    },
+    {
+     "name": "larger frozen attention-family points in large24.jsonl.gz pass on the delivery board",
+     "ok": true,
+     "points": [
+      "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+      "model.llama_decode/large/fp16-b1-p512",
+      "model.llama_prefill/large/fp16-b1-s512",
+      "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+      "op.attention_prefill/large/fp16-b1-h32-s512-d64"
+     ],
+     "raw_sha256": "977de705160fde2ee99e23cfcca30b92dce889d457371afbcab0863fde9b9131"
+    },
+    {
+     "name": "new attention cases on delivery-tree RTL (14/14, standard fused SDPA vs FP32 reference rtol/atol 2e-3): long sequence, odd lengths, all-masked rows, GQA/MQA, causal, D16/32/64, FP16/BF16; actual descriptor loads; zero steady tensor transfers; unmasked cases one kernel with output-only allocation",
+     "ok": true,
+     "coverage": {
+      "long_sequence": [
+       "long_prefill_tail"
+      ],
+      "odd_lengths": [
+       "bf16_tail",
+       "bool_all_mask_d32",
+       "bool_all_mask_row",
+       "decode_d32_tail",
+       "decode_d64_tail",
+       "decode_tail",
+       "float_all_mask_row",
+       "gqa_d64_tail",
+       "gqa_tail",
+       "long_prefill_tail",
+       "mqa_causal_tail",
+       "mqa_d32_causal_tail",
+       "prefill_causal_tail",
+       "strided_batch_heads"
+      ],
+      "all_masked_rows": [
+       "bool_all_mask_row",
+       "float_all_mask_row",
+       "bool_all_mask_d32"
+      ],
+      "gqa": [
+       "gqa_tail",
+       "gqa_d64_tail"
+      ],
+      "mqa": [
+       "mqa_causal_tail",
+       "mqa_d32_causal_tail"
+      ],
+      "causal": [
+       "prefill_causal_tail",
+       "mqa_causal_tail",
+       "mqa_d32_causal_tail"
+      ],
+      "head_dims": [
+       16,
+       32,
+       64
+      ],
+      "dtypes": [
+       "float16",
+       "bfloat16"
+      ]
+     },
+     "step": {
+      "run": "fe1b_sim1",
+      "log": "online-sdpa-14.log",
+      "wall_s": 7024.3,
+      "script_sha256": "4601b5d4b4b8f7d6f895b2917d720a2e32bf90366fe28b67d3f24e5bc64343eb",
+      "superseded": []
+     }
+    },
+    {
+     "name": "decomposed/fused SDPA configuration switching and guards",
+     "ok": true,
+     "step": {
+      "run": "fe1b_sim1",
+      "log": "sdpa-configuration.log",
+      "wall_s": 2.7,
+      "script_sha256": "34b3b2d1777161159908938a853e2269b87380191e4a973f71f9a211095510a3",
+      "superseded": []
+     }
+    },
+    {
+     "name": "simulation identity: delivery product tree before/after, staged RTL/testbench byte-identical to the tree, harness hashes equal the repository; product files differing from the image source tree recorded",
+     "ok": true,
+     "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "staged_identity": {
+      "rtl": {
+       "source": "0c0d6300ad1579e0e131eb7656df1082845af738a381b7d8d915956970768570",
+       "staged": "0c0d6300ad1579e0e131eb7656df1082845af738a381b7d8d915956970768570"
+      },
+      "tb/device": {
+       "source": "ff180b361bfa23f3cb13627da37f8144eeeab06d2b577cb2cb28aacfaf9868b2",
+       "staged": "ff180b361bfa23f3cb13627da37f8144eeeab06d2b577cb2cb28aacfaf9868b2"
+      },
+      "tb/common": {
+       "source": "229fdc2c380a1e05c18d8472143d372e0a1c2000a342c11663ebfdc602b6f338",
+       "staged": "229fdc2c380a1e05c18d8472143d372e0a1c2000a342c11663ebfdc602b6f338"
+      }
+     },
+     "runners": [
+      "3e27fb754172f4825349247cc36a17d80568251fefd34ba06ef75a878726a1c6"
+     ],
+     "host": "gx10-6646",
+     "image_source_delta": {
+      "from_software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+      "files": {
+       "python/tnca/inductor.py": {
+        "before_sha256": "61b33e3359470caf78110840fc6c223cf291d015fe1b35aca079d183b51b7457",
+        "after_sha256": "d1a28be248d5581dbcce60491c9f5a752fda9d77ffa209bf7e458cea152a6f0a"
+       },
+       "python/tnca/triton_backend/compiler.py": {
+        "before_sha256": "7e23e35253b62871756c16586f778927135c3c4073a533cb1ae3671d972d8701",
+        "after_sha256": "3818f5688b7d40c9f995de309738555c848e03e7f11977ce1220554e9e191f36"
+       }
+      }
+     }
+    },
+    {
+     "name": "64-step cache update in the full frozen model on the delivery board (fixed bucket, tokens equal the independent reference, every step within tolerance)",
+     "ok": true,
+     "detail": {
+      "name": "full frozen generation (prefill512 + 64 decode) in one fixed KV bucket on the delivery board: tokens equal the independent reference, every step within tolerance",
+      "ok": true,
+      "tokens": 64,
+      "report": {
+       "raw_sha256": "4658ef4b44be21e429442298947001c2a7995c7e7ebddcf109b963f5cdf5bfe8",
+       "raw_bytes": 16247223,
+       "path": "evidence/r40/v3/R40-08.decode/board_model_fe1b/model_report.json.gz",
+       "source": "acf3019:/home/zzhouch/tnca_runs_r40_v3x2/model/report.json"
+      }
+     },
+     "other_64_step_evidence_not_included": [
+      "RTL 64-step bucket decode: simulation step bucket-decode-64 not complete"
+     ]
+    }
+   ],
+   "detail": "acceptance 1: original graphs on the delivery board; new cases and 64-step cache on delivery-tree RTL (plus the full-model board generation when present); no performance or traffic claim",
+   "written": "2026-10-20T00:47:41+00:00",
+   "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+   "clock_hz": 90000000,
+   "auditor_sha256": "8e728435aa66f7305c5694d26abedc74b55ae26b824da8348d42b23b99c79908",
+   "auditor_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  },
+  "R40-08.decode": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "full frozen generation (prefill512 + 64 decode) in one fixed KV bucket on the delivery board: tokens equal the independent reference, every step within tolerance",
+     "ok": true,
+     "tokens": 64,
+     "report": {
+      "raw_sha256": "4658ef4b44be21e429442298947001c2a7995c7e7ebddcf109b963f5cdf5bfe8",
+      "raw_bytes": 16247223,
+      "path": "evidence/r40/v3/R40-08.decode/board_model_fe1b/model_report.json.gz",
+      "source": "acf3019:/home/zzhouch/tnca_runs_r40_v3x2/model/report.json"
+     }
+    },
+    {
+     "name": "no steady weight/KV retransfer: weights uploaded once, fixed cache addresses, zero tensor/staging transfers after initialization",
+     "ok": true,
+     "initial_weight_upload_bytes": 221267968,
+     "cache_addresses": [
+      273197568,
+      224438784
+     ]
+    },
+    {
+     "name": "timing covers every layer and dependency: identical complete decode graph each step, every launch device-timed and drained before host visibility",
+     "ok": true,
+     "decode_launches_per_step": 77
+    },
+    {
+     "name": "exactly one decode compilation across all positions in the bucket; guard boundary reported (capacity, next position; cross-bucket transition not measured)",
+     "ok": true,
+     "decode_compilations": 1,
+     "bucket_guard": {
+      "capacity": 576,
+      "completed_position_range": [
+       512,
+       575
+      ],
+      "next_position": 576,
+      "position_dtype": "int64",
+      "position_location": "device",
+      "guarded_metadata": "cache capacity/shape, tensor position shape/dtype, resident RoPE table capacity",
+      "boundary_policy": "end at capacity; a larger bucket requires a new shape specialization and resident cache migration",
+      "cross_bucket_transition": "not-measured"
+     }
+    },
+    {
+     "name": "delivery product tree, qualified image and measured 90 MHz clock (the on-board audit hashed the loaded xclbin)",
+     "ok": true,
+     "on_board_audit_sha256": "25a8307e285a490e7ff83c0946cf2895ccf8995ddb1849dff8f559bea9af2a18"
+    }
+   ],
+   "detail": "acceptance 3: fixed-bucket full generation on the delivery board; functional, not performance",
+   "written": "2026-10-20T00:47:41+00:00",
+   "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+   "clock_hz": 90000000,
+   "auditor_sha256": "8e728435aa66f7305c5694d26abedc74b55ae26b824da8348d42b23b99c79908",
+   "auditor_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  }
+ }
+}

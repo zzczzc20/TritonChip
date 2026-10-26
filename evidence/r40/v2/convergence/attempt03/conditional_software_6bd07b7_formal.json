@@ -1,0 +1,12 @@
+{
+  "schema": "tnca-complete-conditional-snapshot/1",
+  "commit": "6bd07b7",
+  "software_tree": "files:44051ad9c76c544f59b57afb9f297608bb3f0362c9f4f4479f977690645d2436",
+  "archive_sha256": "a57d537c1906ff6454636d1f95aaa08f702f4e23409d0b47e43a95b04c15d2c2",
+  "archive_bytes": 9990852,
+  "source": "/home/zzhouch/tnca_src_r40_conditional_6bd07b7_formal",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "reason": "Signed download-length guards at Session and XRT boundaries; new declared product identity, unchanged compiler/RTL/image, original frozen workloads and baseline controls",
+  "scope": "same committed compiler/runtime and unchanged workload definitions; fresh complete package; failed first run preserved; no device/programming operation",
+  "historical_bounds_sha256": "42f224030264f93cf79a209d0082bae6b955ccd521ef8a2a4cfaf9e75807c40a"
+}

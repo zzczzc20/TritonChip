@@ -1,0 +1,10 @@
+{
+  "ram_timing.rpt": {
+    "sha256": "4e8c59af46c06682d1c1fb5ef74605f1c3ad4458376e84841c0cd6dab3382a14",
+    "bytes": 16875844
+  },
+  "ram_cdc.rpt": {
+    "sha256": "cac081214a97109143b61dbb327a44fa8e5f0a18658556a26f85a49301c6df22",
+    "bytes": 2064053
+  }
+}

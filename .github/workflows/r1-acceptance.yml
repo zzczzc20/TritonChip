@@ -72,8 +72,8 @@ jobs:
           echo "installing: $(cat /tmp/apt-packages)"
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends $(cat /tmp/apt-packages)
-          iverilog -V | head -1
-          make --version | head -1
+          iverilog -V | sed -n '1p'
+          make --version | sed -n '1p'
           ls -d "$(python3 -c "import json;print(json.load(open('spec/r1_toolchain.lock.json'))['mlir']['mlir_dir'])")"
 
       # A clean archive of the candidate, which is what an acceptance

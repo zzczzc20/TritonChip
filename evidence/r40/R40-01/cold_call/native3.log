@@ -1,0 +1,5 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v2-d8ab4dc2ea14be49-69b12737e344/tnca_device_vrf2.vvp
+PASS cold call retains 27 launches including compiler literal copies
+PASS steady calls execute exactly one graph kernel; numerical reference matches
+PASS an extra physical kernel is refused despite correct graph output
+r40-cold-scope-tests PASS (3/3)

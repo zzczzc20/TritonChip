@@ -1,0 +1,2 @@
+pass               model.mlp/tiny/fp16-t16-d64                                time=101542cycles eta=0.1626 err=0.0004260301140295764 [290.6s]
+1/1 pass in 291s -> sim/build/r40/native_hbm_mlp_bound_fix.jsonl

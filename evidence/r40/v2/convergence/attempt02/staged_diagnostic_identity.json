@@ -1,0 +1,75 @@
+{
+  "schema": "tnca-r40-readonly-diagnostic-snapshot/1",
+  "staged_utc": "2026-10-17T03:45:34.182130+00:00",
+  "tool_source_commit": "2176e7d543ec22230194c41e7b5e0ec72321870d",
+  "hardware_source_commit": "0c397939952d2a6bc881d08623b1bb9114a54ab8",
+  "root": "/home/zzhouch/tnca_diag_r40_2176e7d5",
+  "files": {
+    "diagnose_r40_checkpoint.tcl": "3daa0ca34b4ebe8d56d666e76fe18edd2518a4d07978e8d1b365e04982ee9db1",
+    "diagnose_r40_boundaries.tcl": "c64de09f3ffd95c0d7a00329f5497250bbff8640c61d951d886bdb3cdc974da3",
+    "audit_r40_placed_cores.tcl": "56215b7a2298a2c4075fa0a03274662931e39e55e0420f8e6ce363b5c98892fa"
+  },
+  "scope": "read-only diagnostics after implementation termination; no implementation or board load",
+  "vendor_execution_status": "pending",
+  "gate_status": "not-measured",
+  "ci": {
+    "databaseId": 38999825421,
+    "headSha": "2176e7d543ec22230194c41e7b5e0ec72321870d",
+    "conclusion": "success",
+    "url": "https://github.com/zzczzc20/TritonChip/actions/runs/38999825421",
+    "jobs": [
+      {
+        "name": "R40 multicore MMIO and native AXI graphs",
+        "conclusion": "success"
+      },
+      {
+        "name": "R40 grid and pipeline (pipeline)",
+        "conclusion": "success"
+      },
+      {
+        "name": "PyTorch: inductor",
+        "conclusion": "success"
+      },
+      {
+        "name": "R40 grid and pipeline (chunks)",
+        "conclusion": "success"
+      },
+      {
+        "name": "R40 grid and pipeline (transport)",
+        "conclusion": "success"
+      },
+      {
+        "name": "lint, unit, core, system, compiler",
+        "conclusion": "success"
+      },
+      {
+        "name": "PyTorch: plugin",
+        "conclusion": "success"
+      },
+      {
+        "name": "original TileBench, AOT O2",
+        "conclusion": "success"
+      },
+      {
+        "name": "original TileBench, AOT O1",
+        "conclusion": "success"
+      },
+      {
+        "name": "original TileBench, AOT O0",
+        "conclusion": "success"
+      },
+      {
+        "name": "R40 grid and pipeline (native)",
+        "conclusion": "success"
+      },
+      {
+        "name": "R40 grid and pipeline (memory)",
+        "conclusion": "success"
+      },
+      {
+        "name": "the real Triton frontend",
+        "conclusion": "success"
+      }
+    ]
+  }
+}

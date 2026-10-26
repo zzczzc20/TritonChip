@@ -1,0 +1,104 @@
+# User-authorized conditional operating-frequency acceptance
+
+On 2026-10-18 the user explicitly authorized preserving the attempt03 image
+and using 91 MHz to conditionally close as many R40 gates as possible. After
+functional/workload acceptance, frequency optimization should be attempted and
+the achieved frequency reported without substitution or rounding into a pass.
+
+This authorization is supplemental evidence. It does not edit the frozen
+R40v2 contract or turn the original 100 MHz gate into a pass. Each result must
+state whether it is contract-qualified, conditionally qualified under this
+authorization, failed, or not measured. Historical results retain their original
+image, clock and software identities.
+
+## Execution order
+
+1. Preserve the original routed checkpoint, generated bitstream and complete
+   xclbin with hashes after the existing implementation terminates. Retain the
+   original link outcome even if its 100 MHz clock guard rejects a downclocked
+   image. Do not rerun implementation or overwrite these artifacts.
+2. Audit the unchanged routed netlist at the proposed operating clock, including
+   all-clock setup/hold, unconstrained paths, CDC, route legality and DRC.
+   `audit_r40_operating_clock.tcl` performs analysis only. Changed constraints
+   alone do not change physical clock frequency or establish board qualification.
+3. Read the packaged clock topology and verify the actual data-clock mapping.
+   Preserve any separately packaged operating-clock derivative and verify the
+   embedded BITSTREAM identity. Measure the loaded clock using the shell counter;
+   metadata and requested frequency are insufficient. If exact 91 MHz fails
+   timing or cannot be programmed, record that result and establish a safe actual
+   operating point before workload testing. Never round a negative margin to zero.
+4. On the qualified operating image and immutable software, run the original
+   unscaled >=64 MiB Torch checkpoint with all three physical cores and outlets,
+   actual multi-PC HBM allocation, ownership and drained visibility. Preserve
+   first-failure evidence. Success unlocks native77, HBM14, frozen models and
+   subsequent required experiments; it does not substitute for them.
+5. Preserve this usable baseline while diagnosing frequency limitations. Any
+   additional full implementation still consumes the one remaining budget and
+   requires a source-bound root-cause correction and matched validation first.
+
+Current blocker: the original implementation has not yet produced a terminal
+marker and packaged xclbin at the latest observation. The routed 100 MHz report
+has WNS -1.002 ns, TNS -6679.026 ns and clean hold. A 91 MHz pass is not inferred
+from these numbers. Next command: inspect `build/attempt.exit`, image clock
+metadata and the existing observer state. Terminal success advances to the
+unchanged-netlist clock audit. Failure preserves all generated artifacts and
+checks whether the usable bitstream can be packaged without implementation.
+
+## Prepared conditional checkpoint interface
+
+`board_checkpoint.py --operating-clock-evidence REVIEWED_CLOCK.json` uses the
+reviewed, image-bound measured frequency instead of its historical 100 MHz
+identity. It retains `gate_status=not-measured` and explicitly labels the
+conditional acceptance basis; a numerical checkpoint pass does not promote a
+gate automatically. The original code/data graph and all traffic, memory-map
+and visibility assertions remain intact.
+
+The `tnca-qualified-operating-clock/1` file must contain the exact image SHA,
+positive integer `clock_hz` no greater than 91,000,000, qualification
+`conditional-r40v2-20261018`, finite nonnegative `setup_wns_ns` and `hold_whs_ns`,
+`route_legal=true`, `cdc_review=passed`, and
+`clock_source=measured-board-counter`, and `physical_core_slrs={"0":0,"1":1,"2":2}`. `evidence_files` must bind the reviewed
+`timing`, `route`, `cdc`, `placement`, and `board_clock` files by path and SHA256. This is a
+reviewed qualification record, not an automatically inferred pass from report
+existence. It cannot be created honestly until the reports and board clock
+measurement exist. Evidence is rechecked before sealing checkpoint success.
+
+Current running preservation/audit command and PID are retained in
+`conditional_91mhz_launch.json`. Its state is
+`~/tnca_build/r40_attempt03_conditional_91mhz/state.json`. It waits for both the
+original implementation and its serial report observer before opening the
+checkpoint. No extra implementation or board load has been started.
+
+
+## Continuous functional delivery
+
+`tools/r40/conditional_delivery.py` prepares and executes the existing functional
+sequence without another implementation: original >=64 MiB checkpoint, all 77
+frozen native points, inventory audit, all 14 `hbm-core.json` points, and the
+unmodified frozen model. It verifies frozen point definitions and fresh
+software/image identity, runs one board job at a time, and stops on stage
+failure while preserving outputs. `--plan-only` writes commands without opening
+a device. A successful sequence remains a functional checkpoint requiring gate
+review; performance A/B and frozen holdout remain separate obligations.
+
+`TNCA_OPERATING_CLOCK_EVIDENCE` now propagates the same reviewed clock through
+ArchBench native records, the HBM board diagnostic and frozen model identity.
+The shared validator is `python/tnca/operating_clock.py`. No default clock was
+changed globally and no missing board clock was filled in from a request.
+The 100 MHz historical path retains its existing behavior; conditional runs
+must provide explicit evidence. Source/compiler/runtime identities must be
+refrozen after this reporting change before starting the new sequence.
+
+
+## Actual packaged operating point
+
+The final Vitis package contains DATA_CLK at **90 MHz**, as recorded in
+`terminal_image_90mhz_20261018.json`. The original launcher returned 3 for
+`freq-moved`; the complete xclbin and partial bitstream exist. The baseline will
+be qualified and measured at 90 MHz under the authorized 91 MHz ceiling, with
+90 MHz stated explicitly in every result. The planned exact-91 MHz audit is
+superseded by a report at the packaged operating point; this does not alter the
+frozen contract or the failed 100 MHz result. The existing 100 MHz diagnostic
+collector is allowed to finish; no second DCP reader is started alongside it.
+The operating-clock report includes actual core/SLR placement in the same DCP
+session to avoid an additional full checkpoint load.

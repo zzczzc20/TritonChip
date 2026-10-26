@@ -1,0 +1,50 @@
+{
+ "schema": "tnca-r40-subset/1",
+ "name": "R40-04.streaming",
+ "rule": "hbm points of the families add, silu, copy, transpose, softmax, rmsnorm",
+ "points": [
+  {
+   "id": "op.add/hbm/fp16-n67108864",
+   "sha256": "4c8c739081452e9ef3c1c8870031ae89ae86a9cc09e262fea5a7ccfc202bc85e",
+   "family": "add",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.copy/hbm/fp16-n67108864",
+   "sha256": "985db43ad808d2f7bf11454bab05e082416c27d6284be0707cefe0d3db071027",
+   "family": "copy",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "sha256": "cf35f8341664c0affaf6d5401ac648fa1782fc02e09715b23b1498639d2579d5",
+   "family": "rmsnorm",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.silu/hbm/fp16-n67108864",
+   "sha256": "ac289d78c2b64352cffab211799e71984b2403633d6fbeee25bd6aa538bd27fd",
+   "family": "silu",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.softmax/hbm/fp16-r4096-c8192",
+   "sha256": "a97f2905a204dcf4d0108822bd6a1ca1bc94dfc04e226ba243efe81ee160443b",
+   "family": "softmax",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.transpose/hbm/fp32-r8192-c8192",
+   "sha256": "178a8b5508f1155d44907970a91aa0a030aeec79618fa7b124df3a320579eb56",
+   "family": "transpose",
+   "tier": "hbm",
+   "dtype": "fp32"
+  }
+ ],
+ "sha256": "8ea0044e6d5ad80c72327b5e777d4ac5ac704482d6323bb47e2c65652e4a8736"
+}

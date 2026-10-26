@@ -1,0 +1,38 @@
+{
+  "status": "failed-preserved",
+  "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "clock_hz": 90000000,
+  "backend_args": {
+    "xclbin": "/home/zzhouch/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+    "image_profile": "core-vrf-sync-v5",
+    "core_count": 3,
+    "memory_ports": 3,
+    "hbm_dma": true,
+    "hbm_bytes": 4294967296,
+    "device_clock": true
+  },
+  "completed": [
+    {
+      "name": "frozen-original-model",
+      "exit_code": 0
+    },
+    {
+      "name": "full-bucket-model-capability-audit",
+      "exit_code": 0
+    },
+    {
+      "name": "complete-no-cuda-host-conformance",
+      "exit_code": 0
+    },
+    {
+      "name": "original-large24",
+      "exit_code": 0
+    }
+  ],
+  "scope": "Resume after native_model.py harness fix (assert moved before del warm): full fixed-bucket model, bucket audit, no-CUDA conformance, large24, graphs24",
+  "observed_utc": "2026-10-19T03:27:33.528518+00:00",
+  "current": "original-large24",
+  "child_pid": 2375376,
+  "error": "Traceback (most recent call last):\n  File \"/home/zzhouch/tnca_v3_functional/controller.py\", line 74, in <module>\n    assert all(r['status'] == 'pass' and r['correctness']['ok'] for r in rows), 'original large point failed'\n  File \"/home/zzhouch/tnca_v3_functional/controller.py\", line 74, in <genexpr>\n    assert all(r['status'] == 'pass' and r['correctness']['ok'] for r in rows), 'original large point failed'\nKeyError: 'ok'\n"
+}

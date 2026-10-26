@@ -1,0 +1,7 @@
+{
+ "source": "acf3019:/home/zzhouch/tnca_runs_r40_v3x2/model/report.json",
+ "producer": "recollect_x2 stage full-original-functional-delivery -> tools/r40/conditional_delivery.py nested stage frozen-original-model (tools/r40/native_model.py --bucket)",
+ "sha256": "76a7a9438c2f5626f36664ecf785a43ffdcbadc0d638da435ac153c4885a93f6",
+ "raw_sha256": "4658ef4b44be21e429442298947001c2a7995c7e7ebddcf109b963f5cdf5bfe8",
+ "raw_bytes": 16247223
+}

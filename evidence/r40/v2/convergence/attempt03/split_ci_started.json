@@ -1,0 +1,15 @@
+{
+  "observed_utc": "2026-10-18T01:51:33.281323+00:00",
+  "workflow_run": 39087952712,
+  "ref": "r40-convergence-evidence",
+  "source_commit": "16914f7c9711ff28e52d765d1e1d77a32d998d03",
+  "status": "in_progress",
+  "original_source_run": 39069298432,
+  "original_source_conclusion": "cancelled",
+  "rtl_git_tree_sha1": "dac5255d9eb000b3f724bdf1259e64b5d0005279",
+  "attempt03_rtl_git_tree_sha1": "dac5255d9eb000b3f724bdf1259e64b5d0005279",
+  "hardware_source_changed": false,
+  "software_caveat": "New head includes endpoint-auditing software and reporting tools beyond original attempt03 commit. Its CI must not be presented as a rerun at commit54249f7. RTL trees match exactly. Final board software needs its own immutable identity.",
+  "scope": "unchanged full CI coverage; seven independent MMIO lanes; no new implementation or image load",
+  "qualification": "pending"
+}

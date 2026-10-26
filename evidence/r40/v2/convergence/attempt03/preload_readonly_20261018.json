@@ -1,0 +1,94 @@
+{
+  "observed_utc": "2026-10-18T01:59:17.177935+00:00",
+  "scope": "read-only preflight, existing loaded image only; no board qualification or image load",
+  "device": "0000:04:00.1",
+  "device_status": "HEALTHY",
+  "static_region": {
+    "vbnv": "xilinx_u280_gen3x16_xdma_base_1",
+    "logic_uuid": "283BAB8F-654D-8674-968F-4DA57F7FA5D7",
+    "jtag_idcode": "0x14b7d093",
+    "fpga_name": ""
+  },
+  "clocks_of_current_image": [
+    {
+      "id": "DATA_CLK",
+      "description": "Data",
+      "freq_mhz": "100"
+    },
+    {
+      "id": "KERNEL_CLK",
+      "description": "Kernel",
+      "freq_mhz": "500"
+    },
+    {
+      "id": "hbm_aclk",
+      "description": "System",
+      "freq_mhz": "450"
+    }
+  ],
+  "dynamic_regions_of_current_image": [
+    {
+      "id": "0",
+      "xclbin_uuid": "1C8DD6E1-4BD7-D16A-2D03-49F353B4AC56",
+      "compute_units": [
+        {
+          "name": "tnca_u50:tnca_u50_1",
+          "base_address": "0xc00000",
+          "usage": "0",
+          "type": "PL",
+          "status": {
+            "bit_mask": "0x4",
+            "bits_set": [
+              "IDLE"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "asynchronous_errors": "",
+  "firewall": {
+    "firewall_level": "0",
+    "firewall_level_name": "",
+    "firewall_status": "0x0",
+    "status": "(GOOD)"
+  },
+  "memory_inventory": {
+    "records": 41,
+    "enabled_banks": [],
+    "allocated_bytes": 0
+  },
+  "raw_reports": {
+    "platform": {
+      "exit_code": 0,
+      "sha256": "3f917bca6f3924c15a5c7f9027594bb80ff47fe729b1683d059270f8244491a2",
+      "path": "/home/zzhouch/tnca_build/r40_preload_inventory_20261018/platform_device.json"
+    },
+    "error": {
+      "exit_code": 0,
+      "sha256": "0e3ba92c83384125ef43b88ee1e5b38dcdebdad76c7bfaa95b372accf751e907",
+      "path": "/home/zzhouch/tnca_build/r40_preload_inventory_20261018/error_device.json"
+    },
+    "firewall": {
+      "exit_code": 0,
+      "sha256": "73fb258425df6f807e6c48f6f397cbd49a562a6ce1cb520d8dcca1d4513968ff",
+      "path": "/home/zzhouch/tnca_build/r40_preload_inventory_20261018/firewall_device.json"
+    },
+    "memory": {
+      "exit_code": 0,
+      "sha256": "8b32fe675c34c2d8efc8e26a4d480b20c384da8ce70a73274152749a4585fdf0",
+      "path": "/home/zzhouch/tnca_build/r40_preload_inventory_20261018/memory_device.json"
+    },
+    "dynamic-regions": {
+      "exit_code": 0,
+      "sha256": "4458d0a41ee46848ba3a29c5cc3569496974c17d2a29cb5a99fe2a77f7f24550",
+      "path": "/home/zzhouch/tnca_build/r40_preload_inventory_20261018/dynamic-regions_device.json"
+    }
+  },
+  "initial_device_selection_failure": "Initial no-device command refused; rerun explicitly named only enumerated BDF0000:04:00.1; all logs retained remotely",
+  "qualification": "not-measured",
+  "caveat": "These clocks and memory records belong to the pre-existing image, not attempt03. No currently enabled bank is reported. Recheck final xclbin metadata, actual allocation, clocks and traffic after qualified image load. A healthy idle card is not a three-core/HBM gate pass.",
+  "new_image_load": false,
+  "full_implementation_started": false,
+  "required_gate_promotions": []
+}

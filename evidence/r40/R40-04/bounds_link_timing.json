@@ -1,0 +1,16 @@
+{
+  "software_commit": "15de750e26fa14f51966a6a15a62185532548aee",
+  "build": "u280_r40bounds",
+  "requested_mhz": 100,
+  "automatic_mhz": 96,
+  "wns_ns": -0.336,
+  "tns_ns": -226.125,
+  "failing_setup_endpoints": 1905,
+  "routed_report_sha256": "eebeae4a38f522d1fdd05123104159b703ac5973f5d33bd25579c0592a44b836",
+  "accepted": false,
+  "programmed": false,
+  "critical_path": "LSU pending_reg[10] -> local BRAM WEA[0]",
+  "data_delay_ns": 9.968,
+  "logic_levels": 16,
+  "route_fraction": 0.84771
+}

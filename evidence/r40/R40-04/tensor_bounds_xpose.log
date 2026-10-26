@@ -1,0 +1,10 @@
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common -o sim/build/tb_core.vvp tb/core/tb_tnca_core.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.HAS_TENSOR_XPOSE=1 \
+   -o sim/build/tb_core_xpose.vvp tb/core/tb_tnca_core.v
+python3 tools/asm/tnca_asm.py tb/core/progs/t30_xpose.s -o sim/build/t30_xpose.hex --lst sim/build/t30_xpose.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t31_xpose_illegal.s -o sim/build/t31_xpose_illegal.hex --lst sim/build/t31_xpose_illegal.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t32_xpose_badsize.s -o sim/build/t32_xpose_badsize.hex --lst sim/build/t32_xpose_badsize.lst --size 16384
+  t30_xpose              PASS   cycles=3757 issued=1641 hazard=693 lsu=0 wb=0 squash=228
+  t31_xpose_illegal      PASS   cycles=113 issued=18 hazard=7 lsu=0 wb=0 squash=1
+  t32_xpose_badsize      PASS   cycles=115 issued=18 hazard=7 lsu=0 wb=0 squash=1

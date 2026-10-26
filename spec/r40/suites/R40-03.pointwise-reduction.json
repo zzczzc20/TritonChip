@@ -1,0 +1,113 @@
+{
+ "schema": "tnca-r40-subset/1",
+ "name": "R40-03.pointwise-reduction",
+ "rule": "medium and hbm points of the families add, silu, gelu_tanh, swiglu, copy, softmax, rmsnorm, layernorm, argmax, cumsum, rope",
+ "points": [
+  {
+   "id": "op.add/hbm/fp16-n67108864",
+   "sha256": "4c8c739081452e9ef3c1c8870031ae89ae86a9cc09e262fea5a7ccfc202bc85e",
+   "family": "add",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.add/medium/fp16-n49152",
+   "sha256": "d93003fba972fe2516663455b54617bf43536590b601707e44b194ff5705ccb7",
+   "family": "add",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.argmax/medium/fp16-r32-v4096",
+   "sha256": "fb10339355602d4e14d3cd98fc6b579fec00b5c064e106d9352adefd72a4cff9",
+   "family": "argmax",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.copy/hbm/fp16-n67108864",
+   "sha256": "985db43ad808d2f7bf11454bab05e082416c27d6284be0707cefe0d3db071027",
+   "family": "copy",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.cumsum/medium/fp32-r128-c256",
+   "sha256": "e7bbefe83b854a602e9fb7ce29202f8a9cc3e57b1519621a91767d125f1f3e88",
+   "family": "cumsum",
+   "tier": "medium",
+   "dtype": "fp32"
+  },
+  {
+   "id": "op.gelu_tanh/medium/fp16-n65536",
+   "sha256": "1838b4f8e12687df2627242ad0c072db36a2920c2e4a712f908b5f67de871882",
+   "family": "gelu_tanh",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.layernorm/medium/fp16-r128-d512",
+   "sha256": "f351ad8ceb8baee68994ac5d31a62e3be15d95bada5116eb38e638c4e5f53791",
+   "family": "layernorm",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "sha256": "cf35f8341664c0affaf6d5401ac648fa1782fc02e09715b23b1498639d2579d5",
+   "family": "rmsnorm",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.rmsnorm/medium/fp16-r128-d512",
+   "sha256": "1a2fc8c15e6adf8fb88f0b2eb673d17c515dec7ae27106b91f9f6c6dce0cbcab",
+   "family": "rmsnorm",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.rope/medium/fp16-b1-h8-s128-d32",
+   "sha256": "68efb08c431333d93590c4004b4ff31a19ae4b76b78d112fd9a7cb30693a3194",
+   "family": "rope",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.silu/hbm/fp16-n67108864",
+   "sha256": "ac289d78c2b64352cffab211799e71984b2403633d6fbeee25bd6aa538bd27fd",
+   "family": "silu",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.silu/medium/fp16-n65536",
+   "sha256": "5f681ae194441bdea0d48b41cede0e168229ee92d0ea499b75f6828a8089ac0e",
+   "family": "silu",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.softmax/hbm/fp16-r4096-c8192",
+   "sha256": "a97f2905a204dcf4d0108822bd6a1ca1bc94dfc04e226ba243efe81ee160443b",
+   "family": "softmax",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.softmax/medium/fp16-r80-c512",
+   "sha256": "966020f31402593850ac045f3105fe20a58f0e27872ca7557a1c4329cad0c725",
+   "family": "softmax",
+   "tier": "medium",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.swiglu/medium/fp16-n49152",
+   "sha256": "1e532bfb03b6b67e1c473b66687c94c9c20ee365136c983d1e1a35c393dbb2a3",
+   "family": "swiglu",
+   "tier": "medium",
+   "dtype": "fp16"
+  }
+ ],
+ "sha256": "2c910fff0455c346cde3a512e83879f86581d058f792d73479a0e8900cb478f3"
+}

@@ -1,0 +1,292 @@
+{
+  "scope": "unchanged 4097-element resident native Torch graph, four memory configurations, diagnostic RTL model only",
+  "gate_status": "not-measured",
+  "observed_utc": "2026-10-16T12:11:47.172366+00:00",
+  "physical_image_sha256": null,
+  "physical_clock_hz": null,
+  "instrumentation_wall_overhead": "not-measured",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "runs": [
+    {
+      "root": "/tmp/r40_illegal30_native",
+      "journal_enabled": true,
+      "exit": 0,
+      "host_log": "MMIO_JOURNAL {\"directory\": \"/tmp/r40_illegal30_native/sim/build/u50-sim/link-piql61nc/journal\"}\nNATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 3, \"maximum_outstanding\": 8, \"outstanding\": 8, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 261, \"write_lines\": 83}, {\"port\": 1, \"read_lines\": 339, \"write_lines\": 82}, {\"port\": 2, \"read_lines\": 285, \"write_lines\": 81}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\nNATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 1, \"maximum_outstanding\": 8, \"outstanding\": 8, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 893, \"write_lines\": 247}, {\"port\": 1, \"read_lines\": 0, \"write_lines\": 0}, {\"port\": 2, \"read_lines\": 0, \"write_lines\": 0}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\nNATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 1, \"maximum_outstanding\": 8, \"outstanding\": 1, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 887, \"write_lines\": 247}, {\"port\": 1, \"read_lines\": 0, \"write_lines\": 0}, {\"port\": 2, \"read_lines\": 0, \"write_lines\": 0}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\nNATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 3, \"maximum_outstanding\": 8, \"outstanding\": 1, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 358, \"write_lines\": 83}, {\"port\": 1, \"read_lines\": 286, \"write_lines\": 82}, {\"port\": 2, \"read_lines\": 256, \"write_lines\": 81}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\n",
+      "configurations": [
+        {
+          "configuration": {
+            "active_ports": 3,
+            "maximum_outstanding": 8,
+            "outstanding": 8,
+            "physical_ports": 3,
+            "version": 1
+          },
+          "numerical": true,
+          "outlet_delta": [
+            {
+              "port": 0,
+              "read_lines": 261,
+              "write_lines": 83
+            },
+            {
+              "port": 1,
+              "read_lines": 339,
+              "write_lines": 82
+            },
+            {
+              "port": 2,
+              "read_lines": 285,
+              "write_lines": 81
+            }
+          ],
+          "scope": "functional RTL only",
+          "zero_tensor_staging": true
+        },
+        {
+          "configuration": {
+            "active_ports": 1,
+            "maximum_outstanding": 8,
+            "outstanding": 8,
+            "physical_ports": 3,
+            "version": 1
+          },
+          "numerical": true,
+          "outlet_delta": [
+            {
+              "port": 0,
+              "read_lines": 893,
+              "write_lines": 247
+            },
+            {
+              "port": 1,
+              "read_lines": 0,
+              "write_lines": 0
+            },
+            {
+              "port": 2,
+              "read_lines": 0,
+              "write_lines": 0
+            }
+          ],
+          "scope": "functional RTL only",
+          "zero_tensor_staging": true
+        },
+        {
+          "configuration": {
+            "active_ports": 1,
+            "maximum_outstanding": 8,
+            "outstanding": 1,
+            "physical_ports": 3,
+            "version": 1
+          },
+          "numerical": true,
+          "outlet_delta": [
+            {
+              "port": 0,
+              "read_lines": 887,
+              "write_lines": 247
+            },
+            {
+              "port": 1,
+              "read_lines": 0,
+              "write_lines": 0
+            },
+            {
+              "port": 2,
+              "read_lines": 0,
+              "write_lines": 0
+            }
+          ],
+          "scope": "functional RTL only",
+          "zero_tensor_staging": true
+        },
+        {
+          "configuration": {
+            "active_ports": 3,
+            "maximum_outstanding": 8,
+            "outstanding": 1,
+            "physical_ports": 3,
+            "version": 1
+          },
+          "numerical": true,
+          "outlet_delta": [
+            {
+              "port": 0,
+              "read_lines": 358,
+              "write_lines": 83
+            },
+            {
+              "port": 1,
+              "read_lines": 286,
+              "write_lines": 82
+            },
+            {
+              "port": 2,
+              "read_lines": 256,
+              "write_lines": 81
+            }
+          ],
+          "scope": "functional RTL only",
+          "zero_tensor_staging": true
+        }
+      ],
+      "software_tree": "files:a11a4f6bae489207b800147ade6d1cd6a00c9479376e300ec526d6550bc2deeb",
+      "harness": "/tmp/r40_illegal30_native/sim/build/u50-sim/link-piql61nc/multicore-mmio.vvp",
+      "harness_sha256": "4a70ce4983ad1d78952fc916f27dcaefd471a72bc4b048ad8fb9a415f37e81e2",
+      "decoder_sha256": "fad46133110797293a9086f5c486cfaeb2dae30f6df3ebc393afe4f96f0499ce",
+      "native_driver_sha256": "fc8ae9a9b6401923f2f703064fd6c932e6927d8c2db2edfc93f6b6356b13af44",
+      "journal_metadata": {
+        "schema": "tnca-mmio-timed-journal/1",
+        "harness": "/tmp/r40_illegal30_native/sim/build/u50-sim/link-piql61nc/multicore-mmio.vvp",
+        "harness_sha256": "4a70ce4983ad1d78952fc916f27dcaefd471a72bc4b048ad8fb9a415f37e81e2",
+        "runtime": "/home/zhongchun/tc_env/bin/vvp",
+        "argv": [
+          "/home/zhongchun/tc_env/bin/vvp",
+          "/tmp/r40_illegal30_native/sim/build/u50-sim/link-piql61nc/multicore-mmio.vvp",
+          "+cmd=/tmp/r40_illegal30_native/sim/build/u50-sim/link-piql61nc/regs.cmd",
+          "+rsp=/tmp/r40_illegal30_native/sim/build/u50-sim/link-piql61nc/regs.rsp",
+          "+pollcycles=20",
+          "+intercycle=8",
+          "+watchdog=200000000",
+          "+assert_fatal",
+          "+journal=/tmp/r40_illegal30_native/sim/build/u50-sim/link-piql61nc/journal"
+        ],
+        "backend": "RTL MMIO v2: 3 cores, 3 AXI outlets",
+        "diagnostic_only": true,
+        "wall_time_overhead": "not-measured",
+        "source_root": "/tmp/r40_illegal30_native",
+        "simulator_log": "/tmp/r40_illegal30_native/sim/build/u50-sim/link-piql61nc/regs.log"
+      },
+      "terminal": "T 3571616 1"
+    },
+    {
+      "root": "/tmp/r40_illegal32_default",
+      "journal_enabled": false,
+      "exit": 0,
+      "host_log": "NATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 3, \"maximum_outstanding\": 8, \"outstanding\": 8, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 261, \"write_lines\": 83}, {\"port\": 1, \"read_lines\": 335, \"write_lines\": 82}, {\"port\": 2, \"read_lines\": 285, \"write_lines\": 82}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\nNATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 1, \"maximum_outstanding\": 8, \"outstanding\": 8, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 890, \"write_lines\": 247}, {\"port\": 1, \"read_lines\": 0, \"write_lines\": 0}, {\"port\": 2, \"read_lines\": 0, \"write_lines\": 0}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\nNATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 1, \"maximum_outstanding\": 8, \"outstanding\": 1, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 881, \"write_lines\": 247}, {\"port\": 1, \"read_lines\": 0, \"write_lines\": 0}, {\"port\": 2, \"read_lines\": 0, \"write_lines\": 0}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\nNATIVE MEMORY CONTROL PASS {\"configuration\": {\"active_ports\": 3, \"maximum_outstanding\": 8, \"outstanding\": 1, \"physical_ports\": 3, \"version\": 1}, \"numerical\": true, \"outlet_delta\": [{\"port\": 0, \"read_lines\": 352, \"write_lines\": 83}, {\"port\": 1, \"read_lines\": 285, \"write_lines\": 82}, {\"port\": 2, \"read_lines\": 256, \"write_lines\": 81}], \"scope\": \"functional RTL only\", \"zero_tensor_staging\": true}\n",
+      "configurations": [
+        {
+          "configuration": {
+            "active_ports": 3,
+            "maximum_outstanding": 8,
+            "outstanding": 8,
+            "physical_ports": 3,
+            "version": 1
+          },
+          "numerical": true,
+          "outlet_delta": [
+            {
+              "port": 0,
+              "read_lines": 261,
+              "write_lines": 83
+            },
+            {
+              "port": 1,
+              "read_lines": 335,
+              "write_lines": 82
+            },
+            {
+              "port": 2,
+              "read_lines": 285,
+              "write_lines": 82
+            }
+          ],
+          "scope": "functional RTL only",
+          "zero_tensor_staging": true
+        },
+        {
+          "configuration": {
+            "active_ports": 1,
+            "maximum_outstanding": 8,
+            "outstanding": 8,
+            "physical_ports": 3,
+            "version": 1
+          },
+          "numerical": true,
+          "outlet_delta": [
+            {
+              "port": 0,
+              "read_lines": 890,
+              "write_lines": 247
+            },
+            {
+              "port": 1,
+              "read_lines": 0,
+              "write_lines": 0
+            },
+            {
+              "port": 2,
+              "read_lines": 0,
+              "write_lines": 0
+            }
+          ],
+          "scope": "functional RTL only",
+          "zero_tensor_staging": true
+        },
+        {
+          "configuration": {
+            "active_ports": 1,
+            "maximum_outstanding": 8,
+            "outstanding": 1,
+            "physical_ports": 3,
+            "version": 1
+          },
+          "numerical": true,
+          "outlet_delta": [
+            {
+              "port": 0,
+              "read_lines": 881,
+              "write_lines": 247
+            },
+            {
+              "port": 1,
+              "read_lines": 0,
+              "write_lines": 0
+            },
+            {
+              "port": 2,
+              "read_lines": 0,
+              "write_lines": 0
+            }
+          ],
+          "scope": "functional RTL only",
+          "zero_tensor_staging": true
+        },
+        {
+          "configuration": {
+            "active_ports": 3,
+            "maximum_outstanding": 8,
+            "outstanding": 1,
+            "physical_ports": 3,
+            "version": 1
+          },
+          "numerical": true,
+          "outlet_delta": [
+            {
+              "port": 0,
+              "read_lines": 352,
+              "write_lines": 83
+            },
+            {
+              "port": 1,
+              "read_lines": 285,
+              "write_lines": 82
+            },
+            {
+              "port": 2,
+              "read_lines": 256,
+              "write_lines": 81
+            }
+          ],
+          "scope": "functional RTL only",
+          "zero_tensor_staging": true
+        }
+      ],
+      "software_tree": "files:a11a4f6bae489207b800147ade6d1cd6a00c9479376e300ec526d6550bc2deeb",
+      "harness": "/tmp/r40_illegal32_default/sim/build/u50-sim/link-0ih1_okw/multicore-mmio.vvp",
+      "harness_sha256": "8df988ea6a5e82e158757941d5cfb59d11847d5b64f6fa6fabbe8899160f45bb",
+      "decoder_sha256": "fad46133110797293a9086f5c486cfaeb2dae30f6df3ebc393afe4f96f0499ce",
+      "native_driver_sha256": "fc8ae9a9b6401923f2f703064fd6c932e6927d8c2db2edfc93f6b6356b13af44"
+    }
+  ]
+}

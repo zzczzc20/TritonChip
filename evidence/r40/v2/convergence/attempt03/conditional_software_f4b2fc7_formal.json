@@ -1,0 +1,12 @@
+{
+  "schema": "tnca-complete-conditional-snapshot/1",
+  "commit": "f4b2fc7",
+  "software_tree": "files:3520df32c20aefcc593c0da6ff80ab2e9aa03556ecb1a942ac709a916903bec7",
+  "archive_sha256": "28ac56d97614c694d4ee3beadb13a3af020d0561a36fc32f330499b0b32704e3",
+  "archive_bytes": 9984452,
+  "source": "/home/zzhouch/tnca_src_r40_conditional_f4b2fc7_formal",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "reason": "Prospectively frozen sampling, exact B40-S/B40-N controls and complete endpoint-preserving runtime audit; identical qualified product software",
+  "scope": "same committed compiler/runtime and unchanged workload definitions; fresh complete package; failed first run preserved; no device/programming operation",
+  "historical_bounds_sha256": "42f224030264f93cf79a209d0082bae6b955ccd521ef8a2a4cfaf9e75807c40a"
+}

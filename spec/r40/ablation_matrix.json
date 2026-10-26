@@ -1,0 +1,316 @@
+{
+ "schema": "tnca-r40-ablation-matrix/1",
+ "rule": "every mechanism has its own switch and configuration hash, a single-factor A/B and a leave-one-out from B40-F; an illegal combination is recorded with its reason and a semantically equivalent control, never a made-up number (doc sec 3.2)",
+ "mechanisms": [
+  {
+   "wp": "R40-01",
+   "id": "native-device",
+   "layer": "runtime",
+   "switch": "TNCA_TORCH_DEVICE",
+   "values": "cpu migration (A) / native per-kernel staging (B) / native resident (C): A-B to R40-01, B-C to R40-02",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-02",
+   "id": "residency",
+   "layer": "runtime",
+   "switch": "TNCA_TRANSFER_POLICY",
+   "values": "per-kernel / resident",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-02",
+   "id": "submission",
+   "layer": "runtime",
+   "switch": "TNCA_SUBMIT",
+   "values": "single / batched / replay",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-02",
+   "id": "copy-overlap",
+   "layer": "runtime",
+   "switch": "TNCA_COPY_OVERLAP",
+   "values": "0 / 1",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-02",
+   "id": "host-control",
+   "layer": "runtime",
+   "switch": "TNCA_HOST_CONTROL",
+   "values": "mmio / queue",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-02",
+   "id": "bulk-dma",
+   "layer": "runtime",
+   "switch": "TNCA_BULK_DMA",
+   "values": "mmio words / XRT bulk",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-03",
+   "id": "max-block",
+   "layer": "compile",
+   "switch": "TNCA_MAX_BLOCK",
+   "values": "16 / 32 / 64 / 128",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-03",
+   "id": "multirow-reduction",
+   "layer": "compile",
+   "switch": "TNCA_MULTIROW",
+   "values": "0 / 1",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-03",
+   "id": "gemm-tile",
+   "layer": "compile",
+   "switch": "TNCA_GEMM_TILE",
+   "values": "16x16 / larger",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-03",
+   "id": "bank-allocation",
+   "layer": "compile",
+   "switch": "TNCA_BANK_ALLOC",
+   "values": "0 / 1",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-03",
+   "id": "lifetime-reuse",
+   "layer": "compile",
+   "switch": "TNCA_LIFETIME",
+   "values": "0 / 1",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-03",
+   "id": "spill-policy",
+   "layer": "compile",
+   "switch": "TNCA_SPILL",
+   "values": "refuse / retile / spill",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-04",
+   "id": "burst",
+   "layer": "rtl",
+   "switch": "TNCA_RTL_BURST",
+   "values": "0 / 1",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-04",
+   "id": "outstanding",
+   "layer": "rtl",
+   "switch": "TNCA_RTL_OUTSTANDING",
+   "values": "1 / N",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-04",
+   "id": "wide-ingress",
+   "layer": "rtl",
+   "switch": "TNCA_RTL_INGRESS",
+   "values": "8 B / 32 B per cycle",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-05",
+   "id": "active-cores",
+   "layer": "runtime",
+   "switch": "TNCA_ACTIVE_CORES",
+   "values": "1 / 2 / 3",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-05",
+   "id": "grid-assignment",
+   "layer": "runtime",
+   "switch": "TNCA_GRID_DISPATCH",
+   "values": "static / dynamic",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-06",
+   "id": "memory-ports",
+   "layer": "rtl",
+   "switch": "TNCA_RTL_MEM_PORTS",
+   "values": "1 / N",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-06",
+   "id": "locality",
+   "layer": "runtime",
+   "switch": "TNCA_LOCALITY",
+   "values": "naive / locality",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-06",
+   "id": "dco",
+   "layer": "runtime",
+   "switch": "TNCA_DCO",
+   "values": "off / on",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-06",
+   "id": "cache-bypass",
+   "layer": "runtime",
+   "switch": "TNCA_CACHE_BYPASS",
+   "values": "cache / bypass",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-06",
+   "id": "home-mapping",
+   "layer": "runtime",
+   "switch": "TNCA_HOME_MAP",
+   "values": "interleave / tensor home",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-06",
+   "id": "dead-hint",
+   "layer": "runtime",
+   "switch": "TNCA_DEAD_HINT",
+   "values": "0 / 1",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-07",
+   "id": "stages",
+   "layer": "compile",
+   "switch": "TNCA_PIPELINE",
+   "values": "1 / 2 / 3 stages",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-07",
+   "id": "role-pipeline",
+   "layer": "compile",
+   "switch": "TNCA_RCTX_ROLES",
+   "values": "off / gated (R39-12) / forced",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-07",
+   "id": "transpose-pack",
+   "layer": "compile",
+   "switch": "TNCA_LAYOUT_MOVE",
+   "values": "scratch repack / descriptor or pack",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-07",
+   "id": "epilogue-fusion",
+   "layer": "compile",
+   "switch": "TNCA_EPILOGUE",
+   "values": "materialised / fused",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-07",
+   "id": "matrix",
+   "layer": "rtl",
+   "switch": "TNCA_RTL_MMA",
+   "values": "v5 MTX_ABUF / overlapped or wider",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-08",
+   "id": "sdpa",
+   "layer": "compile",
+   "switch": "TNCA_SDPA",
+   "values": "decomposed / fused",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-08",
+   "id": "kv-resident",
+   "layer": "runtime",
+   "switch": "TNCA_KV",
+   "values": "copied / resident",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-08",
+   "id": "reduction-fusion",
+   "layer": "compile",
+   "switch": "TNCA_REDUCTION_FUSION",
+   "values": "0 / 1",
+   "single_factor": true,
+   "leave_one_out": true
+  },
+  {
+   "wp": "R40-09",
+   "id": "selection",
+   "layer": "compile",
+   "switch": "TNCA_TUNE",
+   "values": "fixed / model / measured",
+   "single_factor": true,
+   "leave_one_out": true
+  }
+ ],
+ "interactions": [
+  {
+   "a": "TNCA_ACTIVE_CORES",
+   "b": "TNCA_RTL_MEM_PORTS",
+   "note": "single/multi core x single/multi port"
+  },
+  {
+   "a": "TNCA_LOCALITY",
+   "b": "TNCA_DCO",
+   "note": "naive/locality x DCO"
+  },
+  {
+   "a": "TNCA_PIPELINE",
+   "b": "TNCA_RCTX_ROLES",
+   "note": "pipeline off/on x single/multi context"
+  },
+  {
+   "a": "TNCA_PIPELINE",
+   "b": "TNCA_RTL_MMA",
+   "note": "pipeline x matrix"
+  }
+ ]
+}

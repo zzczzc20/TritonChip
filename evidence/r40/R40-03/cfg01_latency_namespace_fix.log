@@ -1,0 +1,46 @@
+R3.6 Gate A: one configuration, and what compatibility means
+  R36-CFG-01  PASS  the profile, the target, the device and the artifact agree
+    elaboration, profile vs target: 7 parameter(s), identical
+    the device elaborates ['-P', 'tnca_device.USE_BANKED_VRF=1']
+    the profile says the register file is 'banked', and the bench is built banked: True
+    the artifact names profile 'core-vrf-sync-v1', config hash a6a5cb5204b8, implementation fingerprint a6a5cb5204b8
+    and the config hash the profile computes now is a6a5cb5204b8: True
+    the target declares 11 capability(ies) present and 6 absent (['atomics_system', 'cache_hints', 'packed_f16', 'rctx_pair', 'rctx_slice', 'tensor_transpose'])
+    the artifact records 11: exactly the ones present
+    the target re-derived from the RTL and the profile: 27 field(s), identical
+      no export was lying around, so one was built
+    the export publishes 25 parameter(s); the profile's elaboration names 7
+    every parameter the profile sets is settable on the exported top: True 
+    the parameters whose defaults differ from the profile: [] 
+    a RESOURCE assumption (VREGS_PER_RCTX 64 -> 32) moves the identity: a6a5cb5204b8 -> fa3ea2de2b1e (True)
+      and the compiler really reads it: target.py exposes vreg_logical_per_rctx, vreg_physical_total and sreg_per_rctx from the target's registers block
+      scheduler model unchanged after target-latency perturbation: True
+      genuine target reads caught, separate model field distinguished: True
+    a LATENCY assumption ['fp_result_cycles', 'mul_result_cycles'] is published and outside the identity, which is safe only while nothing consumes it
+      files in the compiler or runtime that read it: none
+      if that ever changes this case fails first, and latency has to enter config_hash
+      changing it still forces a rebuild of the DEVICE: it comes from FP_LAT and MUL_LAT in the RTL, and device.source_fingerprint hashes the RTL
+    the ISA version: identity says '0.1', the target says '0.1'
+    the report measures {'accumulators': 0, 'barriers': 0, 'descriptors': 0, 'scratch_bytes': 0}, against a ceiling of 64 vector register(s) per context -- measured, not the ceiling repeated back
+    the same source on another profile has another key: a68a5e6e39e7 vs d2b3c033e17b -> True
+    and another config hash: a6a5cb5204b8 vs b8fb71a90255
+  R36-CFG-02  PASS  one artifact on both bindings; three wrong ones refused
+    sim-file    correct=True cycles=204
+    sim-socket  correct=True cycles=204
+    one artifact (a68a5e6e39e7), two bindings, no recompile, same cycles: True
+    a reference artifact on the candidate: [PROFILE_MISMATCH] after 0 device request(s)
+    an artifact with one bit flipped in its payload: [ARTIFACT_INVALID] after 0 device request(s)
+    a capability the hardware lacks is refused at COMPILE time, not at load: the target publishes what the machine can do and the compiler will not emit what is absent (tools/r36/mutation_tests.py MUT-CAPABILITY breaks that and R36-CFG-01 catches it)
+  R36-CFG-03  PASS  versions decided, written down, and no cache hit across implementations
+    the ABI is version [1, 0], the container format [1, 0]
+    optional_metadata carries ['provenance', 'report']
+    and nothing a loader must not ignore: confirmed
+    the same request twice: from cache = True
+    another implementation: from cache = False, key d2b3c033e17b vs a68a5e6e39e7
+    an artifact claiming format 99: [VERSION_UNSUPPORTED] [VERSION_UNSUPPORTED] artifact container 99.0; this ru
+    the version/migration matrix: 8 interface(s), 0 missing field(s) 
+      container, abi, transport, relay, compile-target, cache, hardware-export, backend-abc
+      container: the matrix says [1, 0], the code produces [1, 0] (agree)
+      abi: the matrix says [1, 0], the code produces [1, 0] (agree)
+
+  r36-config-tests       PASS   3 check(s)

@@ -1,0 +1,3 @@
+  PASS  window     {"base": "0x0", "size": 8589934592, "local_limit": "0x20000", "bank": "MBG[0:31]", "bank_bytes": 8589934592, "bank_index": 41, "heap_end": "0x200020000", "dma": true}
+  PASS  samples    {"samples": 32, "first": "0x21000", "last": "0x1f0021000", "pseudo_channels": 32, "pc_first": 0, "pc_last": 31, "all_pc_coverage": true}
+r40-hbm-board  PASS  (2/2)

@@ -855,6 +855,12 @@ module tnca_decoder (
         if (o_illegal) begin
             // A rejected instruction must not present any side effect to the
             // rest of the core.
+            // The raw opcode can be unspecified on a speculative fetch past
+            // an exit. Keep the illegal flag for an unsquashed trap, but use
+            // inert classification bits: R/X also classify units by opcode.
+            o_major       = `TNCA_MAJ_SYS;
+            o_func        = `TNCA_SYS_NOP;
+            o_mod         = 10'd0;
             o_fu          = `TNCA_FU_NONE;
             o_dst_class   = `TNCA_DST_NONE;
             o_sa_en = 1'b0; o_sb_en = 1'b0; o_sc_en = 1'b0;

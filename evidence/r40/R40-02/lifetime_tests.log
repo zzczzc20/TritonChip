@@ -1,0 +1,6 @@
+  building core-sim -> /home/zhongchun/.cache/tnca/devices/core-sim-b8fb71a90255e476-f30a9b914657/tnca_device.vvp
+  pruned 1 older build(s) of core-sim
+  built 17474400 bytes
+PASS retiring a buffer preserves two queued RTL tasks and delays address reuse
+PASS new use of retired storage is refused, final lease recycles its address
+r40-lifetime-tests PASS (2/2)

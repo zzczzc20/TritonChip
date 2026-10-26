@@ -1,0 +1,8 @@
+{
+  "scope": "Source identity, not physical or gate qualification",
+  "production_rtl_sha256": "dc81e607e08c1dbf8b2096c8868dcf9dd28a8f0a135ac067adad9899aebd3bac",
+  "prototype_rtl_sha256": "beaf40276e0aa079007d96844fe8dae4082eb6a3b21a2b412f9fdd2cb21539da",
+  "difference": "Only new optimization parameter defaults differ: production0, isolated candidate1",
+  "timing": "E_LOOK owner snapshot reused on E_HIT. Mismatched owner epoch suppresses only an unformed hint. Data response is never retried or delayed.",
+  "notice_visibility": "Existing STAT_DROP still counts formed notices lost to a busy buffer; it does not measure intentionally unformed stale-owner hints. Zero STAT_DROP must not be interpreted as proof that no stale hint was suppressed."
+}

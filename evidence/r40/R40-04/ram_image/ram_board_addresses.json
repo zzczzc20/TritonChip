@@ -1,0 +1,35 @@
+{
+ "results": [
+  {
+   "name": "window",
+   "ok": true,
+   "detail": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000",
+    "bank": "MBG[0:31]",
+    "bank_bytes": 8589934592,
+    "bank_index": 41,
+    "heap_end": "0x200020000",
+    "dma": true
+   },
+   "wall_s": 3.3
+  },
+  {
+   "name": "samples",
+   "ok": true,
+   "detail": {
+    "samples": 32,
+    "first": "0x21000",
+    "last": "0x1f0021000",
+    "pseudo_channels": 32,
+    "pc_first": 0,
+    "pc_last": 31,
+    "all_pc_coverage": true
+   },
+   "wall_s": 6.4
+  }
+ ],
+ "backend_args": "{\"xclbin\":\"/home/zzhouch/tnca_build/u280_r40ram/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5\"}",
+ "hbm_bytes": "8589934592"
+}

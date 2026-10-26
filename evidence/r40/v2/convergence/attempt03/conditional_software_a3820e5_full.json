@@ -1,0 +1,12 @@
+{
+  "schema": "tnca-complete-conditional-snapshot/1",
+  "commit": "a3820e5",
+  "software_tree": "files:3520df32c20aefcc593c0da6ff80ab2e9aa03556ecb1a942ac709a916903bec7",
+  "archive_sha256": "056a6772160907146f995147dd2e1c18854e09ba7b3be303f057767a8795e72b",
+  "archive_bytes": 2243038,
+  "source": "/home/zzhouch/tnca_src_r40_conditional_a3820e5_full",
+  "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+  "reason": "Allocation-owner cleanup and explicit poisoned-session recovery prevent XRT context reopening during failed launch unwinding",
+  "scope": "same committed compiler/runtime and unchanged workload definitions; fresh complete package; failed first run preserved; no device/programming operation",
+  "historical_bounds_sha256": "42f224030264f93cf79a209d0082bae6b955ccd521ef8a2a4cfaf9e75807c40a"
+}

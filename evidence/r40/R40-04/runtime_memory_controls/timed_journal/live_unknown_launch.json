@@ -1,0 +1,12 @@
+{
+  "observed_utc": "2026-10-16T08:53:56.862420+00:00",
+  "gate_status": "not-measured",
+  "scope": "diagnostic Icarus harness only; no FPGA implementation",
+  "root": "/tmp/r40_mmio_journal27_first_unknown",
+  "runner_pid": 1341451,
+  "r40_mmio_journal27_build.exit": "0\n",
+  "r40_mmio_journal27_build.log": "/tmp/r40_mmio_journal27_first_unknown/sim/build/u50-sim/link-wl2b2644/multicore-mmio.vvp\n",
+  "r40_mmio_journal27_first_unknown_replay.exit": null,
+  "r40_mmio_journal27_first_unknown_replay.log": "",
+  "harness": "/tmp/r40_mmio_journal27_first_unknown/sim/build/u50-sim/link-wl2b2644/multicore-mmio.vvp"
+}

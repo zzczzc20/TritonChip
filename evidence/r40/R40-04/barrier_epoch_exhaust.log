@@ -1,0 +1,2 @@
+PASS barrier exhaustion faults before wrap; init recovers
+/tmp/tb_barrier_epoch.v:63: $finish called at 651000 (1ps)

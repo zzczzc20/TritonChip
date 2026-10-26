@@ -1,0 +1,704 @@
+{
+ "gates": {
+  "R40-02.zero-transfer": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "all 24 frozen >=3-kernel graphs on the delivery board: resident steady calls move 0 tensor bytes; per-kernel staging positive control moves real bytes; explicit output download observed",
+     "ok": true,
+     "queue": "evidence/r40/v3/R40-02.zero-transfer/board_queue_fe1b",
+     "resident_calls": 48,
+     "staging_calls": 48,
+     "staging_bytes": 142349696,
+     "kernels_min": 3,
+     "kernels_max": 84
+    },
+    {
+     "name": "full frozen 4-layer model (prefill512 + 64 decode) on the delivery board: weights uploaded once, zero steady tensor/staging transfers, explicit downloads only, drained completion and host visibility",
+     "ok": true,
+     "report": {
+      "raw_sha256": "4658ef4b44be21e429442298947001c2a7995c7e7ebddcf109b963f5cdf5bfe8",
+      "raw_bytes": 16247223,
+      "path": "evidence/r40/v3/R40-08.decode/board_model_fe1b/model_report.json.gz",
+      "source": "acf3019:/home/zzhouch/tnca_runs_r40_v3x2/model/report.json"
+     },
+     "steps": 65,
+     "steady_launches": 5016,
+     "initial_weight_upload_bytes": 221267968
+    },
+    {
+     "name": "make r40-residency transfer controls on delivery-tree RTL: resident 0 B, staging round trip, artifact identity, offset aliases, unknown policy refused",
+     "ok": true,
+     "steps": {
+      "residency-controls": {
+       "run": "fe1b_sim1",
+       "log": "residency-controls.log",
+       "wall_s": 144.2,
+       "script_sha256": "5b4c73864175275560623d3d1fb722ee7206bd2cddc3565d862fc3e62bce1ceb",
+       "superseded": []
+      },
+      "frozen-attention-tiny": {
+       "run": "fe1b_sim1",
+       "log": "frozen-attention-tiny.log",
+       "wall_s": 265.9,
+       "script_sha256": "74b762d74210e8912ad5e753985ea069761189e5a210d9f7ca9b8a5b52c85070",
+       "superseded": []
+      }
+     }
+    },
+    {
+     "name": "simulation identity: delivery product tree before/after, staged RTL/testbench byte-identical to the tree, harness hashes equal the repository; product files differing from the image source tree recorded",
+     "ok": true,
+     "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "staged_identity": {
+      "rtl": {
+       "source": "0c0d6300ad1579e0e131eb7656df1082845af738a381b7d8d915956970768570",
+       "staged": "0c0d6300ad1579e0e131eb7656df1082845af738a381b7d8d915956970768570"
+      },
+      "tb/device": {
+       "source": "ff180b361bfa23f3cb13627da37f8144eeeab06d2b577cb2cb28aacfaf9868b2",
+       "staged": "ff180b361bfa23f3cb13627da37f8144eeeab06d2b577cb2cb28aacfaf9868b2"
+      },
+      "tb/common": {
+       "source": "229fdc2c380a1e05c18d8472143d372e0a1c2000a342c11663ebfdc602b6f338",
+       "staged": "229fdc2c380a1e05c18d8472143d372e0a1c2000a342c11663ebfdc602b6f338"
+      }
+     },
+     "runners": [
+      "3e27fb754172f4825349247cc36a17d80568251fefd34ba06ef75a878726a1c6"
+     ],
+     "host": "gx10-6646",
+     "image_source_delta": {
+      "from_software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+      "files": {
+       "python/tnca/inductor.py": {
+        "before_sha256": "61b33e3359470caf78110840fc6c223cf291d015fe1b35aca079d183b51b7457",
+        "after_sha256": "d1a28be248d5581dbcce60491c9f5a752fda9d77ffa209bf7e458cea152a6f0a"
+       },
+       "python/tnca/triton_backend/compiler.py": {
+        "before_sha256": "7e23e35253b62871756c16586f778927135c3c4073a533cb1ae3671d972d8701",
+        "after_sha256": "3818f5688b7d40c9f995de309738555c848e03e7f11977ce1220554e9e191f36"
+       }
+      }
+     }
+    }
+   ],
+   "detail": "acceptance 1: frozen chained graphs + full multi-step decode on the delivery board, controls on delivery-tree RTL; no latency claim",
+   "written": "2026-10-20T00:47:33+00:00",
+   "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+   "clock_hz": 90000000,
+   "auditor_sha256": "acdd536fba7dbff0d411f87e1a39b7db20a796b3d1d42d0657b2e05eeeb2fff4",
+   "auditor_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  },
+  "R40-02.stress": {
+   "status": "capability-pass",
+   "checks": [
+    {
+     "name": "1000 standard Torch graph calls: bounded queue, correct output, final live storage unchanged, zero leases/unfinished; end-of-run storage and allocator high water audited",
+     "ok": true,
+     "step": {
+      "run": "fe1b_sim1",
+      "log": "batch-1000.log",
+      "wall_s": 1666.9,
+      "script_sha256": "d36c9369dd91ff29de7041a919e6eb997e4a82b3f0ac877fc56db02a6d305c3a",
+      "superseded": []
+     },
+     "end_storage": {
+      "live_bytes": 2560,
+      "peak_bytes": 4608,
+      "live_buffers": 4
+     },
+     "memory_stats": {
+      "epoch": 0,
+      "heap_capacity_bytes": 393216,
+      "heap_reserved_ranges": [],
+      "heap_allocated_bytes": 2560,
+      "heap_peak_bytes": 9216,
+      "code_allocated_bytes": 10496,
+      "code_peak_bytes": 10496
+     }
+    },
+    {
+     "name": "multi-stream events: recorded dependency, cross-stream wait, concurrent threads, queued-event visibility while the worker is held",
+     "ok": true,
+     "step": {
+      "run": "fe1b_sim1",
+      "log": "batch-1000.log",
+      "wall_s": 1666.9,
+      "script_sha256": "d36c9369dd91ff29de7041a919e6eb997e4a82b3f0ac877fc56db02a6d305c3a",
+      "superseded": []
+     }
+    },
+    {
+     "name": "1000 guarded replays; shape/stride, storage alias and recovery-epoch invalidation refused before admission",
+     "ok": true,
+     "step": {
+      "run": "fe1b_sim1",
+      "log": "replay-1000.log",
+      "wall_s": 26841.9,
+      "script_sha256": "9c4aaae319a13d9277fce651bbcf61e0570b58731333bf2d1a5f07c312ade5e5",
+      "superseded": []
+     },
+     "memory_stats": {
+      "epoch": 0,
+      "heap_capacity_bytes": 393216,
+      "heap_reserved_ranges": [],
+      "heap_allocated_bytes": 3072,
+      "heap_peak_bytes": 11264,
+      "code_allocated_bytes": 10176,
+      "code_peak_bytes": 10176
+     }
+    },
+    {
+     "name": "stale handles after fault recovery (single-core RTL and the 3-core/3-port HBM-DMA platform RTL): event, copy, view, launch, resize refused",
+     "ok": true,
+     "steps": [
+      {
+       "run": "fe1b_sim1",
+       "log": "recovery.log",
+       "wall_s": 90.1,
+       "script_sha256": "4c7f317fa5ef898af39a259d06b1cb1b8eaacf828c72ec83ab5c4310348585aa",
+       "superseded": []
+      },
+      {
+       "run": "fe1b_sim1",
+       "log": "recovery-multicore-dma.log",
+       "wall_s": 311.4,
+       "script_sha256": "4c7f317fa5ef898af39a259d06b1cb1b8eaacf828c72ec83ab5c4310348585aa",
+       "superseded": []
+      }
+     ]
+    },
+    {
+     "name": "asynchronous free/realloc: retired storage keeps queued leases and delays address reuse; allocation waits for retirement under heap pressure",
+     "ok": true,
+     "steps": [
+      {
+       "run": "fe1b_sim1",
+       "log": "lifetime.log",
+       "wall_s": 2.2,
+       "script_sha256": "3ad26133cb49d79ffdf25b34a81f6d28f61b6b217bf29d80c1cb608456b3d1b2",
+       "superseded": []
+      },
+      {
+       "run": "fe1b_sim1",
+       "log": "allocation-pressure.log",
+       "wall_s": 747.5,
+       "script_sha256": "39eb162955a67552c31b8fd3c522a9fdb3c6f7a10dc72d69e28a5fca8831091a",
+       "superseded": []
+      }
+     ],
+     "memory_stats": {
+      "epoch": 0,
+      "heap_capacity_bytes": 393216,
+      "heap_reserved_ranges": [],
+      "heap_allocated_bytes": 65536,
+      "heap_peak_bytes": 328704,
+      "code_allocated_bytes": 5120,
+      "code_peak_bytes": 5120
+     }
+    },
+    {
+     "name": "non-contiguous alias/offset: in-place strided aliases under both transfer policies, strided/aliased device copies, overlapping copy refused",
+     "ok": true,
+     "steps": [
+      {
+       "run": "fe1b_sim1",
+       "log": "residency-controls.log",
+       "wall_s": 144.2,
+       "script_sha256": "5b4c73864175275560623d3d1fb722ee7206bd2cddc3565d862fc3e62bce1ceb",
+       "superseded": []
+      },
+      {
+       "run": "fe1b_sim1",
+       "log": "device-copy.log",
+       "wall_s": 64.2,
+       "script_sha256": "e276148fb74b3b67fd66f90a5cd4a080b2ebc861867d639f73bc7427143a79c4",
+       "superseded": []
+      }
+     ]
+    },
+    {
+     "name": "transport payload concurrency and child launch lifecycle",
+     "ok": true,
+     "steps": [
+      {
+       "run": "fe1b_sim1",
+       "log": "io-concurrency.log",
+       "wall_s": 0.6,
+       "script_sha256": "fa9fe6b0e5ac9f5c1f532d781f3b4201450754027df5d014cb7621d18959cd89",
+       "superseded": []
+      },
+      {
+       "run": "fe1b_sim1",
+       "log": "child-exec.log",
+       "wall_s": 1.1,
+       "script_sha256": "31e077faafc35924c00eda04c2b2987546d0f51f04e2d0e8cee84edb583c9613",
+       "superseded": []
+      }
+     ]
+    },
+    {
+     "name": "simulation identity: delivery product tree before/after, staged RTL/testbench byte-identical to the tree, harness hashes equal the repository; product files differing from the image source tree recorded",
+     "ok": true,
+     "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+     "staged_identity": {
+      "rtl": {
+       "source": "0c0d6300ad1579e0e131eb7656df1082845af738a381b7d8d915956970768570",
+       "staged": "0c0d6300ad1579e0e131eb7656df1082845af738a381b7d8d915956970768570"
+      },
+      "tb/device": {
+       "source": "ff180b361bfa23f3cb13627da37f8144eeeab06d2b577cb2cb28aacfaf9868b2",
+       "staged": "ff180b361bfa23f3cb13627da37f8144eeeab06d2b577cb2cb28aacfaf9868b2"
+      },
+      "tb/common": {
+       "source": "229fdc2c380a1e05c18d8472143d372e0a1c2000a342c11663ebfdc602b6f338",
+       "staged": "229fdc2c380a1e05c18d8472143d372e0a1c2000a342c11663ebfdc602b6f338"
+      }
+     },
+     "runners": [
+      "3e27fb754172f4825349247cc36a17d80568251fefd34ba06ef75a878726a1c6"
+     ],
+     "host": "gx10-6646",
+     "image_source_delta": {
+      "from_software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+      "files": {
+       "python/tnca/inductor.py": {
+        "before_sha256": "61b33e3359470caf78110840fc6c223cf291d015fe1b35aca079d183b51b7457",
+        "after_sha256": "d1a28be248d5581dbcce60491c9f5a752fda9d77ffa209bf7e458cea152a6f0a"
+       },
+       "python/tnca/triton_backend/compiler.py": {
+        "before_sha256": "7e23e35253b62871756c16586f778927135c3c4073a533cb1ae3671d972d8701",
+        "after_sha256": "3818f5688b7d40c9f995de309738555c848e03e7f11977ce1220554e9e191f36"
+       }
+      }
+     }
+    }
+   ],
+   "detail": "acceptance 3 on delivery-tree RTL simulation (single-core and 3-core platform); no latency claim",
+   "written": "2026-10-20T00:47:33+00:00",
+   "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+   "clock_hz": 90000000,
+   "auditor_sha256": "acdd536fba7dbff0d411f87e1a39b7db20a796b3d1d42d0657b2e05eeeb2fff4",
+   "auditor_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211"
+  },
+  "R40-02.resident": {
+   "status": "perf-pass",
+   "checks": [
+    {
+     "name": "R40-02.resident: complete accepted comparison",
+     "ok": true,
+     "detail": ""
+    },
+    {
+     "name": "R40-02.resident: 95% CI lower bound of S_geo > 1",
+     "ok": true,
+     "ci95": [
+      2.3650562311624657,
+      2.948018149515853
+     ],
+     "s_geo": 2.640600570214337
+    }
+   ],
+   "detail": "R40-02.resident: S_geo 2.6406 CI [2.3651, 2.9480], v2 target 1.5 met",
+   "written": "2026-10-20T00:27:51+00:00",
+   "identity": {
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "clock_hz": 90000000,
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "backend": "fpga-u280-multicore",
+    "hbm_bytes": 4294967296,
+    "backend_args_shape": {
+     "image_profile": "core-vrf-sync-v5",
+     "core_count": 3,
+     "memory_ports": 3,
+     "hbm_dma": true,
+     "hbm_bytes": 4294967296,
+     "device_clock": true
+    },
+    "identity_amendment": "doc/r40_v3/identity_amendment.json"
+   },
+   "experiments": {
+    "R40-02.resident": {
+     "status": "perf-pass",
+     "s_geo": 2.640600570214337,
+     "ci95": [
+      2.3650562311624657,
+      2.948018149515853
+     ],
+     "s_geo_balanced_weighted": 2.6406005702143376,
+     "target": 1.5,
+     "target_met": true,
+     "worst": {
+      "point": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+      "speedup": 1.5816412939161852
+     },
+     "regress_2pct": [],
+     "regress_5pct": [],
+     "points": [
+      {
+       "point": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+       "a": 0.7984184999999999,
+       "b": 0.1960195,
+       "speedup": 4.073158537798535,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+       "a": 0.6582635,
+       "b": 0.157879,
+       "speedup": 4.169417718632624,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+       "a": 0.24141,
+       "b": 0.0795,
+       "speedup": 3.036603773584906,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.llama_decode/medium/fp16-b1-p256",
+       "a": 3.2041765,
+       "b": 0.942856,
+       "speedup": 3.398373134391678,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.llama_decode/small/fp16-b1-p128",
+       "a": 1.8332704999999998,
+       "b": 0.528391,
+       "speedup": 3.4695339246883456,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.llama_decode/tiny/fp16-b1-p16",
+       "a": 0.581231,
+       "b": 0.22124100000000002,
+       "speedup": 2.6271396350586014,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.llama_prefill/medium/fp16-b1-s64",
+       "a": 5.3315205,
+       "b": 1.9304325,
+       "speedup": 2.761826948106189,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.llama_prefill/small/fp16-b1-s64",
+       "a": 3.60183,
+       "b": 1.1508090000000002,
+       "speedup": 3.129824323584539,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.llama_prefill/tiny/fp16-b1-s16",
+       "a": 0.711059,
+       "b": 0.26237449999999995,
+       "speedup": 2.7100918724952314,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.resnet_block/medium/fp32-n1-c24-hw16",
+       "a": 0.2863875,
+       "b": 0.13977499999999998,
+       "speedup": 2.0489179037739227,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.resnet_block/small/fp32-n1-c16-hw16",
+       "a": 0.1716765,
+       "b": 0.0651235,
+       "speedup": 2.636168203490292,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.resnet_block/tiny/fp32-n1-c8-hw8",
+       "a": 0.1053415,
+       "b": 0.054164500000000004,
+       "speedup": 1.944843947604058,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+       "a": 0.15931299999999998,
+       "b": 0.0732765,
+       "speedup": 2.174134954589807,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.attention_decode/small/fp16-b1-h4-l256-d32",
+       "a": 0.10245599999999999,
+       "b": 0.047883,
+       "speedup": 2.1397155566693815,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+       "a": 0.043839,
+       "b": 0.0211005,
+       "speedup": 2.0776284922158244,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+       "a": 0.5035624999999999,
+       "b": 0.161815,
+       "speedup": 3.1119642801965206,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+       "a": 0.3271805,
+       "b": 0.1028395,
+       "speedup": 3.1814672377831474,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+       "a": 0.0872845,
+       "b": 0.045383,
+       "speedup": 1.923286252561532,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+       "a": 0.14888449999999998,
+       "b": 0.0736285,
+       "speedup": 2.0221042123634185,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+       "a": 0.090462,
+       "b": 0.0395,
+       "speedup": 2.2901772151898734,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+       "a": 0.042025,
+       "b": 0.0265705,
+       "speedup": 1.5816412939161852,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.rope/medium/fp16-b1-h8-s128-d32",
+       "a": 0.17303,
+       "b": 0.040401,
+       "speedup": 4.282814781812331,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.rope/small/fp16-b1-h4-s64-d32",
+       "a": 0.08433299999999999,
+       "b": 0.0277265,
+       "speedup": 3.0416027987665224,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.rope/tiny/fp16-b1-h2-s16-d16",
+       "a": 0.039563,
+       "b": 0.0206755,
+       "speedup": 1.9135208338371503,
+       "n_a": 90,
+       "n_b": 90
+      }
+     ],
+     "timing": "request-latency",
+     "vary": [
+      "TNCA_TRANSFER_POLICY"
+     ],
+     "compared_vary": [
+      "TNCA_TRANSFER_POLICY"
+     ],
+     "control": "per-kernel",
+     "candidate": "resident",
+     "baseline": "B40-S",
+     "config_a": "3cee022e0e97c8b3",
+     "config_b": "3cee022e0e97c8b3",
+     "inputs": {
+      "control": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-02.resident.control.jsonl",
+       "sha256": "d48f3baee480773572b0ecc7180d83894c2e92c84497f50ed82e2012c3c3f37d"
+      },
+      "candidate": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-02.resident.candidate.jsonl",
+       "sha256": "6e1606ee266e7890bb1936a0907d9ba3ee04b092de7e73ad2a39e02556fc5ee0"
+      }
+     }
+    }
+   },
+   "judgement": "/home/zzhouch/tnca_v3_judge_final/judgement.json",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211",
+   "judgement_copy": "evidence/r40/v3/campaign_fe1b/judgement.json"
+  },
+  "R40-02.batched": {
+   "status": "perf-pass",
+   "checks": [
+    {
+     "name": "R40-02.batched: complete accepted comparison",
+     "ok": true,
+     "detail": ""
+    },
+    {
+     "name": "R40-02.batched: 95% CI lower bound of S_geo > 1",
+     "ok": true,
+     "ci95": [
+      1.0086775201334202,
+      1.1992561043729213
+     ],
+     "s_geo": 1.1005836859803573
+    }
+   ],
+   "detail": "R40-02.batched: S_geo 1.1006 CI [1.0087, 1.1993], v2 target 1.2 missed",
+   "written": "2026-10-20T00:27:51+00:00",
+   "identity": {
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "clock_hz": 90000000,
+    "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+    "backend": "fpga-u280-multicore",
+    "hbm_bytes": 4294967296,
+    "backend_args_shape": {
+     "image_profile": "core-vrf-sync-v5",
+     "core_count": 3,
+     "memory_ports": 3,
+     "hbm_dma": true,
+     "hbm_bytes": 4294967296,
+     "device_clock": true
+    },
+    "identity_amendment": "doc/r40_v3/identity_amendment.json"
+   },
+   "experiments": {
+    "R40-02.batched": {
+     "status": "perf-pass",
+     "s_geo": 1.1005836859803573,
+     "ci95": [
+      1.0086775201334202,
+      1.1992561043729213
+     ],
+     "s_geo_balanced_weighted": 1.1005836859803573,
+     "target": 1.2,
+     "target_met": false,
+     "worst": {
+      "point": "model.llama_decode/tiny/fp16-b1-p16",
+      "speedup": 0.9129972511799179
+     },
+     "regress_2pct": [
+      "model.llama_decode/tiny/fp16-b1-p16"
+     ],
+     "regress_5pct": [
+      "model.llama_decode/tiny/fp16-b1-p16"
+     ],
+     "points": [
+      {
+       "point": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+       "a": 0.07663800000000001,
+       "b": 0.065554,
+       "speedup": 1.1690819782164323,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.llama_decode/tiny/fp16-b1-p16",
+       "a": 0.21124199999999999,
+       "b": 0.23137200000000002,
+       "speedup": 0.9129972511799179,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "model.llama_prefill/tiny/fp16-b1-s16",
+       "a": 0.25883500000000004,
+       "b": 0.260997,
+       "speedup": 0.9917163798817613,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+       "a": 0.016302499999999998,
+       "b": 0.0146295,
+       "speedup": 1.1143579753238317,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+       "a": 0.040206,
+       "b": 0.0321175,
+       "speedup": 1.2518408967074024,
+       "n_a": 90,
+       "n_b": 90
+      },
+      {
+       "point": "op.rope/tiny/fp16-b1-h2-s16-d16",
+       "a": 0.015885,
+       "b": 0.0131985,
+       "speedup": 1.203545857483805,
+       "n_a": 90,
+       "n_b": 90
+      }
+     ],
+     "timing": "resident-call-latency",
+     "vary": [
+      "TNCA_SUBMIT"
+     ],
+     "compared_vary": [
+      "TNCA_SUBMIT"
+     ],
+     "control": "single",
+     "candidate": "batched",
+     "baseline": "B40-S",
+     "config_a": "399e62a672fde730",
+     "config_b": "399e62a672fde730",
+     "inputs": {
+      "control": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-02.batched.control.jsonl",
+       "sha256": "a5c2f85613ab8436b0d01905778af8765b69c88ed04a898abde8ff93d62734f5"
+      },
+      "candidate": {
+       "path": "/home/zzhouch/tnca_v3_judge_final/judge/R40-02.batched.candidate.jsonl",
+       "sha256": "198f1d30ac989ea7cc2180735258ed07f8121fccfefac3093fc4b44292a483a1"
+      }
+     }
+    }
+   },
+   "judgement": "/home/zzhouch/tnca_v3_judge_final/judgement.json",
+   "contract_version": 3,
+   "contract_sha256": "0963f50e5ba7b569d87ac636f7d31df748ef967609e981d0fff884f759abe211",
+   "judgement_copy": "evidence/r40/v3/campaign_fe1b/judgement.json"
+  }
+ }
+}

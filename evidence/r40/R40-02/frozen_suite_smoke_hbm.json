@@ -1,0 +1,21 @@
+{
+  "schema": "tnca-r40-frozen-residency-suite/1",
+  "subset_sha256": "fe1b3ec887421c51c79437b6128b0ffa40f9dc54c1853225cb233b4b70336dfd",
+  "selected": [
+    "op.attention_decode/tiny/fp16-b1-h2-l16-d16"
+  ],
+  "full_inventory": false,
+  "profile": "core-vrf-sync-v5/hbm",
+  "steps": 2,
+  "measured_performance": false,
+  "results": [
+    {
+      "point_id": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+      "definition_sha256": "5b80febf2036b8a8b337cf9f5d28d3dd5df2b1c0370263c33c5cf6a0dfcb4c91",
+      "status": "pass",
+      "returncode": 0,
+      "log": "/home/zhongchun/tritonchip-r40-bank/sim/build/r40/frozen_suite_smoke_20261012/op.attention_decode__tiny__fp16-b1-h2-l16-d16.log",
+      "host_elapsed_s": 181.857217208948
+    }
+  ]
+}

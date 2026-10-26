@@ -1,0 +1,13 @@
+R40-02.batched             perf-pass            S_geo 1.1006 CI [1.0087,1.1993] target 1.2
+R40-02.resident            perf-pass            S_geo 2.6406 CI [2.3651,2.9480] target 1.5
+R40-03.wide-blocks         no-significant-gain  S_geo 1.1571 CI [0.9697,1.2661] target 1.3
+R40-03.gemm-tile           no-significant-gain  S_geo 0.3033 CI [0.2023,0.4442] target 1.15
+R40-04.memory-service      perf-pass            S_geo 1.2285 CI [1.0375,1.6648] target 1.5
+R40-06.ports               no-significant-gain  S_geo 1.0073 CI [0.9981,1.0248] target 1.3
+R40-06.streaming-cores     perf-pass            S_geo 2.5592 CI [2.1529,2.8544] target 1.8
+R40-07.pipeline            no-significant-gain  S_geo 1.0229 CI [0.9547,1.0923] target 1.2
+R40-01.device-time         fail                 S_geo 1.0015 CI [0.9947,1.0080] target None
+R40-09.model               perf-pass            S_geo 2.3072 CI [2.2989,2.3155] target 1.5
+R40-05.three-cores         perf-pass            S_geo 2.3922 CI [2.1841,2.6022] target 2.1
+R40-05.two-cores           perf-pass            S_geo 1.8047 CI [1.6887,1.9075] target 1.5
+R40-08.prefill             no-significant-gain  S_geo 0.9902 CI [0.9636,1.0264] target 1.5

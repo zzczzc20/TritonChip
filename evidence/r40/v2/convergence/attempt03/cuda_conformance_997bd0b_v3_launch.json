@@ -1,0 +1,11 @@
+{
+  "pid": 2308131,
+  "root": "/home/zhongchun/r40_cuda_conformance_997bd0b_v3",
+  "source": "/home/zhongchun/r40_cuda_conformance_997bd0b_source",
+  "controller_sha256": "aed72f70ff0f3bdcd12f1a978cfe38e1f27fdd349314083f7d48b2eff733968a",
+  "tool_preflight": "/home/zhongchun/tc_env/bin/iverilog\n/home/zhongchun/tc_env/bin/vvp\n",
+  "environment_script_sha256": "19e5e3f904eae2b6c2b6cdf1245766dbcd7789b71cef99aa9327c2c917d1002e",
+  "previous_failure": "/home/zhongchun/r40_cuda_conformance_997bd0b_v2/device-tests.log",
+  "repair": "Source the existing pinned toolchain environment before starting the controller; verify iverilog/vvp before launch",
+  "scope": "GB10-only complete CUDA-host conformance; no FPGA-host resources or programming"
+}

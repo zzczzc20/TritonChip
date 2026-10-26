@@ -1,0 +1,124 @@
+{
+  "gate_status": "not-measured",
+  "performance_status": "diagnostic-only",
+  "experiments": {
+    "fine04": {
+      "identity": {
+        "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+        "config_sha256": "8a8e26221e7053dd504bb8145a8794f2d7c4a46956ecabe26757b6ca5ee8dfa5",
+        "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+        "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+        "clock_hz": 100000000,
+        "backend": "sim-file",
+        "baseline_code_sha256": "0a35c5b1e701b4419048d94070f809aa310f43a3eb8ef28eff538b84bed11e3b",
+        "instrumented_code_sha256": "5ee6aa8e3ba2e5c1508dab91144802d9e55ca8f1502c0baadf12ec5951eeea6a"
+      },
+      "raw_report": "r40_proton_capture_fine04/report.json",
+      "raw_runs": "r40_proton_capture_fine04/runs.json",
+      "raw_trace": "r40_proton_capture_fine04/trace.chrome_trace",
+      "iterations": 128,
+      "pair_count": 6,
+      "median_relative_overhead": 0.7755102040816326,
+      "observed_relative_range": [
+        0.7755102040816326,
+        0.7755102040816326
+      ],
+      "baseline_cycles": [
+        147
+      ],
+      "instrumented_cycles": [
+        261
+      ],
+      "scope_cycles": [
+        136
+      ],
+      "region_timing_error_bound_cycles": null,
+      "range_interpretation": "observed calibration range, not a probabilistic coverage guarantee"
+    },
+    "coarse03": {
+      "identity": {
+        "software_sha256": "cc81b1d3a387771e00edf01d6544caba6a7ed8b02ec9ae86ed8279fdc441150f",
+        "config_sha256": "54e849e0b12ec563ff7bd914334cc845519a3198bb2a60677df23e3ce76c436b",
+        "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+        "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+        "clock_hz": 100000000,
+        "backend": "sim-file"
+      },
+      "raw_report": "r40_proton_capture_coarse03/report.json",
+      "raw_runs": "r40_proton_capture_coarse03/runs.json",
+      "raw_trace": "r40_proton_capture_coarse03/trace.chrome_trace",
+      "iterations": 8192,
+      "pair_count": 6,
+      "median_relative_overhead": 0.013883814395323347,
+      "observed_relative_range": [
+        0.013883814395323347,
+        0.013883814395323347
+      ],
+      "baseline_cycles": [
+        8211
+      ],
+      "instrumented_cycles": [
+        8325
+      ],
+      "scope_cycles": [
+        8200
+      ],
+      "region_timing_error_bound_cycles": null,
+      "range_interpretation": "observed calibration range, not a probabilistic coverage guarantee"
+    },
+    "loop_short04": {
+      "identity": {
+        "software_sha256": "1db1cbb3343f93daff31ed18ed78d7ab748db8dc42836ecc167786c6b95df337",
+        "config_sha256": "81d95924e7880e08eae109920602ce7d003b1394eb9bfd23b05b47bc1c73d04f",
+        "image_sha256": "73257b8e9a20bc2c66b3e96b603e418241d62a10c91ac0f89b18eb74f1b1e00a",
+        "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8",
+        "clock_hz": 100000000,
+        "backend": "sim-file",
+        "baseline_code_sha256": "95c76e05c64e62a3787390ab2e8c4c04ef6edb09216ba541e98fbafe78cf52d4",
+        "instrumented_code_sha256": "685535e15b71ea30c1b4634784a2fc00a90b41969a1871bf112262d0e427dade"
+      },
+      "raw_report": "r40_proton_capture_loop_short04/report.json",
+      "raw_runs": "r40_proton_capture_loop_short04/runs.json",
+      "raw_trace": "r40_proton_capture_loop_short04/trace.chrome_trace",
+      "iterations": 128,
+      "pair_count": 6,
+      "median_relative_overhead": 0.05891472868217054,
+      "observed_relative_range": [
+        0.05891472868217054,
+        0.05891472868217054
+      ],
+      "baseline_cycles": [
+        1935
+      ],
+      "instrumented_cycles": [
+        2049
+      ],
+      "scope_cycles": [
+        1924
+      ],
+      "region_timing_error_bound_cycles": null,
+      "range_interpretation": "observed calibration range, not a probabilistic coverage guarantee"
+    }
+  },
+  "regression_exit": 0,
+  "long_loop_stop": {
+    "status": "stopped-optional-calibration",
+    "source": "r40_proton_capture_loop04/stop_reason.json",
+    "not_a_functional_failure": true
+  },
+  "capacity_failure": {
+    "status": "preserved",
+    "source": "r40_proton_capture_coarse01.log",
+    "cause": "diagnostic modules exceed default code/heap partition",
+    "correction": "diagnostic harness heap_base=0x40000; no workload reduction"
+  },
+  "production_model_calibration": "not-measured; synthetic invariant tests are not prediction-accuracy evidence",
+  "analysis_exporter_sha256": "0331f4d99d2c5f32986577cd8b5ef34cd9f716038048083ff9b3c1ecd5bed734",
+  "raw_archive_sha256": "806ed7b14942eda9dfefde0fc3201c975295f5e111f3d52f4bfa07e430f569c1",
+  "source": {
+    "base_commit": "1a5aa24895f559045df436fbb41c0a82c86df7ae",
+    "overlay_sha256": "d72650e12cca450cff8030dfaf33c0aa01396b8b3f7571b3fc1edfdba9d0e42d",
+    "full_archive_sha256": "8c21d88a2f6d0b05e59300497b470af2c5dd2f5328494f42c6c0af35aa6ed871",
+    "note": "Measured source is base tracked archive plus overlay. Final exporter adds postprocessing range metadata; raw reports retain original identities."
+  }
+}

@@ -169,7 +169,7 @@ _REGISTRY = {}
 
 
 def register(name, factory, *, state=INTERFACE_DEFINED, what='',
-             needs_elaborator=True, needs_hardware=False):
+             needs_elaborator=True, needs_hardware=False, prepare_bench=None, physical_grid=False):
     """Make a backend openable by name.
 
     `needs_elaborator` says whether opening this backend means reading the
@@ -201,7 +201,8 @@ def register(name, factory, *, state=INTERFACE_DEFINED, what='',
             "engineering-ready and platform-verified apart")
     _REGISTRY[name] = {'factory': factory, 'state': state, 'what': what,
                        'needs_elaborator': bool(needs_elaborator),
-                       'needs_hardware': bool(needs_hardware)}
+                       'needs_hardware': bool(needs_hardware),
+                       'prepare_bench': prepare_bench, 'physical_grid': bool(physical_grid)}
 
 
 def available():
@@ -234,6 +235,19 @@ def needs_hardware(name):
     """
     entry = _REGISTRY.get(name)
     return False if entry is None else entry['needs_hardware']
+
+
+def physical_grid(name):
+    entry = _REGISTRY.get(name)
+    return bool(entry and entry['physical_grid'])
+
+
+def prepare_bench(name, profile, **kwargs):
+    entry = _REGISTRY.get(name)
+    if entry and entry['prepare_bench']:
+        return entry['prepare_bench'](profile=profile, **kwargs)
+    from . import device
+    return device.require(profile) if needs_elaborator(name) else None
 
 
 def open_backend(name, **kwargs):
@@ -296,6 +310,9 @@ def _register_builtin():
              state=REFERENCE_AVAILABLE,
              what='the simulated device over a file rendezvous, which is '
                   'what this repository has always used')
+    register('sim-multicore', _lazy('tnca.backends.multicore_file', 'MulticoreFileBackend'),
+             state=REFERENCE_AVAILABLE, what='physical-core coherent mesh over a persistent mailbox',
+             prepare_bench=_lazy('tnca.backends.multicore_file', 'prepare'), physical_grid=True)
     register('sim-socket',
              _lazy('tnca.backends.socket_relay', 'SocketBackend'),
              state=REFERENCE_AVAILABLE,
@@ -333,6 +350,12 @@ def _register_builtin():
              what='the TNCA device on an Alveo U280: the U50 kernel and '
                   'register port (rtl/fpga/tnca_fpga_top.v) built for the '
                   'U280 shell, reached through the same U50Backend')
+    register('fpga-u280-multicore', _lazy('tnca.backends.multicore_mmio', 'board'),
+             state=REFERENCE_AVAILABLE, needs_elaborator=False, needs_hardware=True,
+             physical_grid=True, what='opt-in MMIO v2 physical-grid/AXI binding; requires a matching board image')
+    register('fpga-multicore-sim', _lazy('tnca.backends.multicore_mmio_sim', 'stand_in'),
+             state=REFERENCE_AVAILABLE, needs_elaborator=False, physical_grid=True,
+             what='explicit RTL stand-in for the multicore MMIO v2 board binding')
     register('fpga-u50-sim', _lazy('tnca.backends.u50_sim', 'stand_in'),
              state=REFERENCE_AVAILABLE, needs_elaborator=False,
              what='the same device and the same register protocol, on real '

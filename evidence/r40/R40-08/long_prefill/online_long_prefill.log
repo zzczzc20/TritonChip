@@ -1,0 +1,3 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-hbm-a8f9e2a0291d254a-69b12737e344/tnca_device_vrf5_hbm.vvp
+PASS {"case": "long_prefill_tail", "status": "pass", "tensor_allocations": [544], "online_artifacts": [{"artifact": "6783f88c12ec03a8ce7d3a3ccb8a8393ccaf0b9754fa753d47a7a8174bdfc0b4", "descriptor_loads": 2, "resources": {"accumulators": 0, "barriers": 2, "commands_outstanding": "unknown", "descriptors": 2, "rf_private_per_role": {"role0": 33, "role1": 33}, "scratch_bytes": 512, "shared_windows": []}}], "kernels": 1, "steady_tensor_transfers": 0}
+r40-online-attention-tests PASS (1/1)

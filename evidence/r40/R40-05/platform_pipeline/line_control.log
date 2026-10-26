@@ -1,0 +1,78 @@
+MULTICORE MMIO OPTIONS PASS 12 boundaries
+SYNTHESIS PASS tnca_elastic_link
+SYNTHESIS PASS tnca_line_axi
+SYNTHESIS PASS tnca_line_link
+SYNTHESIS PASS tnca_multicore_mmio
+SYNTHESIS PASS tnca_mem_ports
+MULTICORE CONTROL SYNTHESIS PASS 5 modules and 9 rejected geometries
+LINE AXI PASS width=64 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 78440000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 33890000 (1ps)
+LINE AXI PASS width=64 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=31 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 16350000 (1ps)
+LINE AXI PASS width=128 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 68960000 (1ps)
+LINE AXI PASS width=128 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=4 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 29620000 (1ps)
+LINE AXI PASS width=128 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=18 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 12660000 (1ps)
+LINE AXI PASS width=256 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 64630000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 28100000 (1ps)
+LINE AXI PASS width=256 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=11 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 11600000 (1ps)
+LINE AXI PASS width=512 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 63050000 (1ps)
+LINE AXI PASS width=512 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 27340000 (1ps)
+LINE AXI PASS width=512 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 11220000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=1 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:168: $finish called at 410000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=2 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=0 writes=1
+tb/fpga/tb_line_axi.v:168: $finish called at 610000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=3 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 33900000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=4 stages=0 write_ack=1 completed=0 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:168: $finish called at 370000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=5 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=0 writes=0
+tb/fpga/tb_line_axi.v:168: $finish called at 33920000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=1 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:168: $finish called at 350000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=2 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=0 writes=1
+tb/fpga/tb_line_axi.v:168: $finish called at 600000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=3 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 28110000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=4 stages=0 write_ack=1 completed=0 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:168: $finish called at 370000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=5 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=0 writes=0
+tb/fpga/tb_line_axi.v:168: $finish called at 28130000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=8 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 33720000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=8 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 33730000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=8 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 33750000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 28100000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=4 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 27920000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=4 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 27940000 (1ps)
+LINE AXI PASS width=512 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=1 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 27210000 (1ps)
+LINE AXI PASS width=512 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=1 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 27270000 (1ps)
+LINE AXI PASS width=512 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=1 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 27610000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=0 stages=0 write_ack=0 completed=141 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 33700000 (1ps)
+LINE AXI PASS width=64 slots=3 mode=0 stages=2 write_ack=0 completed=141 peak=6 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 33870000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=0 stages=0 write_ack=0 completed=141 peak=3 collisions=5 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 27920000 (1ps)
+LINE AXI PASS width=256 slots=3 mode=0 stages=2 write_ack=0 completed=141 peak=6 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:168: $finish called at 28110000 (1ps)
+LINE AXI MATRIX PASS 35 configurations

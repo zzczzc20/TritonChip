@@ -128,6 +128,22 @@ module tnca_u50_xo #(
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
     parameter VREGS_PER_RCTX = 64,
+    // Architectural switches passed from the image profile, with legacy defaults.
+    parameter HAS_SFU              = 1,
+    parameter HAS_ATOMICS          = 1,
+    parameter HAS_SYS_ATOMICS      = 0,
+    parameter USE_BANKED_VRF       = 1,
+    parameter VRF_BYPASS           = 1,
+    parameter FE_NOBUBBLE          = 1,
+    parameter VRF_PREFETCH         = 1,
+    parameter RCTX_SWITCH          = 0,
+    parameter LSU_INFLIGHT         = 1,
+    parameter FPU_OVERLAP          = 0,
+    parameter RSLICE               = 0,
+    parameter RPAIR                = 0,
+    parameter MTX_ABUF             = 0,
+    parameter HAS_TENSOR_XPOSE     = 0,
+
     // ap_clk / DEV_DIV is the device clock: 1 -> 100 MHz with the 100 MHz
     // kernel clock, measured on the U280 on 2026-10-09 (see above). The /2
     // image (150 MHz kernel clock, 75 MHz device) ran the same day; the one
@@ -208,6 +224,20 @@ module tnca_u50_xo #(
         .ADDR_W(ADDR_W),
         .NUM_RCTX(NUM_RCTX),
         .RCTX_W(RCTX_W),
+        .HAS_SFU(HAS_SFU),
+        .HAS_ATOMICS(HAS_ATOMICS),
+        .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
+        .USE_BANKED_VRF(USE_BANKED_VRF),
+        .VRF_BYPASS(VRF_BYPASS),
+        .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH),
+        .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT),
+        .FPU_OVERLAP(FPU_OVERLAP),
+        .RSLICE(RSLICE),
+        .RPAIR(RPAIR),
+        .MTX_ABUF(MTX_ABUF),
+        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .VREGS_PER_RCTX(VREGS_PER_RCTX)
     ) u_top (
         .ap_clk(ap_clk),
@@ -231,7 +261,22 @@ module tnca_u50_xo #(
         .s_axi_tnca_rdata(s_axi_tnca_rdata),
         .s_axi_tnca_rresp(s_axi_tnca_rresp),
         .s_axi_tnca_rvalid(s_axi_tnca_rvalid),
-        .s_axi_tnca_rready(s_axi_tnca_rready)
+        .s_axi_tnca_rready(s_axi_tnca_rready),
+
+        // R40-04's AXI master: not part of this image (DATA_AXI = 0, the
+        // device's memory is the on-chip RAM). Its inputs held idle, its
+        // outputs -- driven idle inside -- left open. rtl/board/tnca_hbm_xo.v
+        // is the image that has one.
+        .m_axi_hbm_awready(1'b0), .m_axi_hbm_wready(1'b0),
+        .m_axi_hbm_bvalid(1'b0), .m_axi_hbm_bid(5'd0), .m_axi_hbm_bresp(2'd0),
+        .m_axi_hbm_arready(1'b0),
+        .m_axi_hbm_rvalid(1'b0), .m_axi_hbm_rdata(64'd0), .m_axi_hbm_rid(5'd0),
+        .m_axi_hbm_rresp(2'd0), .m_axi_hbm_rlast(1'b0),
+        .m_axi_hbm_awvalid(), .m_axi_hbm_awaddr(), .m_axi_hbm_awid(), .m_axi_hbm_awlen(),
+        .m_axi_hbm_awsize(), .m_axi_hbm_awburst(), .m_axi_hbm_wvalid(), .m_axi_hbm_wdata(),
+        .m_axi_hbm_wstrb(), .m_axi_hbm_wlast(), .m_axi_hbm_bready(), .m_axi_hbm_arvalid(),
+        .m_axi_hbm_araddr(), .m_axi_hbm_arid(), .m_axi_hbm_arlen(), .m_axi_hbm_arsize(),
+        .m_axi_hbm_arburst(), .m_axi_hbm_rready()
     );
 
 endmodule

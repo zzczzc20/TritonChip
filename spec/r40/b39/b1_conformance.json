@@ -1,0 +1,208 @@
+[
+  {
+    "backends": {
+      "fpga-u280": {
+        "cases": {
+          "CONF-COMPAT": {
+            "group": "compatibility",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "medium 'U50 index 0', reaches 'rtl/fpga/tnca_fpga_top.v: rtl/tnca_shell.v wrapped for a board, over its register port'",
+                "ok": true,
+                "step": "the backend says what it is"
+              },
+              {
+                "backed_by": [
+                  "registry"
+                ],
+                "detail": "states ['interface-defined', 'reference-available']",
+                "ok": true,
+                "step": "no backend claims platform-verified"
+              }
+            ]
+          },
+          "CONF-DONE": {
+            "group": "completion",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 10, status 0, 23 cycle(s), 10 instruction(s) retired",
+                "ok": true,
+                "step": "LAUNCH"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "23 and 10 from seq 10",
+                "ok": true,
+                "step": "it reports a cycle count and a retired count"
+              },
+              {
+                "backed_by": [
+                  "oracle"
+                ],
+                "detail": "oracle: 0xdefaced, got 0xdefaced",
+                "ok": true,
+                "step": "the kernel wrote what the oracle says"
+              },
+              {
+                "backed_by": [
+                  "protocol",
+                  "oracle"
+                ],
+                "detail": "no restart in between; the oracle 0xdefaced again",
+                "ok": true,
+                "step": "a second launch in the same session"
+              }
+            ]
+          },
+          "CONF-FAULT": {
+            "group": "faults",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 1, code 0x40, pc 0x6050",
+                "ok": true,
+                "step": "a trapping kernel is a FAULT"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "code 0x40 at pc 0x6050, from seq 16",
+                "ok": true,
+                "step": "the fault carries a code and a pc"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "status 0",
+                "ok": true,
+                "step": "the session still works after a fault"
+              }
+            ]
+          },
+          "CONF-LIFE": {
+            "group": "lifecycle",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "liveness"
+                ],
+                "detail": "the process exists",
+                "ok": true,
+                "step": "alive after open"
+              },
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "['concurrent_requests', 'launch_is_idempotent', 'medium', 'name', 'profile', 'protocol']",
+                "ok": true,
+                "step": "capabilities"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 2, status 0, served 2",
+                "ok": true,
+                "step": "PING"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 3, status 0, 0 cycle(s)",
+                "ok": true,
+                "step": "QUIESCE on an idle device"
+              },
+              {
+                "backed_by": [
+                  "declaration"
+                ],
+                "detail": "[ARGUMENT_INVALID] raised",
+                "ok": true,
+                "step": "an operation the device does not have"
+              }
+            ]
+          },
+          "CONF-XFER": {
+            "group": "transfer",
+            "passed": true,
+            "steps": [
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "seq 5, status 0, 4 word(s)",
+                "ok": true,
+                "step": "UPLOAD"
+              },
+              {
+                "backed_by": [
+                  "protocol",
+                  "oracle"
+                ],
+                "detail": "oracle: the four words the host wrote; seq 6",
+                "ok": true,
+                "step": "DOWNLOAD returns what went in"
+              },
+              {
+                "backed_by": [
+                  "oracle"
+                ],
+                "detail": "oracle: 0xfedcba9876543210",
+                "ok": true,
+                "step": "a single word at an offset"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "[ARGUMENT_INVALID] refused",
+                "ok": true,
+                "step": "an unaligned upload"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "[ARGUMENT_INVALID] refused",
+                "ok": true,
+                "step": "an unaligned download"
+              },
+              {
+                "backed_by": [
+                  "protocol"
+                ],
+                "detail": "[ARGUMENT_INVALID] refused",
+                "ok": true,
+                "step": "a transfer past the end of memory"
+              }
+            ]
+          },
+          "xclbin": "/home/zzhouch/tnca_build/u280_r39h/tnca_u280.xclbin"
+        },
+        "passed": true,
+        "state": "reference-available"
+      }
+    },
+    "detail": "1 backend(s), 5 case(s) in 5 group(s), measurement was required",
+    "id": "R36-TEST-01",
+    "passed": true
+  }
+]

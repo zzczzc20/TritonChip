@@ -1,0 +1,35 @@
+  PASS  a clean comparison                           expect accepted     got accepted S_geo 1.250 perf-pass
+  PASS  identical inputs                             expect identity     got accepted S_geo 1.000 no-significant-gain
+  PASS  slow point deleted                           expect missing      got refused missing
+  PASS  unmeasured point zero-filled                 expect zero-fill    got refused zero-fill
+  PASS  unmeasured point left in as not-measured     expect missing      got refused missing
+  PASS  mixed images on one side                     expect mixed        got refused mixed
+  PASS  tolerance changed                            expect config       got refused config
+  PASS  weights changed                              expect config       got refused config
+  PASS  provenance missing                           expect provenance   got refused provenance
+  PASS  empty launch map                             expect provenance   got refused provenance
+  PASS  core cycles summed as makespan               expect timing       got refused timing
+  PASS  kernel times summed as makespan              expect timing       got refused timing
+  PASS  only the clock changed                       expect clock-only   got refused clock-only
+  PASS  autotune inside the timed samples            expect warmup       got refused warmup
+  PASS  replay warm-up inside the timed region       expect warmup       got refused warmup
+  PASS  different timing kinds                       expect timing       got refused timing
+  PASS  an undeclared knob changed                   expect config       got refused config
+  PASS  protocol-1 record on the B side              expect provenance   got refused provenance
+  PASS  another image, not declared                  expect config       got refused config
+  PASS  another image, declared (platform.image, platform.device_id) expect accepted     got accepted S_geo 1.250 perf-pass
+  PASS  request latency chosen from timings          expect accepted     got accepted S_geo 1.250 perf-pass
+  PASS  a timing kind neither side measured          expect timing       got refused timing
+  PASS  bundles intact                               expect accepted     got accepted S_geo 1.250 perf-pass
+  PASS  a bundle file edited after the run           expect provenance   got refused provenance
+  PASS  an artifact that ran is missing from the bundle expect provenance   got refused provenance
+  PASS  acceptance: a gate with evidence and checks    expect fail             got fail (make target help-nonexistent-ok does not exist)
+  PASS  acceptance: no command                         expect fail             got fail (the gate names no command)
+  PASS  acceptance: evidence missing                   expect not-measured     got not-measured (no evidence at sim/build/r40/does-not-exist.json)
+  PASS  acceptance: evidence does not name the gate    expect fail             got fail (/tmp/tmpq541wbir/ev.json does not name gate g-other)
+  PASS  acceptance: a pass without checks              expect fail             got fail (/tmp/tmpq541wbir/ev.json: capability-pass without the checks that support it)
+  PASS  acceptance: a pass with a failing check        expect fail             got fail (/tmp/tmpq541wbir/ev.json: capability-pass with failing checks ['x'])
+  PASS  acceptance: a capability gate claiming perf-pass expect fail             got fail (a capability gate reported perf-pass)
+  PASS  acceptance: the command failed                 expect fail             got fail (true exited 1)
+  PASS  acceptance: all present                        expect capability-pass  got capability-pass ()
+r40-protocol  PASS  (34/34)

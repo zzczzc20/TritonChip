@@ -1,0 +1,50 @@
+{
+ "schema": "tnca-r40-subset/1",
+ "name": "R40-02.small-kernel-graphs",
+ "rule": "R40-02.graphs3 points whose B39 kernels average at most 20000 device cycles",
+ "points": [
+  {
+   "id": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+   "sha256": "c6ac63596b04acf91cdb6fd7da6cf742d3da62e6f02951df35f1b6a538b5bdc4",
+   "family": "gpt2_block",
+   "tier": "tiny",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_decode/tiny/fp16-b1-p16",
+   "sha256": "9889060c587f03f485fbc2e16e4c3b6788cf830c616747040259517c3e81b63a",
+   "family": "llama_decode",
+   "tier": "tiny",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_prefill/tiny/fp16-b1-s16",
+   "sha256": "6d14a4a6373ba814884be0e62ed485960e3da63c6fe51b6e2de35492dbde69bc",
+   "family": "llama_prefill",
+   "tier": "tiny",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+   "sha256": "5b80febf2036b8a8b337cf9f5d28d3dd5df2b1c0370263c33c5cf6a0dfcb4c91",
+   "family": "attention_decode",
+   "tier": "tiny",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+   "sha256": "eb5c0145c4c95f225ddedb70032fa797303883b0498ec54a1b9bd9065ff48a52",
+   "family": "attention_prefill",
+   "tier": "tiny",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.rope/tiny/fp16-b1-h2-s16-d16",
+   "sha256": "e5e6096b39bf6df53c6f90eef2aac7a3714f5c590ab1c5d5e6d91fd1703fa7e9",
+   "family": "rope",
+   "tier": "tiny",
+   "dtype": "fp16"
+  }
+ ],
+ "sha256": "8198e4c78e024a0cfaf5fe6316e71fceeb5886b390e12afe3d6f5d4de70a9705"
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "tnca-prepared-delivery-launcher/1",
+  "observed_utc": "2026-10-18T08:46:27.154006+00:00",
+  "script": "/home/zzhouch/tnca_prepare_conditional12a0340/run-qualified-delivery.sh",
+  "script_sha256": "e36bb7cf9ac1004cb43a8492ae6361ecdf69a379d1f97f3ab1cfcac2bbfffb60",
+  "command": [
+    "/home/zzhouch/tc_env/torchenv/bin/python",
+    "-u",
+    "/home/zzhouch/tnca_src_r40_conditional_12a0340/tools/r40/conditional_delivery.py",
+    "--xclbin",
+    "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/preserved-tnca_u280.xclbin",
+    "--image-sha256",
+    "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "--software-tree-sha256",
+    "files:3cd958b8e17ad47b21e195cbae768630af6a6c49e31797e12daa3ca4ec81093b",
+    "--operating-clock-evidence",
+    "/home/zzhouch/tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json",
+    "--out",
+    "/home/zzhouch/tnca_runs_r40_conditional90_12a0340"
+  ],
+  "environment": {
+    "TORCH_EXTENSIONS_DIR": "/home/zzhouch/.cache/tnca/r40_conditional12a0340_extensions",
+    "MAX_JOBS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "host_preparation": {
+    "status": "prepared-no-device-opened",
+    "software_tree": "files:3cd958b8e17ad47b21e195cbae768630af6a6c49e31797e12daa3ca4ec81093b",
+    "torch": "2.14.0+cpu",
+    "triton": "3.8.0",
+    "extension": "/home/zzhouch/.cache/tnca/r40_conditional12a0340_extensions/tnca_device_ext/tnca_device_ext.so",
+    "extension_sha256": "c9405301f04e3a24b75f09060bae0c2253565ea20de4ede2cc3c9ff0fe18a134",
+    "open_sessions": 0,
+    "cache": "/home/zzhouch/.cache/tnca/r40_conditional12a0340_extensions",
+    "scope": "host extension compile/register only; MAX_JOBS=1, nice=10, no simulator/device/session allowed"
+  },
+  "scope": "prepared only; qualified image-bound clock proof must exist before execution; no device opened",
+  "status": "ready-after-operating-qualification"
+}

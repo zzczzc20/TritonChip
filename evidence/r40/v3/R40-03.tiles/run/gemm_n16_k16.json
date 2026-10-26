@@ -1,0 +1,15 @@
+{
+ "name": "gemm_n16_k16",
+ "group": "tiles",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/gemm_tiles_tests.py --columns 16",
+ "env": {},
+ "start": "2026-10-19T08:29:16+00:00",
+ "end": "2026-10-19T09:00:38+00:00",
+ "seconds": 1882.2,
+ "exit": 0,
+ "marker": "r40-gemm-tiles-tests PASS \\(4/4\\)",
+ "marker_found": true,
+ "ok": true,
+ "log": "gemm_n16_k16.log",
+ "log_sha256": "7be77a28d80de9c527fae0c341f0939fd800a95350dc069baf07b7573fbe052b"
+}

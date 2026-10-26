@@ -13,19 +13,38 @@ Time is the sum over every kernel launch of the launch's device cycles
 (`serial-grid`: programs of a grid run one after another, so this is not a
 makespan of a concurrent device). Host transfers -- every launch uploads its
 argument storages and downloads them back in Stage 1 -- are reported beside
-it and are not device time. The first call compiles and runs; its launches
-are the measurement, since a TNCA launch is deterministic and the simulator
-is too slow to repeat it for nothing.
+it and are not device time.
+
+Protocol 2 (archbench/PROTOCOL.md, R40-00) separates the cold first call --
+compilation, any autotuning and the first run -- from the measurement:
+`warmup` calls follow it, then `timed` calls, each one sample. The samples
+are per call: `device-cycles-serial-grid` (the call's launches' device
+cycles) and, when there are timed calls, `request-latency` (host monotonic
+time around the call; on this CPU-tensor path it includes every launch's
+upload and download). With no timed call -- the simulator, where a launch is
+deterministic and too slow to repeat for nothing -- the first call's device
+cycles are the one sample, marked deterministic; there is then no latency.
+The record carries its provenance (archbench/provenance.py): the software
+tree, every artifact's sha256, the profile and its capabilities, the image
+and clock, the launch map, and with `bundle` the files of the chain.
+
+With backend_args.device_clock=true on an image providing MMIO clock
+endpoints, timed calls additionally report device-graph-makespan from first
+accepted launch to last completion, including submission gaps. Missing
+endpoints leave this measurement unavailable; serial-grid keeps its meaning.
 """
 import os
 import time
+import sys
+from pathlib import Path
 
+from .. import provenance as _prov
 from ..bounds import VERSION, tnca_bound, tnca_peak
-from .common import base_record, classify, compare, error_text, reference
+from .common import SCHEMA2, base_record, classify, compare, error_text, reference
 
 EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
             'fpga-u50-sim': 'measured-rtl', 'fpga-u50': 'measured-board',
-            'fpga-u280': 'measured-board'}
+            'fpga-u280': 'measured-board', 'fpga-u280-multicore': 'measured-board'}
 
 # The clock a cycle count may be converted with, by backend. Only a board
 # has one; a simulated cycle has no duration (Stage 1 rule).
@@ -43,12 +62,22 @@ BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
                   # host-timed spin kernels gives 100.01-100.07 MHz
                   # (flow/fpga/measure_clock.py). Earlier the same day: /2 of
                   # 150, 75 MHz; until R38's timing work, /4, 37.5 MHz.
-                  'fpga-u280': 100e6}
+                  'fpga-u280': 100e6, 'fpga-u280-multicore': 100e6}
+# How each board's clock is set (a configuration field of protocol-2 records:
+# two runs at different clock policies are different configurations).
+BOARD_CLOCK_POLICY = {'fpga-u50': '150MHz/4', 'fpga-u280': '100MHz-undivided',
+                      'fpga-u280-multicore': '100MHz-undivided'}
 
 # The device heap a launch's argument storages must fit: Session's default
 # heap, 0x20000..0x80000, of the 512 KiB memory the simulator and the U50
 # image both have (python/tnca/runtime.py, rtl/fpga/tnca_fpga_mem.v WORDS).
 HEAP_BYTES = 0x80000 - 0x20000
+
+# Measurement identity is metadata, recorded after all timed work. Separate
+# processes cannot accidentally count copies of one session as three blocks.
+import uuid as _uuid
+_MEASUREMENT_SESSION = _uuid.uuid4().hex
+_MEASUREMENT_BOOT = Path('/proc/sys/kernel/random/boot_id').read_text().strip() if Path('/proc/sys/kernel/random/boot_id').exists() else None
 
 
 # The TNCA_* environment variables that do NOT change what is compiled or how
@@ -57,7 +86,10 @@ HEAP_BYTES = 0x80000 - 0x20000
 # is an ablation knob and is recorded (R39-00).
 NOT_KNOBS = frozenset({'TNCA_BACKEND', 'TNCA_BACKEND_ARGS', 'TNCA_HOST_TIMEOUT',
                        'TNCA_DEADLINE', 'TNCA_LAUNCH', 'TNCA_PROFILE', 'TNCA_OPT_LEVEL',
-                       'TNCA_COUNTERS', 'TNCA_TRITON', 'TNCA_DEVICE'})
+                       'TNCA_COUNTERS', 'TNCA_TRITON', 'TNCA_DEVICE',
+                       # the provenance bundle's kernel dump (doc/dumping_ir.md):
+                       # it writes files, the artifact is byte-identical
+                       'TNCA_KERNEL_DUMP', 'TNCA_DUMP_DIR'})
 
 
 def knobs():
@@ -65,7 +97,7 @@ def knobs():
             if k.startswith('TNCA_') and k not in NOT_KNOBS}
 
 
-def device_id(profile, backend, backend_kwargs):
+def device_id(profile, backend, backend_kwargs, *, full=False):
     """What the device actually was: the simulator build, named by its
     profile and RTL hashes, or the board image, named by its sha256. Two
     runs with the same profile name on different RTL must not be merged."""
@@ -77,14 +109,18 @@ def device_id(profile, backend, backend_kwargs):
             with open(xclbin, 'rb') as f:
                 for chunk in iter(lambda: f.read(1 << 20), b''):
                     h.update(chunk)
-            return f'xclbin:{h.hexdigest()[:16]}'
+            return h.hexdigest() if full else f'xclbin:{h.hexdigest()[:16]}'
+        if full:
+            return None
         from tnca import device
         return f'sim:{os.path.basename(os.path.dirname(device.expected_path(profile)))}'
     except Exception as e:                                   # noqa: BLE001
-        return f'unknown:{type(e).__name__}'
+        return None if full else f'unknown:{type(e).__name__}'
 
 
-def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
+def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmup=0, timed=0,
+        bundle=None):
+    measurement_start = time.monotonic_ns()
     os.environ['TNCA_PROFILE'] = profile
     os.environ['TNCA_OPT_LEVEL'] = str(opt_level)
     if counters:
@@ -99,11 +135,33 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
     from torch._inductor.utils import run_and_get_code
 
     config = tnca.inductor.configure()
+    # R40-01: TNCA_TORCH_DEVICE=native puts the module and its inputs on the
+    # `tnca` PyTorch device (tnca.torch_device) -- storage in device memory,
+    # Inductor generating for device "tnca" -- and copies the outputs back
+    # explicitly for the comparison. Unset (or `cpu`), the B39 path: CPU
+    # tensors, every launch staging its arguments.
+    native = os.environ.get('TNCA_TORCH_DEVICE', 'cpu') == 'native'
+    if native:
+        import tnca.torch_device
+        tnca.torch_device.register()
+        config = dict(config, device='tnca')
     backend, backend_kwargs = backend_choice()
+    from tnca.operating_clock import from_environment
+    if os.environ.get('TNCA_OPERATING_CLOCK_EVIDENCE') and backend not in BOARD_CLOCK_HZ:
+        raise ValueError('board clock evidence cannot label a simulator')
+    operating_clock=from_environment(device_id(profile,backend,backend_kwargs,full=True))
     plat = dict(kind='tnca', name=f'tnca:{profile}@{backend}', profile=profile, backend=backend,
                 backend_args=backend_kwargs, opt_level=opt_level, inductor=config,
                 knobs=knobs(), device_id=device_id(profile, backend, backend_kwargs))
+    # The configuration a protocol-2 comparison checks, on every record --
+    # one that fails as much as one that passes (tools/r40/ablate.py `mixed`).
+    plat.update(image=plat.get('device_id'), clock_policy=BOARD_CLOCK_POLICY.get(backend),
+                image_sha256=device_id(profile, backend, backend_kwargs, full=True),
+                software_tree=_prov.software_tree(),
+                toolchain=dict(torch=torch.__version__, triton=triton.__version__, python=sys.version))
+    plat.update(operating_clock)
     rec = base_record(point, plat, EVIDENCE.get(backend, 'measured-rtl'))
+    rec['schema'] = SCHEMA2
 
     compile_only = os.environ.get('TNCA_LAUNCH') == 'skip'
     try:
@@ -117,11 +175,31 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
     torch._dynamo.reset()
     m, inputs = point.make(seed)
     m = m.eval()
+    if native:
+        try:
+            m = m.to('tnca')
+            inputs = tuple(x.to('tnca') if isinstance(x, torch.Tensor) else x for x in inputs)
+        except Exception as e:                               # noqa: BLE001
+            rec.update(status=classify(e), problems=[f'to("tnca"): {error_text(e)}'])
+            return rec
+    compiled = torch.compile(m, fullgraph=native)
+    if bundle:
+        # Every kernel compiled here, none taken from an earlier cache, so the
+        # dump (TTIR, TNCA IR, assembly) and Triton's own cache entries are
+        # the chain of THIS record.
+        os.environ['TNCA_KERNEL_DUMP'] = '1'
+        os.environ['TNCA_DUMP_DIR'] = os.path.join(bundle, 'kernels')
+        os.environ['TRITON_CACHE_DIR'] = os.path.join(bundle, 'triton_cache')
+    graph = _prov.GraphCapture() if bundle else None
     t0 = time.monotonic()
     log = []
     try:
         with torch.no_grad(), launch_log() as log:
-            got, code = run_and_get_code(torch.compile(m), *inputs)
+            if graph:
+                with graph:
+                    got, code = run_and_get_code(compiled, *inputs)
+            else:
+                got, code = run_and_get_code(compiled, *inputs)
     except Exception as e:                                   # noqa: BLE001
         rec.update(status=classify(e), problems=[error_text(e)],
                    host=dict(wall_s=round(time.monotonic() - t0, 2), launches=len(log)))
@@ -154,7 +232,12 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
         if expected is not None and len(log) != expected:
             rec['status'] = 'runtime-fault'
             rec['problems'].append(f'{len(log)} launches for {expected} in the wrapper (autotuning?)')
-        heap = HEAP_BYTES
+        # Native storage uses the active Session's real heap. The frozen
+        # CPU migration path retains its original on-chip staging limit.
+        heap = (tnca.torch_device.MEMORY.session().memory_stats['heap_capacity_bytes']
+                if native else HEAP_BYTES)
+        if native:
+            rec['host']['heap_capacity_bytes'] = heap
         if biggest > heap:
             rec['status'] = 'capacity-exceeded'
             rec['problems'].append(f'the largest launch needs {biggest} bytes of arguments; '
@@ -162,7 +245,7 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
         return rec
 
     cycles = sum(e['device_cycles'] or 0 for e in log)
-    clock = BOARD_CLOCK_HZ.get(backend)
+    clock = operating_clock.get('clock_hz',BOARD_CLOCK_HZ.get(backend))
     rec['time'] = dict(unit='cycles', device=cycles or None, timing='serial-grid',
                        roi='launch_accept_to_core_idle', launches=len(log),
                        per_launch=[dict(kernel=e['kernel'], grid=e['grid'], cycles=e['device_cycles'],
@@ -208,7 +291,210 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False):
         rec['eta'] = L / cycles
         if rec['eta'] > 1:
             rec['problems'].append(f'AUDIT: eta {rec["eta"]:.4f} > 1 -- a measurement below its strict bound')
+
+    # ---- protocol 2: the measurement proper, and where it came from -------
+    rec['schema'] = SCHEMA2
+    first = dict(wall_s=round(wall, 3), device_cycles=cycles or None)
+    calls = []
+    # Native FakeTensor constant propagation can clone real device literals
+    # while compiling. Preserve that cold call, but require each measured
+    # steady call to execute exactly the generated wrapper's launches.
+    cold_setup = (native and timed > 0 and rec['status'] == 'not-measured'
+                  and expected is not None and len(log) != expected
+                  and cmp['ok'] and not rec['fallbacks'] and len(problems) == 1)
+    measured_log = log
+    if (rec['status'] == 'pass' or cold_setup) and (warmup or timed):
+        got = None               # the first call's outputs are not held across the timed calls
+        try:
+            calls = _steady(compiled, inputs, warmup + timed, expected, launch_log, torch)
+        except Exception as e:                               # noqa: BLE001
+            rec['status'] = classify(e)
+            rec['problems'].append(f'steady calls: {error_text(e)}')
+            calls = []
+        bad = [c for c in calls if c.get('problem')]
+        if bad:
+            rec['status'] = 'not-measured'
+            rec['problems'].append(f'steady call {bad[0]["index"]}: {bad[0]["problem"]}')
+        elif calls and not compare(calls[-1].pop('out'), ref, point.tolerance)['ok']:
+            rec['status'] = 'numeric-error'
+            rec['problems'].append('the last timed call does not match the reference')
+        elif calls and cold_setup:
+            rec['cold_call'] = dict(first_call=dict(first), problem=problems[0],
+                provenance=_provenance(profile, backend, backend_kwargs, plat, log, clock))
+            rec['status'], rec['problems'] = 'pass', []
+            measured_log = calls[warmup]['_launch_log']
+            rec['time']['launches'] = len(measured_log)
+            rec['time']['per_launch'] = [dict(kernel=e['kernel'], grid=e['grid'],
+                cycles=e['device_cycles'], programs=len(e['program_cycles'])) for e in measured_log]
+        for c in calls:
+            c.pop('out', None)
+            # Preserve raw endpoints only after all timed calls completed.
+            # Reuse the existing launch log: no new device reads or work in
+            # the measured call. A later audit can reproduce every makespan.
+            c['device_endpoints'] = [e.get('device_timing')
+                                     for e in c.pop('_launch_log', [])]
+    steady = [c for c in calls[warmup:]] if calls else []
+    rec['timings'] = _timings(cycles, steady, warmup, clock)
+    rec['time'].update(kind='device-cycles-serial-grid',
+                       samples=rec['timings']['device-cycles-serial-grid']['samples'],
+                       deterministic=not steady, warmup=warmup, timed=len(steady),
+                       first_call=first)
+    if steady:
+        rec['time']['device'] = rec['timings']['device-cycles-serial-grid']['median']
+        rec['time']['device_seconds'] = rec['time']['device'] / clock if clock else None
+        if cold_setup and rec['status'] == 'pass' and rec['time']['device']:
+            rec['eta'] = L / rec['time']['device']
+            if rec['eta'] > 1:
+                rec['problems'].append(f'AUDIT: eta {rec["eta"]:.4f} > 1 -- a measurement below its strict bound')
+    rec['host'].update(first_call_s=first['wall_s'],
+                       steady=_host_steady(steady) if steady else None,
+                       # the raw per-call breakdown, timed calls only
+                       calls=[{k: round(c[k], 6) for k in ('request_s', 'upload_s', 'run_s',
+                                                          'download_s')} for c in steady] or None)
+    rec['provenance'] = _provenance(profile, backend, backend_kwargs, plat, measured_log, clock)
+    if bundle:
+        rec['provenance']['bundle'] = _prov.write_bundle(
+            bundle, point_id=point.id, graph_text=graph.text, wrapper_code=code,
+            launches=measured_log, dump_dir=None)
+        if rec.get('cold_call'):
+            rec['cold_call']['provenance']['bundle'] = _prov.write_bundle(
+                os.path.join(bundle, 'cold_call'), point_id=point.id, graph_text=graph.text,
+                wrapper_code=code, launches=log, dump_dir=None)
+    if native:
+        memory = tnca.torch_device.MEMORY
+        session = memory.session()
+        with session._lock:
+            rec['native_memory'] = dict(
+                tensor_live_bytes=memory.live, tensor_peak_bytes=memory.peak,
+                session=session.memory_stats,
+                window=getattr(session.dev, 'axi_window', None),
+                live_buffers=[dict(address=b.addr, bytes=b.size, reserved=b.reserved)
+                              for b in memory.buffers.values() if b.alive])
+    rec['measurement'] = dict(block_id=os.environ.get('ARCHBENCH_BLOCK_ID'),
+                              process_session=_MEASUREMENT_SESSION,
+                              boot_id=_MEASUREMENT_BOOT,
+                              started_ns=measurement_start, ended_ns=time.monotonic_ns())
     return rec
+
+
+def _steady(compiled, inputs, n, expected, launch_log, torch):
+    """`n` calls after the first, each with its launches and host time."""
+    out = []
+    got = None
+    for i in range(n):
+        got = None               # free the last call's outputs before the next
+        with torch.no_grad(), launch_log() as lg:
+            t = time.monotonic()
+            got = compiled(*inputs)
+        # launch_log waits for queued TNCA events at graph completion. Keep
+        # that wait inside request latency when submission is asynchronous.
+        dt = time.monotonic() - t
+        c = dict(index=i, request_s=dt, launches=len(lg), _launch_log=lg,
+                 device_cycles=sum(e['device_cycles'] or 0 for e in lg),
+                 upload_s=sum(e['host_seconds']['upload'] for e in lg),
+                 run_s=sum(e['host_seconds']['run'] for e in lg),
+                 download_s=sum(e['host_seconds']['download'] for e in lg))
+        from tnca.device_timing import clock_span
+        c['device_timing'] = clock_span([e.get('device_timing') for e in lg])
+        if expected is not None and len(lg) != expected:
+            c['problem'] = f'{len(lg)} launches, the wrapper makes {expected}'
+        elif not c['device_cycles']:
+            c['problem'] = 'no device time'
+        if i == n - 1:
+            c['out'] = got
+        out.append(c)
+    return out
+
+
+def _median(xs):
+    s = sorted(xs)
+    k = len(s)
+    m = s[k // 2] if k % 2 else 0.5 * (s[k // 2 - 1] + s[k // 2])
+    return int(m) if isinstance(m, float) and m.is_integer() and all(isinstance(x, int) for x in s) else m
+
+
+def _p95(xs):
+    s = sorted(xs)
+    return s[min(len(s) - 1, int(round(0.95 * (len(s) - 1))))]
+
+
+def _timings(first_cycles, steady, warmup, clock):
+    """Every timing kind this run measured, each with its own samples."""
+    out = {}
+    if steady:
+        cyc = [c['device_cycles'] for c in steady]
+        out['device-cycles-serial-grid'] = dict(unit='cycles', samples=cyc, median=_median(cyc),
+                                                p95=_p95(cyc), warmup=warmup, deterministic=False,
+                                                clock_hz=clock)
+        if all(c.get('device_timing') is not None for c in steady):
+            spans = [c['device_timing']['cycles'] for c in steady]
+            out['device-graph-makespan'] = dict(
+                unit='cycles', samples=spans, median=_median(spans), p95=_p95(spans),
+                warmup=warmup, clock_hz=clock, deterministic=False,
+                boundaries='first accepted launch to last device completion',
+                includes=['device execution', 'submission gaps', 'backpressure'],
+                instrumentation='sequence-checked MMIO endpoints after each program')
+            if all(c.get('device_endpoints') for c in steady):
+                from tnca.device_timing import audit_graph_samples
+                endpoint_records = [c['device_endpoints'] for c in steady]
+                audit_graph_samples(spans, endpoint_records,
+                                    launch_counts=[c['launches'] for c in steady])
+                out['device-graph-makespan'].update(
+                    endpoint_schema='tnca-launch-endpoints/1',
+                    endpoint_records=endpoint_records)
+        lat = [round(c['request_s'], 6) for c in steady]
+        out['request-latency'] = dict(unit='s', samples=lat, median=_median(lat), p95=_p95(lat),
+                                      warmup=warmup,
+                                      includes=['per-launch upload', 'device', 'per-launch download',
+                                                'host dispatch'])
+    else:
+        cyc = [first_cycles] if first_cycles else []
+        out['device-cycles-serial-grid'] = dict(unit='cycles', samples=cyc,
+                                                median=first_cycles or None, p95=first_cycles or None,
+                                                warmup=0, deterministic=True, clock_hz=clock,
+                                                note='the first call: device time excludes compilation')
+    return out
+
+
+def _host_steady(steady):
+    return {k: round(_median([c[k] for c in steady]), 6)
+            for k in ('request_s', 'upload_s', 'run_s', 'download_s')}
+
+
+def _provenance(profile, backend, backend_kwargs, plat, log, clock):
+    if plat.get('operating_clock_evidence_sha256'):
+        from tnca.operating_clock import from_environment
+        fresh=from_environment(plat['image_sha256'])
+        if fresh.get('operating_clock_evidence_sha256')!=plat['operating_clock_evidence_sha256']:
+            raise ValueError('operating clock evidence changed during measurement')
+    try:
+        from tnca import device as _device
+        from tnca.adapters import r1
+        target, _info = r1.target_for(_device.base_profile(profile))
+        caps = target.capabilities if isinstance(target.capabilities, dict) else dict(target.capabilities)
+        capabilities = sorted(k for k, v in caps.items() if v)
+    except Exception as e:                                   # noqa: BLE001
+        capabilities = None
+        plat.setdefault('problems', []).append(f'capabilities: {e}')
+    arts = sorted({e.get('artifact') for e in log if e.get('artifact')})
+    seen, launches = set(), []
+    for e in log:
+        launches.append(dict(kernel=e['kernel'], grid=list(e['grid']),
+                             programs=len(e.get('program_cycles') or []), artifact=e.get('artifact')))
+        seen.add(e['kernel'])
+    launch_map = dict(timing='serial-grid', cores=[0], launches=launches)
+    if backend == 'fpga-u280-multicore':
+        from tnca.triton_backend.driver import _Sessions
+        session = _Sessions.get(profile)
+        if not session.physical_grid:
+            raise RuntimeError('multicore board record requires a physical-grid session')
+        launch_map.update(timing='physical-grid',
+                          cores=[i for i in range(session._physical_core_count)
+                                 if session.active_cores & (1 << i)])
+    return dict(software_tree=_prov.software_tree(), git=_prov.git_commit(),
+                artifacts=arts, profile=profile, capabilities=capabilities,
+                image=plat.get('device_id'), clock_hz=clock, backend=backend,
+                launch_map=launch_map)
 
 
 def _wrapper_launches(code):

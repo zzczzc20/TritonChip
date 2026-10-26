@@ -1,0 +1,7 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-f30a9b914657/tnca_device_vrf5.vvp
+PASS retained multi-kernel Torch graph replay, updated input, artifact and byte audit
+PASS shape/stride guard and permanent invalidation before admission
+PASS changed storage alias rejected before admission
+PASS recovery epoch rejects whole graph without submission
+r40-replay-tests PASS (4/4)
+EXIT:0

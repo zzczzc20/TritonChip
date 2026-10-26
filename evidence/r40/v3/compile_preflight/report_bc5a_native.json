@@ -1,0 +1,6558 @@
+{
+ "schema": "tnca-r40-v3-compile-preflight-report/1",
+ "tree": "bc5a delivery tree",
+ "software_tree": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
+ "software_tree_after": "files:bc5a778ebc5f4afebf6c1a9fbf3b2d8717cb02e118134ebbb73fb5a927fc8183",
+ "software_tree_verified": "archbench.provenance.software_tree(gx10-6646:~/r40v3_fixsrc) before and after the campaign and in every child before and after its compile; python/tnca/inductor.py sha256 db9710f0... equals commit b450904; contract_v2.verify() passed; point and subset hashes equal the frozen plan",
+ "source_root": "gx10-6646:/home/zhongchun/r40v3_fixsrc",
+ "device": "native-stub",
+ "method": "compile-only: fresh process and fresh Triton/Inductor/tmp dirs per (point, config); torch.compile(fullgraph=True), TNCA_LAUNCH=skip, device sessions forbidden; tnca-device tensors over a host-memory stand-in session; pass = every kernel lowered and sealed, artifacts load, no host fallback, launch count equals the wrapper's",
+ "not_measured": [
+  "numerics",
+  "native execution",
+  "performance"
+ ],
+ "harness_env": {
+  "CUDA_VISIBLE_DEVICES": "",
+  "TNCA_LAUNCH": "skip",
+  "TNCA_PROFILE": "core-vrf-sync-v5",
+  "TNCA_OPT_LEVEL": "2",
+  "TNCA_TRITON": "1",
+  "TNCA_KERNEL_DUMP": "1",
+  "TNCA_BACKEND": "fpga-u280-multicore",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "TNCA_TORCH_DEVICE": "native",
+  "TNCA_TRANSFER_POLICY": "per-kernel",
+  "TNCA_ACTIVE_CORES": "1",
+  "TNCA_RTL_MEM_PORTS": "1",
+  "TNCA_RTL_OUTSTANDING": "1",
+  "TNCA_SUBMIT": "single"
+ },
+ "base_knobs": {
+  "TNCA_MAX_BLOCK": "16",
+  "TNCA_GEMM_TILE": "16,16,16",
+  "TNCA_REDUCTION_ROWS": "1",
+  "TNCA_BANK_ALLOC": "0",
+  "TNCA_WINDOW_REUSE": "0",
+  "TNCA_SDPA": "decomposed",
+  "TNCA_PIPELINE": "1",
+  "TNCA_TUNE": "0"
+ },
+ "harness": {
+  "local": "tools/r40/v3_compile_preflight.py",
+  "local_sha256": "22dbac5b51a5548e0cb842c779fa0072e6780b0960a3ef6ae6a658243c2c225c",
+  "run_sha256": "22dbac5b51a5548e0cb842c779fa0072e6780b0960a3ef6ae6a658243c2c225c",
+  "invocation": "gx10-6646:~/r40v3_compile_preflight/bc5a_native.sh (the harness with only ITEMS replaced; item order 4, 1, 2, 3, 5)"
+ },
+ "raw_logs": "gx10-6646:~/r40v3_compile_preflight/bc5a_native/ (report.json, runs/<point>__<config>/{child.log,result.json,wrapper_*.py,dump/,tmp/*.tnca}) and ~/r40v3_compile_preflight/bc5a_native.log",
+ "cpu_path_reference": "gx10-6646:~/r40v3_fixcheck/run_fix (not run here)",
+ "started": "2026-10-19T03:10:22+0000",
+ "finished": "2026-10-19T03:18:26+0000",
+ "n_runs": 96,
+ "n_pass": 96,
+ "items": [
+  {
+   "item": 4,
+   "subset": "R40-08.long-prefill",
+   "experiment": "R40-08.prefill",
+   "config": "control:sdpa=decomposed+unpack+reuse",
+   "knobs_changed": {
+    "TNCA_WINDOW_REUSE": "1",
+    "TNCA_PACKED_WINDOW_UNPACK": "1"
+   },
+   "compiled": 3,
+   "total": 3,
+   "summary": "control:sdpa=decomposed+unpack+reuse compiles 3/3",
+   "failures": []
+  },
+  {
+   "item": 4,
+   "subset": "R40-08.long-prefill",
+   "experiment": "R40-08.prefill",
+   "config": "candidate:sdpa=fused+unpack+reuse",
+   "knobs_changed": {
+    "TNCA_WINDOW_REUSE": "1",
+    "TNCA_SDPA": "fused",
+    "TNCA_PACKED_WINDOW_UNPACK": "1"
+   },
+   "compiled": 3,
+   "total": 3,
+   "summary": "candidate:sdpa=fused+unpack+reuse compiles 3/3",
+   "failures": []
+  },
+  {
+   "item": 1,
+   "subset": "R40-03.pointwise-reduction",
+   "experiment": "R40-03.wide-blocks",
+   "config": "base",
+   "knobs_changed": {},
+   "compiled": 15,
+   "total": 15,
+   "summary": "base compiles 15/15",
+   "failures": []
+  },
+  {
+   "item": 1,
+   "subset": "R40-03.pointwise-reduction",
+   "experiment": "R40-03.wide-blocks",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "compiled": 15,
+   "total": 15,
+   "summary": "max_block=64 compiles 15/15",
+   "failures": []
+  },
+  {
+   "item": 2,
+   "subset": "R40-03.gemm-reuse",
+   "experiment": "R40-03.gemm-tile",
+   "config": "base",
+   "knobs_changed": {},
+   "compiled": 9,
+   "total": 9,
+   "summary": "base compiles 9/9",
+   "failures": []
+  },
+  {
+   "item": 2,
+   "subset": "R40-03.gemm-reuse",
+   "experiment": "R40-03.gemm-tile",
+   "config": "gemm_tile=16,64,16",
+   "knobs_changed": {
+    "TNCA_GEMM_TILE": "16,64,16"
+   },
+   "compiled": 9,
+   "total": 9,
+   "summary": "gemm_tile=16,64,16 compiles 9/9",
+   "failures": []
+  },
+  {
+   "item": 3,
+   "subset": "R40-07.long-k",
+   "experiment": "R40-07.pipeline",
+   "config": "base",
+   "knobs_changed": {},
+   "compiled": 9,
+   "total": 9,
+   "summary": "base compiles 9/9",
+   "failures": []
+  },
+  {
+   "item": 3,
+   "subset": "R40-07.long-k",
+   "experiment": "R40-07.pipeline",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "compiled": 9,
+   "total": 9,
+   "summary": "pipeline=2 compiles 9/9",
+   "failures": []
+  },
+  {
+   "item": 5,
+   "subset": "R40-05.compute",
+   "experiment": "R40-05.three-cores (B40-N compile knobs)",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "compiled": 10,
+   "total": 10,
+   "summary": "pipeline=2 compiles 10/10",
+   "failures": []
+  },
+  {
+   "item": 5,
+   "subset": "R40-02.graphs3",
+   "experiment": "R40-02.*",
+   "config": "base",
+   "knobs_changed": {},
+   "compiled": 24,
+   "total": 24,
+   "summary": "base compiles 24/24",
+   "failures": []
+  },
+  {
+   "item": 5,
+   "subset": "R40-02.small-kernel-graphs",
+   "experiment": "R40-02.batched",
+   "config": "base",
+   "knobs_changed": {},
+   "compiled": 6,
+   "total": 6,
+   "summary": "base compiles 6/6",
+   "failures": []
+  },
+  {
+   "item": 5,
+   "subset": "R40-04.streaming",
+   "experiment": "R40-04.*",
+   "config": "base",
+   "knobs_changed": {},
+   "compiled": 6,
+   "total": 6,
+   "summary": "base compiles 6/6",
+   "failures": []
+  }
+ ],
+ "checks": {
+  "cumsum_max_block_64": {
+   "status": "pass",
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "scan_kernel_lanes": 16,
+   "artifacts_identical_to_base": false,
+   "vs_base_dump": "machine code identical to base: .hex, .s, .tnir, .spmd.tnir, .sched.tnir byte-identical; only the TTIR text differs (so the sealed artifact, which records the source hash, differs)"
+  },
+  "max_block_64_others": [
+   [
+    "op.add/hbm/fp16-n67108864",
+    {
+     "XBLOCK": 64
+    }
+   ],
+   [
+    "op.add/medium/fp16-n49152",
+    {
+     "XBLOCK": 64
+    }
+   ],
+   [
+    "op.argmax/medium/fp16-r32-v4096",
+    {
+     "R0_BLOCK": 64,
+     "XBLOCK": 1
+    }
+   ],
+   [
+    "op.copy/hbm/fp16-n67108864",
+    {
+     "XBLOCK": 64
+    }
+   ],
+   [
+    "op.cumsum/medium/fp32-r128-c256",
+    {
+     "R0_BLOCK": 16,
+     "XBLOCK": 1
+    }
+   ],
+   [
+    "op.gelu_tanh/medium/fp16-n65536",
+    {
+     "XBLOCK": 64
+    }
+   ],
+   [
+    "op.layernorm/medium/fp16-r128-d512",
+    {
+     "R0_BLOCK": 64,
+     "XBLOCK": 1
+    }
+   ],
+   [
+    "op.rmsnorm/hbm/fp16-r8192-d4096",
+    {
+     "R0_BLOCK": 64,
+     "XBLOCK": 1
+    }
+   ],
+   [
+    "op.rmsnorm/medium/fp16-r128-d512",
+    {
+     "R0_BLOCK": 64,
+     "XBLOCK": 1
+    }
+   ],
+   [
+    "op.rope/medium/fp16-b1-h8-s128-d32",
+    {
+     "XBLOCK": 64
+    }
+   ],
+   [
+    "op.silu/hbm/fp16-n67108864",
+    {
+     "XBLOCK": 64
+    }
+   ],
+   [
+    "op.silu/medium/fp16-n65536",
+    {
+     "XBLOCK": 64
+    }
+   ],
+   [
+    "op.softmax/hbm/fp16-r4096-c8192",
+    {
+     "R0_BLOCK": 64,
+     "XBLOCK": 1
+    }
+   ],
+   [
+    "op.softmax/medium/fp16-r80-c512",
+    {
+     "R0_BLOCK": 64,
+     "XBLOCK": 1
+    }
+   ],
+   [
+    "op.swiglu/medium/fp16-n49152",
+    {
+     "XBLOCK": 64
+    }
+   ]
+  ],
+  "sdpa": [
+   {
+    "point": "model.llama_prefill/hbm/fp16-b1-s512",
+    "config": "candidate:sdpa=fused+unpack+reuse",
+    "status": "pass",
+    "sdpa_online_nodes": 1,
+    "launches": 66,
+    "fused_template_kernels": [
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_9"
+    ],
+    "decomposition_installed": true
+   },
+   {
+    "point": "model.llama_prefill/hbm/fp16-b1-s512",
+    "config": "control:sdpa=decomposed+unpack+reuse",
+    "status": "pass",
+    "sdpa_online_nodes": 0,
+    "launches": 78,
+    "fused_template_kernels": [
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8",
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11"
+    ],
+    "decomposition_installed": false
+   },
+   {
+    "point": "model.llama_prefill/large/fp16-b1-s512",
+    "config": "candidate:sdpa=fused+unpack+reuse",
+    "status": "pass",
+    "sdpa_online_nodes": 1,
+    "launches": 258,
+    "fused_template_kernels": [
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_9"
+    ],
+    "decomposition_installed": true
+   },
+   {
+    "point": "model.llama_prefill/large/fp16-b1-s512",
+    "config": "control:sdpa=decomposed+unpack+reuse",
+    "status": "pass",
+    "sdpa_online_nodes": 0,
+    "launches": 306,
+    "fused_template_kernels": [
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8",
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11"
+    ],
+    "decomposition_installed": false
+   },
+   {
+    "point": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+    "config": "candidate:sdpa=fused+unpack+reuse",
+    "status": "pass",
+    "sdpa_online_nodes": 1,
+    "launches": 1,
+    "fused_template_kernels": [
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_0"
+    ],
+    "decomposition_installed": true
+   },
+   {
+    "point": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+    "config": "control:sdpa=decomposed+unpack+reuse",
+    "status": "pass",
+    "sdpa_online_nodes": 0,
+    "launches": 7,
+    "fused_template_kernels": [
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_2",
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_5"
+    ],
+    "decomposition_installed": false
+   }
+  ],
+  "gemm_tile_16_64_16": [
+   [
+    "model.mlp/medium/fp16-t128-d128",
+    [
+     [
+      16,
+      64,
+      16
+     ]
+    ]
+   ],
+   [
+    "op.bmm/medium/fp16-b16-m64-k32-n64",
+    [
+     [
+      16,
+      64,
+      16
+     ]
+    ]
+   ],
+   [
+    "op.gemv/hbm/fp16-k4096-n11008",
+    [
+     [
+      16,
+      64,
+      16
+     ]
+    ]
+   ],
+   [
+    "op.gemv/medium/fp16-k320-n448",
+    [
+     [
+      16,
+      64,
+      16
+     ]
+    ]
+   ],
+   [
+    "op.linear/hbm/fp16-m512-k4096-n11008",
+    [
+     [
+      16,
+      64,
+      16
+     ]
+    ]
+   ],
+   [
+    "op.linear/medium/fp16-m128-k320-n256",
+    [
+     [
+      16,
+      64,
+      16
+     ]
+    ]
+   ],
+   [
+    "op.matmul/hbm/fp16-m4096-k4096-n4096",
+    [
+     [
+      16,
+      64,
+      16
+     ]
+    ]
+   ],
+   [
+    "op.matmul/medium/fp16-m128-k192-n128",
+    [
+     [
+      16,
+      64,
+      16
+     ]
+    ]
+   ],
+   [
+    "op.matmul/medium/fp32-m128-k192-n128",
+    [
+     [
+      16,
+      64,
+      16
+     ]
+    ]
+   ]
+  ],
+  "pipeline_2_compile_options": [
+   "{\"index_opt\": 1, \"opt_level\": 2, \"physical_chunks\": 1, \"rctx_spmd\": 1, \"schedule\": 1, \"sparse_tensormaps\": 1}"
+  ],
+  "pipeline_1_compile_options": [
+   "{\"index_opt\": 1, \"opt_level\": 2, \"physical_chunks\": 1, \"rctx_spmd\": 1, \"rctx_stages\": 1, \"schedule\": 1, \"sparse_tensormaps\": 1}"
+  ],
+  "sdpa_note": "fused template present = graph node torch.ops.tnca.sdpa_online_v1 in the wrapper plus the template config_args (HEAD_DIM) on its triton_tem kernel: candidate 1 node on each point, control 0 on each. The control's triton_tem_fused__scaled_dot_product_* kernels are the decomposed path's matmul templates (no HEAD_DIM, no sdpa_online_v1)."
+ },
+ "compile_wall_time_note": "host load 28-40 on 20 cores during the run; compile = torch.compile + launch-skipped first call",
+ "runs": [
+  {
+   "point": "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 14,
+   "launches": 13,
+   "expected_launches": 13,
+   "artifacts": 13,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 61892608,
+    "live_bytes": 27289600,
+    "allocations": 91,
+    "uploaded_bytes": 26241264
+   },
+   "cold_call": {
+    "launches": 39,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused_native_layer_norm_0": 1,
+     "triton_tem_fused_addmm_native_layer_norm_t_view_1": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_2": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_3": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_4": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_5": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_6": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_7": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_8": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_addmm_t_transpose_view_9": 1,
+     "triton_red_fused_add_native_layer_norm_view_10": 1,
+     "triton_tem_fused_add_addmm_gelu_native_layer_norm_t_view_11": 1,
+     "triton_tem_fused_add_addmm_gelu_t_view_12": 1
+    }
+   },
+   "wall_s": {
+    "setup": 6.78,
+    "make": 0.54,
+    "compile": 10.93,
+    "steady_call": 0.0,
+    "total": 19.72
+   },
+   "process_wall_s": 22.8,
+   "peak_rss_mib": 839.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.gpt2_block__large__fp16-d1024-h16-b1-s512__pipeline=2"
+  },
+  {
+   "point": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 14,
+   "launches": 13,
+   "expected_launches": 13,
+   "artifacts": 13,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 843840,
+    "live_bytes": 659520,
+    "allocations": 91,
+    "uploaded_bytes": 639280
+   },
+   "cold_call": {
+    "launches": 39,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused_native_layer_norm_0": 1,
+     "triton_tem_fused_addmm_native_layer_norm_t_view_1": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_2": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_3": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_4": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_5": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_6": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_7": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_8": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_addmm_t_transpose_view_9": 1,
+     "triton_red_fused_add_native_layer_norm_view_10": 1,
+     "triton_tem_fused_add_addmm_gelu_native_layer_norm_t_view_11": 1,
+     "triton_tem_fused_add_addmm_gelu_t_view_12": 1
+    }
+   },
+   "wall_s": {
+    "setup": 1.99,
+    "make": 0.06,
+    "compile": 11.44,
+    "steady_call": 0.0,
+    "total": 14.85
+   },
+   "process_wall_s": 16.2,
+   "peak_rss_mib": 807.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.gpt2_block__medium__fp16-d160-h5-b1-s64__base"
+  },
+  {
+   "point": "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 14,
+   "launches": 13,
+   "expected_launches": 13,
+   "artifacts": 13,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 576768,
+    "live_bytes": 429312,
+    "allocations": 91,
+    "uploaded_bytes": 413168
+   },
+   "cold_call": {
+    "launches": 39,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused_native_layer_norm_0": 1,
+     "triton_tem_fused_addmm_native_layer_norm_t_view_1": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_2": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_3": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_4": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_5": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_6": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_7": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_8": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_addmm_t_transpose_view_9": 1,
+     "triton_red_fused_add_native_layer_norm_view_10": 1,
+     "triton_tem_fused_add_addmm_gelu_native_layer_norm_t_view_11": 1,
+     "triton_tem_fused_add_addmm_gelu_t_view_12": 1
+    }
+   },
+   "wall_s": {
+    "setup": 5.4,
+    "make": 0.76,
+    "compile": 10.54,
+    "steady_call": 0.0,
+    "total": 18.91
+   },
+   "process_wall_s": 21.0,
+   "peak_rss_mib": 805.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.gpt2_block__small__fp16-d128-h4-b1-s64__base"
+  },
+  {
+   "point": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 13,
+   "launches": 13,
+   "expected_launches": 13,
+   "artifacts": 12,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 120448,
+    "live_bytes": 104064,
+    "allocations": 87,
+    "uploaded_bytes": 102256
+   },
+   "cold_call": {
+    "launches": 39,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused_native_layer_norm_0": 1,
+     "triton_tem_fused_addmm_native_layer_norm_t_view_1": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_2": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_3": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_4": 2,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_5": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_split_transpose_view_6": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_7": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_addmm_t_transpose_view_8": 1,
+     "triton_red_fused_add_native_layer_norm_view_9": 1,
+     "triton_tem_fused_add_addmm_gelu_native_layer_norm_t_view_10": 1,
+     "triton_tem_fused_add_addmm_gelu_t_view_11": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.11,
+    "make": 0.01,
+    "compile": 7.74,
+    "steady_call": 0.0,
+    "total": 12.09
+   },
+   "process_wall_s": 14.8,
+   "peak_rss_mib": 798.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.gpt2_block__tiny__fp16-d64-h4-b1-s16__base"
+  },
+  {
+   "point": "model.llama_decode/medium/fp16-b1-p256",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 33,
+   "launches": 84,
+   "expected_launches": 84,
+   "artifacts": 32,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 3951576,
+    "live_bytes": 3905288,
+    "allocations": 172,
+    "uploaded_bytes": 3903224
+   },
+   "cold_call": {
+    "launches": 110,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 6,
+     "triton_tem_fused_mm_t_view_2": 8,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 4,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 4,
+     "triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_view_7": 2,
+     "triton_poi_fused__unsafe_view_add_mul_stack_transpose_view_8": 4,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_9": 4,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_10": 4,
+     "triton_poi_fused__unsafe_view_cat_select_transpose_view_11": 2,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_12": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_13": 1,
+     "triton_tem_fused_mm_t_view_14": 2,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_17": 1,
+     "triton_tem_fused_mm_t_view_18": 2,
+     "triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_view_19": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_20": 1,
+     "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_21": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_22": 1,
+     "triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_view_23": 2,
+     "triton_poi_fused__unsafe_view_cat_select_stack_transpose_view_24": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_25": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_26": 1,
+     "triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_view_27": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_28": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_29": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_t_view_30": 1,
+     "triton_poi_fused__unsafe_view_stack_transpose_view_31": 2
+    }
+   },
+   "wall_s": {
+    "setup": 4.3,
+    "make": 0.4,
+    "compile": 15.66,
+    "steady_call": 0.0,
+    "total": 21.75
+   },
+   "process_wall_s": 23.6,
+   "peak_rss_mib": 820.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_decode__medium__fp16-b1-p256__base"
+  },
+  {
+   "point": "model.llama_decode/small/fp16-b1-p128",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 33,
+   "launches": 84,
+   "expected_launches": 84,
+   "artifacts": 32,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 1893568,
+    "live_bytes": 1872264,
+    "allocations": 170,
+    "uploaded_bytes": 1870456
+   },
+   "cold_call": {
+    "launches": 110,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 6,
+     "triton_tem_fused_mm_t_view_2": 8,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 4,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 4,
+     "triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_view_7": 2,
+     "triton_poi_fused__unsafe_view_add_mul_stack_transpose_view_8": 4,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_9": 4,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_10": 4,
+     "triton_poi_fused__unsafe_view_cat_select_transpose_view_11": 2,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_12": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_13": 1,
+     "triton_tem_fused_mm_t_view_14": 2,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_17": 1,
+     "triton_tem_fused_mm_t_view_18": 2,
+     "triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_view_19": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_20": 1,
+     "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_21": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_22": 1,
+     "triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_view_23": 2,
+     "triton_poi_fused__unsafe_view_cat_select_stack_transpose_view_24": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_25": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_26": 1,
+     "triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_view_27": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_28": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_29": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_t_view_30": 1,
+     "triton_poi_fused__unsafe_view_stack_transpose_view_31": 2
+    }
+   },
+   "wall_s": {
+    "setup": 3.98,
+    "make": 0.34,
+    "compile": 14.61,
+    "steady_call": 0.0,
+    "total": 21.84
+   },
+   "process_wall_s": 24.2,
+   "peak_rss_mib": 816.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_decode__small__fp16-b1-p128__base"
+  },
+  {
+   "point": "model.llama_decode/tiny/fp16-b1-p16",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 25,
+   "launches": 42,
+   "expected_launches": 42,
+   "artifacts": 24,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 220096,
+    "live_bytes": 218568,
+    "allocations": 132,
+    "uploaded_bytes": 218024
+   },
+   "cold_call": {
+    "launches": 68,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 3,
+     "triton_tem_fused_mm_t_view_2": 4,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 2,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 2,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 2,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 2,
+     "triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_view_7": 2,
+     "triton_poi_fused__unsafe_view_add_mul_stack_transpose_view_8": 2,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_9": 2,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_10": 2,
+     "triton_poi_fused__unsafe_view_cat_select_stack_transpose_view_11": 2,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_12": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_13": 1,
+     "triton_tem_fused_mm_t_view_14": 1,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15": 2,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_17": 1,
+     "triton_tem_fused_mm_t_view_18": 1,
+     "triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_view_19": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_20": 1,
+     "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_21": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_22": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_t_view_23": 1
+    }
+   },
+   "wall_s": {
+    "setup": 5.89,
+    "make": 0.01,
+    "compile": 11.95,
+    "steady_call": 0.0,
+    "total": 18.83
+   },
+   "process_wall_s": 20.7,
+   "peak_rss_mib": 806.3,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_decode__tiny__fp16-b1-p16__base"
+  },
+  {
+   "point": "model.llama_prefill/hbm/fp16-b1-s512",
+   "config": "candidate:sdpa=fused+unpack+reuse",
+   "knobs_changed": {
+    "TNCA_WINDOW_REUSE": "1",
+    "TNCA_SDPA": "fused",
+    "TNCA_PACKED_WINDOW_UNPACK": "1"
+   },
+   "status": "pass",
+   "kernels_compiled": 23,
+   "launches": 66,
+   "expected_launches": 66,
+   "artifacts": 22,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "packed_window_unpack": 1,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1,
+     "window_reuse": 1
+    }
+   ],
+   "sdpa_online_nodes": 1,
+   "sdpa_fused_decomposition_installed": true,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 234312192,
+    "live_bytes": 221531136,
+    "allocations": 152,
+    "uploaded_bytes": 221403344
+   },
+   "cold_call": {
+    "launches": 92,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 8,
+     "triton_tem_fused_mm_t_view_2": 8,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 4,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 4,
+     "triton_poi_fused__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 4,
+     "triton_poi_fused__unsafe_view_clone_expand_transpose_unsqueeze_view_8": 4,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_9": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_10": 1,
+     "triton_tem_fused_mm_t_view_11": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_12": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_13": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_14": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_15": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_16": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_17": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_18": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_19": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_20": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_21": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.53,
+    "make": 3.13,
+    "compile": 32.82,
+    "steady_call": 0.01,
+    "total": 42.56
+   },
+   "process_wall_s": 47.2,
+   "peak_rss_mib": 1354.7,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_prefill__hbm__fp16-b1-s512__candidate_sdpa=fused+unpack+reuse"
+  },
+  {
+   "point": "model.llama_prefill/hbm/fp16-b1-s512",
+   "config": "control:sdpa=decomposed+unpack+reuse",
+   "knobs_changed": {
+    "TNCA_WINDOW_REUSE": "1",
+    "TNCA_PACKED_WINDOW_UNPACK": "1"
+   },
+   "status": "pass",
+   "kernels_compiled": 26,
+   "launches": 78,
+   "expected_launches": 78,
+   "artifacts": 25,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "packed_window_unpack": 1,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1,
+     "window_reuse": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 269701632,
+    "live_bytes": 221531136,
+    "allocations": 180,
+    "uploaded_bytes": 221403472
+   },
+   "cold_call": {
+    "launches": 104,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 8,
+     "triton_tem_fused_mm_t_view_2": 8,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 4,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 4,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8": 4,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": 4,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_12": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_13": 1,
+     "triton_tem_fused_mm_t_view_14": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_17": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_18": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_19": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_20": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_21": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_22": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_23": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_24": 1
+    }
+   },
+   "wall_s": {
+    "setup": 6.06,
+    "make": 4.96,
+    "compile": 28.22,
+    "steady_call": 0.01,
+    "total": 42.74
+   },
+   "process_wall_s": 46.5,
+   "peak_rss_mib": 1292.3,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_prefill__hbm__fp16-b1-s512__control_sdpa=decomposed+unpack+reuse"
+  },
+  {
+   "point": "model.llama_prefill/hbm/fp16-b1-s512",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 26,
+   "launches": 78,
+   "expected_launches": 78,
+   "artifacts": 25,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 269637632,
+    "live_bytes": 221467136,
+    "allocations": 180,
+    "uploaded_bytes": 221403472
+   },
+   "cold_call": {
+    "launches": 104,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 8,
+     "triton_tem_fused_mm_t_view_2": 8,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 4,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 4,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8": 4,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": 4,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_12": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_13": 1,
+     "triton_tem_fused_mm_t_view_14": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_17": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_18": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_19": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_20": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_21": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_22": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_23": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_24": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.61,
+    "make": 1.91,
+    "compile": 20.75,
+    "steady_call": 0.0,
+    "total": 28.04
+   },
+   "process_wall_s": 30.7,
+   "peak_rss_mib": 1316.3,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_prefill__hbm__fp16-b1-s512__pipeline=2"
+  },
+  {
+   "point": "model.llama_prefill/large/fp16-b1-s512",
+   "config": "candidate:sdpa=fused+unpack+reuse",
+   "knobs_changed": {
+    "TNCA_WINDOW_REUSE": "1",
+    "TNCA_SDPA": "fused",
+    "TNCA_PACKED_WINDOW_UNPACK": "1"
+   },
+   "status": "pass",
+   "kernels_compiled": 23,
+   "launches": 258,
+   "expected_launches": 258,
+   "artifacts": 22,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "packed_window_unpack": 1,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1,
+     "window_reuse": 1
+    }
+   ],
+   "sdpa_online_nodes": 1,
+   "sdpa_fused_decomposition_installed": true,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 3028290048,
+    "live_bytes": 2997613568,
+    "allocations": 416,
+    "uploaded_bytes": 2997100752
+   },
+   "cold_call": {
+    "launches": 284,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 32,
+     "triton_tem_fused_mm_t_view_2": 32,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 16,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 16,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 16,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 16,
+     "triton_poi_fused__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 16,
+     "triton_poi_fused__unsafe_view_clone_expand_transpose_unsqueeze_view_8": 16,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_9": 16,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_10": 1,
+     "triton_tem_fused_mm_t_view_11": 16,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_12": 16,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_13": 16,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_14": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_15": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_16": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_17": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_18": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_19": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_20": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_21": 1
+    }
+   },
+   "wall_s": {
+    "setup": 8.01,
+    "make": 51.17,
+    "compile": 49.99,
+    "steady_call": 0.01,
+    "total": 111.43
+   },
+   "process_wall_s": 115.6,
+   "peak_rss_mib": 7109.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_prefill__large__fp16-b1-s512__candidate_sdpa=fused+unpack+reuse"
+  },
+  {
+   "point": "model.llama_prefill/large/fp16-b1-s512",
+   "config": "control:sdpa=decomposed+unpack+reuse",
+   "knobs_changed": {
+    "TNCA_WINDOW_REUSE": "1",
+    "TNCA_PACKED_WINDOW_UNPACK": "1"
+   },
+   "status": "pass",
+   "kernels_compiled": 26,
+   "launches": 306,
+   "expected_launches": 306,
+   "artifacts": 25,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "packed_window_unpack": 1,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1,
+     "window_reuse": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 3099068928,
+    "live_bytes": 2997613568,
+    "allocations": 516,
+    "uploaded_bytes": 2997101264
+   },
+   "cold_call": {
+    "launches": 332,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 32,
+     "triton_tem_fused_mm_t_view_2": 32,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 16,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 16,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 16,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 16,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 16,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8": 16,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9": 16,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": 16,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11": 16,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_12": 16,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_13": 1,
+     "triton_tem_fused_mm_t_view_14": 16,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15": 16,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16": 16,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_17": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_18": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_19": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_20": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_21": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_22": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_23": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_24": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.75,
+    "make": 39.16,
+    "compile": 40.81,
+    "steady_call": 0.0,
+    "total": 87.26
+   },
+   "process_wall_s": 96.0,
+   "peak_rss_mib": 6956.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_prefill__large__fp16-b1-s512__control_sdpa=decomposed+unpack+reuse"
+  },
+  {
+   "point": "model.llama_prefill/large/fp16-b1-s512",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 26,
+   "launches": 306,
+   "expected_launches": 306,
+   "artifacts": 25,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 3098812416,
+    "live_bytes": 2997357056,
+    "allocations": 516,
+    "uploaded_bytes": 2997101264
+   },
+   "cold_call": {
+    "launches": 332,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 32,
+     "triton_tem_fused_mm_t_view_2": 32,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 16,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 16,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 16,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 16,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 16,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8": 16,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9": 16,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": 16,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11": 16,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_12": 16,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_13": 1,
+     "triton_tem_fused_mm_t_view_14": 16,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15": 16,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16": 16,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_17": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_18": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_19": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_20": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_21": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_22": 7,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_23": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_24": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.42,
+    "make": 36.95,
+    "compile": 41.41,
+    "steady_call": 0.0,
+    "total": 85.19
+   },
+   "process_wall_s": 88.3,
+   "peak_rss_mib": 6987.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_prefill__large__fp16-b1-s512__pipeline=2"
+  },
+  {
+   "point": "model.llama_prefill/medium/fp16-b1-s64",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 26,
+   "launches": 78,
+   "expected_launches": 78,
+   "artifacts": 25,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 3993472,
+    "live_bytes": 3650688,
+    "allocations": 192,
+    "uploaded_bytes": 3649744
+   },
+   "cold_call": {
+    "launches": 104,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 8,
+     "triton_tem_fused_mm_t_view_2": 8,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 4,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 4,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8": 4,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": 4,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_12": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_13": 1,
+     "triton_tem_fused_mm_t_view_14": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_17": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_18": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_19": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_20": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_21": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_22": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_23": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_24": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.51,
+    "make": 0.39,
+    "compile": 24.57,
+    "steady_call": 0.0,
+    "total": 29.65
+   },
+   "process_wall_s": 31.9,
+   "peak_rss_mib": 838.2,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_prefill__medium__fp16-b1-s64__base"
+  },
+  {
+   "point": "model.llama_prefill/small/fp16-b1-s64",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 26,
+   "launches": 78,
+   "expected_launches": 78,
+   "artifacts": 25,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 1960704,
+    "live_bytes": 1748736,
+    "allocations": 196,
+    "uploaded_bytes": 1748048
+   },
+   "cold_call": {
+    "launches": 104,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 8,
+     "triton_tem_fused_mm_t_view_2": 8,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 4,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 4,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 4,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8": 4,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": 4,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11": 4,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_12": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_13": 1,
+     "triton_tem_fused_mm_t_view_14": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15": 4,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16": 4,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_17": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_18": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_19": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_20": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_21": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_22": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_23": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_24": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.37,
+    "make": 1.37,
+    "compile": 26.48,
+    "steady_call": 0.0,
+    "total": 33.76
+   },
+   "process_wall_s": 36.9,
+   "peak_rss_mib": 833.2,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_prefill__small__fp16-b1-s64__base"
+  },
+  {
+   "point": "model.llama_prefill/tiny/fp16-b1-s16",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 21,
+   "launches": 40,
+   "expected_launches": 40,
+   "artifacts": 20,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 235264,
+    "live_bytes": 215296,
+    "allocations": 132,
+    "uploaded_bytes": 215056
+   },
+   "cold_call": {
+    "launches": 66,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1,
+     "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1": 4,
+     "triton_tem_fused_mm_t_view_2": 4,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_3": 2,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4": 2,
+     "triton_poi_fused__unsafe_view_neg_split_transpose_view_5": 2,
+     "triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6": 2,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 2,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8": 4,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9": 2,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": 2,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_11": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_12": 1,
+     "triton_tem_fused_mm_t_view_13": 2,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_14": 2,
+     "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15": 2,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_16": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mul_pow_rsqrt_17": 1,
+     "triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqrt_slice_18": 1,
+     "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_19": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.7,
+    "make": 0.0,
+    "compile": 18.67,
+    "steady_call": 0.0,
+    "total": 24.55
+   },
+   "process_wall_s": 27.3,
+   "peak_rss_mib": 820.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.llama_prefill__tiny__fp16-b1-s16__base"
+  },
+  {
+   "point": "model.mlp/large/fp16-t512-d2048",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 3,
+   "launches": 2,
+   "expected_launches": 2,
+   "artifacts": 2,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 79712256,
+    "live_bytes": 71323648,
+    "allocations": 61,
+    "uploaded_bytes": 69226704
+   },
+   "cold_call": {
+    "launches": 28,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_gelu_t_0": 1,
+     "triton_tem_fused_addmm_gelu_t_1": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.74,
+    "make": 0.87,
+    "compile": 2.86,
+    "steady_call": 0.0,
+    "total": 7.26
+   },
+   "process_wall_s": 9.9,
+   "peak_rss_mib": 1033.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.mlp__large__fp16-t512-d2048__pipeline=2"
+  },
+  {
+   "point": "model.mlp/medium/fp16-t128-d128",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 3,
+   "launches": 2,
+   "expected_launches": 2,
+   "artifacts": 2,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 460032,
+    "live_bytes": 328960,
+    "allocations": 61,
+    "uploaded_bytes": 296400
+   },
+   "cold_call": {
+    "launches": 28,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_gelu_t_0": 1,
+     "triton_tem_fused_addmm_gelu_t_1": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.26,
+    "make": 0.03,
+    "compile": 2.8,
+    "steady_call": 0.0,
+    "total": 8.83
+   },
+   "process_wall_s": 10.9,
+   "peak_rss_mib": 782.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.mlp__medium__fp16-t128-d128__base"
+  },
+  {
+   "point": "model.mlp/medium/fp16-t128-d128",
+   "config": "gemm_tile=16,64,16",
+   "knobs_changed": {
+    "TNCA_GEMM_TILE": "16,64,16"
+   },
+   "status": "pass",
+   "kernels_compiled": 3,
+   "launches": 2,
+   "expected_launches": 2,
+   "artifacts": 2,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 64,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     64,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 460032,
+    "live_bytes": 328960,
+    "allocations": 61,
+    "uploaded_bytes": 296400
+   },
+   "cold_call": {
+    "launches": 28,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_gelu_t_0": 1,
+     "triton_tem_fused_addmm_gelu_t_1": 1
+    }
+   },
+   "wall_s": {
+    "setup": 6.45,
+    "make": 0.08,
+    "compile": 58.58,
+    "steady_call": 0.0,
+    "total": 66.9
+   },
+   "process_wall_s": 73.1,
+   "peak_rss_mib": 819.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.mlp__medium__fp16-t128-d128__gemm_tile=16,64,16",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "model.resnet_block/large/fp32-n8-c64-hw56",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 5,
+   "launches": 5,
+   "expected_launches": 5,
+   "artifacts": 4,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 19712016,
+    "live_bytes": 13142032,
+    "allocations": 71,
+    "uploaded_bytes": 6719712
+   },
+   "cold_call": {
+    "launches": 31,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_convolution_0": 1,
+     "triton_poi_fused_convolution_1": 2,
+     "triton_tem_fused__native_batch_norm_legit_no_training_convolution_relu_2": 1,
+     "triton_tem_fused__native_batch_norm_legit_no_training_add_convolution_relu_3": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.22,
+    "make": 0.41,
+    "compile": 18.89,
+    "steady_call": 0.0,
+    "total": 24.24
+   },
+   "process_wall_s": 25.6,
+   "peak_rss_mib": 810.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.resnet_block__large__fp32-n8-c64-hw56__pipeline=2"
+  },
+  {
+   "point": "model.resnet_block/medium/fp32-n1-c24-hw16",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 5,
+   "launches": 5,
+   "expected_launches": 5,
+   "artifacts": 4,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 136720,
+    "live_bytes": 91408,
+    "allocations": 71,
+    "uploaded_bytes": 67040
+   },
+   "cold_call": {
+    "launches": 31,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_convolution_0": 1,
+     "triton_poi_fused_convolution_1": 2,
+     "triton_tem_fused__native_batch_norm_legit_no_training_convolution_relu_2": 1,
+     "triton_tem_fused__native_batch_norm_legit_no_training_add_convolution_relu_3": 1
+    }
+   },
+   "wall_s": {
+    "setup": 5.32,
+    "make": 0.0,
+    "compile": 13.59,
+    "steady_call": 0.0,
+    "total": 19.7
+   },
+   "process_wall_s": 21.5,
+   "peak_rss_mib": 803.5,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.resnet_block__medium__fp32-n1-c24-hw16__base"
+  },
+  {
+   "point": "model.resnet_block/small/fp32-n1-c16-hw16",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 5,
+   "launches": 5,
+   "expected_launches": 5,
+   "artifacts": 4,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 77328,
+    "live_bytes": 51728,
+    "allocations": 71,
+    "uploaded_bytes": 35552
+   },
+   "cold_call": {
+    "launches": 31,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_convolution_0": 1,
+     "triton_poi_fused_convolution_1": 2,
+     "triton_tem_fused__native_batch_norm_legit_no_training_convolution_relu_2": 1,
+     "triton_tem_fused__native_batch_norm_legit_no_training_add_convolution_relu_3": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.6,
+    "make": 0.01,
+    "compile": 18.49,
+    "steady_call": 0.0,
+    "total": 23.9
+   },
+   "process_wall_s": 26.8,
+   "peak_rss_mib": 804.0,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.resnet_block__small__fp32-n1-c16-hw16__base"
+  },
+  {
+   "point": "model.resnet_block/tiny/fp32-n1-c8-hw8",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 5,
+   "launches": 5,
+   "expected_launches": 5,
+   "artifacts": 4,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 13328,
+    "live_bytes": 8976,
+    "allocations": 71,
+    "uploaded_bytes": 7136
+   },
+   "cold_call": {
+    "launches": 31,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_convolution_0": 1,
+     "triton_poi_fused_convolution_1": 2,
+     "triton_tem_fused__native_batch_norm_legit_no_training_convolution_relu_2": 1,
+     "triton_tem_fused__native_batch_norm_legit_no_training_add_convolution_relu_3": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.78,
+    "make": 0.01,
+    "compile": 12.88,
+    "steady_call": 0.0,
+    "total": 18.8
+   },
+   "process_wall_s": 20.6,
+   "peak_rss_mib": 803.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/model.resnet_block__tiny__fp32-n1-c8-hw8__base"
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 402653184,
+    "live_bytes": 402653184,
+    "allocations": 56,
+    "uploaded_bytes": 268435664
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_add_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 5.89,
+    "make": 5.51,
+    "compile": 2.42,
+    "steady_call": 0.0,
+    "total": 17.38
+   },
+   "process_wall_s": 19.4,
+   "peak_rss_mib": 1662.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.add__hbm__fp16-n67108864__base"
+  },
+  {
+   "point": "op.add/hbm/fp16-n67108864",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 64
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 402653184,
+    "live_bytes": 402653184,
+    "allocations": 56,
+    "uploaded_bytes": 268435664
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_add_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.22,
+    "make": 2.96,
+    "compile": 2.08,
+    "steady_call": 0.0,
+    "total": 12.46
+   },
+   "process_wall_s": 15.1,
+   "peak_rss_mib": 1662.0,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.add__hbm__fp16-n67108864__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.add/medium/fp16-n49152",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 294912,
+    "live_bytes": 294912,
+    "allocations": 56,
+    "uploaded_bytes": 196816
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_add_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 11.28,
+    "make": 0.24,
+    "compile": 2.2,
+    "steady_call": 0.0,
+    "total": 16.29
+   },
+   "process_wall_s": 18.9,
+   "peak_rss_mib": 772.3,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.add__medium__fp16-n49152__base"
+  },
+  {
+   "point": "op.add/medium/fp16-n49152",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 64
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 294912,
+    "live_bytes": 294912,
+    "allocations": 56,
+    "uploaded_bytes": 196816
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_add_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.62,
+    "make": 0.02,
+    "compile": 1.74,
+    "steady_call": 0.0,
+    "total": 8.4
+   },
+   "process_wall_s": 10.8,
+   "peak_rss_mib": 772.3,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.add__medium__fp16-n49152__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.argmax/medium/fp16-r32-v4096",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262400,
+    "live_bytes": 262400,
+    "allocations": 55,
+    "uploaded_bytes": 262352
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused_argmax_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.7,
+    "make": 0.45,
+    "compile": 2.73,
+    "steady_call": 0.0,
+    "total": 8.39
+   },
+   "process_wall_s": 10.5,
+   "peak_rss_mib": 776.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.argmax__medium__fp16-r32-v4096__base"
+  },
+  {
+   "point": "op.argmax/medium/fp16-r32-v4096",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 64,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262400,
+    "live_bytes": 262400,
+    "allocations": 55,
+    "uploaded_bytes": 262352
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused_argmax_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.39,
+    "make": 0.11,
+    "compile": 3.05,
+    "steady_call": 0.0,
+    "total": 8.86
+   },
+   "process_wall_s": 13.0,
+   "peak_rss_mib": 779.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.argmax__medium__fp16-r32-v4096__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 4,
+   "launches": 3,
+   "expected_launches": 3,
+   "artifacts": 3,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 279080,
+    "live_bytes": 263168,
+    "allocations": 66,
+    "uploaded_bytes": 262872
+   },
+   "cold_call": {
+    "launches": 29,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_0": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_2": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.87,
+    "make": 0.03,
+    "compile": 3.9,
+    "steady_call": 0.01,
+    "total": 7.82
+   },
+   "process_wall_s": 11.1,
+   "peak_rss_mib": 778.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.attention_decode__medium__fp16-b1-h8-l256-d32__base"
+  },
+  {
+   "point": "op.attention_decode/small/fp16-b1-h4-l256-d32",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 4,
+   "launches": 3,
+   "expected_launches": 3,
+   "artifacts": 3,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 139544,
+    "live_bytes": 131584,
+    "allocations": 66,
+    "uploaded_bytes": 131544
+   },
+   "cold_call": {
+    "launches": 29,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_0": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_2": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.09,
+    "make": 0.01,
+    "compile": 3.91,
+    "steady_call": 0.0,
+    "total": 10.06
+   },
+   "process_wall_s": 12.4,
+   "peak_rss_mib": 778.0,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.attention_decode__small__fp16-b1-h4-l256-d32__base"
+  },
+  {
+   "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 4,
+   "launches": 3,
+   "expected_launches": 3,
+   "artifacts": 3,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 2384,
+    "live_bytes": 2176,
+    "allocations": 66,
+    "uploaded_bytes": 2328
+   },
+   "cold_call": {
+    "launches": 29,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_0": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_2": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.36,
+    "make": 0.0,
+    "compile": 2.53,
+    "steady_call": 0.0,
+    "total": 7.39
+   },
+   "process_wall_s": 10.4,
+   "peak_rss_mib": 777.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.attention_decode__tiny__fp16-b1-h2-l16-d16__base"
+  },
+  {
+   "point": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+   "config": "candidate:sdpa=fused+unpack+reuse",
+   "knobs_changed": {
+    "TNCA_WINDOW_REUSE": "1",
+    "TNCA_SDPA": "fused",
+    "TNCA_PACKED_WINDOW_UNPACK": "1"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {},
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "packed_window_unpack": 1,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1,
+     "window_reuse": 1
+    }
+   ],
+   "sdpa_online_nodes": 1,
+   "sdpa_fused_decomposition_installed": true,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 8388608,
+    "live_bytes": 8388608,
+    "allocations": 57,
+    "uploaded_bytes": 6291664
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 5.68,
+    "make": 1.58,
+    "compile": 26.89,
+    "steady_call": 0.0,
+    "total": 36.24
+   },
+   "process_wall_s": 38.6,
+   "peak_rss_mib": 862.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.attention_prefill__large__fp16-b1-h32-s512-d64__candidate_sdpa=fused+unpack+reuse"
+  },
+  {
+   "point": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+   "config": "control:sdpa=decomposed+unpack+reuse",
+   "knobs_changed": {
+    "TNCA_WINDOW_REUSE": "1",
+    "TNCA_PACKED_WINDOW_UNPACK": "1"
+   },
+   "status": "pass",
+   "kernels_compiled": 8,
+   "launches": 7,
+   "expected_launches": 7,
+   "artifacts": 7,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "R0_BLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "packed_window_unpack": 1,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1,
+     "window_reuse": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 73400320,
+    "live_bytes": 8388608,
+    "allocations": 73,
+    "uploaded_bytes": 6291696
+   },
+   "cold_call": {
+    "launches": 33,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_1": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_2": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_4": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_5": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.8,
+    "make": 0.16,
+    "compile": 12.35,
+    "steady_call": 0.0,
+    "total": 20.2
+   },
+   "process_wall_s": 22.2,
+   "peak_rss_mib": 816.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.attention_prefill__large__fp16-b1-h32-s512-d64__control_sdpa=decomposed+unpack+reuse"
+  },
+  {
+   "point": "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 8,
+   "launches": 7,
+   "expected_launches": 7,
+   "artifacts": 7,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "R0_BLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 368640,
+    "live_bytes": 98304,
+    "allocations": 73,
+    "uploaded_bytes": 73968
+   },
+   "cold_call": {
+    "launches": 33,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_1": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_2": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_4": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_5": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.11,
+    "make": 0.0,
+    "compile": 7.11,
+    "steady_call": 0.0,
+    "total": 12.13
+   },
+   "process_wall_s": 13.6,
+   "peak_rss_mib": 796.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.attention_prefill__medium__fp16-b1-h4-s96-d32__base"
+  },
+  {
+   "point": "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 8,
+   "launches": 7,
+   "expected_launches": 7,
+   "artifacts": 7,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "R0_BLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 180224,
+    "live_bytes": 65536,
+    "allocations": 73,
+    "uploaded_bytes": 49392
+   },
+   "cold_call": {
+    "launches": 33,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_1": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_2": 1,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_4": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_5": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.46,
+    "make": 0.0,
+    "compile": 6.57,
+    "steady_call": 0.0,
+    "total": 11.08
+   },
+   "process_wall_s": 12.3,
+   "peak_rss_mib": 795.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.attention_prefill__small__fp16-b1-h4-s64-d32__base"
+  },
+  {
+   "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 7,
+   "launches": 7,
+   "expected_launches": 7,
+   "artifacts": 6,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16,
+    "R0_BLOCK": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 10240,
+    "live_bytes": 5120,
+    "allocations": 69,
+    "uploaded_bytes": 3312
+   },
+   "cold_call": {
+    "launches": 33,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_1": 1,
+     "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_2": 2,
+     "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_4": 1,
+     "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_5": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.7,
+    "make": 0.0,
+    "compile": 4.86,
+    "steady_call": 0.0,
+    "total": 9.16
+   },
+   "process_wall_s": 12.4,
+   "peak_rss_mib": 790.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.attention_prefill__tiny__fp16-b1-h2-s16-d16__base"
+  },
+  {
+   "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262144,
+    "live_bytes": 262144,
+    "allocations": 56,
+    "uploaded_bytes": 131280
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_bmm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.7,
+    "make": 0.0,
+    "compile": 1.93,
+    "steady_call": 0.0,
+    "total": 7.09
+   },
+   "process_wall_s": 11.0,
+   "peak_rss_mib": 779.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.bmm__medium__fp16-b16-m64-k32-n64__base"
+  },
+  {
+   "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+   "config": "gemm_tile=16,64,16",
+   "knobs_changed": {
+    "TNCA_GEMM_TILE": "16,64,16"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 64,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     64,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262144,
+    "live_bytes": 262144,
+    "allocations": 56,
+    "uploaded_bytes": 131280
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_bmm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.27,
+    "make": 0.0,
+    "compile": 10.44,
+    "steady_call": 0.0,
+    "total": 16.42
+   },
+   "process_wall_s": 21.3,
+   "peak_rss_mib": 796.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.bmm__medium__fp16-b16-m64-k32-n64__gemm_tile=16,64,16",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 4,
+   "launches": 3,
+   "expected_launches": 3,
+   "artifacts": 3,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 115200,
+    "live_bytes": 69888,
+    "allocations": 60,
+    "uploaded_bytes": 45520
+   },
+   "cold_call": {
+    "launches": 29,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_convolution_0": 1,
+     "triton_poi_fused_convolution_1": 1,
+     "triton_tem_fused_convolution_2": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.04,
+    "make": 0.0,
+    "compile": 5.22,
+    "steady_call": 0.0,
+    "total": 7.91
+   },
+   "process_wall_s": 10.4,
+   "peak_rss_mib": 792.0,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.conv2d__medium__fp32-n1-cin24-h16-w16-cout24__base"
+  },
+  {
+   "point": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 4,
+   "launches": 3,
+   "expected_launches": 3,
+   "artifacts": 3,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 67584,
+    "live_bytes": 41984,
+    "allocations": 60,
+    "uploaded_bytes": 25808
+   },
+   "cold_call": {
+    "launches": 29,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_convolution_0": 1,
+     "triton_poi_fused_convolution_1": 1,
+     "triton_tem_fused_convolution_2": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.1,
+    "make": 0.0,
+    "compile": 6.52,
+    "steady_call": 0.0,
+    "total": 11.56
+   },
+   "process_wall_s": 15.1,
+   "peak_rss_mib": 792.7,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.conv2d__small__fp32-n1-cin16-h16-w16-cout16__base"
+  },
+  {
+   "point": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 4,
+   "launches": 3,
+   "expected_launches": 3,
+   "artifacts": 3,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16,
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 6400,
+    "live_bytes": 4224,
+    "allocations": 60,
+    "uploaded_bytes": 2384
+   },
+   "cold_call": {
+    "launches": 29,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_convolution_0": 1,
+     "triton_poi_fused_convolution_1": 1,
+     "triton_tem_fused_convolution_2": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.4,
+    "make": 0.0,
+    "compile": 7.72,
+    "steady_call": 0.0,
+    "total": 12.8
+   },
+   "process_wall_s": 16.7,
+   "peak_rss_mib": 793.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.conv2d__tiny__fp32-n1-cin4-h8-w8-cout8__base"
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 268435456,
+    "live_bytes": 268435456,
+    "allocations": 55,
+    "uploaded_bytes": 134217936
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_clone_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 6.91,
+    "make": 2.23,
+    "compile": 3.51,
+    "steady_call": 0.0,
+    "total": 14.23
+   },
+   "process_wall_s": 18.5,
+   "peak_rss_mib": 1373.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.copy__hbm__fp16-n67108864__base"
+  },
+  {
+   "point": "op.copy/hbm/fp16-n67108864",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 64
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 268435456,
+    "live_bytes": 268435456,
+    "allocations": 55,
+    "uploaded_bytes": 134217936
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_clone_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.44,
+    "make": 1.76,
+    "compile": 2.68,
+    "steady_call": 0.0,
+    "total": 9.71
+   },
+   "process_wall_s": 11.0,
+   "peak_rss_mib": 1373.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.copy__hbm__fp16-n67108864__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.cumsum/medium/fp32-r128-c256",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262144,
+    "live_bytes": 262144,
+    "allocations": 55,
+    "uploaded_bytes": 131280
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused_cumsum_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.46,
+    "make": 0.0,
+    "compile": 4.59,
+    "steady_call": 0.0,
+    "total": 7.86
+   },
+   "process_wall_s": 9.6,
+   "peak_rss_mib": 773.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.cumsum__medium__fp32-r128-c256__base"
+  },
+  {
+   "point": "op.cumsum/medium/fp32-r128-c256",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262144,
+    "live_bytes": 262144,
+    "allocations": 55,
+    "uploaded_bytes": 131280
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused_cumsum_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.49,
+    "make": 0.01,
+    "compile": 2.64,
+    "steady_call": 0.0,
+    "total": 6.64
+   },
+   "process_wall_s": 8.9,
+   "peak_rss_mib": 773.7,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.cumsum__medium__fp32-r128-c256__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.gelu_tanh/medium/fp16-n65536",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262144,
+    "live_bytes": 262144,
+    "allocations": 55,
+    "uploaded_bytes": 131280
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_gelu_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.83,
+    "make": 0.49,
+    "compile": 4.08,
+    "steady_call": 0.0,
+    "total": 11.44
+   },
+   "process_wall_s": 14.9,
+   "peak_rss_mib": 773.0,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.gelu_tanh__medium__fp16-n65536__base"
+  },
+  {
+   "point": "op.gelu_tanh/medium/fp16-n65536",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 64
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262144,
+    "live_bytes": 262144,
+    "allocations": 55,
+    "uploaded_bytes": 131280
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_gelu_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.85,
+    "make": 0.48,
+    "compile": 2.86,
+    "steady_call": 0.0,
+    "total": 9.07
+   },
+   "process_wall_s": 11.5,
+   "peak_rss_mib": 774.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.gelu_tanh__medium__fp16-n65536__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.gemv/hbm/fp16-k4096-n11008",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 90207744,
+    "live_bytes": 90207744,
+    "allocations": 56,
+    "uploaded_bytes": 90185936
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.3,
+    "make": 1.87,
+    "compile": 2.43,
+    "steady_call": 0.0,
+    "total": 8.28
+   },
+   "process_wall_s": 10.6,
+   "peak_rss_mib": 1222.3,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.gemv__hbm__fp16-k4096-n11008__base"
+  },
+  {
+   "point": "op.gemv/hbm/fp16-k4096-n11008",
+   "config": "gemm_tile=16,64,16",
+   "knobs_changed": {
+    "TNCA_GEMM_TILE": "16,64,16"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 64,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     64,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 90207744,
+    "live_bytes": 90207744,
+    "allocations": 56,
+    "uploaded_bytes": 90185936
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.24,
+    "make": 1.3,
+    "compile": 6.05,
+    "steady_call": 0.0,
+    "total": 12.78
+   },
+   "process_wall_s": 23.7,
+   "peak_rss_mib": 1480.5,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.gemv__hbm__fp16-k4096-n11008__gemm_tile=16,64,16",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.gemv/hbm/fp16-k4096-n11008",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 90207744,
+    "live_bytes": 90207744,
+    "allocations": 56,
+    "uploaded_bytes": 90185936
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 7.82,
+    "make": 2.19,
+    "compile": 1.93,
+    "steady_call": 0.0,
+    "total": 14.07
+   },
+   "process_wall_s": 15.7,
+   "peak_rss_mib": 1222.3,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.gemv__hbm__fp16-k4096-n11008__pipeline=2",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.gemv/large/fp16-k2048-n8192",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 33574912,
+    "live_bytes": 33574912,
+    "allocations": 56,
+    "uploaded_bytes": 33558736
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.25,
+    "make": 1.13,
+    "compile": 4.17,
+    "steady_call": 0.0,
+    "total": 11.02
+   },
+   "process_wall_s": 13.7,
+   "peak_rss_mib": 994.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.gemv__large__fp16-k2048-n8192__base"
+  },
+  {
+   "point": "op.gemv/large/fp16-k2048-n8192",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 33574912,
+    "live_bytes": 33574912,
+    "allocations": 56,
+    "uploaded_bytes": 33558736
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 7.99,
+    "make": 1.03,
+    "compile": 2.13,
+    "steady_call": 0.0,
+    "total": 13.25
+   },
+   "process_wall_s": 15.2,
+   "peak_rss_mib": 994.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.gemv__large__fp16-k2048-n8192__pipeline=2",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.gemv/medium/fp16-k320-n448",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 288256,
+    "live_bytes": 288256,
+    "allocations": 56,
+    "uploaded_bytes": 287568
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.37,
+    "make": 1.23,
+    "compile": 5.54,
+    "steady_call": 0.0,
+    "total": 10.6
+   },
+   "process_wall_s": 15.3,
+   "peak_rss_mib": 777.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.gemv__medium__fp16-k320-n448__base"
+  },
+  {
+   "point": "op.gemv/medium/fp16-k320-n448",
+   "config": "gemm_tile=16,64,16",
+   "knobs_changed": {
+    "TNCA_GEMM_TILE": "16,64,16"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 64,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     64,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 288256,
+    "live_bytes": 288256,
+    "allocations": 56,
+    "uploaded_bytes": 287568
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 7.19,
+    "make": 0.88,
+    "compile": 4.93,
+    "steady_call": 0.0,
+    "total": 15.58
+   },
+   "process_wall_s": 18.6,
+   "peak_rss_mib": 793.0,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.gemv__medium__fp16-k320-n448__gemm_tile=16,64,16",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.gemv/medium/fp16-k320-n448",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 288256,
+    "live_bytes": 288256,
+    "allocations": 56,
+    "uploaded_bytes": 287568
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.55,
+    "make": 0.16,
+    "compile": 2.34,
+    "steady_call": 0.0,
+    "total": 7.79
+   },
+   "process_wall_s": 9.9,
+   "peak_rss_mib": 779.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.gemv__medium__fp16-k320-n448__pipeline=2",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.layernorm/medium/fp16-r128-d512",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 264192,
+    "live_bytes": 264192,
+    "allocations": 57,
+    "uploaded_bytes": 133328
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused_native_layer_norm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 6.52,
+    "make": 0.71,
+    "compile": 1.55,
+    "steady_call": 0.0,
+    "total": 10.02
+   },
+   "process_wall_s": 13.5,
+   "peak_rss_mib": 775.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.layernorm__medium__fp16-r128-d512__base"
+  },
+  {
+   "point": "op.layernorm/medium/fp16-r128-d512",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 64,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 264192,
+    "live_bytes": 264192,
+    "allocations": 57,
+    "uploaded_bytes": 133328
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused_native_layer_norm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.36,
+    "make": 0.34,
+    "compile": 2.44,
+    "steady_call": 0.0,
+    "total": 8.96
+   },
+   "process_wall_s": 11.0,
+   "peak_rss_mib": 776.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.layernorm__medium__fp16-r128-d512__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 105666048,
+    "live_bytes": 105666048,
+    "allocations": 57,
+    "uploaded_bytes": 94394064
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.25,
+    "make": 2.78,
+    "compile": 2.26,
+    "steady_call": 0.0,
+    "total": 9.16
+   },
+   "process_wall_s": 12.3,
+   "peak_rss_mib": 1222.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.linear__hbm__fp16-m512-k4096-n11008__base"
+  },
+  {
+   "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "config": "gemm_tile=16,64,16",
+   "knobs_changed": {
+    "TNCA_GEMM_TILE": "16,64,16"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 64,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     64,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 105666048,
+    "live_bytes": 105666048,
+    "allocations": 57,
+    "uploaded_bytes": 94394064
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 5.29,
+    "make": 1.54,
+    "compile": 6.07,
+    "steady_call": 0.0,
+    "total": 14.57
+   },
+   "process_wall_s": 18.2,
+   "peak_rss_mib": 1222.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.linear__hbm__fp16-m512-k4096-n11008__gemm_tile=16,64,16",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 105666048,
+    "live_bytes": 105666048,
+    "allocations": 57,
+    "uploaded_bytes": 94394064
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.68,
+    "make": 1.66,
+    "compile": 2.52,
+    "steady_call": 0.0,
+    "total": 7.73
+   },
+   "process_wall_s": 9.2,
+   "peak_rss_mib": 1221.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.linear__hbm__fp16-m512-k4096-n11008__pipeline=2",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.linear/large/fp16-m512-k2048-n8192",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 44056576,
+    "live_bytes": 44056576,
+    "allocations": 57,
+    "uploaded_bytes": 35668176
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.71,
+    "make": 1.62,
+    "compile": 2.83,
+    "steady_call": 0.0,
+    "total": 8.36
+   },
+   "process_wall_s": 11.9,
+   "peak_rss_mib": 1002.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.linear__large__fp16-m512-k2048-n8192__base"
+  },
+  {
+   "point": "op.linear/large/fp16-m512-k2048-n8192",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 44056576,
+    "live_bytes": 44056576,
+    "allocations": 57,
+    "uploaded_bytes": 35668176
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 5.15,
+    "make": 0.56,
+    "compile": 1.95,
+    "steady_call": 0.0,
+    "total": 8.83
+   },
+   "process_wall_s": 11.0,
+   "peak_rss_mib": 919.0,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.linear__large__fp16-m512-k2048-n8192__pipeline=2",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.linear/medium/fp16-m128-k320-n256",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 311808,
+    "live_bytes": 311808,
+    "allocations": 57,
+    "uploaded_bytes": 246480
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.36,
+    "make": 0.12,
+    "compile": 4.17,
+    "steady_call": 0.0,
+    "total": 9.87
+   },
+   "process_wall_s": 12.3,
+   "peak_rss_mib": 777.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.linear__medium__fp16-m128-k320-n256__base"
+  },
+  {
+   "point": "op.linear/medium/fp16-m128-k320-n256",
+   "config": "gemm_tile=16,64,16",
+   "knobs_changed": {
+    "TNCA_GEMM_TILE": "16,64,16"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 64,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     64,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 311808,
+    "live_bytes": 311808,
+    "allocations": 57,
+    "uploaded_bytes": 246480
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.57,
+    "make": 0.22,
+    "compile": 11.42,
+    "steady_call": 0.0,
+    "total": 20.0
+   },
+   "process_wall_s": 26.7,
+   "peak_rss_mib": 794.0,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.linear__medium__fp16-m128-k320-n256__gemm_tile=16,64,16",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.linear/medium/fp16-m128-k320-n256",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 311808,
+    "live_bytes": 311808,
+    "allocations": 57,
+    "uploaded_bytes": 246480
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_addmm_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.29,
+    "make": 0.25,
+    "compile": 1.99,
+    "steady_call": 0.0,
+    "total": 5.98
+   },
+   "process_wall_s": 7.9,
+   "peak_rss_mib": 776.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.linear__medium__fp16-m128-k320-n256__pipeline=2",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 100663296,
+    "live_bytes": 100663296,
+    "allocations": 56,
+    "uploaded_bytes": 67109072
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.17,
+    "make": 1.7,
+    "compile": 3.65,
+    "steady_call": 0.0,
+    "total": 10.5
+   },
+   "process_wall_s": 12.4,
+   "peak_rss_mib": 1021.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__hbm__fp16-m4096-k4096-n4096__base"
+  },
+  {
+   "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "config": "gemm_tile=16,64,16",
+   "knobs_changed": {
+    "TNCA_GEMM_TILE": "16,64,16"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 64,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     64,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 100663296,
+    "live_bytes": 100663296,
+    "allocations": 56,
+    "uploaded_bytes": 67109072
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 5.5,
+    "make": 0.51,
+    "compile": 4.41,
+    "steady_call": 0.0,
+    "total": 11.15
+   },
+   "process_wall_s": 17.6,
+   "peak_rss_mib": 1048.5,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__hbm__fp16-m4096-k4096-n4096__gemm_tile=16,64,16",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 100663296,
+    "live_bytes": 100663296,
+    "allocations": 56,
+    "uploaded_bytes": 67109072
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.96,
+    "make": 2.74,
+    "compile": 1.86,
+    "steady_call": 0.0,
+    "total": 8.46
+   },
+   "process_wall_s": 9.9,
+   "peak_rss_mib": 1022.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__hbm__fp16-m4096-k4096-n4096__pipeline=2",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.matmul/large/fp16-m2048-k2048-n2048",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 25165824,
+    "live_bytes": 25165824,
+    "allocations": 56,
+    "uploaded_bytes": 16777424
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 5.78,
+    "make": 0.4,
+    "compile": 3.8,
+    "steady_call": 0.0,
+    "total": 11.49
+   },
+   "process_wall_s": 16.3,
+   "peak_rss_mib": 836.2,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__large__fp16-m2048-k2048-n2048__base"
+  },
+  {
+   "point": "op.matmul/large/fp16-m2048-k2048-n2048",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 25165824,
+    "live_bytes": 25165824,
+    "allocations": 56,
+    "uploaded_bytes": 16777424
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.45,
+    "make": 1.27,
+    "compile": 2.24,
+    "steady_call": 0.0,
+    "total": 9.17
+   },
+   "process_wall_s": 11.1,
+   "peak_rss_mib": 836.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__large__fp16-m2048-k2048-n2048__pipeline=2",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.matmul/large/fp32-m2048-k2048-n2048",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 50331648,
+    "live_bytes": 50331648,
+    "allocations": 56,
+    "uploaded_bytes": 33554640
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.98,
+    "make": 0.36,
+    "compile": 3.83,
+    "steady_call": 0.0,
+    "total": 10.85
+   },
+   "process_wall_s": 15.3,
+   "peak_rss_mib": 892.6,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__large__fp32-m2048-k2048-n2048__base"
+  },
+  {
+   "point": "op.matmul/large/fp32-m2048-k2048-n2048",
+   "config": "pipeline=2",
+   "knobs_changed": {
+    "TNCA_PIPELINE": "2"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 50331648,
+    "live_bytes": 50331648,
+    "allocations": 56,
+    "uploaded_bytes": 33554640
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.85,
+    "make": 0.26,
+    "compile": 4.69,
+    "steady_call": 0.0,
+    "total": 9.74
+   },
+   "process_wall_s": 12.4,
+   "peak_rss_mib": 892.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__large__fp32-m2048-k2048-n2048__pipeline=2",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.matmul/medium/fp16-m128-k192-n128",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 131072,
+    "live_bytes": 131072,
+    "allocations": 56,
+    "uploaded_bytes": 98512
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 9.98,
+    "make": 0.0,
+    "compile": 4.81,
+    "steady_call": 0.0,
+    "total": 16.98
+   },
+   "process_wall_s": 20.5,
+   "peak_rss_mib": 774.0,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__medium__fp16-m128-k192-n128__base"
+  },
+  {
+   "point": "op.matmul/medium/fp16-m128-k192-n128",
+   "config": "gemm_tile=16,64,16",
+   "knobs_changed": {
+    "TNCA_GEMM_TILE": "16,64,16"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 64,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     64,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 131072,
+    "live_bytes": 131072,
+    "allocations": 56,
+    "uploaded_bytes": 98512
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 6.14,
+    "make": 0.0,
+    "compile": 4.4,
+    "steady_call": 0.0,
+    "total": 11.94
+   },
+   "process_wall_s": 15.0,
+   "peak_rss_mib": 787.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__medium__fp16-m128-k192-n128__gemm_tile=16,64,16",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.matmul/medium/fp32-m128-k192-n128",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 16,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     16,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262144,
+    "live_bytes": 262144,
+    "allocations": 56,
+    "uploaded_bytes": 196816
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 5.87,
+    "make": 0.0,
+    "compile": 3.58,
+    "steady_call": 0.0,
+    "total": 11.86
+   },
+   "process_wall_s": 15.7,
+   "peak_rss_mib": 780.4,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__medium__fp32-m128-k192-n128__base"
+  },
+  {
+   "point": "op.matmul/medium/fp32-m128-k192-n128",
+   "config": "gemm_tile=16,64,16",
+   "knobs_changed": {
+    "TNCA_GEMM_TILE": "16,64,16"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 64,
+    "BLOCK_K": 16
+   },
+   "gemm_tiles": [
+    [
+     16,
+     64,
+     16
+    ]
+   ],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262144,
+    "live_bytes": 262144,
+    "allocations": 56,
+    "uploaded_bytes": 196816
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_tem_fused_mm_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.47,
+    "make": 0.0,
+    "compile": 19.92,
+    "steady_call": 0.0,
+    "total": 25.33
+   },
+   "process_wall_s": 30.2,
+   "peak_rss_mib": 810.5,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.matmul__medium__fp32-m128-k192-n128__gemm_tile=16,64,16",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 134225920,
+    "live_bytes": 134225920,
+    "allocations": 56,
+    "uploaded_bytes": 67117264
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.93,
+    "make": 2.25,
+    "compile": 2.84,
+    "steady_call": 0.0,
+    "total": 10.95
+   },
+   "process_wall_s": 12.9,
+   "peak_rss_mib": 1054.5,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.rmsnorm__hbm__fp16-r8192-d4096__base"
+  },
+  {
+   "point": "op.rmsnorm/hbm/fp16-r8192-d4096",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 64,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 134225920,
+    "live_bytes": 134225920,
+    "allocations": 56,
+    "uploaded_bytes": 67117264
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.51,
+    "make": 1.03,
+    "compile": 3.65,
+    "steady_call": 0.0,
+    "total": 7.86
+   },
+   "process_wall_s": 10.6,
+   "peak_rss_mib": 1054.5,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.rmsnorm__hbm__fp16-r8192-d4096__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.rmsnorm/medium/fp16-r128-d512",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 263168,
+    "live_bytes": 263168,
+    "allocations": 56,
+    "uploaded_bytes": 132304
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.17,
+    "make": 0.79,
+    "compile": 3.54,
+    "steady_call": 0.0,
+    "total": 9.78
+   },
+   "process_wall_s": 11.8,
+   "peak_rss_mib": 776.9,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.rmsnorm__medium__fp16-r128-d512__base"
+  },
+  {
+   "point": "op.rmsnorm/medium/fp16-r128-d512",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 64,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 263168,
+    "live_bytes": 263168,
+    "allocations": 56,
+    "uploaded_bytes": 132304
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 1.47,
+    "make": 0.01,
+    "compile": 1.78,
+    "steady_call": 0.0,
+    "total": 3.92
+   },
+   "process_wall_s": 6.2,
+   "peak_rss_mib": 778.5,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.rmsnorm__medium__fp16-r128-d512__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.rope/medium/fp16-b1-h8-s128-d32",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 4,
+   "launches": 3,
+   "expected_launches": 3,
+   "artifacts": 3,
+   "max_block_constexprs": {
+    "XBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 212992,
+    "live_bytes": 147456,
+    "allocations": 59,
+    "uploaded_bytes": 82128
+   },
+   "cold_call": {
+    "launches": 29,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_neg_split_0": 1,
+     "triton_poi_fused_cat_neg_split_1": 1,
+     "triton_poi_fused_add_mul_2": 1
+    }
+   },
+   "wall_s": {
+    "setup": 6.09,
+    "make": 0.22,
+    "compile": 4.8,
+    "steady_call": 0.0,
+    "total": 12.67
+   },
+   "process_wall_s": 15.7,
+   "peak_rss_mib": 776.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.rope__medium__fp16-b1-h8-s128-d32__base"
+  },
+  {
+   "point": "op.rope/medium/fp16-b1-h8-s128-d32",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 4,
+   "launches": 3,
+   "expected_launches": 3,
+   "artifacts": 3,
+   "max_block_constexprs": {
+    "XBLOCK": 64
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 212992,
+    "live_bytes": 147456,
+    "allocations": 59,
+    "uploaded_bytes": 82128
+   },
+   "cold_call": {
+    "launches": 29,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_neg_split_0": 1,
+     "triton_poi_fused_cat_neg_split_1": 1,
+     "triton_poi_fused_add_mul_2": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.71,
+    "make": 0.44,
+    "compile": 3.52,
+    "steady_call": 0.0,
+    "total": 8.65
+   },
+   "process_wall_s": 11.1,
+   "peak_rss_mib": 776.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.rope__medium__fp16-b1-h8-s128-d32__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.rope/small/fp16-b1-h4-s64-d32",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 4,
+   "launches": 3,
+   "expected_launches": 3,
+   "artifacts": 3,
+   "max_block_constexprs": {
+    "XBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 57344,
+    "live_bytes": 40960,
+    "allocations": 59,
+    "uploaded_bytes": 24784
+   },
+   "cold_call": {
+    "launches": 29,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_neg_split_0": 1,
+     "triton_poi_fused_cat_neg_split_1": 1,
+     "triton_poi_fused_add_mul_2": 1
+    }
+   },
+   "wall_s": {
+    "setup": 2.96,
+    "make": 0.0,
+    "compile": 3.48,
+    "steady_call": 0.0,
+    "total": 7.05
+   },
+   "process_wall_s": 10.2,
+   "peak_rss_mib": 775.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.rope__small__fp16-b1-h4-s64-d32__base"
+  },
+  {
+   "point": "op.rope/tiny/fp16-b1-h2-s16-d16",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 4,
+   "launches": 3,
+   "expected_launches": 3,
+   "artifacts": 3,
+   "max_block_constexprs": {
+    "XBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 4096,
+    "live_bytes": 3072,
+    "allocations": 59,
+    "uploaded_bytes": 2256
+   },
+   "cold_call": {
+    "launches": 29,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_neg_split_0": 1,
+     "triton_poi_fused_cat_neg_split_1": 1,
+     "triton_poi_fused_add_mul_2": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.42,
+    "make": 0.01,
+    "compile": 2.68,
+    "steady_call": 0.0,
+    "total": 9.84
+   },
+   "process_wall_s": 11.5,
+   "peak_rss_mib": 775.1,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.rope__tiny__fp16-b1-h2-s16-d16__base"
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 268435456,
+    "live_bytes": 268435456,
+    "allocations": 55,
+    "uploaded_bytes": 134217936
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_silu_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.35,
+    "make": 2.65,
+    "compile": 3.05,
+    "steady_call": 0.0,
+    "total": 9.74
+   },
+   "process_wall_s": 12.4,
+   "peak_rss_mib": 1373.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.silu__hbm__fp16-n67108864__base"
+  },
+  {
+   "point": "op.silu/hbm/fp16-n67108864",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 64
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 268435456,
+    "live_bytes": 268435456,
+    "allocations": 55,
+    "uploaded_bytes": 134217936
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_silu_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.43,
+    "make": 1.19,
+    "compile": 2.24,
+    "steady_call": 0.0,
+    "total": 8.08
+   },
+   "process_wall_s": 13.4,
+   "peak_rss_mib": 1374.2,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.silu__hbm__fp16-n67108864__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.silu/medium/fp16-n65536",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262144,
+    "live_bytes": 262144,
+    "allocations": 55,
+    "uploaded_bytes": 131280
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_silu_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.45,
+    "make": 0.49,
+    "compile": 2.76,
+    "steady_call": 0.0,
+    "total": 9.23
+   },
+   "process_wall_s": 11.4,
+   "peak_rss_mib": 773.2,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.silu__medium__fp16-n65536__base"
+  },
+  {
+   "point": "op.silu/medium/fp16-n65536",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 64
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 262144,
+    "live_bytes": 262144,
+    "allocations": 55,
+    "uploaded_bytes": 131280
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_silu_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.06,
+    "make": 0.21,
+    "compile": 3.56,
+    "steady_call": 0.0,
+    "total": 8.28
+   },
+   "process_wall_s": 10.3,
+   "peak_rss_mib": 772.3,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.silu__medium__fp16-n65536__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 268435456,
+    "live_bytes": 134217728,
+    "allocations": 57,
+    "uploaded_bytes": 67109072
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__softmax_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 6.54,
+    "make": 2.34,
+    "compile": 2.94,
+    "steady_call": 0.0,
+    "total": 13.37
+   },
+   "process_wall_s": 16.0,
+   "peak_rss_mib": 1054.0,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.softmax__hbm__fp16-r4096-c8192__base"
+  },
+  {
+   "point": "op.softmax/hbm/fp16-r4096-c8192",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 64,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 268435456,
+    "live_bytes": 134217728,
+    "allocations": 57,
+    "uploaded_bytes": 67109072
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__softmax_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.85,
+    "make": 1.88,
+    "compile": 4.71,
+    "steady_call": 0.0,
+    "total": 12.3
+   },
+   "process_wall_s": 15.2,
+   "peak_rss_mib": 1151.8,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.softmax__hbm__fp16-r4096-c8192__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.softmax/medium/fp16-r80-c512",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 16,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 327680,
+    "live_bytes": 163840,
+    "allocations": 57,
+    "uploaded_bytes": 82128
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__softmax_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.12,
+    "make": 0.13,
+    "compile": 3.67,
+    "steady_call": 0.0,
+    "total": 9.4
+   },
+   "process_wall_s": 12.9,
+   "peak_rss_mib": 774.3,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.softmax__medium__fp16-r80-c512__base"
+  },
+  {
+   "point": "op.softmax/medium/fp16-r80-c512",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "R0_BLOCK": 64,
+    "XBLOCK": 1
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 327680,
+    "live_bytes": 163840,
+    "allocations": 57,
+    "uploaded_bytes": 82128
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_red_fused__softmax_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 3.47,
+    "make": 1.4,
+    "compile": 3.32,
+    "steady_call": 0.0,
+    "total": 9.15
+   },
+   "process_wall_s": 11.3,
+   "peak_rss_mib": 776.5,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.softmax__medium__fp16-r80-c512__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.swiglu/medium/fp16-n49152",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 294912,
+    "live_bytes": 294912,
+    "allocations": 56,
+    "uploaded_bytes": 196816
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_mul_silu_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 7.18,
+    "make": 1.42,
+    "compile": 4.42,
+    "steady_call": 0.0,
+    "total": 13.71
+   },
+   "process_wall_s": 17.9,
+   "peak_rss_mib": 773.5,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.swiglu__medium__fp16-n49152__base"
+  },
+  {
+   "point": "op.swiglu/medium/fp16-n49152",
+   "config": "max_block=64",
+   "knobs_changed": {
+    "TNCA_MAX_BLOCK": "64"
+   },
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 64
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 294912,
+    "live_bytes": 294912,
+    "allocations": 56,
+    "uploaded_bytes": 196816
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_mul_silu_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 6.35,
+    "make": 0.17,
+    "compile": 1.6,
+    "steady_call": 0.0,
+    "total": 10.9
+   },
+   "process_wall_s": 12.6,
+   "peak_rss_mib": 773.7,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.swiglu__medium__fp16-n49152__max_block=64",
+   "artifacts_identical_to_base": false
+  },
+  {
+   "point": "op.transpose/hbm/fp32-r8192-c8192",
+   "config": "base",
+   "knobs_changed": {},
+   "status": "pass",
+   "kernels_compiled": 2,
+   "launches": 1,
+   "expected_launches": 1,
+   "artifacts": 1,
+   "max_block_constexprs": {
+    "XBLOCK": 16,
+    "YBLOCK": 16
+   },
+   "gemm_tiles": [],
+   "compile_options": [
+    {
+     "index_opt": 1,
+     "opt_level": 2,
+     "physical_chunks": 1,
+     "rctx_spmd": 1,
+     "rctx_stages": 1,
+     "schedule": 1,
+     "sparse_tensormaps": 1
+    }
+   ],
+   "sdpa_online_nodes": 0,
+   "sdpa_fused_decomposition_installed": false,
+   "host_fallbacks": [],
+   "problems": [],
+   "native_memory": {
+    "peak_bytes": 536870912,
+    "live_bytes": 536870912,
+    "allocations": 55,
+    "uploaded_bytes": 268435664
+   },
+   "cold_call": {
+    "launches": 27,
+    "kernels": {
+     "_copy_kernel": 26,
+     "triton_poi_fused_clone_t_0": 1
+    }
+   },
+   "wall_s": {
+    "setup": 4.32,
+    "make": 4.09,
+    "compile": 2.27,
+    "steady_call": 0.0,
+    "total": 11.84
+   },
+   "process_wall_s": 13.6,
+   "peak_rss_mib": 1983.2,
+   "run_dir": "gx10-6646:/home/zhongchun/r40v3_compile_preflight/bc5a_native/runs/op.transpose__hbm__fp32-r8192-c8192__base"
+  }
+ ]
+}

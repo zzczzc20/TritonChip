@@ -89,3 +89,15 @@ def axpy_kernel(x_ptr, y_ptr, o_ptr, n, alpha, BLOCK: tl.constexpr):
     a = tl.load(x_ptr + offs, mask=mask, other=0.0)
     b = tl.load(y_ptr + offs, mask=mask, other=0.0)
     tl.store(o_ptr + offs, a * alpha + b, mask=mask)
+
+
+@triton.jit
+def descriptor_copy_kernel(x_ptr, y_ptr, o_ptr, n, BLOCK: tl.constexpr):
+    """Both coordinates share zero; wide chunks must shift only columns."""
+    src = tl.make_tensor_descriptor(x_ptr, shape=[2, BLOCK], strides=[BLOCK, 1],
+                                    block_shape=[2, BLOCK])
+    dst = tl.make_tensor_descriptor(o_ptr, shape=[2, BLOCK], strides=[BLOCK, 1],
+                                    block_shape=[2, BLOCK])
+    zero = tl.full((), 0, tl.int32)
+    value = src.load([zero, zero])
+    dst.store([zero, zero], value)

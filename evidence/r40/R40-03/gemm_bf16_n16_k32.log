@@ -1,0 +1,15 @@
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-ba09d41820d5/tnca_device_vrf5.vvp
+W1012 02:01:58.827000 4177660 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+AUDIT physical MMA K=32: {'accumulators': 1, 'barriers': 3, 'commands_outstanding': 'unknown', 'descriptors': 2, 'rf_private_per_role': {'role0': 14, 'role1': 14}, 'scratch_bytes': 14848, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 16, 32]], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [16, 32]}]
+PASS mm, logical 16x16x32, shape 17x65x33
+AUDIT physical MMA K=32: {'accumulators': 1, 'barriers': 3, 'commands_outstanding': 'unknown', 'descriptors': 2, 'rf_private_per_role': {'role0': 14, 'role1': 14}, 'scratch_bytes': 14848, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 16, 32]], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [16, 32]}]
+PASS mm, logical 16x16x32, shape 33x31x65
+AUDIT physical MMA K=32: {'accumulators': 1, 'barriers': 3, 'commands_outstanding': 'unknown', 'descriptors': 2, 'rf_private_per_role': {'role0': 14, 'role1': 14}, 'scratch_bytes': 14848, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 16, 32]], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [16, 32]}]
+PASS addmm, logical 16x16x32, shape 17x65x33
+AUDIT physical MMA K=32: {'accumulators': 1, 'barriers': 3, 'commands_outstanding': 'unknown', 'descriptors': 2, 'rf_private_per_role': {'role0': 14, 'role1': 14}, 'scratch_bytes': 14848, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 16, 32]], 'mma_fragment_reuses': 0, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [16, 32]}]
+PASS addmm, logical 16x16x32, shape 33x31x65
+r40-gemm-tiles-tests PASS (4/4)

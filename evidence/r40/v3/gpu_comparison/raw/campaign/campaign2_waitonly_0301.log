@@ -1,0 +1,4 @@
+=== 2026-10-19T03:01:44+00:00 stage boundary inductor-cudagraph /home/zhongchun/r40v3_gpu_runs/points_unique.txt: 113 points, 0 already clean
+  [2026-10-19T03:01:44+00:00] waiting: other users on the GPU [(2588425, 'lizeyu', '3060 MiB')]
+pass             boundary  inductor-cudagraph     model.gpt2_block/medium/fp16-d160-h5-b1-s64                attempt 1 clean=True waited=4005.2s run=11.1s
+pass             boundary  inductor-cudagraph     model.gpt2_block/small/fp16-d128-h4-b1-s64                 attempt 1 clean=True waited=0.0s run=9.7s

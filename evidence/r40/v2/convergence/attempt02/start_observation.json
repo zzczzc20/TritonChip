@@ -1,0 +1,11 @@
+{
+  "observed_utc": "2026-10-16T22:34:10.184893+00:00",
+  "gate_status": "not-measured",
+  "runner_alive": true,
+  "terminal": null,
+  "package.started_utc": "2026-10-16T22:33:29Z",
+  "link.started_utc": "2026-10-16T22:34:02Z",
+  "xo.sha256": "b90bdbf25e1f05d8dfae412616f52d92ffb263bb813bc2bb634387aae0b79feb  /home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tnca_u50.xo",
+  "package.log_tail": " xml [read $fh]\n# close $fh\n# foreach {tag id} {ASSOC ASSOCIATED_BUSIF FREQ FREQ_HZ} {\n#     if {[regexp \"BUSIFPARAM_VALUE\\\\.AP_CLK\\\\.$id\\\">(\\[^<\\]*)\" $xml -> v]} {\n#         puts \"TNCA_PKG_XML_$tag=$v\"\n#     } else {\n#         puts \"TNCA_PKG_XML_$tag=NOT IN component.xml\"\n#     }\n# }\nTNCA_PKG_XML_ASSOC=s_axi_tnca:m_axi_hbm0:m_axi_hbm1:m_axi_hbm2\nTNCA_PKG_XML_FREQ=100000000\n# package_xo -kernel_xml $KXML -kernel_name $NAME \\\n#     -ip_directory $IPDIR -xo_path $XO -force\nWARNING: [Vivado 12-4404] The CPU emulation flow in v++ is only supported when using a packaged XO file that contains C-model files, none were found.\n# set variant_file [open $OUT/tnca_variant.txt w]\n# puts $variant_file $VARIANT\n# close $variant_file\n# puts \"TNCA_PKG_DONE=$XO\"\nTNCA_PKG_DONE=/home/zzhouch/tnca_build/r40_attempt02_20261016/xo/tnca_u50.xo\nINFO: [Common 17-206] Exiting Vivado at Sat Oct 17 06:33:52 2026...\n",
+  "link.stdout_tail": ""
+}

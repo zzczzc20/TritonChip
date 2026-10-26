@@ -1,0 +1,81 @@
+{
+  "observed_utc": "2026-10-18T06:59:53.645476+00:00",
+  "terminal": null,
+  "process": "    PID STAT     ELAPSED %CPU\n1939407 Sl      07:37:28  278",
+  "log_sha256": "396e38ffd334ab59fc37e49037007bd1e0ffa0c29c76738f928b295427ed1b7f",
+  "log_bytes": 489844,
+  "intermediate_timing": [
+    {
+      "line": 2684,
+      "text": "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.902 | TNS=-11415.877| WHS=N/A    | THS=N/A    |"
+    },
+    {
+      "line": 2699,
+      "text": "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.641 | TNS=-9250.050| WHS=N/A    | THS=N/A    |"
+    },
+    {
+      "line": 2720,
+      "text": "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.350 | TNS=-7665.265| WHS=N/A    | THS=N/A    |"
+    },
+    {
+      "line": 2736,
+      "text": "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.321 | TNS=-7701.215| WHS=N/A    | THS=N/A    |"
+    },
+    {
+      "line": 2753,
+      "text": "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.321 | TNS=-7701.215| WHS=-0.065 | THS=-0.082 |"
+    },
+    {
+      "line": 2760,
+      "text": "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.321 | TNS=-7701.215| WHS=-0.065 | THS=-0.082 |"
+    },
+    {
+      "line": 2768,
+      "text": "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.309 | TNS=-7663.142| WHS=N/A    | THS=N/A    |"
+    },
+    {
+      "line": 2791,
+      "text": "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.300 | TNS=-7630.205| WHS=-0.065 | THS=-0.082 |"
+    },
+    {
+      "line": 2803,
+      "text": "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.300 | TNS=-7630.205| WHS=0.000  | THS=0.000  |"
+    },
+    {
+      "line": 2837,
+      "text": "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.006 | TNS=-7278.353| WHS=-0.027 | THS=-0.080 |"
+    }
+  ],
+  "tail": [
+    "Phase 6 Post Hold Fix | Checksum: 2137dcff2",
+    "",
+    "Time (s): cpu = 10:15:41 ; elapsed = 03:35:56 . Memory (MB): peak = 22987.539 ; gain = 0.000 ; free physical = 2752 ; free virtual = 20271",
+    "",
+    "Phase 7 Leaf Clock Prog Delay Opt",
+    "",
+    "Phase 7.1 Optimize Skews",
+    "",
+    "Phase 7.1.1 Leaf ClockOpt Init",
+    "Phase 7.1.1 Leaf ClockOpt Init | Checksum: 218b6da29",
+    "",
+    "Time (s): cpu = 12:31:35 ; elapsed = 03:55:12 . Memory (MB): peak = 30542.531 ; gain = 7554.992 ; free physical = 342 ; free virtual = 12691",
+    "Phase 7.1 Optimize Skews | Checksum: 2e9bbba79",
+    "",
+    "Time (s): cpu = 12:35:27 ; elapsed = 03:58:12 . Memory (MB): peak = 30920.703 ; gain = 7933.164 ; free physical = 331 ; free virtual = 12614",
+    "",
+    "Phase 7.2 Post SkewOpt Delay Cleanup",
+    "",
+    "Phase 7.2.1 Delay CleanUp",
+    "",
+    "Phase 7.2.1.1 Update Timing",
+    "Phase 7.2.1.1 Update Timing | Checksum: 2d51bbb7d",
+    "",
+    "Time (s): cpu = 12:47:55 ; elapsed = 04:01:01 . Memory (MB): peak = 30920.703 ; gain = 7933.164 ; free physical = 315 ; free virtual = 12600",
+    "INFO: [Route 35-416] Intermediate Timing Summary | WNS=-1.006 | TNS=-7278.353| WHS=-0.027 | THS=-0.080 |",
+    "",
+    "",
+    "Phase 7.2.1.2 Update Timing"
+  ],
+  "scope": "intermediate routing diagnostics only; no final timing/route/CDC/image qualification",
+  "required_gate_promotions": []
+}

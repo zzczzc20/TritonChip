@@ -1,0 +1,342 @@
+{
+  "command": [
+    "/home/zzhouch/tc_env/torchenv/bin/python",
+    "/home/zzhouch/tnca_src_r40_conditional_b59119d_full/tools/r40/native_inventory.py",
+    "--native",
+    "/home/zzhouch/tnca_runs_r40_conditional90_b59119d_4gib/native",
+    "--evidence"
+  ],
+  "exit_code": 0,
+  "stdout": "R40-01.device v2: capability-pass\n",
+  "stderr": "",
+  "gate_evidence": {
+    "gates": {
+      "R40-01.device": {
+        "status": "capability-pass",
+        "checks": [
+          {
+            "name": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+            "ok": true
+          },
+          {
+            "name": "model.llama_decode/tiny/fp16-b1-p16",
+            "ok": true
+          },
+          {
+            "name": "model.llama_prefill/tiny/fp16-b1-s16",
+            "ok": true
+          },
+          {
+            "name": "model.mlp/tiny/fp16-t16-d64",
+            "ok": true
+          },
+          {
+            "name": "model.resnet_block/tiny/fp32-n1-c8-hw8",
+            "ok": true
+          },
+          {
+            "name": "op.add/tiny/fp16-n1000",
+            "ok": true
+          },
+          {
+            "name": "op.add/tiny/fp32-n256",
+            "ok": true
+          },
+          {
+            "name": "op.argmax/tiny/fp16-r2-v256",
+            "ok": true
+          },
+          {
+            "name": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+            "ok": true
+          },
+          {
+            "name": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+            "ok": true
+          },
+          {
+            "name": "op.bmm/tiny/fp16-b2-m16-k16-n16",
+            "ok": true
+          },
+          {
+            "name": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+            "ok": true
+          },
+          {
+            "name": "op.cumsum/tiny/fp32-r4-c64",
+            "ok": true
+          },
+          {
+            "name": "op.embedding/tiny/fp16-v256-d64-t16",
+            "ok": true
+          },
+          {
+            "name": "op.gelu_tanh/tiny/fp16-n256",
+            "ok": true
+          },
+          {
+            "name": "op.gemv/tiny/fp16-k64-n64",
+            "ok": true
+          },
+          {
+            "name": "op.layernorm/tiny/fp16-r4-d64",
+            "ok": true
+          },
+          {
+            "name": "op.linear/tiny/fp16-m16-k64-n64",
+            "ok": true
+          },
+          {
+            "name": "op.matmul/tiny/fp16-m16-k32-n16",
+            "ok": true
+          },
+          {
+            "name": "op.matmul/tiny/fp32-m16-k32-n16",
+            "ok": true
+          },
+          {
+            "name": "op.rmsnorm/tiny/fp16-r4-d64",
+            "ok": true
+          },
+          {
+            "name": "op.rope/tiny/fp16-b1-h2-s16-d16",
+            "ok": true
+          },
+          {
+            "name": "op.silu/tiny/fp16-n256",
+            "ok": true
+          },
+          {
+            "name": "op.softmax/tiny/fp16-r4-c64",
+            "ok": true
+          },
+          {
+            "name": "op.softmax/tiny/fp32-r3-c37",
+            "ok": true
+          },
+          {
+            "name": "op.swiglu/tiny/fp16-n256",
+            "ok": true
+          },
+          {
+            "name": "op.transpose/tiny/fp32-r32-c32",
+            "ok": true
+          },
+          {
+            "name": "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+            "ok": true
+          },
+          {
+            "name": "model.llama_decode/small/fp16-b1-p128",
+            "ok": true
+          },
+          {
+            "name": "model.llama_prefill/small/fp16-b1-s64",
+            "ok": true
+          },
+          {
+            "name": "model.mlp/small/fp16-t64-d128",
+            "ok": true
+          },
+          {
+            "name": "model.resnet_block/small/fp32-n1-c16-hw16",
+            "ok": true
+          },
+          {
+            "name": "op.add/small/fp16-n16384",
+            "ok": true
+          },
+          {
+            "name": "op.argmax/small/fp16-r8-v2048",
+            "ok": true
+          },
+          {
+            "name": "op.attention_decode/small/fp16-b1-h4-l256-d32",
+            "ok": true
+          },
+          {
+            "name": "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+            "ok": true
+          },
+          {
+            "name": "op.bmm/small/fp16-b8-m64-k32-n64",
+            "ok": true
+          },
+          {
+            "name": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+            "ok": true
+          },
+          {
+            "name": "op.cumsum/small/fp32-r64-c256",
+            "ok": true
+          },
+          {
+            "name": "op.embedding/small/fp16-v1024-d128-t64",
+            "ok": true
+          },
+          {
+            "name": "op.gelu_tanh/small/fp16-n16384",
+            "ok": true
+          },
+          {
+            "name": "op.gemv/small/fp16-k256-n512",
+            "ok": true
+          },
+          {
+            "name": "op.layernorm/small/fp16-r64-d256",
+            "ok": true
+          },
+          {
+            "name": "op.linear/small/fp16-m64-k256-n256",
+            "ok": true
+          },
+          {
+            "name": "op.matmul/small/fp16-m64-k128-n128",
+            "ok": true
+          },
+          {
+            "name": "op.matmul/small/fp32-m64-k128-n128",
+            "ok": true
+          },
+          {
+            "name": "op.rmsnorm/small/fp16-r64-d256",
+            "ok": true
+          },
+          {
+            "name": "op.rope/small/fp16-b1-h4-s64-d32",
+            "ok": true
+          },
+          {
+            "name": "op.silu/small/fp16-n16384",
+            "ok": true
+          },
+          {
+            "name": "op.softmax/small/fp16-r64-c512",
+            "ok": true
+          },
+          {
+            "name": "op.swiglu/small/fp16-n16384",
+            "ok": true
+          },
+          {
+            "name": "op.transpose/small/fp32-r128-c256",
+            "ok": true
+          },
+          {
+            "name": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+            "ok": true
+          },
+          {
+            "name": "model.llama_decode/medium/fp16-b1-p256",
+            "ok": true
+          },
+          {
+            "name": "model.llama_prefill/medium/fp16-b1-s64",
+            "ok": true
+          },
+          {
+            "name": "model.mlp/medium/fp16-t128-d128",
+            "ok": true
+          },
+          {
+            "name": "model.resnet_block/medium/fp32-n1-c24-hw16",
+            "ok": true
+          },
+          {
+            "name": "op.add/medium/fp16-n49152",
+            "ok": true
+          },
+          {
+            "name": "op.argmax/medium/fp16-r32-v4096",
+            "ok": true
+          },
+          {
+            "name": "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+            "ok": true
+          },
+          {
+            "name": "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+            "ok": true
+          },
+          {
+            "name": "op.bmm/medium/fp16-b16-m64-k32-n64",
+            "ok": true
+          },
+          {
+            "name": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+            "ok": true
+          },
+          {
+            "name": "op.cumsum/medium/fp32-r128-c256",
+            "ok": true
+          },
+          {
+            "name": "op.embedding/medium/fp16-v1024-d128-t256",
+            "ok": true
+          },
+          {
+            "name": "op.gelu_tanh/medium/fp16-n65536",
+            "ok": true
+          },
+          {
+            "name": "op.gemv/medium/fp16-k320-n448",
+            "ok": true
+          },
+          {
+            "name": "op.layernorm/medium/fp16-r128-d512",
+            "ok": true
+          },
+          {
+            "name": "op.linear/medium/fp16-m128-k320-n256",
+            "ok": true
+          },
+          {
+            "name": "op.matmul/medium/fp16-m128-k192-n128",
+            "ok": true
+          },
+          {
+            "name": "op.matmul/medium/fp32-m128-k192-n128",
+            "ok": true
+          },
+          {
+            "name": "op.rmsnorm/medium/fp16-r128-d512",
+            "ok": true
+          },
+          {
+            "name": "op.rope/medium/fp16-b1-h8-s128-d32",
+            "ok": true
+          },
+          {
+            "name": "op.silu/medium/fp16-n65536",
+            "ok": true
+          },
+          {
+            "name": "op.softmax/medium/fp16-r80-c512",
+            "ok": true
+          },
+          {
+            "name": "op.swiglu/medium/fp16-n49152",
+            "ok": true
+          },
+          {
+            "name": "op.transpose/medium/fp32-r160-c256",
+            "ok": true
+          },
+          {
+            "name": "one source/image/profile/clock/configuration across all points",
+            "ok": true
+          }
+        ],
+        "detail": "full frozen resident inventory, independent from per-kernel staged timing controls",
+        "written": "2026-10-18T20:27:30+00:00",
+        "inputs": {
+          "/home/zzhouch/tnca_runs_r40_conditional90_b59119d_4gib/native/u280_tiny.jsonl": "bc49c5236098a57b2df76118dd1c815da5981266a4a0a1b1f29dfec1d98a97ed",
+          "/home/zzhouch/tnca_runs_r40_conditional90_b59119d_4gib/native/u280_small.jsonl": "e87e8a1b34248c84b1f6237ca365ceffa0460c500b546b196bd16037e4a7cecf",
+          "/home/zzhouch/tnca_runs_r40_conditional90_b59119d_4gib/native/u280_medium.jsonl": "eaebbfcdee6869dac38a06263aec317ed4b96c925372ea6f49136a4c8c661313"
+        },
+        "contract_version": 2,
+        "contract_sha256": "49fc0e02733139707ae2292eff2ef893e76e73f0723d0d002b2e7e1864af71c8"
+      }
+    }
+  }
+}

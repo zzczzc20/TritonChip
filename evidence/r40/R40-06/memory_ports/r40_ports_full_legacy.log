@@ -1,0 +1,269 @@
+R3.6 Gate A: the backend boundary, and a second binding on it
+  R36-BE-01  PASS  target, backend, implementation and platform are separate
+    the registry: fpga-prototype (interface-defined), fpga-u280 (reference-available), fpga-u50 (reference-available), fpga-u50-sim (reference-available), sim-file (reference-available), sim-multicore (reference-available), sim-socket (reference-available)
+    nothing claims platform-verified: True
+    registering platform-verified is refused: platform-verified is reserved: nothing in this repository has run 
+    the profile core-vrf-sync-v1 describes ['description', 'elaboration', 'implementation', 'num_cores', 'platform_binding', 'target_file']...
+    and names no executable, board or port among them: confirmed
+    its platform binding is a section of its own: kind=simulation, bench=sim/build/tb_core_vrf.vvp
+    the generated target the compiler reads names no binding at all: confirmed
+    67 file(s) of the general runtime and the compiler scanned, 6 binding(s) excluded by name
+      excluded python/tnca/backends/multicore_file.py: the sim-multicore binding: prepares parameterized RTL and reaches its persistent mailbox
+      excluded python/tnca/backends/relay.py: the relay process of the sim-socket backend
+      excluded python/tnca/backends/socket_relay.py: the sim-socket backend
+      excluded python/tnca/backends/u50_sim.py: the fpga-u50-sim backend: a simulator standing in for the board, driving the same register port on the same RTL. Its partner python/tnca/backends/u50.py is NOT on this list and must not be: that is the file that runs on the board, and a board binding that named a simulator would be a binding whose tested path and shipped path had come apart
+      excluded python/tnca/device.py: the simulation binding's build step: it elaborates the RTL the package ships
+      excluded python/tnca/transport.py: the sim-file backend: the file mailbox and the vvp child it speaks to
+    simulator startup or connection logic in the general code: none
+    it names a backend and the registry resolves it, so an external branch registers an implementation rather than editing the state machine
+  R36-BE-02  PASS  the same artifact, both bindings, the same cycles
+    one artifact: 25 word(s), key a68a5e6e39e7
+    sim-file    SUCCEEDED  correct=True cycles=204 medium=a shared directory
+    sim-socket  SUCCEEDED  correct=True cycles=204 medium=tcp
+    the same artifact ran on both without recompiling: a68a5e6e39e7
+    both report 204 device cycle(s): True
+    a mock returning the right numbers would have to reproduce the cycle count of a core it does not have, which is why the cycles are compared and not just the values
+    the adapter speaks a versioned protocol over a socket; medium=tcp, protocol=1
+    and starts no simulator itself: confirmed
+  R36-BE-03  PASS  unknown and unimplemented backends refuse, and nothing is substituted
+    nonesuch         refused: [BACKEND_UNKNOWN] [BACKEND_UNKNOWN] there is no backend named 'nonesuc
+    fpga-prototype   refused: [BACKEND_NOT_IMPLEMENTED] [BACKEND_NOT_IMPLEMENTED] the backend 'fpga-prototyp
+    missing-impl     refused: [BACKEND_UNAVAILABLE] [BACKEND_UNAVAILABLE] the backend's implementation t
+    a peer speaking protocol 1 when this client wants 2: [PROTOCOL_MISMATCH] [PROTOCOL_MISMATCH] the relay speaks protocol 1 an
+    a session on it: BackendError [BACKEND_NOT_IMPLEMENTED]
+    the registry never substitutes: a missing backend that became the simulator would report a platform working that was never there
+    the physical capability is recorded 'out of scope', not verified
+
+  r36-backend-tests      PASS   3 check(s)
+The backend conformance suite
+  5 case(s) in 5 group(s), against 3 backend(s)
+    sim-file CONF-LIFE    PASS  open, query, quiesce, close
+      ok  [liveness] alive after open: the process exists
+      ok  [declaration] capabilities: ['bench', 'concurrent_requests', 'launch_is_idempotent', 'me
+      ok  [protocol] PING: seq 1, status 0, served 1
+      ok  [protocol] QUIESCE on an idle device: seq 2, status 0, 0 cycle(s)
+      ok  [protocol] an operation the device does not have: status 3
+    sim-file CONF-XFER    PASS  upload, download, alignment, range
+      ok  [protocol] UPLOAD: seq 4, status 0, 4 word(s)
+      ok  [protocol+oracle] DOWNLOAD returns what went in: oracle: the four words the host wrote; 
+      ok  [oracle] a single word at an offset: oracle: 0xfedcba9876543210
+      ok  [protocol] an unaligned upload: [ARGUMENT_INVALID] refused
+      ok  [protocol] an unaligned download: [ARGUMENT_INVALID] refused
+      ok  [protocol] a transfer past the end of memory: status 3
+    sim-file CONF-COMPAT  PASS  what the backend claims to be
+      ok  [declaration] the backend says what it is: medium 'a shared directory', reaches 'the RTL
+      ok  [registry] no backend claims platform-verified: states ['interface-defined', 'reference-
+    sim-file CONF-DONE    PASS  a launch that succeeds, and what it reports
+      ok  [protocol] LAUNCH: seq 10, status 0, 23 cycle(s)
+      ok  [protocol] the declared completion counters are nonzero: 23 cycles and 10 retired
+      ok  [oracle] the kernel wrote what the oracle says: oracle: 0xdefaced, got 0xdefaced
+      ok  [protocol+oracle] a second launch in the same session: no restart in between; the oracle
+    sim-file CONF-FAULT   PASS  a launch that traps, and after it
+      ok  [protocol] a trapping kernel is a FAULT: status 1, seq 16
+      ok  [protocol] the fault carries a code and a pc: code 0x40 at pc 0x6050, from seq 16
+      ok  [protocol] the session still works after a fault: status 0
+
+    sim-socket CONF-LIFE    PASS  open, query, quiesce, close
+      ok  [liveness] alive after open: the process exists
+      ok  [declaration] capabilities: ['concurrent_requests', 'launch_is_idempotent', 'medium', 'n
+      ok  [protocol] PING: seq 1, status 0, served 1
+      ok  [protocol] QUIESCE on an idle device: seq 2, status 0, 0 cycle(s)
+      ok  [declaration] an operation the device does not have: not offered: this binding has no op
+    sim-socket CONF-XFER    PASS  upload, download, alignment, range
+      ok  [protocol] UPLOAD: seq 3, status 0, 4 word(s)
+      ok  [protocol+oracle] DOWNLOAD returns what went in: oracle: the four words the host wrote; 
+      ok  [oracle] a single word at an offset: oracle: 0xfedcba9876543210
+      ok  [protocol] an unaligned upload: [ARGUMENT_INVALID] refused
+      ok  [protocol] an unaligned download: [ARGUMENT_INVALID] refused
+      ok  [protocol] a transfer past the end of memory: status 3
+    sim-socket CONF-COMPAT  PASS  what the backend claims to be
+      ok  [declaration] the backend says what it is: medium 'tcp', reaches 'the same RTL as sim-fi
+      ok  [registry] no backend claims platform-verified: states ['interface-defined', 'reference-
+    sim-socket CONF-DONE    PASS  a launch that succeeds, and what it reports
+      ok  [protocol] LAUNCH: seq 9, status 0, 23 cycle(s)
+      ok  [protocol] the declared completion counters are nonzero: 23 cycles and 10 retired
+      ok  [oracle] the kernel wrote what the oracle says: oracle: 0xdefaced, got 0xdefaced
+      ok  [protocol+oracle] a second launch in the same session: no restart in between; the oracle
+    sim-socket CONF-FAULT   PASS  a launch that traps, and after it
+      ok  [protocol] a trapping kernel is a FAULT: status 1, seq 15
+      ok  [protocol] the fault carries a code and a pc: code 0x40 at pc 0x6050, from seq 15
+      ok  [protocol] the session still works after a fault: status 0
+
+    sim-multicore CONF-LIFE    PASS  open, query, quiesce, close
+      ok  [liveness] alive after open: the process exists
+      ok  [declaration] capabilities: ['bench', 'completion_counters', 'concurrent_requests', 'fau
+      ok  [protocol] PING: seq 3, status 0, served 3
+      ok  [protocol] QUIESCE on an idle device: seq 4, status 0, 0 cycle(s)
+      ok  [protocol] an operation the device does not have: status 3
+    sim-multicore CONF-XFER    PASS  upload, download, alignment, range
+      ok  [protocol] UPLOAD: seq 6, status 0, 4 word(s)
+      ok  [protocol+oracle] DOWNLOAD returns what went in: oracle: the four words the host wrote; 
+      ok  [oracle] a single word at an offset: oracle: 0xfedcba9876543210
+      ok  [protocol] an unaligned upload: [ARGUMENT_INVALID] refused
+      ok  [protocol] an unaligned download: [ARGUMENT_INVALID] refused
+      ok  [protocol] a transfer past the end of memory: status 3
+    sim-multicore CONF-COMPAT  PASS  what the backend claims to be
+      ok  [declaration] the backend says what it is: medium 'a shared directory', reaches 'the RTL
+      ok  [registry] no backend claims platform-verified: states ['interface-defined', 'reference-
+    sim-multicore CONF-DONE    PASS  a launch that succeeds, and what it reports
+      ok  [protocol] LAUNCH: seq 12, status 0, 34 cycle(s)
+      ok  [protocol] the declared completion counters are nonzero: global makespan 34
+      ok  [oracle] the kernel wrote what the oracle says: oracle: 0xdefaced, got 0xdefaced
+      ok  [protocol+oracle] a second launch in the same session: no restart in between; the oracle
+    sim-multicore CONF-FAULT   PASS  a launch that traps, and after it
+      ok  [protocol] a trapping kernel is a FAULT: status 1, seq 18
+      ok  [declaration] fault detail is explicitly unavailable: physical-grid completion reports s
+      ok  [protocol] the session still works after a fault: status 0
+
+  conformance            PASS   3 of 3 backend(s) measured
+R40 MEMORY ARBITER PASS N=1
+tb/tb_mem_arbiter_r40.v:45: $finish called at 101000 (1ps)
+R40 MEMORY ARBITER PASS N=2
+tb/tb_mem_arbiter_r40.v:45: $finish called at 121000 (1ps)
+R40 MEMORY ARBITER PASS N=3
+tb/tb_mem_arbiter_r40.v:45: $finish called at 141000 (1ps)
+R40 MEMORY ARBITER PASS N=4
+tb/tb_mem_arbiter_r40.v:45: $finish called at 160000 (1ps)
+R40 MEMORY ARBITER PASS N=8
+tb/tb_mem_arbiter_r40.v:45: $finish called at 240000 (1ps)
+PASS N=1 invalid grid refused
+PASS N=1 invalid grid refused
+PASS N=1 invalid grid refused
+PASS N=1 grid=1x1x1 issued=1 fault=-1
+PASS N=1 grid=19x1x1 issued=19 fault=-1
+PASS N=1 grid=13x7x5 issued=455 fault=-1
+PASS N=1 grid=6145x1x1 issued=6145 fault=-1
+PASS N=1 grid=0x3x2 issued=0 fault=-1
+PASS N=1 grid=101x3x2 issued=1 fault=0
+PASS N=1 grid=47x2x1 issued=94 fault=-1
+PASS N=1 grid=101x3x2 issued=1 fault=-2
+PASS N=1 grid=23x2x1 issued=46 fault=-1
+PASS N=1 grid=5x2x3 issued=30 fault=-1
+PASS N=1 grid=6145x1x1 issued=6145 fault=-1
+PASS N=1 grid=17x3x2 issued=102 fault=-1
+PASS N=1 grid=1x1x1 issued=1 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:124: $finish called at 1552680000 (1ps)
+PASS N=2 invalid grid refused
+PASS N=2 invalid grid refused
+PASS N=2 invalid grid refused
+PASS N=2 grid=1x1x1 issued=1 fault=-1
+PASS N=2 grid=19x1x1 issued=19 fault=-1
+PASS N=2 grid=13x7x5 issued=455 fault=-1
+PASS N=2 grid=6145x1x1 issued=6145 fault=-1
+PASS N=2 grid=0x3x2 issued=0 fault=-1
+PASS N=2 grid=101x3x2 issued=2 fault=0
+PASS N=2 grid=101x3x2 issued=2 fault=1
+PASS N=2 grid=47x2x1 issued=94 fault=-1
+PASS N=2 grid=101x3x2 issued=2 fault=-2
+PASS N=2 grid=23x2x1 issued=46 fault=-1
+PASS N=2 grid=5x2x3 issued=30 fault=-1
+PASS N=2 grid=6145x1x1 issued=6145 fault=-1
+PASS N=2 grid=17x3x2 issued=102 fault=-1
+PASS N=2 grid=1x1x1 issued=1 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:124: $finish called at 773660000 (1ps)
+PASS N=3 invalid grid refused
+PASS N=3 invalid grid refused
+PASS N=3 invalid grid refused
+PASS N=3 grid=1x1x1 issued=1 fault=-1
+PASS N=3 grid=19x1x1 issued=19 fault=-1
+PASS N=3 grid=13x7x5 issued=455 fault=-1
+PASS N=3 grid=6145x1x1 issued=6145 fault=-1
+PASS N=3 grid=0x3x2 issued=0 fault=-1
+PASS N=3 grid=101x3x2 issued=3 fault=0
+PASS N=3 grid=101x3x2 issued=3 fault=1
+PASS N=3 grid=101x3x2 issued=3 fault=2
+PASS N=3 grid=47x2x1 issued=94 fault=-1
+PASS N=3 grid=101x3x2 issued=3 fault=-2
+PASS N=3 grid=23x2x1 issued=46 fault=-1
+PASS N=3 grid=5x2x3 issued=30 fault=-1
+PASS N=3 grid=6145x1x1 issued=6145 fault=-1
+PASS N=3 grid=17x3x2 issued=102 fault=-1
+PASS N=3 grid=1x1x1 issued=1 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:124: $finish called at 515350000 (1ps)
+PASS N=4 invalid grid refused
+PASS N=4 invalid grid refused
+PASS N=4 invalid grid refused
+PASS N=4 grid=1x1x1 issued=1 fault=-1
+PASS N=4 grid=19x1x1 issued=19 fault=-1
+PASS N=4 grid=13x7x5 issued=455 fault=-1
+PASS N=4 grid=6145x1x1 issued=6145 fault=-1
+PASS N=4 grid=0x3x2 issued=0 fault=-1
+PASS N=4 grid=101x3x2 issued=2 fault=0
+PASS N=4 grid=101x3x2 issued=3 fault=1
+PASS N=4 grid=101x3x2 issued=4 fault=2
+PASS N=4 grid=101x3x2 issued=4 fault=3
+PASS N=4 grid=47x2x1 issued=94 fault=-1
+PASS N=4 grid=101x3x2 issued=4 fault=-2
+PASS N=4 grid=23x2x1 issued=46 fault=-1
+PASS N=4 grid=5x2x3 issued=30 fault=-1
+PASS N=4 grid=6145x1x1 issued=6145 fault=-1
+PASS N=4 grid=17x3x2 issued=102 fault=-1
+PASS N=4 grid=1x1x1 issued=1 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:124: $finish called at 406520000 (1ps)
+PASS N=8 invalid grid refused
+PASS N=8 invalid grid refused
+PASS N=8 invalid grid refused
+PASS N=8 grid=1x1x1 issued=1 fault=-1
+PASS N=8 grid=19x1x1 issued=19 fault=-1
+PASS N=8 grid=13x7x5 issued=455 fault=-1
+PASS N=8 grid=6145x1x1 issued=6145 fault=-1
+PASS N=8 grid=0x3x2 issued=0 fault=-1
+PASS N=8 grid=101x3x2 issued=3 fault=0
+PASS N=8 grid=101x3x2 issued=5 fault=1
+PASS N=8 grid=101x3x2 issued=7 fault=2
+PASS N=8 grid=101x3x2 issued=8 fault=3
+PASS N=8 grid=101x3x2 issued=9 fault=4
+PASS N=8 grid=101x3x2 issued=9 fault=5
+PASS N=8 grid=101x3x2 issued=10 fault=6
+PASS N=8 grid=101x3x2 issued=11 fault=7
+PASS N=8 grid=47x2x1 issued=94 fault=-1
+PASS N=8 grid=101x3x2 issued=8 fault=-2
+PASS N=8 grid=23x2x1 issued=46 fault=-1
+PASS N=8 grid=5x2x3 issued=30 fault=-1
+PASS N=8 grid=6145x1x1 issued=6145 fault=-1
+PASS N=8 grid=17x3x2 issued=102 fault=-1
+PASS N=8 grid=1x1x1 issued=1 fault=-1
+GRID DISPATCH PASS
+tb/tb_grid_dispatch.v:124: $finish called at 212600000 (1ps)
+GRID REAL CORES PASS N=1 memory=0 phase=0 programs=455 cycles=3646
+tb/top/tb_grid_cores.v:118: $finish called at 36470000 (1ps)
+GRID REAL CORES PASS N=2 memory=0 phase=0 programs=455 cycles=1830
+tb/top/tb_grid_cores.v:118: $finish called at 18310000 (1ps)
+GRID REAL CORES PASS N=3 memory=0 phase=0 programs=455 cycles=1223
+tb/top/tb_grid_cores.v:118: $finish called at 12240000 (1ps)
+GRID REAL CORES PASS N=4 memory=0 phase=0 programs=455 cycles=920
+tb/top/tb_grid_cores.v:118: $finish called at 9210000 (1ps)
+GRID REAL CORES PASS N=8 memory=0 phase=0 programs=455 cycles=468
+tb/top/tb_grid_cores.v:118: $finish called at 4690000 (1ps)
+GRID REAL CORES PASS N=1 memory=1 phase=0 programs=455 cycles=42700
+GRID REAL CORES PASS N=1 memory=1 phase=1 programs=455 cycles=78849
+tb/top/tb_grid_cores.v:118: $finish called at 788500000 (1ps)
+GRID REAL CORES PASS N=2 memory=1 phase=0 programs=455 cycles=22569
+GRID REAL CORES PASS N=2 memory=1 phase=1 programs=455 cycles=41478
+tb/top/tb_grid_cores.v:118: $finish called at 414790000 (1ps)
+GRID REAL CORES PASS N=3 memory=1 phase=0 programs=455 cycles=14911
+GRID REAL CORES PASS N=3 memory=1 phase=1 programs=455 cycles=27371
+tb/top/tb_grid_cores.v:118: $finish called at 273720000 (1ps)
+GRID REAL CORES PASS N=4 memory=1 phase=0 programs=455 cycles=12162
+GRID REAL CORES PASS N=4 memory=1 phase=1 programs=455 cycles=22396
+tb/top/tb_grid_cores.v:118: $finish called at 223970000 (1ps)
+GRID progress cycles=1000 accepted=72 busy=ff
+GRID progress cycles=2000 accepted=136 busy=ff
+GRID progress cycles=3000 accepted=200 busy=ff
+GRID progress cycles=4000 accepted=264 busy=ff
+GRID progress cycles=5000 accepted=328 busy=ff
+GRID progress cycles=6000 accepted=392 busy=ff
+GRID progress cycles=7000 accepted=455 busy=da
+GRID REAL CORES PASS N=8 memory=1 phase=0 programs=455 cycles=7014
+GRID progress cycles=8000 accepted=80 busy=ff
+GRID progress cycles=9000 accepted=160 busy=ff
+GRID progress cycles=10000 accepted=240 busy=ff
+GRID progress cycles=11000 accepted=320 busy=ff
+GRID progress cycles=12000 accepted=400 busy=ff
+GRID REAL CORES PASS N=8 memory=1 phase=1 programs=455 cycles=12761
+tb/top/tb_grid_cores.v:118: $finish called at 127620000 (1ps)
+r40-grid-dispatch-tests PASS (20 configurations)

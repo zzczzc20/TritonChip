@@ -1,0 +1,78 @@
+{
+ "schema": "tnca-r40-subset/1",
+ "name": "R40-05.compute",
+ "rule": "medium, large and hbm points with at least 1e9 MACs -- 16x16 output tiles then give a grid of at least 32 x 3 programs -- and arithmetic intensity >= 32 FLOP/B",
+ "points": [
+  {
+   "id": "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+   "sha256": "00aa4913f2bc61ce6dd9506d093c08b17a70150f56e0f50dfbc763120b914262",
+   "family": "gpt2_block",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_prefill/hbm/fp16-b1-s512",
+   "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1",
+   "family": "llama_prefill",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.llama_prefill/large/fp16-b1-s512",
+   "sha256": "94d49ce2811ec2c20c73bb69401d68770f044dbc7e2437d98e2a06eaf78ff5fc",
+   "family": "llama_prefill",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.mlp/large/fp16-t512-d2048",
+   "sha256": "172c6551c70bc50f6afcf659b68118e46f984905727f7e9e5dff7b307faf8c80",
+   "family": "mlp",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "model.resnet_block/large/fp32-n8-c64-hw56",
+   "sha256": "61e0f8e38220a848d7c71e8b8d449c3d3bfe82a178b780c464b0a3ebcc5b4227",
+   "family": "resnet_block",
+   "tier": "large",
+   "dtype": "fp32"
+  },
+  {
+   "id": "op.linear/hbm/fp16-m512-k4096-n11008",
+   "sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+   "family": "linear",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.linear/large/fp16-m512-k2048-n8192",
+   "sha256": "b3df7442af7433483b3e6b20a5003785ed305bab9953d33f74162e7464869867",
+   "family": "linear",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+   "sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+   "family": "matmul",
+   "tier": "hbm",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/large/fp16-m2048-k2048-n2048",
+   "sha256": "ae48d791bb5e7b11c5016645c80f5c3e2bb701e6939467a2f072bffa17a60ba1",
+   "family": "matmul",
+   "tier": "large",
+   "dtype": "fp16"
+  },
+  {
+   "id": "op.matmul/large/fp32-m2048-k2048-n2048",
+   "sha256": "b80814817436064b26635364fd6ec185caf99fada72664c34465f28a666e83fb",
+   "family": "matmul",
+   "tier": "large",
+   "dtype": "fp32"
+  }
+ ],
+ "sha256": "6346e1859fc738dd4953197838bcbbb7b33b786ec061766b221d8610fada2502"
+}

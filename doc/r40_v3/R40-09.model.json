@@ -1,0 +1,14 @@
+{
+ "name": "R40-09.model",
+ "rule": "plan.workloads.llama_generate points (frozen four-layer model prefill512 and decode)",
+ "points": [
+  {
+   "id": "model.llama_decode/hbm/fp16-b1-p512",
+   "sha256": "23cc5a368f9c804105cace69fb9f772d116dbd510dc8bc3a5c5f4f9e8728de16"
+  },
+  {
+   "id": "model.llama_prefill/hbm/fp16-b1-s512",
+   "sha256": "c5c8826fb47090de07d2c4860b32d84da88aaf1b22ab0a206eb4139fef6813e1"
+  }
+ ]
+}

@@ -1,0 +1,358 @@
+{
+  "schema": "tnca-r40-v3-sim-chains/1",
+  "status": "running",
+  "source": "/home/zhongchun/r40v3_capgate",
+  "expect_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+  "python": "/home/zhongchun/tc_env/torchenv/bin/python",
+  "chains": {
+    "batch": [
+      {
+        "name": "batch-1000",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/batch_tests.py",
+          "--calls",
+          "1000"
+        ],
+        "env": {},
+        "started_utc": "2026-10-19T02:16:01.296902+00:00",
+        "exit_code": 1,
+        "wall_s": 119.8,
+        "log": "batch-1000.log",
+        "log_sha256": "43bd71c1addbb1ed04c30a1231dbb53d3e9f4bd958579e56f1e2801d104fb302",
+        "ended_utc": "2026-10-19T02:18:01.072402+00:00"
+      }
+    ],
+    "decode64": [
+      {
+        "name": "bucket-decode-64",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/decode_residency_tests.py",
+          "--steps",
+          "64",
+          "--bucket"
+        ],
+        "env": {
+          "TNCA_PROFILE": "core-vrf-sync-v5/hbm"
+        },
+        "started_utc": "2026-10-19T02:16:01.297230+00:00"
+      }
+    ],
+    "fast": [
+      {
+        "name": "child-exec",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/child_exec_tests.py"
+        ],
+        "env": {},
+        "started_utc": "2026-10-19T02:16:01.297649+00:00",
+        "exit_code": 0,
+        "wall_s": 0.4,
+        "log": "child-exec.log",
+        "log_sha256": "2144aad53bc4f58ee55ac37ab60a9f77116818ddc297f4a4c4bf260e32292654",
+        "ended_utc": "2026-10-19T02:16:01.710239+00:00"
+      },
+      {
+        "name": "io-concurrency",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/io_concurrency_tests.py"
+        ],
+        "env": {},
+        "started_utc": "2026-10-19T02:16:01.710596+00:00",
+        "exit_code": 0,
+        "wall_s": 0.6,
+        "log": "io-concurrency.log",
+        "log_sha256": "0b723f01dd1196cb67c9e4ff68926d5d6aa7bb8d4ef00623925380b5c74bdad1",
+        "ended_utc": "2026-10-19T02:16:02.281251+00:00"
+      },
+      {
+        "name": "lifetime",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/lifetime_tests.py"
+        ],
+        "env": {},
+        "started_utc": "2026-10-19T02:16:02.281868+00:00",
+        "exit_code": 0,
+        "wall_s": 1.1,
+        "log": "lifetime.log",
+        "log_sha256": "2fe15b9460cfd4689595877c153b8c8a28df5548ccb38fe5709959b893f524e0",
+        "ended_utc": "2026-10-19T02:16:03.440272+00:00"
+      },
+      {
+        "name": "allocation-pressure",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/allocation_pressure_tests.py"
+        ],
+        "env": {
+          "TNCA_BACKEND": "sim-file"
+        },
+        "started_utc": "2026-10-19T02:16:03.440891+00:00",
+        "exit_code": 0,
+        "wall_s": 796.5,
+        "log": "allocation-pressure.log",
+        "log_sha256": "431524dfd4b73627b0e6c2f9275783f8dcb2dff2aac3d611a18edeaa1bca5448",
+        "ended_utc": "2026-10-19T02:29:19.940686+00:00"
+      },
+      {
+        "name": "residency-controls",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/residency_tests.py"
+        ],
+        "env": {},
+        "started_utc": "2026-10-19T02:29:19.941150+00:00"
+      }
+    ],
+    "multicore-recovery": [
+      {
+        "name": "recovery-multicore-dma",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/recovery_tests.py",
+          "--multicore-dma"
+        ],
+        "env": {},
+        "started_utc": "2026-10-19T02:16:01.297916+00:00",
+        "exit_code": 0,
+        "wall_s": 272.4,
+        "log": "recovery-multicore-dma.log",
+        "log_sha256": "68c163caf2511f74dfcf2ccfd7a7b2a62e2b0e84b9568e31b15956b2c3404484",
+        "ended_utc": "2026-10-19T02:20:33.748728+00:00"
+      }
+    ],
+    "online": [
+      {
+        "name": "online-sdpa-14",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/online_attention_tests.py",
+          "--out",
+          "/home/zhongchun/r40v3_capgate_runs/sim1/online-sdpa-14.json"
+        ],
+        "env": {
+          "TNCA_PROFILE": "core-vrf-sync-v5/hbm"
+        },
+        "started_utc": "2026-10-19T02:16:01.298373+00:00"
+      }
+    ],
+    "replay": [
+      {
+        "name": "replay-1000",
+        "argv": [
+          "/home/zhongchun/tc_env/torchenv/bin/python",
+          "-u",
+          "tools/r40/replay_tests.py",
+          "--replays",
+          "1000"
+        ],
+        "env": {
+          "TNCA_BACKEND": "sim-file"
+        },
+        "started_utc": "2026-10-19T02:16:01.298707+00:00"
+      }
+    ]
+  },
+  "plan": {
+    "batch": [
+      {
+        "name": "batch-1000",
+        "argv": [
+          "tools/r40/batch_tests.py",
+          "--calls",
+          "1000"
+        ],
+        "env": {}
+      }
+    ],
+    "decode64": [
+      {
+        "name": "bucket-decode-64",
+        "argv": [
+          "tools/r40/decode_residency_tests.py",
+          "--steps",
+          "64",
+          "--bucket"
+        ],
+        "env": {
+          "TNCA_PROFILE": "core-vrf-sync-v5/hbm"
+        }
+      }
+    ],
+    "fast": [
+      {
+        "name": "child-exec",
+        "argv": [
+          "tools/r40/child_exec_tests.py"
+        ],
+        "env": {}
+      },
+      {
+        "name": "io-concurrency",
+        "argv": [
+          "tools/r40/io_concurrency_tests.py"
+        ],
+        "env": {}
+      },
+      {
+        "name": "lifetime",
+        "argv": [
+          "tools/r40/lifetime_tests.py"
+        ],
+        "env": {}
+      },
+      {
+        "name": "allocation-pressure",
+        "argv": [
+          "tools/r40/allocation_pressure_tests.py"
+        ],
+        "env": {
+          "TNCA_BACKEND": "sim-file"
+        }
+      },
+      {
+        "name": "residency-controls",
+        "argv": [
+          "tools/r40/residency_tests.py"
+        ],
+        "env": {}
+      },
+      {
+        "name": "device-copy",
+        "argv": [
+          "tools/r40/device_copy_tests.py"
+        ],
+        "env": {}
+      },
+      {
+        "name": "frozen-attention-tiny",
+        "argv": [
+          "tools/r40/frozen_residency_tests.py",
+          "--point",
+          "op.attention_decode/tiny/fp16-b1-h2-l16-d16"
+        ],
+        "env": {}
+      },
+      {
+        "name": "sdpa-configuration",
+        "argv": [
+          "tools/r40/sdpa_configuration_tests.py"
+        ],
+        "env": {}
+      }
+    ],
+    "multicore-recovery": [
+      {
+        "name": "recovery-multicore-dma",
+        "argv": [
+          "tools/r40/recovery_tests.py",
+          "--multicore-dma"
+        ],
+        "env": {}
+      }
+    ],
+    "online": [
+      {
+        "name": "online-sdpa-14",
+        "argv": [
+          "tools/r40/online_attention_tests.py",
+          "--out",
+          "{out}/online-sdpa-14.json"
+        ],
+        "env": {
+          "TNCA_PROFILE": "core-vrf-sync-v5/hbm"
+        }
+      }
+    ],
+    "replay": [
+      {
+        "name": "replay-1000",
+        "argv": [
+          "tools/r40/replay_tests.py",
+          "--replays",
+          "1000"
+        ],
+        "env": {
+          "TNCA_BACKEND": "sim-file"
+        }
+      },
+      {
+        "name": "recovery",
+        "argv": [
+          "tools/r40/recovery_tests.py"
+        ],
+        "env": {
+          "TNCA_BACKEND": "sim-file"
+        }
+      }
+    ]
+  },
+  "runner_sha256": "4e30491a8a5809d0d13b8b237e8a0213bcb2d768b2901fcbed44af75c9e25857",
+  "host": "gx10-6646",
+  "started_utc": "2026-10-19T02:15:59.533987+00:00",
+  "software_tree": "files:80dd1a823e4be49e5e40d375d842c17e46c362d298e37f389c5e225621b6e4ca",
+  "staged_identity": {
+    "rtl": {
+      "source": "0c0d6300ad1579e0e131eb7656df1082845af738a381b7d8d915956970768570",
+      "staged": "0c0d6300ad1579e0e131eb7656df1082845af738a381b7d8d915956970768570"
+    },
+    "tb/device": {
+      "source": "ff180b361bfa23f3cb13627da37f8144eeeab06d2b577cb2cb28aacfaf9868b2",
+      "staged": "ff180b361bfa23f3cb13627da37f8144eeeab06d2b577cb2cb28aacfaf9868b2"
+    },
+    "tb/common": {
+      "source": "229fdc2c380a1e05c18d8472143d372e0a1c2000a342c11663ebfdc602b6f338",
+      "staged": "229fdc2c380a1e05c18d8472143d372e0a1c2000a342c11663ebfdc602b6f338"
+    }
+  },
+  "harness_sha256": {
+    "tools/r40/allocation_pressure_tests.py": "39eb162955a67552c31b8fd3c522a9fdb3c6f7a10dc72d69e28a5fca8831091a",
+    "tools/r40/batch_tests.py": "be42993ac4673642c2a449afe9e072ea86a7cf11bb5936ce0df284e4f7e2f524",
+    "tools/r40/bucket_decode.py": "92bced6c6d64373a18b68b01f493e56bc3e8a792b0a8263429158c11918f97dd",
+    "tools/r40/child_exec_tests.py": "31e077faafc35924c00eda04c2b2987546d0f51f04e2d0e8cee84edb583c9613",
+    "tools/r40/decode_residency_tests.py": "38d1a0217f74894d98b6f6c82a50e20e300706dc240656b26ac74da1b72673b1",
+    "tools/r40/device_copy_tests.py": "e276148fb74b3b67fd66f90a5cd4a080b2ebc861867d639f73bc7427143a79c4",
+    "tools/r40/frozen_residency_tests.py": "74b762d74210e8912ad5e753985ea069761189e5a210d9f7ca9b8a5b52c85070",
+    "tools/r40/io_concurrency_tests.py": "fa9fe6b0e5ac9f5c1f532d781f3b4201450754027df5d014cb7621d18959cd89",
+    "tools/r40/lifetime_tests.py": "3ad26133cb49d79ffdf25b34a81f6d28f61b6b217bf29d80c1cb608456b3d1b2",
+    "tools/r40/online_attention_tests.py": "4601b5d4b4b8f7d6f895b2917d720a2e32bf90366fe28b67d3f24e5bc64343eb",
+    "tools/r40/recovery_tests.py": "4c7f317fa5ef898af39a259d06b1cb1b8eaacf828c72ec83ab5c4310348585aa",
+    "tools/r40/replay_tests.py": "9c4aaae319a13d9277fce651bbcf61e0570b58731333bf2d1a5f07c312ade5e5",
+    "tools/r40/residency_tests.py": "3a65e34d872856416c349281d20c2d42c2e9387a26b71c18f4b3ec539a2e2d33",
+    "tools/r40/sdpa_configuration_tests.py": "34b3b2d1777161159908938a853e2269b87380191e4a973f71f9a211095510a3",
+    "tools/r40/v3_sim_chains.py": "4e30491a8a5809d0d13b8b237e8a0213bcb2d768b2901fcbed44af75c9e25857"
+  },
+  "base_env": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "MAX_JOBS": "1",
+    "TNCA_HOST_TIMEOUT": "172800",
+    "PYTHONPATH": "/home/zhongchun/r40v3_capgate:/home/zhongchun/r40v3_capgate/python:/home/zhongchun/r40v3_capgate/compiler/python:/home/zhongchun/r40v3_capgate/tools/asm"
+  },
+  "observed_utc": "2026-10-19T02:29:19.941153+00:00",
+  "prepare": {
+    "argv": [
+      "/home/zhongchun/tc_env/torchenv/bin/python",
+      "-c",
+      "import sys; from tnca import device\nfor p in sys.argv[1:]: device.prepare(p)",
+      "core-vrf-sync-v5",
+      "core-vrf-sync-v5/hbm",
+      "core-sim"
+    ],
+    "exit_code": 0
+  }
+}

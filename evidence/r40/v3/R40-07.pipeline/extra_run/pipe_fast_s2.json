@@ -1,0 +1,15 @@
+{
+ "name": "pipe_fast_s2",
+ "group": "extra",
+ "cmd": "/home/zhongchun/tc_env/torchenv/bin/python tools/r40/v3_pipeline_matrix.py --memory fast --stages 2 --trace-dir /home/zhongchun/r40v3_tpc_runs/all/trace_fast_s2 --json /home/zhongchun/r40v3_tpc_runs/all/pipe_fast_s2.report.json",
+ "env": {},
+ "start": "2026-10-19T11:22:40+00:00",
+ "end": "2026-10-19T11:50:18+00:00",
+ "seconds": 1658.3,
+ "exit": 0,
+ "marker": "r40-v3-pipeline-matrix PASS",
+ "marker_found": true,
+ "ok": true,
+ "log": "pipe_fast_s2.log",
+ "log_sha256": "85c96e22350e3de6302776c1735c46b023407424b3e71e67c3b78d86ad398cf3"
+}

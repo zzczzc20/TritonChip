@@ -1,0 +1,208 @@
+{
+ "config": "mc8",
+ "backend": "sim-multicore",
+ "backend_args": {
+  "core_count": 8
+ },
+ "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+ "harness_sha256": "76b259e5d286ef97809d5fee4798a9aa0add71d4f6a8ba15edf60a6b4a27772d",
+ "torch": "2.14.0+cu130",
+ "triton": "3.8.0",
+ "env": {
+  "TNCA_PROFILE": "core-vrf-sync-v5",
+  "TNCA_BACKEND": "sim-multicore",
+  "TNCA_BACKEND_ARGS": "{\"core_count\": 8}",
+  "TNCA_HOST_TIMEOUT": "7200",
+  "TNCA_TRITON": "1"
+ },
+ "graphs": {
+  "pointwise": {
+   "checks": {
+    "numerical": true,
+    "device_output": true,
+    "zero_tensor_staging": true,
+    "whole_grid_launch": true,
+    "no_per_program_launch": true,
+    "physical_grid": true,
+    "programs_exactly_once": true,
+    "every_outlet_traffic": true
+   },
+   "ok": true,
+   "output_sha256": "00261615c2f9ac8bc8955d2cfbd782d1a7c382b2cc01ab15d2ce5914b803aa06",
+   "max_abs_err": 0.0,
+   "artifacts": [
+    "bfca046a17e88d7fe4f9bd22bd9b0955f43fdae4650be6d9cec7a80b52e51a49"
+   ],
+   "kernels": [
+    "triton_poi_fused_add_mul_0"
+   ],
+   "grids": [
+    [
+     257,
+     1,
+     1
+    ]
+   ],
+   "device_cycles": [
+    7442
+   ],
+   "physical_grid": {
+    "peak_active": 8,
+    "cores": [
+     {
+      "core": 0,
+      "issued": 32,
+      "completed": 32,
+      "occupied_cycles": 7170
+     },
+     {
+      "core": 1,
+      "issued": 32,
+      "completed": 32,
+      "occupied_cycles": 6836
+     },
+     {
+      "core": 2,
+      "issued": 32,
+      "completed": 32,
+      "occupied_cycles": 6769
+     },
+     {
+      "core": 3,
+      "issued": 33,
+      "completed": 33,
+      "occupied_cycles": 6958
+     },
+     {
+      "core": 4,
+      "issued": 32,
+      "completed": 32,
+      "occupied_cycles": 7320
+     },
+     {
+      "core": 5,
+      "issued": 32,
+      "completed": 32,
+      "occupied_cycles": 7421
+     },
+     {
+      "core": 6,
+      "issued": 32,
+      "completed": 32,
+      "occupied_cycles": 7229
+     },
+     {
+      "core": 7,
+      "issued": 32,
+      "completed": 32,
+      "occupied_cycles": 7114
+     }
+    ]
+   },
+   "outlet_traffic": [
+    {
+     "port": 0,
+     "read_lines": 1115,
+     "write_lines": 274
+    }
+   ],
+   "wall_s": 3001.4
+  },
+  "softmax": {
+   "checks": {
+    "numerical": true,
+    "device_output": true,
+    "zero_tensor_staging": true,
+    "whole_grid_launch": true,
+    "no_per_program_launch": true,
+    "physical_grid": true,
+    "programs_exactly_once": true,
+    "every_outlet_traffic": true
+   },
+   "ok": true,
+   "output_sha256": "2f3cdcac5a2d63c71ec41abf22189dec8f66978ea508d692f60bb8f00fbdcc63",
+   "max_abs_err": 1.4901161193847656e-08,
+   "artifacts": [
+    "88e4f515cdd61a7a27e156259e6ee565e3f3018b9b8c5731a075c283ea447c86"
+   ],
+   "kernels": [
+    "triton_red_fused__softmax_0"
+   ],
+   "grids": [
+    [
+     33,
+     1,
+     1
+    ]
+   ],
+   "device_cycles": [
+    13575
+   ],
+   "physical_grid": {
+    "peak_active": 8,
+    "cores": [
+     {
+      "core": 0,
+      "issued": 5,
+      "completed": 5,
+      "occupied_cycles": 13569
+     },
+     {
+      "core": 1,
+      "issued": 4,
+      "completed": 4,
+      "occupied_cycles": 12436
+     },
+     {
+      "core": 2,
+      "issued": 4,
+      "completed": 4,
+      "occupied_cycles": 11723
+     },
+     {
+      "core": 3,
+      "issued": 4,
+      "completed": 4,
+      "occupied_cycles": 11531
+     },
+     {
+      "core": 4,
+      "issued": 4,
+      "completed": 4,
+      "occupied_cycles": 11793
+     },
+     {
+      "core": 5,
+      "issued": 4,
+      "completed": 4,
+      "occupied_cycles": 11445
+     },
+     {
+      "core": 6,
+      "issued": 4,
+      "completed": 4,
+      "occupied_cycles": 11399
+     },
+     {
+      "core": 7,
+      "issued": 4,
+      "completed": 4,
+      "occupied_cycles": 11548
+     }
+    ]
+   },
+   "outlet_traffic": [
+    {
+     "port": 0,
+     "read_lines": 2053,
+     "write_lines": 879
+    }
+   ],
+   "wall_s": 2755.7
+  }
+ },
+ "journal_dir": null,
+ "link_dir": null,
+ "software_tree_unchanged": true,
+ "ok": true
+}

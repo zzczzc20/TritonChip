@@ -1,0 +1,118 @@
+{
+  "profile": "core-vrf-sync-v5",
+  "ok": true,
+  "cases": [
+    {
+      "name": "gemm_one_step",
+      "ok": true,
+      "off": {
+        "ok": true,
+        "err": 0.0,
+        "roles": 1,
+        "programs": 2,
+        "cycles": 3883,
+        "accept": false,
+        "ring": null,
+        "why": null
+      },
+      "on": {
+        "ok": true,
+        "err": 0.0,
+        "roles": 1,
+        "programs": 2,
+        "cycles": 3883,
+        "accept": false,
+        "ring": null,
+        "why": "no loop fills a window that an MMA in it reads"
+      },
+      "speedup": 1.0
+    },
+    {
+      "name": "gemm_odd_steps",
+      "ok": true,
+      "off": {
+        "ok": true,
+        "err": 0.0,
+        "roles": 1,
+        "programs": 2,
+        "cycles": 8793,
+        "accept": true,
+        "ring": null,
+        "why": null
+      },
+      "on": {
+        "ok": true,
+        "err": 0.0,
+        "roles": 2,
+        "programs": 2,
+        "cycles": 8236,
+        "accept": true,
+        "ring": {
+          "consumer_ops": 358,
+          "direct": false,
+          "producer_ops": 1188,
+          "ring_windows": 6,
+          "stages": 3
+        },
+        "why": null
+      },
+      "speedup": 1.0676299174356483
+    },
+    {
+      "name": "gemm_grid_3x2",
+      "ok": true,
+      "off": {
+        "ok": true,
+        "err": 0.0,
+        "roles": 1,
+        "programs": 2,
+        "cycles": 56776,
+        "accept": true,
+        "ring": null,
+        "why": null
+      },
+      "on": {
+        "ok": true,
+        "err": 0.0,
+        "roles": 2,
+        "programs": 2,
+        "cycles": 56168,
+        "accept": true,
+        "ring": {
+          "consumer_ops": 358,
+          "direct": false,
+          "producer_ops": 1188,
+          "ring_windows": 6,
+          "stages": 3
+        },
+        "why": null
+      },
+      "speedup": 1.010824668850591
+    },
+    {
+      "name": "gemm_carried_pointers",
+      "ok": true,
+      "off": {
+        "ok": true,
+        "err": 0.0,
+        "roles": 1,
+        "programs": 2,
+        "cycles": 65950,
+        "accept": false,
+        "ring": null,
+        "why": null
+      },
+      "on": {
+        "ok": true,
+        "err": 0.0,
+        "roles": 1,
+        "programs": 2,
+        "cycles": 65950,
+        "accept": false,
+        "ring": null,
+        "why": "memory crosses roles: load may read what a store of the other role wrote"
+      },
+      "speedup": 1.0
+    }
+  ]
+}

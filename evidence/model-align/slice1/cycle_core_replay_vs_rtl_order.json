@@ -2,9 +2,9 @@
  "aggregates": {
   "aligned": 0,
   "diverged": 27,
-  "median_abs_cycle_error": 0.010819674075479754,
+  "median_abs_cycle_error": 0.0,
   "missing": 0,
-  "p95_abs_cycle_error": 0.8051020586335144,
+  "p95_abs_cycle_error": 1.6643603050562044,
   "points": 27
  },
  "options": {
@@ -14,9 +14,9 @@
  "points": {
   "model.gpt2_block_tiny_fp16-d64-h4-b1-s16": {
    "aligned_launches": 1,
-   "cycle_error": -0.7249254118562719,
+   "cycle_error": 0.8031478358628443,
    "cycles_a": 462540,
-   "cycles_b": 127233,
+   "cycles_b": 834028,
    "divergences": [
     {
      "launch": 1,
@@ -100,52 +100,41 @@
     }
    ],
    "equal": false,
-   "launches": 61,
+   "launches": 155,
    "launches_a": 155,
-   "launches_b": 61,
+   "launches_b": 270,
    "status": "diverged",
    "streams": {
     "issue": {
-     "a": {
-      "cycle": 1094,
-      "pc": "0000000000001af0",
+     "a": null,
+     "b": {
+      "cycle": 3524,
+      "pc": "00000000000020c0",
       "rctx": 1
      },
-     "b": {
-      "cycle": 1521,
-      "pc": "0000000000001d20",
-      "rctx": 0
-     },
-     "count_a": 1220,
+     "count_a": 513,
      "count_b": 1220,
-     "index": 218,
-     "launch": 30
+     "index": 513,
+     "launch": 154
     },
     "length": {
      "launch_count_a": 155,
-     "launch_count_b": 61
+     "launch_count_b": 270
     },
     "request": {
-     "a": {
-      "addr": "0000000000043100",
-      "amo": 0,
-      "be": null,
-      "cycle": 357,
-      "wdata": null,
-      "we": 0
-     },
+     "a": null,
      "b": {
-      "addr": "0000000000043020",
+      "addr": "000000000003d928",
       "amo": 0,
       "be": null,
-      "cycle": 926,
+      "cycle": 3404,
       "wdata": null,
       "we": 0
      },
-     "count_a": 1448,
-     "count_b": 1320,
-     "index": 24,
-     "launch": 30
+     "count_a": 506,
+     "count_b": 1448,
+     "index": 506,
+     "launch": 154
     },
     "response": {
      "a": {
@@ -164,10 +153,10 @@
    }
   },
   "model.llama_decode_tiny_fp16-b1-p16": {
-   "aligned_launches": 1,
-   "cycle_error": -0.9707630136386275,
+   "aligned_launches": 4,
+   "cycle_error": 1.6643603050562044,
    "cycles_a": 616411,
-   "cycles_b": 18022,
+   "cycles_b": 1642341,
    "divergences": [
     {
      "launch": 1,
@@ -251,53 +240,17 @@
     }
    ],
    "equal": false,
-   "launches": 28,
+   "launches": 163,
    "launches_a": 163,
-   "launches_b": 28,
+   "launches_b": 340,
    "status": "diverged",
    "streams": {
-    "issue": {
-     "a": {
-      "cycle": 294,
-      "pc": "00000000000045f0",
-      "rctx": 1
-     },
-     "b": {
-      "cycle": 854,
-      "pc": "00000000000045e0",
-      "rctx": 0
-     },
-     "count_a": 1308,
-     "count_b": 977,
-     "index": 90,
-     "launch": 27
-    },
+    "issue": "equal",
     "length": {
      "launch_count_a": 163,
-     "launch_count_b": 28
+     "launch_count_b": 340
     },
-    "request": {
-     "a": {
-      "addr": "0000000000057b00",
-      "amo": 0,
-      "be": null,
-      "cycle": 274,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000057768",
-      "amo": 0,
-      "be": "ff",
-      "cycle": 836,
-      "wdata": "0000000200000000",
-      "we": 1
-     },
-     "count_a": 1982,
-     "count_b": 1250,
-     "index": 21,
-     "launch": 27
-    },
+    "request": "equal",
     "response": {
      "a": {
       "latency": 11,
@@ -316,9 +269,9 @@
   },
   "model.llama_prefill_tiny_fp16-b1-s16": {
    "aligned_launches": 1,
-   "cycle_error": -0.46563737401231414,
+   "cycle_error": 3.5453237781702804,
    "cycles_a": 503323,
-   "cycles_b": 268957,
+   "cycles_b": 2287766,
    "divergences": [
     {
      "launch": 1,
@@ -402,53 +355,17 @@
     }
    ],
    "equal": false,
-   "launches": 66,
+   "launches": 148,
    "launches_a": 148,
-   "launches_b": 66,
+   "launches_b": 564,
    "status": "diverged",
    "streams": {
-    "issue": {
-     "a": {
-      "cycle": 1058,
-      "pc": "0000000000003690",
-      "rctx": 1
-     },
-     "b": {
-      "cycle": 1454,
-      "pc": "0000000000003890",
-      "rctx": 0
-     },
-     "count_a": 900,
-     "count_b": 900,
-     "index": 204,
-     "launch": 30
-    },
+    "issue": "equal",
     "length": {
      "launch_count_a": 148,
-     "launch_count_b": 66
+     "launch_count_b": 564
     },
-    "request": {
-     "a": {
-      "addr": "0000000000058800",
-      "amo": 0,
-      "be": null,
-      "cycle": 332,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000058718",
-      "amo": 0,
-      "be": null,
-      "cycle": 855,
-      "wdata": null,
-      "we": 0
-     },
-     "count_a": 1318,
-     "count_b": 1190,
-     "index": 22,
-     "launch": 30
-    },
+    "request": "equal",
     "response": {
      "a": {
       "latency": 11,
@@ -467,9 +384,9 @@
   },
   "model.mlp_tiny_fp16-t16-d64": {
    "aligned_launches": 1,
-   "cycle_error": 0.010819674075479754,
+   "cycle_error": 0.0,
    "cycles_a": 337256,
-   "cycles_b": 340905,
+   "cycles_b": 337256,
    "divergences": [
     {
      "launch": 1,
@@ -558,45 +475,9 @@
    "launches_b": 46,
    "status": "diverged",
    "streams": {
-    "issue": {
-     "a": {
-      "cycle": 1101,
-      "pc": "0000000000001598",
-      "rctx": 1
-     },
-     "b": {
-      "cycle": 1522,
-      "pc": "0000000000001798",
-      "rctx": 0
-     },
-     "count_a": 3214,
-     "count_b": 3214,
-     "index": 206,
-     "launch": 26
-    },
+    "issue": "equal",
     "length": "equal",
-    "request": {
-     "a": {
-      "addr": "000000000003d600",
-      "amo": 0,
-      "be": null,
-      "cycle": 350,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "000000000003d520",
-      "amo": 0,
-      "be": null,
-      "cycle": 822,
-      "wdata": null,
-      "we": 0
-     },
-     "count_a": 1448,
-     "count_b": 1320,
-     "index": 24,
-     "launch": 26
-    },
+    "request": "equal",
     "response": {
      "a": {
       "latency": 9,
@@ -615,9 +496,9 @@
   },
   "model.resnet_block_tiny_fp32-n1-c8-hw8": {
    "aligned_launches": 1,
-   "cycle_error": 0.12154860722402532,
+   "cycle_error": 0.11627587635440292,
    "cycles_a": 859327,
-   "cycles_b": 963777,
+   "cycles_b": 959246,
    "divergences": [
     {
      "launch": 1,
@@ -707,43 +588,32 @@
    "status": "diverged",
    "streams": {
     "issue": {
-     "a": {
-      "cycle": 289,
-      "pc": "0000000000001450",
-      "rctx": 1
-     },
+     "a": null,
      "b": {
-      "cycle": 854,
-      "pc": "0000000000001440",
+      "cycle": 5453,
+      "pc": "000000000000ee90",
       "rctx": 0
      },
-     "count_a": 818,
-     "count_b": 818,
-     "index": 82,
-     "launch": 26
+     "count_a": 1933,
+     "count_b": 51448,
+     "index": 1933,
+     "launch": 53
     },
     "length": "equal",
     "request": {
-     "a": {
-      "addr": "0000000000023900",
+     "a": null,
+     "b": {
+      "addr": "0000000000025d00",
       "amo": 0,
       "be": null,
-      "cycle": 267,
+      "cycle": 5455,
       "wdata": null,
       "we": 0
      },
-     "b": {
-      "addr": "0000000000023668",
-      "amo": 0,
-      "be": "ff",
-      "cycle": 834,
-      "wdata": "0000020200000000",
-      "we": 1
-     },
-     "count_a": 980,
-     "count_b": 916,
-     "index": 19,
-     "launch": 26
+     "count_a": 1194,
+     "count_b": 19050,
+     "index": 1194,
+     "launch": 53
     },
     "response": {
      "a": {
@@ -1099,9 +969,9 @@
   },
   "op.attention_decode_tiny_fp16-b1-h2-l16-d16": {
    "aligned_launches": 1,
-   "cycle_error": 0.40337569791360567,
+   "cycle_error": 0.0,
    "cycles_a": 54448,
-   "cycles_b": 76411,
+   "cycles_b": 54448,
    "divergences": [
     {
      "launch": 1,
@@ -1190,45 +1060,9 @@
    "launches_b": 76,
    "status": "diverged",
    "streams": {
-    "issue": {
-     "a": {
-      "cycle": 310,
-      "pc": "0000000000001648",
-      "rctx": 1
-     },
-     "b": {
-      "cycle": 774,
-      "pc": "0000000000001638",
-      "rctx": 0
-     },
-     "count_a": 776,
-     "count_b": 776,
-     "index": 80,
-     "launch": 34
-    },
+    "issue": "equal",
     "length": "equal",
-    "request": {
-     "a": {
-      "addr": "0000000000020e00",
-      "amo": 0,
-      "be": null,
-      "cycle": 292,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000020d68",
-      "amo": 0,
-      "be": "ff",
-      "cycle": 758,
-      "wdata": "0000020200000000",
-      "we": 1
-     },
-     "count_a": 140,
-     "count_b": 76,
-     "index": 23,
-     "launch": 34
-    },
+    "request": "equal",
     "response": {
      "a": {
       "latency": 28,
@@ -1247,9 +1081,9 @@
   },
   "op.attention_prefill_tiny_fp16-b1-h2-s16-d16": {
    "aligned_launches": 1,
-   "cycle_error": -0.7870046046676374,
+   "cycle_error": 0.0,
    "cycles_a": 152454,
-   "cycles_b": 32472,
+   "cycles_b": 152454,
    "divergences": [
     {
      "launch": 1,
@@ -1333,53 +1167,14 @@
     }
    ],
    "equal": false,
-   "launches": 39,
+   "launches": 118,
    "launches_a": 118,
-   "launches_b": 39,
+   "launches_b": 118,
    "status": "diverged",
    "streams": {
-    "issue": {
-     "a": {
-      "cycle": 1117,
-      "pc": "00000000000057c8",
-      "rctx": 1
-     },
-     "b": {
-      "cycle": 1779,
-      "pc": "00000000000065f8",
-      "rctx": 0
-     },
-     "count_a": 1324,
-     "count_b": 743,
-     "index": 616,
-     "launch": 38
-    },
-    "length": {
-     "launch_count_a": 118,
-     "launch_count_b": 39
-    },
-    "request": {
-     "a": {
-      "addr": "0000000000023d00",
-      "amo": 0,
-      "be": null,
-      "cycle": 192,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000023c18",
-      "amo": 0,
-      "be": null,
-      "cycle": 661,
-      "wdata": null,
-      "we": 0
-     },
-     "count_a": 467,
-     "count_b": 403,
-     "index": 11,
-     "launch": 36
-    },
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
     "response": {
      "a": {
       "latency": 30,
@@ -1398,9 +1193,9 @@
   },
   "op.bmm_tiny_fp16-b2-m16-k16-n16": {
    "aligned_launches": 1,
-   "cycle_error": 0.07522871917263325,
+   "cycle_error": 0.0,
    "cycles_a": 20112,
-   "cycles_b": 21625,
+   "cycles_b": 20112,
    "divergences": [
     {
      "launch": 1,
@@ -1491,28 +1286,7 @@
    "streams": {
     "issue": "equal",
     "length": "equal",
-    "request": {
-     "a": {
-      "addr": "0000000000021900",
-      "amo": 0,
-      "be": null,
-      "cycle": 187,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000021818",
-      "amo": 0,
-      "be": null,
-      "cycle": 656,
-      "wdata": null,
-      "we": 0
-     },
-     "count_a": 275,
-     "count_b": 211,
-     "index": 11,
-     "launch": 26
-    },
+    "request": "equal",
     "response": {
      "a": {
       "latency": 34,
@@ -1531,9 +1305,9 @@
   },
   "op.conv2d_tiny_fp32-n1-cin4-h8-w8-cout8": {
    "aligned_launches": 1,
-   "cycle_error": 0.01175213194428819,
+   "cycle_error": 0.0,
    "cycles_a": 444430,
-   "cycles_b": 449653,
+   "cycles_b": 444430,
    "divergences": [
     {
      "launch": 1,
@@ -1622,45 +1396,9 @@
    "launches_b": 38,
    "status": "diverged",
    "streams": {
-    "issue": {
-     "a": {
-      "cycle": 292,
-      "pc": "0000000000001448",
-      "rctx": 1
-     },
-     "b": {
-      "cycle": 852,
-      "pc": "0000000000001438",
-      "rctx": 0
-     },
-     "count_a": 728,
-     "count_b": 728,
-     "index": 80,
-     "launch": 26
-    },
+    "issue": "equal",
     "length": "equal",
-    "request": {
-     "a": {
-      "addr": "0000000000021800",
-      "amo": 0,
-      "be": null,
-      "cycle": 276,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000021668",
-      "amo": 0,
-      "be": "ff",
-      "cycle": 838,
-      "wdata": "0000020200000000",
-      "we": 1
-     },
-     "count_a": 788,
-     "count_b": 724,
-     "index": 19,
-     "launch": 26
-    },
+    "request": "equal",
     "response": {
      "a": {
       "latency": 30,
@@ -2015,9 +1753,9 @@
   },
   "op.gemv_tiny_fp16-k64-n64": {
    "aligned_launches": 1,
-   "cycle_error": -0.8051020586335144,
+   "cycle_error": 0.0,
    "cycles_a": 57271,
-   "cycles_b": 11162,
+   "cycles_b": 57271,
    "divergences": [
     {
      "launch": 1,
@@ -2101,53 +1839,14 @@
     }
    ],
    "equal": false,
-   "launches": 27,
+   "launches": 30,
    "launches_a": 30,
-   "launches_b": 27,
+   "launches_b": 30,
    "status": "diverged",
    "streams": {
-    "issue": {
-     "a": {
-      "cycle": 301,
-      "pc": "0000000000001470",
-      "rctx": 1
-     },
-     "b": {
-      "cycle": 861,
-      "pc": "0000000000001460",
-      "rctx": 0
-     },
-     "count_a": 1308,
-     "count_b": 977,
-     "index": 90,
-     "launch": 26
-    },
-    "length": {
-     "launch_count_a": 30,
-     "launch_count_b": 27
-    },
-    "request": {
-     "a": {
-      "addr": "0000000000024700",
-      "amo": 0,
-      "be": null,
-      "cycle": 283,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000024368",
-      "amo": 0,
-      "be": "ff",
-      "cycle": 845,
-      "wdata": "0000000200000000",
-      "we": 1
-     },
-     "count_a": 1982,
-     "count_b": 1250,
-     "index": 21,
-     "launch": 26
-    },
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
     "response": {
      "a": {
       "latency": 36,
@@ -2278,9 +1977,9 @@
   },
   "op.linear_tiny_fp16-m16-k64-n64": {
    "aligned_launches": 1,
-   "cycle_error": 0.02872260015117158,
+   "cycle_error": 0.0,
    "cycles_a": 47628,
-   "cycles_b": 48996,
+   "cycles_b": 47628,
    "divergences": [
     {
      "launch": 1,
@@ -2369,45 +2068,9 @@
    "launches_b": 30,
    "status": "diverged",
    "streams": {
-    "issue": {
-     "a": {
-      "cycle": 1111,
-      "pc": "0000000000001598",
-      "rctx": 1
-     },
-     "b": {
-      "cycle": 1523,
-      "pc": "0000000000001798",
-      "rctx": 0
-     },
-     "count_a": 1160,
-     "count_b": 1160,
-     "index": 206,
-     "launch": 26
-    },
+    "issue": "equal",
     "length": "equal",
-    "request": {
-     "a": {
-      "addr": "0000000000026200",
-      "amo": 0,
-      "be": null,
-      "cycle": 333,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000026120",
-      "amo": 0,
-      "be": null,
-      "cycle": 901,
-      "wdata": null,
-      "we": 0
-     },
-     "count_a": 1448,
-     "count_b": 1320,
-     "index": 24,
-     "launch": 26
-    },
+    "request": "equal",
     "response": {
      "a": {
       "latency": 33,
@@ -2426,9 +2089,9 @@
   },
   "op.matmul_tiny_fp16-m16-k32-n16": {
    "aligned_launches": 1,
-   "cycle_error": 0.058007857638086434,
+   "cycle_error": 0.0,
    "cycles_a": 17308,
-   "cycles_b": 18312,
+   "cycles_b": 17308,
    "divergences": [
     {
      "launch": 1,
@@ -2519,28 +2182,7 @@
    "streams": {
     "issue": "equal",
     "length": "equal",
-    "request": {
-     "a": {
-      "addr": "0000000000021500",
-      "amo": 0,
-      "be": null,
-      "cycle": 190,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000021418",
-      "amo": 0,
-      "be": null,
-      "cycle": 755,
-      "wdata": null,
-      "we": 0
-     },
-     "count_a": 403,
-     "count_b": 339,
-     "index": 11,
-     "launch": 26
-    },
+    "request": "equal",
     "response": {
      "a": {
       "latency": 33,
@@ -2559,9 +2201,9 @@
   },
   "op.matmul_tiny_fp32-m16-k32-n16": {
    "aligned_launches": 1,
-   "cycle_error": 0.09106654863169239,
+   "cycle_error": 0.0,
    "cycles_a": 25981,
-   "cycles_b": 28347,
+   "cycles_b": 25981,
    "divergences": [
     {
      "launch": 1,
@@ -2652,28 +2294,7 @@
    "streams": {
     "issue": "equal",
     "length": "equal",
-    "request": {
-     "a": {
-      "addr": "0000000000022900",
-      "amo": 0,
-      "be": null,
-      "cycle": 185,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000022818",
-      "amo": 0,
-      "be": null,
-      "cycle": 702,
-      "wdata": null,
-      "we": 0
-     },
-     "count_a": 723,
-     "count_b": 659,
-     "index": 11,
-     "launch": 26
-    },
+    "request": "equal",
     "response": {
      "a": {
       "latency": 32,
@@ -3028,9 +2649,9 @@
   },
   "op.softmax_tiny_fp16-r4-c64": {
    "aligned_launches": 1,
-   "cycle_error": -0.4710633849662644,
+   "cycle_error": 0.0,
    "cycles_a": 21046,
-   "cycles_b": 11132,
+   "cycles_b": 21046,
    "divergences": [
     {
      "launch": 1,
@@ -3114,53 +2735,14 @@
     }
    ],
    "equal": false,
-   "launches": 27,
+   "launches": 30,
    "launches_a": 30,
-   "launches_b": 27,
+   "launches_b": 30,
    "status": "diverged",
    "streams": {
-    "issue": {
-     "a": {
-      "cycle": 2082,
-      "pc": "0000000000001788",
-      "rctx": 1
-     },
-     "b": {
-      "cycle": 2597,
-      "pc": "0000000000001790",
-      "rctx": 0
-     },
-     "count_a": 1180,
-     "count_b": 952,
-     "index": 949,
-     "launch": 26
-    },
-    "length": {
-     "launch_count_a": 30,
-     "launch_count_b": 27
-    },
-    "request": {
-     "a": {
-      "addr": "0000000000021100",
-      "amo": 0,
-      "be": null,
-      "cycle": 1690,
-      "wdata": null,
-      "we": 0
-     },
-     "b": {
-      "addr": "0000000000020a00",
-      "amo": 0,
-      "be": null,
-      "cycle": 2250,
-      "wdata": null,
-      "we": 0
-     },
-     "count_a": 310,
-     "count_b": 198,
-     "index": 150,
-     "launch": 26
-    },
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
     "response": {
      "a": {
       "latency": 31,

@@ -8,6 +8,10 @@ The memory-system design target remains 100 GB/s. HANDOFF section 7 makes severa
 
 The source audit and existing R40 board/model evidence establish an upstream bottleneck. Three 64-bit core request paths admit at most 2.4 GB/s at 100 MHz, before protocol overhead. Three 256-bit outlets provide 9.6 GB/s in each AXI data direction. The prior ports experiment measured no gain from one to three outlets. Its model attributed contention to the home engine and core dependency waits; this attribution is not a new board measurement.
 
+## Server update
+
+Merged origin/r41 acceptance/server evidence in 7cda728, retaining both branches' docmap entries. The upgraded x86 host is available for screens and approved full links: 31 GB RAM, 32 GB swap, 16 cores and 853 GB currently available disk were verified through vx. Source `~/x86_link_env.sh` before every tool invocation; Vivado/v++/xclbinutil start, but a full link remains unverified there. Allow one link with VPP_JOBS=2 and obtain lead approval under the unchanged total five-run budget (one consumed). HANDOFF section 8 records details. No full link or card access was started.
+
 ## Live external state
 
 Actual connection checks returned `gx10-6646` through `gb` and `acf3019` through the local two-hop `fp` helper; no askpass/password stall occurred. `connection_check.log` records the result. The core-candidate free synthesis completed successfully (raw reports in `kernel/`). No card was opened, reset or programmed. No HBM-task full run has started; the handoff records one of five total runs consumed.

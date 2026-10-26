@@ -49,7 +49,7 @@ Do not copy the contents of these scripts into any file, and do not print them.
 |---|---|---|
 | **GB10** (build and simulation host, user `zhongchun`) | `$S/gb 'command'` | RTL simulation (iverilog, verilator, yosys: `source ~/tc_env/env.sh`), the SystemC/TLM model, Torch (`~/tc_env/torchenv/bin/python`, never pip install into it), XLS is not available (aarch64). Also the jump host for the FPGA host. |
 | **FPGA host** `acf3019` (user `zzhouch`) | `$S/fp 'command'` | The shared Alveo U280, XRT 2.16, Vitis/Vivado 2023.2 at `/tools/Xilinx`, XLS at `~/tnca_xls/.xls/cur`. 24 cores and 62 GB shared with other users. Full v++ links run here. |
-| **x86 Vivado host** (WSL, 16 cores, 23 GB RAM + 8 GB swap, user `vivado`) | `$S/vx 'command'` | CPU-only Vivado for unit and tile screens. Vivado: `source ~/Xilinx/Vivado/2023.2/settings64.sh`. xcu280 needs no license. No card. Not enough memory for a full link (about 31 GB peak). |
+| **x86 Vivado/Vitis host** (WSL2, 16 cores, 31 GB RAM + 32 GB swap, user `vivado`) | `$S/vx 'command'` | CPU-only screens and full links. Before every Vivado, v++ or xclbinutil invocation, run `source ~/x86_link_env.sh`. Tools/platform live under HOME; `/tools/Xilinx` does not exist. No card. Setup and remaining library risks: `evidence/r41/stage2/x86_link/README.md`. |
 
 File transfer:
 - To GB10: `rsync -a --delete --exclude .git --exclude /evidence --exclude /sim -e $S/gb_rsh <worktree>/ gb10:<dir>/`
@@ -59,7 +59,7 @@ File transfer:
 How work is organised:
 - **GB10:** limits for a shared host: at most 6 cores and 16 GB of RAM per job, and keep 40 GB available (`free -g`). Other agents also use it. Kill processes only by PID, never `pkill -f`.
 - **Synthesis screens (free):** `flow/synth/vivado_ooc.sh`, `flow/fpga/synth_r40_multicore.tcl` (kernel synthesis) and `flow/fpga/screen_r41_tile.tcl` (tile place-and-route in one SLR at 10 ns). Examples with the exact method are in `evidence/r41/stage2/integration/README.md` and `evidence/r41/stage2/candidates/T2/README.md`. Run at most two Vivado jobs at once on the x86 host. On the FPGA host run Vivado through `~/r41s2_tools/vivado_slot.sh --min-gb 8 LOG -- command` (two slots and a memory guard).
-- **Full image link:** only on the FPGA host. The recipe is in `evidence/r41/stage2/run1/README.md` (it took 9 h and peaked at 31 GB) and the flow scripts in `flow/fpga/` (`package_xo.tcl`, `link.sh`, `place_r40_multicore.tcl`). The image parameters of the current image are in `evidence/r41/stage2/integration/image.tcl`. Run detached under `nice`, and check `free -g` first: at least 38 GB must be available. Never kill another user's job.
+- **Full image link:** either the FPGA host or the upgraded x86 host. The recipe is in `evidence/r41/stage2/run1/README.md` (it took 9 h and peaked at 31 GB) and the flow scripts in `flow/fpga/` (`package_xo.tcl`, `link.sh`, `place_r40_multicore.tcl`). The image parameters of the current image are in `evidence/r41/stage2/integration/image.tcl`. On the FPGA host run detached under `nice`, and check `free -g` first: at least 38 GB must be available. On the x86 host first source `~/x86_link_env.sh`, permit at most one full link at a time, set VPP_JOBS=2, and inspect RAM/swap/disk against its 31 GB RAM plus 32 GB swap capacity. A complete link has not yet been validated there; additional library gaps may appear. Never kill another user's job.
 - **Full-run budget:** the author allows at most 5 full synthesis + place-and-route runs in total for the whole R41 Stage 2. One is used (run 1, the current image). Unit, kernel and tile screens do not count. Ask the lead before starting a full run, and record each one as n/5 in its evidence.
 
 ## 5. The shared U280 card
@@ -90,3 +90,11 @@ These requirements were added by the author on 2026-10-26 and govern the remaini
 Keep **100 GB/s**, not 100 Gbit/s, as the memory-system design target. The N-times operator-speedup requirement is the actual acceptance gate. Continue committing and pushing milestones to `origin/r41-hbm-bw`; all existing worktree, full-run-budget and shared-card rules remain in force.
 
 The author also requested an actual connection check: use the `gb` helper to reach GB10, then verify the FPGA-host hop through `fp` with `hostname`. If first-hop askpass/password authentication stalls, report the exact stalled hop honestly rather than assuming connectivity.
+
+## 8. Upgraded x86 implementation host (2026-10-26)
+
+The author reports 31 GB RAM, 32 GB swap, 16 cores and approximately 850 GB free disk after restart. Full implementation is allowed on this host as well as acf3019, subject to the unchanged shared five-run Stage-2 budget (one used) and lead approval before each full run. At most two free Vivado jobs may run there, each with no more than six threads; allow only one full link and use VPP_JOBS=2.
+
+**Always `source ~/x86_link_env.sh` before Vivado, v++ or xclbinutil.** The repository flow's `/tools/Xilinx/...` paths do not exist on this host. Vivado/Vitis 2023.2 and the U280 platform are installed under HOME. Boost 1.74 compatibility libraries for xclbinutil have been supplied. Packaging the run-1 source was verified by the author; a complete v++ link has not yet been run and may reveal additional runtime/library gaps. Canonical instructions are `evidence/r41/SERVERS.md` and `evidence/r41/stage2/x86_link/README.md`, now merged from origin/r41.
+
+A read-only check through vx reached hostname ee4e138, saw 31 GB RAM, 32 GB swap and 853 GB available disk, and started all three tools after sourcing the required environment. The tools report the existing missing-default-XILINX_HLS warning; this check is not a packaging or link qualification. No full run was started, and the card rules remain unchanged.

@@ -61,3 +61,24 @@ combined maximum 16 GiB. Reference unit never opens TNCA or the card.
 Next step: inspect fetch/reference logs, resolve any reference failures,
 freeze numerical thresholds and identities only after independent validation,
 then run the Stage 2 freeze checker and proceed to P8.
+
+## P0 milestone — prospective freeze delivered
+
+Authentic checkpoint SHA256 aa33250c…ed680b1 and tokenizer SHA256
+5f9e4d49…b81cb42 verified. Official 24-layer BF16/FP32 CPU references complete
+Q41-core and Q41-tail; all 49 logits/cache tensors at every step compared
+(1,078 comparisons). Maximum rel-L2: logits 0.0198213, states 0.0132705.
+Limits locked prospectively at 0.08 / 0.055 before new TNCA outputs.
+Reference metadata, failed/superseded attempt logs and member hashes are
+in p0/reference-evidence.tgz and reference-index.json. Tensor files remain on
+GB10 at ~/r41-accept-p0/{bf16,fp32}-v5 with hashes in the archived reports.
+
+Local Stage 2 freeze verification and five refusal tests pass. Eight freeze
+field judgments now pass for prospective scope; two historical process
+failures remain failed and need an explicit lead disposition because the
+first implementation cannot be made to occur after this freeze retroactively.
+No contract requirement or historical record was rewritten.
+
+Next step: P8, repair ~/r41s2_fp8env on acf3019 using a .pth pointing at
+~/tc_env/torchenv site-packages and exact Torch 2.14.0 constraints; perform
+imports/version checks only, then prepare lead-started board commands.

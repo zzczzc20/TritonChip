@@ -33,8 +33,9 @@ def cache_tensors(cache):
         for name in ('keys','values','conv_states','recurrent_states','cumulative_length'):
             value=getattr(layer,name,None)
             if isinstance(value,torch.Tensor):out[f'{i}.{name}']=value
-            elif isinstance(value,(tuple,list)):
-                for j,tensor in enumerate(value):
+            elif isinstance(value,(tuple,list,dict)):
+                entries=value.items() if isinstance(value,dict) else enumerate(value)
+                for j,tensor in entries:
                     if isinstance(tensor,torch.Tensor):out[f'{i}.{name}.{j}']=tensor
     return out
 
@@ -76,6 +77,10 @@ def main():
     model.load_state_dict(state,assign=True,strict=True)
     del state
     model.tie_weights()
+    # Rotary frequencies are nonpersistent buffers, absent from checkpoint state.
+    # Recreate the official module on CPU after meta parameter construction.
+    model.model.rotary_emb=type(model.model.rotary_emb)(config=config)
+    assert not any(buffer.is_meta for buffer in model.buffers())
     if args.dtype=='fp32':model.float()
     assert model.lm_head.weight is model.model.embed_tokens.weight
     started=time.monotonic()
@@ -96,6 +101,9 @@ def main():
                 cache=output.past_key_values
                 tensors={'logits':output.logits.detach().contiguous()}
                 tensors.update({k:t.detach().clone().contiguous() for k,t in cache_tensors(cache).items()})
+                assert sum('recurrent_states' in k for k in tensors)==18
+                assert sum('conv_states' in k for k in tensors)==18
+                assert sum(k.endswith(('.keys','.values')) for k in tensors)==12
                 assert all(t.dtype==torch.float32 for k,t in tensors.items() if 'recurrent' in k)
                 path=args.out/f'{name}-{step:02}.safetensors'
                 save_file(tensors,str(path))

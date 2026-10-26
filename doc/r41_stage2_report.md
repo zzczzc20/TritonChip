@@ -12,6 +12,22 @@ obligations without treating a negative study as a functional pass. Its
 uses passed, failed, not measured and blocked. A passed row applies only to
 its stated evidence identity. Aggregate final-release rows remain blocked.
 
+## Delivery update: P0 prospective freeze
+
+P0 now locks the remaining scope in `spec/r41/stage2/plan.json`, `lock.json`,
+`model_lock.json`, `model_points.json` and `xl_core.json`. The authentic pinned
+Qwen3.5-2B checkpoint and tokenizer hashes were verified. Official all-layer
+CPU BF16 and widened FP32 references complete both core/tail workloads,
+including all 49 logits/cache tensors per step (1,078 tensor comparisons).
+Maximum relative L2 is 1.9821% for logits and 1.3271% for states; the
+prospective limits are 0.08 and 0.055, derived from these CPU-only results
+before new TNCA outputs. Zero-reference tensors require absolute error <=1e-6.
+The missing rotary-buffer initialization and an incomplete dictionary-cache
+collector were corrected; superseded attempts remain documented. The P0
+freeze checker and five refusal tests pass. Historical sequencing failures
+remain failed; the initial audit tables below describe the earlier cutoff.
+Next: repair and validate the isolated FPGA-host FP8 environment (P8).
+
 ## What is established
 
 The run-1 image, SHA256

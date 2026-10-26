@@ -50,7 +50,7 @@ class IndexProofs(unittest.TestCase):
     def deferral(self,middle=(),users=1):
         imp=TTIRImporter(TargetInfo.default(),scratch_addr=0x3000,index_opt=True)
         source,user=Op('tt.load',key='source'),Op('tt.dot',key='user')
-        imp._value_users['source']=[(user,0)]*users
+        imp._value_users={'source':[(user,0)]*users}
         imp._all_ops=[source,*middle,user]
         imp._op_pos={id(op):i for i,op in enumerate(imp._all_ops)}
         return imp._deferrable(SimpleNamespace(op=source))

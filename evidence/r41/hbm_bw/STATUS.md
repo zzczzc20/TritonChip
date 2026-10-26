@@ -28,7 +28,7 @@ An opt-in parallel SFU is implemented in RTL through the core/vector-FPU paramet
 
 ## Finite LSU RTL milestone
 
-A finite 4/8-command LSU bank is implemented through the core switch while retaining the old one/two-unit modules. Eighteen randomized equivalence/capacity cases pass against the original pair, plus full-bank reset/recovery, tag-capacity refusal and 112 wide-LSU byte-oracle cases. A real 512-bit synthesis failure exposed an out-of-range lane unpack loop; it is corrected and the failed report is preserved. The corrected eight-unit 512-bit free synthesis completed on acf3019 under `~/r41_hbmbw_lsu_bank_v1/units8_width512_v2`, launcher PID 2631710. See `lsu_bank/README.md` for scope and limitations. Wide atomics, NI/NoC/home integration, area, combined timing and board operator speed remain unqualified. No full run or card access occurred.
+A finite 4/8-command LSU bank is implemented through the core switch while retaining the old one/two-unit modules. Eighteen randomized equivalence/capacity cases pass against the original pair, plus full-bank reset/recovery, tag-capacity refusal and 112 wide-LSU byte-oracle cases. A real 512-bit synthesis failure exposed an out-of-range lane unpack loop; it is corrected and the failed report is preserved. The corrected eight-unit 512-bit free synthesis completed on acf3019 under `~/r41_hbmbw_lsu_bank_v1/units8_width512_v2`, launcher PID 2631710. See `lsu_bank/README.md` for scope and limitations. Wide atomics, complete NI/NoC/home integration, combined timing and board operator speed remain unqualified. No full run or card access occurred.
 
 ## Wide NoC boundary and LSU area decision
 

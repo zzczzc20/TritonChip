@@ -284,6 +284,10 @@ class ObserversOutOfReach(unittest.TestCase):
         self.assertEqual(found["ev-dev0"]["/obs"], observers[0])
         self.assertEqual(found["ev"]["/out"], self.out / "host")
         self.assert_host_cannot_reach(found["ev"], observers)
+        # The runtime takes the host's wait from its environment; a backend
+        # argument of the same name is passed twice and every point fails.
+        self.assertNotIn("host_timeout", json.loads((self.out / "host" / "backend-0.json").read_text()))
+        self.assertIn("TNCA_HOST_TIMEOUT=60", (self.out / "host" / "evaluate.sh").read_text())
 
     def test_single_core(self):
         task = device_task(device_repo(), validation=["p0"])

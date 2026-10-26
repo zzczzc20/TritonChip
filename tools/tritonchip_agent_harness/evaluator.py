@@ -225,7 +225,10 @@ def observed_multicore_point(record: Optional[dict], obs: Optional[dict], drain_
     problem = None
     if obs is None or obs["launches"] == 0:
         problem = "no-observation"
-    elif rec_cycles is not None and rec_cycles != obs["done_cycles"]:
+    elif obs["failed_launches"]:
+        # The device faulted a launch, whatever the host made of it.
+        problem = "device-fault"
+    elif (status == "pass" or rec_cycles is not None) and rec_cycles != obs["done_cycles"]:
         # The host reported cycles the device never did: it was tampered with.
         problem = "record-disagrees"
     elif obs["not_quiet"] or (drain_cycles is not None and obs["max_settle"] > drain_cycles):
@@ -287,6 +290,11 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
     mailroot = out / "mailbox"
     mailroot.mkdir(exist_ok=True)
     mailroot.chmod(0o777)
+    # The host sees its own directory, never the observers' beside it: the
+    # candidate's code runs in the host container, and a count it could
+    # rewrite would be no count.
+    hostout = out / "host"
+    hostout.mkdir(exist_ok=True)
     devices = []
     for i, _ in enumerate(points):
         mb, obs = mailroot / str(i), out / f"observer-{i}"
@@ -307,7 +315,7 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
         devices.append(dname)
         args = {"board_top": True, "device": desc, "mailbox": f"/mb/{i}", "memory_bytes": memory,
                 "hbm_dma": True, "host_timeout": timeout}
-        (out / f"backend-{i}.json").write_text(json.dumps(args), encoding="utf-8")
+        (hostout / f"backend-{i}.json").write_text(json.dumps(args), encoding="utf-8")
     lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
              "run() {",
              f'  TNCA_BACKEND=fpga-multicore-sim TNCA_BACKEND_ARGS="$(cat /out/backend-$1.json)" '
@@ -317,9 +325,9 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
     jobs = max(1, int(ev["jobs"]))
     for k in range(0, len(points), jobs):
         lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
-    (out / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (hostout / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
     h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
-                       pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False), Mount(out, "/out", read_only=False),
+                       pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False), Mount(hostout, "/out", read_only=False),
                                                Mount(mailroot, "/mb", read_only=False)],
                        labels={"tritonchip-agent-harness": "evaluator"}, workdir="/work")
     proc = provider.docker(*h.run_args(["sh", "/out/evaluate.sh"], detach=False, remove=True),
@@ -337,7 +345,7 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
     records = {}
     for i, p in enumerate(points):
         rec = None
-        path = out / f"archbench-{i}.jsonl"
+        path = hostout / f"archbench-{i}.jsonl"
         if path.exists():
             for line in path.read_text(encoding="utf-8").splitlines():
                 try:
@@ -379,6 +387,10 @@ def _measure_observed(site: Site, hosttree: Path, devtree: Path, task: Task, out
     sockets = out / "sockets"
     sockets.mkdir(exist_ok=True)
     sockets.chmod(0o777)
+    # The host sees its own directory, never the observers' beside it (as in
+    # _measure_multicore).
+    hostout = out / "host"
+    hostout.mkdir(exist_ok=True)
     timeout = float(ev["timeout_seconds"])
     devices = []
     for i, _ in enumerate(points):
@@ -406,9 +418,9 @@ def _measure_observed(site: Site, hosttree: Path, devtree: Path, task: Task, out
     jobs = max(1, int(ev["jobs"]))
     for k in range(0, len(points), jobs):
         lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
-    (out / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (hostout / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
     h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
-                       pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False), Mount(out, "/out", read_only=False),
+                       pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False), Mount(hostout, "/out", read_only=False),
                                                Mount(sockets, SOCKETS)],
                        labels={"tritonchip-agent-harness": "evaluator"}, workdir="/work")
     proc = provider.docker(*h.run_args(["sh", "/out/evaluate.sh"], detach=False, remove=True),
@@ -425,7 +437,7 @@ def _measure_observed(site: Site, hosttree: Path, devtree: Path, task: Task, out
     records = {}
     for i, p in enumerate(points):
         rec = None
-        path = out / f"archbench-{i}.jsonl"
+        path = hostout / f"archbench-{i}.jsonl"
         if path.exists():
             for line in path.read_text(encoding="utf-8").splitlines():
                 try:

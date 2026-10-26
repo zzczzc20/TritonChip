@@ -10,12 +10,15 @@ sys.path.insert(0, str(HERE.parent))
 
 import json  # noqa: E402
 import tempfile  # noqa: E402
+import types  # noqa: E402
+from unittest import mock  # noqa: E402
 
 import subprocess  # noqa: E402
 
 from tritonchip_agent_harness.evaluator import (  # noqa: E402
     device_check, hardware_changed, observed_multicore_point, observed_point, read_multicore_observer,
     read_observer, rtl_check, score)
+from tritonchip_agent_harness import evaluator  # noqa: E402
 from tritonchip_agent_harness.task import Task  # noqa: E402
 
 BASE = {p: {"status": "pass", "cycles": 1000} for p in ("a", "b", "c", "d")}
@@ -146,6 +149,13 @@ class MulticoreObserver(unittest.TestCase):
         self.assertEqual(observed_multicore_point({"status": "pass", "time": {"device": 3396}},
                                                   self.log(MC_LOG), 39)["status"], "not-drained")
 
+    def test_a_device_fault_or_a_record_without_cycles_fails(self):
+        faulted = MC_LOG.replace("status=0", "status=1", 1)
+        self.assertEqual(observed_multicore_point({"status": "pass", "time": {"device": 3396}},
+                                                  self.log(faulted), None)["status"], "device-fault")
+        self.assertEqual(observed_multicore_point({"status": "pass", "time": {}}, self.log(MC_LOG), None)["status"],
+                         "record-disagrees")
+
     def test_no_observation_fails_and_a_failed_point_keeps_its_status(self):
         rec = {"status": "pass", "time": {"device": 3396}}
         self.assertEqual(observed_multicore_point(rec, None, None)["status"], "no-observation")
@@ -159,21 +169,32 @@ DESC = {"schema": "tnca-device/1", "name": "d", "per_core_profile": "core-vrf-sy
         "uncore": {"SETS": 32, "MEM_PORTS": 3}}
 
 
+def device_repo() -> Path:
+    """A repository whose one commit has the description spec/devices/d.json."""
+    repo = Path(tempfile.mkdtemp())
+    run = lambda *a: subprocess.run(["git", "-C", str(repo), *a], check=True, capture_output=True)
+    run("init", "-q")
+    (repo / "spec/devices").mkdir(parents=True)
+    (repo / "spec/devices/d.json").write_text(json.dumps(DESC))
+    run("add", "-A")
+    run("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base")
+    return repo
+
+
+def device_task(repo: Path, **evaluation) -> Task:
+    commit = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True,
+                            capture_output=True, text=True).stdout.strip()
+    ev = dict({"profile": "core-vrf-sync-v5", "device": "d", "validation": [], "final": [], "jobs": 2,
+               "timeout_seconds": 60}, **evaluation)
+    return Task(task_id="t", kind="k", base_commit=commit, design=(), evaluator_owned=(), hide=(),
+                instruction="", reference=None, wall_seconds=60, evaluation=ev, services={},
+                path=Path("task.json"), sha256="0" * 64)
+
+
 class DeviceCheck(unittest.TestCase):
     def setUp(self):
-        self.repo = Path(tempfile.mkdtemp())
-        run = lambda *a: subprocess.run(["git", "-C", str(self.repo), *a], check=True, capture_output=True)
-        run("init", "-q")
-        (self.repo / "spec/devices").mkdir(parents=True)
-        (self.repo / "spec/devices/d.json").write_text(json.dumps(DESC))
-        run("add", "-A")
-        run("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base")
-        self.commit = subprocess.run(["git", "-C", str(self.repo), "rev-parse", "HEAD"], check=True,
-                                     capture_output=True, text=True).stdout.strip()
-        self.task = Task(task_id="t", kind="k", base_commit=self.commit, design=(), evaluator_owned=(), hide=(),
-                         instruction="", reference=None, wall_seconds=60,
-                         evaluation={"profile": "core-vrf-sync-v5", "device": "d"}, services={},
-                         path=Path("task.json"), sha256="0" * 64)
+        self.repo = device_repo()
+        self.task = device_task(self.repo)
 
     def tree(self, desc):
         t = Path(tempfile.mkdtemp())
@@ -209,5 +230,71 @@ class DeviceCheck(unittest.TestCase):
         self.assertEqual(hw["device"], {"uncore.SETS": [32, 64]})
 
 
+class ObserversOutOfReach(unittest.TestCase):
+    """The candidate's code runs in the host container: what it can write is never the count."""
+
+    def setUp(self):
+        self.calls = []
+
+        def docker(*args, **kw):
+            self.calls.append(list(args))
+            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        self.patches = [mock.patch.object(evaluator.provider, "docker", side_effect=docker),
+                        mock.patch.object(evaluator.provider, "inspect_state", return_value={"Status": "exited"}),
+                        mock.patch.object(evaluator.provider, "remove")]
+        for p in self.patches:
+            p.start()
+        self.site = types.SimpleNamespace(images={"toolchain": "img"}, cpus=2, memory="4g", pids=256)
+        self.out = Path(tempfile.mkdtemp()) / "out"
+
+    def tearDown(self):
+        for p in self.patches:
+            p.stop()
+
+    def mounts(self):
+        """{container name: {target: source}} for every `docker run` made."""
+        found = {}
+        for args in self.calls:
+            if args[:1] != ["run"]:
+                continue
+            name = args[args.index("--name") + 1]
+            found[name] = {}
+            for i, a in enumerate(args):
+                if a == "--mount":
+                    fields = dict(f.split("=", 1) for f in args[i + 1].split(",") if "=" in f)
+                    found[name][fields["target"]] = Path(fields["source"])
+        return found
+
+    def assert_host_cannot_reach(self, host, observers):
+        for target, source in host.items():
+            for obs in observers:
+                self.assertFalse(source == obs or source in obs.parents,
+                                 f"host mount {target} -> {source} reaches {obs}")
+
+    def test_multicore(self):
+        repo = device_repo()
+        task = device_task(repo, validation=["p0", "p1"])
+        dev = Path(tempfile.mkdtemp())
+        (dev / "spec/devices").mkdir(parents=True)
+        (dev / "spec/devices/d.json").write_text(json.dumps(DESC))
+        evaluator._measure_multicore(self.site, Path(tempfile.mkdtemp()), dev, task, self.out, "ev", repo)
+        found = self.mounts()
+        observers = [self.out / "observer-0", self.out / "observer-1"]
+        self.assertEqual(found["ev-dev0"]["/obs"], observers[0])
+        self.assertEqual(found["ev"]["/out"], self.out / "host")
+        self.assert_host_cannot_reach(found["ev"], observers)
+
+    def test_single_core(self):
+        task = device_task(device_repo(), validation=["p0"])
+        (self.out / "device-build").mkdir(parents=True)
+        (self.out / "device-build" / "bench.txt").write_text("/work/bench.vvp\n")
+        evaluator._measure_observed(self.site, Path(tempfile.mkdtemp()), Path(tempfile.mkdtemp()), task, self.out, "ev")
+        found = self.mounts()
+        self.assertEqual(found["ev"]["/out"], self.out / "host")
+        self.assert_host_cannot_reach(found["ev"], [self.out / "observer-0"])
+
+
 if __name__ == "__main__":
     unittest.main()
+

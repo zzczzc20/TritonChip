@@ -115,6 +115,42 @@ class U50FlowGuardTests(unittest.TestCase):
                     self.assertIn("tnca_u50.xo", proc.stderr)
                 self.assertNotIn("v++", proc.stdout)
 
+    def test_a_recheck_takes_the_clock_its_link_asked_for(self) -> None:
+        # LINK_RECHECK=1 re-runs the checks on a finished link. A 90 MHz link
+        # rechecked without TNCA_KERNEL_MHZ must be judged at 90, as its log
+        # records, and one rechecked at another clock is refused. The vendor
+        # tools are stand-ins: v++ is never run on a recheck, and xclbinutil
+        # reports the clock the link left.
+        with tempfile.TemporaryDirectory(prefix="tnca-recheck-") as td:
+            root = Path(td)
+            vitis, platforms, out = root / "vitis", root / "platforms", root / "out"
+            (vitis / "bin").mkdir(parents=True)
+            (platforms / "xilinx_u280_gen3x16_xdma_1_202211_1").mkdir(parents=True)
+            out.mkdir()
+            (vitis / "settings64.sh").write_text(f'export PATH="{vitis}/bin:$PATH"\n', encoding="utf-8")
+            for tool, body in (("v++", "exit 0"),
+                               ("xclbinutil", "printf 'Scalable Clocks\\n   Name: DATA_CLK\\n   Frequency: 90 MHz\\n"
+                                              "System Clocks\\n'")):
+                (vitis / "bin" / tool).write_text(f"#!/bin/sh\n{body}\n", encoding="utf-8")
+                (vitis / "bin" / tool).chmod(0o755)
+            (out / "tnca_u50.xo").write_bytes(b"xo")
+            (out / "tnca_variant.txt").write_text("multicore-hbm\n", encoding="utf-8")
+            (out / "tnca_u280.xclbin").write_bytes(b"xclbin")
+            (out / "link.log").write_text(
+                "=== LINK START ===\nEXPECT_MHZ=90\n---\nINFO: [v++ 60-991] clock name 'ulp_ucs/aclk_kernel_00' "
+                "(clock ID '0') is being mapped to clock name 'DATA_CLK' in the xclbin\nVPP_RC=0\n", encoding="utf-8")
+            env = dict(os.environ, LINK_RECHECK="1", TNCA_BOARD="u280", XILINX_VITIS=str(vitis),
+                       XILINX_PLATFORMS=str(platforms))
+            env.pop("TNCA_KERNEL_MHZ", None)
+            ok = subprocess.run(["bash", str(LINK), str(out)], cwd=REPO, env=env, text=True,
+                                capture_output=True, check=False)
+            self.assertEqual(ok.returncode, 0, ok.stdout + ok.stderr)
+            self.assertIn("kernel clock 90 MHz, the three-core device on it undivided", ok.stdout)
+            other = subprocess.run(["bash", str(LINK), str(out)], cwd=REPO, env=dict(env, TNCA_KERNEL_MHZ="100"),
+                                   text=True, capture_output=True, check=False)
+            self.assertEqual(other.returncode, 2, other.stdout + other.stderr)
+            self.assertIn("that link asked for 90 MHz", other.stderr)
+
     def test_u50_clock_contract_is_visible_in_flow(self) -> None:
         text = LINK.read_text(encoding="utf-8")
         # The clock is the target's (TNCA_KERNEL_MHZ), 100 MHz when unset.

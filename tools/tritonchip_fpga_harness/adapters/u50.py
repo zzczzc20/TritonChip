@@ -342,18 +342,30 @@ class U50Adapter:
             (f"period={period_match.group(1)}" if period_match else "create_clock missing")
             + f", at most {expected_period:.3f}",
         )
-        wrapper = c.repo / "rtl/board/tnca_u50_xo.v"
-        wrapper_text = self._read_text(wrapper)
-        div_match = re.search(
-            r"(?:parameter\s+DEV_DIV\s*=|BUFGCE_DIVIDE\s*\()\s*([0-9]+)",
-            wrapper_text,
-        )
-        add(
-            "device_divider_contract",
-            div_match is not None and int(div_match.group(1)) == c.expected_device_divider,
-            (f"DEV_DIV={div_match.group(1)}" if div_match else "device divider missing")
-            + f", expected {c.expected_device_divider}",
-        )
+        if c.package_variant == "multicore-hbm":
+            # The three-core top runs its device on ap_clk itself: there is no
+            # divider to read, so the target's must be 1.
+            top = c.repo / "rtl/board/tnca_multicore_hbm_xo.v"
+            divides = re.search(r"(?:parameter\s+DEV_DIV\s*=|BUFGCE_DIVIDE\s*\()", self._read_text(top)) is not None
+            add(
+                "device_divider_contract",
+                not divides and c.expected_device_divider == 1,
+                ("the three-core top divides ap_clk" if divides else "the three-core top runs on ap_clk")
+                + f", expected divider {c.expected_device_divider}",
+            )
+        else:
+            wrapper = c.repo / "rtl/board/tnca_u50_xo.v"
+            wrapper_text = self._read_text(wrapper)
+            div_match = re.search(
+                r"(?:parameter\s+DEV_DIV\s*=|BUFGCE_DIVIDE\s*\()\s*([0-9]+)",
+                wrapper_text,
+            )
+            add(
+                "device_divider_contract",
+                div_match is not None and int(div_match.group(1)) == c.expected_device_divider,
+                (f"DEV_DIV={div_match.group(1)}" if div_match else "device divider missing")
+                + f", expected {c.expected_device_divider}",
+            )
         if c.board_name:
             boards = c.repo / "flow/fpga/boards.sh"
             boards_text = self._read_text(boards)

@@ -73,8 +73,9 @@ set NAME    tnca_u50
 set VERSION 1.0
 
 # The kernel clock this design asks the platform for, and the one link.sh passes
-# to v++ as --kernel_frequency 0:100 (it was 150 with the device divided; since
-# R38's timing work the device runs on it undivided). The platform's default is
+# to v++ as --kernel_frequency 0:<MHz>: the target's TNCA_KERNEL_MHZ, 100 when
+# unset (it was 150 with the device divided; since R38's timing work the device
+# runs on it undivided). The platform's default is
 # 300; the header of flow/fpga/link.sh records why this design does not take it.
 #
 # Keeping this number in step with link.sh is not cosmetic: it is the frequency

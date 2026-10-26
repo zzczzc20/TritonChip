@@ -94,14 +94,18 @@ def _checkout_devices(root: Path):
     import importlib.util
     import sys
     pkg = root / "python" / "tnca"
-    name = f"_tnca_devices_{hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:12]}"
+    sources = [pkg / f for f in ("devices.py", "profiles.py", "errors.py")]
+    if not all(f.is_file() for f in sources):
+        raise ImageError(f"{root}: this checkout has no python/tnca/devices.py (no device descriptions)")
+    # Keyed by the code as well as the place: a checkout changed in place is
+    # another generator, and must not be answered by the one loaded before.
+    digest = hashlib.sha256(str(root.resolve()).encode() + b"".join(f.read_bytes() for f in sources)).hexdigest()
+    name = f"_tnca_devices_{digest[:16]}"
     if f"{name}.devices" in sys.modules:
         return sys.modules[f"{name}.devices"]
     # devices.py imports the checkout's profiles module; load both as a
     # private package so an installed tnca is never consulted.
     spec = importlib.util.spec_from_file_location(name, pkg / "__init__.py", submodule_search_locations=[str(pkg)])
-    if spec is None or not (pkg / "devices.py").is_file():
-        raise ImageError(f"{root}: this checkout has no python/tnca/devices.py (no device descriptions)")
     package = importlib.util.module_from_spec(spec)
     package.__path__ = [str(pkg)]
     sys.modules[name] = package
@@ -111,7 +115,8 @@ def _checkout_devices(root: Path):
     try:
         sub.loader.exec_module(module)
     except Exception as exc:  # noqa: BLE001 -- the checkout's code, reported, not trusted
-        del sys.modules[name], sys.modules[f"{name}.devices"]
+        for key in [k for k in sys.modules if k == name or k.startswith(name + ".")]:
+            del sys.modules[key]
         raise ImageError(f"{root}: python/tnca/devices.py does not load: {exc}") from exc
     return module
 
@@ -119,14 +124,22 @@ def _checkout_devices(root: Path):
 def device_description(root: Path, device: str) -> dict[str, Any]:
     """A device description of the checkout (spec/devices), validated by its generator."""
     devices = _checkout_devices(root)
-    # The generator reads profiles through tnca.profiles, which prefers a
-    # staged copy (python/tnca/data, git-ignored, `make r2-stage-data`) to the
-    # checkout's spec. A stale one would build another machine than the
-    # commit's under the commit's name, and no dirty check would see it.
-    if devices.profiles.spec() != json.loads((root / PROFILES).read_text(encoding="utf-8")):
+    folder = (root / "spec" / "devices").resolve()
+    path = root / "spec" / "devices" / f"{device}.json"
+    if path.resolve().parent != folder:
+        raise ImageError(f"device {device!r} is not a description in spec/devices")
+    try:
+        # The generator reads profiles through tnca.profiles, which prefers a
+        # staged copy (python/tnca/data, git-ignored, `make r2-stage-data`) to
+        # the checkout's spec. A stale one would build another machine than the
+        # commit's under the commit's name, and no dirty check would see it.
+        staged = devices.profiles.spec()
+        own = json.loads((root / PROFILES).read_text(encoding="utf-8"))
+    except (OSError, ValueError, devices.profiles.ProfileMismatch) as exc:
+        raise ImageError(f"{root}: the profiles cannot be read: {exc}") from exc
+    if staged != own:
         raise ImageError(f"{root}: python/tnca/data/{PROFILES} is not {PROFILES}; restage it "
                          "(make r2-stage-data) or remove it")
-    path = root / "spec" / "devices" / f"{device}.json"
     try:
         return devices.load(path)
     except devices.DeviceError as exc:

@@ -58,6 +58,9 @@ def validate_manifest(value: dict[str, Any]) -> dict[str, Any]:
                 or not isinstance(next(iter(image.values())), str) or not next(iter(image.values())):
             raise SchemaError("image must be {\"profile\": \"<a profile of spec/r1_profiles.json>\"} "
                               "or {\"device\": \"<a description in spec/devices>\"}")
+        if "device" in image and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", image["device"]):
+            # A name in spec/devices, never a path: the commit must hold the machine it builds.
+            raise SchemaError("image.device must name a description in spec/devices, not a path")
         if value["mode"] != "full":
             raise SchemaError("image is for a full build")
         if "profile" in image and isinstance(value.get("board"), dict) \

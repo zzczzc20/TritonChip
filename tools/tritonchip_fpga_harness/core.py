@@ -362,6 +362,10 @@ def validate_profile(profile: Profile) -> None:
     if missing:
         raise SchemaError(f"profile {profile.name} missing: {', '.join(missing)}")
     divider = profile.expected_device_divider
+    if not float(data["kernel_clock_mhz"]).is_integer():
+        # The flow asks v++ for whole MHz (TNCA_KERNEL_MHZ); a fraction would be
+        # built at another clock than the one recorded.
+        raise SchemaError(f"profile {profile.name}: kernel_clock_mhz must be a whole number of MHz")
     if divider < 1 or float(data["kernel_clock_mhz"]) / divider != float(data["device_clock_mhz"]):
         raise SchemaError(
             f"profile {profile.name} has inconsistent clocks: "
@@ -385,11 +389,21 @@ def run_profile(package_dir: Path, root: Path, manifest: dict[str, Any]) -> Prof
     else: its machine exists only as a description."""
     profile = load_profile(package_dir, str(manifest["target"]))
     device = (manifest.get("image") or {}).get("device")
+    described = bool(profile.data.get("device_platform"))
     if not device:
-        if profile.data.get("device_platform"):
+        if described:
             raise SchemaError(f"target {profile.name} builds a described machine: "
                               "the manifest needs image.device (spec/devices)")
         return profile
+    if not described:
+        raise SchemaError(f"image: target {profile.name} builds no described machine; a description is built "
+                          "on a target with a device_platform")
+    if manifest.get("board"):
+        # The board stage drives a card through the single-core binding
+        # (fpga-<board>); the three-core image needs fpga-u280-multicore, which
+        # it does not run yet. Refused here, not after an eight-hour link.
+        raise SchemaError(f"target {profile.name}: the board stage cannot measure a described machine yet; "
+                          "build it without a board block")
     try:
         desc = device_description(root, device)
     except (ImageError, OSError) as exc:

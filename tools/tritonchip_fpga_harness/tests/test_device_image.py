@@ -23,8 +23,10 @@ for path in (TOOLS, REPO / "python"):
         sys.path.insert(0, str(path))
 
 from tritonchip_fpga_harness.adapters.u280 import U280FlowAdapter
-from tritonchip_fpga_harness.core import plan, run_profile
-from tritonchip_fpga_harness.image import ImageError, applied, device_parameters, write_device_config
+from tritonchip_fpga_harness.adapters.u50 import U50Adapter, U50Config
+from tritonchip_fpga_harness.core import Profile, load_profile, plan, run_profile, validate_profile
+from tritonchip_fpga_harness.image import (ImageError, applied, device_description, device_parameters,
+                                           write_device_config)
 from tritonchip_fpga_harness.schema import SchemaError, validate_manifest
 from tnca import devices
 
@@ -51,7 +53,8 @@ class DeviceImage(unittest.TestCase):
     def test_an_image_is_a_profile_or_a_device(self) -> None:
         validate_manifest(manifest())
         for bad in ({"device": ""}, {"device": DEVICE, "profile": "core-vrf-sync-v5"}, {"devices": DEVICE},
-                    {"device": 3}):
+                    {"device": 3}, {"device": "../../elsewhere/machine"}, {"device": "/abs/machine"},
+                    {"device": "sub/machine"}):
             with self.subTest(image=bad), self.assertRaises(SchemaError):
                 validate_manifest(dict(manifest(), image=bad))
 
@@ -97,9 +100,10 @@ class DeviceImage(unittest.TestCase):
             run_profile(HERE, REPO, {"candidate_id": "d", "target": "u280-multicore-r40", "mode": "full"})
 
     def test_a_machine_the_target_does_not_build_is_refused(self) -> None:
-        with self.assertRaisesRegex(SchemaError, "platform.kernel_clock_mhz is 90, the target's is 100; "
-                                                 "platform.variant is 'multicore-hbm', the target's is 'none'"):
-            run_profile(HERE, REPO, manifest(target="u280"))
+        # The single-core targets build no described machine, whatever it says.
+        for target in ("u280", "u50"):
+            with self.subTest(target=target), self.assertRaisesRegex(SchemaError, "builds no described machine"):
+                run_profile(HERE, REPO, manifest(target=target))
         with tempfile.TemporaryDirectory() as td:
             root = checkout(td)
             d = json.loads((root / f"spec/devices/{DEVICE}.json").read_text(encoding="utf-8"))
@@ -109,6 +113,48 @@ class DeviceImage(unittest.TestCase):
             (root / "spec/devices/two-core.json").write_text(json.dumps(d), encoding="utf-8")
             with self.assertRaisesRegex(SchemaError, "platform.core_count is 2, the target's is 3"):
                 run_profile(HERE, root, manifest("two-core"))
+
+    def test_a_described_machine_has_no_board_stage_yet(self) -> None:
+        board = {"backend": "fpga-u280-multicore", "profile": "core-vrf-sync-v5"}
+        with self.assertRaisesRegex(SchemaError, "cannot measure a described machine yet"):
+            plan(HERE, REPO, manifest(board=board), "mock")
+
+    def test_a_path_never_reaches_outside_spec_devices(self) -> None:
+        with self.assertRaisesRegex(ImageError, "not a description in spec/devices"):
+            device_description(REPO, "../r1_profiles")
+
+    def test_unreadable_profiles_are_an_image_error(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = checkout(td)
+            (root / "spec/r1_profiles.json").write_text("{ not json", encoding="utf-8")
+            with self.assertRaisesRegex(ImageError, "cannot be read"):
+                device_parameters(root, DEVICE)
+
+    def test_a_generator_changed_in_place_is_loaded_again(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = checkout(td)
+            self.assertNotIn("PROBE", device_parameters(root, DEVICE))
+            gen = root / "python/tnca/devices.py"
+            gen.write_text(gen.read_text(encoding="utf-8") + "\n_image_params = image_params\n\n\n"
+                           "def image_params(desc):\n    return dict(_image_params(desc), PROBE=1)\n",
+                           encoding="utf-8")
+            self.assertEqual(device_parameters(root, DEVICE)["PROBE"], 1)
+
+    def test_a_clock_is_whole_mhz(self) -> None:
+        data = dict(load_profile(HERE, "u280-multicore-r40").data, kernel_clock_mhz=92.5, device_clock_mhz=92.5)
+        with self.assertRaisesRegex(SchemaError, "whole number of MHz"):
+            validate_profile(Profile("u280-multicore-r40", data))
+
+    def test_the_three_core_top_has_no_divider(self) -> None:
+        def divider(expected: int):
+            config = U50Config(REPO, expected_ap_clk_mhz=90, expected_device_divider=expected,
+                               package_part="xcu280-fsvh2892-2L-e", package_variant="multicore-hbm")
+            with tempfile.TemporaryDirectory() as td:
+                checks = U50Adapter(config).preflight(Path(td) / "run", dry_run=True).checks
+            return next(c for c in checks if c.name == "device_divider_contract")
+        self.assertTrue(divider(1).ok)
+        self.assertIn("runs on ap_clk", divider(1).detail)
+        self.assertFalse(divider(2).ok)
 
     def test_an_unknown_or_misnamed_device_is_refused(self) -> None:
         with self.assertRaisesRegex(SchemaError, "no device description"):

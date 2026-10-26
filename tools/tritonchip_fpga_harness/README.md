@@ -127,10 +127,13 @@ or the target named them (`environment.json`, `tool_roots`).
 
 A target is named for its card (and, on the U280, for the machine the flow
 builds for it: one core, or a generation's three-core machine) and nothing
-else, because its file lives beside the flow it describes. A commit that moves the flow to
-another clock changes `link.sh`, `package_xo.tcl`, `ooc.xdc` and the target
-file together; if it forgets the target, the checks of §3.3 fail and nothing
-starts. There is never a second target for "the flow as it used to be".
+else, because its file lives beside the flow it describes. A target names its
+kernel clock and the flow takes it from there (`TNCA_KERNEL_MHZ`, read by
+`link.sh` and `package_xo.tcl`): a commit that moves a target to another clock
+changes the target file, and `ooc.xdc` as well if the clock rises above what
+its 10 ns constrains. A flow that stops taking the clock, or one the target no
+longer describes, fails the checks of §3.3 and nothing starts. There is never
+a second target for "the flow as it used to be".
 
 `u280-multicore-r40` builds only described machines (`image.device`, §5.1):
 the three-core top's own defaults are no machine anyone measured. Its
@@ -175,10 +178,10 @@ with the failed checks in `preflight_failed` and in `preflight.json`.
 
 | Check | Reads | Must hold |
 |---|---|---|
-| `flow_clock_contract` | `EXPECT_MHZ=` in `flow/fpga/link.sh` | the target's kernel clock |
-| `package_clock_contract` | `set AP_CLK_HZ` in `flow/fpga/package_xo.tcl` | the same, in Hz |
-| `ooc_clock_contract` | `create_clock -period` in `flow/fpga/ooc.xdc` | that clock's period |
-| `device_divider_contract` | `DEV_DIV` in `rtl/board/tnca_u50_xo.v` | the target's divider |
+| `flow_clock_contract` | `EXPECT_MHZ=` in `flow/fpga/link.sh` | `${TNCA_KERNEL_MHZ:-…}`, which the harness sets to the target's kernel clock; or a fixed number equal to it |
+| `package_clock_contract` | `AP_CLK_HZ` in `flow/fpga/package_xo.tcl` | taken from `TNCA_KERNEL_MHZ`; or a fixed `set AP_CLK_HZ` equal to the clock in Hz |
+| `ooc_clock_contract` | `create_clock -period` in `flow/fpga/ooc.xdc` | at most that clock's period |
+| `device_divider_contract` | `DEV_DIV` in `rtl/board/tnca_u50_xo.v`; for the three-core variant, `rtl/board/tnca_multicore_hbm_xo.v` | the target's divider; the three-core top has none, so its target's is 1 |
 | `board_contract` (U280) | `flow/fpga/boards.sh` | has a `u280)` case |
 | `board_options_contract` (U280) | `flow/fpga/boards.sh` | carries `--connectivity.slr tnca_u50_1:SLR1` |
 
@@ -360,8 +363,13 @@ the image, the simulation and the model are one machine. A checkout whose
 staged profile copy (`python/tnca/data`, which git ignores) differs from
 `spec/r1_profiles.json` is refused rather than built from the stale copy.
 `image_config.json` records the device, its platform, every parameter, the
-description's fingerprint and the hashes of the files they came from;
-`board.profile` is the per-core profile.
+description's fingerprint and the hashes of the files they came from. A
+description is built only on a target that builds described machines
+(`u280-multicore-r40`), and is named, never given as a path. Its board stage
+is not built yet -- the board stage drives a card through the single-core
+binding, and the three-core image needs `fpga-u280-multicore` -- so its
+manifest has no `board` block, and `plan` refuses one rather than let a link
+of eight hours end in `BOARD_FAIL`.
 
 Without `image`, the flow takes no profile. The image is whatever the RTL's
 parameter defaults elaborate to -- on `main`, `core-vrf-sync-v2` -- so the
@@ -651,13 +659,13 @@ harness or manifest error.
 | `clock_mhz` | if given, must be the target's kernel clock |
 | `source_commit` | if given, must be the checkout's `HEAD`. Name the full SHA for anything that will be compared |
 | `hypothesis` | free text, kept with the run |
-| `board.backend` | `fpga-u50` or `fpga-u280`; must be the target's card |
+| `board.backend` | `fpga-u50` or `fpga-u280`; must be the target's card. A described machine (`image.device`) has no board stage yet: its manifest has no `board` block |
 | `board.profile` | required: the device profile of the image (§5.1) |
 | `board.bdf` | the card's PCI address, if not the one `boards.sh` records |
 | `board.program` | `true` (default), `false`, or `{"check_command": [...], "command": [...]}` |
 | `board.program_script` | another programmer, relative to the checkout, in place of the target's |
 | `board.conformance` | `true` (default), `false`, or `{"command": [...], "result_file": "..."}` |
-| `image` | `{"profile": "<name>"}`: build that profile instead of the RTL defaults (§5.1). Full mode only |
+| `image` | `{"profile": "<name>"}`: build that profile instead of the RTL defaults; or `{"device": "<name>"}`: build the machine `spec/devices/<name>.json` describes, on a target that builds described machines (§5.1). Full mode only |
 | `board.archbench` | `{"tiers": [...]` or `"points": [...]`, `"jobs": 1, "counters": true, "timeout_s": ..., "python": "..."}`, or `{"command": [...]}`. Absent: ArchBench does not run |
 
 A command given in the manifest is an argv list, run without a shell. In it

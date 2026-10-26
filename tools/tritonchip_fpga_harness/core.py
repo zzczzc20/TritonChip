@@ -28,7 +28,8 @@ from .adapters.u50 import execute_command
 from .adapters.u280 import U280FlowAdapter
 from .measurement import MeasurementError, archbench_python, board_preflight, image_profile_contract, measure_board
 from .toolroots import tool_roots
-from .image import ImageError, applied as image_applied, image_parameters, write_image_config
+from .image import (ImageError, applied as image_applied, device_description, device_parameters, image_parameters,
+                    write_device_config, write_image_config)
 
 
 class HarnessError(RuntimeError):
@@ -373,6 +374,42 @@ def validate_profile(profile: Profile) -> None:
         raise SchemaError(f"profile {profile.name} must define two expected_artifacts")
 
 
+def run_profile(package_dir: Path, root: Path, manifest: dict[str, Any]) -> Profile:
+    """The target as one run builds it. A device description (manifest
+    ``image.device``) is a whole machine: its platform must be the one the
+    target builds (the board, the kernel variant, and what the target's
+    ``device_platform`` fixes -- the core count the top instantiates, the
+    HBM the runtime maps), and its kernel clock replaces the target's for
+    this run (R40's three-core machine closes at 90 MHz, R41's at 100, on the
+    one ``u280-multicore`` target). A target with a ``device_platform``
+    builds nothing else: its machine exists only as a description."""
+    profile = load_profile(package_dir, str(manifest["target"]))
+    device = (manifest.get("image") or {}).get("device")
+    if not device:
+        if profile.data.get("device_platform"):
+            raise SchemaError(f"target {profile.name} builds a described machine: "
+                              "the manifest needs image.device (spec/devices)")
+        return profile
+    try:
+        desc = device_description(root, device)
+    except (ImageError, OSError) as exc:
+        raise SchemaError(f"image: {exc}") from exc
+    plat = desc["platform"]
+    locked = dict(profile.data.get("device_platform") or {}, board=profile.data["board"],
+                  variant=profile.data.get("package_variant") or "none")
+    wrong = [f"platform.{k} is {plat.get(k)!r}, the target's is {v!r}"
+             for k, v in sorted(locked.items()) if plat.get(k) != v]
+    if wrong:
+        raise SchemaError(f"image: device {device!r} is not a machine target {profile.name} builds: "
+                          + "; ".join(wrong))
+    divider = profile.expected_device_divider
+    data = dict(profile.data, kernel_clock_mhz=plat["kernel_clock_mhz"],
+                device_clock_mhz=plat["kernel_clock_mhz"] / divider, device=device)
+    derived = Profile(profile.name, data)
+    validate_profile(derived)
+    return derived
+
+
 def load_profile(package_dir: Path, target: str) -> Profile:
     """A target: one card, as this checkout's flow builds for it.
 
@@ -617,7 +654,7 @@ def validate_existing(package_dir: Path, root: Path, target: str, build_dir: Pat
 
 def plan(package_dir: Path, root: Path, manifest: dict[str, Any], adapter_name: str) -> dict[str, Any]:
     validate_manifest(manifest)
-    profile = load_profile(package_dir, manifest["target"])
+    profile = run_profile(package_dir, root, manifest)
     if adapter_name in ("u50", "u280", "real") and profile.expected_adapter != ("u50" if adapter_name == "real" else adapter_name):
         raise SchemaError(
             f"target {profile.name} requires adapter {profile.expected_adapter}, got {adapter_name}"
@@ -650,8 +687,13 @@ def plan(package_dir: Path, root: Path, manifest: dict[str, Any], adapter_name: 
             raise SchemaError(f"image: this checkout's {packager.relative_to(root)} cannot build a named profile "
                               "(no TNCA_IMAGE_CONFIG)")
         try:
-            image = {"profile": manifest["image"]["profile"],
-                     "parameters": image_parameters(root, manifest["image"]["profile"])}
+            if "device" in manifest["image"]:
+                device = manifest["image"]["device"]
+                image = {"device": device, "profile": device_description(root, device)["per_core_profile"],
+                         "parameters": device_parameters(root, device)}
+            else:
+                image = {"profile": manifest["image"]["profile"],
+                         "parameters": image_parameters(root, manifest["image"]["profile"])}
         except (ImageError, OSError, KeyError, ValueError) as exc:
             raise SchemaError(f"image: {exc}") from exc
     expected = manifest.get("clock_mhz", profile.expected_clock)
@@ -810,7 +852,7 @@ def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: P
     if source["dirty"] and not allow_dirty:
         raise HarnessError("working tree is dirty; commit the candidate or pass --allow-dirty")
     p = plan(package_dir, root, manifest, adapter_name)
-    profile = load_profile(package_dir, manifest["target"])
+    profile = run_profile(package_dir, root, manifest)
     adapter = adapter_for(adapter_name)
     run_id = check_run_id(run_id or (time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8]))
     run_dir = state_dir / "runs" / run_id
@@ -876,8 +918,11 @@ def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: P
             image_env: dict[str, str] = {}
             image_record = None
             if manifest.get("image"):
-                # The profile's parameters, set by the packager (TNCA_IMAGE_CONFIG).
-                image_record = write_image_config(root, manifest["image"]["profile"], run_dir)
+                # The profile's (or the device description's) parameters, set by
+                # the packager (TNCA_IMAGE_CONFIG).
+                image_record = (write_device_config(root, manifest["image"]["device"], run_dir)
+                                if "device" in manifest["image"]
+                                else write_image_config(root, manifest["image"]["profile"], run_dir))
                 image_env = {"TNCA_IMAGE_CONFIG": str((run_dir / "image_config.tcl").resolve())}
             lease_context = lease(state_dir, "full") if manifest["mode"] == "full" else contextlib.nullcontext()
             with lease_context:
@@ -1034,7 +1079,7 @@ def measure_existing(
         )
     if result.get("mode") != "full" or result.get("status") not in {"PASS", "BOARD_FAIL", "ARCHBENCH_FAIL"}:
         raise HarnessError(f"run {run_id} is not a successful full implementation")
-    profile = load_profile(package_dir, str(manifest["target"]))
+    profile = run_profile(package_dir, root, manifest)
     current_profile_hash = hashlib.sha256(
         json.dumps(profile.data, sort_keys=True).encode()
     ).hexdigest()

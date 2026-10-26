@@ -60,6 +60,9 @@ class U50Config:
     expected_device_divider: int = 4
     board_name: str | None = None
     package_part: str | None = None
+    # package_xo.tcl's fourth argument: the kernel variant (none, hbm,
+    # multicore-hbm). It follows the part, so a variant needs one.
+    package_variant: str | None = None
     required_board_options: str | None = None
     xo_name: str = "tnca_u50.xo"
     xclbin_name: str = "tnca_u50.xclbin"
@@ -86,6 +89,7 @@ class U50Config:
             expected_device_divider=self.expected_device_divider,
             board_name=self.board_name,
             package_part=self.package_part,
+            package_variant=self.package_variant,
             required_board_options=self.required_board_options,
             xo_name=self.xo_name,
             xclbin_name=self.xclbin_name,
@@ -252,7 +256,10 @@ class U50Adapter:
             str(c.repo),
             str(build_dir),
         )
-        return command + ((c.package_part,) if c.package_part else ())
+        if c.package_variant and not c.package_part:
+            raise ValueError("a package variant needs the part it follows (package_part)")
+        return command + ((c.package_part,) if c.package_part else ()) \
+            + ((c.package_variant,) if c.package_variant else ())
 
     def link_command(self, build_dir: Path) -> tuple[str, ...]:
         return (str(self.config.link_script), str(build_dir))

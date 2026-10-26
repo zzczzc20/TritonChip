@@ -42,6 +42,7 @@ class U280FlowAdapter:
                 require_drc=bool(data.get("require_drc", False)),
                 board_name="u280",
                 package_part=str(data["part"]),
+                package_variant=str(data["package_variant"]) if data.get("package_variant") else None,
                 required_board_options=str(data.get("board_vpp_opts", "")) or None,
                 xo_name=str(expected_artifacts[0]),
                 xclbin_name=str(expected_artifacts[1]),

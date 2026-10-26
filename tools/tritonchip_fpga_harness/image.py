@@ -88,10 +88,85 @@ def write_image_config(root: Path, profile: str, out_dir: Path) -> dict[str, Any
     return record
 
 
+def _checkout_devices(root: Path):
+    """The checkout's own python/tnca/devices.py: the image is the one the
+    checkout's generator describes, not one an installed package would."""
+    import importlib.util
+    import sys
+    pkg = root / "python" / "tnca"
+    name = f"_tnca_devices_{hashlib.sha256(str(root.resolve()).encode()).hexdigest()[:12]}"
+    if f"{name}.devices" in sys.modules:
+        return sys.modules[f"{name}.devices"]
+    # devices.py imports the checkout's profiles module; load both as a
+    # private package so an installed tnca is never consulted.
+    spec = importlib.util.spec_from_file_location(name, pkg / "__init__.py", submodule_search_locations=[str(pkg)])
+    if spec is None or not (pkg / "devices.py").is_file():
+        raise ImageError(f"{root}: this checkout has no python/tnca/devices.py (no device descriptions)")
+    package = importlib.util.module_from_spec(spec)
+    package.__path__ = [str(pkg)]
+    sys.modules[name] = package
+    sub = importlib.util.spec_from_file_location(f"{name}.devices", pkg / "devices.py")
+    module = importlib.util.module_from_spec(sub)
+    sys.modules[f"{name}.devices"] = module
+    try:
+        sub.loader.exec_module(module)
+    except Exception as exc:  # noqa: BLE001 -- the checkout's code, reported, not trusted
+        del sys.modules[name], sys.modules[f"{name}.devices"]
+        raise ImageError(f"{root}: python/tnca/devices.py does not load: {exc}") from exc
+    return module
+
+
+def device_description(root: Path, device: str) -> dict[str, Any]:
+    """A device description of the checkout (spec/devices), validated by its generator."""
+    devices = _checkout_devices(root)
+    # The generator reads profiles through tnca.profiles, which prefers a
+    # staged copy (python/tnca/data, git-ignored, `make r2-stage-data`) to the
+    # checkout's spec. A stale one would build another machine than the
+    # commit's under the commit's name, and no dirty check would see it.
+    if devices.profiles.spec() != json.loads((root / PROFILES).read_text(encoding="utf-8")):
+        raise ImageError(f"{root}: python/tnca/data/{PROFILES} is not {PROFILES}; restage it "
+                         "(make r2-stage-data) or remove it")
+    path = root / "spec" / "devices" / f"{device}.json"
+    try:
+        return devices.load(path)
+    except devices.DeviceError as exc:
+        raise ImageError(f"device {device!r}: {exc}") from exc
+
+
+def device_parameters(root: Path, device: str) -> dict[str, int]:
+    """The image parameters a device description generates."""
+    return dict(sorted(_checkout_devices(root).image_params(device_description(root, device)).items()))
+
+
+def write_device_config(root: Path, device: str, out_dir: Path) -> dict[str, Any]:
+    """image_config.tcl and image_config.json for a device description."""
+    desc = device_description(root, device)
+    devices = _checkout_devices(root)
+    params = dict(sorted(devices.image_params(desc).items()))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    tcl = out_dir / "image_config.tcl"
+    tcl.write_text(devices.image_tcl(desc), encoding="utf-8")
+    source = root / "spec" / "devices" / f"{device}.json"
+    record = {
+        "schema_version": 1,
+        "device": device,
+        "profile": desc["per_core_profile"],
+        "platform": desc["platform"],
+        "parameters": params,
+        "fingerprint": devices.fingerprint(desc),
+        "device_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        "profiles_sha256": hashlib.sha256((root / PROFILES).read_bytes()).hexdigest(),
+        "tcl_sha256": hashlib.sha256(tcl.read_bytes()).hexdigest(),
+    }
+    (out_dir / "image_config.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return record
+
+
 def applied(package_log: str, params: dict[str, int]) -> list[str]:
     """The parameters the packager did not report setting to their value (`TNCA_IMAGE_PARAM name=value`)."""
     seen = dict(re.findall(r"TNCA_IMAGE_PARAM ([A-Z][A-Z0-9_]*)=(-?\d+)", package_log))
     return [name for name, value in params.items() if seen.get(name) != str(value)]
 
 
-__all__ = ["ImageError", "applied", "image_parameters", "wrapper_parameters", "write_image_config"]
+__all__ = ["ImageError", "applied", "device_description", "device_parameters", "image_parameters",
+           "wrapper_parameters", "write_device_config", "write_image_config"]

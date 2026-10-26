@@ -405,3 +405,8 @@ sources = ["rtl/core/tnca_mem_mux.v", "rtl/core/tnca_core.v", "rtl/fpga/tnca_lin
 path = "evidence/r41/hbm_bw/model/README.md"
 depends_on = ["evidence/r41/hbm_bw/capacity_analysis.md"]
 sources = ["tools/performance_harness/systemc/ramulator/", "evidence/r41/hbm_bw/model/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/outlet/README.md"
+depends_on = ["evidence/r41/hbm_bw/model/README.md"]
+sources = ["rtl/fpga/tnca_line_axi.v", "tb/fpga/tb_line_axi.v", "tb/fpga/tb_line_axi_stream.v", "tools/r40/line_axi_tests.py", "flow/fpga/screen_r41_hbm_outlet.tcl", "evidence/r41/hbm_bw/outlet/"]

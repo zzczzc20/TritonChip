@@ -12,6 +12,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cores', type=int, choices=(1, 2, 3, 4, 8), action='append')
     parser.add_argument('--write-delay', type=int, default=15)
+    parser.add_argument('--pipelined-issue', action='store_true')
     args = parser.parse_args()
     if args.write_delay < 0:
         parser.error('write delay must be nonnegative')
@@ -30,7 +31,8 @@ def main():
                        '-s', 'tb_multicore_axi', f'-Ptb_multicore_axi.N={cores}',
                        f'-Ptb_multicore_axi.PORTS={ports}',
                        f'-Ptb_multicore_axi.STAGES={stages}',
-                       f'-Ptb_multicore_axi.WRITE_DELAY={args.write_delay}', '-o', output]
+                       f'-Ptb_multicore_axi.WRITE_DELAY={args.write_delay}',
+                       f'-Ptb_multicore_axi.AXI_PIPELINED_ISSUE={int(args.pipelined_issue)}', '-o', output]
             for library in ('common', 'core', 'gen', 'nuca', 'noc', 'tile'):
                 command += ['-y', 'rtl/' + library]
             command += ['-y', 'rtl', '-y', 'rtl/fpga']

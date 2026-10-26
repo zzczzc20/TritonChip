@@ -1,0 +1,45 @@
+2026-10-26T06:34:02Z slot 1 start (avail 36 GB): vivado -mode batch -nojournal -nolog -source /home/zzhouch/r41_hbmbw_outlet_v1/screen_r41_hbm_outlet.tcl -tclargs /home/zzhouch/r41_hbmbw_outlet_v1/tnca_line_axi.v /home/zzhouch/r41_hbmbw_outlet_v1/slots64 64
+
+****** Vivado v2023.2 (64-bit)
+  **** SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+  **** IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+  **** SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source /home/zzhouch/r41_hbmbw_outlet_v1/screen_r41_hbm_outlet.tcl
+# if {$argc != 3} {error "usage: screen_r41_hbm_outlet.tcl RTL OUT SLOTS"}
+# set rtl [file normalize [lindex $argv 0]]
+# set out [file normalize [lindex $argv 1]]
+# set slots [lindex $argv 2]
+# if {$slots ni {32 64}} {error "screen slots must be 32 or 64"}
+# file mkdir $out
+# set_param general.maxThreads 4
+# read_verilog $rtl
+read_verilog: Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1344.320 ; gain = 0.023 ; free physical = 34225 ; free virtual = 44102
+# synth_design -top tnca_line_axi -part xcu280-fsvh2892-2L-e -mode out_of_context \
+#     -generic [list DATA_W=512 OUT_N=$slots PIPELINED_ISSUE=1 WRITE_RESPONSES=1]
+Command: synth_design -top tnca_line_axi -part xcu280-fsvh2892-2L-e -mode out_of_context -generic {DATA_W=512 OUT_N=64 PIPELINED_ISSUE=1 WRITE_RESPONSES=1}
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xcu280'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xcu280'
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 4 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 2596826
+---------------------------------------------------------------------------------
+Starting Synthesize : Time (s): cpu = 00:00:05 ; elapsed = 00:00:05 . Memory (MB): peak = 1759.855 ; gain = 415.531 ; free physical = 28640 ; free virtual = 42624
+---------------------------------------------------------------------------------
+ERROR: [Synth 8-10936] loop variable declaration is not allowed in this mode of Verilog [/home/zzhouch/r41_hbmbw_outlet_v1/tnca_line_axi.v:99]
+INFO: [Synth 8-10285] module 'tnca_line_axi' is ignored due to previous errors [/home/zzhouch/r41_hbmbw_outlet_v1/tnca_line_axi.v:198]
+INFO: [Synth 8-9084] Verilog file '/home/zzhouch/r41_hbmbw_outlet_v1/tnca_line_axi.v' ignored due to errors
+ERROR: [Synth 8-439] module 'tnca_line_axi' not found
+---------------------------------------------------------------------------------
+Finished Synthesize : Time (s): cpu = 00:00:07 ; elapsed = 00:00:07 . Memory (MB): peak = 1833.793 ; gain = 489.469 ; free physical = 28440 ; free virtual = 42427
+---------------------------------------------------------------------------------
+synthesize failed
+INFO: [Common 17-83] Releasing license: Synthesis
+7 Infos, 0 Warnings, 0 Critical Warnings and 3 Errors encountered.
+synth_design failed
+ERROR: [Common 17-69] Command failed: Vivado Synthesis failed
+INFO: [Common 17-206] Exiting Vivado at Mon Oct 26 14:34:28 2026...
+2026-10-26T06:34:38Z slot 1 end exit 1

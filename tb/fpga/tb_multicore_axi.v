@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 module tb_multicore_axi;
-parameter N=3,PORTS=3,STAGES=2,WRITE_DELAY=15;
+parameter N=3,PORTS=3,STAGES=2,WRITE_DELAY=15,AXI_PIPELINED_ISSUE=0;
 localparam NX=N>4?4:N,SW=N>4?$clog2(N):2;
 reg clk=0;always #5 clk=~clk;
 reg rst=0,cv=0,ack=0,hv=0,hw=0;
@@ -46,7 +46,7 @@ wire [PORTS*(3)-1:0] m_rid;
 wire [PORTS*(2)-1:0] m_rresp;
 wire [PORTS*(1)-1:0] m_rlast;
 
-tnca_multicore_axi #(.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.MEM_BASE(0),.NX(NX),.NY(N/NX),.CODE_WORDS(256),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+tnca_multicore_axi #(.AXI_PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.MEM_BASE(0),.NX(NX),.NY(N/NX),.CODE_WORDS(256),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
 .clk(clk),.rst_n(rst),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
 .cmd_group_log2(2'd0),.cmd_deadline(deadline),.timed_out(timed_out),.cmd_arg_base(64'h8000),.cmd_arg_stride(64'h100),.cmd_gx(32'd13),.cmd_gy(32'd7),.cmd_gz(32'd5),
 .cmd_cores({N{1'b1}}),.cmd_roles(4'b0001),.cmd_slice(4'd0),.cmd_vbase(32'd0),

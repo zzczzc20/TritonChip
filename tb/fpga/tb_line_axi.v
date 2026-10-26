@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 module tb_line_axi;
- parameter DATA_W=256,OUT_N=8,MODE=0,STAGES=0,WRITE_ACK=1,RUNTIME_LIMIT=0;
+ parameter DATA_W=256,OUT_N=8,MODE=0,STAGES=0,WRITE_ACK=1,RUNTIME_LIMIT=0,PIPELINED_ISSUE=0;
  localparam ID_W=(OUT_N>1?$clog2(OUT_N):1),BEATS=512/DATA_W;
  reg clk=0,rst_n=0;always #5 clk=~clk;
  reg req_valid=0,req_we=0;wire req_ready;
@@ -25,7 +25,7 @@ module tb_line_axi;
  .s_rsp_valid(rsp_valid),.s_rsp_rdata(rsp_rdata),.s_rsp_src(rsp_src),.s_rsp_tag(rsp_tag),
  .m_req_valid(qv),.m_req_ready(qr),.m_req_addr(qa),.m_req_we(qwe),.m_req_wdata(qd),.m_req_src(qs),.m_req_tag(qt),
  .m_rsp_valid(rv),.m_rsp_rdata(rd),.m_rsp_src(rs),.m_rsp_tag(rt));
- tnca_line_axi #(.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W),.DYNAMIC_LIMIT(RUNTIME_LIMIT!=0)) dut(
+ tnca_line_axi #(.PIPELINED_ISSUE(PIPELINED_ISSUE),.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W),.DYNAMIC_LIMIT(RUNTIME_LIMIT!=0)) dut(
   .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(qr),
   .req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
   .rsp_valid(rv),.rsp_rdata(rd),.rsp_src(rs),.rsp_tag(rt),

@@ -17,7 +17,7 @@
 module tnca_line_axi #(
  parameter SRC_W=2,TAG_W=3,OUT_N=8,DATA_W=256,DYNAMIC_LIMIT=0,
  parameter ID_W=(OUT_N>1?$clog2(OUT_N):1),
- parameter MEM_BASE=64'h20000,WRITE_RESPONSES=0
+ parameter MEM_BASE=64'h20000,WRITE_RESPONSES=0,PIPELINED_ISSUE=0
 )(
  input wire clk,rst_n,
  input wire [7:0] admission_limit,
@@ -53,6 +53,11 @@ module tnca_line_axi #(
  reg [BEAT_W-1:0] rbeat[0:OUT_N-1];
  reg issue_valid,aw_done,w_done;
  reg [ID_W-1:0] issue_slot;
+ // Optional one-entry skid queue keeps request-ready independent of AXI
+ // ready. The current issue can retire and be replaced on the same edge.
+ // Slots are reserved on home acceptance, including this queued issue.
+ reg pending_valid;
+ reg [ID_W-1:0] pending_slot;
  reg [BEAT_W-1:0] wbeat;
  integer i,free_slot;
  reg hazard;
@@ -98,8 +103,8 @@ module tnca_line_axi #(
  end
  // Invalid addresses are refused and latched as faults, never translated into
  // zero-valued successful memory responses.
- assign req_ready=rst_n && !fault && !issue_valid && free_slot>=0 && !hazard && legal_address && admission_ok;
- assign idle=!(|active) && !issue_valid;
+ assign req_ready=rst_n && !fault && (PIPELINED_ISSUE ? !pending_valid : !issue_valid) && free_slot>=0 && !hazard && legal_address && admission_ok;
+ assign idle=!(|active) && !issue_valid && !pending_valid;
  assign m_arvalid=issue_valid && !writing[issue_slot];
  assign m_araddr=bus_address[issue_slot];
  assign m_arid=issue_slot;assign m_arlen=BEATS-1;
@@ -110,6 +115,8 @@ module tnca_line_axi #(
  assign m_wvalid=issue_valid && writing[issue_slot] && !w_done;
  assign m_wdata=line[issue_slot][wbeat*DATA_W+:DATA_W];
  assign m_wstrb={DATA_W/8{1'b1}};assign m_wlast=wbeat==BEATS-1;
+ wire issue_done=issue_valid && (writing[issue_slot] ?
+   ((aw_done || m_awready) && (w_done || (m_wready && m_wlast))) : m_arready);
  wire read_match=m_rid<OUT_N && active[m_rid] && !writing[m_rid] && sent[m_rid];
  wire read_final=m_rvalid && read_match && rbeat[m_rid]==BEATS-1 && m_rlast;
  wire write_match=m_bid<OUT_N && active[m_bid] && writing[m_bid] && sent[m_bid];
@@ -129,7 +136,7 @@ module tnca_line_axi #(
  endgenerate
  always @(posedge clk)begin
   if(!rst_n)begin
-   active<=0;writing<=0;sent<=0;issue_valid<=0;issue_slot<=0;
+   active<=0;writing<=0;sent<=0;issue_valid<=0;issue_slot<=0;pending_valid<=0;pending_slot<=0;
    aw_done<=0;w_done<=0;wbeat<=0;fault<=0;rsp_valid<=0;
    rsp_src<=0;rsp_tag<=0;rsp_rdata<=0;
    read_lines<=0;write_lines<=0;read_beats<=0;write_beats<=0;
@@ -137,12 +144,6 @@ module tnca_line_axi #(
   end else begin
    rsp_valid<=0;
    if(req_valid && !fault && !legal_address)fault<=1;
-   if(req_valid && req_ready)begin
-    active[free_slot]<=1;writing[free_slot]<=req_we;sent[free_slot]<=0;
-    address[free_slot]<=req_addr;bus_address[free_slot]<=base_q+offset;line[free_slot]<=req_wdata;
-    source[free_slot]<=req_src;tag[free_slot]<=req_tag;rbeat[free_slot]<=0;
-    issue_slot<=free_slot;issue_valid<=1;aw_done<=0;w_done<=0;wbeat<=0;
-   end
    if(m_arvalid && m_arready)begin
     issue_valid<=0;sent[issue_slot]<=1;read_lines<=read_lines+1;
    end
@@ -155,6 +156,22 @@ module tnca_line_axi #(
      (aw_done || (m_awvalid && m_awready)) &&
      (w_done || (m_wvalid && m_wready && m_wlast)))begin
     issue_valid<=0;sent[issue_slot]<=1;
+   end
+   if(PIPELINED_ISSUE && pending_valid && (!issue_valid || issue_done))begin
+    issue_slot<=pending_slot;issue_valid<=1;pending_valid<=0;
+    aw_done<=0;w_done<=0;wbeat<=0;
+   end
+   // New issue state must win over the prior issue's completion/AW/W flags.
+   // A full pending queue refuses admission, even if it drains this cycle.
+   if(req_valid && req_ready)begin
+    active[free_slot]<=1;writing[free_slot]<=req_we;sent[free_slot]<=0;
+    address[free_slot]<=req_addr;bus_address[free_slot]<=base_q+offset;line[free_slot]<=req_wdata;
+    source[free_slot]<=req_src;tag[free_slot]<=req_tag;rbeat[free_slot]<=0;
+    if(!issue_valid || (PIPELINED_ISSUE && issue_done && !pending_valid))begin
+     issue_slot<=free_slot;issue_valid<=1;aw_done<=0;w_done<=0;wbeat<=0;
+    end else begin
+     pending_valid<=1;pending_slot<=free_slot;
+    end
    end
    if(m_rvalid && m_rready)begin
     if(!read_match)fault<=1;

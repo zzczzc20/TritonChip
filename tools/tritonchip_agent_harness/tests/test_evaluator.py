@@ -8,6 +8,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE.parent))
 
+import dataclasses  # noqa: E402
+import hashlib  # noqa: E402
 import json  # noqa: E402
 import tempfile  # noqa: E402
 import types  # noqa: E402
@@ -191,6 +193,21 @@ def device_task(repo: Path, **evaluation) -> Task:
                 path=Path("task.json"), sha256="0" * 64)
 
 
+class BaselineKey(unittest.TestCase):
+    def test_a_multicore_base_is_kept_per_machine(self):
+        repo = device_repo()
+        one = device_task(repo, validation=["p"], platform={"commit": "c" * 40, "paths": []})
+        other = device_task(repo, validation=["p"], platform={"commit": "c" * 40, "paths": []}, device="e")
+        bigger = device_task(repo, validation=["p"], platform={"commit": "c" * 40, "paths": []}, memory_bytes=1 << 26)
+        keys = {evaluator.baseline_key(t) for t in (one, other, bigger)}
+        self.assertEqual(len(keys), 3)
+        # A single-core task's key is what it was, so the bases kept for it stay valid.
+        single = dataclasses.replace(one, evaluation={k: v for k, v in one.evaluation.items() if k != "device"})
+        self.assertEqual(evaluator.baseline_key(single),
+                         f"{single.base_commit[:12]}-core-vrf-sync-v5-"
+                         f"{hashlib.sha256(json.dumps([['p'], []]).encode()).hexdigest()[:8]}-obs{'c' * 12}")
+
+
 class DeviceCheck(unittest.TestCase):
     def setUp(self):
         self.repo = device_repo()
@@ -252,8 +269,8 @@ class ObserversOutOfReach(unittest.TestCase):
         for p in self.patches:
             p.stop()
 
-    def mounts(self):
-        """{container name: {target: source}} for every `docker run` made."""
+    def mounts(self, writable=False):
+        """{container name: {target: source}} for every `docker run` made (only its writable mounts)."""
         found = {}
         for args in self.calls:
             if args[:1] != ["run"]:
@@ -261,16 +278,17 @@ class ObserversOutOfReach(unittest.TestCase):
             name = args[args.index("--name") + 1]
             found[name] = {}
             for i, a in enumerate(args):
-                if a == "--mount":
+                if a == "--mount" and not (writable and args[i + 1].endswith(",readonly")):
                     fields = dict(f.split("=", 1) for f in args[i + 1].split(",") if "=" in f)
                     found[name][fields["target"]] = Path(fields["source"])
         return found
 
-    def assert_host_cannot_reach(self, host, observers):
+    def assert_host_cannot_reach(self, host, guarded):
+        """No mount of the host's reaches what a device writes (a writable one could plant a link there)."""
         for target, source in host.items():
-            for obs in observers:
-                self.assertFalse(source == obs or source in obs.parents,
-                                 f"host mount {target} -> {source} reaches {obs}")
+            for g in guarded:
+                self.assertFalse(source == g or source in g.parents or g in source.parents,
+                                 f"host mount {target} -> {source} reaches {g}")
 
     def test_multicore(self):
         repo = device_repo()
@@ -279,15 +297,45 @@ class ObserversOutOfReach(unittest.TestCase):
         (dev / "spec/devices").mkdir(parents=True)
         (dev / "spec/devices/d.json").write_text(json.dumps(DESC))
         evaluator._measure_multicore(self.site, Path(tempfile.mkdtemp()), dev, task, self.out, "ev", repo)
-        found = self.mounts()
+        found, writable = self.mounts(), self.mounts(writable=True)
         observers = [self.out / "observer-0", self.out / "observer-1"]
+        outboxes = [self.out / "mailbox/out/0", self.out / "mailbox/out/1"]
         self.assertEqual(found["ev-dev0"]["/obs"], observers[0])
         self.assertEqual(found["ev"]["/out"], self.out / "host")
-        self.assert_host_cannot_reach(found["ev"], observers)
+        # The observers are out of the host's sight, and the outboxes it reads
+        # are not writable to it: the device writes nothing the host can aim.
+        self.assert_host_cannot_reach({t: s for t, s in found["ev"].items() if t != "/mb/out"}, observers)
+        self.assert_host_cannot_reach(writable["ev"], observers + outboxes)
+        self.assertNotIn("/mb/in", writable["ev-dev0"])
+        self.assertEqual(writable["ev-dev0"]["/mb/out"], outboxes[0])
         # The runtime takes the host's wait from its environment; a backend
         # argument of the same name is passed twice and every point fails.
         self.assertNotIn("host_timeout", json.loads((self.out / "host" / "backend-0.json").read_text()))
         self.assertIn("TNCA_HOST_TIMEOUT=60", (self.out / "host" / "evaluate.sh").read_text())
+
+    def test_a_host_that_runs_too_long_leaves_no_container(self):
+        def docker(*args, **kw):
+            self.calls.append(list(args))
+            if args[:1] == ("run",) and "-d" not in args:
+                raise subprocess.TimeoutExpired(list(args), kw.get("timeout"))
+            return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        removed = []
+        with mock.patch.object(evaluator.provider, "docker", side_effect=docker), \
+                mock.patch.object(evaluator.provider, "remove", side_effect=removed.append):
+            repo = device_repo()
+            task = device_task(repo, validation=["p0", "p1"])
+            dev = Path(tempfile.mkdtemp())
+            (dev / "spec/devices").mkdir(parents=True)
+            (dev / "spec/devices/d.json").write_text(json.dumps(DESC))
+            got = evaluator._measure_multicore(self.site, Path(tempfile.mkdtemp()), dev, task, self.out, "ev", repo)
+        self.assertIsNone(got["exit"])
+        self.assertEqual(got["missing"], ["p0", "p1"])
+        # Each device, and the host that timed out, removed -- after any
+        # container of the same name a run that died left behind.
+        self.assertEqual(removed.count("ev-dev0"), 2)
+        self.assertEqual(removed.count("ev-dev1"), 2)
+        self.assertEqual(removed.count("ev"), 2)
 
     def test_single_core(self):
         task = device_task(device_repo(), validation=["p0"])

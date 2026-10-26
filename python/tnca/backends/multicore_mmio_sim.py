@@ -13,10 +13,14 @@ from .multicore_mmio import MulticoreMMIOBackend
 from .u50_sim import SimLink, _repo_root, _tools
 
 
-# The files a mailbox device and its host leave for each other: the device's
-# exit status, written when its simulator stops, and the host's goodbye.
-EXIT_FILE = 'device.exit'
-DONE_FILE = 'host.done'
+# A mailbox is two directories, one per direction: the host writes its
+# commands and its goodbye into the inbox, which the device only reads; the
+# device writes its responses and its exit status into the outbox, which the
+# host only reads. The device writes nothing where the host can write -- a
+# link the host left there would otherwise aim the device's own writes (the
+# simulator opens its response file by name) at the observer's log.
+EXIT_FILE = 'device.exit'   # in the outbox, when the simulator stops
+DONE_FILE = 'host.done'     # in the inbox: the host's goodbye
 
 
 class _ExternalDevice:
@@ -46,7 +50,7 @@ class _ExternalDevice:
 
 class MulticoreMMIOLink(SimLink):
     def __init__(self, *, core_count=3, memory_ports=3,
-                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, device=None, mailbox=None, **kwargs):
+                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, device=None, inbox=None, outbox=None, **kwargs):
         if type(journal) is not bool or (journal and not board_top):
             raise ArgumentError('journal requires a boolean and the board-top stand-in')
         explicit = kwargs.pop('_explicit', ())
@@ -103,15 +107,20 @@ class MulticoreMMIOLink(SimLink):
             raise ArgumentError('memory must contain whole lines; link stages must be nonnegative')
         # A mailbox is a device run elsewhere -- by the agent harness's
         # evaluator, in a container of its own (`serve` below) -- that this
-        # link reaches only through the two files. It neither builds nor
-        # starts the simulator, and the device's own process is not its child.
+        # link reaches only through its inbox and outbox. It neither builds
+        # nor starts the simulator, and the device's process is not its child.
         self.mailbox = None
-        if mailbox is not None:
+        if (inbox is None) != (outbox is None):
+            raise ArgumentError('a mailbox is an inbox and an outbox')
+        if inbox is not None:
             if journal:
                 raise ArgumentError('a mailbox device keeps no journal')
-            self.mailbox = str(mailbox)
-            kwargs['workdir'] = self.mailbox
+            self.mailbox = (str(inbox), str(outbox))
+            kwargs['workdir'] = self.mailbox[0]
         super().__init__(**kwargs)
+        if self.mailbox is not None:
+            self.cmd = os.path.join(self.mailbox[0], 'regs.cmd')
+            self.rsp = os.path.join(self.mailbox[1], 'regs.rsp')
         self.journal_dir = str(Path(self.dir)/'journal') if journal else None
 
     def describe(self):
@@ -124,7 +133,7 @@ class MulticoreMMIOLink(SimLink):
         if self.proc is not None:
             from ..errors import TncaError
             raise TncaError('this link already has a device', code='INTERNAL')
-        self.proc = _ExternalDevice(os.path.join(self.dir, EXIT_FILE))
+        self.proc = _ExternalDevice(os.path.join(self.mailbox[1], EXIT_FILE))
         self._await_up()
         return self
 
@@ -136,7 +145,7 @@ class MulticoreMMIOLink(SimLink):
                 self._round_trip([])
             except Exception:  # noqa: BLE001 -- closing; the device's own log has the cause
                 pass
-        with open(os.path.join(self.dir, DONE_FILE), 'w') as stream:
+        with open(os.path.join(self.mailbox[0], DONE_FILE), 'w') as stream:
             stream.write('done\n')
         self.proc = None
 
@@ -241,7 +250,8 @@ def stand_in(**kwargs):
                             maintenance=kwargs.pop('maintenance', False),
                             memory_controls=kwargs.pop('memory_controls', False),
                             journal=kwargs.pop('journal', False),
-                            device=device, _explicit=explicit, mailbox=kwargs.pop('mailbox', None),
+                            device=device, _explicit=explicit, inbox=kwargs.pop('inbox', None),
+                            outbox=kwargs.pop('outbox', None),
                             host_timeout=kwargs.get('host_timeout', 30.0))
     return MulticoreMMIOBackend(link, core_count=core_count,
                                memory_ports=memory_ports, **kwargs)
@@ -250,17 +260,18 @@ def stand_in(**kwargs):
 def serve(argv=None):
     """The device side of a mailbox: build the board-top stand-in for a
     device description, run it against the mailbox's files with the
-    platform's observer log, and leave its exit status in the mailbox.
+    platform's observer log, and leave its exit status in the outbox.
 
-        python -m tnca.backends.multicore_mmio_sim --device D --mailbox DIR
+        python -m tnca.backends.multicore_mmio_sim --device D --inbox IN --outbox OUT
                [--build DIR] [--observe FILE] [--memory-bytes N] [--watchdog CYCLES]
 
     --build is where the simulator is elaborated; the agent harness keeps it,
-    and the observer log, where the host cannot write.
+    and the observer log, where the host cannot write. The device only reads
+    the inbox and only writes the outbox (and --build, and the observer).
 
     A mailbox serves one device, once. The host may write its first command
-    before the device is up, so nothing found in a fresh mailbox is removed;
-    one a device has answered from (or left) is refused instead. The
+    before the device is up, so nothing found in a fresh inbox is removed; a
+    mailbox a device has answered from (or left) is refused instead. The
     simulator is built at once but started only when the host's first command
     arrives: an idle simulator still runs its clock, and a device waiting for
     its host's turn (the evaluator runs a few points at a time) would take a
@@ -268,61 +279,65 @@ def serve(argv=None):
     """
     ap = argparse.ArgumentParser(prog='tnca.backends.multicore_mmio_sim', description=serve.__doc__)
     ap.add_argument('--device', required=True, help='a description name in spec/devices, or its path')
-    ap.add_argument('--mailbox', required=True)
+    ap.add_argument('--inbox', required=True, help="the host's commands and goodbye, read here")
+    ap.add_argument('--outbox', required=True, help='the responses and the exit status, written here')
     ap.add_argument('--build')
     ap.add_argument('--observe')
     ap.add_argument('--memory-bytes', type=int, default=1 << 20)
     ap.add_argument('--watchdog', type=int, default=200_000_000)
     a = ap.parse_args(argv)
-    os.makedirs(a.mailbox, exist_ok=True)
-    used = [n for n in ('regs.rsp', EXIT_FILE, DONE_FILE) if os.path.exists(os.path.join(a.mailbox, n))]
+    os.makedirs(a.outbox, exist_ok=True)
+    used = [os.path.join(d, n) for d, n in ((a.outbox, 'regs.rsp'), (a.outbox, EXIT_FILE), (a.inbox, DONE_FILE))
+            if os.path.lexists(os.path.join(d, n))]
     if used:
-        print(f'{a.mailbox} has been used ({", ".join(used)}); a device takes a fresh mailbox',
+        print(f'the mailbox has been used ({", ".join(used)}); a device takes a fresh one',
               file=sys.stderr, flush=True)
         return 2
-    exit_file = os.path.join(a.mailbox, EXIT_FILE)
+    exit_file = os.path.join(a.outbox, EXIT_FILE)
+    code = 2
     try:
-        build = a.build or os.path.join(a.mailbox, 'build')
-        os.makedirs(build, exist_ok=True)
-        link = MulticoreMMIOLink(board_top=True, device=a.device, memory_bytes=a.memory_bytes, workdir=build)
-        bench = link._build()
-    except Exception as e:  # noqa: BLE001 -- a device that never came up; the host is told by the exit file
-        print(f'the device did not build: {e}', file=sys.stderr, flush=True)
+        try:
+            build = a.build or os.path.join(a.outbox, 'build')
+            os.makedirs(build, exist_ok=True)
+            link = MulticoreMMIOLink(board_top=True, device=a.device, memory_bytes=a.memory_bytes, workdir=build)
+            bench = link._build()
+        except Exception as e:  # noqa: BLE001 -- a device that never came up; the host is told by the exit file
+            print(f'the device did not build: {e}', file=sys.stderr, flush=True)
+            return code
+        command = os.path.join(a.inbox, 'regs.cmd')
+        argv = [link._vvp, bench, f'+cmd={command}', f'+rsp={os.path.join(a.outbox, "regs.rsp")}',
+                f'+pollcycles={link.pollcycles}', f'+intercycle={link.intercycle}', f'+watchdog={a.watchdog}',
+                '+assert_fatal']
+        if a.observe:
+            argv.append(f'+observe={a.observe}')
+        done = os.path.join(a.inbox, DONE_FILE)
+        while not os.path.exists(command):
+            if os.path.exists(done):
+                # The host left without a command: nothing to serve.
+                code = 0
+                return code
+            time.sleep(0.2)
+        print('serving', link.describe(), flush=True)
+        # The simulator runs until its watchdog unless the host says goodbye
+        # (the link's close() leaves DONE_FILE), which ends it at once.
+        proc = subprocess.Popen(argv)
+        while proc.poll() is None:
+            if os.path.exists(done):
+                proc.terminate()
+                try:
+                    proc.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait()
+                break
+            time.sleep(0.2)
+        code = proc.returncode
+        return code
+    finally:
+        # Whatever happened, the host is told: without the exit file it would
+        # wait out its whole timeout for a device that is gone.
         with open(exit_file, 'w') as stream:
-            stream.write('2\n')
-        return 2
-    argv = [link._vvp, bench, f'+cmd={os.path.join(a.mailbox, "regs.cmd")}',
-            f'+rsp={os.path.join(a.mailbox, "regs.rsp")}', f'+pollcycles={link.pollcycles}',
-            f'+intercycle={link.intercycle}', f'+watchdog={a.watchdog}', '+assert_fatal']
-    if a.observe:
-        argv.append(f'+observe={a.observe}')
-    done = os.path.join(a.mailbox, DONE_FILE)
-    command = os.path.join(a.mailbox, 'regs.cmd')
-    while not os.path.exists(command):
-        if os.path.exists(done):
-            # The host left without a command: nothing to serve.
-            with open(exit_file, 'w') as stream:
-                stream.write('0\n')
-            return 0
-        time.sleep(0.2)
-    print('serving', link.describe(), flush=True)
-    # The simulator runs until its watchdog unless the host says goodbye
-    # (the link's close() leaves DONE_FILE), which ends it at once.
-    proc = subprocess.Popen(argv)
-    while proc.poll() is None:
-        if os.path.exists(done):
-            proc.terminate()
-            try:
-                proc.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait()
-            break
-        time.sleep(0.2)
-    code = proc.returncode
-    with open(exit_file, 'w') as stream:
-        stream.write(f'{code}\n')
-    return code
+            stream.write(f'{code}\n')
 
 
 if __name__ == '__main__':

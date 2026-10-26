@@ -31,6 +31,7 @@ import json
 import math
 import re
 import shutil
+import subprocess
 import time
 from pathlib import Path
 from typing import Optional
@@ -271,6 +272,31 @@ def device_check(repo: Path, task: Task, tree: Path) -> list:
     return problems
 
 
+def _run(c: AgentContainer, command: list, timeout: float) -> Optional[int]:
+    """A container run to its end, and its exit status; None when it ran past
+    the timeout, and it is then removed rather than left to run on."""
+    provider.remove(c.name)  # a container of this name left by a run that died
+    try:
+        return provider.docker(*c.run_args(command, detach=False, remove=True), check=False,
+                               timeout=timeout).returncode
+    except subprocess.TimeoutExpired:
+        provider.remove(c.name)
+        return None
+
+
+def _stop_devices(devices: list, out: Path) -> None:
+    """Every device container's log kept, and the container removed. A device
+    whose host said goodbye has stopped; one still up gets the rest of a
+    minute -- a host that died never says goodbye."""
+    deadline = time.time() + 60
+    for dname in devices:
+        while time.time() < deadline and provider.inspect_state(dname).get("Status") == "running":
+            time.sleep(1)
+        logs = provider.docker("logs", dname, check=False)
+        (out / f"{dname.rsplit('-', 1)[-1]}.log").write_text((logs.stdout or "") + (logs.stderr or ""), encoding="utf-8")
+        provider.remove(dname)
+
+
 def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, out: Path, name: str,
                        repo: Path) -> dict:
     """Each point against its own three-core device, in a container the candidate's code cannot reach."""
@@ -287,61 +313,62 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
     memory = int(ev.get("memory_bytes", MULTICORE_MEMORY))
     timeout = float(ev["timeout_seconds"])
     desc = f"/work/{device_path(task)}"
+    # A mailbox per point, one directory per direction (multicore_mmio_sim):
+    # the host writes only the inboxes, each device writes only its outbox.
     mailroot = out / "mailbox"
-    mailroot.mkdir(exist_ok=True)
-    mailroot.chmod(0o777)
+    for d in (mailroot, mailroot / "in", mailroot / "out"):
+        d.mkdir(exist_ok=True)
+        d.chmod(0o777)
     # The host sees its own directory, never the observers' beside it: the
     # candidate's code runs in the host container, and a count it could
     # rewrite would be no count.
     hostout = out / "host"
     hostout.mkdir(exist_ok=True)
-    devices = []
-    for i, _ in enumerate(points):
-        mb, obs = mailroot / str(i), out / f"observer-{i}"
-        for d in (mb, obs):
-            d.mkdir(exist_ok=True)
-            d.chmod(0o777)
-        dname = f"{name}-dev{i}"
-        d = AgentContainer(name=dname, image=site.images["toolchain"], cpus=1, memory="4g", pids=256,
-                           mounts=[Mount(devtree, "/work"), Mount(mb, "/mb", read_only=False),
-                                   Mount(obs, "/obs", read_only=False)],
-                           env={"PYTHONDONTWRITEBYTECODE": "1"},
-                           labels={"tritonchip-agent-harness": "evaluator-device"}, workdir="/work")
-        provider.docker(*d.run_args(["/opt/torchenv/bin/python", "-m", "tnca.backends.multicore_mmio_sim",
-                                     "--device", desc, "--mailbox", "/mb", "--build", "/obs/build",
-                                     "--observe", "/obs/observe.log", "--memory-bytes", str(memory),
-                                     "--watchdog", str(MULTICORE_WATCHDOG)],
-                                    detach=True, remove=False))
-        devices.append(dname)
-        args = {"board_top": True, "device": desc, "mailbox": f"/mb/{i}", "memory_bytes": memory,
-                "hbm_dma": True}
-        (hostout / f"backend-{i}.json").write_text(json.dumps(args), encoding="utf-8")
-    lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
-             "run() {",
-             f'  TNCA_BACKEND=fpga-multicore-sim TNCA_BACKEND_ARGS="$(cat /out/backend-$1.json)" '
-             f'TNCA_ACTIVE_CORES={cores} TNCA_HOST_TIMEOUT={timeout:g} /opt/torchenv/bin/python -m archbench.run '
-             f'--platform tnca '
-             f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
-             "}"]
-    jobs = max(1, int(ev["jobs"]))
-    for k in range(0, len(points), jobs):
-        lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
-    (hostout / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
-                       pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False), Mount(hostout, "/out", read_only=False),
-                                               Mount(mailroot, "/mb", read_only=False)],
-                       labels={"tritonchip-agent-harness": "evaluator"}, workdir="/work")
-    proc = provider.docker(*h.run_args(["sh", "/out/evaluate.sh"], detach=False, remove=True),
-                           check=False, timeout=timeout)
-    deadline = time.time() + 60
-    for dname in devices:
-        # A device whose host said goodbye has stopped; one still up gets the
-        # rest of a minute, then its log is kept and it is removed.
-        while time.time() < deadline and provider.inspect_state(dname).get("Status") == "running":
-            time.sleep(1)
-        logs = provider.docker("logs", dname, check=False)
-        (out / f"{dname.rsplit('-', 1)[-1]}.log").write_text((logs.stdout or "") + (logs.stderr or ""), encoding="utf-8")
-        provider.remove(dname)
+    devices: list = []
+    try:
+        for i, _ in enumerate(points):
+            inbox, outbox, obs = mailroot / "in" / str(i), mailroot / "out" / str(i), out / f"observer-{i}"
+            for d in (inbox, outbox, obs):
+                d.mkdir(exist_ok=True)
+                d.chmod(0o777)
+            dname = f"{name}-dev{i}"
+            d = AgentContainer(name=dname, image=site.images["toolchain"], cpus=1, memory="4g", pids=256,
+                               mounts=[Mount(devtree, "/work"), Mount(inbox, "/mb/in"),
+                                       Mount(outbox, "/mb/out", read_only=False),
+                                       Mount(obs, "/obs", read_only=False)],
+                               env={"PYTHONDONTWRITEBYTECODE": "1"},
+                               labels={"tritonchip-agent-harness": "evaluator-device"}, workdir="/work")
+            provider.remove(dname)  # a container of this name left by a run that died
+            devices.append(dname)
+            provider.docker(*d.run_args(["/opt/torchenv/bin/python", "-m", "tnca.backends.multicore_mmio_sim",
+                                         "--device", desc, "--inbox", "/mb/in", "--outbox", "/mb/out",
+                                         "--build", "/obs/build",
+                                         "--observe", "/obs/observe.log", "--memory-bytes", str(memory),
+                                         "--watchdog", str(MULTICORE_WATCHDOG)],
+                                        detach=True, remove=False))
+            args = {"board_top": True, "device": desc, "inbox": f"/mb/in/{i}", "outbox": f"/mb/out/{i}",
+                    "memory_bytes": memory, "hbm_dma": True}
+            (hostout / f"backend-{i}.json").write_text(json.dumps(args), encoding="utf-8")
+        lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
+                 "run() {",
+                 f'  TNCA_BACKEND=fpga-multicore-sim TNCA_BACKEND_ARGS="$(cat /out/backend-$1.json)" '
+                 f'TNCA_ACTIVE_CORES={cores} TNCA_HOST_TIMEOUT={timeout:g} /opt/torchenv/bin/python -m archbench.run '
+                 f'--platform tnca '
+                 f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
+                 "}"]
+        jobs = max(1, int(ev["jobs"]))
+        for k in range(0, len(points), jobs):
+            lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
+        (hostout / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
+        h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
+                           pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False),
+                                                   Mount(hostout, "/out", read_only=False),
+                                                   Mount(mailroot / "in", "/mb/in", read_only=False),
+                                                   Mount(mailroot / "out", "/mb/out")],
+                           labels={"tritonchip-agent-harness": "evaluator"}, workdir="/work")
+        exit_code = _run(h, ["sh", "/out/evaluate.sh"], timeout)
+    finally:
+        _stop_devices(devices, out)
     drain = ev.get("drain_cycles")
     records = {}
     for i, p in enumerate(points):
@@ -358,7 +385,7 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
         obs = read_multicore_observer(out / f"observer-{i}" / "observe.log")
         if rec is not None or obs is not None:
             records[p] = observed_multicore_point(rec, obs, None if drain is None else int(drain))
-    return {"exit": proc.returncode, "points": records, "missing": [p for p in points if p not in records],
+    return {"exit": exit_code, "points": records, "missing": [p for p in points if p not in records],
             "observed": True}
 
 
@@ -371,8 +398,7 @@ def _build_device(site: Site, devtree: Path, task: Task, out: Path, name: str) -
                        pids=site.pids, mounts=[Mount(devtree, "/work", read_only=False), Mount(out, "/out", read_only=False)],
                        env={"TNCA_CACHE": "/work/.tnca-cache"},
                        labels={"tritonchip-agent-harness": "evaluator-device-build"}, workdir="/work")
-    provider.docker(*c.run_args(["sh", "/out/build.sh"], detach=False, remove=True),
-                    check=False, timeout=float(task.evaluation["timeout_seconds"]))
+    _run(c, ["sh", "/out/build.sh"], float(task.evaluation["timeout_seconds"]))
     bench = (out / "bench.txt").read_text(encoding="utf-8").strip() if (out / "bench.txt").exists() else ""
     return bench or None
 
@@ -393,48 +419,42 @@ def _measure_observed(site: Site, hosttree: Path, devtree: Path, task: Task, out
     hostout = out / "host"
     hostout.mkdir(exist_ok=True)
     timeout = float(ev["timeout_seconds"])
-    devices = []
-    for i, _ in enumerate(points):
-        obs = out / f"observer-{i}"
-        obs.mkdir(exist_ok=True)
-        obs.chmod(0o777)
-        dname = f"{name}-dev{i}"
-        d = AgentContainer(name=dname, image=site.images["toolchain"], cpus=1, memory="2g", pids=256,
-                           mounts=[Mount(devtree, "/work"), Mount(sockets, SOCKETS, read_only=False),
-                                   Mount(obs, "/obs", read_only=False)],
-                           env={"TNCA_CACHE": "/work/.tnca-cache", "PYTHONDONTWRITEBYTECODE": "1",
-                                "TNCA_DEVICE_PLUSARGS": "+observe=/obs/observe.log"},
-                           labels={"tritonchip-agent-harness": "evaluator-device"}, workdir="/work")
-        provider.docker(*d.run_args(["/opt/torchenv/bin/python", "-m", "tnca.backends.relay", bench,
-                                     "--unix", f"{SOCKETS}/{i}.sock", "--workdir", "/tmp/dev",
-                                     "--deadline", str(DEADLINE), "--idle-timeout", f"{timeout:g}"],
-                                    detach=True, remove=False))
-        devices.append(dname)
-    lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
-             "run() {",
-             f'  TNCA_BACKEND=sim-socket TNCA_BACKEND_ARGS="{{\\"address\\": \\"{SOCKETS}/$1.sock\\", '
-             f'\\"bench\\": \\"device-container\\"}}" /opt/torchenv/bin/python -m archbench.run --platform tnca '
-             f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
-             "}"]
-    jobs = max(1, int(ev["jobs"]))
-    for k in range(0, len(points), jobs):
-        lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
-    (hostout / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
-                       pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False), Mount(hostout, "/out", read_only=False),
-                                               Mount(sockets, SOCKETS)],
-                       labels={"tritonchip-agent-harness": "evaluator"}, workdir="/work")
-    proc = provider.docker(*h.run_args(["sh", "/out/evaluate.sh"], detach=False, remove=True),
-                           check=False, timeout=timeout)
-    deadline = time.time() + 60
-    for dname in devices:
-        # A device whose client said goodbye has stopped; one that is still up
-        # gets the rest of a minute, then its log is kept and it is removed.
-        while time.time() < deadline and provider.inspect_state(dname).get("Status") == "running":
-            time.sleep(1)
-        logs = provider.docker("logs", dname, check=False)
-        (out / f"{dname.rsplit('-', 1)[-1]}.log").write_text((logs.stdout or "") + (logs.stderr or ""), encoding="utf-8")
-        provider.remove(dname)
+    devices: list = []
+    try:
+        for i, _ in enumerate(points):
+            obs = out / f"observer-{i}"
+            obs.mkdir(exist_ok=True)
+            obs.chmod(0o777)
+            dname = f"{name}-dev{i}"
+            d = AgentContainer(name=dname, image=site.images["toolchain"], cpus=1, memory="2g", pids=256,
+                               mounts=[Mount(devtree, "/work"), Mount(sockets, SOCKETS, read_only=False),
+                                       Mount(obs, "/obs", read_only=False)],
+                               env={"TNCA_CACHE": "/work/.tnca-cache", "PYTHONDONTWRITEBYTECODE": "1",
+                                    "TNCA_DEVICE_PLUSARGS": "+observe=/obs/observe.log"},
+                               labels={"tritonchip-agent-harness": "evaluator-device"}, workdir="/work")
+            provider.remove(dname)  # a container of this name left by a run that died
+            devices.append(dname)
+            provider.docker(*d.run_args(["/opt/torchenv/bin/python", "-m", "tnca.backends.relay", bench,
+                                         "--unix", f"{SOCKETS}/{i}.sock", "--workdir", "/tmp/dev",
+                                         "--deadline", str(DEADLINE), "--idle-timeout", f"{timeout:g}"],
+                                        detach=True, remove=False))
+        lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
+                 "run() {",
+                 f'  TNCA_BACKEND=sim-socket TNCA_BACKEND_ARGS="{{\\"address\\": \\"{SOCKETS}/$1.sock\\", '
+                 f'\\"bench\\": \\"device-container\\"}}" /opt/torchenv/bin/python -m archbench.run --platform tnca '
+                 f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
+                 "}"]
+        jobs = max(1, int(ev["jobs"]))
+        for k in range(0, len(points), jobs):
+            lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
+        (hostout / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
+        h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
+                           pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False),
+                                                   Mount(hostout, "/out", read_only=False), Mount(sockets, SOCKETS)],
+                           labels={"tritonchip-agent-harness": "evaluator"}, workdir="/work")
+        exit_code = _run(h, ["sh", "/out/evaluate.sh"], timeout)
+    finally:
+        _stop_devices(devices, out)
     records = {}
     for i, p in enumerate(points):
         rec = None
@@ -450,7 +470,7 @@ def _measure_observed(site: Site, hosttree: Path, devtree: Path, task: Task, out
         obs = read_observer(out / f"observer-{i}" / "observe.log")
         if rec is not None or obs is not None:
             records[p] = observed_point(rec, obs)
-    return {"exit": proc.returncode, "points": records, "missing": [p for p in points if p not in records],
+    return {"exit": exit_code, "points": records, "missing": [p for p in points if p not in records],
             "observed": True}
 
 
@@ -463,8 +483,7 @@ def _measure(site: Site, tree: Path, task: Task, out: Path, name: str) -> dict:
     c = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
                        pids=site.pids, mounts=[Mount(tree, "/work", read_only=False), Mount(out, "/out", read_only=False)],
                        labels={"tritonchip-agent-harness": "evaluator"}, workdir="/work")
-    proc = provider.docker(*c.run_args(["sh", "/out/evaluate.sh"], detach=False, remove=True),
-                           check=False, timeout=float(ev["timeout_seconds"]))
+    exit_code = _run(c, ["sh", "/out/evaluate.sh"], float(ev["timeout_seconds"]))
     records = {}
     path = out / "archbench.jsonl"
     if path.exists():
@@ -476,7 +495,7 @@ def _measure(site: Site, tree: Path, task: Task, out: Path, name: str) -> dict:
             records[r["point_id"]] = {"status": r.get("status"), "cycles": (r.get("time") or {}).get("device"),
                                       "fallbacks": r.get("fallbacks"),
                                       "max_rel_err": (r.get("correctness") or {}).get("max_rel_err")}
-    return {"exit": proc.returncode, "points": records,
+    return {"exit": exit_code, "points": records,
             "missing": [p for p in points if p not in records]}
 
 
@@ -511,12 +530,23 @@ def _measure_trees(site: Site, host: Path, dev: Optional[Path], task: Task, out:
     return _measure_observed(site, host, dev, task, out, name)
 
 
-def baseline(site: Site, repo: Path, task: Task) -> dict:
-    """The base's own cycles, measured once per (base commit, profile, points, platform) and kept."""
+def baseline_key(task: Task) -> str:
+    """What the base's cycles depend on: the base commit, the profile, the points, the platform --
+    and for a multicore task the machine as well: the device, the memory it is given and the drain
+    bound the base is judged by."""
     ev = task.evaluation
     points = hashlib.sha256(json.dumps([ev["validation"], ev["final"]]).encode()).hexdigest()[:8]
     platform = ev.get("platform")
     key = f"{task.base_commit[:12]}-{ev['profile']}-{points}" + (f"-obs{platform['commit'][:12]}" if platform else "")
+    if ev.get("device"):
+        machine = json.dumps([ev["device"], int(ev.get("memory_bytes", MULTICORE_MEMORY)), ev.get("drain_cycles")])
+        key += f"-dev{hashlib.sha256(machine.encode()).hexdigest()[:8]}"
+    return key
+
+
+def baseline(site: Site, repo: Path, task: Task) -> dict:
+    """The base's own cycles, measured once per baseline_key and kept."""
+    key = baseline_key(task)
     cache = site.state_dir / "baselines" / f"{key}.json"
     if cache.exists():
         return json.loads(cache.read_text(encoding="utf-8"))
@@ -544,7 +574,10 @@ def measure_validation(site: Site, repo: Path, task: Task, candidate: Optional[P
         shutil.rmtree(dev, ignore_errors=True)
     full = score(base["points"], got["points"], task.evaluation["validation"])
     build = None
-    if got.get("device_build") == "failed":
+    if got.get("device_problems"):
+        # A multicore description the evaluator would not build: its own reasons.
+        build = list(got["device_problems"])
+    elif got.get("device_build") == "failed":
         log = job_dir / "eval" / "device-build" / "prepare.log"
         build = (log.read_text(errors="replace").splitlines()[-20:] if log.exists() else ["the device did not build"])
     return {"aggregate": {k: full[k] for k in ("n", "passed", "speedup_geomean", "fast_1")},
@@ -675,6 +708,6 @@ def evaluate(site: Site, repo: Path, task: Task, candidate: Optional[Path], run_
     }
 
 
-__all__ = ["HARDWARE", "baseline", "device_check", "evaluate", "hardware_changed", "measure_validation",
+__all__ = ["HARDWARE", "baseline", "baseline_key", "device_check", "evaluate", "hardware_changed", "measure_validation",
            "observed_multicore_point", "observed_point", "read_multicore_observer", "read_observer", "rtl_check",
            "score"]

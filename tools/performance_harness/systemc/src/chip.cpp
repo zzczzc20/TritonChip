@@ -646,14 +646,23 @@ struct Core : sc_module {
                             }done+=n;
                         }
                     }
-                    for(auto& beat:plan2){
+                    // Group only addresses sharing one aligned hypothetical core
+                    // beat. Each group still consumes a finite LSU slot, core
+                    // issue slot, NoC capacity, home engine and outlet service.
+                    const u64 width=x.c.get_or("tl_core_beat_bytes",8);
+                    for(auto it=plan2.begin();it!=plan2.end();){
+                        auto end=it;u64 region=it->first&~(width-1);
+                        std::vector<TimelineMemory::WideWord> words;
+                        do{words.push_back({end->first,end->second.first.first,store?end->second.first.second:255,0});++end;}
+                        while(end!=plan2.end() && (end->first&~(width-1))==region);
                         while(window.size()>=t_beat_slots){auto m=std::min_element(window.begin(),window.end());t=std::max(t,*m);window.erase(m);}
-                        u64 at=port.reserve(t,1,gnow);t=at+1;u64 got=0;
-                        u64 when=tm->word(id,beat.first,store,beat.second.first.first,store?beat.second.first.second:255,at,got);
+                        u64 at=port.reserve(t,1,gnow);t=at+1;
+                        u64 when=width==8?tm->word(id,words[0].address,store,words[0].data,words[0].be,at,words[0].result):tm->wide(id,words,store,at);
                         window.push_back(when);complete=std::max(complete,when);
-                        if(!store)for(auto& part:beat.second.second){
+                        unsigned wi=0;
+                        for(;it!=end;++it,++wi)if(!store)for(auto& part:it->second.second){
                             u64 part_mask=part.bytes==8?UINT64_MAX:((1ULL<<(part.bytes*8))-1);
-                            values[part.lane]|=((got>>(part.offset*8))&part_mask)<<part.shift;
+                            values[part.lane]|=((words[wi].result>>(part.offset*8))&part_mask)<<part.shift;
                         }
                     }
                     if(pipe){units[unit_index].drained=t;units[unit_index].free=complete+t_lsu_complete;

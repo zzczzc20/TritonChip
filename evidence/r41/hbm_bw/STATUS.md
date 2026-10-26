@@ -16,6 +16,10 @@ Actual connection checks returned `gx10-6646` through `gb` and `acf3019` through
 
 The copy-only stream candidate is a partial path, not an end-to-end acceptance architecture. Preserve its measured unit evidence and software integration while prioritizing the real NoC/NUCA/LSU/RF operator path. The fixed 64-bit NI and word-data packet fields require coordinated changes; simply raising LSU or AXI widths is insufficient. Runtime peer-CU, ownership, synchronous events and native copy dispatch now pass software fixture tests, including real torch tensors on GB10. These tests do not execute the board and establish no speedup. Do not launch a full image solely for stream-copy bandwidth.
 
+## Coupled path experiment
+
+The exploratory native-ISA/SystemC sweep in `wide_model/README.md` passes five configurations, including numerical checks and masked unaligned accesses. Explicit default widths reproduce every baseline counter. A hypothetical 64-byte core/coalesced-home path with a wide NoC predicts only 1.482x sustained integer vector-add speedup (59,179 to 39,934 cycles); improving home service further reaches 1.507x. These are model microbenchmarks, not torch or board speedups. Core request service shrinks eightfold while LSU and dependency waits remain substantial. The next design must overlap independent vectors and demonstrate receiving-stage capacity; width alone is not an adequate image candidate. The initial frozen-R40 runner refusal is preserved, and its contract files remain unchanged. No full image run or card access occurred.
+
 ## Prior milestones and remaining gates
 
 The historical list below describes partial stream-path work. Section 7 and `end_to_end.md` supersede any implication that this alone can meet acceptance.

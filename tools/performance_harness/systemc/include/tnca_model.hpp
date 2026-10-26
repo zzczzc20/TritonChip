@@ -101,6 +101,10 @@ struct Config {
         {u64 g16=get_or("mtx_dp_group_16",1),g8=get_or("mtx_dp_group_8",1);
          require((g16==1 || g16==2) && (g8==1 || g8==2 || g8==4) && get_or("mtx_dp_b_prefetch",0)<=1,
                  "mtx_dp_group_16 is 1|2, mtx_dp_group_8 1|2|4 (one 64-byte B register per group), mtx_dp_b_prefetch 0|1");}
+        {auto b=get_or("tl_core_beat_bytes",8),n=get_or("tl_noc_payload_bytes",8);
+         require((b==8 || b==16 || b==32 || b==64) && (n==8 || n==16 || n==32 || n==64),
+                 "exploratory core/NoC payload bytes must be 8|16|32|64");
+         require(b==8 || get("memory_model")==1,"wide core hypothesis requires timeline memory");}
         cache_hot();
         for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag"
                             && k!="mtx_abuf" && k!="launch_cycles" && k!="dispatch_cycles" && k!="load_latency"
@@ -130,7 +134,7 @@ struct Config {
     }
     u64 get(const std::string& k)const{return v.at(k);}
     static const std::vector<std::string>& optional_keys(){
-        static const std::vector<std::string> k={"mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch"};return k;}
+        static const std::vector<std::string> k={"mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

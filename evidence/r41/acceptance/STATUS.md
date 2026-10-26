@@ -19,3 +19,28 @@ The complete 113-point Stage 1 comparison is now available: ratio of summed
 median device times 1.09673x; pointwise geometric mean 1.09732x. This is a joint
 hardware/frequency/software migration comparison, not a compiler-only gain.
 The old 96-point comparison remains historical evidence.
+
+Milestone 3: all 94 Stage 2/DoD and supporting study/common obligations judged:
+24 passed, 2 failed, 60 not measured, 8 blocked. Counts include aggregate and
+study rows; they are not 94 independent functional tests. Eight numbered
+S2-01 candidate checks pass. The >65,535-program requirement is closed from
+existing standard Torch launch maps (maximum 4,194,304 programs).
+
+Both requested reports are written in professional English. Stage 2 and R41
+remain not accepted. Frozen Stage 1 snapshot remains 59/61 passes, one not
+measured and one blocked; its owner retains the remaining comparison.
+P0–P8 in closure_plan.md give bounded work, dependencies and resource decisions.
+No board run or full image run was started. No new remote branch was created.
+
+Validation: closeout.py passed raw board/physical/endurance checks and the
+complete 113-point comparison; six Stage 2 checker refusal tests passed;
+`python3 -m tools.docmaint check` passed (85 documents, acyclic).
+`make r41-stage2-acceptance PYTHON=python3` and
+`make r41-acceptance PYTHON=python3` both reject acceptance as expected, with
+zero evidence-integrity errors. Overall target uses the archived checker
+judgment of the frozen Stage 1 tree; it does not rerun that product in this
+merged acceptance worktree. judgment.json preserves the aggregate result.
+
+Final review retained the illegal-alias negative-test gate as not measured:
+high-bit anti-alias tests pass but do not establish overlapping-storage
+ownership refusal. The compound requirement is not upgraded from partial evidence.

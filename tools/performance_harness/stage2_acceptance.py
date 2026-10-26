@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Integrity-check the manually judged R41 Stage 2 ledger; never invent a pass.
+
+Default exit 1 means not accepted. --integrity-only checks the audit artifacts,
+not product acceptance. --overall also requires the archived frozen Stage 1
+checker result. This does not execute board tests or independent reproduction.
+"""
+import argparse
+from collections import Counter
+import hashlib
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+INDEX = 'evidence/r41/acceptance/stage2_required_index.json'
+REQUIRED_IDS = ('S2-00.1', 'S2-00.2', 'S2-00.3', 'S2-00.4', 'S2-00.5', 'S2-00.6', 'S2-00.7', 'S2-00.8', 'S2-00.process', 'S2-00.budget', 'S2-01.1', 'S2-01.2', 'S2-01.3', 'S2-01.4', 'S2-01.5', 'S2-01.6', 'S2-01.7', 'S2-01.8', 'S2-01.timing', 'S2-02.A', 'S2-02.B', 'S2-02.C', 'S2-02.C.formats', 'S2-02.D.hypothesis', 'S2-02.D.sensitivity', 'S2-02.D.semantics', 'S2-02.D.preflight', 'S2-02.D.decision', 'S2-02.D.board', 'S2-03.A.1', 'S2-03.A.2', 'S2-03.A.3', 'S2-03.A.4', 'S2-03.A.5', 'S2-03.B', 'S2-03.C', 'S2-04.A', 'S2-04.B.core', 'S2-04.B.tail', 'S2-04.C.1', 'S2-04.C.2', 'S2-04.C.3', 'S2-04.C.4', 'S2-04.C.5', 'S2-04.D.margin', 'S2-04.D.1', 'S2-04.D.2', 'S2-04.D.3', 'S2-04.D.4', 'S2-04.D.5', 'S2-04.D.6', 'S2-04.D.7', 'S2-04.D.8', 'S2-04.E.freeze', 'S2-04.E.1', 'S2-04.E.2', 'S2-04.E.3', 'S2-04.E.4', 'S2-04.E.5', 'S2-05.A.1', 'S2-05.A.2', 'S2-05.A.3', 'S2-05.A.4', 'S2-05.A.5', 'S2-05.A.6', 'S2-05.A.7', 'S2-05.A.8', 'S2-05.B', 'S2-05.C.1', 'S2-05.C.2', 'S2-05.C.3', 'S2-05.C.4', 'S2-05.C.5', 'S2-05.C.6', 'S2-05.D.1', 'S2-05.D.2', 'S2-05.D.3', 'S2-06.1', 'S2-06.2', 'S2-06.3', 'S2-06.4', 'S2-06.5', 'S2-06.6', 'S2-06.7', 'S2-06.8', 'S2-06.9', 'S2-06.10', 'DoD.Stage1', 'DoD.Stage2', 'DoD.R41', 'Common.2', 'Common.6.4', 'Common.6.5', 'Common.7')
+STATUSES = {'passed', 'failed', 'not measured', 'blocked'}
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def evaluate(root, index, overall=False):
+    errors = []
+    rows = index.get('items', [])
+    ids = [r['id'] for r in rows]
+    if len(ids) != len(set(ids)) or set(ids) != set(REQUIRED_IDS):
+        errors.append('mandatory audit coverage changed or duplicate IDs')
+    contract = root/index['contract']
+    if digest(contract) != index['contract_sha256']:
+        errors.append('acceptance contract hash mismatch')
+    hashes = index.get('evidence_sha256', {})
+    for name, expected in hashes.items():
+        path = root/name
+        if not path.is_file() or digest(path) != expected:
+            errors.append(f'evidence missing or changed: {name}')
+    for row in rows:
+        if row['status'] not in STATUSES:
+            errors.append(f"{row['id']}: invalid status")
+        if not row.get('evidence') or not row.get('reason'):
+            errors.append(f"{row['id']}: evidence/reason missing")
+        if row['status'] != 'passed' and not row.get('closure_plan'):
+            errors.append(f"{row['id']}: bounded closure plan missing")
+        for name in row.get('evidence', []):
+            if name not in hashes:
+                errors.append(f"{row['id']}: unhashed evidence {name}")
+    metrics = json.loads((root/'evidence/r41/acceptance/board_metrics.json').read_text())
+    board = metrics['board']
+    if board['clock_hz'] != 100000000 or board['image_sha256'] != '30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de':
+        errors.append('run-1 board identity mismatch')
+    if metrics['original']['points'] != 113 or metrics['original']['large_points'] != 24:
+        errors.append('original-suite inventory incomplete')
+    counts = dict(Counter(r['status'] for r in rows))
+    accepted = not errors and all(r['status']=='passed' for r in rows)
+    result = dict(scope=index['scope'], integrity='failed' if errors else 'passed',
+                  status='passed' if accepted else 'not accepted', counts=counts,
+                  errors=errors, items=rows)
+    if overall:
+        s1 = json.loads((root/'evidence/r41/stage1/board/acceptance.json').read_text())
+        s1counts = dict(Counter(r['status'] for r in s1['items']))
+        result['stage1_frozen_snapshot_counts'] = s1counts
+        if not all(r['status']=='pass' for r in s1['items']):
+            result['status'] = 'not accepted'
+    return result
+
+def render(index):
+    out = ['# Stage 2 and R41 acceptance item ledger', '',
+           index['scope'], '',
+           'Status is a manual evidence judgment, protected by the integrity checker. '
+           'Passed candidate items do not imply final release acceptance. Study rows '
+           'record mandatory study obligations; numerical and functional Required '
+           'items cannot close through a negative result.', '',
+           'Each non-pass names a bounded plan in [closure_plan.md](closure_plan.md). '
+           'Identity boundaries are in [identity.md](identity.md).', '',
+           '| Item | Type | Requirement | Judgment | Evidence and reason | Closure |',
+           '|---|---|---|---|---|---|']
+    for r in index['items']:
+        evidence = '; '.join('`'+p+'`' for p in r['evidence'])
+        out.append('| '+ ' | '.join([r['id'],r['classification'],r['requirement'],r['status'],evidence+' — '+r['reason'],r['closure_plan'] or 'Closed for stated scope'])+' |')
+    out += ['', 'FP8 Hub/Qwen layer board campaigns remain **not measured**: '
+            'the environment failed before execution. See P8. They cannot replace '
+            'the mandatory BF16 Qwen3.5-2B full-model workload.', '']
+    return '\n'.join(out)
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--root', type=Path, default=ROOT)
+    parser.add_argument('--index', type=Path)
+    parser.add_argument('--json', type=Path)
+    parser.add_argument('--render', type=Path)
+    parser.add_argument('--overall', action='store_true')
+    parser.add_argument('--integrity-only', action='store_true')
+    args = parser.parse_args()
+    index = json.loads((args.index or args.root/INDEX).read_text())
+    result = evaluate(args.root, index, args.overall)
+    if args.render:
+        args.render.write_text(render(index))
+    if args.json:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(json.dumps(result, indent=2)+'\n')
+    print(json.dumps({k:v for k,v in result.items() if k!='items'}, indent=2))
+    return 0 if result['integrity']=='passed' and (args.integrity_only or result['status']=='passed') else 1
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -148,7 +148,8 @@
   "original": {
     "points": 113,
     "formal_records": 113,
-    "large_points": 24
+    "large_points": 24,
+    "max_standard_torch_grid_programs": 4194304
   },
   "fp8": {
     "s2-fp8-cases": {

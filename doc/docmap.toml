@@ -400,3 +400,33 @@ sources = ["flow/fpga/"]
 path = "evidence/r41/acceptance/HANDOFF.md"
 depends_on = []
 sources = ["flow/fpga/"]
+
+[[doc]]
+path = "doc/r41_stage2_report.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "doc/r41_report.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "evidence/r41/acceptance/stage2_index.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "evidence/r41/acceptance/identity.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "evidence/r41/acceptance/closure_plan.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "evidence/r41/acceptance/STATUS.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]

@@ -69,6 +69,13 @@ def run():
         hbm[manifest] = {'cases':len(reports),'checks':sum(len(r['checks']) for r in reports.values())}
     end = json.loads(endurance['out/s2-endurance/mix/endurance.json'])
     assert end['hours'] >= 2 and end['sessions'] == end['passed'] == 250
+    sessions = [json.loads(line) for line in endurance['out/s2-endurance/mix/sessions.jsonl'].splitlines()]
+    assert len(sessions) == 250 and all(row['ok'] and not row['problems'] for row in sessions)
+    assert end['result'] == 'pass' and end['host_samples'] >= 120
+    end_index = json.loads((ROOT/'evidence/r41/stage2/board/endurance-rerun-index.json').read_text())
+    assert sha((ROOT/'evidence/r41/stage2/board/endurance-rerun.tgz').read_bytes()) == end_index['archive_sha256']
+    for name, entry in end_index['members'].items():
+        assert sha(endurance[name]) == entry['sha256']
     assert end['board']['image_sha256'] == batch['board']['image_sha256'] and end['board']['clock_hz']==100000000
     # Complete Stage 1 denominator; no card job is needed to replace the historical 96-point comparison.
     baseline = load_archive(ROOT/'evidence/r41/stage1/board/original-suite-rerun.tgz')
@@ -88,7 +95,7 @@ def run():
     result = {'scope':'run-1 measured candidate; does not bind later product trees',
               'board':batch['board'], 'software_tree':tree, 'qualified_clock':qualified,
               'source_check':{k:source[k] for k in ('commit','files_sha256','status')},
-              'original':{'points':len(points),'formal_records':len(records),'large_points':sum(rows[0]['tier']=='large' for rows in points.values())},
+              'original':{'points':len(points),'formal_records':len(records),'large_points':sum(rows[0]['tier']=='large' for rows in points.values()),'max_standard_torch_grid_programs':max(math.prod(launch['grid']) for record in records for launch in record['provenance']['launch_map']['launches'])},
               'fp8':fp8,'hbm':hbm,'endurance':{k:end[k] for k in ('hours','sessions','passed','software_tree','started_utc','ended_utc')},
               'comparison':{'points':113,'basis':'median serial-grid device cycles per point; joint hardware/frequency/software migration',
                  'device_time_speedup_ratio_of_sums':sum(r['stage1_cycles']/90000000 for r in comparison)/sum(r['stage2_cycles']/100000000 for r in comparison),

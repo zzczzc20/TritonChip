@@ -189,6 +189,28 @@ module tnca_multicore_board_regs;
  .m_rresp(m_rresp[p*(2)+:(2)]),
  .m_rlast(m_rlast[p*(1)+:(1)]));
  end endgenerate
+`ifdef TNCA_IMAGE_PARAMS
+    //==========================================================================
+    // Every launch meets the same memory (a described machine)
+    //
+    // The line models draw their stalls from a generator that advances every
+    // cycle, idle or not. A launch's cycles would then depend on how many idle
+    // cycles came before it -- on how long the host took, in wall-clock time
+    // -- and one machine would count differently from one run to the next.
+    // Reseeding every line model as a launch starts makes a launch cost the
+    // same whenever it runs. Only with a device description: the stand-in
+    // machine below and R40's tests keep the generator as it was.
+    //==========================================================================
+    reg [63:0] reseed_start=0;
+    reg reseed=0;
+    always @(posedge clk) begin
+        reseed <= rst_n_async && dut.device.control.launch_start != reseed_start;
+        if (rst_n_async) reseed_start <= dut.device.control.launch_start;
+    end
+    generate for(genvar p=0;p<PORTS;p=p+1)begin:g_reseed
+        always @(posedge clk) if (reseed) g_ram[p].ram.seed = 123;
+    end endgenerate
+`endif
 `include "tb/fpga/tnca_multicore_shared_hbm.vh"
     //==========================================================================
     // The platform's own count (+observe=<file>)

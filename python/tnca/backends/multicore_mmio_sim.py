@@ -260,7 +260,11 @@ def serve(argv=None):
 
     A mailbox serves one device, once. The host may write its first command
     before the device is up, so nothing found in a fresh mailbox is removed;
-    one a device has answered from (or left) is refused instead.
+    one a device has answered from (or left) is refused instead. The
+    simulator is built at once but started only when the host's first command
+    arrives: an idle simulator still runs its clock, and a device waiting for
+    its host's turn (the evaluator runs a few points at a time) would take a
+    CPU from the ones that are running.
     """
     ap = argparse.ArgumentParser(prog='tnca.backends.multicore_mmio_sim', description=serve.__doc__)
     ap.add_argument('--device', required=True, help='a description name in spec/devices, or its path')
@@ -292,11 +296,19 @@ def serve(argv=None):
             f'+intercycle={link.intercycle}', f'+watchdog={a.watchdog}', '+assert_fatal']
     if a.observe:
         argv.append(f'+observe={a.observe}')
+    done = os.path.join(a.mailbox, DONE_FILE)
+    command = os.path.join(a.mailbox, 'regs.cmd')
+    while not os.path.exists(command):
+        if os.path.exists(done):
+            # The host left without a command: nothing to serve.
+            with open(exit_file, 'w') as stream:
+                stream.write('0\n')
+            return 0
+        time.sleep(0.2)
     print('serving', link.describe(), flush=True)
     # The simulator runs until its watchdog unless the host says goodbye
     # (the link's close() leaves DONE_FILE), which ends it at once.
     proc = subprocess.Popen(argv)
-    done = os.path.join(a.mailbox, DONE_FILE)
     while proc.poll() is None:
         if os.path.exists(done):
             proc.terminate()

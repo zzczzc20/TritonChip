@@ -54,7 +54,9 @@ Actual core RTL now passes t02_mem, t22_atomic, t12_tensor and t37_lsu_straddle 
 
 The real home slice now selects full 512-bit words, preserves scalar atomic byte/compare semantics in hit and miss-wake paths, and positions scalar TMU read/write data correctly. Nine functional configurations pass: 2,000 legacy requests, four 2,000-request wide partial-write/shadow cases, two target-full pressure cases, and two sets of 288 cold/hot atomic cases plus all eight TMU word positions. See `wide_home/README.md` and raw logs. These tests establish functionality under receiving backpressure, not throughput or a board speedup.
 
-The free 32-set/eight-way wide-home physical screen is running on the upgraded x86 host with the required sourced environment, four threads and one job. The initial source bundle missed the registered-owner include and failed; after supplying it, launcher 4692 / Vivado 4760 is verified live during placement under `~/r41_hbmbw_wide_home_v1`, out_v2. Next connect this home, wide NI/mesh and hybrid core through the tile/host/board hierarchy, then measure the coupled service and compiled standard torch path. No full link or card access has occurred; budget remains one of five used.
+The free 32-set/eight-way wide-home physical screen completed on the upgraded x86 host. Routed SLR1 timing at 10 ns passes with WNS +1.774 ns and WHS +0.007 ns; area is 41,279 LUTs and 5,789 FFs. Raw reports are in wide_home/physical/. The initial missing-include failure remains recorded. No full link or card access occurred; budget remains one of five used.
+
+The opt-in hybrid path is being threaded through the tile, host mux, mesh, persistent shell and FPGA wrappers. A coupled one-core masked-vector grid test has been launched on GB10; its result is pending. These hierarchy changes are not yet qualified as an image candidate.
 
 ## Prior milestones and remaining gates
 

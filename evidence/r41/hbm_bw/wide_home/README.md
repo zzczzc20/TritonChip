@@ -28,3 +28,7 @@ These are functional receiving-stage checks, not a sustained throughput guarante
 The free 10 ns SLR1 screen uses the candidate's 32 sets, eight ways, full tags, registered owner/victim selection/rank, data pipeline and registered DCO ranges. It runs on the upgraded x86 host under ~/r41_hbmbw_wide_home_v1, with four threads after sourcing ~/x86_link_env.sh. The first attempt was terminal with a missing tnca_dco_owner_registered.vh in the transferred source bundle; its log is preserved. The header was supplied and the new out_v2/screen_v2.log run is live (launcher 4692, Vivado 4760, last verified during placement). This was a source-bundle omission, not a proven runtime/library gap. No full v++ link, budgeted image run or card access was started.
 
 Next parameterize the real tile/mesh/host and board hierarchy, connect the hybrid core to this home through the wide NI, and validate ownership, tensor transfers, atomics and standard torch operators on the complete path. Final routed timing/area and the full image remain unqualified.
+
+## Routed screen result
+
+The free SLR1 screen completed on the x86 host after sourcing ~/x86_link_env.sh. At 10 ns, routed WNS is +1.774 ns and WHS is +0.007 ns. The routed slice uses 41,279 LUTs (30,807 logic and 10,472 LUTRAM) and 5,789 FFs, with no block RAM or DSP. Raw routed timing, utilization and DRC reports are retained in physical/. This is a unit implementation result, not a full-image timing or throughput qualification. No full-run allocation or card access was used.

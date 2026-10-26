@@ -1,0 +1,4 @@
+WIDE NI MESH PASS data=512 payload=720 links=2 stall=0 requests=32 injection_span=32 cycles=48
+tb/noc/tb_wide_ni.v:106: $finish called at 525000 (1ps)
+tnca_core_ni inconsistent geometry refused
+tnca_slice_ni inconsistent geometry refused

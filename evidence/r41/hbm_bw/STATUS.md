@@ -28,7 +28,13 @@ An opt-in parallel SFU is implemented in RTL through the core/vector-FPU paramet
 
 ## Finite LSU RTL milestone
 
-A finite 4/8-command LSU bank is implemented through the core switch while retaining the old one/two-unit modules. Eighteen randomized equivalence/capacity cases pass against the original pair, plus full-bank reset/recovery, tag-capacity refusal and 112 wide-LSU byte-oracle cases. A real 512-bit synthesis failure exposed an out-of-range lane unpack loop; it is corrected and the failed report is preserved. The corrected eight-unit 512-bit free synthesis is live on acf3019 under `~/r41_hbmbw_lsu_bank_v1/units8_width512_v2`, launcher PID 2631710. See `lsu_bank/README.md` for scope and limitations. Wide atomics, NI/NoC/home integration, area, combined timing and board operator speed remain unqualified. No full run or card access occurred.
+A finite 4/8-command LSU bank is implemented through the core switch while retaining the old one/two-unit modules. Eighteen randomized equivalence/capacity cases pass against the original pair, plus full-bank reset/recovery, tag-capacity refusal and 112 wide-LSU byte-oracle cases. A real 512-bit synthesis failure exposed an out-of-range lane unpack loop; it is corrected and the failed report is preserved. The corrected eight-unit 512-bit free synthesis completed on acf3019 under `~/r41_hbmbw_lsu_bank_v1/units8_width512_v2`, launcher PID 2631710. See `lsu_bank/README.md` for scope and limitations. Wide atomics, NI/NoC/home integration, area, combined timing and board operator speed remain unqualified. No full run or card access occurred.
+
+## Wide NoC boundary and LSU area decision
+
+The 8-unit/512-bit general LSU bank requires 440,741 LUTs and 186,131 FFs per core. Three banks alone exceed the chip's 1,303,680 LUTs, so this replication is rejected for the image. Completed utilization evidence is in `lsu_bank/synth_wide8/`; the corrected run completed with exit zero and wrote its checkpoint. Next implement a shared contiguous-vector planner with finite response slots and the original narrow path for complex/MMIO/atomic accesses, rather than cloning the general planner.
+
+Parameterized core/slice NIs now preserve the default 216-bit layout and carry 512-bit data in a 720-bit packet. Eight real three-node mesh tests pass, including full data/mask/tag/opcode checks, canonical legacy encoding and destination backpressure. No-stall tests accept 768 packets in 768 cycles. This is an RTL transport boundary result with echo endpoints, not cache/home or HBM performance. The tile/top still use narrow defaults; complete integration and physical receiving-stage capacity remain pending. See `wide_noc/README.md`. No full-run allocation or card access was consumed.
 
 ## Prior milestones and remaining gates
 

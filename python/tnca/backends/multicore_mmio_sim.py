@@ -10,9 +10,13 @@ from .u50_sim import SimLink, _repo_root, _tools
 
 class MulticoreMMIOLink(SimLink):
     def __init__(self, *, core_count=3, memory_ports=3,
-                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, **kwargs):
+                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, hybrid_lsu=False, sfu_lanes=1, **kwargs):
         if type(journal) is not bool or (journal and not board_top):
             raise ArgumentError('journal requires a boolean and the board-top stand-in')
+        if type(hybrid_lsu) is not bool or sfu_lanes not in (1, 2, 3, 4, 8):
+            raise ArgumentError('invalid hybrid LSU/SFU geometry')
+        self.hybrid_lsu = hybrid_lsu
+        self.sfu_lanes = operator.index(sfu_lanes)
         self.assert_fatal = True
         self.board_top = bool(board_top)
         self.memory_controls = bool(memory_controls)
@@ -85,6 +89,7 @@ class MulticoreMMIOLink(SimLink):
                    '-s', top, '-o', output]
         for name, value in dict(N=self.core_count, PORTS=self.memory_ports,
                                 MEMORY_BYTES=self.memory_bytes, STAGES=self.link_stages,
+                                HYBRID_LSU=int(self.hybrid_lsu), SFU_LANES=self.sfu_lanes,
                                 NOC_PIPE=self.noc_link_stages, DISPATCH_PIPE=self.dispatch_stages, HOME_PIPE=self.home_stages, CODE_PIPE=self.code_stages, MAINTENANCE=self.maintenance, MEMORY_CONTROLS=int(self.memory_controls)).items():
             command += [f'-P{top}.{name}={value}']
         for library in ('common', 'core', 'gen', 'nuca', 'noc', 'tile'):
@@ -114,6 +119,8 @@ def stand_in(**kwargs):
                             maintenance=kwargs.pop('maintenance', False),
                             memory_controls=kwargs.pop('memory_controls', False),
                             journal=kwargs.pop('journal', False),
+                            hybrid_lsu=kwargs.pop('hybrid_lsu', False),
+                            sfu_lanes=kwargs.pop('sfu_lanes', 1),
                             host_timeout=kwargs.get('host_timeout', 30.0))
     return MulticoreMMIOBackend(link, core_count=core_count,
                                memory_ports=memory_ports, **kwargs)

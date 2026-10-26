@@ -2,7 +2,7 @@
 `timescale 1ns/1ps
 `default_nettype none
 module tnca_multicore_regs;
- parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0;
+ parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0,HYBRID_LSU=0,SFU_LANES=1;
  // Dense only; tb/fpga/tnca_multicore_dma.vh also serves the sparse board bench.
  localparam SPARSE=0,SPARSE_MAP="none";
  localparam NX=N>4?4:N,ADDR_BITS=(MEMORY_CONTROLS?9:8),WORDS=(131072+MEMORY_BYTES)/8;
@@ -38,7 +38,7 @@ module tnca_multicore_regs;
  wire [PORTS*3-1:0] m_rid;
  wire [PORTS*2-1:0] m_rresp;
  wire [PORTS-1:0] m_rlast;
- tnca_multicore_fpga #(.REG_ADDR_W(ADDR_BITS),.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.NX(NX),.NY(N/NX),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+ tnca_multicore_fpga #(.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.NUCA_CACHE_DATA_PIPELINE(HYBRID_LSU),.REG_ADDR_W(ADDR_BITS),.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.NX(NX),.NY(N/NX),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
  .clk(clk),.rst_n(rst_n_async),.reg_addr(reg_addr),.reg_wdata(reg_wdata),.reg_we(reg_we),.reg_re(reg_re),.reg_rdata(reg_rdata),
  .m_awvalid(m_awvalid),
  .m_awready(m_awready),

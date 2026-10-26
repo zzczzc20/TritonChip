@@ -40,7 +40,7 @@ class AcceptanceTests(unittest.TestCase):
 
     def test_missing_closure_plan_is_refused(self):
         index = copy.deepcopy(self.index)
-        index['items'][0]['closure_plan'] = None
+        next(row for row in index['items'] if row['status'] != 'passed')['closure_plan'] = None
         self.assertEqual(self.check(index)['integrity'], 'failed')
 
 if __name__ == '__main__':

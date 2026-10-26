@@ -2,7 +2,7 @@
   "schema": "tnca-r41-stage2-required-index/1",
   "contract": "doc/r41_tasks_and_acceptance.md",
   "contract_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
-  "scope": "Evidence cutoff 2026-10-26; run-1 candidate only. This is an acceptance audit, not a retroactive Stage 2 freeze.",
+  "scope": "Initial audit plus P0 prospective freeze and P8 measured follow-up, 2026-10-26; historical process failures remain.",
   "statuses": [
     "passed",
     "failed",
@@ -13,98 +13,130 @@
     {
       "id": "S2-00.1",
       "requirement": "Final model revision, weights and tokenizer",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/stage2_readiness.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "spec/r41/stage2/plan.json",
+        "spec/r41/stage2/lock.json",
+        "spec/r41/stage2/model_lock.json",
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/acceptance/p0/cross-validation.json",
+        "evidence/r41/acceptance/p0/freeze-check.json"
       ],
-      "reason": "No Stage 2 plan/lock/model_lock/xl_core freeze exists. Stage 1 feasibility and board manifests do not constitute a pre-implementation Stage 2 freeze.",
-      "closure_plan": "P0"
+      "reason": "Prospective remaining scope is locked with authentic weight/tokenizer hashes, core/tail inputs, eight XL points, independently CPU-cross-validated tolerances, hardware scope, candidates, budgets and baseline boundaries. This does not erase the historical pre-implementation sequencing failure.",
+      "closure_plan": null
     },
     {
       "id": "S2-00.2",
       "requirement": "New core model points",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/stage2_readiness.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "spec/r41/stage2/plan.json",
+        "spec/r41/stage2/lock.json",
+        "spec/r41/stage2/model_lock.json",
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/acceptance/p0/cross-validation.json",
+        "evidence/r41/acceptance/p0/freeze-check.json"
       ],
-      "reason": "No Stage 2 plan/lock/model_lock/xl_core freeze exists. Stage 1 feasibility and board manifests do not constitute a pre-implementation Stage 2 freeze.",
-      "closure_plan": "P0"
+      "reason": "Prospective remaining scope is locked with authentic weight/tokenizer hashes, core/tail inputs, eight XL points, independently CPU-cross-validated tolerances, hardware scope, candidates, budgets and baseline boundaries. This does not erase the historical pre-implementation sequencing failure.",
+      "closure_plan": null
     },
     {
       "id": "S2-00.3",
       "requirement": "XL-core inputs, shapes, strides and hashes",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/stage2_readiness.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "spec/r41/stage2/plan.json",
+        "spec/r41/stage2/lock.json",
+        "spec/r41/stage2/model_lock.json",
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/acceptance/p0/cross-validation.json",
+        "evidence/r41/acceptance/p0/freeze-check.json"
       ],
-      "reason": "No Stage 2 plan/lock/model_lock/xl_core freeze exists. Stage 1 feasibility and board manifests do not constitute a pre-implementation Stage 2 freeze.",
-      "closure_plan": "P0"
+      "reason": "Prospective remaining scope is locked with authentic weight/tokenizer hashes, core/tail inputs, eight XL points, independently CPU-cross-validated tolerances, hardware scope, candidates, budgets and baseline boundaries. This does not erase the historical pre-implementation sequencing failure.",
+      "closure_plan": null
     },
     {
       "id": "S2-00.4",
       "requirement": "Independently cross-validated numerical tolerances",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/stage2_readiness.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "spec/r41/stage2/plan.json",
+        "spec/r41/stage2/lock.json",
+        "spec/r41/stage2/model_lock.json",
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/acceptance/p0/cross-validation.json",
+        "evidence/r41/acceptance/p0/freeze-check.json"
       ],
-      "reason": "No Stage 2 plan/lock/model_lock/xl_core freeze exists. Stage 1 feasibility and board manifests do not constitute a pre-implementation Stage 2 freeze.",
-      "closure_plan": "P0"
+      "reason": "Prospective remaining scope is locked with authentic weight/tokenizer hashes, core/tail inputs, eight XL points, independently CPU-cross-validated tolerances, hardware scope, candidates, budgets and baseline boundaries. This does not erase the historical pre-implementation sequencing failure.",
+      "closure_plan": null
     },
     {
       "id": "S2-00.5",
       "requirement": "Mandatory hardware modifications",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/stage2_readiness.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "spec/r41/stage2/plan.json",
+        "spec/r41/stage2/lock.json",
+        "spec/r41/stage2/model_lock.json",
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/acceptance/p0/cross-validation.json",
+        "evidence/r41/acceptance/p0/freeze-check.json"
       ],
-      "reason": "No Stage 2 plan/lock/model_lock/xl_core freeze exists. Stage 1 feasibility and board manifests do not constitute a pre-implementation Stage 2 freeze.",
-      "closure_plan": "P0"
+      "reason": "Prospective remaining scope is locked with authentic weight/tokenizer hashes, core/tail inputs, eight XL points, independently CPU-cross-validated tolerances, hardware scope, candidates, budgets and baseline boundaries. This does not erase the historical pre-implementation sequencing failure.",
+      "closure_plan": null
     },
     {
       "id": "S2-00.6",
       "requirement": "Candidate study list",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/stage2_readiness.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "spec/r41/stage2/plan.json",
+        "spec/r41/stage2/lock.json",
+        "spec/r41/stage2/model_lock.json",
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/acceptance/p0/cross-validation.json",
+        "evidence/r41/acceptance/p0/freeze-check.json"
       ],
-      "reason": "No Stage 2 plan/lock/model_lock/xl_core freeze exists. Stage 1 feasibility and board manifests do not constitute a pre-implementation Stage 2 freeze.",
-      "closure_plan": "P0"
+      "reason": "Prospective remaining scope is locked with authentic weight/tokenizer hashes, core/tail inputs, eight XL points, independently CPU-cross-validated tolerances, hardware scope, candidates, budgets and baseline boundaries. This does not erase the historical pre-implementation sequencing failure.",
+      "closure_plan": null
     },
     {
       "id": "S2-00.7",
       "requirement": "Compilation, board, tuning and implementation budgets",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/stage2_readiness.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "spec/r41/stage2/plan.json",
+        "spec/r41/stage2/lock.json",
+        "spec/r41/stage2/model_lock.json",
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/acceptance/p0/cross-validation.json",
+        "evidence/r41/acceptance/p0/freeze-check.json"
       ],
-      "reason": "No Stage 2 plan/lock/model_lock/xl_core freeze exists. Stage 1 feasibility and board manifests do not constitute a pre-implementation Stage 2 freeze.",
-      "closure_plan": "P0"
+      "reason": "Prospective remaining scope is locked with authentic weight/tokenizer hashes, core/tail inputs, eight XL points, independently CPU-cross-validated tolerances, hardware scope, candidates, budgets and baseline boundaries. This does not erase the historical pre-implementation sequencing failure.",
+      "closure_plan": null
     },
     {
       "id": "S2-00.8",
       "requirement": "Final baselines and comparison boundaries",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/stage2_readiness.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "spec/r41/stage2/plan.json",
+        "spec/r41/stage2/lock.json",
+        "spec/r41/stage2/model_lock.json",
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/acceptance/p0/cross-validation.json",
+        "evidence/r41/acceptance/p0/freeze-check.json"
       ],
-      "reason": "No Stage 2 plan/lock/model_lock/xl_core freeze exists. Stage 1 feasibility and board manifests do not constitute a pre-implementation Stage 2 freeze.",
-      "closure_plan": "P0"
+      "reason": "Prospective remaining scope is locked with authentic weight/tokenizer hashes, core/tail inputs, eight XL points, independently CPU-cross-validated tolerances, hardware scope, candidates, budgets and baseline boundaries. This does not erase the historical pre-implementation sequencing failure.",
+      "closure_plan": null
     },
     {
       "id": "S2-00.process",
@@ -116,7 +148,7 @@
         "evidence/r41/stage2/integration/README.md",
         "doc/r41_tasks_and_acceptance.md"
       ],
-      "reason": "Run-1 implementation preceded the missing Stage 2 freeze. A later freeze can govern remaining work but cannot retrospectively satisfy this sequence.",
+      "reason": "Historical implementation preceded freeze and remains failed. P0 now corrects the cause prospectively; the lead must disposition the irrecoverable historical sequencing miss explicitly rather than silently mark it passed.",
       "closure_plan": "P0"
     },
     {
@@ -452,7 +484,7 @@
         "evidence/r41/stage1/model_estimates.md",
         "evidence/r41/fp8/models_tnca/README.md"
       ],
-      "reason": "Full required checkpoint has feasibility evidence only. FP8 layers of Qwen3-VL-2B and Qwen3.5-4B are different models and cannot substitute.",
+      "reason": "Authentic complete 24-layer BF16/FP32 CPU references now pass core/tail cross-validation. The required standard TNCA full-model board execution is still absent; FP8 layers of other checkpoints cannot substitute.",
       "closure_plan": "P3"
     },
     {
@@ -659,9 +691,11 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "doc/r41_tasks_and_acceptance.md",
+        "spec/r41/stage2/model_lock.json",
+        "evidence/r41/acceptance/p0/cross-validation.json"
       ],
-      "reason": "No independently cross-validated Stage 2 model tolerance lock before implementation. Preserve this process miss; do not backdate the lock.",
+      "reason": "Historical freeze timing failure remains. Authentic all-layer CPU BF16/FP32 cross-validation and numerical lock now exist before any new TNCA outputs; that corrective evidence cannot backdate the initial implementation.",
       "closure_plan": "P0"
     },
     {
@@ -731,9 +765,10 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "spec/r41/stage2/xl_core.json"
       ],
-      "reason": "XL-core manifest is absent. Existing high-storage or primitive results are useful preflight but cannot close a frozen XL point with unspecified inputs/hash/tolerance.",
+      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
       "closure_plan": "P5"
     },
     {
@@ -743,9 +778,10 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "spec/r41/stage2/xl_core.json"
       ],
-      "reason": "XL-core manifest is absent. Existing high-storage or primitive results are useful preflight but cannot close a frozen XL point with unspecified inputs/hash/tolerance.",
+      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
       "closure_plan": "P5"
     },
     {
@@ -755,9 +791,10 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "spec/r41/stage2/xl_core.json"
       ],
-      "reason": "XL-core manifest is absent. Existing high-storage or primitive results are useful preflight but cannot close a frozen XL point with unspecified inputs/hash/tolerance.",
+      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
       "closure_plan": "P5"
     },
     {
@@ -767,9 +804,10 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "spec/r41/stage2/xl_core.json"
       ],
-      "reason": "XL-core manifest is absent. Existing high-storage or primitive results are useful preflight but cannot close a frozen XL point with unspecified inputs/hash/tolerance.",
+      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
       "closure_plan": "P5"
     },
     {
@@ -779,9 +817,10 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "spec/r41/stage2/xl_core.json"
       ],
-      "reason": "XL-core manifest is absent. Existing high-storage or primitive results are useful preflight but cannot close a frozen XL point with unspecified inputs/hash/tolerance.",
+      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
       "closure_plan": "P5"
     },
     {
@@ -791,9 +830,10 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "spec/r41/stage2/xl_core.json"
       ],
-      "reason": "XL-core manifest is absent. Existing high-storage or primitive results are useful preflight but cannot close a frozen XL point with unspecified inputs/hash/tolerance.",
+      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
       "closure_plan": "P5"
     },
     {
@@ -803,9 +843,10 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "spec/r41/stage2/xl_core.json"
       ],
-      "reason": "XL-core manifest is absent. Existing high-storage or primitive results are useful preflight but cannot close a frozen XL point with unspecified inputs/hash/tolerance.",
+      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
       "closure_plan": "P5"
     },
     {
@@ -815,9 +856,10 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "spec/r41/stage2/xl_core.json"
       ],
-      "reason": "XL-core manifest is absent. Existing high-storage or primitive results are useful preflight but cannot close a frozen XL point with unspecified inputs/hash/tolerance.",
+      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
       "closure_plan": "P5"
     },
     {
@@ -1147,8 +1189,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "f57713fabcdd8d00c9bb5d81ad705812c1ca74ebf34e7be4efd8131e7834164c",
-    "doc/r41_stage2_report.md": "e4e650c125de4b62939e74ddbbacf5670abafd5ea6c8d95363cf4f125488e03b",
+    "doc/r41_report.md": "2ea43482f7a80d9ecc1eab21700c8caa6225ef7ea725bfeebcb74e08c67ac039",
+    "doc/r41_stage2_report.md": "0691363a9caa6a96c8f2786b4d147ae6c41a4e88e53afd5e814d7a1422e06138",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "04350417d681c7a3bd90fdbe5b0240c5ebf0e8b27d1c14a9b07e14a72ee59a7e",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1175,6 +1217,40 @@
     "evidence/r41/stage2/integration/image.json": "1d185bbefaf9e1d6f7394763263ece23289ccecdb2192085d230c74ac760318c",
     "evidence/r41/stage2/roofline/README.md": "cb352c7b9ca63504537528983d972cdcafda76d803356687171288fc05337733",
     "evidence/r41/stage2/run1/README.md": "552c2a345b2ceff6bbab1ed24a449b53e7b24360d7afe37fbfba77ac9c5e163a",
-    "spec/r41/holdout.json": "1edf9a8bba72a41705357794c886043ddcb74b0c70c4acf2de949f04ea62f0af"
-  }
+    "spec/r41/holdout.json": "1edf9a8bba72a41705357794c886043ddcb74b0c70c4acf2de949f04ea62f0af",
+    "evidence/r41/acceptance/p0/cross-validation.json": "a8ad536a59c8e4b128b3266046f7fddb383207009b9890e8490fb77a49178c51",
+    "evidence/r41/acceptance/p0/freeze-check.json": "f62eb01ec5d2d772a3733b620fa1ee7f6dc9ddd1ebd5f51ee61f4a65115d2af0",
+    "spec/r41/stage2/lock.json": "5d9e4f6d41094c3492672229d0af5425425b5d9688aee276687a9be62c943f96",
+    "spec/r41/stage2/model_lock.json": "3b4330efde6f6ea261e3939ce14e22c7e4e241ac12abbe77bb5fb3b2f3caaccf",
+    "spec/r41/stage2/plan.json": "d32cd805baf16e32e8b511db3a4a9aa2f4d8686f5c2fdabe9911f9e03fa937ab",
+    "spec/r41/stage2/xl_core.json": "0b5d7d477bfd781bfef214c9256aeef7b319ce2571addcd91afdac8cf08bcbe6",
+    "evidence/r41/acceptance/p8/board-records.tgz": "a44913d53a6a5e3edf26687628b88d7b7ebf881aef2ca877089ae6eb3631b671",
+    "evidence/r41/acceptance/p8/environment.json": "94f4dab5565c7e842dbe3d280266fec49b3037158968c75d06d84beb869fee58",
+    "evidence/r41/acceptance/p8/metrics.json": "e1bfe3a624aa8c98bf5f024f93fba4e4f572a7eca166fe4c5f951890317ef0b5"
+  },
+  "followups": [
+    {
+      "id": "P8.fp8_hub",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "Lead-run 35/35 Hub/compile/FP8Linear cases pass on approved run-1 image; isolated environment verified. No new board run by this agent.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/environment.json",
+        "evidence/r41/acceptance/p8/board-records.tgz"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P8.qwen_fp8",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "Lead-run 14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from required full BF16 model.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/board-records.tgz"
+      ],
+      "closure_plan": null
+    }
+  ]
 }

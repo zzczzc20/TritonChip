@@ -31,11 +31,14 @@ class FreezeRecordTests(unittest.TestCase):
         self.assertTrue(record['git'] is None or 'commit' in record['git'], record['git'])
         self.assertEqual(record['delivery_acceptance'], 'not-measured')
 
-    def test_stage_2_is_not_frozen(self):
+    def test_stage_2_prospective_freeze_preserves_historical_failure(self):
         run = subprocess.run([sys.executable, str(HERE/'stage_contract.py'), '--stage', '2', '--no-registry'],
                              cwd=REPO, capture_output=True, text=True)
-        self.assertNotEqual(run.returncode, 0)
-        self.assertIn('Stage 2 inputs have not been frozen', run.stderr)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        result = json.loads(run.stdout)
+        self.assertEqual(result['freeze_kind'], 'prospective')
+        self.assertTrue(result['historical_failure_preserved'])
+        self.assertEqual(result['delivery_acceptance'], 'not-measured')
 
 
 if __name__ == '__main__':

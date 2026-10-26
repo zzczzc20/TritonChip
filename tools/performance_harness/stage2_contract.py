@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 # Set to the reviewed prospective lock when numerical cross-validation completes.
-LOCK_SHA256 = 'pending-independent-reference'
+LOCK_SHA256 = '5d9e4f6d41094c3492672229d0af5425425b5d9688aee276687a9be62c943f96'
 
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 

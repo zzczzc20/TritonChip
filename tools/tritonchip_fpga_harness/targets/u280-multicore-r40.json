@@ -1,5 +1,5 @@
 {
-  "name": "u280-multicore",
+  "name": "u280-multicore-r40",
   "adapter": "u280",
   "board": "u280",
   "part": "xcu280-fsvh2892-2L-e",
@@ -17,8 +17,8 @@
     "2023.2"
   ],
   "platforms_root": "/opt/xilinx/platforms",
-  "kernel_clock_mhz": 100,
-  "device_clock_mhz": 100,
+  "kernel_clock_mhz": 90,
+  "device_clock_mhz": 90,
   "device_divider": 1,
   "full_slots": 1,
   "package_script": "flow/fpga/package_xo.tcl",

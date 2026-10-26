@@ -114,7 +114,7 @@ manifest names it.
 | Target | Card | Platform | Kernel clock → device clock | Vitis |
 |---|---|---|---|---|
 | `u280` | Alveo U280, kernel in SLR1 | `xilinx_u280_gen3x16_xdma_1_202211_1` | 100 MHz → 100 MHz (÷1) | 2023.2 by default; 2022.2 or 2023.2 accepted |
-| `u280-multicore` | Alveo U280, three cores, one per SLR, three HBM outlets (`package_xo.tcl` variant `multicore-hbm`) | `xilinx_u280_gen3x16_xdma_1_202211_1` | the device description's (§5.1), ÷1 | 2023.2 |
+| `u280-multicore-r40` | Alveo U280, R40's three-core machine: one core per SLR, three HBM outlets (`package_xo.tcl` variant `multicore-hbm`) | `xilinx_u280_gen3x16_xdma_1_202211_1` | 90 MHz → 90 MHz (÷1) | 2023.2 |
 | `u50` | Alveo U50 | `xilinx_u50_gen3x16_xdma_5_202210_1` | 100 MHz → 100 MHz (÷1) | 2022.2 |
 
 Where Vitis is installed is the host's business, not the card's. The target's
@@ -125,21 +125,20 @@ versions the card accepts images from, and a root outside it is refused
 (`vitis_version`, §3.3). A run records the roots it used and whether the host
 or the target named them (`environment.json`, `tool_roots`).
 
-A target is named for its card (and, on the U280, for the kernel the flow
-builds for it: one core, or the three-core machine) and nothing else, because
-its file lives beside the flow it describes. A commit that moves the flow to
+A target is named for its card (and, on the U280, for the machine the flow
+builds for it: one core, or a generation's three-core machine) and nothing
+else, because its file lives beside the flow it describes. A commit that moves the flow to
 another clock changes `link.sh`, `package_xo.tcl`, `ooc.xdc` and the target
 file together; if it forgets the target, the checks of §3.3 fail and nothing
 starts. There is never a second target for "the flow as it used to be".
 
-`u280-multicore` builds only described machines (`image.device`, §5.1): the
-three-core top's own defaults are no machine anyone measured. Its
+`u280-multicore-r40` builds only described machines (`image.device`, §5.1):
+the three-core top's own defaults are no machine anyone measured. Its
 `device_platform` is what the top and the runtime fix -- three cores, 256-bit
 HBM outlets, 4 GiB of HBM, the memory controls and cache maintenance -- and a
-description that differs, or names another board or variant, is refused in
-`plan`. The kernel clock is the description's: R40's machine closes at
-90 MHz and R41's at 100 on the one target, and the run's profile, the
-preflight, `TNCA_KERNEL_MHZ` and the clock checks all take it from there.
+description that differs from it, or from the target's board, variant or
+kernel clock, is refused in `plan`. Each generation's machine fixes its own
+clock (R40's closes at 90 MHz; R41's, at 100, gets a target of its own).
 
 ### 3.2 What runs
 
@@ -157,7 +156,7 @@ link      flow/fpga/link.sh <artifacts>
 The U280 target passes the card's part to the packager and sets
 `TNCA_BOARD=u280`, `XILINX_VITIS`, `XILINX_PLATFORMS` and `VPP_JOBS` for the
 link, which is how `flow/fpga/boards.sh` selects the platform and the SLR1
-placement; `u280-multicore` also passes the variant (`multicore-hbm`), which
+placement; `u280-multicore-r40` also passes the variant (`multicore-hbm`), which
 the packager records beside the XO and `link.sh` links with the three-core
 connectivity and placement. Every command is given the target's kernel clock
 as `TNCA_KERNEL_MHZ`. The kernel and its name (`tnca_u50`) are the same for both cards,

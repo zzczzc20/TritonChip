@@ -375,14 +375,14 @@ def validate_profile(profile: Profile) -> None:
 
 
 def run_profile(package_dir: Path, root: Path, manifest: dict[str, Any]) -> Profile:
-    """The target as one run builds it. A device description (manifest
-    ``image.device``) is a whole machine: its platform must be the one the
-    target builds (the board, the kernel variant, and what the target's
-    ``device_platform`` fixes -- the core count the top instantiates, the
-    HBM the runtime maps), and its kernel clock replaces the target's for
-    this run (R40's three-core machine closes at 90 MHz, R41's at 100, on the
-    one ``u280-multicore`` target). A target with a ``device_platform``
-    builds nothing else: its machine exists only as a description."""
+    """The target, checked against the machine the manifest builds. A device
+    description (manifest ``image.device``) is a whole machine, and its
+    platform must be the one the target builds: the board, the kernel
+    variant, the kernel clock (each target fixes its own: R40's three-core
+    machine on ``u280-multicore-r40`` at 90 MHz), and what the target's
+    ``device_platform`` fixes -- the core count the top instantiates, the HBM
+    the runtime maps. A target with a ``device_platform`` builds nothing
+    else: its machine exists only as a description."""
     profile = load_profile(package_dir, str(manifest["target"]))
     device = (manifest.get("image") or {}).get("device")
     if not device:
@@ -396,18 +396,14 @@ def run_profile(package_dir: Path, root: Path, manifest: dict[str, Any]) -> Prof
         raise SchemaError(f"image: {exc}") from exc
     plat = desc["platform"]
     locked = dict(profile.data.get("device_platform") or {}, board=profile.data["board"],
-                  variant=profile.data.get("package_variant") or "none")
+                  variant=profile.data.get("package_variant") or "none",
+                  kernel_clock_mhz=profile.data["kernel_clock_mhz"])
     wrong = [f"platform.{k} is {plat.get(k)!r}, the target's is {v!r}"
              for k, v in sorted(locked.items()) if plat.get(k) != v]
     if wrong:
         raise SchemaError(f"image: device {device!r} is not a machine target {profile.name} builds: "
                           + "; ".join(wrong))
-    divider = profile.expected_device_divider
-    data = dict(profile.data, kernel_clock_mhz=plat["kernel_clock_mhz"],
-                device_clock_mhz=plat["kernel_clock_mhz"] / divider, device=device)
-    derived = Profile(profile.name, data)
-    validate_profile(derived)
-    return derived
+    return profile
 
 
 def load_profile(package_dir: Path, target: str) -> Profile:

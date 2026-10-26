@@ -1,8 +1,8 @@
-"""A device description built as the image (target u280-multicore).
+"""A device description built as the image (target u280-multicore-r40).
 
-The description (spec/devices) is the machine. The target must build its
-platform, the run takes its kernel clock, the packager is given the kernel
-variant and every parameter the description generates, and the generator and
+The description (spec/devices) is the machine. Its platform must be the one
+the target builds, the kernel clock included; the packager is given the kernel
+variant and every parameter the description generates; and the generator and
 the description are the checkout's own -- never an installed package's, nor a
 stale staged copy of the profiles.
 """
@@ -34,7 +34,7 @@ FILES = ("python/tnca/__init__.py", "python/tnca/devices.py", "python/tnca/profi
 
 
 def manifest(device: str = DEVICE, **extra) -> dict:
-    return dict({"candidate_id": "d", "target": "u280-multicore", "mode": "full", "image": {"device": device}}, **extra)
+    return dict({"candidate_id": "d", "target": "u280-multicore-r40", "mode": "full", "image": {"device": device}}, **extra)
 
 
 def checkout(td: str) -> Path:
@@ -55,10 +55,16 @@ class DeviceImage(unittest.TestCase):
             with self.subTest(image=bad), self.assertRaises(SchemaError):
                 validate_manifest(dict(manifest(), image=bad))
 
-    def test_the_run_takes_the_descriptions_clock(self) -> None:
-        profile = run_profile(HERE, REPO, manifest())
-        self.assertEqual((profile.expected_clock, profile.data["device_clock_mhz"], profile.data["device"]),
-                         (90.0, 90.0, DEVICE))
+    def test_the_target_fixes_the_clock(self) -> None:
+        self.assertEqual(run_profile(HERE, REPO, manifest()).expected_clock, 90.0)
+        with tempfile.TemporaryDirectory() as td:
+            root = checkout(td)
+            d = json.loads((root / f"spec/devices/{DEVICE}.json").read_text(encoding="utf-8"))
+            d.update(name="at-100")
+            d["platform"]["kernel_clock_mhz"] = 100
+            (root / "spec/devices/at-100.json").write_text(json.dumps(d), encoding="utf-8")
+            with self.assertRaisesRegex(SchemaError, "platform.kernel_clock_mhz is 100, the target's is 90"):
+                run_profile(HERE, root, manifest("at-100"))
 
     def test_the_packager_and_the_link_are_given_the_machine(self) -> None:
         impl = U280FlowAdapter()._impl(REPO, run_profile(HERE, REPO, manifest()))
@@ -88,10 +94,11 @@ class DeviceImage(unittest.TestCase):
 
     def test_a_described_target_builds_only_descriptions(self) -> None:
         with self.assertRaisesRegex(SchemaError, "needs image.device"):
-            run_profile(HERE, REPO, {"candidate_id": "d", "target": "u280-multicore", "mode": "full"})
+            run_profile(HERE, REPO, {"candidate_id": "d", "target": "u280-multicore-r40", "mode": "full"})
 
     def test_a_machine_the_target_does_not_build_is_refused(self) -> None:
-        with self.assertRaisesRegex(SchemaError, "platform.variant is 'multicore-hbm', the target's is 'none'"):
+        with self.assertRaisesRegex(SchemaError, "platform.kernel_clock_mhz is 90, the target's is 100; "
+                                                 "platform.variant is 'multicore-hbm', the target's is 'none'"):
             run_profile(HERE, REPO, manifest(target="u280"))
         with tempfile.TemporaryDirectory() as td:
             root = checkout(td)

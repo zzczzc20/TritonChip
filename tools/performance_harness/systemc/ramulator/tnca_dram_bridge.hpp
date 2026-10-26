@@ -30,6 +30,7 @@ struct PcStats {
     std::uint64_t read_callbacks = 0, write_callbacks = 0;
     std::uint64_t first_read_complete = 0, last_read_complete = 0;
     std::uint64_t first_write_issue = 0, last_write_issue = 0, last_write_complete = 0;
+    std::uint64_t peak_line_credits = 0;
 };
 
 struct Result {
@@ -69,8 +70,19 @@ struct Batch {
     const void* context = nullptr;
     void (*decode)(const void* context, std::size_t i, std::uint32_t& pc, std::uint64_t& offset, bool& write) = nullptr;
 };
+// Optional hypothetical stream-outlet admission, independently per PC.
+// A credit covers one 64-byte line until both bursts complete plus the fixed
+// return pipeline. Admission starts only on kernel clock edges and successive
+// lines are separated by issue_cycles kernel cycles. This does not model the
+// core, NUCA, AXI width conversion, copy data dependencies or arithmetic.
+struct StreamAdmission {
+    unsigned lines = 0;
+    unsigned dram_cycles_per_kernel = 0;
+    unsigned issue_cycles = 0;
+    unsigned return_kernel_cycles = 0;
+};
 Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, std::vector<std::uint32_t>& latency,
-              bool event_skip = true, bool idle_skip = true);
+              bool event_skip = true, bool idle_skip = true, const StreamAdmission* admission = nullptr);
 Timing timing(const std::string& yaml_path);
 // The controller address mapping inside one pseudo channel (see the .cpp).
 struct Mapped {int bankgroup, bank, row, column;};

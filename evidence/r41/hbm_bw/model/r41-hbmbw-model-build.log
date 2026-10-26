@@ -1,0 +1,10 @@
+[ 50%] Built target tnca-dram-bridge
+[ 75%] Building CXX object CMakeFiles/tnca-stream-probe.dir/ramulator/stream_probe.cpp.o
+[100%] Linking CXX executable tnca-stream-probe
+[100%] Built target tnca-stream-probe
+[ 33%] Built target tnca-dram-bridge
+[ 50%] Generating tnca_isa_generated.hpp
+[ 66%] Generating tnca_sfu_tables_generated.hpp
+[ 83%] Building CXX object CMakeFiles/tnca-chip.dir/src/chip.cpp.o
+[100%] Linking CXX executable tnca-chip
+[100%] Built target tnca-chip

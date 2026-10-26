@@ -400,3 +400,8 @@ sources = []
 path = "evidence/r41/hbm_bw/capacity_analysis.md"
 depends_on = []
 sources = ["rtl/core/tnca_mem_mux.v", "rtl/core/tnca_core.v", "rtl/fpga/tnca_line_axi.v", "rtl/board/tnca_multicore_hbm_xo.v"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/model/README.md"
+depends_on = ["evidence/r41/hbm_bw/capacity_analysis.md"]
+sources = ["tools/performance_harness/systemc/ramulator/", "evidence/r41/hbm_bw/model/"]

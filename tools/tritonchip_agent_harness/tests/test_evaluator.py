@@ -11,7 +11,12 @@ sys.path.insert(0, str(HERE.parent))
 import json  # noqa: E402
 import tempfile  # noqa: E402
 
-from tritonchip_agent_harness.evaluator import observed_point, read_observer, rtl_check, score  # noqa: E402
+import subprocess  # noqa: E402
+
+from tritonchip_agent_harness.evaluator import (  # noqa: E402
+    device_check, hardware_changed, observed_multicore_point, observed_point, read_multicore_observer,
+    read_observer, rtl_check, score)
+from tritonchip_agent_harness.task import Task  # noqa: E402
 
 BASE = {p: {"status": "pass", "cycles": 1000} for p in ("a", "b", "c", "d")}
 
@@ -107,6 +112,101 @@ class Observer(unittest.TestCase):
     def test_a_failed_point_keeps_its_own_status(self):
         self.assertEqual(observed_point({"status": "fail-numerics", "time": {"device": 302}}, self.log(LOG))["status"],
                          "fail-numerics")
+
+
+MC_LOG = ("cmd op=1 seq=1 obs=2450 done=2395 status=0 settle=3 quiet=1 rd=0 wr=0\n"
+          "cmd op=1 seq=2 obs=1050 done=1001 status=0 settle=40 quiet=1 rd=0 wr=0\n")
+
+
+class MulticoreObserver(unittest.TestCase):
+    def log(self, text):
+        p = Path(tempfile.mkdtemp()) / "observe.log"
+        p.write_text(text)
+        return read_multicore_observer(p)
+
+    def test_the_score_is_the_endpoints(self):
+        obs = self.log(MC_LOG)
+        self.assertEqual((obs["launches"], obs["cycles"], obs["done_cycles"], obs["max_settle"], obs["not_quiet"]),
+                         (2, 3500, 3396, 40, 0))
+        point = observed_multicore_point({"status": "pass", "time": {"device": 3396}}, obs, None)
+        self.assertEqual((point["status"], point["cycles"], point["record_cycles"]), ("pass", 3500, 3396))
+
+    def test_a_record_the_device_never_reported_fails(self):
+        point = observed_multicore_point({"status": "pass", "time": {"device": 1700}}, self.log(MC_LOG), None)
+        self.assertEqual(point["status"], "record-disagrees")
+
+    def test_done_before_the_work_drained_fails(self):
+        early = MC_LOG.replace("settle=40 quiet=1", "settle=9 quiet=0")
+        self.assertEqual(observed_multicore_point({"status": "pass", "time": {"device": 3396}},
+                                                  self.log(early), None)["status"], "not-drained")
+        # A write-back cache may write behind a launch: a long settle fails only
+        # past the bound calibrated on the base.
+        self.assertEqual(observed_multicore_point({"status": "pass", "time": {"device": 3396}},
+                                                  self.log(MC_LOG), 64)["status"], "pass")
+        self.assertEqual(observed_multicore_point({"status": "pass", "time": {"device": 3396}},
+                                                  self.log(MC_LOG), 39)["status"], "not-drained")
+
+    def test_no_observation_fails_and_a_failed_point_keeps_its_status(self):
+        rec = {"status": "pass", "time": {"device": 3396}}
+        self.assertEqual(observed_multicore_point(rec, None, None)["status"], "no-observation")
+        self.assertEqual(observed_multicore_point(rec, self.log(""), None)["status"], "no-observation")
+        self.assertEqual(observed_multicore_point({"status": "fail-numerics"}, self.log(MC_LOG), None)["status"],
+                         "fail-numerics")
+
+
+DESC = {"schema": "tnca-device/1", "name": "d", "per_core_profile": "core-vrf-sync-v5",
+        "platform": {"board": "u280", "core_count": 3, "kernel_clock_mhz": 90},
+        "uncore": {"SETS": 32, "MEM_PORTS": 3}}
+
+
+class DeviceCheck(unittest.TestCase):
+    def setUp(self):
+        self.repo = Path(tempfile.mkdtemp())
+        run = lambda *a: subprocess.run(["git", "-C", str(self.repo), *a], check=True, capture_output=True)
+        run("init", "-q")
+        (self.repo / "spec/devices").mkdir(parents=True)
+        (self.repo / "spec/devices/d.json").write_text(json.dumps(DESC))
+        run("add", "-A")
+        run("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base")
+        self.commit = subprocess.run(["git", "-C", str(self.repo), "rev-parse", "HEAD"], check=True,
+                                     capture_output=True, text=True).stdout.strip()
+        self.task = Task(task_id="t", kind="k", base_commit=self.commit, design=(), evaluator_owned=(), hide=(),
+                         instruction="", reference=None, wall_seconds=60,
+                         evaluation={"profile": "core-vrf-sync-v5", "device": "d"}, services={},
+                         path=Path("task.json"), sha256="0" * 64)
+
+    def tree(self, desc):
+        t = Path(tempfile.mkdtemp())
+        (t / "spec/devices").mkdir(parents=True)
+        (t / "spec/devices/d.json").write_text(json.dumps(desc))
+        return t
+
+    def test_the_uncore_may_change_the_platform_may_not(self):
+        uncore = json.loads(json.dumps(DESC))
+        uncore["uncore"]["SETS"] = 64
+        self.assertEqual(device_check(self.repo, self.task, self.tree(uncore)), [])
+        clock = json.loads(json.dumps(DESC))
+        clock["platform"]["kernel_clock_mhz"] = 100
+        clock["platform"]["extra"] = 1
+        self.assertEqual(device_check(self.repo, self.task, self.tree(clock)),
+                         ["spec/devices/d.json: platform.kernel_clock_mhz: 100, fixed at 90",
+                          "spec/devices/d.json: platform.extra is not the base's"])
+
+    def test_the_scored_profile_is_fixed(self):
+        other = json.loads(json.dumps(DESC))
+        other["per_core_profile"] = "core-vrf-sync-v4"
+        self.assertIn("is not the scored profile", device_check(self.repo, self.task, self.tree(other))[0])
+        renamed = json.loads(json.dumps(DESC))
+        renamed["name"] = "another-machine"
+        self.assertIn("name 'another-machine' is not the base's", device_check(self.repo, self.task, self.tree(renamed))[0])
+
+    def test_a_changed_description_is_a_changed_machine(self):
+        changed = json.loads(json.dumps(DESC))
+        changed["uncore"]["SETS"] = 64
+        c = candidate({"spec/devices/d.json": json.dumps(changed)})
+        hw = hardware_changed(self.repo, self.task, c)
+        self.assertTrue(hw["changed"])
+        self.assertEqual(hw["device"], {"uncore.SETS": [32, 64]})
 
 
 if __name__ == "__main__":

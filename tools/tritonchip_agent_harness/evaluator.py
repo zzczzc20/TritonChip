@@ -52,7 +52,7 @@ make -s python/tnca/data/.staged > /out/stage.log 2>&1
 
 # The candidate's paths the device is built from. Everything else in the
 # device's tree is the base's, so building it runs no candidate code.
-HARDWARE = ("rtl/", "spec/r1_profiles.json")
+HARDWARE = ("rtl/", "spec/r1_profiles.json", "spec/devices/")
 # The device's own deadline for one launch, as the runtime's default session sets it.
 DEADLINE = 5_000_000
 SOCKETS = "/run/tnca-device"
@@ -183,6 +183,174 @@ def observed_point(record: Optional[dict], obs: Optional[dict]) -> dict:
             "fallbacks": (record or {}).get("fallbacks"),
             "max_rel_err": ((record or {}).get("correctness") or {}).get("max_rel_err"),
             "observer": obs, "observer_problem": problem}
+
+
+# A multicore task (evaluation.device names a description in spec/devices):
+# the device is the image's own top in the board-register bench, run by
+# `python -m tnca.backends.multicore_mmio_sim` in a container of its own; the
+# host reaches it only through a mailbox directory, and the bench's observer
+# log is written where the host cannot write.
+MULTICORE_MEMORY = 16 << 20
+MULTICORE_WATCHDOG = 2_000_000_000
+
+
+def read_multicore_observer(path: Path) -> Optional[dict]:
+    """The board-register bench's log: every launch's MMIO endpoints, the
+    count the device reported, and how long the device took to drain."""
+    if not path.exists():
+        return None
+    launches = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        words = line.split()
+        if not words or words[0] != "cmd":
+            continue
+        try:
+            launches.append({k: int(v) for k, v in (w.split("=", 1) for w in words[1:])})
+        except ValueError:
+            continue
+    launches = [c for c in launches if c.get("op") == 1]
+    return {"launches": len(launches),
+            "cycles": sum(c.get("obs", 0) for c in launches),
+            "done_cycles": sum(c.get("done", 0) for c in launches),
+            "failed_launches": sum(1 for c in launches if c.get("status", 0) != 0),
+            "max_settle": max((c.get("settle", 0) for c in launches), default=0),
+            "not_quiet": sum(1 for c in launches if c.get("quiet", 1) != 1),
+            "ended": bool(launches)}
+
+
+def observed_multicore_point(record: Optional[dict], obs: Optional[dict], drain_cycles: Optional[int]) -> dict:
+    """One multicore point: the record's verdict, the endpoints' cycles."""
+    rec_cycles = ((record or {}).get("time") or {}).get("device")
+    status = (record or {}).get("status")
+    problem = None
+    if obs is None or obs["launches"] == 0:
+        problem = "no-observation"
+    elif rec_cycles is not None and rec_cycles != obs["done_cycles"]:
+        # The host reported cycles the device never did: it was tampered with.
+        problem = "record-disagrees"
+    elif obs["not_quiet"] or (drain_cycles is not None and obs["max_settle"] > drain_cycles):
+        # The device said done before its work had drained.
+        problem = "not-drained"
+    if status == "pass" and problem:
+        status = problem
+    return {"status": status, "cycles": obs["cycles"] if obs else None, "record_cycles": rec_cycles,
+            "fallbacks": (record or {}).get("fallbacks"),
+            "max_rel_err": ((record or {}).get("correctness") or {}).get("max_rel_err"),
+            "observer": obs, "observer_problem": problem}
+
+
+def device_path(task: Task) -> str:
+    return f"spec/devices/{task.evaluation['device']}.json"
+
+
+def device_check(repo: Path, task: Task, tree: Path) -> list:
+    """Why the candidate's device description may not be built; [] when it may.
+
+    The platform is the base's: the candidate may change the uncore, never the
+    card's or the flow's fixed fields, nor the per-core profile the task scores.
+    """
+    name = device_path(task)
+    base = json.loads(git("-C", str(repo), "show", f"{task.base_commit}:{name}"))
+    try:
+        cand = json.loads((tree / name).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        return [f"{name}: {e}"]
+    if not isinstance(cand, dict) or not isinstance(cand.get("platform"), dict):
+        return [f"{name}: not a device description"]
+    problems = [f"{name}: platform.{k}: {cand['platform'].get(k)!r}, fixed at {v!r}"
+                for k, v in sorted(base["platform"].items()) if cand["platform"].get(k) != v]
+    problems += [f"{name}: platform.{k} is not the base's" for k in sorted(set(cand["platform"]) - set(base["platform"]))]
+    if cand.get("name") != base.get("name"):
+        problems.append(f"{name}: name {cand.get('name')!r} is not the base's {base.get('name')!r}")
+    if cand.get("per_core_profile") != task.evaluation["profile"]:
+        problems.append(f"{name}: per_core_profile {cand.get('per_core_profile')!r} is not the scored "
+                        f"profile {task.evaluation['profile']!r}")
+    return problems
+
+
+def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, out: Path, name: str,
+                       repo: Path) -> dict:
+    """Each point against its own three-core device, in a container the candidate's code cannot reach."""
+    ev = task.evaluation
+    points = list(ev["validation"]) + list(ev["final"])
+    out.mkdir(parents=True, exist_ok=True)
+    problems = device_check(repo, task, devtree)
+    if problems:
+        (out / "device-check.txt").write_text("\n".join(problems) + "\n", encoding="utf-8")
+        return {"exit": None, "points": {}, "missing": points, "device_build": "failed",
+                "device_problems": problems, "observed": True}
+    base_desc = json.loads((devtree / device_path(task)).read_text(encoding="utf-8"))
+    cores = int(base_desc["platform"]["core_count"])
+    memory = int(ev.get("memory_bytes", MULTICORE_MEMORY))
+    timeout = float(ev["timeout_seconds"])
+    desc = f"/work/{device_path(task)}"
+    mailroot = out / "mailbox"
+    mailroot.mkdir(exist_ok=True)
+    mailroot.chmod(0o777)
+    devices = []
+    for i, _ in enumerate(points):
+        mb, obs = mailroot / str(i), out / f"observer-{i}"
+        for d in (mb, obs):
+            d.mkdir(exist_ok=True)
+            d.chmod(0o777)
+        dname = f"{name}-dev{i}"
+        d = AgentContainer(name=dname, image=site.images["toolchain"], cpus=1, memory="4g", pids=256,
+                           mounts=[Mount(devtree, "/work"), Mount(mb, "/mb", read_only=False),
+                                   Mount(obs, "/obs", read_only=False)],
+                           env={"PYTHONDONTWRITEBYTECODE": "1"},
+                           labels={"tritonchip-agent-harness": "evaluator-device"}, workdir="/work")
+        provider.docker(*d.run_args(["/opt/torchenv/bin/python", "-m", "tnca.backends.multicore_mmio_sim",
+                                     "--device", desc, "--mailbox", "/mb", "--build", "/obs/build",
+                                     "--observe", "/obs/observe.log", "--memory-bytes", str(memory),
+                                     "--watchdog", str(MULTICORE_WATCHDOG)],
+                                    detach=True, remove=False))
+        devices.append(dname)
+        args = {"board_top": True, "device": desc, "mailbox": f"/mb/{i}", "memory_bytes": memory,
+                "hbm_dma": True, "host_timeout": timeout}
+        (out / f"backend-{i}.json").write_text(json.dumps(args), encoding="utf-8")
+    lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
+             "run() {",
+             f'  TNCA_BACKEND=fpga-multicore-sim TNCA_BACKEND_ARGS="$(cat /out/backend-$1.json)" '
+             f'TNCA_ACTIVE_CORES={cores} /opt/torchenv/bin/python -m archbench.run --platform tnca '
+             f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
+             "}"]
+    jobs = max(1, int(ev["jobs"]))
+    for k in range(0, len(points), jobs):
+        lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
+    (out / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
+                       pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False), Mount(out, "/out", read_only=False),
+                                               Mount(mailroot, "/mb", read_only=False)],
+                       labels={"tritonchip-agent-harness": "evaluator"}, workdir="/work")
+    proc = provider.docker(*h.run_args(["sh", "/out/evaluate.sh"], detach=False, remove=True),
+                           check=False, timeout=timeout)
+    deadline = time.time() + 60
+    for dname in devices:
+        # A device whose host said goodbye has stopped; one still up gets the
+        # rest of a minute, then its log is kept and it is removed.
+        while time.time() < deadline and provider.inspect_state(dname).get("Status") == "running":
+            time.sleep(1)
+        logs = provider.docker("logs", dname, check=False)
+        (out / f"{dname.rsplit('-', 1)[-1]}.log").write_text((logs.stdout or "") + (logs.stderr or ""), encoding="utf-8")
+        provider.remove(dname)
+    drain = ev.get("drain_cycles")
+    records = {}
+    for i, p in enumerate(points):
+        rec = None
+        path = out / f"archbench-{i}.jsonl"
+        if path.exists():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                try:
+                    r = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if r.get("point_id") == p:
+                    rec = r
+        obs = read_multicore_observer(out / f"observer-{i}" / "observe.log")
+        if rec is not None or obs is not None:
+            records[p] = observed_multicore_point(rec, obs, None if drain is None else int(drain))
+    return {"exit": proc.returncode, "points": records, "missing": [p for p in points if p not in records],
+            "observed": True}
 
 
 def _build_device(site: Site, devtree: Path, task: Task, out: Path, name: str) -> Optional[str]:
@@ -321,9 +489,12 @@ def _trees(repo: Path, task: Task, candidate: Optional[Path], work: Path) -> tup
     return host, dev
 
 
-def _measure_trees(site: Site, host: Path, dev: Optional[Path], task: Task, out: Path, name: str) -> dict:
+def _measure_trees(site: Site, host: Path, dev: Optional[Path], task: Task, out: Path, name: str,
+                   repo: Path) -> dict:
     if dev is None:
         return _measure(site, host, task, out, name)
+    if task.evaluation.get("device"):
+        return _measure_multicore(site, host, dev, task, out, name, repo)
     return _measure_observed(site, host, dev, task, out, name)
 
 
@@ -339,7 +510,7 @@ def baseline(site: Site, repo: Path, task: Task) -> dict:
     work = site.state_dir / "baselines" / key
     shutil.rmtree(work, ignore_errors=True)
     host, dev = _trees(repo, task, None, work)
-    result = _measure_trees(site, host, dev, task, work / "out", f"tnca-eval-base-{key}")
+    result = _measure_trees(site, host, dev, task, work / "out", f"tnca-eval-base-{key}", repo)
     shutil.rmtree(host, ignore_errors=True)
     if dev is not None:
         shutil.rmtree(dev, ignore_errors=True)
@@ -354,7 +525,7 @@ def measure_validation(site: Site, repo: Path, task: Task, candidate: Optional[P
     base = baseline(site, repo, task)
     host, dev = _trees(repo, task, candidate, job_dir)
     vtask = dataclasses.replace(task, evaluation={**task.evaluation, "final": []})
-    got = _measure_trees(site, host, dev, vtask, job_dir / "eval", name)
+    got = _measure_trees(site, host, dev, vtask, job_dir / "eval", name, repo)
     shutil.rmtree(host, ignore_errors=True)
     if dev is not None:
         shutil.rmtree(dev, ignore_errors=True)
@@ -374,6 +545,26 @@ def _rtl_parameters(profiles_json: str, name: str) -> dict:
     return params
 
 
+def _device_fields(text: str) -> dict:
+    """A device description's fields, flattened: per_core_profile, platform.*, uncore.*."""
+    try:
+        d = json.loads(text)
+    except ValueError:
+        return {}
+    out = {"per_core_profile": d.get("per_core_profile")}
+    for section in ("platform", "uncore"):
+        out.update({f"{section}.{k}": v for k, v in (d.get(section) or {}).items()})
+    return out
+
+
+def _device_change(repo: Path, task: Task, after_text: Optional[str]) -> dict:
+    if not task.evaluation.get("device"):
+        return {}
+    before = _device_fields(git("-C", str(repo), "show", f"{task.base_commit}:{device_path(task)}").decode())
+    after = _device_fields(after_text) if after_text is not None else {}
+    return {k: [before.get(k), after.get(k)] for k in sorted(set(before) | set(after)) if before.get(k) != after.get(k)}
+
+
 def machine_change(repo: Path, task: Task, tree: Path) -> dict:
     """Whether the candidate changed the machine it is measured on, and how.
 
@@ -385,13 +576,18 @@ def machine_change(repo: Path, task: Task, tree: Path) -> dict:
     before = _rtl_parameters(git("-C", str(repo), "show", f"{task.base_commit}:spec/r1_profiles.json").decode(), name)
     after = _rtl_parameters((tree / "spec/r1_profiles.json").read_text(encoding="utf-8"), name)
     changed = {k: [before.get(k), after.get(k)] for k in sorted(set(before) | set(after)) if before.get(k) != after.get(k)}
-    return {"profile": name, "changed": changed}
+    out = {"profile": name, "changed": changed}
+    if task.evaluation.get("device"):
+        p = tree / device_path(task)
+        out["device"] = task.evaluation["device"]
+        out["device_changed"] = _device_change(repo, task, p.read_text(encoding="utf-8") if p.exists() else None)
+    return out
 
 
 def hardware_changed(repo: Path, task: Task, candidate: Optional[Path]) -> dict:
     """Whether the candidate's machine differs from the base's: an RTL file, or the scored profile."""
     if candidate is None:
-        return {"changed": False, "rtl": [], "profile": {}}
+        return {"changed": False, "rtl": [], "profile": {}, "device": {}}
     report = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))
     rtl = sorted(c["path"] for c in report["taken"] if c["path"].startswith("rtl/"))
     profile = {}
@@ -404,7 +600,12 @@ def hardware_changed(repo: Path, task: Task, candidate: Optional[Path]) -> dict:
         else:
             after = _rtl_parameters((candidate / "files" / "spec/r1_profiles.json").read_text(encoding="utf-8"), name)
         profile = {k: [before.get(k), after.get(k)] for k in sorted(set(before) | set(after)) if before.get(k) != after.get(k)}
-    return {"changed": bool(rtl or profile), "rtl": rtl, "profile": profile}
+    device = {}
+    if task.evaluation.get("device") and device_path(task) in taken:
+        c = taken[device_path(task)]
+        device = _device_change(repo, task, None if c["status"] == "deleted" else
+                                (candidate / "files" / device_path(task)).read_text(encoding="utf-8"))
+    return {"changed": bool(rtl or profile or device), "rtl": rtl, "profile": profile, "device": device}
 
 
 def _geomean(xs: list) -> Optional[float]:
@@ -442,7 +643,7 @@ def evaluate(site: Site, repo: Path, task: Task, candidate: Optional[Path], run_
     base = baseline(site, repo, task)
     host, dev = _trees(repo, task, candidate, run_dir)
     machine = machine_change(repo, task, host)
-    got = _measure_trees(site, host, dev, task, run_dir / "eval", f"tnca-eval-{run_dir.name}")
+    got = _measure_trees(site, host, dev, task, run_dir / "eval", f"tnca-eval-{run_dir.name}", repo)
     shutil.rmtree(host, ignore_errors=True)
     if dev is not None:
         shutil.rmtree(dev, ignore_errors=True)
@@ -461,5 +662,6 @@ def evaluate(site: Site, repo: Path, task: Task, candidate: Optional[Path], run_
     }
 
 
-__all__ = ["HARDWARE", "baseline", "evaluate", "hardware_changed", "measure_validation", "observed_point",
-           "read_observer", "rtl_check", "score"]
+__all__ = ["HARDWARE", "baseline", "device_check", "evaluate", "hardware_changed", "measure_validation",
+           "observed_multicore_point", "observed_point", "read_multicore_observer", "read_observer", "rtl_check",
+           "score"]

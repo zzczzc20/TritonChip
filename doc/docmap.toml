@@ -365,3 +365,23 @@ path = "tutorial/README.md"
 depends_on = ["tutorial/01_first_kernel.md", "tutorial/02_optimisation_levels.md", "tutorial/03_layout_views.md", "tutorial/04_reading_the_compile.md", "tutorial/05_matrix_multiply.md", "tutorial/06_errors_and_faults.md", "tutorial/07_backends_and_cache.md", "tutorial/08_triton_gemm.md", "tutorial/09_tensor_descriptors.md", "tutorial/10_torch_compile.md", "tutorial/11_running_on_the_u280.md"]
 sources = []
 
+
+[[doc]]
+path = "evidence/r41/stage1/board/README.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["evidence/r41/stage1/board/index.json", "evidence/r41/stage1/board/finished.tgz", "evidence/r41/stage1/board/host-raw.sha256"]
+
+[[doc]]
+path = "evidence/r41/stage2/board/results.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md"]
+sources = ["spec/r41/stage2/board/"]
+
+[[doc]]
+path = "evidence/r41/stage1/stage2_readiness.md"
+depends_on = ["evidence/r41/stage1/board/README.md", "evidence/r41/stage2/board/results.md"]
+sources = ["evidence/r41/stage1/board/metrics.json", "evidence/r41/stage1/model_estimates.json"]
+
+[[doc]]
+path = "doc/r41_stage1_report.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md", "evidence/r41/stage1/board/README.md", "evidence/r41/stage1/stage2_readiness.md", "evidence/r41/stage2/board/results.md"]
+sources = ["evidence/r41/stage1/required_index.json", "evidence/r41/stage1/board/", "evidence/r41/stage1/kickoff/prospective-prediction-v2.json", "evidence/r41/stage1/kickoff/gemm-subset-predictions-v2.json"]

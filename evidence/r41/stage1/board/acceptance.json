@@ -1,0 +1,551 @@
+{
+  "schema": "tnca-r41-stage1-acceptance/1",
+  "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+  "index_sha256": "df5c4710f2e275c3277e33a5d52d5063d3ea411b3e1cec83896b83dbee93e111",
+  "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a",
+  "required": 61,
+  "counts": {
+    "pass": 57,
+    "fail": 0,
+    "not-measured": 3,
+    "blocked": 1
+  },
+  "status": "not-accepted",
+  "items": [
+    {
+      "id": "S1-00.baseline_identity",
+      "status": "pass",
+      "kinds": [
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-00.original_inventory_and_hashes",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-00.required_study_target_scope",
+      "status": "pass",
+      "kinds": [
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-00.diagnostic_development_holdout_split",
+      "status": "pass",
+      "kinds": [
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-00.budgets",
+      "status": "pass",
+      "kinds": [
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-00.carryover",
+      "status": "pass",
+      "kinds": [
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.unified_experiment_resume_dedup_failures",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "compile"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.native_systemc_real_artifacts_common_session",
+      "status": "pass",
+      "kinds": [
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.off_aggregate_trace_architecture_invariance",
+      "status": "pass",
+      "kinds": [
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.fast_and_ramulator2_paths",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "doc",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.dependency_and_address_map_provenance",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "compile",
+        "doc",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.no_latency_double_counting",
+      "status": "pass",
+      "kinds": [
+        "doc",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.backpressure_completion_write_response",
+      "status": "pass",
+      "kinds": [
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.calibration_validation_holdout_separation",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.out_of_domain_refusal",
+      "status": "pass",
+      "kinds": [
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.clean_build_smoke",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.case_gemm_fragment",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "rtl",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.case_memory_service",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "rtl",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.case_pipeline_admission",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "rtl",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.negative_case",
+      "status": "pass",
+      "kinds": [
+        "doc",
+        "rtl"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.prospective_prediction_board_residual",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "doc",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.matched_rtl_speed_measurement",
+      "status": "pass",
+      "kinds": [
+        "rtl",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-01.retain_known_model_mismatches",
+      "status": "pass",
+      "kinds": [
+        "doc",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-02.two_resident_16x16_accumulators_for_16x32",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-02.ordered_k_and_loop_residency",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "rtl",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-02.tails_masks_noncontiguous_and_resource_refusal",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-02.resource_plan_layout_lifetime_bank_allocation",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "rtl"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-02.two_standard_torch_graphs_execute",
+      "status": "pass",
+      "kinds": [
+        "rtl",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-02.numeric_ownership_resource_checks",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-02.code_and_dynamic_counters",
+      "status": "pass",
+      "kinds": [
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-02.original_gemm_subset_retest",
+      "status": "pass",
+      "kinds": [
+        "board"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-02.old_mapping_and_conservative_baseline_comparisons",
+      "status": "not-measured",
+      "kinds": [
+        "board"
+      ],
+      "reasons": [
+        "Current 16x16 control measured, but no matched final-source old-mapping board comparison is established. Historical model comparisons are retained, not upgraded to board measurements."
+      ]
+    },
+    {
+      "id": "S1-03.barrier_ordering_audit_and_negative_cases",
+      "status": "pass",
+      "kinds": [
+        "doc",
+        "rtl"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-03.public_inductor_tnca_tuning_consumer",
+      "status": "pass",
+      "kinds": [
+        "doc",
+        "rtl",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-03.semantic_resource_candidates_and_conservative_fallback",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "rtl"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-03.graph_budget_and_worker_termination",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-03.device_drain_recovery",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "compile"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-03.isolated_tuning_samples",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "rtl"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-03.identity_complete_cache",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "rtl"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-03.device_endpoint_ranking",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "rtl"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-03.uncertainty_fallback",
+      "status": "pass",
+      "kinds": [
+        "compile"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-03.locality_consumer_safety_and_board_design",
+      "status": "pass",
+      "kinds": [
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-04.M1_M4_regression",
+      "status": "pass",
+      "kinds": [
+        "rtl"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-04.critical_path_owners_candidates_validation",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-04.unit_ooc_and_region_resource_preflight",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "doc",
+        "rtl"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-04.fixed_next_implementation_candidate_list",
+      "status": "pass",
+      "kinds": [
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-04.official_language_distinct_storage_inventory",
+      "status": "pass",
+      "kinds": [
+        "compile"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-04.operator_state_dtype_inventory",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-04.D256_depthwise_FP32_recurrence_compile_function",
+      "status": "pass",
+      "kinds": [
+        "rtl",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-04.compile_code_IR_memory_estimates",
+      "status": "pass",
+      "kinds": [
+        "compile",
+        "doc",
+        "systemc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-04.public_model_cache_adapter_difference_inventory",
+      "status": "pass",
+      "kinds": [
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-05.all_stage1_required",
+      "status": "blocked",
+      "kinds": [],
+      "reasons": [
+        "1 of 51 prerequisites not passed"
+      ]
+    },
+    {
+      "id": "S1-05.original_full_suite_on_90mhz",
+      "status": "not-measured",
+      "kinds": [],
+      "reasons": [
+        "requires board evidence",
+        "Original-suite first attempt interrupted by external card reload. Lead schedules rerun; ingest only after completion. No Stage 2 or historical measurement substitutes for the Stage 1 final suite."
+      ]
+    },
+    {
+      "id": "S1-05.fragment_path_actually_used",
+      "status": "pass",
+      "kinds": [
+        "board"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-05.tuning_and_fallback_integrated",
+      "status": "pass",
+      "kinds": [
+        "board"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-05.three_harness_cases",
+      "status": "pass",
+      "kinds": [],
+      "reasons": []
+    },
+    {
+      "id": "S1-05.new_default_nonregression",
+      "status": "not-measured",
+      "kinds": [],
+      "reasons": [
+        "requires board evidence",
+        "Original-suite first attempt interrupted by external card reload. Lead schedules rerun; ingest only after completion. No Stage 2 or historical measurement substitutes for the Stage 1 final suite."
+      ]
+    },
+    {
+      "id": "S1-05.clean_archive_fresh_cache_rebuild",
+      "status": "pass",
+      "kinds": [
+        "board",
+        "compile"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-05.frozen_board_anchor_reproduction",
+      "status": "pass",
+      "kinds": [
+        "board"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-05.stage1_report",
+      "status": "pass",
+      "kinds": [
+        "doc"
+      ],
+      "reasons": []
+    },
+    {
+      "id": "S1-05.stage2_ready_blocker_list",
+      "status": "pass",
+      "kinds": [
+        "doc"
+      ],
+      "reasons": []
+    }
+  ]
+}

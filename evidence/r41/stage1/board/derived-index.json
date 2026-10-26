@@ -1,0 +1,23 @@
+{
+  "description": "Hashes of supplemental artifacts and locally derived results; finished.tgz member hashes are in index.json.",
+  "files": {
+    ".gitignore": "89e69901af2a01eced6f20f4f85d045f55ff4c1448232b0853fe6dcb42eec210",
+    "README.md": "40ad0e93bcb2287532f33071877c14d75e451636a994ee3f547d9311c8114568",
+    "acceptance-before.json": "d566ceb47fa59a38e380534132087d57108494d4a34571b53be9faf49ef29fc2",
+    "acceptance-regression-initial.log": "4327734ec561e6b6b060eb873d59f6de343eae80e8f3334ee078e85f2fcd0c42",
+    "acceptance-regression.log": "b40907d2b76704ce0fb542a5325b0fd197f1d5a894e155e8cc437ef4030b7a53",
+    "acceptance.exit-code": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+    "acceptance.json": "f0e701130a80f0affae95a9f9a8591b170c9b41406f0589871d48fe7fc189df2",
+    "acceptance.log": "8b70555985eb34629866f386901bb768091c620226fb924e1deab299442289a5",
+    "closeout.py": "0bf726393b27a9771be5f4ea8bd9f7490b85ec4f2d32c8c6c2b34b722af0d1d7",
+    "docmaint-check.log": "30285f98f4358fcc73327abc1972a118830d898903da8eda78e9b8a69eed8952",
+    "executables.tgz": "4344258a62ed9ea653f9281e29bee53a0883079c39f39972f6b95e00784d2030",
+    "finished.tgz": "3c2a1d380c46e3e51cb39e629e2c9e45328ff05c4ba802328d99ae7ed5908c25",
+    "gemm-tile-residuals.json": "7c93e1b83a4f98134633025dbff8b7c8526fcb5785f81e52ac127faf9c67b1e9",
+    "host-raw.sha256": "7816556ddc95430924a4d5fc37d44ce5c86703e28cb523a62c92230183b6d776",
+    "index.json": "dad82be045401c2268dc09df3baf8322969223b6410e709371962fb0aa9b538e",
+    "metrics.json": "0e092d6a1391ce97c9c5dff18ed7a47e4eba6fac3719ef7f821af436a1eb0aa6",
+    "prospective-residuals.json": "f0de8059632afe704b66d029420bf78b1313a97873eec8145f12d9472f4011dc",
+    "run_acceptance.sh": "3973c1a05ed4a9cd3e442e8c2e56bbbcbdc690b9d631e58edf7f629a11503f65"
+  }
+}

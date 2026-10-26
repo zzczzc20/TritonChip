@@ -333,7 +333,14 @@ class Batch:
         if reason:
             raise Refused(reason)
 
-    def execute(self):
+    def bind(self):
+        """Bind this batch to its registered image, clock evidence and software tree.
+
+        Every run is checked against the clock evidence digest recorded here, so a
+        driver that calls run_one directly (the endurance run) must call bind first;
+        without it the digest is None and every record is rejected as
+        'qualified clock evidence identity'.
+        """
         self.out.mkdir(parents=True, exist_ok=True)
         board = self.reg['board']
         if sha_file(board['image']) != board['image_sha256']:
@@ -343,6 +350,10 @@ class Batch:
             raise Refused('qualified clock evidence is not bound to this image and clock')
         self.state.update(clock_evidence_sha256=sha_file(board['clock_evidence']), software_tree=self.tree,
                           image_sha256=board['image_sha256'], clock_hz=board['clock_hz'])
+
+    def execute(self):
+        board = self.reg['board']
+        self.bind()
         self.check_card()
         m = self.reg['plan']['measurement']['long_device_tasks']
         mode = self.reg['batch']['sampling']

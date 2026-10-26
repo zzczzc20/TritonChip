@@ -135,6 +135,7 @@ def run(args, probe=None, batch_cls=None, fp8_runner=None):
         raise board_batch.Refused('board runs require the product software tree identity')
     shim = [str(args.python), '-u', str(HERE / 'endurance_mixed.py'), 'wrap', '--rusage']
     batch = (batch_cls or board_batch.Batch)(reg, root=root, out=out, python=args.python, tree=tree, probe=probe)
+    batch.bind()
     board = reg['board']
     sessions_path = out / 'sessions.jsonl'
     sampler = Sampler(out / 'host.jsonl', probe, board, args.sample_seconds)
@@ -232,18 +233,22 @@ def run(args, probe=None, batch_cls=None, fp8_runner=None):
 
 
 def run_fp8(args, root, out, shim):
-    """One fp8_cases.py --quick --group scaled_mm session on the board (env from the step)."""
-    out.mkdir(parents=True, exist_ok=True)
+    """One fp8_cases.py --quick --group scaled_mm session on the board (env from the step).
+
+    fp8_cases.py creates its output directory itself and refuses an existing one, so
+    the log lives beside it, not inside it.
+    """
+    out.parent.mkdir(parents=True, exist_ok=True)
     cmd = shim + [str(args.python), '-u', str(root / 'tools/performance_harness/fp8_cases.py'),
                   '--out', str(out), '--quick', '--group', 'scaled_mm']
-    with (out / 'log').open('w') as fh:
+    with out.with_name(out.name + '.log').open('w') as fh:
         code = subprocess.call(cmd, cwd=root, stdout=fh, stderr=subprocess.STDOUT, timeout=3600)
     rep = out / 'report.json'
     problems = [] if code == 0 else [f'exit {code}']
     cases = []
     if rep.is_file():
         data = json.loads(rep.read_text())
-        cases = data.get('cases') or []
+        cases = data.get('rows') or data.get('cases') or []     # fp8_cases writes 'rows'
         bad = [c.get('case') for c in cases if c.get('status') != 'pass']
         if bad or not cases:
             problems.append(f'{len(bad)} of {len(cases)} cases not pass')

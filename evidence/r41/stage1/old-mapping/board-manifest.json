@@ -11,6 +11,11 @@
     "the old mapping does not actually reproduce per-K traffic",
     "unmatched inputs, placement, clock or timing boundaries are mistaken for a mapping effect"
   ],
+  "expected_counter_changes": [
+    "the old-mapping control restores ACC reads/writes/zeros inside wide-tile K loops",
+    "useful MMA counts stay matched; narrow code remains unchanged",
+    "launch and graph cycles are measured without assuming the repair wins every point"
+  ],
   "expected_observations": [
     "all nine original GEMM points retain their frozen independent numerical checks",
     "the isolated control source differs in one file and one method only",

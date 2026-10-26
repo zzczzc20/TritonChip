@@ -25,7 +25,11 @@ from archbench.provenance import software_tree
 proof=json.loads((directory/'preparation.json').read_text())
 manifest=json.loads((directory/'board-manifest.json').read_text())
 validation=json.loads((directory/'validation-v2.json').read_text())
+preflight=json.loads((directory/'preflight-v2/preflight.json').read_text())
 assert validation['status']=='old-mapping-control-validated'
+assert preflight['status']=='registration-preflight-pass-no-device-access'
+assert preflight['commands_executed']==0
+assert preflight['manifest_sha256']==hashlib.sha256((directory/'board-manifest.json').read_bytes()).hexdigest()
 assert hashlib.sha256((directory/'preparation.json').read_bytes()).hexdigest()==validation['preparation_sha256']
 assert hashlib.sha256((directory/'validation-v2.json').read_bytes()).hexdigest()==manifest['registration']['validation_sha256']
 assert software_tree(root,refresh=True)==proof['control_software_tree']==manifest['registration']['isolated_control']

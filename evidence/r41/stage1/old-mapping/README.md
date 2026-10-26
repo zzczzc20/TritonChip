@@ -63,8 +63,25 @@ Host directories:
 - acf3019 source: `~/r41s1_old_mapping_control_v1`.
 - acf3019 queue/output: `~/r41s1_old_mapping_v1`.
 
-The waiting queue started on acf3019 at 2026-10-26 16:40:52 UTC, PID 2847878.
+The first queue started at 2026-10-26 16:40:52 UTC, PID 2847878. After the
+15-minute idle interval it successfully loaded the approved B40 image, but
+the experiment runner refused the manifest before workload measurement:
+`expected_counter_changes` was missing. That process terminated at 16:56:09.
+`board-manifest.v1.json` and `preflight-and-failure-v2.tgz` preserve the original
+registration, loader/probe logs and error; no failed record is overwritten.
+
+The corrected `board-manifest.json` (also retained as `board-manifest.v2.json`)
+declares the expected counters. The source package now includes the unchanged,
+hash-checked board-map reference outside the product hash. The updated
+preparation tool reproduces the same control software tree
+(`preparation-v2-check.json`). Installed-runner preflight validates real
+source/image/clock/map files and reaches the first probe boundary, where a
+sentinel deliberately stops execution. It executes no device probe or command.
+The original invalid manifest still refuses before output creation.
+
+The corrected waiting queue started at 2026-10-26 21:33:08 UTC, PID 2882868.
 `../launches/old_mapping_queue.sh` validates installed source/proof identities
+and the successful preflight's manifest hash,
 and requires 900 continuous idle seconds, even if B40 is already loaded.
 It checks the approved image and qualified clock, then runs the registered
 manifest through `experiment.py`. Each board configuration retains the existing

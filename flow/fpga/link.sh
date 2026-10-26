@@ -136,10 +136,13 @@ set -u
 OUT=${1:?usage: link.sh <build-dir>    # the directory package_xo.tcl wrote into}
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
 
-# Variant metadata is written only after successful XO packaging.
+# Variant metadata is written only after successful XO packaging. The on-chip
+# build is `none`; an empty file is the same build, as package_xo.tcl wrote it
+# before it named it.
 TNCA_KERNEL_VARIANT=none
 if [ -f "$OUT/tnca_variant.txt" ]; then
     TNCA_KERNEL_VARIANT=$(cat "$OUT/tnca_variant.txt")
+    [ -n "$TNCA_KERNEL_VARIANT" ] || TNCA_KERNEL_VARIANT=none
 fi
 case "$TNCA_KERNEL_VARIANT" in
 none|hbm|multicore-hbm) ;;

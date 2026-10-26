@@ -61,6 +61,44 @@ class U50FlowGuardTests(unittest.TestCase):
         self.assertNotIn("v++", proc.stderr)
         self.assertNotIn("v++", proc.stdout)
 
+    def test_packaged_variant_file_is_parsed(self) -> None:
+        # package_xo.tcl writes the variant it packaged next to the XO. The
+        # on-chip build used to write an empty line, which link.sh refused as
+        # an unknown variant: every default (single-core U280, U50) build
+        # stopped before v++. A known variant must reach the next preflight
+        # (the missing XO); an unknown one must not.
+        cases = [
+            ("\n", None, "no "),
+            ("", None, "no "),
+            ("none\n", None, "no "),
+            ("hbm\n", None, "no "),
+            ("multicore-hbm\n", "u280", "no "),
+            ("multicore-hbm\n", "u50", "multicore-hbm requires TNCA_BOARD=u280"),
+            ("bogus\n", None, "unknown packaged variant bogus"),
+        ]
+        for content, board, expected in cases:
+            with self.subTest(content=content, board=board):
+                with tempfile.TemporaryDirectory(prefix="tnca-variant-") as td:
+                    (Path(td) / "tnca_variant.txt").write_text(content, encoding="utf-8")
+                    env = os.environ.copy()
+                    env.pop("TNCA_BOARD", None)
+                    if board:
+                        env["TNCA_BOARD"] = board
+                    proc = subprocess.run(
+                        ["bash", str(LINK), td],
+                        cwd=REPO,
+                        env=env,
+                        text=True,
+                        capture_output=True,
+                        check=False,
+                    )
+                self.assertEqual(proc.returncode, 2, proc.stderr)
+                self.assertIn(expected, proc.stderr)
+                if expected == "no ":
+                    self.assertNotIn("unknown packaged variant", proc.stderr)
+                    self.assertIn("tnca_u50.xo", proc.stderr)
+                self.assertNotIn("v++", proc.stdout)
+
     def test_u50_clock_contract_is_visible_in_flow(self) -> None:
         text = LINK.read_text(encoding="utf-8")
         expected_clock = re.search(r"(?m)^EXPECT_MHZ=(\d+)$", text)

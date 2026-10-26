@@ -1,7 +1,11 @@
 #==============================================================================
 # Package the RTL kernel into a .xo.
 #
-#   vivado -mode batch -source flow/fpga/package_xo.tcl -tclargs <repo> <out> [part] [hbm]
+#   vivado -mode batch -source flow/fpga/package_xo.tcl -tclargs <repo> <out> [part] [variant]
+#
+# The variant is `none` (the on-chip build, also the default and an empty
+# argument), `hbm` or `multicore-hbm`. It is written to <out>/tnca_variant.txt,
+# which flow/fpga/link.sh reads.
 #
 # `hbm` (R40-04) packages rtl/board/tnca_hbm_xo.v with fpga/kernel_hbm.xml:
 # the same kernel, name and register port, plus the AXI4 master m_axi_hbm.
@@ -43,7 +47,8 @@ set OUT  [file normalize [lindex $::argv 1]]
 # The card's part: the third argument, from flow/fpga/boards.sh's
 # BOARD_PART; the U50's when absent, which is what this script always built.
 set PART    [expr {[llength $::argv] > 2 ? [lindex $::argv 2] : "xcu50-fsvh2104-2-e"}]
-set VARIANT [expr {[llength $::argv] > 3 ? [lindex $::argv 3] : ""}]
+set VARIANT [expr {[llength $::argv] > 3 ? [lindex $::argv 3] : "none"}]
+if {$VARIANT eq ""} {set VARIANT none}
 if {$VARIANT eq "hbm"} {
     set TOP     tnca_hbm_xo
     set KSRC    kernel_hbm.xml
@@ -52,7 +57,7 @@ if {$VARIANT eq "hbm"} {
     set TOP     tnca_multicore_hbm_xo
     set KSRC    kernel_multicore_hbm.xml
     set BUSIFS  s_axi_tnca:m_axi_hbm0:m_axi_hbm1:m_axi_hbm2
-} elseif {$VARIANT eq ""} {
+} elseif {$VARIANT eq "none"} {
     set TOP     tnca_u50_xo
     set KSRC    kernel.xml
     set BUSIFS  s_axi_tnca
@@ -60,7 +65,7 @@ if {$VARIANT eq "hbm"} {
     puts "TNCA_PKG_ERROR unknown variant '$VARIANT' (none, hbm, multicore-hbm)"
     exit 2
 }
-puts "TNCA_PKG_VARIANT=[expr {$VARIANT eq {} ? {onchip} : $VARIANT}] TOP=$TOP"
+puts "TNCA_PKG_VARIANT=[expr {$VARIANT eq {none} ? {onchip} : $VARIANT}] TOP=$TOP"
 
 set VENDOR  tnca.com
 set LIB     kernel

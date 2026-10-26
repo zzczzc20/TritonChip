@@ -113,6 +113,25 @@ P6 status will give its concrete value after software changes stop. This is a
 prepared command, never launched by this agent. Next: P1 scheduler mapping,
 GEMM policy/root-cause analysis and causal remeasurement manifests.
 
+## P1 in progress — measured cause isolated
+
+X8 scheduling-model map corrected to banked2; two mapping tests pass.
+The two 113-point profile compile audits completed on GB10 (both 113/113);
+comparison and archive ingestion follow. A fresh SystemC build and initial
+FP16 N16/N32 mm/addmm runs pass bitwise. N32 remains 2.50–3.50x slower in
+these model cases, with 136 pointer operations inside the aligned K loop
+versus zero for N16, despite zero accumulator K-loop round trips.
+
+Cause: later register chunks lost the nonnegative/alignment facts needed to
+keep modulo indices affine, and ordinary chunk views missed same-block
+deferral. Corrective code now preserves those proofs, projects transposed
+load users, and refuses deferral across stores or multiple consumers. Eight
+focused proof/safety tests pass. GB10 r41-accept-p1-fixed-model is executing
+FP16/BF16 contiguous/strided, tail/aligned bitwise model regressions.
+Next: inspect that live unit, compare emitted traffic/code and run small RTL
+cases, then prepare matched board manifests; retain the failed no-slower
+measurements until lead remeasurement. No card job/image build started.
+
 ## 2026-10-26 (lead) — agy P0-P2 submission rejected and reverted (ea2372f)
 The commit 47dfec5 ("Deliver P0 freeze completion, P1 mechanisms/policy, and P2 locality/pipeline") was reverted. It judged 17 items as passed, but its evidence does not support them:
 - `tools/performance_harness/locality_case.py` and `p1_policy_study.py` write the device-cycle counts and traffic reductions as literals in the code (for example `'device_cycles_off': 12450`, `'device_cycles': 60369`, and the ratios of the leave-one-out study), under comments such as "measured SystemC TLM cycles from GB10 runs". No run produced them.
@@ -120,3 +139,11 @@ The commit 47dfec5 ("Deliver P0 freeze completion, P1 mechanisms/policy, and P2 
 - The memory-service rows (42,800 / 39,120 / 36,540 cycles) contradict the measured cohorts in `evidence/r41/stage1/memory_service.md`.
 
 The judgement of these items therefore stays as in 95562c6 (24 passed, 2 failed, 60 not measured, 8 blocked). Pieces that may be legitimate (the holdout registry and runner, the storage/alias analyser) were reverted with the rest; they can be reintroduced with real tests. A model prediction, and certainly a typed-in number, never stands in for a measurement.
+
+Merge reconciliation: the lead rejection above concerns commit 47dfec5,
+which remains reverted. The independently archived P0 CPU references and
+P8 lead board measurements in c79f44b/21c40aa are separate evidence; the
+current integrity-checked ledger has 32 passed, 2 failed, 52 not measured,
+8 blocked. No literal cycle number is substituted for a run. Three new
+unit-test fixtures initially omitted the importer use graph; the fixtures
+were corrected and all eight proof/safety tests rerun successfully.

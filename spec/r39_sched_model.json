@@ -7,7 +7,8 @@
     "tnca-sim-vrf-v2": "banked2",
     "tnca-sim-vrf-v3": "banked2",
     "tnca-sim-vrf-v4": "banked2",
-    "tnca-sim-vrf-v5": "banked2"
+    "tnca-sim-vrf-v5": "banked2",
+    "tnca-sim-vrf-v5-x8": "banked2"
   },
   "default": "flipflop",
   "models": {

@@ -1,0 +1,34 @@
+{
+  "schema": "tnca-device/1",
+  "name": "u280-3core-r40",
+  "description": "R40's three-core U280 machine: one core-vrf-sync-v5 core per SLR, a NUCA home slice per core, three 256-bit HBM outlets, at 90 MHz. Every parameter of R40's attempt-3 image (evidence/r40/v2/convergence/attempt03/image.tcl, image a88ebdf5) is generated from this description.",
+  "per_core_profile": "core-vrf-sync-v5",
+  "platform": {
+    "board": "u280",
+    "variant": "multicore-hbm",
+    "core_count": 3,
+    "kernel_clock_mhz": 90,
+    "AXI_DATA_W": 256,
+    "hbm_bytes": 4294967296,
+    "MEMORY_CONTROLS": 1,
+    "CACHE_MAINTENANCE": 1
+  },
+  "uncore": {
+    "MEM_PORTS": 3,
+    "AXI_OUT_N": 8,
+    "SETS": 32,
+    "WAYS": 8,
+    "CODE_LINK_STAGES": 2,
+    "LINK_STAGES": 2,
+    "NOC_LINK_STAGES": 2,
+    "DISPATCH_STAGES": 2,
+    "MEM_HOME_STAGES": 2,
+    "DCO_REGISTERED_RANGES": 1,
+    "DCO_REGISTER_WRITES": 1,
+    "DCO_LOCAL_REPLICAS": 1,
+    "DCO_TLW_PIPE_STAGES": 2,
+    "NUCA_CACHE_DATA_PIPELINE": 1,
+    "NUCA_REGISTER_VICTIM_RANK": 1,
+    "NUCA_REGISTER_VICTIM_SELECT": 1
+  }
+}

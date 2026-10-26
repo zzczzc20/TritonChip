@@ -20,7 +20,8 @@ Three kinds of field:
               clock, the controls the runtime requires). A task or a target
               owns them: check_platform() refuses a description that differs.
     uncore    the machine's own design, open to change within RTL limits.
-    derived   computed here, never written: SET_W, WAY_W, AXI_ID_W.
+    derived   computed here, never written: SET_W, WAY_W, AXI_ID_W from the
+              uncore, PHYS_VREGS and PHYS_W from the core's contexts.
 """
 import hashlib
 import json
@@ -65,7 +66,7 @@ UNCORE = {
     'NUCA_REGISTER_VICTIM_RANK': (0, 1),
     'NUCA_REGISTER_VICTIM_SELECT': (0, 1),
 }
-DERIVED = ('SET_W', 'WAY_W', 'AXI_ID_W')
+DERIVED = ('SET_W', 'WAY_W', 'AXI_ID_W', 'PHYS_VREGS', 'PHYS_W')
 
 # The image parameters a multicore description sets from its platform.
 _PLATFORM_PARAMS = ('AXI_DATA_W', 'MEMORY_CONTROLS', 'CACHE_MAINTENANCE')
@@ -95,6 +96,9 @@ def load(name):
     except json.JSONDecodeError as e:
         raise DeviceError(f'{p}: not JSON: {e}') from None
     validate(desc)
+    if desc['name'] != p.stem:
+        # Records name a machine by its file; the two must not disagree.
+        raise DeviceError(f'{p}: names itself {desc["name"]!r}; a description is named for its file')
     return desc
 
 
@@ -111,6 +115,25 @@ def core_params(profile_name):
         params['USE_BANKED_VRF'] = 1
     params.update(impl.get('rtl_parameters') or {})
     return params
+
+
+def core_derived(profile_name):
+    """PHYS_VREGS and PHYS_W of a per-core profile: its contexts times their
+    registers. The single-core wrapper derives them; the multicore top takes
+    them as parameters (rtl/board/tnca_multicore_hbm_xo.v, 256 and 8), so an
+    image that left them out would build every core with the top's register
+    file whatever the profile -- right for v5's four contexts of 64, wrong for
+    a two-context core."""
+    core = core_params(profile_name)
+    try:
+        n = core['NUM_RCTX'] * core['VREGS_PER_RCTX']
+    except KeyError as e:
+        raise DeviceError(f'per-core profile {profile_name!r} states no {e.args[0]}') from None
+    stated = profiles.profile(profile_name)['elaboration'].get('PHYS_VREGS', n)
+    if stated != n:
+        raise DeviceError(f'per-core profile {profile_name!r} sets PHYS_VREGS {stated}; its '
+                          f'{core["NUM_RCTX"]} contexts of {core["VREGS_PER_RCTX"]} registers make {n}')
+    return dict(PHYS_VREGS=n, PHYS_W=max(1, (n - 1).bit_length()))
 
 
 def _log2(n):
@@ -136,7 +159,7 @@ def validate(desc):
     if not isinstance(desc.get('name'), str) or not desc.get('name'):
         problems.append('name must be a non-empty string')
     try:
-        core_params(desc.get('per_core_profile'))
+        core_derived(desc.get('per_core_profile'))
     except (KeyError, TypeError, profiles.ProfileMismatch):
         problems.append(f'per_core_profile {desc.get("per_core_profile")!r} is not a profile '
                         'in spec/r1_profiles.json')
@@ -191,6 +214,7 @@ def check_platform(desc, locked):
 def image_params(desc):
     """Every parameter the image's wrapper is packaged with, by name."""
     params = core_params(desc['per_core_profile'])
+    params.update(core_derived(desc['per_core_profile']))
     params.update({k: desc['platform'][k] for k in _PLATFORM_PARAMS})
     params.update(desc['uncore'])
     params.update(derived(desc['uncore']))

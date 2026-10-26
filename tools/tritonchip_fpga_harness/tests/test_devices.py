@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Device descriptions (spec/devices, python/tnca/devices.py).
 
-The one test that matters most: R40's description generates exactly the 39
+The one test that matters most: R40's description generates the 39
 parameters of the image R40 delivered (attempt 3), which until now existed
-only as a hand-written evidence file. The rest hold the generator to the same
-per-core rule as tools/r40/image_profile.py and check that a description that
-could not be built is refused, naming why.
+only as a hand-written evidence file, and states the two that image left at
+the top's defaults. The rest hold the generator to the same per-core rule as
+tools/r40/image_profile.py and check that a description that could not be
+built is refused, naming why.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+import re
 import sys
 import unittest
 
@@ -38,9 +40,15 @@ class R40Description(unittest.TestCase):
         self.desc = devices.load("u280-3core-r40")
 
     def test_generates_the_delivered_image(self) -> None:
+        # Attempt 3 set 39 parameters and left PHYS_VREGS and PHYS_W at the
+        # multicore top's defaults, which are what v5's four contexts of 64
+        # registers make. The description states them: the same machine.
         delivered = devices.parse_image_tcl(ATTEMPT03.read_text(encoding="utf-8"))
         self.assertEqual(len(delivered), 39)
-        self.assertEqual(devices.image_params(self.desc), delivered)
+        top = (REPO / "rtl/board/tnca_multicore_hbm_xo.v").read_text(encoding="utf-8")
+        defaults = {k: int(v) for k, v in re.findall(r"\b(PHYS_VREGS|PHYS_W)=(\d+)", top)}
+        self.assertEqual(defaults, dict(PHYS_VREGS=256, PHYS_W=8))
+        self.assertEqual(devices.image_params(self.desc), dict(delivered, **defaults))
 
     def test_image_tcl_round_trips(self) -> None:
         text = devices.image_tcl(self.desc)
@@ -123,6 +131,13 @@ class Derived(unittest.TestCase):
         for out_n, id_w in ((1, 1), (2, 1), (3, 2), (8, 3), (9, 4), (16, 4)):
             u = dict(SETS=64, WAYS=4, AXI_OUT_N=out_n)
             self.assertEqual(devices.derived(u), dict(SET_W=6, WAY_W=2, AXI_ID_W=id_w))
+
+    def test_the_register_file_follows_the_core(self) -> None:
+        # The top would otherwise build a two-context core with v5's 256.
+        d = devices.load("u280-3core-r40")
+        d["per_core_profile"] = "core-vrf-sync-v2"
+        p = devices.image_params(devices.validate(d))
+        self.assertEqual((p["NUM_RCTX"], p["VREGS_PER_RCTX"], p["PHYS_VREGS"], p["PHYS_W"]), (2, 64, 128, 7))
 
     def test_the_model_cannot_route_to_some_outlets(self) -> None:
         d = devices.load("u280-3core-r40")

@@ -1,7 +1,7 @@
 {
   "schema": "tnca-device/1",
   "name": "u280-3core-r40",
-  "description": "R40's three-core U280 machine: one core-vrf-sync-v5 core per SLR, a NUCA home slice per core, three 256-bit HBM outlets, at 90 MHz. Every parameter of R40's attempt-3 image (evidence/r40/v2/convergence/attempt03/image.tcl, image a88ebdf5) is generated from this description.",
+  "description": "R40's three-core U280 machine: one core-vrf-sync-v5 core per SLR, a NUCA home slice per core, three 256-bit HBM outlets, at 90 MHz. Every parameter of R40's attempt-3 image (evidence/r40/v2/convergence/attempt03/image.tcl, image a88ebdf5) is generated from this description, and PHYS_VREGS and PHYS_W, which that image left at the top's defaults (256, 8), are stated.",
   "per_core_profile": "core-vrf-sync-v5",
   "platform": {
     "board": "u280",

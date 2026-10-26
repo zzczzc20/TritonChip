@@ -1,0 +1,27 @@
+# Shared contiguous-vector LSU
+
+The general eight-unit 512-bit LSU required 440,741 LUTs and was excluded from the image. `rtl/core/tnca_lsu_line.v` instead uses one shared address/data/mask planner and eight finite command/response slots. It handles continuous 16-lane vectors of bytes, halfwords or words that fit within one 64-byte cache line. Each eligible instruction produces one registered 512-bit request. Input data and result formatting preserve the original lane width, sign extension and masks; no arithmetic approximation or instruction substitution is involved.
+
+## Admission, ordering and ownership
+
+The module exposes eligibility separately from resource readiness. Indexed operations, scalars, atomics, unsupported sizes, cross-line spans, addresses outside the eight-GiB aperture and the TMU register page are rejected without admission or memory traffic. A surrounding dispatcher must send those instructions through the original narrow LSU. That dispatcher is not implemented yet, so this unit does not accelerate the core or torch today.
+
+Each command reserves a slot before entering the registered memory request queue. An identity remains reserved until its completion retires at the single vector-RF port, including stores and masked-out commands. Responses land independently of request issue. A fair rotating completion selector holds its selection/data under RF backpressure. The issue queue preserves request order. Zero-mask instructions complete locally without memory traffic and still consume a real completion slot. Quiescence requires all reserved slots and the request queue to drain. Counters report admitted/completed instructions, request and slot stalls, and peak outstanding commands. Reset discards the entire epoch; the surrounding fabric must coordinate reset so it does not deliver stale replies.
+
+## Functional evidence
+
+`tools/r41/lsu_line_tests.py` passes 24 cases: 2/4/8 slots, ready/stalled interfaces, mixed load/store or full-width read streams, and two seeds. Every case runs 512 commands. A separate byte oracle applies the source instruction's effects and compares all enabled store bytes, every active load lane, sign/zero extension, command metadata, masks and final memory. It covers partial masks, zero masks, mixed byte/halfword/word vectors, unaligned within-line offsets, request backpressure, RF completion backpressure, variable memory latency and reordered replies. Both memory requests and completions must remain stable when stalled. Counters must match accepted commands and completed commands exactly.
+
+The eight-slot, no-stall cases accept 512 commands in 512 consecutive cycles, including the full-width read stream. This demonstrates that the unit and its synthetic receiving memory/RF interfaces can sustain one command per cycle at short latency. It does not establish a DRAM-latency throughput guarantee. Random-delay/stalled cases actually occupy all eight slots; observed request/slot stalls are retained in tests.log. Reset/recovery tests pass with every slot occupied for 2/4/8 slots, and a response with no owning command is refused. Those checks are in reset_tests.log. Duplicate/stale responses remain protocol errors, never fabricated successful commands.
+
+The previous standard torch add and silu native artifacts are audited in compiled_memory_ops.json. Add has sixteen contiguous halfword loads and eight stores per compiled block; silu has eight of each. Their opcodes match the new path's supported instruction family. This audit does not prove dynamic alignment, eligible fractions, spill behavior or board speedup; those require core integration and runtime counters.
+
+## Area and physical screen
+
+Free synthesis on acf3019 reports **4,664 LUTs and 802 FFs**, with zero BRAM tiles, for the complete eight-slot unit. The completed synthesis reports are under screen_v1/out/. This is 94.5 times fewer LUTs than the rejected general eight-unit bank, while serving a narrower instruction family whose fallback remains mandatory. It is a measured resource comparison, not a performance or acceptance claim.
+
+The 10 ns SLR1 placement/routing screen is running under ~/r41_hbmbw_line_lsu_v1, launcher PID 2634490, through the shared Vivado slot wrapper with an eight-GiB free-memory guard and four threads. Final routed setup/hold and full core/SLR integration remain unqualified. No FPGA card was opened and no full image build was consumed.
+
+## Required integration
+
+Connect the compact planner and the original narrow LSU behind a dispatcher that preserves cross-path memory order, atomic/fence quiescence and the existing scoreboard/completion protocol. Adapt narrow eight-byte requests and replies to their correct positions in wide cache words, including scalar MMIO and atomic compare semantics. Preserve tensor-transfer behavior and tag ownership across the core memory mux. Then parameterize the actual NI/mesh/cache boundary, exercise the receiving home service and RF with compiled programs, and repeat the model/counter comparison. The existing three-core bandwidth ceiling and the 100 GB/s memory-system design target remain unchanged obligations; this standalone unit does not establish them or the several-times board operator acceptance gate.

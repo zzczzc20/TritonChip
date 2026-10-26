@@ -36,6 +36,10 @@ The 8-unit/512-bit general LSU bank requires 440,741 LUTs and 186,131 FFs per co
 
 Parameterized core/slice NIs now preserve the default 216-bit layout and carry 512-bit data in a 720-bit packet. Eight real three-node mesh tests pass, including full data/mask/tag/opcode checks, canonical legacy encoding and destination backpressure. No-stall tests accept 768 packets in 768 cycles. This is an RTL transport boundary result with echo endpoints, not cache/home or HBM performance. The tile/top still use narrow defaults; complete integration and physical receiving-stage capacity remain pending. See `wide_noc/README.md`. No full-run allocation or card access was consumed.
 
+## Shared vector planner implementation
+
+The compact line LSU is implemented with one planner, eight reserved response slots and one RF completion port. All 24 byte-oracle/backpressure/throughput cases pass, plus full-slot reset/recovery and unowned-response refusal. Eight-slot ready cases admit 512 commands in 512 consecutive cycles under a short-latency synthetic memory. Synthesis measures 4,664 LUTs and 802 FFs, versus 440,741 LUTs for the rejected general bank. The free SLR1 10 ns routed screen is live on acf3019 under `~/r41_hbmbw_line_lsu_v1`, launcher PID 2634490. See `line_lsu/README.md` for exact scope. This unit is not connected to the core yet; unsupported complex/scalar/MMIO/atomic instructions require the original path. Next implement that dispatcher, narrow-to-wide byte/tag adaptation, tensor-transfer preservation and actual home/cache service, then validate standard torch eligibility and operator speed. No image or board claim is made.
+
 ## Prior milestones and remaining gates
 
 The historical list below describes partial stream-path work. Section 7 and `end_to_end.md` supersede any implication that this alone can meet acceptance.

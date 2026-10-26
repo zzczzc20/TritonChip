@@ -1,0 +1,7 @@
+LINE LSU RESET PASS slots=2 full abort and recovery
+tb/core/tb_lsu_line_reset.v:37: $finish called at 210000 (1ps)
+LINE LSU RESET PASS slots=4 full abort and recovery
+tb/core/tb_lsu_line_reset.v:37: $finish called at 250000 (1ps)
+LINE LSU RESET PASS slots=8 full abort and recovery
+tb/core/tb_lsu_line_reset.v:37: $finish called at 330000 (1ps)
+LINE LSU UNOWNED RESPONSE REFUSED

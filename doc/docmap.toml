@@ -460,3 +460,8 @@ sources = ["rtl/core/tnca_lsu_bank.v", "rtl/core/tnca_lsu.v", "rtl/core/tnca_cor
 path = "evidence/r41/hbm_bw/wide_noc/README.md"
 depends_on = ["evidence/r41/hbm_bw/lsu_bank/README.md"]
 sources = ["rtl/noc/tnca_core_ni.v", "rtl/noc/tnca_slice_ni.v", "rtl/noc/tnca_mesh.v", "rtl/noc/tnca_router.v", "tb/noc/tb_wide_ni.v", "tools/r41/wide_noc_tests.py", "evidence/r41/hbm_bw/wide_noc/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/line_lsu/README.md"
+depends_on = ["evidence/r41/hbm_bw/lsu_bank/README.md", "evidence/r41/hbm_bw/wide_noc/README.md"]
+sources = ["rtl/core/tnca_lsu_line.v", "tb/core/tb_lsu_line.v", "tb/core/tb_lsu_line_reset.v", "tools/r41/lsu_line_tests.py", "flow/fpga/screen_r41_lsu_line.tcl", "evidence/r41/hbm_bw/line_lsu/"]

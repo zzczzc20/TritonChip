@@ -450,3 +450,8 @@ sources = ["tools/r41/vector_schedule_model_tests.py", "tools/r41/operator_path_
 path = "evidence/r41/hbm_bw/sfu/README.md"
 depends_on = ["evidence/r41/hbm_bw/vector_schedule/README.md"]
 sources = ["rtl/core/tnca_sfu.v", "rtl/core/tnca_vector_fpu.v", "rtl/core/tnca_core.v", "tb/core/tb_sfu_parallel.v", "tools/r41/sfu_parallel_tests.py", "flow/fpga/screen_r41_sfu.tcl", "evidence/r41/hbm_bw/sfu/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/lsu_bank/README.md"
+depends_on = ["evidence/r41/hbm_bw/vector_schedule/README.md", "evidence/r41/hbm_bw/sfu/README.md"]
+sources = ["rtl/core/tnca_lsu_bank.v", "rtl/core/tnca_lsu.v", "rtl/core/tnca_core.v", "tb/core/tb_lsu_bank.v", "tb/core/tb_lsu_bank_reset.v", "tb/core/tb_lsu_wide.v", "tools/r41/lsu_bank_tests.py", "flow/fpga/synth_r41_lsu_bank.tcl", "evidence/r41/hbm_bw/lsu_bank/"]

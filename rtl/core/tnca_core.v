@@ -1681,7 +1681,43 @@ module tnca_core #(
     // for.
     wire lsu_ready_load;
     generate
-    if (LSU_INFLIGHT >= 2) begin : g_lsu_pair
+    if (LSU_INFLIGHT >= 4) begin : g_lsu_bank
+    tnca_lsu_bank #(
+        .UNITS(LSU_INFLIGHT),
+        .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
+        .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
+        .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
+    ) u_lsu (
+        .req_ready_load(lsu_ready_load),
+        .clk(clk), .rst_n(rst_n),
+        .req_ready(lsu_req_ready),
+        .req_valid(x_mem_go),
+        .req_store(x_mem_store), .req_vector(x_mem_vector),
+        .req_indexed(x_mem_indexed), .req_size(x_mem_size),
+        .req_signed(x_mem_signed), .req_hint(x_mem_hint),
+        .req_base(sa_data), .req_offset(x_imm),
+        .req_index(vb_data),
+        // atom.cas swaps in Sc and compares against Sb; every other atomic
+        // has one operand and takes Sb.
+        .req_sdata(x_amo_cas ? sc_data : sb_data),
+        .req_amo(x_amo), .req_aop(x_aop), .req_cmp(sb_data),
+        .req_vdata(x_mem_indexed ? vc_data : vb_data),
+        .req_mask(lane_mask),
+        .req_rctx(x_rctx), .req_dst_class(x_dstc), .req_dst_idx(x_dsti),
+        .cpl_valid(lsu_cpl_valid), .cpl_ack(lsu_cpl_ack),
+        .cpl_rctx(lsu_cpl_rctx), .cpl_dst_class(lsu_cpl_dstc),
+        .cpl_dst_idx(lsu_cpl_dsti), .cpl_sdata(lsu_cpl_sdata),
+        .cpl_vdata(lsu_cpl_vdata), .cpl_lane_en(lsu_cpl_lane_en),
+        .mem_req_valid(lm_req_valid), .mem_req_ready(lm_req_ready),
+        .mem_req_addr(lm_req_addr), .mem_req_we(lm_req_we),
+        .mem_req_be(lm_req_be), .mem_req_wdata(lm_req_wdata),
+        .mem_req_tag(lm_req_tag), .mem_req_hint(lm_req_hint),
+        .mem_req_amo(lm_req_amo), .mem_req_aop(lm_req_aop),
+        .mem_req_cmp(lm_req_cmp),
+        .mem_rsp_valid(lm_rsp_valid), .mem_rsp_tag(lm_rsp_tag),
+        .mem_rsp_rdata(lm_rsp_rdata)
+    );
+    end else if (LSU_INFLIGHT >= 2) begin : g_lsu_pair
     tnca_lsu_pair #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),

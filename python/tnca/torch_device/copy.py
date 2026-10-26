@@ -2,6 +2,7 @@
 import threading
 import tempfile
 import weakref
+import os
 from pathlib import Path
 
 import triton
@@ -26,12 +27,34 @@ def _copy_storage_kernel(SRC, DST, N, BLOCK: tl.constexpr):
 MAX_SPAN = (1 << 31) - (1 << 20)
 
 
+def _try_stream_copy(memory, dst, src, nbytes):
+    from tnca.backends.hbm_stream import NATIVE_COPY_MIN_BYTES, PAGE_GROUP
+    if nbytes<NATIVE_COPY_MIN_BYTES or (src|dst|nbytes)&63 or (src-dst)%PAGE_GROUP:
+        return False
+    from .graph import active_capture
+    if active_capture() is not None or os.environ.get('TNCA_LAUNCH') == 'skip':
+        return False
+    from tnca.triton_backend.driver import _bench_local
+    if getattr(_bench_local, 'compile_only', False):
+        return False
+    session = memory.session()
+    if not getattr(session.dev, 'stream_available', False):
+        return False
+    memory.synchronize()
+    source, source_offset = memory.locate(src)
+    destination, destination_offset = memory.locate(dst)
+    return session.try_stream_copy(source,destination,nbytes,
+        source_offset=source_offset,destination_offset=destination_offset)
+
+
 def copy_storage(memory, dst, src, nbytes):
     """Allocator resize copy: opaque bytes stay on the device."""
     if not nbytes or dst == src:
         return
     if nbytes < 0:
         raise RuntimeError('tnca resize copy requires a positive byte count')
+    if _try_stream_copy(memory,dst,src,nbytes):
+        return
     from tnca import aot, device
     memory.synchronize()
     session = memory.session()
@@ -133,6 +156,11 @@ def copy_tensor(src, dst):
         return copy_tensor(temporary, dst)
     raw = src.dtype == dst.dtype
     count = dst.numel() * (dst.element_size() if raw else 1)
+    contiguous = src.is_contiguous() and dst.is_contiguous() and tuple(src.shape) == shape
+    if raw and contiguous:
+        from . import MEMORY
+        if _try_stream_copy(MEMORY,dst.data_ptr(),src.data_ptr(),count):
+            return dst
     source_extent = src.element_size() * (1 + sum((n - 1) * s
                                                   for s, n in zip(source_strides, shape)))
     destination_extent = dst.element_size() * (1 + sum((n - 1) * s

@@ -430,3 +430,8 @@ sources = ["rtl/fpga/tnca_stream_bank.v", "tb/fpga/tb_stream_bank.v", "tools/r41
 path = "evidence/r41/hbm_bw/binding/README.md"
 depends_on = ["evidence/r41/hbm_bw/bank/README.md"]
 sources = ["rtl/board/tnca_stream_hbm_xo.v", "fpga/kernel_stream_hbm.xml", "fpga/u280_multicore_stream.cfg", "flow/fpga/package_xo.tcl", "flow/fpga/link.sh", "tools/r41/generate_stream_binding.py", "tools/r41/stream_binding_tests.py", "tools/r41/audit_stream_package.py", "evidence/r41/hbm_bw/binding/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/end_to_end.md"
+depends_on = ["evidence/r41/hbm_bw/HANDOFF.md", "evidence/r41/hbm_bw/capacity_analysis.md"]
+sources = ["rtl/noc/tnca_core_ni.v", "rtl/noc/tnca_noc_pkg.vh", "rtl/core/tnca_lsu.v", "rtl/core/tnca_vrf_banked.v", "rtl/core/tnca_sfu.v", "evidence/r41/hbm_bw/operator_baseline.json", "evidence/r41/hbm_bw/kernel/", "evidence/r41/hbm_bw/runtime/"]

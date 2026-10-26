@@ -1,0 +1,4 @@
+NATIVE TORCH 32 MiB COPY PASS: real tensors, stream event/log, no host transfers inside copy
+NATIVE STORAGE COPY PASS
+NATIVE CAPTURE/COMPILE-ONLY/SHAPE FALLBACK GUARDS PASS
+NATIVE STREAM SOFTWARE INTEGRATION PASS (register fixture, not board evidence)

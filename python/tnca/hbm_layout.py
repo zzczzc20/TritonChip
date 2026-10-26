@@ -5,6 +5,7 @@ STRIPED_CAP = 64
 STRIPED_REGISTER = 0x120
 STRIPED_SIGNATURE = 0x5234315300010C05
 STRIPED_BYTES = 1 << 33
+DEVICE_RESERVED_RANGES = ((0x7fff0000, 0x7fff1000),)
 
 
 class StripedHBMLayout:
@@ -44,6 +45,27 @@ class StripedHBMLayout:
             size = min(nbytes-done, 4096-((offset+done) & 4095))
             yield done, cls.physical(offset+done), size
             done += size
+
+    @classmethod
+    def pc_ranges(cls, offset, nbytes):
+        """Return contiguous per-PC ranges in O(32), without a page list."""
+        offset, nbytes = operator.index(offset), operator.index(nbytes)
+        if offset < 0 or nbytes < 0 or offset > STRIPED_BYTES or nbytes > STRIPED_BYTES-offset:
+            raise ValueError('HBM transfer outside the striped allocation')
+        if not nbytes:
+            return []
+        first, first_byte = divmod(offset, 4096)
+        last, last_byte = divmod(offset+nbytes-1, 4096)
+        result = []
+        for pc in range(32):
+            lo = first+(pc-first)%32
+            hi = last-(last-pc)%32
+            if lo > hi:continue
+            begin = first_byte if lo==first else 0
+            end = last_byte+1 if hi==last else 4096
+            size = ((hi-lo)//32)*4096+end-begin
+            result.append((pc,(pc<<28)+(lo//32)*4096+begin,size))
+        return result
 
     @classmethod
     def groups(cls, offset, nbytes):

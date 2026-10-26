@@ -116,3 +116,15 @@ Cycles from the observer, the speedup against the base in brackets. Run IDs
 Every launch of every run drained at once (settle 0 on all 24 launches), as
 on the base. `drain_cycles` is frozen at **8**: the base's largest settle (0)
 plus eight cycles for a legitimate register stage on the completion path.
+
+### After the independent review (base `6b36db5`, 2026-10-27)
+
+The review's fixes changed how a point is run, not the machine: the mailbox
+is split by direction, no container outlives an evaluation, a multicore base
+is kept per machine. On the new base the base's measurement counted exactly
+the cycles of the table above, point by point, and `run-task ... --agent noop`
+was again `valid`, gate `PASS`, validation **3/3** and final **3/3**, every
+speedup exactly **1.000**, with no evaluation container left behind. Run ID
+`r40-multicore-pilot-noop-20261026T182221Z-f124`; `run.json` SHA-256
+`83025a485c011728778e837c75e0e3cf3927ff98b4148287d0b857b625c0b557`. The
+known-answer submissions were not repeated: nothing they measure changed.

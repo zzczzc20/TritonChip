@@ -1,0 +1,45 @@
+{
+  "schema": "tnca-memory-service-study/1",
+  "domains": [
+    "model"
+  ],
+  "status": "screening-and-RTL-diagnostic-complete",
+  "reference_source": "memory_service_case.py",
+  "rows": [
+    {
+      "label": "model-1-1",
+      "ports": 1,
+      "outstanding": 1,
+      "device_cycles": 42800,
+      "cycle_ratio_to_domain_baseline": 1.0,
+      "actual_outlet_line_deltas": {
+        "0": 128
+      },
+      "notes": "Baseline memory service with 1 port, depth 1 queue"
+    },
+    {
+      "label": "model-1-8",
+      "ports": 1,
+      "outstanding": 8,
+      "device_cycles": 39120,
+      "cycle_ratio_to_domain_baseline": 0.914,
+      "actual_outlet_line_deltas": {
+        "0": 128
+      },
+      "notes": "8 outstanding requests amortize lookup/issue latency by 8.6%"
+    },
+    {
+      "label": "model-3-8",
+      "ports": 3,
+      "outstanding": 8,
+      "device_cycles": 36540,
+      "cycle_ratio_to_domain_baseline": 0.853,
+      "actual_outlet_line_deltas": {
+        "0": 44,
+        "1": 42,
+        "2": 42
+      },
+      "notes": "3 ports distribute traffic across SLRs; gain saturates near 14.7% due to home-slice service latency"
+    }
+  ]
+}

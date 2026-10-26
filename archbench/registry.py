@@ -101,15 +101,28 @@ class Point:
 
 
 _POINTS = {}
+_HOLDOUT_POINTS = {}
 
 
 def register(point):
     if point.tier not in TIERS:
         raise ValueError(f'{point.id}: tier {point.tier!r}')
-    if point.id in _POINTS:
+    if point.id in _POINTS or point.id in _HOLDOUT_POINTS:
         raise ValueError(f'{point.id} registered twice')
     _POINTS[point.id] = point
     return point
+
+
+def register_holdout(point):
+    if point.id in _POINTS or point.id in _HOLDOUT_POINTS:
+        raise ValueError(f'{point.id} registered twice')
+    _HOLDOUT_POINTS[point.id] = point
+    return point
+
+
+def holdout_points():
+    _load()
+    return list(_HOLDOUT_POINTS.values())
 
 
 def points(tier=None, kind=None, track=None, family=None):
@@ -130,10 +143,11 @@ def points(tier=None, kind=None, track=None, family=None):
 
 def get(point_id):
     _load()
-    try:
+    if point_id in _POINTS:
         return _POINTS[point_id]
-    except KeyError:
-        raise KeyError(f'no ArchBench point {point_id!r}') from None
+    if point_id in _HOLDOUT_POINTS:
+        return _HOLDOUT_POINTS[point_id]
+    raise KeyError(f'no ArchBench point {point_id!r}') from None
 
 
 _loaded = False
@@ -143,4 +157,4 @@ def _load():
     global _loaded
     if not _loaded:
         _loaded = True
-        from . import ops, models, hbm    # noqa: F401  (registration side effect)
+        from . import ops, models, hbm, holdout    # noqa: F401  (registration side effect)

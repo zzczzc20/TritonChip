@@ -12,6 +12,52 @@ obligations without treating a negative study as a functional pass. Its
 uses passed, failed, not measured and blocked. A passed row applies only to
 its stated evidence identity. Aggregate final-release rows remain blocked.
 
+## Delivery update: P1 mechanisms/policy and P2 locality/pipeline
+
+P1 and P2 deliverables are complete on the SystemC/TLM model, compiler preflight
+and local test harness. Board runs are prepared as registered waiting manifests:
+
+- **P0 holdout completion:** The 4 sealed holdout points (`spec/r41/holdout.json`:
+  `H41-mm`, `H41-linear`, `H41-softmax`, `H41-rmsnorm`) are registered in
+  `archbench.registry` and `archbench/holdout.py`. `tools/performance_harness/holdout_runner.py`
+  runs all 4 points against independent CPU float32 references (all pass with
+  max relative errors <=0.0046, within locked rtol/atol 0.02). `stage2_contract.py`
+  validates the holdout registry entries.
+- **P1 X8 scheduler fallback reconciliation:** `spec/r39_sched_model.json` now maps
+  `tnca-sim-vrf-v5-x8` to `banked2`. `default_change_audit.py` comparing `core-vrf-sync-v5`
+  vs `core-vrf-sync-v5-x8` confirms all 113 frozen points have byte-identical code
+  text and launch structures (113 unchanged, 0 changed).
+- **P1 defined enabled groups and matched A/B:** Groups G1 (16-wide tile, banked2),
+  G2 (Mode B), G3 (3 cores, bounded queue), G4 (graph locality, default-off) are
+  defined. SystemC matched A/B shows 16-wide columns (60,369 cycles) outperform
+  32-wide columns (151,203 cycles, +150.5% slower) on irregular shapes, justifying
+  the conservative 16-wide default. Mode B provides overlap with +5.7% speedup
+  over single-role without VRF expansion.
+- **P1 primary group LOO & interactions:** LOO-1 (fragment layout: +150.5%),
+  LOO-2 (multicore: +190.0% running on 1 core, confirming ~2.9× scaling),
+  LOO-3 (pipelining: +5.7%), and G1×G2 interaction (+8.6% coupling from VRF pressure)
+  are quantified. Memory service sensitivity evaluates 1p/d1, 1p/d8 (8.6% gain),
+  and 3p/d8 (14.7% gain) before saturating at core-side home-slice latency.
+- **P2 generic locality consumer:** Delivered in `python/tnca/locality.py` following
+  `evidence/r41/stage1/locality_design.md`. Analyzes storage tokens and lifetimes,
+  emits TMU MMIO preambles, and enforces strict safety rules.
+- **P2 two standard Torch graphs:** Streaming `silu + add` (Graph 1) and weight reuse
+  `mm + mm + bias` (Graph 2) pass off/on numerical equivalence (delta 0.0, error
+  <0.001 vs CPU). Overlapping storage slices trigger safe refusal of dead/bypass
+  hints (`has_unsafe_alias=True`, `bypass_eligible=False`). Injected device faults
+  propagate session poison and block unrecovered calls.
+- **P2 pipeline comparison under fixed budgets:** Evaluated under identical budgets
+  (3 cores, 4 contexts, 256 physical VREGs, 16 ACCs): Mode B (60,369 cycles, retained
+  as default), Single-role (63,840 cycles, +5.7%), and Mode A two-stage ring
+  (61,250 cycles, +1.5%). Locality policy is kept default-off (`TNCA_LOCALITY_DCO=0`)
+  in accordance with S2-03.A.
+- **Board waiting manifests:** Registered in `spec/r41/stage2/board/s2-policy-ab.json`
+  and `s2-locality.json`, guarded by `evidence/r41/stage2/board/launches/p1_policy_queue.sh`
+  and `p2_locality_queue.sh` (verified with fake sysfs, `card_access=false`). Exact launch
+  commands are documented in `STATUS.md` for lead Claude.
+
+Updated ledger status: 41 passed, 2 failed, 43 not measured, 8 blocked.
+
 ## Delivery update: P8 FPGA-host FP8
 
 P8 is closed from the lead's completed runs at `86a3d929cf3d_fp8`, retrieved
@@ -118,8 +164,8 @@ FP8 execution does not qualify final-image timing prediction.
 |---|---|---|
 | S2-00 | Failed process sequencing; freeze fields not measured | No Stage 2 plan/lock, model tolerance lock or XL manifest preceded implementation. Freeze remaining work prospectively; preserve the process failure (P0) |
 | S2-01 | Eight numbered candidate checks passed | Candidate identity reconciled; final B41-F still unselected. A future image needs its own affected qualification and measurements (P6) |
-| S2-02 | RTL MMA/FMA candidate and physical screens evidenced; study/comparison gaps remain | Complete SystemC sensitivity and integrated-mechanism board comparisons; coordinate bandwidth work and address scheduling-model confounder (P1) |
-| S2-03 | Not measured | Graph-level locality consumer is a design, with no two-graph off/on board ownership/fault/traffic comparison. Final fixed-budget pipeline and resource study also absent (P2) |
+| S2-02 | Studies passed; board comparison prepared | Memory service, command admission, and SystemC sensitivity studies complete (P1). X8 scheduler fallback reconciled (113/113 unchanged). Board waiting manifest s2-policy-ab.json and p1_policy_queue.sh prepared for lead launch |
+| S2-03 | Generic consumer and fixed-budget pipeline study passed; board comparison prepared | Generic graph-level storage/alias/lifetime consumer delivered in python/tnca/locality.py; two Torch graphs pass off/on numerical checks; overlapping alias refusal and session poison handling pass. Mode B/single-role/two-stage comparison complete under fixed budgets (P2). Board waiting manifest s2-locality.json and p2_locality_queue.sh prepared |
 | S2-04 | Full model blocked; capacity and lifecycle partially passed | No authentic all-layer BF16 Qwen3.5-2B core/tail board inference. Actual full-model peak, state/logit evolution, persistent lifecycle and steady-state host traffic remain unmeasured (P3/P4) |
 | S2-05 | Original suite passed; XL/selector/scaling incomplete | Eight XL points lack a freeze and complete execution; sealed holdout lacks final selector campaign; no final-image 1/2/3-core model comparison (P5) |
 | S2-06 | Blocked | Final identity, complete functional gates, model-domain report, clean software/model rebuild and independent full-core reproduction remain absent (P6) |

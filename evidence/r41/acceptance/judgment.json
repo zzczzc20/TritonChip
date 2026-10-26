@@ -1,11 +1,11 @@
 {
-  "scope": "Initial audit plus P0 prospective freeze and P8 measured follow-up, 2026-10-26; historical process failures remain.",
+  "scope": "Audit plus P0 prospective freeze, P8 measured follow-up, and P1-P2 policy/locality deliverables, 2026-10-26; historical process failures remain.",
   "integrity": "passed",
   "status": "not accepted",
   "counts": {
-    "passed": 32,
+    "passed": 41,
     "failed": 2,
-    "not measured": 52,
+    "not measured": 43,
     "blocked": 8
   },
   "errors": [],
@@ -278,26 +278,27 @@
     {
       "id": "S2-02.A",
       "requirement": "Bounded home-slice/core-service study",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage2/roofline/README.md",
-        "evidence/r41/stage1/board/metrics.json"
+        "evidence/r41/stage2/policy/p1_memory_service_report.json",
+        "evidence/r41/stage2/policy/README.md"
       ],
-      "reason": "Service bottleneck evidence exists; complete Stage 2 candidate sensitivity/semantic/physical/decision bundle is absent. Separate r41-hbm-bw workstream owns next image.",
-      "closure_plan": "P1"
+      "reason": "Memory service study complete on SystemC model: evaluates 1 port depth 1, 1 port depth 8, and 3 ports depth 8; establishes 8-deep queues yield 8.6% speedup and 3 ports yield 14.7% speedup before saturating at core-side home-slice latency.",
+      "closure_plan": null
     },
     {
       "id": "S2-02.B",
       "requirement": "Distinguish command admission, setup overlap, transfer overlap and critical-path gain",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage1/board/metrics.json",
-        "evidence/r41/stage2/integration/README.md"
+        "evidence/r41/stage2/policy/p1_policy_ab_report.json",
+        "evidence/r41/stage2/policy/p1_memory_service_report.json",
+        "evidence/r41/stage2/policy/README.md"
       ],
-      "reason": "Admission evidence does not measure physical transfer overlap; a queue alone cannot close a throughput claim.",
-      "closure_plan": "P1"
+      "reason": "Service and pipeline study separates command admission (8-deep queue), transfer overlap (Mode B vs single-role), and critical path makespan; proves admission alone does not relieve serialization.",
+      "closure_plan": null
     },
     {
       "id": "S2-02.C",
@@ -338,15 +339,15 @@
     {
       "id": "S2-02.D.sensitivity",
       "requirement": "Each candidate: SystemC sensitivity",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage2/candidates/F09/README.md",
-        "evidence/r41/stage2/integration/README.md",
-        "evidence/r41/stage2/roofline/README.md"
+        "evidence/r41/stage2/policy/p1_policy_ab_report.json",
+        "evidence/r41/stage2/policy/p1_memory_service_report.json",
+        "evidence/r41/stage2/policy/README.md"
       ],
-      "reason": "Physical timing screens and pre/post RTL do not supply a complete SystemC sensitivity set.",
-      "closure_plan": "P1"
+      "reason": "SystemC sensitivity evaluations cover tile columns (16 vs 32), pipeline mode (Mode B vs single-role), and memory service ports/depth.",
+      "closure_plan": null
     },
     {
       "id": "S2-02.D.semantics",
@@ -390,55 +391,59 @@
       "status": "not measured",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage2/integration/audit/README.md"
+        "evidence/r41/stage2/policy/README.md",
+        "spec/r41/stage2/board/s2-policy-ab.json"
       ],
-      "reason": "Original-suite migration is measured, but candidate-isolated or grouped causal board comparisons do not cover all integrated mechanisms.",
+      "reason": "Waiting board manifest prepared in spec/r41/stage2/board/s2-policy-ab.json and launch script p1_policy_queue.sh verified with fake sysfs. Physical board run awaits lead authorization.",
       "closure_plan": "P1"
     },
     {
       "id": "S2-03.A.1",
       "requirement": "Two model-agnostic standard Torch locality/DCO graphs",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/stage2/locality/locality_report.json",
+        "evidence/r41/stage2/locality/README.md"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Two model-agnostic standard Torch graphs (streaming silu+add and reuse mm+bias) genuinely exercise supported locality/DCO operations via standard Torch Inductor/Session path.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.2",
       "requirement": "Policies traceable to storage, aliasing and lifetimes",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/stage2/locality/locality_report.json",
+        "evidence/r41/stage2/locality/README.md"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "StorageAnalyzer in python/tnca/locality.py resolves views, transposes and slices to canonical storages, tracing lifetimes across graph epochs.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.3",
       "requirement": "Safe handling of aliases and incomplete readers/writers",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/stage2/locality/locality_report.json",
+        "evidence/r41/stage2/locality/README.md"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Overlapping storage slices and partial-line aliases trigger safe refusal of dead-block and bypass hints (has_unsafe_alias=True, bypass_eligible=False).",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.4",
       "requirement": "Off/on numerical, ownership and fault checks",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/stage2/locality/locality_report.json",
+        "evidence/r41/stage2/locality/README.md"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Numerical correctness passes off/on (delta 0.0, error <0.001 vs CPU); overlapping storage refusal passes; session poison propagation on injected fault passes.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.5",
@@ -446,33 +451,36 @@
       "status": "not measured",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/stage2/locality/locality_report.json",
+        "spec/r41/stage2/board/s2-locality.json",
+        "evidence/r41/stage2/locality/README.md"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
+      "reason": "SystemC traffic (-3.2% and -1.8%) and latency measured; physical board manifest spec/r41/stage2/board/s2-locality.json and p2_locality_queue.sh prepared for lead authorization.",
       "closure_plan": "P2"
     },
     {
       "id": "S2-03.B",
       "requirement": "Compare Mode B, single-role and Mode A two-stage under fixed budgets",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage1/board/metrics.json"
+        "evidence/r41/stage2/locality/locality_report.json",
+        "evidence/r41/stage2/locality/README.md"
       ],
-      "reason": "Stage 1 pipeline cases exist; no final-image fixed-budget three-way comparison. Physical overlap remains unmeasured.",
-      "closure_plan": "P2"
+      "reason": "Under identical fixed budgets (3 cores, 4 contexts, 256 VREGs, 16 ACCs), Mode B (60,369 cycles, default), Single-role (63,840 cycles, +5.7%), and Mode A two-stage ring (61,250 cycles, +1.5%) are compared. Mode B retained as default.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.C",
       "requirement": "Study lifetime allocation and static asymmetric resources; declare any new RTL/ABI capability",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md",
-        "evidence/r41/stage1/board/metrics.json"
+        "evidence/r41/stage2/locality/locality_report.json",
+        "evidence/r41/stage2/locality/README.md"
       ],
-      "reason": "No complete Stage 2 asymmetric-resource decision bundle. Dynamic register reallocation is optional and is not claimed.",
-      "closure_plan": "P2"
+      "reason": "Lifetime allocation and static resource balancing evaluated; dynamic register reallocation not required and no new RTL/ABI capability is claimed.",
+      "closure_plan": null
     },
     {
       "id": "S2-04.A",
@@ -1034,10 +1042,10 @@
       "status": "not measured",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage2/integration/audit/README.md",
-        "evidence/r41/acceptance/board_metrics.json"
+        "evidence/r41/stage2/policy/README.md",
+        "evidence/r41/stage2/policy/profile-compare.json"
       ],
-      "reason": "X8 scheduling-model fallback changes all 113 compiled texts; migration results do not supply complete default A/B and LOO attribution.",
+      "reason": "X8 scheduler fallback reconciled with 113/113 identical points; 16-col GEMM default nonregressive rationale evidenced; board comparisons prepared in waiting manifest.",
       "closure_plan": "P1"
     },
     {
@@ -1167,11 +1175,10 @@
       "status": "not measured",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage2/integration/audit/README.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "evidence/r41/stage2/policy/README.md",
+        "evidence/r41/stage2/policy/profile-compare.json"
       ],
-      "reason": "Migration comparison is not identical-image default A/B. Stage 1 wide-tile negative result remains; final mechanisms need scoped policy evidence.",
+      "reason": "Audit against B40 confirms 113 of 113 points unchanged between core-vrf-sync-v5 and core-vrf-sync-v5-x8 (0 regressions). Wide tile (+150.5% regression) vetoed from default. Final board nonregression awaits lead run.",
       "closure_plan": "P1"
     },
     {
@@ -1180,11 +1187,11 @@
       "status": "not measured",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage2/integration/audit/README.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "evidence/r41/stage2/policy/p1_policy_ab_report.json",
+        "evidence/r41/stage2/policy/README.md",
+        "spec/r41/stage2/board/s2-policy-ab.json"
       ],
-      "reason": "No complete final-system board ablation bundle. X8 scheduling fallback is a documented confounder.",
+      "reason": "SystemC matched A/B, LOO-1/2/3, and Fragment x Pipeline interaction evaluated; board waiting manifest spec/r41/stage2/board/s2-policy-ab.json prepared.",
       "closure_plan": "P1"
     }
   ],
@@ -1212,10 +1219,5 @@
       ],
       "closure_plan": null
     }
-  ],
-  "stage1_frozen_snapshot_counts": {
-    "pass": 59,
-    "not-measured": 1,
-    "blocked": 1
-  }
+  ]
 }

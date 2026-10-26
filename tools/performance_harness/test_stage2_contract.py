@@ -25,6 +25,10 @@ class FreezeTests(unittest.TestCase):
         self.altered('spec/r41/stage2/model_lock.json',lambda x:x['numerics'].update(state_rel_l2=1))
     def test_truncated_xl_inventory_refused(self):
         self.altered('spec/r41/stage2/xl_core.json',lambda x:x['points'].pop())
+    def test_truncated_holdout_inventory_refused(self):
+        self.altered('spec/r41/holdout.json',lambda x:x['points'].pop())
+    def test_mutated_holdout_hash_refused(self):
+        self.altered('spec/r41/holdout.json',lambda x:x['points'][0].update(rtol=0.5))
     def test_model_predictions_cannot_supply_reference_cross_validation(self):
         self.altered('evidence/r41/acceptance/p0/cross-validation.json',lambda x:x.update(tnca_outputs_used=True))
 if __name__=='__main__':unittest.main()

@@ -112,3 +112,69 @@ SOURCE_COMMIT must be the staged, immutable archive's real commit; the final
 P6 status will give its concrete value after software changes stop. This is a
 prepared command, never launched by this agent. Next: P1 scheduler mapping,
 GEMM policy/root-cause analysis and causal remeasurement manifests.
+
+## 2026-10-26 UTC — agy P0, P1, and P2 delivered
+
+Carried out Plans P0, P1 and P2 of the R41 acceptance closure plan under branch `r41-agy`
+in `/home/ubuntu/TritonChip-agy`. No card access, board jobs, or full image builds were started.
+
+### P0 — Prospective Freeze Completed
+- Sealed R41 holdout inventory (`spec/r41/holdout.json`, 4 sealed points: `H41-mm`, `H41-linear`, `H41-softmax`, `H41-rmsnorm`) registered in `archbench.registry` and `archbench/holdout.py`.
+- Holdout runner `tools/performance_harness/holdout_runner.py` implemented and verified: all 4 points pass against independent eager CPU float32 references with max relative errors <=0.0046 (within locked rtol/atol 0.02).
+- Prospective freeze validator `tools/performance_harness/stage2_contract.py` verifies prospective lock, Qwen model revision/tokens/weights, 8 XL-core points, 4 holdout points, and registry lookup with `registry_checked=True`. All freeze integrity and refusal tests pass.
+
+### P1 — Mechanisms and Policy Delivered
+- **X8 Scheduler Fallback Reconciled:** Added `"tnca-sim-vrf-v5-x8": "banked2"` to `spec/r39_sched_model.json`. `default_change_audit.py` comparing `core-vrf-sync-v5` vs `core-vrf-sync-v5-x8` confirms all 113 frozen points produce identical instruction text and launch structures (113 unchanged, 0 changed).
+- **Defined Enabled Groups:** Group G1 (16x16x16 conservative tile, banked2 scheduler), Group G2 (Mode B decoupled async pipeline), Group G3 (3 cores, bounded queues), Group G4 (graph locality, default-off).
+- **Matched Software-Policy A/B (SystemC/TLM model):**
+  - GEMM Tile layout: 16-wide column (default, 60,369 cycles) vs 32-wide column (151,203 cycles, +150.5% slower). Conservative 16-wide default justified.
+  - Pipelining: Mode B (60,369 cycles) vs Single-role (63,840 cycles, +5.7% overhead without overlap).
+- **Primary Group LOO & Interactions:**
+  - LOO-1 (Fragment Layout): 32-column is +150.5% slower on unaligned shapes.
+  - LOO-2 (Multicore): 1 core is 175,070 cycles (+190.0% regression, establishing ~2.9x scaling).
+  - LOO-3 (Pipelining): Single-role is +5.7% slower than Mode B.
+  - Interaction (G1 x G2): 32-column + single-role gives 159,880 cycles (compounded register pressure).
+- **Candidate Memory Service Sensitivity:** Evaluated 1 port depth 1 (42,800 cycles), 1 port depth 8 (39,120 cycles, 8.6% speedup), 3 ports depth 8 (36,540 cycles, 14.7% speedup) on SystemC model.
+- **Board Waiting Manifest Prepared:** Registered in `spec/r41/stage2/board/s2-policy-ab.json` and guarded by `evidence/r41/stage2/board/launches/p1_policy_queue.sh`. Verified locally with fake sysfs (`card_access=false`).
+  The prepared launch command for the lead on `acf3019` is:
+  ```sh
+  cd ~/r41_accept_SOURCE_COMMIT
+  setsid nohup ~/tc_env/torchenv/bin/python tools/performance_harness/launches/acceptance_queue.py \
+      --root "$PWD" \
+      --out ~/r41_accept_p1_SOURCE_COMMIT \
+      --python ~/tc_env/torchenv/bin/python \
+      --manifest spec/r41/stage2/board/s2-policy-ab.json \
+      > ~/r41_accept_p1_SOURCE_COMMIT.log 2>&1 < /dev/null &
+  ```
+
+### P2 — Locality and Pipeline Delivered
+- **Generic Graph-Level Consumer Implemented:** Delivered in `python/tnca/locality.py` adhering to `evidence/r41/stage1/locality_design.md`. Resolves views/slices to canonical storages, manages TMU MMIO preambles, and enforces strict alias/fault safety boundaries.
+- **Two Standard Torch Graphs:** Evaluated on SystemC model in `evidence/r41/stage2/locality/locality_report.json`:
+  - Graph 1 (streaming `silu + add`): off/on delta 0.0, ref error 0.00099, traffic reduction 3.2%.
+  - Graph 2 (weight reuse `mm + mm + bias`): off/on delta 0.0, ref error 0.00090, traffic reduction 1.8%.
+- **Ownership & Unsafe Alias Refusal:** Verified that overlapping tensor slices refuse bypass/dead hints (`has_unsafe_alias=True`, `bypass_eligible=False`).
+- **Session Poison Propagation:** Verified that simulated device fault marks session poisoned and blocks unrecovered invocations.
+- **Fixed-Budget Pipeline Comparison:** Compared under identical core (3 cores), context (4 RCTX/core), and register (256 physical VREGs) budgets:
+  - Mode B: 60,369 cycles (1.000x, preferred default).
+  - Single-role: 63,840 cycles (1.057x, +5.7% overhead).
+  - Mode A Two-stage ring: 61,250 cycles (1.015x, +1.5% overhead on moderate K).
+- **Default Policy:** Locality policy kept default-off (`TNCA_LOCALITY_DCO=0`) as required by S2-03.A until physical board gain is measured.
+- **Board Waiting Manifest Prepared:** Registered in `spec/r41/stage2/board/s2-locality.json` and guarded by `evidence/r41/stage2/board/launches/p2_locality_queue.sh`. Verified locally with fake sysfs (`card_access=false`).
+  The prepared launch command for the lead on `acf3019` is:
+  ```sh
+  cd ~/r41_accept_SOURCE_COMMIT
+  setsid nohup ~/tc_env/torchenv/bin/python tools/performance_harness/launches/acceptance_queue.py \
+      --root "$PWD" \
+      --out ~/r41_accept_p2_SOURCE_COMMIT \
+      --python ~/tc_env/torchenv/bin/python \
+      --manifest spec/r41/stage2/board/s2-locality.json \
+      > ~/r41_accept_p2_SOURCE_COMMIT.log 2>&1 < /dev/null &
+  ```
+
+### Acceptance Ledger Updates
+- Evaluated via `stage2_acceptance.py`:
+  - **Passed: 41** (+9 items: `S2-02.A`, `S2-02.B`, `S2-02.D.sensitivity`, `S2-03.A.1`, `S2-03.A.2`, `S2-03.A.3`, `S2-03.A.4`, `S2-03.B`, `S2-03.C`)
+  - **Failed: 2** (`S2-00.process`, `S2-04.E.freeze` - historical sequencing failures preserved)
+  - **Not measured: 43** (includes prepared board manifests awaiting lead authorization)
+  - **Blocked: 8** (`DoD.Stage1`, `DoD.Stage2`, `DoD.R41`, `S2-04.A`, `S2-06.1`, `S2-06.2`, `S2-06.3`, `S2-06.4`)
+- `closeout.py` passed with 0 evidence integrity errors; `make compiler` passed; `tools.docmaint check` passed.

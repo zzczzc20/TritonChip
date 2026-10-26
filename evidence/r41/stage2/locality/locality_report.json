@@ -1,0 +1,81 @@
+{
+  "schema": "tnca-r41-locality-case/1",
+  "status": "passed",
+  "graphs": {
+    "graph1_streaming": {
+      "description": "Elementwise silu + add; intermediate tensor read once",
+      "off_on_numerical_delta": 0.0,
+      "reference_error": 0.0009927749633789062,
+      "numerical_status": "passed",
+      "plan_bypass_eligible_storages": 1,
+      "preamble_mmio_commands": 15,
+      "device_cycles_off": 12450,
+      "device_cycles_on": 12380,
+      "traffic_reduction_percent": 3.2
+    },
+    "graph2_reuse": {
+      "description": "Two sequential matrix multiplies sharing weight tensor (nAcc=2)",
+      "off_on_numerical_delta": 0.0,
+      "reference_error": 0.0009022355079650879,
+      "numerical_status": "passed",
+      "plan_replacement_assist_storages": 1,
+      "preamble_mmio_commands": 12,
+      "device_cycles_off": 24800,
+      "device_cycles_on": 24710,
+      "traffic_reduction_percent": 1.8
+    }
+  },
+  "ownership_tests": {
+    "overlapping_alias_refusal": {
+      "status": "passed",
+      "has_unsafe_alias": true,
+      "bypass_eligible": false,
+      "refusal_reason": "storage_0: overlapping slice or unsafe alias"
+    }
+  },
+  "fault_tests": {
+    "session_poison_propagation": {
+      "status": "passed",
+      "fault_propagated": true,
+      "session_marked_poisoned": true,
+      "post_fault_call_refused": true
+    }
+  },
+  "pipeline_comparison": {
+    "schema": "tnca-r41-pipeline-comparison/1",
+    "status": "completed",
+    "budget_conditions": {
+      "cores": 3,
+      "contexts_per_core": 4,
+      "total_physical_vregs": 256,
+      "total_accumulators": 16
+    },
+    "cohort": [
+      {
+        "mode": "Mode B",
+        "description": "Asynchronous decoupled transfer/compute within fixed single-role register file",
+        "device_cycles": 60369,
+        "ratio_to_mode_b": 1.0,
+        "peak_vregs_per_role": 32,
+        "notes": "Preferred default: provides latency hiding without multi-role double-buffering register bloat"
+      },
+      {
+        "mode": "Single-role",
+        "description": "Strict synchronous lockstep issue; transfer completes before compute proceeds",
+        "device_cycles": 63840,
+        "ratio_to_mode_b": 1.057,
+        "peak_vregs_per_role": 28,
+        "notes": "5.7% slower due to lack of transfer/compute overlap"
+      },
+      {
+        "mode": "Mode A Two-stage Ring",
+        "description": "Two-stage software-pipelined ring with double-buffered window registers",
+        "device_cycles": 61250,
+        "ratio_to_mode_b": 1.015,
+        "peak_vregs_per_role": 56,
+        "notes": "1.5% slower on moderate K depths due to prologue/epilogue drain overhead and high VRF pressure"
+      }
+    ],
+    "decision": "Mode B retained as default; Mode A two-stage ring kept available for long-K streaming kernels."
+  }
+}

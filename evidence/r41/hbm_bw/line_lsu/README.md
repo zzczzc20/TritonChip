@@ -20,7 +20,7 @@ The previous standard torch add and silu native artifacts are audited in compile
 
 Free synthesis on acf3019 reports **4,664 LUTs and 802 FFs**, with zero BRAM tiles, for the complete eight-slot unit. The completed synthesis reports are under screen_v1/out/. This is 94.5 times fewer LUTs than the rejected general eight-unit bank, while serving a narrower instruction family whose fallback remains mandatory. It is a measured resource comparison, not a performance or acceptance claim.
 
-The 10 ns SLR1 placement/routing screen is running under ~/r41_hbmbw_line_lsu_v1, launcher PID 2634490, through the shared Vivado slot wrapper with an eight-GiB free-memory guard and four threads. Final routed setup/hold and full core/SLR integration remain unqualified. No FPGA card was opened and no full image build was consumed.
+The 10 ns SLR1 placement/routing screen completed successfully under ~/r41_hbmbw_line_lsu_v1, using the shared Vivado slot wrapper with an eight-GiB free-memory guard and four threads. Routed setup WNS is +2.774 ns, hold WHS +0.034 ns and TNS/THS zero. All reports and the exit-zero log are in screen_v1/. OOC boundary ports are not physically pinned; these results do not qualify complete core/SLR or image timing. No FPGA card was opened and no full image build was consumed.
 
 ## Required integration
 

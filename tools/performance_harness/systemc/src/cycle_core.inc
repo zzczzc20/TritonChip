@@ -58,7 +58,7 @@ struct CycleCore {
     struct Bundle {bool valid=false;unsigned rctx=0;u64 pc=0;const Inst* in=nullptr;};
     Bundle f1,fb,d,r,xb;                                  // [1.2]
     unsigned of_got=0,pf_tag=0;bool adv_q=false;unsigned vrf_rr=0;   // [1.3]
-    struct BankRsp {bool valid=false;unsigned port=0;};std::array<BankRsp,4> bank_rsp{};
+    struct BankRsp {bool valid=false;unsigned port=0;unsigned phys=0;};std::array<BankRsp,4> bank_rsp{};
     bool sb_s[4][64]={},sb_v[4][64]={},sb_p[4][16]={},sb_acc[16]={};unsigned wb_rsv=0;   // [1.4]
     struct Result {u64 port=0;unsigned cls=0,rctx=0,idx=0,mask=0,src=0;u64 sdata=0;PhysicalRegisters::Vector vdata{};}; // cls 1 S,2 V,3 P; src 0 single,1 fpnorm,2 mul
     std::vector<Result> sched;                            // fp_v / mu_v tag pipelines
@@ -76,10 +76,12 @@ struct CycleCore {
     };
     Unit units[2];unsigned old=0;
     //------------------------------------------------------------ engines [4]
-    u64 mtx_start=0,mtx_busy_until=0,mtx_done_at=0,mtx_srcfree_at=0;unsigned mtx_done_slot=0,mtx_rctx=0;u64 mtx_done_token=0,mtx_srcfree_token=0;bool mtx_done_bar=false;
+    unsigned mtx_rctx=0;
     bool mtx_busy_q=false,txf_busy_q=false;unsigned txf_rctx=0;
 #include "cycle_tensor.inc"
     CycleTensor txf{*this};
+#include "cycle_matrix.inc"
+    CycleMatrix mtx{*this};
     //------------------------------------------------------------ misc
     u64 t=0,launch_cycle=0,last_progress=0;bool launched_any=false;const Launch* cur=nullptr;
     // Diagnostic snapshot of the pre-edge state (the watchdog's message).
@@ -88,12 +90,14 @@ struct CycleCore {
         for(unsigned i=0;i<4;++i){const Ctx& q=ctx[i];o<<" ctx"<<i<<": pc="<<std::hex<<q.pc<<std::dec<<" running="<<q.running<<" faulted="<<q.faulted<<" blocked="<<q.blocked<<" parked="<<q.parked<<" instret="<<q.instret<<" slp="<<q.slp_v<<"\n";}
         auto bd=[&](const char* n,const Bundle& b){o<<" "<<n<<": valid="<<b.valid<<" rctx="<<b.rctx<<" pc="<<std::hex<<b.pc<<std::dec<<(b.valid&&b.in?std::string(" kind=")+kind_name(b.in->kind):std::string())<<"\n";};
         bd("f1",f1);bd("fb",fb);bd("d",d);bd("r",r);bd("x",xb);
-        o<<" w.en="<<w.en<<" red_pend="<<red_pend<<" wb_rsv="<<wb_rsv<<" of_got="<<of_got<<" pf_tag="<<pf_tag<<" sched="<<sched.size()<<" fpu_busy_until="<<fpu_busy_until<<" mtx_busy_until="<<mtx_busy_until<<" txf_busy="<<txf_busy()<<"\n";
+        o<<" w.en="<<w.en<<" red_pend="<<red_pend<<" wb_rsv="<<wb_rsv<<" of_got="<<of_got<<" pf_tag="<<pf_tag<<" sched="<<sched.size()<<" fpu_busy_until="<<fpu_busy_until<<" mtx_busy="<<mtx_busy()<<" txf_busy="<<txf_busy()<<"\n";
         for(unsigned i=0;i<2;++i){const Unit& u=units[i];o<<" lsu"<<i<<": st="<<u.st<<" beats="<<u.beats.size()<<" next="<<u.next<<" outstanding="<<u.outstanding<<" cpl="<<u.cpl<<"\n";}
         for(unsigned rc=0;rc<4;++rc){o<<" sb"<<rc<<":";for(unsigned i=0;i<64;++i){if(sb_s[rc][i])o<<" s"<<i;}for(unsigned i=0;i<64;++i){if(sb_v[rc][i])o<<" v"<<i;}for(unsigned i=0;i<16;++i){if(sb_p[rc][i])o<<" p"<<i;}o<<"\n";}
         return o.str();}
 
     std::unique_ptr<ReplayTrace> replay;u64 trace_tag=0;
+    // Beside the core trace: one line per distinct pc, `K pc kind major func mod d a b c` (what the model decoded there).
+    std::ofstream decode_log;std::unordered_map<u64,bool> decoded;
     u64 *c_cycles,*c_instr,*c_stall,*c_replay_mismatch,*c_replay_unrecorded,*c_hazard,*c_lsu,*c_fpu,*c_mtx,*c_txf,*c_fence,*c_arrive,*c_rsv,*c_steal,*c_vrf,*c_park;
     Outcome fault;bool aborting=false;
 
@@ -162,7 +166,7 @@ struct CycleCore {
             case K::Cvt:case K::Sfu:case K::Reduce:case K::Extract:o.V(in.a);break;
             case K::Pred:if(f!=19){o.P(in.a);}else {o.S(in.a);}if(f==1 || f==2 || f==3 || f==5){o.P(in.b);}break;
             case K::Shuffle:o.V(in.a);if(f==3){o.V(in.b);}else {o.S(in.b);}break;
-            case K::Insert:o.S(in.a);break;
+            case K::Insert:o.S(in.a);o.V(in.d);break;   // tnca_decoder.v: read-modify-write on Vd (o_vb_en)
             case K::Desc:if(f==0){o.S(in.a);}break;
             case K::Xfer:case K::Prefetch:o.S(in.c);o.S(in.b);o.S(in.b+1);o.S(in.b+2);o.S(in.b+3);o.S(in.b+4);break;
             case K::Barrier:if(f==3 || f==4){o.S(in.a);}break;
@@ -186,7 +190,7 @@ struct CycleCore {
         std::vector<Result> deferred;                   // fp/mul pipeline entries
         bool red_start=false;Result redres;u64 red_done=0;bool red_is_sfu=false;
         bool mem_go=false;Unit req;
-        bool mtx_cmd=false;u64 mtx_busy=0,mtx_srcfree=0;unsigned mtx_slot=0;u64 token=0,sf_token=0;bool bar_en=false;
+        bool mtx_cmd=false;u64 mtx_busy=0,mtx_srcfree=0;unsigned mtx_slot=0;u64 token=0,sf_token=0;bool bar_en=false;CycleMatrix::Cmd mcmd;
         bool txf_cmd=false;
         bool txf_cfg=false;unsigned cfg_func=0,cfg_slot=0,cfg_imm=0;u64 cfg_addr=0;   // applied at the edge (registered in tnca_tensor.v)
         bool txf_issue=false;CycleTensor::Cmd txf_cmd_v;
@@ -334,28 +338,26 @@ struct CycleCore {
             }else if(func==5)c.barriers[Core::sliced(f,a,5)].invalidate();
             else throw std::runtime_error("reserved barrier function");
             break;}
-        case K::MZero:case K::AZero:{unsigned slot=Core::sliced(f,dd,4);c.acc[slot]={};e.mtx_cmd=true;e.mtx_slot=slot;e.mtx_busy=17;break;}
+        case K::MZero:case K::AZero:{unsigned slot=Core::sliced(f,dd,4);c.acc[slot]={};e.mtx_cmd=true;e.mtx_slot=slot;e.mtx_busy=17;e.mcmd.op=0;e.mcmd.slot=slot;e.mcmd.rctx=rc;break;}
         case K::Mma:{
             unsigned slot=Core::sliced(f,dd,4),K=16U<<(mod&3),dt=(mod>>2)&3,bytes=tnca_matrix_ops::element_bytes(dt);
             bool source_free=mod&16;
             u64 token=c.token_of(f,rS(rc,cc)),sf_token=source_free?c.token_of(f,rS(rc,(cc+1)&63)):0;
             unsigned a_regs=tnca_matrix_ops::fragment_registers(16,K,dt),b_regs=tnca_matrix_ops::fragment_registers(K,16,dt);
             c.verify_async_token(token);if(source_free)c.verify_async_token(sf_token);
-            std::vector<PhysicalRegisters::Vector> A(a_regs),B(b_regs);
-            for(unsigned rr=0;rr<a_regs;++rr){unsigned p=f.vbase+a+rr;require(p<256,"MMA A fragment beyond the physical file");A[rr]=f.physical->read(p,sc_time_stamp());}
-            for(unsigned rr=0;rr<b_regs;++rr){unsigned p=f.vbase+b+rr;require(p<256,"MMA B fragment beyond the physical file");B[rr]=f.physical->read(p,sc_time_stamp());}
-            tnca_matrix_ops::mma(c.acc[slot],A,B,K,dt);
-            bool buffered=c.abuf && (bytes==1?K!=64:K==16);
-            u64 busy=buffered?(2*a_regs+18*K+PIPE+3):(34*K+6);      // [4.1]
-            e.mtx_cmd=true;e.mtx_slot=slot;e.mtx_busy=busy;e.token=token;e.bar_en=true;
-            if(source_free){e.sf_token=sf_token;e.mtx_srcfree=busy-(PIPE+3);}
+            for(unsigned rr=0;rr<a_regs;++rr){unsigned p=f.vbase+a+rr;require(p<256,"MMA A fragment beyond the physical file");}
+            for(unsigned rr=0;rr<b_regs;++rr){unsigned p=f.vbase+b+rr;require(p<256,"MMA B fragment beyond the physical file");}
+            (void)bytes;
+            e.mtx_cmd=true;e.mtx_slot=slot;e.token=token;e.bar_en=true;
+            e.mcmd.op=1;e.mcmd.slot=slot;e.mcmd.va=a;e.mcmd.vb=b;e.mcmd.K=K;e.mcmd.dt=dt;e.mcmd.rctx=rc;e.mcmd.bar_en=true;e.mcmd.token=token;
+            e.mcmd.sf_en=source_free;e.mcmd.sf_token=sf_token;
             break;}
         case K::ARow:{
             u64 row=rS(rc,a)&15;std::uint32_t scale=0;PhysicalRegisters::Vector vbv{};
             if(func==2)scale=std::uint32_t(rS(rc,b));else{vbv=rV(rc,b);if(func==3)scale=std::uint32_t(rS(rc,cc));}
             unsigned slot=Core::sliced(f,dd,4);
             tnca_matrix_ops::row_op(c.acc[slot][row],func,scale,func==2?PhysicalRegisters::Vector{}:vbv,mask);
-            e.mtx_cmd=true;e.mtx_slot=slot;e.mtx_busy=func==1?2:7;break;}
+            e.mtx_cmd=true;e.mtx_slot=slot;e.mtx_busy=func==1?2:7;e.mcmd.op=2;e.mcmd.slot=slot;e.mcmd.rctx=rc;e.mcmd.rowop=func==1?0:1;break;}
         case K::AVread:{
             u64 row=rS(rc,b)&15;auto out=rV(rc,dd);auto& rowv=c.acc[Core::sliced(f,a,4)][row];
             for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane))out[lane]=rowv[lane];
@@ -388,7 +390,7 @@ struct CycleCore {
     bool any_running()const{for(auto& k:ctx){if(k.running)return true;}return false;}
     bool fpu_busy()const{return fpu_busy_until>0 && t>fpu_start && t<=fpu_busy_until;}
     bool fpu_done()const{return fpu_done_at==t;}
-    bool mtx_busy()const{return mtx_busy_until>0 && t>mtx_start && t<=mtx_busy_until;}
+    bool mtx_busy()const{return mtx.busy();}
     bool txf_busy()const{return txf.busy();}
     bool lsu_cpl_valid()const{return units[0].cpl || units[1].cpl;}
     bool lsu_req_ready()const{return units[0].st==0 && units[1].st==0;}
@@ -415,7 +417,7 @@ struct CycleCore {
         bool fp_inflight=false;for(auto& s:sched)if(s.src==1)fp_inflight=true;
         bool sched_wb=x_has_dest || fp_wb>=0 || mul_wb>=0;
         bool wb_steal=(lsu_cpl_valid() || red_pend) && sched_wb;
-        bool mtx_done=mtx_done_at==t;bool fpu_done_now=fpu_done();const bool mtx_busy_now=mtx_busy(),txf_busy_now=txf_busy();
+        bool mtx_done=mtx.done_at==t;bool fpu_done_now=fpu_done();const bool mtx_busy_now=mtx_busy(),txf_busy_now=txf_busy();
         // ---- R hazards and stalls [2.7][2.8]
         bool hazard=false,stall_lsu=false,stall_fpu=false,stall_mtx=false,stall_txf=false,stall_fence=false,stall_arrive=false,stall_rsv=false,r_vsrc_haz=false;
         unsigned r_dc=0;Srcs rs{};
@@ -428,8 +430,8 @@ struct CycleCore {
             if(r_dc==1 && in.d && sb_s[rc][in.d] && !wb_hit(1,rc,in.d))hazard=true;        // hz_d (WAW)
             if(r_dc==2 && sb_v[rc][in.d] && !wb_hit(2,rc,in.d))hazard=true;
             if(r_dc==3 && in.d && sb_p[rc][in.d] && !wb_hit(3,rc,in.d))hazard=true;
-            if(r_dc==4){unsigned slot=Core::sliced(F(rc),in.d,4);if(sb_acc[slot] && !(mtx_done && mtx_done_slot==slot))hazard=true;}
-            if(in.kind==K::AVread){unsigned slot=Core::sliced(F(rc),in.a,4);if(sb_acc[slot] && !(mtx_done && mtx_done_slot==slot))hazard=true;}
+            if(r_dc==4){unsigned slot=Core::sliced(F(rc),in.d,4);if(sb_acc[slot] && !(mtx_done && mtx.done_slot==slot))hazard=true;}
+            if(in.kind==K::AVread){unsigned slot=Core::sliced(F(rc),in.a,4);if(sb_acc[slot] && !(mtx_done && mtx.done_slot==slot))hazard=true;}
             if(is_mem(in))stall_lsu=!((in.kind==K::Atomic?lsu_req_ready():lsu_ready_load()) && !(x_mem && xb.valid));
             bool fold_next=(fpu_busy() && fpu_red) || x_is_fpred;
             bool red_busy_next=fpu_busy() || red_pend || fpu_done_now || x_is_fpmc;
@@ -461,12 +463,16 @@ struct CycleCore {
         // ---- bank arbiter: ports 0..2 (3 and 4 not modelled) [2.9]
         unsigned req_mask=pf_go?pf_need:of_want;unsigned req_rctx=pf_go?d.rctx:r.rctx;const unsigned* req_idx=pf_go?pf_idx:need_idx;
         bool p4_req=txf.st==CycleTensor::SREAD && !txf.sread_pending;unsigned p4_phys=p4_req?phys(txf.cmd.rctx,txf.st_vreg()):0;
+        unsigned p3_idx=mtx.read_index();bool p3_req=p3_idx!=~0u;unsigned p3_phys=p3_req?phys(mtx.cmd.rctx,p3_idx):0;
+        // last cycle's port-3 read answers now
+        bool p3_data_now=false;PhysicalRegisters::Vector p3_data{};
+        for(auto& br:bank_rsp)if(br.valid && br.port==3){p3_data_now=true;p3_data=F(mtx.cmd.rctx).physical->read(br.phys,sc_time_stamp());}
         unsigned accepted=0;bool bank_taken[4]={};int first_served=-1;
         for(unsigned k=0;k<NPORT;++k){unsigned p=(vrf_rr+k)%NPORT;
             unsigned bk;
             if(p<3){if(!((req_mask>>p)&1)){continue;}bk=phys(req_rctx,req_idx[p])%4;}
-            else if(p==4){if(!p4_req){continue;}bk=p4_phys%4;}
-            else continue;
+            else if(p==3){if(!p3_req){continue;}bk=p3_phys%4;}
+            else{if(!p4_req){continue;}bk=p4_phys%4;}
             if(bank_taken[bk]){continue;}
             bank_taken[bk]=true;accepted|=1U<<p;
             if(first_served<0){first_served=int(p);}}
@@ -577,10 +583,10 @@ struct CycleCore {
         if(txf.done_at==t){if(txf.done_bar)c.complete_async(txf.done_token,txf.done_err);
             if(txf.done_err){Ctx& q=ctx[txf.cmd.rctx];q.running=false;q.faulted=true;record(STATUS_FAULT,txf.fault_code,txf.cmd.pc,txf.fault_why);}}
         // matrix engine [4.1]
-        if(mtx_done){sb_acc[mtx_done_slot]=false;if(mtx_done_bar)c.complete_async(mtx_done_token,false);}
-        if(mtx_srcfree_at==t && mtx_srcfree_token){c.complete_async(mtx_srcfree_token,false);mtx_srcfree_token=0;}
-        if(e.mtx_cmd){mtx_start=t;mtx_busy_until=t+e.mtx_busy;mtx_done_at=t+e.mtx_busy+1;mtx_done_slot=e.mtx_slot;mtx_rctx=xr;mtx_done_bar=e.bar_en;mtx_done_token=e.token;
-            if(e.mtx_srcfree){mtx_srcfree_at=t+e.mtx_srcfree;mtx_srcfree_token=e.sf_token;}}
+        if(mtx_done){sb_acc[mtx.done_slot]=false;if(mtx.done_bar)c.complete_async(mtx.done_token,false);}
+        if(mtx.srcfree_at==t && mtx.srcfree_token){c.complete_async(mtx.srcfree_token,false);mtx.srcfree_token=0;}
+        mtx.edge((accepted>>3)&1,p3_data_now,p3_data);
+        if(e.mtx_cmd){mtx_rctx=xr;mtx.issue(e.mcmd);}
         if(e.txf_cmd)txf_rctx=xr;
         // wakes [2.16]: any WB write to the context, any mtx_done, any engine freed
         bool eng_freed=(mtx_busy_q && !mtx_busy_now) || (txf_busy_q && !txf_busy_now);
@@ -596,7 +602,9 @@ struct CycleCore {
         }
         // X retire effects [2.11]
         if(xb.valid){Ctx& q=ctx[xr];++q.instret;++*c_instr;
-            if(c.core_trace){char line[64];std::snprintf(line,sizeof line,"I %llu %u %016llx\n",(unsigned long long)t,xr,(unsigned long long)xb.pc);c.core_trace<<line;}
+            if(c.core_trace){char line[64];std::snprintf(line,sizeof line,"I %llu %u %016llx\n",(unsigned long long)t,xr,(unsigned long long)xb.pc);c.core_trace<<line;
+                if(!decoded.count(xb.pc)){decoded[xb.pc]=true;if(!decode_log.is_open()){const char* path=std::getenv("TNCA_MODEL_CORE_TRACE");std::string f=std::string(path)=="1"?x.directory+"/core_decode.txt":std::string(path)+".decode";decode_log.open(f);}
+                    const Inst& in=*xb.in;decode_log<<"K "<<std::hex<<xb.pc<<std::dec<<' '<<kind_name(in.kind)<<' '<<in.major<<' '<<in.func<<' '<<in.mod<<' '<<in.d<<' '<<in.a<<' '<<in.b<<' '<<in.c<<"\n";}}
             if(e.exit)q.running=false;
             if(e.trap){q.running=false;q.faulted=true;record(STATUS_FAULT,e.code,xb.pc,e.why);}
             if(e.sleep){q.blocked=true;q.pc=xb.pc;q.slp_v=true;}
@@ -631,6 +639,7 @@ struct CycleCore {
         for(auto& br:bank_rsp)br.valid=false;
         for(unsigned p=0;p<3;++p)if((accepted>>p)&1){unsigned bk=phys(req_rctx,req_idx[p])%4;bank_rsp[bk].valid=true;bank_rsp[bk].port=p;}
         if((accepted>>4)&1){unsigned bk=p4_phys%4;bank_rsp[bk].valid=true;bank_rsp[bk].port=4;txf.sread_pending=true;}
+        if((accepted>>3)&1){unsigned bk=p3_phys%4;bank_rsp[bk].valid=true;bank_rsp[bk].port=3;bank_rsp[bk].phys=p3_phys;}
         if(first_served>=0)vrf_rr=(unsigned(first_served)+1)%NPORT;
         f1=nf1;fb=nfb;d=nd;r=nr;xb=nx;
     }
@@ -650,7 +659,7 @@ struct CycleCore {
         rr_ptr=0;f1=fb=d=r=xb=Bundle{};w.en=false;wb_rsv=0;sched.clear();
         std::memset(sb_s,0,sizeof sb_s);std::memset(sb_v,0,sizeof sb_v);std::memset(sb_p,0,sizeof sb_p);std::memset(sb_acc,0,sizeof sb_acc);
         of_got=pf_tag=0;adv_q=false;vrf_rr=0;for(auto& br:bank_rsp)br.valid=false;
-        mtx_busy_until=mtx_done_at=mtx_srcfree_at=0;mtx_srcfree_token=0;mtx_busy_q=txf_busy_q=false;
+        mtx.reset();mtx_busy_q=txf_busy_q=false;
         txf.reset();for(auto& barrier:c.barriers)barrier.reset();
         if(replay)replay->start_launch();
         if(c.core_trace){++c.trace_launches;char line[64];std::snprintf(line,sizeof line,"L %llu %016llx %u\n",(unsigned long long)t,(unsigned long long)l.pc,unsigned(l.roles));c.core_trace<<line;}

@@ -122,6 +122,8 @@ struct CycleTensor {
     // `fired`: the request of this cycle was accepted (the port answers at `rsp` with `got`).
     void edge(bool fired,u64 rsp,u64 got){
         const u64 t=k.t;
+        // sl_done / have_done are combinational from the registered glo/ghi: evaluated before this edge's responses
+        unsigned done_slot=0;const bool had_done=have_done(done_slot);
         // responses this cycle
         for(auto& s:sl){if(!s.v){continue;}if(s.nlo && !s.glo && s.rsp_lo==t){s.glo=true;}if(s.nhi && !s.ghi && s.rsp_hi==t)s.ghi=true;}
         bool rsp_now=false;
@@ -136,8 +138,7 @@ struct CycleTensor {
             for(unsigned l=0;l<16;++l)if(vw_mask&(1U<<l))cur[l]=vw_data[l];
             f.physical->write(vw_idx,vw_mask,sc_time_stamp(),cur,owner);f.physical->commit(sc_time_stamp());vw_en=false;}
         // a completed load slot goes to its window register (write port first)
-        unsigned done_slot=0;
-        if(have_done(done_slot) && !cmd.store && !cmd.transpose && !hold && (st!=TRUN || true)){
+        if(had_done && !cmd.store && !cmd.transpose && !hold){
             Slot& s=sl[done_slot];
             // assemble: the two words shifted by the row misalignment, bytes not kept become fill
             u64 shifted=s.m?((s.dlo>>(s.m*8))|(s.dhi<<(64-s.m*8))):s.dlo;u64 fw=fillword(),out=0;
@@ -171,8 +172,7 @@ struct CycleTensor {
         case TRUN:{
             UnitPlan p=unit_plan(t_unit,nullptr);bool adv=false;unsigned fs=0;
             if(!p.nlo && !p.nhi){
-                unsigned dummy=0;
-                if(!have_done(dummy) && !hold && !vw_en){ // the fill written straight into the window
+                if(!had_done && !hold && !vw_en){ // the fill written straight into the window
                     unsigned off=t_flat+t_unit*8;vw_en=true;vw_idx=base+off/64;unsigned lane=(off%64)/4;vw_mask=3U<<lane;vw_data={};
                     u64 fw=fillword();vw_data[lane]=std::uint32_t(fw);vw_data[lane+1]=std::uint32_t(fw>>32);adv=true;}
             }else if(fired){

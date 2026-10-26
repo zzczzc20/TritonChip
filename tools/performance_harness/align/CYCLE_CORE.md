@@ -25,14 +25,18 @@ core of M1/M2, untouched). It follows CORE_TIMING.md and the TPCS discipline:
   descriptor load, setup and geometry cycles, the load walk with eight slots
   and the window write port, the store walk with sixteen tags and the
   register reads through port 4 of the banked file, the transposed walk,
-  drain and done) with strict priority on the port; the matrix engine is a
-  busy window with the RTL's formulas; the barrier model is the existing one,
-  driven at the cycle level (sleep records, wake pulses).
+  drain and done) with strict priority on the port; the matrix engine is the
+  cycle-level `cycle_matrix.inc` (tnca_matrix.v's states: the A-fragment
+  buffer load, one B row per k, the MAC sweep, drain and done, with every
+  fragment read a two-cycle request/response on port 3 of the banked file,
+  repeated when the arbiter refuses it); the barrier model is the existing
+  one, driven at the cycle level (sleep records, wake pulses).
 
 Not modelled in this version, each a known divergence source to retire with
-the gate: VRF port 3 (the matrix engine's fragment reads do not contend with
-the execute ports), response reordering on the port, atomics (refused as
-before).
+the gate when a kernel reaches it: response reordering on the port, atomics
+(refused as before). On the tiny tier of `spec/r40/suites/existing.json`
+(2026-10-27) every operator point and the MLP model align exactly in replay
+mode (evidence/model-align/slice1).
 
 Validation path: `record_model.py --replay RTL_RUN` gives every point's
 model process the RTL trace of that point; the replay port checks each LSU

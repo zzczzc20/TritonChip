@@ -112,3 +112,22 @@ SOURCE_COMMIT must be the staged, immutable archive's real commit; the final
 P6 status will give its concrete value after software changes stop. This is a
 prepared command, never launched by this agent. Next: P1 scheduler mapping,
 GEMM policy/root-cause analysis and causal remeasurement manifests.
+
+## P1 in progress — measured cause isolated
+
+X8 scheduling-model map corrected to banked2; two mapping tests pass.
+The two 113-point profile compile audits completed on GB10 (both 113/113);
+comparison and archive ingestion follow. A fresh SystemC build and initial
+FP16 N16/N32 mm/addmm runs pass bitwise. N32 remains 2.50–3.50x slower in
+these model cases, with 136 pointer operations inside the aligned K loop
+versus zero for N16, despite zero accumulator K-loop round trips.
+
+Cause: later register chunks lost the nonnegative/alignment facts needed to
+keep modulo indices affine, and ordinary chunk views missed same-block
+deferral. Corrective code now preserves those proofs, projects transposed
+load users, and refuses deferral across stores or multiple consumers. Eight
+focused proof/safety tests pass. GB10 r41-accept-p1-fixed-model is executing
+FP16/BF16 contiguous/strided, tail/aligned bitwise model regressions.
+Next: inspect that live unit, compare emitted traffic/code and run small RTL
+cases, then prepare matched board manifests; retain the failed no-slower
+measurements until lead remeasurement. No card job/image build started.

@@ -81,6 +81,22 @@ ENV TRITON_PYTHON=/opt/torchenv/bin/python \
 # 18.
 FROM toolchain AS agent
 USER root
+# SystemC 3.0.2 (Accellera, with TLM-2.0), at the commit
+# tools/performance_harness/systemc/bootstrap.sh pins, for the architectural
+# model an agent builds from its own workspace: a run is offline, so the
+# library has to be here. Only the agent image has it; the evaluator scores
+# from the RTL and never runs the model.
+ARG SYSTEMC_COMMIT
+RUN test -n "$SYSTEMC_COMMIT" \
+ && git init -q /tmp/systemc \
+ && git -C /tmp/systemc fetch -q --depth 1 https://github.com/accellera-official/systemc.git "$SYSTEMC_COMMIT" \
+ && git -C /tmp/systemc checkout -q FETCH_HEAD \
+ && cmake -S /tmp/systemc -B /tmp/systemc-build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 \
+      -DCMAKE_INSTALL_PREFIX=/opt/systemc -DBUILD_SHARED_LIBS=ON -DENABLE_EXAMPLES=OFF \
+ && cmake --build /tmp/systemc-build \
+ && cmake --install /tmp/systemc-build \
+ && rm -rf /tmp/systemc /tmp/systemc-build
+ENV CMAKE_PREFIX_PATH=/opt/systemc
 ARG NODE_VERSION
 ARG NODE_SHA256
 RUN test -n "$NODE_VERSION" && test -n "$NODE_SHA256" \

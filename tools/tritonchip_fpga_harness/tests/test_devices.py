@@ -11,8 +11,10 @@ built is refused, naming why.
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import importlib.util
+import io
 import json
 from pathlib import Path
 import re
@@ -26,6 +28,12 @@ if str(REPO / "python") not in sys.path:
 from tnca import devices, profiles  # noqa: E402
 
 ATTEMPT03 = REPO / "evidence/r40/v2/convergence/attempt03/image.tcl"
+BOARD_M2 = REPO / "tools/performance_harness/systemc/configs/r40-board-m2.cfg"
+
+
+def _cfg(text):
+    return {k.strip(): v.strip() for k, v in (l.split("#", 1)[0].split("=", 1) for l in text.splitlines()
+                                               if "=" in l.split("#", 1)[0])}
 
 
 def _image_profile():
@@ -124,6 +132,32 @@ class Refusals(unittest.TestCase):
         d["platform"]["core_count"] = 3
         self.assertEqual(devices.check_platform(d, locked),
                          ["platform.kernel_clock_mhz: 100, fixed at 90"])
+
+
+class Model(unittest.TestCase):
+    def test_the_model_is_configured_from_the_description(self) -> None:
+        base = BOARD_M2.read_text(encoding="utf-8")
+        d = devices.load("u280-3core-r40")
+        # R40's board configuration is R40's machine: the description changes nothing in it.
+        self.assertEqual(_cfg(devices.systemc_config(d, base)), _cfg(base))
+        d["uncore"].update(SETS=64, MEM_PORTS=1, AXI_OUT_N=2)
+        got = _cfg(devices.systemc_config(d, base))
+        self.assertEqual((got["sets"], got["active_outlets"], got["outstanding"]), ("64", "1", "2"))
+        self.assertEqual({k: v for k, v in got.items() if k not in ("sets", "active_outlets", "outstanding")},
+                         {k: v for k, v in _cfg(base).items() if k not in ("sets", "active_outlets", "outstanding")})
+        with self.assertRaisesRegex(devices.DeviceError, "sets no ways"):
+            devices.systemc_config(d, "\n".join(l for l in base.splitlines() if not l.startswith("ways=")))
+
+    def test_the_command_line(self) -> None:
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(devices.main(["params", "u280-3core-r40"]), 0)
+        self.assertEqual(len(out.getvalue().splitlines()), 41)
+        self.assertIn("PHYS_VREGS=256", out.getvalue().splitlines())
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(devices.main(["params", "no-such-machine"]), 2)
+        self.assertIn("no device description", err.getvalue())
 
 
 class Derived(unittest.TestCase):

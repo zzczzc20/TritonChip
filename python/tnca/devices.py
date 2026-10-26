@@ -13,6 +13,10 @@ models the machine is generated from it:
     image_params()       the same parameters, for the board-top simulation
     backend_args()       the fpga-u280-multicore / fpga-multicore-sim arguments
     systemc_overrides()  the uncore keys of the SystemC model's configuration
+    systemc_config()     that configuration, from a base one
+
+    python -m tnca.devices params NAME                     the image's parameters
+    python -m tnca.devices systemc-config NAME --base CFG  the model's configuration
 
 Three kinds of field:
 
@@ -262,6 +266,31 @@ def systemc_overrides(desc):
                 clock_hz=desc['platform']['kernel_clock_mhz'] * 1_000_000)
 
 
+def systemc_config(desc, base_text):
+    """The SystemC model's configuration of a described machine: a base
+    configuration (tools/performance_harness/systemc/configs, whose per-core
+    timing stays as it is) with the keys the description decides
+    (systemc_overrides) set to its values. A key the base does not set is
+    refused: the model would not read it, and would model another machine."""
+    over = {k: str(v) for k, v in systemc_overrides(desc).items()}
+    out, seen = [], set()
+    for line in base_text.splitlines():
+        body = line.split('#', 1)[0]
+        key = body.split('=', 1)[0].strip() if '=' in body else None
+        if key in over:
+            out.append(f'{key}={over[key]}')
+            seen.add(key)
+        else:
+            out.append(line)
+    missing = sorted(set(over) - seen)
+    if missing:
+        raise DeviceError(f'the base configuration sets no {", ".join(missing)}')
+    head = (f'# GENERATED from device description {desc["name"]} by tnca.devices: '
+            f'{", ".join(sorted(over))} are the description\'s, the rest the base\'s.\n'
+            '# Its cycle counts are UNCALIBRATED estimates, not measurements.\n')
+    return head + '\n'.join(out) + '\n'
+
+
 def parse_image_tcl(text):
     """{name: int} from a TNCA_IMAGE_CONFIG file (image_tcl()'s or R40's)."""
     head = 'set TNCA_IMAGE_PARAMS [dict create '
@@ -272,3 +301,31 @@ def parse_image_tcl(text):
     if len(words) % 2:
         raise DeviceError('TNCA_IMAGE_PARAMS has an odd number of words')
     return {k: int(v) for k, v in zip(words[0::2], words[1::2])}
+
+
+def main(argv=None):
+    import argparse
+    import sys
+    ap = argparse.ArgumentParser(prog='python -m tnca.devices', description='What a described machine builds.')
+    sub = ap.add_subparsers(dest='command', required=True)
+    p = sub.add_parser('params', help="every parameter of the machine's image, one per line")
+    p.add_argument('device', help='a description in spec/devices, or its path')
+    c = sub.add_parser('systemc-config', help="the SystemC model's configuration of the machine")
+    c.add_argument('device', help='a description in spec/devices, or its path')
+    c.add_argument('--base', required=True,
+                   help='a model configuration (tools/performance_harness/systemc/configs) for everything else')
+    a = ap.parse_args(argv)
+    try:
+        desc = load(a.device)
+        if a.command == 'params':
+            sys.stdout.write(''.join(f'{k}={v}\n' for k, v in sorted(image_params(desc).items())))
+        else:
+            sys.stdout.write(systemc_config(desc, Path(a.base).read_text(encoding='utf-8')))
+    except (DeviceError, OSError) as e:
+        print(f'tnca.devices: {e}', file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

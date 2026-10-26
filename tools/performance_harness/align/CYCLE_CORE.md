@@ -18,17 +18,21 @@ core of M1/M2, untouched). It follows CORE_TIMING.md and the TPCS discipline:
   arithmetic of the existing model (the executor is reused); its results are
   deferred writes with the RTL's port cycle (single-cycle at x, FP at x+2, MUL
   at x+3, loads at the last response +3, reductions and SFU through `red_pend`).
-- **Transactions**: the memory port issues at most one beat per cycle through
-  `MemPort`, bound to the timeline memory (prediction) or to the RTL's
-  recorded trace (validation: `TNCA_MODEL_CORE_REPLAY=<rtl trace>`); the
-  transfer engine and the barrier model are the existing ones, driven as
-  services (a command at X, a completion event at a cycle).
+- **Transactions**: the memory port issues at most one beat per cycle,
+  bound to the timeline memory (prediction) or to the RTL's recorded trace
+  (validation: `TNCA_MODEL_CORE_REPLAY=<rtl trace>`); the transfer engine is
+  the cycle-level `cycle_tensor.inc` (tnca_tensor.v's states: the serial
+  descriptor load, setup and geometry cycles, the load walk with eight slots
+  and the window write port, the store walk with sixteen tags and the
+  register reads through port 4 of the banked file, the transposed walk,
+  drain and done) with strict priority on the port; the matrix engine is a
+  busy window with the RTL's formulas; the barrier model is the existing one,
+  driven at the cycle level (sleep records, wake pulses).
 
 Not modelled in this version, each a known divergence source to retire with
-the gate: VRF ports 3 and 4 (matrix-engine and transfer-engine register reads
-do not contend with the execute ports), the transfer engine's own timeline
-(its beats go to the memory system, not through the replayed port), response
-reordering on the port, atomics (refused as before).
+the gate: VRF port 3 (the matrix engine's fragment reads do not contend with
+the execute ports), response reordering on the port, atomics (refused as
+before).
 
 Validation path: `record_model.py --replay RTL_RUN` gives every point's
 model process the RTL trace of that point; the replay port checks each LSU

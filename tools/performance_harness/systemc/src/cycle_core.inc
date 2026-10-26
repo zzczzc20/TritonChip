@@ -8,7 +8,7 @@
 //==============================================================================
 
 // The RTL's recorded memory beats of one point (align/README.md section 2),
-// LSU beats only (tag bit 4 clear), per launch, in order.
+// every beat in port order (LSU and transfer engine), per launch.
 struct ReplayTrace {
     struct Beat {u64 cycle=0;bool we=false;u64 addr=0;unsigned be=0;u64 latency=0;bool answered=false;};
     std::vector<std::vector<Beat>> launches;
@@ -22,7 +22,6 @@ struct ReplayTrace {
             if(k=="L"){u64 c;s>>c;start=c;launches.emplace_back();pending.clear();in_launch=true;}
             else if(k=="Q" && in_launch){
                 u64 c,we,addr,be,tag,amo;std::string wd;s>>std::dec>>c>>we>>std::hex>>addr>>be>>std::dec>>tag>>amo>>wd;
-                if(tag&16)continue; // the transfer engine's beat: not replayed
                 Beat b;b.cycle=c-start;b.we=we!=0;b.addr=addr;b.be=unsigned(be);
                 pending[tag]=launches.back().size();launches.back().push_back(b);
             }else if(k=="P" && in_launch){
@@ -33,7 +32,7 @@ struct ReplayTrace {
         }
         require(!launches.empty(),"replay trace has no launches");
     }
-    void start_launch(){if(open)++launch;open=true;next=0;}
+    void start_launch(){if(open){++launch;}open=true;next=0;}
     // The next recorded LSU beat: earliest issue cycle (relative to the launch)
     // and the latency; false when the record is exhausted (the caller uses its
     // own memory then).
@@ -79,6 +78,8 @@ struct CycleCore {
     //------------------------------------------------------------ engines [4]
     u64 mtx_start=0,mtx_busy_until=0,mtx_done_at=0,mtx_srcfree_at=0;unsigned mtx_done_slot=0,mtx_rctx=0;u64 mtx_done_token=0,mtx_srcfree_token=0;bool mtx_done_bar=false;
     bool mtx_busy_q=false,txf_busy_q=false;unsigned txf_rctx=0;
+#include "cycle_tensor.inc"
+    CycleTensor txf{*this};
     //------------------------------------------------------------ misc
     u64 t=0,launch_cycle=0,last_progress=0;bool launched_any=false;const Launch* cur=nullptr;
     // Diagnostic snapshot of the pre-edge state (the watchdog's message).
@@ -89,7 +90,7 @@ struct CycleCore {
         bd("f1",f1);bd("fb",fb);bd("d",d);bd("r",r);bd("x",xb);
         o<<" w.en="<<w.en<<" red_pend="<<red_pend<<" wb_rsv="<<wb_rsv<<" of_got="<<of_got<<" pf_tag="<<pf_tag<<" sched="<<sched.size()<<" fpu_busy_until="<<fpu_busy_until<<" mtx_busy_until="<<mtx_busy_until<<" txf_busy="<<txf_busy()<<"\n";
         for(unsigned i=0;i<2;++i){const Unit& u=units[i];o<<" lsu"<<i<<": st="<<u.st<<" beats="<<u.beats.size()<<" next="<<u.next<<" outstanding="<<u.outstanding<<" cpl="<<u.cpl<<"\n";}
-        for(unsigned rc=0;rc<4;++rc){o<<" sb"<<rc<<":";for(unsigned i=0;i<64;++i)if(sb_s[rc][i])o<<" s"<<i;for(unsigned i=0;i<64;++i)if(sb_v[rc][i])o<<" v"<<i;for(unsigned i=0;i<16;++i)if(sb_p[rc][i])o<<" p"<<i;o<<"\n";}
+        for(unsigned rc=0;rc<4;++rc){o<<" sb"<<rc<<":";for(unsigned i=0;i<64;++i){if(sb_s[rc][i])o<<" s"<<i;}for(unsigned i=0;i<64;++i){if(sb_v[rc][i])o<<" v"<<i;}for(unsigned i=0;i<16;++i){if(sb_p[rc][i])o<<" p"<<i;}o<<"\n";}
         return o.str();}
 
     std::unique_ptr<ReplayTrace> replay;u64 trace_tag=0;
@@ -126,7 +127,7 @@ struct CycleCore {
             case K::Vint:return (in.func==24 || in.func==56)?3:2;
             case K::Vfp:return in.func==24?3:2;
             case K::Cvt:case K::Shuffle:case K::Insert:case K::Sfu:case K::AVread:return 2;
-            case K::Lsu:if(is_store(in))return 0;return in.func>=16?2:1;
+            case K::Lsu:if(is_store(in)){return 0;}return in.func>=16?2:1;
             case K::Mma:case K::MZero:case K::AZero:case K::ARow:return 4;
             default:return 0;
         }
@@ -146,9 +147,9 @@ struct CycleCore {
                 else if(f==25){o.S(in.c);o.S(in.a);o.S(in.b);}
                 else{o.S(in.a);if(!(f>=32 && f<=63) && f!=0 && f!=20 && f!=21 && f!=22 && f!=23)o.S(in.b);}
                 break;
-            case K::Branch:if(f==1 || f==2 || f==4 || f==9)o.S(in.a);break;
+            case K::Branch:if(f==1 || f==2 || f==4 || f==9){o.S(in.a);}break;
             case K::Lsu:{bool store=is_store(in),vector=f>=16,gather=f>=32;o.S(in.a);
-                if(vector){if(gather)o.V(in.b);if(store)o.V(in.d);}else if(store)o.S(in.d);break;}
+                if(vector){if(gather){o.V(in.b);}if(store)o.V(in.d);}else if(store){o.S(in.d);}break;}
             case K::Vint:{bool imm=f>=32 && f<=63;
                 if(f==26)o.S(in.a);
                 if(f!=64 && f!=27 && f!=26)o.V(in.a);
@@ -159,13 +160,13 @@ struct CycleCore {
                 if(f==6 || f==7)o.V(in.c);
                 break;
             case K::Cvt:case K::Sfu:case K::Reduce:case K::Extract:o.V(in.a);break;
-            case K::Pred:if(f!=19)o.P(in.a);else o.S(in.a);if(f==1 || f==2 || f==3 || f==5)o.P(in.b);break;
-            case K::Shuffle:o.V(in.a);if(f==3)o.V(in.b);else o.S(in.b);break;
+            case K::Pred:if(f!=19){o.P(in.a);}else {o.S(in.a);}if(f==1 || f==2 || f==3 || f==5){o.P(in.b);}break;
+            case K::Shuffle:o.V(in.a);if(f==3){o.V(in.b);}else {o.S(in.b);}break;
             case K::Insert:o.S(in.a);break;
-            case K::Desc:if(f==0)o.S(in.a);break;
+            case K::Desc:if(f==0){o.S(in.a);}break;
             case K::Xfer:case K::Prefetch:o.S(in.c);o.S(in.b);o.S(in.b+1);o.S(in.b+2);o.S(in.b+3);o.S(in.b+4);break;
-            case K::Barrier:if(f==3 || f==4)o.S(in.a);break;
-            case K::Mma:o.S(in.c);if(in.mod&16)o.S((in.c+1)&63);break;
+            case K::Barrier:if(f==3 || f==4){o.S(in.a);}break;
+            case K::Mma:o.S(in.c);if(in.mod&16){o.S((in.c+1)&63);}break;
             case K::ARow:o.S(in.a);if(f==2)o.S(in.b);else{o.V(in.b);if(f==3)o.S(in.c);}break;
             case K::AVread:o.S(in.b);break;
             default:break;
@@ -176,8 +177,8 @@ struct CycleCore {
     unsigned phys(unsigned rc,unsigned idx)const{return ctx[rc].f->vbase+idx;}
     bool wb_hit(unsigned cls,unsigned rc,unsigned idx)const{return w.en && w.res.cls==cls && w.res.rctx==rc && w.res.idx==idx;}
     // reads at X: write-first scalar/predicate files forward the WB stage [2.12]
-    u64 rS(unsigned rc,unsigned i){if(!i)return 0;if(wb_hit(1,rc,i))return w.res.sdata;return F(rc).s[i];}
-    unsigned rP(unsigned rc,unsigned i){if(!i)return 65535;if(wb_hit(3,rc,i))return unsigned(w.res.sdata);return F(rc).p[i];}
+    u64 rS(unsigned rc,unsigned i){if(!i){return 0;}if(wb_hit(1,rc,i)){return w.res.sdata;}return F(rc).s[i];}
+    unsigned rP(unsigned rc,unsigned i){if(!i){return 65535;}if(wb_hit(3,rc,i)){return unsigned(w.res.sdata);}return F(rc).p[i];}
     PhysicalRegisters::Vector rV(unsigned rc,unsigned i){require(i<64,"vector index");return F(rc).physical->read(phys(rc,i),sc_time_stamp());}
     //------------------------------------------------------------ X effects (collected during the cycle, applied at the edge)
     struct XEffects {
@@ -187,6 +188,8 @@ struct CycleCore {
         bool mem_go=false;Unit req;
         bool mtx_cmd=false;u64 mtx_busy=0,mtx_srcfree=0;unsigned mtx_slot=0;u64 token=0,sf_token=0;bool bar_en=false;
         bool txf_cmd=false;
+        bool txf_cfg=false;unsigned cfg_func=0,cfg_slot=0,cfg_imm=0;u64 cfg_addr=0;   // applied at the edge (registered in tnca_tensor.v)
+        bool txf_issue=false;CycleTensor::Cmd txf_cmd_v;
         bool redirect=false;u64 target=0;bool exit=false,sleep=false,trap=false;unsigned code=0;std::string why;
         bool bar_arm=false,bar_arrive=false,bar_init=false,bar_inval=false;unsigned bar=0;
     };
@@ -217,7 +220,7 @@ struct CycleCore {
                 if(func>=32 && func<=63){right=zero_extended_immediate(func)?in.imm:in.simm;af=immediate_alu(func);}
                 else if(func!=0 && func!=20 && func!=21 && func!=22 && func!=23)right=rS(rc,b);
                 value=alu(af,left,right,64,mod&15);}
-            if(is_mul(in))defer(1,dd,2,value,0,nullptr);else wS(dd,value);break;}
+            if(is_mul(in)){defer(1,dd,2,value,0,nullptr);}else {wS(dd,value);}break;}
         case K::Branch:{
             auto off24=std::int32_t((unsigned(a)<<24)|(unsigned(b)<<16)|(unsigned(cc)<<8))>>8;
             if(func==0)next=xb.pc+u64(std::int64_t(off24)*8);
@@ -231,7 +234,7 @@ struct CycleCore {
             bool store=is_store(in),vector=func>=16,gather=func>=32;unsigned size=1U<<(mod&7);
             u64 base=rS(rc,a);if(!gather)base+=in.simm;
             unsigned active=vector?mask:(mask&1);
-            PhysicalRegisters::Vector vd{},vb{};if(vector){if(store)vd=rV(rc,dd);if(gather)vb=rV(rc,b);}
+            PhysicalRegisters::Vector vd{},vb{};if(vector){if(store){vd=rV(rc,dd);}if(gather)vb=rV(rc,b);}
             Unit& u=e.req;u.st=1;u.accept=t;u.store=store;u.vector=vector;u.amo=false;u.sign=(mod&8)!=0;u.rctx=rc;u.dst=dd;u.size=size;u.active=active;
             if(!active)break;             // nothing to do: the RTL still passes through the LSU? (tnca_lsu.v latches `active`; no beats, completes)
             std::map<u64,size_t> words;
@@ -264,7 +267,7 @@ struct CycleCore {
                 else{u64 right=immediate?(zero_extended_immediate(func)?in.imm:in.simm):vbv[lane];value=alu(immediate?immediate_alu(func):func,va[lane],right,32,mod&15);}
                 if(cmp){if(value)comparison|=1<<lane;}else out[lane]=std::uint32_t(value);
             }
-            if(cmp)wP(dd,comparison);else wV(dd,func==25?65535:mask,out);break;}
+            if(cmp){wP(dd,comparison);}else {wV(dd,func==25?65535:mask,out);}break;}
         case K::Vfp:{
             PhysicalRegisters::Vector va=rV(rc,a),vbv{},vc{},out{};if(func!=24)out=rV(rc,dd);
             if(func!=20 && func!=21)vbv=rV(rc,b);
@@ -274,7 +277,7 @@ struct CycleCore {
                 if(func==24){if(tnca_vector_ops::vfp_compare(mod,va[lane],vbv[lane]))comparison|=1<<lane;}
                 else out[lane]=tnca_vector_ops::vfp(func,mod,va[lane],vbv[lane],(func==6 || func==7)?vc[lane]:0);
             }
-            if(func==24)defer(3,dd,1,comparison,0,nullptr);else defer(2,dd,1,0,mask,&out);break;}
+            if(func==24){defer(3,dd,1,comparison,0,nullptr);}else {defer(2,dd,1,0,mask,&out);}break;}
         case K::Cvt:{PhysicalRegisters::Vector va=rV(rc,a),out=rV(rc,dd);
             for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane))out[lane]=tnca_vector_ops::cvt(func,mod,va[lane]);
             defer(2,dd,1,0,mask,&out);break;}
@@ -290,14 +293,14 @@ struct CycleCore {
             break;}
         case K::Shuffle:{
             PhysicalRegisters::Vector source=rV(rc,a),out=rV(rc,dd),indices{};unsigned shift=0;
-            if(func==3)indices=rV(rc,b);else shift=unsigned(rS(rc,b))&15;
+            if(func==3){indices=rV(rc,b);}else {shift=unsigned(rS(rc,b))&15;}
             for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane)){unsigned from=lane;
                 if(func==0)from=lane^shift;else if(func==1)from=lane>=shift?lane-shift:lane;
-                else if(func==2)from=lane+shift<16?lane+shift:lane;else if(func==3)from=indices[lane]&15;else from=(lane+shift)&15;
+                else if(func==2)from=lane+shift<16?lane+shift:lane;else if(func==3){from=indices[lane]&15;}else {from=(lane+shift)&15;}
                 out[lane]=source[from];}
             wV(dd,mask,out);break;}
         case K::Extract:{auto va=rV(rc,a);wS(dd,va[mod&15]);break;}
-        case K::Insert:{auto out=rV(rc,dd);auto value=std::uint32_t(rS(rc,a));if(mask&(1<<(mod&15)))out[mod&15]=value;wV(dd,mask&(1<<(mod&15)),out);break;}
+        case K::Insert:{auto out=rV(rc,dd);auto value=std::uint32_t(rS(rc,a));if(mask&(1<<(mod&15))){out[mod&15]=value;}wV(dd,mask&(1<<(mod&15)),out);break;}
         case K::Reduce:{
             auto va=rV(rc,a);std::uint32_t reduced=tnca_vector_ops::reduce(func,va,mask);
             if(func>=8){ // FP reduction: the sequencer [2.13]
@@ -312,15 +315,13 @@ struct CycleCore {
             auto va=rV(rc,a),out=rV(rc,dd);
             for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane))out[lane]=tnca_sfu::evaluate(func,va[lane]);
             e.red_start=true;e.red_is_sfu=true;e.red_done=t+24;e.redres=Result{0,2,rc,dd,mask,0,0,out};break;}
-        case K::Desc:{unsigned slot=Core::sliced(f,dd,4);u64 address=func==0?rS(rc,a):0;c.tensor.configure(func,slot,address,in.imm);e.txf_cmd=true;break;}
+        case K::Desc:{e.txf_cfg=true;e.cfg_func=func;e.cfg_slot=Core::sliced(f,dd,4);e.cfg_addr=func==0?rS(rc,a):0;e.cfg_imm=in.imm;e.txf_cmd=true;break;}
         case K::Xfer:{
-            u64 token=c.token_of(f,rS(rc,cc));
-            c.tensor.issue(Core::sliced(f,a,4),Core::sliced(f,dd,4),token,1U<<(mod&7),func==8,mod&32,mask!=0,f.physical,f.vbase,f.role,
-                [&,rc](unsigned rank){arch(b+rank<=64,trapcode::descriptor,"DESCRIPTOR_FAULT: coordinates exceed scalar file");
-                    std::array<u64,5> cs{};for(unsigned dim=0;dim<rank;++dim)cs[dim]=rS(rc,b+dim);return cs;},
-                [&](unsigned base,unsigned length){arch(base<64 && length<=64-base,trapcode::descriptor,"DESCRIPTOR_FAULT: transfer exceeds role mapping");
-                    f.physical->commit(sc_time_stamp());});
-            e.txf_cmd=true;break;}
+            u64 token=c.token_of(f,rS(rc,cc));c.verify_async_token(token);
+            CycleTensor::Cmd cm;cm.store=func==8;cm.transpose=(mod&32)!=0;cm.active=mask!=0;cm.bar_en=true;cm.desc=Core::sliced(f,a,4);cm.win=Core::sliced(f,dd,4);
+            cm.bytes=1U<<(mod&7);cm.rctx=rc;cm.role=f.role;cm.token=token;cm.pc=xb.pc;cm.sb=b;
+            for(unsigned dim=0;dim<5;++dim)cm.coords[dim]=(b+dim<64)?rS(rc,b+dim):0;
+            e.txf_issue=true;e.txf_cmd_v=cm;e.txf_cmd=true;break;}
         case K::Barrier:{
             if(func==0){e.bar_init=true;e.bar=Core::sliced(f,dd,5);c.barriers[e.bar].reset();}
             else if(func==1){unsigned index=Core::sliced(f,a,5);wS(dd,c.barriers[index].arm(index,b,cc));}
@@ -364,29 +365,38 @@ struct CycleCore {
     }
     //------------------------------------------------------------ the memory port
     // One beat on the core port at cycle `at`; returns the response cycle.
-    u64 port_issue(Beat& beat,u64 at,bool replayed,u64 latency){
-        u64 got=0;
-        u64 when=c.tm->word(c.id,beat.addr,beat.store,beat.data,beat.store?beat.be:255,at,got);
+    u64 issue_beat(u64 addr,bool store,u64 data,unsigned be,u64 at,bool replayed,u64 latency,bool engine,u64& got){
+        got=0;
+        u64 when=c.tm->word(c.id,addr,store,data,store?be:255,at,got);
         if(replayed)when=at+latency;
-        if(c.core_trace){const u64 tag=trace_tag++;char line[160];
-            std::snprintf(line,sizeof line,"Q %llu %u %016llx %02x %llu 0 %016llx\n",(unsigned long long)at,beat.store?1U:0U,
-                (unsigned long long)beat.addr,beat.store?beat.be:0U,(unsigned long long)tag,(unsigned long long)beat.data);c.core_trace<<line;
+        if(c.core_trace){const u64 tag=(trace_tag++<<5)|(engine?16:0);char line[160];
+            std::snprintf(line,sizeof line,"Q %llu %u %016llx %02x %llu 0 %016llx\n",(unsigned long long)at,store?1U:0U,
+                (unsigned long long)addr,store?be:0U,(unsigned long long)tag,(unsigned long long)data);c.core_trace<<line;
             std::snprintf(line,sizeof line,"P %llu %llu %016llx\n",(unsigned long long)when,(unsigned long long)tag,(unsigned long long)got);c.core_trace<<line;}
+        return when;
+    }
+    u64 port_issue(Beat& beat,u64 at,bool replayed,u64 latency){
+        u64 got=0;u64 when=issue_beat(beat.addr,beat.store,beat.data,beat.be,at,replayed,latency,false,got);
         beat.rdata=got;beat.rsp=when;beat.issued=true;return when;
     }
+    // Replay: may this beat issue now? (the RTL's memory accepted it no earlier than recorded)
+    bool replay_allows(u64& latency,bool& replayed){u64 earliest=0;latency=0;replayed=false;
+        if(!replay){return true;}
+        replayed=replay->peek(earliest,latency);
+        return !(replayed && launch_cycle+earliest>t);}
     //------------------------------------------------------------ one cycle
-    bool any_running()const{for(auto& k:ctx)if(k.running)return true;return false;}
+    bool any_running()const{for(auto& k:ctx){if(k.running)return true;}return false;}
     bool fpu_busy()const{return fpu_busy_until>0 && t>fpu_start && t<=fpu_busy_until;}
     bool fpu_done()const{return fpu_done_at==t;}
     bool mtx_busy()const{return mtx_busy_until>0 && t>mtx_start && t<=mtx_busy_until;}
-    bool txf_busy()const{return c.tensor.admission.used>0;}
+    bool txf_busy()const{return txf.busy();}
     bool lsu_cpl_valid()const{return units[0].cpl || units[1].cpl;}
     bool lsu_req_ready()const{return units[0].st==0 && units[1].st==0;}
     bool lsu_ready_load()const{
         if(lsu_req_ready())return true;
         for(unsigned i=0;i<2;++i)if(units[i].st==0 && (units[1-i].st==3 || units[1-i].st==4) && !units[1-i].amo)return true;
         return false;}
-    bool rctx_wr_busy(unsigned rc)const{for(unsigned i=1;i<64;++i)if(sb_s[rc][i])return true;for(unsigned i=0;i<64;++i)if(sb_v[rc][i])return true;for(unsigned i=1;i<16;++i)if(sb_p[rc][i])return true;return false;}
+    bool rctx_wr_busy(unsigned rc)const{for(unsigned i=1;i<64;++i){if(sb_s[rc][i])return true;}for(unsigned i=0;i<64;++i){if(sb_v[rc][i])return true;}for(unsigned i=1;i<16;++i){if(sb_p[rc][i])return true;}return false;}
     bool core_idle()const{
         return !any_running() && !f1.valid && !fb.valid && !d.valid && !r.valid && !xb.valid && lsu_req_ready() && !lsu_cpl_valid()
             && !fpu_busy() && !red_pend && !w.en && !mtx_busy() && !txf_busy() && wb_rsv==0;}
@@ -401,7 +411,7 @@ struct CycleCore {
             x_is_fpred=xin->kind==K::Reduce && xin->func>=8;x_mtx_cmd=is_matrix_fu(*xin) && xin->kind!=K::AVread;x_txf_cmd=xin->kind==K::Desc || xin->kind==K::Xfer;x_mem=is_mem(*xin);}
         // scheduled writebacks this cycle [2.12]
         int fp_wb=-1,mul_wb=-1;
-        for(size_t i=0;i<sched.size();++i)if(sched[i].port==t){if(sched[i].src==1)fp_wb=int(i);else mul_wb=int(i);}
+        for(size_t i=0;i<sched.size();++i)if(sched[i].port==t){if(sched[i].src==1){fp_wb=int(i);}else {mul_wb=int(i);}}
         bool fp_inflight=false;for(auto& s:sched)if(s.src==1)fp_inflight=true;
         bool sched_wb=x_has_dest || fp_wb>=0 || mul_wb>=0;
         bool wb_steal=(lsu_cpl_valid() || red_pend) && sched_wb;
@@ -450,9 +460,16 @@ struct CycleCore {
         bool pf_go=d.valid && pf_need && of_want==0 && !(r.valid && r_vsrc_haz) && !pf_haz;
         // ---- bank arbiter: ports 0..2 (3 and 4 not modelled) [2.9]
         unsigned req_mask=pf_go?pf_need:of_want;unsigned req_rctx=pf_go?d.rctx:r.rctx;const unsigned* req_idx=pf_go?pf_idx:need_idx;
+        bool p4_req=txf.st==CycleTensor::SREAD && !txf.sread_pending;unsigned p4_phys=p4_req?phys(txf.cmd.rctx,txf.st_vreg()):0;
         unsigned accepted=0;bool bank_taken[4]={};int first_served=-1;
-        for(unsigned k=0;k<NPORT;++k){unsigned p=(vrf_rr+k)%NPORT;if(p>=3 || !((req_mask>>p)&1))continue;
-            unsigned bk=phys(req_rctx,req_idx[p])%4;if(bank_taken[bk])continue;bank_taken[bk]=true;accepted|=1U<<p;if(first_served<0)first_served=int(p);}
+        for(unsigned k=0;k<NPORT;++k){unsigned p=(vrf_rr+k)%NPORT;
+            unsigned bk;
+            if(p<3){if(!((req_mask>>p)&1)){continue;}bk=phys(req_rctx,req_idx[p])%4;}
+            else if(p==4){if(!p4_req){continue;}bk=p4_phys%4;}
+            else continue;
+            if(bank_taken[bk]){continue;}
+            bank_taken[bk]=true;accepted|=1U<<p;
+            if(first_served<0){first_served=int(p);}}
         // ---- stall summary [2.1]
         bool stall_other=hazard||stall_lsu||stall_fpu||stall_mtx||stall_txf||stall_fence||stall_arrive||stall_rsv||wb_steal;
         bool stall_raw=stall_other||vrf_stall;
@@ -465,7 +482,7 @@ struct CycleCore {
         }
         if(rp_go && e.redirect)rp_go=false;  // x_redirect blocks rp_go [2.1]
         bool stall_front=stall_raw && !rp_go;
-        if(any_running()){if(stall_raw)++*c_stall;if(hazard)++*c_hazard;else if(stall_lsu)++*c_lsu;else if(stall_fpu)++*c_fpu;else if(stall_mtx)++*c_mtx;else if(stall_txf)++*c_txf;
+        if(any_running()){if(stall_raw){++*c_stall;}if(hazard)++*c_hazard;else if(stall_lsu)++*c_lsu;else if(stall_fpu)++*c_fpu;else if(stall_mtx)++*c_mtx;else if(stall_txf)++*c_txf;
             else if(stall_fence)++*c_fence;else if(stall_arrive)++*c_arrive;else if(stall_rsv)++*c_rsv;else if(wb_steal)++*c_steal;else if(vrf_stall)++*c_vrf;}
         // ---- F selection [2.2]
         int f_sel=-1;
@@ -482,12 +499,12 @@ struct CycleCore {
         bool issue=!stall_front && r.valid && !kill_r;
         // ---- writeback port arbitration [2.12]
         bool have_nw=false;Result nw;int cpl_unit=-1;bool red_grant=false;
-        if(sched_wb){have_nw=true;if(fp_wb>=0)nw=sched[fp_wb];else if(mul_wb>=0)nw=sched[mul_wb];else nw=e.single;}
+        if(sched_wb){have_nw=true;if(fp_wb>=0)nw=sched[fp_wb];else if(mul_wb>=0){nw=sched[mul_wb];}else {nw=e.single;}}
         else if(lsu_cpl_valid()){cpl_unit=units[old].cpl?int(old):int(1-old);Unit& u=units[cpl_unit];
             if(!u.store){have_nw=true;   // a load always takes the port: with no active lane it writes nothing but releases its scoreboard bit [2.12]
                 if(u.vector){PhysicalRegisters::Vector out=rV(u.rctx,u.dst);std::array<u64,16> values{};
                     for(auto& beat:u.beats)for(auto& part:beat.parts){u64 pm=part.bytes==8?UINT64_MAX:((1ULL<<(part.bytes*8))-1);values[part.lane]|=((beat.rdata>>(part.offset*8))&pm)<<part.shift;}
-                    for(unsigned lane=0;lane<16;++lane)if(u.active&(1<<lane)){u64 v=values[lane];if(u.sign && u.size<8 && (v&(1ULL<<(u.size*8-1))))v|=UINT64_MAX<<(u.size*8);out[lane]=std::uint32_t(v);}
+                    for(unsigned lane=0;lane<16;++lane)if(u.active&(1<<lane)){u64 v=values[lane];if(u.sign && u.size<8 && (v&(1ULL<<(u.size*8-1)))){v|=UINT64_MAX<<(u.size*8);}out[lane]=std::uint32_t(v);}
                     nw=Result{t,2,u.rctx,u.dst,u.active,0,0,out};
                 }else{u64 v=0;for(auto& beat:u.beats)for(auto& part:beat.parts){u64 pm=part.bytes==8?UINT64_MAX:((1ULL<<(part.bytes*8))-1);v|=((beat.rdata>>(part.offset*8))&pm)<<part.shift;}
                     if(u.sign && u.size<8 && (v&(1ULL<<(u.size*8-1))))v|=UINT64_MAX<<(u.size*8);
@@ -496,13 +513,17 @@ struct CycleCore {
         else if(red_pend){have_nw=true;nw=red;red_grant=true;}
         // ---- LSU beats on the port this cycle [3.2][3.3]: one request, engine priority not modelled
         bool port_used=false;
-        for(unsigned k=0;k<2 && !port_used;++k){unsigned i=(old+k)%2;Unit& u=units[i];
+        CycleTensor::Req er=txf.request();bool efired=false;u64 ersp=0,egot=0;
+        if(er.valid){u64 latency;bool replayed;
+            if(replay_allows(latency,replayed)){if(replay)replay->advance(er.we,er.addr);
+                ersp=issue_beat(er.addr,er.we,er.data,er.be,t,replayed,latency,true,egot);efired=true;port_used=true;}
+        }
+        // tnca_mem_mux.v: the LSU is served only when the engine has no request at all [3.1]
+        for(unsigned k=0;k<2 && !port_used && !er.valid;++k){unsigned i=(old+k)%2;Unit& u=units[i];
             if(u.st==2 && u.next<u.beats.size() && u.outstanding<NBEAT){
-                u64 earliest=0,latency=0;bool replayed=false;
-                if(replay){replayed=replay->peek(earliest,latency);
-                    if(replayed && launch_cycle+earliest>t)continue;   // the RTL's memory accepted it later (back-pressure): wait
-                    replay->advance(u.beats[u.next].store,u.beats[u.next].addr);
-                }
+                u64 latency;bool replayed;
+                if(!replay_allows(latency,replayed))continue;   // the RTL's memory accepted it later (back-pressure): wait
+                if(replay)replay->advance(u.beats[u.next].store,u.beats[u.next].addr);
                 port_issue(u.beats[u.next],t,replayed,latency);++u.outstanding;u.last_issue=t;++u.next;port_used=true;
             }}
         if(xb.valid || port_used)last_progress=t;
@@ -516,11 +537,11 @@ struct CycleCore {
         for(unsigned i=0;i<2;++i){Unit& u=units[i];
             switch(u.st){
                 case 1:u.st=2;break;                                   // SETUP -> RUN at c+1 edge; beats from c+2
-                case 2:if(u.next>=u.beats.size() && (u.beats.empty() || u.last_issue<t))u.st=3;break; // plan empty: DRAIN
+                case 2:if(u.next>=u.beats.size() && (u.beats.empty() || u.last_issue<t)){u.st=3;}break; // plan empty: DRAIN
                 case 3:{bool rsp_now=false;for(auto& beat:u.beats)if(beat.issued && beat.rsp==t)rsp_now=true;
                         if(u.outstanding==0 && !rsp_now)u.st=4;
                         break;}
-                case 4:if(!u.cpl)u.cpl=true;break;
+                case 4:if(!u.cpl){u.cpl=true;}break;
                 default:break;
             }
         }
@@ -528,13 +549,20 @@ struct CycleCore {
         // the memory request accepted in X [3.2]
         if(e.mem_go || (xb.valid && xin->kind==K::Lsu && !e.req.active && e.req.st==1)){
             unsigned i=units[0].st==0?0:1;require(units[i].st==0,"LSU accepted a request with no idle unit");
-            units[i]=e.req;units[i].st=1;if(units[0].st!=0 && units[1].st!=0)old=1-i;else old=i;
+            units[i]=e.req;units[i].st=1;if(units[0].st!=0 && units[1].st!=0){old=1-i;}else {old=i;}
         }
         const bool w_pre_en=w.en;const unsigned w_pre_rctx=w.res.rctx;
+        // the engine's register read answered this cycle (port 4), then its edge [4.2]
+        for(auto& br:bank_rsp)if(br.valid && br.port==4){txf.sread_response(F(txf.cmd.rctx).physical->read(phys(txf.cmd.rctx,txf.st_vreg()),sc_time_stamp(),txf.owner));}
+        txf.edge(efired,ersp,egot);
+        // the command of this cycle's X takes effect now [4.2]: cfg ops at the edge, a transfer or td.load enters its first state
+        if(e.txf_cfg){try{txf.config(e.cfg_func,e.cfg_slot,e.cfg_addr,e.cfg_imm);}catch(const ArchFault& ex){Ctx& q=ctx[xb.rctx];q.running=false;q.faulted=true;record(STATUS_FAULT,ex.code,xb.pc,ex.what());}}
+        if(e.txf_issue)txf.issue(e.txf_cmd_v);
+        if(txf.done_at==t+1 && txf.done_bar){/* the done pulse is high during t+1; counted then */}
         // WB stage: commit w, release its scoreboard bit, then w <= nw
         if(w.en){const Result& R=w.res;Frame& f=F(R.rctx);
-            if(R.cls==1){if(R.idx)f.s[R.idx]=R.sdata;sb_s[R.rctx][R.idx]=false;}
-            else if(R.cls==3){if(R.idx)f.p[R.idx]=unsigned(R.sdata)&65535;sb_p[R.rctx][R.idx]=false;}
+            if(R.cls==1){if(R.idx){f.s[R.idx]=R.sdata;}sb_s[R.rctx][R.idx]=false;}
+            else if(R.cls==3){if(R.idx){f.p[R.idx]=unsigned(R.sdata)&65535;}sb_p[R.rctx][R.idx]=false;}
             else if(R.cls==2){f.physical->write(f.vbase+R.idx,R.mask,sc_time_stamp(),R.vdata);f.physical->commit(sc_time_stamp());sb_v[R.rctx][R.idx]=false;}
         }
         w.en=have_nw;if(have_nw)w.res=nw;
@@ -545,6 +573,9 @@ struct CycleCore {
         // FP sequencer [2.13][2.15]
         if(fpu_done_now && !red_pend){red_pend=true;}       // red_pend from done+1
         if(e.red_start){fpu_red=!e.red_is_sfu;fpu_start=t;fpu_busy_until=e.red_is_sfu?t+23:t+12;fpu_done_at=e.red_done;red=e.redres;red.port=0;}
+        // transfer engine completion pulse (high during this cycle) [5.2]
+        if(txf.done_at==t){if(txf.done_bar)c.complete_async(txf.done_token,txf.done_err);
+            if(txf.done_err){Ctx& q=ctx[txf.cmd.rctx];q.running=false;q.faulted=true;record(STATUS_FAULT,txf.fault_code,txf.cmd.pc,txf.fault_why);}}
         // matrix engine [4.1]
         if(mtx_done){sb_acc[mtx_done_slot]=false;if(mtx_done_bar)c.complete_async(mtx_done_token,false);}
         if(mtx_srcfree_at==t && mtx_srcfree_token){c.complete_async(mtx_srcfree_token,false);mtx_srcfree_token=0;}
@@ -578,7 +609,7 @@ struct CycleCore {
             else if(dc==4)sb_acc[Core::sliced(F(rc),in.d,4)]=true;
             wb_rsv=(wb_rsv>>1)|(books_wb(in)?(1U<<wb_delay(in)):0);
         }else wb_rsv>>=1;
-        if(rp_go){Ctx& q=ctx[rr];q.pc=r.pc;if(!wake[rr])q.parked=true;++*c_park;}
+        if(rp_go){Ctx& q=ctx[rr];q.pc=r.pc;if(!wake[rr]){q.parked=true;}++*c_park;}
         for(unsigned i=0;i<4;++i)if(wake[i])ctx[i].parked=false;
         // D -> R [2.5]
         Bundle nr=r;if(!stall_front){nr=d;nr.valid=d.valid && !kill_d;}else if(kill_r)nr.valid=false;
@@ -595,10 +626,11 @@ struct CycleCore {
         Bundle nf1;nf1.valid=f_issue && !kill_f;
         if(f_issue){Ctx& q=ctx[f_sel];nf1.rctx=unsigned(f_sel);nf1.pc=q.pc;nf1.in=&c.code.at(q.pc);rr_ptr=(unsigned(f_sel)+1)%4;if(!kill_f)q.pc+=8;}
         // operand fetch state [2.9]
-        if(!stall_front)of_got=0;else of_got=of_have;
+        if(!stall_front){of_got=0;}else {of_got=of_have;}
         pf_tag=pf_go?(accepted&pf_need):0;adv_q=!stall_front && d.valid && !kill_d;
         for(auto& br:bank_rsp)br.valid=false;
         for(unsigned p=0;p<3;++p)if((accepted>>p)&1){unsigned bk=phys(req_rctx,req_idx[p])%4;bank_rsp[bk].valid=true;bank_rsp[bk].port=p;}
+        if((accepted>>4)&1){unsigned bk=p4_phys%4;bank_rsp[bk].valid=true;bank_rsp[bk].port=4;txf.sread_pending=true;}
         if(first_served>=0)vrf_rr=(unsigned(first_served)+1)%NPORT;
         f1=nf1;fb=nfb;d=nd;r=nr;xb=nx;
     }
@@ -619,7 +651,7 @@ struct CycleCore {
         std::memset(sb_s,0,sizeof sb_s);std::memset(sb_v,0,sizeof sb_v);std::memset(sb_p,0,sizeof sb_p);std::memset(sb_acc,0,sizeof sb_acc);
         of_got=pf_tag=0;adv_q=false;vrf_rr=0;for(auto& br:bank_rsp)br.valid=false;
         mtx_busy_until=mtx_done_at=mtx_srcfree_at=0;mtx_srcfree_token=0;mtx_busy_q=txf_busy_q=false;
-        c.tensor.reset();for(auto& barrier:c.barriers)barrier.reset();
+        txf.reset();for(auto& barrier:c.barriers)barrier.reset();
         if(replay)replay->start_launch();
         if(c.core_trace){++c.trace_launches;char line[64];std::snprintf(line,sizeof line,"L %llu %016llx %u\n",(unsigned long long)t,(unsigned long long)l.pc,unsigned(l.roles));c.core_trace<<line;}
     }
@@ -634,10 +666,9 @@ struct CycleCore {
             if(c.deadline!=SC_ZERO_TIME && sc_time_stamp()>c.deadline){record(STATUS_TIMEOUT,0,0,"device deadline expired");break;}
             wait(c.cycle);
         }
-        c.tensor.drain();
         if(c.core_trace){c.core_trace<<"E "<<(x.now()+1)<<"\n";c.core_trace.flush();}
         if(replay){*c_replay_mismatch=replay->mismatches;*c_replay_unrecorded=replay->unrecorded;}
-        Outcome out=aborting?fault:Outcome{};u64 retired=0;for(auto& q:ctx)retired+=q.instret;out.retired=retired;
+        Outcome out=aborting?fault:Outcome{};u64 retired=0;for(auto& q:ctx){retired+=q.instret;}out.retired=retired;
         return out;
     }
 };

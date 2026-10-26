@@ -4,6 +4,7 @@
 module tnca_multicore_regs;
  parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0;
  localparam NX=N>4?4:N,ADDR_BITS=(MEMORY_CONTROLS?9:8),WORDS=(131072+MEMORY_BYTES)/8;
+ localparam AXI_ID_W=3; // the outlets' ID width (tnca_multicore_shared_hbm.vh)
  reg clk=0,rst_n_async=0;always #5 clk=~clk;
  reg [ADDR_BITS-1:0] reg_addr;reg [63:0] reg_wdata;reg reg_we,reg_re;
  wire [63:0] reg_rdata;

@@ -9,8 +9,8 @@ generate if(MEMORY_CONTROLS)begin:g_shared_hbm
   for(genvar reader=0;reader<PORTS;reader=reader+1)begin:g_reader
    if(writer!=reader)begin:g_mirror
     always @(posedge clk)if(rst_n_async && m_bvalid[writer] && m_bready[writer])begin
-     g_ram[reader].ram.memory[g_ram[writer].ram.location[m_bid[writer*3+:3]]]
-       <=g_ram[writer].ram.write_data[m_bid[writer*3+:3]];
+     g_ram[reader].ram.memory[g_ram[writer].ram.location[m_bid[writer*AXI_ID_W+:AXI_ID_W]]]
+       <=g_ram[writer].ram.write_data[m_bid[writer*AXI_ID_W+:AXI_ID_W]];
     end
    end
   end

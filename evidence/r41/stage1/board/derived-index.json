@@ -2,13 +2,13 @@
   "description": "Hashes of supplemental artifacts and locally derived results; finished.tgz member hashes are in index.json.",
   "files": {
     ".gitignore": "89e69901af2a01eced6f20f4f85d045f55ff4c1448232b0853fe6dcb42eec210",
-    "README.md": "40ad0e93bcb2287532f33071877c14d75e451636a994ee3f547d9311c8114568",
+    "README.md": "db9c303e95cc8b0a8e9cfff1aa5e024af62bdf76b0ee307ee30db8a061d2a1ea",
     "acceptance-before.json": "d566ceb47fa59a38e380534132087d57108494d4a34571b53be9faf49ef29fc2",
     "acceptance-regression-initial.log": "4327734ec561e6b6b060eb873d59f6de343eae80e8f3334ee078e85f2fcd0c42",
-    "acceptance-regression.log": "b40907d2b76704ce0fb542a5325b0fd197f1d5a894e155e8cc437ef4030b7a53",
+    "acceptance-regression.log": "4eed2a2b13846cb90c991e231f774b9dd8452f518832fdca90bd0beb24ccf947",
     "acceptance.exit-code": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
-    "acceptance.json": "f0e701130a80f0affae95a9f9a8591b170c9b41406f0589871d48fe7fc189df2",
-    "acceptance.log": "8b70555985eb34629866f386901bb768091c620226fb924e1deab299442289a5",
+    "acceptance.json": "7d89ea71417a523065d3d0fdc0086f19505b3b54061612f3414ddc02bcf4c447",
+    "acceptance.log": "02d22bb79bba7eae939927640437380c813cffa9ba88c7d889756ea24137d1c3",
     "closeout.py": "0bf726393b27a9771be5f4ea8bd9f7490b85ec4f2d32c8c6c2b34b722af0d1d7",
     "docmaint-check.log": "30285f98f4358fcc73327abc1972a118830d898903da8eda78e9b8a69eed8952",
     "executables.tgz": "4344258a62ed9ea653f9281e29bee53a0883079c39f39972f6b95e00784d2030",
@@ -18,6 +18,10 @@
     "index.json": "dad82be045401c2268dc09df3baf8322969223b6410e709371962fb0aa9b538e",
     "metrics.json": "0e092d6a1391ce97c9c5dff18ed7a47e4eba6fac3719ef7f821af436a1eb0aa6",
     "prospective-residuals.json": "f0de8059632afe704b66d029420bf78b1313a97873eec8145f12d9472f4011dc",
-    "run_acceptance.sh": "3973c1a05ed4a9cd3e442e8c2e56bbbcbdc690b9d631e58edf7f629a11503f65"
+    "run_acceptance.sh": "92d3a499a3b628e8faf231b9e2130d06097d201f112acb56f47c91c469547a2d",
+    "original-suite-comparison.json": "8dd0fecf139c4b610b38d093120a33515da6a6dd4700f0bef30f7b8348b3ec75",
+    "original_closeout.py": "52db597b1a382450feb4424c6535f9cef18af218b3d7d297e4839bb31bb64f71",
+    "original-suite-index.json": "7777fe0545b8b14e4743480b50e53765abf2b3c3d5fb87d3ffea5fb3b3e1df3c",
+    "original-suite-rerun.tgz": "7a982912d183d390aaa3b6df1e0b87d40bf96d1de0df896654c5f7d43f9c12fe"
   }
 }

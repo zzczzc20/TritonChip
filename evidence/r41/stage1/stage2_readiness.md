@@ -31,11 +31,23 @@ are a separate 100 MHz / 8 GiB product and cannot substitute for the Stage 1 sui
 | S2-01 clock/anchors | 9/9 numerical sessions on 90 MHz B40; graph cycle ranges 0.035%, 1.54%, 0.614% | Use the independent Stage 2 identity and timing evidence for 100 MHz |
 | S2-02 memory service | 9 functional cases; depth 1→8 median cycles 17,000→15,870; three outlets 15,836 | Additional outlet gain unconfirmed; model-source/cache domains differ, absolute model residual unavailable; keep defaults |
 | S2-03 pipeline/locality | 48 numerical rows; tail-mm stage 3 slower than stage 2 in all repetitions (median +3.60%) | Physical overlap not directly measured; stage-3 addmm bindings differ. No locality implementation pass; Mode A default-off |
-| S2-05 GEMM/selector | 18/18 GEMM configurations numerical; wide candidate slower on 8/9 points. Three tuning selections and three cache hits; deadline recovery passes | General wide-tile no-slower hypothesis fails; no default promotion or subset ≥1.15× target pass. Full-suite nonregression pending |
+| S2-05 GEMM/selector | 18/18 GEMM configurations numerical; wide candidate slower on 8/9 points. Three tuning selections and three cache hits; deadline recovery passes | General wide-tile no-slower hypothesis fails; no default promotion or subset ≥1.15× target pass. Full-suite device-time nonregression passes against 113 B40-OBS points |
 | Model profile | Prospective fast residual +1.94%/−3.13%; ratio error +5.23%. GEMM fast median absolute 6.44%, p95 21.95% | Model remains uncalibrated; slow predictions inconclusive/not-run. Diagnostics are no longer unseen holdout; no refit performed |
 | S2-04 full model | No new Stage 1 full-model board evidence | Earlier compile estimates and six blockers do not become capability passes; consult Stage 2 evidence for later progress |
-| Stage 1 sign-off | Six completed manifests archived and judged on the frozen identity | Original-suite and full-set nonregression stay **not-measured**; matched old-mapping comparison also unestablished. Stage 1 not accepted |
+| Stage 1 sign-off | Seven completed manifests archived and judged on the frozen identity | Original suite 113/113 and device-time nonregression pass (sum ratio 1.000322, no >5% point regressions); matched old-mapping comparison remains **not-measured**. Stage 1 not accepted |
 
-**ORIGINAL-SUITE PLACEHOLDER:** first attempt interrupted by external card reload;
-lead schedules the rerun. Read-only ingest command is in `board/README.md`.
-Do not launch a board experiment or alter the shared host queues to fill this row.
+The one interrupted large attention-decode point was requalified (timed 1) and
+measured in a separate timed-3 process on October 26 09:04 UTC; the other 112
+points were reused. The interrupted record and pre-retry state are archived.
+Frozen acceptance now reports 59 pass, 0 fail, 1 not-measured and 1 blocked;
+the unmeasured item is the isolated old-mapping comparison. The derived Stage 1
+sign-off stays blocked. GEMM no-slower still fails on 8/9 points.
+
+The separate 100 MHz Stage 2 board product passes 113/113 original points,
+100/100 FP8 cases under the NaN-sign-aware bitwise gate and 16/16 blockwise
+cases with zero bit mismatches, and the 8 GiB window studies (7+2 cases).
+The second endurance attempt after the harness fix passes 250/250 sessions
+in 2.0611 h; the first attempt remains a harness failure. See the linked
+Stage 2 results and Stage 1 report for identities and configuration boundaries.
+These results do not close the Stage 1 old-mapping item, the uncalibrated model,
+or full-model/FP8-hub execution. Window functionality does not measure bandwidth.

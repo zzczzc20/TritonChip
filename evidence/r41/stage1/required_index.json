@@ -1667,13 +1667,24 @@
    "note": "passes only when every S1-00..S1-04 item passes"
   },
   "S1-05.original_full_suite_on_90mhz": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "board"
    ],
    "final_identity": true,
-   "evidence": [],
-   "note": "Original-suite first attempt interrupted by external card reload. Lead schedules rerun; ingest only after completion. No Stage 2 or historical measurement substitutes for the Stage 1 final suite.",
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-original-suite/original/formal.jsonl",
+     "sha256": "2dbf40d804409ba9ee84f0e46a4fa7130d7463cbc3026986b1a537a6b9975d08",
+     "kind": "board",
+     "format": "archbench-jsonl",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "113/113 original points pass on frozen identity; completed batch has no rejected final runs. Device serial-grid comparison against 113 B40-OBS points: sum ratio 1.000322, no >5% regressions; host and graph nonregression not claimed.",
    "coverage": "original_suites"
   },
   "S1-05.fragment_path_actually_used": {
@@ -1745,13 +1756,33 @@
    "note": "the three closed-loop cases"
   },
   "S1-05.new_default_nonregression": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "board"
    ],
    "final_identity": true,
-   "evidence": [],
-   "note": "Original-suite first attempt interrupted by external card reload. Lead schedules rerun; ingest only after completion. No Stage 2 or historical measurement substitutes for the Stage 1 final suite."
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-original-suite/original/formal.jsonl",
+     "sha256": "2dbf40d804409ba9ee84f0e46a4fa7130d7463cbc3026986b1a537a6b9975d08",
+     "kind": "board",
+     "format": "archbench-jsonl",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/original-suite-comparison.json",
+     "sha256": "8dd0fecf139c4b610b38d093120a33515da6a6dd4700f0bef30f7b8348b3ec75",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "113/113 original points pass on frozen identity; completed batch has no rejected final runs. Device serial-grid comparison against 113 B40-OBS points: sum ratio 1.000322, no >5% regressions; host and graph nonregression not claimed."
   },
   "S1-05.clean_archive_fresh_cache_rebuild": {
    "claim": "pass",
@@ -1812,7 +1843,7 @@
    "evidence": [
     {
      "path": "doc/r41_stage1_report.md",
-     "sha256": "f64cf9b93d978c1988fcbc24ec54f0dad30b0a89316113c2ade26d34dcecff41",
+     "sha256": "860ef2ac2a303ca66ca879ad340663d319d9bffa5dded5726d3f4e2f19a82e49",
      "kind": "doc",
      "binds": {
       "git_commit": "25094197f6e6",
@@ -1831,7 +1862,7 @@
    "evidence": [
     {
      "path": "evidence/r41/stage1/stage2_readiness.md",
-     "sha256": "a01b7aa0363c2801b9169c981188badc452e8ddca6666b7b835abdcfa73cf64e",
+     "sha256": "85691c7f4139131a2eb580473034f86eb9c16651b451321531cf4978edf6cfc7",
      "kind": "doc",
      "binds": {
       "git_commit": "25094197f6e6",

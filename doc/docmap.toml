@@ -369,12 +369,12 @@ sources = []
 [[doc]]
 path = "evidence/r41/stage1/board/README.md"
 depends_on = ["doc/r41_tasks_and_acceptance.md"]
-sources = ["evidence/r41/stage1/board/index.json", "evidence/r41/stage1/board/finished.tgz", "evidence/r41/stage1/board/host-raw.sha256"]
+sources = ["evidence/r41/stage1/board/index.json", "evidence/r41/stage1/board/finished.tgz", "evidence/r41/stage1/board/host-raw.sha256", "evidence/r41/stage1/board/original-suite-index.json", "evidence/r41/stage1/board/original-suite-comparison.json"]
 
 [[doc]]
 path = "evidence/r41/stage2/board/results.md"
 depends_on = ["doc/r41_tasks_and_acceptance.md"]
-sources = ["spec/r41/stage2/board/"]
+sources = ["spec/r41/stage2/board/", "evidence/r41/stage2/board/endurance-rerun-index.json", "evidence/r41/stage2/board/endurance-rerun.tgz"]
 
 [[doc]]
 path = "evidence/r41/stage1/stage2_readiness.md"

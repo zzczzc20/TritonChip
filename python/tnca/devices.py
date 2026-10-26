@@ -49,14 +49,16 @@ PLATFORM_FIELDS = ('board', 'variant', 'core_count', 'kernel_clock_mhz', 'AXI_DA
 # The uncore fields and their legal values. The limits are the RTL's own:
 # rtl/board/tnca_multicore_hbm_xo.v (MEM_PORTS 1..3), rtl/nuca/tnca_tmu.v
 # (TLW 0..2), tnca_elastic_link (stages >= 0), the set and way indices
-# ($clog2, so powers of two), and the outstanding slots the native line
-# adapter takes (1..16, tools/r40/image_profile.py).
+# ($clog2, so powers of two; at most 8 ways, as the NUCA's 8-bit victim key
+# {!dead, priority[3:0], ~age[WAY_W-1:0]} holds three bits of age), and the
+# outstanding slots the native line adapter takes (1..16,
+# tools/r40/image_profile.py).
 _POW2 = lambda lo, hi: tuple(1 << i for i in range(lo.bit_length() - 1, hi.bit_length()) if lo <= 1 << i <= hi)
 UNCORE = {
     'MEM_PORTS': tuple(range(1, 4)),
     'AXI_OUT_N': tuple(range(1, 17)),
     'SETS': _POW2(4, 512),
-    'WAYS': _POW2(2, 16),
+    'WAYS': _POW2(2, 8),
     'CODE_LINK_STAGES': tuple(range(0, 5)),
     'LINK_STAGES': tuple(range(0, 5)),
     'NOC_LINK_STAGES': tuple(range(0, 5)),
@@ -197,7 +199,7 @@ def validate(desc):
             problems.append(f'uncore.{key} is missing')
             continue
         v = uncore[key]
-        if isinstance(v, bool) or v not in legal:
+        if type(v) is not int or v not in legal:
             problems.append(f'uncore.{key}={v!r} is outside {legal[0]}..{legal[-1]}'
                             + (' (a power of two)' if key in ('SETS', 'WAYS') else ''))
     cores = platform.get('core_count')

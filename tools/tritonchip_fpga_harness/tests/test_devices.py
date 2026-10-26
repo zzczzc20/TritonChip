@@ -119,10 +119,20 @@ class Refusals(unittest.TestCase):
         d["per_core_profile"] = "system-2x2"
         self.refused(d, "a device names one core")
 
-    def test_booleans_are_not_integers(self) -> None:
+    def test_booleans_and_floats_are_not_integers(self) -> None:
         d = copy.deepcopy(self.desc)
         d["uncore"]["NUCA_CACHE_DATA_PIPELINE"] = True
         self.refused(d, "uncore.NUCA_CACHE_DATA_PIPELINE=True")
+        # 2.0 == 2, but it would be written into the image as a real.
+        d = copy.deepcopy(self.desc)
+        d["uncore"]["LINK_STAGES"] = 2.0
+        d["uncore"]["SETS"] = 32.0
+        self.refused(d, "uncore.LINK_STAGES=2.0", "uncore.SETS=32.0")
+
+    def test_the_victim_key_holds_eight_ways(self) -> None:
+        d = copy.deepcopy(self.desc)
+        d["uncore"]["WAYS"] = 16
+        self.refused(d, "uncore.WAYS=16 is outside 2..8")
 
     def test_platform_is_checked_against_the_owner(self) -> None:
         locked = dict(self.desc["platform"])

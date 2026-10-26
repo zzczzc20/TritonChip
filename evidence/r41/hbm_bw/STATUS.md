@@ -70,3 +70,9 @@ The historical list below describes partial stream-path work. Section 7 and `end
 4. Obtain explicit new-image loading approval through the lead and respect the existing board queues and 15-minute idle rule. Run manifest-bound streaming and original-suite measurements, then regenerate the roofline.
 
 No permission is needed to continue analysis, implementation or free screens. Full-run and programming approvals are later gates required by the handoff.
+
+## Full-vector coupled regression milestone
+
+The real 16-lane store/load/copy path now passes one-core/one-outlet, three-core/two-outlet and three-core/three-outlet configurations. Each checks 272 host-read words over two vector regions plus scalar verification, protocol faults and refusal behavior. All four native hybrid ISA programs pass after the landing-register fix. Raw logs and source-hash evidence are in hybrid_lsu/coupled/. The older 455-program masked matrix is still finishing its last configuration (GB10 PID 337563); do not replace its live process. The corrected free kernel synthesis remains live on x86 (Vivado PID 10102, launcher 10034).
+
+The current integrated diagnostic geometry remains insufficient for 100 GB/s: its three 256-bit outlets have a 9.6 GB/s per-direction upper bound, while the three 512-bit core ports have a 19.2 GB/s bound. These are analytical limits, not measurements. Next measure compiled-operator coupled service and remove the remaining outlet/service/RF limits before proposing a full-run candidate. No full link or board experiment has been started; one of five full runs remains used.

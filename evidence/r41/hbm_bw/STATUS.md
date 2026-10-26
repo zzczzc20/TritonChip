@@ -56,7 +56,9 @@ The real home slice now selects full 512-bit words, preserves scalar atomic byte
 
 The free 32-set/eight-way wide-home physical screen completed on the upgraded x86 host. Routed SLR1 timing at 10 ns passes with WNS +1.774 ns and WHS +0.007 ns; area is 41,279 LUTs and 5,789 FFs. Raw reports are in wide_home/physical/. The initial missing-include failure remains recorded. No full link or card access occurred; budget remains one of five used.
 
-The opt-in hybrid path is being threaded through the tile, host mux, mesh, persistent shell and FPGA wrappers. A coupled one-core masked-vector grid test has been launched on GB10; its result is pending. These hierarchy changes are not yet qualified as an image candidate.
+The opt-in hybrid path now propagates through the tile, coherent host mux, 720-bit-payload mesh, persistent shell and FPGA/board wrappers. Coupled coverage exposed an R-to-X reservation bug that could drop eligible requests; a command landing register now retains operands until the correct engine can accept them. The corrected one-core masked-vector grid passes with 58 compact admissions, 1,310 narrow admissions and 1,368 retirements, followed by full verification and error/refusal checks. Legacy one-core regression passes. Raw initial failures remain in hybrid_lsu/coupled/. The three-core matrix is still running on GB10 PID 337563; native ISA regression has also been launched. A delayed-B case failed its drain-overlap coverage requirement and is not claimed as passing.
+
+The initial wide-kernel free synthesis was explicitly stopped after the reservation defect was found. Corrected synthesis is running on x86 under ~/r41_hbmbw_wide_kernel_v1, out_landing / screen_landing.log, launcher PID 10034, four threads. The diagnostic image config enables HYBRID_LSU=1 and SFU_LANES=4; full-image timing and board acceptance remain unproven. No full link or card access occurred.
 
 ## Prior milestones and remaining gates
 

@@ -1683,27 +1683,69 @@ module tnca_core #(
     wire lsu_ready_load;
     generate
     if (HYBRID_LSU) begin : g_lsu_hybrid
+    // R reserves LSU capacity one cycle before X supplies operands. A
+    // command-independent landing register bridges that reservation to the
+    // hybrid engine's command-dependent path selection and drain checks.
+    reg pending;
+    wire hybrid_idle,hybrid_ready_load;
+    wire [1-1:0] q_store;
+    wire [1-1:0] q_vector;
+    wire [1-1:0] q_indexed;
+    wire [3-1:0] q_size;
+    wire [1-1:0] q_signed;
+    wire [2-1:0] q_hint;
+    wire [64-1:0] q_base;
+    wire [64-1:0] q_offset;
+    wire [512-1:0] q_index;
+    wire [64-1:0] q_sdata;
+    wire [1-1:0] q_amo;
+    wire [4-1:0] q_aop;
+    wire [64-1:0] q_cmp;
+    wire [512-1:0] q_vdata;
+    wire [16-1:0] q_mask;
+    wire [RCTX_W-1:0] q_rctx;
+    wire [3-1:0] q_dst_class;
+    wire [8-1:0] q_dst_idx;
+    reg [1321+RCTX_W-1:0] command;
+    assign {q_store,q_vector,q_indexed,q_size,q_signed,q_hint,q_base,q_offset,q_index,q_sdata,q_amo,q_aop,q_cmp,q_vdata,q_mask,q_rctx,q_dst_class,q_dst_idx}=command;
+    wire consume=pending && (q_amo ? hybrid_idle : hybrid_ready_load);
+    assign lsu_ready_load=!pending;
+    assign lsu_req_ready=!pending && hybrid_idle;
+    always @(posedge clk) begin
+        if(!rst_n) begin pending<=0;command<=0;end
+        else begin
+            if(consume) pending<=0;
+            if(x_mem_go) begin
+                pending<=1;
+                command<={x_mem_store,x_mem_vector,x_mem_indexed,x_mem_size,x_mem_signed,x_mem_hint,sa_data,x_imm,vb_data,x_amo_cas ? sc_data : sb_data,x_amo,x_aop,sb_data,x_mem_indexed ? vc_data : vb_data,lane_mask,x_rctx,x_dstc,x_dsti};
+            end
+        end
+    end
+`ifndef SYNTHESIS
+    always @(posedge clk) if(rst_n && x_mem_go && pending)
+        $fatal(1,"hybrid command landing register overflow");
+`endif
     tnca_lsu_hybrid #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
         .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
     ) u_lsu (
-        .req_ready_load(lsu_ready_load),
+        .req_ready_load(hybrid_ready_load),
         .clk(clk), .rst_n(rst_n),
-        .req_ready(lsu_req_ready),
-        .req_valid(x_mem_go),
-        .req_store(x_mem_store), .req_vector(x_mem_vector),
-        .req_indexed(x_mem_indexed), .req_size(x_mem_size),
-        .req_signed(x_mem_signed), .req_hint(x_mem_hint),
-        .req_base(sa_data), .req_offset(x_imm),
-        .req_index(vb_data),
+        .req_ready(hybrid_idle),
+        .req_valid(consume),
+        .req_store(q_store), .req_vector(q_vector),
+        .req_indexed(q_indexed), .req_size(q_size),
+        .req_signed(q_signed), .req_hint(q_hint),
+        .req_base(q_base), .req_offset(q_offset),
+        .req_index(q_index),
         // atom.cas swaps in Sc and compares against Sb; every other atomic
         // has one operand and takes Sb.
-        .req_sdata(x_amo_cas ? sc_data : sb_data),
-        .req_amo(x_amo), .req_aop(x_aop), .req_cmp(sb_data),
-        .req_vdata(x_mem_indexed ? vc_data : vb_data),
-        .req_mask(lane_mask),
-        .req_rctx(x_rctx), .req_dst_class(x_dstc), .req_dst_idx(x_dsti),
+        .req_sdata(q_sdata),
+        .req_amo(q_amo), .req_aop(q_aop), .req_cmp(q_cmp),
+        .req_vdata(q_vdata),
+        .req_mask(q_mask),
+        .req_rctx(q_rctx), .req_dst_class(q_dst_class), .req_dst_idx(q_dst_idx),
         .cpl_valid(lsu_cpl_valid), .cpl_ack(lsu_cpl_ack),
         .cpl_rctx(lsu_cpl_rctx), .cpl_dst_class(lsu_cpl_dstc),
         .cpl_dst_idx(lsu_cpl_dsti), .cpl_sdata(lsu_cpl_sdata),

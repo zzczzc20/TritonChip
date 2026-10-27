@@ -110,8 +110,23 @@ gate; `r40-board-cycle.cfg` is the prediction configuration for the U280
 measured; the image's 32x8 slice with E_ALLOC and the data-array pipeline
 is still modelled as the bench's slice).
 
-Two core-side rules the uncore level made visible (both fixed in the core,
-both invisible under core-level replay because the replayed port hid them):
-the transfer engine's load slot is the pre-edge `free_slot` of the request's
-tag, not one freed by the window write at the same edge; and the dispatcher
-above.
+Rules the uncore level made visible (each fixed where it lives, each
+invisible under core-level replay because the replayed port hid them):
+
+- the transfer engine's load slot is the pre-edge `free_slot` of the
+  request's tag, not one freed by the window write at the same edge;
+- likewise its store / transposed-load tag is the pre-edge `free_tag`
+  (`tnca_tensor.v` 506-511, 1110, 1164): a tag freed by a response at the
+  same edge is reused by the next request. The model allocated the post-edge
+  tag, so a fast slice hit landing in the middle of a 16-request burst left
+  one tag allocated forever and the engine never drained (op.gemv launch 26,
+  model.mlp, model.gpt2_block: a refusal "core made no progress");
+- the dispatcher above;
+- the memory arbiter's round robin also moves on the host's traffic between
+  launches: the host's words go through tile 0 and the homes
+  (`tnca_top.v:488`), and every host miss is a fill (and maybe a writeback)
+  on the port, so the pointer resumes after that home. The model's zero-time
+  host warm-up (`host_touch`) now advances the pointer the same way; without
+  it the first three-way tie of a launch could be granted in the wrong order
+  (op.transpose launch 28: 1,2,0 recorded, 2,0,1 modelled, a pure relabelling
+  of the three slices from then on).

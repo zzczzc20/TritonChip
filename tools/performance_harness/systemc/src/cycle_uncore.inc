@@ -125,6 +125,16 @@ struct CycleUncore : sc_module {
         int way=-1;for(unsigned w=0;w<ways;++w)if(!s.valid[st*ways+w]){way=int(w);break;}
         if(way<0){way=int(s.victim_ptr[st]%ways);}
         unsigned i=st*ways+unsigned(way);s.valid[i]=true;s.dirty[i]=write;s.tag[i]=tg;s.victim_ptr[st]=(unsigned(way)+1)%ways;
+        // a host miss is a fill (and maybe a writeback) on the home's port, one at a time: the port arbiter's
+        // pointer moves past this home exactly as it does for a launch's transaction (tnca_mem_arbiter.v rr)
+        port_granted(s.id);
+    }
+    // the port arbiter of home h's port granted h: its round robin resumes after h, nothing is held
+    void port_granted(unsigned h){
+        if(!board){arb_held=false;arb_rr=(h+1)%slices.size();return;}
+        Port& q=ports[port_of(h)];std::vector<unsigned> homes;for(unsigned k=0;k<slices.size();++k)if(port_of(k)==port_of(h))homes.push_back(k);
+        unsigned idx=0;for(unsigned k=0;k<homes.size();++k)if(homes[k]==h)idx=k;
+        q.held=false;q.rr=(idx+1)%homes.size();
     }
     //------------------------------------------------------------- requests from the cores
     bool req_ready(unsigned core)const{return routers[core].in[P_LOCAL][VN_REQ].in_ready();}   // [1.3]

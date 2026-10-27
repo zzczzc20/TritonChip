@@ -522,7 +522,13 @@ of evicted dirty lines went to DRAM as writebacks); a download hits dirty
 lines. Each host word is a full round trip (`host_busy` until `h_rsp_valid`,
 36, 45), serialised by the bench's `host_word` task (device.v:73-84). With
 CACHE_MAINTENANCE = 0 on the sim bench nothing is ever flushed between
-launches.
+launches. The memory arbiter's `rr` is part of that left-behind state: every
+host miss is at least one port transaction from the home (the fill, a
+writeback before it if the victim is dirty), granted one at a time since the
+words are serialised, so `rr` resumes after the home of the last host miss
+(`tnca_mem_arbiter.v`, sec 10). A model that warms the slices in zero time
+must move the pointer the same way, or the first tie of the next launch is
+granted in the wrong order (seen on op.transpose, launch 28).
 
 ## 8. Points I am not certain about (with where to look)
 

@@ -136,6 +136,9 @@ struct CycleTensor {
         // the load slot a request of this cycle takes is the pre-edge `free_slot` (tnca_tensor.v 599, 1044):
         // it is the slot in the request's tag, not one freed by the window write at this same edge
         unsigned fs_pre=0;have_slot(fs_pre);
+        // likewise the tag a store beat or a transposed-load request takes is the pre-edge `free_tag` (tnca_tensor.v 506-511,
+        // 1110, 1164): a tag freed by a response at this same edge is reused by the NEXT request, not this one
+        unsigned ft_pre=0;have_tag(ft_pre);
         // responses this cycle
         for(auto& s:sl){if(!s.v){continue;}if(s.nlo && !s.glo && s.rsp_lo && s.rsp_lo==t){s.glo=true;}if(s.nhi && !s.ghi && s.rsp_hi && s.rsp_hi==t){s.ghi=true;}}
         bool rsp_now=false;
@@ -202,7 +205,7 @@ struct CycleTensor {
             if(!rowv)row_end=true;
             else if(st_need_reg()){st=SREAD;sread_req=true;}
             else if(t_unit>=row_words.size() || row_words[t_unit].be==0 || fired){
-                if(fired){unsigned ft=0;have_tag(ft);tg[ft].v=true;tg[ft].rsp=0;}
+                if(fired){tg[ft_pre].v=true;tg[ft_pre].rsp=0;}
                 adv=true;
             }
             if(adv){if(t_unit+1==row_words.size()){row_end=true;}else {++t_unit;}}
@@ -213,7 +216,7 @@ struct CycleTensor {
         case XRUN:{
             if(x_unit_oob() || fired){
                 if(x_unit_oob()){xbuf[x_row&15]=0;}
-                else{unsigned ft=0;have_tag(ft);tg[ft].v=true;tg[ft].rsp=0;tg[ft].xrow=x_row&15;tg[ft].xkeep=x_keep();tg[ft].data=0;}
+                else{tg[ft_pre].v=true;tg[ft_pre].rsp=0;tg[ft_pre].xrow=x_row&15;tg[ft_pre].xkeep=x_keep();tg[ft_pre].data=0;}
                 if(x_row+1==d->block[0]){st=XDRAIN;}else{++x_row;x_row_base+=d->stride[0];}
             }break;}
         case XDRAIN:{bool any=false;for(auto& g:tg){if(g.v)any=true;}if(!any && !rsp_now){x_q=0;st=XWRITE;}break;}

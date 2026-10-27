@@ -36,6 +36,14 @@ with three active cores on the board-top bench, `record_rtl.py --bench board`, r
   three homes share outlet 0 through the port arbiter and the adapter admits one line at a time, so
   that is what the model's `active_outlets=1`, `outstanding=1` describe. Found on the way: a replayed
   read's slot is free in the cycle of its recorded response (released at the final beat's edge).
+- **Prediction on the board-top bench** (`board_prediction_vs_rtl.json`, same recording, no replay):
+  the model's AXI slave is deterministic (every ready high, the lowest due read first) where the
+  bench's line model stalls each AXI channel on a seeded `$random` in 30-40% of cycles and picks
+  among due reads at random. Over the three cores the prediction is 2.9% below the recording
+  (48436 vs 47052 cycles summed; per core +1.3%, -9.2%, -4.8%) and the dispatcher hands one block
+  to a different core (38/10/10 against 37/11/10): the timing difference is the bench's random
+  stalls, not structure. The U280's HBM is not that line model either, so the prediction
+  configuration (`r40-board-cycle.cfg`) keeps the deterministic slave with one latency per port.
 - The uncore trace carries no cycle verdict of its own (its `END` is each side's own clock, the
   model's including the host path); the core traces carry it.
 
@@ -64,3 +72,14 @@ Verdict: **aligned** (all 4 point(s) equal in every compared stream). Points 4, 
 | op.add_tiny_fp16-n1000.core1 | 11/11 | 11970 | 11970 | +0.00% | equal | equal |
 | op.add_tiny_fp16-n1000.core2 | 10/10 | 12131 | 12131 | +0.00% | equal | equal |
 | op.add_tiny_fp16-n1000.uncore | 58/58 | | | | slice: equal / equal | port: equal / equal |
+
+### Board-top bench, three active cores, prediction (no replay: the model's deterministic AXI slave)
+
+Verdict: **diverged** (4 of 4 point(s) diverge). Points 4, aligned 0, diverged 4, missing 0; |cycle error| median 4.8%, p95 9.2%.
+
+| point | launches equal | cycles RTL | cycles model | error | first issue divergence | first request divergence |
+|---|---:|---:|---:|---:|---|---|
+| op.add_tiny_fp16-n1000 | 10/37 | 24335 | 24640 | +1.25% | L2 #304 | L2 #3 |
+| op.add_tiny_fp16-n1000.core1 | 0/11 | 11970 | 10868 | -9.21% | L0 #72 | L0 #16 |
+| op.add_tiny_fp16-n1000.core2 | 0/10 | 12131 | 11544 | -4.84% | L0 #72 | L0 #16 |
+| op.add_tiny_fp16-n1000.uncore | 16/58 | | | | slice: L2 #3 / L1 #3 | port: L1 #1 / L1 #0 |

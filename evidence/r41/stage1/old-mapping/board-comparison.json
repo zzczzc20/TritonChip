@@ -1,0 +1,1298 @@
+{
+  "schema": "tnca-matched-old-mapping-board-comparison/1",
+  "status": "comparison-recorded",
+  "frozen_software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a",
+  "control_software_tree": "files:b95b380161aebba3f4dee6f4c60ca1c76abb064f5d90863a454d8a3717fa484b",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "clock_hz": 90000000,
+  "recorded_source_audit": {
+    "changed_product_files": [
+      "compiler/python/tnca_cc/register_blocks.py"
+    ],
+    "unchanged_recorded_product_files": 166
+  },
+  "old_files": {
+    "experiment_sha256": "7ab0a19b59132e31f0c2b0fdfdd83a375209dfd0ff6c12af04a9c8696f6521b2",
+    "formal_sha256": "da3a5b56f33a3537b566f243c36c2a686aa7124bc4c437633ae02c675d460601",
+    "batch_sha256": "2d50d1b7267bac58b8126d70a3ba5711c07ad82b618be99e5384576242bc7a86"
+  },
+  "fixed_files": {
+    "experiment_sha256": "dbe1db88cdc7bf4fd2bc5cecdd6db3da83ebacbde0268555ff6137bdafb5b3c4",
+    "formal_sha256": "a48296d52af7bb40024e009dce035941c08f99b60e44b089d8ca922c648548cd",
+    "batch_sha256": "e78a8e4d7ba5fb6866c3bcb24ea402727d50eb809629d694e2f0c0f9c9309e81"
+  },
+  "manifest_sha256": "a18e6d5fb0ed2bd49ce1cb9607f326a62355ea16427f5400d7a3ab778d68dfe3",
+  "rows": [
+    {
+      "point": "model.mlp/medium/fp16-t128-d128",
+      "point_sha256": "e902898ba8ac399b55fbd6fb1f451a8c1e0f3aed4a37d03c72be9d26518ab1cf",
+      "metrics": {
+        "device-cycles-serial-grid": {
+          "old": 27524866,
+          "fixed": 24392373,
+          "narrow": 4165299,
+          "repair_speedup_old_over_fixed": 1.1284210027454074,
+          "fixed_over_conservative_ratio": 5.856091723547337,
+          "samples": {
+            "old": [
+              27526325,
+              27524866,
+              27521868
+            ],
+            "fixed": [
+              24399804,
+              24386477,
+              24392373
+            ],
+            "narrow": [
+              4165299,
+              4165912,
+              4164887
+            ]
+          }
+        },
+        "device-graph-makespan": {
+          "old": 38330699,
+          "fixed": 35011890,
+          "narrow": 10784856,
+          "repair_speedup_old_over_fixed": 1.0947909124585962,
+          "fixed_over_conservative_ratio": 3.246393832240319,
+          "samples": {
+            "old": [
+              38330699,
+              38397139,
+              38322753
+            ],
+            "fixed": [
+              33110335,
+              35154200,
+              35011890
+            ],
+            "narrow": [
+              10578991,
+              10862342,
+              10784856
+            ]
+          }
+        }
+      },
+      "old_executables": [
+        {
+          "kernel": "triton_tem_fused_addmm_gelu_t_0",
+          "artifact_sha256": "7ed5af386a3489bcda02e205f2bda9c2583b2a6573b7db2f05632c84c0646913",
+          "executable_sha256": "622b714951e5846e3007c65b002e17e8c2513421e3c96d41fe4479de53c720c7",
+          "code_sha256": "53dfdcc2e8e9fce882db25fd6e8779f04c905ba4df80054a25f02a633d2bdbd1",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 128,
+            "k_loop_writes": 96,
+            "k_loop_zeros": 2,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 12,
+              "role1": 12
+            },
+            "scratch_bytes": 51008,
+            "shared_windows": []
+          }
+        },
+        {
+          "kernel": "triton_tem_fused_addmm_gelu_t_1",
+          "artifact_sha256": "aee43629a6cedeee00359b7709dddb8243f6d598d034ff5b52eb12f0b00a514b",
+          "executable_sha256": "85112d3f25cf83ae9bed6c2ea9b0a03b4a93833109ce0676fedac1fe48a8f2fe",
+          "code_sha256": "4423df6dc5e156c13386907b2fa90f88d847721dd56bee7613addc838fa78684",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 128,
+            "k_loop_writes": 96,
+            "k_loop_zeros": 2,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 12,
+              "role1": 12
+            },
+            "scratch_bytes": 14144,
+            "shared_windows": []
+          }
+        }
+      ],
+      "fixed_executables": [
+        {
+          "kernel": "triton_tem_fused_addmm_gelu_t_0",
+          "artifact_sha256": "e3d1832f9d0a8b9f7cf1536e6b7824e0b61dfb4a74f155b13fb08a64fe929f34",
+          "executable_sha256": "0ef3cbb1c63da95b45ee692d2627769f966362d54af731b44c4a238c6d1867ca",
+          "code_sha256": "9d088ef9445e9b5c57824921b1bdd8effd642f04e82ad5f9c062615e6e8c9c03",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 256,
+            "outside_k_loop_writes": 96
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 12,
+              "role1": 12
+            },
+            "scratch_bytes": 44864,
+            "shared_windows": []
+          }
+        },
+        {
+          "kernel": "triton_tem_fused_addmm_gelu_t_1",
+          "artifact_sha256": "bc462b260e9c11d79ee05fab91e45b9fa2c947562b0b8f698a6e8d10b3657760",
+          "executable_sha256": "deed0ba8bafd851c18e1c637368076179826f63b423d3bd8090d2509e93c8054",
+          "code_sha256": "79c166bdd2ecd249794eae7aab8f92626d681d628b49660f09ce38aa4d17fdbc",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 96,
+            "outside_k_loop_writes": 64
+          },
+          "resources": {
+            "accumulators": 6,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 12,
+              "role1": 12
+            },
+            "scratch_bytes": 10048,
+            "shared_windows": []
+          }
+        }
+      ],
+      "narrow_executables": [
+        {
+          "kernel": "triton_tem_fused_addmm_gelu_t_0",
+          "artifact_sha256": "a1ba91c436d290fe94e731b9765a46d6f8ee3529c469a6a4bd5ac953e7125537",
+          "executable_sha256": "fc00088235c404af96216020aa97da7f497549ec4467f43f742d2fff5b2204fe",
+          "code_sha256": "685fd60bacdc34f4f96d73512d400b4611f3e1ceeb417a3e9c4b25cc364b7624",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 192,
+            "outside_k_loop_writes": 64
+          },
+          "resources": {
+            "accumulators": 5,
+            "barriers": 3,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 14,
+              "role1": 14
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        },
+        {
+          "kernel": "triton_tem_fused_addmm_gelu_t_1",
+          "artifact_sha256": "48217aef1f1b3f7a405c2a1f6dd7135ce2f4587a3b575db2441bee8bdcf5906e",
+          "executable_sha256": "4998caeb936fadbeab9af3678633e917285fd3ed66c78237e319976749cf330b",
+          "code_sha256": "f2bd140ab26489870e09565279cf66d0a285662260717da34f0da776b4c0b602",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 16,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 1,
+            "barriers": 3,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 10,
+              "role1": 10
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ]
+    },
+    {
+      "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+      "point_sha256": "b377b0e53eab312336e85287a3ed0ab7c463c58977085140b2a8466dbb5fe595",
+      "metrics": {
+        "device-cycles-serial-grid": {
+          "old": 5365830,
+          "fixed": 5164197,
+          "narrow": 5570903,
+          "repair_speedup_old_over_fixed": 1.039044405161151,
+          "fixed_over_conservative_ratio": 0.9269946003367856,
+          "samples": {
+            "old": [
+              5365968,
+              5364844,
+              5365830
+            ],
+            "fixed": [
+              5164197,
+              5168412,
+              5160077
+            ],
+            "narrow": [
+              5570903,
+              5570937,
+              5569924
+            ]
+          }
+        },
+        "device-graph-makespan": {
+          "old": 5365832,
+          "fixed": 5164199,
+          "narrow": 5570905,
+          "repair_speedup_old_over_fixed": 1.0390443900399655,
+          "fixed_over_conservative_ratio": 0.9269946265463151,
+          "samples": {
+            "old": [
+              5365970,
+              5364846,
+              5365832
+            ],
+            "fixed": [
+              5164199,
+              5168414,
+              5160079
+            ],
+            "narrow": [
+              5570905,
+              5570939,
+              5569926
+            ]
+          }
+        }
+      },
+      "old_executables": [
+        {
+          "kernel": "triton_tem_fused_bmm_0",
+          "artifact_sha256": "f15123533a0e2ce9caa848ec40228768e52381e6b334025e2ff10c6b587487f8",
+          "executable_sha256": "9b9c431bfdc9c7e2ec0c8b05465781183b4026e5d9d449bf8fc339bf2765e441",
+          "code_sha256": "4ce980a06c7248807ba7c731bd2583cd344836d84aae9db11413aed79edb72ad",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 128,
+            "k_loop_writes": 96,
+            "k_loop_zeros": 2,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 10,
+              "role1": 10
+            },
+            "scratch_bytes": 19712,
+            "shared_windows": []
+          }
+        }
+      ],
+      "fixed_executables": [
+        {
+          "kernel": "triton_tem_fused_bmm_0",
+          "artifact_sha256": "7045c245b06e14bc5ac08f8f83e65dec9c90385f70c8cc9bb9a48432b28c8cf6",
+          "executable_sha256": "a390fcbc5c1abb33634bea4861da538946c3a90f67da76330d3df55222f10f51",
+          "code_sha256": "c1722bf379e58158bb16bca959bd017076b2312cb5b69f4c77f338490b248150",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 2,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 10,
+              "role1": 10
+            },
+            "scratch_bytes": 19712,
+            "shared_windows": []
+          }
+        }
+      ],
+      "narrow_executables": [
+        {
+          "kernel": "triton_tem_fused_bmm_0",
+          "artifact_sha256": "d16dbfc021bf30a69379be2c1811597214a0a0ecb49016d38813b7b22144fb86",
+          "executable_sha256": "67385dadcadd401022004d067bcd4eb163e3bbaa45a9042032e355054bf63882",
+          "code_sha256": "ae21cbdd3624c686d1da425d6f36ce084e3f60d5434a85071827bde642f218bb",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 16,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 1,
+            "barriers": 3,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 10,
+              "role1": 10
+            },
+            "scratch_bytes": 9728,
+            "shared_windows": []
+          }
+        }
+      ]
+    },
+    {
+      "point": "op.gemv/hbm/fp16-k4096-n11008",
+      "point_sha256": "a65683795c4c05baf3c758fe40b6d0d6bc5994a11c2340fd17fbbc04d576baa9",
+      "metrics": {
+        "device-cycles-serial-grid": {
+          "old": 815424948,
+          "fixed": 1317542701,
+          "narrow": 248610895,
+          "repair_speedup_old_over_fixed": 0.6188983077217168,
+          "fixed_over_conservative_ratio": 5.299617705812933,
+          "samples": {
+            "old": [
+              815424948
+            ],
+            "fixed": [
+              1317542701
+            ],
+            "narrow": [
+              248610895
+            ]
+          }
+        },
+        "device-graph-makespan": {
+          "old": 815424950,
+          "fixed": 1317542703,
+          "narrow": 248610897,
+          "repair_speedup_old_over_fixed": 0.6188983083002206,
+          "fixed_over_conservative_ratio": 5.2996176712238,
+          "samples": {
+            "old": [
+              815424950
+            ],
+            "fixed": [
+              1317542703
+            ],
+            "narrow": [
+              248610897
+            ]
+          }
+        }
+      },
+      "old_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_t_0",
+          "artifact_sha256": "9454503431c555a3390300636a081e06a063c220ea6d2d3493ebb1ca8b922404",
+          "executable_sha256": "f003a834df07320f746fdb8c867657a9564a5e94717710f9c7369dc5b9115077",
+          "code_sha256": "1200ed97a44c66a0cae27cdb084025c2b87d3669401a60b42bdae5dfeb2d0a38",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 128,
+            "k_loop_writes": 96,
+            "k_loop_zeros": 2,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 13,
+              "role1": 13
+            },
+            "scratch_bytes": 8512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "fixed_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_t_0",
+          "artifact_sha256": "a2a9bd9bd390ef0469bfbabade364f2d9e3081e54ebbd73da76cdfaeb74e9f2d",
+          "executable_sha256": "412ab0534ecf1e7592cf42c31ce4a8da8b2989cb45228fc91b78835434beca8d",
+          "code_sha256": "2eae4224dafe997b342ff319af956707d984aa70181f84bb28b9223c58b1f786",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 2,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 13,
+              "role1": 13
+            },
+            "scratch_bytes": 8512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "narrow_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_t_0",
+          "artifact_sha256": "e1df846e5d1dbb4824117f5d59c02e442fc99b1d3d95361c9d1248fbb58b407a",
+          "executable_sha256": "8f7fbba79dc95bd62c5cdcf7beebeb648da5285eb236a40d988ca5a4a6f00c54",
+          "code_sha256": "88011a77a9677bca2bd63961f7fa4e9ce962dd98c159c41015080a616818764a",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 16,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 1,
+            "barriers": 3,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 9,
+              "role1": 9
+            },
+            "scratch_bytes": 1024,
+            "shared_windows": []
+          }
+        }
+      ]
+    },
+    {
+      "point": "op.gemv/medium/fp16-k320-n448",
+      "point_sha256": "fd15161f24b0d9305fdc83fde76124d2a8fa398f2db5eb98a6b3448b36d0f3ea",
+      "metrics": {
+        "device-cycles-serial-grid": {
+          "old": 2448593,
+          "fixed": 2355889,
+          "narrow": 714471,
+          "repair_speedup_old_over_fixed": 1.0393499014597039,
+          "fixed_over_conservative_ratio": 3.2973892572266754,
+          "samples": {
+            "old": [
+              2432739,
+              2449379,
+              2448593
+            ],
+            "fixed": [
+              2355203,
+              2355889,
+              2355895
+            ],
+            "narrow": [
+              714210,
+              714667,
+              714471
+            ]
+          }
+        },
+        "device-graph-makespan": {
+          "old": 2448595,
+          "fixed": 2355891,
+          "narrow": 714473,
+          "repair_speedup_old_over_fixed": 1.0393498680541673,
+          "fixed_over_conservative_ratio": 3.2973828262229645,
+          "samples": {
+            "old": [
+              2432741,
+              2449381,
+              2448595
+            ],
+            "fixed": [
+              2355205,
+              2355891,
+              2355897
+            ],
+            "narrow": [
+              714212,
+              714669,
+              714473
+            ]
+          }
+        }
+      },
+      "old_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_t_0",
+          "artifact_sha256": "da4cdaec84177edabfb38277e2a348eefc34faad1c3c24cd6090fb701e1f0485",
+          "executable_sha256": "25bd51eefc3d6ec6eabe314b0b052c42cf216b139445b25e2982732d07dcb347",
+          "code_sha256": "f1f7b2379d2be9cea97e49f8a68e87e406c4e453dbbe5b052c66e556426c4b52",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 128,
+            "k_loop_writes": 96,
+            "k_loop_zeros": 2,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 13,
+              "role1": 13
+            },
+            "scratch_bytes": 8512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "fixed_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_t_0",
+          "artifact_sha256": "ea8245b815434cd3b991fde632812f4cf1afea8ab4150bcdbec8fde0105f41e7",
+          "executable_sha256": "d58551177d8cadc00711109a22c1ddbadb20b01c74b940d65d08278c113c4d62",
+          "code_sha256": "bcb13f83783344af96c33b00b908c81686ea4245ff461bb6d6707c6f67b3350d",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 2,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 13,
+              "role1": 13
+            },
+            "scratch_bytes": 8512,
+            "shared_windows": []
+          }
+        }
+      ],
+      "narrow_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_t_0",
+          "artifact_sha256": "b6cf97564b34cacd7ed25cd94c1e927660c4ffb559d67da04808b7f460314e90",
+          "executable_sha256": "8f797a784a81cc16c48a9c26a10f69a5cf6a982dca810e2e4d95345216c29cd9",
+          "code_sha256": "a1134c73ce2b79dee28bcedf83e08ea1abda1a919a4b5bf6b669451099ce536f",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 16,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 1,
+            "barriers": 3,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 9,
+              "role1": 9
+            },
+            "scratch_bytes": 1024,
+            "shared_windows": []
+          }
+        }
+      ]
+    },
+    {
+      "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+      "point_sha256": "1a898be55b59c02cbbc4e6b2a988ecfcd4793e472f6dae3aa3aca612f43d23bc",
+      "metrics": {
+        "device-cycles-serial-grid": {
+          "old": 53419409154,
+          "fixed": 50934524507,
+          "narrow": 5898995535,
+          "repair_speedup_old_over_fixed": 1.0487858612807606,
+          "fixed_over_conservative_ratio": 8.634440254242369,
+          "samples": {
+            "old": [
+              53419409154
+            ],
+            "fixed": [
+              50934524507
+            ],
+            "narrow": [
+              5898995535
+            ]
+          }
+        },
+        "device-graph-makespan": {
+          "old": 53419409156,
+          "fixed": 50934524509,
+          "narrow": 5898995537,
+          "repair_speedup_old_over_fixed": 1.048785861278845,
+          "fixed_over_conservative_ratio": 8.634440251653983,
+          "samples": {
+            "old": [
+              53419409156
+            ],
+            "fixed": [
+              50934524509
+            ],
+            "narrow": [
+              5898995537
+            ]
+          }
+        }
+      },
+      "old_executables": [
+        {
+          "kernel": "triton_tem_fused_addmm_t_0",
+          "artifact_sha256": "8e39005aecc382658fc581a000335088ce2b9b1b9235bdfab776f1d5ffcbebf5",
+          "executable_sha256": "11eb79a8902f4b1296ae58b090092fd3227b92c9a2738670be0482fe80aa954b",
+          "code_sha256": "787aa4873bd3fdd2a7bb2cdd02e4c2d65eaf557dc9ee0bda46ebfa6d573084e6",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 128,
+            "k_loop_writes": 96,
+            "k_loop_zeros": 2,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 14,
+              "role1": 14
+            },
+            "scratch_bytes": 14144,
+            "shared_windows": []
+          }
+        }
+      ],
+      "fixed_executables": [
+        {
+          "kernel": "triton_tem_fused_addmm_t_0",
+          "artifact_sha256": "760e1c701f02e507c510c6c210deb7f09435d2722d25a298dbf6e4598bb0eb6f",
+          "executable_sha256": "11d7283c78303a97659c758ae127c72c775acf28cdb19bfdbdfeab5b6bb0a085",
+          "code_sha256": "f119d1855b9dd21efdb379846a19ba594ed2e498bc235a3ab18601e6b0a5a540",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 96,
+            "outside_k_loop_writes": 64
+          },
+          "resources": {
+            "accumulators": 6,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 14,
+              "role1": 14
+            },
+            "scratch_bytes": 10048,
+            "shared_windows": []
+          }
+        }
+      ],
+      "narrow_executables": [
+        {
+          "kernel": "triton_tem_fused_addmm_t_0",
+          "artifact_sha256": "3a51095653edc9df59c78584c62295178bbdd6b4a19172267ba27ba522d0fbfa",
+          "executable_sha256": "1d34e8315e57d3b2b83dfc84ff5793bbd354aba3edd1e898c1958f4c50a5861d",
+          "code_sha256": "a550e221dee5dd07a7055fbe176897ec0d0bac801f47709c5684dcfe6831a80a",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 16,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 1,
+            "barriers": 3,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 10,
+              "role1": 10
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ]
+    },
+    {
+      "point": "op.linear/medium/fp16-m128-k320-n256",
+      "point_sha256": "af00fd1e34ac660423c1cc3d8cc4d10443a9c2f9e69080514274b96db068693d",
+      "metrics": {
+        "device-cycles-serial-grid": {
+          "old": 11878146,
+          "fixed": 10664989,
+          "narrow": 1949447,
+          "repair_speedup_old_over_fixed": 1.1137513597060438,
+          "fixed_over_conservative_ratio": 5.470776584333916,
+          "samples": {
+            "old": [
+              11873912,
+              11879221,
+              11878146
+            ],
+            "fixed": [
+              10664989,
+              10667383,
+              10663386
+            ],
+            "narrow": [
+              1949447,
+              1949850,
+              1949327
+            ]
+          }
+        },
+        "device-graph-makespan": {
+          "old": 11878148,
+          "fixed": 10664991,
+          "narrow": 1949449,
+          "repair_speedup_old_over_fixed": 1.1137513383743127,
+          "fixed_over_conservative_ratio": 5.470771997625996,
+          "samples": {
+            "old": [
+              11873914,
+              11879223,
+              11878148
+            ],
+            "fixed": [
+              10664991,
+              10667385,
+              10663388
+            ],
+            "narrow": [
+              1949449,
+              1949852,
+              1949329
+            ]
+          }
+        }
+      },
+      "old_executables": [
+        {
+          "kernel": "triton_tem_fused_addmm_t_0",
+          "artifact_sha256": "805c03916c8a6bed90e090d8ebd2a8b817573d182d91a8cb07ff16306824f82e",
+          "executable_sha256": "8d07aaed7efb9b176c5e7825d6cd8d6386c9841421fe8b00aa374126cf25c3a4",
+          "code_sha256": "11decf0470f16b8ff6191355abd3e445204ba46a139695d8625043048cc1d510",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 128,
+            "k_loop_writes": 96,
+            "k_loop_zeros": 2,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 12,
+              "role1": 12
+            },
+            "scratch_bytes": 14144,
+            "shared_windows": []
+          }
+        }
+      ],
+      "fixed_executables": [
+        {
+          "kernel": "triton_tem_fused_addmm_t_0",
+          "artifact_sha256": "c29933275a8a0feb63056f767c89676189990304d431c875204cea233713ab4b",
+          "executable_sha256": "5d3f37fd0ac02a5c07638686f69de6d1280c7b3b0325f9ff6053a19ba4c5e281",
+          "code_sha256": "bc6ed537fda061efbd03aff16de3e0e0fae7bae8af47abcf247ebc95a9095f48",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 96,
+            "outside_k_loop_writes": 64
+          },
+          "resources": {
+            "accumulators": 6,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 12,
+              "role1": 12
+            },
+            "scratch_bytes": 10048,
+            "shared_windows": []
+          }
+        }
+      ],
+      "narrow_executables": [
+        {
+          "kernel": "triton_tem_fused_addmm_t_0",
+          "artifact_sha256": "444326d3d15b0b49f2ad81a73c5908539490221a2cc275f1b5a9d8913f43a380",
+          "executable_sha256": "fdb8c0f7a37ae8459a4dd00f57e2b5786cbb883867f9b5359359a2abfb27a5bd",
+          "code_sha256": "67617980675b27df4e8fcdb7b7192d563a600216ff06e1db53cb1bbd62f966b6",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 16,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 1,
+            "barriers": 3,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 10,
+              "role1": 10
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ]
+    },
+    {
+      "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "point_sha256": "c9873996038a73864d846e6d6496b954b71588b99a6f4c7fa69725d0563ade81",
+      "metrics": {
+        "device-cycles-serial-grid": {
+          "old": 43660673451,
+          "fixed": 34919267464,
+          "narrow": 11485664097,
+          "repair_speedup_old_over_fixed": 1.2503318832793944,
+          "fixed_over_conservative_ratio": 3.04024801431558,
+          "samples": {
+            "old": [
+              43660673451
+            ],
+            "fixed": [
+              34919267464
+            ],
+            "narrow": [
+              11485664097
+            ]
+          }
+        },
+        "device-graph-makespan": {
+          "old": 43660673453,
+          "fixed": 34919267466,
+          "narrow": 11485664099,
+          "repair_speedup_old_over_fixed": 1.2503318832650565,
+          "fixed_over_conservative_ratio": 3.0402480139603116,
+          "samples": {
+            "old": [
+              43660673453
+            ],
+            "fixed": [
+              34919267466
+            ],
+            "narrow": [
+              11485664099
+            ]
+          }
+        }
+      },
+      "old_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "artifact_sha256": "a870db07c303abbf80e151aa9d84aeb3759b88042e3103e7c6796595a5db3552",
+          "executable_sha256": "a3bb3cd926fcab7268be2d513c686409ce2243ae49a7f41dce94b1825b953077",
+          "code_sha256": "4644444f4637ee5c8722976ba4254136665a2a8833830a5c9a0d4e3d99b64698",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 128,
+            "k_loop_writes": 96,
+            "k_loop_zeros": 2,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 12,
+              "role1": 12
+            },
+            "scratch_bytes": 6400,
+            "shared_windows": []
+          }
+        }
+      ],
+      "fixed_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "artifact_sha256": "1ef34a80400c14840ba53709733bd418861bae8178606e08b9192ea6926155c4",
+          "executable_sha256": "b70a521bb48321fca19ad81bbff5c9536fdf57880d1cbad9ee3de9224bc4d488",
+          "code_sha256": "053836f8790fbd387526f7f8c5fc7fd7b12a99d1cfbb254230f3cce396dcc9a0",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 2,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 12,
+              "role1": 12
+            },
+            "scratch_bytes": 6400,
+            "shared_windows": []
+          }
+        }
+      ],
+      "narrow_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "artifact_sha256": "fe791716e4a82c8e055748b6e7e849921c85357a186a5f2eb822a2cd1bde1d46",
+          "executable_sha256": "4c59959819cc22e3a84da50ad64df15a970f29aa731c494363766c6ae8856e1d",
+          "code_sha256": "114c84ddb5f6a089fb6e2295658a8465fb5fe2b1ba2c471d869675d4cf80ed28",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 16,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 1,
+            "barriers": 3,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 9,
+              "role1": 9
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ]
+    },
+    {
+      "point": "op.matmul/medium/fp16-m128-k192-n128",
+      "point_sha256": "5fcd1986d57a317c831dfb5bb8b3334475169939d8e9c957ba15f7f06e8cef5a",
+      "metrics": {
+        "device-cycles-serial-grid": {
+          "old": 2133548,
+          "fixed": 1772241,
+          "narrow": 567407,
+          "repair_speedup_old_over_fixed": 1.203870128272622,
+          "fixed_over_conservative_ratio": 3.1234034828615087,
+          "samples": {
+            "old": [
+              2133548,
+              2143650,
+              2115986
+            ],
+            "fixed": [
+              1771850,
+              1774541,
+              1772241
+            ],
+            "narrow": [
+              567407,
+              567390,
+              567585
+            ]
+          }
+        },
+        "device-graph-makespan": {
+          "old": 2133550,
+          "fixed": 1772243,
+          "narrow": 567409,
+          "repair_speedup_old_over_fixed": 1.2038698982024474,
+          "fixed_over_conservative_ratio": 3.1233959983010493,
+          "samples": {
+            "old": [
+              2133550,
+              2143652,
+              2115988
+            ],
+            "fixed": [
+              1771852,
+              1774543,
+              1772243
+            ],
+            "narrow": [
+              567409,
+              567392,
+              567587
+            ]
+          }
+        }
+      },
+      "old_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "artifact_sha256": "5ce23b8ef797eec6931958299e5f5dbe98e0310d179dacec76a711cb6928bd73",
+          "executable_sha256": "fd1727c1951e7c7098cdcf2178c7c677ae4aa3a89907c4f7edcc82592c4b5b59",
+          "code_sha256": "6e68b56f17da4731e45099f2791c2ef35770384689240de53a46484753c264f7",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 128,
+            "k_loop_writes": 96,
+            "k_loop_zeros": 2,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 12,
+              "role1": 12
+            },
+            "scratch_bytes": 6400,
+            "shared_windows": []
+          }
+        }
+      ],
+      "fixed_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "artifact_sha256": "0922171ab4bad80770be6f77b69870ccd8cf8c9ef2d53b38134a9fb316b39428",
+          "executable_sha256": "e21cb10f3015714c670366d0f4efdd4bda9c741b290916075496e9797709256d",
+          "code_sha256": "983c05fcdf24e5e7fb223e4dca901561e07ac7bff52a45787d0696e9322396f6",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 32,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 2,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 12,
+              "role1": 12
+            },
+            "scratch_bytes": 6400,
+            "shared_windows": []
+          }
+        }
+      ],
+      "narrow_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "artifact_sha256": "242cef9596f2540a020f3cc21d403844965d32e4bb55bbb2e19d1a9bcc905282",
+          "executable_sha256": "4376071663851e22598f81392ba9483309477059123eddd2bfe5de3dcdf2e4f9",
+          "code_sha256": "1719d3555d860b63e3b005dd0b6510679cdc79fee25ed34f704e0a1f4a261de6",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 16,
+            "outside_k_loop_writes": 0
+          },
+          "resources": {
+            "accumulators": 1,
+            "barriers": 3,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 9,
+              "role1": 9
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ]
+    },
+    {
+      "point": "op.matmul/medium/fp32-m128-k192-n128",
+      "point_sha256": "6b6b368b24dfedbd7c53df61c1f1d6359500ce485dc4bd6c126abcb626626505",
+      "metrics": {
+        "device-cycles-serial-grid": {
+          "old": 3039195,
+          "fixed": 3042231,
+          "narrow": 1740241,
+          "repair_speedup_old_over_fixed": 0.9990020481679399,
+          "fixed_over_conservative_ratio": 1.748166489583914,
+          "samples": {
+            "old": [
+              3039195,
+              3037780,
+              3041320
+            ],
+            "fixed": [
+              3046194,
+              3042231,
+              3041642
+            ],
+            "narrow": [
+              1744302,
+              1739808,
+              1740241
+            ]
+          }
+        },
+        "device-graph-makespan": {
+          "old": 3039197,
+          "fixed": 3042233,
+          "narrow": 1740243,
+          "repair_speedup_old_over_fixed": 0.9990020488240052,
+          "fixed_over_conservative_ratio": 1.748165629742513,
+          "samples": {
+            "old": [
+              3039197,
+              3037782,
+              3041322
+            ],
+            "fixed": [
+              3046196,
+              3042233,
+              3041644
+            ],
+            "narrow": [
+              1744304,
+              1739810,
+              1740243
+            ]
+          }
+        }
+      },
+      "old_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "artifact_sha256": "062dc0fe205a2f9eafa6faeef5261dffd1c901b89c73c924d51a6f7087ec7f3e",
+          "executable_sha256": "76d623c2bf6800d6abb283665c52a2877498a061b4a05b401b551988b6c9b17d",
+          "code_sha256": "abdac16d5223fec795dfa088312bddeef64a25f1c02d9a2e9b16bfd069b21dc6",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 400,
+            "outside_k_loop_writes": 128
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 42,
+              "role1": 42
+            },
+            "scratch_bytes": 3584,
+            "shared_windows": []
+          }
+        }
+      ],
+      "fixed_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "artifact_sha256": "4d74b6a832d10442d3f4e02cc12545dba48f1bdb4e774563227d18227a2cc786",
+          "executable_sha256": "76d623c2bf6800d6abb283665c52a2877498a061b4a05b401b551988b6c9b17d",
+          "code_sha256": "abdac16d5223fec795dfa088312bddeef64a25f1c02d9a2e9b16bfd069b21dc6",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 400,
+            "outside_k_loop_writes": 128
+          },
+          "resources": {
+            "accumulators": 8,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 42,
+              "role1": 42
+            },
+            "scratch_bytes": 3584,
+            "shared_windows": []
+          }
+        }
+      ],
+      "narrow_executables": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "artifact_sha256": "5c3fcdbdf7e3d2a4e2ba585610fa5b2e65dd2192d6d81af568fe7dd81079afcd",
+          "executable_sha256": "afcd4031d142889b28da5de04140d95d3791b03587b67df60819ceae273dd2c9",
+          "code_sha256": "0a2e1d5d9abb51b8e8613578704cd755fcf297273d5d046e19ea7d88c1a7bc36",
+          "static_accumulator_round_trips": {
+            "k_loop_reads": 0,
+            "k_loop_writes": 0,
+            "k_loop_zeros": 0,
+            "outside_k_loop_reads": 64,
+            "outside_k_loop_writes": 48
+          },
+          "resources": {
+            "accumulators": 3,
+            "barriers": 2,
+            "commands_outstanding": "unknown",
+            "descriptors": 2,
+            "rf_private_per_role": {
+              "role0": 41,
+              "role1": 41
+            },
+            "scratch_bytes": 512,
+            "shared_windows": []
+          }
+        }
+      ]
+    }
+  ],
+  "repair_demonstrated_in_executed_artifacts": [
+    "model.mlp/medium/fp16-t128-d128",
+    "op.bmm/medium/fp16-b16-m64-k32-n64",
+    "op.gemv/hbm/fp16-k4096-n11008",
+    "op.gemv/medium/fp16-k320-n448",
+    "op.linear/hbm/fp16-m512-k4096-n11008",
+    "op.linear/medium/fp16-m128-k320-n256",
+    "op.matmul/hbm/fp16-m4096-k4096-n4096",
+    "op.matmul/medium/fp16-m128-k192-n128"
+  ],
+  "comparator_sha256": "c34d41cf06290f0fb1b7641253680e1ea9d3de600cfc0bf215093c49598ec86b",
+  "scope": "single-source-method compiler ablation; original point hashes and qualified board domain; descriptive medians without noise confidence intervals",
+  "caveats": [
+    "source versions have different executable sizes; complete graph costs include their actual placement and host gaps",
+    "historical fixed/narrow measurements reused; no interleaved old/fixed process sampling",
+    "comparison completion is not a general wide-tile speedup or default promotion"
+  ]
+}

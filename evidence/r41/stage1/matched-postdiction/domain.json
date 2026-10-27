@@ -1,0 +1,14 @@
+{
+  "created_utc": "2026-10-26T21:52:37.607093+00:00",
+  "source_config_sha256": "1e731106c0cbf556828d4a6ef9b10e11f8b5626aacff4a34d7cecfb45c38c575",
+  "config_sha256": "5b8bfd71936a87746b78ca6499fb3b02acbc812b887eb8e0fea3484e95b8fe34",
+  "overrides": {
+    "host_launch_cycles": 0,
+    "host_transfer_cycles": 0,
+    "host_transfer_cycles_per_kib": 0
+  },
+  "host_handoff": "dma-maintenance",
+  "memory_bytes": 4295098368,
+  "map_sha256": "a1019970fe9548fda5e9b7e44442a14f1a886decd397f472c498dd15f5970bc2",
+  "scope": "postdiction of completed launch cycles only; explicit ABI maintenance affects cache state outside launch timing; no parameters fitted; not host-call latency or unseen holdout"
+}

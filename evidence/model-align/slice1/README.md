@@ -6,7 +6,7 @@ active, `TNCA_TORCH_DEVICE=native`, run_graphs.py's knob sets, warmup 0 / timed 
 `spec/r40/suites/existing.json`. Model traces: `record_model.py --replay` with
 `configs/r40-board-cycle.cfg` (the M2 board structure, `core_model=1`).
 
-Files: `event_model_vs_rtl*.json` (the M2 event-driven core, `core_model=0`, its own memory; the
+Files: `cycle_core_replay_vs_rtl_model_points.json` (the four model points on their full RTL recordings), `event_model_vs_rtl*.json` (the M2 event-driven core, `core_model=0`, its own memory; the
 first table), `cycle_core_replay_vs_rtl*.json` (the cycle core replaying the RTL's beats; the
 current table). `*_order.json` are the same comparisons with `--order-only --data`.
 
@@ -15,11 +15,12 @@ current table). `*_order.json` are the same comparisons with `--order-only --dat
 - **The cycle core aligns exactly on all 23 operator points and on `model.mlp`**: every launch,
   every compared stream (issue events, memory-port beats, launch length), the same cycle count,
   and zero replay mismatches (the model's beats are the RTL's beats, in order).
-- The four other `model.*` rows (gpt2_block, llama_decode, llama_prefill, resnet_block) compare
-  against RTL traces the recorder's two-hour host timeout cut short in this run (`rc=1`): every
-  launch the RTL recorded aligns except the truncated last one, and the model's cycles run on
-  past the RTL's end. Their full recordings (`record_rtl.py --timeout 24000`) replace them when
-  they complete.
+- The four other `model.*` rows in the main table compare against RTL traces the recorder's
+  two-hour host timeout cut short (`rc=1`). Their full recordings (`record_rtl.py --timeout
+  24000`, 1.3 to 4.4 h each) are the third table: **gpt2_block and resnet_block exact; llama_decode
+  (338 of 340 launches) and llama_prefill (561 of 564) exact in total cycles** (+0 and +2 cycles over
+  1.7 M and 2.5 M), with the remaining launches shifted by one cycle somewhere inside and zero
+  replay mismatches. The residual cases are recorded in `cycle_core_replay_vs_rtl_model_points.json`.
 - `data` divergence at launch 1, beat 3 on every point (`--data` mode, not part of the coarse
   gate): the RTL's memory returns 0 for a word the model returns as the value a previous launch
   stored. Open question for the memory system (slice 2): a don't-care read, or a visibility rule
@@ -31,6 +32,17 @@ current table). `*_order.json` are the same comparisons with `--order-only --dat
   first request is the cycle after its instruction; a completed load slot is seen the cycle
   after its response; `insert` reads its destination as a vector source; the matrix engine's
   fragment reads contend on port 3 of the banked file.
+
+### The four model points on their full RTL recordings (record_rtl.py --timeout 24000)
+
+Verdict: **diverged** (2 of 4 point(s) diverge). Points 4, aligned 2, diverged 2, missing 0; |cycle error| median 0.0%, p95 0.0%.
+
+| point | launches equal | cycles RTL | cycles model | error | first issue divergence | first request divergence |
+|---|---:|---:|---:|---:|---|---|
+| model.gpt2_block_tiny_fp16-d64-h4-b1-s16 | 270/270 | 854124 | 854124 | +0.00% | equal | equal |
+| model.llama_decode_tiny_fp16-b1-p16 | 338/340 | 1733826 | 1733826 | +0.00% | L168 #1042 | equal |
+| model.llama_prefill_tiny_fp16-b1-s16 | 561/564 | 2487258 | 2487260 | +0.00% | L147 #720 | L147 #1238 |
+| model.resnet_block_tiny_fp32-n1-c8-hw8 | 54/54 | 981275 | 981275 | +0.00% | equal | equal |
 
 ### Cycle core (core_model=1), replay of the RTL's beats, tiny (2026-10-27, commit after the matrix engine)
 

@@ -389,3 +389,42 @@ base and advertised limits from the device, tests refusal above the base limit,
 and handles an absent extension. Grid-preflight-v3 is running the same measured
 6,144-program case; no passing grid judgment is made yet. These are simulator
 results only and do not change the acceptance ledger.
+
+## 2026-10-27 (Kimi) — P4 model/RTL preflight closed
+
+Grid-model-v4 exited zero on the serial simulator. Its archived report proves
+6,144 unique program IDs, 6,151 completion atomics including the dependent queue
+checks, and all four opt-in/overflow/drain/advertised-limit checks. Together with
+model-v3 and rtl-v1, this passes lifecycle_closeout.py; the derived summary and
+all raw journals, reports and tarballs are under evidence/r41/acceptance/p4/.
+The AOT grid and barrier cases are not standard-Torch evidence. No performance,
+persistent full-model or physical-board acceptance is inferred.
+
+Grid-preflight-v3 was stopped through its owned systemd unit after the serial
+success. Its report remains status running and is archived as incomplete, not a
+pass or semantic failure. All earlier failures and timeouts remain preserved.
+The integrity-checked acceptance ledger remains 40 passed, two failed, 45 not
+measured and seven blocked. S2-03.A.5 and S2-04.D.3/.4/.6/.7 still need physical
+measurements; D.7 additionally needs the persistent full-model session.
+
+### Replacement lead-only P2/P4 launch (immutable 7b10e7b source)
+
+Commit 7b10e7b is staged at `~/r41_accept_7b10e7b` on acf3019. All 3,825 tracked
+files match their Git SHA-1 blob identities, with zero mismatches. CPU-only
+`--check-only` preparation passes for both manifests; verification records are
+in p4/staged-*-7b10e7b.json. No card was opened. This replaces the superseded
+deedaed command above, which must not be run.
+
+After the lead alone has loaded the approved run-1 100 MHz image under the
+existing 15-consecutive-minute idle procedure, run this single sequential queue
+on acf3019 (never alongside another U280 job):
+
+```sh
+cd ~/r41_accept_7b10e7b
+setsid nohup ~/tc_env/torchenv/bin/python tools/performance_harness/launches/acceptance_queue.py --root "$PWD" --out ~/r41_accept_p2_p4_7b10e7b --python ~/tc_env/torchenv/bin/python --budget-seconds 6900 --manifest spec/r41/stage2/acceptance/s2-p2-locality.json --manifest spec/r41/stage2/acceptance/s2-p4-lifecycle.json > ~/r41_accept_p2_p4_7b10e7b.log 2>&1 < /dev/null &
+```
+
+The queue verifies the approved image UUID, 100 MHz clock evidence and kdsstat
+around each step; it never programs or resets the card. A timeout preserves the
+failure and needs a new lead budget decision, not an automatic retry. No agent
+card access, image loading or full-image build occurred.

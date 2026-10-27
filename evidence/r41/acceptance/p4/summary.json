@@ -1,0 +1,35 @@
+{
+  "schema": "tnca-r41-lifecycle-closeout/1",
+  "status": "model-and-rtl-preflight-pass",
+  "board_acceptance": "not-measured",
+  "software_trees": [
+    "files:8e086d10687c704cf58d3a9b6e880b4ce1c59d0a687f2255b5a32eced510b8d4"
+  ],
+  "aliases": {
+    "backend": "sim-file",
+    "refusals": 4,
+    "report_sha256": "ee607269a1a92a9be20013737be5e1fe65f89498118561c106734ba22f5a9e89"
+  },
+  "barrier": {
+    "backend": "sim-file",
+    "completed_arm_wait_iterations": 65537,
+    "device_cycles": 1114159,
+    "report_sha256": "d81b16ac5833823b59b9a411bc03c0dc025eaed2d2dd800d91b2105bac72de89"
+  },
+  "grid": {
+    "backend": "sim-file",
+    "programs": 6144,
+    "completed_events": 8,
+    "completion_atomics": 6151,
+    "queue_limit": 8,
+    "report_sha256": "1bcf785a715d9479427a27588d316c1add844c5a6b9220e00e22fd5d619cc4ab"
+  },
+  "standard_torch_eviction": "117 graphs; 1 module(s) unloaded to make room; resident data intact",
+  "code_cache": {
+    "rtl_launches": 6,
+    "live_buffer_preserved": true
+  },
+  "rtl_grid_configurations": 20,
+  "rtl_barrier_wrap_and_exhaustion": "pass",
+  "interpretation": "Functional model/RTL preflight only. The AOT grid and barrier cases are not standard-Torch or physical-board results. No full-model persistent-session, performance, or board acceptance inference."
+}

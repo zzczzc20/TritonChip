@@ -428,3 +428,23 @@ The queue verifies the approved image UUID, 100 MHz clock evidence and kdsstat
 around each step; it never programs or resets the card. A timeout preserves the
 failure and needs a new lead budget decision, not an automatic retry. No agent
 card access, image loading or full-image build occurred.
+
+## 2026-10-27 (Kimi) — Qwen FP8 chat driver implementation
+
+Added tools/models/chat.py with official HF tokenizers/chat templates, one-shot
+and REPL modes, full-checkpoint defaults, explicitly labeled reduced-depth proof
+runs, static-cache prefill/decode, greedy and seeded sampling, and CPU-W8A8
+teacher-forced logit checks. TNCA uses the official FP8 Hub route through
+standard Torch. Reports derive per-token time and tokens/s from actual steps,
+record graph growth and host transfers, and distinguish the theoretical 2.4 GB/s
+core-port ceiling from measured performance. Usage and exact operation coverage
+are in doc/r41_chat.md; linear attention and single-image vision are not listed
+as fixed blockers, while dynamic multi-image/video segmentation remains refused.
+
+Four real-Torch control tests pass on GB10. A reduced-depth CPU smoke run exited
+zero and generated three tokens through the W8A8 reference; its raw report is
+archived under evidence/r41/chat/cpu-v1*. This is not TNCA performance evidence.
+The first TLM launch failed before model loading because CUDA and TNCA drivers
+were both active. Its journal is preserved as tlm-vl-v1.log. The corrected
+launch disables CUDA visibility and is running; no simulator or board result is
+claimed yet. Compiler and 88-document checks pass. No card/image work started.

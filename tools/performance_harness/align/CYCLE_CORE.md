@@ -122,6 +122,14 @@ invisible under core-level replay because the replayed port hid them):
   one tag allocated forever and the engine never drained (op.gemv launch 26,
   model.mlp, model.gpt2_block: a refusal "core made no progress");
 - the dispatcher above;
+- a vector source reads on the port of its instruction field (a: 0, b: 1,
+  c: 2; store data and `v.insert`'s Vd on vb, a scatter's data on vc), not
+  on the port of its position among the sources. The model numbered sources
+  in order, so an `a.fma.row` (vector in `b`) asked on port 0 and lost its
+  bank to the matrix engine's port 3 where the RTL's port 1 wins (round
+  robin from `rr_ptr = 1`): one refused fragment read, the mma one cycle
+  longer, the accumulator read behind it one cycle later (llama_decode,
+  launch 168, invisible in 1.7 M cycles otherwise);
 - the memory arbiter's round robin also moves on the host's traffic between
   launches: the host's words go through tile 0 and the homes
   (`tnca_top.v:488`), and every host miss is a fill (and maybe a writeback)

@@ -12,9 +12,8 @@ Files: `three_cores_uncore_replay_vs_rtl.json` (op.add and matmul with `--active
 sides: the three core traces and the uncore trace of each), `board_uncore_replay_vs_rtl.json` (op.add
 with three active cores on the board-top bench, `record_rtl.py --bench board`, replayed with
 `r40-boardbench-cycle.cfg`: the board's links, dispatch stages and AXI adapters, UNCORE_TIMING_BOARD.md),
-`tiny_uncore_replay_vs_rtl.json` (the tiny tier of `spec/r40/suites/existing.json`, one active core: the 25
-points recorded so far; `model.llama_decode` and `model.llama_prefill` were still recording on the RTL when this
-table was made and are added when they land).
+`tiny_uncore_replay_vs_rtl.json` (the tiny tier of `spec/r40/suites/existing.json`, one active core: 26 of its
+27 points; `model.llama_prefill` was still recording on the RTL when this table was made and is added when it lands).
 
 ## What the tables say
 
@@ -49,8 +48,8 @@ table was made and are added when they land).
   to a different core (38/10/10 against 37/11/10): the timing difference is the bench's random
   stalls, not structure. The U280's HBM is not that line model either, so the prediction
   configuration (`r40-board-cycle.cfg`) keeps the deterministic slave with one latency per port.
-- **The tiny tier aligns exactly** (25 points, one active core, every core and uncore stream, 853522
-  cycles of model.gpt2_block among them). Its first run diverged on four points and the two causes
+- **The tiny tier aligns exactly** (26 points, one active core, every core and uncore stream; model.gpt2_block's
+  853522 cycles and model.llama_decode's 340 launches / 1733212 cycles among them). Its first run diverged on four points and the two causes
   were both rules of the RTL the single-point runs had not exercised (CYCLE_CORE.md): the transfer
   engine's store / transposed-load tag is the pre-edge free tag (a tag freed by a response at the same
   edge is reused by the next request; the model's post-edge choice let a fast slice hit in the middle
@@ -59,12 +58,17 @@ table was made and are added when they land).
   between launches too (host words go through tile 0 and the homes, every host miss is a port
   transaction), so the model's zero-time host warm-up now advances the pointer (op.transpose's launch 28
   had its first three-way tie granted 2,0,1 instead of 1,2,0 and every later port record relabelled).
+  llama_decode then showed the last one-cycle rule slice 1 had left (338 of 340 launches): a vector source reads
+  on the port of its instruction field (a: 0, b: 1, c: 2; store data on vb), not of its position among the
+  sources; an `a.fma.row` with its vector in `b` competes as port 1 and beats the matrix engine's port 3 on a
+  shared bank where port 0 loses, one refused fragment read, the mma one cycle longer. Found with the model's
+  new `TNCA_MODEL_VRF_DEBUG` dump of the register-file arbiter.
 - The uncore trace carries no cycle verdict of its own (its `END` is each side's own clock, the
   model's including the host path); the core traces carry it.
 
 ### Tiny tier, one active core, uncore replay (device bench, r40-sim-cycle.cfg)
 
-Verdict: **aligned** (all 100 point(s) equal in every compared stream). Points 100, aligned 100, diverged 0, missing 0; |cycle error| median 0.0%, p95 0.0%.
+Verdict: **aligned** (all 104 point(s) equal in every compared stream). Points 104, aligned 104, diverged 0, missing 0; |cycle error| median 0.0%, p95 0.0%.
 
 | point | launches equal | cycles RTL | cycles model | error | first issue divergence | first request divergence |
 |---|---:|---:|---:|---:|---|---|
@@ -72,6 +76,10 @@ Verdict: **aligned** (all 100 point(s) equal in every compared stream). Points 1
 | model.gpt2_block_tiny_fp16-d64-h4-b1-s16.core1 | 0/0 | 0 | 0 | +0.00% | equal | equal |
 | model.gpt2_block_tiny_fp16-d64-h4-b1-s16.core2 | 0/0 | 0 | 0 | +0.00% | equal | equal |
 | model.gpt2_block_tiny_fp16-d64-h4-b1-s16.uncore | 270/270 | | | | slice: equal / equal | port: equal / equal |
+| model.llama_decode_tiny_fp16-b1-p16 | 340/340 | 1733212 | 1733212 | +0.00% | equal | equal |
+| model.llama_decode_tiny_fp16-b1-p16.core1 | 0/0 | 0 | 0 | +0.00% | equal | equal |
+| model.llama_decode_tiny_fp16-b1-p16.core2 | 0/0 | 0 | 0 | +0.00% | equal | equal |
+| model.llama_decode_tiny_fp16-b1-p16.uncore | 340/340 | | | | slice: equal / equal | port: equal / equal |
 | model.mlp_tiny_fp16-t16-d64 | 46/46 | 337256 | 337256 | +0.00% | equal | equal |
 | model.mlp_tiny_fp16-t16-d64.core1 | 0/0 | 0 | 0 | +0.00% | equal | equal |
 | model.mlp_tiny_fp16-t16-d64.core2 | 0/0 | 0 | 0 | +0.00% | equal | equal |

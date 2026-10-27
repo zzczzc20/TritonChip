@@ -283,7 +283,15 @@ Lines 746-811 and `tnca_vrf_banked.v:239-268`, `tnca_rf_bank.v:145-170`.
 
 Bank side: port p (0 va, 1 vb, 2 vc, 3 matrix, 4 tensor store read) asks for
 physical register `vbase[rctx] + idx`; bank = `phys % 4`, row = `phys / 4`
-(`tnca_vrf_banked.v:13-14`). Per cycle each bank accepts at most one read;
+(`tnca_vrf_banked.v:13-14`). The port is the instruction FIELD, not the
+operand's order: `a` reads on va, `b` on vb, `c` on vc (`TNCA_DEC_SRC_V*`,
+`tnca_decoder.v:163-165`); a vector store's data (field d) reads on vb (601),
+a scatter's on vc with its index on vb (613-614), `v.insert`'s Vd on vb (524),
+`a.mul.row` / `a.fma.row`'s vector on vb (`TNCA_DEC_SRC_VB`, 9B). An
+instruction whose only vector source is `b` therefore competes as port 1:
+with `rr_ptr = 1` it beats the matrix's port 3 on a shared bank, as port 0
+would not (seen on llama_decode launch 168: an `a.fma.row` behind an mma
+cost the engine one refused fragment read). Per cycle each bank accepts at most one read;
 ports are scanned in order `u_vrf.rr_ptr, +1, ... (mod 5)`, a port is accepted
 if its bank is not yet taken this cycle and the bank's response register is
 free (`bank_accept`, always true here because `rsp_ready` is tied to 1, 987);

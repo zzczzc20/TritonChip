@@ -1,11 +1,11 @@
 {
  "aggregates": {
-  "aligned": 100,
+  "aligned": 104,
   "diverged": 0,
   "median_abs_cycle_error": 0.0,
   "missing": 0,
   "p95_abs_cycle_error": 0.0,
-  "points": 100
+  "points": 104
  },
  "options": {
   "data": false,
@@ -73,6 +73,77 @@
    "launches": 270,
    "launches_a": 270,
    "launches_b": 270,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16": {
+   "aligned_launches": 340,
+   "cycle_error": 0.0,
+   "cycles_a": 1733212,
+   "cycles_b": 1733212,
+   "divergences": [],
+   "equal": true,
+   "launches": 340,
+   "launches_a": 340,
+   "launches_b": 340,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16.uncore": {
+   "aligned_launches": 340,
+   "cycles_a": 7370786,
+   "cycles_b": 60644189,
+   "divergences": [],
+   "equal": true,
+   "launches": 340,
+   "launches_a": 340,
+   "launches_b": 340,
    "status": "aligned",
    "streams": {
     "dram_req": "equal",
@@ -1788,7 +1859,7 @@
    }
   }
  },
- "reason": "all 100 point(s) equal in every compared stream",
+ "reason": "all 104 point(s) equal in every compared stream",
  "schema": "tnca-core-alignment/1",
  "verdict": "aligned"
 }

@@ -89,6 +89,8 @@ struct CycleCore {
     // Debugging aid: TNCA_MODEL_TXF_DEBUG=core:launch:from:to:path dumps the transfer engine and the
     // port every cycle of that launch window (cycles relative to the launch) to `path`.
     u64 launch_n=0;long dbg_core=-1,dbg_launch=-1;u64 dbg_from=0,dbg_to=0;std::ofstream dbg;
+    // TNCA_MODEL_VRF_DEBUG=core:launch:from:to:path dumps the register-file read arbiter per cycle (ports, banks, grants)
+    long vdbg_core=-1,vdbg_launch=-1;u64 vdbg_from=0,vdbg_to=0;std::ofstream vdbg;
     // Diagnostic snapshot of the pre-edge state (the watchdog's message).
     std::string snapshot(const char* wires)const{
         std::ostringstream o;o<<"cycle "<<t<<" (launch+"<<(t-launch_cycle)<<") "<<wires<<"\n";
@@ -137,6 +139,9 @@ struct CycleCore {
         if(const char* p=std::getenv("TNCA_MODEL_TXF_DEBUG")){std::string s(p);std::vector<std::string> f;size_t b=0;
             for(size_t i=0;i<=s.size();++i)if(i==s.size()||s[i]==':'){f.push_back(s.substr(b,i-b));b=i+1;}
             if(f.size()==5){dbg_core=std::stol(f[0]);dbg_launch=std::stol(f[1]);dbg_from=std::stoull(f[2]);dbg_to=std::stoull(f[3]);if(dbg_core==long(c.id))dbg.open(f[4]);}}
+        if(const char* p=std::getenv("TNCA_MODEL_VRF_DEBUG")){std::string s(p);std::vector<std::string> f;size_t b=0;
+            for(;;){size_t e=s.find(':',b);if(e==std::string::npos){f.push_back(s.substr(b));break;}f.push_back(s.substr(b,e-b));b=e+1;}
+            if(f.size()==5){vdbg_core=std::stol(f[0]);vdbg_launch=std::stol(f[1]);vdbg_from=std::stoull(f[2]);vdbg_to=std::stoull(f[3]);if(vdbg_core==long(c.id))vdbg.open(f[4]);}}
         if(const char* p=std::getenv("TNCA_MODEL_CORE_REPLAY")){const char* which=std::getenv("TNCA_MODEL_CORE_TRACE_CORE");
             const bool all=which && std::string(which)=="all";
             if(*p && (all || unsigned(which && *which?std::strtoul(which,nullptr,10):0)==c.id)){
@@ -173,7 +178,10 @@ struct CycleCore {
     static unsigned wb_delay(const Inst& in){return is_mul(in)?3:is_fpnorm(in)?2:0;}
     static bool books_wb(const Inst& in){unsigned dc=dest_class(in);return (dc==1 || dc==2 || dc==3) && !(is_mem(in) || is_fpmc(in));}
     // Sources read through the scoreboards (decoder o_*_en) [2.7]
-    struct Srcs {unsigned ns=0,nv=0,np=0;unsigned s[8],v[3],p[3];void S(unsigned i){if(ns<8)s[ns++]=i;}void V(unsigned i){if(nv<3)v[nv++]=i;}void P(unsigned i){if(np<3)p[np++]=i;}};
+    // vector sources carry their read port: the decoder binds by field (a: va = port 0, b: vb = 1, c: vc = 2; a vector
+    // store's data in d goes to vb, a scatter's to vc, v.insert's Vd to vb: tnca_decoder.v `TNCA_DEC_SRC_V*`, 524, 601, 614).
+    // Under contention with the matrix (3) and tensor (4) ports the port decides who wins the bank [2.9]
+    struct Srcs {unsigned ns=0,nv=0,np=0;unsigned s[8],v[3],vp[3],p[3];void S(unsigned i){if(ns<8)s[ns++]=i;}void V(unsigned i,unsigned port){if(nv<3){vp[nv]=port;v[nv++]=i;}}void P(unsigned i){if(np<3)p[np++]=i;}};
     static Srcs sources(const Inst& in){
         Srcs o;const unsigned f=in.func;
         if(in.major>=16)o.P(in.pred);
@@ -185,25 +193,25 @@ struct CycleCore {
                 break;
             case K::Branch:if(f==1 || f==2 || f==4 || f==9){o.S(in.a);}break;
             case K::Lsu:{bool store=is_store(in),vector=f>=16,gather=f>=32;o.S(in.a);
-                if(vector){if(gather){o.V(in.b);}if(store)o.V(in.d);}else if(store){o.S(in.d);}break;}
+                if(vector){if(gather){o.V(in.b,1);}if(store)o.V(in.d,gather?2:1);}else if(store){o.S(in.d);}break;}
             case K::Vint:{bool imm=f>=32 && f<=63;
                 if(f==26)o.S(in.a);
-                if(f!=64 && f!=27 && f!=26)o.V(in.a);
-                if(!imm && f!=0 && f!=20 && f!=21 && f!=26 && f!=27 && f!=64)o.V(in.b);
+                if(f!=64 && f!=27 && f!=26)o.V(in.a,0);
+                if(!imm && f!=0 && f!=20 && f!=21 && f!=26 && f!=27 && f!=64)o.V(in.b,1);
                 break;}
-            case K::Vfp:o.V(in.a);
-                if(f!=20 && f!=21)o.V(in.b);
-                if(f==6 || f==7)o.V(in.c);
+            case K::Vfp:o.V(in.a,0);
+                if(f!=20 && f!=21)o.V(in.b,1);
+                if(f==6 || f==7)o.V(in.c,2);
                 break;
-            case K::Cvt:case K::Sfu:case K::Reduce:case K::Extract:o.V(in.a);break;
+            case K::Cvt:case K::Sfu:case K::Reduce:case K::Extract:o.V(in.a,0);break;
             case K::Pred:if(f!=19){o.P(in.a);}else {o.S(in.a);}if(f==1 || f==2 || f==3 || f==5){o.P(in.b);}break;
-            case K::Shuffle:o.V(in.a);if(f==3){o.V(in.b);}else {o.S(in.b);}break;
-            case K::Insert:o.S(in.a);o.V(in.d);break;   // tnca_decoder.v: read-modify-write on Vd (o_vb_en)
+            case K::Shuffle:o.V(in.a,0);if(f==3){o.V(in.b,1);}else {o.S(in.b);}break;
+            case K::Insert:o.S(in.a);o.V(in.d,1);break;   // tnca_decoder.v: read-modify-write on Vd (o_vb_en)
             case K::Desc:if(f==0){o.S(in.a);}break;
             case K::Xfer:case K::Prefetch:o.S(in.c);o.S(in.b);o.S(in.b+1);o.S(in.b+2);o.S(in.b+3);o.S(in.b+4);break;
             case K::Barrier:if(f==3 || f==4){o.S(in.a);}break;
             case K::Mma:o.S(in.c);if(in.mod&16){o.S((in.c+1)&63);}break;
-            case K::ARow:o.S(in.a);if(f==2)o.S(in.b);else{o.V(in.b);if(f==3)o.S(in.c);}break;
+            case K::ARow:o.S(in.a);if(f==2)o.S(in.b);else{o.V(in.b,1);if(f==3)o.S(in.c);}break;
             case K::AVread:o.S(in.b);break;
             default:break;
         }
@@ -490,7 +498,7 @@ struct CycleCore {
         }
         // ---- operand fetch [2.9]
         bool of_enable=r.valid && !r_vsrc_haz;unsigned of_need=0;unsigned need_idx[3]={0,0,0};
-        if(of_enable)for(unsigned i=0;i<rs.nv;++i){of_need|=1U<<i;need_idx[i]=rs.v[i];}
+        if(of_enable)for(unsigned i=0;i<rs.nv;++i){of_need|=1U<<rs.vp[i];need_idx[rs.vp[i]]=rs.v[i];}
         unsigned of_arrive=0;for(auto& br:bank_rsp)if(br.valid && br.port<3)of_arrive|=1U<<br.port;
         of_arrive&=~(pf_tag&~(adv_q?7U:0U));
         unsigned of_have=of_got|of_arrive,of_want=of_need&~of_have;
@@ -498,7 +506,7 @@ struct CycleCore {
         bool r_of_idle=of_got==0 && of_arrive==0 && of_want==0;
         // D prefetch [2.6]
         unsigned pf_need=0,pf_idx[3]={0,0,0};bool pf_haz=false;
-        if(d.valid){Srcs ds=sources(*d.in);for(unsigned i=0;i<ds.nv;++i){pf_need|=1U<<i;pf_idx[i]=ds.v[i];
+        if(d.valid){Srcs ds=sources(*d.in);for(unsigned i=0;i<ds.nv;++i){pf_need|=1U<<ds.vp[i];pf_idx[ds.vp[i]]=ds.v[i];
                 unsigned idx=ds.v[i];bool haz=(sb_v[d.rctx][idx] && !wb_hit(2,d.rctx,idx)) || (r.valid && r_dc==2 && r.rctx==d.rctx && r.in->d==idx);if(haz)pf_haz=true;}}
         bool pf_go=d.valid && pf_need && of_want==0 && !(r.valid && r_vsrc_haz) && !pf_haz;
         // ---- bank arbiter: ports 0..2 (3 and 4 not modelled) [2.9]
@@ -517,6 +525,12 @@ struct CycleCore {
             if(bank_taken[bk]){continue;}
             bank_taken[bk]=true;accepted|=1U<<p;
             if(first_served<0){first_served=int(p);}}
+        if(vdbg_core==long(c.id) && vdbg_launch+1==long(launch_n) && t-launch_cycle>=vdbg_from && t-launch_cycle<=vdbg_to){
+            vdbg<<(t-launch_cycle)<<" rr="<<vrf_rr<<" req=";
+            for(unsigned p=0;p<3;++p){if((req_mask>>p)&1){vdbg<<" p"<<p<<":"<<phys(req_rctx,req_idx[p])<<"/b"<<phys(req_rctx,req_idx[p])%4;}}
+            if(p3_req){vdbg<<" p3:"<<p3_phys<<"/b"<<p3_phys%4;}if(p4_req){vdbg<<" p4:"<<p4_phys<<"/b"<<p4_phys%4;}
+            vdbg<<" acc="<<accepted<<" first="<<first_served<<" pf_go="<<pf_go<<" mtx.st="<<mtx.st<<" kk="<<mtx.kk<<" mm="<<mtx.mm<<" la="<<mtx.la<<" pend="<<mtx.pending
+                <<" r="<<r.valid<<"/"<<std::hex<<(r.valid?r.pc:0)<<" d="<<d.valid<<"/"<<(d.valid?d.pc:0)<<std::dec<<"\n";}
         // ---- stall summary [2.1]
         bool stall_other=hazard||stall_lsu||stall_fpu||stall_mtx||stall_txf||stall_fence||stall_arrive||stall_rsv||wb_steal;
         bool stall_raw=stall_other||vrf_stall;

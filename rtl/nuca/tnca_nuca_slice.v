@@ -54,6 +54,7 @@ module tnca_nuca_slice #(
     parameter LINE_BYTES = 64,
     parameter LINE_BITS  = 512,
     parameter WORD_BITS  = 64,
+    parameter HIT_CHAIN = 0,
     parameter WORD_BYTES = 8,
     parameter SETS       = 64,
     parameter SET_W      = 6,        // $clog2(SETS)
@@ -432,7 +433,8 @@ module tnca_nuca_slice #(
                 if ((j != i) && rq_v[j] && older[j][i] &&
                     (rq_addr[j][ADDR_W-1:OFF_W] == rq_addr[i][ADDR_W-1:OFF_W]))
                     shadowed = 1'b1;
-            elig[i] = rq_v[i] && !rq_blocked[i] && !shadowed;
+            elig[i] = rq_v[i] && !rq_blocked[i] && !shadowed
+                      && !(HIT_CHAIN && est==E_HIT && i==cur_rq);
         end
 
         // Among the eligible, take the oldest.
@@ -619,7 +621,11 @@ module tnca_nuca_slice #(
     // Shallow 32/64-entry banks use LUTRAM with an explicit output register.
     // No fill can coincide with lookup/maintenance reads in this single engine,
     // so same-set read-after-fill sees the completed write on the next E_SEL.
-    wire tag_read_en = (est == E_SEL && !(maint_requested && maint_ready) && !ms_pick &&
+    // Reserve room for both the retiring hit and the following response.
+    // Conflicting requests remain shadowed until the prior hit retires.
+    wire hit_chain_take = HIT_CHAIN && est==E_HIT && !maint_requested &&
+                          !ms_pick && sel_valid && rsq_cnt<RSPQ_N-1;
+    wire tag_read_en = hit_chain_take || (est == E_SEL && !(maint_requested && maint_ready) && !ms_pick &&
                         sel_valid && !rsq_full) || est == E_MTAG;
     wire [SET_W-1:0] tag_read_set = (est == E_MTAG) ? maint_set :
                                    `SLICE_SET(rq_addr[sel_idx]);
@@ -1254,6 +1260,15 @@ module tnca_nuca_slice #(
                     tl_note(cur_addr);
                 rq_v[cur_rq] <= 1'b0;
                 est <= E_SEL;
+                if(hit_chain_take)begin
+                    cur_rq<=sel_idx;cur_addr<=rq_addr[sel_idx];
+                    cur_we<=rq_we[sel_idx];cur_amo<=rq_amo[sel_idx];
+                    cur_aop<=rq_aop[sel_idx];cur_cmp<=rq_cmp[sel_idx];
+                    cur_be<=rq_be[sel_idx];cur_wdata<=rq_wdata[sel_idx];
+                    cur_src<=rq_src[sel_idx];cur_tag<=rq_tag[sel_idx];
+                    if(any_blocked)perf_hit_past_block<=perf_hit_past_block+1;
+                    est<=E_LOOK;
+                end
             end
 
             //---------------------------------------------------------------

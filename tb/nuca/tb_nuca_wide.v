@@ -21,6 +21,9 @@
 module tb_nuca_wide;
     parameter CACHE_DATA_PIPELINE=1;
     parameter PRESSURE=0;
+    parameter HIT_CHAIN=0;
+    parameter RSP_STALL=0;
+    parameter SERVICE_MODE=0; // 1: hot reads, 2: streaming reads
     parameter DCO_REGISTERED_RANGES = 0;
     parameter SYNC_TAG_BANK = 1;
     parameter BALANCED_VICTIM = 1;
@@ -112,7 +115,7 @@ module tb_nuca_wide;
     wire [63:0]             tl_addr;
 
     tnca_nuca_slice #(
-        .CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE),.MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
+        .HIT_CHAIN(HIT_CHAIN),.CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE),.MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(WORD_BITS), .WORD_BYTES(WORD_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
@@ -252,6 +255,20 @@ module tb_nuca_wide;
     end
 
     // ---- watchdog: a deadlocked slice must fail, not run forever ------------
+    integer service_cycle=0,accepted=0,responses=0,first_accept=-1,last_response=-1;
+    always @(posedge clk)begin
+        if(rst_n)begin
+            service_cycle<=service_cycle+1;
+            if(req_valid && req_ready)begin
+                accepted<=accepted+1;
+                if(first_accept<0)first_accept<=service_cycle;
+            end
+            if(rsp_valid && rsp_ready)begin responses<=responses+1;last_response<=service_cycle;end
+        end
+    end
+    generate if(RSP_STALL)begin:g_rsp_stall
+        always @(posedge clk)if(rst_n)rsp_ready <= service_cycle%13<5;
+    end endgenerate
     integer wd;
     initial begin
         wd = 0;
@@ -338,6 +355,8 @@ module tb_nuca_wide;
                 end
 
                 if(PRESSURE) widx=0;
+                if(SERVICE_MODE==1)widx=(n_issued%16)*WORDS_PER_LINE;
+                if(SERVICE_MODE==2)widx=n_issued%N_WORDS;
 
                 // A home-consistent address: the mesh only ever delivers a
                 // slice the lines whose home bits (line[1:0] ^ line[3:2]) are
@@ -349,7 +368,7 @@ module tb_nuca_wide;
                 req_src   = 4'd1;
                 req_tag   = free_tag;
                 req_be    = {WORD_BYTES{1'b1}};
-                if (rnd[5:4] == 2'b00) begin
+                if (SERVICE_MODE==0 && rnd[5:4] == 2'b00) begin
                     // write
                     req_we    = 1'b1;
                     for(integer bytepos=0;bytepos<WORD_BYTES;bytepos=bytepos+1)begin
@@ -388,6 +407,10 @@ module tb_nuca_wide;
             i = i + 1;
         end
 
+        if(SERVICE_MODE!=0)begin
+            if(accepted!=nreq || responses!=nreq)$fatal(1,"service lost a handshake");
+            $display("HOME SERVICE mode=%0d word_bytes=%0d accepted=%0d responses=%0d span_cycles=%0d hit=%0d miss=%0d",SERVICE_MODE,WORD_BYTES,accepted,responses,last_response-first_accept+1,perf_hit,perf_miss);
+        end
         $display("---- nuca slice ----");
         $display("seed=%0d trace_hash=%016h writes=%0d", seed0, trace_hash, n_write);
         $display("issued=%0d reads_checked=%0d inflight_left=%0d", n_issued, n_checked, inflight);

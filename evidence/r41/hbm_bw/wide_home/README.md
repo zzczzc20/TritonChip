@@ -32,3 +32,22 @@ Next parameterize the real tile/mesh/host and board hierarchy, connect the hybri
 ## Routed screen result
 
 The free SLR1 screen completed on the x86 host after sourcing ~/x86_link_env.sh. At 10 ns, routed WNS is +1.774 ns and WHS is +0.007 ns. The routed slice uses 41,279 LUTs (30,807 logic and 10,472 LUTRAM) and 5,789 FFs, with no block RAM or DSP. Raw routed timing, utilization and DRC reports are retained in physical/. This is a unit implementation result, not a full-image timing or throughput qualification. No full-run allocation or card access was used.
+
+## Measured service and opt-in hit chaining
+
+The checked home service sweep now measures accepted requests through final responses instead of assuming that a 512-bit word implies one word per cycle. Run `PYTHONPATH=. python3 tools/r41/home_service_sweep.py --out FRESH_DIRECTORY`. Six cases return the same 262,144 useful bytes; every read and request/response count is checked. The fixture uses 32 sets/eight ways, four MSHRs, eight target slots, 32 source tags, a synthetic delayed/reordered memory and an always-ready response sink. This is standalone service, without AXI, NoC, RF or torch.
+
+| Word / mode | Cycles | Useful GB/s at assumed 100 MHz |
+| --- | ---: | ---: |
+| 64-bit hot read | 98,475 | 0.266 |
+| 512-bit hot read, original selection | 12,459 | 2.104 |
+| 512-bit hot read, hit chaining | 8,385 | 3.126 |
+| 64-bit streaming read | 266,233 | 0.0985 |
+| 512-bit streaming read, original selection | 56,280 | 0.4658 |
+| 512-bit streaming read, hit chaining | 56,280 | 0.4658 |
+
+The original hit path spends a separate cycle selecting the next request after completing a hit. HIT_CHAIN=1 permits a retiring hit to initiate tag lookup for another eligible request. The arbiter excludes the retiring entry; older same-line dependencies remain shadowed, so conflicting requests keep their original serialization. Maintenance and pending MSHR completion work suppress chaining. The response queue reserves capacity for both the current response and the next one. The option defaults to zero and is not enabled in the tile/image candidate yet.
+
+Chained randomized partial writes/reads pass 4,096 requests under response backpressure for both data-pipeline settings, including 1,297 owner-epoch retries in the pipelined case. Both sets of 288 atomic cases and all eight TMU positions pass. Raw checks and complete service cases, source hashes and configuration metadata are in service/. The 1.486x hot-service improvement does not improve the cold miss path, establish 100 GB/s or satisfy operator acceptance. The cold result identifies a remaining receiving-stage bottleneck that must be addressed and measured.
+
+A free HIT_CHAIN=1 SLR1 screen is live on x86 under ~/r41_hbmbw_home_chain_v1, screen.log / out, launcher 16692 and Vivado 16760. The Tcl accepts an optional third argument selecting the chain option; two-argument invocations retain the original setting. New routed timing and coupled-core qualification remain pending. No full link or card operation was started.

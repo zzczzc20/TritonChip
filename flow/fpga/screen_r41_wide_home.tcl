@@ -1,12 +1,17 @@
 # Free wide-home screen; source ~/x86_link_env.sh before invoking on x86.
-if {$argc!=2} {error "usage: screen_r41_wide_home.tcl RTL_ROOT OUT"}
+if {$argc!=2 && $argc!=3} {error "usage: screen_r41_wide_home.tcl RTL_ROOT OUT ?HIT_CHAIN?"}
+set chain 0
+if {$argc==3} {set chain [lindex $argv 2]}
+if {$chain ni {0 1}} {error "HIT_CHAIN must be 0 or 1"}
 set rtl [file normalize [lindex $argv 0]]
 set out [file normalize [lindex $argv 1]]
 file mkdir $out
 set_param general.maxThreads 4
 set_property include_dirs [list [file join $rtl common]] [current_fileset]
 read_verilog -sv [file join $rtl nuca/tnca_nuca_slice.v]
-synth_design -top tnca_nuca_slice -part xcu280-fsvh2892-2L-e -mode out_of_context -generic {WORD_BITS=512 WORD_BYTES=64 FULL_LINE_TAG=1 SETS=32 SET_W=5 WAYS=8 WAY_W=3 TAG_W=5 CACHE_DATA_PIPELINE=1 REGISTER_VICTIM_OWNER=1 REGISTER_VICTIM_SELECT=1 REGISTER_VICTIM_RANK=1 DCO_REGISTERED_RANGES=1}
+set generics {WORD_BITS=512 WORD_BYTES=64 FULL_LINE_TAG=1 SETS=32 SET_W=5 WAYS=8 WAY_W=3 TAG_W=5 CACHE_DATA_PIPELINE=1 REGISTER_VICTIM_OWNER=1 REGISTER_VICTIM_SELECT=1 REGISTER_VICTIM_RANK=1 DCO_REGISTERED_RANGES=1}
+lappend generics HIT_CHAIN=$chain
+synth_design -top tnca_nuca_slice -part xcu280-fsvh2892-2L-e -mode out_of_context -generic $generics
 create_clock -name kernel -period 10 [get_ports clk]
 set_clock_uncertainty 0.200 [get_clocks kernel]
 set_input_delay 1.000 -clock kernel [get_ports -filter {DIRECTION==IN && NAME!=clk && NAME!=rst_n}]

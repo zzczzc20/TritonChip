@@ -1,0 +1,148 @@
+{
+  "evidence": "standalone-home-RTL-with-synthetic-DRAM",
+  "board_measured": false,
+  "clock_hz_assumed": 100000000,
+  "dram_latency_configured": 40,
+  "response_backpressure": false,
+  "outstanding_request_tags": 32,
+  "scope": "home word service only; no AXI, NoC, RF, torch or board throughput guarantee",
+  "sources_sha256": {
+    "rtl/nuca/tnca_nuca_slice.v": "ef20c265ee00de1755486c07e606855870254ade22f7b5be20d61812eb64c03e",
+    "tb/nuca/tb_nuca_wide.v": "34175dea36dc27987324d4a45c26b28379c5dcbea6487e2e914341fe67f61a97",
+    "tools/r41/home_service_sweep.py": "8cb566f8f6bebda697cab389ddde31eb9fa698672e5573d47a5cfa61681b88ae"
+  },
+  "rows": [
+    {
+      "mode": 1,
+      "word_bytes": 8,
+      "accepted": 32768,
+      "responses": 32768,
+      "span_cycles": 98475,
+      "hit": 32752,
+      "miss": 16,
+      "configuration": {
+        "WORD_BITS": 64,
+        "HIT_CHAIN": 0,
+        "SERVICE_MODE": 1,
+        "SETS": 32,
+        "SET_W": 5,
+        "WAYS": 8,
+        "WAY_W": 3,
+        "REGISTER_VICTIM_OWNER": 1,
+        "DCO_REGISTERED_RANGES": 1
+      },
+      "useful_bytes": 262144,
+      "gb_per_s_at_100mhz": 0.2662036049758822
+    },
+    {
+      "mode": 2,
+      "word_bytes": 8,
+      "accepted": 32768,
+      "responses": 32768,
+      "span_cycles": 266233,
+      "hit": 0,
+      "miss": 4096,
+      "configuration": {
+        "WORD_BITS": 64,
+        "HIT_CHAIN": 0,
+        "SERVICE_MODE": 2,
+        "SETS": 32,
+        "SET_W": 5,
+        "WAYS": 8,
+        "WAY_W": 3,
+        "REGISTER_VICTIM_OWNER": 1,
+        "DCO_REGISTERED_RANGES": 1
+      },
+      "useful_bytes": 262144,
+      "gb_per_s_at_100mhz": 0.09846412728700049
+    },
+    {
+      "mode": 1,
+      "word_bytes": 64,
+      "accepted": 4096,
+      "responses": 4096,
+      "span_cycles": 12459,
+      "hit": 4080,
+      "miss": 16,
+      "configuration": {
+        "WORD_BITS": 512,
+        "HIT_CHAIN": 0,
+        "SERVICE_MODE": 1,
+        "SETS": 32,
+        "SET_W": 5,
+        "WAYS": 8,
+        "WAY_W": 3,
+        "REGISTER_VICTIM_OWNER": 1,
+        "DCO_REGISTERED_RANGES": 1
+      },
+      "useful_bytes": 262144,
+      "gb_per_s_at_100mhz": 2.104053294806967
+    },
+    {
+      "mode": 2,
+      "word_bytes": 64,
+      "accepted": 4096,
+      "responses": 4096,
+      "span_cycles": 56280,
+      "hit": 0,
+      "miss": 4096,
+      "configuration": {
+        "WORD_BITS": 512,
+        "HIT_CHAIN": 0,
+        "SERVICE_MODE": 2,
+        "SETS": 32,
+        "SET_W": 5,
+        "WAYS": 8,
+        "WAY_W": 3,
+        "REGISTER_VICTIM_OWNER": 1,
+        "DCO_REGISTERED_RANGES": 1
+      },
+      "useful_bytes": 262144,
+      "gb_per_s_at_100mhz": 0.4657853589196873
+    },
+    {
+      "mode": 1,
+      "word_bytes": 64,
+      "accepted": 4096,
+      "responses": 4096,
+      "span_cycles": 8385,
+      "hit": 4079,
+      "miss": 16,
+      "configuration": {
+        "WORD_BITS": 512,
+        "HIT_CHAIN": 1,
+        "SERVICE_MODE": 1,
+        "SETS": 32,
+        "SET_W": 5,
+        "WAYS": 8,
+        "WAY_W": 3,
+        "REGISTER_VICTIM_OWNER": 1,
+        "DCO_REGISTERED_RANGES": 1
+      },
+      "useful_bytes": 262144,
+      "gb_per_s_at_100mhz": 3.126344663088849
+    },
+    {
+      "mode": 2,
+      "word_bytes": 64,
+      "accepted": 4096,
+      "responses": 4096,
+      "span_cycles": 56280,
+      "hit": 0,
+      "miss": 4096,
+      "configuration": {
+        "WORD_BITS": 512,
+        "HIT_CHAIN": 1,
+        "SERVICE_MODE": 2,
+        "SETS": 32,
+        "SET_W": 5,
+        "WAYS": 8,
+        "WAY_W": 3,
+        "REGISTER_VICTIM_OWNER": 1,
+        "DCO_REGISTERED_RANGES": 1
+      },
+      "useful_bytes": 262144,
+      "gb_per_s_at_100mhz": 0.4657853589196873
+    }
+  ]
+}

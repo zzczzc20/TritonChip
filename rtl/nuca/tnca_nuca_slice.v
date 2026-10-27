@@ -182,7 +182,8 @@ module tnca_nuca_slice #(
 
     localparam OFF_W     = 6;                       // log2(LINE_BYTES)
     localparam WORDS_PER_LINE = LINE_BYTES / WORD_BYTES;
-    localparam WSEL_W   = 3;                        // log2(WORDS_PER_LINE)
+    localparam WSEL_W = WORDS_PER_LINE>1 ? $clog2(WORDS_PER_LINE) : 1;
+    localparam WORD_SHIFT = $clog2(WORD_BYTES);
     // The set index skips the home bits: they are the same for every line
     // that reaches this slice, so indexing with them -- as this slice did
     // until R38 -- left only SETS/4 of its sets reachable and three quarters
@@ -206,12 +207,31 @@ module tnca_nuca_slice #(
     //==========================================================================
 `include "tnca_amo.vh"
 
+    // A wide cache word still executes one original scalar atomic, selected
+    // by its positioned byte enables. Compare remains a scalar operand.
+    function [WORD_BITS-1:0] cache_amo_new;
+        input [3:0] op;
+        input [WORD_BYTES-1:0] be;
+        input [WORD_BITS-1:0] old_word,write_word,compare_word;
+        integer group;
+        begin
+            if(WORD_BITS<=64) cache_amo_new=amo_new(op,be,old_word,write_word,compare_word);
+            else begin
+                cache_amo_new=0;
+                for(group=0;group<WORD_BYTES/8;group=group+1)
+                    if(be[group*8+:8]!=0)
+                        cache_amo_new[group*64+:64]=amo_new(op,be[group*8+:8],old_word[group*64+:64],write_word[group*64+:64],compare_word[63:0]);
+            end
+        end
+    endfunction
+
+
     //==========================================================================
     // Address decomposition
     //==========================================================================
     `define SLICE_SET(ad)  (ad[OFF_W + HOME_SKIP +: SET_W])
     `define SLICE_TAG(ad)  (ad[ADDR_W-1 -: TAGB])
-    `define SLICE_WSEL(ad) (ad[WORD_BYTES==8 ? 3 : 2 +: WSEL_W])
+    `define SLICE_WSEL(ad) ((WORDS_PER_LINE==1) ? {WSEL_W{1'b0}} : ad[WORD_SHIFT +: WSEL_W])
 
     // A cached line's byte address from its tag and set: the home bits are
     // line[1:0] = SLICE_ID ^ line[3:2], and line[3:2] are the set's low bits.
@@ -591,7 +611,7 @@ module tnca_nuca_slice #(
 
     wire [SET_W-1:0]  cur_set  = `SLICE_SET(cur_addr);
     wire [TAGB-1:0]   cur_tagb = `SLICE_TAG(cur_addr);
-    wire [WSEL_W-1:0] cur_wsel = cur_addr[3 +: WSEL_W];
+    wire [WSEL_W-1:0] cur_wsel = `SLICE_WSEL(cur_addr);
 
     // One independent bank per way. E_SEL reads the SELECTED request's
     // set (not cur_set, which is updated on that same edge); E_LOOK consumes
@@ -873,7 +893,9 @@ module tnca_nuca_slice #(
     wire        cur_mmio  = (cur_addr[ADDR_W-1:12] == TMU_BASE[ADDR_W-1:12]);
     assign tmu_wr_valid = (est == E_MMIO) && cur_we && !cur_amo;
     assign tmu_wr_off   = cur_addr[11:0];
-    assign tmu_wr_data  = cur_wdata;
+    wire [8:0] tmu_word_shift = WORD_BITS<=64 ? 0 : ((cur_addr & (WORD_BYTES-1))>>3)*64;
+    wire [WORD_BITS-1:0] tmu_word = tmu_rd_data;
+    assign tmu_wr_data  = cur_wdata >> tmu_word_shift;
     assign tmu_wr_src   = cur_src;
     assign tmu_rd_off   = cur_addr[11:0];
 
@@ -1155,7 +1177,7 @@ module tnca_nuca_slice #(
                     push_rsp  = 1'b1;
                     push_src  = cur_src;
                     push_tag  = cur_tag;
-                    push_data = cur_we ? {WORD_BITS{1'b0}} : tmu_rd_data;
+                    push_data = cur_we ? {WORD_BITS{1'b0}} : (tmu_word << tmu_word_shift);
                     rq_v[cur_rq] <= 1'b0;
                     est <= E_SEL;
                 end
@@ -1174,7 +1196,7 @@ module tnca_nuca_slice #(
                         merged=data_mem[cur_set*WAYS + data_hit_way];
                         amo_word=merged[cur_wsel*WORD_BITS+:WORD_BITS];
                     end
-                    amo_res  = amo_new(cur_aop, cur_be, amo_word, cur_wdata, cur_cmp);
+                    amo_res  = cache_amo_new(cur_aop, cur_be, amo_word, cur_wdata, cur_cmp);
                     if (cur_aop != `TNCA_AOP_LD) begin
                         if(CACHE_DATA_PIPELINE) begin
                             data_write_enable=1;data_write_index=cur_set*WAYS+data_hit_way;
@@ -1432,7 +1454,7 @@ module tnca_nuca_slice #(
                     if (tg_amo[t_cur]) begin
                         merged   = data_mem[fill_set*WAYS + fill_way];
                         amo_word = merged[tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
-                        amo_res  = amo_new(tg_aop[t_cur], tg_be[t_cur], amo_word,
+                        amo_res  = cache_amo_new(tg_aop[t_cur], tg_be[t_cur], amo_word,
                                            tg_wdata[t_cur], tg_cmp[t_cur]);
                         if (tg_aop[t_cur] != `TNCA_AOP_LD) begin
                             if(CACHE_DATA_PIPELINE) begin

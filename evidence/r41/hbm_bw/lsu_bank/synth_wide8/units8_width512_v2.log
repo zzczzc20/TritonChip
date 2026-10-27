@@ -1,0 +1,549 @@
+2026-10-26T11:46:11Z slot 0 start (avail 39 GB): vivado -mode batch -source /home/zzhouch/r41_hbmbw_lsu_bank_v1/src/flow/fpga/synth_r41_lsu_bank.tcl -tclargs /home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl /home/zzhouch/r41_hbmbw_lsu_bank_v1/units8_width512_v2 8 512
+
+****** Vivado v2023.2 (64-bit)
+  **** SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+  **** IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+  **** SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source /home/zzhouch/r41_hbmbw_lsu_bank_v1/src/flow/fpga/synth_r41_lsu_bank.tcl
+# if {$argc != 4} {error "usage: synth_r41_lsu_bank.tcl RTL_ROOT OUT UNITS WIDTH"}
+# set rtl [file normalize [lindex $argv 0]]
+# set out [file normalize [lindex $argv 1]]
+# set units [lindex $argv 2]
+# set width [lindex $argv 3]
+# if {$units ni {4 8} || $width ni {64 512}} {error "unsupported LSU screen"}
+# set bytes [expr {$width / 8}]
+# set shift [expr {$width == 512 ? 6 : 3}]
+# file mkdir $out
+# set_param general.maxThreads 4
+current_fileset: Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1339.840 ; gain = 41.805 ; free physical = 32060 ; free virtual = 43566
+# set_property include_dirs [list [file join $rtl common]] [current_fileset]
+# read_verilog -sv [file join $rtl core/tnca_lsu.v]
+# read_verilog -sv [file join $rtl core/tnca_lsu_bank.v]
+# synth_design -top tnca_lsu_bank -part xcu280-fsvh2892-2L-e -mode out_of_context -generic [list UNITS=$units NUM_BEATS=[expr {16/$units}] BEAT_W=4 MEM_DW=$width MEM_BYTES=$bytes MEM_SHIFT=$shift RCTX_W=2]
+Command: synth_design -top tnca_lsu_bank -part xcu280-fsvh2892-2L-e -mode out_of_context -generic {UNITS=8 NUM_BEATS=2 BEAT_W=4 MEM_DW=512 MEM_BYTES=64 MEM_SHIFT=6 RCTX_W=2}
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xcu280'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xcu280'
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 4 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 2631779
+---------------------------------------------------------------------------------
+Starting Synthesize : Time (s): cpu = 00:00:05 ; elapsed = 00:00:05 . Memory (MB): peak = 1760.375 ; gain = 414.594 ; free physical = 31368 ; free virtual = 42874
+---------------------------------------------------------------------------------
+INFO: [Synth 8-6157] synthesizing module 'tnca_lsu_bank' [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu_bank.v:5]
+	Parameter UNITS bound to: 8 - type: integer 
+	Parameter RCTX_W bound to: 2 - type: integer 
+	Parameter MEM_DW bound to: 512 - type: integer 
+	Parameter MEM_BYTES bound to: 64 - type: integer 
+	Parameter MEM_SHIFT bound to: 6 - type: integer 
+	Parameter NUM_BEATS bound to: 2 - type: integer 
+	Parameter BEAT_W bound to: 4 - type: integer 
+INFO: [Synth 8-6157] synthesizing module 'tnca_lsu' [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:61]
+	Parameter VLEN bound to: 16 - type: integer 
+	Parameter ELEN bound to: 32 - type: integer 
+	Parameter RCTX_W bound to: 2 - type: integer 
+	Parameter MEM_DW bound to: 512 - type: integer 
+	Parameter MEM_BYTES bound to: 64 - type: integer 
+	Parameter MEM_SHIFT bound to: 6 - type: integer 
+	Parameter NUM_BEATS bound to: 2 - type: integer 
+	Parameter BEAT_W bound to: 1 - type: integer 
+	Parameter REQ_REG bound to: 1 - type: integer 
+INFO: [Synth 8-6155] done synthesizing module 'tnca_lsu' (0#1) [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:61]
+INFO: [Synth 8-6155] done synthesizing module 'tnca_lsu_bank' (0#1) [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu_bank.v:5]
+WARNING: [Synth 8-6014] Unused sequential element rsp_lanes_reg was removed.  [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:425]
+WARNING: [Synth 8-6014] Unused sequential element rsp_low_reg was removed.  [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:426]
+WARNING: [Synth 8-6014] Unused sequential element rsp_high_reg was removed.  [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:427]
+WARNING: [Synth 8-6014] Unused sequential element cboff_reg was removed.  [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:431]
+WARNING: [Synth 8-6014] Unused sequential element chi_reg was removed.  [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:433]
+WARNING: [Synth 8-6014] Unused sequential element clo_reg was removed.  [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:439]
+WARNING: [Synth 8-6014] Unused sequential element r_vector_reg was removed.  [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:462]
+WARNING: [Synth 8-6014] Unused sequential element r_indexed_reg was removed.  [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:463]
+WARNING: [Synth 8-6014] Unused sequential element eff_base_reg was removed.  [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:472]
+WARNING: [Synth 8-6014] Unused sequential element idx_ext_reg was removed.  [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:476]
+---------------------------------------------------------------------------------
+Finished Synthesize : Time (s): cpu = 00:00:17 ; elapsed = 00:00:18 . Memory (MB): peak = 2189.312 ; gain = 843.531 ; free physical = 30900 ; free virtual = 42412
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Constraint Validation : Time (s): cpu = 00:00:19 ; elapsed = 00:00:20 . Memory (MB): peak = 2189.312 ; gain = 843.531 ; free physical = 30896 ; free virtual = 42408
+---------------------------------------------------------------------------------
+INFO: [Synth 8-802] inferred FSM for state register 'state_reg' in module 'tnca_lsu'
+INFO: [Synth 8-6904] The RAM "tnca_lsu:/bt_high_reg" of size (depth=2 x width=16) is automatically implemented using LUTRAM. BRAM implementation would be inefficient 
+INFO: [Synth 8-6904] The RAM "tnca_lsu:/bt_low_reg" of size (depth=2 x width=16) is automatically implemented using LUTRAM. BRAM implementation would be inefficient 
+INFO: [Synth 8-6904] The RAM "tnca_lsu:/bt_lanes_reg" of size (depth=2 x width=16) is automatically implemented using LUTRAM. BRAM implementation would be inefficient 
+---------------------------------------------------------------------------------------------------
+                   State |                     New Encoding |                Previous Encoding 
+---------------------------------------------------------------------------------------------------
+                  S_IDLE |                              000 |                              000
+                 S_SETUP |                              100 |                              001
+                   S_RUN |                              011 |                              010
+                 S_DRAIN |                              010 |                              011
+                  S_DONE |                              001 |                              100
+---------------------------------------------------------------------------------------------------
+INFO: [Synth 8-3354] encoded FSM with state register 'state_reg' using encoding 'sequential' in module 'tnca_lsu'
+---------------------------------------------------------------------------------
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:01:06 ; elapsed = 00:00:59 . Memory (MB): peak = 3767.598 ; gain = 2421.816 ; free physical = 20660 ; free virtual = 32184
+---------------------------------------------------------------------------------
+No constraint files found.
+---------------------------------------------------------------------------------
+Start RTL Component Statistics 
+---------------------------------------------------------------------------------
+Detailed RTL Component Info : 
++---Adders : 
+	   3 Input   64 Bit       Adders := 128   
+	   2 Input   64 Bit       Adders := 256   
+	   2 Input   32 Bit       Adders := 16000 
+	   2 Input    7 Bit       Adders := 128   
+	   2 Input    6 Bit       Adders := 128   
+	   3 Input    6 Bit       Adders := 128   
+	   2 Input    4 Bit       Adders := 1     
+	   3 Input    4 Bit       Adders := 1     
++---Registers : 
+	              512 Bit    Registers := 256   
+	               64 Bit    Registers := 664   
+	               16 Bit    Registers := 56    
+	                8 Bit    Registers := 16    
+	                5 Bit    Registers := 8     
+	                4 Bit    Registers := 9     
+	                3 Bit    Registers := 34    
+	                2 Bit    Registers := 32    
+	                1 Bit    Registers := 65    
++---RAMs : 
+	               32 Bit	(2 X 16 bit)          RAMs := 24    
++---Muxes : 
+	   2 Input   64 Bit        Muxes := 3632  
+	   5 Input   64 Bit        Muxes := 256   
+	   4 Input   64 Bit        Muxes := 8     
+	   2 Input   32 Bit        Muxes := 512   
+	   5 Input   16 Bit        Muxes := 32    
+	   2 Input   16 Bit        Muxes := 96    
+	   2 Input    8 Bit        Muxes := 16000 
+	   2 Input    6 Bit        Muxes := 256   
+	   5 Input    3 Bit        Muxes := 16    
+	   2 Input    3 Bit        Muxes := 88    
+	   5 Input    2 Bit        Muxes := 16    
+	   2 Input    2 Bit        Muxes := 20    
+	   3 Input    2 Bit        Muxes := 1     
+	   2 Input    1 Bit        Muxes := 793   
+	   5 Input    1 Bit        Muxes := 64    
+	  16 Input    1 Bit        Muxes := 24    
+	   8 Input    1 Bit        Muxes := 1     
+	   3 Input    1 Bit        Muxes := 1     
+---------------------------------------------------------------------------------
+Finished RTL Component Statistics 
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Part Resource Summary
+---------------------------------------------------------------------------------
+Part Resources:
+DSPs: 9024 (col length:94)
+BRAMs: 4032 (col length: RAMB18 288 RAMB36 144)
+---------------------------------------------------------------------------------
+Finished Part Resource Summary
+---------------------------------------------------------------------------------
+No constraint files found.
+---------------------------------------------------------------------------------
+Start Cross Boundary and Area Optimization
+---------------------------------------------------------------------------------
+INFO: [Synth 8-6904] The RAM "tnca_lsu__GBM0/bt_high_reg" of size (depth=2 x width=16) is automatically implemented using LUTRAM. BRAM implementation would be inefficient 
+INFO: [Synth 8-6904] The RAM "tnca_lsu__GBM0/bt_lanes_reg" of size (depth=2 x width=16) is automatically implemented using LUTRAM. BRAM implementation would be inefficient 
+INFO: [Synth 8-6904] The RAM "tnca_lsu__GBM0/bt_high_reg" of size (depth=2 x width=16) is automatically implemented using LUTRAM. BRAM implementation would be inefficient 
+INFO: [Synth 8-6904] The RAM "tnca_lsu__GBM0/bt_lanes_reg" of size (depth=2 x width=16) is automatically implemented using LUTRAM. BRAM implementation would be inefficient 
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[15][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[14][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[13][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[12][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[11][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[10][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[9][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[8][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[7][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[6][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[5][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[4][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[3][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[2][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3886] merging instance 'ln_hi_be_reg[1][63]' (FDE) to 'ln_hi_be_reg[0][63]'
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_be_reg[0][63] )
+WARNING: [Synth 8-3917] design tnca_lsu__GBM4 has port P[9] driven by constant 0
+WARNING: [Synth 8-3917] design tnca_lsu__GBM4 has port P[2] driven by constant 0
+WARNING: [Synth 8-3917] design tnca_lsu__GBM4 has port P[1] driven by constant 0
+WARNING: [Synth 8-3917] design tnca_lsu__GBM4 has port P[0] driven by constant 0
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][32]' (FDE) to 'lane_wdata_reg[1][32]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][33]' (FDE) to 'lane_wdata_reg[1][33]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][34]' (FDE) to 'lane_wdata_reg[1][34]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][35]' (FDE) to 'lane_wdata_reg[1][35]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][36]' (FDE) to 'lane_wdata_reg[1][36]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][37]' (FDE) to 'lane_wdata_reg[1][37]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][38]' (FDE) to 'lane_wdata_reg[1][38]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][39]' (FDE) to 'lane_wdata_reg[1][39]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][40]' (FDE) to 'lane_wdata_reg[1][40]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][41]' (FDE) to 'lane_wdata_reg[1][41]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][42]' (FDE) to 'lane_wdata_reg[1][42]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][43]' (FDE) to 'lane_wdata_reg[1][43]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][44]' (FDE) to 'lane_wdata_reg[1][44]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][45]' (FDE) to 'lane_wdata_reg[1][45]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][46]' (FDE) to 'lane_wdata_reg[1][46]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][47]' (FDE) to 'lane_wdata_reg[1][47]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][48]' (FDE) to 'lane_wdata_reg[1][48]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][49]' (FDE) to 'lane_wdata_reg[1][49]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][50]' (FDE) to 'lane_wdata_reg[1][50]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][51]' (FDE) to 'lane_wdata_reg[1][51]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][52]' (FDE) to 'lane_wdata_reg[1][52]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][53]' (FDE) to 'lane_wdata_reg[1][53]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][54]' (FDE) to 'lane_wdata_reg[1][54]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][55]' (FDE) to 'lane_wdata_reg[1][55]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][56]' (FDE) to 'lane_wdata_reg[1][56]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][57]' (FDE) to 'lane_wdata_reg[1][57]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][58]' (FDE) to 'lane_wdata_reg[1][58]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][59]' (FDE) to 'lane_wdata_reg[1][59]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][60]' (FDE) to 'lane_wdata_reg[1][60]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][61]' (FDE) to 'lane_wdata_reg[1][61]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][62]' (FDE) to 'lane_wdata_reg[1][62]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[3][63]' (FDE) to 'lane_wdata_reg[1][63]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][32]' (FDE) to 'lane_wdata_reg[13][32]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][33]' (FDE) to 'lane_wdata_reg[13][33]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][34]' (FDE) to 'lane_wdata_reg[13][34]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][35]' (FDE) to 'lane_wdata_reg[13][35]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][36]' (FDE) to 'lane_wdata_reg[13][36]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][37]' (FDE) to 'lane_wdata_reg[13][37]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][38]' (FDE) to 'lane_wdata_reg[13][38]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][39]' (FDE) to 'lane_wdata_reg[13][39]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][40]' (FDE) to 'lane_wdata_reg[13][40]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][41]' (FDE) to 'lane_wdata_reg[13][41]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][42]' (FDE) to 'lane_wdata_reg[13][42]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][43]' (FDE) to 'lane_wdata_reg[13][43]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][44]' (FDE) to 'lane_wdata_reg[13][44]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][45]' (FDE) to 'lane_wdata_reg[13][45]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][46]' (FDE) to 'lane_wdata_reg[13][46]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][47]' (FDE) to 'lane_wdata_reg[13][47]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][48]' (FDE) to 'lane_wdata_reg[13][48]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][49]' (FDE) to 'lane_wdata_reg[13][49]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][50]' (FDE) to 'lane_wdata_reg[13][50]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][51]' (FDE) to 'lane_wdata_reg[13][51]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][52]' (FDE) to 'lane_wdata_reg[13][52]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][53]' (FDE) to 'lane_wdata_reg[13][53]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][54]' (FDE) to 'lane_wdata_reg[13][54]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][55]' (FDE) to 'lane_wdata_reg[13][55]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][56]' (FDE) to 'lane_wdata_reg[13][56]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][57]' (FDE) to 'lane_wdata_reg[13][57]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][58]' (FDE) to 'lane_wdata_reg[13][58]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][59]' (FDE) to 'lane_wdata_reg[13][59]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][60]' (FDE) to 'lane_wdata_reg[13][60]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][61]' (FDE) to 'lane_wdata_reg[13][61]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][62]' (FDE) to 'lane_wdata_reg[13][62]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[1][63]' (FDE) to 'lane_wdata_reg[13][63]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][32]' (FDE) to 'lane_wdata_reg[7][32]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][33]' (FDE) to 'lane_wdata_reg[7][33]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][34]' (FDE) to 'lane_wdata_reg[7][34]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][35]' (FDE) to 'lane_wdata_reg[7][35]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][36]' (FDE) to 'lane_wdata_reg[7][36]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][37]' (FDE) to 'lane_wdata_reg[7][37]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][38]' (FDE) to 'lane_wdata_reg[7][38]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][39]' (FDE) to 'lane_wdata_reg[7][39]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][40]' (FDE) to 'lane_wdata_reg[7][40]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][41]' (FDE) to 'lane_wdata_reg[7][41]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][42]' (FDE) to 'lane_wdata_reg[7][42]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][43]' (FDE) to 'lane_wdata_reg[7][43]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][44]' (FDE) to 'lane_wdata_reg[7][44]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][45]' (FDE) to 'lane_wdata_reg[7][45]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][46]' (FDE) to 'lane_wdata_reg[7][46]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][47]' (FDE) to 'lane_wdata_reg[7][47]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][48]' (FDE) to 'lane_wdata_reg[7][48]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][49]' (FDE) to 'lane_wdata_reg[7][49]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][50]' (FDE) to 'lane_wdata_reg[7][50]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][51]' (FDE) to 'lane_wdata_reg[7][51]'
+INFO: [Synth 8-3886] merging instance 'lane_wdata_reg[13][52]' (FDE) to 'lane_wdata_reg[7][52]'
+INFO: [Common 17-14] Message 'Synth 8-3886' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
+INFO: [Common 17-14] Message 'Synth 8-3886' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[15][504] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[14][504] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[13][504] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[12][504] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[11][504] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[10][504] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[8][504] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[6][504] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[3][504] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[2][504] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[15][505] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[14][505] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[13][505] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[12][505] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[11][505] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[10][505] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[8][505] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[6][505] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[3][505] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[2][505] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[15][506] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[14][506] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[13][506] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[12][506] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[11][506] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[10][506] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[8][506] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[6][506] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[3][506] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[2][506] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[15][507] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[14][507] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[13][507] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[12][507] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[11][507] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[10][507] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[8][507] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[6][507] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[3][507] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[2][507] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[15][508] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[14][508] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[13][508] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[12][508] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[11][508] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[10][508] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[8][508] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[6][508] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[3][508] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[2][508] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[15][509] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[14][509] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[13][509] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[12][509] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[11][509] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[10][509] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[8][509] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[6][509] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[3][509] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[2][509] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[15][510] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[14][510] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[13][510] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[12][510] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[11][510] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[10][510] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[8][510] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[6][510] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[3][510] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[2][510] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[15][511] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[14][511] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[13][511] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[12][511] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[11][511] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[10][511] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[8][511] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[6][511] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[3][511] )
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_hi_wd_reg[2][511] )
+INFO: [Synth 8-6904] The RAM "tnca_lsu__GBM8/bt_low_reg" of size (depth=2 x width=16) is automatically implemented using LUTRAM. BRAM implementation would be inefficient 
+INFO: [Synth 8-6904] The RAM "tnca_lsu__GBM8/bt_low_reg" of size (depth=2 x width=16) is automatically implemented using LUTRAM. BRAM implementation would be inefficient 
+WARNING: [Synth 8-3917] design tnca_lsu__GBM9 has port P[9] driven by constant 0
+WARNING: [Synth 8-3917] design tnca_lsu__GBM9 has port P[2] driven by constant 0
+WARNING: [Synth 8-3917] design tnca_lsu__GBM9 has port P[1] driven by constant 0
+WARNING: [Synth 8-3917] design tnca_lsu__GBM9 has port P[0] driven by constant 0
+WARNING: [Synth 8-3917] design tnca_lsu__GBM10 has port P[9] driven by constant 0
+WARNING: [Synth 8-3917] design tnca_lsu__GBM10 has port P[2] driven by constant 0
+WARNING: [Synth 8-3917] design tnca_lsu__GBM10 has port P[1] driven by constant 0
+WARNING: [Synth 8-3917] design tnca_lsu__GBM10 has port P[0] driven by constant 0
+INFO: [Common 17-14] Message 'Synth 8-3886' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\ln_wlo_reg[15][2] )
+---------------------------------------------------------------------------------
+Finished Cross Boundary and Area Optimization : Time (s): cpu = 00:03:21 ; elapsed = 00:03:14 . Memory (MB): peak = 3846.719 ; gain = 2500.938 ; free physical = 18920 ; free virtual = 30449
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+
+Distributed RAM: Preliminary Mapping Report (see note below)
++---------------+--------------+-----------+----------------------+---------------+
+|Module Name    | RTL Object   | Inference | Size (Depth x Width) | Primitives    | 
++---------------+--------------+-----------+----------------------+---------------+
+|tnca_lsu__GBM0 | bt_high_reg  | Implied   | 2 x 16               | RAM32M16 x 2  | 
+|tnca_lsu__GBM0 | bt_lanes_reg | Implied   | 2 x 16               | RAM32M16 x 2  | 
+|tnca_lsu__GBM8 | bt_low_reg   | Implied   | 2 x 16               | RAM32M16 x 2  | 
++---------------+--------------+-----------+----------------------+---------------+
+
+Note: The table above is a preliminary report that shows the Distributed RAMs at the current stage of the synthesis flow. Some Distributed RAMs may be reimplemented as non Distributed RAM primitives later in the synthesis flow. Multiple instantiated RAMs are reported only once.
+---------------------------------------------------------------------------------
+Finished ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+No constraint files found.
+---------------------------------------------------------------------------------
+Start Timing Optimization
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Timing Optimization : Time (s): cpu = 00:03:32 ; elapsed = 00:03:26 . Memory (MB): peak = 3846.719 ; gain = 2500.938 ; free physical = 18924 ; free virtual = 30452
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+
+Distributed RAM: Final Mapping Report
++---------------+--------------+-----------+----------------------+---------------+
+|Module Name    | RTL Object   | Inference | Size (Depth x Width) | Primitives    | 
++---------------+--------------+-----------+----------------------+---------------+
+|tnca_lsu__GBM0 | bt_high_reg  | Implied   | 2 x 16               | RAM32M16 x 2  | 
+|tnca_lsu__GBM0 | bt_lanes_reg | Implied   | 2 x 16               | RAM32M16 x 2  | 
+|tnca_lsu__GBM8 | bt_low_reg   | Implied   | 2 x 16               | RAM32M16 x 2  | 
++---------------+--------------+-----------+----------------------+---------------+
+
+---------------------------------------------------------------------------------
+Finished ROM, RAM, DSP, Shift Register and Retiming Reporting
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Technology Mapping
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Technology Mapping : Time (s): cpu = 00:04:03 ; elapsed = 00:03:58 . Memory (MB): peak = 4042.371 ; gain = 2696.590 ; free physical = 18911 ; free virtual = 30463
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Flattening Before IO Insertion
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Final Netlist Cleanup
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished IO Insertion : Time (s): cpu = 00:06:07 ; elapsed = 00:06:06 . Memory (MB): peak = 4446.020 ; gain = 3100.238 ; free physical = 18482 ; free virtual = 30034
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Instances
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Instances : Time (s): cpu = 00:06:12 ; elapsed = 00:06:11 . Memory (MB): peak = 4446.020 ; gain = 3100.238 ; free physical = 18482 ; free virtual = 30033
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Rebuilding User Hierarchy
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Rebuilding User Hierarchy : Time (s): cpu = 00:06:35 ; elapsed = 00:06:34 . Memory (MB): peak = 4446.020 ; gain = 3100.238 ; free physical = 18488 ; free virtual = 30039
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Ports
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Ports : Time (s): cpu = 00:06:36 ; elapsed = 00:06:36 . Memory (MB): peak = 4446.020 ; gain = 3100.238 ; free physical = 18487 ; free virtual = 30039
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Handling Custom Attributes
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Handling Custom Attributes : Time (s): cpu = 00:07:52 ; elapsed = 00:07:53 . Memory (MB): peak = 4446.020 ; gain = 3100.238 ; free physical = 18481 ; free virtual = 30032
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Renaming Generated Nets
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Finished Renaming Generated Nets : Time (s): cpu = 00:07:54 ; elapsed = 00:07:56 . Memory (MB): peak = 4446.020 ; gain = 3100.238 ; free physical = 18480 ; free virtual = 30032
+---------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+Start Writing Synthesis Report
+---------------------------------------------------------------------------------
+
+Report BlackBoxes: 
++-+--------------+----------+
+| |BlackBox name |Instances |
++-+--------------+----------+
++-+--------------+----------+
+
+Report Cell Usage: 
++------+---------+-------+
+|      |Cell     |Count  |
++------+---------+-------+
+|1     |CARRY8   |   4224|
+|2     |LUT1     |     90|
+|3     |LUT2     |  56595|
+|4     |LUT3     |  46897|
+|5     |LUT4     |  99336|
+|6     |LUT5     |  81444|
+|7     |LUT6     | 215328|
+|8     |MUXF7    |  47760|
+|9     |MUXF8    |  15872|
+|10    |RAM32M16 |     24|
+|11    |RAM32X1D |     48|
+|12    |FDRE     | 186131|
++------+---------+-------+
+
+Report Instance Areas: 
++------+----------------+-----------+-------+
+|      |Instance        |Module     |Cells  |
++------+----------------+-----------+-------+
+|1     |top             |           | 753749|
+|2     |  \g_unit[0].u  |tnca_lsu   |  93559|
+|3     |  \g_unit[1].u  |tnca_lsu_0 |  93570|
+|4     |  \g_unit[2].u  |tnca_lsu_1 |  93560|
+|5     |  \g_unit[3].u  |tnca_lsu_2 |  96948|
+|6     |  \g_unit[4].u  |tnca_lsu_3 |  93564|
+|7     |  \g_unit[5].u  |tnca_lsu_4 |  93563|
+|8     |  \g_unit[6].u  |tnca_lsu_5 |  94112|
+|9     |  \g_unit[7].u  |tnca_lsu_6 |  94837|
++------+----------------+-----------+-------+
+---------------------------------------------------------------------------------
+Finished Writing Synthesis Report : Time (s): cpu = 00:07:54 ; elapsed = 00:07:56 . Memory (MB): peak = 4446.020 ; gain = 3100.238 ; free physical = 18480 ; free virtual = 30032
+---------------------------------------------------------------------------------
+Synthesis finished with 0 errors, 0 critical warnings and 22 warnings.
+Synthesis Optimization Runtime : Time (s): cpu = 00:07:58 ; elapsed = 00:07:58 . Memory (MB): peak = 4449.930 ; gain = 3104.148 ; free physical = 28950 ; free virtual = 40502
+Synthesis Optimization Complete : Time (s): cpu = 00:07:58 ; elapsed = 00:07:58 . Memory (MB): peak = 4449.930 ; gain = 3104.148 ; free physical = 28979 ; free virtual = 40503
+INFO: [Project 1-571] Translating synthesized netlist
+Netlist sorting complete. Time (s): cpu = 00:00:07 ; elapsed = 00:00:07 . Memory (MB): peak = 4449.930 ; gain = 0.000 ; free physical = 28992 ; free virtual = 40516
+INFO: [Netlist 29-17] Analyzing 67928 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 2 CPU seconds
+INFO: [Project 1-570] Preparing netlist for logic optimization
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+Netlist sorting complete. Time (s): cpu = 00:00:00.11 ; elapsed = 00:00:00.12 . Memory (MB): peak = 4552.449 ; gain = 0.000 ; free physical = 28930 ; free virtual = 40454
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 72 instances were transformed.
+  RAM32M16 => RAM32M16 (RAMD32(x14), RAMS32(x2)): 24 instances
+  RAM32X1D => RAM32X1D (RAMD32(x2)): 48 instances
+
+Synth Design complete | Checksum: 82ee75a9
+INFO: [Common 17-83] Releasing license: Synthesis
+213 Infos, 22 Warnings, 0 Critical Warnings and 0 Errors encountered.
+synth_design completed successfully
+synth_design: Time (s): cpu = 00:10:24 ; elapsed = 00:10:14 . Memory (MB): peak = 4552.484 ; gain = 3212.645 ; free physical = 28926 ; free virtual = 40450
+INFO: [Common 17-2834] synth_design peak Physical Memory [PSS] (MB): overall = 14373.078; main = 3920.596; forked = 10985.775
+INFO: [Common 17-2834] synth_design peak Virtual Memory [VSS] (MB): overall = 19501.336; main = 4552.453; forked = 15055.312
+# create_clock -name kernel -period 10 [get_ports clk]
+create_clock: Time (s): cpu = 00:00:07 ; elapsed = 00:00:07 . Memory (MB): peak = 4552.484 ; gain = 0.000 ; free physical = 28931 ; free virtual = 40455
+# set_clock_uncertainty 0.200 [get_clocks kernel]
+# set_input_delay 1.000 -clock kernel [get_ports -filter {DIRECTION == IN && NAME != clk && NAME != rst_n}]
+# set_output_delay 1.000 -clock kernel [all_outputs]
+# set_false_path -from [get_ports rst_n]
+# report_utilization -hierarchical -file $out/synth_util.rpt
+report_utilization: Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 4552.484 ; gain = 0.000 ; free physical = 28920 ; free virtual = 40444
+# report_timing_summary -file $out/synth_timing.rpt
+INFO: [Timing 38-35] Done setting XDC timing constraints.
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2L, Temperature grade: E, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 4 CPUs
+WARNING: [Timing 38-242] The property HD.CLK_SRC of clock port "clk" is not set. In out-of-context mode, this prevents timing estimation for clock delay/skew
+Resolution: Set the HD.CLK_SRC property of the out-of-context port to the location of the clock buffer instance in the top-level design
+report_timing_summary: Time (s): cpu = 00:03:55 ; elapsed = 00:02:08 . Memory (MB): peak = 6195.812 ; gain = 1643.328 ; free physical = 27379 ; free virtual = 38903
+# report_drc -file $out/synth_drc.rpt
+Command: report_drc -file /home/zzhouch/r41_hbmbw_lsu_bank_v1/units8_width512_v2/synth_drc.rpt
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1704] No user IP repositories specified
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/tools/Xilinx/Vivado/2023.2/data/ip'.
+INFO: [DRC 23-27] Running DRC with 4 threads
+INFO: [Vivado_Tcl 2-168] The results of DRC are in file /home/zzhouch/r41_hbmbw_lsu_bank_v1/units8_width512_v2/synth_drc.rpt.
+report_drc completed successfully
+report_drc: Time (s): cpu = 00:00:51 ; elapsed = 00:00:19 . Memory (MB): peak = 6312.516 ; gain = 116.703 ; free physical = 27278 ; free virtual = 38802
+# write_checkpoint -force $out/synth.dcp
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Write ShapeDB Complete: Time (s): cpu = 00:00:04 ; elapsed = 00:00:01 . Memory (MB): peak = 6312.516 ; gain = 0.000 ; free physical = 27235 ; free virtual = 38816
+INFO: [Common 17-1381] The checkpoint '/home/zzhouch/r41_hbmbw_lsu_bank_v1/units8_width512_v2/synth.dcp' has been generated.
+write_checkpoint: Time (s): cpu = 00:01:13 ; elapsed = 00:00:48 . Memory (MB): peak = 6312.516 ; gain = 0.000 ; free physical = 26450 ; free virtual = 38181
+# puts "R41_LSU_BANK_SYNTH units=$units width=$width total_tags=16"
+R41_LSU_BANK_SYNTH units=8 width=512 total_tags=16
+INFO: [Common 17-206] Exiting Vivado at Mon Oct 26 20:00:11 2026...
+2026-10-26T12:00:25Z slot 0 end exit 0

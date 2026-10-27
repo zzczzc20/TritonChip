@@ -31,6 +31,9 @@
 `include "tnca_noc_pkg.vh"
 
 module tnca_core_ni #(
+    parameter DATA_W = 64,
+    parameter BYTE_W = DATA_W/8,
+    parameter PAYLOAD_W = 216 + DATA_W-64 + BYTE_W-8,
     parameter XW      = 2,
     parameter YW      = 2,
     parameter NX      = 2,
@@ -48,8 +51,8 @@ module tnca_core_ni #(
     output wire                     req_ready,
     input  wire [63:0]              req_addr,
     input  wire                     req_we,
-    input  wire [7:0]               req_be,
-    input  wire [63:0]              req_wdata,
+    input  wire [BYTE_W-1:0]        req_be,
+    input  wire [DATA_W-1:0]        req_wdata,
     input  wire [TAG_W-1:0]         req_tag,
     input  wire                     req_amo,
     input  wire [3:0]               req_aop,
@@ -57,27 +60,31 @@ module tnca_core_ni #(
 
     output reg                      rsp_valid,
     output reg  [TAG_W-1:0]         rsp_tag,
-    output reg  [63:0]              rsp_rdata,
+    output reg  [DATA_W-1:0]        rsp_rdata,
 
     // ---- mesh local port ----------------------------------------------------
     output wire                                     net_in_valid_req,
     input  wire                                     net_in_ready_req,
-    output wire [XW+YW+`TNCA_NOC_PAYLOAD_W-1:0]     net_in_flit_req,
+    output wire [XW+YW+PAYLOAD_W-1:0]     net_in_flit_req,
 
     output wire                                     net_in_valid_rsp,
     input  wire                                     net_in_ready_rsp,
-    output wire [XW+YW+`TNCA_NOC_PAYLOAD_W-1:0]     net_in_flit_rsp,
+    output wire [XW+YW+PAYLOAD_W-1:0]     net_in_flit_rsp,
 
     input  wire                                     net_out_valid_req,
     output wire                                     net_out_ready_req,
-    input  wire [XW+YW+`TNCA_NOC_PAYLOAD_W-1:0]     net_out_flit_req,
+    input  wire [XW+YW+PAYLOAD_W-1:0]     net_out_flit_req,
 
     input  wire                                     net_out_valid_rsp,
     output wire                                     net_out_ready_rsp,
-    input  wire [XW+YW+`TNCA_NOC_PAYLOAD_W-1:0]     net_out_flit_rsp
+    input  wire [XW+YW+PAYLOAD_W-1:0]     net_out_flit_rsp
 );
 
-    localparam PW = `TNCA_NOC_PAYLOAD_W;
+    localparam PW = PAYLOAD_W;
+    // Preserve every legacy bit position at DATA_W=64. Comparison operands
+    // remain 64-bit scalar values; wide data/byte enables expand together.
+    localparam BE_L=65, DATA_L=BE_L+BYTE_W, SRC_L=DATA_L+DATA_W;
+    localparam TAG_L=SRC_L+4, AMO_L=TAG_L+5, AOP_L=AMO_L+1, CMP_L=AOP_L+4;
 
     // ---- home slice ---------------------------------------------------------
     wire [63:0] line = req_addr >> LINE_SH;
@@ -94,13 +101,13 @@ module tnca_core_ni #(
     wire [PW-1:0] req_payload;
     assign req_payload[`TNCA_REQ_ADDR]  = req_addr;
     assign req_payload[`TNCA_REQ_WE]    = req_we;
-    assign req_payload[`TNCA_REQ_BE]    = req_be;
-    assign req_payload[`TNCA_REQ_WDATA] = req_wdata;
-    assign req_payload[`TNCA_REQ_SRC]   = MY_ID[3:0];
-    assign req_payload[`TNCA_REQ_TAG]   = req_tag;
-    assign req_payload[`TNCA_REQ_AMO]   = req_amo;
-    assign req_payload[`TNCA_REQ_AOP]   = req_aop;
-    assign req_payload[`TNCA_REQ_CMP]   = req_cmp;
+    assign req_payload[BE_L+:BYTE_W]    = req_be;
+    assign req_payload[DATA_L+:DATA_W] = req_wdata;
+    assign req_payload[SRC_L+:4]   = MY_ID[3:0];
+    assign req_payload[TAG_L+:5]   = req_tag;
+    assign req_payload[AMO_L]   = req_amo;
+    assign req_payload[AOP_L+:4]   = req_aop;
+    assign req_payload[CMP_L+:64]   = req_cmp;
     assign req_payload[PW-1]            = 1'b0;
 
     assign net_in_valid_req = req_valid;
@@ -124,11 +131,17 @@ module tnca_core_ni #(
             rsp_valid <= 1'b0;
         end else begin
             rsp_valid <= net_out_valid_rsp;
-            rsp_tag   <= net_out_flit_rsp[`TNCA_RSP_TAG];
-            rsp_rdata <= net_out_flit_rsp[`TNCA_RSP_RDATA];
+            rsp_tag   <= net_out_flit_rsp[DATA_W+:5];
+            rsp_rdata <= net_out_flit_rsp[0+:DATA_W];
         end
     end
 
     wire _unused = &{1'b0, net_out_valid_req, net_out_flit_req, 1'b0};
+
+`ifndef SYNTHESIS
+    initial if ((DATA_W!=64 && DATA_W!=128 && DATA_W!=256 && DATA_W!=512)
+                || BYTE_W!=DATA_W/8 || PAYLOAD_W!=216+DATA_W-64+BYTE_W-8)
+        $fatal(1,"invalid NI data/mask/payload geometry");
+`endif
 
 endmodule

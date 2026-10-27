@@ -1,0 +1,35 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Mon Oct 26 20:46:07 2026
+| Host         : acf3019 running 64-bit Ubuntu 22.04.5 LTS
+| Command      : report_utilization -hierarchical -file /home/zzhouch/r41_hbmbw_hybrid_lsu_v1/out/synth_util.rpt
+| Design       : tnca_lsu_hybrid
+| Device       : xcu280-fsvh2892-2L-e
+| Speed File   : -2L
+| Design State : Synthesized
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++---------------------+------------------------+------------+------------+---------+------+-------+--------+--------+------+------------+
+|       Instance      |         Module         | Total LUTs | Logic LUTs | LUTRAMs | SRLs |  FFs  | RAMB36 | RAMB18 | URAM | DSP Blocks |
++---------------------+------------------------+------------+------------+---------+------+-------+--------+--------+------+------------+
+| tnca_lsu_hybrid     |                  (top) |      30658 |      30262 |     396 |    0 | 15253 |      0 |      0 |    0 |          0 |
+|   (tnca_lsu_hybrid) |                  (top) |          8 |          8 |       0 |    0 |   760 |      0 |      0 |    0 |          0 |
+|   adapter           | tnca_word_line_adapter |       2980 |       2976 |       4 |    0 |     0 |      0 |      0 |    0 |          0 |
+|   fast              |          tnca_lsu_line |       5106 |       4778 |     328 |    0 |   803 |      0 |      0 |    0 |          0 |
+|   slow              |          tnca_lsu_pair |      22564 |      22500 |      64 |    0 | 13690 |      0 |      0 |    0 |          0 |
+|     (slow)          |          tnca_lsu_pair |          0 |          0 |       0 |    0 |     1 |      0 |      0 |    0 |          0 |
+|     g_unit[0].u     |               tnca_lsu |      11611 |      11579 |      32 |    0 |  6844 |      0 |      0 |    0 |          0 |
+|     g_unit[1].u     |             tnca_lsu_0 |      10953 |      10921 |      32 |    0 |  6845 |      0 |      0 |    0 |          0 |
++---------------------+------------------------+------------+------------+---------+------+-------+--------+--------+------+------------+
+
+

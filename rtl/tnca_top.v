@@ -51,6 +51,9 @@ module tnca_top #(
     parameter VRF_PREFETCH = 0,
     parameter RCTX_SWITCH = 0,
     parameter MTX_ABUF = 0,
+    parameter HYBRID_LSU = 0,
+    parameter SFU_LANES = 1,
+    parameter NOC_PAYLOAD_W = HYBRID_LSU ? 720 : 216,
     parameter LSU_INFLIGHT = 1,
     parameter FPU_OVERLAP = 0,
     parameter RSLICE = 0,
@@ -172,7 +175,7 @@ module tnca_top #(
 
     localparam N  = NX * NY;
     localparam NV = `TNCA_NOC_NV;
-    localparam FW = XW + YW + `TNCA_NOC_PAYLOAD_W;
+    localparam FW = XW + YW + NOC_PAYLOAD_W;
 
     wire [N*NV-1:0]     li_valid, li_ready, lo_valid, lo_ready;
     wire [N*NV*FW-1:0]  li_flit,  lo_flit;
@@ -468,6 +471,7 @@ module tnca_top #(
     generate
         for (t = 0; t < N; t = t + 1) begin : g_tile
             tnca_tile #(
+                .HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.NOC_PAYLOAD_W(NOC_PAYLOAD_W),
                 .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
                 .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .HOST_ACCESS(HOST_ACCESS && GLOBAL_GRID && t==0), .NX(NX), .NY(NY), .XW(XW), .YW(YW),
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
@@ -557,7 +561,7 @@ module tnca_top #(
 
     tnca_mesh #(
         .NX(NX), .NY(NY), .XW(XW), .YW(YW),
-        .PAYLOAD_W(`TNCA_NOC_PAYLOAD_W), .NV(NV),
+        .PAYLOAD_W(NOC_PAYLOAD_W), .NV(NV),
         .DEPTH(NOC_DEPTH), .AW(NOC_AW),.LINK_STAGES(NOC_LINK_STAGES)
     ) u_mesh (
         .clk(clk), .rst_n(rst_n),

@@ -1,0 +1,11 @@
+HYBRID CORE fast=0 slow=176 retired=176 switches=0 wb_stall=0 peak=0
+---- tnca core run ----
+cycles=5501 issued=1429 hazard=2540 lsu=863 wb=0 squash=118
+vrf req=0 accept=0 conflict=0 stall=0 serial=0 parallel=0 mtx_req=0 mtx_wait=0 wb_retry=0
+stall_total=3427 x_hazard=2540 x_lsu=863 x_fpu=0 x_mtx=0 x_txf=0 x_fence=24 x_arrive=0 x_rsv=0 x_wb=0 x_vrf=0 x_vrfwb=0 x_sum=3427
+frontend=647 partition=1429+3427+647 of 5503
+rctx_switch=0
+memtrace=f9f3e7cf9fbf7e7c memstall=180 memreorder=0 memmulti=0
+barcollide=0
+PASS
+tb/core/tb_core_hybrid.v:305: $finish called at 55105000 (1ps)

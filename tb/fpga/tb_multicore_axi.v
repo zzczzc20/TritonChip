@@ -1,6 +1,7 @@
 `timescale 1ns/1ps
 module tb_multicore_axi;
-parameter N=3,PORTS=3,STAGES=2,WRITE_DELAY=15;
+parameter N=3,PORTS=3,STAGES=2,WRITE_DELAY=15,AXI_PIPELINED_ISSUE=0,HYBRID_LSU=0,VECTOR_TEST=0,FULL_VECTOR_TEST=0;
+localparam POINTS=FULL_VECTOR_TEST?17:455;
 localparam NX=N>4?4:N,SW=N>4?$clog2(N):2;
 reg clk=0;always #5 clk=~clk;
 reg rst=0,cv=0,ack=0,hv=0,hw=0;
@@ -46,9 +47,9 @@ wire [PORTS*(3)-1:0] m_rid;
 wire [PORTS*(2)-1:0] m_rresp;
 wire [PORTS*(1)-1:0] m_rlast;
 
-tnca_multicore_axi #(.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.MEM_BASE(0),.NX(NX),.NY(N/NX),.CODE_WORDS(256),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+tnca_multicore_axi #(.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(HYBRID_LSU?4:1),.NOC_LINK_STAGES(HYBRID_LSU?2:0),.DISPATCH_STAGES(HYBRID_LSU?2:0),.MEM_HOME_STAGES(HYBRID_LSU?2:0),.NUCA_CACHE_DATA_PIPELINE(HYBRID_LSU),.AXI_PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.MEM_BASE(0),.NX(NX),.NY(N/NX),.CODE_WORDS(256),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
 .clk(clk),.rst_n(rst),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
-.cmd_group_log2(2'd0),.cmd_deadline(deadline),.timed_out(timed_out),.cmd_arg_base(64'h8000),.cmd_arg_stride(64'h100),.cmd_gx(32'd13),.cmd_gy(32'd7),.cmd_gz(32'd5),
+.cmd_group_log2(2'd0),.cmd_deadline(deadline),.timed_out(timed_out),.cmd_arg_base(64'h8000),.cmd_arg_stride(64'h100),.cmd_gx(FULL_VECTOR_TEST?32'd17:32'd13),.cmd_gy(FULL_VECTOR_TEST?32'd1:32'd7),.cmd_gz(FULL_VECTOR_TEST?32'd1:32'd5),
 .cmd_cores({N{1'b1}}),.cmd_roles(4'b0001),.cmd_slice(4'd0),.cmd_vbase(32'd0),
 .done_valid(dv),.done_ready(ack),.done_status(ds),.done_id(did),.done_cycles(dc),
 .issued(issued),.completed(completed),.host_valid(hv),.host_ready(hr),.host_we(hw),
@@ -118,6 +119,23 @@ generate for(genvar p=0;p<PORTS;p=p+1)begin:g_ram
 .m_rresp(m_rresp[p*(2)+:(2)]),
 .m_rlast(m_rlast[p*(1)+:(1)]));
 end endgenerate
+wire [N*32-1:0] fast_accepted,slow_accepted,lsu_retired;
+generate for(genvar c=0;c<N;c=c+1)begin:g_lsu_coverage
+ if(HYBRID_LSU)begin:g_hybrid
+  integer seen_vectors=0;
+  always @(posedge clk)if($test$plusargs("diagnose") && rst && dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_valid && dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_vector && seen_vectors<10)begin
+   seen_vectors=seen_vectors+1;
+   $display("VECTOR ROUTE core=%0d base=%h offset=%h size=%0d indexed=%b mask=%h eligible=%b",c,dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_base,dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_offset,dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_size,dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_indexed,dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_mask,dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.fast_eligible);
+  end
+  assign fast_accepted[c*32+:32]=dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_accepted;
+  assign slow_accepted[c*32+:32]=dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_slow_accepted;
+  assign lsu_retired[c*32+:32]=dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_retired;
+ end else begin:g_legacy
+  assign fast_accepted[c*32+:32]=0;
+  assign slow_accepted[c*32+:32]=0;
+  assign lsu_retired[c*32+:32]=0;
+ end
+end endgenerate
 always @(posedge clk)begin
  if(rst && dut.shell_done_valid && !((&ai) && (&li)))drain_wait=drain_wait+1;
  if(dv && !((&ai) && (&li)))$fatal(1,"global completion preceded AXI/link drain");
@@ -149,14 +167,14 @@ task launch;
     if(issued[c*32+:32]!=completed[c*32+:32])$fatal(1,"timeout returned before drain");
     sum=sum+issued[c*32+:32];
    end
-   if(!timed_out || sum==0 || sum>=455)$fatal(1,"timeout did not stop issue");
+   if(!timed_out || sum==0 || sum>=POINTS)$fatal(1,"timeout did not stop issue");
   end
   if(expected_status==0)begin
    sum=0;for(integer c=0;c<N;c=c+1)begin
     if(issued[c*32+:32]==0 || issued[c*32+:32]!=completed[c*32+:32])$fatal(1,"core not drained");
     sum=sum+issued[c*32+:32];
    end
-   if(sum!=455 || dc==0)$fatal(1,"grid count mismatch");
+   if(sum!=POINTS || dc==0)$fatal(1,"grid count mismatch");
   end
   repeat(4)begin @(negedge clk);if(!dv || cr || did!=launch_id)$fatal(1,"completion not held");end
   ack=1;@(negedge clk);ack=0;
@@ -176,8 +194,24 @@ initial begin
   $display("MEMORY SAMPLE p0=%h p1=%h p2=%h",g_ram[0].ram.memory[1024],g_ram[0].ram.memory[1025],g_ram[0].ram.memory[1026]);
   for(integer k=0;k<8;k=k+1)word(0,65536+k*8,4096+k,0);
  end
- launch(256,12,0);
- for(integer k=0;k<455;k=k+1)word(0,65536+k*8,4096+k,0);
+ if(HYBRID_LSU)begin
+  for(integer c=0;c<N;c=c+1)begin
+   $display("HYBRID COUPLED core=%0d fast=%0d slow=%0d retired=%0d",c,fast_accepted[c*32+:32],slow_accepted[c*32+:32],lsu_retired[c*32+:32]);
+   if(VECTOR_TEST && fast_accepted[c*32+:32]==0)$fatal(1,"vector grid did not exercise compact LSU");
+   if(slow_accepted[c*32+:32]==0 || lsu_retired[c*32+:32]!=fast_accepted[c*32+:32]+slow_accepted[c*32+:32])$fatal(1,"hybrid did not drain both paths");
+  end
+ end
+ launch(VECTOR_TEST?512:256,12,0);
+ for(integer k=0;k<POINTS;k=k+1)word(0,65536+k*8,4096+k,0);
+ if(FULL_VECTOR_TEST)begin
+  for(integer k=0;k<POINTS;k=k+1)begin
+   for(integer w=0;w<8;w=w+1)begin
+    word(0,98304+k*64+w*8,((64'd4096+k)<<32)|(64'd4096+k),0);
+    word(0,32768+k*64+w*8,((64'd4096+k)<<32)|(64'd4096+k),0);
+   end
+  end
+  $display("FULL VECTOR ROUNDTRIP PASS programs=%0d checked_words=%0d",POINTS,POINTS*16);
+ end
  wait((&ai) && (&li));
  if(af || dut.memory_protocol_fault)$fatal(1,"AXI memory fault");
  for(integer p=0;p<PORTS;p=p+1)begin

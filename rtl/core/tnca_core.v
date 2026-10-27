@@ -86,6 +86,7 @@ module tnca_core #(
     //               (tnca_lsu_pair), so an access starts while the one ahead
     //               waits for memory; atomics and fences see one access at
     //               a time, as before.
+    parameter HYBRID_LSU     = 0,          // opt-in shared vector-line + narrow fallback
     parameter LSU_INFLIGHT   = 1,
     //   FPU_OVERLAP (R39-10) ordinary vector FP issues during an SFU pass,
     //               and an SFU pass starts with ordinary FP in flight: the
@@ -140,6 +141,7 @@ module tnca_core #(
     // mod[5] transfer ILLEGAL_INSTRUCTION (capability tensor_transpose).
     parameter HAS_TENSOR_XPOSE = 0,
     parameter FP_LAT         = 2,          // tnca_vector_fpu result delay, in cycles
+    parameter SFU_LANES      = 1,          // identical parallel SFU slices
     parameter SFU_LAT        = 6,          // rtl/gen/tnca_sfu_*_xls.v latency
     parameter MUL_LAT        = 3,          // tnca_mul64 result delay, in cycles
     parameter MEM_DW         = 64,
@@ -1455,7 +1457,7 @@ module tnca_core #(
     reg  [4:0] x_fpctl;
 
     tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT),
-                      .SFU_LAT(SFU_LAT), .HAS_SFU(HAS_SFU)) u_vfpu (
+                      .SFU_LAT(SFU_LAT), .SFU_LANES(SFU_LANES), .HAS_SFU(HAS_SFU)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
         .va(fpu_va), .vb(fpu_vb), .vc(fpu_vc), .fpctl(x_fpctl),
@@ -1680,7 +1682,120 @@ module tnca_core #(
     // for.
     wire lsu_ready_load;
     generate
-    if (LSU_INFLIGHT >= 2) begin : g_lsu_pair
+    if (HYBRID_LSU) begin : g_lsu_hybrid
+    // R reserves LSU capacity one cycle before X supplies operands. A
+    // command-independent landing register bridges that reservation to the
+    // hybrid engine's command-dependent path selection and drain checks.
+    reg pending;
+    wire hybrid_idle,hybrid_ready_load;
+    wire [1-1:0] q_store;
+    wire [1-1:0] q_vector;
+    wire [1-1:0] q_indexed;
+    wire [3-1:0] q_size;
+    wire [1-1:0] q_signed;
+    wire [2-1:0] q_hint;
+    wire [64-1:0] q_base;
+    wire [64-1:0] q_offset;
+    wire [512-1:0] q_index;
+    wire [64-1:0] q_sdata;
+    wire [1-1:0] q_amo;
+    wire [4-1:0] q_aop;
+    wire [64-1:0] q_cmp;
+    wire [512-1:0] q_vdata;
+    wire [16-1:0] q_mask;
+    wire [RCTX_W-1:0] q_rctx;
+    wire [3-1:0] q_dst_class;
+    wire [8-1:0] q_dst_idx;
+    reg [1321+RCTX_W-1:0] command;
+    assign {q_store,q_vector,q_indexed,q_size,q_signed,q_hint,q_base,q_offset,q_index,q_sdata,q_amo,q_aop,q_cmp,q_vdata,q_mask,q_rctx,q_dst_class,q_dst_idx}=command;
+    wire consume=pending && (q_amo ? hybrid_idle : hybrid_ready_load);
+    assign lsu_ready_load=!pending;
+    assign lsu_req_ready=!pending && hybrid_idle;
+    always @(posedge clk) begin
+        if(!rst_n) begin pending<=0;command<=0;end
+        else begin
+            if(consume) pending<=0;
+            if(x_mem_go) begin
+                pending<=1;
+                command<={x_mem_store,x_mem_vector,x_mem_indexed,x_mem_size,x_mem_signed,x_mem_hint,sa_data,x_imm,vb_data,x_amo_cas ? sc_data : sb_data,x_amo,x_aop,sb_data,x_mem_indexed ? vc_data : vb_data,lane_mask,x_rctx,x_dstc,x_dsti};
+            end
+        end
+    end
+`ifndef SYNTHESIS
+    always @(posedge clk) if(rst_n && x_mem_go && pending)
+        $fatal(1,"hybrid command landing register overflow");
+`endif
+    tnca_lsu_hybrid #(
+        .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
+        .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
+        .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
+    ) u_lsu (
+        .req_ready_load(hybrid_ready_load),
+        .clk(clk), .rst_n(rst_n),
+        .req_ready(hybrid_idle),
+        .req_valid(consume),
+        .req_store(q_store), .req_vector(q_vector),
+        .req_indexed(q_indexed), .req_size(q_size),
+        .req_signed(q_signed), .req_hint(q_hint),
+        .req_base(q_base), .req_offset(q_offset),
+        .req_index(q_index),
+        // atom.cas swaps in Sc and compares against Sb; every other atomic
+        // has one operand and takes Sb.
+        .req_sdata(q_sdata),
+        .req_amo(q_amo), .req_aop(q_aop), .req_cmp(q_cmp),
+        .req_vdata(q_vdata),
+        .req_mask(q_mask),
+        .req_rctx(q_rctx), .req_dst_class(q_dst_class), .req_dst_idx(q_dst_idx),
+        .cpl_valid(lsu_cpl_valid), .cpl_ack(lsu_cpl_ack),
+        .cpl_rctx(lsu_cpl_rctx), .cpl_dst_class(lsu_cpl_dstc),
+        .cpl_dst_idx(lsu_cpl_dsti), .cpl_sdata(lsu_cpl_sdata),
+        .cpl_vdata(lsu_cpl_vdata), .cpl_lane_en(lsu_cpl_lane_en),
+        .mem_req_valid(lm_req_valid), .mem_req_ready(lm_req_ready),
+        .mem_req_addr(lm_req_addr), .mem_req_we(lm_req_we),
+        .mem_req_be(lm_req_be), .mem_req_wdata(lm_req_wdata),
+        .mem_req_tag(lm_req_tag), .mem_req_hint(lm_req_hint),
+        .mem_req_amo(lm_req_amo), .mem_req_aop(lm_req_aop),
+        .mem_req_cmp(lm_req_cmp),
+        .mem_rsp_valid(lm_rsp_valid), .mem_rsp_tag(lm_rsp_tag),
+        .mem_rsp_rdata(lm_rsp_rdata)
+    );
+    end else if (LSU_INFLIGHT >= 4) begin : g_lsu_bank
+    tnca_lsu_bank #(
+        .UNITS(LSU_INFLIGHT),
+        .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
+        .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
+        .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
+    ) u_lsu (
+        .req_ready_load(lsu_ready_load),
+        .clk(clk), .rst_n(rst_n),
+        .req_ready(lsu_req_ready),
+        .req_valid(x_mem_go),
+        .req_store(x_mem_store), .req_vector(x_mem_vector),
+        .req_indexed(x_mem_indexed), .req_size(x_mem_size),
+        .req_signed(x_mem_signed), .req_hint(x_mem_hint),
+        .req_base(sa_data), .req_offset(x_imm),
+        .req_index(vb_data),
+        // atom.cas swaps in Sc and compares against Sb; every other atomic
+        // has one operand and takes Sb.
+        .req_sdata(x_amo_cas ? sc_data : sb_data),
+        .req_amo(x_amo), .req_aop(x_aop), .req_cmp(sb_data),
+        .req_vdata(x_mem_indexed ? vc_data : vb_data),
+        .req_mask(lane_mask),
+        .req_rctx(x_rctx), .req_dst_class(x_dstc), .req_dst_idx(x_dsti),
+        .cpl_valid(lsu_cpl_valid), .cpl_ack(lsu_cpl_ack),
+        .cpl_rctx(lsu_cpl_rctx), .cpl_dst_class(lsu_cpl_dstc),
+        .cpl_dst_idx(lsu_cpl_dsti), .cpl_sdata(lsu_cpl_sdata),
+        .cpl_vdata(lsu_cpl_vdata), .cpl_lane_en(lsu_cpl_lane_en),
+        .mem_req_valid(lm_req_valid), .mem_req_ready(lm_req_ready),
+        .mem_req_addr(lm_req_addr), .mem_req_we(lm_req_we),
+        .mem_req_be(lm_req_be), .mem_req_wdata(lm_req_wdata),
+        .mem_req_tag(lm_req_tag), .mem_req_hint(lm_req_hint),
+        .mem_req_amo(lm_req_amo), .mem_req_aop(lm_req_aop),
+        .mem_req_cmp(lm_req_cmp),
+        .mem_rsp_valid(lm_rsp_valid), .mem_rsp_tag(lm_rsp_tag),
+        .mem_rsp_rdata(lm_rsp_rdata)
+    );
+    end else if (LSU_INFLIGHT >= 2) begin : g_lsu_pair
     tnca_lsu_pair #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
@@ -1762,7 +1877,7 @@ module tnca_core #(
         .a_req_addr(lm_req_addr), .a_req_we(lm_req_we),
         .a_req_be(lm_req_be), .a_req_wdata(lm_req_wdata),
         .a_req_tag(lm_req_tag), .a_req_hint(lm_req_hint),
-        .a_req_amo(lm_req_amo), .a_req_aop(lm_req_aop), .a_req_cmp(lm_req_cmp),
+        .a_req_amo(lm_req_amo), .a_req_aop(lm_req_aop), .a_req_cmp({{(MEM_DW-64){1'b0}},lm_req_cmp}),
         .a_rsp_valid(lm_rsp_valid), .a_rsp_tag(lm_rsp_tag),
         .a_rsp_rdata(lm_rsp_rdata),
         .b_req_valid(tm_req_valid), .b_req_ready(tm_req_ready),
@@ -1876,10 +1991,33 @@ module tnca_core #(
     wire [CTAG_W-1:0]    tm_rsp_tag;
     wire [MEM_DW-1:0]    tm_rsp_rdata;
 
+    localparam TENSOR_DW=HYBRID_LSU ? 64 : MEM_DW;
+    localparam TENSOR_BYTES=HYBRID_LSU ? 8 : MEM_BYTES;
+    wire tn_req_valid,tn_req_ready,tn_req_we,tn_rsp_valid;
+    wire [63:0] tn_req_addr;
+    wire [TENSOR_BYTES-1:0] tn_req_be;
+    wire [TENSOR_DW-1:0] tn_req_wdata,tn_rsp_rdata;
+    wire [CTAG_W-1:0] tn_req_tag,tn_rsp_tag;
+    generate if(HYBRID_LSU) begin:g_tensor_line_adapter
+        tnca_word_line_adapter #(.TAG_W(CTAG_W)) adapter(
+            .clk(clk),.rst_n(rst_n),.n_req_valid(tn_req_valid),.n_req_ready(tn_req_ready),
+            .n_req_addr(tn_req_addr),.n_req_wdata(tn_req_wdata),.n_req_we(tn_req_we),.n_req_be(tn_req_be),
+            .n_req_tag(tn_req_tag),.n_req_hint(2'd0),.n_req_amo(1'b0),.n_req_aop(4'd0),.n_req_cmp(64'd0),
+            .n_rsp_valid(tn_rsp_valid),.n_rsp_tag(tn_rsp_tag),.n_rsp_rdata(tn_rsp_rdata),
+            .w_req_valid(tm_req_valid),.w_req_ready(tm_req_ready),.w_req_addr(tm_req_addr),.w_req_we(tm_req_we),
+            .w_req_be(tm_req_be),.w_req_wdata(tm_req_wdata),.w_req_tag(tm_req_tag),
+            .w_rsp_valid(tm_rsp_valid),.w_rsp_tag(tm_rsp_tag),.w_rsp_rdata(tm_rsp_rdata));
+    end else begin:g_tensor_legacy_port
+        assign tm_req_valid=tn_req_valid;assign tn_req_ready=tm_req_ready;
+        assign tm_req_addr=tn_req_addr;assign tm_req_we=tn_req_we;assign tm_req_be=tn_req_be;
+        assign tm_req_wdata=tn_req_wdata;assign tm_req_tag=tn_req_tag;
+        assign tn_rsp_valid=tm_rsp_valid;assign tn_rsp_tag=tm_rsp_tag;assign tn_rsp_rdata=tm_rsp_rdata;
+    end endgenerate
+
     tnca_tensor #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .DESC_N(DESC_N), .DESC_W(DESC_W), .WIN_N(WIN_N), .WIN_W(WIN_W),
-        .BAR_W(BAR_W), .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES),
+        .BAR_W(BAR_W), .MEM_DW(TENSOR_DW), .MEM_BYTES(TENSOR_BYTES),
         .TAG_W(CTAG_W), .NTAG(1 << CTAG_W), .HAS_XPOSE(HAS_TENSOR_XPOSE)
     ) u_txf (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),
@@ -1904,12 +2042,12 @@ module tnca_core #(
         .vw_lane_en(txf_vw_lane), .vw_data(txf_vw_data), .vw_ready(txf_vw_ready),
         .vr_req(txf_vr_req), .vr_rctx(txf_vr_rctx), .vr_idx(txf_vr_idx),
         .vr_valid(txf_vr_valid), .vr_data(txf_vr_data),
-        .mem_req_valid(tm_req_valid), .mem_req_ready(tm_req_ready),
-        .mem_req_addr(tm_req_addr), .mem_req_we(tm_req_we),
-        .mem_req_be(tm_req_be), .mem_req_wdata(tm_req_wdata),
-        .mem_req_tag(tm_req_tag),
-        .mem_rsp_valid(tm_rsp_valid), .mem_rsp_tag(tm_rsp_tag),
-        .mem_rsp_rdata(tm_rsp_rdata)
+        .mem_req_valid(tn_req_valid), .mem_req_ready(tn_req_ready),
+        .mem_req_addr(tn_req_addr), .mem_req_we(tn_req_we),
+        .mem_req_be(tn_req_be), .mem_req_wdata(tn_req_wdata),
+        .mem_req_tag(tn_req_tag),
+        .mem_rsp_valid(tn_rsp_valid), .mem_rsp_tag(tn_rsp_tag),
+        .mem_rsp_rdata(tn_rsp_rdata)
     );
 
     //==========================================================================

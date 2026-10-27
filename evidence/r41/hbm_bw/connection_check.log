@@ -1,0 +1,6 @@
+2026-10-26 UTC: actual helper invocations
+gb hostname: gx10-6646
+fp hostname: acf3019
+Both commands completed; no askpass/password stall.
+The local fp helper supplies the GB10 hop; no standalone fp was found on GB10 PATH in the earlier check.
+No helper contents or credentials were copied. No card opened.

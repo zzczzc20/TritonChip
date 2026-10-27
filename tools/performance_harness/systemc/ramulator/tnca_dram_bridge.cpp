@@ -20,6 +20,7 @@
 #include <memory>
 #include <mutex>
 #include <numeric>
+#include <queue>
 #include <sstream>
 #include <stdexcept>
 
@@ -301,11 +302,13 @@ Timing timing(const std::string& yaml_path) {
 }
 
 Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, std::vector<std::uint32_t>& latency,
-              bool event_skip, bool idle_skip) {
+              bool event_skip, bool idle_skip, const StreamAdmission* admission) {
   Result r;
   r.pcs.resize(pcs);
   latency.assign(batch.n, 0);
   try {
+    if (admission && (!admission->lines || !admission->dram_cycles_per_kernel || !admission->issue_cycles))
+      throw std::runtime_error("stream admission requires positive window, clock ratio and issue interval");
     if (batch.n >= (std::size_t(1) << 32)) throw std::runtime_error("more than 2^32 requests in one replay");
     std::vector<std::vector<std::uint32_t>> by_pc(pcs);
     {
@@ -339,6 +342,8 @@ Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, st
       std::vector<std::uint8_t> state(m, 0);
       std::size_t next = 0, done = 0;
       std::uint64_t outstanding = 0, stall = 0;
+      std::uint64_t credits = 0, next_issue = 0;
+      std::priority_queue<std::uint64_t, std::vector<std::uint64_t>, std::greater<std::uint64_t>> returns;
       auto arrival_of = [&](std::size_t k) { return batch.arrival[order[k]]; };
       auto make = [&](std::size_t k, unsigned half) {
         std::uint32_t p;
@@ -371,13 +376,23 @@ Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, st
           l = static_cast<std::uint32_t>(std::max<std::uint64_t>(l, lat));
           --outstanding;
           state[k] += 4;
-          if ((state[k] >> 2) == 2) ++done;
+          if ((state[k] >> 2) == 2) {
+            ++done;
+            if (admission) returns.push(batch.arrival[order[k]] + l +
+              std::uint64_t(admission->return_kernel_cycles) * admission->dram_cycles_per_kernel);
+          }
         };
         return req;
       };
       while (done < m) {
+        const auto now = static_cast<std::uint64_t>(ctrl->m_clk);
+        while (!returns.empty() && returns.top() <= now) { returns.pop(); --credits; }
         // Inject every burst that has arrived; a refused burst retries next tick.
         while (next < m && arrival_of(next) <= static_cast<std::uint64_t>(ctrl->m_clk)) {
+          // A partially accepted line keeps its reserved credit and can finish
+          // sending its second burst between kernel edges.
+          if (admission && !(state[next] & 3) &&
+              (credits >= admission->lines || now < next_issue || now % admission->dram_cycles_per_kernel)) break;
           bool all = true;
           for (unsigned half = 0; half < 2; ++half) {
             if (state[next] & (1u << half)) continue;
@@ -390,6 +405,11 @@ Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, st
               break;
             }
             ++st.accepted_bursts;
+            if (admission && !(state[next] & 3)) {
+              ++credits;
+              st.peak_line_credits = std::max(st.peak_line_credits, credits);
+              next_issue = now + std::uint64_t(admission->issue_cycles) * admission->dram_cycles_per_kernel;
+            }
             st.peak_rw_queued_bursts = std::max(st.peak_rw_queued_bursts, ctrl->queued_rw());
             state[next] |= static_cast<std::uint8_t>(1u << half);
           }
@@ -408,7 +428,7 @@ Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, st
         // rows left open, so the later ones issue REFab without a precharge;
         // merging them into the last one charged that precharge (tRP) to the
         // last refresh and delayed what followed.
-        if (idle_skip && outstanding == 0 && !ctrl->busy() && next < m) {
+        if (!admission && idle_skip && outstanding == 0 && !ctrl->busy() && next < m) {
           Clk_t clk = ctrl->m_clk, target = static_cast<Clk_t>(arrival_of(next)) - 1;
           if (target > clk) {
             Clk_t due = inst.refresh->m_next;
@@ -420,7 +440,7 @@ Result replay(const std::string& yaml_path, unsigned pcs, const Batch& batch, st
           }
         }
         // Busy: skip ticks in which no command can become legal.
-        if (event_skip && (outstanding > 0 || ctrl->busy())) {
+        if (!admission && event_skip && (outstanding > 0 || ctrl->busy())) {
           Clk_t clk = ctrl->m_clk, bound = ctrl->next_event_bound();
           bound = std::min(bound, inst.refresh->m_next);
           if (next < m) bound = std::min(bound, static_cast<Clk_t>(arrival_of(next)));

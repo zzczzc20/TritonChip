@@ -16,8 +16,9 @@ module tnca_multicore_axi #(
  parameter VREGS_PER_RCTX=64,AUTO_VBASE=1,
  parameter HAS_SFU=1,HAS_ATOMICS=1,HAS_SYS_ATOMICS=0,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
  parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
+ parameter HYBRID_LSU=0,SFU_LANES=1,
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
- parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,LINK_STAGES=2,AXI_DATA_W=256,AXI_OUT_N=8,
+ parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,LINK_STAGES=2,AXI_DATA_W=256,AXI_OUT_N=8,AXI_PIPELINED_ISSUE=0,HBM_STRIPED=0,
  parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1),MEM_BASE=64'h20000,CACHE_MAINTENANCE=0
 )(
  input wire clk,rst_n,
@@ -140,6 +141,7 @@ module tnca_multicore_axi #(
   .RCTX_SWITCH(RCTX_SWITCH),
   .MTX_ABUF(MTX_ABUF),
   .LSU_INFLIGHT(LSU_INFLIGHT),
+  .HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),
   .FPU_OVERLAP(FPU_OVERLAP),
   .RSLICE(RSLICE),
   .RPAIR(RPAIR),
@@ -284,7 +286,7 @@ module tnca_multicore_axi #(
    .s_rsp_valid(mode_rsp_valid[p]),.s_rsp_rdata(mode_rsp_rdata[p*512+:512]),.s_rsp_src(mode_rsp_src[p*SRC_W+:SRC_W]),.s_rsp_tag(mode_rsp_tag[p*3+:3]),
    .m_req_valid(qv),.m_req_ready(qr),.m_req_addr(qa),.m_req_we(qwe),.m_req_wdata(qd),.m_req_src(qs),.m_req_tag(qt),
    .m_rsp_valid(rv),.m_rsp_rdata(rd),.m_rsp_src(rs),.m_rsp_tag(rt));
-  tnca_line_axi #(.SRC_W(SRC_W),.TAG_W(3),.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.DYNAMIC_LIMIT(MEMORY_CONTROLS),.ID_W(AXI_ID_W),.MEM_BASE(MEM_BASE)) adapter(
+  tnca_line_axi #(.HBM_STRIPED(HBM_STRIPED),.PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.SRC_W(SRC_W),.TAG_W(3),.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.DYNAMIC_LIMIT(MEMORY_CONTROLS),.ID_W(AXI_ID_W),.MEM_BASE(MEM_BASE)) adapter(
    .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(qr),.req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
    .rsp_valid(rv),.rsp_rdata(rd),.rsp_src(rs),.rsp_tag(rt),
    .admission_limit(memory_outstanding),.axi_base(axi_base[p*64+:64]),.axi_size(axi_size[p*64+:64]),.fault(adapter_fault[p]),.idle(axi_idle[p]),

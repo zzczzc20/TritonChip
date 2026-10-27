@@ -1,0 +1,13 @@
+{"timing": {"nBL": 2, "nCL": 13, "nCWL": 5, "nRCDRD": 13, "nRCDWR": 11, "nRP": 13, "nRAS": 31, "nREFI": 3510, "nRFC": 235, "read_latency": 15, "tCK_ps": 1111},
+ "tests": [
+  {"test": "idle_read", "pass": true, "latency": 34, "tRCD+tCL+tBL": 28, "row_misses": 2},
+  {"test": "row_hit_miss_conflict", "pass": true, "miss": 34, "hit": 18, "conflict": 46, "tRP": 13, "row_hits": 2, "row_conflicts": 2},
+  {"test": "controller_address_map", "pass": true, "map": "ROW_BANK_COLUMN, BG0 interleave, USER_MC0_ADDR_BIT"},
+  {"test": "bank_parallelism", "pass": true, "makespan_spread": 154, "makespan_one_bank": 694, "tRC": 44},
+  {"test": "refresh_on_stream", "pass": true, "requests": 877, "refreshes": 10, "min_latency": 18, "max_latency": 280, "tRFC": 235, "slow_requests": 42, "skipped_cycles": 31636},
+  {"test": "idle_skip_with_refresh", "pass": true, "second_latency": 34, "skipped_cycles": 18571, "ticks": 20, "refreshes": 5},
+  {"test": "write", "pass": true, "write_latency": 24, "tRCDWR+tCWL+tBL": 18},
+  {"test": "write_queue_backpressure", "pass": true, "lines": 96, "accepted_bursts": 192, "completed_bursts": 192, "queue_refusals": 3878, "peak_rw_queued_bursts": 32},
+  {"test": "read_write_turnaround", "pass": true, "read_to_write_command_gap": 14, "nRTW": 14, "write_to_read_command_gap": 13, "nCWL+nBL+nWTRS": 13},
+  {"test": "event_skip_identical", "pass": true, "requests": 200000, "differing_completions": 0, "ticks_without_skip": 73173703, "ticks_with_skip": 1744779, "row_conflicts": 180677, "refreshes": 20847}
+ ], "failures": 0}

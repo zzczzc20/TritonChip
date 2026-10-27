@@ -1,0 +1,10 @@
+MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=1 id=13 status=2 cycles=1718
+MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=49112
+HYBRID COUPLED core=0 fast=58 slow=1310 retired=1368
+MULTICORE SHELL GRID PASS N=1 id=12 status=0 cycles=88803
+AXI OUTLET TRAFFIC port=0 reads=171 writes=57
+MULTICORE SHELL GRID PASS N=1 id=14 status=1 cycles=95656
+MULTICORE AXI PERSISTENT PASS N=1 ports=1 stages=0 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:217: $finish called at 956560000 (1ps)

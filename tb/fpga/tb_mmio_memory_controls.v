@@ -1,10 +1,10 @@
 `timescale 1ns/1ps
 module tb_mmio_memory_controls;
- parameter ENABLE=1;
+ parameter ENABLE=1,HBM_STRIPED=0;
  reg clk=0,rst_n=0;always #5 clk=~clk;
  reg [8:0] address=0;reg [63:0] data=0;reg we=0,idle=1,ready=0,done=0,host_ready=0,host_rsp=0;
  wire [63:0] value;wire [7:0] ports,limit;
- tnca_multicore_mmio #(.PORTS(3),.REG_ADDR_W(9),.CACHE_MAINTENANCE(1),.MEMORY_CONTROLS(ENABLE),.AXI_OUT_N(8)) dut(
+ tnca_multicore_mmio #(.HBM_STRIPED(HBM_STRIPED),.PORTS(3),.REG_ADDR_W(9),.CACHE_MAINTENANCE(1),.MEMORY_CONTROLS(ENABLE),.AXI_OUT_N(8)) dut(
   .clk(clk),.rst_n(rst_n),.reg_addr(address),.reg_wdata(data),.reg_we(we),.reg_re(1'b1),.reg_rdata(value),
   .cmd_ready(1'b0),.done_valid(1'b0),.done_status(4'd0),.done_id(64'd0),.done_cycles(64'd0),
   .issued(96'd0),.completed(96'd0),.peak_active(32'd0),.active_cycles(192'd0),
@@ -25,7 +25,10 @@ module tb_mmio_memory_controls;
  endtask
  initial begin
   repeat(3)@(negedge clk);rst_n=1;
-  check(9'hb8,(64'h20<<32)|64'd18|(ENABLE?64'd32:0));
+  check(9'hb8,(64'h20<<32)|64'd18|(ENABLE?64'd32:0)|(HBM_STRIPED?64'd64:0));
+  check(9'h120,HBM_STRIPED?64'h5234315300010c05:0);
+  write(9'h120,64'hdeadbeef);
+  check(9'h120,HBM_STRIPED?64'h5234315300010c05:0);
   check(9'h118,ENABLE?64'h5234304d00010308:0);
   check(9'h110,ENABLE?64'h308:0);
   if(!ENABLE)begin

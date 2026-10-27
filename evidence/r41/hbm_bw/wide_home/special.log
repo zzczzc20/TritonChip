@@ -1,0 +1,2 @@
+WIDE HOME SPECIAL PASS pipeline=1 atomic_cases=288 transactions=1456 MMIO_words=8
+tb/nuca/tb_nuca_wide_special.v:91: $finish called at 199460000 (1ps)

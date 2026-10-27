@@ -51,6 +51,9 @@ module tnca_tile #(
     parameter VRF_PREFETCH = 0,
     parameter RCTX_SWITCH = 0,
     parameter MTX_ABUF = 0,
+    parameter HYBRID_LSU = 0,
+    parameter SFU_LANES = 1,
+    parameter NOC_PAYLOAD_W = HYBRID_LSU ? 720 : 216,
     parameter LSU_INFLIGHT = 1,
     parameter FPU_OVERLAP = 0,
     parameter RSLICE = 0,
@@ -121,10 +124,10 @@ module tnca_tile #(
     // ---- mesh local port ----------------------------------------------------
     output wire [`TNCA_NOC_NV-1:0]                          l_in_valid,
     input  wire [`TNCA_NOC_NV-1:0]                          l_in_ready,
-    output wire [`TNCA_NOC_NV*(XW+YW+`TNCA_NOC_PAYLOAD_W)-1:0] l_in_flit,
+    output wire [`TNCA_NOC_NV*(XW+YW+NOC_PAYLOAD_W)-1:0] l_in_flit,
     input  wire [`TNCA_NOC_NV-1:0]                          l_out_valid,
     output wire [`TNCA_NOC_NV-1:0]                          l_out_ready,
-    input  wire [`TNCA_NOC_NV*(XW+YW+`TNCA_NOC_PAYLOAD_W)-1:0] l_out_flit,
+    input  wire [`TNCA_NOC_NV*(XW+YW+NOC_PAYLOAD_W)-1:0] l_out_flit,
 
     // ---- this slice's memory port -------------------------------------------
     output wire                     mem_req_valid,
@@ -176,7 +179,9 @@ module tnca_tile #(
     output wire [31:0]              perf_hit_past_block
 );
 
-    localparam FW = XW + YW + `TNCA_NOC_PAYLOAD_W;
+    localparam CORE_DW=HYBRID_LSU ? 512 : 64;
+    localparam CORE_BYTES=CORE_DW/8;
+    localparam FW = XW + YW + NOC_PAYLOAD_W;
     localparam [31:0] TILE_ID_32   = TILE_ID;
     localparam [31:0] NUM_TILES_32 = NUM_TILES;
     localparam VR = `TNCA_VN_REQ;
@@ -186,18 +191,21 @@ module tnca_tile #(
     // Core
     //==========================================================================
     wire                 c_req_valid, c_req_ready, c_req_we;
-    wire [63:0]          c_req_addr, c_req_wdata;
-    wire [7:0]           c_req_be;
+    wire [63:0] c_req_addr;
+    wire [CORE_DW-1:0] c_req_wdata;
+    wire [CORE_BYTES-1:0] c_req_be;
     wire [LSU_TAG_W-1:0] c_req_tag;
     wire [1:0]           c_req_hint;
     wire                 c_req_amo;
     wire [3:0]           c_req_aop;
-    wire [63:0]          c_req_cmp;
+    wire [CORE_DW-1:0] c_req_cmp;
     wire                 c_rsp_valid;
     wire [LSU_TAG_W-1:0] c_rsp_tag;
-    wire [63:0]          c_rsp_rdata;
+    wire [CORE_DW-1:0] c_rsp_rdata;
 
     tnca_core #(
+        .HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),
+        .MEM_DW(CORE_DW),.MEM_BYTES(CORE_BYTES),.MEM_SHIFT(HYBRID_LSU ? 6 : 3),
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(LW),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
         .CORE_ID(TILE_ID), .NUM_CORES(NUM_TILES),
@@ -214,7 +222,7 @@ module tnca_tile #(
         .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
-        .LSU_BEATS(LSU_BEATS), .LSU_TAG_W(LSU_TAG_W)
+        .LSU_BEATS(HYBRID_LSU ? 4 : LSU_BEATS), .LSU_TAG_W(LSU_TAG_W)
     ) u_core (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),
@@ -249,8 +257,9 @@ module tnca_tile #(
     wire [FW-1:0]   ni_out_f_rsp;
 
     wire n_req_valid,n_req_ready,n_req_we,n_req_amo,n_rsp_valid;
-    wire [63:0] n_req_addr,n_req_wdata,n_req_cmp,n_rsp_rdata;
-    wire [7:0] n_req_be;wire [3:0] n_req_aop;
+    wire [63:0] n_req_addr,n_req_cmp;
+    wire [CORE_DW-1:0] n_req_wdata,n_rsp_rdata;
+    wire [CORE_BYTES-1:0] n_req_be;wire [3:0] n_req_aop;
     wire [LSU_TAG_W-1:0] n_req_tag,n_rsp_tag;
     generate if(HOST_ACCESS) begin: g_host_mux
         // Second copy of the registered quiescence permission, inside this
@@ -259,10 +268,10 @@ module tnca_tile #(
         // flop is the only consumer.
         reg host_allow_q;
         always @(posedge clk) host_allow_q <= rst_n && host_allow;
-        tnca_idle_host_mux #(.TAG_W(LSU_TAG_W)) u_host (
+        tnca_idle_host_mux #(.TAG_W(LSU_TAG_W),.DATA_W(CORE_DW)) u_host (
             .clk(clk),.rst_n(rst_n),.host_allow(host_allow_q),
             .c_valid(c_req_valid),.c_ready(c_req_ready),.c_addr(c_req_addr),.c_wdata(c_req_wdata),
-            .c_cmp(c_req_cmp),.c_we(c_req_we),.c_amo(c_req_amo),.c_be(c_req_be),.c_aop(c_req_aop),.c_tag(c_req_tag),
+            .c_cmp(c_req_cmp[63:0]),.c_we(c_req_we),.c_amo(c_req_amo),.c_be(c_req_be),.c_aop(c_req_aop),.c_tag(c_req_tag),
             .c_rsp_valid(c_rsp_valid),.c_rsp_tag(c_rsp_tag),.c_rsp_data(c_rsp_rdata),
             .h_valid(host_valid),.h_ready(host_ready),.h_we(host_we),.h_addr(host_addr),
             .h_wdata(host_wdata),.h_be(host_be),.h_rsp_valid(host_rsp_valid),.h_rsp_data(host_rsp_data),.host_busy(host_busy),
@@ -271,7 +280,7 @@ module tnca_tile #(
             .n_rsp_valid(n_rsp_valid),.n_rsp_tag(n_rsp_tag),.n_rsp_data(n_rsp_rdata));
     end else begin: g_core_only
         assign n_req_valid=c_req_valid;assign c_req_ready=n_req_ready;
-        assign n_req_addr=c_req_addr;assign n_req_wdata=c_req_wdata;assign n_req_cmp=c_req_cmp;
+        assign n_req_addr=c_req_addr;assign n_req_wdata=c_req_wdata;assign n_req_cmp=c_req_cmp[63:0];
         assign n_req_we=c_req_we;assign n_req_amo=c_req_amo;assign n_req_be=c_req_be;
         assign n_req_aop=c_req_aop;assign n_req_tag=c_req_tag;
         assign c_rsp_valid=n_rsp_valid;assign c_rsp_tag=n_rsp_tag;assign c_rsp_rdata=n_rsp_rdata;
@@ -279,6 +288,7 @@ module tnca_tile #(
     end endgenerate
 
     tnca_core_ni #(
+        .DATA_W(CORE_DW),.PAYLOAD_W(NOC_PAYLOAD_W),
         .NX(NX), .NY(NY), .XW(XW), .YW(YW), .TAG_W(LSU_TAG_W), .SRC_W(SLICE_SRC_W),
         .MY_ID(TILE_ID), .LINE_SH(6)
     ) u_cni (
@@ -297,8 +307,9 @@ module tnca_tile #(
     );
 
     wire                    s_req_valid, s_req_ready, s_req_we;
-    wire [63:0]             s_req_addr, s_req_wdata;
-    wire [7:0]              s_req_be;
+    wire [63:0] s_req_addr;
+    wire [CORE_DW-1:0] s_req_wdata;
+    wire [CORE_BYTES-1:0] s_req_be;
     wire                    s_req_amo;
     wire [3:0]              s_req_aop;
     wire [63:0]             s_req_cmp;
@@ -307,7 +318,7 @@ module tnca_tile #(
     wire                    s_rsp_valid, s_rsp_ready;
     wire [SLICE_SRC_W-1:0]  s_rsp_src;
     wire [SLICE_TAG_W-1:0]  s_rsp_tag;
-    wire [63:0]             s_rsp_rdata;
+    wire [CORE_DW-1:0] s_rsp_rdata;
 
     wire            ni_in_v_rsp, ni_in_r_rsp;
     wire [FW-1:0]   ni_in_f_rsp;
@@ -315,6 +326,7 @@ module tnca_tile #(
     wire [FW-1:0]   ni_out_f_req;
 
     tnca_slice_ni #(
+        .DATA_W(CORE_DW),.PAYLOAD_W(NOC_PAYLOAD_W),
         .NX(NX), .NY(NY), .XW(XW), .YW(YW), .TAG_W(SLICE_TAG_W), .SRC_W(SLICE_SRC_W)
     ) u_sni (
         .clk(clk), .rst_n(rst_n),
@@ -341,7 +353,7 @@ module tnca_tile #(
         .REGISTER_VICTIM_OWNER(1), .REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK), .MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .FULL_LINE_TAG(!(NX==2 && NY==2)),
         .ADDR_W(64), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
-        .WORD_BITS(64), .WORD_BYTES(8),
+        .WORD_BITS(CORE_DW), .WORD_BYTES(CORE_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
         .MSHR_N(MSHR_N), .MSHR_W(MSHR_W),
         .TARGET_N(TARGET_N), .TARGET_W(TARGET_W),
@@ -357,7 +369,7 @@ module tnca_tile #(
         .req_ready(s_req_ready), .req_valid(s_req_valid),
         .req_addr(s_req_addr), .req_we(s_req_we), .req_be(s_req_be),
         .req_wdata(s_req_wdata), .req_src(s_req_src), .req_tag(s_req_tag),
-        .req_amo(s_req_amo), .req_aop(s_req_aop), .req_cmp(s_req_cmp),
+        .req_amo(s_req_amo), .req_aop(s_req_aop), .req_cmp({{(CORE_DW-64){1'b0}},s_req_cmp}),
         .rsp_valid(s_rsp_valid), .rsp_ready(s_rsp_ready),
         .rsp_src(s_rsp_src), .rsp_tag(s_rsp_tag), .rsp_rdata(s_rsp_rdata),
         .mem_req_valid(mem_req_valid), .mem_req_ready(mem_req_ready),

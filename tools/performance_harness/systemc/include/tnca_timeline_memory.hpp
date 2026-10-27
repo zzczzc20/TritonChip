@@ -184,6 +184,34 @@ struct TimelineMemory {
         result=old;
         return r;
     }
+    // Exploratory wide coalesced request: one aligned region, one cache service,
+    // and explicit serialization when the receiving NoC is narrower. Functional
+    // words remain exact 64-bit values; this does not widen arithmetic or atomics.
+    struct WideWord {u64 address,data;unsigned be;u64 result=0;};
+    u64 wide(unsigned core,std::vector<WideWord>& words,bool write,u64 t){
+        require(!words.empty(),"empty wide request");
+        u64 width=c.get_or("tl_core_beat_bytes",8),payload=c.get_or("tl_noc_payload_bytes",8);
+        u64 region=words.front().address&~(width-1),now=x.now();
+        for(auto& w:words){require((w.address&7)==0 && (w.address&~(width-1))==region,"wide request crosses region");x.c.address(w.address,8);}
+        unsigned h=x.c.home(region);
+        // The historical model treats fixed headers as one flit. Extra useful
+        // data occupies additional link cycles; retain that exact baseline.
+        u64 req_data=write?width:8,rsp_data=write?8:width;
+        auto transfer=[&](unsigned from,unsigned to,unsigned vn,u64 data,u64 at){
+            u64 n=(data+payload-1)/payload;
+            u64 last=at;
+            for(u64 i=0;i<n;++i)last=std::max(last,route(from,to,vn,std::min(payload,data-i*payload),at+i,now));
+            return last;
+        };
+        u64 r=transfer(core,h,0,req_data,t+inject);
+        r=slice(h,region,write,r,now);
+        r=transfer(h,core,1,rsp_data,r+eject);
+        for(auto& w:words){auto& l=store[w.address&~63ULL];unsigned off=unsigned(w.address&63);w.result=0;
+            for(unsigned b=0;b<8;++b)w.result|=u64(l[off+b])<<(8*b);
+            if(write)for(unsigned b=0;b<8;++b)if(w.be&(1U<<b))l[off+b]=static_cast<unsigned char>(w.data>>(8*b));}
+        x.counts["wide_requests"]++;x.counts["wide_word_components"]+=words.size();
+        return r;
+    }
     // The functional effect alone (untimed mode): no timing state changes,
     // except that the line is placed in its home slice as a timed access
     // would leave it, so a following timed call starts with that content.

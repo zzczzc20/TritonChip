@@ -431,14 +431,14 @@ module tnca_lsu #(
                             cboff = lane_addr[i][MEM_SHIFT-1:0];
                             if (rsp_high[i]) begin
                                 chi = {1'd0, nbytes} - (MEM_BYTES - {1'd0, cboff});
-                                for (b = 0; b < MEM_BYTES; b = b + 1)
+                                for (b = 0; b < ((MEM_BYTES < 8) ? MEM_BYTES : 8); b = b + 1)
                                     if (b < chi)
                                         lane_rdata[i][(MEM_BYTES - cboff + b)*8 +: 8]
                                             <= mem_rsp_rdata[b*8 +: 8];
                             end else begin
                                 clo = rsp_low[i] ? (MEM_BYTES - {1'd0, cboff})
                                                  : {1'd0, nbytes};
-                                for (b = 0; b < MEM_BYTES; b = b + 1)
+                                for (b = 0; b < ((MEM_BYTES < 8) ? MEM_BYTES : 8); b = b + 1)
                                     if (b < clo)
                                         lane_rdata[i][b*8 +: 8]
                                             <= mem_rsp_rdata[(cboff + b)*8 +: 8];

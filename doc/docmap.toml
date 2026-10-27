@@ -397,6 +397,91 @@ depends_on = ["doc/r41_tasks_and_acceptance.md", "evidence/r41/stage1/board/READ
 sources = ["evidence/r41/stage1/required_index.json", "evidence/r41/stage1/board/", "evidence/r41/stage1/kickoff/prospective-prediction-v2.json", "evidence/r41/stage1/kickoff/gemm-subset-predictions-v2.json"]
 
 [[doc]]
+path = "evidence/r41/hbm_bw/HANDOFF.md"
+depends_on = []
+sources = ["rtl/nuca/", "rtl/fpga/", "rtl/board/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/STATUS.md"
+depends_on = ["evidence/r41/hbm_bw/HANDOFF.md", "evidence/r41/hbm_bw/capacity_analysis.md"]
+sources = []
+
+[[doc]]
+path = "evidence/r41/hbm_bw/capacity_analysis.md"
+depends_on = []
+sources = ["rtl/core/tnca_mem_mux.v", "rtl/core/tnca_core.v", "rtl/fpga/tnca_line_axi.v", "rtl/board/tnca_multicore_hbm_xo.v"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/model/README.md"
+depends_on = ["evidence/r41/hbm_bw/capacity_analysis.md"]
+sources = ["tools/performance_harness/systemc/ramulator/", "evidence/r41/hbm_bw/model/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/outlet/README.md"
+depends_on = ["evidence/r41/hbm_bw/model/README.md"]
+sources = ["rtl/fpga/tnca_line_axi.v", "tb/fpga/tb_line_axi.v", "tb/fpga/tb_line_axi_stream.v", "tools/r40/line_axi_tests.py", "flow/fpga/screen_r41_hbm_outlet.tcl", "evidence/r41/hbm_bw/outlet/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/stream/README.md"
+depends_on = ["evidence/r41/hbm_bw/model/README.md", "evidence/r41/hbm_bw/outlet/README.md"]
+sources = ["rtl/fpga/tnca_stream_axi.v", "rtl/fpga/tnca_stream_fifo.v", "tb/fpga/tb_stream_axi.v", "tools/r41/hbm_stream_tests.py", "flow/fpga/screen_r41_hbm_stream.tcl", "evidence/r41/hbm_bw/stream/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/layout/README.md"
+depends_on = ["evidence/r41/hbm_bw/stream/README.md"]
+sources = ["python/tnca/hbm_layout.py", "python/tnca/backends/multicore_mmio.py", "rtl/fpga/tnca_line_axi.v", "rtl/fpga/tnca_multicore_mmio.v", "tb/fpga/tb_hbm_stripe.v", "tools/r41/hbm_layout_tests.py", "evidence/r41/hbm_bw/layout/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/bank/README.md"
+depends_on = ["evidence/r41/hbm_bw/layout/README.md", "evidence/r41/hbm_bw/stream/README.md"]
+sources = ["rtl/fpga/tnca_stream_bank.v", "tb/fpga/tb_stream_bank.v", "tools/r41/hbm_bank_tests.py", "flow/fpga/screen_r41_hbm_bank.tcl", "evidence/r41/hbm_bw/bank/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/binding/README.md"
+depends_on = ["evidence/r41/hbm_bw/bank/README.md"]
+sources = ["rtl/board/tnca_stream_hbm_xo.v", "fpga/kernel_stream_hbm.xml", "fpga/u280_multicore_stream.cfg", "flow/fpga/package_xo.tcl", "flow/fpga/link.sh", "tools/r41/generate_stream_binding.py", "tools/r41/stream_binding_tests.py", "tools/r41/audit_stream_package.py", "evidence/r41/hbm_bw/binding/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/end_to_end.md"
+depends_on = ["evidence/r41/hbm_bw/HANDOFF.md", "evidence/r41/hbm_bw/capacity_analysis.md"]
+sources = ["rtl/noc/tnca_core_ni.v", "rtl/noc/tnca_noc_pkg.vh", "rtl/core/tnca_lsu.v", "rtl/core/tnca_vrf_banked.v", "rtl/core/tnca_sfu.v", "evidence/r41/hbm_bw/operator_baseline.json", "evidence/r41/hbm_bw/kernel/", "evidence/r41/hbm_bw/runtime/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/wide_model/README.md"
+depends_on = ["evidence/r41/hbm_bw/end_to_end.md"]
+sources = ["tools/r41/wide_path_model_tests.py", "tools/performance_harness/systemc/include/tnca_model.hpp", "tools/performance_harness/systemc/include/tnca_timeline_memory.hpp", "tools/performance_harness/systemc/src/chip.cpp", "evidence/r41/hbm_bw/wide_model/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/vector_schedule/README.md"
+depends_on = ["evidence/r41/hbm_bw/wide_model/README.md"]
+sources = ["tools/r41/vector_schedule_model_tests.py", "tools/r41/operator_path_model_sweep.py", "tools/r41/wide_path_model_tests.py", "tools/performance_harness/systemc/src/chip.cpp", "evidence/r41/hbm_bw/vector_schedule/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/sfu/README.md"
+depends_on = ["evidence/r41/hbm_bw/vector_schedule/README.md"]
+sources = ["rtl/core/tnca_sfu.v", "rtl/core/tnca_vector_fpu.v", "rtl/core/tnca_core.v", "tb/core/tb_sfu_parallel.v", "tools/r41/sfu_parallel_tests.py", "flow/fpga/screen_r41_sfu.tcl", "evidence/r41/hbm_bw/sfu/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/lsu_bank/README.md"
+depends_on = ["evidence/r41/hbm_bw/vector_schedule/README.md", "evidence/r41/hbm_bw/sfu/README.md"]
+sources = ["rtl/core/tnca_lsu_bank.v", "rtl/core/tnca_lsu.v", "rtl/core/tnca_core.v", "tb/core/tb_lsu_bank.v", "tb/core/tb_lsu_bank_reset.v", "tb/core/tb_lsu_wide.v", "tools/r41/lsu_bank_tests.py", "flow/fpga/synth_r41_lsu_bank.tcl", "evidence/r41/hbm_bw/lsu_bank/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/wide_noc/README.md"
+depends_on = ["evidence/r41/hbm_bw/lsu_bank/README.md"]
+sources = ["rtl/noc/tnca_core_ni.v", "rtl/noc/tnca_slice_ni.v", "rtl/noc/tnca_mesh.v", "rtl/noc/tnca_router.v", "tb/noc/tb_wide_ni.v", "tools/r41/wide_noc_tests.py", "evidence/r41/hbm_bw/wide_noc/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/line_lsu/README.md"
+depends_on = ["evidence/r41/hbm_bw/lsu_bank/README.md", "evidence/r41/hbm_bw/wide_noc/README.md"]
+sources = ["rtl/core/tnca_lsu_line.v", "tb/core/tb_lsu_line.v", "tb/core/tb_lsu_line_reset.v", "tools/r41/lsu_line_tests.py", "flow/fpga/screen_r41_lsu_line.tcl", "evidence/r41/hbm_bw/line_lsu/"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/hybrid_lsu/README.md"
+depends_on = ["evidence/r41/hbm_bw/line_lsu/README.md", "evidence/r41/hbm_bw/wide_noc/README.md"]
+sources = ["rtl/core/tnca_lsu_hybrid.v", "rtl/core/tnca_word_line_adapter.v", "rtl/core/tnca_core.v", "rtl/core/tnca_lsu_line.v", "tb/core/tb_lsu_hybrid.v", "tb/core/tb_lsu_hybrid_reset.v", "tb/core/tb_core_hybrid.v", "tb/common/tnca_line_mem_model.v", "tools/r41/lsu_hybrid_tests.py", "tools/r41/hybrid_core_tests.py", "flow/fpga/screen_r41_lsu_hybrid.tcl", "evidence/r41/hbm_bw/hybrid_lsu/"]
+
+[[doc]]
 path = "evidence/r41/stage2/x86_link/README.md"
 depends_on = []
 sources = ["flow/fpga/"]
@@ -440,6 +525,11 @@ sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.jso
 path = "evidence/r41/acceptance/STATUS.md"
 depends_on = ["doc/r41_tasks_and_acceptance.md"]
 sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.json", "tools/performance_harness/stage2_acceptance.py"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/wide_home/README.md"
+depends_on = ["evidence/r41/hbm_bw/hybrid_lsu/README.md", "evidence/r41/hbm_bw/wide_noc/README.md", "evidence/r41/SERVERS.md"]
+sources = ["rtl/nuca/tnca_nuca_slice.v", "tb/nuca/tb_nuca_wide.v", "tb/nuca/tb_nuca_wide_special.v", "tools/r41/wide_home_tests.py", "flow/fpga/screen_r41_wide_home.tcl", "evidence/r41/hbm_bw/wide_home/"]
 
 [[doc]]
 path = "evidence/r41/acceptance/KIMI_HANDOFF.md"

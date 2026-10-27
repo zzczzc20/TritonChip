@@ -1,0 +1,19 @@
+........HBM STRIPE AXI PASS vectors=100
+tb/fpga/tb_hbm_stripe.v:44: $finish called at 3070000 (1ps)
+HBM STRIPE REFUSAL PASS bad_window=1
+tb/fpga/tb_hbm_stripe.v:37: $finish called at 80000 (1ps)
+HBM STRIPE REFUSAL PASS bad_window=2
+tb/fpga/tb_hbm_stripe.v:37: $finish called at 80000 (1ps)
+MMIO MEMORY CONTROLS PASS disabled
+tb/fpga/tb_mmio_memory_controls.v:36: $finish called at 71000 (1ps)
+MMIO MEMORY CONTROLS PASS disabled
+tb/fpga/tb_mmio_memory_controls.v:36: $finish called at 71000 (1ps)
+MMIO MEMORY CONTROLS PASS quiescence invalid counts ownership host reset aliases
+tb/fpga/tb_mmio_memory_controls.v:61: $finish called at 791000 (1ps)
+MMIO MEMORY CONTROLS PASS quiescence invalid counts ownership host reset aliases
+tb/fpga/tb_mmio_memory_controls.v:61: $finish called at 791000 (1ps)
+.
+----------------------------------------------------------------------
+Ran 9 tests in 0.269s
+
+OK

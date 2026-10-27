@@ -1,0 +1,49 @@
+LINE LSU PASS slots=2 stall=0 stream=0 seed=1 commands=512 peak=2 admission_span=996 request_stall=0 slot_stall=484
+tb/core/tb_lsu_line.v:140: $finish called at 10270000 (1ps)
+LINE LSU PASS slots=2 stall=0 stream=0 seed=39 commands=512 peak=2 admission_span=996 request_stall=0 slot_stall=484
+tb/core/tb_lsu_line.v:140: $finish called at 10270000 (1ps)
+LINE LSU PASS slots=2 stall=0 stream=1 seed=1 commands=512 peak=2 admission_span=1022 request_stall=0 slot_stall=510
+tb/core/tb_lsu_line.v:140: $finish called at 10530000 (1ps)
+LINE LSU PASS slots=2 stall=0 stream=1 seed=39 commands=512 peak=2 admission_span=1022 request_stall=0 slot_stall=510
+tb/core/tb_lsu_line.v:140: $finish called at 10530000 (1ps)
+LINE LSU PASS slots=2 stall=1 stream=0 seed=1 commands=512 peak=2 admission_span=4844 request_stall=142 slot_stall=4319
+tb/core/tb_lsu_line.v:140: $finish called at 48960000 (1ps)
+LINE LSU PASS slots=2 stall=1 stream=0 seed=39 commands=512 peak=2 admission_span=4894 request_stall=133 slot_stall=4376
+tb/core/tb_lsu_line.v:140: $finish called at 49430000 (1ps)
+LINE LSU PASS slots=2 stall=1 stream=1 seed=1 commands=512 peak=2 admission_span=5351 request_stall=136 slot_stall=4827
+tb/core/tb_lsu_line.v:140: $finish called at 53890000 (1ps)
+LINE LSU PASS slots=2 stall=1 stream=1 seed=39 commands=512 peak=2 admission_span=5357 request_stall=111 slot_stall=4832
+tb/core/tb_lsu_line.v:140: $finish called at 54200000 (1ps)
+LINE LSU PASS slots=4 stall=0 stream=0 seed=1 commands=512 peak=3 admission_span=512 request_stall=0 slot_stall=0
+tb/core/tb_lsu_line.v:140: $finish called at 5430000 (1ps)
+LINE LSU PASS slots=4 stall=0 stream=0 seed=39 commands=512 peak=3 admission_span=512 request_stall=0 slot_stall=0
+tb/core/tb_lsu_line.v:140: $finish called at 5430000 (1ps)
+LINE LSU PASS slots=4 stall=0 stream=1 seed=1 commands=512 peak=3 admission_span=512 request_stall=0 slot_stall=0
+tb/core/tb_lsu_line.v:140: $finish called at 5430000 (1ps)
+LINE LSU PASS slots=4 stall=0 stream=1 seed=39 commands=512 peak=3 admission_span=512 request_stall=0 slot_stall=0
+tb/core/tb_lsu_line.v:140: $finish called at 5430000 (1ps)
+LINE LSU PASS slots=4 stall=1 stream=0 seed=1 commands=512 peak=4 admission_span=2518 request_stall=119 slot_stall=1984
+tb/core/tb_lsu_line.v:140: $finish called at 25760000 (1ps)
+LINE LSU PASS slots=4 stall=1 stream=0 seed=39 commands=512 peak=4 admission_span=2459 request_stall=121 slot_stall=1909
+tb/core/tb_lsu_line.v:140: $finish called at 25180000 (1ps)
+LINE LSU PASS slots=4 stall=1 stream=1 seed=1 commands=512 peak=4 admission_span=2654 request_stall=119 slot_stall=2116
+tb/core/tb_lsu_line.v:140: $finish called at 27020000 (1ps)
+LINE LSU PASS slots=4 stall=1 stream=1 seed=39 commands=512 peak=4 admission_span=2577 request_stall=128 slot_stall=2030
+tb/core/tb_lsu_line.v:140: $finish called at 26380000 (1ps)
+LINE LSU PASS slots=8 stall=0 stream=0 seed=1 commands=512 peak=3 admission_span=512 request_stall=0 slot_stall=0
+tb/core/tb_lsu_line.v:140: $finish called at 5430000 (1ps)
+LINE LSU PASS slots=8 stall=0 stream=0 seed=39 commands=512 peak=3 admission_span=512 request_stall=0 slot_stall=0
+tb/core/tb_lsu_line.v:140: $finish called at 5430000 (1ps)
+LINE LSU PASS slots=8 stall=0 stream=1 seed=1 commands=512 peak=3 admission_span=512 request_stall=0 slot_stall=0
+tb/core/tb_lsu_line.v:140: $finish called at 5430000 (1ps)
+LINE LSU PASS slots=8 stall=0 stream=1 seed=39 commands=512 peak=3 admission_span=512 request_stall=0 slot_stall=0
+tb/core/tb_lsu_line.v:140: $finish called at 5430000 (1ps)
+LINE LSU PASS slots=8 stall=1 stream=0 seed=1 commands=512 peak=8 admission_span=1242 request_stall=132 slot_stall=662
+tb/core/tb_lsu_line.v:140: $finish called at 12990000 (1ps)
+LINE LSU PASS slots=8 stall=1 stream=0 seed=39 commands=512 peak=8 admission_span=1314 request_stall=130 slot_stall=739
+tb/core/tb_lsu_line.v:140: $finish called at 13710000 (1ps)
+LINE LSU PASS slots=8 stall=1 stream=1 seed=1 commands=512 peak=8 admission_span=1362 request_stall=126 slot_stall=790
+tb/core/tb_lsu_line.v:140: $finish called at 14190000 (1ps)
+LINE LSU PASS slots=8 stall=1 stream=1 seed=39 commands=512 peak=8 admission_span=1329 request_stall=127 slot_stall=756
+tb/core/tb_lsu_line.v:140: $finish called at 13860000 (1ps)
+LINE LSU ALL 24 CONFIGURATIONS PASS

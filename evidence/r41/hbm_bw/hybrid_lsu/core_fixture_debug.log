@@ -1,0 +1,152 @@
+HYBRID_TRACE cyc=0 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=5 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=0 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=6 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=2 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=7 slowstate=0 q=0 tensor=0
+[115000] rctx=0 pc=0000000000000000 maj=01 fn=40 dst=1/1
+HYBRID_TRACE cyc=2 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=8 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=4 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=9 slowstate=0 q=0 tensor=0
+[135000] rctx=0 pc=0000000000000008 maj=01 fn=41 dst=1/1
+HYBRID_TRACE cyc=4 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=10 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=6 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=11 slowstate=0 q=0 tensor=0
+[155000] rctx=0 pc=0000000000000010 maj=01 fn=41 dst=1/1
+HYBRID_TRACE cyc=6 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=12 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=8 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=13 slowstate=0 q=0 tensor=0
+[175000] rctx=0 pc=0000000000000018 maj=01 fn=41 dst=1/1
+[185000] rctx=0 pc=0000000000000020 maj=01 fn=40 dst=1/2
+HYBRID_TRACE cyc=8 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=14 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=10 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=15 slowstate=0 q=0 tensor=0
+[205000] rctx=0 pc=0000000000000028 maj=01 fn=41 dst=1/2
+HYBRID_TRACE cyc=10 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=16 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=12 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=17 slowstate=0 q=0 tensor=0
+[225000] rctx=0 pc=0000000000000030 maj=01 fn=41 dst=1/2
+HYBRID_TRACE cyc=12 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=18 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=14 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=19 slowstate=0 q=0 tensor=0
+[245000] rctx=0 pc=0000000000000038 maj=01 fn=41 dst=1/2
+HYBRID_TRACE cyc=14 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=20 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=16 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=21 slowstate=0 q=0 tensor=0
+[255000] rctx=0 pc=0000000000000040 maj=01 fn=40 dst=1/3
+HYBRID_TRACE cyc=16 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=22 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=18 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=23 slowstate=0 q=0 tensor=0
+[275000] rctx=0 pc=0000000000000048 maj=01 fn=41 dst=1/3
+HYBRID_TRACE cyc=18 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=24 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=20 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=25 slowstate=0 q=0 tensor=0
+[295000] rctx=0 pc=0000000000000050 maj=01 fn=41 dst=1/3
+HYBRID_TRACE cyc=20 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=26 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=22 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=27 slowstate=0 q=0 tensor=0
+[315000] rctx=0 pc=0000000000000058 maj=01 fn=41 dst=1/3
+[325000] rctx=0 pc=0000000000000060 maj=01 fn=40 dst=1/4
+HYBRID_TRACE cyc=22 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=28 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=24 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=29 slowstate=0 q=0 tensor=0
+[345000] rctx=0 pc=0000000000000068 maj=01 fn=41 dst=1/4
+HYBRID_TRACE cyc=24 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=30 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=26 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=31 slowstate=0 q=0 tensor=0
+[365000] rctx=0 pc=0000000000000070 maj=01 fn=41 dst=1/4
+HYBRID_TRACE cyc=26 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=32 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=28 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=33 slowstate=0 q=0 tensor=0
+[385000] rctx=0 pc=0000000000000078 maj=01 fn=41 dst=1/4
+HYBRID_TRACE cyc=28 req=0 ready=x addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=34 slowstate=0 q=0 tensor=0
+HYBRID_TRACE cyc=30 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=35 slowstate=0 q=0 tensor=0
+[395000] rctx=0 pc=0000000000000080 maj=20 fn=00 dst=1/5
+[405000] rctx=0 pc=0000000000000088 maj=01 fn=40 dst=1/62
+HYBRID_TRACE cyc=30 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=36 slowstate=1 q=0 tensor=0
+HYBRID_TRACE cyc=32 req=0 ready=0 addr=xxxxxxxxxxxxxxxx tag=0X rsp=0 rtag=xx pool=00000000 due0=x memcycle=37 slowstate=2 q=0 tensor=0
+[425000] rctx=0 pc=0000000000000090 maj=01 fn=41 dst=1/62
+HYBRID_TRACE cyc=32 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=38 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=34 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=39 slowstate=2 q=1 tensor=0
+[445000] rctx=0 pc=0000000000000098 maj=01 fn=41 dst=1/62
+HYBRID_TRACE cyc=34 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=40 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=36 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=41 slowstate=2 q=1 tensor=0
+[465000] rctx=0 pc=00000000000000a0 maj=01 fn=41 dst=1/62
+HYBRID_TRACE cyc=36 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=42 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=38 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=43 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=38 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=44 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=40 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=45 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=40 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=46 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=42 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=47 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=42 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=48 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=44 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=49 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=44 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=50 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=46 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=51 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=46 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=52 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=48 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=53 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=48 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=54 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=50 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=55 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=50 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=56 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=52 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=57 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=52 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=58 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=54 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=59 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=54 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=60 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=56 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=61 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=56 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=62 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=58 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=63 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=58 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=64 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=60 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=65 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=60 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=66 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=62 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=67 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=62 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=68 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=64 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=69 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=64 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=70 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=66 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=71 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=66 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=72 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=68 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=73 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=68 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=74 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=70 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=75 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=70 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=76 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=72 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=77 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=72 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=78 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=74 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=79 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=74 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=80 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=76 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=81 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=76 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=82 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=78 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=83 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=78 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=84 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=80 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=85 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=80 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=86 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=82 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=87 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=82 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=88 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=84 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=89 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=84 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=90 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=86 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=91 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=86 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=92 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=88 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=93 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=88 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=94 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=90 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=95 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=90 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=96 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=92 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=97 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=92 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=98 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=94 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=99 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=94 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=100 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=96 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=101 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=96 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=102 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=98 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=103 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=98 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=104 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=100 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=105 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=100 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=106 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=102 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=107 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=102 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=108 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=104 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=109 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=104 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=110 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=106 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=111 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=106 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=112 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=108 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=113 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=108 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=114 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=110 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=115 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=110 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=116 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=112 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=117 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=112 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=118 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=114 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=119 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=114 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=120 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=116 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=121 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=116 req=1 ready=x addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=122 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=118 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=123 slowstate=2 q=1 tensor=0
+HYBRID_TRACE cyc=118 req=1 ready=0 addr=0000000000004000 tag=00 rsp=0 rtag=xx pool=00000000 due0=x memcycle=124 slowstate=2 q=1 tensor=0
+HYBRID CORE fast=0 slow=1 retired=0 switches=0 wb_stall=0 peak=0
+---- tnca core run ----
+cycles=200 issued=21 hazard=174 lsu=0 wb=0 squash=0
+vrf req=0 accept=0 conflict=0 stall=0 serial=0 parallel=0 mtx_req=0 mtx_wait=0 wb_retry=0
+stall_total=174 x_hazard=174 x_lsu=0 x_fpu=0 x_mtx=0 x_txf=0 x_fence=0 x_arrive=0 x_rsv=0 x_wb=0 x_vrf=0 x_vrfwb=0 x_sum=174
+frontend=7 partition=21+174+7 of 202
+rctx_switch=0
+memtrace=0000000000000000 memstall=87 memreorder=0 memmulti=0
+barcollide=0
+FAIL: timeout after 200 cycles
+tb/core/tb_core_hybrid.v:305: $finish called at 2095000 (1ps)

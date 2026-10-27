@@ -1,0 +1,37 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Mon Oct 26 19:56:52 2026
+| Host         : acf3019 running 64-bit Ubuntu 22.04.5 LTS
+| Command      : report_utilization -hierarchical -file /home/zzhouch/r41_hbmbw_lsu_bank_v1/units8_width512_v2/synth_util.rpt
+| Design       : tnca_lsu_bank
+| Device       : xcu280-fsvh2892-2L-e
+| Speed File   : -2L
+| Design State : Synthesized
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++-------------------+------------+------------+------------+---------+------+--------+--------+--------+------+------------+
+|      Instance     |   Module   | Total LUTs | Logic LUTs | LUTRAMs | SRLs |   FFs  | RAMB36 | RAMB18 | URAM | DSP Blocks |
++-------------------+------------+------------+------------+---------+------+--------+--------+--------+------+------------+
+| tnca_lsu_bank     |      (top) |     440741 |     440453 |     288 |    0 | 186131 |      0 |      0 |    0 |          0 |
+|   (tnca_lsu_bank) |      (top) |          1 |          1 |       0 |    0 |     35 |      0 |      0 |    0 |          0 |
+|   g_unit[0].u     |   tnca_lsu |      54648 |      54612 |      36 |    0 |  23262 |      0 |      0 |    0 |          0 |
+|   g_unit[1].u     | tnca_lsu_0 |      54653 |      54617 |      36 |    0 |  23262 |      0 |      0 |    0 |          0 |
+|   g_unit[2].u     | tnca_lsu_1 |      54649 |      54613 |      36 |    0 |  23262 |      0 |      0 |    0 |          0 |
+|   g_unit[3].u     | tnca_lsu_2 |      56683 |      56647 |      36 |    0 |  23262 |      0 |      0 |    0 |          0 |
+|   g_unit[4].u     | tnca_lsu_3 |      54652 |      54616 |      36 |    0 |  23262 |      0 |      0 |    0 |          0 |
+|   g_unit[5].u     | tnca_lsu_4 |      54652 |      54616 |      36 |    0 |  23262 |      0 |      0 |    0 |          0 |
+|   g_unit[6].u     | tnca_lsu_5 |      55156 |      55120 |      36 |    0 |  23262 |      0 |      0 |    0 |          0 |
+|   g_unit[7].u     | tnca_lsu_6 |      55647 |      55611 |      36 |    0 |  23262 |      0 |      0 |    0 |          0 |
++-------------------+------------+------------+------------+---------+------+--------+--------+--------+------+------------+
+
+

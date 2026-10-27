@@ -13,6 +13,7 @@ p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--hybrid', action='store_true')
 p.add_argument('--trace', action='store_true')
 p.add_argument('--size', type=int, default=33)
+p.add_argument('--warmup', action='store_true')
 a = p.parse_args()
 if a.size < 1:
     p.error('size must be positive')
@@ -34,6 +35,10 @@ operations = dict(add=lambda x,y:x+y, mul=lambda x,y:x*y,
     gelu=lambda x,y:torch.nn.functional.gelu(x), copy=lambda x,y:x.clone())
 for name, operation in operations.items():
     fn = torch.compile(operation, fullgraph=True, dynamic=False)
+    if a.warmup:
+        warm = fn(dx, dy)
+        torch.testing.assert_close(warm.cpu(), operation(x,y))
+        del warm
     with launch_log() as launches:
         result = fn(dx, dy)
     torch.testing.assert_close(result.cpu(), operation(x,y))
@@ -41,5 +46,7 @@ for name, operation in operations.items():
     print(json.dumps(dict(operator=name, shape=[a.size], dtype='float32',
         hybrid=a.hybrid, numerics='pass', launches=len(launches),
         rtl_device_cycles=[row.get('device_cycles') for row in launches],
+        warmed=a.warmup, upload_bytes=[row.get('upload_bytes') for row in launches],
+        download_bytes=[row.get('download_bytes') for row in launches],
         evidence='coupled-RTL-functional', board_speedup_measured=False)), flush=True)
 print('HYBRID TORCH COUPLED RTL ALL 5 OPERATORS PASS', flush=True)

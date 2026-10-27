@@ -1,0 +1,345 @@
+MMIO DOORBELL cycle=213 seq=1 op=6 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=553 seq=2 op=10 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=788 seq=3 op=14 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=1023 seq=4 op=16 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=2906 seq=5 op=1 a0=0000000000020000 a1=0000000000000011
+MMIO DOORBELL cycle=4760 seq=6 op=1 a0=00000000000200c0 a1=0000000000000011
+MMIO DOORBELL cycle=5267 seq=7 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=10000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=10000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=10000 core=0 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=20000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=20000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=20000 core=0 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=22594 seq=8 op=1 a0=0000000000000000 a1=0000000000000129
+HYBRID WATCH cycle=30000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=30000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=30000 core=0 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=31685 seq=9 op=1 a0=0000000000020200 a1=0000000000000060
+MMIO DOORBELL cycle=31920 seq=10 op=11 a0=0000000000000000 a1=0000000000020200
+HYBRID WATCH cycle=32461 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=18 retired=18 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=32461 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=32461 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=32880 seq=11 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=33200 seq=12 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=40000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=40000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=40000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=18 retired=18 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=41827 seq=13 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=42062 seq=14 op=11 a0=0000000000000000 a1=0000000000020300
+HYBRID WATCH cycle=42494 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=42494 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=42494 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=36 retired=36 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=42906 seq=15 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=43226 seq=16 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=50000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=50000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=50000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=36 retired=36 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=51621 seq=17 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=51856 seq=18 op=11 a0=0000000000000000 a1=0000000000020300
+HYBRID WATCH cycle=52291 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=54 retired=54 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=52291 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=52291 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=52700 seq=19 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=53020 seq=20 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=60000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=60000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=60000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=54 retired=54 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=61415 seq=21 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=61650 seq=22 op=11 a0=0000000000000000 a1=0000000000020300
+HYBRID WATCH cycle=62176 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=62176 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=62176 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=72 retired=72 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=62581 seq=23 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=62901 seq=24 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=70000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=70000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=70000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=72 retired=72 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=71383 seq=25 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=71618 seq=26 op=11 a0=0000000000000000 a1=0000000000020300
+HYBRID WATCH cycle=72157 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=90 retired=90 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=72157 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=72157 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=72578 seq=27 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=72898 seq=28 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=80000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=80000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=80000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=90 retired=90 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=81641 seq=29 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=81876 seq=30 op=11 a0=0000000000000000 a1=0000000000020400
+HYBRID WATCH cycle=82375 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=108 retired=108 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=82375 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=82375 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=82778 seq=31 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=83098 seq=32 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=90000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=90000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=90000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=108 retired=108 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=91609 seq=33 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=91844 seq=34 op=11 a0=0000000000000000 a1=0000000000020400
+HYBRID WATCH cycle=92366 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=92366 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=92366 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=126 retired=126 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=92775 seq=35 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=93095 seq=36 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=100000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=100000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=100000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=126 retired=126 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=101664 seq=37 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=101899 seq=38 op=11 a0=0000000000000000 a1=0000000000020400
+HYBRID WATCH cycle=102372 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=102372 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=102372 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=144 retired=144 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=102801 seq=39 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=103121 seq=40 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=110000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=110000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=110000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=144 retired=144 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=111632 seq=41 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=111867 seq=42 op=11 a0=0000000000000000 a1=0000000000020400
+HYBRID WATCH cycle=112364 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=112364 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=112364 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=162 retired=162 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=112769 seq=43 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=113089 seq=44 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=120000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=120000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=120000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=162 retired=162 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=121861 seq=45 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=122096 seq=46 op=11 a0=0000000000000000 a1=0000000000020500
+HYBRID WATCH cycle=122528 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=122528 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=122528 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=180 retired=180 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=122940 seq=47 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=123260 seq=48 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=130000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=130000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=130000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=180 retired=180 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=131655 seq=49 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=131890 seq=50 op=11 a0=0000000000000000 a1=0000000000020500
+HYBRID WATCH cycle=132325 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=198 retired=198 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=132325 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=132325 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=132734 seq=51 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=133054 seq=52 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=140000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=140000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=140000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=198 retired=198 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=141449 seq=53 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=141684 seq=54 op=11 a0=0000000000000000 a1=0000000000020500
+HYBRID WATCH cycle=142122 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=142122 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=142122 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=216 retired=216 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=142528 seq=55 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=142948 seq=56 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=150000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=150000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=150000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=216 retired=216 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=159815 seq=57 op=1 a0=0000000000000980 a1=0000000000000129
+HYBRID WATCH cycle=160000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=160000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=160000 core=0 pc=0000000000000960 x_valid=0 pending=0 fast=0 slow=216 retired=216 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=168645 seq=58 op=1 a0=0000000000020200 a1=0000000000000060
+MMIO DOORBELL cycle=168880 seq=59 op=11 a0=0000000000000980 a1=0000000000020200
+HYBRID WATCH cycle=169419 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=234 retired=234 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=169419 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=169419 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=169840 seq=60 op=4 a0=0000000000000000 a1=0000000000000000
+HYBRID WATCH cycle=170000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=170000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=170000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=234 retired=234 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=170160 seq=61 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=178816 seq=62 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=179051 seq=63 op=11 a0=0000000000000980 a1=0000000000020300
+HYBRID WATCH cycle=179483 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=252 retired=252 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=179483 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=179483 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=179895 seq=64 op=4 a0=0000000000000000 a1=0000000000000000
+HYBRID WATCH cycle=180000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=180000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=180000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=252 retired=252 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=180215 seq=65 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=188610 seq=66 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=188845 seq=67 op=11 a0=0000000000000980 a1=0000000000020300
+HYBRID WATCH cycle=189280 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=189280 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=189280 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=270 retired=270 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=189689 seq=68 op=4 a0=0000000000000000 a1=0000000000000000
+HYBRID WATCH cycle=190000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=190000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=190000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=270 retired=270 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=190009 seq=69 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=198404 seq=70 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=198639 seq=71 op=11 a0=0000000000000980 a1=0000000000020300
+HYBRID WATCH cycle=199163 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=288 retired=288 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=199163 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=199163 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=199570 seq=72 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=199890 seq=73 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=200000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=200000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=200000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=288 retired=288 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=208372 seq=74 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=208607 seq=75 op=11 a0=0000000000000980 a1=0000000000020300
+HYBRID WATCH cycle=209149 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=306 retired=306 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=209149 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=209149 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=209567 seq=76 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=209887 seq=77 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=210000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=210000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=210000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=306 retired=306 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=218601 seq=78 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=218836 seq=79 op=11 a0=0000000000000980 a1=0000000000020400
+HYBRID WATCH cycle=219334 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=219334 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=219334 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=324 retired=324 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=219738 seq=80 op=4 a0=0000000000000000 a1=0000000000000000
+HYBRID WATCH cycle=220000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=220000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=220000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=324 retired=324 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=220058 seq=81 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=228569 seq=82 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=228804 seq=83 op=11 a0=0000000000000980 a1=0000000000020400
+HYBRID WATCH cycle=229326 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=229326 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=229326 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=342 retired=342 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=229735 seq=84 op=4 a0=0000000000000000 a1=0000000000000000
+HYBRID WATCH cycle=230000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=230000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=230000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=342 retired=342 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=230055 seq=85 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=238624 seq=86 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=238859 seq=87 op=11 a0=0000000000000980 a1=0000000000020400
+HYBRID WATCH cycle=239332 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=239332 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=239332 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=360 retired=360 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=239761 seq=88 op=4 a0=0000000000000000 a1=0000000000000000
+HYBRID WATCH cycle=240000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=240000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=240000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=360 retired=360 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=240081 seq=89 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=248592 seq=90 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=248827 seq=91 op=11 a0=0000000000000980 a1=0000000000020400
+HYBRID WATCH cycle=249323 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=378 retired=378 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=249323 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=249323 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=249729 seq=92 op=4 a0=0000000000000000 a1=0000000000000000
+HYBRID WATCH cycle=250000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=250000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=250000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=378 retired=378 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=250049 seq=93 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=258560 seq=94 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=258795 seq=95 op=11 a0=0000000000000980 a1=0000000000020500
+HYBRID WATCH cycle=259227 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=396 retired=396 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=259227 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=259227 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=259639 seq=96 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=259959 seq=97 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=260000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=260000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=260000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=396 retired=396 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=268354 seq=98 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=268589 seq=99 op=11 a0=0000000000000980 a1=0000000000020500
+HYBRID WATCH cycle=269024 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=269024 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=269024 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=414 retired=414 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=269433 seq=100 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=269753 seq=101 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=270000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=270000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=270000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=414 retired=414 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=278148 seq=102 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=278383 seq=103 op=11 a0=0000000000000980 a1=0000000000020500
+HYBRID WATCH cycle=278821 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=432 retired=432 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=278821 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=278821 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=279227 seq=104 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=279547 seq=105 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=280000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=280000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=280000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=432 retired=432 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=287942 seq=106 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=288177 seq=107 op=11 a0=0000000000000980 a1=0000000000020500
+HYBRID WATCH cycle=288609 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=450 retired=450 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=288609 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=288609 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=289021 seq=108 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=289341 seq=109 op=1 a0=0000000000020180 a1=0000000000000001
+HYBRID WATCH cycle=290000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=290000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=290000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=450 retired=450 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=298026 seq=110 op=1 a0=0000000000020600 a1=0000000000000060
+MMIO DOORBELL cycle=298261 seq=111 op=11 a0=0000000000000980 a1=0000000000020600
+HYBRID WATCH cycle=298760 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=298760 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=298760 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=468 retired=468 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=299163 seq=112 op=4 a0=0000000000000000 a1=0000000000000000
+HYBRID WATCH cycle=300000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=300000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=300000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=468 retired=468 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=301258 seq=113 op=1 a0=0000000000001300 a1=0000000000000019
+HYBRID WATCH cycle=310000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=310000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=310000 core=0 pc=00000000000012e0 x_valid=0 pending=0 fast=0 slow=468 retired=468 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=310117 seq=114 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=310352 seq=115 op=11 a0=0000000000001300 a1=0000000000020300
+HYBRID WATCH cycle=310773 core=0 pc=00000000000013d8 x_valid=0 pending=0 fast=9 slow=477 retired=486 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=310773 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=310773 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=311196 seq=116 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=311431 seq=117 op=2 a0=0000000000020180 a1=0000000000000011
+MMIO DOORBELL cycle=314951 seq=118 op=1 a0=0000000000001400 a1=0000000000000019
+HYBRID WATCH cycle=320000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=320000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=320000 core=0 pc=00000000000013d8 x_valid=0 pending=0 fast=9 slow=477 retired=486 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=323375 seq=119 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=323610 seq=120 op=11 a0=0000000000001400 a1=0000000000020300
+HYBRID WATCH cycle=324007 core=0 pc=00000000000014d8 x_valid=0 pending=0 fast=18 slow=486 retired=504 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=324007 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=324007 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=324425 seq=121 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=324660 seq=122 op=2 a0=0000000000020240 a1=0000000000000011
+HYBRID WATCH cycle=330000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=330000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=330000 core=0 pc=00000000000014d8 x_valid=0 pending=0 fast=18 slow=486 retired=504 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=330052 seq=123 op=1 a0=0000000000001500 a1=0000000000000039
+MMIO DOORBELL cycle=338650 seq=124 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=338885 seq=125 op=11 a0=0000000000001500 a1=0000000000020300
+HYBRID WATCH cycle=339399 core=0 pc=00000000000016e0 x_valid=0 pending=0 fast=24 slow=492 retired=516 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=339399 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=339399 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=339816 seq=126 op=4 a0=0000000000000000 a1=0000000000000000
+HYBRID WATCH cycle=340000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=340000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=340000 core=0 pc=00000000000016e0 x_valid=0 pending=0 fast=24 slow=492 retired=516 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=340051 seq=127 op=2 a0=0000000000020180 a1=0000000000000011
+HYBRID WATCH cycle=350000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=350000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=350000 core=0 pc=00000000000016e0 x_valid=0 pending=0 fast=24 slow=492 retired=516 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=356247 seq=128 op=1 a0=0000000000001700 a1=00000000000000fb
+HYBRID WATCH cycle=360000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=360000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=360000 core=0 pc=00000000000016e0 x_valid=0 pending=0 fast=24 slow=492 retired=516 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=364691 seq=129 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=364926 seq=130 op=11 a0=0000000000001700 a1=0000000000020300
+HYBRID WATCH cycle=366026 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=366026 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=366026 core=0 pc=0000000000001ef0 x_valid=0 pending=0 fast=30 slow=498 retired=528 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=366437 seq=131 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=366672 seq=132 op=2 a0=0000000000020240 a1=0000000000000011
+HYBRID WATCH cycle=370000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=370000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=370000 core=0 pc=0000000000001ef0 x_valid=0 pending=0 fast=30 slow=498 retired=528 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=370008 seq=133 op=1 a0=0000000000001f00 a1=0000000000000015
+MMIO DOORBELL cycle=378548 seq=134 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=378783 seq=135 op=11 a0=0000000000001f00 a1=0000000000020300
+HYBRID WATCH cycle=379063 core=0 pc=0000000000001fc0 x_valid=0 pending=0 fast=36 slow=504 retired=540 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=379063 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=379063 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=379482 seq=136 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=379717 seq=137 op=2 a0=0000000000020180 a1=0000000000000011
+HYBRID WATCH cycle=380000 core=2 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=380000 core=1 pc=xxxxxxxxxxxxxxxx x_valid=0 pending=0 fast=0 slow=0 retired=0 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+HYBRID WATCH cycle=380000 core=0 pc=0000000000001fc0 x_valid=0 pending=0 fast=36 slow=504 retired=540 fast_quiet=1 slow_idle=1 cpl=0 ack=0
+MMIO DOORBELL cycle=381737 seq=138 op=5 a0=0000000000000000 a1=0000000000000000

@@ -252,3 +252,22 @@ ownership/fault tests, then fixed-budget pipeline and resource studies. Keep
 locality default-off and refuse unsupported backends; never use MockSession
 or literal numeric measurements as acceptance evidence. All board-dependent
 P2 results will receive locally tested manifests and lead-only launch commands.
+
+## P2 implementation checkpoint — 2026-10-27
+
+Generic locality planning now follows actual Session-owned storage handles,
+coalesces views/declared aliases, records captured first/last uses and refuses
+forged/stale/over-capacity bindings. Seven metadata-safety tests pass using real
+Sessions and loaded AOT artifacts; they are not numerical acceptance evidence.
+The opt-in native Graph.replay(locality=True) uses only metadata AOT helpers
+for existing TMU LRU/range controls, then the original captured Inductor
+numerical artifacts. Dead and bypass hints remain disabled because global
+reader/writer completeness is unproved. Default replay behavior is unchanged.
+
+GB10 r41-accept-p2-rtl-v1 is the first two-standard-Torch-graph off/on/off
+functional attempt through the real board-top MMIO RTL simulator (no physical
+card): source ~/r41-accept-p2-v1, log ~/r41-accept-p2/rtl-v1.log, output
+~/r41-accept-p2/rtl-v1. CPU set 0–5, 12 GiB maximum, one-hour stop bound. No P2
+judgment has been upgraded. Next: inspect this exact unit and preserve any
+failure, complete ownership/fault coverage and collect actual traffic/latency,
+then prepare lead-only board manifests and fixed-budget pipeline comparisons.

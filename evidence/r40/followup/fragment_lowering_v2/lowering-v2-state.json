@@ -1,0 +1,45 @@
+{
+  "software_tree": "files:60cf7062521a3e5d84677016836f48bf331270c389aaf4166f1f8d3d5818ef4c",
+  "started": 1793051403.8745282,
+  "runs": [
+    {
+      "name": "unit",
+      "command": [
+        "/home/zhongchun/tc_env/torchenv/bin/python",
+        "compiler/test/run_tests.py",
+        "--no-rtl"
+      ],
+      "status": "pass",
+      "returncode": 0
+    },
+    {
+      "name": "preflight",
+      "command": [
+        "/home/zhongchun/tc_env/torchenv/bin/python",
+        "tools/r40/v3_compile_preflight.py",
+        "--source-root",
+        "/home/zhongchun/r40_followup_fragment_20261026/source-v2",
+        "--software-tree",
+        "files:60cf7062521a3e5d84677016836f48bf331270c389aaf4166f1f8d3d5818ef4c",
+        "--out",
+        "/home/zhongchun/r40_followup_fragment_20261026/gemm-preflight-v2",
+        "--device",
+        "native-stub",
+        "--jobs",
+        "4",
+        "--items",
+        "/home/zhongchun/r40_followup_fragment_20261026/gemm-preflight-items.json",
+        "--torch-extensions-dir",
+        "/home/zhongchun/r40_followup_fragment_20261026/torch_extensions-v2"
+      ],
+      "status": "pass",
+      "returncode": 0
+    }
+  ],
+  "not_measured": [
+    "board performance",
+    "gate improvement"
+  ],
+  "software_tree_after": "files:60cf7062521a3e5d84677016836f48bf331270c389aaf4166f1f8d3d5818ef4c",
+  "finished": 1793051437.4415858
+}

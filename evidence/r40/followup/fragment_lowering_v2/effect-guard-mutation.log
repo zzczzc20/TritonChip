@@ -1,0 +1,32 @@
+test_chunk_load_or_expression_cannot_cross_effects (test_chunk_effects.ChunkEffectTests.test_chunk_load_or_expression_cannot_cross_effects) ... 
+  test_chunk_load_or_expression_cannot_cross_effects (test_chunk_effects.ChunkEffectTests.test_chunk_load_or_expression_cannot_cross_effects) (effect='ttg.barrier') ... FAIL
+  test_chunk_load_or_expression_cannot_cross_effects (test_chunk_effects.ChunkEffectTests.test_chunk_load_or_expression_cannot_cross_effects) (effect='tt.descriptor_reduce') ... FAIL
+test_later_column_chunk_uses_transposed_dma (test_chunk_effects.ChunkEffectTests.test_later_column_chunk_uses_transposed_dma) ... ok
+test_live_non_matrix_user_keeps_gather_path (test_chunk_effects.ChunkEffectTests.test_live_non_matrix_user_keeps_gather_path) ... ok
+test_masked_load_keeps_gather_path (test_chunk_effects.ChunkEffectTests.test_masked_load_keeps_gather_path) ... ok
+test_multiple_users_and_different_blocks_prevent_deferral (test_chunk_effects.ChunkEffectTests.test_multiple_users_and_different_blocks_prevent_deferral) ... ok
+test_pure_chunk_epilogue_can_be_deferred (test_chunk_effects.ChunkEffectTests.test_pure_chunk_epilogue_can_be_deferred) ... ok
+
+======================================================================
+FAIL: test_chunk_load_or_expression_cannot_cross_effects (test_chunk_effects.ChunkEffectTests.test_chunk_load_or_expression_cannot_cross_effects) (effect='ttg.barrier')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ubuntu/TritonChip-r40-followup/compiler/test/test_chunk_effects.py", line 66, in test_chunk_load_or_expression_cannot_cross_effects
+    self.assertFalse(self.deferral((effect,)))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_chunk_load_or_expression_cannot_cross_effects (test_chunk_effects.ChunkEffectTests.test_chunk_load_or_expression_cannot_cross_effects) (effect='tt.descriptor_reduce')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ubuntu/TritonChip-r40-followup/compiler/test/test_chunk_effects.py", line 66, in test_chunk_load_or_expression_cannot_cross_effects
+    self.assertFalse(self.deferral((effect,)))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.003s
+
+FAILED (failures=2)
+EXPECTED mutation rejected: removing either ordering guard is detected

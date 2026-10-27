@@ -3856,7 +3856,8 @@ class TTIRImporter:
     # tile it reads), or leave the block.
     _NOT_ACROSS = ('tt.store', 'tt.descriptor_store', 'tt.atomic_rmw', 'tt.atomic_cas',
                    'tt.dot', 'tt.dot_scaled', 'tt.call', 'tt.return', 'tt.assert',
-                   'tt.print', 'tt.descriptor_scatter')
+                   'tt.print', 'tt.descriptor_scatter', 'tt.descriptor_reduce',
+                   'ttg.barrier')
 
     def _deferrable(self, op):
         """index_opt: may this tile be a rule for its rows, computed where its
@@ -3872,6 +3873,10 @@ class TTIRImporter:
         accumulator, loading the bias row and storing take 48."""
         if not self.index_opt:
             return False
+        # Chunk identities name physical pieces, while effect order and
+        # the single-user proof belong to the original TTIR operation.
+        while hasattr(op, 'op'):
+            op = op.op
         users = self._value_users.get(op.get_result(0).id(), [])
         if len(users) != 1:
             return False
@@ -4457,7 +4462,9 @@ class TTIRImporter:
         the gathered path -- and so does a tile anything but `tl.dot` reads:
         a 16-bit tile in a window is an MMA operand and nothing else.
         """
-        users = self._value_users.get(op.get_result(0).id(), [])
+        project = getattr(op, 'value_users', None)
+        users = (project(self, op.get_result(0)) if project else
+                 self._value_users.get(op.get_result(0).id(), []))
         if not users or any(u.get_name() != 'tt.dot' or k > 1 for u, k in users):
             return None
         if (not self.target.has('tensor_transpose') or op.get_num_operands() > 1

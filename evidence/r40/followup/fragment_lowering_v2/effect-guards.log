@@ -1,0 +1,11 @@
+test_chunk_load_or_expression_cannot_cross_effects (test_chunk_effects.ChunkEffectTests.test_chunk_load_or_expression_cannot_cross_effects) ... ok
+test_later_column_chunk_uses_transposed_dma (test_chunk_effects.ChunkEffectTests.test_later_column_chunk_uses_transposed_dma) ... ok
+test_live_non_matrix_user_keeps_gather_path (test_chunk_effects.ChunkEffectTests.test_live_non_matrix_user_keeps_gather_path) ... ok
+test_masked_load_keeps_gather_path (test_chunk_effects.ChunkEffectTests.test_masked_load_keeps_gather_path) ... ok
+test_multiple_users_and_different_blocks_prevent_deferral (test_chunk_effects.ChunkEffectTests.test_multiple_users_and_different_blocks_prevent_deferral) ... ok
+test_pure_chunk_epilogue_can_be_deferred (test_chunk_effects.ChunkEffectTests.test_pure_chunk_epilogue_can_be_deferred) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.003s
+
+OK

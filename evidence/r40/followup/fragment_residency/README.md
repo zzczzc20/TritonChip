@@ -61,11 +61,11 @@ which does not exist. That failure is preserved. Its replacement uses
 
 ## Open validation and next decision
 
-At this checkpoint, standard Torch mm/addmm numerical simulation for FP16 and
-BF16 is **running**, not passed. The replacement controller is GB10 PID 346190,
-with state at `~/r40_followup_fragment_20261026/batch-v2-state.json`; revalidate
-the process before relying on that handle. The live child was observed running
-`vvp` on GB10. No RTL simulation was placed on the FPGA host.
+Update, 2026-10-27: standard Torch mm/addmm numerical simulation for FP16 and
+BF16 **passed all eight directed cases**. Both controller return codes are zero;
+the final state and complete dtype logs are archived here. This proves the
+listed directed cases on candidate `4bfc9ca1…`, not the full frozen suites or
+the later `60cf7062…` candidate. No RTL simulation was placed on the FPGA host.
 
 This fix does not yet establish a competitive wide tile. Inspection of the
 new linear/medium assembly still finds 1,886 non-directive operation lines versus 518

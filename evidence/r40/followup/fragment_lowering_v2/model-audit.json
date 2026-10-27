@@ -1,0 +1,73 @@
+{
+  "evidence_level": "model-prediction-uncalibrated",
+  "rows": [
+    {
+      "case": "fe1b-n16",
+      "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+      "tile": "16,16,16",
+      "model_cycles": 1826446,
+      "max_rel_err": 0.00022744774532427184,
+      "stale_summary_fields": {
+        "TNCA_PIPELINE": {
+          "summary": "2",
+          "effective": "1"
+        }
+      }
+    },
+    {
+      "case": "resident-n32",
+      "software_tree": "files:4bfc9ca1fa8565bb6f8e4d38ef8a43c5845646634ae3921d60aee1af1bc1e1f1",
+      "tile": "16,32,16",
+      "model_cycles": 9318383,
+      "max_rel_err": 0.00022744774532427184,
+      "stale_summary_fields": {
+        "TNCA_GEMM_TILE": {
+          "summary": "16,16,16",
+          "effective": "16,32,16"
+        },
+        "TNCA_PIPELINE": {
+          "summary": "2",
+          "effective": "1"
+        }
+      }
+    },
+    {
+      "case": "lowering-n16",
+      "software_tree": "files:60cf7062521a3e5d84677016836f48bf331270c389aaf4166f1f8d3d5818ef4c",
+      "tile": "16,16,16",
+      "model_cycles": 1826446,
+      "max_rel_err": 0.00022744774532427184,
+      "stale_summary_fields": {
+        "TNCA_PIPELINE": {
+          "summary": "2",
+          "effective": "1"
+        }
+      }
+    },
+    {
+      "case": "lowering-n32",
+      "software_tree": "files:60cf7062521a3e5d84677016836f48bf331270c389aaf4166f1f8d3d5818ef4c",
+      "tile": "16,32,16",
+      "model_cycles": 4934039,
+      "max_rel_err": 0.00022744774532427184,
+      "stale_summary_fields": {
+        "TNCA_GEMM_TILE": {
+          "summary": "16,16,16",
+          "effective": "16,32,16"
+        },
+        "TNCA_PIPELINE": {
+          "summary": "2",
+          "effective": "1"
+        }
+      }
+    }
+  ],
+  "resident_to_lowering_speedup": 1.8885912738022541,
+  "remaining_wide_slowdown": 2.7014425830273656,
+  "decision": "Reject board performance qualification of this wide candidate.",
+  "not_measured": [
+    "board performance",
+    "full frozen-subset speedup",
+    "gate improvement"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+ "schema": "tnca-systemc-graph-runs/1",
+ "backend": "systemc-tlm-grid",
+ "binary": "/home/zhongchun/diag_gemm/tnca-chip",
+ "source_root": "/home/zhongchun/r40_followup_fragment_20261026/source-v2",
+ "points": [
+  {
+   "point": "op.linear/medium/fp16-m128-k320-n256",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 4934039,
+   "first_call_device_cycles": 4945817,
+   "steady_request_s": 0.397034,
+   "timing": "serial-grid",
+   "max_rel_err": 0.00022744774532427184,
+   "tol": 0.02,
+   "first_call_wall_s": 1.63,
+   "child_wall_s": 3.327,
+   "process_wall_s": 4.63,
+   "model_launch_host_s": 0.822241,
+   "model_transfer_host_s": 0.009648,
+   "model_retired": 935628,
+   "model_dirs": [
+    "/home/zhongchun/r40_followup_fragment_20261026/model-lowering-n32/runs/op.linear__medium__fp16-m128-k320-n256/model/model-575677-y0viazgl"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 4934039,
+    "device_cycles": 4934039,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "triton_tem_fused_addmm_t_0",
+      "cycles": 4934039
+     }
+    ]
+   },
+   "cold_setup_only": false,
+   "returncode": 0,
+   "key": "op.linear/medium/fp16-m128-k320-n256",
+   "knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   }
+  }
+ ]
+}

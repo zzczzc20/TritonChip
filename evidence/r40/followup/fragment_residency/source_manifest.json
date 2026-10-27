@@ -77,10 +77,14 @@
   },
   "batch-v2-state.json": {
     "source": "/home/zhongchun/r40_followup_fragment_20261026/batch-v2-state.json",
-    "sha256": "e92bd08b926b9aeaf0ba956b8baa6d7d86996f1f9e8f2539de61385805f79e2f"
+    "sha256": "3939452895be5dc732e15d3cc351433d35010dd6983d30aa8fb769a8f8febcaf"
   },
   "gemm-v2-float16.log": {
     "source": "/home/zhongchun/r40_followup_fragment_20261026/gemm-v2-float16.log",
-    "sha256": "a254e14e8da50c060d1dfa8a5fcf9c7edc31aae7cc50ba1a9856f2018fb85b63"
+    "sha256": "9172caa2664dcb7d41b92f34afeec171a299208d6edb418d611453a61b842821"
+  },
+  "gemm-v2-bfloat16.log": {
+    "source": "/home/zhongchun/r40_followup_fragment_20261026/gemm-v2-bfloat16.log",
+    "sha256": "31a1d72c37f1a26f4b6afa63affa8b48fa26be74628fc9f27ca17a867d09a19f"
   }
 }

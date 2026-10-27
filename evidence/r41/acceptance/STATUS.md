@@ -271,3 +271,31 @@ card): source ~/r41-accept-p2-v1, log ~/r41-accept-p2/rtl-v1.log, output
 judgment has been upgraded. Next: inspect this exact unit and preserve any
 failure, complete ownership/fault coverage and collect actual traffic/latency,
 then prepare lead-only board manifests and fixed-budget pipeline comparisons.
+
+## 2026-10-27 (Kimi) — Stage 1 closed
+
+Reviewed and reproduced the completed old-mapping and matched-postdiction
+sets without card access. All 752 old-mapping archive members match their
+recorded hashes and sizes. The nine-point old/fixed/narrow comparison and all
+seven integrity-mutation refusals reproduce byte-for-byte. The postdiction
+reproduces 17 matched rows, two binding-mismatch refusals and all 30 input
+report hashes; only host-specific path strings differ in local replay.
+
+The isolated old mapping is faster than the repair on two of nine graph
+comparisons and slower on seven; this does not alter the fixed-wide versus
+conservative no-slower failure on eight of nine points. Matched postdiction is
+explicitly uncalibrated postmeasurement analysis, not sealed prediction or an
+unseen holdout. Full evidence and limitations are in doc/r41_stage1_report.md
+and evidence/r41/stage1/stage2_readiness.md.
+
+Ran evidence/r41/stage1/board/run_acceptance.sh on detached frozen commit
+25094197f6e6 with software tree
+files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a.
+Final acceptance: 61 pass, zero fail, zero not-measured, zero blocked; status
+accepted and exit code zero. Stage 1 is closed on that frozen identity only.
+Stage 2 and overall R41 remain unaccepted.
+
+Validation: python3 -m tools.docmaint check passes (87 documents, acyclic),
+nine Stage 1 acceptance regression tests pass, and make compiler passes.
+No card access, board job, image load or full image build was started. Next:
+P4 lifecycle stress and review/continuation of the real P2 locality runs.

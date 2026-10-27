@@ -1,10 +1,11 @@
-# Isolated old-mapping comparison: in progress
+# Isolated old-mapping comparison: complete
 
-This work addresses the remaining Required item
+This work closes the Required item
 `S1-02.old_mapping_and_conservative_baseline_comparisons`. The frozen product
-remains `25094197f6e6`, software
+is `25094197f6e6`, software
 `files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a`.
-Stage 1 is **not accepted**. The required index is unchanged pending board data.
+The completed comparison and integrity checks are indexed; frozen Stage 1
+acceptance passes all 61 Required items.
 
 ## Control construction and numerical validation
 
@@ -88,8 +89,24 @@ manifest through `experiment.py`. Each board configuration retains the existing
 UUID/clock/usage checks. Waiting is bounded to 24 hours; the original manifest's
 12-hour execution budget is retained. No full image build is requested.
 
-Inspect the live PID, `queue.log`, `experiment.log` and
-`out/old-mapping/state.json` before taking the next action. A timeout in
-observation is not permission to restart. Numerical and source/timing checks,
-old/fixed and fixed/narrow comparisons, report updates and frozen acceptance
-reproduction remain necessary after the physical run.
+## Completed collection and review
+
+The queue completed all nine registered old-mapping configurations.
+`completed-evidence.tgz` and `completed-index.json` preserve the raw records,
+executed artifacts, logs and source identities; all 752 indexed members pass
+hash and size checks. `board-comparison.json` records old/fixed and fixed/narrow
+graph and serial-grid comparisons without removing any point.
+
+Independent replay of `test_old_mapping_board.py` reproduces
+`integrity-checks.json` and `integrity-checks.log` byte-for-byte. The seven
+mutations reject changed output bytes, a missing point, wrong image, numerical
+failure, non-isolated source delta, changed artifact bytes and an unfinished
+experiment. The repaired mapping is faster than the old mapping on seven of
+nine graph-makespan comparisons, while the separate fixed/narrow no-slower
+hypothesis remains failed on eight of nine points. These are descriptive
+medians; fixed/narrow records were reused and were not interleaved with the
+new old-mapping process.
+
+The Stage 1 report and Required index now name this evidence. The frozen
+acceptance target exits zero with 61/61 Required items passing. No further
+board run is needed for this Stage 1 comparison.

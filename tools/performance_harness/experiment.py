@@ -264,12 +264,23 @@ def run(manifest, root, out, *, python, retry_failed=False, conclusion=None, boa
     ids = [step['id'] for step in spec['steps']]
     if len(set(ids)) != len(ids) or any(not name.replace('-', '').replace('_', '').isalnum() for name in ids):
         raise ValueError('step ids must be unique simple names')
+    experiment_started = time.monotonic()
+    total_budget = spec.get('budget_seconds')
+    if total_budget is not None and (type(total_budget) not in (int, float) or not 0 < total_budget <= 259200):
+        raise ValueError('experiment total budget must be finite and positive')
     for step in spec['steps']:
         if step['kind'] not in KINDS or not isinstance(step['argv'], list) or not step['argv']:
             raise ValueError('each step requires an explicit command and evidence kind')
         timeout = step['timeout_seconds']
         if type(timeout) not in (int, float) or not 0 < timeout <= 259200:
             raise ValueError('each command requires a finite positive budget')
+        if total_budget is not None:
+            remaining = total_budget - (time.monotonic() - experiment_started)
+            if remaining <= 0:
+                report.update(status='stopped-on-budget', total_budget_seconds=total_budget)
+                publish(report_path, report)
+                return report
+            timeout = min(timeout, remaining)
         argv = [expand(arg) for arg in step['argv']]
         # Product knobs are explicit experiment inputs. Ambient TNCA knobs
         # must not silently change an otherwise identical measurement.

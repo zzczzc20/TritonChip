@@ -1,5 +1,5 @@
 {
-  "scope": "Initial audit plus P0 prospective freeze and P8 measured follow-up, 2026-10-26; historical process failures remain.",
+  "scope": "Initial audit plus P0 prospective freeze, P8 measured follow-up and P1 corrective preflight, 2026-10-27; historical failures remain.",
   "integrity": "passed",
   "status": "not accepted",
   "counts": {
@@ -343,9 +343,12 @@
       "evidence": [
         "evidence/r41/stage2/candidates/F09/README.md",
         "evidence/r41/stage2/integration/README.md",
-        "evidence/r41/stage2/roofline/README.md"
+        "evidence/r41/stage2/roofline/README.md",
+        "evidence/r41/acceptance/p1/README.md",
+        "evidence/r41/acceptance/p1/metrics.json",
+        "evidence/r41/acceptance/p1/index.json"
       ],
-      "reason": "Physical timing screens and pre/post RTL do not supply a complete SystemC sensitivity set.",
+      "reason": "Physical timing screens and pre/post RTL do not supply a complete SystemC sensitivity set. P1 corrective preflight now has real model/RTL observations and prepared matched board manifests. Uncalibrated grouped parameter perturbations do not close every-candidate sensitivity; new board measurements have not been launched.",
       "closure_plan": "P1"
     },
     {
@@ -391,9 +394,12 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage2/integration/audit/README.md"
+        "evidence/r41/stage2/integration/audit/README.md",
+        "evidence/r41/acceptance/p1/README.md",
+        "evidence/r41/acceptance/p1/metrics.json",
+        "evidence/r41/acceptance/p1/index.json"
       ],
-      "reason": "Original-suite migration is measured, but candidate-isolated or grouped causal board comparisons do not cover all integrated mechanisms.",
+      "reason": "Original-suite migration is measured, but candidate-isolated or grouped causal board comparisons do not cover all integrated mechanisms. P1 corrective preflight now has real model/RTL observations and prepared matched board manifests. Uncalibrated grouped parameter perturbations do not close every-candidate sensitivity; new board measurements have not been launched.",
       "closure_plan": "P1"
     },
     {

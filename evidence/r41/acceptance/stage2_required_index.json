@@ -2,7 +2,7 @@
   "schema": "tnca-r41-stage2-required-index/1",
   "contract": "doc/r41_tasks_and_acceptance.md",
   "contract_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
-  "scope": "Initial audit plus P0 prospective freeze and P8 measured follow-up, 2026-10-26; historical process failures remain.",
+  "scope": "Initial audit plus P0 prospective freeze, P8 measured follow-up and P1 corrective preflight, 2026-10-27; historical failures remain.",
   "statuses": [
     "passed",
     "failed",
@@ -343,9 +343,12 @@
       "evidence": [
         "evidence/r41/stage2/candidates/F09/README.md",
         "evidence/r41/stage2/integration/README.md",
-        "evidence/r41/stage2/roofline/README.md"
+        "evidence/r41/stage2/roofline/README.md",
+        "evidence/r41/acceptance/p1/README.md",
+        "evidence/r41/acceptance/p1/metrics.json",
+        "evidence/r41/acceptance/p1/index.json"
       ],
-      "reason": "Physical timing screens and pre/post RTL do not supply a complete SystemC sensitivity set.",
+      "reason": "Physical timing screens and pre/post RTL do not supply a complete SystemC sensitivity set. P1 corrective preflight now has real model/RTL observations and prepared matched board manifests. Uncalibrated grouped parameter perturbations do not close every-candidate sensitivity; new board measurements have not been launched.",
       "closure_plan": "P1"
     },
     {
@@ -391,9 +394,12 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage2/integration/audit/README.md"
+        "evidence/r41/stage2/integration/audit/README.md",
+        "evidence/r41/acceptance/p1/README.md",
+        "evidence/r41/acceptance/p1/metrics.json",
+        "evidence/r41/acceptance/p1/index.json"
       ],
-      "reason": "Original-suite migration is measured, but candidate-isolated or grouped causal board comparisons do not cover all integrated mechanisms.",
+      "reason": "Original-suite migration is measured, but candidate-isolated or grouped causal board comparisons do not cover all integrated mechanisms. P1 corrective preflight now has real model/RTL observations and prepared matched board manifests. Uncalibrated grouped parameter perturbations do not close every-candidate sensitivity; new board measurements have not been launched.",
       "closure_plan": "P1"
     },
     {
@@ -1189,8 +1195,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "2ea43482f7a80d9ecc1eab21700c8caa6225ef7ea725bfeebcb74e08c67ac039",
-    "doc/r41_stage2_report.md": "0691363a9caa6a96c8f2786b4d147ae6c41a4e88e53afd5e814d7a1422e06138",
+    "doc/r41_report.md": "c3fa2d289392b582264f7fbfa2be6549593b621ec607448316f388f8f8de0b4a",
+    "doc/r41_stage2_report.md": "ed626523d029577b3f1701406f73de4fc5cf81906b487ac6d2084db771d19422",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "04350417d681c7a3bd90fdbe5b0240c5ebf0e8b27d1c14a9b07e14a72ee59a7e",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1226,7 +1232,10 @@
     "spec/r41/stage2/xl_core.json": "0b5d7d477bfd781bfef214c9256aeef7b319ce2571addcd91afdac8cf08bcbe6",
     "evidence/r41/acceptance/p8/board-records.tgz": "a44913d53a6a5e3edf26687628b88d7b7ebf881aef2ca877089ae6eb3631b671",
     "evidence/r41/acceptance/p8/environment.json": "94f4dab5565c7e842dbe3d280266fec49b3037158968c75d06d84beb869fee58",
-    "evidence/r41/acceptance/p8/metrics.json": "e1bfe3a624aa8c98bf5f024f93fba4e4f572a7eca166fe4c5f951890317ef0b5"
+    "evidence/r41/acceptance/p8/metrics.json": "e1bfe3a624aa8c98bf5f024f93fba4e4f572a7eca166fe4c5f951890317ef0b5",
+    "evidence/r41/acceptance/p1/README.md": "b855509ad70d6e8515b645b502d2873c93b25b0affff17f6ed94a641b9f9646f",
+    "evidence/r41/acceptance/p1/metrics.json": "2255dabbe51a7b0a36b4ad4edc6fdc02ea37393064db062d819951eb9c6f9c08",
+    "evidence/r41/acceptance/p1/index.json": "61b9b3a106b1747bfe21930d53349d87dea604c24a0cfbb19326bf4b65161893"
   },
   "followups": [
     {

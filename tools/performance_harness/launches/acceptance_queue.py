@@ -50,8 +50,10 @@ def main():
         spec=json.loads(path.read_text())
         if not spec.get('steps') or not any(s['kind']=='fpga' for s in spec['steps']):raise ValueError('board manifest required')
         board=spec['board']
-        if board['image_sha256']!='30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de' or board['clock_hz']!=100000000:
-            raise ValueError('only already-approved run-1 image at 100 MHz is admitted')
+        approved={('30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de',100000000),
+                  ('a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083',90000000)}
+        if (board['image_sha256'],board['clock_hz']) not in approved:
+            raise ValueError('only already-approved B40/90 or run-1/100 images are admitted')
         specs.append((path,spec))
     if a.check_only:
         print(json.dumps(dict(status='prepared-only',manifests=[str(p) for p,_ in specs],card_access=False)))

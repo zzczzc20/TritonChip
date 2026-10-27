@@ -162,3 +162,19 @@ and index coverage, and never upgrades an author's judgment merely because
 a command returned zero. `make r41-acceptance PYTHON=python3` also includes
 the frozen Stage 1 result and Definition of Done. These commands reproduce
 the audit; they do not constitute independent product reproduction.
+
+## P1 corrective preflight — 2026-10-27
+
+The banked X8 scheduling map and later-fragment affine proof/deferral causes
+are corrected. Archived real GB10 runs validate 32 bitwise SystemC cases, eight
+small bitwise RTL cases and 32 model sensitivity cases. All 113 original
+points compile with unchanged default artifacts across the profile correction
+and frontend correction. Evidence: `evidence/r41/acceptance/p1/README.md`,
+`metrics.json`, `index.json` and the raw archives in that directory.
+
+Aligned wide GEMM improves in the model; tail cases remain slower. No board
+failure is upgraded. Sensitivity is uncalibrated and does not isolate every
+RTL candidate, so that obligation remains not measured. Matched GEMM, policy
+leave-one-out and shared-artifact 90/100 MHz manifests are prepared and locally
+checked. Only the lead may launch them on the shared card. Stage 2 and R41
+remain not accepted: 32 passed, two failed, 52 not measured, eight blocked.

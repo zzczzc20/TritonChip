@@ -1,0 +1,531 @@
+{
+  "schema": "r41-p1-observations/1",
+  "model_numeric_rows": 32,
+  "rtl_numeric_rows": 8,
+  "sensitivity_numeric_rows": 32,
+  "default_audit": {
+    "points": 113,
+    "changed": 0
+  },
+  "pairs": [
+    {
+      "dtype": "float16",
+      "strided": false,
+      "graph": "mm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 60369,
+      "wide_cycles": 71727,
+      "wide_over_narrow": 1.188142921035631
+    },
+    {
+      "dtype": "float16",
+      "strided": false,
+      "graph": "mm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 176273,
+      "wide_cycles": 141309,
+      "wide_over_narrow": 0.8016485791925025
+    },
+    {
+      "dtype": "float16",
+      "strided": false,
+      "graph": "addmm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 63674,
+      "wide_cycles": 73493,
+      "wide_over_narrow": 1.1542073687847474
+    },
+    {
+      "dtype": "float16",
+      "strided": false,
+      "graph": "addmm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 182986,
+      "wide_cycles": 153936,
+      "wide_over_narrow": 0.8412446853857672
+    },
+    {
+      "dtype": "float16",
+      "strided": true,
+      "graph": "mm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 64557,
+      "wide_cycles": 74188,
+      "wide_over_narrow": 1.1491859906749073
+    },
+    {
+      "dtype": "float16",
+      "strided": true,
+      "graph": "mm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 182408,
+      "wide_cycles": 134045,
+      "wide_over_narrow": 0.7348636024735757
+    },
+    {
+      "dtype": "float16",
+      "strided": true,
+      "graph": "addmm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 66961,
+      "wide_cycles": 80334,
+      "wide_over_narrow": 1.199713265930915
+    },
+    {
+      "dtype": "float16",
+      "strided": true,
+      "graph": "addmm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 188487,
+      "wide_cycles": 141071,
+      "wide_over_narrow": 0.7484388843792941
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": false,
+      "graph": "mm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 60369,
+      "wide_cycles": 71727,
+      "wide_over_narrow": 1.188142921035631
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": false,
+      "graph": "mm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 176273,
+      "wide_cycles": 141309,
+      "wide_over_narrow": 0.8016485791925025
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": false,
+      "graph": "addmm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 63674,
+      "wide_cycles": 73493,
+      "wide_over_narrow": 1.1542073687847474
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": false,
+      "graph": "addmm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 182986,
+      "wide_cycles": 153936,
+      "wide_over_narrow": 0.8412446853857672
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": true,
+      "graph": "mm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 64557,
+      "wide_cycles": 74188,
+      "wide_over_narrow": 1.1491859906749073
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": true,
+      "graph": "mm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 182408,
+      "wide_cycles": 134045,
+      "wide_over_narrow": 0.7348636024735757
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": true,
+      "graph": "addmm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 66961,
+      "wide_cycles": 80334,
+      "wide_over_narrow": 1.199713265930915
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": true,
+      "graph": "addmm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 188487,
+      "wide_cycles": 141071,
+      "wide_over_narrow": 0.7484388843792941
+    }
+  ],
+  "sensitivity": {
+    "sensitivity/F04-F05-writeback/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73915
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141221
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73397
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 154162
+      }
+    ],
+    "sensitivity/F03-F08-F09-fma/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73162
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141164
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 75471
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153368
+      }
+    ],
+    "sensitivity/F10-lsu/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71850
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141026
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71374
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153130
+      }
+    ],
+    "sensitivity/base/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71727
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141309
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73493
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153936
+      }
+    ],
+    "sensitivity/F06-dispatch/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71731
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141047
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73497
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153246
+      }
+    ],
+    "sensitivity/F01-F02-core/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71539
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141069
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 74133
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153658
+      }
+    ],
+    "sensitivity/F07-slice/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 79786
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 151653
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 81947
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 165596
+      }
+    ],
+    "sensitivity/T2-transfer/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73883
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 140864
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 72993
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153674
+      }
+    ]
+  },
+  "limitations": [
+    "Uncalibrated SystemC sensitivity parameters are hypotheses, not hardware ablations or board results. Some perturbations are nonmonotonic; no causal throughput attribution is inferred.",
+    "RTL regression covers four small dtype/layout configurations, not the full model or original suite.",
+    "Prior board failures remain failures until matched remeasurement; tail wide fragments remain slower in the model."
+  ]
+}

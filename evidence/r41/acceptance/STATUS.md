@@ -147,3 +147,21 @@ current integrity-checked ledger has 32 passed, 2 failed, 52 not measured,
 8 blocked. No literal cycle number is substituted for a run. Three new
 unit-test fixtures initially omitted the importer use graph; the fixtures
 were corrected and all eight proof/safety tests rerun successfully.
+
+## P1 corrective preflight archived — 2026-10-27
+
+Verified terminal success of GB10 r41-accept-p1-rtl-v3 and sensitivity units.
+Raw reports/configurations and hashes are in p1/; closeout.py verifies 32 model,
+eight RTL and 32 sensitivity numeric rows. The full 113-point compile audits
+show unchanged default artifacts. Tail wide GEMM still loses in the model;
+prior board failures remain failures. Per-candidate sensitivity is still not
+measured: grouped uncalibrated parameter changes are insufficient for that gate.
+Both acceptance reports and the ledger were rejudged; counts remain
+32 passed / 2 failed / 52 not measured / 8 blocked, integrity passed.
+
+Four P1 board manifests and a bounded waiting queue pass local preparation
+checks. No shared-card job or image build was started. Next step: stage this
+milestone's immutable source and the 21c40aa control on the FPGA host using
+CPU-only file transfer, write concrete lead launch commands here, then finish
+P1 candidate coverage before P2. The lead must load the named approved image
+and start each campaign; never run the 90 MHz and 100 MHz queues together.

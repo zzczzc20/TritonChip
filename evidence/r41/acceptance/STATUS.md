@@ -600,3 +600,15 @@ differs from the Stage 1 lock; this is the documented frozen-overlay boundary,
 not a change to the closed frozen acceptance result. The complete failure is in
 `acceptance/harness-review-2026-10-27.log`. `make compiler` and document checks
 pass. No card access or board launch occurred.
+
+Commit a52fb29 is now staged at `~/r41_chat_a52fb29` on acf3019. All 3,872
+tracked files match their Git blob identities; the queue's `--check-only`
+preparation reports `card_access=false`. Records are
+`chat/staged-source-a52fb29.json` and `chat/staged-queue-check-a52fb29.json`.
+An explicit reduced-depth CPU-reference REPL session exited zero on that host;
+its saved one-shot report confirms FP8 weights, seven FP8Linear modules with no
+unquantized shells, and the exact W8A8 reference route. Logs/reports are
+`chat/repl-cpu-a52fb29.log` and `chat/cpu-load-a52fb29.*`. The generic
+Transformers dequantization warning did not describe the actual loaded modules.
+These are host-only checks, not TNCA or board evidence. The lead command remains
+withheld pending the fresh Qwen3.5 TLM result.

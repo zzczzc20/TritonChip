@@ -186,3 +186,21 @@ setup/transfer overlap, which remains serialized; no throughput gain is claimed.
 Current ledger: 33 passed, two failed, 51 not measured, eight blocked.
 The lead-only queue caps all manifest execution together; the planned 100/90
 MHz allocations total three hours. Evidence is in p1/service-transfer.tgz.
+
+## P1 bounded Study closeout — 2026-10-27
+
+The home/core-service resource and admission study is delivered with current
+standard Torch observations and retained F07 semantic/physical evidence. The
+per-candidate sensitivity follow-up supplies 48 bitwise native rows across
+12 core-pipeline configurations, verifies each executed one-factor change
+and unchanged artifact/output identities, and separately checks four archived
+X8 capability point pairs. Both Study obligations pass with negative or
+inconclusive decisions. This does not establish isolated physical candidate
+gains, unbounded fairness, final-source X8 acceptance, or a board speedup.
+
+Evidence and limitations: `evidence/r41/acceptance/p1/memory-service-study.md`
+and `evidence/r41/acceptance/p1/candidate-sensitivity/README.md`, their derived
+metrics/indexes and raw archives. The earlier grouped-only sensitivity judgment
+is superseded. Current ledger: **35 passed, two failed, 49 not measured, eight
+blocked**. Required integrated board comparisons await the lead commands in
+STATUS.md. Stage 2 and overall R41 remain not accepted. P2 is next.

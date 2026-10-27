@@ -18,8 +18,8 @@ remain slower. Wide fragments therefore receive no universal default-on claim.
 Sensitivity consists of eight registered parameter configurations of the real
 SystemC executable, with identities/configurations preserved in the archives.
 They are uncalibrated hypotheses. Several effects are nonmonotonic; these data
-do not isolate the timing contribution of each RTL candidate. The mandatory
-per-candidate sensitivity obligation remains not measured in the ledger.
+do not isolate the timing contribution of each RTL candidate. This initial grouped experiment did not close the per-candidate obligation.
+The later candidate-sensitivity/ follow-up below supersedes that judgment.
 
 Four manifests under `spec/r41/stage2/acceptance/` prepare the matched old/fixed
 GEMM, software-policy leave-one-out and same-artifact 90/100 MHz comparisons.
@@ -59,3 +59,19 @@ The lead queue now additionally caps the sum of execution time across manifests
 to three hours; a caller can lower but cannot increase a registered experiment
 budget. Idle waits do not consume the execution budget. The final launch
 commands allocate 9,000 seconds to 100 MHz and 1,800 seconds to 90 MHz.
+
+## Per-candidate and service Study closeout
+
+`candidate-sensitivity/` retains two real 48-row native experiment attempts.
+The authoritative V2 enables the core-pipeline model and verifies exactly one
+registered parameter change per candidate probe. All 48 numeric/artifact/output
+checks pass. Four original X8 FP8 model point pairs are independently rechecked
+from their archived results. The coverage table explains which probes test
+uncertainty and which cannot attribute physical retiming. No standalone
+physical gain is claimed; bounded inconclusive outcomes remain explicit.
+
+S2-02.A and S2-02.D.sensitivity now pass as Study deliverables. Their evidence
+and negative/inconclusive decisions are in memory-service-study.md and
+candidate-sensitivity/README.md. This does not promote the Required integrated
+board-comparison gate, which awaits the lead's staged commands. No new hardware
+implementation, image build or card run is selected by these studies.

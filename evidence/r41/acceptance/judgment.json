@@ -1,11 +1,11 @@
 {
-  "scope": "Initial audit plus P0 prospective freeze, P8 measured follow-up and P1 corrective preflight, 2026-10-27; historical failures remain.",
+  "scope": "Audit plus P0 prospective freeze, P8 measured follow-up and P1 corrective/study closeout, 2026-10-27; historical failures remain.",
   "integrity": "passed",
   "status": "not accepted",
   "counts": {
-    "passed": 33,
+    "passed": 35,
     "failed": 2,
-    "not measured": 51,
+    "not measured": 49,
     "blocked": 8
   },
   "errors": [],
@@ -278,14 +278,18 @@
     {
       "id": "S2-02.A",
       "requirement": "Bounded home-slice/core-service study",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage2/roofline/README.md",
-        "evidence/r41/stage1/board/metrics.json"
+        "evidence/r41/acceptance/p1/memory-service-study.md",
+        "evidence/r41/acceptance/p1/metrics.json",
+        "evidence/r41/acceptance/p1/index.json",
+        "evidence/r41/stage1/memory_service.md",
+        "evidence/r41/stage2/candidates/F07/functional_report.json",
+        "evidence/r41/stage1/f07_ooc/README.md"
       ],
-      "reason": "Service bottleneck evidence exists; complete Stage 2 candidate sensitivity/semantic/physical/decision bundle is absent. Separate r41-hbm-bw workstream owns next image.",
-      "closure_plan": "P1"
+      "reason": "Bounded home/core service Study delivered: current-source standard Torch depth/outlet runs, ownership/counter identities, separate lookup/miss/admission and bounded queue/resource audit, F07 semantic/physical references, and a conservative no-new-throughput-candidate decision. Unbounded fairness and physical throughput are not claimed; the separate hbm_bw workstream is not substituted for acceptance.",
+      "closure_plan": null
     },
     {
       "id": "S2-02.B",
@@ -340,18 +344,15 @@
     {
       "id": "S2-02.D.sensitivity",
       "requirement": "Each candidate: SystemC sensitivity",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage2/candidates/F09/README.md",
-        "evidence/r41/stage2/integration/README.md",
-        "evidence/r41/stage2/roofline/README.md",
-        "evidence/r41/acceptance/p1/README.md",
-        "evidence/r41/acceptance/p1/metrics.json",
-        "evidence/r41/acceptance/p1/index.json"
+        "evidence/r41/acceptance/p1/candidate-sensitivity/README.md",
+        "evidence/r41/acceptance/p1/candidate-sensitivity/metrics.json",
+        "evidence/r41/acceptance/p1/candidate-sensitivity/index.json"
       ],
-      "reason": "Physical timing screens and pre/post RTL do not supply a complete SystemC sensitivity set. P1 corrective preflight now has real model/RTL observations and prepared matched board manifests. Uncalibrated grouped parameter perturbations do not close every-candidate sensitivity; new board measurements have not been launched.",
-      "closure_plan": "P1"
+      "reason": "Per-candidate bounded SystemC Study delivered: 12 configurations/48 bitwise standard Torch rows with core-pipeline model, exact one-factor executed-configuration checks and unchanged artifact/output hashes; four original X8 FP8 point pairs rechecked separately. Physical retiming effects remain inconclusive and proxies are not RTL counterfactuals; no per-candidate gain or board pass is inferred. This supersedes incomplete grouped-only coverage.",
+      "closure_plan": null
     },
     {
       "id": "S2-02.D.semantics",

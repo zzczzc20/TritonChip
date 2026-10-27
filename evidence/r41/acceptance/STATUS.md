@@ -228,3 +228,27 @@ evidence integrity and six checker refusal tests pass. Next agent action:
 finish the P1 per-candidate sensitivity coverage/decision ledger and bounded
 home/core-service study, without duplicating the hbm_bw owner's RTL work.
 Then proceed to P2; P2–P6 remain engineering work, not lead-only blockers.
+
+## P1 Study closeout — 2026-10-27
+
+The current-source service study and per-candidate sensitivity/decision ledger
+are delivered. V1 M1-domain and authoritative V2 core-pipeline sensitivity jobs
+both terminated successfully on GB10. V2 supplies 48 bitwise rows across 12
+configurations; actual configuration differences, source/artifact/output hashes
+are checked, and four original X8 FP8 model point pairs are rechecked separately.
+Bounded negative/inconclusive studies close S2-02.A and S2-02.D.sensitivity;
+physical candidate gains and unbounded fairness are not inferred from proxies.
+See p1/memory-service-study.md and p1/candidate-sensitivity/README.md.
+
+Current ledger: 35 passed / 2 failed / 49 not measured / 8 blocked. Required
+P1 board comparisons remain awaiting the exact lead commands above; no agent
+card access or image work occurred. Historical failures stay failed. No extra
+full-image run is requested. The staged bbbf607 source/control remain immutable;
+these new evidence-only files do not change their software identities.
+
+Next agent step: P2, implement generic graph-level storage/alias/lifetime
+locality consumption and execute two real standard Torch graphs with off/on
+ownership/fault tests, then fixed-budget pipeline and resource studies. Keep
+locality default-off and refuse unsupported backends; never use MockSession
+or literal numeric measurements as acceptance evidence. All board-dependent
+P2 results will receive locally tested manifests and lead-only launch commands.

@@ -1,0 +1,660 @@
+{
+  "schema": "r41-p1-candidate-sensitivity/1",
+  "numeric_rows": 48,
+  "rows": {
+    "F08": {
+      "parameter_deltas": {
+        "mtx_pipe_cycles": 1
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 75792,
+          "ratio": 0.9891030576689679
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 142349,
+          "ratio": 1.0006256150709967
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 77862,
+          "ratio": 0.9896034570411795
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 154529,
+          "ratio": 1.0008030828017227
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "F02": {
+      "parameter_deltas": {
+        "scalar_latency": 1
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 77605,
+          "ratio": 1.012763125269161
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 144746,
+          "ratio": 1.0174750456909882
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 79362,
+          "ratio": 1.00866802236909
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 157321,
+          "ratio": 1.0188853987888993
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "F04": {
+      "parameter_deltas": {
+        "vector_int_latency": 1
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 77060,
+          "ratio": 1.0056507497357328
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 142592,
+          "ratio": 1.0023337550963025
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 77578,
+          "ratio": 0.9859938993390951
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 154573,
+          "ratio": 1.0010880476668502
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "F07": {
+      "parameter_deltas": {
+        "lookup_cycles": 1
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 77599,
+          "ratio": 1.0126848238871415
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 146011,
+          "ratio": 1.0263672149585266
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 77952,
+          "ratio": 0.9907473309608541
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 158943,
+          "ratio": 1.0293902399533694
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "base": {
+      "parameter_deltas": {},
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 76627,
+          "ratio": 1.0
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 142260,
+          "ratio": 1.0
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 78680,
+          "ratio": 1.0
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 154405,
+          "ratio": 1.0
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "F06": {
+      "parameter_deltas": {
+        "dispatch_cycles": 4
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 76631,
+          "ratio": 1.0000522009213462
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 142144,
+          "ratio": 0.9991845915928581
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 76299,
+          "ratio": 0.9697381799694967
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 154568,
+          "ratio": 1.001055665295813
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "F09": {
+      "parameter_deltas": {
+        "vector_fp_latency": 1
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 76627,
+          "ratio": 1.0
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 142260,
+          "ratio": 1.0
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 78659,
+          "ratio": 0.9997330960854093
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 155229,
+          "ratio": 1.0053366147469318
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "F03": {
+      "parameter_deltas": {
+        "vector_fp_latency": 1
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 76627,
+          "ratio": 1.0
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 142260,
+          "ratio": 1.0
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 78659,
+          "ratio": 0.9997330960854093
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 155229,
+          "ratio": 1.0053366147469318
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "F05": {
+      "parameter_deltas": {
+        "vrf_bank_conflict_cycles": 1
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 76588,
+          "ratio": 0.9994910410168739
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 142262,
+          "ratio": 1.0000140587656403
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 75954,
+          "ratio": 0.9653533299440773
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 154362,
+          "ratio": 0.9997215116090801
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "F10": {
+      "parameter_deltas": {
+        "lsu_setup_cycles": 1
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 76627,
+          "ratio": 1.0
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 142260,
+          "ratio": 1.0
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 78680,
+          "ratio": 1.0
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 154405,
+          "ratio": 1.0
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "T2": {
+      "parameter_deltas": {
+        "dma_setup_cycles": 1
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 75756,
+          "ratio": 0.9886332493768515
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 142893,
+          "ratio": 1.0044495993251792
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 77811,
+          "ratio": 0.9889552618200305
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 154667,
+          "ratio": 1.0016968362423497
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    },
+    "F01": {
+      "parameter_deltas": {
+        "issue_cycles": 1
+      },
+      "observations": [
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 76627,
+          "cycles": 79531,
+          "ratio": 1.0378978688973861
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 142260,
+          "cycles": 146484,
+          "ratio": 1.0296921130324757
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "base_cycles": 78680,
+          "cycles": 82485,
+          "ratio": 1.0483604473817998
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            128,
+            128,
+            192
+          ],
+          "base_cycles": 154405,
+          "cycles": 159731,
+          "ratio": 1.0344937016288334
+        }
+      ],
+      "interpretation": "uncalibrated one-factor uncertainty; not an RTL candidate counterfactual or gain"
+    }
+  },
+  "x8": [
+    {
+      "point": "op.w8a8_linear/hbm/bf16-m1-k2048-n6144",
+      "baseline_cycles": 53965314,
+      "x8_cycles": 10731757,
+      "speedup": 5.028562797312686
+    },
+    {
+      "point": "op.w8a8_linear/hbm/bf16-m1-k2560-n9216",
+      "baseline_cycles": 51977068,
+      "x8_cycles": 17057221,
+      "speedup": 3.0472178322600145
+    },
+    {
+      "point": "op.w8a8_linear/hbm/bf16-m128-k2048-n6144",
+      "baseline_cycles": 445561279,
+      "x8_cycles": 51142107,
+      "speedup": 8.712219834822214
+    },
+    {
+      "point": "op.w8a8_linear/hbm/bf16-m128-k2560-n9216",
+      "baseline_cycles": 369937961,
+      "x8_cycles": 97086186,
+      "speedup": 3.810407806111572
+    }
+  ],
+  "coverage": "F01-F10 and T2 one-factor timing uncertainty; X8 archived capability comparison",
+  "limitations": [
+    "No proxy is a quantitative physical candidate attribution. Cycle-preserving retiming requires physical frequency/area evidence.",
+    "Small standard Torch GEMMs do not establish workload-general gain. Zero or mixed response is retained.",
+    "All model results remain uncalibrated; board remeasurement is pending."
+  ]
+}

@@ -290,14 +290,16 @@
     {
       "id": "S2-02.B",
       "requirement": "Distinguish command admission, setup overlap, transfer overlap and critical-path gain",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage1/board/metrics.json",
-        "evidence/r41/stage2/integration/README.md"
+        "evidence/r41/acceptance/p1/README.md",
+        "evidence/r41/acceptance/p1/metrics.json",
+        "evidence/r41/acceptance/p1/index.json",
+        "tools/performance_harness/systemc/include/tnca_tensor_engine.hpp"
       ],
-      "reason": "Admission evidence does not measure physical transfer overlap; a queue alone cannot close a throughput claim.",
-      "closure_plan": "P1"
+      "reason": "Bounded negative study distinguishes admitted immutable commands from execution: actual queue-depth 1/2 artifact runs pass eight bitwise rows, with mixed makespan changes; the single controller serializes setup and transfer. No transfer-overlap or throughput optimization is selected. This closes the Study distinction, not a physical throughput claim.",
+      "closure_plan": null
     },
     {
       "id": "S2-02.C",
@@ -1195,8 +1197,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "c3fa2d289392b582264f7fbfa2be6549593b621ec607448316f388f8f8de0b4a",
-    "doc/r41_stage2_report.md": "ed626523d029577b3f1701406f73de4fc5cf81906b487ac6d2084db771d19422",
+    "doc/r41_report.md": "9d3edff4a6d028e840c19333bbe680024cf4454da94d3f3dfd40b47c284622c1",
+    "doc/r41_stage2_report.md": "2bce7cf073685c50414e52de1529956e538c23c200741f2bc24e398f0ca0f882",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "04350417d681c7a3bd90fdbe5b0240c5ebf0e8b27d1c14a9b07e14a72ee59a7e",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1233,9 +1235,10 @@
     "evidence/r41/acceptance/p8/board-records.tgz": "a44913d53a6a5e3edf26687628b88d7b7ebf881aef2ca877089ae6eb3631b671",
     "evidence/r41/acceptance/p8/environment.json": "94f4dab5565c7e842dbe3d280266fec49b3037158968c75d06d84beb869fee58",
     "evidence/r41/acceptance/p8/metrics.json": "e1bfe3a624aa8c98bf5f024f93fba4e4f572a7eca166fe4c5f951890317ef0b5",
-    "evidence/r41/acceptance/p1/README.md": "b855509ad70d6e8515b645b502d2873c93b25b0affff17f6ed94a641b9f9646f",
-    "evidence/r41/acceptance/p1/metrics.json": "2255dabbe51a7b0a36b4ad4edc6fdc02ea37393064db062d819951eb9c6f9c08",
-    "evidence/r41/acceptance/p1/index.json": "61b9b3a106b1747bfe21930d53349d87dea604c24a0cfbb19326bf4b65161893"
+    "evidence/r41/acceptance/p1/README.md": "85f3fe8b80b5a7eb697a6f50cac3749675b4c0b1596d6364c3ae73a2ed6efc88",
+    "evidence/r41/acceptance/p1/metrics.json": "2bb2a63c0ef499a3d77d7cb4bf2e5abbd764588163175921730ae9c5d9efe796",
+    "evidence/r41/acceptance/p1/index.json": "d3f19d4ce93c4c1ac62c2ad9ce9b2d56280fb954d4d83339aa8c445f2432eb5f",
+    "tools/performance_harness/systemc/include/tnca_tensor_engine.hpp": "46efa44368b4b3e3654c2646a8d418f9f02e3bfb87b106707c9b1e32ff8b0ee7"
   },
   "followups": [
     {

@@ -28,3 +28,34 @@ experiment has a three-hour total bound, not three hours per step. The queue
 requires the appropriate approved image already loaded and 900 seconds idle;
 it never builds, programs or resets a card. All manifests passed local
 preparation checks without device access. Lead measurements remain pending.
+
+## Memory service and command queue follow-up
+
+Fresh current-source SystemC standard Torch `(a+b)*0.5` runs pass for all three
+outlet/depth settings. Completed-launch cycles are 20,250 (1/1), 13,520 (1/8),
+and 13,532 (3/8). These measurements are extracted from raw reports, not entered
+as an oracle. Increasing outstanding depth helps this graph; adding outlets
+does not. Cache/outlet counters, actual placements and model identities remain
+in `service-transfer.tgz` and `metrics.json`. This is not a physical HBM result.
+
+The model home slice releases its lookup engine before waiting for a miss,
+serializes same-line predecessors, bounds MSHRs and targets, and records hits,
+merges, capacity stalls and writebacks. This explains how admission and miss
+completion are separated in the existing model; it does not establish RTL
+fairness or a new home-service throughput capability. The separate hbm_bw owner
+retains the core-side hardware investigation; no competing image is requested.
+
+A real artifact-executing queue-depth 1/2 model comparison passes eight bitwise
+mm/addmm rows with identical output hashes. Changes in makespan are mixed and
+small, not a general speedup. `TensorEngine::issue` bounds admission and retains
+immutable descriptor/window ownership, but one controller holds both setup
+and transfer until completion. Increasing queue capacity alone cannot overlap
+setup or data transfers in this implementation. Waiting can move to the queue
+without improving critical-path throughput. No queue-throughput optimization
+is selected. Model observations and this source audit do not substitute for
+RTL counterfactuals or the pending standard Torch board comparison.
+
+The lead queue now additionally caps the sum of execution time across manifests
+to three hours; a caller can lower but cannot increase a registered experiment
+budget. Idle waits do not consume the execution budget. The final launch
+commands allocate 9,000 seconds to 100 MHz and 1,800 seconds to 90 MHz.

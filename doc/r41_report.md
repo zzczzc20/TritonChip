@@ -147,3 +147,11 @@ RTL candidate, so that obligation remains not measured. Matched GEMM, policy
 leave-one-out and shared-artifact 90/100 MHz manifests are prepared and locally
 checked. Only the lead may launch them on the shared card. Stage 2 and R41
 remain not accepted: 32 passed, two failed, 52 not measured, eight blocked.
+
+P1 service/queue follow-up: three current-source standard Torch service
+configurations and eight bitwise queue-depth comparison rows pass. The bounded
+S2-02.B Study now passes with a negative decision: admission differs from
+setup/transfer overlap, which remains serialized; no throughput gain is claimed.
+Current ledger: 33 passed, two failed, 51 not measured, eight blocked.
+The lead-only queue caps all manifest execution together; the planned 100/90
+MHz allocations total three hours. Evidence is in p1/service-transfer.tgz.

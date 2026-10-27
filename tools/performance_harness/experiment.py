@@ -222,7 +222,7 @@ def conclusion_fields(record, source):
     return {k: record[k] for k in CONCLUSION_FIELDS}
 
 
-def run(manifest, root, out, *, python, retry_failed=False, conclusion=None, board_probe=sysfs_probe):
+def run(manifest, root, out, *, python, retry_failed=False, conclusion=None, board_probe=sysfs_probe, budget_seconds=None):
     spec = json.loads(manifest.read_text())
     if socket.gethostname() not in spec['allowed_hosts']:
         raise ValueError('this experiment may run only on its declared remote hosts')
@@ -266,6 +266,10 @@ def run(manifest, root, out, *, python, retry_failed=False, conclusion=None, boa
         raise ValueError('step ids must be unique simple names')
     experiment_started = time.monotonic()
     total_budget = spec.get('budget_seconds')
+    if budget_seconds is not None:
+        if type(budget_seconds) not in (int, float) or not 0 < budget_seconds <= 259200:
+            raise ValueError('caller budget must be finite and positive')
+        total_budget = min(total_budget, budget_seconds) if total_budget is not None else budget_seconds
     if total_budget is not None and (type(total_budget) not in (int, float) or not 0 < total_budget <= 259200):
         raise ValueError('experiment total budget must be finite and positive')
     for step in spec['steps']:
@@ -427,10 +431,11 @@ if __name__ == '__main__':
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--python', type=Path, required=True)
     ap.add_argument('--retry-failed', action='store_true')
+    ap.add_argument('--budget-seconds', type=float, help='additional cap; cannot increase the registered budget')
     ap.add_argument('--conclusion', type=Path,
                     help='reviewed JSON with result/residual/conclusion/next_step for a completed experiment')
     args = ap.parse_args()
     result = run(args.manifest, args.root, args.out, python=args.python,
-                 retry_failed=args.retry_failed, conclusion=args.conclusion)
+                 retry_failed=args.retry_failed, conclusion=args.conclusion, budget_seconds=args.budget_seconds)
     print(result['status'])
     raise SystemExit(0 if result['status'] == 'completed-experiment' else 1)

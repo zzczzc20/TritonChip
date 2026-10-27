@@ -165,3 +165,12 @@ milestone's immutable source and the 21c40aa control on the FPGA host using
 CPU-only file transfer, write concrete lead launch commands here, then finish
 P1 candidate coverage before P2. The lead must load the named approved image
 and start each campaign; never run the 90 MHz and 100 MHz queues together.
+
+P1 follow-up: fresh current-source service and queue runs complete successfully;
+raw archives now include three standard Torch service configurations and eight
+bitwise queue comparison rows. No queue-throughput gain is selected. Corrected
+the queue budget to cap execution across all manifests, with 9,000 seconds for
+the 100 MHz set and 1,800 seconds for the 90 MHz set (three hours total).
+Next: stage the revised bounded launcher, verify immutable files on acf3019,
+and publish concrete lead commands. Source transfer handle remains live; no
+board job was launched.

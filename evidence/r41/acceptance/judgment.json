@@ -3,9 +3,9 @@
   "integrity": "passed",
   "status": "not accepted",
   "counts": {
-    "passed": 32,
+    "passed": 33,
     "failed": 2,
-    "not measured": 52,
+    "not measured": 51,
     "blocked": 8
   },
   "errors": [],
@@ -290,14 +290,16 @@
     {
       "id": "S2-02.B",
       "requirement": "Distinguish command admission, setup overlap, transfer overlap and critical-path gain",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage1/board/metrics.json",
-        "evidence/r41/stage2/integration/README.md"
+        "evidence/r41/acceptance/p1/README.md",
+        "evidence/r41/acceptance/p1/metrics.json",
+        "evidence/r41/acceptance/p1/index.json",
+        "tools/performance_harness/systemc/include/tnca_tensor_engine.hpp"
       ],
-      "reason": "Admission evidence does not measure physical transfer overlap; a queue alone cannot close a throughput claim.",
-      "closure_plan": "P1"
+      "reason": "Bounded negative study distinguishes admitted immutable commands from execution: actual queue-depth 1/2 artifact runs pass eight bitwise rows, with mixed makespan changes; the single controller serializes setup and transfer. No transfer-overlap or throughput optimization is selected. This closes the Study distinction, not a physical throughput claim.",
+      "closure_plan": null
     },
     {
       "id": "S2-02.C",

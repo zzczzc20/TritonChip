@@ -80,3 +80,23 @@ The corrected 33-element standard torch test has completed: all five operators p
 The observed 33-element run completed all five operators. Its 31 MMIO grids include the first add's compiler tuning. The boundary observer reports 36 compact admissions and 504 narrow admissions, with all 540 retired; hybrid_trace_summary.py independently checks the per-grid counter deltas and retains them in coupled/torch_observed33_summary.json. The observer does not label grids with operator identities. The final five grids admit compact requests, establishing actual use of the wide path, while earlier tuning grids use only narrow requests. This is not a bandwidth result. Raw numerical/cycle output and boundary observations are retained as torch_observed33.log and torch_observed33_boundaries.log. The matched legacy 33-element functional run also passes all five operators (torch_legacy_pass.log).
 
 The test now supports an explicit warmup before its collected launch interval, keeping compiler tuning out of the comparison. A matched 257-element pair is live on GB10, hybrid PID 574840 and legacy PID 574841, logs /tmp/r41-wide-coupled/torch_warm257_{hybrid,legacy}.log. Both use the same program/compiler settings and small cache fixture; the candidate enables the hybrid LSU and four SFU slices. These are synthetic-memory RTL comparisons, not the author-required board speedups. Larger sizes, original dtypes and complete ArchBench coverage remain required.
+
+## Warmed coupled-RTL comparison: first 257-element results
+
+The matched float32 baseline run has completed all five operators. The candidate has so far completed add, mul, silu and gelu; copy remains pending. Each recorded interval contains exactly one launch after a numerically checked warmup, with zero tensor upload/download bytes. Preliminary device-cycle results are:
+
+| Operator | Legacy RTL cycles | Hybrid RTL cycles | RTL cycle ratio |
+| --- | ---: | ---: | ---: |
+| add | 1,805 | 1,209 | 1.493x |
+| mul | 1,855 | 1,102 | 1.683x |
+| silu | 1,697 | 1,194 | 1.421x |
+| gelu | 3,244 | 3,015 | 1.076x |
+| copy | 1,223 | pending | pending |
+
+These are small-cache synthetic-memory RTL results, not board speedups or the 100 MHz Stage-2 board baseline. They do not meet the several-times operator gate. The particularly small gelu improvement is retained without redefining acceptance. The complete baseline and candidate prefix are in coupled/torch_warm257_legacy.log and torch_warm257_hybrid_partial.log. compare_torch_rtl.py requires complete five-operator runs, one positive measured launch per operator, unchanged shape/dtype, successful numerics, warmup and zero tensor staging. Its rejection of this incomplete candidate has been verified; no complete comparison JSON is claimed yet.
+
+Optional CORE COUNTERS observation now records active cycles, issued instructions, exclusive dependency/LSU/FPU/VRF stall reasons, frontend cycles and home hit/miss/full counters at grid completion. A live trace has elaborated and emitted those counters; core_stage33_partial.log is a partial diagnostic snapshot. Cache deltas between completed grids also include intervening coherent host transactions, so those deltas must not be attributed solely to operator traffic. The warmed 33-element stage run remains active (GB10 PID 580085).
+
+A candidate experiment allows a maximum compiler block of 128 instead of 16, to test whether amortizing per-program work helps the real compact engine. It is live on GB10 PID 582347, log torch_warm257_block128.log. The test now records block limits and selected grids; it also accepts float16 for subsequent coverage, but no float16 run has passed this new entry point yet. These options do not alter arithmetic or tolerance. The integrated outlet/whole-image/board gates remain open.
+
+The candidate 257-element run has now completed all five operators. Copy takes 836 cycles versus the legacy 1,223 (1.463x). The strict comparison succeeds on the complete pair; coupled/torch_warm257_comparison.json retains exact ratios and input hashes. The earlier partial log and refusal remain historical evidence. All five ratios are below 1.7x, so this diagnostic candidate does not satisfy the several-times gate. No board speedup has been measured. The stage and block-128 experiments remain live.

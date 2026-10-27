@@ -1,0 +1,67 @@
+{
+  "evidence": "synthetic-memory-coupled-RTL-comparison",
+  "board_speedup_measured": false,
+  "acceptance_gate_satisfied": false,
+  "scope": "five float32 operators only; small cache; no image or board qualification",
+  "sources": {
+    "evidence/r41/hbm_bw/hybrid_lsu/coupled/torch_warm257_legacy.log": "e958abe1e8965b81b7ff5a9047d3c02b712bce2b8eda6f78b422fa5d9f948cd3",
+    "evidence/r41/hbm_bw/hybrid_lsu/coupled/torch_warm257_hybrid.log": "c73d6ad76b4890b194e300735b26e7770a8b61d4fe65b8713480606ebf25ba72"
+  },
+  "rows": [
+    {
+      "operator": "add",
+      "shape": [
+        257
+      ],
+      "dtype": "float32",
+      "baseline_rtl_cycles": 1805,
+      "candidate_rtl_cycles": 1209,
+      "rtl_cycle_speedup": 1.4929693961952026,
+      "numerics": "pass"
+    },
+    {
+      "operator": "mul",
+      "shape": [
+        257
+      ],
+      "dtype": "float32",
+      "baseline_rtl_cycles": 1855,
+      "candidate_rtl_cycles": 1102,
+      "rtl_cycle_speedup": 1.6833030852994555,
+      "numerics": "pass"
+    },
+    {
+      "operator": "silu",
+      "shape": [
+        257
+      ],
+      "dtype": "float32",
+      "baseline_rtl_cycles": 1697,
+      "candidate_rtl_cycles": 1194,
+      "rtl_cycle_speedup": 1.4212730318257956,
+      "numerics": "pass"
+    },
+    {
+      "operator": "gelu",
+      "shape": [
+        257
+      ],
+      "dtype": "float32",
+      "baseline_rtl_cycles": 3244,
+      "candidate_rtl_cycles": 3015,
+      "rtl_cycle_speedup": 1.0759535655058043,
+      "numerics": "pass"
+    },
+    {
+      "operator": "copy",
+      "shape": [
+        257
+      ],
+      "dtype": "float32",
+      "baseline_rtl_cycles": 1223,
+      "candidate_rtl_cycles": 836,
+      "rtl_cycle_speedup": 1.4629186602870814,
+      "numerics": "pass"
+    }
+  ]
+}

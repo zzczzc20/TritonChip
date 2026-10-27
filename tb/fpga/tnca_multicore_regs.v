@@ -11,6 +11,20 @@ module tnca_multicore_regs;
    $display("MMIO DOORBELL cycle=%0d seq=%0d op=%0d a0=%h a1=%h",diag_cycle,dut.control.req_seq,dut.control.req_op,dut.control.a0,dut.control.a1);
  end
  generate for(genvar c=0;c<N;c=c+1)begin:g_diag
+  always @(posedge clk)if($test$plusargs("trace") && rst_n_async && dut.done_valid)
+   $display("CORE COUNTERS cycle=%0d core=%0d cycles=%0d issued=%0d stall=%0d hazard=%0d lsu=%0d fpu=%0d vrf=%0d vrfwb=%0d frontend=%0d home_hit=%0d home_miss=%0d home_mshr_full=%0d",diag_cycle,c,
+    dut.system.shell.u_system.g_tile[c].u_tile.u_core.perf_cycles,
+    dut.system.shell.u_system.g_tile[c].u_tile.u_core.perf_issued,
+    dut.system.shell.u_system.g_tile[c].u_tile.u_core.perf_stall_total,
+    dut.system.shell.u_system.g_tile[c].u_tile.u_core.perf_x_hazard,
+    dut.system.shell.u_system.g_tile[c].u_tile.u_core.perf_x_lsu,
+    dut.system.shell.u_system.g_tile[c].u_tile.u_core.perf_x_fpu,
+    dut.system.shell.u_system.g_tile[c].u_tile.u_core.perf_x_vrf,
+    dut.system.shell.u_system.g_tile[c].u_tile.u_core.perf_x_vrfwb,
+    dut.system.shell.u_system.g_tile[c].u_tile.u_core.perf_x_frontend,
+    dut.system.shell.u_system.g_tile[c].u_tile.perf_hit,
+    dut.system.shell.u_system.g_tile[c].u_tile.perf_miss,
+    dut.system.shell.u_system.g_tile[c].u_tile.perf_mshr_full);
   if(HYBRID_LSU)begin:g_hybrid
    always @(posedge clk)if($test$plusargs("trace") && rst_n_async && (diag_cycle%10000==0 || dut.done_valid))
     $display("HYBRID WATCH cycle=%0d core=%0d pc=%h x_valid=%b pending=%b fast=%0d slow=%0d retired=%0d fast_quiet=%b slow_idle=%b cpl=%b ack=%b",diag_cycle,c,

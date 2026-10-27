@@ -43,6 +43,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Frozen R40 v3 contract integrity
+        run: python3 tools/r40/contract_v3.py
+
       - name: Toolchain
         run: |
           set -euo pipefail
@@ -247,6 +250,8 @@ jobs:
 
       - name: Triton source to RTL, one core and the whole machine
         run: |
+          R1_STRICT=1 $HOME/tritonenv/bin/python compiler/test/run_suite.py \
+            test_fragment_residency r40-fragment-residency R40-GEMM-FRAGMENT
           make triton-e2e TRITON_PYTHON=$HOME/tritonenv/bin/python
           make e2e TRITON_PYTHON=$HOME/tritonenv/bin/python
 

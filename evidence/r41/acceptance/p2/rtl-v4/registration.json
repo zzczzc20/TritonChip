@@ -1,0 +1,49 @@
+{
+  "seed": 4103,
+  "graphs": [
+    {
+      "name": "residual",
+      "shapes": [
+        [
+          128
+        ],
+        [
+          128
+        ]
+      ],
+      "dtypes": [
+        "torch.float32",
+        "torch.float32"
+      ]
+    },
+    {
+      "name": "projection",
+      "shapes": [
+        [
+          8,
+          16
+        ],
+        [
+          16,
+          16
+        ],
+        [
+          16
+        ]
+      ],
+      "dtypes": [
+        "torch.float16",
+        "torch.float16",
+        "torch.float16"
+      ]
+    }
+  ],
+  "modes": [
+    false,
+    true,
+    false
+  ],
+  "policy": "LRU only, no complete-access or dead/bypass claims",
+  "rtol": 0.002,
+  "atol": 0.002
+}

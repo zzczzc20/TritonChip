@@ -40,8 +40,8 @@ Next: repair and validate the isolated FPGA-host FP8 environment (P8).
 
 | Boundary | Judgment | Evidence |
 |---|---|---|
-| `R41_S1_COMPILER_AND_PERFORMANCE_HARNESS` | Not accepted: 59/61 Required items passed, one not measured and one blocked | [Stage 1 report](r41_stage1_report.md), frozen-checker `evidence/r41/stage1/board/acceptance.json` |
-| `R41_S2_100MHZ_AND_FULL_MODEL` | Not accepted: qualified 100 MHz candidate and full original correctness, with missing full-model, XL, locality, selector and final reproduction gates | [Stage 2 report](r41_stage2_report.md), [item ledger](../evidence/r41/acceptance/stage2_index.md) |
+| `R41_S1_COMPILER_AND_PERFORMANCE_HARNESS` | Accepted on the frozen identity: all 61 Required checks pass | [Stage 1 report](r41_stage1_report.md), frozen-checker `evidence/r41/stage1/board/acceptance.json` |
+| `R41_S2_100MHZ_AND_FULL_MODEL` | Not accepted: qualified 100 MHz candidate and full original correctness, with missing full-model, XL, physical locality, selector and final reproduction gates | [Stage 2 report](r41_stage2_report.md), [item ledger](../evidence/r41/acceptance/stage2_index.md) |
 | R41 Definition of Done | Blocked: all Required criteria in both stages have not passed | [Machine-readable judgments](../evidence/r41/acceptance/stage2_required_index.json) |
 
 Stage 1 binds to frozen commit `25094197f6e6`, software
@@ -92,8 +92,9 @@ teacher-forced state/logit validation and no measured complete capacity
 high-water margin. FP8 layers/cache/vision results on SystemC cover different
 models and do not replace that requirement.
 
-The locality consumer remains a design rather than a standard Torch
-integration with two measured off/on graphs and ownership/fault checks.
+The locality consumer now has two standard Torch off/on/off graph runs with
+storage/alias, ownership and fault checks on board-top RTL. Its physical U280
+traffic/latency comparison and the pipeline/resource studies remain unmeasured.
 The eight XL points, final holdout selector execution and core-count scaling
 are incomplete. Barrier wrap and persistent code eviction/state-reuse tests
 need explicit counted evidence. Final software/model rebuild and independent
@@ -173,3 +174,17 @@ metrics/indexes and raw archives. The earlier grouped-only sensitivity judgment
 is superseded. Current ledger: **35 passed, two failed, 49 not measured, eight
 blocked**. Required integrated board comparisons await the lead commands in
 STATUS.md. Stage 2 and overall R41 remain not accepted. P2 is next.
+
+## P2 functional locality closeout — 2026-10-27
+
+Two standard Torch graphs pass locality off/on/off numerical replay on board-top
+RTL, with identical native artifacts and output hashes. Storage/alias/lifetime
+planning, seven ownership tests and injected-fault policy restoration pass;
+aggressive hints remain disabled and the policy remains opt-in. Evidence is in
+`evidence/r41/acceptance/p2/`. This closes S2-03.A.1–A.4 only. Physical U280
+traffic/latency, fixed-budget pipeline and asymmetric-resource studies remain
+unmeasured; no locality speedup or default-on decision is claimed.
+
+The frozen Stage 1 DoD row now records its accepted 61/61 result. Current
+ledger: **40 passed, two failed, 45 not measured, seven blocked**. Overall R41
+remains not accepted.

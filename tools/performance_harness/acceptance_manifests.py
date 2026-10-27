@@ -83,7 +83,27 @@ def manifests():
         spec['steps']=[command]
         spec['registration']['interpretation']='Same logical compiler profile; verify actual artifact text hashes match across images before attributing the migration. No new image build.'
         migration.append(spec)
-    return [gemm,policy,*migration]
+    def direct(spec,name,script,timeout,*,output=True):
+        argv=['{python}','{root}/'+script]
+        if output:argv += ['--out','{out}/'+name]
+        return dict(id=name,kind='fpga',argv=argv,timeout_seconds=timeout,
+            env=stage2_board.fpga_env(4*stage2_board.GIB),
+            timing_boundary='functional lifecycle or opt-in locality scope; raw device and host observations only, no performance acceptance claim',
+            cache_state='fresh experiment-local process, Session and caches; preserved failure; no tuning',
+            outputs=['{out}/'+name+'/report.json'] if output else [])
+    p2=common('s2-p2-locality','Two captured standard Torch graphs execute identical native artifacts with conservative locality off/on/off; numerical results, ownership, injected-fault cleanup, traffic and latency are observed without assuming a gain.')
+    p2['steps']=[direct(p2,'locality','tools/performance_harness/locality_case.py',1200)]
+    p2['budget_seconds']=1200;p2['registration']['budget_seconds']=1200
+    p2['registration']['contract']='doc/r41_tasks_and_acceptance.md S2-03.A; functional board evidence only, separate performance review required'
+    p4=common('s2-p4-lifecycle','Explicit compound refusals, standard Torch code eviction and a rolled AOT/Session barrier loop establish lifecycle behavior on the approved image; no full-model or aggregate acceptance inference.')
+    p4['sources'] += ['tools/r40/alias_negative_case.py','tools/r40/device_tests.py','tools/r40/barrier_epoch_case.py']
+    p4['steps']=[direct(p4,'aliases','tools/r40/alias_negative_case.py',300),
+                 direct(p4,'eviction','tools/r40/device_tests.py',1800,output=False),
+                 direct(p4,'barrier','tools/r40/barrier_epoch_case.py',3600)]
+    p4['steps'][1]['argv'] += ['--only','eviction']
+    p4['budget_seconds']=5100;p4['registration']['budget_seconds']=5100
+    p4['registration']['contract']='doc/r41_tasks_and_acceptance.md S2-04.D.3/.4/.6/.7; full-model persistent-session and sustained-admission gates remain separate'
+    return [gemm,policy,*migration,p2,p4]
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--check',action='store_true');a=p.parse_args()

@@ -182,7 +182,10 @@ def replay_with_locality(graph,execute):
         # A failed numerical replay is never silently reusable.
         graph.invalid_reason=str(exc)
         if enabled and not session.poisoned and not session.closed:
-            try:command('set',{'policy':0})
+            try:
+                command('set',{'policy':0})
+                report['restored']=read()
+                if report['restored']['policy']!=0:raise RuntimeError('locality policy failed to restore after a fault')
             except BaseException as cleanup:report['cleanup_error']=str(cleanup)
         raise
     finally:

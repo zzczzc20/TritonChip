@@ -299,3 +299,23 @@ Validation: python3 -m tools.docmaint check passes (87 documents, acyclic),
 nine Stage 1 acceptance regression tests pass, and make compiler passes.
 No card access, board job, image load or full image build was started. Next:
 P4 lifecycle stress and review/continuation of the real P2 locality runs.
+
+## 2026-10-27 (Kimi) — P2 functional locality closed
+
+Preserved the initial host_timeout integration failure and the subsequent
+missing-Icarus-path failure. Fixed duplicate Session timeout forwarding and added
+a regression test. Fresh GB10 r41-accept-p2-rtl-v4 then passed two standard Torch
+graphs through native captured off/on/off replay on board-top MMIO RTL. Artifact
+and output identities match; replay performs no host upload/download. The seven
+real-Session ownership/alias tests pass. Injected numerical admission failures
+after actual locality registration restore policy zero, and subsequent off replay
+refuses the invalid graph. Raw failed/successful logs and the derived validator
+output are in evidence/r41/acceptance/p2/.
+
+S2-03.A.1–A.4 now pass for functional delivery. S2-03.A.5 remains not measured:
+RTL counters/timings are not physical U280 evidence and no performance gain or
+default-on decision is claimed. S2-03.B/C remain open. The P2 board manifest is
+prepared, not launched. Reconciled the Stage 1 DoD row and stale evidence hashes
+to the frozen accepted 61/61 record. Current integrity-checked ledger: 40 passed,
+two failed, 45 not measured, seven blocked. No card access or image work started.
+Next: finish P4 model/RTL stress and stage lead-only P2/P4 queue commands.

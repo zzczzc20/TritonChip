@@ -2,7 +2,7 @@
   "schema": "tnca-r41-stage2-required-index/1",
   "contract": "doc/r41_tasks_and_acceptance.md",
   "contract_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
-  "scope": "Audit plus P0 prospective freeze, P8 measured follow-up and P1 corrective/study closeout, 2026-10-27; historical failures remain.",
+  "scope": "Audit plus P0 prospective freeze, P8 measured follow-up, P1 corrective/study closeout and P2 functional locality delivery, 2026-10-27; historical failures remain.",
   "statuses": [
     "passed",
     "failed",
@@ -408,46 +408,52 @@
     {
       "id": "S2-03.A.1",
       "requirement": "Two model-agnostic standard Torch locality/DCO graphs",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/acceptance/p2/rtl-v4/report.json",
+        "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Residual and projection standard Torch graphs execute their captured native Inductor artifacts with locality off/on/off on the board-top MMIO RTL binding. Identical artifact and output hashes pass the closeout validator. This is functional delivery, not a physical-board performance claim.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.2",
       "requirement": "Policies traceable to storage, aliasing and lifetimes",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/acceptance/p2/rtl-v4/report.json",
+        "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Each executed plan records Session-owned storage identities, addresses, sizes, aliasing and captured first/last command uses. The applied policy is conservative LRU only; no aggressive hint is inferred from incomplete global access knowledge.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.3",
       "requirement": "Safe handling of aliases and incomplete readers/writers",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/acceptance/p2/rtl-v4/metadata-tests.log",
+        "evidence/r41/acceptance/p2/rtl-v4/report.json",
+        "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Seven real-Session tests cover coalesced views, declared aliases, undeclared overlap, descriptors, forged/freed/stale handles, unsupported backends and whole-plan capacity refusal. Every executed range retains incomplete reader/writer flags with dead/bypass disabled.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.4",
       "requirement": "Off/on numerical, ownership and fault checks",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/acceptance/p2/rtl-v4/metadata-tests.log",
+        "evidence/r41/acceptance/p2/rtl-v4/report.json",
+        "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Both graphs pass numerical off/on/off replay with unchanged outputs and no host retransmission. Injected numerical admission faults after real control registration propagate, restore policy zero and poison the captured graph against later off replay; ownership tests pass.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.5",
@@ -455,9 +461,11 @@
       "status": "not measured",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/acceptance/p2/rtl-v4/report.json",
+        "evidence/r41/acceptance/p2/summary.json",
+        "spec/r41/stage2/acceptance/s2-p2-locality.json"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
+      "reason": "Actual RTL counter and host/device timing rows are archived, but no physical U280 locality comparison has run. The approved-image manifest is prepared only; RTL observations do not close this board requirement or establish a performance gain.",
       "closure_plan": "P2"
     },
     {
@@ -1112,13 +1120,13 @@
     {
       "id": "DoD.Stage1",
       "requirement": "Stage 1 completion",
-      "status": "blocked",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/board/acceptance.json"
       ],
-      "reason": "Frozen Stage 1 checker: 59 passed, one not measured, one blocked of 61. Matched final-source old-mapping comparison remains open.",
-      "closure_plan": "P7"
+      "reason": "The frozen product and software identity passes all 61 Stage 1 checks with zero failures, not-measured rows or blockers. This closes Stage 1 only; Stage 2 and overall R41 remain unaccepted.",
+      "closure_plan": null
     },
     {
       "id": "DoD.Stage2",
@@ -1198,8 +1206,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "558231fd106cb50525ca3ce17b9aa947e57a0d485102b18ce440275438282412",
-    "doc/r41_stage2_report.md": "bc24b6a32640df9af28b455da76efec207809cb53c6d6806009562d20fc9ee49",
+    "doc/r41_report.md": "0d52ce1c5628debec1c535c22dacb7e42875e00d8a3b25509ae271b0554d1fe4",
+    "doc/r41_stage2_report.md": "769255ae9549c187094fcad5fd652edee73170bbb8f6e7ac5df602ebc30d3aec",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "04350417d681c7a3bd90fdbe5b0240c5ebf0e8b27d1c14a9b07e14a72ee59a7e",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1210,12 +1218,12 @@
     "evidence/r41/acceptance/identity.md": "c6d375cdf9114542033b1ac21c1d94bc70ad83850288338f206f8386a36da98f",
     "evidence/r41/acceptance/physical-audit.tgz": "3bec9cc04cc9b66071a02f507f143856771271481231d5f7d6509eed5304ebd1",
     "evidence/r41/fp8/models_tnca/README.md": "a709e292b504fe637b31d4ea50287548917aba800edf69222f5ff01c064f0164",
-    "evidence/r41/stage1/board/acceptance.json": "7d89ea71417a523065d3d0fdc0086f19505b3b54061612f3414ddc02bcf4c447",
+    "evidence/r41/stage1/board/acceptance.json": "0c58095cf3edd1930ccad4ab1b8d6ce3dff288de71c26984ee6e239564387330",
     "evidence/r41/stage1/board/metrics.json": "0e092d6a1391ce97c9c5dff18ed7a47e4eba6fac3719ef7f821af436a1eb0aa6",
     "evidence/r41/stage1/board/original-suite-rerun.tgz": "7a982912d183d390aaa3b6df1e0b87d40bf96d1de0df896654c5f7d43f9c12fe",
     "evidence/r41/stage1/locality_design.md": "7f73826be587941b302c09ef0de10db78de462c05ae9d5e8c702d80f47e0afaf",
     "evidence/r41/stage1/model_estimates.md": "d654530d55a1e4da63926a55e38baea3667ade6e3b31f2d9b86d9bd6675dca88",
-    "evidence/r41/stage1/stage2_readiness.md": "85691c7f4139131a2eb580473034f86eb9c16651b451321531cf4978edf6cfc7",
+    "evidence/r41/stage1/stage2_readiness.md": "e0222f2afb03fcba8dbdf449a2c2068c1ed0e3595d4faaa4c853c8bd29dfaee7",
     "evidence/r41/stage2/board/endurance-rerun-index.json": "7864b0400b5dd9701709651ff386082218977bec3469b89d4f10a9fe850fd6a0",
     "evidence/r41/stage2/board/endurance-rerun.tgz": "918a6a03b937824f3c290f831df0c68cca28e28cc668c87e21d93c35aca86c75",
     "evidence/r41/stage2/board/image_source.json": "4b843204e81c51bf7ddb5955ab20ce7a72cb199d014f6fa9a1d19685e7ca2cd6",
@@ -1246,6 +1254,10 @@
     "evidence/r41/acceptance/p1/memory-service-study.md": "bc590cc8a20a53da0b7a2d0da6b59c793db755d264abae5d33e8aed3e3f5c642",
     "evidence/r41/acceptance/p1/candidate-sensitivity/metrics.json": "96fe8cfaab50a12529f506eeaffb8396ed555e2ca4ca74ce040bcd0def4fe83d",
     "evidence/r41/acceptance/p1/candidate-sensitivity/index.json": "6c6ced49716eb82c3c20fba4d95742d292c02f44fef2c2f3da8298d4ec2fcb08",
+    "evidence/r41/acceptance/p2/rtl-v4/metadata-tests.log": "0dff316fc0014be8514211e9d2c74eb025567fe1f1fad3eab68b5845b28419cd",
+    "evidence/r41/acceptance/p2/rtl-v4/report.json": "73575462e42916fd4152e6b6c45f708c68f7a25578f7bd952c8be0781b166a01",
+    "evidence/r41/acceptance/p2/summary.json": "74bae5e6f6fa12729dc467abf0674893e669334a1ec016566614d8857f9b5d1e",
+    "spec/r41/stage2/acceptance/s2-p2-locality.json": "e59d6b34b383127f8086287336e3b27e2c491a4a41fdb220ad0953917da865bb",
     "evidence/r41/stage2/candidates/F07/functional_report.json": "803488d8b42b7e3f0ce9d194b92a417888ee391f09b4374cece3bc8d3725a5b4"
   },
   "followups": [

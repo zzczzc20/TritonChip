@@ -119,7 +119,7 @@ FP8 execution does not qualify final-image timing prediction.
 | S2-00 | Failed process sequencing; freeze fields not measured | No Stage 2 plan/lock, model tolerance lock or XL manifest preceded implementation. Freeze remaining work prospectively; preserve the process failure (P0) |
 | S2-01 | Eight numbered candidate checks passed | Candidate identity reconciled; final B41-F still unselected. A future image needs its own affected qualification and measurements (P6) |
 | S2-02 | RTL MMA/FMA candidate and physical screens evidenced; study/comparison gaps remain | Complete SystemC sensitivity and integrated-mechanism board comparisons; coordinate bandwidth work and address scheduling-model confounder (P1) |
-| S2-03 | Not measured | Graph-level locality consumer is a design, with no two-graph off/on board ownership/fault/traffic comparison. Final fixed-budget pipeline and resource study also absent (P2) |
+| S2-03 | Functional locality passed; board comparison and studies not measured | Two standard Torch graphs pass off/on/off numerical, storage/alias, ownership and fault checks on board-top RTL. Physical U280 traffic/latency and final fixed-budget pipeline/resource studies remain absent (P2) |
 | S2-04 | Full model blocked; capacity and lifecycle partially passed | No authentic all-layer BF16 Qwen3.5-2B core/tail board inference. Actual full-model peak, state/logit evolution, persistent lifecycle and steady-state host traffic remain unmeasured (P3/P4) |
 | S2-05 | Original suite passed; XL/selector/scaling incomplete | Eight XL points lack a freeze and complete execution; sealed holdout lacks final selector campaign; no final-image 1/2/3-core model comparison (P5) |
 | S2-06 | Blocked | Final identity, complete functional gates, model-domain report, clean software/model rebuild and independent full-core reproduction remain absent (P6) |
@@ -204,3 +204,24 @@ metrics/indexes and raw archives. The earlier grouped-only sensitivity judgment
 is superseded. Current ledger: **35 passed, two failed, 49 not measured, eight
 blocked**. Required integrated board comparisons await the lead commands in
 STATUS.md. Stage 2 and overall R41 remain not accepted. P2 is next.
+
+## P2 functional locality closeout — 2026-10-27
+
+The native graph consumer now executes residual and projection standard Torch
+graphs with locality off/on/off on the board-top MMIO RTL binding. Both preserve
+captured Inductor artifact identities and output hashes, with no host upload or
+download during replay. Plans follow actual Session storage handles and record
+aliases and captured lifetimes; aggressive dead/bypass hints remain disabled.
+Seven real-Session ownership/alias tests pass. Injected numerical admission
+faults after real locality registration propagate, restore policy zero and make
+subsequent off replay refuse the invalid graph. Raw logs and the validated
+comparison ledger are in `evidence/r41/acceptance/p2/`.
+
+S2-03.A.1–A.4 pass for this functional scope. S2-03.A.5 remains not measured:
+no physical U280 locality traffic/latency run has occurred and no speedup is
+claimed. The fixed-budget pipeline and asymmetric-resource studies also remain
+open. An approved-image board manifest is prepared but not launched.
+
+The frozen Stage 1 DoD row is reconciled to its accepted 61/61 result. Current
+ledger: **40 passed, two failed, 45 not measured, seven blocked**. Stage 2 and
+overall R41 remain not accepted.

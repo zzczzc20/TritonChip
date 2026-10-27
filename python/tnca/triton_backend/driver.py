@@ -82,9 +82,10 @@ class _Sessions:
             # board context here can race its still-owned XRT resources,
             # including from tensor destructors unwinding the failed launch.
             if s is None or s.closed:
-                s = Session(profile=profile, deadline_cycles=int(os.environ.get('TNCA_DEADLINE', '5000000')),
-                            host_timeout=float(os.environ.get('TNCA_HOST_TIMEOUT', '600')),
-                            counters=os.environ.get('TNCA_COUNTERS') == '1',
+                kwargs = dict(kwargs)
+                kwargs.setdefault('deadline_cycles', int(os.environ.get('TNCA_DEADLINE', '5000000')))
+                kwargs.setdefault('host_timeout', float(os.environ.get('TNCA_HOST_TIMEOUT', '600')))
+                s = Session(profile=profile, counters=os.environ.get('TNCA_COUNTERS') == '1',
                             backend=backend, **kwargs)
                 cls.open[key] = s
             return s

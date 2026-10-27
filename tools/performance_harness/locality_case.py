@@ -65,6 +65,26 @@ def main():
                     assert not row['controls']['plan']['aggressive_hints']
                 entry['runs'].append(row);save()
             assert len({r['output_sha256'] for r in entry['runs']})==1
+            from tnca.errors import AdmissionError
+            from unittest.mock import patch
+            numerical=graph.commands[0][1];submit=session.submit
+            def refuse(module,args,**kwargs):
+                if module is numerical:raise AdmissionError('injected numerical admission refusal')
+                return submit(module,args,**kwargs)
+            try:
+                with patch.object(session,'submit',new=refuse):graph.replay(locality=True)
+                raise AssertionError('injected locality numerical fault was not propagated')
+            except AdmissionError:
+                fault=graph.last_locality_report
+                assert fault['status']=='failed-preserved' and fault['restored']['policy']==0
+                assert graph.invalid_reason and not session.unfinished
+            before=session.latest_event
+            try:
+                graph.replay(locality=False)
+                raise AssertionError('faulted graph replayed with locality off')
+            except RuntimeError:assert session.latest_event is before
+            entry['fault']=dict(status='pass',injection='numerical admission refused after locality registration',
+                cleanup=fault,off_replay_refused=True)
             assert all(not b.leases for b in session._buffers.values()) and not session.unfinished
             graph.reset();entry['status']='functional-pass';save()
         assert software_tree(ROOT,refresh=True)==source,'source changed during run'

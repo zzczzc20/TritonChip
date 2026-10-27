@@ -208,13 +208,21 @@ def pinned_fp8_quantizer(record):
         qauto.AUTO_QUANTIZER_MAPPING.update(old)
 
 
-def load_model(spec, weights="fp8", dtype=torch.bfloat16):
+def load_model(spec, weights="fp8", dtype=torch.bfloat16, layers=None):
     """Official <Class>.from_pretrained on the pinned snapshot.  weights: fp8 (FP8Linear, W8A8) or bf16
-    (transformers' own dequantize=True path).  Returns (model, report)."""
+    (transformers' own dequantize=True path).  layers is a reduced-depth proof limit, never a full-model result.
+    Returns (model, report)."""
     import transformers
     from transformers import AutoConfig
     snap, view_note = loadable_snapshot(spec)
     cfg = AutoConfig.from_pretrained(snap)
+    if layers is not None:
+        text = cfg.get_text_config(decoder=True)
+        if layers < 1 or layers > text.num_hidden_layers:
+            raise ValueError(f"layers must be in 1..{text.num_hidden_layers}")
+        text.num_hidden_layers = layers
+        if isinstance(getattr(text, "layer_types", None), list):
+            text.layer_types = text.layer_types[:layers]
     fmt = fp8_format(cfg)
     if fmt is None:
         raise UnsupportedQuantization("checkpoint has no quantization_config")

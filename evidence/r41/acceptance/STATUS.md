@@ -612,3 +612,40 @@ unquantized shells, and the exact W8A8 reference route. Logs/reports are
 Transformers dequantization warning did not describe the actual loaded modules.
 These are host-only checks, not TNCA or board evidence. The lead command remains
 withheld pending the fresh Qwen3.5 TLM result.
+
+## 2026-10-27 (Kimi) — reduced-depth Qwen chat TLM closeout
+
+All three successful SystemC/TLM archives pass `chat_tlm_closeout.py`: VL greedy
+(`tlm-vl-greedy-v8.tgz`, SHA256
+`dd0c4e5d9441e5a2ed9f6d06077418b156e58a8bba58b24c3b20aa61d9384852`),
+VL sampled (`tlm-vl-sample-v1.tgz`, SHA256
+`c9225b66a9433d46f926b1b2eb59a7f80e2f3b8a253776d641eba84f3f2e152a`)
+and four-layer Qwen3.5 greedy (`tlm-q35-v2.tgz`, SHA256
+`659c7852369aac4545d83870ec41631c86020659d0967ec85422d2ff8a90c640`).
+The generated `tlm-summary.json` and `tlm-index.json` retain the raw timings,
+teacher checks, graph/transfer counts and preserved failure/diagnostic.
+
+The fresh Qwen3.5 run exits zero, generates three tokens in two decode steps,
+and passes both teacher-forced argmax and dynamic-floor logit checks. Its steady
+second decode adds no graphs or host reads and performs two writes totaling
+40 bytes. Its actual reduced-depth TLM mean decode is 837.9598828395829 s/token
+(0.0011933745522653353 tokens/s). The reduced-model theoretical weight-stream
+ceiling is 0.802693368029665 tokens/s. These are uncalibrated TLM numbers, not
+physical-board performance or a full-model result. Exact measurements for all
+three runs and the retained fixed-threshold rejection are in `doc/r41_chat.md`.
+
+### Replacement lead-only full-model chat launch (immutable a52fb29 source)
+
+This replaces the 68b9191 command above, which must not be run. After the lead
+alone has loaded the approved run-1 100 MHz image under the existing idle
+procedure, execute on acf3019 (never alongside another U280 job):
+
+```sh
+cd ~/r41_chat_a52fb29
+spec/r41/chat/board_queue.sh "$PWD" "$HOME/r41_chat_a52fb29_out"
+```
+
+The queue uses a 10,800-second execution cap and never programs or resets the
+card. It was prepared, not launched. Full-depth physical generation, actual
+board tokens/s and the X8 transposed-load fault remain open. No card access,
+image loading or image build occurred during this closeout.

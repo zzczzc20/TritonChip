@@ -35,7 +35,10 @@ def main():
     spec['expected_observations']=['all nine original GEMM points retain their frozen independent numerical checks',
         'the isolated control source differs in one file and one method only',
         'old/fixed and fixed/narrow ratios are reported independently; no general wide-tile promotion']
-    spec.pop('expected_counter_changes',None)
+    spec['expected_counter_changes']=[
+        'the old-mapping control restores ACC reads/writes/zeros inside wide-tile K loops',
+        'useful MMA counts stay matched; narrow code remains unchanged',
+        'launch and graph cycles are measured without assuming the repair wins every point']
     batch=copy.deepcopy(base['board_batches']['gemm'])
     configs=[c for c in batch['configurations'] if c.get('arm')=='candidate']
     if len(configs)!=9:raise ValueError('all nine registered wide configurations required')

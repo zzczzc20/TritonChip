@@ -45,3 +45,9 @@ Ordinary torch.compile add, mul, silu, gelu and clone/copy now pass float32 nume
 ## Wide tile routed screen
 
 Tile 0 extracted from the wide-kernel checkpoint passes its free SLR1 routed screen at 10 ns: WNS +0.508 ns, WHS +0.007 ns, zero TNS/THS. It uses 273,894 LUTs, 75,791 FFs, 62 block RAM tiles and 213 DSPs. LUT occupancy is 63.4% of SLR1. Raw timing and utilization are in kernel_wide/tile0_slr1/. This isolates intra-tile placement and routing; it does not prove simultaneous three-tile packing, the static shell, inter-SLR paths, stream-CU coexistence, full-image 100 MHz timing or throughput. Those combined risks remain open before a full-run proposal.
+
+## Actual home window and FP16 operator progress
+
+The real tile uses eight MSHRs and 16 target slots. With that capacity and image-like registered-tag/victim controls, the checked cold-line fixture measures 0.5798 GB/s per home at assumed 100 MHz. Increasing the synthetic window to 16/32 has no effect on its 45,212-cycle completion; the eight-MSHR case has no MSHR-full events. This shows the receiving-stage serialization in this fixture, not a controller or board guarantee. Details and source hashes are in wide_home/windows/.
+
+The standard torch 16,384-element float16 RTL comparison reaches 3.530x add, 3.623x mul, 2.509x silu, 1.898x gelu and 4.150x copy against a block16 legacy fixture, with unchanged numerical checks. The hybrid uses maximum block128 and the small-cache synthetic memory; therefore these are not hardware-only A/B ratios or board acceptance. Matching-block controls and a new integrated HIT_CHAIN kernel screen are running. The new option's unit-routed timing passes, but complete candidate placement, 100 GB/s and all required board speedups remain open.

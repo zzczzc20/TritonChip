@@ -44,9 +44,11 @@ def compare(baseline,candidate):
             raise ValueError('shape/dtype mismatch')
         old,new=a['rtl_device_cycles'][0],b['rtl_device_cycles'][0]
         rows.append(dict(operator=name,shape=a['shape'],dtype=a['dtype'],
-            baseline_rtl_cycles=old,candidate_rtl_cycles=new,rtl_cycle_speedup=old/new,numerics='pass'))
+            baseline_rtl_cycles=old,candidate_rtl_cycles=new,rtl_cycle_speedup=old/new,numerics='pass',
+            baseline_max_block=a.get('max_block'),candidate_max_block=b.get('max_block'),
+            baseline_grids=a.get('grids'),candidate_grids=b.get('grids')))
     return dict(evidence='synthetic-memory-coupled-RTL-comparison',board_speedup_measured=False,
-        acceptance_gate_satisfied=False,scope='five float32 operators only; small cache; no image or board qualification',
+        acceptance_gate_satisfied=False,scope='five matched operators, small-cache RTL; compiler block caps may differ; no board qualification',
         sources={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in (baseline,candidate)},rows=rows)
 
 

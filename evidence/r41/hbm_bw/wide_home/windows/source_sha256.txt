@@ -1,0 +1,3 @@
+ef20c265ee00de1755486c07e606855870254ade22f7b5be20d61812eb64c03e  rtl/nuca/tnca_nuca_slice.v
+3a41fcdcac2e99a1cbfbaa6171c0d5aae034740791fa1beb245bab7159f318c0  tb/nuca/tb_nuca_wide.v
+3c62601bfda427bae26b4b88708ba31b542472b95ead0d5cce99c0be84e1288d  tools/r41/home_window_sweep.py

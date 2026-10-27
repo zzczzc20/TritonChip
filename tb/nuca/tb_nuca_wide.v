@@ -23,6 +23,7 @@ module tb_nuca_wide;
     parameter PRESSURE=0;
     parameter HIT_CHAIN=0;
     parameter RSP_STALL=0;
+    parameter FULL_LINE_TAG=0,REGISTER_VICTIM_SELECT=0,REGISTER_VICTIM_RANK=0;
     parameter SERVICE_MODE=0; // 1: hot reads, 2: streaming reads
     parameter DCO_REGISTERED_RANGES = 0;
     parameter SYNC_TAG_BANK = 1;
@@ -50,10 +51,10 @@ module tb_nuca_wide;
     parameter SET_W      = 4;
     parameter WAYS       = 4;
     parameter WAY_W      = 2;
-    localparam MSHR_N     = 4;
-    localparam MSHR_W     = 2;
-    localparam TARGET_N   = 8;
-    localparam TARGET_W   = 3;
+    parameter MSHR_N     = 4;
+    parameter MSHR_W     = $clog2(MSHR_N);
+    parameter TARGET_N   = 8;
+    parameter TARGET_W   = $clog2(TARGET_N);
     localparam RQ_N       = 8;
     localparam RQ_W       = 3;
     localparam SRC_W      = 4;
@@ -115,7 +116,7 @@ module tb_nuca_wide;
     wire [63:0]             tl_addr;
 
     tnca_nuca_slice #(
-        .HIT_CHAIN(HIT_CHAIN),.CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE),.MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
+        .FULL_LINE_TAG(FULL_LINE_TAG),.REGISTER_VICTIM_SELECT(REGISTER_VICTIM_SELECT),.REGISTER_VICTIM_RANK(REGISTER_VICTIM_RANK),.HIT_CHAIN(HIT_CHAIN),.CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE),.MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(WORD_BITS), .WORD_BYTES(WORD_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),

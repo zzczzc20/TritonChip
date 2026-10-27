@@ -119,8 +119,12 @@ generate for(genvar p=0;p<PORTS;p=p+1)begin:g_ram
 .m_rresp(m_rresp[p*(2)+:(2)]),
 .m_rlast(m_rlast[p*(1)+:(1)]));
 end endgenerate
+wire [N*32-1:0] chained_hits;
 wire [N*32-1:0] fast_accepted,slow_accepted,lsu_retired;
 generate for(genvar c=0;c<N;c=c+1)begin:g_lsu_coverage
+ reg [31:0] chain_count=0;
+ always @(posedge clk)if(!rst)chain_count<=0;else if(dut.shell.u_system.g_tile[c].u_tile.u_slice.hit_chain_take)chain_count<=chain_count+1;
+ assign chained_hits[c*32+:32]=chain_count;
  if(HYBRID_LSU)begin:g_hybrid
   integer seen_vectors=0;
   always @(posedge clk)if($test$plusargs("diagnose") && rst && dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_valid && dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_vector && seen_vectors<10)begin
@@ -196,10 +200,17 @@ initial begin
  end
  if(HYBRID_LSU)begin
   for(integer c=0;c<N;c=c+1)begin
+   $display("HOME CHAIN COVERAGE core=%0d chained=%0d",c,chained_hits[c*32+:32]);
    $display("HYBRID COUPLED core=%0d fast=%0d slow=%0d retired=%0d",c,fast_accepted[c*32+:32],slow_accepted[c*32+:32],lsu_retired[c*32+:32]);
    if(VECTOR_TEST && fast_accepted[c*32+:32]==0)$fatal(1,"vector grid did not exercise compact LSU");
    if(slow_accepted[c*32+:32]==0 || lsu_retired[c*32+:32]!=fast_accepted[c*32+:32]+slow_accepted[c*32+:32])$fatal(1,"hybrid did not drain both paths");
   end
+ end
+ if(HYBRID_LSU && VECTOR_TEST && N>=3)begin: check_chained_hits
+  integer total_chains;
+  total_chains=0;
+  for(integer c=0;c<N;c=c+1)total_chains=total_chains+chained_hits[c*32+:32];
+  if(total_chains==0)$fatal(1,"coupled grid did not exercise chained hits");
  end
  launch(VECTOR_TEST?512:256,12,0);
  for(integer k=0;k<POINTS;k=k+1)word(0,65536+k*8,4096+k,0);

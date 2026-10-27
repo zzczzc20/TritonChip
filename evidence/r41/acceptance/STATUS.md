@@ -551,3 +551,24 @@ requests full-checkpoint VL and Qwen3.5 text generation with direct CPU-W8A8
 teacher forcing. A timeout or failed teacher-forced comparison remains a
 failure, not a partial pass. Physical generation, its measured rate and the X8
 transposed lowering remain unproven. This command was prepared, not launched.
+
+## 2026-10-27 (Kimi) — P2 pipeline audit and P3 evidence review
+
+Re-ran `p2/pipeline_closeout.py` and `p2/pipeline_preflight_closeout.py` against
+the retained archives. The checks pass: 18 functional model rows and four RTL
+rows in the first closeout; 54 timed model samples, two BF16 RTL rows and 113
+unchanged default artifacts in the preflight closeout. Reviewed the actual
+single-role transformation, guarded odd-trip drain, option/cache identity,
+resource accounting and physical-comparison checks. This validates the scoped
+model/RTL evidence only; S2-03.B remains not measured until the lead runs the
+registered physical comparison. No board command was launched.
+
+For P3, verified every indexed member hash in `p0/reference-evidence.tgz`, the
+identity of the archived and published cross-validation reports, and all 1,078
+CPU BF16/FP32 tensor comparisons across 22 teacher-forced steps. The authentic
+24-layer reference and prospective numerical baseline are real. No acceptance
+Codex TNCA full-model implementation or execution archive is present to review.
+All full-model TNCA numerical, state/reset/tail/gating, traffic/capacity and
+physical core/tail items therefore remain open; the FP8 chat driver does not
+close them. Remaining P4 items likewise still require their registered physical
+runs, with D.7 also requiring a persistent full-model session.

@@ -199,13 +199,42 @@ class BaselineKey(unittest.TestCase):
         one = device_task(repo, validation=["p"], platform={"commit": "c" * 40, "paths": []})
         other = device_task(repo, validation=["p"], platform={"commit": "c" * 40, "paths": []}, device="e")
         bigger = device_task(repo, validation=["p"], platform={"commit": "c" * 40, "paths": []}, memory_bytes=1 << 26)
-        keys = {evaluator.baseline_key(t) for t in (one, other, bigger)}
-        self.assertEqual(len(keys), 3)
+        drained = device_task(repo, validation=["p"], platform={"commit": "c" * 40, "paths": []}, drain_cycles=500)
+        keys = {evaluator.baseline_key(t) for t in (one, other, bigger, drained)}
+        self.assertEqual(len(keys), 4)
         # A single-core task's key is what it was, so the bases kept for it stay valid.
         single = dataclasses.replace(one, evaluation={k: v for k, v in one.evaluation.items() if k != "device"})
         self.assertEqual(evaluator.baseline_key(single),
                          f"{single.base_commit[:12]}-core-vrf-sync-v5-"
                          f"{hashlib.sha256(json.dumps([['p'], []]).encode()).hexdigest()[:8]}-obs{'c' * 12}")
+
+    def test_another_machine_is_measured_not_given_a_kept_base(self):
+        # Two tasks alike but for the machine they name: the second is measured
+        # on its own machine and kept in a file of its own, never handed the
+        # first one's cycles; the first, asked again, is read back.
+        repo = device_repo()
+        one = device_task(repo, validation=["p"], platform={"commit": "c" * 40, "paths": []})
+        other = dataclasses.replace(one, evaluation={**one.evaluation, "device": "e"})
+        cycles, measured = {"d": 1000, "e": 3000}, []
+
+        def trees(repo, task, candidate, work):
+            for tree in ("host-tree", "device-tree"):
+                (work / tree).mkdir(parents=True)
+            return work / "host-tree", work / "device-tree"
+
+        def measure(site, host, dev, task, *_):
+            measured.append(task.evaluation["device"])
+            return {"exit": 0, "missing": [],
+                    "points": {"p": {"status": "pass", "cycles": cycles[task.evaluation["device"]]}}}
+
+        site = types.SimpleNamespace(state_dir=Path(tempfile.mkdtemp()))
+        with mock.patch.object(evaluator, "_trees", side_effect=trees), \
+                mock.patch.object(evaluator, "_measure_trees", side_effect=measure):
+            got = [evaluator.baseline(site, repo, t) for t in (one, other, one)]
+        self.assertEqual([g["points"]["p"]["cycles"] for g in got], [1000, 3000, 1000])
+        self.assertEqual(measured, ["d", "e"])
+        self.assertEqual(sorted(p.name for p in (site.state_dir / "baselines").glob("*.json")),
+                         sorted(f"{evaluator.baseline_key(t)}.json" for t in (one, other)))
 
 
 class DeviceCheck(unittest.TestCase):

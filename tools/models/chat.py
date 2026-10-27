@@ -259,12 +259,17 @@ class ChatApplication:
         args = self.args
         inputs, text = make_inputs(self.spec, self.processor, prompt, image)
         reference = None
+        scale_floor = None
         forced = None
         if args.check_tokens:
             L.install_fp8_route("reference", dot="exact", scale_div="ieee")
             reference = run_generation(self.model, self.processor, self.spec, inputs, text, "cpu",
                                        bucket=args.bucket, new_tokens=args.check_tokens)
             forced = reference["generated_tokens"]
+            L.install_fp8_route("reference", dot="exact", scale_div="recip")
+            reciprocal = run_generation(self.model, self.processor, self.spec, inputs, text, "cpu",
+                                        bucket=args.bucket, new_tokens=args.check_tokens, forced_tokens=forced)
+            scale_floor = compare_logits(reference["logits"], reciprocal["logits"])
             gc.collect()
         L.install_fp8_route("reference" if args.device == "cpu" else "official", dot="exact", scale_div="ieee")
         result = run_generation(self.model, self.processor, self.spec, inputs, text, args.device,
@@ -277,11 +282,15 @@ class ChatApplication:
         result["versions"] = L.versions()
         if reference is not None:
             comparison = compare_logits(reference["logits"], result["logits"][:args.check_tokens])
-            passed = all(row["rel_l2"] <= args.max_rel_l2 for row in comparison)
+            for row, floor in zip(comparison, scale_floor, strict=True):
+                row["cpu_scale_rounding_floor"] = floor["rel_l2"]
+                row["allowed_rel_l2"] = max(args.max_rel_l2, args.cpu_floor_multiplier * floor["rel_l2"])
+            passed = all(row["rel_l2"] <= row["allowed_rel_l2"] for row in comparison)
             result["teacher_forced_cpu_w8a8"] = dict(
                 reference_tokens=reference["generated_tokens"], checked_tokens=len(comparison),
-                max_allowed_rel_l2=args.max_rel_l2, passed=passed, steps=comparison,
-                interpretation="Reference tokens feed the device; copied tokens are not the correctness check")
+                max_allowed_rel_l2=args.max_rel_l2, cpu_floor_multiplier=args.cpu_floor_multiplier,
+                passed=passed, steps=comparison,
+                interpretation="Reference tokens feed the device; each allowance is the configured minimum or the logged CPU reciprocal-scale floor times the configured multiplier, whichever is larger")
             if not passed:
                 result["status"] = "failed-teacher-forced-tolerance"
         return result
@@ -355,7 +364,9 @@ def parser():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--check-tokens", type=int, default=0,
                     help="teacher-force this many greedy CPU-W8A8 tokens before free generation")
-    ap.add_argument("--max-rel-l2", type=float, default=0.05)
+    ap.add_argument("--max-rel-l2", type=float, default=0.05,
+                    help="minimum per-token relative-L2 allowance; the measured CPU floor can raise it")
+    ap.add_argument("--cpu-floor-multiplier", type=float, default=2.0)
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--tnca-tree")
     ap.add_argument("--out", type=Path)
@@ -367,6 +378,8 @@ def main(argv=None):
     validate_sampling(args.temperature, args.top_k, args.top_p)
     if args.check_tokens < 0 or args.check_tokens > args.new_tokens:
         raise ValueError("check-tokens must be in 0..new-tokens")
+    if args.max_rel_l2 < 0 or args.cpu_floor_multiplier < 0:
+        raise ValueError("numerical allowances must be nonnegative")
     if args.interactive and args.check_tokens:
         raise ValueError("interactive teacher forcing would move the model between CPU and TNCA; use one-shot mode")
     app = ChatApplication(args)

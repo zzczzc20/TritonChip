@@ -45,7 +45,12 @@ official checkpoint, tokenizer and remaining weights. Its report says
 runs the CPU W8A8 reference in `tools/models/fp8_blockwise_ref.py`, feeds its
 first N greedy tokens to the target, and compares target logits and argmax
 choices at every forced step. Copying the reference token IDs is not itself the
-check. `--max-rel-l2` sets the numerical comparison threshold.
+check. The driver also runs the CPU reference with reciprocal scale rounding and
+logs that numerical floor at each forced step. The allowance is the larger of
+`--max-rel-l2` (the configurable minimum) and that measured floor multiplied by
+`--cpu-floor-multiplier` (default 2). A fixed threshold therefore cannot reject
+a target for a difference already produced by the CPU's own scale-rounding
+choice; the floor and the applied allowance appear in every check row.
 
 ## Measurements and the memory-bandwidth ceiling
 

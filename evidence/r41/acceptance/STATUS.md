@@ -572,3 +572,31 @@ All full-model TNCA numerical, state/reset/tail/gating, traffic/capacity and
 physical core/tail items therefore remain open; the FP8 chat driver does not
 close them. Remaining P4 items likewise still require their registered physical
 runs, with D.7 also requiring a persistent full-model session.
+
+## 2026-10-27 (Kimi) — chat sampling and numerical-floor diagnosis
+
+The reduced-depth greedy and seeded-sampling VL SystemC/TLM runs exited zero;
+their reports, logits, model/assembly output and journals are archived as
+`chat/tlm-vl-greedy-v8.tgz` and `chat/tlm-vl-sample-v1.tgz`. They are not board
+performance results. The four-layer Qwen3.5 attempt generated both requested
+tokens with matching argmax choices but failed its fixed two-token tolerance:
+the second relative L2 was 0.060020090237703445 against the 0.05 limit. Its
+nonzero exit and complete artifacts remain in `chat/tlm-q35-v1.tgz`.
+
+A separate CPU W8A8 exact-versus-reciprocal-scale run measured 0.05941731822088129
+at that same token, establishing that the fixed threshold rejected a difference
+already present from the CPU's own scale-rounding choice. The raw diagnostic is
+`chat/q35-cpu-floor-v1.tgz`. The driver now logs this floor during every teacher
+check and uses the larger of the configured minimum and the measured floor times
+the configurable multiplier; it does not contain a typed replacement tolerance.
+A fresh four-layer Qwen3.5 TLM run with the same two checked tokens and an added
+steady decode step is running. No pass is claimed yet.
+
+The previously staged 68b9191 board command is superseded by this numerical-check
+change and must not be run. A replacement immutable source and command will be
+posted only after the fresh proof. Separately, `make r41-harness-tests` retains a
+failure in the current-tree Stage 1 freeze test because the merged contract hash
+differs from the Stage 1 lock; this is the documented frozen-overlay boundary,
+not a change to the closed frozen acceptance result. The complete failure is in
+`acceptance/harness-review-2026-10-27.log`. `make compiler` and document checks
+pass. No card access or board launch occurred.

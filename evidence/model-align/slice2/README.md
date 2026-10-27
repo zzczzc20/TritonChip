@@ -12,6 +12,8 @@ Files: `three_cores_uncore_replay_vs_rtl.json` (op.add and matmul with `--active
 sides: the three core traces and the uncore trace of each), `board_uncore_replay_vs_rtl.json` (op.add
 with three active cores on the board-top bench, `record_rtl.py --bench board`, replayed with
 `r40-boardbench-cycle.cfg`: the board's links, dispatch stages and AXI adapters, UNCORE_TIMING_BOARD.md),
+`board_ports3_uncore_replay_vs_rtl.json` (the same bench and points recorded with the image's own memory mode,
+`TNCA_RTL_MEM_PORTS=3 TNCA_RTL_OUTSTANDING=8` on both sides: three outlets, eight lines in flight per adapter),
 `tiny_uncore_replay_vs_rtl.json` (the whole tiny tier of `spec/r40/suites/existing.json`, 27 points, one active core).
 
 ## What the tables say
@@ -34,7 +36,13 @@ with three active cores on the board-top bench, `record_rtl.py --bench board`, r
   single issue register. The recording runs in the runtime's default memory mode, which both sides
   take from run_graphs.py's RUNTIME knobs (`TNCA_RTL_MEM_PORTS=1`, `TNCA_RTL_OUTSTANDING=1`): all
   three homes share outlet 0 through the port arbiter and the adapter admits one line at a time, so
-  that is what the model's `active_outlets=1`, `outstanding=1` describe. Found on the way: a replayed
+  that is what the model's `active_outlets=1`, `outstanding=1` describe. The image's own mode, three outlets
+  (home h on port h, no arbiter) with eight lines admitted per adapter, recorded with those knobs set to 3 and 8
+  on both sides, aligns exactly too (`board_ports3_uncore_replay_vs_rtl.json`: op.add 36/12/10 launches, a
+  different distribution from the single-port run's 37/11/10, and matmul 28). What that replay validates: every
+  stream inside the adapters, and that the model's adapter never accepts later than the recording; an adapter
+  that would accept EARLIER than the RTL is held to the recorded cycle, so admission is confirmed in one
+  direction only (the prediction run is the other). Found on the way: a replayed
   read's slot is free in the cycle of its recorded response (released at the final beat's edge).
   Assumption behind both benches: no cache-maintenance command occurs between launches (the bench's
   host words go through the homes, so nothing needs flushing); the cycle uncore has no maintenance
@@ -206,6 +214,21 @@ Verdict: **aligned** (all 4 point(s) equal in every compared stream). Points 4, 
 | op.add_tiny_fp16-n1000.core1 | 11/11 | 11970 | 11970 | +0.00% | equal | equal |
 | op.add_tiny_fp16-n1000.core2 | 10/10 | 12131 | 12131 | +0.00% | equal | equal |
 | op.add_tiny_fp16-n1000.uncore | 58/58 | | | | slice: equal / equal | port: equal / equal |
+
+### Board-top bench, three active cores, three outlets / eight outstanding, uncore replay at the adapters
+
+Verdict: **aligned** (all 8 point(s) equal in every compared stream). Points 8, aligned 8, diverged 0, missing 0; |cycle error| median 0.0%, p95 0.0%.
+
+| point | launches equal | cycles RTL | cycles model | error | first issue divergence | first request divergence |
+|---|---:|---:|---:|---:|---|---|
+| op.add_tiny_fp16-n1000 | 36/36 | 21021 | 21021 | +0.00% | equal | equal |
+| op.add_tiny_fp16-n1000.core1 | 12/12 | 9513 | 9513 | +0.00% | equal | equal |
+| op.add_tiny_fp16-n1000.core2 | 10/10 | 8795 | 8795 | +0.00% | equal | equal |
+| op.add_tiny_fp16-n1000.uncore | 58/58 | | | | slice: equal / equal | port: equal / equal |
+| op.matmul_tiny_fp16-m16-k32-n16 | 28/28 | 23712 | 23712 | +0.00% | equal | equal |
+| op.matmul_tiny_fp16-m16-k32-n16.core1 | 0/0 | 0 | 0 | +0.00% | equal | equal |
+| op.matmul_tiny_fp16-m16-k32-n16.core2 | 0/0 | 0 | 0 | +0.00% | equal | equal |
+| op.matmul_tiny_fp16-m16-k32-n16.uncore | 28/28 | | | | slice: equal / equal | port: equal / equal |
 
 ### Board-top bench, three active cores, prediction (no replay: the model's deterministic AXI slave)
 

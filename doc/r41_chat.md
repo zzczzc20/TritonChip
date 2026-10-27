@@ -8,12 +8,15 @@ optional image are supported; the board preflight is text-only.
 
 ## Usage
 
-The Hugging Face cache must contain the pinned snapshots. Set `HF_HOME` and
-`HF_HUB_OFFLINE=1`, and use the Torch/Transformers environment already used by
-`tools/models/qwen_tnca_layers.py`.
+The Hugging Face cache must contain the pinned model and Hub-kernel snapshots.
+Set `HF_HOME`, and use the Torch/Transformers environment already used by
+`tools/models/qwen_tnca_layers.py`. The current GB10 launcher uses
+`HF_HUB_OFFLINE=0` to resolve the staged Hub-kernel version; strictly offline
+resolution was refused and that failure is preserved. The FPGA preparation uses
+the previously validated offline environment.
 
 ```sh
-python tools/models/chat.py --model vl --device tnca \
+TNCA_PROFILE=core-vrf-sync-v5 python tools/models/chat.py --model vl --device tnca \
   --prompt "Hello. Introduce yourself briefly." --new-tokens 32 --bucket 256 \
   --out OUT
 ```

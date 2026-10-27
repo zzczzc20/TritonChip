@@ -528,3 +528,26 @@ reference directory. `spec/r41/chat/board_queue.sh` delegates to the bounded
 programs or resets the card. Card-free manifest preparation, shell syntax,
 88-document checks and `make compiler` (157 passes, 53 skips; MLIR unavailable)
 pass. No board job, card access, image load or full-image build was started.
+
+### Prepared lead-only full-model chat launch (immutable 68b9191 source)
+
+Commit 68b9191 is staged at `~/r41_chat_68b9191` on acf3019. All 3,863 tracked
+files match their Git blob identities, with zero mismatches; the queue's
+card-free preparation check passes. Verification records are in
+`evidence/r41/chat/staged-*-68b9191.json`. No card was opened.
+
+After the lead alone has loaded the approved run-1 100 MHz image under the
+existing idle/programming procedure, execute on acf3019 (never alongside another
+U280 job):
+
+```sh
+cd ~/r41_chat_68b9191
+spec/r41/chat/board_queue.sh "$PWD" "$HOME/r41_chat_68b9191_out"
+```
+
+The wrapper uses `acceptance_queue.py` with its 10,800-second execution cap;
+idle waiting is additional. It never programs or resets the card. The manifest
+requests full-checkpoint VL and Qwen3.5 text generation with direct CPU-W8A8
+teacher forcing. A timeout or failed teacher-forced comparison remains a
+failure, not a partial pass. Physical generation, its measured rate and the X8
+transposed lowering remain unproven. This command was prepared, not launched.

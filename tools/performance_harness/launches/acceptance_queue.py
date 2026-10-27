@@ -42,16 +42,20 @@ def main():
     p.add_argument('--python',type=Path,default=Path(sys.executable))
     p.add_argument('--manifest',type=Path,action='append',required=True)
     p.add_argument('--check-only',action='store_true')
+    p.add_argument('--budget-seconds',type=float,default=10800,help='total execution budget across manifests; idle waits excluded')
     a=p.parse_args()
     a.root=a.root.resolve();a.out=a.out.resolve();a.python=a.python.resolve()
+    if not 0 < a.budget_seconds <= 10800:raise ValueError('queue budget must be positive and at most three hours')
     specs=[]
     for name in a.manifest:
         path=name if name.is_absolute() else a.root/name
         spec=json.loads(path.read_text())
         if not spec.get('steps') or not any(s['kind']=='fpga' for s in spec['steps']):raise ValueError('board manifest required')
         board=spec['board']
-        if board['image_sha256']!='30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de' or board['clock_hz']!=100000000:
-            raise ValueError('only already-approved run-1 image at 100 MHz is admitted')
+        approved={('30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de',100000000),
+                  ('a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083',90000000)}
+        if (board['image_sha256'],board['clock_hz']) not in approved:
+            raise ValueError('only already-approved B40/90 or run-1/100 images are admitted')
         specs.append((path,spec))
     if a.check_only:
         print(json.dumps(dict(status='prepared-only',manifests=[str(p) for p,_ in specs],card_access=False)))
@@ -61,7 +65,9 @@ def main():
     import fcntl
     with (a.out/'queue.lock').open('w') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        remaining=a.budget_seconds
         for manifest,spec in specs:
+            if remaining<=0:raise RuntimeError('queue execution budget exhausted')
             home=str(Path.home())
             def resolve(value):
                 path=Path(value.format(root=a.root,home=home,out=a.out,python=a.python))
@@ -72,9 +78,11 @@ def main():
             wait_idle(lambda:experiment.sysfs_probe(declared),board)
             target=a.out/spec['id']
             command=[str(a.python),str(a.root/'tools/performance_harness/experiment.py'),str(manifest),
-                     '--root',str(a.root),'--out',str(target),'--python',str(a.python)]
+                     '--root',str(a.root),'--out',str(target),'--python',str(a.python),'--budget-seconds',str(remaining)]
+            started=time.monotonic()
             with (a.out/(spec['id']+'.log')).open('a') as log:
                 subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,check=True)
+            remaining-=time.monotonic()-started
             result=json.loads((target/'report.json').read_text())
             if result['status']!='completed-experiment':raise RuntimeError(f"{spec['id']}: {result['status']}")
         (a.out/'DONE').write_text('commands completed; per-point acceptance still required\n')

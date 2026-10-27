@@ -131,3 +131,45 @@ Neither option permits relabeling missing Required work as passed.
 `make r41-stage2-acceptance PYTHON=python3` and
 `make r41-acceptance PYTHON=python3` reproduce the non-acceptance judgment;
 nonzero exit is expected while these obligations remain open.
+
+## P1 corrective preflight — 2026-10-27
+
+The banked X8 scheduling map and later-fragment affine proof/deferral causes
+are corrected. Archived real GB10 runs validate 32 bitwise SystemC cases, eight
+small bitwise RTL cases and 32 model sensitivity cases. All 113 original
+points compile with unchanged default artifacts across the profile correction
+and frontend correction. Evidence: `evidence/r41/acceptance/p1/README.md`,
+`metrics.json`, `index.json` and the raw archives in that directory.
+
+Aligned wide GEMM improves in the model; tail cases remain slower. No board
+failure is upgraded. Sensitivity is uncalibrated and does not isolate every
+RTL candidate, so that obligation remains not measured. Matched GEMM, policy
+leave-one-out and shared-artifact 90/100 MHz manifests are prepared and locally
+checked. Only the lead may launch them on the shared card. Stage 2 and R41
+remain not accepted: 32 passed, two failed, 52 not measured, eight blocked.
+
+P1 service/queue follow-up: three current-source standard Torch service
+configurations and eight bitwise queue-depth comparison rows pass. The bounded
+S2-02.B Study now passes with a negative decision: admission differs from
+setup/transfer overlap, which remains serialized; no throughput gain is claimed.
+Current ledger: 33 passed, two failed, 51 not measured, eight blocked.
+The lead-only queue caps all manifest execution together; the planned 100/90
+MHz allocations total three hours. Evidence is in p1/service-transfer.tgz.
+
+## P1 bounded Study closeout — 2026-10-27
+
+The home/core-service resource and admission study is delivered with current
+standard Torch observations and retained F07 semantic/physical evidence. The
+per-candidate sensitivity follow-up supplies 48 bitwise native rows across
+12 core-pipeline configurations, verifies each executed one-factor change
+and unchanged artifact/output identities, and separately checks four archived
+X8 capability point pairs. Both Study obligations pass with negative or
+inconclusive decisions. This does not establish isolated physical candidate
+gains, unbounded fairness, final-source X8 acceptance, or a board speedup.
+
+Evidence and limitations: `evidence/r41/acceptance/p1/memory-service-study.md`
+and `evidence/r41/acceptance/p1/candidate-sensitivity/README.md`, their derived
+metrics/indexes and raw archives. The earlier grouped-only sensitivity judgment
+is superseded. Current ledger: **35 passed, two failed, 49 not measured, eight
+blocked**. Required integrated board comparisons await the lead commands in
+STATUS.md. Stage 2 and overall R41 remain not accepted. P2 is next.

@@ -58,6 +58,8 @@ def verify(root,registry_check=True):
         if len(doc['points'])!=suite['points']:raise ValueError('original inventory incomplete')
         for p in doc['points']:inventory[p['id']]=p['sha256']
     if registry_check:
+        import sys
+        sys.path.insert(0,str(root))
         from archbench import registry
         for name,sha in inventory.items():
             if registry.get(name).definition_sha256()!=sha:raise ValueError('original registry changed')

@@ -147,3 +147,127 @@ current integrity-checked ledger has 32 passed, 2 failed, 52 not measured,
 8 blocked. No literal cycle number is substituted for a run. Three new
 unit-test fixtures initially omitted the importer use graph; the fixtures
 were corrected and all eight proof/safety tests rerun successfully.
+
+## P1 corrective preflight archived — 2026-10-27
+
+Verified terminal success of GB10 r41-accept-p1-rtl-v3 and sensitivity units.
+Raw reports/configurations and hashes are in p1/; closeout.py verifies 32 model,
+eight RTL and 32 sensitivity numeric rows. The full 113-point compile audits
+show unchanged default artifacts. Tail wide GEMM still loses in the model;
+prior board failures remain failures. Per-candidate sensitivity is still not
+measured: grouped uncalibrated parameter changes are insufficient for that gate.
+Both acceptance reports and the ledger were rejudged; counts remain
+32 passed / 2 failed / 52 not measured / 8 blocked, integrity passed.
+
+Four P1 board manifests and a bounded waiting queue pass local preparation
+checks. No shared-card job or image build was started. Next step: stage this
+milestone's immutable source and the 21c40aa control on the FPGA host using
+CPU-only file transfer, write concrete lead launch commands here, then finish
+P1 candidate coverage before P2. The lead must load the named approved image
+and start each campaign; never run the 90 MHz and 100 MHz queues together.
+
+P1 follow-up: fresh current-source service and queue runs complete successfully;
+raw archives now include three standard Torch service configurations and eight
+bitwise queue comparison rows. No queue-throughput gain is selected. Corrected
+the queue budget to cap execution across all manifests, with 9,000 seconds for
+the 100 MHz set and 1,800 seconds for the 90 MHz set (three hours total).
+Next: stage the revised bounded launcher, verify immutable files on acf3019,
+and publish concrete lead commands. Source transfer handle remains live; no
+board job was launched.
+
+### Prepared lead-only launch commands (bounded launcher bbbf607)
+
+All 3,757 tracked files of commit bbbf607 in `~/r41_accept_bbbf607` on acf3019
+match their Git blob identities. CPU-only queue preparation passes. No card
+was opened. The pre-fix control transfer to `~/r41_accept_control_21c40aa`
+is still being verified; GEMM must wait for its confirmation below.
+
+The lead (Claude) must start these measurements because this agent is forbidden
+from starting shared-U280 work. They remeasure the failed wide-GEMM hypothesis
+after its compiler causes were corrected, and obtain policy/migration evidence.
+They do not request a new image or consume a full-image run.
+
+After the lead has loaded the approved run-1 100 MHz image using the existing
+idle/programming procedure, execute on acf3019:
+
+```sh
+cd ~/r41_accept_bbbf607
+setsid nohup ~/tc_env/torchenv/bin/python tools/performance_harness/launches/acceptance_queue.py --root "$PWD" --out ~/r41_accept_p1_100_bbbf607 --python ~/tc_env/torchenv/bin/python --budget-seconds 9000 --manifest spec/r41/stage2/acceptance/s2-p1-gemm.json --manifest spec/r41/stage2/acceptance/s2-p1-policy.json --manifest spec/r41/stage2/acceptance/s2-p1-shared-100.json > ~/r41_accept_p1_100_bbbf607.log 2>&1 < /dev/null &
+```
+
+Separately, with the approved B40 90 MHz image loaded by the lead:
+
+```sh
+cd ~/r41_accept_bbbf607
+setsid nohup ~/tc_env/torchenv/bin/python tools/performance_harness/launches/acceptance_queue.py --root "$PWD" --out ~/r41_accept_p1_90_bbbf607 --python ~/tc_env/torchenv/bin/python --budget-seconds 1800 --manifest spec/r41/stage2/acceptance/s2-p1-shared-90.json > ~/r41_accept_p1_90_bbbf607.log 2>&1 < /dev/null &
+```
+
+Run sequentially, never concurrently. Total execution allowance is 10,800
+seconds; idle waits are additional. A timeout preserves failure and requires a
+new lead budget decision, not an automatic restart. The queue never programs
+or resets; it verifies the loaded image after 900 consecutive idle seconds.
+The 100 MHz set contains 27 GEMM configurations, 15 policy configurations and
+three shared-profile points; the 90 MHz set has three shared-profile points.
+If the bound expires, retain incomplete points as not measured. Verify actual
+artifact hashes match across images; this measures joint hardware/frequency
+migration, not isolated hardware gain. Prior board failures remain failures.
+
+Remaining agent work is not declared lead-blocked: finish per-candidate P1
+sensitivity coverage/limitations and home/core-service closure, then implement
+P2 locality and pipeline obligations before proceeding through P3–P6. Current
+judgment is 33 passed, two failed, 51 not measured, eight blocked. Only the
+prepared board measurements and historical freeze disposition presently need
+the lead. No full image run was started; four of five remain lead-controlled.
+
+Control transfer is now complete and verified: all 3,722 tracked files of
+21c40aa match Git blob identities, zero mismatches. The GEMM preparation
+dependency above is cleared. Both staged trees are immutable; later status
+commits do not alter them. Raw source-verification summaries are in p1/.
+Both acceptance targets were rerun and correctly reject outstanding gates;
+evidence integrity and six checker refusal tests pass. Next agent action:
+finish the P1 per-candidate sensitivity coverage/decision ledger and bounded
+home/core-service study, without duplicating the hbm_bw owner's RTL work.
+Then proceed to P2; P2–P6 remain engineering work, not lead-only blockers.
+
+## P1 Study closeout — 2026-10-27
+
+The current-source service study and per-candidate sensitivity/decision ledger
+are delivered. V1 M1-domain and authoritative V2 core-pipeline sensitivity jobs
+both terminated successfully on GB10. V2 supplies 48 bitwise rows across 12
+configurations; actual configuration differences, source/artifact/output hashes
+are checked, and four original X8 FP8 model point pairs are rechecked separately.
+Bounded negative/inconclusive studies close S2-02.A and S2-02.D.sensitivity;
+physical candidate gains and unbounded fairness are not inferred from proxies.
+See p1/memory-service-study.md and p1/candidate-sensitivity/README.md.
+
+Current ledger: 35 passed / 2 failed / 49 not measured / 8 blocked. Required
+P1 board comparisons remain awaiting the exact lead commands above; no agent
+card access or image work occurred. Historical failures stay failed. No extra
+full-image run is requested. The staged bbbf607 source/control remain immutable;
+these new evidence-only files do not change their software identities.
+
+Next agent step: P2, implement generic graph-level storage/alias/lifetime
+locality consumption and execute two real standard Torch graphs with off/on
+ownership/fault tests, then fixed-budget pipeline and resource studies. Keep
+locality default-off and refuse unsupported backends; never use MockSession
+or literal numeric measurements as acceptance evidence. All board-dependent
+P2 results will receive locally tested manifests and lead-only launch commands.
+
+## P2 implementation checkpoint — 2026-10-27
+
+Generic locality planning now follows actual Session-owned storage handles,
+coalesces views/declared aliases, records captured first/last uses and refuses
+forged/stale/over-capacity bindings. Seven metadata-safety tests pass using real
+Sessions and loaded AOT artifacts; they are not numerical acceptance evidence.
+The opt-in native Graph.replay(locality=True) uses only metadata AOT helpers
+for existing TMU LRU/range controls, then the original captured Inductor
+numerical artifacts. Dead and bypass hints remain disabled because global
+reader/writer completeness is unproved. Default replay behavior is unchanged.
+
+GB10 r41-accept-p2-rtl-v1 is the first two-standard-Torch-graph off/on/off
+functional attempt through the real board-top MMIO RTL simulator (no physical
+card): source ~/r41-accept-p2-v1, log ~/r41-accept-p2/rtl-v1.log, output
+~/r41-accept-p2/rtl-v1. CPU set 0–5, 12 GiB maximum, one-hour stop bound. No P2
+judgment has been upgraded. Next: inspect this exact unit and preserve any
+failure, complete ownership/fault coverage and collect actual traffic/latency,
+then prepare lead-only board manifests and fixed-budget pipeline comparisons.

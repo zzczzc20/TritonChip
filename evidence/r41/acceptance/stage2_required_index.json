@@ -2,7 +2,7 @@
   "schema": "tnca-r41-stage2-required-index/1",
   "contract": "doc/r41_tasks_and_acceptance.md",
   "contract_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
-  "scope": "Initial audit plus P0 prospective freeze and P8 measured follow-up, 2026-10-26; historical process failures remain.",
+  "scope": "Audit plus P0 prospective freeze, P8 measured follow-up and P1 corrective/study closeout, 2026-10-27; historical failures remain.",
   "statuses": [
     "passed",
     "failed",
@@ -278,26 +278,32 @@
     {
       "id": "S2-02.A",
       "requirement": "Bounded home-slice/core-service study",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage2/roofline/README.md",
-        "evidence/r41/stage1/board/metrics.json"
+        "evidence/r41/acceptance/p1/memory-service-study.md",
+        "evidence/r41/acceptance/p1/metrics.json",
+        "evidence/r41/acceptance/p1/index.json",
+        "evidence/r41/stage1/memory_service.md",
+        "evidence/r41/stage2/candidates/F07/functional_report.json",
+        "evidence/r41/stage1/f07_ooc/README.md"
       ],
-      "reason": "Service bottleneck evidence exists; complete Stage 2 candidate sensitivity/semantic/physical/decision bundle is absent. Separate r41-hbm-bw workstream owns next image.",
-      "closure_plan": "P1"
+      "reason": "Bounded home/core service Study delivered: current-source standard Torch depth/outlet runs, ownership/counter identities, separate lookup/miss/admission and bounded queue/resource audit, F07 semantic/physical references, and a conservative no-new-throughput-candidate decision. Unbounded fairness and physical throughput are not claimed; the separate hbm_bw workstream is not substituted for acceptance.",
+      "closure_plan": null
     },
     {
       "id": "S2-02.B",
       "requirement": "Distinguish command admission, setup overlap, transfer overlap and critical-path gain",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage1/board/metrics.json",
-        "evidence/r41/stage2/integration/README.md"
+        "evidence/r41/acceptance/p1/README.md",
+        "evidence/r41/acceptance/p1/metrics.json",
+        "evidence/r41/acceptance/p1/index.json",
+        "tools/performance_harness/systemc/include/tnca_tensor_engine.hpp"
       ],
-      "reason": "Admission evidence does not measure physical transfer overlap; a queue alone cannot close a throughput claim.",
-      "closure_plan": "P1"
+      "reason": "Bounded negative study distinguishes admitted immutable commands from execution: actual queue-depth 1/2 artifact runs pass eight bitwise rows, with mixed makespan changes; the single controller serializes setup and transfer. No transfer-overlap or throughput optimization is selected. This closes the Study distinction, not a physical throughput claim.",
+      "closure_plan": null
     },
     {
       "id": "S2-02.C",
@@ -338,15 +344,15 @@
     {
       "id": "S2-02.D.sensitivity",
       "requirement": "Each candidate: SystemC sensitivity",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage2/candidates/F09/README.md",
-        "evidence/r41/stage2/integration/README.md",
-        "evidence/r41/stage2/roofline/README.md"
+        "evidence/r41/acceptance/p1/candidate-sensitivity/README.md",
+        "evidence/r41/acceptance/p1/candidate-sensitivity/metrics.json",
+        "evidence/r41/acceptance/p1/candidate-sensitivity/index.json"
       ],
-      "reason": "Physical timing screens and pre/post RTL do not supply a complete SystemC sensitivity set.",
-      "closure_plan": "P1"
+      "reason": "Per-candidate bounded SystemC Study delivered: 12 configurations/48 bitwise standard Torch rows with core-pipeline model, exact one-factor executed-configuration checks and unchanged artifact/output hashes; four original X8 FP8 point pairs rechecked separately. Physical retiming effects remain inconclusive and proxies are not RTL counterfactuals; no per-candidate gain or board pass is inferred. This supersedes incomplete grouped-only coverage.",
+      "closure_plan": null
     },
     {
       "id": "S2-02.D.semantics",
@@ -391,9 +397,12 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage2/integration/audit/README.md"
+        "evidence/r41/stage2/integration/audit/README.md",
+        "evidence/r41/acceptance/p1/README.md",
+        "evidence/r41/acceptance/p1/metrics.json",
+        "evidence/r41/acceptance/p1/index.json"
       ],
-      "reason": "Original-suite migration is measured, but candidate-isolated or grouped causal board comparisons do not cover all integrated mechanisms.",
+      "reason": "Original-suite migration is measured, but candidate-isolated or grouped causal board comparisons do not cover all integrated mechanisms. P1 corrective preflight now has real model/RTL observations and prepared matched board manifests. Uncalibrated grouped parameter perturbations do not close every-candidate sensitivity; new board measurements have not been launched.",
       "closure_plan": "P1"
     },
     {
@@ -1189,8 +1198,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "2ea43482f7a80d9ecc1eab21700c8caa6225ef7ea725bfeebcb74e08c67ac039",
-    "doc/r41_stage2_report.md": "0691363a9caa6a96c8f2786b4d147ae6c41a4e88e53afd5e814d7a1422e06138",
+    "doc/r41_report.md": "558231fd106cb50525ca3ce17b9aa947e57a0d485102b18ce440275438282412",
+    "doc/r41_stage2_report.md": "bc24b6a32640df9af28b455da76efec207809cb53c6d6806009562d20fc9ee49",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "04350417d681c7a3bd90fdbe5b0240c5ebf0e8b27d1c14a9b07e14a72ee59a7e",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1226,7 +1235,18 @@
     "spec/r41/stage2/xl_core.json": "0b5d7d477bfd781bfef214c9256aeef7b319ce2571addcd91afdac8cf08bcbe6",
     "evidence/r41/acceptance/p8/board-records.tgz": "a44913d53a6a5e3edf26687628b88d7b7ebf881aef2ca877089ae6eb3631b671",
     "evidence/r41/acceptance/p8/environment.json": "94f4dab5565c7e842dbe3d280266fec49b3037158968c75d06d84beb869fee58",
-    "evidence/r41/acceptance/p8/metrics.json": "e1bfe3a624aa8c98bf5f024f93fba4e4f572a7eca166fe4c5f951890317ef0b5"
+    "evidence/r41/acceptance/p8/metrics.json": "e1bfe3a624aa8c98bf5f024f93fba4e4f572a7eca166fe4c5f951890317ef0b5",
+    "evidence/r41/acceptance/p1/README.md": "0b4e7578fc3d57293be7ef486079ce4406f6cbf3cbeba042b823d5a30a01b397",
+    "evidence/r41/acceptance/p1/metrics.json": "2bb2a63c0ef499a3d77d7cb4bf2e5abbd764588163175921730ae9c5d9efe796",
+    "evidence/r41/acceptance/p1/index.json": "d3f19d4ce93c4c1ac62c2ad9ce9b2d56280fb954d4d83339aa8c445f2432eb5f",
+    "tools/performance_harness/systemc/include/tnca_tensor_engine.hpp": "46efa44368b4b3e3654c2646a8d418f9f02e3bfb87b106707c9b1e32ff8b0ee7",
+    "evidence/r41/acceptance/p1/candidate-sensitivity/README.md": "48c41c97f5b51bf7213cf301a5ce678e5d3ff087778f514dd3664fb41b703068",
+    "evidence/r41/stage1/f07_ooc/README.md": "245343198105787ec30a3b5ad8202b85e6eb7bb2ac44cfe96abfcb389080018a",
+    "evidence/r41/stage1/memory_service.md": "63c8ad43a0e6a194817e3b9821ffab9097032a5177bf22d38de86f428deb1e43",
+    "evidence/r41/acceptance/p1/memory-service-study.md": "bc590cc8a20a53da0b7a2d0da6b59c793db755d264abae5d33e8aed3e3f5c642",
+    "evidence/r41/acceptance/p1/candidate-sensitivity/metrics.json": "96fe8cfaab50a12529f506eeaffb8396ed555e2ca4ca74ce040bcd0def4fe83d",
+    "evidence/r41/acceptance/p1/candidate-sensitivity/index.json": "6c6ced49716eb82c3c20fba4d95742d292c02f44fef2c2f3da8298d4ec2fcb08",
+    "evidence/r41/stage2/candidates/F07/functional_report.json": "803488d8b42b7e3f0ce9d194b92a417888ee391f09b4374cece3bc8d3725a5b4"
   },
   "followups": [
     {

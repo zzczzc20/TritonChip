@@ -4,7 +4,7 @@
   "allowed_hosts": [
     "acf3019"
   ],
-  "hypothesis": "Explicit compound refusals, standard Torch code eviction and a rolled AOT/Session barrier loop establish lifecycle behavior on the approved image; no full-model or aggregate acceptance inference.",
+  "hypothesis": "Explicit compound refusals, bounded large-grid admission, standard Torch code eviction and a rolled AOT/Session barrier loop establish lifecycle behavior on the approved image; no full-model or aggregate acceptance inference.",
   "competing_explanations": [
     "changed emitted address/fragment code",
     "host gaps or transfer boundaries",
@@ -147,7 +147,8 @@
     "spec/r41/stage2/acceptance/s2-p4-lifecycle.json",
     "tools/r40/alias_negative_case.py",
     "tools/r40/device_tests.py",
-    "tools/r40/barrier_epoch_case.py"
+    "tools/r40/barrier_epoch_case.py",
+    "tools/r40/grid_admission_case.py"
   ],
   "env": {
     "OMP_NUM_THREADS": "1",
@@ -161,10 +162,10 @@
     "status": "registered-not-run",
     "registered_utc": "2026-10-26",
     "authority": "lead starts waiting queue; agent never opens card",
-    "budget_seconds": 5100,
+    "budget_seconds": 5700,
     "contract": "doc/r41_tasks_and_acceptance.md S2-04.D.3/.4/.6/.7; full-model persistent-session and sustained-admission gates remain separate"
   },
-  "budget_seconds": 5100,
+  "budget_seconds": 5700,
   "board_batches": {},
   "steps": [
     {
@@ -235,6 +236,30 @@
       "cache_state": "fresh experiment-local process, Session and caches; preserved failure; no tuning",
       "outputs": [
         "{out}/barrier/report.json"
+      ]
+    },
+    {
+      "id": "grid",
+      "kind": "fpga",
+      "argv": [
+        "{python}",
+        "{root}/tools/r40/grid_admission_case.py",
+        "--out",
+        "{out}/grid"
+      ],
+      "timeout_seconds": 600,
+      "env": {
+        "TNCA_BACKEND": "fpga-u280-multicore",
+        "TNCA_BACKEND_ARGS": "{\"xclbin\":\"{home}/tnca_images/r41s2_run1_c9f25787494a/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":4294967296,\"device_clock\":true}",
+        "TNCA_PROFILE": "core-vrf-sync-v5-x8",
+        "TNCA_OPERATING_CLOCK_EVIDENCE": "{home}/tnca_build/r41s2_run1_c9f25787494a/r41s2-board/qualified_clock.json",
+        "TNCA_DEADLINE": "200000000000",
+        "TNCA_HOST_TIMEOUT": "28800"
+      },
+      "timing_boundary": "functional lifecycle or opt-in locality scope; raw device and host observations only, no performance acceptance claim",
+      "cache_state": "fresh experiment-local process, Session and caches; preserved failure; no tuning",
+      "outputs": [
+        "{out}/grid/report.json"
       ]
     }
   ]

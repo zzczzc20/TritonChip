@@ -1,0 +1,51 @@
+Oct 27 06:05:16 gx10-6646 systemd[2282]: Started r41-p4-model-v1.service - /usr/bin/taskset -c 0-5 timeout 3600 env PATH=/home/zhongchun/tc_env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin PYTHONPATH=/home/zhongchun/r41-p4-v1:/home/zhongchun/r41-p4-v1/python:/home/zhongchun/r41-p4-v1/compiler/python:/home/zhongchun/r41-p4-v1/tools/asm TNCA_BACKEND=sim-file TNCA_PROFILE=core-vrf-sync-v5 TNCA_HOST_TIMEOUT=1800 TNCA_DEADLINE=200000000 /bin/bash -c "set -e; /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/alias_negative_case.py --out /home/zhongchun/r41-p4/model-v1/aliases; /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/barrier_epoch_case.py --out /home/zhongchun/r41-p4/model-v1/barrier; /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/device_tests.py --only eviction; /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/code_cache_epoch_tests.py".
+Oct 27 06:05:16 gx10-6646 taskset[703343]: Traceback (most recent call last):
+Oct 27 06:05:16 gx10-6646 taskset[703343]:   File "/home/zhongchun/r41-p4-v1/tools/r40/alias_negative_case.py", line 88, in <module>
+Oct 27 06:05:16 gx10-6646 taskset[703343]:     main()
+Oct 27 06:05:16 gx10-6646 taskset[703343]:   File "/home/zhongchun/r41-p4-v1/tools/r40/alias_negative_case.py", line 43, in main
+Oct 27 06:05:16 gx10-6646 taskset[703343]:     with Session(profile=profile, backend=backend, **kwargs) as session:
+Oct 27 06:05:16 gx10-6646 taskset[703343]:          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Oct 27 06:05:16 gx10-6646 taskset[703343]:   File "/home/zhongchun/r41-p4-v1/python/tnca/runtime.py", line 397, in __init__
+Oct 27 06:05:16 gx10-6646 taskset[703343]:     self.bench = _backend.prepare_bench(self.backend_name, profile, **backend_kwargs)
+Oct 27 06:05:16 gx10-6646 taskset[703343]:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Oct 27 06:05:16 gx10-6646 taskset[703343]:   File "/home/zhongchun/r41-p4-v1/python/tnca/backend.py", line 250, in prepare_bench
+Oct 27 06:05:16 gx10-6646 taskset[703343]:     return device.require(profile) if needs_elaborator(name) else None
+Oct 27 06:05:16 gx10-6646 taskset[703343]:            ^^^^^^^^^^^^^^^^^^^^^^^
+Oct 27 06:05:16 gx10-6646 taskset[703343]:   File "/home/zhongchun/r41-p4-v1/python/tnca/device.py", line 342, in require
+Oct 27 06:05:16 gx10-6646 taskset[703343]:     raise DeviceLost(
+Oct 27 06:05:16 gx10-6646 taskset[703343]: tnca.errors.DeviceLost: [DEVICE_LOST] no simulator for profile 'core-vrf-sync-v5'
+Oct 27 06:05:16 gx10-6646 taskset[703343]:   looked for: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-b9e735fbbc62/tnca_device_vrf5.vvp
+Oct 27 06:05:16 gx10-6646 taskset[703343]:   try: run `tnca-sim prepare` once to build it, or set TNCA_DEVICE to an existing bench. A launch does not build one: that would put a compile inside every kernel call
+Oct 27 06:05:16 gx10-6646 systemd[2282]: r41-p4-model-v1.service: Main process exited, code=exited, status=1/FAILURE
+Oct 27 06:05:16 gx10-6646 systemd[2282]: r41-p4-model-v1.service: Failed with result 'exit-code'.
+Oct 27 07:01:27 gx10-6646 systemd[2282]: Started r41-p4-model-v2.service - /usr/bin/taskset -c 0-5 timeout 3600 env PATH=/home/zhongchun/tc_env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin PYTHONPATH=/home/zhongchun/r41-p4-v2:/home/zhongchun/r41-p4-v2/python:/home/zhongchun/r41-p4-v2/compiler/python:/home/zhongchun/r41-p4-v2/tools/asm TNCA_BACKEND=sim-file TNCA_PROFILE=core-vrf-sync-v5 TNCA_HOST_TIMEOUT=1800 TNCA_DEADLINE=200000000 /bin/bash -c "set -e; /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/alias_negative_case.py --out /home/zhongchun/r41-p4/model-v2/aliases; /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/barrier_epoch_case.py --out /home/zhongchun/r41-p4/model-v2/barrier; /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/device_tests.py --only eviction; /home/zhongchun/tc_env/torchenv/bin/python -u tools/r40/code_cache_epoch_tests.py".
+Oct 27 07:01:27 gx10-6646 taskset[735179]: /home/zhongchun/r41-p4-v2/python/tnca/device.py:481: RuntimeWarning: the staged copy under /home/zhongchun/r41-p4-v2/python/tnca/data differs from the working tree in ['rtl', 'rtl/core', 'rtl/common', 'rtl/gen', 'tb/common', 'tb/device']. The runtime reads the staged copy, so it is about to build a device from sources that are not the ones you edited. Run `make r2-stage-data`.
+Oct 27 07:01:27 gx10-6646 taskset[735179]:   warn_if_staged_copy_is_stale()
+Oct 27 07:01:27 gx10-6646 taskset[735179]:   building core-vrf-sync-v5 -> /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-b9e735fbbc62/tnca_device_vrf5.vvp
+Oct 27 07:01:27 gx10-6646 taskset[735179]:   pruned 1 older build(s) of core-vrf-sync-v5
+Oct 27 07:01:28 gx10-6646 taskset[735179]:   built 17673264 bytes
+Oct 27 07:01:28 gx10-6646 taskset[735179]: {"schema": "tnca-r41-alias-negative/1", "status": "pass", "checks": [{"name": "undeclared-overlapping-storage-arguments", "status": "refused-before-admission", "error_type": "TncaError", "error": "[ALIAS_UNDECLARED] 'a' and 'b' overlap and the manifest does not declare them as aliases\n  declared: []\n  try: declare the alias at compile time, or use separate buffers"}, {"name": "out-of-bounds-view", "status": "refused-before-admission", "error_type": "ArgumentError", "error": "[ARGUMENT_INVALID] 'b': byte offset 128 is outside buf1 (0..127)"}, {"name": "forged-high-bit-storage-owner", "status": "refused-before-admission", "error_type": "ArgumentError", "error": "[ARGUMENT_INVALID] locality storage is not owned by this session"}, {"name": "distinct-storage-handles-overlap", "status": "refused-before-admission", "error_type": "TncaError", "error": "[ALIAS_UNDECLARED] 'a' and 'b' overlap and the manifest does not declare them as aliases\n  declared: []\n  try: declare the alias at compile time, or use separate buffers"}], "board_acceptance": "not-measured", "backend": "sim-file", "software_tree": "files:8e086d10687c704cf58d3a9b6e880b4ce1c59d0a687f2255b5a32eced510b8d4", "artifact_sha256": "05df3743f95a59304c4d1168677df1ee73982bb6030ce7ce135ece5f6bfa1462"}
+Oct 27 07:01:29 gx10-6646 taskset[735255]: Traceback (most recent call last):
+Oct 27 07:01:29 gx10-6646 taskset[735255]:   File "/home/zhongchun/r41-p4-v2/python/tnca/aot.py", line 1173, in _compile_tnca_ir
+Oct 27 07:01:29 gx10-6646 taskset[735255]:     build(builder, target)
+Oct 27 07:01:29 gx10-6646 taskset[735255]:   File "/home/zhongchun/r41-p4-v2/tools/r40/barrier_epoch_case.py", line 46, in program
+Oct 27 07:01:29 gx10-6646 taskset[735255]:     b.sstore(destination, token, size='d')
+Oct 27 07:01:29 gx10-6646 taskset[735255]:   File "/home/zhongchun/r41-p4-v2/compiler/python/tnca_cc/ir.py", line 405, in sstore
+Oct 27 07:01:29 gx10-6646 taskset[735255]:     raise TypeError(
+Oct 27 07:01:29 gx10-6646 taskset[735255]: TypeError: s.st takes scalar registers; its value is a token (t6)
+Oct 27 07:01:29 gx10-6646 taskset[735255]: During handling of the above exception, another exception occurred:
+Oct 27 07:01:29 gx10-6646 taskset[735255]: Traceback (most recent call last):
+Oct 27 07:01:29 gx10-6646 taskset[735255]:   File "/home/zhongchun/r41-p4-v2/tools/r40/barrier_epoch_case.py", line 82, in <module>
+Oct 27 07:01:29 gx10-6646 taskset[735255]:     main()
+Oct 27 07:01:29 gx10-6646 taskset[735255]:   File "/home/zhongchun/r41-p4-v2/tools/r40/barrier_epoch_case.py", line 49, in main
+Oct 27 07:01:29 gx10-6646 taskset[735255]:     aot.compile_aot(program, kernel_name='barrier_epoch', source_kind='tnca-ir',
+Oct 27 07:01:29 gx10-6646 taskset[735255]:   File "/home/zhongchun/r41-p4-v2/python/tnca/aot.py", line 499, in compile_aot
+Oct 27 07:01:29 gx10-6646 taskset[735255]:     result = _compile_tnca_ir(source, kernel_name, signature, constexprs,
+Oct 27 07:01:29 gx10-6646 taskset[735255]:              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Oct 27 07:01:29 gx10-6646 taskset[735255]:   File "/home/zhongchun/r41-p4-v2/python/tnca/aot.py", line 1177, in _compile_tnca_ir
+Oct 27 07:01:29 gx10-6646 taskset[735255]:     raise CompileError(f"the TNCA IR program raised {type(e).__name__}: "
+Oct 27 07:01:29 gx10-6646 taskset[735255]: tnca.errors.CompileError: [COMPILE_FAILED] the TNCA IR program raised TypeError: s.st takes scalar registers; its value is a token (t6)
+Oct 27 07:01:29 gx10-6646 taskset[735255]:   at: barrier_epoch
+Oct 27 07:01:29 gx10-6646 systemd[2282]: r41-p4-model-v2.service: Main process exited, code=exited, status=1/FAILURE
+Oct 27 07:01:29 gx10-6646 systemd[2282]: r41-p4-model-v2.service: Failed with result 'exit-code'.
+Oct 27 07:01:29 gx10-6646 systemd[2282]: r41-p4-model-v2.service: Consumed 1.690s CPU time.

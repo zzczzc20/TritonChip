@@ -319,3 +319,27 @@ prepared, not launched. Reconciled the Stage 1 DoD row and stale evidence hashes
 to the frozen accepted 61/61 record. Current integrity-checked ledger: 40 passed,
 two failed, 45 not measured, seven blocked. No card access or image work started.
 Next: finish P4 model/RTL stress and stage lead-only P2/P4 queue commands.
+
+## 2026-10-27 (Kimi) — P4 lifecycle preflight in progress
+
+Preserved model-v1's missing-simulator failure and model-v2's stale-staging warning
+and illegal token-store compile failure. Restaged the device data, corrected the
+barrier case to execute a rolled arm/wait loop and store its completed iteration
+count, and launched fresh model evidence. Four compound alias/ownership refusals
+pass on that fresh simulator; the rolled barrier and subsequent standard Torch
+eviction/code-cache checks are still running and are not yet judged.
+
+The independent RTL job exited zero: all 20 grid-dispatch configurations passed,
+the barrier bench covered generations 0 through 65,537 without early release, and
+the exhaustion bench faulted before wrap and recovered through initialization.
+Raw logs and simulator outputs are archived under evidence/r41/acceptance/p4/.
+
+The first 6,144-program MMIO RTL queue/admission attempt hit its 900-second outer
+timeout without a semantic assertion failure. Its running report and journal are
+preserved. Added incremental checkpoints and launched the same-size bounded retry
+with a 2,400-second outer limit; this is not a passing result yet. The board case
+still defaults to 65,537 programs and checks opt-in, queue overflow, exact output,
+atomic completion count and advertised-capacity refusal. The P4 manifest now
+registers that case within a 5,700-second budget; P2+P4 retain a 6,900-second
+queue allowance. Manifest, fake-board queue, compiler and document checks pass.
+No physical-card gate or ledger status has changed, and no card/image work started.

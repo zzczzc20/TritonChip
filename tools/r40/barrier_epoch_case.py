@@ -38,12 +38,13 @@ def main():
         def program(b, target):
             base = b.special('arg_base')
             destination = b.sload(base, 0)
-            limit = b.sbini('add', b.sload(base, 8), 1)
+            arms = b.sload(base, 8)
+            limit = b.sbini('add', arms, 1)
             barrier = b.barrier()
             with b.loop(b.const(1), limit):
                 token = b.barrier_arm(barrier)
                 b.barrier_wait(token)
-            b.sstore(destination, token, size='d')
+            b.sstore(destination, arms, size='d')
             b.exit()
         artifact = out/'barrier_epoch.tnca'
         aot.compile_aot(program, kernel_name='barrier_epoch', source_kind='tnca-ir',
@@ -65,9 +66,8 @@ def main():
                           memory_stats=session.memory_stats)
             assert event.ok, event.error
             observed = struct.unpack('<Q', session.download(result))[0]
-            report['observed'] = dict(token=observed, generation=observed >> 16,
-                                      barrier=observed & 0xffff)
-            assert observed == args.arms << 16, report['observed']
+            report['observed'] = dict(completed_arm_wait_iterations=observed)
+            assert observed == args.arms, report['observed']
             assert software_tree(ROOT, refresh=True) == source
         report['status'] = 'pass'
     except BaseException:

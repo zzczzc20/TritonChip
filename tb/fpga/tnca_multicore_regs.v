@@ -26,6 +26,13 @@ module tnca_multicore_regs;
     dut.system.shell.u_system.g_tile[c].u_tile.perf_miss,
     dut.system.shell.u_system.g_tile[c].u_tile.perf_mshr_full);
   if(HYBRID_LSU)begin:g_hybrid
+   reg [31:0] observed_fast_fills=0;
+   always @(posedge clk)begin
+    if(!rst_n_async)observed_fast_fills<=0;
+    else if(dut.system.shell.u_system.g_tile[c].u_tile.u_slice.fill_fast_take)observed_fast_fills<=observed_fast_fills+1;
+    if($test$plusargs("trace") && rst_n_async && dut.done_valid)
+     $display("FAST FILL WATCH cycle=%0d home=%0d count=%0d",diag_cycle,c,observed_fast_fills);
+   end
    always @(posedge clk)if($test$plusargs("trace") && rst_n_async && (diag_cycle%10000==0 || dut.done_valid))
     $display("HYBRID WATCH cycle=%0d core=%0d pc=%h x_valid=%b pending=%b fast=%0d slow=%0d retired=%0d fast_quiet=%b slow_idle=%b cpl=%b ack=%b",diag_cycle,c,
      dut.system.shell.u_system.g_tile[c].u_tile.u_core.x_pc,

@@ -1,0 +1,12 @@
+NUCA MAINTENANCE PASS full_tag=0 latency=1 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 2890000 (1ps)
+NUCA MAINTENANCE PASS full_tag=0 latency=8 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 3470000 (1ps)
+NUCA MAINTENANCE PASS full_tag=0 latency=31 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 5530000 (1ps)
+NUCA MAINTENANCE PASS full_tag=1 latency=1 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 2890000 (1ps)
+NUCA MAINTENANCE PASS full_tag=1 latency=8 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 3470000 (1ps)
+NUCA MAINTENANCE PASS full_tag=1 latency=31 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 5530000 (1ps)

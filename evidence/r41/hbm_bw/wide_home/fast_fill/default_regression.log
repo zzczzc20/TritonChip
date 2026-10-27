@@ -1,0 +1,61 @@
+---- nuca slice ----
+seed=20260918 trace_hash=ff3191d16a55e465 writes=509
+issued=2000 reads_checked=1491 inflight_left=0
+hit=878 miss=1066 merge=56 wb=266 mshr_full=717 target_full=0 hit_past_block=498
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=1002 dead_evict=0 gear=0
+PASS
+tb/nuca/tb_nuca_slice.v:414: $finish called at 167676000 (1ps)
+---- nuca slice ----
+seed=1 trace_hash=fd998bc6861ac625 writes=521
+issued=2000 reads_checked=1479 inflight_left=0
+hit=556 miss=1389 merge=55 wb=359 mshr_full=1061 target_full=0 hit_past_block=719
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=1325 dead_evict=0 gear=0
+PASS
+tb/nuca/tb_nuca_wide.v:448: $finish called at 204576000 (1ps)
+---- nuca slice ----
+seed=39 trace_hash=a7189c039e35e865 writes=483
+issued=2000 reads_checked=1517 inflight_left=0
+hit=623 miss=1332 merge=45 wb=330 mshr_full=985 target_full=0 hit_past_block=669
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=1268 dead_evict=0 gear=0
+PASS
+tb/nuca/tb_nuca_wide.v:448: $finish called at 196926000 (1ps)
+---- nuca slice ----
+seed=20260918 trace_hash=1fc05eb337858375 writes=23
+issued=100 reads_checked=77 inflight_left=0
+hit=92 miss=1 merge=7 wb=0 mshr_full=0 target_full=1 hit_past_block=0
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=0 dead_evict=0 gear=0
+PASS
+tb/nuca/tb_nuca_wide.v:448: $finish called at 5066000 (1ps)
+WIDE HOME SPECIAL PASS pipeline=0 atomic_cases=288 transactions=1456 MMIO_words=8
+tb/nuca/tb_nuca_wide_special.v:116: $finish called at 199460000 (1ps)
+---- nuca slice ----
+seed=1 trace_hash=fd998bc6861ac625 writes=521
+issued=2000 reads_checked=1479 inflight_left=0
+hit=556 miss=1389 merge=55 wb=359 mshr_full=1061 target_full=0 hit_past_block=719
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=1325 dead_evict=0 gear=0
+PASS
+tb/nuca/tb_nuca_wide.v:448: $finish called at 204576000 (1ps)
+---- nuca slice ----
+seed=39 trace_hash=a7189c039e35e865 writes=483
+issued=2000 reads_checked=1517 inflight_left=0
+hit=623 miss=1332 merge=45 wb=330 mshr_full=985 target_full=0 hit_past_block=669
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=1268 dead_evict=0 gear=0
+PASS
+tb/nuca/tb_nuca_wide.v:448: $finish called at 196926000 (1ps)
+---- nuca slice ----
+seed=20260918 trace_hash=1fc05eb337858375 writes=23
+issued=100 reads_checked=77 inflight_left=0
+hit=92 miss=1 merge=7 wb=0 mshr_full=0 target_full=1 hit_past_block=0
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=0 dead_evict=0 gear=0
+PASS
+tb/nuca/tb_nuca_wide.v:448: $finish called at 5066000 (1ps)
+WIDE HOME SPECIAL PASS pipeline=1 atomic_cases=288 transactions=1456 MMIO_words=8
+tb/nuca/tb_nuca_wide_special.v:116: $finish called at 199460000 (1ps)
+WIDE HOME ALL 9 CONFIGURATIONS PASS

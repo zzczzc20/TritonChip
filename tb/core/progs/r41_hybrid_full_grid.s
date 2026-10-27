@@ -16,6 +16,8 @@
     s.add s5, s5, s4
     .li s4, #64
     s.mul s8, s1, s4
+    .li s4, #0x4000
+    s.add s10, s8, s4
     .li s4, #0x8000
     s.add s9, s8, s4
     .li s4, #0x18000
@@ -26,6 +28,8 @@
     p.frombits p1, s7
     v.splat v0, s1
     @p1 v.st.w [s5, #0], v0
+    v.ld.w v2, [s8, #0]
+    v.st.w [s10, #0], v2
     v.st.w [s8, #0], v0
     v.ld.w v1, [s8, #0]
     v.st.w [s9, #0], v1

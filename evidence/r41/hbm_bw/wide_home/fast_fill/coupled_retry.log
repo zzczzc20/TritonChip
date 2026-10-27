@@ -1,0 +1,48 @@
+MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=1 id=13 status=2 cycles=1929
+MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=9385
+HOME COVERAGE core=0 chained=0 fast_fill=23
+HYBRID COUPLED core=0 fast=94 slow=50 retired=144
+MULTICORE SHELL GRID PASS N=1 id=12 status=0 cycles=10843
+FULL VECTOR ROUNDTRIP PASS programs=17 checked_words=408
+AXI OUTLET TRAFFIC port=0 reads=489 writes=79
+MULTICORE SHELL GRID PASS N=1 id=14 status=1 cycles=30546
+MULTICORE AXI PERSISTENT PASS N=1 ports=1 stages=0 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:255: $finish called at 305460000 (1ps)
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1968
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=7159
+HOME COVERAGE core=0 chained=0 fast_fill=6
+HYBRID COUPLED core=0 fast=32 slow=16 retired=48
+HOME COVERAGE core=1 chained=4 fast_fill=7
+HYBRID COUPLED core=1 fast=35 slow=21 retired=56
+HOME COVERAGE core=2 chained=1 fast_fill=4
+HYBRID COUPLED core=2 fast=37 slow=19 retired=56
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=7769
+FULL VECTOR ROUNDTRIP PASS programs=17 checked_words=408
+AXI OUTLET TRAFFIC port=0 reads=87 writes=52
+AXI OUTLET TRAFFIC port=1 reads=41 writes=23
+MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=17337
+MULTICORE AXI PERSISTENT PASS N=3 ports=2 stages=2 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:255: $finish called at 173370000 (1ps)
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1970
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=7514
+HOME COVERAGE core=0 chained=0 fast_fill=6
+HYBRID COUPLED core=0 fast=33 slow=15 retired=48
+HOME COVERAGE core=1 chained=3 fast_fill=6
+HYBRID COUPLED core=1 fast=35 slow=21 retired=56
+HOME COVERAGE core=2 chained=3 fast_fill=4
+HYBRID COUPLED core=2 fast=36 slow=20 retired=56
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=8122
+FULL VECTOR ROUNDTRIP PASS programs=17 checked_words=408
+AXI OUTLET TRAFFIC port=0 reads=48 writes=29
+AXI OUTLET TRAFFIC port=1 reads=40 writes=23
+AXI OUTLET TRAFFIC port=2 reads=39 writes=23
+MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=18286
+MULTICORE AXI PERSISTENT PASS N=3 ports=3 stages=2 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:255: $finish called at 182860000 (1ps)
+MULTICORE AXI MATRIX PASS 3 configurations

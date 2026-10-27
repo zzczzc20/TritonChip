@@ -1,0 +1,6 @@
+WIDE HOME MERGED READ-WRITE PASS pipeline=0
+WIDE HOME SPECIAL PASS pipeline=0 atomic_cases=288 transactions=1456 MMIO_words=8
+tb/nuca/tb_nuca_wide_special.v:116: $finish called at 199840000 (1ps)
+WIDE HOME MERGED READ-WRITE PASS pipeline=1
+WIDE HOME SPECIAL PASS pipeline=1 atomic_cases=288 transactions=1456 MMIO_words=8
+tb/nuca/tb_nuca_wide_special.v:116: $finish called at 199840000 (1ps)

@@ -21,7 +21,7 @@
 module tb_nuca_wide;
     parameter CACHE_DATA_PIPELINE=1;
     parameter PRESSURE=0;
-    parameter HIT_CHAIN=0;
+    parameter HIT_CHAIN=0,FAST_FILL_READ=0;
     parameter RSP_STALL=0;
     parameter FULL_LINE_TAG=0,REGISTER_VICTIM_SELECT=0,REGISTER_VICTIM_RANK=0;
     parameter SERVICE_MODE=0; // 1: hot reads, 2: streaming reads
@@ -116,7 +116,7 @@ module tb_nuca_wide;
     wire [63:0]             tl_addr;
 
     tnca_nuca_slice #(
-        .FULL_LINE_TAG(FULL_LINE_TAG),.REGISTER_VICTIM_SELECT(REGISTER_VICTIM_SELECT),.REGISTER_VICTIM_RANK(REGISTER_VICTIM_RANK),.HIT_CHAIN(HIT_CHAIN),.CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE),.MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
+        .FULL_LINE_TAG(FULL_LINE_TAG),.REGISTER_VICTIM_SELECT(REGISTER_VICTIM_SELECT),.REGISTER_VICTIM_RANK(REGISTER_VICTIM_RANK),.HIT_CHAIN(HIT_CHAIN),.FAST_FILL_READ(FAST_FILL_READ),.CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE),.MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(WORD_BITS), .WORD_BYTES(WORD_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
@@ -256,10 +256,11 @@ module tb_nuca_wide;
     end
 
     // ---- watchdog: a deadlocked slice must fail, not run forever ------------
-    integer service_cycle=0,accepted=0,responses=0,first_accept=-1,last_response=-1;
+    integer service_cycle=0,accepted=0,responses=0,fast_fills=0,first_accept=-1,last_response=-1;
     always @(posedge clk)begin
         if(rst_n)begin
             service_cycle<=service_cycle+1;
+            if(dut.fill_fast_take)fast_fills<=fast_fills+1;
             if(req_valid && req_ready)begin
                 accepted<=accepted+1;
                 if(first_accept<0)first_accept<=service_cycle;
@@ -410,7 +411,7 @@ module tb_nuca_wide;
 
         if(SERVICE_MODE!=0)begin
             if(accepted!=nreq || responses!=nreq)$fatal(1,"service lost a handshake");
-            $display("HOME SERVICE mode=%0d word_bytes=%0d accepted=%0d responses=%0d span_cycles=%0d hit=%0d miss=%0d",SERVICE_MODE,WORD_BYTES,accepted,responses,last_response-first_accept+1,perf_hit,perf_miss);
+            $display("HOME SERVICE mode=%0d word_bytes=%0d accepted=%0d responses=%0d span_cycles=%0d hit=%0d miss=%0d fast_fills=%0d",SERVICE_MODE,WORD_BYTES,accepted,responses,last_response-first_accept+1,perf_hit,perf_miss,fast_fills);
         end
         $display("---- nuca slice ----");
         $display("seed=%0d trace_hash=%016h writes=%0d", seed0, trace_hash, n_write);

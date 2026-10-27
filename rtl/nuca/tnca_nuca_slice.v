@@ -55,6 +55,7 @@ module tnca_nuca_slice #(
     parameter LINE_BITS  = 512,
     parameter WORD_BITS  = 64,
     parameter HIT_CHAIN = 0,
+    parameter FAST_FILL_READ = 0,
     parameter WORD_BYTES = 8,
     parameter SETS       = 64,
     parameter SET_W      = 6,        // $clog2(SETS)
@@ -580,6 +581,11 @@ module tnca_nuca_slice #(
     reg [SRC_W-1:0]      cur_src;
     reg [TAG_W-1:0]      cur_tag;
     reg [MSHR_W-1:0]     cur_ms;
+    // The fill may answer its sole ordinary-read target directly from the
+    // returned line. Multi-target, write and atomic misses retain E_WAKE.
+    wire fill_fast_take = FAST_FILL_READ && est==E_FILL && !rsq_full &&
+        ms_hasT[cur_ms] && ms_head[cur_ms]==ms_tail[cur_ms] &&
+        tg_v[ms_head[cur_ms]] && !tg_we[ms_head[cur_ms]] && !tg_amo[ms_head[cur_ms]];
     // Capture immutable service descriptors on the existing arbitration edge.
     // RAM control then depends on these small flops, without a second MSHR mux.
     // Request/coalescing state and returned line data retain their live paths.
@@ -1455,6 +1461,17 @@ module tnca_nuca_slice #(
                     touch(fill_set, fill_way);
                 end
                 ms_state[cur_ms] <= MS_WAKE;
+                if(fill_fast_take)begin
+                    t_cur=ms_head[cur_ms];
+                    push_rsp=1'b1;
+                    push_src=tg_src[t_cur];push_tag=tg_tag[t_cur];
+                    push_data=ms_line[cur_ms][tg_wsel[t_cur]*WORD_BITS+:WORD_BITS];
+                    tg_v[t_cur]<=1'b0;
+                    ms_state[cur_ms]<=MS_FREE;
+                    ms_hasT[cur_ms]<=1'b0;
+                    ms_byp[cur_ms]<=1'b0;
+                    rq_blocked<={RQ_N{1'b0}};
+                end
                 est <= E_SEL;
             end
 

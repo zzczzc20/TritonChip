@@ -9,23 +9,25 @@ from tools.r41.wide_home_tests import run_case
 
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--out',type=Path,required=True)
+p.add_argument('--fast-fill',action='store_true')
 a=p.parse_args();a.out.mkdir(parents=True,exist_ok=False)
 rows=[]
 with tempfile.TemporaryDirectory(prefix='r41-home-window-') as temp:
     for mshrs,targets in ((4,8),(8,8),(8,16),(16,32)):
-        params=dict(WORD_BITS=512,MSHR_N=mshrs,TARGET_N=targets,HIT_CHAIN=1,SERVICE_MODE=2,
+        params=dict(WORD_BITS=512,MSHR_N=mshrs,TARGET_N=targets,HIT_CHAIN=1,FAST_FILL_READ=int(a.fast_fill),SERVICE_MODE=2,
             SETS=32,SET_W=5,WAYS=8,WAY_W=3,REGISTER_VICTIM_OWNER=1,DCO_REGISTERED_RANGES=1,
             FULL_LINE_TAG=1,REGISTER_VICTIM_SELECT=1,REGISTER_VICTIM_RANK=1)
         name=f'm{mshrs}-t{targets}'
         log=run_case(str(Path(temp)/'home.vvp'),'tb_nuca_wide',params,'tb/nuca/tb_nuca_wide.v',
             ['+nreq=4096','+min_wb=0'])
         (a.out/(name+'.log')).write_text(log)
-        m=re.search(r'HOME SERVICE mode=2 word_bytes=64 accepted=(\d+) responses=(\d+) span_cycles=(\d+) hit=(\d+) miss=(\d+)',log)
+        m=re.search(r'HOME SERVICE mode=2 word_bytes=64 accepted=(\d+) responses=(\d+) span_cycles=(\d+) hit=(\d+) miss=(\d+) fast_fills=(\d+)',log)
         assert m,name
-        accepted,responses,cycles,hit,miss=map(int,m.groups())
+        accepted,responses,cycles,hit,miss,fast_fills=map(int,m.groups())
+        assert (fast_fills>0)==a.fast_fill,name
         assert accepted==responses==4096,name
         row=dict(configuration=params,accepted=accepted,responses=responses,cycles=cycles,
-            hit=hit,miss=miss,gb_per_s_at_100mhz=accepted*64/cycles*0.1,
+            hit=hit,miss=miss,fast_fills=fast_fills,gb_per_s_at_100mhz=accepted*64/cycles*0.1,
             actual_image_window=(mshrs,targets)==(8,16))
         rows.append(row);print(name,json.dumps(row,sort_keys=True),flush=True)
 (a.out/'results.json').write_text(json.dumps(dict(evidence='standalone-RTL-synthetic-memory-window-sweep',

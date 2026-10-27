@@ -1,0 +1,17 @@
+MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=1 id=13 status=2 cycles=1929
+MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=7128
+HOME COVERAGE core=0 chained=0 fast_fill=23
+HYBRID COUPLED core=0 fast=94 slow=50 retired=144
+MULTICORE SHELL GRID PASS N=1 id=12 status=0 cycles=8591
+FATAL: tb/fpga/tb_multicore_axi.v:159: host mismatch addr=0000000000004000 got=0000100000001000 status= 0
+       Time: 89260000  Scope: tb_multicore_axi.word
+Traceback (most recent call last):
+  File "/home/zhongchun/r41-hbmbw/tools/r40/multicore_axi_tests.py", line 56, in <module>
+    main()
+  File "/home/zhongchun/r41-hbmbw/tools/r40/multicore_axi_tests.py", line 51, in main
+    subprocess.run(['vvp', '-i', output, '+hex=' + image] + (['+diagnose'] if args.diagnose else []), cwd=ROOT, check=True, timeout=1200)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['vvp', '-i', '/tmp/r40-multicore-axi-2c70en9s/axi-1-1-0.vvp', '+hex=/tmp/r40-multicore-axi-2c70en9s/grid.hex']' returned non-zero exit status 1.

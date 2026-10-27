@@ -119,12 +119,17 @@ generate for(genvar p=0;p<PORTS;p=p+1)begin:g_ram
 .m_rresp(m_rresp[p*(2)+:(2)]),
 .m_rlast(m_rlast[p*(1)+:(1)]));
 end endgenerate
-wire [N*32-1:0] chained_hits;
+wire [N*32-1:0] chained_hits,fast_fill_count;
 wire [N*32-1:0] fast_accepted,slow_accepted,lsu_retired;
 generate for(genvar c=0;c<N;c=c+1)begin:g_lsu_coverage
- reg [31:0] chain_count=0;
- always @(posedge clk)if(!rst)chain_count<=0;else if(dut.shell.u_system.g_tile[c].u_tile.u_slice.hit_chain_take)chain_count<=chain_count+1;
+ reg [31:0] chain_count=0,fill_count=0;
+ always @(posedge clk)if(!rst)begin chain_count<=0;fill_count<=0;end
+ else begin
+  if(dut.shell.u_system.g_tile[c].u_tile.u_slice.hit_chain_take)chain_count<=chain_count+1;
+  if(dut.shell.u_system.g_tile[c].u_tile.u_slice.fill_fast_take)fill_count<=fill_count+1;
+ end
  assign chained_hits[c*32+:32]=chain_count;
+ assign fast_fill_count[c*32+:32]=fill_count;
  if(HYBRID_LSU)begin:g_hybrid
   integer seen_vectors=0;
   always @(posedge clk)if($test$plusargs("diagnose") && rst && dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_valid && dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_vector && seen_vectors<10)begin
@@ -193,6 +198,11 @@ initial begin
  for(integer k=0;k<256;k=k+1)word(0,k*8,image[k],0);
  launch(2048,9,3);launch(1,10,3);
  deadline=20;launch(0,13,2);deadline=0;
+ // The timeout probe drains issued programs, which can have populated the
+ // source lines. Establish the explicit zero initial state for this test.
+ if(FULL_VECTOR_TEST)
+  for(integer k=0;k<POINTS;k=k+1)
+   for(integer w=0;w<8;w=w+1)word(1,98304+k*64+w*8,0,0);
  launch(0,11,0);
  if($test$plusargs("diagnose"))begin
   $display("MEMORY SAMPLE p0=%h p1=%h p2=%h",g_ram[0].ram.memory[1024],g_ram[0].ram.memory[1025],g_ram[0].ram.memory[1026]);
@@ -200,7 +210,7 @@ initial begin
  end
  if(HYBRID_LSU)begin
   for(integer c=0;c<N;c=c+1)begin
-   $display("HOME CHAIN COVERAGE core=%0d chained=%0d",c,chained_hits[c*32+:32]);
+   $display("HOME COVERAGE core=%0d chained=%0d fast_fill=%0d",c,chained_hits[c*32+:32],fast_fill_count[c*32+:32]);
    $display("HYBRID COUPLED core=%0d fast=%0d slow=%0d retired=%0d",c,fast_accepted[c*32+:32],slow_accepted[c*32+:32],lsu_retired[c*32+:32]);
    if(VECTOR_TEST && fast_accepted[c*32+:32]==0)$fatal(1,"vector grid did not exercise compact LSU");
    if(slow_accepted[c*32+:32]==0 || lsu_retired[c*32+:32]!=fast_accepted[c*32+:32]+slow_accepted[c*32+:32])$fatal(1,"hybrid did not drain both paths");
@@ -212,6 +222,12 @@ initial begin
   for(integer c=0;c<N;c=c+1)total_chains=total_chains+chained_hits[c*32+:32];
   if(total_chains==0)$fatal(1,"coupled grid did not exercise chained hits");
  end
+ if(HYBRID_LSU && FULL_VECTOR_TEST)begin: check_fast_fill
+  integer total_fills;
+  total_fills=0;
+  for(integer c=0;c<N;c=c+1)total_fills=total_fills+fast_fill_count[c*32+:32];
+  if(total_fills==0)$fatal(1,"coupled grid did not exercise fast read fills");
+ end
  launch(VECTOR_TEST?512:256,12,0);
  for(integer k=0;k<POINTS;k=k+1)word(0,65536+k*8,4096+k,0);
  if(FULL_VECTOR_TEST)begin
@@ -219,9 +235,10 @@ initial begin
    for(integer w=0;w<8;w=w+1)begin
     word(0,98304+k*64+w*8,((64'd4096+k)<<32)|(64'd4096+k),0);
     word(0,32768+k*64+w*8,((64'd4096+k)<<32)|(64'd4096+k),0);
+    word(0,16384+k*64+w*8,0,0);
    end
   end
-  $display("FULL VECTOR ROUNDTRIP PASS programs=%0d checked_words=%0d",POINTS,POINTS*16);
+  $display("FULL VECTOR ROUNDTRIP PASS programs=%0d checked_words=%0d",POINTS,POINTS*24);
  end
  wait((&ai) && (&li));
  if(af || dut.memory_protocol_fault)$fatal(1,"AXI memory fault");

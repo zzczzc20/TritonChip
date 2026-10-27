@@ -1,11 +1,13 @@
 `timescale 1ns/1ps
 module tb_nuca_wide_special;
- parameter PIPE=1,HIT_CHAIN=0;
+ parameter PIPE=1,HIT_CHAIN=0,FAST_FILL_READ=0;
  reg clk=0;always #5 clk=~clk;
  reg rst_n=0,qv=0,qwe=0,qamo=0,rr=0;
  reg [63:0] qa=0,qbe=0;
  reg [511:0] qdata=0,qcmp=0;
  reg [3:0] qop=0;
+ reg [4:0] qtag=7;
+ integer fast_count=0;
  wire qr,rv,mv,mready,mwe,mrv,tw;
  wire [511:0] rd,mwd,mrd;
  wire [63:0] ma,twdata;
@@ -19,12 +21,12 @@ module tb_nuca_wide_special;
  reg [11:0] lastoff;
  reg [63:0] lastdata;
  wire twready=cycle%5!=0;
- tnca_nuca_slice #(.HIT_CHAIN(HIT_CHAIN),.WORD_BITS(512),.WORD_BYTES(64),.FULL_LINE_TAG(1),.HOME_W(2),
+ tnca_nuca_slice #(.HIT_CHAIN(HIT_CHAIN),.FAST_FILL_READ(FAST_FILL_READ),.WORD_BITS(512),.WORD_BYTES(64),.FULL_LINE_TAG(1),.HOME_W(2),
   .SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1),.MSHR_N(4),.MSHR_W(2),.TARGET_N(8),.TARGET_W(3),
   .TAG_W(5),.DCO_T(2),.CACHE_DATA_PIPELINE(PIPE)) dut(
   .clk(clk),.rst_n(rst_n),.maint_valid(1'b0),.maint_base(64'd0),.maint_size(64'd0),
   .req_valid(qv),.req_ready(qr),.req_addr(qa),.req_we(qwe),.req_be(qbe),.req_wdata(qdata),
-  .req_src(4'd2),.req_tag(5'd7),.req_amo(qamo),.req_aop(qop),.req_cmp(qcmp),
+  .req_src(4'd2),.req_tag(qtag),.req_amo(qamo),.req_aop(qop),.req_cmp(qcmp),
   .rsp_valid(rv),.rsp_ready(rr),.rsp_rdata(rd),.rsp_tag(rtag),.rsp_src(rsrc),
   .mem_req_valid(mv),.mem_req_ready(mready),.mem_req_addr(ma),.mem_req_we(mwe),.mem_req_wdata(mwd),.mem_req_tag(mt),
   .mem_rsp_valid(mrv),.mem_rsp_tag(mrt),.mem_rsp_rdata(mrd),
@@ -38,6 +40,7 @@ module tb_nuca_wide_special;
  `include "tnca_amo.vh"
  always @(posedge clk)if(rst_n)begin
   cycle<=cycle+1;
+  if(dut.fill_fast_take)fast_count=fast_count+1;
   if(tw && twready)begin mmwrites=mmwrites+1;lastoff=twoff;lastdata=twdata;end
  end
  integer transactions=0;
@@ -49,7 +52,7 @@ module tb_nuca_wide_special;
   integer waitcycles;
   begin
    @(negedge clk);while(!qr)@(negedge clk);
-   qa=addr;qbe=be;qwe=wr;qamo=atomic;qop=op;qdata=data;qcmp=cmp;qv=1;
+   qa=addr;qbe=be;qwe=wr;qamo=atomic;qop=op;qdata=data;qcmp=cmp;qtag=7;qv=1;
    @(negedge clk);qv=0;
    waitcycles=0;while(!rv && waitcycles<2000)begin @(negedge clk);waitcycles=waitcycles+1;end
    if(!rv || rd!==wanted || rtag!=7 || rsrc!=2)$fatal(1,"wide home special mismatch tx=%0d addr=%h op=%0d got=%h expected=%h",transactions,addr,op,rd,wanted);
@@ -57,7 +60,15 @@ module tb_nuca_wide_special;
    rr=1;@(negedge clk);rr=0;transactions=transactions+1;
   end
  endtask
- integer kind,g,op,n=0,offset,bytes;
+ task enqueue;
+  input [4:0] tag;input wr;input [511:0] data;
+  begin
+   @(negedge clk);while(!qr)@(negedge clk);
+   qa=64'd32768;qbe=64'hff;qwe=wr;qamo=0;qop=0;qdata=data;qcmp=0;qtag=tag;qv=1;
+   @(negedge clk);qv=0;
+  end
+ endtask
+ integer kind,g,op,n=0,offset,bytes,merge_before,fast_before;
  reg [63:0] addr,mask64,old,arg,cmp,result,word;
  reg [511:0] gold,packed_arg,compare;
  initial begin
@@ -80,6 +91,20 @@ module tb_nuca_wide_special;
    result=amo_alu(op,kind!=0,old,arg,cmp);
    if(kind==0)gold[offset*8+:64]=result;else gold[offset*8+:32]=result[31:0];
    tx(addr,0,0,0,0,0,0,gold);n=n+1;
+  end
+  if(FAST_FILL_READ)begin
+   merge_before=dut.perf_merge;fast_before=fast_count;
+   enqueue(8,0,0);enqueue(9,1,512'h123456789abcdef0);enqueue(10,0,0);
+   while(!rv)@(negedge clk);
+   if(rtag!=8 || rd!==512'd0)$fatal(1,"merged initial read");
+   rr=1;@(negedge clk);
+   while(!rv)@(negedge clk);
+   if(rtag!=9 || rd!==512'd0)$fatal(1,"merged store completion");
+   @(negedge clk);while(!rv)@(negedge clk);
+   if(rtag!=10 || rd!==512'h123456789abcdef0)$fatal(1,"merged read after store");
+   @(negedge clk);rr=0;
+   if(dut.perf_merge<=merge_before || fast_count!=fast_before)$fatal(1,"merged miss incorrectly used single-target fast fill");
+   $display("WIDE HOME MERGED READ-WRITE PASS pipeline=%0d",PIPE);
   end
   for(g=0;g<8;g=g+1)begin
    addr=64'h7fff0100+g*8;gold=0;gold[g*64+:64]=64'hfedcba9876540000^(64'h100+g*8);

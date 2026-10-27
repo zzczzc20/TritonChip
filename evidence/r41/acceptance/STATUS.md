@@ -343,3 +343,27 @@ atomic completion count and advertised-capacity refusal. The P4 manifest now
 registers that case within a 5,700-second budget; P2+P4 retain a 6,900-second
 queue allowance. Manifest, fake-board queue, compiler and document checks pass.
 No physical-card gate or ledger status has changed, and no card/image work started.
+
+### Prepared lead-only P2/P4 launch (immutable deedaed source)
+
+Commit deedaed is staged at `~/r41_accept_deedaed` on acf3019. All 3,815
+tracked files match their Git SHA-1 blob identities; the initial verifier's
+incorrect SHA-256 assumption was corrected and is not a source mismatch.
+CPU-only `--check-only` preparation passes for both manifests. Verification
+records are in evidence/r41/acceptance/p4/. No card was opened.
+
+After the lead alone has loaded the approved run-1 100 MHz image under the
+existing 15-consecutive-minute idle procedure, run this single sequential queue
+on acf3019 (never alongside another U280 job):
+
+```sh
+cd ~/r41_accept_deedaed
+setsid nohup ~/tc_env/torchenv/bin/python tools/performance_harness/launches/acceptance_queue.py --root "$PWD" --out ~/r41_accept_p2_p4_deedaed --python ~/tc_env/torchenv/bin/python --budget-seconds 6900 --manifest spec/r41/stage2/acceptance/s2-p2-locality.json --manifest spec/r41/stage2/acceptance/s2-p4-lifecycle.json > ~/r41_accept_p2_p4_deedaed.log 2>&1 < /dev/null &
+```
+
+The queue verifies UUID `49964b17-e0b4-5bd2-dd40-7fc37b1205d3`, the 100 MHz
+clock evidence and kdsstat around each step. It never programs or resets the
+card. A timeout preserves failure and needs a new lead budget decision, not an
+automatic retry. S2-03.A.5 and S2-04.D.3/.4/.6/.7 remain not measured until
+this physical evidence exists; D.7 additionally needs its persistent full-model
+session. Do not infer a locality speedup or default-on decision from RTL.

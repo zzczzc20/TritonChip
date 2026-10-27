@@ -45,6 +45,8 @@ ABI_VERSION = list(abi.ABI_VERSION)
 # something and been told nothing, and the artifact they get back is not the
 # one they asked for (CMP-02).
 KNOWN_OPTIONS = {
+    'single_role_pipeline': 'int, 0 or 1; opt-in two-slot single-role transfer/MMA overlap with guarded drain',
+    'rctx_role_pairs': 'int, 0..2; cap paired programs for fixed-context comparisons (0 uses the target maximum)',
     'bank_alloc': 'int, 0 or 1; use the target bank-aware vector allocator',
     'packed_window_unpack': 'int, 0 or 1; software lane unpack of packed FP16/BF16 DMA windows',
     'window_reuse': 'int, 0 or 1; reuse disjoint awaited single-role window lifetimes',
@@ -298,7 +300,9 @@ def check_options(options):
                    'produce a different artifact')
     # Resolve allocation/lowering switches before either cache lookup or
     # compilation. Default off stays absent for the frozen B39 contract.
-    for name, env in (('physical_chunks', 'TNCA_PHYSICAL_CHUNKS'),
+    for name, env in (('rctx_role_pairs', 'TNCA_RCTX_ROLE_PAIRS'),
+                      ('single_role_pipeline', 'TNCA_SINGLE_ROLE_PIPELINE'),
+                      ('physical_chunks', 'TNCA_PHYSICAL_CHUNKS'),
                       ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
                       ('window_reuse', 'TNCA_WINDOW_REUSE'),
                       ('bank_alloc', 'TNCA_BANK_ALLOC'),
@@ -313,9 +317,13 @@ def check_options(options):
             options.pop(name, None)
             if value:
                 options[name] = value
-        allowed = (0, 1, 2) if name == 'rctx_roles' else (0, 1)
+        allowed = (0, 1, 2) if name in ('rctx_roles', 'rctx_role_pairs') else (0, 1)
         if value not in allowed:
             raise ValueError(f'{name} must be one of {allowed}')
+    if options.get('rctx_role_pairs') and not options.get('rctx_roles'):
+        raise ValueError('rctx_role_pairs requires rctx_roles')
+    if options.get('single_role_pipeline') and options.get('rctx_roles'):
+        raise ValueError('single_role_pipeline and rctx_roles are mutually exclusive')
     stages = options.get('rctx_stages')
     if stages is None:
         stages = _pipeline_stages_default()
@@ -892,7 +900,7 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
     # fit is tried again computing nothing once, then without the loop.
     import copy as _copy
     plain = (_copy.deepcopy(kernel)
-             if _rctx_spmd_wanted(options) or _rctx_roles_wanted(options) else None)
+             if _rctx_spmd_wanted(options) or _rctx_roles_wanted(options) or (options or {}).get('single_role_pipeline') else None)
     # R39-12: a GEMM loop as a producer and a consumer on a Role Context pair
     # (Mode A), with the pairs running a grid row (Mode B) -- or, where that
     # does not apply or does not fit, Mode B alone.
@@ -913,6 +921,31 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
                 prov.entries.pop(key, None)
             stages.stages.pop('tnir_roles', None)
             programs_per_launch = None
+    single_role_applied = False
+    emit_options = options
+    if not programs_per_launch and (options or {}).get('single_role_pipeline'):
+        from tnca_cc.single_role_pipeline import pipeline_loop, NotPipelined
+        trial = _copy.deepcopy(kernel)
+        try:
+            info = pipeline_loop(trial)
+            # The odd-trip drain uses explicit forward branches; fixed windows
+            # keep slots distinct without relying on straight-line coloring.
+            emit_options = dict(options or {}, window_reuse=0)
+            _emit(_copy.deepcopy(trial), target, adapter.Provenance(), opt_level,
+                  emit_options, _dump.Dump(kernel_name + '_single_role_preflight'))
+        except NotPipelined as error:
+            prov.record('single_role_pipeline_refused', str(error))
+            emit_options = options
+        except CompileError as error:
+            if error.detail.get('kind') != 'ResourceError':
+                raise
+            prov.record('single_role_pipeline_refused', str(error)[:200])
+            emit_options = options
+        else:
+            kernel = trial
+            single_role_applied = True
+            prov.record('single_role_pipeline', info)
+            stages.record('tnir_single_role_pipeline', str(kernel))
     if not programs_per_launch:
         programs_per_launch = _rctx_spmd(kernel, target, prov, options, stages,
                                          scratch_bytes, 8 * len(params))
@@ -920,9 +953,19 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
         if roles_per_program == 2:
             break
         try:
-            asm_text, cg = _emit(kernel, target, prov, opt_level, options, stages)
+            asm_text, cg = _emit(kernel, target, prov, opt_level, emit_options, stages)
             break
         except CompileError as e:
+            if single_role_applied and e.detail.get('kind') == 'ResourceError':
+                prov.record('single_role_pipeline_fallback', str(e)[:200])
+                prov.entries.pop('single_role_pipeline', None)
+                stages.stages.pop('tnir_single_role_pipeline', None)
+                kernel = _copy.deepcopy(plain)
+                single_role_applied = False
+                emit_options = options
+                programs_per_launch = _rctx_spmd(kernel, target, prov, options, stages,
+                                                 scratch_bytes, 8 * len(params))
+                continue
             if retry == 'fail' or programs_per_launch == 1 or e.detail.get('kind') != 'ResourceError':
                 raise
             prov.record('rctx_spmd_fallback', f'{retry}: {str(e)[:160]}')
@@ -978,7 +1021,11 @@ def _rctx_roles(kernel, target, prov, options, stages, scratch_bytes, scratch_sl
     except partition.NotSpecialised as e:
         prov.record('rctx_roles_refused', str(e))
         return None
-    pairs = max(1, int(getattr(target, 'num_rctx', 1) or 1) // 2)
+    maximum_pairs = max(1, int(getattr(target, 'num_rctx', 1) or 1) // 2)
+    requested_pairs = (options or {}).get('rctx_role_pairs', 0)
+    if requested_pairs > maximum_pairs:
+        raise ValueError('requested paired programs exceed target role contexts')
+    pairs = requested_pairs or maximum_pairs
     while True:
         trial = copy.deepcopy(kernel)
         sizes = rctx_spmd.slices(target, pairs) if pairs > 1 else None

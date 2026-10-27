@@ -74,6 +74,14 @@ def _rctx_roles():
     return int(os.environ.get('TNCA_RCTX_ROLES', '0'))
 
 
+def _rctx_role_pairs():
+    return int(os.environ.get('TNCA_RCTX_ROLE_PAIRS', '0'))
+
+
+def _single_role_pipeline():
+    return int(os.environ.get('TNCA_SINGLE_ROLE_PIPELINE', '0'))
+
+
 def _rctx_stages():
     from tnca.aot import _pipeline_stages_default
     return _pipeline_stages_default()
@@ -139,6 +147,8 @@ class TNCAOptions:
     rctx_spmd: int = field(default_factory=_rctx_spmd)
     sparse_tensormaps: int = field(default_factory=_sparse_tensormaps)
     rctx_roles: int = field(default_factory=_rctx_roles)
+    rctx_role_pairs: int = field(default_factory=_rctx_role_pairs)
+    single_role_pipeline: int = field(default_factory=_single_role_pipeline)
     rctx_stages: int = field(default_factory=_rctx_stages)
     bank_alloc: int = field(default_factory=_bank_alloc)
     window_reuse: int = field(default_factory=_window_reuse)
@@ -146,6 +156,14 @@ class TNCAOptions:
     ieee_div: int = field(default_factory=_ieee_div)
 
     def __post_init__(self):
+        if type(self.rctx_role_pairs) is not int or self.rctx_role_pairs not in (0, 1, 2):
+            raise ValueError('rctx_role_pairs must be 0, 1 or 2')
+        if self.rctx_role_pairs and not self.rctx_roles:
+            raise ValueError('rctx_role_pairs requires rctx_roles')
+        if type(self.single_role_pipeline) is not int or self.single_role_pipeline not in (0, 1):
+            raise ValueError('single_role_pipeline must be 0 or 1')
+        if self.single_role_pipeline and self.rctx_roles:
+            raise ValueError('single_role_pipeline and rctx_roles are mutually exclusive')
         if type(self.rctx_stages) is not int or self.rctx_stages not in (1, 2, 3):
             raise ValueError('rctx_stages must be 1, 2 or 3')
 
@@ -329,7 +347,8 @@ class TNCABackend(BaseBackend):
                           ('schedule', 'TNCA_SCHEDULE'), ('index_opt', 'TNCA_INDEX_OPT'),
                           ('rctx_spmd', 'TNCA_RCTX_SPMD'),
                           ('sparse_tensormaps', 'TNCA_SPARSE_TENSORMAPS'),
-                          ('rctx_roles', 'TNCA_RCTX_ROLES'), ('bank_alloc', 'TNCA_BANK_ALLOC'),
+                          ('rctx_roles', 'TNCA_RCTX_ROLES'), ('rctx_role_pairs', 'TNCA_RCTX_ROLE_PAIRS'),
+                          ('single_role_pipeline', 'TNCA_SINGLE_ROLE_PIPELINE'), ('bank_alloc', 'TNCA_BANK_ALLOC'),
                           ('window_reuse', 'TNCA_WINDOW_REUSE'),
                           ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
                           ('ieee_div', 'TNCA_IEEE_DIV')):

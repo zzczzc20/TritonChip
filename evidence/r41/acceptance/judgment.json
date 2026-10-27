@@ -1,12 +1,12 @@
 {
-  "scope": "Audit plus P0 prospective freeze, P8 measured follow-up and P1 corrective/study closeout, 2026-10-27; historical failures remain.",
+  "scope": "Audit plus P0 prospective freeze, P8 measured follow-up, P1 bounded studies and P2 locality/resource work, 2026-10-27; historical failures remain.",
   "integrity": "passed",
   "status": "not accepted",
   "counts": {
-    "passed": 35,
+    "passed": 41,
     "failed": 2,
-    "not measured": 49,
-    "blocked": 8
+    "not measured": 44,
+    "blocked": 7
   },
   "errors": [],
   "items": [
@@ -408,46 +408,52 @@
     {
       "id": "S2-03.A.1",
       "requirement": "Two model-agnostic standard Torch locality/DCO graphs",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/acceptance/p2/rtl-v4/report.json",
+        "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Residual and projection standard Torch graphs execute their captured native Inductor artifacts with locality off/on/off on the board-top MMIO RTL binding. Identical artifact and output hashes pass the closeout validator. This is functional delivery, not a physical-board performance claim.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.2",
       "requirement": "Policies traceable to storage, aliasing and lifetimes",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/acceptance/p2/rtl-v4/report.json",
+        "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Each executed plan records Session-owned storage identities, addresses, sizes, aliasing and captured first/last command uses. The applied policy is conservative LRU only; no aggressive hint is inferred from incomplete global access knowledge.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.3",
       "requirement": "Safe handling of aliases and incomplete readers/writers",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/acceptance/p2/rtl-v4/metadata-tests.log",
+        "evidence/r41/acceptance/p2/rtl-v4/report.json",
+        "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Seven real-Session tests cover coalesced views, declared aliases, undeclared overlap, descriptors, forged/freed/stale handles, unsupported backends and whole-plan capacity refusal. Every executed range retains incomplete reader/writer flags with dead/bypass disabled.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.4",
       "requirement": "Off/on numerical, ownership and fault checks",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/acceptance/p2/rtl-v4/metadata-tests.log",
+        "evidence/r41/acceptance/p2/rtl-v4/report.json",
+        "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
-      "closure_plan": "P2"
+      "reason": "Both graphs pass numerical off/on/off replay with unchanged outputs and no host retransmission. Injected numerical admission faults after real control registration propagate, restore policy zero and poison the captured graph against later off replay; ownership tests pass.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.A.5",
@@ -455,9 +461,11 @@
       "status": "not measured",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md"
+        "evidence/r41/acceptance/p2/rtl-v4/report.json",
+        "evidence/r41/acceptance/p2/summary.json",
+        "spec/r41/stage2/acceptance/s2-p2-locality.json"
       ],
-      "reason": "Consumer design exists; no delivered graph-level consumer and no matching off/on execution evidence. Default-off does not close functional delivery.",
+      "reason": "Actual RTL counter and host/device timing rows are archived, but no physical U280 locality comparison has run. The approved-image manifest is prepared only; RTL observations do not close this board requirement or establish a performance gain.",
       "closure_plan": "P2"
     },
     {
@@ -466,22 +474,27 @@
       "status": "not measured",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage1/board/metrics.json"
+        "evidence/r41/stage1/board/metrics.json",
+        "evidence/r41/acceptance/p2/pipeline-summary.json",
+        "evidence/r41/acceptance/p2/pipeline-index.json"
       ],
-      "reason": "Stage 1 pipeline cases exist; no final-image fixed-budget three-way comparison. Physical overlap remains unmeasured.",
+      "reason": "Three fixed-budget standard Torch policies now have 18 bitwise SystemC rows and actual one-core RTL DMA/MMA overlap for the single-role candidate. These grid-one points and uncalibrated model timing do not close the final-image board comparison; the lead-only measurement is being prepared.",
       "closure_plan": "P2"
     },
     {
       "id": "S2-03.C",
       "requirement": "Study lifetime allocation and static asymmetric resources; declare any new RTL/ABI capability",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Study",
       "evidence": [
-        "evidence/r41/stage1/locality_design.md",
-        "evidence/r41/stage1/board/metrics.json"
+        "evidence/r41/acceptance/p2/private-resource-study.md",
+        "evidence/r41/acceptance/p2/pipeline-summary.json",
+        "evidence/r41/acceptance/p2/pipeline-index.json",
+        "rtl/core/tnca_core.v",
+        "compiler/python/tnca_cc/window_lifetime.py"
       ],
-      "reason": "No complete Stage 2 asymmetric-resource decision bundle. Dynamic register reallocation is optional and is not claimed.",
-      "closure_plan": "P2"
+      "reason": "Bounded negative Study evaluates real paired producer/consumer command demands, equal two-context/64-register-per-program budgets, current window lifetime reuse and the static asymmetric VRF proposal. Existing RPAIR shares one base and provides no additional register pool; measured representative kernels fit, so no new capability or dynamic reallocation is selected. Other workloads and board speedups are not inferred.",
+      "closure_plan": null
     },
     {
       "id": "S2-04.A",
@@ -1112,13 +1125,13 @@
     {
       "id": "DoD.Stage1",
       "requirement": "Stage 1 completion",
-      "status": "blocked",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/board/acceptance.json"
       ],
-      "reason": "Frozen Stage 1 checker: 59 passed, one not measured, one blocked of 61. Matched final-source old-mapping comparison remains open.",
-      "closure_plan": "P7"
+      "reason": "The frozen product and software identity passes all 61 Stage 1 checks with zero failures, not-measured rows or blockers. This closes Stage 1 only; Stage 2 and overall R41 remain unaccepted.",
+      "closure_plan": null
     },
     {
       "id": "DoD.Stage2",
@@ -1223,8 +1236,6 @@
     }
   ],
   "stage1_frozen_snapshot_counts": {
-    "pass": 59,
-    "not-measured": 1,
-    "blocked": 1
+    "pass": 61
   }
 }

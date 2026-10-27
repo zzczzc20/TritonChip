@@ -428,3 +428,39 @@ The queue verifies the approved image UUID, 100 MHz clock evidence and kdsstat
 around each step; it never programs or resets the card. A timeout preserves the
 failure and needs a new lead budget decision, not an automatic retry. No agent
 card access, image loading or full-image build occurred.
+
+## P2 pipeline and resource checkpoint — 2026-10-27
+
+Implemented an opt-in single-role two-slot schedule for a conservatively
+recognized one-MMA loop. It retains separate windows, waits for the previous
+MMA before rearming its barrier, and drains an odd final iteration before
+the original epilogue. Unsupported or resource-exceeding cases fall back to
+the existing path. A paired-program cap allows the Mode A comparison to use
+the same two-context budget. Default selection is unchanged. Compiler channel
+checking now accounts for completed MMA operations on their barriers.
+
+Actual model evidence: 18 bitwise standard Torch rows across Mode B, single-role
+and paired two-stage runs, all on one source/model identity, with identical
+inputs, outputs and a two-context mask. Each grid contains one program; this
+is not a three-core scaling result. Four earlier-source single-core RTL rows
+also pass and real engine traces show DMA/MMA overlap. `p2/pipeline_closeout.py`
+validates the raw archive, repeated identities, odd/even cases and traces.
+Model timing is uncalibrated and the board comparison remains not measured.
+The first attempt's missing dump stage and the second attempt's one-versus-two
+static-MMA harness assertion are retained in the archive; both were corrected.
+
+The bounded static asymmetric-resource analysis is in
+`p2/private-resource-study.md`. RPAIR shares a register base; no larger private
+pool or new capability is claimed. S2-03.C passes as a negative Study. Current
+ledger: 41 passed / 2 failed / 44 not measured / 7 blocked. The corrected
+`make compiler` passes 157 tests with 53 skips; the MLIR IR suite is skipped
+because tnca-opt is absent. The first compiler invocation imported the old
+installed package and failed; its corrected PYTHONPATH run passed.
+
+GB10 r41-accept-p2-default-audit-v5 is comparing all 113 default point artifacts
+against the earlier corrected compiler; r41-accept-p2-single-rtl-v2 is checking
+BF16 and four K steps on the actual single-core RTL. Both units were confirmed
+live. Next: inspect those exact units; preserve and diagnose any failures,
+finish a three-sample locally tested lead-only pipeline manifest within P2's
+remaining board budget, stage its immutable source, and write the exact launch
+command. The fixed-budget hardware comparison stays open until the lead runs it.

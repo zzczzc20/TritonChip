@@ -225,3 +225,23 @@ open. An approved-image board manifest is prepared but not launched.
 The frozen Stage 1 DoD row is reconciled to its accepted 61/61 result. Current
 ledger: **40 passed, two failed, 45 not measured, seven blocked**. Stage 2 and
 overall R41 remain not accepted.
+
+## P2 pipeline and private-resource preflight — 2026-10-27
+
+The new opt-in single-role two-slot schedule preserves one 64-register
+program space, issues the next transfer while the prior MMA is outstanding,
+and drains the odd-trip exit. Unsupported loops retain the original path.
+Under the same model source, three-core profile and two-context mask, Mode B,
+single-role and two-stage paired execution pass 18 bitwise standard Torch rows.
+The registered grid-one points exercise one program, not three-core scaling.
+Four additional one-core RTL rows pass and their real DMA/MMA interval traces
+show overlap. `evidence/r41/acceptance/p2/pipeline-summary.json` and its raw
+archive retain identities, input/output hashes, actual resources and limits.
+Model timing is uncalibrated; final-image board comparison remains unmeasured.
+
+The bounded static private-resource Study concludes that the tested kernels
+fit existing limits and RPAIR shares a base rather than adding a register pool.
+No asymmetric or dynamic reallocation capability is selected. See
+`evidence/r41/acceptance/p2/private-resource-study.md`. S2-03.C now passes as
+a negative Study. Current ledger: **41 passed, two failed, 44 not measured,
+seven blocked**. Stage 2 and overall R41 remain not accepted.

@@ -1072,6 +1072,8 @@ class CodeGen:
         # safety checks concluded, which is exactly what it must not do.
         for cmd in self._mma_pending.pop(bar, []):
             self.own.release(cmd)
+            if self.protocol and isinstance(cmd, str) and cmd.startswith('mma'):
+                self.protocol.complete_operation(bar, 'mma')
         # R39-12: a producer waiting for the consumer to release a ring stage
         # knows the transfers it filled the stage with are complete -- the
         # consumer waited for them before it read the windows -- so the

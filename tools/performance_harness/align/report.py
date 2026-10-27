@@ -49,6 +49,11 @@ def main():
             out.append(f"| {k} | {p['status']} | | | | {p.get('error', '')[:60]} | |" + (' | | |' if o else ''))
             continue
         s = p['streams']
+        if 'issue' not in s:   # an uncore trace: no cycle verdict of its own, the port's streams
+            row = (f"| {k} | {p['aligned_launches']}/{p['launches_a']} | | | "
+                   f"| slice: {first(s['slice_req'])} / {first(s['slice_rsp'])} | port: {first(s['dram_req'])} / {first(s['dram_rsp'])} |")
+            out.append(row + (' | | |' if o else ''))
+            continue
         row = (f"| {k} | {p['aligned_launches']}/{p['launches_a']} | {p['cycles_a']} | {p['cycles_b']} | "
                f"{p.get('cycle_error', 0):+.2%} | {first(s['issue'])} | {first(s['request'])} |")
         if o:

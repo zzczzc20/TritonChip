@@ -175,13 +175,24 @@ def sysfs_probe(board):
         row['clock_counter_mhz'] = None
     fields = {}
     try:
+        client_lines = []
+        reading_clients = False
         for line in (base/'kdsstat').read_text().splitlines():
-            name, _, value = line.partition(':')
-            fields[name.strip()] = value.strip()
+            if ':' in line:
+                name, _, value = line.partition(':')
+                fields[name.strip()] = value.strip()
+                reading_clients = name.strip() == 'client pid'
+                if reading_clients and value.strip():
+                    client_lines.append(value.strip())
+            elif reading_clients and line.strip():
+                client_lines.append(line.strip())
+        fields['client pid'] = ' '.join(client_lines)
     except OSError:
         pass
     row['contexts'] = int(fields['contexts']) if fields.get('contexts', '').isdigit() else None
     row['client_pid'] = fields.get('client pid') or None
+    value = fields.get('outstanding execs', '')
+    row['outstanding_execs'] = int(value) if value.isdigit() else None
     return row
 
 
@@ -195,6 +206,10 @@ def board_refusal(identity, probe):
         return f'measured clock counter {mhz} MHz differs from the declared {identity["clock_hz"]} Hz'
     if probe.get('contexts') is None:
         return 'card use (kdsstat contexts) is unreadable'
+    if 'outstanding_execs' in probe and probe['outstanding_execs'] is None:
+        return 'card use (kdsstat outstanding execs) is unreadable'
+    if probe.get('outstanding_execs', 0) != 0:
+        return f'card in use: outstanding execs={probe["outstanding_execs"]}'
     if probe['contexts'] != 0 or probe.get('client_pid'):
         return f'card in use: contexts={probe["contexts"]} client={probe.get("client_pid")}'
     return None
@@ -207,7 +222,7 @@ def conclusion_fields(record, source):
     return {k: record[k] for k in CONCLUSION_FIELDS}
 
 
-def run(manifest, root, out, *, python, retry_failed=False, conclusion=None, board_probe=sysfs_probe):
+def run(manifest, root, out, *, python, retry_failed=False, conclusion=None, board_probe=sysfs_probe, budget_seconds=None):
     spec = json.loads(manifest.read_text())
     if socket.gethostname() not in spec['allowed_hosts']:
         raise ValueError('this experiment may run only on its declared remote hosts')
@@ -249,12 +264,27 @@ def run(manifest, root, out, *, python, retry_failed=False, conclusion=None, boa
     ids = [step['id'] for step in spec['steps']]
     if len(set(ids)) != len(ids) or any(not name.replace('-', '').replace('_', '').isalnum() for name in ids):
         raise ValueError('step ids must be unique simple names')
+    experiment_started = time.monotonic()
+    total_budget = spec.get('budget_seconds')
+    if budget_seconds is not None:
+        if type(budget_seconds) not in (int, float) or not 0 < budget_seconds <= 259200:
+            raise ValueError('caller budget must be finite and positive')
+        total_budget = min(total_budget, budget_seconds) if total_budget is not None else budget_seconds
+    if total_budget is not None and (type(total_budget) not in (int, float) or not 0 < total_budget <= 259200):
+        raise ValueError('experiment total budget must be finite and positive')
     for step in spec['steps']:
         if step['kind'] not in KINDS or not isinstance(step['argv'], list) or not step['argv']:
             raise ValueError('each step requires an explicit command and evidence kind')
         timeout = step['timeout_seconds']
         if type(timeout) not in (int, float) or not 0 < timeout <= 259200:
             raise ValueError('each command requires a finite positive budget')
+        if total_budget is not None:
+            remaining = total_budget - (time.monotonic() - experiment_started)
+            if remaining <= 0:
+                report.update(status='stopped-on-budget', total_budget_seconds=total_budget)
+                publish(report_path, report)
+                return report
+            timeout = min(timeout, remaining)
         argv = [expand(arg) for arg in step['argv']]
         # Product knobs are explicit experiment inputs. Ambient TNCA knobs
         # must not silently change an otherwise identical measurement.
@@ -401,10 +431,11 @@ if __name__ == '__main__':
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--python', type=Path, required=True)
     ap.add_argument('--retry-failed', action='store_true')
+    ap.add_argument('--budget-seconds', type=float, help='additional cap; cannot increase the registered budget')
     ap.add_argument('--conclusion', type=Path,
                     help='reviewed JSON with result/residual/conclusion/next_step for a completed experiment')
     args = ap.parse_args()
     result = run(args.manifest, args.root, args.out, python=args.python,
-                 retry_failed=args.retry_failed, conclusion=args.conclusion)
+                 retry_failed=args.retry_failed, conclusion=args.conclusion, budget_seconds=args.budget_seconds)
     print(result['status'])
     raise SystemExit(0 if result['status'] == 'completed-experiment' else 1)

@@ -1,0 +1,92 @@
+{
+  "schema": "tnca-r41-locality-closeout/1",
+  "status": "functional-pass",
+  "source_report": "evidence/r41/acceptance/p2/rtl-v4/report.json",
+  "source_software_tree": "files:cc69519df752cb0ba6ba4507f8fec6207e29d540817d9fbcae78d325af90633a",
+  "backend": "fpga-multicore-sim",
+  "rows": [
+    {
+      "graph": "residual",
+      "locality": false,
+      "output_sha256": "38e05c0c30cfe338c1b1d0ecd239a86c43b07e806f493f1d973ec9db7875d603",
+      "device_cycles": 758,
+      "host_scope_seconds": 3.7933756606653333,
+      "traffic": {
+        "read_lines": 9,
+        "write_lines": 1
+      }
+    },
+    {
+      "graph": "residual",
+      "locality": true,
+      "output_sha256": "38e05c0c30cfe338c1b1d0ecd239a86c43b07e806f493f1d973ec9db7875d603",
+      "device_cycles": 802,
+      "host_scope_seconds": 24.155087005347013,
+      "traffic": {
+        "read_lines": 29,
+        "write_lines": 4
+      },
+      "control_events": 7
+    },
+    {
+      "graph": "residual",
+      "locality": false,
+      "output_sha256": "38e05c0c30cfe338c1b1d0ecd239a86c43b07e806f493f1d973ec9db7875d603",
+      "device_cycles": 780,
+      "host_scope_seconds": 3.666534441523254,
+      "traffic": {
+        "read_lines": 15,
+        "write_lines": 0
+      }
+    },
+    {
+      "graph": "projection",
+      "locality": false,
+      "output_sha256": "d364c6df61da7aa37b5c3bb15c5489b32d3bc916e60fb1019b70e44363934f2b",
+      "device_cycles": 9425,
+      "host_scope_seconds": 16.500847294926643,
+      "traffic": {
+        "read_lines": 98,
+        "write_lines": 48
+      }
+    },
+    {
+      "graph": "projection",
+      "locality": true,
+      "output_sha256": "d364c6df61da7aa37b5c3bb15c5489b32d3bc916e60fb1019b70e44363934f2b",
+      "device_cycles": 9373,
+      "host_scope_seconds": 31.807328377850354,
+      "traffic": {
+        "read_lines": 112,
+        "write_lines": 47
+      },
+      "control_events": 7
+    },
+    {
+      "graph": "projection",
+      "locality": false,
+      "output_sha256": "d364c6df61da7aa37b5c3bb15c5489b32d3bc916e60fb1019b70e44363934f2b",
+      "device_cycles": 9391,
+      "host_scope_seconds": 16.460053897462785,
+      "traffic": {
+        "read_lines": 98,
+        "write_lines": 45
+      }
+    }
+  ],
+  "fault_checks": [
+    {
+      "graph": "residual",
+      "status": "pass",
+      "restored_policy": 0,
+      "off_replay_refused": true
+    },
+    {
+      "graph": "projection",
+      "status": "pass",
+      "restored_policy": 0,
+      "off_replay_refused": true
+    }
+  ],
+  "interpretation": "RTL functional observations; not physical-board or performance acceptance"
+}

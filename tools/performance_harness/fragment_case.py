@@ -83,14 +83,22 @@ def bit_compare(got, ref):
                           for i in differ[:8]])
 
 
+def require_matching_bits(row):
+    """Refuse a measured row if either independent or repeat check differs."""
+    if not row['bitwise_reference']['equal'] or not row['cold_bitwise_same']:
+        raise ValueError('bitwise reference or cold/steady comparison failed')
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--columns', type=int, choices=(16, 32), default=32)
     ap.add_argument('--dtype', choices=('float16', 'bfloat16'), default='float16')
     ap.add_argument('--strided', action='store_true')
+    ap.add_argument('--samples',type=int,default=1,help='timed resident calls after qualification (frozen board points use three)')
     ap.add_argument('--require-resident', action='store_true')
     ap.add_argument('--shapes', default='17x65x33,33x31x65', help='M x N x K list; input/reference semantics stay unchanged')
+    ap.add_argument('--require-single-role-pipeline',action='store_true', help='require an executed single-role pipeline in every registered point')
     ap.add_argument('--ring-stages', type=int, choices=(1,2,3), help='force the existing two-role ring and audit its actual artifact')
     ap.add_argument('--rtl-engine-trace',action='store_true',help='retain actual single-core RTL DMA/MMA intervals')
     ap.add_argument('--cancel', action='store_true',
@@ -98,6 +106,7 @@ def main():
     ap.add_argument('--bitwise', action='store_true',
                     help='also compare raw output bits with the per-K FP32 FMA reference and keep them')
     args = ap.parse_args()
+    if not 1 <= args.samples <= 30:ap.error('samples must be between 1 and 30')
     try:
         shapes=[tuple(int(v) for v in item.split('x')) for item in args.shapes.split(',')]
         if not shapes or any(len(s)!=3 or min(s)<=0 for s in shapes):
@@ -121,7 +130,7 @@ def main():
     report = dict(schema='tnca-fragment-case/1', status='running',
                   execution='torch.compile(backend=inductor,fullgraph=True) on tnca',
                   evidence='development-only', columns=args.columns, dtype=args.dtype,
-                  strided=args.strided, bitwise=args.bitwise, cancel=args.cancel, rows=[])
+                  strided=args.strided, bitwise=args.bitwise, cancel=args.cancel, timed_samples=args.samples, rows=[])
     def save():
         (out/'report.json').write_text(json.dumps(report, indent=2)+'\n')
     save()
@@ -188,29 +197,58 @@ def main():
                     reference = per_k_fma_reference(a, b, c if name == 'addmm' else None).float()
                 cold = compiled(da, db, dc)
                 torch.testing.assert_close(cold.cpu().float(), reference, rtol=2e-3, atol=2e-3)
+                session=device.MEMORY.session()
+                port_probe=getattr(session.dev,'memory_port_metrics',None) if session.physical_grid else None
+                port_before=port_probe() if callable(port_probe) else None
                 snapshots = ({str(i): model.counters_snapshot()
                               for i, model in enumerate(model_class.instances) if model.proc is not None}
                              if model_class else {})
                 start = time.monotonic()
-                session=device.MEMORY.session()
                 history_start=len(session.dev.history) if args.rtl_engine_trace else None
                 with launch_log(isolated=True) as launches:
                     result = compiled(da, db, dc)
                 sequences=([e['seq'] for e in session.dev.history[history_start:] if e['op'] in (3,9)]
                            if args.rtl_engine_trace else [])
                 wall = time.monotonic() - start
+                port_after=port_probe() if callable(port_probe) else None
                 after = ({str(i): model.counters_snapshot()
                           for i, model in enumerate(model_class.instances) if model.proc is not None}
                          if model_class else {})
+                # Keep every timed output resident until the full sample block
+                # finishes: CPU checks and ownership handoffs are outside it.
+                timed_results=[result]
+                samples=[dict(device_cycles=sum(e['device_cycles'] for e in launches),host_seconds=wall,
+                              output_bits_sha256=None,counters_before=port_before,counters_after=port_after)]
+                for _ in range(1,args.samples):
+                    before_extra=port_probe() if callable(port_probe) else None
+                    seq_start=len(session.dev.history) if args.rtl_engine_trace else None
+                    t0=time.monotonic()
+                    with launch_log(isolated=True) as more_launches:
+                        more=compiled(da,db,dc)
+                    elapsed=time.monotonic()-t0
+                    after_extra=port_probe() if callable(port_probe) else None
+                    if args.rtl_engine_trace:
+                        sequences += [e['seq'] for e in session.dev.history[seq_start:] if e['op'] in (3,9)]
+                    assert [e['artifact'] for e in more_launches]==[e['artifact'] for e in launches]
+                    assert all(e['upload_bytes']==e['download_bytes']==0 for e in more_launches)
+                    timed_results.append(more)
+                    samples.append(dict(device_cycles=sum(e['device_cycles'] for e in more_launches),
+                                        host_seconds=elapsed,output_bits_sha256=None,
+                                        counters_before=before_extra,counters_after=after_extra))
                 got = result.cpu().float()
                 torch.testing.assert_close(got, reference, rtol=2e-3, atol=2e-3)
                 assert launches and all(e['upload_bytes'] == e['download_bytes'] == 0 for e in launches)
-                resources = [];rings=[]
+                resources = [];rings=[];single_role_plans=[]
                 for entry in launches:
                     manifest, segments = artifact.load(entry['artifact_path'])
                     prov = manifest['optional_metadata']['provenance']
                     plan = prov.get('execution_resources', {})
                     ring=prov.get('rctx_roles_ring')
+                    single=prov.get('single_role_pipeline')
+                    if single:
+                        assert single['roles']==1 and single['stages']==2,single
+                        assert len(manifest['execution']['program_to_role']['0'])==1,manifest['execution']
+                        single_role_plans.append(single)
                     if ring:
                         rings.append(ring)
                         if args.ring_stages is not None:
@@ -220,7 +258,7 @@ def main():
                                                      for site in plan.get('gemm', {}).get('sites', [])):
                         # A K loop exists (K > 16): its accumulators stay resident.
                         loops = [loop for role in plan.get('roles', []) for loop in role['loops']
-                                 if loop['static_mma_commands'] == args.columns // 16]
+                                 if loop['static_mma_commands'] == (args.columns // 16)*(single['stages'] if single else ring['stages'] if ring else 1)]
                         assert any(loop['static_acc_reads'] == loop['static_acc_writes'] ==
                                    loop['static_acc_zeros'] == 0 for loop in loops), plan
                         trips = plan['accumulator_round_trips']
@@ -228,9 +266,15 @@ def main():
                     digest = hashlib.sha256(segments['text']).hexdigest()
                     shutil.copyfile(entry['artifact_path'], out/'artifacts'/f'{digest}.tnca')
                     resources.append(dict(code_sha256=digest, code_bytes=len(segments['text']),
-                                          manifest_resources=manifest['resources'], plan=plan))
+                                          manifest_resources=manifest['resources'], plan=plan,
+                                          execution=manifest['execution'],
+                                          scheduling={k:prov[k] for k in ('rctx_spmd','rctx_slice','rctx_roles',
+                                              'rctx_roles_pairs','rctx_roles_ring','single_role_pipeline',
+                                              'single_role_pipeline_refused','single_role_pipeline_fallback') if k in prov}))
                 if args.ring_stages is not None:
                     assert rings,'forced ring did not execute through the standard Torch graph'
+                if args.require_single_role_pipeline:
+                    assert single_role_plans,'single-role pipeline did not execute through the standard Torch graph'
                 deltas = {i: {key: value - snapshots.get(i, {}).get(key, 0)
                               for key, value in values.items()}
                           for i, values in after.items()}
@@ -257,11 +301,32 @@ def main():
                                logical_tiles=sorted({tuple(s['logical_tile']) for x in resources
                                                      for s in x['plan'].get('gemm', {}).get('sites', [])
                                                      if 'logical_tile' in s}))
+                row.update(inputs=inputs,timed_samples=samples)
+                for sample,tensor in zip(samples,timed_results):
+                    sample_cpu=tensor.cpu()
+                    torch.testing.assert_close(sample_cpu.float(),reference,rtol=2e-3,atol=2e-3)
+                    sample_bits=hashlib.sha256(sample_cpu.contiguous().view(torch.uint8).numpy().tobytes()).hexdigest()
+                    sample['output_bits_sha256']=sample_bits
+                    if args.bitwise and sample_bits != row['reference_bits_sha256']:
+                        row.update(status='fail',failed_sample=samples.index(sample)+1,
+                                   failed_sample_output_bits_sha256=sample_bits)
+                        report['rows'].append(row);save()
+                        raise ValueError('timed sample differs from the independent bitwise reference')
+                row['timed_samples']=samples
                 row.update(inputs=inputs,ring_plans=rings,ring_stages=args.ring_stages,
+                           single_role_plans=single_role_plans,
                            model_counters_before=snapshots,model_counters_after=after,rtl_sequences=sequences,
                            input_placements=[dict(base=t.untyped_storage().data_ptr(),offset=t.storage_offset(),
                                                   shape=list(t.shape),stride=list(t.stride())) for t in (da,db,dc)],
                            output_placement=dict(base=result.untyped_storage().data_ptr(),offset=result.storage_offset()))
+                if args.bitwise:
+                    try:
+                        require_matching_bits(row)
+                    except ValueError:
+                        row['status'] = 'fail'
+                        report['rows'].append(row)
+                        save()
+                        raise
                 if model_class:
                     from prediction_domain import timing_status, VALID_STATUSES
                     qualifications = [timing_status(after[str(i)], slow=model.identity['dram_path']=='slow')

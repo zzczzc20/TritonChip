@@ -153,7 +153,7 @@ class MulticoreMMIOBackend(U50Backend):
 
     def capabilities(self):
         out = super().capabilities()
-        out.update(physical_grid=True, memory_ports=self.memory_ports,
+        out.update(physical_grid=True, tmu_locality=True, tmu_ranges=8, memory_ports=self.memory_ports,
                    memory_bytes=self.memory_bytes, memory_configuration=(dict(self._memory_config) if self._memory_config is not None else None),
                    completion_counters='global-makespan-u64', fault_detail=False,
                    reaches='rtl/fpga/tnca_multicore_fpga.v',

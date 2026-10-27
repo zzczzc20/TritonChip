@@ -33,7 +33,7 @@ def evaluate(root, index, overall=False):
         path = root/name
         if not path.is_file() or digest(path) != expected:
             errors.append(f'evidence missing or changed: {name}')
-    for row in rows:
+    for row in rows + index.get('followups', []):
         if row['status'] not in STATUSES:
             errors.append(f"{row['id']}: invalid status")
         if not row.get('evidence') or not row.get('reason'):
@@ -53,7 +53,7 @@ def evaluate(root, index, overall=False):
     accepted = not errors and all(r['status']=='passed' for r in rows)
     result = dict(scope=index['scope'], integrity='failed' if errors else 'passed',
                   status='passed' if accepted else 'not accepted', counts=counts,
-                  errors=errors, items=rows)
+                  errors=errors, items=rows, followups=index.get('followups', []))
     if overall:
         s1 = json.loads((root/'evidence/r41/stage1/board/acceptance.json').read_text())
         s1counts = dict(Counter(r['status'] for r in s1['items']))
@@ -76,9 +76,13 @@ def render(index):
     for r in index['items']:
         evidence = '; '.join('`'+p+'`' for p in r['evidence'])
         out.append('| '+ ' | '.join([r['id'],r['classification'],r['requirement'],r['status'],evidence+' — '+r['reason'],r['closure_plan'] or 'Closed for stated scope'])+' |')
-    out += ['', 'FP8 Hub/Qwen layer board campaigns remain **not measured**: '
-            'the environment failed before execution. See P8. They cannot replace '
-            'the mandatory BF16 Qwen3.5-2B full-model workload.', '']
+    out += ['', '## Supplementary delivery follow-ups', '',
+            '| Follow-up | Judgment | Evidence and scope |', '|---|---|---|']
+    for row in index.get('followups', []):
+        out.append('| '+row['id']+' | '+row['status']+' | '+row['reason']+' '+
+                   '; '.join('`'+p+'`' for p in row['evidence'])+' |')
+    out += ['', 'FP8 layer campaigns do not replace the mandatory BF16 '
+            'Qwen3.5-2B full-model workload.', '']
     return '\n'.join(out)
 
 def main():

@@ -1098,7 +1098,7 @@
    "note": "Nine frozen subset points, both tiles: 18 numerical passes. Performance hypothesis fails on eight points."
   },
   "S1-02.old_mapping_and_conservative_baseline_comparisons": {
-   "claim": "not-measured",
+   "claim": "pass",
    "requires": [
     "board"
    ],
@@ -1113,9 +1113,18 @@
       "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
      },
      "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/old-mapping/board-comparison.json",
+     "sha256": "a179f425368d2160a349192079d611fe30ead436e33a363ada7c6fca74a4058f",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
     }
    ],
-   "note": "Current 16x16 control measured, but no matched final-source old-mapping board comparison is established. Historical model comparisons are retained, not upgraded to board measurements."
+   "note": "Matched nine-point board comparison records the isolated old-mapping control, repaired wide tile and conservative 16x16 baseline. The repair comparison and no-slower performance failure are separate judgments."
   },
   "S1-03.barrier_ordering_audit_and_negative_cases": {
    "claim": "pass",
@@ -1843,7 +1852,7 @@
    "evidence": [
     {
      "path": "doc/r41_stage1_report.md",
-     "sha256": "860ef2ac2a303ca66ca879ad340663d319d9bffa5dded5726d3f4e2f19a82e49",
+     "sha256": "164f745822f76380c79cdb6a9ffb84acb803f92d46431d1f8a8a2c8b0c585694",
      "kind": "doc",
      "binds": {
       "git_commit": "25094197f6e6",
@@ -1851,7 +1860,7 @@
      }
     }
    ],
-   "note": "Evidence-qualified closeout report for frozen product; stage remains not accepted."
+   "note": "Evidence-qualified closeout report for the accepted frozen Stage 1 product."
   },
   "S1-05.stage2_ready_blocker_list": {
    "claim": "pass",
@@ -1862,7 +1871,7 @@
    "evidence": [
     {
      "path": "evidence/r41/stage1/stage2_readiness.md",
-     "sha256": "85691c7f4139131a2eb580473034f86eb9c16651b451321531cf4978edf6cfc7",
+     "sha256": "e0222f2afb03fcba8dbdf449a2c2068c1ed0e3595d4faaa4c853c8bd29dfaee7",
      "kind": "doc",
      "binds": {
       "git_commit": "25094197f6e6",

@@ -1,0 +1,502 @@
+{
+  "schema": "r41-p2-pipeline-comparison/1",
+  "result": "measured",
+  "residual": "Not calculated: a separate matched prediction and physical residual review is required.",
+  "conclusion": "Three recorded samples per registered point; compare per-point ratios and retain negative results.",
+  "next_step": "Review physical identity, sample stability, and final-source scope before rejudging the acceptance study.",
+  "backend": "systemc-tlm-grid",
+  "software_tree": "files:b94e05f7d016b6ec877e0fe0f2138c3217ff380acb8160b9d1da3b0ceb8e2bc0",
+  "rows": [
+    {
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        32
+      ],
+      "device_cycles": {
+        "baseline": [
+          3416,
+          3382,
+          3368
+        ],
+        "single": [
+          3136,
+          3102,
+          3088
+        ],
+        "paired": [
+          3122,
+          3088,
+          3074
+        ]
+      },
+      "median_cycles": {
+        "baseline": 3382,
+        "single": 3102,
+        "paired": 3088
+      },
+      "single_ratio": 1.0902643455834946,
+      "paired_ratio": 1.0952072538860103,
+      "artifacts": {
+        "baseline": "9188d3cf0639c50caa17c4be524d2e889bc8f567df28cc362636444b2b267f2f",
+        "single": "967950cd4748611ce140fb673babfc037ffe449e3eae940a225c49edbd297928",
+        "paired": "d7eb5a7838d360031f64ade012ae5d56576ed00b790812fe0a44977ea11195ee"
+      },
+      "traffic": {
+        "baseline": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "single": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "paired": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ]
+      }
+    },
+    {
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": {
+        "baseline": [
+          3917,
+          3897,
+          3883
+        ],
+        "single": [
+          3640,
+          3620,
+          3606
+        ],
+        "paired": [
+          3410,
+          3390,
+          3376
+        ]
+      },
+      "median_cycles": {
+        "baseline": 3897,
+        "single": 3620,
+        "paired": 3390
+      },
+      "single_ratio": 1.0765193370165747,
+      "paired_ratio": 1.1495575221238938,
+      "artifacts": {
+        "baseline": "e21b5a3176a7bad16463818ba2032016a13564b64e56284f2b1a12dcd9e1a84d",
+        "single": "457fa8246b68ec5683cc7aa8489e6e6e93f362a9c9713eb1002e94ee396f817b",
+        "paired": "556325cb1ddc4017939f2b0fd91c60e0636969dd71750ad6b2bd7567830957f5"
+      },
+      "traffic": {
+        "baseline": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "single": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "paired": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ]
+      }
+    },
+    {
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        64
+      ],
+      "device_cycles": {
+        "baseline": [
+          4827,
+          4841,
+          4827
+        ],
+        "single": [
+          4257,
+          4271,
+          4257
+        ],
+        "paired": [
+          3974,
+          3988,
+          3974
+        ]
+      },
+      "median_cycles": {
+        "baseline": 4827,
+        "single": 4257,
+        "paired": 3974
+      },
+      "single_ratio": 1.1338971106412967,
+      "paired_ratio": 1.2146451937594362,
+      "artifacts": {
+        "baseline": "1ee7d822c53d8e595a6b6d9caa4691cd72f03f7aec42e56eed6bb2ab05ca7c38",
+        "single": "429367dc5a47fd0fb1b340008349bc5160ee01e23188856ee8aeb9a70d00aa03",
+        "paired": "22a4bed9c0cf625f9f55ef4394efa27389c07c0db0b734a72fc8e7da19e5de1e"
+      },
+      "traffic": {
+        "baseline": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "single": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "paired": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ]
+      }
+    },
+    {
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        32
+      ],
+      "device_cycles": {
+        "baseline": [
+          3091,
+          3092,
+          3280
+        ],
+        "single": [
+          2806,
+          2807,
+          2995
+        ],
+        "paired": [
+          2809,
+          2802,
+          2990
+        ]
+      },
+      "median_cycles": {
+        "baseline": 3092,
+        "single": 2807,
+        "paired": 2809
+      },
+      "single_ratio": 1.1015318845742785,
+      "paired_ratio": 1.1007475970096119,
+      "artifacts": {
+        "baseline": "05dc83de4cb45f3515e09d71d5207cd25722789393456961858835ff176e38d2",
+        "single": "028fc17ba18f2aa6791aa7723bddcd925f87ffd4153a715c3dee6a80a3ae3b4d",
+        "paired": "aabaa8eaced564485131fbf0615fae2caebd6b4a55e100c62d54d3e6bd6f6aee"
+      },
+      "traffic": {
+        "baseline": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "single": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "paired": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ]
+      }
+    },
+    {
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": {
+        "baseline": [
+          3544,
+          3564,
+          3618
+        ],
+        "single": [
+          3270,
+          3290,
+          3344
+        ],
+        "paired": [
+          3000,
+          3020,
+          3074
+        ]
+      },
+      "median_cycles": {
+        "baseline": 3564,
+        "single": 3290,
+        "paired": 3020
+      },
+      "single_ratio": 1.0832826747720365,
+      "paired_ratio": 1.180132450331126,
+      "artifacts": {
+        "baseline": "b1caf2c3091f1bdad55b6c21fe5d5b2bd8847a50a9a0bdab375b952512c9c42d",
+        "single": "ac2245f65200646432d801b6366aecd3d4e189aabf0a5f7aab106cc0a9f59f70",
+        "paired": "b9ec6f9bf1a6e23d2d36d33c6dabe332def0a5a70f68725032d78b1ff80f9ee6"
+      },
+      "traffic": {
+        "baseline": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "single": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "paired": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ]
+      }
+    },
+    {
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        64
+      ],
+      "device_cycles": {
+        "baseline": [
+          3936,
+          3922,
+          3922
+        ],
+        "single": [
+          3366,
+          3352,
+          3352
+        ],
+        "paired": [
+          3329,
+          3315,
+          3315
+        ]
+      },
+      "median_cycles": {
+        "baseline": 3922,
+        "single": 3352,
+        "paired": 3315
+      },
+      "single_ratio": 1.1700477326968974,
+      "paired_ratio": 1.183107088989442,
+      "artifacts": {
+        "baseline": "bfa9aa87bab9f922484908ddbad577e88278c73aa091c8157ce71323762fbd11",
+        "single": "8d04cf92aa31455a5e4777f5dd5ad508bc697b0212e5d678a721c0a8e5875cbf",
+        "paired": "1f92e41ea749b76a8c8e79ad96105d693db8dc77470c78b9913d57e45511a72d"
+      },
+      "traffic": {
+        "baseline": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "single": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ],
+        "paired": [
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          },
+          {
+            "before": null,
+            "after": null
+          }
+        ]
+      }
+    }
+  ],
+  "limitations": [
+    "Grid-one cases exercise one program; they do not establish three-core scaling.",
+    "Three device samples do not satisfy the separate 30-sample host-latency protocol.",
+    "SystemC results are uncalibrated and are never promoted to board evidence."
+  ]
+}

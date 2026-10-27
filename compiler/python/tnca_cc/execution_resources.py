@@ -424,9 +424,21 @@ def finalize(plan, *, measured, entries, code_limit=None):
     # emitted must be the sum of the sites' per-step physical commands.
     emitted = sum(r['commands']['mma'] for r in roles if 'commands' in r)
     expected = sum(s['per_k_step']['mma_commands'] for s in sites if s.get('engine') == 'mma')
-    plan['gemm'] = dict(sites=sites,
-                        static_mma_commands=dict(expected_from_sites=expected, emitted=emitted,
-                                                 match=expected == emitted))
+    pipeline = entries.get('single_role_pipeline') or entries.get('rctx_roles_ring')
+    # A single K-loop dot has one guarded copy per pipeline stage. Keep the
+    # logical work and TTIR trip count unchanged; do not guess the multiplier
+    # for kernels with multiple sites whose unroll scope is ambiguous.
+    sites_with_mma = [s for s in sites if s.get('engine') == 'mma']
+    if pipeline:
+        if len(sites_with_mma) == 1 and sites_with_mma[0].get('enclosing_loops') == 1:
+            expected *= pipeline['stages']
+        else:
+            expected = None
+    static = dict(expected_from_sites=expected, emitted=emitted,
+                  match=None if expected is None else expected == emitted)
+    if pipeline:
+        static['unroll_factor'] = pipeline['stages']
+    plan['gemm'] = dict(sites=sites, static_mma_commands=static)
     limits = measured.get('limits', {})
     plan['resources'] = dict(
         vrf_peak_registers=measured.get('vector_regs_used'), vrf_limit=limits.get('vector_regs'),

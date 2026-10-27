@@ -43,6 +43,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Frozen R40 contracts retain their original bytes
+        run: python3 tools/r40/contract_v3.py
+
       - name: Toolchain
         run: |
           set -euo pipefail

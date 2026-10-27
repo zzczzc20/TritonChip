@@ -1,34 +1,34 @@
-# R40 v2: A One-Time Frozen Delivery Contract
+# R40 v2：一次冻结的交付合同
 
-Version 2, 2026-10-15. Status: **FROZEN CONTRACT / NOT ACCEPTED**.
-Sign-off name: `R40_NATIVE_DEVICE_SCALABLE_NUCA_HBM_V2`.
+版本 2，2026-10-15。状态：FROZEN CONTRACT / NOT ACCEPTED。
+签收名：`R40_NATIVE_DEVICE_SCALABLE_NUCA_HBM_V2`。
 
-Pursuant to user authorization on 2026-10-15, this contract adjusts only the following three requirements that were misaligned with actual workload scales. Sign-off criteria have not yet been met; freezing is not acceptance. This document, the v2 plan ([`spec/r40/v2/plan.json`](../spec/r40/v2/plan.json)), the ablation matrix ([`spec/r40/v2/ablation_matrix.json`](../spec/r40/v2/ablation_matrix.json)), the rationale list ([`spec/r40/v2/rationale.json`](../spec/r40/v2/rationale.json)), and the inherited snapshot are fixed by [`spec/r40/v2/lock.json`](../spec/r40/v2/lock.json), with the lock file hash embedded in the validator. After freezing, no further modifications to contracts, thresholds, workloads, or baselines are permitted to obtain a pass. Implementation, diagnostic, and delivery reports are updated separately.
+本合同依据用户当日授权，只调整以下三处与实际负载规模不匹配的要求。签收条件尚未达到；冻结不是验收。本文、v2 plan、消融矩阵、理由清单和继承快照由 `spec/r40/v2/lock.json` 固定，锁文件哈希写入验证器。冻结后不得再修改合同、阈值、负载或基线来取得通过。实现、诊断与交付报告另行更新。
 
-## Inheritance and Precedence
+## 继承及优先级
 
-Except for the three explicit override clauses below, this contract fully inherits [r40_tasks_and_acceptance.md](r40_tasks_and_acceptance.md) at commit `f2b081e`, with exact bytes preserved in [`spec/r40/v2/inherited_v1.md.gz`](../spec/r40/v2/inherited_v1.md.gz). Execution status in the snapshot represents historical records, not v2 evidence. This document overrides conflicting terms; the machine-readable plan and this document jointly govern acceptance. All original 11 work packages, 36 required gates, dependencies, standard Torch/Inductor/Triton path, descriptors, zero numerical fallback, all frozen points, dtypes/shapes/tolerances, models, sampling plans, clock/timing boundaries, and ablation rules are retained. Existing evidence must undergo conditional auditing and bind the v2 contract hash; copying legacy PASS status without audit is prohibited.
+除下列三个明确覆盖条款，完整继承提交 `f2b081e` 的 `doc/r40_tasks_and_acceptance.md`，精确字节见 `spec/r40/v2/inherited_v1.md.gz`。快照中的执行状态是历史记录，不是 v2 证据。本文覆盖冲突条款；机器计划与本文共同约束验收。原有 11 个工作包、36 个 required gate、依赖关系、标准 Torch/Inductor/Triton 路径、descriptor、零数值回退、全部冻结点、dtype/shape/容差、模型、采样计划、时钟/计时边界和消融规则均保留。已有证据须经过对应条件审计并绑定 v2 合同哈希；不能复制旧 PASS 状态代替审计。
 
-## Modification 1: R40-01 Device Identity Accepted via Matched Controls for Non-Regression
+## 变更一：R40-01 设备身份按匹配控制验收不退化
 
-Device registration itself does not require computational acceleration. B39 on-chip RAM differs from the new HBM image, so directly attributing their cycle ratio to device identity is invalid. Reproduction of all 77 B39 points and historical results must still be preserved. The device identity control is changed to B40-CPU vs. native per-kernel staging, covering the full 77 points on the identical final software tree, bitstream image, clock, memory system/capacity, allocator policy, and fixed compiler settings. Only `TNCA_TORCH_DEVICE` and `platform.inductor.device` are permitted to vary; exempting the entire Inductor configuration is forbidden. Both sides operate with per-kernel staging; residency gains belong to R40-02 and must not be conflated with this control.
+设备注册本身不要求获得计算加速。B39 片上 RAM 与新 HBM 镜像不同，直接用它们的周期比归因于设备身份不成立。B39 全部 77 点复现和历史结果仍需保留。设备身份控制改为 B40-CPU 与 native per-kernel staging，在同一最终软件树、镜像、时钟、内存系统/容量、allocator 策略和固定编译参数上覆盖完整 77 点。只允许 `TNCA_TORCH_DEVICE` 和 `platform.inductor.device` 变化，不能豁免整个 Inductor 配置。两侧都按 kernel staging；驻留收益属于 R40-02，不能混入本控制。
 
-This item remains a capability gate: the paired bootstrap 95% confidence interval lower bound must be >= `1/1.05`, and the native/CPU execution time for each point must be <= 1.05; points with > 2% regression continue to require point-by-point cause analysis and automatic selection/correction. This item must not be claimed as a performance speedup. The original board-level protocol of 5 warmup runs, 30 timed runs, 3 independent measurement blocks, and randomized within-block interleaved A/B sampling is maintained; long tasks follow the original pre-declared exception rules. Native functional acceptance still requires the complete 77 points, genuine device tensors, and zero implicit staging or numerical fallbacks. Product migration differences between historical B39 and the final system are reported separately.
+本项仍为 capability gate：配对 bootstrap 95% 区间下界必须 >= `1/1.05`，每个点 native/CPU 时间 <=1.05；>2% 回退继续要求逐点原因与自动选择/修正。不得将本项称为性能提升。保持原板级 5 次 warmup、30 次 timed、3 个独立测量块及块内随机交错 A/B；长任务使用原预声明规则。原生功能验收仍要求完整 77 点、真实设备张量、零隐式 staging/数值回退。历史 B39 与最终系统的产品迁移差异另外报告。
 
-## Modification 2: R40-04 Acceptance of Actually Exposed and Utilized HBM Capacity
+## 变更二：R40-04 对实际暴露和使用的 HBM 容量验收
 
-The input and output of the frozen 8192×8192 FP32 transpose total 512 MiB (536,870,912 bytes), and four-layer model weights total 221,267,968 bytes. Full-capacity testing across unallocated and unreachable pseudo-channels (PCs) cannot demonstrate performance for these workloads. Replacing the original requirement of mandatory 32-PC address/capacity coverage: declare and actually expose a reachable window of at least 1 GiB, with capacity sized to at least 1.25× the measured peak footprint of the complete frozen suites and full model; if insufficient, capacity must be expanded rather than shrinking workloads. Peak and usable capacity are calculated across all resident objects, scratch, code, descriptors, KV caches, and reserved areas managed by the actual allocator, rather than substituting raw tensor size estimates for measurements.
+冻结 8192×8192 FP32 转置的输入输出合计 512 MiB，四层模型权重为 221267968 字节。未分配且不可达 PC 的全容量测试不能证明这些负载的性能。替代原强制全部 32 PC 地址/容量覆盖要求：声明并实际暴露至少 1 GiB 可达窗口，且容量至少为完整冻结 suites 和完整模型实测峰值的 1.25 倍；不足时扩大容量，不准缩小负载。按真实 allocator 的全部常驻对象、scratch、代码、descriptor、KV 和保留区计算峰值与可用容量，不以张量大小估算代替测量。
 
-Actual XRT BO physical ranges and platform topology must be used to prove PC mapping; at least two actual physical PCs must be covered by real workloads. Every reachable/allocated PC group and active port in the configuration must have traffic, boundary, high-64-bit address, alias, and out-of-bounds tests. Guessing physical PCs from logical addresses is forbidden. Unexposed memory regions must be explicitly marked as uncertified/non-allocatable; claiming that the full 8 GiB has passed is prohibited. All 14 HBM points, >= 64 MiB data volume, capacity safety, real traffic, data visibility, and 8/16/32-core capacity planning remain unchanged.
+使用实际 XRT BO 物理范围和平台拓扑证明 PC 映射；至少两个实际物理 PC 被真实负载覆盖。每个配置可达/已分配的 PC 组、每个 active port 必须有流量、边界、高 64 位地址、alias 与越界测试。不得从逻辑地址猜测物理 PC。未暴露区域明确标为未认证/不可分配；不得宣称完整 8 GiB 已通过。全部 14 个 HBM 点、>=64 MiB 数据、容量安全、真实流量、数据可见性和 8/16/32 核容量规划不变。
 
-## Modification 3: R40-04 Ingress Width Accepted by Consumer Demand and Measured Throughput
+## 变更三：R40-04 入口宽度按消费者需求与实测吞吐验收
 
-An 8 B/core/cycle ingress at 100 MHz delivers 0.8 GB/s, summing to 2.4 GB/s across three cores. A fixed requirement of 32 B/cycle per core does not independently demonstrate that these consumers obtain throughput; concurrency, coalescing, and outstanding transactions can also improve effective memory service. Therefore, 32 B/core/cycle is retained as a design target; wide ingress implementation and its single-factor / leave-one-out (LOO) ablations are mandatory if and when that mechanism is implemented. Claiming delivery of an unimplemented ingress width is forbidden.
+8 B/core/cycle 在 100 MHz 为 0.8 GB/s，三核合计 2.4 GB/s。固定要求每核 32 B/cycle 并不能独立证明这些消费者获得吞吐；并发、合并和 outstanding 也能改善有效服务。因此 32 B/core/cycle 保留为设计目标，宽入口实现及其单因子/LOO 消融在实际实现该机制时必需；不得声称未实现的宽度已经交付。
 
-The original floors requiring streaming read, write, and copy in each direction to achieve >= 50% of the frozen physical bottleneck peak are retained. The standalone memory service improvement gate `S_geo >= 1.5` is retained, frozen as `TNCA_RTL_OUTSTANDING=1` vs. `8`, evaluated over the original 6 points of `R40-04.streaming` under identical capacity, clock, ingress width, ports, burst, and compiler settings. This control is defined under `R40-04.memory-service`, while the original `R40-04.ingress` serves as an additional ablation if wide ingress is implemented. All implemented mechanisms must still provide single-factor and leave-one-out ablations; substituting multi-switch combined gains is prohibited. Line/beat parameterization, backpressure, tags, bursts, the bandwidth ledger, and the ASIC 32 B target vs. actual gap report remain unchanged.
+保留 streaming 读、写、copy 每个方向 >=冻结物理瓶颈峰值 50% 的原门限。保留独立内存服务改进 `S_geo >=1.5`，冻结为 `TNCA_RTL_OUTSTANDING=1` 对 `8`，使用原 R40-04.streaming 六点、相同容量/时钟/入口宽度/端口/burst/编译设置。该控制在 `R40-04.memory-service` 定义，原 `R40-04.ingress` 是实现宽入口时的附加消融。所有已实现机制仍须原单因子及 leave-one-out；不能用多开关联合收益代替。line/beat 参数化、背压、tag、burst、吞吐账本和 ASIC 32 B 目标/实际差距报告均不变。
 
-## Non-Waivable Deliverables
+## 不可削弱的交付
 
-Three-core SLR0/1/2 physical parallelism, 2-core speedup 1.5 / 3-core speedup 2.1, streaming 3-core 1.8, memory ports 1.3, locality/DCO 1.1 and traffic requirements, wide blocks 1.3, tile 1.15, resident 1.5, batch 1.2, pipeline/matrix 1.2, prefill 1.5 and halved intermediate traffic, holdout 1.1 and bounded regret, full four-layer model prefill512/decode64, and all model thresholds are retained. Numerical tolerances, full workloads, and correctness may not be waived due to difficulty or delivery schedule pressure; current local-memory path attention sequence numerical failures must still be fixed and regressed. All original gates must pass; final bitstream image, clean rebuild, same-configuration board-level measurements, resource/timing/CDC closure, raw evidence, and independent reproducibility remain sign-off conditions.
+三核 SLR0/1/2 物理并行、2 核 1.5/3 核 2.1、streaming 三核 1.8、端口 1.3、locality/DCO 1.1 与流量要求、宽块 1.3、tile 1.15、resident 1.5、batch 1.2、pipeline/matrix 1.2、prefill 1.5 与中间流量减半、holdout 1.1 与 regret、完整四层模型 prefill512/decode64 和模型门限全部保留。数值容差、完整负载和正确性不允许以困难或交期豁免；当前本地内存路径 attention 序列数值失败仍须修复并回归。所有原有 gate 均须通过，最终镜像、干净重建、同配置板级测量、资源/时序/CDC、原始证据和独立复现仍为签收条件。
 
-`make r40-v2-contract-check` verifies the freeze; `make r40-v2-acceptance` audits the v2 independent evidence directory. Missing, failing, unbound, or unmeasured items cannot PASS. Subsequent progress is documented only in reports without altering this document or the lock file.
+`make r40-v2-contract-check` 验证冻结；`make r40-v2-acceptance` 审计 v2 独立证据目录。缺失、失败、未绑定合同、未经测量的项不得 PASS。后续进度只写报告，不改本文或锁定文件。

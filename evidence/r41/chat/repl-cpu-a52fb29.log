@@ -1,0 +1,30 @@
+[transformers] Using FP8 quantized models requires a GPU or XPU, we will default to dequantizing the model to bf16 since no GPU or XPU is available
+Loading weights:   0%|          | 0/336 [00:00<?, ?it/s]Loading weights:   8%|▊         | 26/336 [00:00<00:01, 256.85it/s]Loading weights:  15%|█▌        | 52/336 [00:00<00:01, 210.79it/s]Loading weights:  22%|██▏       | 74/336 [00:00<00:01, 191.65it/s]Loading weights:  28%|██▊       | 94/336 [00:00<00:01, 186.78it/s]Loading weights:  34%|███▎      | 113/336 [00:00<00:01, 183.24it/s]Loading weights:  81%|████████  | 272/336 [00:00<00:00, 598.26it/s]Loading weights:  99%|█████████▉| 334/336 [00:00<00:00, 567.11it/s]Loading weights: 100%|██████████| 336/336 [00:00<00:00, 408.88it/s]
+[transformers] [1mQwen3VLForConditionalGeneration LOAD REPORT[0m from: /home/zzhouch/r41s2_fp8_inputs/hf/hub/models--Qwen--Qwen3-VL-2B-Instruct-FP8/snapshots/46485250d8854c0a9be4f1adbc67ca47e5bb6fa5
+Key                                                                    | Status     |  | 
+-----------------------------------------------------------------------+------------+--+-
+model.language_model.layers.{1...27}.self_attn.q_proj.weight_scale_inv | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.mlp.up_proj.weight_scale_inv      | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.self_attn.o_proj.weight           | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.self_attn.k_proj.weight_scale_inv | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.post_attention_layernorm.weight   | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.self_attn.q_proj.weight           | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.self_attn.v_proj.weight_scale_inv | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.mlp.down_proj.weight              | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.mlp.gate_proj.weight              | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.self_attn.o_proj.weight_scale_inv | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.self_attn.q_norm.weight           | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.mlp.gate_proj.weight_scale_inv    | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.input_layernorm.weight            | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.self_attn.k_proj.weight           | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.self_attn.v_proj.weight           | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.mlp.up_proj.weight                | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.mlp.down_proj.weight_scale_inv    | UNEXPECTED |  | 
+model.language_model.layers.{1...27}.self_attn.k_norm.weight           | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Qwen TNCA chat. /help lists commands; /quit exits.
+you> assistant> ask
+{"decode_steps": 0, "mean_decode_seconds_per_token": null, "decode_tokens_per_second": null}
+you> 

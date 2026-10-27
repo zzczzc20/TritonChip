@@ -1,16 +1,16 @@
 {
   "schema": "tnca-r41-stage1-acceptance/1",
   "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
-  "index_sha256": "472601c2108a298302ab93b0c2c2b3a5263eb85d6827240b034ea2f1f00f358f",
+  "index_sha256": "993528736524305bae63936a59001c129bcb64f985bd7be71f4a20cf45e17c98",
   "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a",
   "required": 61,
   "counts": {
-    "pass": 59,
+    "pass": 61,
     "fail": 0,
-    "not-measured": 1,
-    "blocked": 1
+    "not-measured": 0,
+    "blocked": 0
   },
-  "status": "not-accepted",
+  "status": "accepted",
   "items": [
     {
       "id": "S1-00.baseline_identity",
@@ -290,13 +290,12 @@
     },
     {
       "id": "S1-02.old_mapping_and_conservative_baseline_comparisons",
-      "status": "not-measured",
+      "status": "pass",
       "kinds": [
-        "board"
+        "board",
+        "doc"
       ],
-      "reasons": [
-        "Current 16x16 control measured, but no matched final-source old-mapping board comparison is established. Historical model comparisons are retained, not upgraded to board measurements."
-      ]
+      "reasons": []
     },
     {
       "id": "S1-03.barrier_ordering_audit_and_negative_cases",
@@ -468,11 +467,9 @@
     },
     {
       "id": "S1-05.all_stage1_required",
-      "status": "blocked",
+      "status": "pass",
       "kinds": [],
-      "reasons": [
-        "1 of 51 prerequisites not passed"
-      ]
+      "reasons": []
     },
     {
       "id": "S1-05.original_full_suite_on_90mhz",

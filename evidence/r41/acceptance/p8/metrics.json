@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "scope": "P8 only; two FP8 layers are not full BF16 Qwen3.5-2B",
+  "started_by": "lead, independent from this acceptance agent",
+  "image_sha256": "30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de",
+  "clock_hz": 100000000,
+  "hub_cases_passed": 35,
+  "linears_passed": 14,
+  "decode_steps_including_prefill": 5,
+  "steady_state_new_graphs": 0,
+  "steady_state_host_transfer_calls": 0,
+  "campaigns": {
+    "s2-fp8-hub": {
+      "software_tree": "files:c560dca3f1158106d11437948d09979d4d2b9ae181f3bb5ebaacc5fa6079290e",
+      "steps": 3
+    },
+    "s2-qwen-fp8": {
+      "software_tree": "files:c560dca3f1158106d11437948d09979d4d2b9ae181f3bb5ebaacc5fa6079290e",
+      "steps": 2
+    }
+  }
+}

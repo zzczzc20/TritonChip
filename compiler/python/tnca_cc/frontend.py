@@ -1915,6 +1915,12 @@ class TTIRImporter:
             # address or an index needs it (frontend._address folds it).
             self._uscalar[rid] = start if self.large_tiles else self._const_scalar(start)
             self._offsets[rid] = ('contiguous', rid)
+            # Later register chunks are still nonnegative aligned ranges.
+            # Retain that proof so (pid*BLOCK + chunk + lane) % N stays
+            # affine when N and the chunk origin are VLEN multiples.
+            if start >= 0:
+                self._nonneg.add(rid)
+            self._multiple[rid] = abs(start)
 
     def _op_tt_splat(self, op):
         src = op.get_operand(0)
@@ -4783,11 +4789,13 @@ class TTIRImporter:
         accumulator, loading the bias row and storing take 48."""
         if not self.index_opt:
             return False
-        if self.large_tiles:
-            # A register chunk (register_blocks) or row-chunk view of an
-            # operation: the TTIR operation's users and position decide.
-            while hasattr(op, 'op'):
-                op = op.op
+        # A register chunk or row-chunk uses virtual SSA identities. The
+        # original TTIR operation's use/effect order decides deferral even
+        # for ordinary N32 tiles, not only the extended large-tile path.
+        # Looking up virtual ids found no users and materialised every
+        # narrow operand chunk through scratch before its MMA repack.
+        while hasattr(op, 'op'):
+            op = op.op
         users = self._value_users.get(op.get_result(0).id(), [])
         if len(users) != 1:
             return False
@@ -5370,7 +5378,12 @@ class TTIRImporter:
             # (uniform + arange) + uniform: still the lane index plus one
             # lane-invariant amount, the sum of the two.
             con, uni = (a, b) if ka == 'contiguous' else (b, a)
-            start = self._uscalar.get(self._offsets[con.id()][1])
+            con_key, uni_key = self._offsets[con.id()][1], self._offsets[uni.id()][1]
+            self._multiple[rid] = math.gcd(self._multiple.get(con_key, 1),
+                                           self._multiple.get(uni_key, 1))
+            if con_key in self._nonneg and uni_key in self._nonneg:
+                self._nonneg.add(rid)
+            start = self._uscalar.get(con_key)
             if isinstance(start, int):
                 # Extended lowering: a register chunk's start stays a number
                 # beside the shared uniform part (_address folds it).
@@ -5588,7 +5601,9 @@ class TTIRImporter:
         the gathered path -- and so does a tile anything but `tl.dot` reads:
         a 16-bit tile in a window is an MMA operand and nothing else.
         """
-        users = self._value_users.get(op.get_result(0).id(), [])
+        project = getattr(op, 'value_users', None)
+        users = (project(self, op.get_result(0)) if project else
+                 self._value_users.get(op.get_result(0).id(), []))
         if not users or any(u.get_name() != 'tt.dot' or k > 1 for u, k in users):
             return None
         # R41 X8: an FP8 tile too, on a target whose engine transposes 1-byte

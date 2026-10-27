@@ -246,6 +246,11 @@ depends_on = []
 sources = ["python/tnca/torch_device/"]
 
 [[doc]]
+path = "doc/r41_chat.md"
+depends_on = ["doc/r40_tasks_and_acceptance.md"]
+sources = ["tools/models/chat.py", "tools/models/qwen_fp8_lib.py", "tools/models/fp8_blockwise_ref.py", "evidence/r41/fp8/models_tnca/README.md", "evidence/r41/fp8/ops/README.md", "spec/r41/chat/", "evidence/r41/chat/"]
+
+[[doc]]
 path = "doc/r41_execution_tasks.md"
 depends_on = ["doc/r41_tasks_and_acceptance.md"]
 sources = ["tools/performance_harness/systemc/", "tools/performance_harness/systemc/include/tnca_dram.hpp"]
@@ -375,6 +380,11 @@ sources = ["evidence/r41/stage1/board/index.json", "evidence/r41/stage1/board/fi
 path = "evidence/r41/stage2/board/results.md"
 depends_on = ["doc/r41_tasks_and_acceptance.md"]
 sources = ["spec/r41/stage2/board/", "evidence/r41/stage2/board/endurance-rerun-index.json", "evidence/r41/stage2/board/endurance-rerun.tgz"]
+
+[[doc]]
+path = "evidence/r41/stage2/board/fp8_env_and_hub_runs.md"
+depends_on = ["doc/r41_tasks_and_acceptance.md", "evidence/r41/stage2/board/results.md"]
+sources = ["spec/r41/stage2/board/s2-fp8-hub.json", "spec/r41/stage2/board/s2-qwen-fp8.json", "evidence/r41/stage2/board/launches/board_queue.sh"]
 
 [[doc]]
 path = "evidence/r41/stage1/stage2_readiness.md"
@@ -520,3 +530,8 @@ sources = ["evidence/r41/acceptance/", "evidence/r41/stage1/board/acceptance.jso
 path = "evidence/r41/hbm_bw/wide_home/README.md"
 depends_on = ["evidence/r41/hbm_bw/hybrid_lsu/README.md", "evidence/r41/hbm_bw/wide_noc/README.md", "evidence/r41/SERVERS.md"]
 sources = ["rtl/nuca/tnca_nuca_slice.v", "tb/nuca/tb_nuca_wide.v", "tb/nuca/tb_nuca_wide_special.v", "tools/r41/wide_home_tests.py", "flow/fpga/screen_r41_wide_home.tcl", "evidence/r41/hbm_bw/wide_home/"]
+
+[[doc]]
+path = "evidence/r41/acceptance/KIMI_HANDOFF.md"
+depends_on = []
+sources = ["flow/fpga/"]

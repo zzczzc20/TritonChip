@@ -12,6 +12,37 @@ obligations without treating a negative study as a functional pass. Its
 uses passed, failed, not measured and blocked. A passed row applies only to
 its stated evidence identity. Aggregate final-release rows remain blocked.
 
+## Delivery update: P8 FPGA-host FP8
+
+P8 is closed from the lead's completed runs at `86a3d929cf3d_fp8`, retrieved
+read-only and independently checked by `evidence/r41/acceptance/p8/closeout.py`.
+Hub cases pass 35/35; layer linears pass 14/14 against device-order references;
+two-layer prefill plus four decode steps pass, with zero recompilations and
+zero host transfer calls in steady state. The isolated environment sees the
+original Torch 2.14.0+cpu and Triton 3.8.0, with pinned dependencies. Its
+CUDA 13.0 metadata compatibility setting selects the Hub's Triton namespace;
+actual CUDA availability is false. No shared base packages were modified by
+this check and no new board job was started. Raw archive/member hashes and
+environment versions are under `evidence/r41/acceptance/p8/`. Historical
+“not run” FP8 entries below are superseded for these two manifests only;
+the full BF16 Qwen3.5-2B requirement remains open. Next plan: P1.
+
+## Delivery update: P0 prospective freeze
+
+P0 now locks the remaining scope in `spec/r41/stage2/plan.json`, `lock.json`,
+`model_lock.json`, `model_points.json` and `xl_core.json`. The authentic pinned
+Qwen3.5-2B checkpoint and tokenizer hashes were verified. Official all-layer
+CPU BF16 and widened FP32 references complete both core/tail workloads,
+including all 49 logits/cache tensors per step (1,078 tensor comparisons).
+Maximum relative L2 is 1.9821% for logits and 1.3271% for states; the
+prospective limits are 0.08 and 0.055, derived from these CPU-only results
+before new TNCA outputs. Zero-reference tensors require absolute error <=1e-6.
+The missing rotary-buffer initialization and an incomplete dictionary-cache
+collector were corrected; superseded attempts remain documented. The P0
+freeze checker and five refusal tests pass. Historical sequencing failures
+remain failed; the initial audit tables below describe the earlier cutoff.
+Next: repair and validate the isolated FPGA-host FP8 environment (P8).
+
 ## What is established
 
 The run-1 image, SHA256
@@ -88,7 +119,7 @@ FP8 execution does not qualify final-image timing prediction.
 | S2-00 | Failed process sequencing; freeze fields not measured | No Stage 2 plan/lock, model tolerance lock or XL manifest preceded implementation. Freeze remaining work prospectively; preserve the process failure (P0) |
 | S2-01 | Eight numbered candidate checks passed | Candidate identity reconciled; final B41-F still unselected. A future image needs its own affected qualification and measurements (P6) |
 | S2-02 | RTL MMA/FMA candidate and physical screens evidenced; study/comparison gaps remain | Complete SystemC sensitivity and integrated-mechanism board comparisons; coordinate bandwidth work and address scheduling-model confounder (P1) |
-| S2-03 | Not measured | Graph-level locality consumer is a design, with no two-graph off/on board ownership/fault/traffic comparison. Final fixed-budget pipeline and resource study also absent (P2) |
+| S2-03 | Functional locality passed; board comparison and studies not measured | Two standard Torch graphs pass off/on/off numerical, storage/alias, ownership and fault checks on board-top RTL. Physical U280 traffic/latency and final fixed-budget pipeline/resource studies remain absent (P2) |
 | S2-04 | Full model blocked; capacity and lifecycle partially passed | No authentic all-layer BF16 Qwen3.5-2B core/tail board inference. Actual full-model peak, state/logit evolution, persistent lifecycle and steady-state host traffic remain unmeasured (P3/P4) |
 | S2-05 | Original suite passed; XL/selector/scaling incomplete | Eight XL points lack a freeze and complete execution; sealed holdout lacks final selector campaign; no final-image 1/2/3-core model comparison (P5) |
 | S2-06 | Blocked | Final identity, complete functional gates, model-domain report, clean software/model rebuild and independent full-core reproduction remain absent (P6) |
@@ -131,3 +162,95 @@ and index coverage, and never upgrades an author's judgment merely because
 a command returned zero. `make r41-acceptance PYTHON=python3` also includes
 the frozen Stage 1 result and Definition of Done. These commands reproduce
 the audit; they do not constitute independent product reproduction.
+
+## P1 corrective preflight — 2026-10-27
+
+The banked X8 scheduling map and later-fragment affine proof/deferral causes
+are corrected. Archived real GB10 runs validate 32 bitwise SystemC cases, eight
+small bitwise RTL cases and 32 model sensitivity cases. All 113 original
+points compile with unchanged default artifacts across the profile correction
+and frontend correction. Evidence: `evidence/r41/acceptance/p1/README.md`,
+`metrics.json`, `index.json` and the raw archives in that directory.
+
+Aligned wide GEMM improves in the model; tail cases remain slower. No board
+failure is upgraded. Sensitivity is uncalibrated and does not isolate every
+RTL candidate, so that obligation remains not measured. Matched GEMM, policy
+leave-one-out and shared-artifact 90/100 MHz manifests are prepared and locally
+checked. Only the lead may launch them on the shared card. Stage 2 and R41
+remain not accepted: 32 passed, two failed, 52 not measured, eight blocked.
+
+P1 service/queue follow-up: three current-source standard Torch service
+configurations and eight bitwise queue-depth comparison rows pass. The bounded
+S2-02.B Study now passes with a negative decision: admission differs from
+setup/transfer overlap, which remains serialized; no throughput gain is claimed.
+Current ledger: 33 passed, two failed, 51 not measured, eight blocked.
+The lead-only queue caps all manifest execution together; the planned 100/90
+MHz allocations total three hours. Evidence is in p1/service-transfer.tgz.
+
+## P1 bounded Study closeout — 2026-10-27
+
+The home/core-service resource and admission study is delivered with current
+standard Torch observations and retained F07 semantic/physical evidence. The
+per-candidate sensitivity follow-up supplies 48 bitwise native rows across
+12 core-pipeline configurations, verifies each executed one-factor change
+and unchanged artifact/output identities, and separately checks four archived
+X8 capability point pairs. Both Study obligations pass with negative or
+inconclusive decisions. This does not establish isolated physical candidate
+gains, unbounded fairness, final-source X8 acceptance, or a board speedup.
+
+Evidence and limitations: `evidence/r41/acceptance/p1/memory-service-study.md`
+and `evidence/r41/acceptance/p1/candidate-sensitivity/README.md`, their derived
+metrics/indexes and raw archives. The earlier grouped-only sensitivity judgment
+is superseded. Current ledger: **35 passed, two failed, 49 not measured, eight
+blocked**. Required integrated board comparisons await the lead commands in
+STATUS.md. Stage 2 and overall R41 remain not accepted. P2 is next.
+
+## P2 functional locality closeout — 2026-10-27
+
+The native graph consumer now executes residual and projection standard Torch
+graphs with locality off/on/off on the board-top MMIO RTL binding. Both preserve
+captured Inductor artifact identities and output hashes, with no host upload or
+download during replay. Plans follow actual Session storage handles and record
+aliases and captured lifetimes; aggressive dead/bypass hints remain disabled.
+Seven real-Session ownership/alias tests pass. Injected numerical admission
+faults after real locality registration propagate, restore policy zero and make
+subsequent off replay refuse the invalid graph. Raw logs and the validated
+comparison ledger are in `evidence/r41/acceptance/p2/`.
+
+S2-03.A.1–A.4 pass for this functional scope. S2-03.A.5 remains not measured:
+no physical U280 locality traffic/latency run has occurred and no speedup is
+claimed. The fixed-budget pipeline and asymmetric-resource studies also remain
+open. An approved-image board manifest is prepared but not launched.
+
+The frozen Stage 1 DoD row is reconciled to its accepted 61/61 result. Current
+ledger: **40 passed, two failed, 45 not measured, seven blocked**. Stage 2 and
+overall R41 remain not accepted.
+
+## P2 pipeline and private-resource preflight — 2026-10-27
+
+The new opt-in single-role two-slot schedule preserves one 64-register
+program space, issues the next transfer while the prior MMA is outstanding,
+and drains the odd-trip exit. Unsupported loops retain the original path.
+Under the same model source, three-core profile and two-context mask, Mode B,
+single-role and two-stage paired execution pass 18 bitwise standard Torch rows.
+The registered grid-one points exercise one program, not three-core scaling.
+Four additional one-core RTL rows pass and their real DMA/MMA interval traces
+show overlap. `evidence/r41/acceptance/p2/pipeline-summary.json` and its raw
+archive retain identities, input/output hashes, actual resources and limits.
+Model timing is uncalibrated; final-image board comparison remains unmeasured.
+
+The bounded static private-resource Study concludes that the tested kernels
+fit existing limits and RPAIR shares a base rather than adding a register pool.
+No asymmetric or dynamic reallocation capability is selected. See
+`evidence/r41/acceptance/p2/private-resource-study.md`. S2-03.C now passes as
+a negative Study. Current ledger: **41 passed, two failed, 44 not measured,
+seven blocked**. Stage 2 and overall R41 remain not accepted.
+
+The pipeline preflight now includes three timed model samples for each of
+18 policy/point rows, plus two BF16 four-step RTL rows. The 113-point default
+compile audit reports no changed artifacts. `make compiler` passed with 53
+Python tests and the MLIR IR suite skipped; tnca-opt was unavailable. These
+results are preserved in `evidence/r41/acceptance/p2/pipeline-final-preflight.tgz`
+and its preflight summary. The locally tested approved-image manifest is
+`spec/r41/stage2/acceptance/s2-p2-pipeline.json`. S2-03.B remains not measured
+until the lead supplies the physical comparison; no acceptance count changes.

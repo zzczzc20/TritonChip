@@ -167,6 +167,15 @@ class ProtocolModel:
         self._log(f"{role}: mb.arrive b{b} ({bar.arrivals}/{bar.expect_arrivals})")
         self._maybe_release(bar)
 
+    def complete_operation(self, b, kind):
+        """Retire a non-channel asynchronous operation on its armed phase."""
+        bar = self.barriers[b]
+        if not bar.armed or bar.ops >= bar.expect_ops:
+            self._fail(f"{kind} completes on unarmed or already complete barrier {b}")
+        bar.ops += 1
+        self._log(f"  {kind} complete ({bar.ops}/{bar.expect_ops} ops on b{b})")
+        self._maybe_release(bar)
+
     def barrier_wait(self, b, role):
         """Sleep until the phase completes. Returns True if it already had."""
         bar = self.barriers[b]

@@ -1,12 +1,13 @@
 # R41 Stage 1 closeout report
 
-Date: 2026-10-26 UTC. Sign-off name: `R41_S1_COMPILER_AND_PERFORMANCE_HARNESS`.
-Status: **not accepted; matched old-mapping comparison remains open**.
+Date: 2026-10-27 UTC. Sign-off name: `R41_S1_COMPILER_AND_PERFORMANCE_HARNESS`.
+Status: **accepted; all 61 Required items pass on the frozen identity**.
 
 This report judges the frozen Stage 1 product, commit `25094197f6e6`, software
 `files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a`.
 It does not sign off the merged product or Stage 2. R40 remains
-`closed-with-failures`.
+`closed-with-failures`. Stage 1 acceptance does not convert the failed GEMM
+no-slower hypothesis into a performance pass.
 
 ## Evidence and identity
 
@@ -45,7 +46,7 @@ judgements below come from the measurements, not those exit codes.
 | `board-anchors` | Numerical and reproduction checks pass: 9/9 sessions across 3 frozen anchors | Descriptive stability supports bounded sampling; no population confidence claim |
 | `board-gemm-tile` | Numerical capability passes, 18/18 configurations; **no-slower hypothesis fails on 8/9 points** | Close the study with a negative performance result; wide tile must not become a general performance default |
 | `board-prospective` | Fast-path absolute residuals recorded and small for both arms | Slow path remains inconclusive; A/B ratio error is +5.23%; global model remains uncalibrated |
-| `board-memory-service` | 9/9 diagnostic cases functional; depth benefit observed | No reliable additional outlet benefit; matched-source absolute model residual unavailable |
+| `board-memory-service` | 9/9 diagnostic cases functional; depth benefit observed | No reliable additional outlet benefit; matched postdiction residuals +12.15% to +29.48%; model uncalibrated |
 | `board-pipeline-admission` | 48/48 workload rows functional across 12 case processes; tail-mm stage-3 slowdown reproduced | Physical overlap itself not measured; stage-3 addmm bindings differ, so causal comparison is confounded |
 | `board-tune-qualification` | 6/6 formal records, 3 device-ranked kernels, 3/3 cache hits; poison/recovery checks pass | Qualification of selection and recovery; no speedup/default nonregression claim |
 | `board-original-suite` | **113/113 numerical passes; 202/202 accepted runs; device-time nonregression passes** | Interrupted record preserved; only its one point re-run; no >5% regression against 113 B40-OBS points |
@@ -159,14 +160,18 @@ prove overlap or its cause. Stage-3 addmm changes bindings relative to baseline
 in all repetitions; its timings are reported but do not establish an isolated
 stage-count gain. Mode A remains default-off.
 
-The board cohorts explicitly say that absolute model residuals need matching
-product-source model cases. Earlier model/RTL cohorts differ in source and
-memory/ownership domains. Their numerical cycle differences are not accepted
-as physical prediction residuals. Both bounded case studies are closed with
-these limitations and decisions; no model accuracy or new default performance
-pass follows from study completion.
+The matched postdiction in `matched-postdiction/postdiction-comparison.json`
+uses captured physical inputs and checks code, resources and Tensor bindings.
+Seventeen rows are comparable: all three memory cases and 14 pipeline rows.
+Memory signed residuals range from +12.15% to +29.48%; pipeline signed residuals
+range from −7.22% to +62.57%. The two stage-3 addmm rows retain their numerical
+results but are explicitly not comparable because their bindings differ. This
+is postdiction after measurement, not a sealed prediction or unseen holdout;
+no parameters were fitted and the model remains uncalibrated. Both bounded case
+studies are closed with these limitations and decisions; no new default
+performance pass follows.
 
-## Tuning, recovery and outstanding Required items
+## Tuning, recovery and original-suite regression
 
 The public path selects three pointwise kernels within four-candidate and
 600-second limits, reuses all three winners in new processes, and keeps tuning
@@ -204,10 +209,37 @@ Section 6.5 device-time nonregression passes its 5% budget. Historical reference
 have one timed sample each; these comparisons are descriptive, without noise
 confidence intervals. No host-latency or graph-makespan nonregression is inferred.
 
-The matched final-source old-mapping comparison remains **not-measured**.
-The measured 16×16 control and historical B40-OBS suite are not an isolated
-old-mapping experiment. Severe wide-tile slowdowns remain failures of the
-no-slower hypothesis; the candidate must not become a general performance default.
+The matched old-mapping comparison is complete in
+`old-mapping/board-comparison.json`. The control differs from the frozen product
+only in `compiler/python/tnca_cc/register_blocks.py`, restoring the legacy
+virtual-column SSA lookup. The nine old-mapping board records, 18 repaired/
+conservative records and executed artifacts pass source, image, clock, point,
+numerical and output-hash validation. All 752 members of the completed archive
+match `completed-index.json`; the comparison reproduces byte-for-byte and all
+seven integrity-mutation refusals pass.
+
+The following graph-makespan medians and old/fixed ratios come directly from
+that comparison. Values above one for the ratio mean the repair is faster.
+
+| Frozen point | Old cycles | Fixed cycles | Old/fixed |
+|---|---:|---:|---:|
+| `model.mlp/medium/fp16-t128-d128` | 38,330,699 | 35,011,890 | 1.0948× |
+| `op.bmm/medium/fp16-b16-m64-k32-n64` | 5,365,832 | 5,164,199 | 1.0390× |
+| `op.gemv/hbm/fp16-k4096-n11008` | 815,424,950 | 1,317,542,703 | 0.6189× |
+| `op.gemv/medium/fp16-k320-n448` | 2,448,595 | 2,355,891 | 1.0393× |
+| `op.linear/hbm/fp16-m512-k4096-n11008` | 53,419,409,156 | 50,934,524,509 | 1.0488× |
+| `op.linear/medium/fp16-m128-k320-n256` | 11,878,148 | 10,664,991 | 1.1138× |
+| `op.matmul/hbm/fp16-m4096-k4096-n4096` | 43,660,673,453 | 34,919,267,466 | 1.2503× |
+| `op.matmul/medium/fp16-m128-k192-n128` | 2,133,550 | 1,772,243 | 1.2039× |
+| `op.matmul/medium/fp32-m128-k192-n128` | 3,039,197 | 3,042,233 | 0.9990× |
+
+The repair is faster than the isolated old mapping on seven of nine points.
+This is a repair comparison, not a claim that wide tiles beat the conservative
+path: the separately measured fixed/narrow no-slower hypothesis still fails on
+eight of nine points. Historical fixed/narrow samples were reused rather than
+interleaved with the new old-mapping process, so these are descriptive medians
+without noise confidence intervals. The wide candidate must not become a
+general performance default.
 
 ## Frozen acceptance reproduction
 
@@ -237,11 +269,12 @@ The checker is unchanged. The updated index supplies real measured board
 records and scoped study decisions; it never upgrades missing measurements.
 The frozen contract is left intact, and the merged contract's index hash is not
 silently redefined. Evidence/report overlays are outside the product hash's
-source directories. Final `acceptance.json` and `acceptance.log` record **59 pass, 0 fail,
-1 not-measured, 1 blocked** out of 61 Required items, and every open prerequisite.
-The zero failed Required items does not erase the failed GEMM performance
-hypothesis: bounded study completion and performance success are distinct. Acceptance exits nonzero while Required
-items are open; **Stage 1 remains not accepted**.
+source directories. Final `acceptance.json`, `acceptance.log` and
+`acceptance.exit-code` record **61 pass, 0 fail, 0 not-measured, 0 blocked**
+out of 61 Required items, status `accepted`, exit status zero. The zero failed
+Required items does not erase the failed GEMM performance hypothesis: bounded
+study completion and performance success are distinct. **Stage 1 is accepted
+only on the frozen product and evidence identity above.**
 
 The [Stage 2 readiness ledger](../evidence/r41/stage1/stage2_readiness.md)
 records the board-derived inputs and their limits. The independent
@@ -277,15 +310,12 @@ comparison; it has not been recomputed against the newly completed Stage 1 set.
 
 ## Local verification
 
-`python -m tools.docmaint check` passes: 76 documents, acyclic. The system has
-`python3` but no `python` command, so the exact requested invocation used a
-temporary PATH alias to `/usr/bin/python3`. Nine acceptance regression tests
-pass with TMPDIR on the workspace disk; the initial rerun exhausted the `/tmp`
-quota, so it was repeated with that directory changed. One initial test assumed that the live index could never pass any board
-item; it was changed to construct an explicit fixture with board evidence
-removed, preserving the refusal assertion as real board evidence arrives.
-The checker itself and the frozen product sources are unchanged. Initial and
-final test logs are retained. The residual recomputation also passes archive,
-manifest, executable, numerical-status and board-record validation. Frozen
-acceptance intentionally remains nonzero because the Required items above
-remain unmeasured.
+`python3 -m tools.docmaint check` passes: 87 documents, acyclic. Nine
+acceptance regression tests pass with TMPDIR on the workspace disk, and
+`make compiler` passes. Logs are retained under `board/`. The checker itself
+and the frozen product sources are unchanged. The old-mapping comparison and
+its seven refusal tests reproduce from the archived records; all 752 archive
+members pass hash and size checks. The matched postdiction reproduces all 19
+rows and all 30 input-report hashes, with only host-specific path strings
+changed by the local replay. Frozen acceptance exits zero with all 61 Required
+items passing.

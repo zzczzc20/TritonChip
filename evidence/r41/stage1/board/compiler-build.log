@@ -1,0 +1,21 @@
+wrote compiler/targets/tnca-sim-v0.1.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-4rctx.json: 4 RCTX, 32 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-2x2.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v2.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v3.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v4.json: 4 RCTX, 64 logical vregs each, 256 physical
+wrote compiler/targets/tnca-sim-vrf-v5.json: 4 RCTX, 64 logical vregs each, 256 physical
+wrote compiler/targets/tnca-sim-vrf-v5-x8.json: 4 RCTX, 64 logical vregs each, 256 physical
+wrote compiler/targets/tnca-sim-xpose-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+  up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+  up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+  up to date: doc/isa/opcode-map.md
+PASS: all generated ISA files match the schema
+  up to date: doc/support_matrix.md
+PASS: target descriptions match the RTL parameters
+checked 218 shared constants against /home/ubuntu/TritonChip/rtl/common/tnca_defs.vh
+PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+  compiler-unit          PASS   153 tests, 49 skipped
+  compiler-ir            SKIP   tnca-opt not found at /home/ubuntu/TritonChip/compiler/build/tools/tnca-opt/tnca-opt

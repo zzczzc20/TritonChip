@@ -1,0 +1,1418 @@
+{
+  "schema": "tnca-r41-locality-case/1",
+  "status": "functional-pass",
+  "seed": 4103,
+  "rtol": 0.002,
+  "atol": 0.002,
+  "board_acceptance": "not-measured",
+  "measurement": "native numerical replay plus separately reported metadata scope; CPU reference/download after counter snapshot",
+  "graphs": [
+    {
+      "name": "residual",
+      "inputs": [
+        {
+          "shape": [
+            128
+          ],
+          "stride": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "sha256": "a2fa45f5a892715866a84808ec3c3f5556e467eb753e9e0c9615ff4a0124eee6"
+        },
+        {
+          "shape": [
+            128
+          ],
+          "stride": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "sha256": "03e22577c06d64af12b7af12f7891c343937a01b57793849c57db478a926cfa8"
+        }
+      ],
+      "runs": [
+        {
+          "locality": false,
+          "status": "pass",
+          "host_scope_seconds": 3.7933756606653333,
+          "launches": [
+            {
+              "kernel": "triton_poi_fused_add_mul_relu_0",
+              "grid": [
+                8,
+                1,
+                1
+              ],
+              "profile": "core-vrf-sync-v5",
+              "backend": "fpga-multicore-sim",
+              "stream_id": 0,
+              "artifact": "0fd23d8e2c13db527448fde2f738e6e50bbb2a3ac01a47f718c35c5d8a08397b",
+              "artifact_path": "/tmp/tnca-triton-ipo2lzal/triton_poi_fused_add_mul_relu_0-a46a4ae044d85e1.tnca",
+              "device_cycles": 758,
+              "program_cycles": [],
+              "device_timing": {
+                "clock": "mmio-device-clock/1",
+                "epoch": 0,
+                "session_id": 1,
+                "start": 182920,
+                "end": 183684,
+                "cycles": 764
+              },
+              "counters": null,
+              "host_seconds": {
+                "upload": 0.000143,
+                "run": 3.136882,
+                "download": 0.0
+              },
+              "upload_bytes": 0,
+              "download_bytes": 0,
+              "resident_bytes": 1536,
+              "replay": true
+            }
+          ],
+          "counters_before": [
+            {
+              "port": 0,
+              "read_lines": 26,
+              "write_lines": 10
+            },
+            {
+              "port": 1,
+              "read_lines": 38,
+              "write_lines": 12
+            },
+            {
+              "port": 2,
+              "read_lines": 33,
+              "write_lines": 8
+            }
+          ],
+          "counters_after": [
+            {
+              "port": 0,
+              "read_lines": 28,
+              "write_lines": 10
+            },
+            {
+              "port": 1,
+              "read_lines": 43,
+              "write_lines": 13
+            },
+            {
+              "port": 2,
+              "read_lines": 35,
+              "write_lines": 8
+            }
+          ],
+          "output_sha256": "38e05c0c30cfe338c1b1d0ecd239a86c43b07e806f493f1d973ec9db7875d603"
+        },
+        {
+          "locality": true,
+          "status": "pass",
+          "host_scope_seconds": 24.155087005347013,
+          "launches": [
+            {
+              "kernel": "triton_poi_fused_add_mul_relu_0",
+              "grid": [
+                8,
+                1,
+                1
+              ],
+              "profile": "core-vrf-sync-v5",
+              "backend": "fpga-multicore-sim",
+              "stream_id": 0,
+              "artifact": "0fd23d8e2c13db527448fde2f738e6e50bbb2a3ac01a47f718c35c5d8a08397b",
+              "artifact_path": "/tmp/tnca-triton-ipo2lzal/triton_poi_fused_add_mul_relu_0-a46a4ae044d85e1.tnca",
+              "device_cycles": 802,
+              "program_cycles": [],
+              "device_timing": {
+                "clock": "mmio-device-clock/1",
+                "epoch": 0,
+                "session_id": 1,
+                "start": 210000,
+                "end": 210808,
+                "cycles": 808
+              },
+              "counters": null,
+              "host_seconds": {
+                "upload": 0.000154,
+                "run": 3.221695,
+                "download": 0.0
+              },
+              "upload_bytes": 0,
+              "download_bytes": 0,
+              "resident_bytes": 1536,
+              "replay": true
+            }
+          ],
+          "counters_before": [
+            {
+              "port": 0,
+              "read_lines": 28,
+              "write_lines": 13
+            },
+            {
+              "port": 1,
+              "read_lines": 43,
+              "write_lines": 16
+            },
+            {
+              "port": 2,
+              "read_lines": 35,
+              "write_lines": 10
+            }
+          ],
+          "counters_after": [
+            {
+              "port": 0,
+              "read_lines": 33,
+              "write_lines": 13
+            },
+            {
+              "port": 1,
+              "read_lines": 53,
+              "write_lines": 20
+            },
+            {
+              "port": 2,
+              "read_lines": 49,
+              "write_lines": 10
+            }
+          ],
+          "output_sha256": "38e05c0c30cfe338c1b1d0ecd239a86c43b07e806f493f1d973ec9db7875d603",
+          "controls": {
+            "plan": {
+              "session_id": 1,
+              "epoch": 0,
+              "command_count": 1,
+              "ranges": [
+                {
+                  "buffer_id": 1,
+                  "address": 131072,
+                  "size": 512,
+                  "epoch": 0,
+                  "first_command": 0,
+                  "last_command": 0,
+                  "arguments": [
+                    [
+                      0,
+                      "in_ptr0",
+                      0
+                    ]
+                  ],
+                  "aliases": false,
+                  "nacc": 4294967295,
+                  "bypass": false,
+                  "tile_lsb": 6,
+                  "complete_readers": false,
+                  "complete_writers": false
+                },
+                {
+                  "buffer_id": 2,
+                  "address": 131584,
+                  "size": 512,
+                  "epoch": 0,
+                  "first_command": 0,
+                  "last_command": 0,
+                  "arguments": [
+                    [
+                      0,
+                      "in_ptr1",
+                      0
+                    ]
+                  ],
+                  "aliases": false,
+                  "nacc": 4294967295,
+                  "bypass": false,
+                  "tile_lsb": 6,
+                  "complete_readers": false,
+                  "complete_writers": false
+                },
+                {
+                  "buffer_id": 56,
+                  "address": 132096,
+                  "size": 512,
+                  "epoch": 0,
+                  "first_command": 0,
+                  "last_command": 0,
+                  "arguments": [
+                    [
+                      0,
+                      "out_ptr0",
+                      0
+                    ]
+                  ],
+                  "aliases": false,
+                  "nacc": 4294967295,
+                  "bypass": false,
+                  "tile_lsb": 6,
+                  "complete_readers": false,
+                  "complete_writers": false
+                }
+              ],
+              "policy": 1,
+              "scope": "captured command interval; storages retained by Graph; global reader/writer completeness unproved",
+              "aggressive_hints": false
+            },
+            "status": "completed",
+            "control_events": [
+              {
+                "operation": "read",
+                "status": "SUCCEEDED",
+                "cycles": 269
+              },
+              {
+                "operation": "set",
+                "status": "SUCCEEDED",
+                "cycles": 150
+              },
+              {
+                "operation": "register",
+                "status": "SUCCEEDED",
+                "cycles": 267
+              },
+              {
+                "operation": "read",
+                "status": "SUCCEEDED",
+                "cycles": 318
+              },
+              {
+                "operation": "read",
+                "status": "SUCCEEDED",
+                "cycles": 315
+              },
+              {
+                "operation": "set",
+                "status": "SUCCEEDED",
+                "cycles": 151
+              },
+              {
+                "operation": "read",
+                "status": "SUCCEEDED",
+                "cycles": 314
+              }
+            ],
+            "numerical_execution": "captured native Inductor artifacts",
+            "before": {
+              "policy": 0,
+              "registered": 0,
+              "tile_notices": 0,
+              "dead": 0,
+              "dropped": 0
+            },
+            "registered": {
+              "policy": 1,
+              "registered": 3,
+              "tile_notices": 0,
+              "dead": 0,
+              "dropped": 0
+            },
+            "after": {
+              "policy": 1,
+              "registered": 3,
+              "tile_notices": 0,
+              "dead": 0,
+              "dropped": 0
+            },
+            "restored": {
+              "policy": 0,
+              "registered": 3,
+              "tile_notices": 0,
+              "dead": 0,
+              "dropped": 0
+            },
+            "host_scope_seconds": 24.15448360145092
+          }
+        },
+        {
+          "locality": false,
+          "status": "pass",
+          "host_scope_seconds": 3.666534441523254,
+          "launches": [
+            {
+              "kernel": "triton_poi_fused_add_mul_relu_0",
+              "grid": [
+                8,
+                1,
+                1
+              ],
+              "profile": "core-vrf-sync-v5",
+              "backend": "fpga-multicore-sim",
+              "stream_id": 0,
+              "artifact": "0fd23d8e2c13db527448fde2f738e6e50bbb2a3ac01a47f718c35c5d8a08397b",
+              "artifact_path": "/tmp/tnca-triton-ipo2lzal/triton_poi_fused_add_mul_relu_0-a46a4ae044d85e1.tnca",
+              "device_cycles": 780,
+              "program_cycles": [],
+              "device_timing": {
+                "clock": "mmio-device-clock/1",
+                "epoch": 0,
+                "session_id": 1,
+                "start": 226345,
+                "end": 227131,
+                "cycles": 786
+              },
+              "counters": null,
+              "host_seconds": {
+                "upload": 0.000138,
+                "run": 3.012853,
+                "download": 0.0
+              },
+              "upload_bytes": 0,
+              "download_bytes": 0,
+              "resident_bytes": 1536,
+              "replay": true
+            }
+          ],
+          "counters_before": [
+            {
+              "port": 0,
+              "read_lines": 33,
+              "write_lines": 16
+            },
+            {
+              "port": 1,
+              "read_lines": 53,
+              "write_lines": 23
+            },
+            {
+              "port": 2,
+              "read_lines": 49,
+              "write_lines": 12
+            }
+          ],
+          "counters_after": [
+            {
+              "port": 0,
+              "read_lines": 38,
+              "write_lines": 16
+            },
+            {
+              "port": 1,
+              "read_lines": 59,
+              "write_lines": 23
+            },
+            {
+              "port": 2,
+              "read_lines": 53,
+              "write_lines": 12
+            }
+          ],
+          "output_sha256": "38e05c0c30cfe338c1b1d0ecd239a86c43b07e806f493f1d973ec9db7875d603"
+        }
+      ],
+      "capture": [
+        {
+          "kernel": "triton_poi_fused_add_mul_relu_0",
+          "grid": [
+            8,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "fpga-multicore-sim",
+          "stream_id": 0,
+          "artifact": "0fd23d8e2c13db527448fde2f738e6e50bbb2a3ac01a47f718c35c5d8a08397b",
+          "artifact_path": "/tmp/tnca-triton-ipo2lzal/triton_poi_fused_add_mul_relu_0-a46a4ae044d85e1.tnca",
+          "device_cycles": 874,
+          "program_cycles": [],
+          "device_timing": {
+            "clock": "mmio-device-clock/1",
+            "epoch": 0,
+            "session_id": 1,
+            "start": 178488,
+            "end": 179368,
+            "cycles": 880
+          },
+          "counters": null,
+          "host_seconds": {
+            "upload": 0.000122,
+            "run": 3.182928,
+            "download": 0.000102
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 1536
+        }
+      ],
+      "plan": {
+        "session_id": 1,
+        "epoch": 0,
+        "command_count": 1,
+        "ranges": [
+          {
+            "buffer_id": 1,
+            "address": 131072,
+            "size": 512,
+            "epoch": 0,
+            "first_command": 0,
+            "last_command": 0,
+            "arguments": [
+              [
+                0,
+                "in_ptr0",
+                0
+              ]
+            ],
+            "aliases": false,
+            "nacc": 4294967295,
+            "bypass": false,
+            "tile_lsb": 6,
+            "complete_readers": false,
+            "complete_writers": false
+          },
+          {
+            "buffer_id": 2,
+            "address": 131584,
+            "size": 512,
+            "epoch": 0,
+            "first_command": 0,
+            "last_command": 0,
+            "arguments": [
+              [
+                0,
+                "in_ptr1",
+                0
+              ]
+            ],
+            "aliases": false,
+            "nacc": 4294967295,
+            "bypass": false,
+            "tile_lsb": 6,
+            "complete_readers": false,
+            "complete_writers": false
+          },
+          {
+            "buffer_id": 56,
+            "address": 132096,
+            "size": 512,
+            "epoch": 0,
+            "first_command": 0,
+            "last_command": 0,
+            "arguments": [
+              [
+                0,
+                "out_ptr0",
+                0
+              ]
+            ],
+            "aliases": false,
+            "nacc": 4294967295,
+            "bypass": false,
+            "tile_lsb": 6,
+            "complete_readers": false,
+            "complete_writers": false
+          }
+        ],
+        "policy": 1,
+        "scope": "captured command interval; storages retained by Graph; global reader/writer completeness unproved",
+        "aggressive_hints": false
+      },
+      "capabilities": {
+        "name": "fpga-u280-multicore",
+        "state": "reference-available",
+        "launch_is_idempotent": false,
+        "supports_cancel": false,
+        "concurrent_requests": 1,
+        "raw_request": true,
+        "medium": "RTL MMIO v2: 3 cores, 3 AXI outlets",
+        "reaches": "rtl/fpga/tnca_multicore_fpga.v",
+        "protocol": "r2_transport_v1 + r40 physical-grid extension, MMIO v2",
+        "profile": "core-vrf-sync-v5",
+        "physical_grid": true,
+        "tmu_locality": true,
+        "tmu_ranges": 8,
+        "memory_ports": 3,
+        "memory_bytes": 8519680,
+        "memory_configuration": null,
+        "completion_counters": "global-makespan-u64",
+        "fault_detail": false,
+        "coherent_host_window": true,
+        "hbm_dma": true,
+        "cache_ownership_handoff": true
+      },
+      "fault": {
+        "status": "pass",
+        "injection": "numerical admission refused after locality registration",
+        "cleanup": {
+          "plan": {
+            "session_id": 1,
+            "epoch": 0,
+            "command_count": 1,
+            "ranges": [
+              {
+                "buffer_id": 1,
+                "address": 131072,
+                "size": 512,
+                "epoch": 0,
+                "first_command": 0,
+                "last_command": 0,
+                "arguments": [
+                  [
+                    0,
+                    "in_ptr0",
+                    0
+                  ]
+                ],
+                "aliases": false,
+                "nacc": 4294967295,
+                "bypass": false,
+                "tile_lsb": 6,
+                "complete_readers": false,
+                "complete_writers": false
+              },
+              {
+                "buffer_id": 2,
+                "address": 131584,
+                "size": 512,
+                "epoch": 0,
+                "first_command": 0,
+                "last_command": 0,
+                "arguments": [
+                  [
+                    0,
+                    "in_ptr1",
+                    0
+                  ]
+                ],
+                "aliases": false,
+                "nacc": 4294967295,
+                "bypass": false,
+                "tile_lsb": 6,
+                "complete_readers": false,
+                "complete_writers": false
+              },
+              {
+                "buffer_id": 56,
+                "address": 132096,
+                "size": 512,
+                "epoch": 0,
+                "first_command": 0,
+                "last_command": 0,
+                "arguments": [
+                  [
+                    0,
+                    "out_ptr0",
+                    0
+                  ]
+                ],
+                "aliases": false,
+                "nacc": 4294967295,
+                "bypass": false,
+                "tile_lsb": 6,
+                "complete_readers": false,
+                "complete_writers": false
+              }
+            ],
+            "policy": 1,
+            "scope": "captured command interval; storages retained by Graph; global reader/writer completeness unproved",
+            "aggressive_hints": false
+          },
+          "status": "failed-preserved",
+          "control_events": [
+            {
+              "operation": "read",
+              "status": "SUCCEEDED",
+              "cycles": 315
+            },
+            {
+              "operation": "set",
+              "status": "SUCCEEDED",
+              "cycles": 148
+            },
+            {
+              "operation": "register",
+              "status": "SUCCEEDED",
+              "cycles": 266
+            },
+            {
+              "operation": "read",
+              "status": "SUCCEEDED",
+              "cycles": 316
+            },
+            {
+              "operation": "set",
+              "status": "SUCCEEDED",
+              "cycles": 150
+            },
+            {
+              "operation": "read",
+              "status": "SUCCEEDED",
+              "cycles": 314
+            }
+          ],
+          "numerical_execution": "captured native Inductor artifacts",
+          "before": {
+            "policy": 0,
+            "registered": 3,
+            "tile_notices": 0,
+            "dead": 0,
+            "dropped": 0
+          },
+          "registered": {
+            "policy": 1,
+            "registered": 6,
+            "tile_notices": 0,
+            "dead": 0,
+            "dropped": 0
+          },
+          "error": "[ADMISSION_REFUSED] injected numerical admission refusal",
+          "restored": {
+            "policy": 0,
+            "registered": 6,
+            "tile_notices": 0,
+            "dead": 0,
+            "dropped": 0
+          },
+          "host_scope_seconds": 12.777589773759246
+        },
+        "off_replay_refused": true
+      },
+      "status": "functional-pass"
+    },
+    {
+      "name": "projection",
+      "inputs": [
+        {
+          "shape": [
+            8,
+            16
+          ],
+          "stride": [
+            16,
+            1
+          ],
+          "dtype": "torch.float16",
+          "sha256": "8622e61bf6fc0d91c33ca2746cdd772dbbd9cdb480cd1a27a5ce7427095f1ddc"
+        },
+        {
+          "shape": [
+            16,
+            16
+          ],
+          "stride": [
+            16,
+            1
+          ],
+          "dtype": "torch.float16",
+          "sha256": "36f175fc940537ae5650c029e46a866f928e88da51d223bfae979b01c5b048ce"
+        },
+        {
+          "shape": [
+            16
+          ],
+          "stride": [
+            1
+          ],
+          "dtype": "torch.float16",
+          "sha256": "027fbaabf93350d0279f17138dff47181f22975c383a2accbb5242da3b25603f"
+        }
+      ],
+      "runs": [
+        {
+          "locality": false,
+          "status": "pass",
+          "host_scope_seconds": 16.500847294926643,
+          "launches": [
+            {
+              "kernel": "triton_tem_fused_add_relu_0",
+              "grid": [
+                1,
+                1,
+                1
+              ],
+              "profile": "core-vrf-sync-v5",
+              "backend": "fpga-multicore-sim",
+              "stream_id": 0,
+              "artifact": "d7853632b0ff32b8a433fee1a7ce3c8ca6dfd995524fe6b51046289808512d64",
+              "artifact_path": "/tmp/tnca-triton-ipo2lzal/triton_tem_fused_add_relu_0-282e76b5d83708.tnca",
+              "device_cycles": 9425,
+              "program_cycles": [],
+              "device_timing": {
+                "clock": "mmio-device-clock/1",
+                "epoch": 0,
+                "session_id": 1,
+                "start": 374662,
+                "end": 384093,
+                "cycles": 9431
+              },
+              "counters": null,
+              "host_seconds": {
+                "upload": 0.000153,
+                "run": 15.316375,
+                "download": 0.0
+              },
+              "upload_bytes": 0,
+              "download_bytes": 0,
+              "resident_bytes": 1056,
+              "replay": true
+            }
+          ],
+          "counters_before": [
+            {
+              "port": 0,
+              "read_lines": 102,
+              "write_lines": 51
+            },
+            {
+              "port": 1,
+              "read_lines": 131,
+              "write_lines": 58
+            },
+            {
+              "port": 2,
+              "read_lines": 125,
+              "write_lines": 43
+            }
+          ],
+          "counters_after": [
+            {
+              "port": 0,
+              "read_lines": 134,
+              "write_lines": 68
+            },
+            {
+              "port": 1,
+              "read_lines": 165,
+              "write_lines": 73
+            },
+            {
+              "port": 2,
+              "read_lines": 157,
+              "write_lines": 59
+            }
+          ],
+          "output_sha256": "d364c6df61da7aa37b5c3bb15c5489b32d3bc916e60fb1019b70e44363934f2b"
+        },
+        {
+          "locality": true,
+          "status": "pass",
+          "host_scope_seconds": 31.807328377850354,
+          "launches": [
+            {
+              "kernel": "triton_tem_fused_add_relu_0",
+              "grid": [
+                1,
+                1,
+                1
+              ],
+              "profile": "core-vrf-sync-v5",
+              "backend": "fpga-multicore-sim",
+              "stream_id": 0,
+              "artifact": "d7853632b0ff32b8a433fee1a7ce3c8ca6dfd995524fe6b51046289808512d64",
+              "artifact_path": "/tmp/tnca-triton-ipo2lzal/triton_tem_fused_add_relu_0-282e76b5d83708.tnca",
+              "device_cycles": 9373,
+              "program_cycles": [],
+              "device_timing": {
+                "clock": "mmio-device-clock/1",
+                "epoch": 0,
+                "session_id": 1,
+                "start": 403786,
+                "end": 413165,
+                "cycles": 9379
+              },
+              "counters": null,
+              "host_seconds": {
+                "upload": 0.000155,
+                "run": 15.303895,
+                "download": 0.0
+              },
+              "upload_bytes": 0,
+              "download_bytes": 0,
+              "resident_bytes": 1056,
+              "replay": true
+            }
+          ],
+          "counters_before": [
+            {
+              "port": 0,
+              "read_lines": 134,
+              "write_lines": 69
+            },
+            {
+              "port": 1,
+              "read_lines": 165,
+              "write_lines": 74
+            },
+            {
+              "port": 2,
+              "read_lines": 157,
+              "write_lines": 61
+            }
+          ],
+          "counters_after": [
+            {
+              "port": 0,
+              "read_lines": 174,
+              "write_lines": 85
+            },
+            {
+              "port": 1,
+              "read_lines": 204,
+              "write_lines": 91
+            },
+            {
+              "port": 2,
+              "read_lines": 190,
+              "write_lines": 75
+            }
+          ],
+          "output_sha256": "d364c6df61da7aa37b5c3bb15c5489b32d3bc916e60fb1019b70e44363934f2b",
+          "controls": {
+            "plan": {
+              "session_id": 1,
+              "epoch": 0,
+              "command_count": 1,
+              "ranges": [
+                {
+                  "buffer_id": 63,
+                  "address": 131072,
+                  "size": 256,
+                  "epoch": 0,
+                  "first_command": 0,
+                  "last_command": 0,
+                  "arguments": [
+                    [
+                      0,
+                      "out_ptr1",
+                      0
+                    ]
+                  ],
+                  "aliases": false,
+                  "nacc": 4294967295,
+                  "bypass": false,
+                  "tile_lsb": 6,
+                  "complete_readers": false,
+                  "complete_writers": false
+                },
+                {
+                  "buffer_id": 59,
+                  "address": 132800,
+                  "size": 256,
+                  "epoch": 0,
+                  "first_command": 0,
+                  "last_command": 0,
+                  "arguments": [
+                    [
+                      0,
+                      "arg_A",
+                      0
+                    ]
+                  ],
+                  "aliases": false,
+                  "nacc": 4294967295,
+                  "bypass": false,
+                  "tile_lsb": 6,
+                  "complete_readers": false,
+                  "complete_writers": false
+                },
+                {
+                  "buffer_id": 60,
+                  "address": 133056,
+                  "size": 512,
+                  "epoch": 0,
+                  "first_command": 0,
+                  "last_command": 0,
+                  "arguments": [
+                    [
+                      0,
+                      "arg_B",
+                      0
+                    ]
+                  ],
+                  "aliases": false,
+                  "nacc": 4294967295,
+                  "bypass": false,
+                  "tile_lsb": 6,
+                  "complete_readers": false,
+                  "complete_writers": false
+                },
+                {
+                  "buffer_id": 61,
+                  "address": 133568,
+                  "size": 32,
+                  "epoch": 0,
+                  "first_command": 0,
+                  "last_command": 0,
+                  "arguments": [
+                    [
+                      0,
+                      "in_ptr0",
+                      0
+                    ]
+                  ],
+                  "aliases": false,
+                  "nacc": 4294967295,
+                  "bypass": false,
+                  "tile_lsb": 6,
+                  "complete_readers": false,
+                  "complete_writers": false
+                }
+              ],
+              "policy": 1,
+              "scope": "captured command interval; storages retained by Graph; global reader/writer completeness unproved",
+              "aggressive_hints": false
+            },
+            "status": "completed",
+            "control_events": [
+              {
+                "operation": "read",
+                "status": "SUCCEEDED",
+                "cycles": 264
+              },
+              {
+                "operation": "set",
+                "status": "SUCCEEDED",
+                "cycles": 98
+              },
+              {
+                "operation": "register",
+                "status": "SUCCEEDED",
+                "cycles": 367
+              },
+              {
+                "operation": "read",
+                "status": "SUCCEEDED",
+                "cycles": 265
+              },
+              {
+                "operation": "read",
+                "status": "SUCCEEDED",
+                "cycles": 265
+              },
+              {
+                "operation": "set",
+                "status": "SUCCEEDED",
+                "cycles": 98
+              },
+              {
+                "operation": "read",
+                "status": "SUCCEEDED",
+                "cycles": 265
+              }
+            ],
+            "numerical_execution": "captured native Inductor artifacts",
+            "before": {
+              "policy": 0,
+              "registered": 6,
+              "tile_notices": 0,
+              "dead": 0,
+              "dropped": 0
+            },
+            "registered": {
+              "policy": 1,
+              "registered": 10,
+              "tile_notices": 0,
+              "dead": 0,
+              "dropped": 0
+            },
+            "after": {
+              "policy": 1,
+              "registered": 10,
+              "tile_notices": 0,
+              "dead": 0,
+              "dropped": 0
+            },
+            "restored": {
+              "policy": 0,
+              "registered": 10,
+              "tile_notices": 0,
+              "dead": 0,
+              "dropped": 0
+            },
+            "host_scope_seconds": 31.80671402718872
+          }
+        },
+        {
+          "locality": false,
+          "status": "pass",
+          "host_scope_seconds": 16.460053897462785,
+          "launches": [
+            {
+              "kernel": "triton_tem_fused_add_relu_0",
+              "grid": [
+                1,
+                1,
+                1
+              ],
+              "profile": "core-vrf-sync-v5",
+              "backend": "fpga-multicore-sim",
+              "stream_id": 0,
+              "artifact": "d7853632b0ff32b8a433fee1a7ce3c8ca6dfd995524fe6b51046289808512d64",
+              "artifact_path": "/tmp/tnca-triton-ipo2lzal/triton_tem_fused_add_relu_0-282e76b5d83708.tnca",
+              "device_cycles": 9391,
+              "program_cycles": [],
+              "device_timing": {
+                "clock": "mmio-device-clock/1",
+                "epoch": 0,
+                "session_id": 1,
+                "start": 429277,
+                "end": 438674,
+                "cycles": 9397
+              },
+              "counters": null,
+              "host_seconds": {
+                "upload": 0.000147,
+                "run": 15.276359,
+                "download": 0.0
+              },
+              "upload_bytes": 0,
+              "download_bytes": 0,
+              "resident_bytes": 1056,
+              "replay": true
+            }
+          ],
+          "counters_before": [
+            {
+              "port": 0,
+              "read_lines": 174,
+              "write_lines": 86
+            },
+            {
+              "port": 1,
+              "read_lines": 204,
+              "write_lines": 92
+            },
+            {
+              "port": 2,
+              "read_lines": 190,
+              "write_lines": 77
+            }
+          ],
+          "counters_after": [
+            {
+              "port": 0,
+              "read_lines": 206,
+              "write_lines": 102
+            },
+            {
+              "port": 1,
+              "read_lines": 238,
+              "write_lines": 107
+            },
+            {
+              "port": 2,
+              "read_lines": 222,
+              "write_lines": 91
+            }
+          ],
+          "output_sha256": "d364c6df61da7aa37b5c3bb15c5489b32d3bc916e60fb1019b70e44363934f2b"
+        }
+      ],
+      "capture": [
+        {
+          "kernel": "triton_tem_fused_add_relu_0",
+          "grid": [
+            1,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "fpga-multicore-sim",
+          "stream_id": 0,
+          "artifact": "d7853632b0ff32b8a433fee1a7ce3c8ca6dfd995524fe6b51046289808512d64",
+          "artifact_path": "/tmp/tnca-triton-ipo2lzal/triton_tem_fused_add_relu_0-282e76b5d83708.tnca",
+          "device_cycles": 9403,
+          "program_cycles": [],
+          "device_timing": {
+            "clock": "mmio-device-clock/1",
+            "epoch": 0,
+            "session_id": 1,
+            "start": 360984,
+            "end": 370393,
+            "cycles": 9409
+          },
+          "counters": null,
+          "host_seconds": {
+            "upload": 0.000159,
+            "run": 15.290183,
+            "download": 0.00011
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 1056
+        }
+      ],
+      "plan": {
+        "session_id": 1,
+        "epoch": 0,
+        "command_count": 1,
+        "ranges": [
+          {
+            "buffer_id": 63,
+            "address": 131072,
+            "size": 256,
+            "epoch": 0,
+            "first_command": 0,
+            "last_command": 0,
+            "arguments": [
+              [
+                0,
+                "out_ptr1",
+                0
+              ]
+            ],
+            "aliases": false,
+            "nacc": 4294967295,
+            "bypass": false,
+            "tile_lsb": 6,
+            "complete_readers": false,
+            "complete_writers": false
+          },
+          {
+            "buffer_id": 59,
+            "address": 132800,
+            "size": 256,
+            "epoch": 0,
+            "first_command": 0,
+            "last_command": 0,
+            "arguments": [
+              [
+                0,
+                "arg_A",
+                0
+              ]
+            ],
+            "aliases": false,
+            "nacc": 4294967295,
+            "bypass": false,
+            "tile_lsb": 6,
+            "complete_readers": false,
+            "complete_writers": false
+          },
+          {
+            "buffer_id": 60,
+            "address": 133056,
+            "size": 512,
+            "epoch": 0,
+            "first_command": 0,
+            "last_command": 0,
+            "arguments": [
+              [
+                0,
+                "arg_B",
+                0
+              ]
+            ],
+            "aliases": false,
+            "nacc": 4294967295,
+            "bypass": false,
+            "tile_lsb": 6,
+            "complete_readers": false,
+            "complete_writers": false
+          },
+          {
+            "buffer_id": 61,
+            "address": 133568,
+            "size": 32,
+            "epoch": 0,
+            "first_command": 0,
+            "last_command": 0,
+            "arguments": [
+              [
+                0,
+                "in_ptr0",
+                0
+              ]
+            ],
+            "aliases": false,
+            "nacc": 4294967295,
+            "bypass": false,
+            "tile_lsb": 6,
+            "complete_readers": false,
+            "complete_writers": false
+          }
+        ],
+        "policy": 1,
+        "scope": "captured command interval; storages retained by Graph; global reader/writer completeness unproved",
+        "aggressive_hints": false
+      },
+      "capabilities": {
+        "name": "fpga-u280-multicore",
+        "state": "reference-available",
+        "launch_is_idempotent": false,
+        "supports_cancel": false,
+        "concurrent_requests": 1,
+        "raw_request": true,
+        "medium": "RTL MMIO v2: 3 cores, 3 AXI outlets",
+        "reaches": "rtl/fpga/tnca_multicore_fpga.v",
+        "protocol": "r2_transport_v1 + r40 physical-grid extension, MMIO v2",
+        "profile": "core-vrf-sync-v5",
+        "physical_grid": true,
+        "tmu_locality": true,
+        "tmu_ranges": 8,
+        "memory_ports": 3,
+        "memory_bytes": 8519680,
+        "memory_configuration": null,
+        "completion_counters": "global-makespan-u64",
+        "fault_detail": false,
+        "coherent_host_window": true,
+        "hbm_dma": true,
+        "cache_ownership_handoff": true
+      },
+      "fault": {
+        "status": "pass",
+        "injection": "numerical admission refused after locality registration",
+        "cleanup": {
+          "plan": {
+            "session_id": 1,
+            "epoch": 0,
+            "command_count": 1,
+            "ranges": [
+              {
+                "buffer_id": 63,
+                "address": 131072,
+                "size": 256,
+                "epoch": 0,
+                "first_command": 0,
+                "last_command": 0,
+                "arguments": [
+                  [
+                    0,
+                    "out_ptr1",
+                    0
+                  ]
+                ],
+                "aliases": false,
+                "nacc": 4294967295,
+                "bypass": false,
+                "tile_lsb": 6,
+                "complete_readers": false,
+                "complete_writers": false
+              },
+              {
+                "buffer_id": 59,
+                "address": 132800,
+                "size": 256,
+                "epoch": 0,
+                "first_command": 0,
+                "last_command": 0,
+                "arguments": [
+                  [
+                    0,
+                    "arg_A",
+                    0
+                  ]
+                ],
+                "aliases": false,
+                "nacc": 4294967295,
+                "bypass": false,
+                "tile_lsb": 6,
+                "complete_readers": false,
+                "complete_writers": false
+              },
+              {
+                "buffer_id": 60,
+                "address": 133056,
+                "size": 512,
+                "epoch": 0,
+                "first_command": 0,
+                "last_command": 0,
+                "arguments": [
+                  [
+                    0,
+                    "arg_B",
+                    0
+                  ]
+                ],
+                "aliases": false,
+                "nacc": 4294967295,
+                "bypass": false,
+                "tile_lsb": 6,
+                "complete_readers": false,
+                "complete_writers": false
+              },
+              {
+                "buffer_id": 61,
+                "address": 133568,
+                "size": 32,
+                "epoch": 0,
+                "first_command": 0,
+                "last_command": 0,
+                "arguments": [
+                  [
+                    0,
+                    "in_ptr0",
+                    0
+                  ]
+                ],
+                "aliases": false,
+                "nacc": 4294967295,
+                "bypass": false,
+                "tile_lsb": 6,
+                "complete_readers": false,
+                "complete_writers": false
+              }
+            ],
+            "policy": 1,
+            "scope": "captured command interval; storages retained by Graph; global reader/writer completeness unproved",
+            "aggressive_hints": false
+          },
+          "status": "failed-preserved",
+          "control_events": [
+            {
+              "operation": "read",
+              "status": "SUCCEEDED",
+              "cycles": 265
+            },
+            {
+              "operation": "set",
+              "status": "SUCCEEDED",
+              "cycles": 98
+            },
+            {
+              "operation": "register",
+              "status": "SUCCEEDED",
+              "cycles": 366
+            },
+            {
+              "operation": "read",
+              "status": "SUCCEEDED",
+              "cycles": 264
+            },
+            {
+              "operation": "set",
+              "status": "SUCCEEDED",
+              "cycles": 99
+            },
+            {
+              "operation": "read",
+              "status": "SUCCEEDED",
+              "cycles": 267
+            }
+          ],
+          "numerical_execution": "captured native Inductor artifacts",
+          "before": {
+            "policy": 0,
+            "registered": 10,
+            "tile_notices": 0,
+            "dead": 0,
+            "dropped": 0
+          },
+          "registered": {
+            "policy": 1,
+            "registered": 14,
+            "tile_notices": 0,
+            "dead": 0,
+            "dropped": 0
+          },
+          "error": "[ADMISSION_REFUSED] injected numerical admission refusal",
+          "restored": {
+            "policy": 0,
+            "registered": 14,
+            "tile_notices": 0,
+            "dead": 0,
+            "dropped": 0
+          },
+          "host_scope_seconds": 12.962686819955707
+        },
+        "off_replay_refused": true
+      },
+      "status": "functional-pass"
+    }
+  ],
+  "software_tree": "files:cc69519df752cb0ba6ba4507f8fec6207e29d540817d9fbcae78d325af90633a",
+  "torch": "2.14.0+cu130",
+  "triton": "3.8.0",
+  "backend": "fpga-multicore-sim"
+}

@@ -483,3 +483,24 @@ The first TLM launch failed before model loading because CUDA and TNCA drivers
 were both active. Its journal is preserved as tlm-vl-v1.log. The corrected
 launch disables CUDA visibility and is running; no simulator or board result is
 claimed yet. Compiler and 88-document checks pass. No card/image work started.
+
+## 2026-10-27 (Kimi) — chat TLM diagnosis and board preparation
+
+Preserved TLM attempts v2-v7 in `evidence/r41/chat/tlm-failures-v2-v7.tgz`:
+Hub resolution, stale packaged profile data, two launcher omissions and the real
+X8 descriptor failure are distinct, visible failures. Restaging through
+`make r2-stage-data` fixed the missing X8 profile/target. The subsequent chat
+runs and standalone official-FP8 controls fail at `t.ld.async.b.t` with
+`DESCRIPTOR_FAULT`; current and pre-P3 controls both fail, so this is not
+attributed to the incoming pipeline work. Raw control reports, journals, model
+logs and assembly are in `fp8-x8-controls.tgz`. No numerical fallback was used.
+
+A fresh reduced-depth VL attempt is running with the portable v5 gather lowering.
+It is not yet a passing TLM result. The full-checkpoint VL/Qwen3.5 board manifest
+uses that same artifact profile on the approved run-1 X8-capable image and runs
+CPU-W8A8 teacher forcing directly; it does not depend on the empty Qwen3.5
+reference directory. `spec/r41/chat/board_queue.sh` delegates to the bounded
+`acceptance_queue.py`, which waits for 900 consecutive idle seconds and never
+programs or resets the card. Card-free manifest preparation, shell syntax,
+88-document checks and `make compiler` (157 passes, 53 skips; MLIR unavailable)
+pass. No board job, card access, image load or full-image build was started.

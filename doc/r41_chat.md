@@ -75,6 +75,13 @@ operator evidence in `evidence/r41/fp8/ops/README.md`.
   keeps `grid_thw` and `cu_seqlens` as host integer metadata. Its host reads do
   not execute vision arithmetic on the CPU. The documented multimodal prefill
   also has device scalar reads for masks/counts; text decode has none.
+- **Current X8 small-M prefill blocker:** fresh chat and standalone official-FP8
+  controls on this tree fault in `t.ld.async.b.t` with `DESCRIPTOR_FAULT` for the
+  small-M Hub kernel, on both current and pre-P3 sources. The failed reports and
+  assembly are preserved in `evidence/r41/chat/`. The chat proof and prepared
+  board manifest therefore use the portable `core-vrf-sync-v5` gather lowering;
+  the approved X8 image executes those v5 artifacts. This is not an X8 result and
+  does not close the transposed-load fault.
 - **Still refused:** two or more image/video attention segments with symbolic
   per-segment lengths. The driver accepts one optional image and does not claim
   multi-image or video support.

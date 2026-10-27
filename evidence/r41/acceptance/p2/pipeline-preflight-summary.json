@@ -1,0 +1,136 @@
+{
+  "schema": "r41-p2-pipeline-preflight/1",
+  "status": "passed-with-mlir-skipped",
+  "software_tree": "files:b94e05f7d016b6ec877e0fe0f2138c3217ff380acb8160b9d1da3b0ceb8e2bc0",
+  "default_audit": {
+    "points": 113,
+    "unchanged": 113,
+    "changed": 0,
+    "not_compared": 0
+  },
+  "model_rows": 18,
+  "model_timed_samples": 54,
+  "rtl_bf16_rows": 2,
+  "rtl_bf16_trace": {
+    "116": {
+      "mma_intervals": [
+        [
+          35374,
+          35685
+        ],
+        [
+          35693,
+          36004
+        ],
+        [
+          36196,
+          36507
+        ],
+        [
+          36515,
+          36826
+        ]
+      ],
+      "dma_intervals": [
+        [
+          35205,
+          35280
+        ],
+        [
+          35291,
+          35366
+        ],
+        [
+          35387,
+          35462
+        ],
+        [
+          35473,
+          35548
+        ],
+        [
+          36027,
+          36102
+        ],
+        [
+          36113,
+          36188
+        ],
+        [
+          36209,
+          36284
+        ],
+        [
+          36295,
+          36370
+        ]
+      ],
+      "mma_cycles": 1244,
+      "dma_cycles": 600,
+      "overlap_cycles": 300
+    },
+    "130": {
+      "mma_intervals": [
+        [
+          47803,
+          48114
+        ],
+        [
+          48122,
+          48433
+        ],
+        [
+          48625,
+          48936
+        ],
+        [
+          48944,
+          49255
+        ]
+      ],
+      "dma_intervals": [
+        [
+          47634,
+          47709
+        ],
+        [
+          47720,
+          47795
+        ],
+        [
+          47816,
+          47891
+        ],
+        [
+          47902,
+          47977
+        ],
+        [
+          48456,
+          48531
+        ],
+        [
+          48542,
+          48617
+        ],
+        [
+          48638,
+          48713
+        ],
+        [
+          48724,
+          48799
+        ]
+      ],
+      "mma_cycles": 1244,
+      "dma_cycles": 600,
+      "overlap_cycles": 300
+    }
+  },
+  "compiler": "make compiler passed; 53 Python tests and the tnca-opt MLIR suite skipped",
+  "limitations": [
+    "The model uses an uncalibrated timing domain.",
+    "The retained RTL trace was built from an earlier source identity.",
+    "Physical U280 results and final identity reproduction remain pending."
+  ]
+}

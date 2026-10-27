@@ -95,6 +95,32 @@ def manifests():
     p2['steps']=[direct(p2,'locality','tools/performance_harness/locality_case.py',1200)]
     p2['budget_seconds']=1200;p2['registration']['budget_seconds']=1200
     p2['registration']['contract']='doc/r41_tasks_and_acceptance.md S2-03.A; functional board evidence only, separate performance review required'
+    pipeline=common('s2-p2-pipeline','Compare Mode B, single-role two-slot and Mode A two-slot standard Torch GEMMs under the same image, three-core profile, two-context mask and 64-register program space.')
+    pipeline['env'].update(TNCA_ACTIVE_CORES='3',TNCA_RCTX_SPMD='1',TNCA_RCTX_SPMD_SHARED='2',
+                           TNCA_SCHEDULE='0',TNCA_WINDOW_REUSE='0',TNCA_IEEE_DIV='1')
+    pipeline['steps']=[]
+    for mode in ('baseline','single','paired'):
+        task=direct(pipeline,mode,'tools/performance_harness/fragment_case.py',1800)
+        task['argv'] += ['--columns','16','--shapes','16x16x32,16x16x48,16x16x64',
+                         '--samples','3','--bitwise','--require-resident']
+        task['env'].update(TNCA_SINGLE_ROLE_PIPELINE='1' if mode=='single' else '0',
+                           TNCA_RCTX_ROLES='2' if mode=='paired' else '0',
+                           TNCA_RCTX_ROLE_PAIRS='1' if mode=='paired' else '0')
+        if mode=='single':task['argv'].append('--require-single-role-pipeline')
+        if mode=='paired':task['argv'] += ['--ring-stages','2']
+        task['timing_boundary']='one qualified call then three timed device-completion samples; outputs stay resident during the sample block and CPU checks follow'
+        task['cache_state']='isolated process/cache per arm; identical deterministic inputs and no tuning; qualification includes CPU numerical validation'
+        pipeline['steps'].append(task)
+    pipeline['steps'].append(dict(id='compare',kind='compare',
+        argv=['{python}','{root}/tools/performance_harness/pipeline_compare.py',
+              '--backend','fpga-u280-multicore','--experiment','{out}/report.json',
+              '--baseline','{out}/baseline/report.json','--single','{out}/single/report.json',
+              '--paired','{out}/paired/report.json','--out','{out}/comparison.json'],
+        timeout_seconds=60,inputs=['{out}/baseline/report.json','{out}/single/report.json','{out}/paired/report.json'],
+        outputs=['{out}/comparison.json']))
+    pipeline['budget_seconds']=5500;pipeline['registration']['budget_seconds']=5500
+    pipeline['registration']['contract']='doc/r41_tasks_and_acceptance.md S2-03.B; registered grid-one points; device samples only, no host-latency acceptance claim'
+    pipeline['conclusion_source']='{out}/comparison.json'
     p4=common('s2-p4-lifecycle','Explicit compound refusals, bounded large-grid admission, standard Torch code eviction and a rolled AOT/Session barrier loop establish lifecycle behavior on the approved image; no full-model or aggregate acceptance inference.')
     p4['sources'] += ['tools/r40/alias_negative_case.py','tools/r40/device_tests.py','tools/r40/barrier_epoch_case.py','tools/r40/grid_admission_case.py']
     p4['steps']=[direct(p4,'aliases','tools/r40/alias_negative_case.py',300),
@@ -104,7 +130,7 @@ def manifests():
     p4['steps'][1]['argv'] += ['--only','eviction']
     p4['budget_seconds']=5700;p4['registration']['budget_seconds']=5700
     p4['registration']['contract']='doc/r41_tasks_and_acceptance.md S2-04.D.3/.4/.6/.7; full-model persistent-session and sustained-admission gates remain separate'
-    return [gemm,policy,*migration,p2,p4]
+    return [gemm,policy,*migration,p2,pipeline,p4]
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--check',action='store_true');a=p.parse_args()

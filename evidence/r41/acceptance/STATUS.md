@@ -484,6 +484,30 @@ were both active. Its journal is preserved as tlm-vl-v1.log. The corrected
 launch disables CUDA visibility and is running; no simulator or board result is
 claimed yet. Compiler and 88-document checks pass. No card/image work started.
 
+### P2 final preflight and lead queue preparation
+
+GB10 default-audit-v5 and BF16 RTL-v2 both exited zero. All 113 original
+points compile with zero changed default artifacts. The BF16 four-step cases
+pass bitwise with real DMA/MMA trace overlap. The repeated fixed-budget model
+experiment supplies 54 timed numerical samples with outputs kept resident
+through each sample block. `p2/pipeline_preflight_closeout.py` validates the
+raw archives, model/RTL identities, sample hashes and audit summary. The
+compiler check retains 53 skipped Python tests and a skipped MLIR IR suite.
+
+`s2-p2-pipeline.json` registers six exact Torch points in each of three arms,
+three timed device samples after qualification, the same two-context/64-register
+program budget and a 5,500-second total execution cap. The separate P2 locality
+manifest has a 1,200-second cap; together they stay below P2's two-hour bound.
+The comparison checks actual artifact text, inputs, bitwise outputs, software,
+role maps, sample counts and before/after image/clock probes. The actual-model
+comparison and four refusal mutations pass locally. Six waiting-rule tests pass;
+no physical device was probed or opened. S2-03.B remains not measured.
+
+Next: commit this preflight and the manifest, stage the resulting immutable
+source on the FPGA host with CPU-only transfer, verify it against Git blob
+identities, and write the exact lead-only launch command. Then continue P3
+full-model code and preflight while the lead controls all card work.
+
 ## 2026-10-27 (Kimi) — chat TLM diagnosis and board preparation
 
 Preserved TLM attempts v2-v7 in `evidence/r41/chat/tlm-failures-v2-v7.tgz`:

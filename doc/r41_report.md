@@ -208,3 +208,12 @@ No asymmetric or dynamic reallocation capability is selected. See
 `evidence/r41/acceptance/p2/private-resource-study.md`. S2-03.C now passes as
 a negative Study. Current ledger: **41 passed, two failed, 44 not measured,
 seven blocked**. Stage 2 and overall R41 remain not accepted.
+
+The pipeline preflight now includes three timed model samples for each of
+18 policy/point rows, plus two BF16 four-step RTL rows. The 113-point default
+compile audit reports no changed artifacts. `make compiler` passed with 53
+Python tests and the MLIR IR suite skipped; tnca-opt was unavailable. These
+results are preserved in `evidence/r41/acceptance/p2/pipeline-final-preflight.tgz`
+and its preflight summary. The locally tested approved-image manifest is
+`spec/r41/stage2/acceptance/s2-p2-pipeline.json`. S2-03.B remains not measured
+until the lead supplies the physical comparison; no acceptance count changes.

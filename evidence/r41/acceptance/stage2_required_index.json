@@ -476,9 +476,13 @@
       "evidence": [
         "evidence/r41/stage1/board/metrics.json",
         "evidence/r41/acceptance/p2/pipeline-summary.json",
-        "evidence/r41/acceptance/p2/pipeline-index.json"
+        "evidence/r41/acceptance/p2/pipeline-index.json",
+        "evidence/r41/acceptance/p2/pipeline-preflight-summary.json",
+        "evidence/r41/acceptance/p2/pipeline-preflight-index.json",
+        "evidence/r41/acceptance/p2/pipeline-three-sample-model.json",
+        "spec/r41/stage2/acceptance/s2-p2-pipeline.json"
       ],
-      "reason": "Three fixed-budget standard Torch policies now have 18 bitwise SystemC rows and actual one-core RTL DMA/MMA overlap for the single-role candidate. These grid-one points and uncalibrated model timing do not close the final-image board comparison; the lead-only measurement is being prepared.",
+      "reason": "Three matched fixed-budget standard Torch policies have 54 timed bitwise model samples, six real RTL rows including BF16 and actual DMA/MMA overlap, and unchanged default artifacts across all 113 points. Model timing is uncalibrated and grid-one does not establish scaling. The approved-image, three-sample lead-only board manifest is prepared; the final-image board comparison remains not measured.",
       "closure_plan": "P2"
     },
     {
@@ -1211,8 +1215,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "22909150870802c16ce049e139acc1ec6b97118b2802d85d0fbfd637721a8e39",
-    "doc/r41_stage2_report.md": "d2750be347dd4680e0198e31d655b6a6fcd0dc9a5c15b53a6bf9367fb084c203",
+    "doc/r41_report.md": "3c95b7731f2fb01de2600bab78f3ae6b1c00012307d28c9ab7c1687e2451ea10",
+    "doc/r41_stage2_report.md": "092bc5c0617cd1274250b4d8bbc2411341cffcce99869927c70649f02edc4b2f",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "04350417d681c7a3bd90fdbe5b0240c5ebf0e8b27d1c14a9b07e14a72ee59a7e",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1268,7 +1272,11 @@
     "rtl/core/tnca_core.v": "15416c4cdb7b76a9ea2099bdb675f3e9962da04d618a5843eec3558f43f2bc18",
     "evidence/r41/acceptance/p2/pipeline-index.json": "6dc591805b2fb784d6bf143f3aa24b8a3171219c6007780f42bacd654b50ec2d",
     "evidence/r41/acceptance/p2/private-resource-study.md": "12c48aff5f37cb1fe2a6f3b176848db1fc67f6717b61fcbfdfd2c8c0168bd92a",
-    "compiler/python/tnca_cc/window_lifetime.py": "08a7e2ca8eff18bbee82e5f86466fb5242383c7d8e90afed6f199ced4fac0400"
+    "compiler/python/tnca_cc/window_lifetime.py": "08a7e2ca8eff18bbee82e5f86466fb5242383c7d8e90afed6f199ced4fac0400",
+    "evidence/r41/acceptance/p2/pipeline-preflight-summary.json": "d9260eced63d0fa1f7a341645627e217889fe5d103710c1ca16a545617e5aae1",
+    "spec/r41/stage2/acceptance/s2-p2-pipeline.json": "40c58270883fd3d0ef348c076481d8e6b90f1df060e4f2cdc533f6d74e611608",
+    "evidence/r41/acceptance/p2/pipeline-three-sample-model.json": "855264cd3b2bbce376ff9296462bf0de4a6605939f305ed87e4a21088cb12a80",
+    "evidence/r41/acceptance/p2/pipeline-preflight-index.json": "07c39873ce44e8ba8087f7063e8684b1349eccd2d814402fe1f16c098587ca38"
   },
   "followups": [
     {

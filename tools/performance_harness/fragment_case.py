@@ -214,6 +214,27 @@ def main():
                 after = ({str(i): model.counters_snapshot()
                           for i, model in enumerate(model_class.instances) if model.proc is not None}
                          if model_class else {})
+                # Keep every timed output resident until the full sample block
+                # finishes: CPU checks and ownership handoffs are outside it.
+                timed_results=[result]
+                samples=[dict(device_cycles=sum(e['device_cycles'] for e in launches),host_seconds=wall,
+                              output_bits_sha256=None,counters_before=port_before,counters_after=port_after)]
+                for _ in range(1,args.samples):
+                    before_extra=port_probe() if callable(port_probe) else None
+                    seq_start=len(session.dev.history) if args.rtl_engine_trace else None
+                    t0=time.monotonic()
+                    with launch_log(isolated=True) as more_launches:
+                        more=compiled(da,db,dc)
+                    elapsed=time.monotonic()-t0
+                    after_extra=port_probe() if callable(port_probe) else None
+                    if args.rtl_engine_trace:
+                        sequences += [e['seq'] for e in session.dev.history[seq_start:] if e['op'] in (3,9)]
+                    assert [e['artifact'] for e in more_launches]==[e['artifact'] for e in launches]
+                    assert all(e['upload_bytes']==e['download_bytes']==0 for e in more_launches)
+                    timed_results.append(more)
+                    samples.append(dict(device_cycles=sum(e['device_cycles'] for e in more_launches),
+                                        host_seconds=elapsed,output_bits_sha256=None,
+                                        counters_before=before_extra,counters_after=after_extra))
                 got = result.cpu().float()
                 torch.testing.assert_close(got, reference, rtol=2e-3, atol=2e-3)
                 assert launches and all(e['upload_bytes'] == e['download_bytes'] == 0 for e in launches)
@@ -280,29 +301,17 @@ def main():
                                logical_tiles=sorted({tuple(s['logical_tile']) for x in resources
                                                      for s in x['plan'].get('gemm', {}).get('sites', [])
                                                      if 'logical_tile' in s}))
-                samples=[dict(device_cycles=row['device_cycles'],host_seconds=wall,
-                              output_bits_sha256=row.get('output_bits_sha256'),
-                              counters_before=port_before,counters_after=port_after)]
-                for _ in range(1,args.samples):
-                    before_extra=port_probe() if callable(port_probe) else None
-                    t0=time.monotonic()
-                    with launch_log(isolated=True) as more_launches:
-                        more=compiled(da,db,dc)
-                    elapsed=time.monotonic()-t0
-                    after_extra=port_probe() if callable(port_probe) else None
-                    assert [e['artifact'] for e in more_launches]==[e['artifact'] for e in launches]
-                    assert all(e['upload_bytes']==e['download_bytes']==0 for e in more_launches)
-                    more_cpu=more.cpu()
-                    torch.testing.assert_close(more_cpu.float(),reference,rtol=2e-3,atol=2e-3)
-                    more_bits=hashlib.sha256(more_cpu.contiguous().view(torch.uint8).numpy().tobytes()).hexdigest()
-                    if args.bitwise and more_bits != row['reference_bits_sha256']:
-                        row.update(status='fail',failed_sample=len(samples)+1,
-                                   failed_sample_output_bits_sha256=more_bits)
+                row.update(inputs=inputs,timed_samples=samples)
+                for sample,tensor in zip(samples,timed_results):
+                    sample_cpu=tensor.cpu()
+                    torch.testing.assert_close(sample_cpu.float(),reference,rtol=2e-3,atol=2e-3)
+                    sample_bits=hashlib.sha256(sample_cpu.contiguous().view(torch.uint8).numpy().tobytes()).hexdigest()
+                    sample['output_bits_sha256']=sample_bits
+                    if args.bitwise and sample_bits != row['reference_bits_sha256']:
+                        row.update(status='fail',failed_sample=samples.index(sample)+1,
+                                   failed_sample_output_bits_sha256=sample_bits)
                         report['rows'].append(row);save()
                         raise ValueError('timed sample differs from the independent bitwise reference')
-                    samples.append(dict(device_cycles=sum(e['device_cycles'] for e in more_launches),
-                                        host_seconds=elapsed,output_bits_sha256=more_bits,
-                                        counters_before=before_extra,counters_after=after_extra))
                 row['timed_samples']=samples
                 row.update(inputs=inputs,ring_plans=rings,ring_stages=args.ring_stages,
                            single_role_plans=single_role_plans,

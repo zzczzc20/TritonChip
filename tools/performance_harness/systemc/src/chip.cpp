@@ -993,11 +993,14 @@ struct Chip : sc_module {
             if(x0+cmd.group>=cmd.gx){x0=0;if(y0+1==cmd.gy){y0=0;++z0;}else ++y0;}else x0+=cmd.group;
             return l;};
         if(uncore){
-            // tnca_grid_dispatch.v [UNCORE 6.2-6.3]: one enqueue per cycle, the first candidate
-            // from `rr` (the core after the last choice) that is active and neither busy nor
-            // pending; the block is bound to the core at the enqueue. The first launch is at
-            // L+2, a core that went idle is a candidate again 3 cycles after its last cycle.
-            const unsigned n=cores.size();
+            // tnca_grid_dispatch.v [UNCORE 6.2-6.3, BOARD 5]: one enqueue per cycle, the first
+            // candidate from `rr` (the core after the last choice) that is active and neither
+            // busy nor pending; the block is bound to the core at the enqueue (cycle P). The
+            // command link launches the core at P+1+stages; a core that went idle at i is a
+            // candidate again at i+1+stages (its program() returned at i-1); done_valid is
+            // 1+stages cycles after the last idle. Sim bench: stages 0 (L+2, i+2, i+1);
+            // board: 2 (L+4, i+6, i+3).
+            const unsigned n=cores.size();const unsigned stages=uncore->dispatch_stages;
             std::vector<u64> ready_at(n,0);std::vector<char> busy(n,0),active(n,0);std::vector<Launch> slot(n);
             std::vector<sc_event> go(n);bool stop=false;
             for(auto& core:cores){
@@ -1006,9 +1009,10 @@ struct Chip : sc_module {
                 sc_spawn([&,ptr](){
                     for(;;){
                         wait(go[ptr->id]);if(stop)break;
+                        wait(x.cycles(1+stages));   // the command link
                         Outcome o=ptr->program(slot[ptr->id]);retired+=o.retired;
                         if(o.status!=STATUS_OK && !faulted){faulted=true;first=o;}
-                        ready_at[ptr->id]=x.now()+3;busy[ptr->id]=0;
+                        ready_at[ptr->id]=x.now()+2+stages;busy[ptr->id]=0;
                     }
                     --live;done.notify(SC_ZERO_TIME);
                 });
@@ -1016,7 +1020,7 @@ struct Chip : sc_module {
             require(live>0 || total==0,"no active core for the grid");
             unsigned rr=0;
             if(total){
-                u64 first_at=start_cycle+2;if(x.now()<first_at)wait(x.cycles(first_at-x.now()));
+                u64 first_at=start_cycle+1;if(x.now()<first_at)wait(x.cycles(first_at-x.now()));   // the first enqueue at L+1
                 while(issued<total && !faulted){
                     int choice=-1;
                     for(unsigned j=0;j<n && choice<0;++j){unsigned c=(rr+j)%n;if(active[c] && !busy[c] && ready_at[c]<=x.now())choice=c;}
@@ -1030,7 +1034,7 @@ struct Chip : sc_module {
             }
             stop=true;for(unsigned c=0;c<n;++c)if(active[c])go[c].notify();
             while(live)wait(done);
-            wait(x.cycles(2));   // done_valid the cycle after the last core's idle cycle [UNCORE 6.3]
+            wait(x.cycles(2+stages));   // done_valid: sim the cycle after the last idle cycle, board i+3 [UNCORE 6.3, BOARD 5.2]
             first.retired=retired;return first;
         }
         for(auto& core:cores){

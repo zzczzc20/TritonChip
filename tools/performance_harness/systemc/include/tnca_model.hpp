@@ -88,6 +88,13 @@ struct Config {
         // uncore_model (optional, default 0): 1 selects the cycle-level uncore (src/cycle_uncore.inc); needs core_model=1.
         u64 uncore_model=0;if(v.count("uncore_model")){uncore_model=v.at("uncore_model");v.erase("uncore_model");}
         require(uncore_model<=1 && (uncore_model==0 || core_model==1),"uncore_model is 0 or 1 and needs core_model=1");
+        // uncore_board (optional, default 0): 1 = the board's memory side (home and outlet links, one port per
+        // home, tnca_line_axi adapters, dispatch link stages; align/UNCORE_TIMING_BOARD.md); 0 = the simulation
+        // bench's (PORTS=1, tnca_dram_model). With it, optional uncore_axi_latency (25), uncore_axi_latency_step
+        // (19 per port) and uncore_axi_write_delay (15) describe the AXI slave (the bench's line model by default).
+        u64 uncore_board=0;if(v.count("uncore_board")){uncore_board=v.at("uncore_board");v.erase("uncore_board");}
+        require(uncore_board<=1 && (uncore_board==0 || uncore_model==1),"uncore_board is 0 or 1 and needs uncore_model=1");
+        std::map<std::string,u64> axi;for(const char* k:{"uncore_axi_latency","uncore_axi_latency_step","uncore_axi_write_delay"})if(v.count(k)){axi[k]=v.at(k);v.erase(k);}
         require(v.size()==keys.size(),"configuration key count mismatch (unknown or missing key)");
         for(auto& k:keys)require(v.count(k),"missing configuration: "+k);
         cache_hot();
@@ -103,7 +110,7 @@ struct Config {
         require(get("memory_model")<=1,"memory_model is 0 (detailed TLM) or 1 (timeline)");
         require(get("time_quantum")==0 || get("memory_model")==1,"time_quantum needs the timeline memory (memory_model=1)");
         require(core_model==0 || get("memory_model")==1,"core_model=1 needs the timeline memory (memory_model=1)");
-        v["core_model"]=core_model;v["uncore_model"]=uncore_model;
+        v["core_model"]=core_model;v["uncore_model"]=uncore_model;v["uncore_board"]=uncore_board;for(auto& kv:axi)v[kv.first]=kv.second;
         require(get("nx")*get("ny")<=16,"at most 16 homes");
         require(get("sets")<=65536 && (get("sets")&(get("sets")-1))==0,"sets must be power of two <=65536");
         require(get("ways")<=32 && get("mshrs")<=256 && get("targets")<=4096,"unreasonable cache geometry");

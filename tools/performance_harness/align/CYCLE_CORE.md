@@ -83,6 +83,33 @@ at t+1.
   pattern depends on the absolute cycle, so a prediction's total differs
   from a recording by the phase of that pattern, not by structure.
 
+**The board configuration** (`uncore_board=1`, UNCORE_TIMING_BOARD.md): the
+same slices and mesh with two-stage links everywhere; per home a home link
+(two 2-deep request stages, two response registers), its port (with every
+outlet active home h is port h and nothing arbitrates; with one active
+outlet, the runtime's default `TNCA_RTL_MEM_PORTS=1` that both recordings
+and run_graphs.py use, the three homes share outlet 0 through the port
+arbiter's round robin and hold), an outlet link of the same shape and a
+`tnca_line_axi` adapter (`outstanding` slots, one with the runtime's default
+`TNCA_RTL_OUTSTANDING=1`, eight on the image; one issue register: a read holds it
+two cycles, a write three; same-line hazards refuse the request at the head
+of the outlet link; a write's slot stays until its B and gives no response);
+dispatch through two-stage command and completion links (first launch L+4,
+relaunch i+6, done i+3). Behind the adapter the AXI slave is deterministic:
+every ready high, reads answered after the port's latency and the bench's
+per-slot skew, the lowest due read first, one beat per cycle; the bench's
+seeded `$random` readies and read picks are not reproduced, so a board
+prediction differs from the board-top bench by those stalls, not by
+structure. The validation path replays the adapter boundary: each port's
+accepts no earlier than its recorded `X`, each port's responses at its
+recorded `Y` (then +2 +2 to the slice); writebacks have no record (no B in
+the trace), so their slot release is the deterministic model's. The config
+`r40-boardbench-cycle.cfg` is this with the bench's 4x2 slices, for the
+gate; `r40-board-cycle.cfg` is the prediction configuration for the U280
+(one HBM latency for every port, the fitted 23, an assumption until
+measured; the image's 32x8 slice with E_ALLOC and the data-array pipeline
+is still modelled as the bench's slice).
+
 Two core-side rules the uncore level made visible (both fixed in the core,
 both invisible under core-level replay because the replayed port hid them):
 the transfer engine's load slot is the pre-edge `free_slot` of the request's

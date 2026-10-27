@@ -112,6 +112,103 @@ def parse(path):
     return dict(core=int(header.get('core', 0)), launches=launches, cycles=end[1], stray=stray)
 
 
+UNCORE_STREAMS = ('slice_req', 'slice_rsp', 'mem_req', 'mem_rsp', 'dram_req', 'dram_rsp')
+
+
+def parse_uncore(path):
+    """TNCA_UNCORE_TRACE 1 -> dict(launches=[Launch-like], cycles). Every record is attached to
+    the most recent launch (of any core) and timed relative to it; streams are tuples per
+    README section 2b, cycles first."""
+    path = Path(path)
+    launches, current = [], None
+    header = end = None
+    with path.open() as f:
+        for n, line in enumerate(f, 1):
+            parts = line.split()
+            if not parts:
+                continue
+            kind = parts[0]
+            try:
+                if kind == 'TNCA_UNCORE_TRACE':
+                    if parts[1] != '1':
+                        raise TraceError(f'unknown uncore trace version {parts[1]}')
+                    header = dict(kv.split('=', 1) for kv in parts[2:])
+                    continue
+                if header is None:
+                    raise TraceError('record before header')
+                if kind == 'L':
+                    current = dict(start=int(parts[1]), core=int(parts[2]), pc=int(parts[3], 16),
+                                   **{st: [] for st in UNCORE_STREAMS})
+                    launches.append(current)
+                    continue
+                if kind == 'END':
+                    end = int(parts[1])
+                    continue
+                if current is None:
+                    continue
+                cyc = int(parts[1]) - current['start']
+                if kind == 'S':
+                    current['slice_req'].append((cyc, int(parts[2]), int(parts[3]), int(parts[5]), int(parts[6], 16)))
+                elif kind == 'R':
+                    current['slice_rsp'].append((cyc, int(parts[2]), int(parts[3])))
+                elif kind == 'M':
+                    current['mem_req'].append((cyc, int(parts[2]), int(parts[3]), int(parts[4], 16)))
+                elif kind == 'D':
+                    current['mem_rsp'].append((cyc, int(parts[2])))
+                elif kind == 'X':
+                    current['dram_req'].append((cyc, int(parts[2]), int(parts[3], 16), int(parts[4])))
+                elif kind == 'Y':
+                    current['dram_rsp'].append((cyc, int(parts[2])))
+                else:
+                    raise TraceError(f'unknown record {kind}')
+            except (IndexError, ValueError) as e:
+                raise TraceError(f'{path}:{n}: {e}') from None
+    if header is None:
+        raise TraceError(f'{path}: no header')
+    if end is None:
+        raise TraceError(f'{path}: no END (the simulation did not finish)')
+    return dict(cores=int(header.get('cores', 1)), launches=launches, cycles=end)
+
+
+def compare_uncore(ta, tb, *, order_only=False, max_report=5):
+    """Pair launches in order; every stream record by record (cycles relative to the launch)."""
+    la, lb = ta['launches'], tb['launches']
+    result = dict(launches_a=len(la), launches_b=len(lb), launches=min(len(la), len(lb)), aligned_launches=0,
+                  cycles_a=ta['cycles'], cycles_b=tb['cycles'], divergences=[])
+    streams = {st: 'equal' for st in UNCORE_STREAMS}
+    for k in range(min(len(la), len(lb))):
+        c = {}
+        for st in UNCORE_STREAMS:
+            xa, xb = la[k][st], lb[k][st]
+            found = 'equal'
+            for i in range(max(len(xa), len(xb))):
+                ra = xa[i] if i < len(xa) else None
+                rb = xb[i] if i < len(xb) else None
+                if order_only:
+                    ra, rb = _strip_cycle(ra), _strip_cycle(rb)
+                if ra != rb:
+                    found = dict(index=i, a=xa[i] if i < len(xa) else None, b=xb[i] if i < len(xb) else None,
+                                 count_a=len(xa), count_b=len(xb))
+                    break
+            c[st] = found
+        if all(v == 'equal' for v in c.values()):
+            result['aligned_launches'] += 1
+            continue
+        for st in UNCORE_STREAMS:
+            if c[st] != 'equal' and streams[st] == 'equal':
+                streams[st] = dict(launch=k, **c[st])
+        if len(result['divergences']) < max_report:
+            result['divergences'].append(dict(launch=k, **{st: c[st] for st in UNCORE_STREAMS if c[st] != 'equal'}))
+    result['streams'] = streams
+    result['equal'] = all(v == 'equal' for v in streams.values()) and len(la) == len(lb)
+    return result
+
+
+def is_uncore(path):
+    with Path(path).open() as f:
+        return f.readline().startswith('TNCA_UNCORE_TRACE')
+
+
 def _view(record, stream, data):
     """The compared projection of a record."""
     if record is None:
@@ -210,7 +307,7 @@ def describe(result, name='point'):
     lines = [f"{name}: launches {result['launches_a']} vs {result['launches_b']}, "
              f"aligned {result['aligned_launches']}, cycles {result['cycles_a']} vs {result['cycles_b']}"
              + (f" ({result['cycle_error']:+.2%})" if 'cycle_error' in result else '')]
-    for s in STREAMS:
+    for s in result['streams']:
         v = result['streams'][s]
         if v == 'equal':
             continue
@@ -229,7 +326,10 @@ def gate(dir_a, dir_b, *, data=False, order_only=False, max_report=5):
             points[name] = dict(status='missing', a=pa.exists(), b=pb.exists())
             continue
         try:
-            r = compare(parse(pa), parse(pb), data=data, order_only=order_only, max_report=max_report)
+            if is_uncore(pa):
+                r = compare_uncore(parse_uncore(pa), parse_uncore(pb), order_only=order_only, max_report=max_report)
+            else:
+                r = compare(parse(pa), parse(pb), data=data, order_only=order_only, max_report=max_report)
         except TraceError as e:
             missing.append(name)
             points[name] = dict(status='malformed', error=str(e))
@@ -288,7 +388,10 @@ def main(argv=None):
         return {'aligned': 0, 'diverged': 1, 'no-verdict': 2}[r['verdict']]
     if args.cmd == 'pair':
         try:
-            r = compare(parse(args.a), parse(args.b), **opts)
+            if is_uncore(args.a):
+                r = compare_uncore(parse_uncore(args.a), parse_uncore(args.b), order_only=args.order_only, max_report=args.max_report)
+            else:
+                r = compare(parse(args.a), parse(args.b), **opts)
         except TraceError as e:
             print(f'no-verdict: {e}')
             return 2

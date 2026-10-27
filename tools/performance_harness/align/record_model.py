@@ -50,6 +50,11 @@ def collect(out, run_dirs=None):
             found = sorted((run_dir / 'model').glob('model-*/core_trace.txt'))
         if len(found) == 1:
             shutil.copyfile(found[0], traces / f'{slug(point)}.trace')
+            d = found[0].parent
+            for extra in sorted(d.glob('core_trace.txt.core*')):
+                shutil.copyfile(extra, traces / f"{slug(point)}.{extra.name.split('.')[-1]}.trace")
+            if (d / 'uncore_trace.txt').exists():
+                shutil.copyfile(d / 'uncore_trace.txt', traces / f'{slug(point)}.uncore.trace')
             status[point] = dict(status=row.get('status'), trace=str(found[0]), device_cycles=row.get('device_cycles'))
         else:
             status[point] = dict(status=row.get('status'), trace=None, model_dirs=[str(d) for d in dirs],
@@ -71,8 +76,11 @@ def main():
     ap.add_argument('--python', default=sys.executable, help='the Torch/Triton interpreter')
     ap.add_argument('--env', action='append', default=[], help='KEY=VALUE for every run (run_graphs.py --env)')
     ap.add_argument('--collect-only', action='store_true')
-    ap.add_argument('--replay', help='an RTL recording (record_rtl.py RUN_DIR): every point replays its trace '
-                                     '(TNCA_MODEL_CORE_REPLAY), one run_graphs.py call per point')
+    ap.add_argument('--replay', help='an RTL recording (record_rtl.py RUN_DIR): every point replays its trace, '
+                                     'one run_graphs.py call per point')
+    ap.add_argument('--replay-level', choices=['core', 'uncore'], default='core',
+                    help="core: the core's port (TNCA_MODEL_CORE_REPLAY, first slice); uncore: the device's "
+                         "memory port (TNCA_MODEL_UNCORE_REPLAY, second slice, needs uncore_model=1)")
     args = ap.parse_args()
     out = Path(args.out).resolve()
     points = list(args.point)
@@ -99,20 +107,25 @@ def main():
         run_dirs = []
         jobs = []
         for p in points:
-            trace = replay / 'traces' / f'{slug(p)}.trace'
+            trace = replay / 'traces' / f'{slug(p)}.trace'   # core c>0: <trace>.core<c>, as record_rtl names them
             rd = out / 'per_point' / slug(p)
             run_dirs.append(rd)
             if not trace.exists():
                 print(f'no RTL trace for {p}: {trace}', file=sys.stderr)
                 continue
             if not args.collect_only:
-                jobs.append((rd, p, [f'TNCA_MODEL_CORE_REPLAY={trace}']))
+                if args.replay_level == 'core':
+                    env = [f'TNCA_MODEL_CORE_REPLAY={trace}', 'TNCA_MODEL_CORE_TRACE_CORE=all']
+                else:
+                    utrace = replay / 'traces' / f'{slug(p)}.uncore.trace'
+                    env = [f'TNCA_MODEL_UNCORE_REPLAY={utrace}', 'TNCA_MODEL_CORE_TRACE_CORE=all']
+                jobs.append((rd, p, env))
         if jobs:
             import concurrent.futures as cf
             with cf.ThreadPoolExecutor(max_workers=args.jobs) as pool:
                 list(pool.map(lambda j: run_graphs(j[0], [j[1]], j[2]), jobs))
     elif not args.collect_only:
-        run_graphs(out, points, [])
+        run_graphs(out, points, ['TNCA_MODEL_CORE_TRACE_CORE=all'])
     status = collect(out, run_dirs)
     missing = [p for p, s in status.items() if not s['trace']]
     print(f'{len(status) - len(missing)} of {len(status)} model traces collected' + (f'; missing: {missing}' if missing else ''))

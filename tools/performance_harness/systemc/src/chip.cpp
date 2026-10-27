@@ -256,6 +256,7 @@ struct Outcome {unsigned status=STATUS_OK,code=0;u64 pc=0,retired=0;std::string 
 struct CycleCore;
 struct Core : sc_module {
     std::unique_ptr<CycleCore> cyc;   // core_model=1: the cycle-level core (cycle_core.inc)
+    unsigned launch_order=0;bool launched_once=false;   // the dispatcher's order among active cores (uncore_model=1)
     // Core trace (tools/performance_harness/align/README.md section 2), the
     // validation path's view of this core: TNCA_MODEL_CORE_TRACE names the
     // file, TNCA_MODEL_CORE_TRACE_CORE (default 0) the core. Off otherwise.
@@ -263,10 +264,14 @@ struct Core : sc_module {
     void trace_open(){
         const char* path=std::getenv("TNCA_MODEL_CORE_TRACE");if(!path || !*path)return;
         const char* which=std::getenv("TNCA_MODEL_CORE_TRACE_CORE");
-        if(unsigned(which && *which?std::strtoul(which,nullptr,10):0)!=id)return;
+        const bool all=which && std::string(which)=="all";
+        if(!all && unsigned(which && *which?std::strtoul(which,nullptr,10):0)!=id)return;
         // "1": the run's own directory (tlm_backend's per-Session dir), so a
-        // driver that runs one point per Session finds one trace per point.
+        // driver that runs one point per Session finds one trace per point;
+        // with TNCA_MODEL_CORE_TRACE_CORE=all every core writes, core c>0 to
+        // core_trace.txt.core<c> (as the RTL monitor names them).
         std::string file=std::string(path)=="1"?x.directory+"/core_trace.txt":std::string(path);
+        if(id)file+=".core"+std::to_string(id);
         core_trace.open(file);require(bool(core_trace),"cannot create the core trace");
         core_trace<<"TNCA_CORE_TRACE 1 core="<<id<<"\n";
         tensor.trace_beat=[this](u64 at,bool store,u64 addr,unsigned be,u64 data,u64 when,u64 got){
@@ -912,6 +917,7 @@ struct Core : sc_module {
 };
 
 #include "cycle_core.inc"
+#include "cycle_uncore.inc"
 void Core::cycle_core_attach(){require(tm!=nullptr || true,"");cyc.reset(new CycleCore(*this));}
 Outcome Core::cycle_program(const Launch& l){require(tm!=nullptr,"core_model=1 requires memory_model=1");return cyc->program(l);}
 
@@ -921,7 +927,7 @@ Outcome Core::cycle_program(const Launch& l){require(tm!=nullptr,"core_model=1 r
 struct Chip : sc_module {
     SC_HAS_PROCESS(Chip);
     Context& x;HBM& hbm;std::vector<std::unique_ptr<Slice>>& caches;CodeCache code;
-    std::vector<std::unique_ptr<Core>> cores;
+    std::vector<std::unique_ptr<Core>> cores;std::unique_ptr<CycleUncore> uncore;   // uncore_model=1
     // Host-driven command interface: one pending command, one completion.
     struct Command {bool grid=false;Launch launch;u64 stride=0,core_mask=1,deadline=0;unsigned gx=1,gy=1,gz=1,group=1;};
     std::unique_ptr<Command> pending;bool command_done=false,flush_request=false,shutdown=false;
@@ -949,6 +955,8 @@ struct Chip : sc_module {
         require(address>=base && n<=bytes && address-base<=bytes-n,"host access outside model memory window");
         require(!(address<0x7fff1000ULL && address+n>0x7fff0000ULL),"TMU MMIO is not ordinary model memory");
         if(write)code.invalidate(address,n);
+        // The code store (tnca_multicore_shell.v: CODE_WORDS words at 0) is not memory: host words below it never reach a slice.
+        if(uncore)for(u64 a=std::max<u64>(address&~7ULL,16384ULL*8);a<address+n;a+=8)uncore->host_touch(a,write);
         u64 done=0;
         while(done<n){
             u64 a=address+done,line=a&~63ULL;unsigned off=unsigned(a&63),len=unsigned(std::min<u64>(64-off,n-done));
@@ -978,6 +986,7 @@ struct Chip : sc_module {
     // argument block at arg_base + core * stride. A fault stops dispatch.
     Outcome dispatch(const Command& cmd){
         u64 groups_x=(u64(cmd.gx)+cmd.group-1)/cmd.group,total=groups_x*cmd.gy*cmd.gz;
+        {unsigned order=0;for(auto& core:cores){core->launch_order=order;core->launched_once=false;if((cmd.core_mask>>core->id)&1)++order;}}
         unsigned x0=0,y0=0,z0=0;u64 issued=0;Outcome first;bool faulted=false;u64 retired=0;
         unsigned live=0;sc_event done;
         for(auto& core:cores){
@@ -988,7 +997,10 @@ struct Chip : sc_module {
                     Launch l=cmd.launch;l.px=x0;l.py=y0;l.pz=z0;l.nx=cmd.gx;l.ny=cmd.gy;l.nz=cmd.gz;l.arg=cmd.launch.arg+ptr->id*cmd.stride;
                     ++issued;
                     if(x0+cmd.group>=cmd.gx){x0=0;if(y0+1==cmd.gy){y0=0;++z0;}else ++y0;}else x0+=cmd.group;
-                    if(!x.functional)wait(x.cycles(x.c.get("dispatch_cycles")+ptr->t_launch));
+                    if(uncore){ // tnca_grid_dispatch.v [UNCORE 6.3]: first launch at L+2, one core per cycle; a relaunch 3 cycles after the exit's X
+                        u64 first_at=start_cycle+2+ptr->launch_order;if(x.now()<first_at)wait(x.cycles(first_at-x.now()));else if(ptr->launched_once)wait(x.cycles(3));
+                        ptr->launched_once=true;}
+                    else if(!x.functional)wait(x.cycles(x.c.get("dispatch_cycles")+ptr->t_launch));
                     Outcome o=ptr->program(l);retired+=o.retired;
                     if(o.status!=STATUS_OK && !faulted){faulted=true;first=o;}
                 }
@@ -997,6 +1009,7 @@ struct Chip : sc_module {
         }
         require(live>0 || total==0,"no active core for the grid");
         while(live)wait(done);
+        if(uncore)wait(x.cycles(2));   // done_valid the cycle after the last core's idle cycle [UNCORE 6.3]
         first.retired=retired;return first;
     }
     // Server mode: host transfers since the previous launch and the fixed
@@ -1060,6 +1073,10 @@ struct Model {
             caches.back()->memory.bind(probes.back()->target);probes.back()->downstream.bind(hbm.target);
         }
         chip.reset(new Chip("chip",x,hbm,net,caches));
+        if(cfg.v.count("uncore_model") && cfg.get("uncore_model")==1){
+            chip->uncore.reset(new CycleUncore("uncore",x,cfg.cores()));
+            for(auto& core:chip->cores){require(bool(core->cyc),"uncore_model=1 requires core_model=1");chip->uncore->cores.push_back(core->cyc.get());core->cyc->uncore=chip->uncore.get();}
+        }
         if(cfg.get("memory_model")==1){
             tmem.reset(new TimelineMemory(cfg,x,hbm.memory));chip->tm=tmem.get();
             for(auto& core:chip->cores){core->tm=tmem.get();core->tensor.tm=tmem.get();core->tensor.port=&core->port;core->tensor.rtl=cfg.get("core_pipeline")!=0;}

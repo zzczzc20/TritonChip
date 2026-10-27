@@ -59,7 +59,7 @@ def build_bench(out, *, core_count, memory_bytes, memory_ports, traced_core, ove
     target = out / 'device.vvp'
     args = [iverilog, '-g2012', '-I', str(rtl / 'common'), '-I', str(rtl / 'noc'),
             '-s', 'tnca_multicore_device', '-s', 'tnca_core_trace',
-            f'-DTNCA_TRACE_CORE={traced_core}',
+            f'-DTNCA_TRACE_CORES={core_count}',
             f'-Ptnca_multicore_device.N={core_count}',
             f'-Ptnca_multicore_device.TOTAL_WORDS={memory_bytes // 8}',
             f'-Ptnca_multicore_device.PORTS={memory_ports}', '-o', str(target)]
@@ -87,7 +87,7 @@ def suite_points(path, tier):
 
 
 def run_point(point, *, python, bench, out, core_count, memory_ports, timeout, extra_env, warmup=0, timed=1,
-              torch_device='native'):
+              torch_device='native', active_cores=1):
     trace = out / 'traces' / f'{slug(point)}.trace'
     log = out / 'logs' / f'{slug(point)}.log'
     rec = out / 'records' / f'{slug(point)}.jsonl'
@@ -98,9 +98,11 @@ def run_point(point, *, python, bench, out, core_count, memory_ports, timeout, e
     env.update(RUNTIME)
     env.update(knobs_for(point, None))
     env.update(extra_env)
-    env['TNCA_ACTIVE_CORES'] = '1'
+    env['TNCA_ACTIVE_CORES'] = str(active_cores)
     env['TNCA_TORCH_DEVICE'] = torch_device   # run_graphs.py --torch-device: native tensors, as the model runs
-    env['TNCA_DEVICE_PLUSARGS'] = f'+core_trace={trace}'
+    utrace = out / 'traces' / f'{slug(point)}.uncore.trace'
+    plusargs = [f'+core_trace={trace}'] + [f'+core_trace{c}={trace}.core{c}' for c in range(1, core_count)] + [f'+uncore_trace={utrace}']
+    env['TNCA_DEVICE_PLUSARGS'] = ' '.join(plusargs)
     work = out / 'work' / slug(point)
     for d in ('triton_cache', 'triton_home', 'inductor_cache', 'tmp', 'dump'):
         (work / d).mkdir(parents=True, exist_ok=True)
@@ -117,8 +119,14 @@ def run_point(point, *, python, bench, out, core_count, memory_ports, timeout, e
         f.write(' '.join(cmd) + '\n')
         f.flush()
         r = subprocess.run(cmd, cwd=ROOT, env=env, stdout=f, stderr=subprocess.STDOUT)
+    # the monitor names core c>0's file <trace>.core<c>; keep the directory's naming (<slug>.core<c>.trace)
+    for c in range(1, core_count):
+        extra = Path(str(trace) + f'.core{c}')
+        if extra.exists():   # keep the monitor's name (the model replays <trace>.core<c>) and the directory's
+            shutil.copyfile(extra, out / 'traces' / f'{slug(point)}.core{c}.trace')
     status = dict(point=point, returncode=r.returncode, seconds=round(time.time() - t0, 1),
-                  trace=str(trace) if trace.exists() else None, record=str(rec) if rec.exists() else None)
+                  trace=str(trace) if trace.exists() else None, record=str(rec) if rec.exists() else None,
+                  uncore=str(utrace) if utrace.exists() else None)
     if trace.exists():
         with trace.open() as f:
             last = ''
@@ -140,7 +148,7 @@ def main():
     ap.add_argument('--core-count', type=int, default=3, help='cores elaborated; one is active')
     ap.add_argument('--memory-ports', type=int, default=1)
     ap.add_argument('--memory-bytes', type=int, default=8 * 1024 * 1024)
-    ap.add_argument('--traced-core', type=int, default=0)
+    ap.add_argument('--active-cores', type=int, default=1, help='TNCA_ACTIVE_CORES: cores the grid runs on')
     ap.add_argument('--iverilog', default=shutil.which('iverilog'))
     ap.add_argument('--set', action='append', default=[], help='KEY=VALUE in every child environment')
     ap.add_argument('--warmup', type=int, default=0, help='untimed calls after the cold call (as run_graphs.py)')
@@ -166,7 +174,7 @@ def main():
         bench = json.loads((bench_dir / 'bench.json').read_text())
     else:
         bench = build_bench(bench_dir, core_count=args.core_count, memory_bytes=args.memory_bytes,
-                            memory_ports=args.memory_ports, traced_core=args.traced_core,
+                            memory_ports=args.memory_ports, traced_core=0,
                             overrides=overrides, iverilog=args.iverilog)
         (bench_dir / 'bench.json').write_text(json.dumps(bench, indent=1) + '\n')
     head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True)
@@ -176,8 +184,8 @@ def main():
                   dirty=bool(dirty.stdout.strip()) if dirty.returncode == 0 else None)
     environment = dict(HARNESS, **RUNTIME)
     environment.update(extra_env)
-    manifest = dict(schema='tnca-core-trace-run/1', source=source,
-                    bench=bench, profile=PROFILE, active_cores=1, points=points, environment=environment,
+    manifest = dict(schema='tnca-core-trace-run/2', source=source,
+                    bench=bench, profile=PROFILE, active_cores=args.active_cores, points=points, environment=environment,
                     compile_knobs='run_graphs.knobs_for (B40N)', warmup=args.warmup, timed=args.timed,
                     torch_device=args.torch_device,
                     python=args.python, started=time.strftime('%Y-%m-%dT%H:%M:%S'))
@@ -187,7 +195,8 @@ def main():
         futures = {pool.submit(run_point, p, python=args.python, bench=bench['path'], out=out,
                                core_count=args.core_count, memory_ports=args.memory_ports,
                                timeout=args.timeout, extra_env=extra_env, warmup=args.warmup,
-                               timed=args.timed, torch_device=args.torch_device): p for p in points}
+                               timed=args.timed, torch_device=args.torch_device,
+                               active_cores=args.active_cores): p for p in points}
         for fut in cf.as_completed(futures):
             s = fut.result()
             results.append(s)

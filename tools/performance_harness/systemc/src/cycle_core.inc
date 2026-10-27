@@ -78,6 +78,8 @@ struct CycleCore {
     //------------------------------------------------------------ engines [4]
     unsigned mtx_rctx=0;
     bool mtx_busy_q=false,txf_busy_q=false;unsigned txf_rctx=0;
+    // A beat's response target (declared before the engines, which name it).
+    struct Target {unsigned kind=0,a=0,b=0;};   // 0 LSU beat (unit a, beat b); 1 tensor slot low (a); 2 slot high; 3 tensor tag (a); 4 descriptor word
 #include "cycle_tensor.inc"
     CycleTensor txf{*this};
 #include "cycle_matrix.inc"
@@ -96,6 +98,27 @@ struct CycleCore {
         return o.str();}
 
     std::unique_ptr<ReplayTrace> replay;u64 trace_tag=0;
+    // Every beat on the port gets an id; its response is delivered at a cycle
+    // (`rsp` fields set then), either scheduled here (timeline memory,
+    // replay) or by the chip's cycle uncore (uncore_model=1).
+    std::unordered_map<u64,Target> targets;
+    struct Scheduled {u64 id,when,data;};std::vector<Scheduled> scheduled;u64 next_id=1;
+    struct CycleUncore* uncore=nullptr;
+    void schedule(u64 id,u64 when,u64 data){scheduled.push_back({id,when,data});}
+    void deliver(u64 id,u64 when,u64 data){
+        auto it=targets.find(id);require(it!=targets.end(),"response for an unknown beat");Target tg=it->second;targets.erase(it);
+        switch(tg.kind){
+            case 0:{Beat& b=units[tg.a].beats[tg.b];b.rsp=when;b.rdata=data;break;}
+            case 1:{auto& sl=txf.sl[tg.a];sl.rsp_lo=when;sl.dlo=data;break;}
+            case 2:{auto& sl=txf.sl[tg.a];sl.rsp_hi=when;sl.dhi=data;break;}
+            case 3:{auto& g=txf.tg[tg.a];g.rsp=when;u64 keepm=0;for(unsigned j=0;j<8;++j)if((g.xkeep>>j)&1)keepm|=255ULL<<(j*8);g.data=data&keepm;break;}
+            case 4:txf.dl_rsp=when;txf.dl_data=data;break;
+        }
+        if(c.core_trace){char line[64];std::snprintf(line,sizeof line,"P %llu %llu %016llx\n",(unsigned long long)when,(unsigned long long)id,(unsigned long long)data);c.core_trace<<line;}
+    }
+    void deliveries(){  // at the start of a cycle: every response due now
+        for(size_t i=0;i<scheduled.size();){if(scheduled[i].when<=t){Scheduled s=scheduled[i];scheduled[i]=scheduled.back();scheduled.pop_back();deliver(s.id,t,s.data);}else ++i;}
+    }
     // Beside the core trace: one line per distinct pc, `K pc kind major func mod d a b c` (what the model decoded there).
     std::ofstream decode_log;std::unordered_map<u64,bool> decoded;
     u64 *c_cycles,*c_instr,*c_stall,*c_replay_mismatch,*c_replay_unrecorded,*c_hazard,*c_lsu,*c_fpu,*c_mtx,*c_txf,*c_fence,*c_arrive,*c_rsv,*c_steal,*c_vrf,*c_park;
@@ -109,7 +132,10 @@ struct CycleCore {
         c_txf=&x.counts[key("stall_txf")];c_fence=&x.counts[key("stall_fence")];c_arrive=&x.counts[key("stall_arrive")];c_rsv=&x.counts[key("stall_rsv")];
         c_steal=&x.counts[key("stall_wb_steal")];c_vrf=&x.counts[key("stall_vrf")];c_park=&x.counts[key("context_parks")];
         if(const char* p=std::getenv("TNCA_MODEL_CORE_REPLAY")){const char* which=std::getenv("TNCA_MODEL_CORE_TRACE_CORE");
-            if(*p && unsigned(which && *which?std::strtoul(which,nullptr,10):0)==c.id){replay.reset(new ReplayTrace);replay->load(p);}}
+            const bool all=which && std::string(which)=="all";
+            if(*p && (all || unsigned(which && *which?std::strtoul(which,nullptr,10):0)==c.id)){
+                std::string f=p;if(c.id)f+=".core"+std::to_string(c.id);
+                replay.reset(new ReplayTrace);replay->load(f);}}
     }
     //------------------------------------------------------------ helpers
     static bool is_fpnorm(const Inst& in){return in.kind==K::Cvt || (in.kind==K::Vfp);} // VFP incl. vf.cmp, CVT [2.11]
@@ -367,19 +393,27 @@ struct CycleCore {
     }
     //------------------------------------------------------------ the memory port
     // One beat on the core port at cycle `at`; returns the response cycle.
-    u64 issue_beat(u64 addr,bool store,u64 data,unsigned be,u64 at,bool replayed,u64 latency,bool engine,u64& got){
-        got=0;
-        u64 when=c.tm->word(c.id,addr,store,data,store?be:255,at,got);
+    // One beat on the port at cycle `at`: the functional access now, the
+    // response cycle by the memory timing in force. Returns the beat's id
+    // (the trace's tag: bit 4 marks the transfer engine's beats).
+    u64 issue_beat(u64 addr,bool store,u64 data,unsigned be,u64 at,bool replayed,u64 latency,bool engine,Target target){
+        const u64 id=(next_id++<<5)|(engine?16:0);targets[id]=target;
+        u64 got=0,when=0;
+        if(uncore || replayed){got=c.tm->access(addr,store,data,store?be:255);}
+        else when=c.tm->word(c.id,addr,store,data,store?be:255,at,got);
         if(replayed)when=at+latency;
-        if(c.core_trace){const u64 tag=(trace_tag++<<5)|(engine?16:0);char line[160];
+        if(c.core_trace){char line[160];
             std::snprintf(line,sizeof line,"Q %llu %u %016llx %02x %llu 0 %016llx\n",(unsigned long long)at,store?1U:0U,
-                (unsigned long long)addr,store?be:0U,(unsigned long long)tag,(unsigned long long)data);c.core_trace<<line;
-            std::snprintf(line,sizeof line,"P %llu %llu %016llx\n",(unsigned long long)when,(unsigned long long)tag,(unsigned long long)got);c.core_trace<<line;}
-        return when;
+                (unsigned long long)addr,store?be:0U,(unsigned long long)id,(unsigned long long)data);c.core_trace<<line;}
+        if(uncore && !replayed)uncore_request(id,at,addr,store,be,got);
+        else schedule(id,when,got);
+        return id;
     }
-    u64 port_issue(Beat& beat,u64 at,bool replayed,u64 latency){
-        u64 got=0;u64 when=issue_beat(beat.addr,beat.store,beat.data,beat.be,at,replayed,latency,false,got);
-        beat.rdata=got;beat.rsp=when;beat.issued=true;return when;
+    void uncore_request(u64 id,u64 at,u64 addr,bool store,unsigned be,u64 got);   // defined after CycleUncore
+    bool uncore_ready()const;
+    void uncore_launch(u64 pc,unsigned roles);
+    void port_issue(Beat& beat,unsigned unit,unsigned index,u64 at,bool replayed,u64 latency){
+        beat.rsp=0;beat.issued=true;issue_beat(beat.addr,beat.store,beat.data,beat.be,at,replayed,latency,false,Target{0,unit,index});
     }
     // Replay: may this beat issue now? (the RTL's memory accepted it no earlier than recorded)
     bool replay_allows(u64& latency,bool& replayed){u64 earliest=0;latency=0;replayed=false;
@@ -405,6 +439,7 @@ struct CycleCore {
 
     void step(){
         t=x.now();++*c_cycles;
+        deliveries();
         //==================== wires from the pre-edge state
         // X decode flags
         const Inst* xin=xb.valid?xb.in:nullptr;
@@ -519,18 +554,19 @@ struct CycleCore {
         else if(red_pend){have_nw=true;nw=red;red_grant=true;}
         // ---- LSU beats on the port this cycle [3.2][3.3]: one request, engine priority not modelled
         bool port_used=false;
-        CycleTensor::Req er=txf.request();bool efired=false;u64 ersp=0,egot=0;
-        if(er.valid){u64 latency;bool replayed;
+        CycleTensor::Req er=txf.request();bool efired=false;u64 eid=0;
+        const bool mem_ready=!uncore || uncore_ready();   // mem_req_ready from the NoC [UNCORE 1.3]
+        if(er.valid && mem_ready){u64 latency;bool replayed;
             if(replay_allows(latency,replayed)){if(replay)replay->advance(er.we,er.addr);
-                ersp=issue_beat(er.addr,er.we,er.data,er.be,t,replayed,latency,true,egot);efired=true;port_used=true;}
+                eid=issue_beat(er.addr,er.we,er.data,er.be,t,replayed,latency,true,txf.request_target(er));efired=true;port_used=true;}
         }
         // tnca_mem_mux.v: the LSU is served only when the engine has no request at all [3.1]
-        for(unsigned k=0;k<2 && !port_used && !er.valid;++k){unsigned i=(old+k)%2;Unit& u=units[i];
+        for(unsigned k=0;k<2 && !port_used && !er.valid && mem_ready;++k){unsigned i=(old+k)%2;Unit& u=units[i];
             if(u.st==2 && u.next<u.beats.size() && u.outstanding<NBEAT){
                 u64 latency;bool replayed;
                 if(!replay_allows(latency,replayed))continue;   // the RTL's memory accepted it later (back-pressure): wait
                 if(replay)replay->advance(u.beats[u.next].store,u.beats[u.next].addr);
-                port_issue(u.beats[u.next],t,replayed,latency);++u.outstanding;u.last_issue=t;++u.next;port_used=true;
+                port_issue(u.beats[u.next],i,u.next,t,replayed,latency);++u.outstanding;u.last_issue=t;++u.next;port_used=true;
             }}
         if(xb.valid || port_used)last_progress=t;
         if(t-last_progress>200000){std::ostringstream wr;wr<<"hazard="<<hazard<<" lsu="<<stall_lsu<<" fpu="<<stall_fpu<<" mtx="<<stall_mtx<<" txf="<<stall_txf<<" fence="<<stall_fence<<" arrive="<<stall_arrive<<" rsv="<<stall_rsv<<" steal="<<wb_steal<<" vrf="<<vrf_stall<<" rp_go="<<rp_go<<" f_sel="<<f_sel<<" of_need="<<of_need<<" of_have="<<of_have;
@@ -538,13 +574,13 @@ struct CycleCore {
         //==================== the edge
         // launch is handled in launch(); here the pipeline rules.
         // responses that arrive this cycle: bt_valid cleared at this edge [3.2]
-        for(auto& u:units)for(auto& beat:u.beats)if(beat.issued && !beat.done && beat.rsp<=t){beat.done=true;--u.outstanding;}
+        for(auto& u:units)for(auto& beat:u.beats)if(beat.issued && !beat.done && beat.rsp && beat.rsp<=t){beat.done=true;--u.outstanding;}
         // LSU unit state machines
         for(unsigned i=0;i<2;++i){Unit& u=units[i];
             switch(u.st){
                 case 1:u.st=2;break;                                   // SETUP -> RUN at c+1 edge; beats from c+2
                 case 2:if(u.next>=u.beats.size() && (u.beats.empty() || u.last_issue<t)){u.st=3;}break; // plan empty: DRAIN
-                case 3:{bool rsp_now=false;for(auto& beat:u.beats)if(beat.issued && beat.rsp==t)rsp_now=true;
+                case 3:{bool rsp_now=false;for(auto& beat:u.beats)if(beat.issued && beat.rsp && beat.rsp==t)rsp_now=true;
                         if(u.outstanding==0 && !rsp_now)u.st=4;
                         break;}
                 case 4:if(!u.cpl){u.cpl=true;}break;
@@ -560,7 +596,7 @@ struct CycleCore {
         const bool w_pre_en=w.en;const unsigned w_pre_rctx=w.res.rctx;
         // the engine's register read answered this cycle (port 4), then its edge [4.2]
         for(auto& br:bank_rsp)if(br.valid && br.port==4){txf.sread_response(F(txf.cmd.rctx).physical->read(phys(txf.cmd.rctx,txf.st_vreg()),sc_time_stamp(),txf.owner));}
-        txf.edge(efired,ersp,egot);
+        txf.edge(efired,eid);
         // the command of this cycle's X takes effect now [4.2]: cfg ops at the edge, a transfer or td.load enters its first state
         if(e.txf_cfg){try{txf.config(e.cfg_func,e.cfg_slot,e.cfg_addr,e.cfg_imm);}catch(const ArchFault& ex){Ctx& q=ctx[xb.rctx];q.running=false;q.faulted=true;record(STATUS_FAULT,ex.code,xb.pc,ex.what());}}
         if(e.txf_issue)txf.issue(e.txf_cmd_v);
@@ -662,6 +698,8 @@ struct CycleCore {
         mtx.reset();mtx_busy_q=txf_busy_q=false;
         txf.reset();for(auto& barrier:c.barriers)barrier.reset();
         if(replay)replay->start_launch();
+        scheduled.clear();targets.clear();
+        if(uncore)uncore_launch(l.pc,l.roles);
         if(c.core_trace){++c.trace_launches;char line[64];std::snprintf(line,sizeof line,"L %llu %016llx %u\n",(unsigned long long)t,(unsigned long long)l.pc,unsigned(l.roles));c.core_trace<<line;}
     }
     Outcome program(const Launch& l){

@@ -51,10 +51,35 @@ the next `P` carrying it. The RTL writes both from the pre-edge values, which
 are the values its own clocked logic acts on at that edge.
 
 The RTL side is `tnca_core_trace.v`, a second simulation top compiled next to
-`tb/device/tnca_multicore_device.v`; it reaches core `TNCA_TRACE_CORE` (a
-compile-time define, 0 by default) by hierarchical reference and nothing in
-`rtl/` changes. The model writes the same format from its own clock (see the
-model README for the switch).
+`tb/device/tnca_multicore_device.v`; it reaches every core (`TNCA_TRACE_CORES`,
+a compile-time define) by hierarchical reference and nothing in `rtl/`
+changes. Core 0 writes `+core_trace=<file>`, core c>0 `<file>.core<c>`; the
+recorders keep them as `<point>.trace` and `<point>.core<c>.trace`. The model
+writes the same format from its own clock (see the model README for the
+switch; `TNCA_MODEL_CORE_TRACE_CORE=all` for every core).
+
+### 2b. The uncore trace (`TNCA_UNCORE_TRACE 1`, second slice)
+
+With `+uncore_trace=<file>` the monitor also writes one trace of the path
+between the cores' ports and the device's memory port (`<point>.uncore.trace`):
+
+```
+TNCA_UNCORE_TRACE 1 cores=<n>
+L <cycle> <core> <pc:016x> <role_mask>      a core's launch (the records that follow are timed from it)
+S <cycle> <home> <src> <tag> <we> <addr>    the home slice accepted a request (tnca_tile s_req_*)
+R <cycle> <home> <src> <tag>                the slice's response handshake (s_rsp_*)
+M <cycle> <home> <we> <addr> <mtag>         the tile's memory request accepted (slice -> outlet, a line)
+D <cycle> <home> <mtag>                     the tile's memory response
+X <cycle> <we> <addr> <src> <tag>           the device's memory port accepted a request (the DRAM side)
+Y <cycle> <src> <tag>                       the device's memory response
+END <cycles>
+```
+
+The gate pairs launches in order (any core's `L`) and compares each stream
+record by record, cycles relative to the launch. In the validation path the
+model replays the `X`/`Y` boundary (the DRAM model's latencies, which the
+bench randomises); in the prediction path `Y` comes from the model's own
+memory timing and is not compared.
 
 ## 3. Tools
 

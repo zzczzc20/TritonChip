@@ -89,6 +89,12 @@ struct CycleTensor {
     u64 fillword()const{if(d->padding!=3){return 0;}u64 f=d->fill(cmd.bytes);u64 w=0;for(unsigned j=0;j<8;j+=cmd.bytes){w|=f<<(j*8);}return w;}
     //------------------------------------------------------------------ requests this cycle (wires)
     struct Req {bool valid=false;u64 addr=0;bool we=false;unsigned be=0;u64 data=0;unsigned tag=0;};
+    // where this cycle's request's response goes (the core registers it under the beat id)
+    CycleCore::Target request_target(const Req& r)const{unsigned ft=0;
+        if(st==DLOAD)return CycleCore::Target{4,0,0};
+        if(st==TRUN){bool hi=(r.tag&1)!=0;unsigned slot=r.tag>>1;return CycleCore::Target{hi?2U:1U,slot,0};}
+        if(st==SRUN || st==XRUN){have_tag(ft);return CycleCore::Target{3,ft,0};}
+        return CycleCore::Target{};}
     bool have_slot(unsigned& free)const{for(unsigned i=0;i<NSLOT;++i)if(!sl[i].v){free=i;return true;}return false;}
     bool have_tag(unsigned& free)const{for(unsigned i=0;i<NTAG;++i)if(!tg[i].v){free=i;return true;}return false;}
     bool have_done(unsigned& done)const{for(unsigned i=0;i<NSLOT;++i){const Slot& s=sl[i];if(s.v && (s.glo||!s.nlo) && (s.ghi||!s.nhi)){done=i;return true;}}return false;}
@@ -120,16 +126,16 @@ struct CycleTensor {
     unsigned x_keep()const{u64 left=d->extent[1]>cmd.coords[1]?d->extent[1]-cmd.coords[1]:0;unsigned ok=unsigned(std::min<u64>(left,d->block[1]))*cmd.bytes;unsigned rem=ok>t_unit*8?ok-t_unit*8:0;return rem>=8?255:(1U<<rem)-1;}
     //------------------------------------------------------------------ the edge
     // `fired`: the request of this cycle was accepted (the port answers at `rsp` with `got`).
-    void edge(bool fired,u64 rsp,u64 got){
+    void edge(bool fired,u64 id){(void)id;
         const u64 t=k.t;
         // sl_done / have_done are combinational from the registered glo/ghi: evaluated before this edge's responses
         unsigned done_slot=0;const bool had_done=have_done(done_slot);
         // responses this cycle
-        for(auto& s:sl){if(!s.v){continue;}if(s.nlo && !s.glo && s.rsp_lo==t){s.glo=true;}if(s.nhi && !s.ghi && s.rsp_hi==t)s.ghi=true;}
+        for(auto& s:sl){if(!s.v){continue;}if(s.nlo && !s.glo && s.rsp_lo && s.rsp_lo==t){s.glo=true;}if(s.nhi && !s.ghi && s.rsp_hi && s.rsp_hi==t){s.ghi=true;}}
         bool rsp_now=false;
-        for(auto& g:tg)if(g.v && g.rsp==t){g.v=false;rsp_now=true;if(st==XRUN||st==XDRAIN||st==XWRITE){xbuf[g.xrow]=g.data;}}
-        for(auto& s:sl)if(s.v && ((s.nlo && s.rsp_lo==t)||(s.nhi && s.rsp_hi==t)))rsp_now=true;
-        if(dl_waiting && dl_rsp==t){rsp_now=true;}
+        for(auto& g:tg)if(g.v && g.rsp && g.rsp==t){g.v=false;rsp_now=true;if(st==XRUN||st==XDRAIN||st==XWRITE){xbuf[g.xrow]=g.data;}}
+        for(auto& s:sl)if(s.v && ((s.nlo && s.rsp_lo && s.rsp_lo==t)||(s.nhi && s.rsp_hi && s.rsp_hi==t)))rsp_now=true;
+        if(dl_waiting && dl_rsp && dl_rsp==t){rsp_now=true;}
         // S_TDRAIN reads sl_v before this edge: a slot freed by the write port now still counts [4.2]
         bool slots_pre=false;for(auto& s:sl){if(s.v){slots_pre=true;}}
         // the presented window write: lands unless held
@@ -149,8 +155,8 @@ struct CycleTensor {
         }
         switch(st){
         case IDLE:break;
-        case DLOAD:if(fired){dl_waiting=true;dl_rsp=rsp;dl_data=got;st=DWAIT;}break;
-        case DWAIT:if(dl_waiting && dl_rsp==t){dl_waiting=false;for(unsigned b=0;b<8;++b)dl_buf[dl_word*8+b]=(unsigned char)(dl_data>>(b*8));
+        case DLOAD:if(fired){dl_waiting=true;dl_rsp=0;st=DWAIT;}break;
+        case DWAIT:if(dl_waiting && dl_rsp && dl_rsp==t){dl_waiting=false;for(unsigned b=0;b<8;++b)dl_buf[dl_word*8+b]=(unsigned char)(dl_data>>(b*8));
                 if(dl_word==31)st=DPARSE;else{++dl_word;st=DLOAD;}}break;
         case DPARSE:descriptors[dl_slot].snapshot=std::make_shared<TensorMapModel>(dl_buf);st=DONE;break;
         case TSETUP:{
@@ -178,9 +184,8 @@ struct CycleTensor {
             }else if(fired){
                 if(!t_half){have_slot(fs);Slot& s=sl[fs];s=Slot{};s.v=true;s.nlo=p.nlo;s.nhi=p.nhi;s.keep=p.keep;s.m=r_m;
                     unsigned off=t_flat+t_unit*8;s.vreg=base+off/64;s.lane=(off%64)/4;t_slot=fs;
-                    bool hi=!p.nlo;
-                    if(hi){s.rsp_hi=rsp;s.dhi=got;}else{s.rsp_lo=rsp;s.dlo=got;}
-                }else{Slot& s=sl[t_slot];s.rsp_hi=rsp;s.dhi=got;}
+                    s.rsp_lo=s.rsp_hi=0;
+                }
                 if(!t_half && p.nlo && p.nhi){t_half=true;}else{t_half=false;adv=true;}
             }
             if(adv){if(t_unit+1==row_units){t_unit=0;t_flat+=row_bytes;if(row+1==rows)st=TDRAIN;else{++row;start_row();}}else ++t_unit;}
@@ -191,7 +196,7 @@ struct CycleTensor {
             if(!rowv)row_end=true;
             else if(st_need_reg()){st=SREAD;sread_req=true;}
             else if(t_unit>=row_words.size() || row_words[t_unit].be==0 || fired){
-                if(fired){unsigned ft=0;have_tag(ft);tg[ft].v=true;tg[ft].rsp=rsp;}
+                if(fired){unsigned ft=0;have_tag(ft);tg[ft].v=true;tg[ft].rsp=0;}
                 adv=true;
             }
             if(adv){if(t_unit+1==row_words.size()){row_end=true;}else {++t_unit;}}
@@ -202,8 +207,7 @@ struct CycleTensor {
         case XRUN:{
             if(x_unit_oob() || fired){
                 if(x_unit_oob()){xbuf[x_row&15]=0;}
-                else{unsigned ft=0;have_tag(ft);tg[ft].v=true;tg[ft].rsp=rsp;tg[ft].xrow=x_row&15;tg[ft].xkeep=x_keep();
-                    u64 keepm=0;for(unsigned j=0;j<8;++j){if((tg[ft].xkeep>>j)&1)keepm|=255ULL<<(j*8);}tg[ft].data=got&keepm;}
+                else{unsigned ft=0;have_tag(ft);tg[ft].v=true;tg[ft].rsp=0;tg[ft].xrow=x_row&15;tg[ft].xkeep=x_keep();tg[ft].data=0;}
                 if(x_row+1==d->block[0]){st=XDRAIN;}else{++x_row;x_row_base+=d->stride[0];}
             }break;}
         case XDRAIN:{bool any=false;for(auto& g:tg){if(g.v)any=true;}if(!any && !rsp_now){x_q=0;st=XWRITE;}break;}

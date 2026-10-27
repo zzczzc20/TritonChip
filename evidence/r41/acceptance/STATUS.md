@@ -344,7 +344,12 @@ registers that case within a 5,700-second budget; P2+P4 retain a 6,900-second
 queue allowance. Manifest, fake-board queue, compiler and document checks pass.
 No physical-card gate or ledger status has changed, and no card/image work started.
 
-### Prepared lead-only P2/P4 launch (immutable deedaed source)
+### Superseded lead-only P2/P4 launch (immutable deedaed source)
+
+**Do not run this deedaed command.** The later grid-preflight-v2 semantic failure
+found that the grid harness assumed a legacy no-opt-in limit and mishandled a
+missing large-grid extension. A corrected immutable source and replacement
+command will be published below after its preflight. No board job was launched.
 
 Commit deedaed is staged at `~/r41_accept_deedaed` on acf3019. All 3,815
 tracked files match their Git SHA-1 blob identities; the initial verifier's
@@ -367,3 +372,20 @@ card. A timeout preserves failure and needs a new lead budget decision, not an
 automatic retry. S2-03.A.5 and S2-04.D.3/.4/.6/.7 remain not measured until
 this physical evidence exists; D.7 additionally needs its persistent full-model
 session. Do not infer a locality speedup or default-on decision from RTL.
+
+### P4 model closeout and grid diagnosis
+
+Model-v3 exited zero. Four alias/ownership refusals passed; the rolled barrier
+completed 65,537 arm/wait iterations; standard Torch eviction unloaded a module
+while preserving resident data; and the one-module code-cache case completed six
+RTL launches with its live buffer preserved. Raw reports/artifacts and the
+journal are archived under p4/model-v3*.
+
+Grid-preflight-v2 then failed a semantic assertion: 6,144 programs were legally
+inside the live physical-grid capability, so the harness's legacy no-opt-in
+assumption was wrong. A direct read-only capability probe reported 16,777,216
+programs and no separate large-grid extension. The corrected harness derives the
+base and advertised limits from the device, tests refusal above the base limit,
+and handles an absent extension. Grid-preflight-v3 is running the same measured
+6,144-program case; no passing grid judgment is made yet. These are simulator
+results only and do not change the acceptance ledger.

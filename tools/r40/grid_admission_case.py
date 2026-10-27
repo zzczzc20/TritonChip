@@ -63,17 +63,23 @@ def main():
             counter = session.allocate(8)
             session.upload(result, bytes([255])*result.size)
             session.upload(counter, bytes(8))
+            base_limit = (session.dev.physical_grid_capability()[1]
+                          if session.physical_grid else 4096)
+            extension_limit = session.dev.large_grid_limit()
+            limit = extension_limit or base_limit
+            assert base_limit < 0xFFFFFFFF and args.programs <= limit
+            refused_programs = max(args.programs, base_limit + 1)
             before = session.latest_event
             try:
-                session.submit(module, {'out':result, 'counter':counter}, grid=(args.programs,1,1))
-                raise AssertionError('large grid was admitted without opt-in')
+                session.submit(module, {'out':result, 'counter':counter}, grid=(refused_programs,1,1))
+                raise AssertionError('above-capability grid was admitted without opt-in')
             except AdmissionError as error:
                 assert session.latest_event is before
-                report['checks'].append(dict(name='opt-in-required', status='pass', error=str(error)))
+                report['checks'].append(dict(name='opt-in-required', status='pass',
+                    base_limit=base_limit, requested=refused_programs, error=str(error)))
                 save()
                 print('grid admission: opt-in refusal passed', flush=True)
             session.large_grid = True
-            limit = session.dev.large_grid_limit()
             long_event = session.submit(module, {'out':result, 'counter':counter},
                                         grid=(args.programs,1,1))
             dependent = []

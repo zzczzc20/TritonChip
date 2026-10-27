@@ -1,0 +1,34 @@
+{
+  "schema": "tnca-r41-alias-negative/1",
+  "status": "pass",
+  "checks": [
+    {
+      "name": "undeclared-overlapping-storage-arguments",
+      "status": "refused-before-admission",
+      "error_type": "TncaError",
+      "error": "[ALIAS_UNDECLARED] 'a' and 'b' overlap and the manifest does not declare them as aliases\n  declared: []\n  try: declare the alias at compile time, or use separate buffers"
+    },
+    {
+      "name": "out-of-bounds-view",
+      "status": "refused-before-admission",
+      "error_type": "ArgumentError",
+      "error": "[ARGUMENT_INVALID] 'b': byte offset 128 is outside buf1 (0..127)"
+    },
+    {
+      "name": "forged-high-bit-storage-owner",
+      "status": "refused-before-admission",
+      "error_type": "ArgumentError",
+      "error": "[ARGUMENT_INVALID] locality storage is not owned by this session"
+    },
+    {
+      "name": "distinct-storage-handles-overlap",
+      "status": "refused-before-admission",
+      "error_type": "TncaError",
+      "error": "[ALIAS_UNDECLARED] 'a' and 'b' overlap and the manifest does not declare them as aliases\n  declared: []\n  try: declare the alias at compile time, or use separate buffers"
+    }
+  ],
+  "board_acceptance": "not-measured",
+  "backend": "sim-file",
+  "software_tree": "files:8e086d10687c704cf58d3a9b6e880b4ce1c59d0a687f2255b5a32eced510b8d4",
+  "artifact_sha256": "05df3743f95a59304c4d1168677df1ee73982bb6030ce7ce135ece5f6bfa1462"
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "tnca-r41-barrier-epoch/1",
+  "status": "pass",
+  "requested_arms": 65537,
+  "board_acceptance": "not-measured",
+  "backend": "sim-file",
+  "software_tree": "files:8e086d10687c704cf58d3a9b6e880b4ce1c59d0a687f2255b5a32eced510b8d4",
+  "artifact_sha256": "49d6c3e681f53dad64a38428f461e0cb427fb2c0d51e5bd7dc11cce277770a23",
+  "event": {
+    "state": "SUCCEEDED",
+    "ok": true,
+    "device_cycles": 1114159,
+    "error": "None"
+  },
+  "memory_stats": {
+    "epoch": 0,
+    "heap_capacity_bytes": 393216,
+    "heap_reserved_ranges": [],
+    "heap_allocated_bytes": 64,
+    "heap_peak_bytes": 320,
+    "code_allocated_bytes": 128,
+    "code_peak_bytes": 128
+  },
+  "observed": {
+    "completed_arm_wait_iterations": 65537
+  }
+}

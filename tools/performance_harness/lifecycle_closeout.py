@@ -60,9 +60,11 @@ def main():
     assert all(event['state'] == 'SUCCEEDED' for event in grid['events'])
 
     model_log = args.model_log.read_text()
-    eviction = re.findall(r'OK eviction: ([^\n]+)', model_log)
+    eviction = re.findall(r'PASS\s+eviction\s+([^\n]+)', model_log)
     assert len(eviction) == 1, eviction
-    assert 'CODE CACHE EPOCH PASS 6 RTL launches, one-module region, live buffer preserved' in model_log
+    assert 'r40-device-tests  PASS  (1/1)' in model_log
+    cache = re.search(r'CODE CACHE EPOCH PASS (\d+) RTL launches, one-module region, live buffer preserved', model_log)
+    assert cache
     assert 'Traceback' not in model_log
 
     rtl_log = args.rtl_log.read_text()
@@ -97,7 +99,8 @@ def main():
             'report_sha256': hashlib.sha256(args.grid.read_bytes()).hexdigest(),
         },
         'standard_torch_eviction': eviction[0],
-        'code_cache': 'six launches; one-module region; live buffer preserved',
+        'code_cache': {'rtl_launches': int(cache.group(1)),
+                       'live_buffer_preserved': True},
         'rtl_grid_configurations': int(dispatch.group(1)),
         'rtl_barrier_wrap_and_exhaustion': 'pass',
         'interpretation': 'Functional model/RTL preflight only. The AOT grid and barrier cases are not standard-Torch or physical-board results. No full-model persistent-session, performance, or board acceptance inference.',

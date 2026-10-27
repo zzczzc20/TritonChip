@@ -1,0 +1,13 @@
+ExecMainStatus=1
+ActiveState=failed
+SubState=failed
+Oct 27 07:27:24 gx10-6646 systemd[2282]: Started r41-p4-grid-preflight-v2.service - /usr/bin/taskset -c 0-5 timeout 2400 env PATH=/home/zhongchun/tc_env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin PYTHONPATH=/home/zhongchun/r41-p4-v3:/home/zhongchun/r41-p4-v3/python:/home/zhongchun/r41-p4-v3/compiler/python:/home/zhongchun/r41-p4-v3/tools/asm TNCA_BACKEND=fpga-multicore-sim TNCA_PROFILE=core-vrf-sync-v5 TNCA_HOST_TIMEOUT=1800 TNCA_DEADLINE=5000000 /home/zhongchun/tc_env/torchenv/bin/python -u /home/zhongchun/r41-p4-v3/tools/r40/grid_admission_case.py --programs 6144 --out /home/zhongchun/r41-p4/grid-preflight-v2.
+Oct 27 07:44:53 gx10-6646 taskset[746795]: Traceback (most recent call last):
+Oct 27 07:44:53 gx10-6646 taskset[746795]:   File "/home/zhongchun/r41-p4-v3/tools/r40/grid_admission_case.py", line 133, in <module>
+Oct 27 07:44:53 gx10-6646 taskset[746795]:     main()
+Oct 27 07:44:53 gx10-6646 taskset[746795]:   File "/home/zhongchun/r41-p4-v3/tools/r40/grid_admission_case.py", line 69, in main
+Oct 27 07:44:53 gx10-6646 taskset[746795]:     raise AssertionError('large grid was admitted without opt-in')
+Oct 27 07:44:53 gx10-6646 taskset[746795]: AssertionError: large grid was admitted without opt-in
+Oct 27 07:44:53 gx10-6646 systemd[2282]: r41-p4-grid-preflight-v2.service: Main process exited, code=exited, status=1/FAILURE
+Oct 27 07:44:53 gx10-6646 systemd[2282]: r41-p4-grid-preflight-v2.service: Failed with result 'exit-code'.
+Oct 27 07:44:53 gx10-6646 systemd[2282]: r41-p4-grid-preflight-v2.service: Consumed 18min 1.620s CPU time.

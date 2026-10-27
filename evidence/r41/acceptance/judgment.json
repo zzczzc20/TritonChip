@@ -476,9 +476,13 @@
       "evidence": [
         "evidence/r41/stage1/board/metrics.json",
         "evidence/r41/acceptance/p2/pipeline-summary.json",
-        "evidence/r41/acceptance/p2/pipeline-index.json"
+        "evidence/r41/acceptance/p2/pipeline-index.json",
+        "evidence/r41/acceptance/p2/pipeline-preflight-summary.json",
+        "evidence/r41/acceptance/p2/pipeline-preflight-index.json",
+        "evidence/r41/acceptance/p2/pipeline-three-sample-model.json",
+        "spec/r41/stage2/acceptance/s2-p2-pipeline.json"
       ],
-      "reason": "Three fixed-budget standard Torch policies now have 18 bitwise SystemC rows and actual one-core RTL DMA/MMA overlap for the single-role candidate. These grid-one points and uncalibrated model timing do not close the final-image board comparison; the lead-only measurement is being prepared.",
+      "reason": "Three matched fixed-budget standard Torch policies have 54 timed bitwise model samples, six real RTL rows including BF16 and actual DMA/MMA overlap, and unchanged default artifacts across all 113 points. Model timing is uncalibrated and grid-one does not establish scaling. The approved-image, three-sample lead-only board manifest is prepared; the final-image board comparison remains not measured.",
       "closure_plan": "P2"
     },
     {

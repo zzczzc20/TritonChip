@@ -1,0 +1,312 @@
+{
+  "schema": "tnca-experiment-spec/1",
+  "id": "s2-p2-pipeline",
+  "allowed_hosts": [
+    "acf3019"
+  ],
+  "hypothesis": "Compare Mode B, single-role two-slot and Mode A two-slot standard Torch GEMMs under the same image, three-core profile, two-context mask and 64-register program space.",
+  "competing_explanations": [
+    "changed emitted address/fragment code",
+    "host gaps or transfer boundaries",
+    "different image/clock or software tree"
+  ],
+  "expected_counter_changes": [
+    "actual launched artifacts, graph/device completion cycles and traffic; no synthetic measurements"
+  ],
+  "expected_observations": [
+    "all registered points remain correct with descriptors enabled and no CPU numerical fallback",
+    "paired completion samples and exact software/image identities retained"
+  ],
+  "board": {
+    "image": "{home}/tnca_images/r41s2_run1_c9f25787494a/tnca_u280.xclbin",
+    "image_sha256": "30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de",
+    "image_uuid": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+    "clock_evidence": "{home}/tnca_build/r41s2_run1_c9f25787494a/r41s2-board/qualified_clock.json",
+    "clock_hz": 100000000,
+    "device": "0000:04:00.1",
+    "mgmt_device": "0000:04:00.0",
+    "backend": "fpga-u280-multicore",
+    "backend_args": {
+      "xclbin": "{home}/tnca_images/r41s2_run1_c9f25787494a/tnca_u280.xclbin",
+      "image_profile": "core-vrf-sync-v5-x8",
+      "core_count": 3,
+      "memory_ports": 3,
+      "hbm_dma": true,
+      "hbm_bytes": 4294967296,
+      "device_clock": true
+    },
+    "profile": "core-vrf-sync-v5-x8",
+    "transport": {
+      "deadline_cycles": 200000000000,
+      "host_timeout_seconds": 28800,
+      "source": "evidence/r40/v3/campaign_fe1b/campaign.json transport"
+    },
+    "memory_map": {
+      "window_base": 0,
+      "window_bytes": 4294967296,
+      "local_limit": 131072,
+      "bank": "MBG[0:31]",
+      "physical_pcs": "PC0-PC15",
+      "source": "evidence/r41/stage2/board/xclbin_hbm_map.json",
+      "source_sha256": "c459cd14ac521d03b9bc67a26f6a191d7dc8c958d57fea40a369db9f0a12d852"
+    },
+    "image_source": {
+      "commit": "c9f25787494a8414f9ab19e03bea6fb3fa794d20",
+      "branch": "r41s2-t2",
+      "record": "evidence/r41/stage2/board/image_source.json",
+      "parameters": "evidence/r41/stage2/integration/image.json",
+      "run": "evidence/r41/stage2/run1/README.md"
+    },
+    "load_policy": "loaded only by evidence/r41/stage2/board/launches/board_queue.sh after the Stage 1 and hbm8 queues finished and the card was idle 15 consecutive minutes (user authorization for this image only); every fpga step probes the loaded UUID, the 100 MHz clock counter and kdsstat first and refuses otherwise; the clock evidence is captured after that load"
+  },
+  "plan": "spec/r41/stage2/plan.json",
+  "plan_sha256": "d32cd805baf16e32e8b511db3a4a9aa2f4d8686f5c2fdabe9911f9e03fa937ab",
+  "measurement": {
+    "long_device_tasks": {
+      "qualification_samples": 1,
+      "short_threshold_seconds": 1,
+      "short_timed_samples": 3,
+      "long_timed_samples": 1,
+      "anchor_stability_samples": 3
+    },
+    "host_latency": {
+      "warmup": 5,
+      "timed": 30,
+      "blocks": 3,
+      "order": "interleaved seeded A/B"
+    },
+    "borderline_device_recheck": {
+      "additional_samples_per_arm": 3,
+      "max_recheck_blocks": 2
+    },
+    "bootstrap": {
+      "resamples": 2000,
+      "seed": 20261020,
+      "alpha": 0.05
+    },
+    "overall_nonregression_budget": 0.05,
+    "report_point_regression_above": 0.05,
+    "confirmed_new_default_regression_block": 0.1
+  },
+  "suites": [
+    {
+      "path": "spec/r40/suites/existing.json",
+      "sha256": "f3e4ba5f3a346d45d3289b4b58f380d0103f4a5edfe6c88abd6b136868154a0f"
+    },
+    {
+      "path": "spec/r40/suites/large.json",
+      "sha256": "9279cf341d9c631f103a15abdbff1d6d932329fbc0a0336352bbac8b22b223bf"
+    },
+    {
+      "path": "spec/r40/suites/hbm-tier.json",
+      "sha256": "a36483591c755273db172d11455301e8a9a164932340a5827fccd0f5703d5d6f"
+    },
+    {
+      "path": "spec/r40/suites/hbm.json",
+      "sha256": "7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd"
+    },
+    {
+      "path": "spec/r40/suites/R40-03.gemm-reuse.json",
+      "sha256": "2ae243782413f4970616dfef3e02aca60e8f8f34907d18cf2ea4a6ac48807c3f"
+    },
+    {
+      "path": "spec/r40/suites/R40-09.tune.json",
+      "sha256": "2e5a0c346123f6cd2fe896baa176be3dc2138d6bd4e189b62564ae67f1347484"
+    }
+  ],
+  "estimates": [
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_tiny.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_small.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_medium.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/large24.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/hbm14.jsonl"
+    },
+    {
+      "campaign": "evidence/r40/v3/campaign_fe1b/campaign.json",
+      "state": "evidence/r40/v3/campaign_fe1b/state.json"
+    }
+  ],
+  "sources": [
+    "tools/performance_harness",
+    "archbench",
+    "python/tnca",
+    "compiler/python",
+    "compiler/targets",
+    "spec/r39_sched_model.json",
+    "tools/asm",
+    "isa",
+    "spec/r41/stage2/acceptance/s2-p2-pipeline.json"
+  ],
+  "env": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MAX_JOBS": "2",
+    "CUDA_VISIBLE_DEVICES": "",
+    "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm",
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RCTX_SPMD": "1",
+    "TNCA_RCTX_SPMD_SHARED": "2",
+    "TNCA_SCHEDULE": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_IEEE_DIV": "1"
+  },
+  "registration": {
+    "status": "registered-not-run",
+    "registered_utc": "2026-10-26",
+    "authority": "lead starts waiting queue; agent never opens card",
+    "budget_seconds": 5500,
+    "contract": "doc/r41_tasks_and_acceptance.md S2-03.B; registered grid-one points; device samples only, no host-latency acceptance claim"
+  },
+  "budget_seconds": 5500,
+  "board_batches": {},
+  "steps": [
+    {
+      "id": "baseline",
+      "kind": "fpga",
+      "argv": [
+        "{python}",
+        "{root}/tools/performance_harness/fragment_case.py",
+        "--out",
+        "{out}/baseline",
+        "--columns",
+        "16",
+        "--shapes",
+        "16x16x32,16x16x48,16x16x64",
+        "--samples",
+        "3",
+        "--bitwise",
+        "--require-resident"
+      ],
+      "timeout_seconds": 1800,
+      "env": {
+        "TNCA_BACKEND": "fpga-u280-multicore",
+        "TNCA_BACKEND_ARGS": "{\"xclbin\":\"{home}/tnca_images/r41s2_run1_c9f25787494a/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":4294967296,\"device_clock\":true}",
+        "TNCA_PROFILE": "core-vrf-sync-v5-x8",
+        "TNCA_OPERATING_CLOCK_EVIDENCE": "{home}/tnca_build/r41s2_run1_c9f25787494a/r41s2-board/qualified_clock.json",
+        "TNCA_DEADLINE": "200000000000",
+        "TNCA_HOST_TIMEOUT": "28800",
+        "TNCA_SINGLE_ROLE_PIPELINE": "0",
+        "TNCA_RCTX_ROLES": "0",
+        "TNCA_RCTX_ROLE_PAIRS": "0"
+      },
+      "timing_boundary": "one qualified call then three timed device-completion samples; outputs stay resident during the sample block and CPU checks follow",
+      "cache_state": "isolated process/cache per arm; identical deterministic inputs and no tuning; qualification includes CPU numerical validation",
+      "outputs": [
+        "{out}/baseline/report.json"
+      ]
+    },
+    {
+      "id": "single",
+      "kind": "fpga",
+      "argv": [
+        "{python}",
+        "{root}/tools/performance_harness/fragment_case.py",
+        "--out",
+        "{out}/single",
+        "--columns",
+        "16",
+        "--shapes",
+        "16x16x32,16x16x48,16x16x64",
+        "--samples",
+        "3",
+        "--bitwise",
+        "--require-resident",
+        "--require-single-role-pipeline"
+      ],
+      "timeout_seconds": 1800,
+      "env": {
+        "TNCA_BACKEND": "fpga-u280-multicore",
+        "TNCA_BACKEND_ARGS": "{\"xclbin\":\"{home}/tnca_images/r41s2_run1_c9f25787494a/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":4294967296,\"device_clock\":true}",
+        "TNCA_PROFILE": "core-vrf-sync-v5-x8",
+        "TNCA_OPERATING_CLOCK_EVIDENCE": "{home}/tnca_build/r41s2_run1_c9f25787494a/r41s2-board/qualified_clock.json",
+        "TNCA_DEADLINE": "200000000000",
+        "TNCA_HOST_TIMEOUT": "28800",
+        "TNCA_SINGLE_ROLE_PIPELINE": "1",
+        "TNCA_RCTX_ROLES": "0",
+        "TNCA_RCTX_ROLE_PAIRS": "0"
+      },
+      "timing_boundary": "one qualified call then three timed device-completion samples; outputs stay resident during the sample block and CPU checks follow",
+      "cache_state": "isolated process/cache per arm; identical deterministic inputs and no tuning; qualification includes CPU numerical validation",
+      "outputs": [
+        "{out}/single/report.json"
+      ]
+    },
+    {
+      "id": "paired",
+      "kind": "fpga",
+      "argv": [
+        "{python}",
+        "{root}/tools/performance_harness/fragment_case.py",
+        "--out",
+        "{out}/paired",
+        "--columns",
+        "16",
+        "--shapes",
+        "16x16x32,16x16x48,16x16x64",
+        "--samples",
+        "3",
+        "--bitwise",
+        "--require-resident",
+        "--ring-stages",
+        "2"
+      ],
+      "timeout_seconds": 1800,
+      "env": {
+        "TNCA_BACKEND": "fpga-u280-multicore",
+        "TNCA_BACKEND_ARGS": "{\"xclbin\":\"{home}/tnca_images/r41s2_run1_c9f25787494a/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":4294967296,\"device_clock\":true}",
+        "TNCA_PROFILE": "core-vrf-sync-v5-x8",
+        "TNCA_OPERATING_CLOCK_EVIDENCE": "{home}/tnca_build/r41s2_run1_c9f25787494a/r41s2-board/qualified_clock.json",
+        "TNCA_DEADLINE": "200000000000",
+        "TNCA_HOST_TIMEOUT": "28800",
+        "TNCA_SINGLE_ROLE_PIPELINE": "0",
+        "TNCA_RCTX_ROLES": "2",
+        "TNCA_RCTX_ROLE_PAIRS": "1"
+      },
+      "timing_boundary": "one qualified call then three timed device-completion samples; outputs stay resident during the sample block and CPU checks follow",
+      "cache_state": "isolated process/cache per arm; identical deterministic inputs and no tuning; qualification includes CPU numerical validation",
+      "outputs": [
+        "{out}/paired/report.json"
+      ]
+    },
+    {
+      "id": "compare",
+      "kind": "compare",
+      "argv": [
+        "{python}",
+        "{root}/tools/performance_harness/pipeline_compare.py",
+        "--backend",
+        "fpga-u280-multicore",
+        "--experiment",
+        "{out}/report.json",
+        "--baseline",
+        "{out}/baseline/report.json",
+        "--single",
+        "{out}/single/report.json",
+        "--paired",
+        "{out}/paired/report.json",
+        "--out",
+        "{out}/comparison.json"
+      ],
+      "timeout_seconds": 60,
+      "inputs": [
+        "{out}/baseline/report.json",
+        "{out}/single/report.json",
+        "{out}/paired/report.json"
+      ],
+      "outputs": [
+        "{out}/comparison.json"
+      ]
+    }
+  ],
+  "conclusion_source": "{out}/comparison.json"
+}

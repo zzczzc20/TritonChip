@@ -29,9 +29,19 @@ assert final['frontend-default-compare.json']['summary']==dict(points=113,unchan
 service_transfer=read('service-transfer.tgz')
 service={k:v for k,v in service_transfer.items() if k.startswith('service-current/') and k.endswith('/report.json')}
 assert len(service)==3 and all(v['status']=='functional-pass' for v in service.values())
+baseline=next(iter(service.values()))
+for v in service.values():
+    for field in ['inputs','placements','software_tree','output_sha256']:
+        assert v[field]==baseline[field],field
+    assert [a['code_sha256'] for a in v['artifacts']]==[a['code_sha256'] for a in baseline['artifacts']]
+    assert v['model_identity']['binary_sha256']==baseline['model_identity']['binary_sha256']
+    cfg=dict(v['model_identity']['config']);basecfg=dict(baseline['model_identity']['config'])
+    for key in ['active_outlets','outstanding']:cfg.pop(key);basecfg.pop(key)
+    assert cfg==basecfg
 queue=cases(service_transfer,'transfer-queue/',2)
 for a,b in zip(queue['transfer-queue/queue-1/report.json']['rows'],queue['transfer-queue/queue-2/report.json']['rows']):
     assert a['output_f32_sha256']==b['output_f32_sha256']
+    assert [v['code_sha256'] for v in a['artifacts']]==[v['code_sha256'] for v in b['artifacts']]
 pairs=[]
 for name,d in model.items():
     if d['columns']!=32:continue

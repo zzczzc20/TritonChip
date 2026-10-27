@@ -174,3 +174,57 @@ the 100 MHz set and 1,800 seconds for the 90 MHz set (three hours total).
 Next: stage the revised bounded launcher, verify immutable files on acf3019,
 and publish concrete lead commands. Source transfer handle remains live; no
 board job was launched.
+
+### Prepared lead-only launch commands (bounded launcher bbbf607)
+
+All 3,757 tracked files of commit bbbf607 in `~/r41_accept_bbbf607` on acf3019
+match their Git blob identities. CPU-only queue preparation passes. No card
+was opened. The pre-fix control transfer to `~/r41_accept_control_21c40aa`
+is still being verified; GEMM must wait for its confirmation below.
+
+The lead (Claude) must start these measurements because this agent is forbidden
+from starting shared-U280 work. They remeasure the failed wide-GEMM hypothesis
+after its compiler causes were corrected, and obtain policy/migration evidence.
+They do not request a new image or consume a full-image run.
+
+After the lead has loaded the approved run-1 100 MHz image using the existing
+idle/programming procedure, execute on acf3019:
+
+```sh
+cd ~/r41_accept_bbbf607
+setsid nohup ~/tc_env/torchenv/bin/python tools/performance_harness/launches/acceptance_queue.py --root "$PWD" --out ~/r41_accept_p1_100_bbbf607 --python ~/tc_env/torchenv/bin/python --budget-seconds 9000 --manifest spec/r41/stage2/acceptance/s2-p1-gemm.json --manifest spec/r41/stage2/acceptance/s2-p1-policy.json --manifest spec/r41/stage2/acceptance/s2-p1-shared-100.json > ~/r41_accept_p1_100_bbbf607.log 2>&1 < /dev/null &
+```
+
+Separately, with the approved B40 90 MHz image loaded by the lead:
+
+```sh
+cd ~/r41_accept_bbbf607
+setsid nohup ~/tc_env/torchenv/bin/python tools/performance_harness/launches/acceptance_queue.py --root "$PWD" --out ~/r41_accept_p1_90_bbbf607 --python ~/tc_env/torchenv/bin/python --budget-seconds 1800 --manifest spec/r41/stage2/acceptance/s2-p1-shared-90.json > ~/r41_accept_p1_90_bbbf607.log 2>&1 < /dev/null &
+```
+
+Run sequentially, never concurrently. Total execution allowance is 10,800
+seconds; idle waits are additional. A timeout preserves failure and requires a
+new lead budget decision, not an automatic restart. The queue never programs
+or resets; it verifies the loaded image after 900 consecutive idle seconds.
+The 100 MHz set contains 27 GEMM configurations, 15 policy configurations and
+three shared-profile points; the 90 MHz set has three shared-profile points.
+If the bound expires, retain incomplete points as not measured. Verify actual
+artifact hashes match across images; this measures joint hardware/frequency
+migration, not isolated hardware gain. Prior board failures remain failures.
+
+Remaining agent work is not declared lead-blocked: finish per-candidate P1
+sensitivity coverage/limitations and home/core-service closure, then implement
+P2 locality and pipeline obligations before proceeding through P3–P6. Current
+judgment is 33 passed, two failed, 51 not measured, eight blocked. Only the
+prepared board measurements and historical freeze disposition presently need
+the lead. No full image run was started; four of five remain lead-controlled.
+
+Control transfer is now complete and verified: all 3,722 tracked files of
+21c40aa match Git blob identities, zero mismatches. The GEMM preparation
+dependency above is cleared. Both staged trees are immutable; later status
+commits do not alter them. Raw source-verification summaries are in p1/.
+Both acceptance targets were rerun and correctly reject outstanding gates;
+evidence integrity and six checker refusal tests pass. Next agent action:
+finish the P1 per-candidate sensitivity coverage/decision ledger and bounded
+home/core-service study, without duplicating the hbm_bw owner's RTL work.
+Then proceed to P2; P2–P6 remain engineering work, not lead-only blockers.

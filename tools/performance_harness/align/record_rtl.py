@@ -52,24 +52,46 @@ def file_sha(path):
     return h.hexdigest()
 
 
-def build_bench(out, *, core_count, memory_bytes, memory_ports, traced_core, overrides, iverilog):
-    """The multicore_file.prepare() file set plus the monitor top."""
+# The board-top stand-in's structure (python/tnca/backends/multicore_mmio_sim.py MulticoreMMIOLink):
+# the U280 image's link and pipeline stages, maintenance and memory controls, three AXI outlets.
+BOARD = dict(link_stages=2, noc_link_stages=2, dispatch_stages=2, home_stages=2, code_stages=2,
+             maintenance=1, memory_controls=1, memory_ports=3, memory_bytes=1 << 20, board_top=True)
+
+
+def build_bench(out, *, core_count, memory_bytes, memory_ports, traced_core, overrides, iverilog, bench='device'):
+    """The runtime's own file set for the chosen bench plus the monitor top."""
     rtl, tb = ROOT / 'rtl', ROOT / 'tb'
     out.mkdir(parents=True, exist_ok=True)
     target = out / 'device.vvp'
-    args = [iverilog, '-g2012', '-I', str(rtl / 'common'), '-I', str(rtl / 'noc'),
-            '-s', 'tnca_multicore_device', '-s', 'tnca_core_trace',
-            f'-DTNCA_TRACE_CORES={core_count}',
-            f'-Ptnca_multicore_device.N={core_count}',
-            f'-Ptnca_multicore_device.TOTAL_WORDS={memory_bytes // 8}',
-            f'-Ptnca_multicore_device.PORTS={memory_ports}', '-o', str(target)]
-    args += [f'-Ptnca_multicore_device.{k}={v}' for k, v in sorted(overrides.items())]
-    for library in ('common', 'core', 'gen', 'nuca', 'noc', 'tile'):
-        args += ['-y', str(rtl / library)]
-    args += [str(p) for p in sorted((rtl / 'common').glob('*.v'))]
-    args += [str(rtl / p) for p in ('tnca_top.v', 'tnca_grid_dispatch.v', 'tnca_grid_deadline.v', 'tnca_multicore_shell.v')]
-    args += [str(tb / 'common/tnca_dram_model.v'), str(tb / 'device/tnca_multicore_device.v'),
-             str(HERE / 'tnca_core_trace.v')]
+    if bench == 'board':   # multicore_mmio_sim.MulticoreMMIOLink._build, board_top=True
+        top = 'tnca_multicore_board_regs'
+        args = [iverilog, '-g2012', '-I', str(rtl / 'common'), '-I', str(rtl / 'noc'),
+                '-s', top, '-s', 'tnca_core_trace', '-DTNCA_TRACE_BOARD', f'-DTNCA_TRACE_CORES={core_count}',
+                f'-DTNCA_TRACE_PORTS={BOARD["memory_ports"]}', '-o', str(target)]
+        params = dict(N=core_count, PORTS=BOARD['memory_ports'], MEMORY_BYTES=BOARD['memory_bytes'],
+                      STAGES=BOARD['link_stages'], NOC_PIPE=BOARD['noc_link_stages'], DISPATCH_PIPE=BOARD['dispatch_stages'],
+                      HOME_PIPE=BOARD['home_stages'], CODE_PIPE=BOARD['code_stages'], MAINTENANCE=BOARD['maintenance'],
+                      MEMORY_CONTROLS=BOARD['memory_controls'])
+        args += [f'-P{top}.{k}={v}' for k, v in params.items()]
+        for library in ('common', 'core', 'gen', 'nuca', 'noc', 'tile'):
+            args += ['-y', str(rtl / library)]
+        args += ['-y', str(rtl), '-y', str(rtl / 'fpga'), '-y', str(rtl / 'board')]
+        args += [str(p) for p in sorted((rtl / 'common').glob('*.v'))]
+        args += [str(tb / 'common/tnca_axi_line_model.v'), str(tb / f'fpga/{top}.v'), str(HERE / 'tnca_core_trace.v')]
+    else:
+        args = [iverilog, '-g2012', '-I', str(rtl / 'common'), '-I', str(rtl / 'noc'),
+                '-s', 'tnca_multicore_device', '-s', 'tnca_core_trace',
+                f'-DTNCA_TRACE_CORES={core_count}',
+                f'-Ptnca_multicore_device.N={core_count}',
+                f'-Ptnca_multicore_device.TOTAL_WORDS={memory_bytes // 8}',
+                f'-Ptnca_multicore_device.PORTS={memory_ports}', '-o', str(target)]
+        args += [f'-Ptnca_multicore_device.{k}={v}' for k, v in sorted(overrides.items())]
+        for library in ('common', 'core', 'gen', 'nuca', 'noc', 'tile'):
+            args += ['-y', str(rtl / library)]
+        args += [str(p) for p in sorted((rtl / 'common').glob('*.v'))]
+        args += [str(rtl / p) for p in ('tnca_top.v', 'tnca_grid_dispatch.v', 'tnca_grid_deadline.v', 'tnca_multicore_shell.v')]
+        args += [str(tb / 'common/tnca_dram_model.v'), str(tb / 'device/tnca_multicore_device.v'),
+                 str(HERE / 'tnca_core_trace.v')]
     (out / 'iverilog.cmd').write_text(' \\\n  '.join(args) + '\n')
     r = subprocess.run(args, capture_output=True, text=True)
     (out / 'iverilog.log').write_text(r.stdout + r.stderr)
@@ -78,7 +100,8 @@ def build_bench(out, *, core_count, memory_bytes, memory_ports, traced_core, ove
     version = subprocess.run([iverilog, '-V'], capture_output=True, text=True).stdout.splitlines()[0]
     return dict(path=str(target), sha256=file_sha(target), compiler=iverilog, compiler_version=version,
                 core_count=core_count, memory_bytes=memory_bytes, memory_ports=memory_ports,
-                traced_core=traced_core, rtl_overrides=overrides)
+                traced_core=traced_core, rtl_overrides=overrides, bench=bench,
+                board=BOARD if bench == 'board' else None)
 
 
 def suite_points(path, tier):
@@ -87,7 +110,7 @@ def suite_points(path, tier):
 
 
 def run_point(point, *, python, bench, out, core_count, memory_ports, timeout, extra_env, warmup=0, timed=1,
-              torch_device='native', active_cores=1):
+              torch_device='native', active_cores=1, bench_kind='device'):
     trace = out / 'traces' / f'{slug(point)}.trace'
     log = out / 'logs' / f'{slug(point)}.log'
     rec = out / 'records' / f'{slug(point)}.jsonl'
@@ -109,9 +132,14 @@ def run_point(point, *, python, bench, out, core_count, memory_ports, timeout, e
     env.update(TRITON_CACHE_DIR=str(work / 'triton_cache'), TRITON_HOME=str(work / 'triton_home'),
                TORCHINDUCTOR_CACHE_DIR=str(work / 'inductor_cache'), TMPDIR=str(work / 'tmp'),
                TNCA_DUMP_DIR=str(work / 'dump'))
-    backend_args = json.dumps(dict(bench=str(bench), core_count=core_count, memory_ports=memory_ports))
+    if bench_kind == 'board':
+        backend = 'fpga-multicore-sim'
+        backend_args = json.dumps(dict(harness=str(bench), core_count=core_count, **BOARD))
+    else:
+        backend = 'sim-multicore'
+        backend_args = json.dumps(dict(bench=str(bench), core_count=core_count, memory_ports=memory_ports))
     cmd = [python, '-m', 'archbench.run', '--platform', 'tnca', '--profile', PROFILE,
-           '--backend', 'sim-multicore', '--backend-args', backend_args, '--opt-level', '2', '--seed', '0',
+           '--backend', backend, '--backend-args', backend_args, '--opt-level', '2', '--seed', '0',
            '--warmup', str(warmup), '--timed', str(timed),
            '--point', point, '--out', str(rec), '--timeout', str(timeout)]
     t0 = time.time()
@@ -149,6 +177,8 @@ def main():
     ap.add_argument('--memory-ports', type=int, default=1)
     ap.add_argument('--memory-bytes', type=int, default=8 * 1024 * 1024)
     ap.add_argument('--active-cores', type=int, default=1, help='TNCA_ACTIVE_CORES: cores the grid runs on')
+    ap.add_argument('--bench', choices=['device', 'board'], default='device',
+                    help='device: tb/device bench on sim-multicore (DRAM model); board: the board-top stand-in (fpga-multicore-sim, AXI outlets)')
     ap.add_argument('--iverilog', default=shutil.which('iverilog'))
     ap.add_argument('--set', action='append', default=[], help='KEY=VALUE in every child environment')
     ap.add_argument('--warmup', type=int, default=0, help='untimed calls after the cold call (as run_graphs.py)')
@@ -175,7 +205,7 @@ def main():
     else:
         bench = build_bench(bench_dir, core_count=args.core_count, memory_bytes=args.memory_bytes,
                             memory_ports=args.memory_ports, traced_core=0,
-                            overrides=overrides, iverilog=args.iverilog)
+                            overrides=overrides, iverilog=args.iverilog, bench=args.bench)
         (bench_dir / 'bench.json').write_text(json.dumps(bench, indent=1) + '\n')
     head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True)
     dirty = subprocess.run(['git', 'status', '--porcelain', '--', 'rtl', 'tb', 'python', 'archbench', 'compiler'],
@@ -196,7 +226,7 @@ def main():
                                core_count=args.core_count, memory_ports=args.memory_ports,
                                timeout=args.timeout, extra_env=extra_env, warmup=args.warmup,
                                timed=args.timed, torch_device=args.torch_device,
-                               active_cores=args.active_cores): p for p in points}
+                               active_cores=args.active_cores, bench_kind=args.bench): p for p in points}
         for fut in cf.as_completed(futures):
             s = fut.result()
             results.append(s)

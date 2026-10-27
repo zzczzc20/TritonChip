@@ -44,3 +44,47 @@ beat's address and direction against the record, issues no earlier than the
 RTL did (the memory system's back-pressure) and answers after the RTL's
 latency. Mismatches are counted in the model's counters
 (`core_N_replay_mismatches`) and never silently absorbed.
+
+## The cycle-level uncore (`uncore_model=1`, second slice)
+
+`tools/performance_harness/systemc/src/cycle_uncore.inc`, selected by the
+configuration key `uncore_model=1` (which requires `core_model=1`), follows
+UNCORE_TIMING.md: the grid dispatcher, the core and slice network
+interfaces, the 3x1 mesh (per-port, per-virtual-network FIFOs, round-robin
+output arbiters, the elastic links), the NUCA slices (request queue, MSHRs,
+targets, response queue, the engine's states), the memory arbiter with its
+hold rule and the bench's DRAM model (its LFSR-driven ready and reorder
+pick, latency 11). It is one SystemC process that steps half a cycle after
+the cores: the cores' requests of cycle t enter the source router's FIFO at
+the edge of t, the responses the uncore delivers at cycle t reach the core
+at t+1.
+
+- **State**: every FIFO, the routers' arbiters, each slice's queues and
+  engine registers, the arbiter's hold, the DRAM pool and LFSR.
+- **One step per cycle**: wires from the pre-edge state (ready chains, the
+  arbitration, the slice engines' choices, the DRAM's ready and the response
+  it presents), then the edge.
+- **Dispatch** (chip.cpp `dispatch`): the RTL's one-enqueue-per-cycle
+  round robin, `rr` the core after the last choice, the block bound to the
+  core at the enqueue, first launch at L+2, a core a candidate again three
+  cycles after its last cycle. Two cores that exit in the same cycle relaunch
+  in consecutive cycles in the RTL's order, which decides which block each
+  core runs next; a model that let both relaunch together diverged on the
+  three-core grids at the first such exit.
+- **Validation path**: `--replay-level uncore` replays the device's memory
+  port (`TNCA_MODEL_UNCORE_REPLAY=<uncore trace>`): the arbiter grants a
+  request no earlier than the RTL's port accepted it (the recorded `X`), the
+  DRAM answers at the recorded `Y`. Everything above the port is the model's
+  own, so every core trace and every uncore stream (slice requests and
+  responses, tile memory requests and responses, the port) is compared
+  whole. With the recorded `X`/`Y` on the simulation bench, the three-core
+  op.add and matmul points align exactly in every stream (2026-10-27).
+- **Prediction path**: the model's own LFSR and pool; the DRAM's ready
+  pattern depends on the absolute cycle, so a prediction's total differs
+  from a recording by the phase of that pattern, not by structure.
+
+Two core-side rules the uncore level made visible (both fixed in the core,
+both invisible under core-level replay because the replayed port hid them):
+the transfer engine's load slot is the pre-edge `free_slot` of the request's
+tag, not one freed by the window write at the same edge; and the dispatcher
+above.

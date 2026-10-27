@@ -256,7 +256,6 @@ struct Outcome {unsigned status=STATUS_OK,code=0;u64 pc=0,retired=0;std::string 
 struct CycleCore;
 struct Core : sc_module {
     std::unique_ptr<CycleCore> cyc;   // core_model=1: the cycle-level core (cycle_core.inc)
-    unsigned launch_order=0;bool launched_once=false;   // the dispatcher's order among active cores (uncore_model=1)
     // Core trace (tools/performance_harness/align/README.md section 2), the
     // validation path's view of this core: TNCA_MODEL_CORE_TRACE names the
     // file, TNCA_MODEL_CORE_TRACE_CORE (default 0) the core. Off otherwise.
@@ -986,21 +985,61 @@ struct Chip : sc_module {
     // argument block at arg_base + core * stride. A fault stops dispatch.
     Outcome dispatch(const Command& cmd){
         u64 groups_x=(u64(cmd.gx)+cmd.group-1)/cmd.group,total=groups_x*cmd.gy*cmd.gz;
-        {unsigned order=0;for(auto& core:cores){core->launch_order=order;core->launched_once=false;if((cmd.core_mask>>core->id)&1)++order;}}
         unsigned x0=0,y0=0,z0=0;u64 issued=0;Outcome first;bool faulted=false;u64 retired=0;
         unsigned live=0;sc_event done;
+        auto next_block=[&](Core* ptr){
+            Launch l=cmd.launch;l.px=x0;l.py=y0;l.pz=z0;l.nx=cmd.gx;l.ny=cmd.gy;l.nz=cmd.gz;l.arg=cmd.launch.arg+ptr->id*cmd.stride;
+            ++issued;
+            if(x0+cmd.group>=cmd.gx){x0=0;if(y0+1==cmd.gy){y0=0;++z0;}else ++y0;}else x0+=cmd.group;
+            return l;};
+        if(uncore){
+            // tnca_grid_dispatch.v [UNCORE 6.2-6.3]: one enqueue per cycle, the first candidate
+            // from `rr` (the core after the last choice) that is active and neither busy nor
+            // pending; the block is bound to the core at the enqueue. The first launch is at
+            // L+2, a core that went idle is a candidate again 3 cycles after its last cycle.
+            const unsigned n=cores.size();
+            std::vector<u64> ready_at(n,0);std::vector<char> busy(n,0),active(n,0);std::vector<Launch> slot(n);
+            std::vector<sc_event> go(n);bool stop=false;
+            for(auto& core:cores){
+                if(!((cmd.core_mask>>core->id)&1))continue;
+                active[core->id]=1;++live;auto* ptr=core.get();
+                sc_spawn([&,ptr](){
+                    for(;;){
+                        wait(go[ptr->id]);if(stop)break;
+                        Outcome o=ptr->program(slot[ptr->id]);retired+=o.retired;
+                        if(o.status!=STATUS_OK && !faulted){faulted=true;first=o;}
+                        ready_at[ptr->id]=x.now()+3;busy[ptr->id]=0;
+                    }
+                    --live;done.notify(SC_ZERO_TIME);
+                });
+            }
+            require(live>0 || total==0,"no active core for the grid");
+            unsigned rr=0;
+            if(total){
+                u64 first_at=start_cycle+2;if(x.now()<first_at)wait(x.cycles(first_at-x.now()));
+                while(issued<total && !faulted){
+                    int choice=-1;
+                    for(unsigned j=0;j<n && choice<0;++j){unsigned c=(rr+j)%n;if(active[c] && !busy[c] && ready_at[c]<=x.now())choice=c;}
+                    if(choice>=0){
+                        auto* ptr=cores[choice].get();slot[choice]=next_block(ptr);busy[choice]=1;rr=(choice+1)%n;
+                        go[choice].notify();   // the launch happens in this cycle
+                    }
+                    wait(x.cycles(1));
+                }
+                for(;;){bool any=false;for(unsigned c=0;c<n;++c)any|=bool(busy[c]);if(!any)break;wait(x.cycles(1));}
+            }
+            stop=true;for(unsigned c=0;c<n;++c)if(active[c])go[c].notify();
+            while(live)wait(done);
+            wait(x.cycles(2));   // done_valid the cycle after the last core's idle cycle [UNCORE 6.3]
+            first.retired=retired;return first;
+        }
         for(auto& core:cores){
             if(!((cmd.core_mask>>core->id)&1))continue;
             ++live;auto* ptr=core.get();
             sc_spawn([&,ptr](){
                 while(issued<total && !faulted){
-                    Launch l=cmd.launch;l.px=x0;l.py=y0;l.pz=z0;l.nx=cmd.gx;l.ny=cmd.gy;l.nz=cmd.gz;l.arg=cmd.launch.arg+ptr->id*cmd.stride;
-                    ++issued;
-                    if(x0+cmd.group>=cmd.gx){x0=0;if(y0+1==cmd.gy){y0=0;++z0;}else ++y0;}else x0+=cmd.group;
-                    if(uncore){ // tnca_grid_dispatch.v [UNCORE 6.3]: first launch at L+2, one core per cycle; a relaunch 3 cycles after the exit's X
-                        u64 first_at=start_cycle+2+ptr->launch_order;if(x.now()<first_at)wait(x.cycles(first_at-x.now()));else if(ptr->launched_once)wait(x.cycles(3));
-                        ptr->launched_once=true;}
-                    else if(!x.functional)wait(x.cycles(x.c.get("dispatch_cycles")+ptr->t_launch));
+                    Launch l=next_block(ptr);
+                    if(!x.functional)wait(x.cycles(x.c.get("dispatch_cycles")+ptr->t_launch));
                     Outcome o=ptr->program(l);retired+=o.retired;
                     if(o.status!=STATUS_OK && !faulted){faulted=true;first=o;}
                 }
@@ -1009,7 +1048,6 @@ struct Chip : sc_module {
         }
         require(live>0 || total==0,"no active core for the grid");
         while(live)wait(done);
-        if(uncore)wait(x.cycles(2));   // done_valid the cycle after the last core's idle cycle [UNCORE 6.3]
         first.retired=retired;return first;
     }
     // Server mode: host transfers since the previous launch and the fixed

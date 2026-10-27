@@ -76,6 +76,7 @@ def main():
     ap.add_argument('--python', default=sys.executable, help='the Torch/Triton interpreter')
     ap.add_argument('--env', action='append', default=[], help='KEY=VALUE for every run (run_graphs.py --env)')
     ap.add_argument('--collect-only', action='store_true')
+    ap.add_argument('--active-cores', type=int, default=1, help='run_graphs.py --active-cores (TNCA_ACTIVE_CORES)')
     ap.add_argument('--replay', help='an RTL recording (record_rtl.py RUN_DIR): every point replays its trace, '
                                      'one run_graphs.py call per point')
     ap.add_argument('--replay-level', choices=['core', 'uncore'], default='core',
@@ -91,7 +92,7 @@ def main():
     def run_graphs(run_out, pts, env):
         cmd = [args.python, str(SYSTEMC / 'run_graphs.py'), '--source-root', str(ROOT), '--binary', args.binary,
                '--config', args.config, '--out', str(run_out), '--jobs', str(args.jobs), '--timeout', str(args.timeout),
-               '--env', 'TNCA_MODEL_CORE_TRACE=1']
+               '--active-cores', str(args.active_cores), '--env', 'TNCA_MODEL_CORE_TRACE=1']
         for kv in list(args.env) + env:
             cmd += ['--env', kv]
         for p in pts:

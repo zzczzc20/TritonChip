@@ -30,7 +30,7 @@ struct ReplayTrace {
                 auto& b=launches.back()[it->second];b.latency=(c-start)-b.cycle;b.answered=true;pending.erase(it);
             }else if(k=="E"){in_launch=false;}
         }
-        require(!launches.empty(),"replay trace has no launches");
+        // an empty trace (a core the RTL never launched) replays nothing: every beat counts as unrecorded
     }
     void start_launch(){if(open){++launch;}open=true;next=0;}
     // The next recorded LSU beat: earliest issue cycle (relative to the launch)
@@ -86,6 +86,9 @@ struct CycleCore {
     CycleMatrix mtx{*this};
     //------------------------------------------------------------ misc
     u64 t=0,launch_cycle=0,last_progress=0;bool launched_any=false;const Launch* cur=nullptr;
+    // Debugging aid: TNCA_MODEL_TXF_DEBUG=core:launch:from:to:path dumps the transfer engine and the
+    // port every cycle of that launch window (cycles relative to the launch) to `path`.
+    u64 launch_n=0;long dbg_core=-1,dbg_launch=-1;u64 dbg_from=0,dbg_to=0;std::ofstream dbg;
     // Diagnostic snapshot of the pre-edge state (the watchdog's message).
     std::string snapshot(const char* wires)const{
         std::ostringstream o;o<<"cycle "<<t<<" (launch+"<<(t-launch_cycle)<<") "<<wires<<"\n";
@@ -131,6 +134,9 @@ struct CycleCore {
         c_hazard=&x.counts[key("stall_hazard")];c_lsu=&x.counts[key("stall_lsu")];c_fpu=&x.counts[key("stall_fpu")];c_mtx=&x.counts[key("stall_mtx")];
         c_txf=&x.counts[key("stall_txf")];c_fence=&x.counts[key("stall_fence")];c_arrive=&x.counts[key("stall_arrive")];c_rsv=&x.counts[key("stall_rsv")];
         c_steal=&x.counts[key("stall_wb_steal")];c_vrf=&x.counts[key("stall_vrf")];c_park=&x.counts[key("context_parks")];
+        if(const char* p=std::getenv("TNCA_MODEL_TXF_DEBUG")){std::string s(p);std::vector<std::string> f;size_t b=0;
+            for(size_t i=0;i<=s.size();++i)if(i==s.size()||s[i]==':'){f.push_back(s.substr(b,i-b));b=i+1;}
+            if(f.size()==5){dbg_core=std::stol(f[0]);dbg_launch=std::stol(f[1]);dbg_from=std::stoull(f[2]);dbg_to=std::stoull(f[3]);if(dbg_core==long(c.id))dbg.open(f[4]);}}
         if(const char* p=std::getenv("TNCA_MODEL_CORE_REPLAY")){const char* which=std::getenv("TNCA_MODEL_CORE_TRACE_CORE");
             const bool all=which && std::string(which)=="all";
             if(*p && (all || unsigned(which && *which?std::strtoul(which,nullptr,10):0)==c.id)){
@@ -597,6 +603,8 @@ struct CycleCore {
         // the engine's register read answered this cycle (port 4), then its edge [4.2]
         for(auto& br:bank_rsp)if(br.valid && br.port==4){txf.sread_response(F(txf.cmd.rctx).physical->read(phys(txf.cmd.rctx,txf.st_vreg()),sc_time_stamp(),txf.owner));}
         txf.edge(efired,eid);
+        if(dbg_core==long(c.id) && dbg_launch+1==long(launch_n) && t-launch_cycle>=dbg_from && t-launch_cycle<=dbg_to){
+            dbg<<(t-launch_cycle)<<" req="<<er.valid<<"/"<<std::hex<<er.addr<<std::dec<<" ready="<<mem_ready<<" fired="<<efired<<" w="<<w_pre_en<<"/"<<w.res.cls<<"/"<<w.res.idx<<" "<<txf.dump()<<"\n";}
         // the command of this cycle's X takes effect now [4.2]: cfg ops at the edge, a transfer or td.load enters its first state
         if(e.txf_cfg){try{txf.config(e.cfg_func,e.cfg_slot,e.cfg_addr,e.cfg_imm);}catch(const ArchFault& ex){Ctx& q=ctx[xb.rctx];q.running=false;q.faulted=true;record(STATUS_FAULT,ex.code,xb.pc,ex.what());}}
         if(e.txf_issue)txf.issue(e.txf_cmd_v);
@@ -685,7 +693,7 @@ struct CycleCore {
     }
     //------------------------------------------------------------ launch [6.1]
     void launch(const Launch& l){
-        t=x.now();launch_cycle=t;last_progress=t;cur=&l;aborting=false;fault=Outcome{};
+        t=x.now();launch_cycle=t;last_progress=t;cur=&l;aborting=false;fault=Outcome{};++launch_n;
         for(unsigned i=0;i<4;++i){Ctx& q=ctx[i];bool on=(l.roles>>i)&1;
             unsigned base=(l.pair?(i&~1U):i)*64;q.f.reset(new Frame(c.vrf,base));
             Frame& f=*q.f;f.pc=l.pc;f.arg=l.arg;f.px=l.px;f.py=l.py;f.pz=l.pz;f.nx=l.nx;f.ny=l.ny;f.nz=l.nz;

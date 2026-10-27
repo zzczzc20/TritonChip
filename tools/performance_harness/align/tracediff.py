@@ -120,7 +120,7 @@ def parse_uncore(path):
     the most recent launch (of any core) and timed relative to it; streams are tuples per
     README section 2b, cycles first."""
     path = Path(path)
-    launches, current = [], None
+    launches, current, previous = [], None, None
     header = end = None
     with path.open() as f:
         for n, line in enumerate(f, 1):
@@ -137,6 +137,7 @@ def parse_uncore(path):
                 if header is None:
                     raise TraceError('record before header')
                 if kind == 'L':
+                    previous = current
                     current = dict(start=int(parts[1]), core=int(parts[2]), pc=int(parts[3], 16),
                                    **{st: [] for st in UNCORE_STREAMS})
                     launches.append(current)
@@ -146,19 +147,23 @@ def parse_uncore(path):
                     continue
                 if current is None:
                     continue
-                cyc = int(parts[1]) - current['start']
+                # A record in the launch's own cycle belongs to the launch before it: the two
+                # writers' order within a cycle (the monitor's always blocks, the model's
+                # processes) is not an observable.
+                target = previous if previous is not None and int(parts[1]) == current['start'] else current
+                cyc = int(parts[1]) - target['start']
                 if kind == 'S':
-                    current['slice_req'].append((cyc, int(parts[2]), int(parts[3]), int(parts[5]), int(parts[6], 16)))
+                    target['slice_req'].append((cyc, int(parts[2]), int(parts[3]), int(parts[5]), int(parts[6], 16)))
                 elif kind == 'R':
-                    current['slice_rsp'].append((cyc, int(parts[2]), int(parts[3])))
+                    target['slice_rsp'].append((cyc, int(parts[2]), int(parts[3])))
                 elif kind == 'M':
-                    current['mem_req'].append((cyc, int(parts[2]), int(parts[3]), int(parts[4], 16)))
+                    target['mem_req'].append((cyc, int(parts[2]), int(parts[3]), int(parts[4], 16)))
                 elif kind == 'D':
-                    current['mem_rsp'].append((cyc, int(parts[2])))
+                    target['mem_rsp'].append((cyc, int(parts[2])))
                 elif kind == 'X':
-                    current['dram_req'].append((cyc, int(parts[2]), int(parts[3], 16), int(parts[4])))
+                    target['dram_req'].append((cyc, int(parts[2]), int(parts[3], 16), int(parts[4])))
                 elif kind == 'Y':
-                    current['dram_rsp'].append((cyc, int(parts[2])))
+                    target['dram_rsp'].append((cyc, int(parts[2])))
                 else:
                     raise TraceError(f'unknown record {kind}')
             except (IndexError, ValueError) as e:
@@ -171,11 +176,17 @@ def parse_uncore(path):
 
 
 def compare_uncore(ta, tb, *, order_only=False, max_report=5):
-    """Pair launches in order; every stream record by record (cycles relative to the launch)."""
+    """Pair launches in order; every stream record by record (cycles relative to the launch).
+    Records of one cycle are compared as a set: the order in which the monitor and the model
+    write the events of several slices or cores in the same cycle is not an observable."""
     la, lb = ta['launches'], tb['launches']
+    for launch in la + lb:
+        for st in UNCORE_STREAMS:
+            launch[st].sort()
     result = dict(launches_a=len(la), launches_b=len(lb), launches=min(len(la), len(lb)), aligned_launches=0,
-                  cycles_a=ta['cycles'], cycles_b=tb['cycles'], divergences=[])
-    streams = {st: 'equal' for st in UNCORE_STREAMS}
+                  cycles_a=ta['cycles'], cycles_b=tb['cycles'], divergences=[])   # no cycle_error: END is each
+    streams = {st: 'equal' for st in UNCORE_STREAMS}                                # side's own clock, the
+                                                                                    # core traces carry the verdict
     for k in range(min(len(la), len(lb))):
         c = {}
         for st in UNCORE_STREAMS:

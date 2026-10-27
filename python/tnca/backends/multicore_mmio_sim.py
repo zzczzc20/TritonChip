@@ -114,6 +114,7 @@ def stand_in(**kwargs):
                             maintenance=kwargs.pop('maintenance', False),
                             memory_controls=kwargs.pop('memory_controls', False),
                             journal=kwargs.pop('journal', False),
+                            harness=kwargs.pop('harness', None),   # a prebuilt bench (an observation build), else _build()
                             host_timeout=kwargs.get('host_timeout', 30.0))
     return MulticoreMMIOBackend(link, core_count=core_count,
                                memory_ports=memory_ports, **kwargs)

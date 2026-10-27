@@ -85,8 +85,9 @@ memory timing and is not compared.
 
 | Tool | Does | Runs where |
 |---|---|---|
-| `tnca_core_trace.v` | the RTL monitor | with the device bench, under Icarus |
-| `record_rtl.py` | builds the bench with the monitor, runs ArchBench points on `sim-multicore` with one active core, keeps one trace per point and the run records | a host with Icarus and the Torch/Triton environment |
+| `tnca_core_trace.v` | the RTL monitor: every core's trace and the uncore trace | with the device bench (`sim-multicore`) or the board-top bench (`fpga-multicore-sim`, `-DTNCA_TRACE_BOARD`), under Icarus |
+| `record_rtl.py` | builds the chosen bench with the monitor, runs ArchBench points on it with `--active-cores` cores, keeps every core's trace, the uncore trace and the run records per point | a host with Icarus and the Torch/Triton environment |
+| `record_model.py` | runs the same points on the model (`run_graphs.py`), predicting or replaying the RTL recording at the core or the uncore level | a host with the model build and the Torch/Triton environment |
 | `tracediff.py` | parses two traces (or two directories of them), pairs launches in order and reports the first divergence of every stream, per launch and per point | anywhere |
 | `tracediff.py gate` | the verdict over a point set: `alignment.json` | anywhere; the harness adapter calls this |
 
@@ -100,12 +101,23 @@ python3 tools/performance_harness/align/record_rtl.py \
 
 One ArchBench child per point, each with its own bench process, so one
 `+core_trace=` file per point. The child is the standard path (`archbench.run
---platform tnca --backend sim-multicore`), with `TNCA_ACTIVE_CORES=1`, the
-monitor compiled into a private copy of the bench (`RUN_DIR/bench/`), and
-`TNCA_DEVICE_PLUSARGS` carrying the trace path. The run records
-(`RUN_DIR/records.jsonl`) keep every point's result and provenance as any
-ArchBench run does; `RUN_DIR/traces/<point>.trace` is the trace;
+--platform tnca --backend sim-multicore`), with `TNCA_ACTIVE_CORES` from
+`--active-cores` (default 1; 3 runs the grids over all three cores as the
+board does), the monitor compiled into a private copy of the bench
+(`RUN_DIR/bench/`), and `TNCA_DEVICE_PLUSARGS` carrying the trace paths
+(`+core_trace=`, one `+core_trace<c>=` per further core, `+uncore_trace=`).
+The run records (`RUN_DIR/records.jsonl`) keep every point's result and
+provenance as any ArchBench run does; `RUN_DIR/traces/<point>.trace`,
+`<point>.core<c>.trace` and `<point>.uncore.trace` are the traces;
 `RUN_DIR/manifest.json` names the bench, its compiler and the source tree.
+
+`--bench board` records the board-top stand-in instead: the bench the
+`fpga-multicore-sim` backend elaborates (`tb/fpga/tnca_multicore_board_regs.v`,
+the U280 image's link and pipeline stages, three AXI outlets through
+`tnca_line_axi`, the bench's AXI line model behind them), built here with the
+monitor as a second top and handed to the backend prebuilt (`harness=`). Its
+uncore trace's `X`/`Y` records are every outlet's adapter request and
+response (the adapter boundary), not the DRAM model's port.
 
 ### 3.1b Recording the model
 
@@ -118,9 +130,20 @@ python3 tools/performance_harness/align/record_model.py --binary BUILD/tnca-chip
 `record_model_container.sh` runs it inside the toolchain image with the host's
 model build mounted; `TNCA_REPLAY_DIR=RUN_RTL` turns on the replay. Without
 `--replay` the model predicts (its own memory system); with it every point's
-model process replays the RTL's recorded LSU beats (CYCLE_CORE.md), which is
-the validation path of the first slice. The configuration
-`r40-board-cycle.cfg` is the M2 board structure with `core_model=1`.
+model process replays the RTL recording at the chosen `--replay-level`:
+
+- `core` (first slice): the core's port replays the recorded LSU beats
+  (`TNCA_MODEL_CORE_REPLAY`, CYCLE_CORE.md); the uncore is not exercised.
+- `uncore` (second slice, needs `uncore_model=1`): the device's memory port
+  replays the recorded `X`/`Y` stream (`TNCA_MODEL_UNCORE_REPLAY`); the
+  cores, the NoC, the slices and the arbiter run at the cycle level and their
+  traces are compared whole.
+
+`--active-cores` must match the recording. Configurations:
+`r40-board-cycle.cfg` is the M2 board structure with `core_model=1`;
+`r40-sim-cycle.cfg` is the simulation bench's structure (4 sets x 2 ways,
+PORTS=1, no link stages) with `core_model=1` and `uncore_model=1`, the one to
+replay the device-bench recordings against.
 
 ### 3.2 Comparing
 
@@ -163,10 +186,19 @@ validation points, and hands the agent the `aggregates` only. The `points`
 map names points and is for the evaluator's record, as `certification.json`
 is. Point names never reach the agent through this file.
 
-## 5. Scope of the first slice (decided 2026-10-26)
+## 5. Scope (decided 2026-10-26 and 2026-10-27)
 
-One core. The model's core runs execute/commit cycle by cycle; the memory
-interface is replayed from the RTL's trace in the validation path. The NUCA,
-the NoC and the HBM path are the second slice; until then their effect enters
-the core only through the replayed response latencies. The base is the PR #10
-merge, `3e1a282` (three cores, NUCA, HBM, the U280 at 90 MHz).
+**First slice:** one core. The model's core runs execute/commit cycle by
+cycle; the memory interface is replayed from the RTL's trace in the
+validation path. The base is the PR #10 merge, `3e1a282` (three cores,
+NUCA, HBM, the U280 at 90 MHz).
+
+**Second slice:** the uncore, switchable (`uncore_model=1`, on in the
+evaluation configurations because the agent's candidates are judged with
+the uncore's effect): the grid dispatcher, the core and slice network
+interfaces, the mesh, the NUCA slices, the memory arbiter and the DRAM
+model at the cycle level (UNCORE_TIMING.md), validated by replaying the
+device port. The board configuration (link stages, three outlets, the AXI
+adapters) is the same model with the board's parameters, validated against
+the board-top bench's recording at the adapter boundary
+(UNCORE_TIMING_BOARD.md).

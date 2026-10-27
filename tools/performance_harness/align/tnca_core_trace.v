@@ -15,8 +15,20 @@
 `ifndef TNCA_TRACE_CORES
 `define TNCA_TRACE_CORES 3
 `endif
+// The device bench (default) or the board-top bench (-DTNCA_TRACE_BOARD):
+//   device: tb/device/tnca_multicore_device.v, the shell's memory port is the DRAM model's
+//   board:  tb/fpga/tnca_multicore_board_regs.v, the device port is each AXI adapter's request/response
+`ifdef TNCA_TRACE_BOARD
+`define TNCA_SYS tnca_multicore_board_regs.dut.device.system.shell.u_system
+`define TNCA_ADAPTER(p) tnca_multicore_board_regs.dut.device.system.g_outlet[p].adapter
+`else
 `define TNCA_DEV tnca_multicore_device
-`define TNCA_TILE(c) tnca_multicore_device.dut.u_system.g_tile[c].u_tile
+`define TNCA_SYS tnca_multicore_device.dut.u_system
+`endif
+`define TNCA_TILE(c) `TNCA_SYS.g_tile[c].u_tile
+`ifndef TNCA_TRACE_PORTS
+`define TNCA_TRACE_PORTS 3
+`endif
 
 module tnca_core_trace;
     integer cycle = 0;        // posedges with rst_n high; the first such edge is 0
@@ -116,8 +128,23 @@ module tnca_core_trace;
         end
     end endgenerate
 
-    // The device's memory port (PORTS=1): the outlet to the DRAM model, where
-    // the validation replays responses.
+    // The device's memory port, where the validation replays responses:
+    // the DRAM model's port (device bench, PORTS=1) or every AXI adapter's
+    // request/response (board bench).
+`ifdef TNCA_TRACE_BOARD
+    genvar p;
+    generate for (p = 0; p < `TNCA_TRACE_PORTS; p = p + 1) begin : g_port
+        always @(posedge clk) begin
+            if (rst_n && ufile && (|launch_bits)) begin
+                if (`TNCA_ADAPTER(p).req_valid && `TNCA_ADAPTER(p).req_ready)
+                    $fdisplay(ufile, "X %0d %0d %016h %0d %0d", cycle, `TNCA_ADAPTER(p).req_we, `TNCA_ADAPTER(p).req_addr,
+                              `TNCA_ADAPTER(p).req_src, `TNCA_ADAPTER(p).req_tag);
+                if (`TNCA_ADAPTER(p).rsp_valid)
+                    $fdisplay(ufile, "Y %0d %0d %0d", cycle, `TNCA_ADAPTER(p).rsp_src, `TNCA_ADAPTER(p).rsp_tag);
+            end
+        end
+    end endgenerate
+`else
     always @(posedge clk) begin
         if (rst_n && ufile && (|launch_bits)) begin
             if (`TNCA_DEV.mr && `TNCA_DEV.mready)
@@ -126,6 +153,7 @@ module tnca_core_trace;
                 $fdisplay(ufile, "Y %0d %0d %0d", cycle, `TNCA_DEV.mrs, `TNCA_DEV.mrt);
         end
     end
+`endif
     // The cycle counter advances between edges, so every posedge block above
     // (they run in no fixed order) sees the same value at an edge.
     always @(negedge clk) if (rst_n) cycle = cycle + 1;

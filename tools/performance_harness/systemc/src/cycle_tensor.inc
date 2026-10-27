@@ -97,6 +97,9 @@ struct CycleTensor {
         return CycleCore::Target{};}
     bool have_slot(unsigned& free)const{for(unsigned i=0;i<NSLOT;++i)if(!sl[i].v){free=i;return true;}return false;}
     bool have_tag(unsigned& free)const{for(unsigned i=0;i<NTAG;++i)if(!tg[i].v){free=i;return true;}return false;}
+    std::string dump()const{std::ostringstream o;o<<"st="<<st<<" unit="<<t_unit<<" half="<<t_half<<" vw_en="<<vw_en<<" vw_idx="<<vw_idx<<" hold="<<vw_hold()<<" slots:";
+        for(unsigned i=0;i<NSLOT;++i){const Slot& s=sl[i];if(s.v)o<<" ["<<i<<" lo="<<s.nlo<<"/"<<s.glo<<"@"<<s.rsp_lo<<" hi="<<s.nhi<<"/"<<s.ghi<<"@"<<s.rsp_hi<<"]";}
+        o<<" tags:";for(unsigned i=0;i<NTAG;++i)if(tg[i].v)o<<" "<<i<<"@"<<tg[i].rsp;return o.str();}
     bool have_done(unsigned& done)const{for(unsigned i=0;i<NSLOT;++i){const Slot& s=sl[i];if(s.v && (s.glo||!s.nlo) && (s.ghi||!s.nhi)){done=i;return true;}}return false;}
     bool vw_hold()const{  // the presented window write loses to the WB stage on a same-bank cycle
         if(!vw_en){return false;}
@@ -130,6 +133,9 @@ struct CycleTensor {
         const u64 t=k.t;
         // sl_done / have_done are combinational from the registered glo/ghi: evaluated before this edge's responses
         unsigned done_slot=0;const bool had_done=have_done(done_slot);
+        // the load slot a request of this cycle takes is the pre-edge `free_slot` (tnca_tensor.v 599, 1044):
+        // it is the slot in the request's tag, not one freed by the window write at this same edge
+        unsigned fs_pre=0;have_slot(fs_pre);
         // responses this cycle
         for(auto& s:sl){if(!s.v){continue;}if(s.nlo && !s.glo && s.rsp_lo && s.rsp_lo==t){s.glo=true;}if(s.nhi && !s.ghi && s.rsp_hi && s.rsp_hi==t){s.ghi=true;}}
         bool rsp_now=false;
@@ -182,7 +188,7 @@ struct CycleTensor {
                     unsigned off=t_flat+t_unit*8;vw_en=true;vw_idx=base+off/64;unsigned lane=(off%64)/4;vw_mask=3U<<lane;vw_data={};
                     u64 fw=fillword();vw_data[lane]=std::uint32_t(fw);vw_data[lane+1]=std::uint32_t(fw>>32);adv=true;}
             }else if(fired){
-                if(!t_half){have_slot(fs);Slot& s=sl[fs];s=Slot{};s.v=true;s.nlo=p.nlo;s.nhi=p.nhi;s.keep=p.keep;s.m=r_m;
+                if(!t_half){fs=fs_pre;Slot& s=sl[fs];s=Slot{};s.v=true;s.nlo=p.nlo;s.nhi=p.nhi;s.keep=p.keep;s.m=r_m;
                     unsigned off=t_flat+t_unit*8;s.vreg=base+off/64;s.lane=(off%64)/4;t_slot=fs;
                     s.rsp_lo=s.rsp_hi=0;
                 }

@@ -4,7 +4,7 @@ import os
 
 from ..errors import ArgumentError, DeviceLost, DependencyFailed
 from ..hbm_layout import (StripedHBMLayout, STRIPED_CAP, STRIPED_REGISTER,
-                          STRIPED_SIGNATURE, STRIPED_BYTES, DEVICE_RESERVED_RANGES)
+                          STRIPED_SIGNATURE, STRIPED_BYTES)
 from .u50 import U50Backend, XDMALink, IP_NAME, DEFAULT_WORDS, _xclbin_bank
 
 OP_CACHE_HANDOFF = 18
@@ -18,7 +18,7 @@ class MulticoreMMIOBackend(U50Backend):
     name = 'fpga-u280-multicore'
 
     def __init__(self, link, *, core_count=3, memory_ports=3,
-                 hbm_dma=False, active_memory_ports=None, outstanding=None, stream_ip_name=None, **kwargs):
+                 hbm_dma=False, active_memory_ports=None, outstanding=None, **kwargs):
         self.core_count = operator.index(core_count)
         self.memory_ports = operator.index(memory_ports)
         if not (1 <= self.memory_ports <= min(3, self.core_count) and self.core_count <= 16):
@@ -28,11 +28,6 @@ class MulticoreMMIOBackend(U50Backend):
         self._requested_outstanding = (outstanding if outstanding is not None
                                       else os.environ.get('TNCA_RTL_OUTSTANDING'))
         self._memory_config = None
-        if stream_ip_name is not None and (not isinstance(stream_ip_name, str) or not stream_ip_name):
-            raise ArgumentError('stream_ip_name must name a CU or be None')
-        self._stream_ip_name = stream_ip_name
-        self._stream = None
-        self._stream_failed = False
         kwargs['image_profile'] = kwargs.get('image_profile') or 'core-vrf-sync-v5'
         kwargs.setdefault('device_clock', True)
         super().__init__(link, hbm_dma=hbm_dma, **kwargs)
@@ -80,8 +75,6 @@ class MulticoreMMIOBackend(U50Backend):
 
     def start(self):
         self._memory_config = None
-        self._stream = None
-        self._stream_failed = False
         try:
             super().start()
             if self.hbm_dma and not getattr(self, '_ownership_cap', False):
@@ -101,55 +94,10 @@ class MulticoreMMIOBackend(U50Backend):
                 self.configure_memory(
                     active_ports=config['physical_ports'] if self._requested_ports is None else self._requested_ports,
                     outstanding=config['maximum_outstanding'] if self._requested_outstanding is None else self._requested_outstanding)
-            if self._stream_ip_name is not None:
-                from .hbm_stream import StreamController
-                if not getattr(self, '_ownership_cap', False) or (self.axi_window or {}).get('layout') != StripedHBMLayout.name:
-                    raise ArgumentError('stream CU requires verified striped HBM and ownership handoff')
-                peer = self.link.open_stream(self._stream_ip_name)
-                self._stream = StreamController(peer, timeout=self.host_timeout, poll_interval=self.poll_interval)
             return self
         except BaseException:
             self.stop()
             raise
-
-    @property
-    def stream_available(self):
-        return getattr(self, '_stream', None) is not None and not self._stream_failed and not self._stream.failed
-
-    def alive(self):
-        return not getattr(self, '_stream_failed', False) and super().alive()
-
-    def stream_operation(self, mode, source, destination, nbytes, *, pattern=0):
-        from .hbm_stream import descriptors, integer
-        mode, source, destination, nbytes = map(integer,(mode,source,destination,nbytes))
-        pattern = integer(pattern)
-        if not 0 <= pattern < 1 << 32:
-            raise ArgumentError('stream fill pattern must fit uint32')
-        with self._io_lock:
-            if not self.stream_available:
-                raise ArgumentError('no verified stream CU is enabled')
-            local = self.local_limit
-            # Validate every range before ownership changes or CU writes.
-            plan = descriptors(mode,source-local if mode!=1 else 0,
-                               destination-local if mode!=2 else 0,nbytes)
-            del plan
-            for address in ((source,destination) if mode==0 else (destination,) if mode==1 else (source,)):
-                if any(address<hi and address+nbytes>lo for lo,hi in DEVICE_RESERVED_RANGES):
-                    raise ArgumentError('stream range overlaps reserved device registers')
-            if self.link.read_reg(0x48):
-                raise ArgumentError('stream operation requires a drained core CU')
-            if (self.link.read_reg(0xa8),self.link.read_reg(0xb0)) != (0,STRIPED_BYTES):
-                raise DeviceLost('core HBM aperture changed before stream admission')
-            def handoff(offset,size):
-                self._handoff(local+offset,size)
-            try:
-                reply = self.request(4)  # physical drain, under the shared IO lock
-                if not reply.ok:raise DeviceLost('core drain refused before stream admission')
-                return self._stream.execute(mode,source-local if mode!=1 else 0,
-                    destination-local if mode!=2 else 0,nbytes,pattern=pattern,handoff=handoff)
-            except DeviceLost:
-                self._stream_failed = True
-                raise
 
     def capabilities(self):
         out = super().capabilities()
@@ -159,8 +107,7 @@ class MulticoreMMIOBackend(U50Backend):
                    reaches='rtl/fpga/tnca_multicore_fpga.v',
                    protocol='r2_transport_v1 + r40 physical-grid extension, MMIO v2',
                    coherent_host_window=True, hbm_dma=self.hbm_dma and getattr(self, '_ownership_cap', False),
-                   cache_ownership_handoff=getattr(self, '_ownership_cap', False),
-                   stream_engine=self.stream_available)
+                   cache_ownership_handoff=getattr(self, '_ownership_cap', False))
         return out
 
     def memory_configuration(self):
@@ -232,13 +179,6 @@ class MulticoreMMIOBackend(U50Backend):
 
 class MulticoreXDMALink(XDMALink):
     """The platform's three argument aliases require one reachable BO group."""
-    def open_stream(self, ip_name):
-        if not isinstance(getattr(self, 'hbm_layout', None), StripedHBMLayout):
-            raise DependencyFailed('stream peer requires verified striped allocation')
-        if self._accessor is None or not hasattr(self._accessor, 'open_peer'):
-            raise DependencyFailed('this register accessor cannot open a peer CU')
-        return self._accessor.open_peer(ip_name)
-
     def hbm_open(self, nbytes):
         if self._accessor is None or not hasattr(self._accessor, 'bo_open'):
             return None

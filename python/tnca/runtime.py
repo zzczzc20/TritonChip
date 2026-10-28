@@ -36,7 +36,6 @@ import json
 import os
 import operator
 import struct
-import sys
 import threading
 import time
 from contextlib import contextmanager
@@ -56,7 +55,7 @@ DEFAULT_ALIGN = 64
 # All shipped NUCA images decode this 4 KiB page before external memory.
 # A host DMA can write its backing BO, but a core load reads TMU registers.
 # Keep the hole even when the allocated HBM window extends beyond 2 GiB.
-from .hbm_layout import DEVICE_RESERVED_RANGES
+DEVICE_RESERVED_RANGES = ((0x7fff0000, 0x7fff1000),)
 
 # States
 SUBMITTED, VALIDATED, QUEUED = 'SUBMITTED', 'VALIDATED', 'QUEUED'
@@ -516,104 +515,12 @@ class Session:
     def allocate(self, nbytes, *, name=None):
         self._check_usable()
         with self._lock:
-            alignment = (1 << 17) if nbytes >= (1 << 20) and getattr(self.dev, 'stream_available', False) else DEFAULT_ALIGN
-            addr, size = (self._heap.alloc(nbytes,align=alignment) if alignment!=DEFAULT_ALIGN else self._heap.alloc(nbytes))
+            addr, size = self._heap.alloc(nbytes)
             self._next_buffer += 1
             buf = Buffer(self._next_buffer, addr, nbytes, self.id,
                          self.epoch, name, reserved=size)
             self._buffers[buf.id] = buf
             return buf
-
-    def try_stream_copy(self, source, destination, nbytes, *, source_offset=0, destination_offset=0):
-        """Use the synchronous stream path when eligible; otherwise leave memory untouched."""
-        self._check_usable()
-        with self._lock:
-            if not getattr(self.dev, 'stream_available', False) or self.unfinished:
-                return False
-            from .backends.hbm_stream import integer
-            self._validate_buffer(source,why='stream copy')
-            self._validate_buffer(destination,why='stream copy')
-            nbytes, source_offset, destination_offset = map(integer,(nbytes,source_offset,destination_offset))
-            src, dst = source.addr+source_offset, destination.addr+destination_offset
-            if nbytes<=0 or (src|dst|nbytes)&63 or (src-dst) % (1<<17) or max(src,dst)<min(src+nbytes,dst+nbytes):
-                return False
-            self.stream_copy(source,destination,nbytes,source_offset=source_offset,destination_offset=destination_offset)
-            return True
-
-    def stream_copy(self, source, destination, nbytes, *, source_offset=0, destination_offset=0):
-        return self._stream_work(0,source,destination,nbytes,source_offset,destination_offset)
-
-    def stream_fill(self, destination, pattern, nbytes=None, *, offset=0):
-        return self._stream_work(1,None,destination,destination.size-offset if nbytes is None else nbytes,0,offset,pattern)
-
-    def stream_reduce_u32(self, source, nbytes=None, *, offset=0):
-        return self._stream_work(2,source,None,source.size-offset if nbytes is None else nbytes,offset,0)
-
-    def _stream_work(self, mode, source, destination, nbytes, source_offset, destination_offset, pattern=0):
-        from .backends.hbm_stream import integer, descriptors
-        self._check_usable()
-        with self._lock:
-            capture = sys.modules.get('tnca.torch_device.graph')
-            if capture is not None and capture.active_capture() is not None:
-                raise CapabilityError('stream APIs require execution outside graph capture')
-            if self.unfinished:
-                raise SessionBusy('synchronous stream work requires a drained session')
-            if not getattr(self.dev, 'stream_available', False):
-                raise CapabilityError('this device has no verified stream engine')
-            nbytes, source_offset, destination_offset, pattern = map(integer,(nbytes,source_offset,destination_offset,pattern))
-            if not 0 <= pattern < 1 << 32:
-                raise ArgumentError('stream fill pattern must fit uint32')
-            for buf,offset in ((source,source_offset),(destination,destination_offset)):
-                if buf is None:continue
-                self._validate_buffer(buf,why='stream operation')
-                if offset<0 or nbytes<=0 or offset>buf.size or nbytes>buf.size-offset:
-                    raise BufferError('stream range exceeds its buffer')
-            if source is not None and not source.valid:
-                raise BufferError('stream source was written by a failed task')
-            if destination is not None and not destination.valid and (destination_offset or nbytes!=destination.size):
-                raise BufferError('a partial stream write cannot restore an invalid buffer')
-            src = source.addr+source_offset if source else 0
-            dst = destination.addr+destination_offset if destination else 0
-            local = self.dev.local_limit
-            descriptors(mode,src-local if source else 0,dst-local if destination else 0,nbytes)
-            if any(addr<hi and addr+nbytes>lo for addr in ([src] if source else [])+([dst] if destination else [])
-                   for lo,hi in DEVICE_RESERVED_RANGES):
-                raise ArgumentError('stream range overlaps reserved device registers')
-            self._next_job += 1
-            event = Event(self._next_job,self.epoch,('stream.copy','stream.fill','stream.sum_u32')[mode])
-            self._events[event.job_id] = event
-            event.stream_id = 0
-            native = sys.modules.get('tnca.torch_device')
-            if native is not None and getattr(native,'_registered',False):
-                event.stream_id = native._DeviceModule.current_stream().stream_id
-            event._to(VALIDATED);event._to(QUEUED);event._to(RUNNING)
-            started = time.perf_counter()
-            try:
-                result = self.dev.stream_operation(mode,src,
-                    dst,nbytes,pattern=pattern)
-                event.device_cycles = result['cycles']
-                event.program_cycles = None
-                event.device_timing = None  # Duration is available; no absolute timestamp is reported.
-                event.stream_result = result
-            except BaseException as error:
-                self.poisoned = True
-                if destination is not None:destination.valid = False
-                failure = error if isinstance(error,TncaError) else DeviceLost('stream operation failed',detail={'error':str(error)})
-                event._to(FAILING,failure);event._to(FAILED,failure)
-                raise
-            event._to(DRAINING);event._to(SUCCEEDED)
-            if destination is not None:destination.valid = True
-            self.last_stream_result = result
-            driver = sys.modules.get('tnca.triton_backend.driver')
-            if driver is not None:
-                entry = dict(kernel=event.kernel,operation_kind='hbm-stream',grid=(1,1,1),
-                    profile=self.profile,backend=self.backend_name,stream_id=event.stream_id,
-                    artifact=None,artifact_path=None,upload_bytes=0,download_bytes=0,
-                    device_cycles=event.device_cycles,program_cycles=[],device_timing=None,
-                    counters=None,stream=result,
-                    host_seconds=dict(upload=0.,run=time.perf_counter()-started,download=0.))
-                for log in driver._active_logs():log.append(dict(entry))
-            return result
 
     def _validate_buffer(self, buf, *, why):
         if not isinstance(buf, Buffer):

@@ -1,5 +1,8 @@
 # Handoff to the Kimi Code session: Stage 1 closeout, then evidence-backed acceptance items
 
+> **Binding:** [`doc/engineering_discipline.md`](../../../doc/engineering_discipline.md) (evidence integrity, the standard path, no special-casing, no constructive exceptions, no test poisoning) applies to all work and takes precedence over this file.
+
+
 You are a new session. Read this file, then `evidence/r41/SERVERS.md` (how to reach the three servers and the rules for the shared U280 card), and then `evidence/r41/acceptance/HANDOFF.md`, `evidence/r41/acceptance/STATUS.md` and `evidence/r41/acceptance/closure_plan.md`. The contract is `doc/r41_tasks_and_acceptance.md`.
 
 ## Project in one paragraph

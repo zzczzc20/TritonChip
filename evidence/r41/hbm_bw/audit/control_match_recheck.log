@@ -1,0 +1,32 @@
+# Audit F13 control re-check, 2026-10-28T08:07:49Z, tool tools/r41/compare_torch_rtl.py sha256 8a3c5af6199a6e1833527de6dbdac42e94d5edd489e7e4cf8cd3efbb9ce7df50
+# cwd evidence/r41/hbm_bw/hybrid_lsu/coupled
+$ python3 tools/r41/compare_torch_rtl.py --baseline torch_fp16_16384_legacy16.log --candidate torch_fp16_16384_hybrid128.log --out /dev/null 
+ValueError: unmatched control settings: max_block, sfu_lanes
+exit=1
+$ python3 tools/r41/compare_torch_rtl.py --baseline torch_fp16_16384_legacy16.log --candidate torch_fp16_16384_hybrid128.log --out /dev/null --allow-unmatched
+UNMATCHED add: 72568 -> 20556 RTL cycles, 3.530x
+UNMATCHED mul: 72627 -> 20046 RTL cycles, 3.623x
+UNMATCHED silu: 69016 -> 27509 RTL cycles, 2.509x
+UNMATCHED gelu: 136492 -> 71917 RTL cycles, 1.898x
+UNMATCHED copy: 50697 -> 12215 RTL cycles, 4.150x
+exit=0
+$ python3 tools/r41/compare_torch_rtl.py --baseline torch_fp16_16384_legacy16.log --candidate torch_fp16_16384_hybrid16_chain.log --out /dev/null 
+ValueError: unmatched control settings: sfu_lanes
+exit=1
+$ python3 tools/r41/compare_torch_rtl.py --baseline torch_fp16_16384_legacy16.log --candidate torch_fp16_16384_hybrid16_chain.log --out /dev/null --allow-unmatched
+UNMATCHED add: 72568 -> 41163 RTL cycles, 1.763x
+UNMATCHED mul: 72627 -> 41082 RTL cycles, 1.768x
+UNMATCHED silu: 69016 -> 56042 RTL cycles, 1.232x
+UNMATCHED gelu: 136492 -> 128815 RTL cycles, 1.060x
+UNMATCHED copy: 50697 -> 32855 RTL cycles, 1.543x
+exit=0
+$ python3 tools/r41/compare_torch_rtl.py --baseline torch_fp16_16384_legacy128.log --candidate torch_fp16_16384_hybrid128.log --out /dev/null 
+ValueError: unmatched control settings: sfu_lanes
+exit=1
+$ python3 tools/r41/compare_torch_rtl.py --baseline torch_fp16_16384_legacy128.log --candidate torch_fp16_16384_hybrid128.log --out /dev/null --allow-unmatched
+UNMATCHED add: 49991 -> 20556 RTL cycles, 2.432x
+UNMATCHED mul: 50195 -> 20046 RTL cycles, 2.504x
+UNMATCHED silu: 56336 -> 27509 RTL cycles, 2.048x
+UNMATCHED gelu: 85212 -> 71917 RTL cycles, 1.185x
+UNMATCHED copy: 33658 -> 12215 RTL cycles, 2.755x
+exit=0

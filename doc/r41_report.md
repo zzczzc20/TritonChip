@@ -7,8 +7,15 @@ Required criteria. R40 remains `closed-with-failures`; its history is unchanged.
 
 ## Delivery update: P8 FPGA-host FP8
 
-P8 is closed from the lead's completed runs at `86a3d929cf3d_fp8`, retrieved
+P8 is closed from the completed runs at `86a3d929cf3d_fp8`, retrieved
 read-only and independently checked by `evidence/r41/acceptance/p8/closeout.py`.
+*Attribution corrected 2026-10-28 (see "Rectification" below):* these runs
+were made by an agy/Gemini session (commit 63acb94) that the lead launched on
+the author's instruction of 2026-10-26; they are not the lead's own runs.
+They depend on a `.pth` that sets `torch.version.cuda` on a CPU-only torch, a
+non-default environment, so P8 is a recorded deviation: its correctness
+results stand against their references, but it is not a standard-path
+default result.
 Hub cases pass 35/35; layer linears pass 14/14 against device-order references;
 two-layer prefill plus four decode steps pass, with zero recompilations and
 zero host transfer calls in steady state. The isolated environment sees the
@@ -221,7 +228,9 @@ until the lead supplies the physical comparison; no acceptance count changes.
 
 ## P2/P4 physical-board closeout — 2026-10-28
 
-The lead's completed `7b10e7b` queue on the approved 100 MHz image was retrieved
+The lead's completed `7b10e7b` queue (launched by the lead through
+`~/r41_p2p4_launch2.sh`; records in `evidence/r41/acceptance/launch_records/`)
+on the approved 100 MHz image was retrieved
 read-only and validated by `board_p2p4_closeout.py`. Every declared source hash
 matches that commit, and all five steps retain matching image UUIDs, 100 MHz
 probes and zero-step exit records. The locality step took

@@ -782,3 +782,11 @@ This section implements the lead's decisions on the `r41` findings R1–R18 of `
 - **`s2-p2-pipeline` (8b62527).** Every arm, the baseline included, forces `TNCA_SCHEDULE=0`, `TNCA_WINDOW_REUSE=0` and `TNCA_IEEE_DIV=1`. Its results are a non-default configuration study and do not count as default standard-path results (§2.2.1). The earlier report line "make compiler passed with 53 Python tests" is wrong: 157 tests ran, 53 were skipped, and the IR suite was skipped.
 - **`spec/r41/chat/s2-qwen-chat.json` (ac1458e, d7ad625, 7d805ae).** It sets `TNCA_IEEE_DIV=1` and `TNCA_TORCH_DEVICE=native`, selects the portable `core-vrf-sync-v5` profile on the X8 image, and runs under `~/r41s2_fp8env/bin/python`, whose `.pth` sets `torch.version.cuda` (the P8 deviation). Board tokens/s or correctness from it, including the 51aef19 queue now running, do not count as default standard-path results.
 - Neither manifest is changed; both are already staged. The notes are in the S2-03.B and S2-04.B.core rows.
+
+### Non-regression gate (R16, R17; audit §"For the lead")
+Run on GB10 on 2026-10-28 for the merge e4770b6 and the stream removal; full record in `gate_after_rectification/README.md`, raw logs in `gate_after_rectification/gate-logs.tgz`.
+- `default_change_audit.py`: 113 of 113 original points unchanged against the pre-merge base e6b613d (and against the r41s1 control). This also records the default-change audit for R16 (`TNCA_SINGLE_ROLE_PIPELINE`, default 0) and R17 (`TNCA_BACKEND_ARGS` precedence).
+- `make compiler` (strict): 157 unit tests with no skips, 6 IR files pass.
+- RTL regressions (core suites, multicore, `r41-xpose8-rtl`, `lsu-reqreg`, `fma-deep`, `lint`, `r40-*`, board-top MMIO): all pass on head and base, with identical result lines and cycle counts except new added cases and one lane whose counts vary run to run on both trees.
+- FMA miter against the pre-F03 generated FMA: 210,000,000 vectors × 2 latencies, 0 mismatches.
+- Stream-removal unit tests: two stale fixtures (the hbm8 accessor stand-in after 6e4bebf; the large-grid Session fixture since f5ff452) and the stale `SERVERS.md` evidence hash were fixed generically; pre-existing failures (`r36` yosys elaboration, `r2` NOT RUN cases) remain on both trees.

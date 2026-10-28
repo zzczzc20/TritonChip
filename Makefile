@@ -757,6 +757,26 @@ nuca: | dirs
 	   done; \
 	 done
 
+# R41 G2: NUCA_SHARED_DATA_READ (one read address for the line array) against
+# the delivered build, in lockstep: every output, every cycle, image slice
+# parameters, with and without the cache data pipeline, two DCO policies.
+SHARED_READ_SEEDS ?= 1 7 42
+SHARED_READ_CYCLES ?= 200000
+.PHONY: nuca-shared-read
+nuca-shared-read: | dirs
+	@for cfg in "1 0" "1 46" "0 0" "0 46"; do \
+	   set -- $$cfg; \
+	   $(IVERILOG) -g2012 $(IVFLAGS) -I $(RTL)/common -y $(RTL)/common \
+	     -P tb_nuca_shared_read.CACHE_DATA_PIPELINE=$$1 -P tb_nuca_shared_read.POLICY=$$2 \
+	     -o $(BUILD)/tb_nuca_shared_read_$$1_$$2.vvp $(TB)/nuca/tb_nuca_shared_read.v \
+	     $(RTL)/nuca/tnca_nuca_slice.v $(TB)/common/tnca_dram_model.v || exit 1; \
+	   for sd in $(SHARED_READ_SEEDS); do \
+	     $(TOOLS)/run_test.sh "NUCA-SHARED-READ-pipe$$1-policy$$2-seed$$sd" \
+	       "$(VVP) $(BUILD)/tb_nuca_shared_read_$$1_$$2.vvp +seed=$$sd +cycles=$(SHARED_READ_CYCLES)" \
+	       || exit 1; \
+	   done; \
+	 done
+
 # The same randomised check under DCO's policies (doc/DCO.pdf; the POLICY
 # register of rtl/nuca/tnca_tmu.v). The bench drives a bypassed tensor, a
 # dead-tile FIFO that keeps changing and a flipping slow-core flag; whatever

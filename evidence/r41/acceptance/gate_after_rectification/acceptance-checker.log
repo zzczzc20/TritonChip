@@ -1,0 +1,144 @@
+# 2026-10-28T12:13:28Z rerun after merging origin/r41 68a56fa
+$ make r41-stage2-acceptance PYTHON=python3
+{
+  "scope": "Rectified 2026-10-28 against doc/engineering_discipline.md and the discipline audit (evidence/r41/hbm_bw/AUDIT.md, R1-R18): unsourced attributions corrected, post-hoc tolerance and check changes withdrawn, locality-control results quarantined, domains labelled; historical failures and persistent full-model gaps remain.",
+  "integrity": "passed",
+  "status": "not accepted",
+  "counts": {
+    "passed": 38,
+    "failed": 2,
+    "not measured": 47,
+    "blocked": 7
+  },
+  "errors": [],
+  "review_only_evidence": [
+    "rtl/core/tnca_core.v"
+  ],
+  "followups": [
+    {
+      "id": "P8.fp8_hub",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "35/35 Hub/compile/FP8Linear cases pass numerically on the approved run-1 image. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/environment.json",
+        "evidence/r41/acceptance/p8/board-records.tgz",
+        "evidence/r41/stage2/board/fp8_env_and_hub_runs.md"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P8.qwen_fp8",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from the required full BF16 model. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/board-records.tgz"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P3.chat_vl_full",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "Board, run-1 image (UUID 49964b17, 100 MHz before and after): full-checkpoint Qwen3-VL-2B-Instruct-FP8 (28 layers) generated 4 tokens through tools/models/chat.py from staged source 51aef19; both teacher-forced tokens match the CPU W8A8 argmax with relative L2 0.03492688958696281 and 0.03500718871823851, below the fixed 0.05 gate; steady decode 0.015720705662231143 tokens/s with no new graphs or host reads. Deviations from default standard-path settings, so not a default result (doc/engineering_discipline.md 2.2.1): the manifest sets TNCA_IEEE_DIV=1 and TNCA_TORCH_DEVICE=native, compiles for core-vrf-sync-v5 on the X8 image, and runs under r41s2_fp8env, whose .pth sets torch.version.cuda (the P8 deviation). Scope: FP8 VL text chat, not the required BF16 Qwen3.5-2B workload.",
+      "evidence": [
+        "evidence/r41/chat/board-51aef19.tgz",
+        "evidence/r41/chat/board-51aef19-summary.json"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P3.chat_q35_full",
+      "status": "failed",
+      "classification": "Supplementary",
+      "reason": "Board queue 51aef19: the Qwen3.5-4B-FP8 step failed in 20 s before loading, because the pinned checkpoint was not in acf3019's input cache. The failure is preserved. The checkpoint has since been staged and verified (evidence/r41/chat/staged-inputs-qwen35-acf3019.json); s2-qwen-chat-v2 registers the rerun. No Qwen3.5 board generation exists.",
+      "evidence": [
+        "evidence/r41/chat/board-51aef19.tgz",
+        "evidence/r41/chat/board-51aef19-summary.json",
+        "evidence/r41/chat/staged-inputs-qwen35-acf3019.json",
+        "spec/r41/chat/s2-qwen-chat-v2.json"
+      ],
+      "closure_plan": "P3"
+    }
+  ]
+}
+make: *** [Makefile:2351: r41-stage2-acceptance] Error 1
+exit 2
+$ make r41-acceptance PYTHON=python3
+{
+  "scope": "Rectified 2026-10-28 against doc/engineering_discipline.md and the discipline audit (evidence/r41/hbm_bw/AUDIT.md, R1-R18): unsourced attributions corrected, post-hoc tolerance and check changes withdrawn, locality-control results quarantined, domains labelled; historical failures and persistent full-model gaps remain.",
+  "integrity": "passed",
+  "status": "not accepted",
+  "counts": {
+    "passed": 38,
+    "failed": 2,
+    "not measured": 47,
+    "blocked": 7
+  },
+  "errors": [],
+  "review_only_evidence": [
+    "rtl/core/tnca_core.v"
+  ],
+  "followups": [
+    {
+      "id": "P8.fp8_hub",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "35/35 Hub/compile/FP8Linear cases pass numerically on the approved run-1 image. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/environment.json",
+        "evidence/r41/acceptance/p8/board-records.tgz",
+        "evidence/r41/stage2/board/fp8_env_and_hub_runs.md"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P8.qwen_fp8",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from the required full BF16 model. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/board-records.tgz"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P3.chat_vl_full",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "Board, run-1 image (UUID 49964b17, 100 MHz before and after): full-checkpoint Qwen3-VL-2B-Instruct-FP8 (28 layers) generated 4 tokens through tools/models/chat.py from staged source 51aef19; both teacher-forced tokens match the CPU W8A8 argmax with relative L2 0.03492688958696281 and 0.03500718871823851, below the fixed 0.05 gate; steady decode 0.015720705662231143 tokens/s with no new graphs or host reads. Deviations from default standard-path settings, so not a default result (doc/engineering_discipline.md 2.2.1): the manifest sets TNCA_IEEE_DIV=1 and TNCA_TORCH_DEVICE=native, compiles for core-vrf-sync-v5 on the X8 image, and runs under r41s2_fp8env, whose .pth sets torch.version.cuda (the P8 deviation). Scope: FP8 VL text chat, not the required BF16 Qwen3.5-2B workload.",
+      "evidence": [
+        "evidence/r41/chat/board-51aef19.tgz",
+        "evidence/r41/chat/board-51aef19-summary.json"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P3.chat_q35_full",
+      "status": "failed",
+      "classification": "Supplementary",
+      "reason": "Board queue 51aef19: the Qwen3.5-4B-FP8 step failed in 20 s before loading, because the pinned checkpoint was not in acf3019's input cache. The failure is preserved. The checkpoint has since been staged and verified (evidence/r41/chat/staged-inputs-qwen35-acf3019.json); s2-qwen-chat-v2 registers the rerun. No Qwen3.5 board generation exists.",
+      "evidence": [
+        "evidence/r41/chat/board-51aef19.tgz",
+        "evidence/r41/chat/board-51aef19-summary.json",
+        "evidence/r41/chat/staged-inputs-qwen35-acf3019.json",
+        "spec/r41/chat/s2-qwen-chat-v2.json"
+      ],
+      "closure_plan": "P3"
+    }
+  ],
+  "stage1_frozen_snapshot_counts": {
+    "pass": 61
+  }
+}
+make: *** [Makefile:2353: r41-acceptance] Error 1
+exit 2
+$ python3 tools/performance_harness/test_stage2_acceptance.py
+Ran 8 tests in 0.123s
+
+OK

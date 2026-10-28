@@ -1,0 +1,55 @@
+WARNING: Default location for XILINX_HLS not found
+
+****** Vivado v2023.2 (64-bit)
+  **** SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+  **** IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+  **** SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source src/flow/fpga/screen_r41_core_stream.tcl
+# if {[llength $argv] != 3} {error "expected CORE_KERNEL_DCP STREAM_BANK_DCP OUT_DIR"}
+# set core [file normalize [lindex $argv 0]]
+# set bank [file normalize [lindex $argv 1]]
+# set out [file normalize [lindex $argv 2]]
+# if {[file exists $out]} {error "output must be fresh: $out"}
+# file mkdir $out
+# set_param general.maxThreads 4
+# open_checkpoint $core
+Command: open_checkpoint /home/vivado/r41_hbmbw_kernel_bg_v1/out/synth.dcp
+
+Starting open_checkpoint Task
+
+Time (s): cpu = 00:00:00.02 ; elapsed = 00:00:00.02 . Memory (MB): peak = 1334.328 ; gain = 0.000 ; free physical = 29492 ; free virtual = 63569
+INFO: [Device 21-403] Loading part xcu280-fsvh2892-2L-e
+Netlist sorting complete. Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 3899.488 ; gain = 7.000 ; free physical = 26734 ; free virtual = 61027
+INFO: [Netlist 29-17] Analyzing 75271 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 7 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2023.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Read ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:01 . Memory (MB): peak = 4857.551 ; gain = 267.492 ; free physical = 25810 ; free virtual = 60104
+INFO: [Timing 38-478] Restoring timing data from binary archive.
+INFO: [Timing 38-479] Binary timing data restore complete.
+INFO: [Project 1-856] Restoring constraints from binary archive.
+INFO: [Project 1-853] Binary constraint restore complete.
+Netlist sorting complete. Time (s): cpu = 00:00:00.06 ; elapsed = 00:00:00.06 . Memory (MB): peak = 7455.855 ; gain = 0.000 ; free physical = 23285 ; free virtual = 57579
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 9634 instances were transformed.
+  DSP48E2 => DSP48E2 (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 646 instances
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 30 instances
+  RAM16X1S => RAM32X1S (RAMS32): 384 instances
+  RAM256X1D => RAM256X1D (MUXF7(x4), MUXF8(x2), RAMD64E(x8)): 1536 instances
+  RAM256X1S => RAM256X1S (MUXF7(x2), MUXF8, RAMS64E(x4)): 144 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 52 instances
+  RAM32M16 => RAM32M16 (RAMD32(x14), RAMS32(x2)): 3230 instances
+  RAM32X1D => RAM32X1D (RAMD32(x2)): 36 instances
+  RAM64M8 => RAM64M8 (RAMD64E(x8)): 3468 instances
+  RAM64X1D => RAM64X1D (RAMD64E(x2)): 108 instances
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2023.2 (64-bit) build 4029153
+open_checkpoint: Time (s): cpu = 00:01:10 ; elapsed = 00:01:09 . Memory (MB): peak = 7455.891 ; gain = 6121.562 ; free physical = 23285 ; free virtual = 57579
+# read_checkpoint -cell stream_bank $bank
+Command: read_checkpoint -cell stream_bank /home/vivado/r41_hbmbw_kernel_bg_v1/stream_bank_synth/synth.dcp
+WARNING: [Vivado 12-156] No cells matched 'stream_bank'
+ERROR: [Common 17-162] Invalid option value specified for '-cell'.
+INFO: [Common 17-206] Exiting Vivado at Wed Oct 28 12:52:15 2026...

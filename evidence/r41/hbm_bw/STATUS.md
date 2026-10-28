@@ -8,6 +8,12 @@ The memory-system design target remains 100 GB/s. HANDOFF section 7 makes severa
 
 The source audit and existing R40 board/model evidence establish an upstream bottleneck. Three 64-bit core request paths admit at most 2.4 GB/s at 100 MHz, before protocol overhead. Three 256-bit outlets provide 9.6 GB/s in each AXI data direction. The prior ports experiment measured no gain from one to three outlets. Its model attributed contention to the home engine and core dependency waits; this attribution is not a new board measurement.
 
+## V2 whole-link projection and active screens
+
+V2 is the combined three-core wide path plus 32 independent 512-bit stream outlets. The current planning projection is **100–140 GB/s for full-link stream copy/read/write**, corresponding to 50–70% utilization of the 204.8 GB/s interface ceiling. The ordinary core/torch path is projected separately at **5–15 GB/s**, below its 19.2 GB/s three-core port ceiling. These are design projections, not measurements. Stream throughput is expected to be limited by HBM concurrency, AXI outstanding depth and SLR0 routing; ordinary operators remain limited by LSU scheduling, home/cache service and RF/execution absorption.
+
+The active combined core/stream-bank OOC screen tests whether this V2 geometry can retain 100 MHz under joint placement and routing. It is not a throughput experiment. Every subsequent experiment report must identify its V2 link, projected whole-link bandwidth and principal bottleneck.
+
 ## Server update
 
 Merged origin/r41 acceptance/server evidence in 7cda728, retaining both branches' docmap entries. The upgraded x86 host is available for screens and approved full links: 31 GB RAM, 32 GB swap, 16 cores and 853 GB currently available disk were verified through vx. Source `~/x86_link_env.sh` before every tool invocation; Vivado/v++/xclbinutil start, but a full link remains unverified there. Allow one link with VPP_JOBS=2 and obtain lead approval under the unchanged total five-run budget (one consumed). HANDOFF section 8 records details. No full link or card access was started.

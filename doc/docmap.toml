@@ -535,3 +535,9 @@ sources = ["rtl/nuca/tnca_nuca_slice.v", "tb/nuca/tb_nuca_wide.v", "tb/nuca/tb_n
 path = "evidence/r41/acceptance/KIMI_HANDOFF.md"
 depends_on = []
 sources = ["flow/fpga/"]
+
+[[doc]]
+path = "doc/engineering_discipline.md"
+depends_on = []
+sources = []
+notes = "Binding rules; must not be weakened by maintenance."

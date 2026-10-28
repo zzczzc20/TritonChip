@@ -236,6 +236,7 @@ class TTIRImporter:
         # compile is lowered again with this set). Separable indices
         # (tnca_cc.separable) live here; the default path never makes one.
         self.large_tiles = False
+        self.tiled_pointwise = 0  # option tiled_pointwise (pointwise_tiles.py), default off
         self.ieee_div = False   # option `ieee_div`: IEEE-exact arith.divf everywhere
         self._sep = {}      # TTIR value id -> Sep2D
         self._ptr2d = {}    # TTIR value id -> (arg name, elem, Affine2D)
@@ -397,7 +398,27 @@ class TTIRImporter:
         entry_caches = {n: dict(getattr(self, n)) for n in
                         ('_scalar_cache', '_fconst_cache', '_byte_offsets')}
         self.row_split = None
-        if self.large_tiles and not cfg_blocks:
+        self.tiled_pointwise_plan = None
+        if getattr(self, 'tiled_pointwise', 0) and not cfg_blocks and not self._bodies:
+            # Option tiled_pointwise (default off): a 1-D element-wise program
+            # as a loop over register tiles (pointwise_tiles.py).
+            from .pointwise_tiles import plan as _pt_plan, run as _pt_run
+            body = [o for o in ops if o.get_name() not in ('tt.func', 'builtin.module', 'tt.return')]
+            pt = _pt_plan(self, body, str(module), func_name)
+            if pt is not None:
+                _pt_run(self, pt, self._dispatch)
+                ops = [o for o in ops if o.get_name() == 'tt.return']
+                self.tiled_pointwise_plan = pt.summary()
+        if getattr(self, 'tiled_pointwise', 0) and self.tiled_pointwise_plan is None:
+            from .pointwise_tiles import widest
+            if widest(self._all_ops) > 128:
+                # The block grew only because tiling was asked for (inductor.py
+                # TILED_POINTWISE_BLOCK); a program that cannot be tiled takes
+                # Inductor's 16-lane configuration instead.
+                raise Unsupported('a block wider than 128 lanes that is not a tileable '
+                                  '1-D element-wise program (pointwise_tiles.py refusal '
+                                  f'{getattr(self, "tiled_pointwise_refused", None)})')
+        if self.large_tiles and not cfg_blocks and self.tiled_pointwise_plan is None:
             # Extended lowering: a program whose rows are independent runs as
             # a loop over 16-row chunks (row_split), emitted once.
             from .row_split import plan as _rs_plan, run as _rs_run

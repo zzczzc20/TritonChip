@@ -115,6 +115,13 @@ def _packed_window_unpack():
     return value
 
 
+def _tiled_pointwise():
+    value = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
+    if value not in (0, 1, 2):
+        raise ValueError('TNCA_TILED_POINTWISE must be 0, 1 or 2')
+    return value
+
+
 @dataclass(frozen=True)
 class TNCAOptions:
     # What ASTSource.make_ir reads; tnca_cc.triton_options.frontend_options
@@ -153,6 +160,7 @@ class TNCAOptions:
     bank_alloc: int = field(default_factory=_bank_alloc)
     window_reuse: int = field(default_factory=_window_reuse)
     packed_window_unpack: int = field(default_factory=_packed_window_unpack)
+    tiled_pointwise: int = field(default_factory=_tiled_pointwise)
     ieee_div: int = field(default_factory=_ieee_div)
 
     def __post_init__(self):
@@ -351,6 +359,7 @@ class TNCABackend(BaseBackend):
                           ('single_role_pipeline', 'TNCA_SINGLE_ROLE_PIPELINE'), ('bank_alloc', 'TNCA_BANK_ALLOC'),
                           ('window_reuse', 'TNCA_WINDOW_REUSE'),
                           ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
+                          ('tiled_pointwise', 'TNCA_TILED_POINTWISE'),
                           ('ieee_div', 'TNCA_IEEE_DIV')):
             value = getattr(options, name)
             if value or int(os.environ.get(env, '0')) != value:

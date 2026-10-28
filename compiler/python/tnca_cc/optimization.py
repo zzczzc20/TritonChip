@@ -87,7 +87,16 @@ def _opaque(op):
     return False
 
 
-def drop_dead_pure(kernel):
+def _int_vector_pure(op):
+    """An integer vector add/sub/mul/logic/shift: no memory, no fault, and
+    no floating-point exception state (only used with flat_control)."""
+    if op.kind != 'vbin' or op.attrs.get('op') not in (
+            'add', 'sub', 'mul', 'and', 'or', 'xor', 'shl', 'lshr', 'ashr', 'min', 'max'):
+        return False
+    return all(not str(getattr(r, 'dtype', 'f')).startswith(('f', 'bf')) for r in op.results)
+
+
+def drop_dead_pure(kernel, flat_control=False):
     """Remove pure scalar definitions that nothing names.
 
     Its own pass rather than a tail of the CSE, because the two have
@@ -100,7 +109,13 @@ def drop_dead_pure(kernel):
     """
     out = {'removed': 0, 'roles': []}
     for role in kernel.roles:
-        if any(_opaque(o) for o in role.region.ops):
+        # `flat_control`: labels, branches and register assignments in one
+        # flat list do not hide a use -- an `assign` names both its registers
+        # -- so a definition nothing names anywhere is dead there too. Only a
+        # nested region stays opaque. (Used for the tiled element-wise loop.)
+        opaque = ((lambda o: _opaque(o) and o.kind not in ('label', 'branch_nz', 'assign'))
+                  if flat_control else _opaque)
+        if any(opaque(o) for o in role.region.ops):
             out['roles'].append({'role': role.name,
                                  'why': 'control flow or mutable assignments'})
             continue
@@ -113,7 +128,7 @@ def drop_dead_pure(kernel):
                 for v in _values_in(o):
                     live.add(id(v))
             keep = [o for o in role.region.ops
-                    if not _no_effect(o)
+                    if not (_no_effect(o) or (flat_control and _int_vector_pure(o)))
                     or any(id(r) in live for r in o.results)]
             if len(keep) == len(role.region.ops):
                 break
@@ -374,7 +389,7 @@ def narrow_lane0_store(kernel):
                     continue
                 op.kind = 'sstore'
                 op.operands = [base, src]
-                op.attrs = dict(op.attrs, mask=None, offset=0,
+                op.attrs = dict(op.attrs, mask=None, offset=op.attrs.get('offset', 0),
                                 comment='lane 0 of a broadcast is one word')
                 n += 1
         out['sites'] += n

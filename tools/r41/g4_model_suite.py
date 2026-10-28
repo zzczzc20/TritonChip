@@ -20,7 +20,10 @@ as one of these memory systems (all at 100 MHz):
          lines outstanding and single-cycle issue, lines striped across the 32
          pseudo-channels in 4 KiB pages;
   ideal  g4 with every memory latency set to its minimum, to isolate the
-         core-side (issue, dependency, SFU) limit of the compiled code.
+         core-side (issue, dependency, SFU) limit of the compiled code;
+  onelane  the authorised one-lane 64 B path (option c): one memory lane,
+         home occupancy 1 per line, 32 MSHRs, 32 LSU slots, 3 outlets x 32
+         outstanding with single-cycle issue, 4 KiB striping.
 
 The model has no key for a full-line write without fill or for a wider
 transfer engine, so those parts of the design are not represented (stated
@@ -57,7 +60,19 @@ def configs():
     ideal.update(tl_memory_lanes='8', tl_noc_inject_cycles='1', tl_noc_eject_cycles='1', noc_stages='1',
                  tl_slice_hit_latency='1', tl_slice_to_outlet_cycles='1', tl_outlet_to_slice_cycles='1',
                  hbm_latency_cycles='1', tl_hbm_write_latency_cycles='1', outlets='32', active_outlets='32')
-    return dict(run1=(base, 3), g4=(g4, 6), ideal=(ideal, 32))
+    # option (c), the authorised one-lane path (G4_DESIGN.md section 8): one
+    # 64 B lane, a home that takes one line per cycle, 32 MSHRs per home and
+    # 32 line slots per core, three outlets with 32 lines outstanding and
+    # single-cycle issue, lines striped over the pseudo-channels.
+    onelane = dict(base)
+    onelane.update(tl_core_beat_bytes='64', tl_noc_payload_bytes='64', tl_memory_lanes='1',
+                   tl_lsu_units='8', tl_lsu_shared_issue='0', lsu_slots='32', lsu_beat_slots='8',
+                   tl_slice_hit_occupancy='1', tl_slice_miss_occupancy='1', tl_slice_mreq_occupancy='1',
+                   tl_slice_fill_occupancy='1', tl_slice_wake_occupancy='1', tl_slice_writeback_occupancy='1',
+                   mshrs='32', targets='64', outlets='3', active_outlets='3', outstanding='32',
+                   tl_outlet_read_issue_cycles='1', tl_outlet_write_issue_cycles='1',
+                   tl_pc_stripe_bytes='4096')
+    return dict(run1=(base, 3), g4=(g4, 6), ideal=(ideal, 32), onelane=(onelane, 3))
 
 
 def main():

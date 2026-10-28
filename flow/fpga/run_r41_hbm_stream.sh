@@ -18,16 +18,25 @@ foreach {name expected} {HBM_STRIPED 1 AXI_DATA_W 256 MEM_PORTS 3} {
     }
 }
 TCL
-[ "$(free -g | awk '/^Mem:/{print $7}')" -ge 38 ] || { echo 'full run needs at least 38 GiB available' >&2; exit 2; }
+if [ -f "$HOME/x86_link_env.sh" ]; then
+    minimum_available=20
+else
+    minimum_available=38
+fi
+[ "$(free -g | awk '/^Mem:/{print $7}')" -ge "$minimum_available" ] || { echo "full run needs at least $minimum_available GiB available" >&2; exit 2; }
 mkdir -p "$build/build"
 exec >"$build/build/runner.log" 2>&1
 trap 'result=$?; printf "%s\n" "$result" > "$build/build/attempt.exit"' EXIT
 printf '%s/5\n' "$run_number" > "$build/build/full_run_number"
 cd "$root"
 set +u
-source /tools/Xilinx/Vivado/2023.2/settings64.sh >/dev/null 2>&1
-source /tools/Xilinx/Vitis/2023.2/settings64.sh >/dev/null 2>&1
-source /opt/xilinx/xrt/setup.sh >/dev/null 2>&1
+if [ -f "$HOME/x86_link_env.sh" ]; then
+    source "$HOME/x86_link_env.sh" >/dev/null 2>&1
+else
+    source /tools/Xilinx/Vivado/2023.2/settings64.sh >/dev/null 2>&1
+    source /tools/Xilinx/Vitis/2023.2/settings64.sh >/dev/null 2>&1
+    source /opt/xilinx/xrt/setup.sh >/dev/null 2>&1
+fi
 set -u
 export TNCA_BOARD=u280 VPP_JOBS=2
 export LINK_EXTRA='--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=SSI_SpreadSLLs'

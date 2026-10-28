@@ -60,6 +60,8 @@ class GridTests(unittest.TestCase):
         s._check_usable = lambda: None
         s._lock = threading.RLock()
         s._events, s.epoch = {}, 0
+        # Session.__init__ sets this (f5ff452); the hand-built fixture must too.
+        s._measurement_owner = None
         s.dev = SimpleNamespace(large_grid_limit=Mock(return_value=1 << 24))
         s._resolve = Mock(side_effect=RuntimeError('reached argument validation'))
         m = SimpleNamespace(epoch=0, alive=True, name='grid',

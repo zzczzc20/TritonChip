@@ -42,7 +42,13 @@ def topology_section():
 class Accessor:
     """Records BO calls; a flat bytearray stands in for nothing larger than needed."""
     def __init__(self, paddr=0):
-        self.paddr, self.calls = paddr, []
+        self.paddr, self.calls, self.register_reads = paddr, [], []
+
+    def read(self, offset):
+        # MMIO register reads. hbm_open reads the capability word (6e4bebf);
+        # the B40 image this fixture models advertises no striped-HBM layout.
+        self.register_reads.append(offset)
+        return 0
 
     def bo_open(self, nbytes, bank):
         self.calls.append(('open', nbytes, bank))

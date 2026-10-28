@@ -1,6 +1,6 @@
 # HBM bandwidth status
 
-Updated: 2026-10-26 UTC.
+Updated: 2026-10-28 UTC.
 
 ## Goal and current evidence
 
@@ -124,6 +124,12 @@ At 16,384 float16 elements, warmed standard torch synthetic-memory RTL ratios ag
 FAST_FILL_READ combines fill and response for one ordinary read target when the response queue has space; all other miss types retain the original wake path. It is now enabled in hybrid tiles. At the actual eight-MSHR/16-target geometry, the checked cold fixture improves 45,212 -> 36,738 cycles (0.5798 -> 0.7136 GB/s at assumed 100 MHz), a 1.231x local gain. All 4,096 shortcuts and response values are checked. Multi-target read/write/read, atomic, TMU, response-stall, owner-epoch, maintenance and default-path regressions pass; raw logs and source hashes are in wide_home/fast_fill/.
 
 The corrected one-/three-core full-vector matrix passes with 408 host-read words per case and nonzero fast-fill coverage; the three-core global cache-handoff test also passes. The first matrix failure and fixture correction are retained: the earlier timeout probe had populated the supposed zero source, so the retry explicitly initializes it. A new standard torch test with fast-fill counters is live on GB10 PID 826575. Matched-block FP16 controls 799986/799987 remain live. The free fast-fill unit route is live on acf3019 slot-wrapper PID 3179519; the earlier kernel synthesis PID 3170968 has hit chaining but predates fast fill. Neither is a full link. A combined kernel/tile screen for the present source, cold-service parallelism, the outlet path and actual board acceptance remain open. Full-run budget is still one of five used; no card operation occurred.
+
+## Independent home read issue and completed local screens
+
+The default-off BACKGROUND_READ_REQUESTS option decouples allocated MSHR reads from the single home engine while preserving engine writeback priority and locking a stalled selection until acceptance. At the actual eight-MSHR/16-target geometry, the synthetic cold fixture improves 36,738 -> 27,511 cycles (0.7136 -> 0.9529 GB/s at an assumed 100 MHz), a 1.336x local gain. A hypothetical 16/32 window reaches 1.0653 GB/s but is not integrated. All ordinary, special, maintenance, default-path and stalled-selection coverage checks pass; the initial coverage failures remain in `wide_home/background/`. This is not board throughput and remains far below the target.
+
+The fast-fill home SLR1 route passed at 10 ns with WNS +1.254 ns, WHS +0.008 ns and zero TNS/THS. The hit-chain kernel synthesis also passed with WNS +3.809 ns and WHS +0.055 ns. These reports do not qualify the newest background requester or a combined routed image. No GB10 regression jobs remain active. Origin/r41 was merged and pushed again as 6513765, and the documentation check passed. Both server hostname checks succeeded. Full-run budget remains one of five used; no full link or card operation occurred.
 
 ## Lead synchronization, geometry and Qwen projection (2026-10-27)
 

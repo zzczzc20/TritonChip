@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 module tb_multicore_axi;
-parameter N=3,PORTS=3,STAGES=2,WRITE_DELAY=15,AXI_PIPELINED_ISSUE=0,HYBRID_LSU=0,VECTOR_TEST=0,FULL_VECTOR_TEST=0;
+parameter N=3,PORTS=3,STAGES=2,WRITE_DELAY=15,AXI_PIPELINED_ISSUE=0,HYBRID_LSU=0,VECTOR_TEST=0,FULL_VECTOR_TEST=0,HOME_BACKGROUND_READS=0;
 localparam POINTS=FULL_VECTOR_TEST?17:455;
 localparam NX=N>4?4:N,SW=N>4?$clog2(N):2;
 reg clk=0;always #5 clk=~clk;
@@ -47,7 +47,7 @@ wire [PORTS*(3)-1:0] m_rid;
 wire [PORTS*(2)-1:0] m_rresp;
 wire [PORTS*(1)-1:0] m_rlast;
 
-tnca_multicore_axi #(.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(HYBRID_LSU?4:1),.NOC_LINK_STAGES(HYBRID_LSU?2:0),.DISPATCH_STAGES(HYBRID_LSU?2:0),.MEM_HOME_STAGES(HYBRID_LSU?2:0),.NUCA_CACHE_DATA_PIPELINE(HYBRID_LSU),.AXI_PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.MEM_BASE(0),.NX(NX),.NY(N/NX),.CODE_WORDS(256),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+tnca_multicore_axi #(.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(HYBRID_LSU?4:1),.NOC_LINK_STAGES(HYBRID_LSU?2:0),.DISPATCH_STAGES(HYBRID_LSU?2:0),.MEM_HOME_STAGES(HYBRID_LSU?2:0),.NUCA_CACHE_DATA_PIPELINE(HYBRID_LSU),.AXI_PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.MEM_BASE(0),.NX(NX),.NY(N/NX),.CODE_WORDS(256),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
 .clk(clk),.rst_n(rst),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
 .cmd_group_log2(2'd0),.cmd_deadline(deadline),.timed_out(timed_out),.cmd_arg_base(64'h8000),.cmd_arg_stride(64'h100),.cmd_gx(FULL_VECTOR_TEST?32'd17:32'd13),.cmd_gy(FULL_VECTOR_TEST?32'd1:32'd7),.cmd_gz(FULL_VECTOR_TEST?32'd1:32'd5),
 .cmd_cores({N{1'b1}}),.cmd_roles(4'b0001),.cmd_slice(4'd0),.cmd_vbase(32'd0),
@@ -119,17 +119,19 @@ generate for(genvar p=0;p<PORTS;p=p+1)begin:g_ram
 .m_rresp(m_rresp[p*(2)+:(2)]),
 .m_rlast(m_rlast[p*(1)+:(1)]));
 end endgenerate
-wire [N*32-1:0] chained_hits,fast_fill_count;
+wire [N*32-1:0] chained_hits,fast_fill_count,bg_issue_count;
 wire [N*32-1:0] fast_accepted,slow_accepted,lsu_retired;
 generate for(genvar c=0;c<N;c=c+1)begin:g_lsu_coverage
- reg [31:0] chain_count=0,fill_count=0;
- always @(posedge clk)if(!rst)begin chain_count<=0;fill_count<=0;end
+ reg [31:0] chain_count=0,fill_count=0,bg_count=0;
+ always @(posedge clk)if(!rst)begin chain_count<=0;fill_count<=0;bg_count<=0;end
  else begin
   if(dut.shell.u_system.g_tile[c].u_tile.u_slice.hit_chain_take)chain_count<=chain_count+1;
   if(dut.shell.u_system.g_tile[c].u_tile.u_slice.fill_fast_take)fill_count<=fill_count+1;
+  if(dut.shell.u_system.g_tile[c].u_tile.u_slice.use_background && dut.shell.u_system.g_tile[c].u_tile.u_slice.mem_req_ready)bg_count<=bg_count+1;
  end
  assign chained_hits[c*32+:32]=chain_count;
  assign fast_fill_count[c*32+:32]=fill_count;
+ assign bg_issue_count[c*32+:32]=bg_count;
  if(HYBRID_LSU)begin:g_hybrid
   integer seen_vectors=0;
   always @(posedge clk)if($test$plusargs("diagnose") && rst && dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_valid && dut.shell.u_system.g_tile[c].u_tile.u_core.g_lsu_hybrid.u_lsu.req_vector && seen_vectors<10)begin
@@ -210,7 +212,7 @@ initial begin
  end
  if(HYBRID_LSU)begin
   for(integer c=0;c<N;c=c+1)begin
-   $display("HOME COVERAGE core=%0d chained=%0d fast_fill=%0d",c,chained_hits[c*32+:32],fast_fill_count[c*32+:32]);
+   $display("HOME COVERAGE core=%0d chained=%0d fast_fill=%0d background=%0d",c,chained_hits[c*32+:32],fast_fill_count[c*32+:32],bg_issue_count[c*32+:32]);
    $display("HYBRID COUPLED core=%0d fast=%0d slow=%0d retired=%0d",c,fast_accepted[c*32+:32],slow_accepted[c*32+:32],lsu_retired[c*32+:32]);
    if(VECTOR_TEST && fast_accepted[c*32+:32]==0)$fatal(1,"vector grid did not exercise compact LSU");
    if(slow_accepted[c*32+:32]==0 || lsu_retired[c*32+:32]!=fast_accepted[c*32+:32]+slow_accepted[c*32+:32])$fatal(1,"hybrid did not drain both paths");
@@ -227,6 +229,12 @@ initial begin
   total_fills=0;
   for(integer c=0;c<N;c=c+1)total_fills=total_fills+fast_fill_count[c*32+:32];
   if(total_fills==0)$fatal(1,"coupled grid did not exercise fast read fills");
+ end
+ if(HOME_BACKGROUND_READS && FULL_VECTOR_TEST)begin: check_bg_issue
+  integer total_issues;
+  total_issues=0;
+  for(integer c=0;c<N;c=c+1)total_issues=total_issues+bg_issue_count[c*32+:32];
+  if(total_issues==0)$fatal(1,"coupled grid did not exercise background reads");
  end
  launch(VECTOR_TEST?512:256,12,0);
  for(integer k=0;k<POINTS;k=k+1)word(0,65536+k*8,4096+k,0);

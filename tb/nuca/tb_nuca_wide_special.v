@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 module tb_nuca_wide_special;
- parameter PIPE=1,HIT_CHAIN=0,FAST_FILL_READ=0;
+ parameter PIPE=1,HIT_CHAIN=0,FAST_FILL_READ=0,BACKGROUND_READ_REQUESTS=0;
  reg clk=0;always #5 clk=~clk;
  reg rst_n=0,qv=0,qwe=0,qamo=0,rr=0;
  reg [63:0] qa=0,qbe=0;
@@ -21,7 +21,7 @@ module tb_nuca_wide_special;
  reg [11:0] lastoff;
  reg [63:0] lastdata;
  wire twready=cycle%5!=0;
- tnca_nuca_slice #(.HIT_CHAIN(HIT_CHAIN),.FAST_FILL_READ(FAST_FILL_READ),.WORD_BITS(512),.WORD_BYTES(64),.FULL_LINE_TAG(1),.HOME_W(2),
+ tnca_nuca_slice #(.HIT_CHAIN(HIT_CHAIN),.FAST_FILL_READ(FAST_FILL_READ),.BACKGROUND_READ_REQUESTS(BACKGROUND_READ_REQUESTS),.WORD_BITS(512),.WORD_BYTES(64),.FULL_LINE_TAG(1),.HOME_W(2),
   .SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1),.MSHR_N(4),.MSHR_W(2),.TARGET_N(8),.TARGET_W(3),
   .TAG_W(5),.DCO_T(2),.CACHE_DATA_PIPELINE(PIPE)) dut(
   .clk(clk),.rst_n(rst_n),.maint_valid(1'b0),.maint_base(64'd0),.maint_size(64'd0),

@@ -1,0 +1,9 @@
+BACKGROUND COVERAGE locks=3173 write_contention=4 issues=3099 interleaved=1348
+---- nuca slice ----
+seed=20260918 trace_hash=d256443f854f7fe5 writes=1015
+issued=4096 reads_checked=3081 inflight_left=0
+hit=865 miss=3099 merge=132 wb=751 mshr_full=78 target_full=0 hit_past_block=16
+OWNER_EPOCH retries=756
+policy=0 bypass=0 evict=3035 dead_evict=0 gear=8
+PASS
+tb/nuca/tb_nuca_wide.v:470: $finish called at 279466000 (1ps)

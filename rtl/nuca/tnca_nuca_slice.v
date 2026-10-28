@@ -56,6 +56,7 @@ module tnca_nuca_slice #(
     parameter WORD_BITS  = 64,
     parameter HIT_CHAIN = 0,
     parameter FAST_FILL_READ = 0,
+    parameter BACKGROUND_READ_REQUESTS = 0,
     parameter WORD_BYTES = 8,
     parameter SETS       = 64,
     parameter SET_W      = 6,        // $clog2(SETS)
@@ -955,22 +956,38 @@ module tnca_nuca_slice #(
                 if (ms_state[i] == MS_WB) begin
                     ms_pick = 1'b1; ms_pick_id = i[MSHR_W-1:0]; ms_pick_st = MS_WB;
                 end
-        if (!ms_pick)
+        if (!ms_pick && !BACKGROUND_READ_REQUESTS)
             for (i = MSHR_N-1; i >= 0; i = i - 1)
                 if (ms_state[i] == MS_REQ) begin
                     ms_pick = 1'b1; ms_pick_id = i[MSHR_W-1:0]; ms_pick_st = MS_REQ;
                 end
     end
 
-    // ---- memory request, straight off the engine state ----------------------
-    assign mem_req_valid = (est == E_MREQ) || (est == E_WBSND) || (est == E_MSEND);
-    assign mem_req_we    = (est == E_WBSND) || (est == E_MSEND);
-    assign mem_req_addr  = (est == E_MSEND) ? maint_line :
+    // Independent read issue lets the home engine process requests and fills
+    // while allocated MSHRs send their memory reads. A stalled selection is
+    // locked until accepted, including when a writeback becomes ready.
+    reg bg_locked;
+    reg [MSHR_W-1:0] bg_locked_id;
+    reg bg_found;
+    reg [MSHR_W-1:0] bg_pick;
+    integer bg_i;
+    always @* begin
+        bg_found=0;bg_pick=0;
+        for(bg_i=MSHR_N-1;bg_i>=0;bg_i=bg_i-1)
+            if(ms_state[bg_i]==MS_REQ)begin bg_found=1;bg_pick=bg_i;end
+        if(bg_locked)begin bg_found=1;bg_pick=bg_locked_id;end
+    end
+    wire engine_write=(est==E_WBSND)||(est==E_MSEND);
+    wire use_background=BACKGROUND_READ_REQUESTS && bg_found && (bg_locked || !engine_write);
+    assign mem_req_valid = use_background || engine_write || (!BACKGROUND_READ_REQUESTS && est==E_MREQ);
+    assign mem_req_we = !use_background && engine_write;
+    assign mem_req_addr = use_background ? ms_addr[bg_pick] :
+                          (est == E_MSEND) ? maint_line :
                           (est == E_WBSND) ? ms_wbadr[cur_ms] : ms_addr[cur_ms];
-    assign mem_req_wdata = wb_buf;
-    assign mem_req_tag   = cur_ms;
-
+    assign mem_req_wdata = use_background ? {LINE_BITS{1'b0}} : wb_buf;
+    assign mem_req_tag = use_background ? bg_pick : cur_ms;
     wire mem_req_fire = mem_req_valid && mem_req_ready;
+
 
     // ---- byte merge helper ---------------------------------------------------
     reg [LINE_BITS-1:0] merged;
@@ -1022,6 +1039,7 @@ module tnca_nuca_slice #(
     always @(posedge clk) begin
         if (!rst_n) begin
             hit_way_q<=0;hit_word_q<=0;
+            bg_locked<=0;bg_locked_id<=0;
             est           <= E_SEL;
             maint_done <= 0; maint_index <= 0; maint_first <= 0; maint_end <= 0; maint_line <= 0;
             rq_v          <= {RQ_N{1'b0}};
@@ -1050,6 +1068,8 @@ module tnca_nuca_slice #(
             gear <= 4'd0; gear_seed <= 1'b1; ev_cnt <= 16'd0; win_cnt <= 16'd0;
         end else begin
             data_write_enable=0;data_write_index=0;data_write_line=0;data_write_mask=0;
+            if(use_background && !mem_req_ready)begin bg_locked<=1;bg_locked_id<=bg_pick;end
+            else if(use_background && mem_req_fire)begin bg_locked<=0;ms_state[bg_pick]<=MS_WAIT;end
             maint_done <= 0;
             push_rsp = 1'b0;
             tl_load  = 1'b0;
@@ -1156,7 +1176,7 @@ module tnca_nuca_slice #(
                 est <= E_MSEND;
             end
             E_MSEND: begin
-                if (mem_req_fire) begin
+                if (mem_req_fire && mem_req_we) begin
                     perf_wb <= perf_wb+1'b1;
                     v_bits[maint_index] <= 0;
                     d_bits[maint_index] <= 0;
@@ -1431,7 +1451,7 @@ module tnca_nuca_slice #(
             end
 
             E_WBSND: begin
-                if (mem_req_fire) begin
+                if (mem_req_fire && mem_req_we) begin
                     perf_wb  <= perf_wb + 1;
                     d_bits[service_set*WAYS + service_way] <= 1'b0;
                     ms_state[cur_ms] <= MS_REQ;

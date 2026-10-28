@@ -2,7 +2,7 @@
 `timescale 1ns/1ps
 `default_nettype none
 module tnca_multicore_regs;
- parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0,HYBRID_LSU=0,SFU_LANES=1;
+ parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0,HYBRID_LSU=0,SFU_LANES=1,HOME_BACKGROUND_READS=0;
  // Optional observation only: keep the register response protocol unchanged.
  integer diag_cycle=0;
  always @(posedge clk) begin
@@ -26,12 +26,15 @@ module tnca_multicore_regs;
     dut.system.shell.u_system.g_tile[c].u_tile.perf_miss,
     dut.system.shell.u_system.g_tile[c].u_tile.perf_mshr_full);
   if(HYBRID_LSU)begin:g_hybrid
-   reg [31:0] observed_fast_fills=0;
+   reg [31:0] observed_fast_fills=0,observed_bg_reads=0;
    always @(posedge clk)begin
-    if(!rst_n_async)observed_fast_fills<=0;
-    else if(dut.system.shell.u_system.g_tile[c].u_tile.u_slice.fill_fast_take)observed_fast_fills<=observed_fast_fills+1;
+    if(!rst_n_async)begin observed_fast_fills<=0;observed_bg_reads<=0;end
+    else begin
+     if(dut.system.shell.u_system.g_tile[c].u_tile.u_slice.fill_fast_take)observed_fast_fills<=observed_fast_fills+1;
+     if(dut.system.shell.u_system.g_tile[c].u_tile.u_slice.use_background && dut.system.shell.u_system.g_tile[c].u_tile.u_slice.mem_req_ready)observed_bg_reads<=observed_bg_reads+1;
+    end
     if($test$plusargs("trace") && rst_n_async && dut.done_valid)
-     $display("FAST FILL WATCH cycle=%0d home=%0d count=%0d",diag_cycle,c,observed_fast_fills);
+     $display("FAST FILL WATCH cycle=%0d home=%0d count=%0d background=%0d",diag_cycle,c,observed_fast_fills,observed_bg_reads);
    end
    always @(posedge clk)if($test$plusargs("trace") && rst_n_async && (diag_cycle%10000==0 || dut.done_valid))
     $display("HYBRID WATCH cycle=%0d core=%0d pc=%h x_valid=%b pending=%b fast=%0d slow=%0d retired=%0d fast_quiet=%b slow_idle=%b cpl=%b ack=%b",diag_cycle,c,
@@ -82,7 +85,7 @@ module tnca_multicore_regs;
  wire [PORTS*3-1:0] m_rid;
  wire [PORTS*2-1:0] m_rresp;
  wire [PORTS-1:0] m_rlast;
- tnca_multicore_fpga #(.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.NUCA_CACHE_DATA_PIPELINE(HYBRID_LSU),.REG_ADDR_W(ADDR_BITS),.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.NX(NX),.NY(N/NX),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+ tnca_multicore_fpga #(.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.NUCA_CACHE_DATA_PIPELINE(HYBRID_LSU),.REG_ADDR_W(ADDR_BITS),.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.NX(NX),.NY(N/NX),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
  .clk(clk),.rst_n(rst_n_async),.reg_addr(reg_addr),.reg_wdata(reg_wdata),.reg_we(reg_we),.reg_re(reg_re),.reg_rdata(reg_rdata),
  .m_awvalid(m_awvalid),
  .m_awready(m_awready),

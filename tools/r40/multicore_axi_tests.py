@@ -14,6 +14,7 @@ def main():
     parser.add_argument('--write-delay', type=int, default=15)
     parser.add_argument('--pipelined-issue', action='store_true')
     parser.add_argument('--hybrid', action='store_true')
+    parser.add_argument('--background-home', action='store_true')
     parser.add_argument('--vector-program', action='store_true')
     parser.add_argument('--diagnose', action='store_true')
     parser.add_argument('--full-vector-program', action='store_true')
@@ -36,6 +37,7 @@ def main():
             command = ['iverilog', '-g2012', '-I', 'rtl/common', '-I', 'rtl/noc',
                        '-s', 'tb_multicore_axi', f'-Ptb_multicore_axi.N={cores}',
                        f'-Ptb_multicore_axi.HYBRID_LSU={int(args.hybrid)}',
+                       f'-Ptb_multicore_axi.HOME_BACKGROUND_READS={int(args.background_home)}',
                        f'-Ptb_multicore_axi.VECTOR_TEST={int(args.vector_program)}',
                        f'-Ptb_multicore_axi.FULL_VECTOR_TEST={int(args.full_vector_program)}',
                        f'-Ptb_multicore_axi.PORTS={ports}',

@@ -21,8 +21,8 @@
 module tb_nuca_wide;
     parameter CACHE_DATA_PIPELINE=1;
     parameter PRESSURE=0;
-    parameter HIT_CHAIN=0,FAST_FILL_READ=0;
-    parameter RSP_STALL=0;
+    parameter HIT_CHAIN=0,FAST_FILL_READ=0,BACKGROUND_READ_REQUESTS=0;
+    parameter RSP_STALL=0,REQUIRE_BG_CONTENTION=0;
     parameter FULL_LINE_TAG=0,REGISTER_VICTIM_SELECT=0,REGISTER_VICTIM_RANK=0;
     parameter SERVICE_MODE=0; // 1: hot reads, 2: streaming reads
     parameter DCO_REGISTERED_RANGES = 0;
@@ -116,7 +116,7 @@ module tb_nuca_wide;
     wire [63:0]             tl_addr;
 
     tnca_nuca_slice #(
-        .FULL_LINE_TAG(FULL_LINE_TAG),.REGISTER_VICTIM_SELECT(REGISTER_VICTIM_SELECT),.REGISTER_VICTIM_RANK(REGISTER_VICTIM_RANK),.HIT_CHAIN(HIT_CHAIN),.FAST_FILL_READ(FAST_FILL_READ),.CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE),.MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
+        .FULL_LINE_TAG(FULL_LINE_TAG),.REGISTER_VICTIM_SELECT(REGISTER_VICTIM_SELECT),.REGISTER_VICTIM_RANK(REGISTER_VICTIM_RANK),.HIT_CHAIN(HIT_CHAIN),.FAST_FILL_READ(FAST_FILL_READ),.BACKGROUND_READ_REQUESTS(BACKGROUND_READ_REQUESTS),.CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE),.MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(WORD_BITS), .WORD_BYTES(WORD_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
@@ -256,6 +256,26 @@ module tb_nuca_wide;
     end
 
     // ---- watchdog: a deadlocked slice must fail, not run forever ------------
+    integer bg_lock_cycles=0,bg_write_contention=0,bg_issues=0,bg_interleaved=0;
+    always @(posedge clk)if(rst_n)begin
+        if(dut.bg_locked)bg_lock_cycles<=bg_lock_cycles+1;
+        if(dut.bg_locked && dut.engine_write)bg_write_contention<=bg_write_contention+1;
+        if(dut.use_background && m_req_ready)begin
+            bg_issues<=bg_issues+1;
+            if(dut.est!=0)bg_interleaved<=bg_interleaved+1;
+        end
+    end
+    reg held_memory=0;
+    reg [ADDR_W+LINE_BITS+MSHR_W:0] held_memory_payload;
+    always @(posedge clk)begin
+        if(!rst_n)held_memory<=0;
+        else begin
+            if(held_memory && (!m_req_valid || {m_req_we,m_req_addr,m_req_wdata,m_req_tag}!==held_memory_payload))
+                $fatal(1,"memory request changed under backpressure");
+            held_memory<=m_req_valid && !m_req_ready;
+            if(m_req_valid && !m_req_ready)held_memory_payload<={m_req_we,m_req_addr,m_req_wdata,m_req_tag};
+        end
+    end
     integer service_cycle=0,accepted=0,responses=0,fast_fills=0,first_accept=-1,last_response=-1;
     always @(posedge clk)begin
         if(rst_n)begin
@@ -412,6 +432,11 @@ module tb_nuca_wide;
         if(SERVICE_MODE!=0)begin
             if(accepted!=nreq || responses!=nreq)$fatal(1,"service lost a handshake");
             $display("HOME SERVICE mode=%0d word_bytes=%0d accepted=%0d responses=%0d span_cycles=%0d hit=%0d miss=%0d fast_fills=%0d",SERVICE_MODE,WORD_BYTES,accepted,responses,last_response-first_accept+1,perf_hit,perf_miss,fast_fills);
+        end
+        if(BACKGROUND_READ_REQUESTS)begin
+            $display("BACKGROUND COVERAGE locks=%0d write_contention=%0d issues=%0d interleaved=%0d",bg_lock_cycles,bg_write_contention,bg_issues,bg_interleaved);
+            if(REQUIRE_BG_CONTENTION && (bg_lock_cycles==0 || bg_write_contention==0 || bg_interleaved==0))
+                $fatal(1,"background arbitration coverage missing");
         end
         $display("---- nuca slice ----");
         $display("seed=%0d trace_hash=%016h writes=%0d", seed0, trace_hash, n_write);

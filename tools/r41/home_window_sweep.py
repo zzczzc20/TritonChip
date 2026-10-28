@@ -10,11 +10,12 @@ from tools.r41.wide_home_tests import run_case
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--out',type=Path,required=True)
 p.add_argument('--fast-fill',action='store_true')
+p.add_argument('--background',action='store_true')
 a=p.parse_args();a.out.mkdir(parents=True,exist_ok=False)
 rows=[]
 with tempfile.TemporaryDirectory(prefix='r41-home-window-') as temp:
     for mshrs,targets in ((4,8),(8,8),(8,16),(16,32)):
-        params=dict(WORD_BITS=512,MSHR_N=mshrs,TARGET_N=targets,HIT_CHAIN=1,FAST_FILL_READ=int(a.fast_fill),SERVICE_MODE=2,
+        params=dict(WORD_BITS=512,MSHR_N=mshrs,TARGET_N=targets,HIT_CHAIN=1,FAST_FILL_READ=int(a.fast_fill),BACKGROUND_READ_REQUESTS=int(a.background),SERVICE_MODE=2,
             SETS=32,SET_W=5,WAYS=8,WAY_W=3,REGISTER_VICTIM_OWNER=1,DCO_REGISTERED_RANGES=1,
             FULL_LINE_TAG=1,REGISTER_VICTIM_SELECT=1,REGISTER_VICTIM_RANK=1)
         name=f'm{mshrs}-t{targets}'

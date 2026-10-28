@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 module tb_nuca_maintenance;
- parameter SYNC_TAG_BANK=1,HIT_CHAIN=0,FAST_FILL_READ=0;
+ parameter SYNC_TAG_BANK=1,HIT_CHAIN=0,FAST_FILL_READ=0,BACKGROUND_READ_REQUESTS=0;
  parameter LATENCY=8,STALL=1,REORDER=1,FULL_TAG=1;
  reg clk=0,rst_n=0; always #5 clk=~clk;
  reg req_valid=0,req_we=0,rsp_ready=1;
@@ -17,7 +17,7 @@ module tb_nuca_maintenance;
  reg waiting_memory=0;reg [577:0] held;
  wire [577:0] offered={mem_we,mem_tag,mem_addr,mem_data};
  assign mem_ready=model_ready && !stall_memory;
- tnca_nuca_slice #(.FAST_FILL_READ(FAST_FILL_READ),.HIT_CHAIN(HIT_CHAIN),.MAINTENANCE(1),.SYNC_TAG_BANK(SYNC_TAG_BANK),.FULL_LINE_TAG(FULL_TAG),
+ tnca_nuca_slice #(.BACKGROUND_READ_REQUESTS(BACKGROUND_READ_REQUESTS),.FAST_FILL_READ(FAST_FILL_READ),.HIT_CHAIN(HIT_CHAIN),.MAINTENANCE(1),.SYNC_TAG_BANK(SYNC_TAG_BANK),.FULL_LINE_TAG(FULL_TAG),
   .SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1),.MSHR_N(2),.MSHR_W(1),
   .TARGET_N(4),.TARGET_W(2),.RQ_N(4),.RQ_W(2),.TAG_W(5),.DCO_T(1),.DCO_DEAD(1)) dut(
   .clk(clk),.rst_n(rst_n),.maint_valid(maint_valid),.maint_ready(maint_ready),

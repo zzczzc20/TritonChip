@@ -19,6 +19,10 @@ sys.path.insert(0,str(HERE.parents[1]))
 import experiment
 
 
+def absolute_path(path):
+    return path.expanduser().absolute()
+
+
 def wait_idle(probe,expected,*,seconds=900,poll_seconds=10,clock=time.monotonic,sleep=time.sleep):
     idle_since=None
     while True:
@@ -44,7 +48,7 @@ def main():
     p.add_argument('--check-only',action='store_true')
     p.add_argument('--budget-seconds',type=float,default=10800,help='total execution budget across manifests; idle waits excluded')
     a=p.parse_args()
-    a.root=a.root.resolve();a.out=a.out.resolve();a.python=a.python.resolve()
+    a.root=a.root.resolve();a.out=a.out.resolve();a.python=absolute_path(a.python)
     if not 0 < a.budget_seconds <= 10800:raise ValueError('queue budget must be positive and at most three hours')
     specs=[]
     for name in a.manifest:

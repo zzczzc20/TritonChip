@@ -8,7 +8,11 @@
   "device execution falls back to host numerical work or recompiles during decode",
   "the loaded image, clock, or shared-card ownership changes during the run"
  ],
- "expected_counter_changes": [],
+ "expected_counter_changes": [
+  "real prefill/decode launches change completion and memory-port traffic counters; the run records the observed deltas without a predetermined traffic or performance target",
+  "after the first decode graph is compiled, subsequent decode steps add no graphs and perform no host reads",
+  "teacher-forced comparisons, failures and timeouts are recorded rather than assumed to pass"
+ ],
  "expected_observations": [
   "the chat report records the actual prefill/decode steps, graph counts, host transfers, and teacher-forced comparisons",
   "no result is inferred if a step fails or the execution budget expires"

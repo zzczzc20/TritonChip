@@ -5,3 +5,4 @@ source [file normalize [file join [file dirname [info script]] .. .. stage2 inte
 dict set TNCA_IMAGE_PARAMS HBM_STRIPED 1
 dict set TNCA_IMAGE_PARAMS HYBRID_LSU 1
 dict set TNCA_IMAGE_PARAMS SFU_LANES 4
+dict set TNCA_IMAGE_PARAMS HOME_BACKGROUND_READS 1

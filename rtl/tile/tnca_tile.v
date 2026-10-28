@@ -361,30 +361,16 @@ module tnca_tile #(
     // A maintenance size that does not fit saturates (it covers every line).
     //==========================================================================
     localparam SA_W = PHYS_ADDR_W;
-    function [SA_W-1:0] g2_fold;
-        input [63:0] a;
-        begin
-            if (SA_W >= 64) g2_fold = a[SA_W-1:0];
-            else g2_fold = {|(a >> (SA_W-1)), a[SA_W-2:0]};
-        end
-    endfunction
-    function [SA_W-1:0] g2_sat;
-        input [63:0] a;
-        begin
-            if (SA_W >= 64) g2_sat = a[SA_W-1:0];
-            else g2_sat = (|(a >> SA_W)) ? {SA_W{1'b1}} : a[SA_W-1:0];
-        end
-    endfunction
-    wire [SA_W-1:0] sl_req_addr = g2_fold(s_req_addr);
-    wire [SA_W-1:0] sl_maint_base = g2_fold(cache_maint_base);
-    wire [SA_W-1:0] sl_maint_size = g2_sat(cache_maint_size);
-    wire [SA_W-1:0] sl_mem_req_addr, sl_tmu_tl_addr;
+    wire [SA_W-1:0] sl_req_addr, sl_maint_base, sl_maint_size, sl_unused_size;
+    tnca_addr_fold #(.W(SA_W)) u_fold_req (.addr(s_req_addr), .size(64'd0),
+        .addr_w(sl_req_addr), .size_w(sl_unused_size));
+    tnca_addr_fold #(.W(SA_W)) u_fold_maint (.addr(cache_maint_base), .size(cache_maint_size),
+        .addr_w(sl_maint_base), .size_w(sl_maint_size));
+    wire [SA_W-1:0] sl_mem_req_addr;
     generate if (SA_W < 64) begin : g_narrow_home
         assign mem_req_addr = {{(64-SA_W){1'b0}}, sl_mem_req_addr};
-        assign tmu_tl_addr  = {{(64-SA_W){1'b0}}, sl_tmu_tl_addr};
     end else begin : g_full_home
         assign mem_req_addr = sl_mem_req_addr;
-        assign tmu_tl_addr  = sl_tmu_tl_addr;
     end endgenerate
 
     //==========================================================================
@@ -431,7 +417,7 @@ module tnca_tile #(
         .tmu_wr_off(tmu_wr_off), .tmu_wr_data(tmu_wr_data), .tmu_wr_src(tmu_wr_src),
         .tmu_rd_off(tmu_rd_off), .tmu_rd_data(tmu_rd_data),
         .tmu_tl_valid(tmu_tl_valid), .tmu_tl_ready(tmu_tl_ready),
-        .tmu_tl_addr(sl_tmu_tl_addr), .tmu_tl_drop(tmu_tl_drop),
+        .tmu_tl_addr(tmu_tl_addr), .tmu_tl_drop(tmu_tl_drop),   // a 64-bit port at any ADDR_W
         .perf_bypass(perf_bypass), .perf_evict(perf_evict),
         .perf_dead_evict(perf_dead_evict), .perf_gear(perf_gear)
     );

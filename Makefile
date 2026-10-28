@@ -778,6 +778,25 @@ nuca-shared-read: | dirs
 	   done; \
 	 done
 
+# R41 G2: PHYS_ADDR_W (the home slice's narrowed address, rtl/nuca/tnca_addr_fold.v)
+# against the 64-bit slice in lockstep; OOR=1 adds out-of-range addresses.
+ADDR_FOLD_SEEDS ?= 1 7 42
+ADDR_FOLD_CYCLES ?= 200000
+.PHONY: nuca-addr-fold
+nuca-addr-fold: | dirs
+	@for cfg in "0 1" "1 1" "0 0" "1 0"; do \
+	   set -- $$cfg; \
+	   $(IVERILOG) -g2012 $(IVFLAGS) -I $(RTL)/common -y $(RTL)/common \
+	     -P tb_nuca_addr_fold.OOR=$$1 -P tb_nuca_addr_fold.CACHE_DATA_PIPELINE=$$2 \
+	     -o $(BUILD)/tb_nuca_addr_fold_$$1_$$2.vvp $(TB)/nuca/tb_nuca_addr_fold.v \
+	     $(RTL)/nuca/tnca_nuca_slice.v $(RTL)/nuca/tnca_addr_fold.v $(TB)/common/tnca_dram_model.v || exit 1; \
+	   for sd in $(ADDR_FOLD_SEEDS); do \
+	     $(TOOLS)/run_test.sh "NUCA-ADDR-FOLD-oor$$1-pipe$$2-seed$$sd" \
+	       "$(VVP) $(BUILD)/tb_nuca_addr_fold_$$1_$$2.vvp +seed=$$sd +cycles=$(ADDR_FOLD_CYCLES)" \
+	       || exit 1; \
+	   done; \
+	 done
+
 # The same randomised check under DCO's policies (doc/DCO.pdf; the POLICY
 # register of rtl/nuca/tnca_tmu.v). The bench drives a bypassed tensor, a
 # dead-tile FIFO that keeps changing and a flipping slow-core flag; whatever

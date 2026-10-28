@@ -126,12 +126,19 @@ def main():
     ap.add_argument('--point', action='append', required=True)
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--memory-bytes', type=int, default=2 << 20)
+    ap.add_argument('--set', action='append', default=[], metavar='TNCA_KEY=VALUE',
+                    help='a NON-DEFAULT compiler setting for a default-off candidate (G4); '
+                         'recorded in every record, which then counts for no target')
     a = ap.parse_args()
+    extra = dict(kv.split('=', 1) for kv in a.set)
+    if any(not k.startswith('TNCA_') for k in extra):
+        ap.error('--set takes TNCA_* settings only')
     args, identity = backend_args(a.memory_bytes)
     for k in [k for k in os.environ if k.startswith('TNCA_')]:
         del os.environ[k]
     os.environ.update(TNCA_BACKEND='fpga-multicore-sim', TNCA_BACKEND_ARGS=json.dumps(args),
                       TNCA_TORCH_DEVICE='native', TNCA_HOST_TIMEOUT='86400', TNCA_DEADLINE='200000000000')
+    os.environ.update(extra)
     for p in (ROOT, ROOT/'python', ROOT/'compiler/python', ROOT/'tools/asm'):
         sys.path.insert(0, str(p))
     import triton                                    # noqa: F401  (Triton first: backend discovery)
@@ -160,6 +167,7 @@ def main():
                    memory_model='tb/common/tnca_axi_line_model.v (latency 25+19p cycles, 8 IDs, random ready stalls)',
                    software_tree=(rec.get('platform') or {}).get('software_tree'),
                    all_launches=len(per_launch), timed_launches=timed, logs=logs,
+                   non_default_settings=extra, counts_for_target=not extra,
                    wall_seconds=round(time.time() - started, 1))
         with a.out.open('a') as fh:
             fh.write(json.dumps(out) + '\n')

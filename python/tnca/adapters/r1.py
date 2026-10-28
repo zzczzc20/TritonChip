@@ -230,7 +230,7 @@ def assemble(asm_text, *, prov=None):
 def import_ttir(module, func_name, arg_values, *, param_names, target,
                 prov=None, dynamic_args=True, index_opt=False, sparse_maps=False,
                 window_reuse=False, packed_window_unpack=False, large_tiles=False,
-                ieee_div=False):
+                ieee_div=False, tiled_pointwise=0):
     """A Triton TTIR module -> TNCA IR, through R1's importer.
 
     `dynamic_args` defaults to TRUE here, and that is the difference between
@@ -246,6 +246,7 @@ def import_ttir(module, func_name, arg_values, *, param_names, target,
     imp._packed_window_unpack = bool(packed_window_unpack)
     imp.large_tiles = bool(large_tiles)
     imp.ieee_div = bool(ieee_div)
+    imp.tiled_pointwise = int(tiled_pointwise)
     try:
         kernel, builder = imp.run(module, func_name, arg_values,
                                   param_names=param_names,

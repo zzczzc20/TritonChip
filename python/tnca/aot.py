@@ -49,6 +49,9 @@ KNOWN_OPTIONS = {
     'rctx_role_pairs': 'int, 0..2; cap paired programs for fixed-context comparisons (0 uses the target maximum)',
     'bank_alloc': 'int, 0 or 1; use the target bank-aware vector allocator',
     'packed_window_unpack': 'int, 0 or 1; software lane unpack of packed FP16/BF16 DMA windows',
+    'tiled_pointwise': 'int, 0..2; 1-D element-wise programs as a loop over register tiles, '
+                       '1 with tensor-engine transfers where legal, 2 with vector loads/stores only '
+                       '(tnca_cc/pointwise_tiles.py; default 0)',
     'window_reuse': 'int, 0 or 1; reuse disjoint awaited single-role window lifetimes',
     'ieee_div': 'int, 0 or 1; arith.divf correctly rounded (the extended lowering always is)',
     'no_ll': 'bool; at opt_level 2, switch the layout algebra off and use a legal plan instead. The ablation of phase 3.5 section 4.3, not a fallback: O2 without it never silently stops using LinearLayout',
@@ -304,6 +307,7 @@ def check_options(options):
                       ('single_role_pipeline', 'TNCA_SINGLE_ROLE_PIPELINE'),
                       ('physical_chunks', 'TNCA_PHYSICAL_CHUNKS'),
                       ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
+                      ('tiled_pointwise', 'TNCA_TILED_POINTWISE'),
                       ('window_reuse', 'TNCA_WINDOW_REUSE'),
                       ('bank_alloc', 'TNCA_BANK_ALLOC'),
                       ('index_opt', 'TNCA_INDEX_OPT'),
@@ -317,7 +321,7 @@ def check_options(options):
             options.pop(name, None)
             if value:
                 options[name] = value
-        allowed = (0, 1, 2) if name in ('rctx_roles', 'rctx_role_pairs') else (0, 1)
+        allowed = (0, 1, 2) if name in ('rctx_roles', 'rctx_role_pairs', 'tiled_pointwise') else (0, 1)
         if value not in allowed:
             raise ValueError(f'{name} must be one of {allowed}')
     if options.get('rctx_role_pairs') and not options.get('rctx_roles'):
@@ -758,6 +762,11 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         packed_unpack = int(os.environ.get('TNCA_PACKED_WINDOW_UNPACK', '0'))
     if packed_unpack not in (0, 1):
         raise ValueError('packed_window_unpack must be 0 or 1')
+    tiled = (options or {}).get('tiled_pointwise')
+    if tiled is None:
+        tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
+    if tiled not in (0, 1, 2):
+        raise ValueError('tiled_pointwise must be 0, 1 or 2')
     # The extended lowering (large tiles): a kernel the default lowering
     # refuses, or whose code the code store cannot hold, is imported once
     # more with the importer's `large_tiles` set -- separable indices, wide
@@ -776,7 +785,7 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
             result = _lower_imported(
                 module, kernel_name, params, target, prov, options, stages, opt_level,
                 index_opt=index_opt, sparse=sparse, window_reuse=window_reuse,
-                packed_unpack=packed_unpack, large_tiles=large_tiles)
+                packed_unpack=packed_unpack, large_tiles=large_tiles, tiled=tiled)
         except (UnsupportedError, CompileError) as e:
             if large_tiles:
                 if first and first not in str(e):
@@ -807,13 +816,15 @@ _CODE_STORE_BYTES = 0x20000
 
 
 def _lower_imported(module, kernel_name, params, target, prov, options, stages, opt_level, *,
-                    index_opt, sparse, window_reuse, packed_unpack, large_tiles):
+                    index_opt, sparse, window_reuse, packed_unpack, large_tiles, tiled=0):
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
         dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse),
         window_reuse=bool(window_reuse), packed_window_unpack=bool(packed_unpack),
-        large_tiles=large_tiles, ieee_div=bool(_ieee_div(options)))
+        large_tiles=large_tiles, ieee_div=bool(_ieee_div(options)), tiled_pointwise=tiled)
+    if getattr(imp, 'tiled_pointwise_plan', None) is not None:
+        prov.record('tiled_pointwise', imp.tiled_pointwise_plan)
     if imp.large_tiles or imp.ieee_div:
         prov.record('division', 'ieee')
     if getattr(imp, '_packed_unpack_rows', 0):
@@ -888,7 +899,7 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
         prov.record('opt_unobserved_load_other', dlo['sites'])
         sr = strength_reduce(kernel)
         cse = pure_scalar_cse(kernel)
-        dead = drop_dead_pure(kernel)
+        dead = drop_dead_pure(kernel, flat_control=getattr(imp, 'tiled_pointwise_plan', None) is not None)
         prov.record('opt_strength_reduced', sr['sites'])
         prov.record('opt_pure_scalar_merged', cse['merged'])
         prov.record('opt_dead_pure_removed', dead['removed'])
@@ -1264,7 +1275,7 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
         prov.record('opt_unobserved_load_other', dlo['sites'])
         sr = strength_reduce(kernel)
         info = pure_scalar_cse(kernel)
-        dead = drop_dead_pure(kernel)
+        dead = drop_dead_pure(kernel, flat_control=getattr(imp, 'tiled_pointwise_plan', None) is not None)
         prov.record('opt_strength_reduced', sr['sites'])
         prov.record('opt_pure_scalar_merged', info['merged'])
         prov.record('opt_dead_pure_removed', dead['removed'])

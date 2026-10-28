@@ -357,7 +357,7 @@ class Builder:
         return v
 
     # ---- memory -----------------------------------------------------------
-    def load(self, base, *, mask=None, other=0, dtype='f32', size='w'):
+    def load(self, base, *, mask=None, other=0, dtype='f32', size='w', offset=0):
         """A contiguous vector load.
 
         ISA sec 9.1 gives lane i the address base + i*sz, so a contiguous
@@ -365,12 +365,20 @@ class Builder:
         a predicated load leaves masked-off lanes holding whatever was there.
         """
         v = self._value(VECTOR, dtype, hint='ld')
-        self._emit('load', [v], [base], mask=mask, other=other, size=size)
+        if offset:
+            # `[Sa, #imm16]` (ISA 0x10): a byte offset folded into the access.
+            self._emit('load', [v], [base], mask=mask, other=other, size=size, offset=offset)
+        else:
+            self._emit('load', [v], [base], mask=mask, other=other, size=size)
         return v
 
-    def store(self, base, value, *, mask=None, size='w', comment=None):
-        self._emit('store', [], [base, value], mask=mask, size=size,
-                   comment=comment)
+    def store(self, base, value, *, mask=None, size='w', comment=None, offset=0):
+        if offset:
+            self._emit('store', [], [base, value], mask=mask, size=size,
+                       comment=comment, offset=offset)
+        else:
+            self._emit('store', [], [base, value], mask=mask, size=size,
+                       comment=comment)
 
     def gather(self, base, index, *, mask=None, other=0, dtype='f32',
                size='w'):

@@ -799,11 +799,11 @@ class CodeGen:
             self._broadcast_imm(v.reg, int(op.attrs['other']),
                                 comment='other=, materialised (sec 12)')
         self._emit(f"v.ld.{op.attrs['size']}", f"v{v.reg}",
-                    f"[s{base.reg}, #0]", pred=self._pred(mask))
+                    f"[s{base.reg}, #{int(op.attrs.get('offset', 0))}]", pred=self._pred(mask))
 
     def _op_store(self, op):
         base, value = op.operands
-        self._emit(f"v.st.{op.attrs['size']}", f"[s{base.reg}, #0]",
+        self._emit(f"v.st.{op.attrs['size']}", f"[s{base.reg}, #{int(op.attrs.get('offset', 0))}]",
                     f"v{value.reg}", pred=self._pred(op.attrs.get('mask')))
 
     def _op_view(self, op):

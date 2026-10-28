@@ -5954,3 +5954,18 @@ INFO: [Common 17-2834] synth_design peak Virtual Memory [VSS] (MB): overall = 20
 report_utilization: Time (s): cpu = 00:00:12 ; elapsed = 00:00:12 . Memory (MB): peak = 6281.898 ; gain = 0.000 ; free physical = 19459 ; free virtual = 53426
 # report_timing_summary -file $out/timing.rpt
 INFO: [Timing 38-35] Done setting XDC timing constraints.
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2L, Temperature grade: E, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 8 CPUs
+WARNING: [Timing 38-242] The property HD.CLK_SRC of clock port "ap_clk" is not set. In out-of-context mode, this prevents timing estimation for clock delay/skew
+Resolution: Set the HD.CLK_SRC property of the out-of-context port to the location of the clock buffer instance in the top-level design
+report_timing_summary: Time (s): cpu = 00:04:47 ; elapsed = 00:01:34 . Memory (MB): peak = 8719.438 ; gain = 2437.539 ; free physical = 14995 ; free virtual = 49180
+# check_timing -verbose -file $out/check_timing.rpt
+check_timing: Time (s): cpu = 00:00:05 ; elapsed = 00:00:05 . Memory (MB): peak = 8719.438 ; gain = 0.000 ; free physical = 14554 ; free virtual = 48739
+# write_checkpoint -force $out/synth.dcp
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Write ShapeDB Complete: Time (s): cpu = 00:00:04 ; elapsed = 00:00:01 . Memory (MB): peak = 8763.453 ; gain = 12.000 ; free physical = 14387 ; free virtual = 48707
+INFO: [Common 17-1381] The checkpoint '/home/vivado/r41res/c1_2edc9ab8c8d4/out/synth.dcp' has been generated.
+write_checkpoint: Time (s): cpu = 00:01:04 ; elapsed = 00:00:41 . Memory (MB): peak = 8779.820 ; gain = 60.383 ; free physical = 13720 ; free virtual = 48637
+# puts "R40_MULTICORE_SYNTH_DONE=$out/synth.dcp"
+R40_MULTICORE_SYNTH_DONE=/home/vivado/r41res/c1_2edc9ab8c8d4/out/synth.dcp
+INFO: [Common 17-206] Exiting Vivado at Wed Oct 28 16:33:44 2026...

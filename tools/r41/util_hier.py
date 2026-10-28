@@ -185,6 +185,11 @@ def cmd_compare(base, *cands):
                 rc = [r for r in c if r[0][:len(tc[0])] == tc[0] and r[0][len(tc[0]):] == (sub,)]
                 if rb and rc:
                     pairs.append((f'{tb[0][-1]}/{sub}', rb[0][2], rc[0][2]))
+        for pat in [r'g_outlet\[\d+\]\.adapter', r'g_local_tmu\.u_tmu', r'g_shared_tmu\.u_tmu', r'u_mesh']:
+            rb = {r[0][-1]: r for r in b if re.fullmatch(pat, r[0][-1])}
+            rc = {r[0][-1]: r for r in c if re.fullmatch(pat, r[0][-1])}
+            for k in sorted(set(rb) | set(rc)):
+                pairs.append((k, rb[k][2] if k in rb else {}, rc[k][2] if k in rc else {}))
         for name, vb, vc in pairs:
             cells = []
             for k in ['Total LUTs', 'LUTRAMs', 'FFs', 'RAMB36', 'DSP Blocks']:

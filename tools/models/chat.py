@@ -286,7 +286,10 @@ def run_generation(session, processor, spec, inputs, prompt_text, *, new_tokens,
             logits, calls, reused = session.prefill_prompt(inputs, per_image)
             if meter is not None:
                 meter.mem.synchronize()
-            logits = logits.cpu()
+        # The logits download for host-side token selection is the step's output; it is counted separately from
+        # the transfers inside the model call, and its time is inside the step's wall time.
+        logits_bytes = logits.numel() * logits.element_size() if tnca else 0
+        logits = logits.cpu()
         elapsed = time.perf_counter() - started
         token, greedy = select_token(logits, sample, temperature, top_k, top_p, generator)
         candidate_tokens.append(token)
@@ -297,6 +300,7 @@ def run_generation(session, processor, spec, inputs, prompt_text, *, new_tokens,
                          new_graphs=counters["stats"]["unique_graphs"] - graph_start,
                          token=tokens[-1], candidate_token=token, greedy_token=greedy,
                          code_store=_counter_delta(code, code_store_counters() if tnca else None),
+                         logits_download_bytes=logits_bytes,
                          transfers_inside_step=meter.summary() if meter is not None else None))
         for index in range(1, new_tokens):
             if not forced_tokens and tokens[-1] in eos:
@@ -310,7 +314,8 @@ def run_generation(session, processor, spec, inputs, prompt_text, *, new_tokens,
                 logits = session.step(tokens[-1])
                 if meter is not None:
                     meter.mem.synchronize()
-                logits = logits.cpu()
+            logits_bytes = logits.numel() * logits.element_size() if tnca else 0
+            logits = logits.cpu()
             elapsed = time.perf_counter() - started
             token, greedy = select_token(logits, sample, temperature, top_k, top_p, generator)
             candidate_tokens.append(token)
@@ -321,6 +326,7 @@ def run_generation(session, processor, spec, inputs, prompt_text, *, new_tokens,
                              new_graphs=counters["stats"]["unique_graphs"] - graph_start,
                              token=tokens[-1], candidate_token=token, greedy_token=greedy,
                              code_store=_counter_delta(code, code_store_counters() if tnca else None),
+                             logits_download_bytes=logits_bytes,
                              transfers_inside_step=meter.summary() if meter is not None else None))
     finally:
         dynamo.config.error_on_recompile = old_recompile

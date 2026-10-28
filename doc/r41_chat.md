@@ -148,6 +148,34 @@ scale rounding alone accounts for 0.05941731822088129 at that step. That is a
 reason to propose a different rule for future runs, in writing and before
 they start; it does not turn either recorded run into a pass.
 
+### Session, image and default-settings runs on the TLM model (P3)
+
+Domain: **TLM** (uncalibrated SystemC/TLM model built from the current tree,
+sha256 `276a8f12…`), reduced depth, `core-vrf-sync-v5-x8` profile. Commands,
+launchers and source states are in `evidence/r41/chat/p3/runs.json`; raw output
+is in `p3/tlm-vl-session-default.tgz` and `p3/tlm-q35-and-vl-images.tgz`. These
+sources still applied the withdrawn floor-based allowance, so their reports
+print "pass"; the judgments below apply the fixed 0.05 gate.
+
+| Run | Settings | Teacher rel L2 (token 1, 2) | Gate 0.05 | Other result |
+| --- | --- | --- | --- | --- |
+| VL 1 layer, chunk 5, session check | non-default | 0.024659919041966807, 0.02574394384689021 | pass | session repeat bitwise equal; 3 graphs in total, none after the first prompt; 18 code-store evictions per decode token |
+| VL 1 layer | default | 0.024659919041966807, 0.02574394384689021 | pass | — |
+| VL 1 layer (current source, fixed gate in the report) | default | 0.024659919041966807, 0.02574394384689021 | pass | steady decode: 0 host reads, 40 bytes written per token; the 303872-byte logits download is reported separately as `logits_download_bytes` |
+| VL 1 layer, two images | default | 0.021313732649428156, 0.023404515994576682 | pass | vision tower once per image (5615.917901336215 s and 5505.577816525474 s of model wall time) |
+| Qwen3.5 4 layers, chunk 7, session check | non-default | 0.035197324952002645, 0.060020090237703445 | **fail** | session repeat bitwise equal; the post-reset prompt compiled one new graph, the repeat none |
+| Qwen3.5 4 layers | default | 0.035197324952002645, 0.060020090237703445 | **fail** | 74 code-store evictions per steady decode token |
+
+Both argmax choices match in every run. The few small host reads in the first
+prefill and decode calls come from Inductor's compile-time constant folding
+(`joint_graph.py`), not from model execution. The Qwen3.5 second-token value is the
+same in all four Qwen3.5 TLM runs (default and non-default settings, with and
+without chunked prefill), and the CPU reference's own reciprocal-versus-IEEE
+scale-rounding difference at that token is 0.05941731822088129. A full-depth
+Qwen3.5 board run is therefore expected to be at risk under the 0.05 gate; it
+will be recorded as it comes out. Any different rule needs a written proposal
+approved before the run that uses it.
+
 ### Full-depth board results (queue from immutable source 51aef19)
 
 Domain: **board**, U280 with the run-1 image (sha256 `30e79769…`, UUID

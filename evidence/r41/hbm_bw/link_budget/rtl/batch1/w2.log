@@ -1,3 +1,6 @@
 op.add/membound/fp16-small-strided-r32-c1024 pass [153045] [153050]
 op.exp/membound/fp16-small-contig-r32-c1024 pass [104667] [104672]
 op.cast/membound/fp32-to-fp16-small-contig-r32-c1024 pass [102456] [102461]
+op.layernorm/membound/fp16-small-contig-r32-c1024 pass [159785] [159790]
+op.add/membound/bf16-small-contig-r32-c1024 pass [137996] [138001]
+op.sum/membound/fp16-small-strided-r32-c1024 pass [56239] [56244]

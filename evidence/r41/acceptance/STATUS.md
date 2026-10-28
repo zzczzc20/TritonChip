@@ -997,3 +997,8 @@ spec/r41/chat/board_queue_v3_vl.sh "$PWD" "$HOME/r41_chat_51f31e8_vl_out"
 
 Board time: each queue at most 10,800 s of execution plus at least 900 s of idle wait, so at most about 6.5 h for both.
 Prepared, not launched.
+
+TLM confirmation of 51f31e8 (appended): `tlm-vl-quality-v3` (Qwen3-VL, 1 layer, default settings, three prompts of
+different lengths with chunked prefill) passes. The session compiled 2 graphs for the first prompt and none afterwards,
+and every device answer equals the 1-layer CPU reference token for token (`chat/p3/tlm-vl-quality-v3.tgz`; a
+reduced-depth mechanism proof, not a quality result). The 51f31e8 commands above stand.

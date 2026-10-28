@@ -286,6 +286,11 @@ Commands and sources are in `evidence/r41/chat/p3/runs.json`.
   graph-count check (Inductor CPU backend, `dynamic=False`, three prompts of 11, 20 and
   25 tokens, chunk 8; `p3/graphcount.tgz`) goes from 3, 2 and 2 new graphs to 2, 0 and 0,
   with no recompilation.
+- *Chunked quality subset on the staged source 51f31e8, Qwen3-VL, 1 layer*
+  (`tlm-vl-quality-v3`, three prompts of different lengths, 2 tokens each): passes. The
+  session compiled 2 graphs for the first prompt and none afterwards, and every device
+  answer equals the 1-layer CPU reference token for token. This is a reduced-depth
+  mechanism proof, not a quality result.
 - *X8 Hub-kernel control on RTL* (`x8rtl-v2`, Icarus, `core-vrf-sync-v5-x8`): the first
   case (eager, x(1,7,384) → 320) passes bit for bit. The compiled case of the same shape hit
   the 14,400-second host timeout of the simulation, and the 1×16×2048 case exceeded the

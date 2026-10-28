@@ -194,10 +194,10 @@
    "domain": "TLM",
    "launcher": "tlmrun-default.sh",
    "profile": "core-vrf-sync-v5-x8",
-   "source": "this commit",
+   "source": "51f31e8",
    "settings": "default TNCA settings",
    "command": "chat_quality.py --model vl --layers 1 --device tnca --spec spec/r41/chat/quality-v1.json --reference quality-ref-vl-l1/quality.json --prefill-chunk 8 --prompts fact,arith,instruct --max-new-tokens 2",
-   "archive": "(running)"
+   "archive": "tlm-vl-quality-v3.tgz"
   }
  ]
 }

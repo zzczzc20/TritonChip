@@ -1,0 +1,96 @@
+# 2026-10-28T12:12:58Z commit 0151b0d (+ working-tree report/index edits committed next)
+$ make r41-stage2-acceptance PYTHON=python3
+{
+  "scope": "Rectified 2026-10-28 against doc/engineering_discipline.md and the discipline audit (evidence/r41/hbm_bw/AUDIT.md, R1-R18): unsourced attributions corrected, post-hoc tolerance and check changes withdrawn, locality-control results quarantined, domains labelled; historical failures and persistent full-model gaps remain.",
+  "integrity": "passed",
+  "status": "not accepted",
+  "counts": {
+    "passed": 38,
+    "failed": 2,
+    "not measured": 47,
+    "blocked": 7
+  },
+  "errors": [],
+  "review_only_evidence": [
+    "rtl/core/tnca_core.v"
+  ],
+  "followups": [
+    {
+      "id": "P8.fp8_hub",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "35/35 Hub/compile/FP8Linear cases pass numerically on the approved run-1 image. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/environment.json",
+        "evidence/r41/acceptance/p8/board-records.tgz",
+        "evidence/r41/stage2/board/fp8_env_and_hub_runs.md"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P8.qwen_fp8",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from the required full BF16 model. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/board-records.tgz"
+      ],
+      "closure_plan": null
+    }
+  ]
+}
+make: *** [Makefile:2351: r41-stage2-acceptance] Error 1
+exit 2
+$ make r41-acceptance PYTHON=python3
+{
+  "scope": "Rectified 2026-10-28 against doc/engineering_discipline.md and the discipline audit (evidence/r41/hbm_bw/AUDIT.md, R1-R18): unsourced attributions corrected, post-hoc tolerance and check changes withdrawn, locality-control results quarantined, domains labelled; historical failures and persistent full-model gaps remain.",
+  "integrity": "passed",
+  "status": "not accepted",
+  "counts": {
+    "passed": 38,
+    "failed": 2,
+    "not measured": 47,
+    "blocked": 7
+  },
+  "errors": [],
+  "review_only_evidence": [
+    "rtl/core/tnca_core.v"
+  ],
+  "followups": [
+    {
+      "id": "P8.fp8_hub",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "35/35 Hub/compile/FP8Linear cases pass numerically on the approved run-1 image. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/environment.json",
+        "evidence/r41/acceptance/p8/board-records.tgz",
+        "evidence/r41/stage2/board/fp8_env_and_hub_runs.md"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P8.qwen_fp8",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from the required full BF16 model. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
+      "evidence": [
+        "evidence/r41/acceptance/p8/metrics.json",
+        "evidence/r41/acceptance/p8/board-records.tgz"
+      ],
+      "closure_plan": null
+    }
+  ],
+  "stage1_frozen_snapshot_counts": {
+    "pass": 61
+  }
+}
+make: *** [Makefile:2353: r41-acceptance] Error 1
+exit 2
+$ python3 tools/performance_harness/test_stage2_acceptance.py
+Ran 8 tests in 0.111s
+
+OK

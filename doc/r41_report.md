@@ -5,6 +5,11 @@ The acceptance review is complete against the evidence available at this
 cutoff. R41 product completion is not established: both stages retain unmet
 Required criteria. R40 remains `closed-with-failures`; its history is unchanged.
 
+> **Rectification, 2026-10-28.** Several judgments in the dated sections below
+> were corrected after the discipline audit; see "Rectification — 2026-10-28"
+> at the end of this report. The current ledger is **38 passed, two failed,
+> 47 not measured, seven blocked**.
+
 ## Delivery update: P8 FPGA-host FP8
 
 P8 is closed from the completed runs at `86a3d929cf3d_fp8`, retrieved
@@ -251,3 +256,54 @@ pipeline manifest was not in this queue.
 The validated ledger is now **45 passed, two failed, 40 not measured, seven
 blocked**. Stage 2 and overall R41 remain not accepted. Raw files and member
 hashes are in `board-p2p4-7b10e7b-try2.tgz` and `board-p2p4-index.json`.
+
+## Rectification — 2026-10-28
+
+The discipline audit of 2026-10-28 (`evidence/r41/hbm_bw/AUDIT.md`, findings
+R1–R18 for `r41`) found unsourced attributions, a tolerance and a check
+changed after failures, results counted from quarantined mechanisms, and
+missing domain labels. `doc/engineering_discipline.md` is binding. The lead's
+decisions are implemented as follows; statements in the dated sections above
+that conflict with this section are superseded by it, and the details are in
+`evidence/r41/acceptance/STATUS.md` ("rectification of the audit findings").
+
+- **Attribution (R2–R5, R14).** P8 (63acb94) was run by an agy/Gemini session
+  that the lead launched on the author's instruction of 2026-10-26, not by the
+  lead. It depends on a `.pth` that sets `torch.version.cuda`, so it is a
+  recorded deviation: correct against its references, not a standard-path
+  default result. The P2/P4 `_try2` job and the 51aef19 chat queue were
+  launched by the lead; their launch records, including the unarchived failed
+  try 1, are in `evidence/r41/acceptance/launch_records/`. The old-mapping B40
+  load is covered by the author's standing permission of 2026-10-21. "The user
+  authorized … P0, P8, P1–P6" has no source and is marked unsupported.
+- **TLM q35 (R6).** The 0.05 limit is the gate again; q35-v1 and the
+  bit-identical q35-v2 are **failed**. The floor-based limit was introduced
+  after the result was seen and is not used.
+- **S2-02.D.sensitivity (R7)** is not measured: it was passed on probes its own
+  README calls inconclusive. **S2-02.A and S2-03.C (R8)** are labelled as
+  SystemC/TLM plus RTL evidence; they are Study items that do not require the
+  board.
+- **S2-04.D.4 (R9)** is not measured: the opt-in check had been changed to
+  repeat the capacity refusal. The original check is restored.
+- **Non-default knobs (R10, R13).** The pipeline arms and the chat manifest use
+  non-default settings; their results do not count as default standard-path
+  results. The staged manifests are unchanged.
+- **R11** (the restored Stage 1 failure record) is byte-identical to 51f6816^.
+  **R12:** the `tnca_core.v` evidence hash is review-only.
+- **Locality controls (R15).** `Graph.replay(locality=True)` issues hand-built
+  TNCA-IR kernels (discipline §2.2.5). The controls are quarantined and count
+  for no item, so **S2-03.A.1–A.5 are not measured**.
+
+**Non-regression gate (R16, R17).** The merge e4770b6 and the stream removal
+were gated on GB10 against the pre-merge base
+(`evidence/r41/acceptance/gate_after_rectification/`): 113 of 113 original
+points compile to unchanged code; strict `make compiler` passes 157 unit tests
+with no skips and 6 IR files; every RTL regression (core suites, multicore,
+`r41-xpose8-rtl`, `lsu-reqreg`, `fma-deep`, lint, `r40-*`) passes with result
+lines and cycle counts identical to the base, apart from added cases; the FMA
+miter finds 0 mismatches in 210,000,000 vectors × 2 latencies. Two stale test
+fixtures and one stale evidence hash were fixed; pre-existing failures are
+recorded.
+
+The rectified ledger is **38 passed, two failed, 47 not measured, seven blocked** (integrity passed); Stage 2 and R41 remain
+not accepted.

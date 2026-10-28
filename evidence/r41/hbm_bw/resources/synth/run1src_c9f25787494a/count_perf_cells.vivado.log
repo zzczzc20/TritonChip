@@ -1,0 +1,59 @@
+#-----------------------------------------------------------
+# Vivado v2023.2 (64-bit)
+# SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+# IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+# SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+# Start of session at: Wed Oct 28 18:28:37 2026
+# Process ID: 48505
+# Current directory: /home/vivado/r41res
+# Command line: vivado -mode batch -nojournal -log count_perf_run1src.log -source count_perf_cells.tcl -tclargs /home/vivado/r41res/run1src_c9f25787494a/out/synth.dcp
+# Log file: /home/vivado/r41res/count_perf_run1src.log
+# Journal file: 
+# Running On: ee4e138, OS: Linux, CPU Frequency: 2419.201 MHz, CPU Physical cores: 8, Host memory: 33334 MB
+#-----------------------------------------------------------
+source count_perf_cells.tcl
+# open_checkpoint [lindex $argv 0]
+Command: open_checkpoint /home/vivado/r41res/run1src_c9f25787494a/out/synth.dcp
+
+Starting open_checkpoint Task
+
+Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00.03 . Memory (MB): peak = 1262.672 ; gain = 0.000 ; free physical = 29898 ; free virtual = 63668
+INFO: [Device 21-403] Loading part xcu280-fsvh2892-2L-e
+Netlist sorting complete. Time (s): cpu = 00:00:02 ; elapsed = 00:00:02 . Memory (MB): peak = 3748.043 ; gain = 4.000 ; free physical = 27146 ; free virtual = 61215
+INFO: [Netlist 29-17] Analyzing 69530 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 5 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2023.2
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Read ShapeDB Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:01 . Memory (MB): peak = 4563.738 ; gain = 236.102 ; free physical = 26322 ; free virtual = 60408
+INFO: [Timing 38-478] Restoring timing data from binary archive.
+INFO: [Timing 38-479] Binary timing data restore complete.
+INFO: [Project 1-856] Restoring constraints from binary archive.
+INFO: [Project 1-853] Binary constraint restore complete.
+Netlist sorting complete. Time (s): cpu = 00:00:00.05 ; elapsed = 00:00:00.05 . Memory (MB): peak = 6909.949 ; gain = 0.000 ; free physical = 24039 ; free virtual = 58162
+INFO: [Project 1-111] Unisim Transformation Summary:
+  A total of 8049 instances were transformed.
+  DSP48E2 => DSP48E2 (DSP_ALU, DSP_A_B_DATA, DSP_C_DATA, DSP_MULTIPLIER, DSP_M_DATA, DSP_OUTPUT, DSP_PREADD, DSP_PREADD_DATA): 520 instances
+  RAM16X1D => RAM32X1D (RAMD32(x2)): 12 instances
+  RAM16X1S => RAM32X1S (RAMS32): 384 instances
+  RAM256X1D => RAM256X1D (MUXF7(x4), MUXF8(x2), RAMD64E(x8)): 1536 instances
+  RAM256X1S => RAM256X1S (MUXF7(x2), MUXF8, RAMS64E(x4)): 144 instances
+  RAM32M => RAM32M (RAMD32(x6), RAMS32(x2)): 35 instances
+  RAM32M16 => RAM32M16 (RAMD32(x14), RAMS32(x2)): 1782 instances
+  RAM32X1D => RAM32X1D (RAMD32(x2)): 60 instances
+  RAM64M8 => RAM64M8 (RAMD64E(x8)): 3468 instances
+  RAM64X1D => RAM64X1D (RAMD64E(x2)): 108 instances
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2023.2 (64-bit) build 4029153
+open_checkpoint: Time (s): cpu = 00:01:02 ; elapsed = 00:01:04 . Memory (MB): peak = 6909.984 ; gain = 5647.312 ; free physical = 24037 ; free virtual = 58161
+# foreach pat {*u_core/perf_* *u_slice/perf_* *adapter/read_lines* *adapter/write_lines* *adapter/read_beats* *adapter/write_beats* *perf_*} {
+#   set c [get_cells -quiet -hierarchical -filter "IS_PRIMITIVE && PRIMITIVE_GROUP == REGISTER && NAME =~ $pat"]
+#   puts "R41_PERF_CELLS pattern=$pat registers=[llength $c]"
+# }
+R41_PERF_CELLS pattern=*u_core/perf_* registers=128
+R41_PERF_CELLS pattern=*u_slice/perf_* registers=972
+R41_PERF_CELLS pattern=*adapter/read_lines* registers=192
+R41_PERF_CELLS pattern=*adapter/write_lines* registers=192
+R41_PERF_CELLS pattern=*adapter/read_beats* registers=0
+R41_PERF_CELLS pattern=*adapter/write_beats* registers=0
+R41_PERF_CELLS pattern=*perf_* registers=1100
+INFO: [Common 17-206] Exiting Vivado at Wed Oct 28 18:29:57 2026...

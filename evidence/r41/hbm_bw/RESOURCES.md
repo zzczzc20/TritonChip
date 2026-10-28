@@ -15,9 +15,11 @@ Every number below is read from a report produced by a recorded run (§8 lists t
 - **Floating point is the largest single cost.** The kernel instantiates 96 binary32 FMAs (16 in each core's vector FPU and 16 in each core's matrix engine). In kernel synthesis of the run-1 source they take 229,008 LUTs, 28.3 % of the kernel; their normalisation stage alone takes 130,656 (16.1 %).
 - **Next come the core's data-movement structures:** the two-unit LSU (25,435 LUTs and 13,639 FFs per core), the banked vector register file's read crossbar (13,784 LUTs per core outside the banks), the NUCA slice (30,647 LUTs per tile, 9,644 of them LUTRAM), the tensor transfer engine (14,494) and the barrier unit (7,450).
 - **Two capability-neutral removals were built, regression-tested and screened** (both default-off, behind new image parameters):
-  - **`AXI_LINE_LUTRAM=1`**: the outlet's eight 512-bit slot lines move from reset registers into single-write-port distributed RAM. Outlet screen: routed LUTs 6,942 → 1,389, FFs 6,131 → 2,027, CLBs 1,952 → 399 per outlet, WNS +4.083 → +4.057 ns. All three outlets sit in SLR0. *(Kernel synthesis: §4.2.)*
-  - **`NUCA_SHARED_DATA_READ`**: fewer LUTRAM read ports on the slice's 128 Kbit line array. Mode 1 (one port) saves 4,684 LUTRAM per slice in kernel synthesis, but the tile-0 screen lost 0.552 ns of slack to a structural path, so it is not recommended. Mode 2 (lookup port kept, the rest shared) is the candidate. *(Measurements: §4.1.)*
-- **Measured costs of performance and timing features** (removing them keeps every capability but is a performance or timing trade-off, so they are listed for the author, not recommended): §5.
+  - **`AXI_LINE_LUTRAM 1`** (§4.2): the outlet's eight 512-bit slot lines move from reset registers into single-write-port distributed RAM. Outlet screen, per outlet: routed LUTs 6,942 → 1,389, FFs 6,131 → 2,027, CLBs 1,952 → 399, WNS +4.083 → +4.057 ns. Kernel synthesis: −6,153 LUTs and −4,106 FFs per outlet. All three outlets are in SLR0, so this is the largest SLR0 saving found.
+  - **`NUCA_SHARED_DATA_READ 2`** (§4.1): one fewer LUTRAM copy of the slice's 128 Kbit line array. Kernel synthesis: −2,332 LUTRAM and −2,730 to −3,454 LUTs per slice. Tile-0 screen: −2,478 routed LUTs, −407 CLBs, WNS +0.838 → +0.772 ns, with the worst path in untouched SFU logic. Mode 1 (a single port) saves twice the LUTRAM but lost 0.552 ns to a structural path, so it is not recommended.
+  - Together (kernel synthesis): −27,077 LUTs and −12,877 FFs of the kernel's 814,043 and 242,620.
+  - Both changed nothing in the default build (identical kernel synthesis) and passed the lockstep, unit and board-top regressions (§7).
+- **Measured costs of performance and timing features** (§5; removing one keeps every capability but trades performance or timing, so none is recommended). The second LSU (`LSU_INFLIGHT 2`) costs 35,925 kernel LUTs; the three DCO/TMU replicas cost 13,746 LUTs more than one shared TMU; `MTX_ABUF` costs 1,329; `VRF_PREFETCH` costs nothing measurable.
 - **Options that would remove or narrow an architectural capability** are listed in §6 for the author's decision and were not implemented.
 
 ## 2. Where the resources go
@@ -147,7 +149,7 @@ By module type, over the whole kernel (run-1 source; `resources/tables/run1src_s
 
 **DCO/TMU (three replicas, 16,836 LUTs).** `DCO_LOCAL_REPLICAS 1` keeps one TMU state copy next to each slice (a timing fix for the cross-SLR TMU paths); each replica holds the 256-entry live table and the tensor ranges.
 
-**Debug, trace and counters.** All `$display` tracing and the scheduling checkers in `tnca_core.v` are under `ifndef SYNTHESIS` and do not reach the image. The image keeps hardware performance counters: 20 × 64-bit counters per core (`perf_*` in `tnca_core.v`), ten 32-bit counters per slice and four 64-bit counters per outlet. They are read by the board diagnostics, so they are listed in §6, not removed.
+**Debug, trace and counters: not a material cost.** All `$display` tracing and the scheduling checkers in `tnca_core.v` are under `ifndef SYNTHESIS` and do not reach the image. The RTL declares 20 × 64-bit performance counters per core, ten 32-bit counters per slice and four 64-bit counters per outlet. Most of the core counters are not connected above the tile (`tnca_tile.v` leaves the stall counters open, and `tnca_multicore_shell.v` connects none of `tnca_top`'s `perf_*` outputs), so synthesis removes them. Counting the registers that survive in the run-1 source synthesis (`resources/host/count_perf_cells.tcl`, log in `resources/synth/run1src_c9f25787494a/`) gives 1,100 `perf_*` registers in the whole kernel (128 in the cores, 972 in the three slices), plus 192 for the outlets' line counters (the beat counters are removed). Together that is about 0.6 % of the kernel's 231,691 registers.
 
 ## 4. Capability-neutral removals: built, regression-tested, screened
 
@@ -189,7 +191,7 @@ The line array maps to `RAM256X1D ×512` alone (the `RAM64M8 ×592` copies are g
 
 The line array maps to `RAM256X1D ×512` plus `RAM64M8 ×296` (one of the two `RAM64M8` copies is gone). Mode 2's worst tile path is in the SFU's exp2 table address (`u_vfpu/g_sfu`), RTL that this change does not touch; the slice's own worst path is slightly better than in the base screen. One screen per build is a single placement, and run 1 saw the same family move by 0.6 ns between placements, so differences of this size are within placement variance.
 
-**Regression** (§7): the lockstep bench `tb_nuca_shared_read` (both modes, with and without the cache data pipeline, two DCO policies, three seeds, 200,000 cycles each) compares every output of the new and the delivered slice on every cycle under random loads, stores, every atomic opcode, evictions, maintenance and an out-of-order stalling DRAM model. Two deliberately broken variants of mode 1 fail it. `make nuca`, `make nuca-dco` and the board top at the image's parameters (`image_geometry_tests.py`) pass with each mode.
+**Regression** (§7): the lockstep bench `tb_nuca_shared_read` (both modes, with and without the cache data pipeline, two DCO policies, three seeds, 200,000 cycles each) compares every output of the new and the delivered slice on every cycle under random loads, stores, every atomic opcode, evictions, maintenance and an out-of-order stalling DRAM model. The deliberately broken variants listed in §7 (modes 1 and 2) fail it. `make nuca`, `make nuca-dco` and the board top at the image's parameters (`image_geometry_tests.py`) pass with each mode.
 
 **Risk.** Mode 2: low; it adds one state-decoded multiplexer level on reads whose addresses are all registers. Neither mode changes the number of cycles of any engine state. Mode 1: the 0.552 ns structural path above.
 
@@ -219,7 +221,7 @@ Kernel synthesis of the image with `AXI_LINE_LUTRAM 1` (`c2_line_lutram`, commit
 
 The kernel delta also contains synthesis noise in RTL that did not change: tile 0's `u_core` moved by +331 LUTs and the TMU by −258. Kernel synthesis of identical core RTL varies by a few hundred LUTs per tile from run to run of different tops (§8). The three outlets are all in SLR0, so the whole outlet saving lands there; the outlet screen puts it at 1,553 CLBs per outlet when routed on its own.
 
-**Regression** (§7): `tools/r40/line_axi_tests.py --line-lutram` runs the 78-configuration outlet matrix with the new build and the delivered build in lockstep inside the bench (`tb_line_axi.LINE_LUTRAM`), comparing every output on every cycle; the board top at the image's parameters runs with the parameter set. Two deliberately broken variants (a wrong read slot, a fixed W slot) fail the lockstep check.
+**Regression** (§7): `tools/r40/line_axi_tests.py --line-lutram` runs the 78-configuration outlet matrix with the new build and the delivered build in lockstep inside the bench (`tb_line_axi.LINE_LUTRAM`), comparing every output on every cycle; the board top at the image's parameters runs with the parameter set. The deliberately broken variants listed in §7 (a wrong read slot, a fixed W slot) fail the lockstep check.
 
 **Risk.** Low. The read of `m_rid`'s beats is now an asynchronous LUTRAM read addressed by the AXI R channel's ID; in the screen it does not limit timing (+4.057 ns at 10 ns). A slot's previous contents are no longer reset to zero, which is not observable because a slot's data is read only after the same tenure wrote it (the lockstep run checks this across reset, fault and malformed-burst modes).
 
@@ -244,7 +246,16 @@ Tile-0 screen of this build: §4.1 (mode 2). The outlets are outside the tile, s
 
 These parameters add hardware for performance or for timing closure. Turning one off keeps every instruction, format, precision and SFU function, but slows some programs or reopens a timing path, so the decision belongs to the author with a performance non-regression measurement (discipline §2.4). The costs are measured by kernel synthesis of the image with one parameter changed.
 
-PENDING-P
+Kernel synthesis of commit `08c2601` with images that each differ from `image.tcl` in one parameter, compared with `base` (`resources/tables/compare_p1_p4.md`). The performance column quotes the R39 leave-one-out study (`doc/r39_report.md` §3, RTL simulation on the R39 `tiny` suite, relative to the final R39 configuration). It was not re-measured here.
+
+| Parameter change | Kernel LUTs | Kernel FFs | Where the saving is | What it costs |
+|---|---:|---:|---|---|
+| `LSU_INFLIGHT 2 → 1` (one LSU instead of the pair) | −35,925 | −20,921 | −11,809 LUTs and −6,966 FFs in tile 0, similarly in each tile | R39-08: disabling it slowed the suite 1.084× (geometric) and +10.7 % in cycles. It is the core's only source of two accesses in flight, so it matters more, not less, for the bandwidth target |
+| `DCO_LOCAL_REPLICAS 1 → 0` (one shared TMU instead of three replicas) | −13,746 | −4,921 | The three replicas (17,079 LUTs, one per SLR) are replaced by one TMU of 4,067 LUTs | The replicas were added to close the cross-SLR TMU paths. The shared TMU would sit in one SLR and broadcast its state to the other two; its timing is unscreened |
+| `MTX_ABUF 1 → 0` | −1,329 | −15 | −443 LUTs per tile (−296 LUTRAM, the operand buffer) | A timing fix for the VRF-to-MAC operand capture (F09 in `stage2/run1/README.md`), which run 1 left at +0.079 ns in SLR0 |
+| `VRF_PREFETCH 1 → 0` | +155 | +44 | None measurable: within kernel-synthesis noise | R39-06/07: disabling it slowed the suite 1.147× |
+
+**Reading.** The only large saving among the performance features is the second LSU, and it buys the memory-level parallelism that the bandwidth plan needs. `DCO_LOCAL_REPLICAS` and `MTX_ABUF` are timing fixes on near-critical SLR0 families. None of these is recommended for removal; they are listed so that the author can weigh each against the area it costs.
 
 ## 6. Options that need the author's approval (not implemented)
 
@@ -257,7 +268,6 @@ Each of these would remove or narrow an architectural capability, a semantic ran
 | `ACC_N` 16 → 8 accumulator slots | Half of the accumulator file (2,560 LUTRAM and 4,096 FFs per core) | Accumulator slots visible to `a.*` and the matrix instructions |
 | `BAR_N` 32 → 16 barriers, or narrower epochs (`EPOCH_W` 48) | Up to half of the barrier unit (7,450 LUTs, 3,891 FFs per core) | Barrier names and epoch range visible to software |
 | Narrow internal physical addresses (64 → 34 bits) in the slice, LSU and outlet tables | Part of the 64-bit address registers and comparators in `rq_addr`, `ms_addr`, `ms_wbadr`, `lane_addr`, `address`/`bus_address` | The 64-bit address range seen by hardware; out-of-range addresses would alias instead of faulting |
-| Narrow or remove hardware performance counters (20 × 64 bit per core, 10 × 32 per slice, 4 × 64 per outlet) | The counters' registers and incrementers | Board-level observability used for performance diagnosis |
 | A smaller FMA: one subtraction order plus a swap, or a DSP-based normalising shift | Part of the 130,656 LUTs of the normalise stage | Nothing architectural if bit-exact, but it touches the single rounding implementation of the core, so it needs exhaustive numeric verification and the author's agreement before it is attempted |
 
 ## 7. Regression results

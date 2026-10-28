@@ -502,13 +502,18 @@ class ChatApplication:
                     interpretation="same-session repeat after an intervening conversation; bitwise equality of "
                                    "logits and candidate tokens is required")
 
-    def repl(self):
+    def repl(self, lines=None, transcript=None):
+        """Interactive chat; with `lines` (script mode) the same commands come from a file, every turn's report
+        is appended to `transcript`, and a failed turn stops the script."""
         print("Qwen TNCA chat. /help lists commands; /quit exits.")
         images = [Path(p).expanduser() for p in (self.args.image or [])]
+        source = iter(lines) if lines is not None else None
         while True:
             try:
-                line = input("you> ").strip()
-            except EOFError:
+                line = (next(source) if source is not None else input("you> ")).strip()
+                if source is not None:
+                    print("you>", line, flush=True)
+            except (EOFError, StopIteration):
                 break
             if not line:
                 continue
@@ -544,8 +549,13 @@ class ChatApplication:
                 report = self.generate(line, open_images(images), keep_history=True)
             except ValueError as error:          # e.g. the conversation no longer fits the static bucket
                 print("error>", error, "(use /reset)", flush=True)
+                if transcript is not None:
+                    transcript.append(dict(user=line, status="refused", error=str(error)))
+                    return False
                 continue
             images = []
+            if transcript is not None:
+                transcript.append(dict(user=line, assistant=report["generated_text"], report=public_report(report)))
             print("assistant>", report["generated_text"], flush=True)
             stats = report["statistics"]
             print(json.dumps({k: stats[k] for k in ("prefill_seconds", "decode_steps",
@@ -553,6 +563,7 @@ class ChatApplication:
                                                      "decode_tokens_per_second")}
                              | {"reused_cached_tokens": report["steps"][0]["reused_cached_tokens"],
                                 "new_graphs": report["session"]["new_graphs_this_prompt"]}), flush=True)
+        return True
 
 
 def user_message(prompt, images=()):
@@ -577,6 +588,9 @@ def parser():
     ap.add_argument("--image", action="append",
                     help="an image for the prompt (repeatable); the vision tower runs once per image")
     ap.add_argument("--interactive", action="store_true")
+    ap.add_argument("--script", type=Path,
+                    help="run the interactive session from this file (one prompt or /command per line) and write "
+                         "a transcript report to --out")
     ap.add_argument("--new-tokens", type=int, default=32)
     ap.add_argument("--bucket", type=int, default=256)
     ap.add_argument("--layers", type=int, help="reduced-depth proof only; not a full-model run")
@@ -608,12 +622,27 @@ def main(argv=None):
         raise ValueError("check-tokens must be in 0..new-tokens")
     if args.max_rel_l2 < 0:
         raise ValueError("numerical allowances must be nonnegative")
-    if args.interactive and args.check_tokens:
+    if (args.interactive or args.script) and args.check_tokens:
         raise ValueError("interactive teacher forcing would move the model between CPU and TNCA; use one-shot mode")
     app = ChatApplication(args)
     if args.interactive:
         app.repl()
         return 0
+    if args.script:
+        transcript = []
+        try:
+            completed = app.repl(args.script.read_text().splitlines(), transcript)
+        finally:
+            if args.out:
+                args.out.mkdir(parents=True, exist_ok=True)
+                session = app.session
+                (args.out / "transcript.json").write_text(json.dumps(dict(
+                    schema="tnca-qwen-chat-transcript/1", model=app.spec.name, device=args.device,
+                    model_scope="reduced-depth-proof" if args.layers else "full-checkpoint",
+                    script=str(args.script), turns=transcript, load=app.load_report, versions=L.versions(),
+                    cache_resets=session.resets if session else None,
+                    device_target=device_target() if args.device == "tnca" else None), indent=2) + "\n")
+        return 0 if completed and all(t.get("report", {}).get("status") == "pass" for t in transcript) else 2
     images = open_images([Path(p).expanduser() for p in (args.image or [])])
     try:
         report = app.generate(args.prompt, images)

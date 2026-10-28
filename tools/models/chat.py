@@ -194,11 +194,19 @@ class Session:
         return per_image, calls
 
     def _call_prefill(self, ids, positions, vision):
+        # Canonical strides: a slice of the whole prompt keeps the prompt length as the stride of its size-1 batch
+        # dimension, and the compiled graph is guarded on input strides, so every new prompt length recompiled
+        # (dynamo: "tensor 'input_ids' stride mismatch at index 0"; CPU graph-count check,
+        # evidence/r41/chat/p3/graphcount.tgz).
+        ids = ids.clone(memory_format=torch.contiguous_format)
+        positions = positions.clone(memory_format=torch.contiguous_format)
         result = self.prefill(ids.to(self.dev), positions.to(self.dev), self.cache,
                               None if vision is None else vision)
         return result[0][0, -1]
 
     def _call_decode(self, ids, positions):
+        ids = ids.clone(memory_format=torch.contiguous_format)
+        positions = positions.clone(memory_format=torch.contiguous_format)
         return self.decode(ids.to(self.dev), positions.to(self.dev), self.cache)[0]
 
     def prefill_prompt(self, inputs, per_image):

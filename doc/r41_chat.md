@@ -276,6 +276,16 @@ Commands and sources are in `evidence/r41/chat/p3/runs.json`.
   Repeating the first prompt added no graph and reproduced every logit and candidate
   token bit for bit (80 code-store evictions in between). The teacher check passes the
   registered rule (0.024659919041966807, 0.02574394384689021, argmax equal).
+- *Chunked quality subset, Qwen3-VL, 1 layer* (`tlm-vl-quality-v2`): no crash. The second
+  turn reused 24 cached tokens. It exposed one more recompilation: every new prompt added
+  two graphs, because the chunk and token inputs were slices of the whole prompt whose
+  size-1 batch dimension kept the prompt length as its stride (dynamo: "tensor
+  'input_ids' stride mismatch at index 0"). Its multi-turn score compares different
+  conversations (the device's first turn was capped at 2 tokens, the reference's had 12),
+  so that score is not a device result. Fix: inputs get canonical strides. A CPU
+  graph-count check (Inductor CPU backend, `dynamic=False`, three prompts of 11, 20 and
+  25 tokens, chunk 8; `p3/graphcount.tgz`) goes from 3, 2 and 2 new graphs to 2, 0 and 0,
+  with no recompilation.
 - *X8 Hub-kernel control on RTL* (`x8rtl-v2`, Icarus, `core-vrf-sync-v5-x8`): the first
   case (eager, x(1,7,384) → 320) passes bit for bit. The compiled case of the same shape hit
   the 14,400-second host timeout of the simulation, and the 1×16×2048 case exceeded the

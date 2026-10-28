@@ -170,6 +170,34 @@
    "settings": "default TNCA settings",
    "command": "chat.py --model vl --device tnca --layers 1 --prompt \"Say hi.\" --new-tokens 2 --check-tokens 2 --bucket 64 --cpu-floor-multiplier 2 --require-argmax --session-check \"What is the capital of France? Answer with one word.\"",
    "archive": "tlm-vl-shapes-v1.tgz"
+  },
+  {
+   "name": "tlm-vl-quality-v2",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "8bb123d",
+   "settings": "default TNCA settings",
+   "command": "chat_quality.py --model vl --layers 1 --device tnca --spec spec/r41/chat/quality-v1.json --reference quality-ref-vl-l1/quality.json --prefill-chunk 8 --prompts fact,multiturn --max-new-tokens 2",
+   "archive": "tlm-vl-quality-v2.tgz",
+   "note": "reduced proof; its multiturn turn-2 score compares different conversations (device turn 1 capped at 2 tokens, reference turn 1 had 12), so that score is not a device result"
+  },
+  {
+   "name": "graphcount/{base,new,new-clone,reasons,new-canonical}",
+   "domain": "CPU (torch.compile with the CPU Inductor backend, dynamic=False)",
+   "source": "d7a0185 (base) and the stride fixes of this commit",
+   "command": "python graphcount.py TREE/tools/models (evidence/r41/chat/p3/graphcount.py); 'reasons' with TORCH_LOGS=recompiles",
+   "archive": "graphcount.tgz"
+  },
+  {
+   "name": "tlm-vl-quality-v3",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "this commit",
+   "settings": "default TNCA settings",
+   "command": "chat_quality.py --model vl --layers 1 --device tnca --spec spec/r41/chat/quality-v1.json --reference quality-ref-vl-l1/quality.json --prefill-chunk 8 --prompts fact,arith,instruct --max-new-tokens 2",
+   "archive": "(running)"
   }
  ]
 }

@@ -1109,8 +1109,6 @@ class _XRTRegisters:
         self._lib = None
         self._handle = None
         self._ip = None
-        self._owns_handle = True
-        self._peers = []
         # Kept as an attribute and not a local: ctypes does not own the
         # buffer, and the context holds the pointer for as long as it is open.
         self._uuid = None
@@ -1194,26 +1192,6 @@ class _XRTRegisters:
         self._ip = ip
         return self
 
-    def open_peer(self, ip_name):
-        """Open another CU context on this handle, without reopening/loading a device."""
-        if self._handle is None or self._ip is None:
-            raise DeviceLost('the parent XRT context is not open')
-        if bytes(_loaded_xclbin_uuid(self.index)) != bytes(self._uuid):
-            raise DeviceLost('the loaded image changed before peer context admission')
-        ip = self._lib.xclIPName2Index(self._handle, ip_name.encode())
-        if ip < 0 or ip == self._ip:
-            raise DependencyFailed('stream peer must name a distinct loaded CU')
-        peer = _XRTRegisters(self.index, self.xclbin, ip_name, self._what)
-        peer._owns_handle = False
-        peer._lib, peer._handle, peer._uuid = self._lib, self._handle, self._uuid
-        result = self._lib.xclOpenContext(self._handle, self._uuid, ip, False)
-        if result != 0:
-            peer._handle = None
-            raise DependencyFailed('XRT refused the stream CU context', detail={'ip_name': ip_name, 'rc': result})
-        peer._ip = ip
-        self._peers.append(peer)
-        return peer
-
     def close(self):
         """Safe on a device that already died, and safe to call twice."""
         self._close_everything()
@@ -1267,12 +1245,6 @@ class _XRTRegisters:
         return buf.raw
 
     def _close_everything(self):
-        for peer in getattr(self, '_peers', []):
-            try:
-                peer.close()
-            except Exception:
-                pass
-        self._peers = []
         if self._bo is not None and self._lib is not None and self._handle is not None:
             try:
                 self._lib.xclFreeBO(self._handle, self._bo)
@@ -1293,11 +1265,10 @@ class _XRTRegisters:
             # device handle below, and neither failure has a caller who
             # could do anything with it.
             pass
-        if getattr(self, '_owns_handle', True):
-            try:
-                lib.xclClose(handle)
-            except Exception:
-                pass
+        try:
+            lib.xclClose(handle)
+        except Exception:
+            pass
 
     # ---- the four methods a U50Link needs ---------------------------------
     def read(self, offset):

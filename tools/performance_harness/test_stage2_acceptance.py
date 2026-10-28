@@ -43,5 +43,17 @@ class AcceptanceTests(unittest.TestCase):
         next(row for row in index['items'] if row['status'] != 'passed')['closure_plan'] = None
         self.assertEqual(self.check(index)['integrity'], 'failed')
 
+    def test_review_only_entry_must_not_also_be_hashed(self):
+        index = copy.deepcopy(self.index)
+        name = next(iter(index['evidence_review_only']))
+        index['evidence_sha256'][name] = '0'*64
+        self.assertEqual(self.check(index)['integrity'], 'failed')
+
+    def test_review_only_entry_needs_reviewed_hash_and_note(self):
+        index = copy.deepcopy(self.index)
+        name = next(iter(index['evidence_review_only']))
+        index['evidence_review_only'][name].pop('note')
+        self.assertEqual(self.check(index)['integrity'], 'failed')
+
 if __name__ == '__main__':
     unittest.main()

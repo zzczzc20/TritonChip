@@ -7,15 +7,23 @@ import tarfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+# The teacher-forced gate is the fixed relative-L2 limit registered before the
+# runs. The floor-based limit max(0.05, 2 x CPU floor) was introduced after
+# q35-v1 failed, so it is not used for any run here (AUDIT.md R6).
+FIXED_MAX_REL_L2 = 0.05
 RUNS = (
     ("vl-greedy", "tlm-vl-greedy-v8.tgz", "tlm-vl-v8/report.json", True),
     ("vl-sampled", "tlm-vl-sample-v1.tgz", "tlm-vl-sample-v1/report.json", False),
-    ("q35-greedy", "tlm-q35-v2.tgz", "tlm-q35-v2/report.json", True),
 )
 EXTRAS = (
-    ("q35-rejected-fixed-threshold", "tlm-q35-v1.tgz", "tlm-q35-v1/report.json", "failure"),
+    ("q35-v1-failed-fixed-limit", "tlm-q35-v1.tgz", "tlm-q35-v1/report.json", "failure"),
+    ("q35-v2-failed-fixed-limit", "tlm-q35-v2.tgz", "tlm-q35-v2/report.json", "rejudged"),
     ("q35-cpu-scale-floor", "q35-cpu-floor-v1.tgz", "q35-cpu-floor-v1/report.json", "floor"),
 )
+
+
+def fixed_limit_passed(check):
+    return all(row["rel_l2"] <= FIXED_MAX_REL_L2 for row in check["steps"])
 
 
 def sha(data):
@@ -74,8 +82,7 @@ def main():
         if teacher_required:
             assert check and check["passed"] and check["checked_tokens"] > 0
             assert len(check["steps"]) == check["checked_tokens"]
-            assert all(row["rel_l2"] <= row.get("allowed_rel_l2", check["max_allowed_rel_l2"])
-                       for row in check["steps"])
+            assert check["max_allowed_rel_l2"] == FIXED_MAX_REL_L2 and fixed_limit_passed(check)
         summaries.append(dict(label=label, archive=filename, archive_sha256=index["archive_sha256"],
             report_sha256=index["members"][report_name]["sha256"], model=report["model"], repo=report["repo"],
             revision=report["revision"], model_scope=report["model_scope"],
@@ -93,14 +100,28 @@ def main():
         if kind == "failure":
             assert report["status"] == "failed-teacher-forced-tolerance"
             assert not report["teacher_forced_cpu_w8a8"]["passed"]
+            assert not fixed_limit_passed(report["teacher_forced_cpu_w8a8"])
             failures.append(dict(label=label, archive=filename, status=report["status"],
                 statistics=report["statistics"], teacher_forced_cpu_w8a8=report["teacher_forced_cpu_w8a8"]))
+        elif kind == "rejudged":
+            # The archived report says pass only under the post-hoc floor rule.
+            check = report["teacher_forced_cpu_w8a8"]
+            assert not fixed_limit_passed(check)
+            failures.append(dict(label=label, archive=filename,
+                status="failed-teacher-forced-tolerance (fixed limit 0.05)",
+                archived_report_status=report["status"],
+                note="The archived report's pass applied max(0.05, 2 x CPU floor), introduced after "
+                     "q35-v1 failed; under the registered fixed limit the run fails (AUDIT.md R6).",
+                fixed_max_rel_l2=FIXED_MAX_REL_L2, statistics=report["statistics"],
+                teacher_forced_cpu_w8a8=check))
         else:
             assert report["status"] == "measured" and report["model_scope"] == "reduced-depth-proof"
             floors.append(dict(label=label, archive=filename, model=report["model"],
                 decoder_layers=report["decoder_layers"], comparison=report["comparison"],
                 interpretation=report["interpretation"]))
-    result = dict(schema="r41-chat-tlm-closeout/1", status="reduced-depth-tlm-pass",
+    result = dict(schema="r41-chat-tlm-closeout/2",
+                  status="reduced-depth-tlm: VL greedy and sampled pass; Qwen3.5 greedy failed",
+                  fixed_max_rel_l2=FIXED_MAX_REL_L2,
                   execution_domain="SystemC/TLM; not physical-U280 performance or full-model evidence",
                   runs=summaries, preserved_failures=failures, cpu_floor_diagnostics=floors)
     (HERE / "tlm-summary.json").write_text(json.dumps(result, indent=2) + "\n")

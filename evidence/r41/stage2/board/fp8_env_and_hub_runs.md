@@ -1,5 +1,7 @@
 # R41 Stage 2 FP8 Environment Repair and Board Execution Report
 
+> **Attribution and deviation (2026-10-28 rectification; `evidence/r41/hbm_bw/AUDIT.md` R2, R3).** This campaign (commit 63acb94) was run by an agy/Gemini session that the lead launched on the author's explicit instruction of 2026-10-26: "launch agy + gemini 3.8 flash high to fix the FPGA Python environment and run the tests". The lead did not run it itself; any text elsewhere calling it "the lead's" campaign is wrong. The `zz_torchenv.pth` described below sets `torch.version.cuda` on a CPU-only torch so that the `kernels` package selects its Triton build. That is a non-default environment hack. The campaign is therefore recorded as a deviation: its correctness results stand, as matched against their references, but it does not count as a standard-path default result (discipline §2.2.1).
+
 Date: 2026-10-26  
 Host: `acf3019.ece.ust.hk` (Alveo U280 at PCI BDF `0000:04:00.1`)  
 Batch Commit: `86a3d929cf3d` (run directory `~/r41s2_board_86a3d929cf3d_fp8`)  

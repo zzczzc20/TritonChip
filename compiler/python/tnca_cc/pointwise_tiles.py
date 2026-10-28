@@ -106,6 +106,22 @@ def _no(imp, where):
     return None
 
 
+def _zero_other(imp, defs, value):
+    """True when a load's `other` is a dense +0 (what the engine pads with).
+    The literal comes from the printed module (frontend._float_constants)."""
+    o = defs.get(value.id())
+    if o is None or o.get_name() != 'arith.constant':
+        return False
+    lit = (getattr(imp, '_printed_consts', None) or {}).get(value.id())
+    m = re.fullmatch(r'dense<([^>]+)>', lit or '')
+    if not m or m.group(1).strip().startswith('-'):
+        return False
+    try:
+        return float(m.group(1)) == 0.0
+    except ValueError:
+        return m.group(1).strip() == 'false'
+
+
 def plan(imp, ops, module_text, func_name):
     """A Plan, or None when the program is not a tileable 1-D element-wise one."""
     mode = getattr(imp, 'tiled_pointwise', 0)
@@ -251,7 +267,7 @@ def plan(imp, ops, module_text, func_name):
                     n = int(k)
                 elif n.id() in defs:
                     continue        # computed in the body: not available before the loop
-            if not store and o.get_num_operands() > 2:
+            if not store and o.get_num_operands() > 2 and not _zero_other(imp, defs, o.get_operand(2)):
                 continue
             accesses[id(o)] = Access(o, 'store' if store else 'load', name, elem, base, n)
     # Contiguous accesses that stay on the vector load/store unit: one tile
@@ -262,7 +278,8 @@ def plan(imp, ops, module_text, func_name):
             continue
         store = o.get_name() == 'tt.store'
         idx = index_of(o.get_operand(0))
-        if idx is None or (not store and o.get_num_operands() > 2):
+        if idx is None or (not store and o.get_num_operands() > 2
+                           and not _zero_other(imp, defs, o.get_operand(2))):
             continue
         name, elem, base, off = idx
         if imp._ELEM_BYTES.get(elem) not in (1, 2, 4, 8):

@@ -227,9 +227,135 @@ What this shows:
 - The memory-side changes alone cannot reach the target.
 - The `run1` arm predicts fp16 copy at 0.7 B/cycle/core. G3 measured 0.449 (rtl) and the board ran fp16 clone at 0.543, so the model is within the same order and uncalibrated.
 
-<!-- G4_MODEL_MEDIUM -->
+**Model, medium points, model_medium (model-prediction-uncalibrated)**, contiguous rows:
 
-<!-- G4_MODEL_BLOCK128 -->
+| Family | dtype | Layout | run1 B/cycle/core | g4 B/cycle/core | ideal B/cycle/core |
+|---|---|---|---:|---:|---:|
+| copy | bf16 | contig | 0.7 | 1.2 | 2.0 |
+| copy | fp16 | contig | 0.7 | 1.2 | 2.0 |
+| copy | fp32 | contig | 0.9 | 2.4 | 4.0 |
+| clone | bf16 | contig | 0.7 | 1.2 | 2.0 |
+| clone | fp16 | contig | 0.7 | 1.2 | 2.0 |
+| clone | fp32 | contig | 0.9 | 2.4 | 4.0 |
+| add | bf16 | contig | 0.7 | 1.4 | 2.3 |
+| add | fp16 | contig | 0.7 | 1.4 | 2.3 |
+| add | fp32 | contig | 1.0 | 3.1 | 5.0 |
+| sub | bf16 | contig | 0.7 | 1.4 | 2.3 |
+| sub | fp16 | contig | 0.7 | 1.4 | 2.3 |
+| sub | fp32 | contig | 1.0 | 3.1 | 5.0 |
+| mul | bf16 | contig | 0.7 | 1.4 | 2.3 |
+| mul | fp16 | contig | 0.7 | 1.4 | 2.3 |
+| mul | fp32 | contig | 1.0 | 3.1 | 5.0 |
+| div | bf16 | contig | 0.6 | 1.0 | 1.4 |
+| div | fp16 | contig | 0.6 | 1.0 | 1.4 |
+| div | fp32 | contig | 0.9 | 2.3 | 3.2 |
+| relu | bf16 | contig | 0.7 | 1.1 | 1.7 |
+| relu | fp16 | contig | 0.7 | 1.1 | 1.7 |
+| relu | fp32 | contig | 0.9 | 2.3 | 3.8 |
+| silu | bf16 | contig | 0.4 | 0.5 | 0.6 |
+| silu | fp16 | contig | 0.4 | 0.5 | 0.6 |
+| silu | fp32 | contig | 0.7 | 1.0 | 1.3 |
+| gelu | bf16 | contig | 0.2 | 0.2 | 0.2 |
+| gelu | fp16 | contig | 0.2 | 0.2 | 0.2 |
+| gelu | fp32 | contig | 0.4 | 0.4 | 0.5 |
+| exp | bf16 | contig | 0.6 | 0.7 | 1.0 |
+| exp | fp16 | contig | 0.6 | 0.7 | 1.0 |
+| exp | fp32 | contig | 0.8 | 1.6 | 2.1 |
+| sigmoid | bf16 | contig | 0.4 | 0.5 | 0.6 |
+| sigmoid | fp16 | contig | 0.4 | 0.5 | 0.6 |
+| sigmoid | fp32 | contig | 0.7 | 1.0 | 1.3 |
+| cast | bf16→fp16 | contig | 0.7 | 1.1 | 1.8 |
+| cast | bf16→fp32 | contig | 0.8 | 1.7 | 2.8 |
+| cast | fp16→bf16 | contig | 0.7 | 1.1 | 1.8 |
+| cast | fp16→fp32 | contig | 0.8 | 1.7 | 2.8 |
+| cast | fp32→bf16 | contig | 0.9 | 1.8 | 2.8 |
+| cast | fp32→fp16 | contig | 0.9 | 1.8 | 2.8 |
+| sum | bf16 | contig | 0.9 | 1.0 | 1.2 |
+| sum | fp16 | contig | 0.9 | 1.0 | 1.2 |
+| sum | fp32 | contig | 1.0 | 1.9 | 2.5 |
+| mean | bf16 | contig | 0.9 | 1.0 | 1.2 |
+| mean | fp16 | contig | 0.9 | 1.0 | 1.2 |
+| mean | fp32 | contig | 1.0 | 1.9 | 2.5 |
+| max | bf16 | contig | 0.9 | 1.0 | 1.2 |
+| max | fp16 | contig | 0.9 | 1.0 | 1.2 |
+| max | fp32 | contig | 1.0 | 1.9 | 2.5 |
+| layernorm | bf16 | contig | 0.4 | 0.4 | 0.5 |
+| layernorm | fp16 | contig | 0.4 | 0.4 | 0.5 |
+| layernorm | fp32 | contig | 0.4 | 0.9 | 1.0 |
+| rmsnorm | bf16 | contig | 0.5 | 0.5 | 0.6 |
+| rmsnorm | fp16 | contig | 0.5 | 0.5 | 0.6 |
+| rmsnorm | fp32 | contig | 0.6 | 1.1 | 1.2 |
+| softmax | bf16 | contig | 0.2 | 0.3 | 0.3 |
+| softmax | fp16 | contig | 0.2 | 0.3 | 0.3 |
+| softmax | fp32 | contig | 0.4 | 0.6 | 0.7 |
+Status counts: run1: pass 171; g4: pass 171; ideal: pass 171
+Highest B/cycle/core of any point: run1 1.0; g4 3.1; ideal 5.0
+<!-- /G4_MODEL_MEDIUM -->
+
+**Model, small points, model_small_block128 (model-prediction-uncalibrated, NON-DEFAULT TNCA_MAX_BLOCK=128: does not count for any target)**, contiguous rows:
+
+| Family | dtype | Layout | g4 B/cycle/core | ideal B/cycle/core |
+|---|---|---|---:|---:|
+| copy | bf16 | contig | 3.2 | 4.1 |
+| copy | fp16 | contig | 3.2 | 4.1 |
+| copy | fp32 | contig | 6.0 | 8.0 |
+| clone | bf16 | contig | 3.2 | 4.1 |
+| clone | fp16 | contig | 3.2 | 4.1 |
+| clone | fp32 | contig | 6.1 | 8.0 |
+| add | bf16 | contig | 2.8 | 4.0 |
+| add | fp16 | contig | 2.8 | 4.0 |
+| add | fp32 | contig | 6.0 | 9.0 |
+| sub | bf16 | contig | 2.8 | 4.0 |
+| sub | fp16 | contig | 2.8 | 4.0 |
+| sub | fp32 | contig | 6.0 | 9.0 |
+| mul | bf16 | contig | 2.8 | 4.0 |
+| mul | fp16 | contig | 2.8 | 4.0 |
+| mul | fp32 | contig | 6.0 | 9.0 |
+| div | bf16 | contig | 2.1 | 2.6 |
+| div | fp16 | contig | 2.1 | 2.6 |
+| div | fp32 | contig | 4.7 | 5.5 |
+| relu | bf16 | contig | 2.6 | 3.2 |
+| relu | fp16 | contig | 2.6 | 3.2 |
+| relu | fp32 | contig | 5.0 | 6.9 |
+| silu | bf16 | contig | 1.0 | 1.1 |
+| silu | fp16 | contig | 1.0 | 1.1 |
+| silu | fp32 | contig | 2.1 | 2.3 |
+| gelu | bf16 | contig | 0.3 | 0.4 |
+| gelu | fp16 | contig | 0.3 | 0.4 |
+| gelu | fp32 | contig | 0.7 | 0.7 |
+| exp | bf16 | contig | 1.7 | 1.9 |
+| exp | fp16 | contig | 1.7 | 1.9 |
+| exp | fp32 | contig | 3.6 | 4.1 |
+| sigmoid | bf16 | contig | 1.0 | 1.1 |
+| sigmoid | fp16 | contig | 1.0 | 1.1 |
+| sigmoid | fp32 | contig | 2.2 | 2.4 |
+| cast | bf16→fp16 | contig | 2.7 | 3.6 |
+| cast | bf16→fp32 | contig | 4.1 | 5.3 |
+| cast | fp16→bf16 | contig | 2.7 | 3.6 |
+| cast | fp16→fp32 | contig | 4.1 | 5.3 |
+| cast | fp32→bf16 | contig | 3.8 | 5.2 |
+| cast | fp32→fp16 | contig | 3.8 | 5.2 |
+| sum | bf16 | contig | 1.2 | 1.3 |
+| sum | fp16 | contig | 1.2 | 1.3 |
+| sum | fp32 | contig | 2.0 | 2.0 |
+| mean | bf16 | contig | 1.2 | 1.3 |
+| mean | fp16 | contig | 1.2 | 1.3 |
+| mean | fp32 | contig | 1.9 | 2.0 |
+| max | bf16 | contig | 1.1 | 1.2 |
+| max | fp16 | contig | 1.1 | 1.2 |
+| max | fp32 | contig | 1.8 | 1.9 |
+| layernorm | bf16 | contig | 0.6 | 0.7 |
+| layernorm | fp16 | contig | 0.6 | 0.7 |
+| layernorm | fp32 | contig | 1.1 | 1.1 |
+| rmsnorm | bf16 | contig | 1.0 | 1.0 |
+| rmsnorm | fp16 | contig | 1.0 | 1.0 |
+| rmsnorm | fp32 | contig | 1.6 | 1.7 |
+| softmax | bf16 | contig | 0.3 | 0.4 |
+| softmax | fp16 | contig | 0.3 | 0.4 |
+| softmax | fp32 | contig | 0.7 | 0.8 |
+Status counts: g4: pass 171; ideal: pass 171
+Highest B/cycle/core of any point: g4 6.1; ideal 9.0
+<!-- /G4_MODEL_BLOCK128 -->
 
 ## 6. A smaller memory path that fits (option c)
 

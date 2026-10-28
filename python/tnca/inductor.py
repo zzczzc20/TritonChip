@@ -140,7 +140,8 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
         def get_configs(self, *args, **kwargs):
             import copy
             original = super().get_configs(*args, **kwargs)
-            configs = _with_fallback(copy.deepcopy(original), _POINTWISE_CAP[0] or cap)
+            configs = _with_fallback(copy.deepcopy(original), _pointwise_cap(
+                args[0] if args else kwargs.get('size_hints'), cap))
             # Padding and multi-axis gathers can exhaust scalar/predicate
             # registers even at VLEN. Retile the same pointwise program,
             # keeping the first legal configuration without benchmarking.
@@ -338,6 +339,24 @@ def _install_unsplit_scan():
 _NO_X_DIM = [False]
 _BLOCK_CAP = [STAGE1_MAX_BLOCK]
 _POINTWISE_CAP = [0]   # 0: the block cap; set by configure() from TNCA_TILED_POINTWISE
+# With tiling on, a 1-D pointwise block also leaves at least this many
+# programs, so that every context of every core has one (3 cores x 2 role
+# contexts on the image, rounded up to a power of two).
+TILED_MIN_PROGRAMS = 8
+
+
+def _pointwise_cap(size_hints, cap):
+    """The block cap of one pointwise kernel: `cap`, or with
+    TNCA_TILED_POINTWISE a 1-D block up to TILED_POINTWISE_BLOCK that still
+    leaves TILED_MIN_PROGRAMS programs."""
+    wide = _POINTWISE_CAP[0]
+    if not wide or not size_hints or len(size_hints) != 1:
+        return cap
+    numel = int(next(iter(size_hints.values())))
+    block = 1
+    while block * 2 * TILED_MIN_PROGRAMS <= numel and block * 2 <= wide:
+        block *= 2
+    return max(cap, block)
 
 
 def _install_narrow_blocks():

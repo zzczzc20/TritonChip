@@ -64,7 +64,10 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--binary', type=Path, required=True)
     ap.add_argument('--out', type=Path, required=True)
-    ap.add_argument('--size', default='small', choices=['small', 'medium', 'large'])
+    ap.add_argument('--size', default='small', choices=['small', 'medium', 'large', 'all'])
+    ap.add_argument('--suite', type=Path, default=ROOT/'archbench/suites/r41_membound.json',
+                    help='a frozen ArchBench suite (default: the registered memory-bound suite); '
+                         'the non-regression set is spec/r40/suites/hbm.json')
     ap.add_argument('--variant', action='append')
     ap.add_argument('--jobs', type=int, default=3)
     ap.add_argument('--point', action='append', help='restrict to these suite ids (smoke tests only)')
@@ -75,14 +78,17 @@ def main():
     a = ap.parse_args()
     a.out = a.out.resolve()
     a.out.mkdir(parents=True, exist_ok=True)
-    suite_path = ROOT/'archbench/suites/r41_membound.json'
+    suite_path = a.suite.resolve()
     suite = json.loads(suite_path.read_text())
-    ids = [p['id'] for p in suite['points'] if f'-{a.size}-' in p['id']]
+    ids = [p['id'] if isinstance(p, dict) else p for p in suite['points']]
+    if a.size != 'all':
+        ids = [i for i in ids if f'-{a.size}-' in i]
     if a.point:
         ids = [i for i in ids if i in a.point]
     import archbench.registry as reg
     summary = dict(domain='model-prediction-uncalibrated', clock_hz_configured=100000000, cores=CORES,
-                   suite=str(suite_path.relative_to(ROOT)), suite_sha256=suite.get('sha256'),
+                   suite=str(suite_path.relative_to(ROOT)) if suite_path.is_relative_to(ROOT) else str(suite_path),
+                   suite_sha256=suite.get('sha256'),
                    size=a.size, binary=str(a.binary), variants={},
                    non_default_settings=a.env,
                    counts_for_target=not a.env)

@@ -1029,7 +1029,9 @@ export TRITON_PYTHON
 triton-e2e: $(BUILD)/tb_core.vvp
 	@if [ -x "$(TRITON_PYTHON)" ]; then \
 	   $(TRITON_PYTHON) compiler/test/run_suite.py test_triton_e2e \
-	       triton-e2e BASE-TRITON-CORE; \
+	       triton-e2e BASE-TRITON-CORE && \
+	   $(TRITON_PYTHON) compiler/test/run_suite.py test_pointwise_tiles \
+	       triton-e2e G4-TILED-POINTWISE; \
 	 elif [ "$(R1_STRICT)" = "1" ]; then \
 	   echo "  triton-e2e             FAIL   no Triton at $(TRITON_PYTHON)"; \
 	   exit 1; \

@@ -10,7 +10,7 @@ from .u50_sim import SimLink, _repo_root, _tools
 
 class MulticoreMMIOLink(SimLink):
     def __init__(self, *, core_count=3, memory_ports=3,
-                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, hybrid_lsu=False, sfu_lanes=1, home_background_reads=False, cache_sets=None, **kwargs):
+                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, hybrid_lsu=False, sfu_lanes=1, home_background_reads=False, cache_sets=None, rtl_params=None, stage_probes=False, **kwargs):
         if type(journal) is not bool or (journal and not board_top):
             raise ArgumentError('journal requires a boolean and the board-top stand-in')
         if type(hybrid_lsu) is not bool or type(home_background_reads) is not bool or sfu_lanes not in (1, 2, 3, 4, 8):
@@ -20,6 +20,17 @@ class MulticoreMMIOLink(SimLink):
         if cache_sets is not None and cache_sets not in (4, 16, 32, 64):
             raise ArgumentError('cache_sets must be None, 4, 16, 32 or 64')
         self.cache_sets = cache_sets
+        # Extra top-level bench parameters (for example an image's cache
+        # geometry, tools/r40/image_geometry_tests.py); names are checked by
+        # the elaborator, values must be integers. None keeps every default.
+        rtl_params = dict(rtl_params or {})
+        if any(not (isinstance(k, str) and k.isidentifier() and k.isupper()) or type(v) is not int
+               for k, v in rtl_params.items()):
+            raise ArgumentError('rtl_params must map upper-case parameter names to integers')
+        # Observation-only stage counters (tb/fpga/tnca_stage_probes.vh).
+        if type(stage_probes) is not bool:
+            raise ArgumentError('stage_probes must be a boolean')
+        self.plusargs = ['+stageprobe'] if stage_probes else []
         self.home_background_reads = home_background_reads
         self.hybrid_lsu = hybrid_lsu
         self.sfu_lanes = operator.index(sfu_lanes)
@@ -45,7 +56,7 @@ class MulticoreMMIOLink(SimLink):
             raise ArgumentError('the rectangular stand-in needs a multiple of four above four cores')
         if self.memory_bytes < 4096 or self.memory_bytes % 64 or min(self.link_stages, self.noc_link_stages, self.dispatch_stages, self.home_stages, self.code_stages) < 0:
             raise ArgumentError('memory must contain whole lines; link stages must be nonnegative')
-        super().__init__(**kwargs)
+        super().__init__(rtl_params=rtl_params, **kwargs)
         self.journal_dir = str(Path(self.dir)/'journal') if journal else None
 
     def describe(self):
@@ -101,6 +112,8 @@ class MulticoreMMIOLink(SimLink):
                                 **geometry,
                                 NOC_PIPE=self.noc_link_stages, DISPATCH_PIPE=self.dispatch_stages, HOME_PIPE=self.home_stages, CODE_PIPE=self.code_stages, MAINTENANCE=self.maintenance, MEMORY_CONTROLS=int(self.memory_controls)).items():
             command += [f'-P{top}.{name}={value}']
+        for name, value in sorted(self.rtl_params.items()):
+            command += [f'-P{top}.{name}={value}']
         for library in ('common', 'core', 'gen', 'nuca', 'noc', 'tile'):
             command += ['-y', 'rtl/' + library]
         command += ['-y', 'rtl', '-y', 'rtl/fpga', '-y', 'rtl/board']
@@ -132,6 +145,8 @@ def stand_in(**kwargs):
                             home_background_reads=kwargs.pop('home_background_reads', False),
                             sfu_lanes=kwargs.pop('sfu_lanes', 1),
                             cache_sets=kwargs.pop('cache_sets', None),
+                            rtl_params=kwargs.pop('rtl_params', None),
+                            stage_probes=kwargs.pop('stage_probes', False),
                             trace=kwargs.pop('trace', False),
                             host_timeout=kwargs.get('host_timeout', 30.0))
     return MulticoreMMIOBackend(link, core_count=core_count,

@@ -68,6 +68,39 @@ cache, descriptor, launch and host overheads can only lower it, and reuse or
 compression can change the traffic assumption. Measured tokens/s must come from
 the generation report.
 
+### Archived reduced-depth TLM results
+
+`evidence/r41/chat/tlm-summary.json` is derived from the raw archives by
+`chat_tlm_closeout.py`. These are uncalibrated SystemC/TLM wall times for small
+prompts and reduced decoder depth, not full-model results or physical-U280
+measurements. The generated text is not a model-quality claim.
+
+| Run | Layers | Generated tokens | Prefill (s) | Mean decode (s/token) | Decode (tokens/s) | Reduced-model weight-stream ceiling (tokens/s) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| VL greedy | 1 | 3 | 327.4231004854664 | 312.1245263405144 | 0.003203849475478396 | 1.8532575820474197 |
+| VL sampled | 1 | 2 | 305.28765878267586 | 307.43000791873783 | 0.0032527729051886416 | 1.8532575820474197 |
+| Qwen3.5 greedy | 4 | 3 | 1093.5643128491938 | 837.9598828395829 | 0.0011933745522653353 | 0.802693368029665 |
+
+The VL sampled run uses temperature 0.8, top-k 40, top-p 0.95 and seed 7. The
+VL greedy teacher check covers two forced tokens: relative L2 values are
+0.024659919041966807 and 0.02574394384689021, and both argmax choices match.
+The Qwen3.5 teacher check also covers two forced tokens: relative L2 values are
+0.035197324952002645 and 0.060020090237703445, and both argmax choices match.
+Its logged CPU reciprocal-scale floors are 0.03199982662928769 and
+0.05941731822088129; the per-step allowances derived from the configured
+multiplier are 0.06399965325857539 and 0.11883463644176258.
+
+In the steady second decode, both greedy runs create zero new graphs, perform
+zero host reads, and perform two host writes totaling 40 bytes. The sampled run
+exercises sampling but has only one decode step and therefore does not establish
+steady decode behavior.
+
+The first Qwen3.5 attempt is retained in `tlm-q35-v1.tgz` with its nonzero exit:
+its second relative L2 exceeded the former fixed 0.05 threshold. The independent
+`q35-cpu-floor-v1.tgz` diagnostic established that CPU scale rounding alone
+accounts for 0.05941731822088129 at that step, motivating the logged dynamic
+floor rather than a typed replacement tolerance.
+
 ## Operation coverage and remaining blockers
 
 The following statements are scoped to the logged layer, two-layer decode and

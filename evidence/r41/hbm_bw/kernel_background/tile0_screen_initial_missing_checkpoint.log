@@ -1,0 +1,26 @@
+WARNING: Default location for XILINX_HLS not found
+
+****** Vivado v2023.2 (64-bit)
+  **** SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+  **** IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+  **** SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source src/flow/fpga/screen_r41_tile.tcl
+# if {[llength $argv] != 4} {error "expected KERNEL_SYNTH_DCP TILE_INDEX SLR OUT_DIR"}
+# set dcp [file normalize [lindex $argv 0]]
+# set tile [lindex $argv 1]
+# set slr [lindex $argv 2]
+# set out [file normalize [lindex $argv 3]]
+# if {[file exists $out]} {error "output must be fresh: $out"}
+# file mkdir $out
+# set_param general.maxThreads 4
+# open_checkpoint $dcp
+Command: open_checkpoint /home/vivado/r41_hbmbw_kernel_bg_v1/out/synth.dcp
+
+Starting open_checkpoint Task
+
+Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00.03 . Memory (MB): peak = 1333.910 ; gain = 0.000 ; free physical = 19684 ; free virtual = 55119
+ERROR: [Common 17-69] Command failed: File '/home/vivado/r41_hbmbw_kernel_bg_v1/out/synth.dcp' does not exist
+INFO: [Common 17-206] Exiting Vivado at Wed Oct 28 10:28:08 2026...

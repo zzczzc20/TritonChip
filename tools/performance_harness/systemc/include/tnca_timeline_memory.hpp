@@ -43,17 +43,29 @@ struct Timeline {
     }
 };
 
+struct ParallelTimeline {
+    std::vector<Timeline> lanes;
+    explicit ParallelTimeline(unsigned n=1):lanes(n){}
+    void counters(u64 *service,u64 *queue){for(auto& lane:lanes){lane.service=service;lane.queue=queue;}}
+    u64 reserve(u64 t,u64 d,u64 now){
+        unsigned best=0;u64 end=UINT64_MAX;
+        for(unsigned i=0;i<lanes.size();++i){u64 candidate=lanes[i].busy.empty()?0:lanes[i].busy.rbegin()->second;
+            if(candidate<end){end=candidate;best=i;}}
+        return lanes[best].reserve(t,d,now);
+    }
+};
+
 struct TimelineMemory {
     const Config& c;Context& x;Store& store;
     struct Tag {u64 address=0,ready=0;bool valid=false,dirty=false;};
     struct Home {
-        std::vector<Tag> tags;std::vector<unsigned> rr;std::vector<u64> fills;Timeline engine;
+        std::vector<Tag> tags;std::vector<unsigned> rr;std::vector<u64> fills;ParallelTimeline engine;
         std::array<u64*,11> slots{};
     };
     std::vector<Home> homes;
     struct Outlet {Timeline issue;std::vector<u64> inflight;u64 *reads=nullptr,*writes=nullptr,*peak=nullptr,*waited=nullptr;unsigned peak_n=0;};
     std::vector<Outlet> outlets;std::vector<u64*> pc_bytes;
-    std::map<std::tuple<unsigned,unsigned,unsigned>,Timeline> links;std::map<std::tuple<unsigned,unsigned,unsigned>,u64*> link_bytes;
+    std::map<std::tuple<unsigned,unsigned,unsigned>,ParallelTimeline> links;std::map<std::tuple<unsigned,unsigned,unsigned>,u64*> link_bytes;
     unsigned nx,ways;u64 hop,inject,eject,hit_occ,hit_lat,miss_occ,mreq_occ,fill_occ,wake_occ,wb_occ,to_outlet,from_outlet,
         read_issue,write_issue,beats_extra,latency,write_latency,mshrs,active_outlets,noutlets,outstanding,base,pc_first,pc_size;
     FastDram fast_dram{c};DramPath* dram=&fast_dram; // Model points it at the slow path when selected
@@ -72,8 +84,9 @@ struct TimelineMemory {
         homes.resize(c.cores());
         for(unsigned h=0;h<homes.size();++h){
             homes[h].tags.resize(size_t(g("sets"))*ways);homes[h].rr.assign(g("sets"),0);
-            homes[h].engine.service=&x.counts["home_"+std::to_string(h)+"_engine_service_cycles"];
-            homes[h].engine.queue=&x.counts["home_"+std::to_string(h)+"_engine_queue_cycles"];
+            homes[h].engine=ParallelTimeline(c.get_or("tl_memory_lanes",1));
+            homes[h].engine.counters(&x.counts["home_"+std::to_string(h)+"_engine_service_cycles"],
+                                     &x.counts["home_"+std::to_string(h)+"_engine_queue_cycles"]);
         }
         outlets.resize(noutlets);
         for(unsigned p=0;p<noutlets;++p){auto k="outlet_"+std::to_string(p);
@@ -97,7 +110,8 @@ struct TimelineMemory {
             auto it=links.find(key);
             if(it==links.end()){
                 auto k="link_"+std::to_string(from)+"_"+std::to_string(next);
-                it=links.emplace(key,Timeline{}).first;it->second.service=&x.counts[k+"_service_cycles"];it->second.queue=&x.counts[k+"_queue_cycles"];
+                it=links.emplace(key,ParallelTimeline(c.get_or("tl_memory_lanes",1))).first;
+                it->second.counters(&x.counts[k+"_service_cycles"],&x.counts[k+"_queue_cycles"]);
                 link_bytes[key]=&x.counts[k+"_bytes"];
             }
             t=it->second.reserve(t,1,now)+hop;*link_bytes[key]+=bytes;from=next;
@@ -108,7 +122,9 @@ struct TimelineMemory {
     // `outstanding` lines are active, a 2/3-cycle issue stage, then the
     // read data (latency + second beat) or the write response.
     u64 line(unsigned home,u64 address,bool write,u64 t,u64 now){
-        unsigned port=active_outlets==1?0:unsigned(home%noutlets);auto& o=outlets[port];
+        u64 stripe=c.get_or("tl_pc_stripe_bytes",0);
+        unsigned pc=physical_map?physical_map->translate(address).pc:(stripe?pc_first+unsigned(((address-base)/stripe)%c.get("pc_count")):unsigned(pc_first+(address-base)/pc_size));
+        unsigned port=active_outlets==1?0:(noutlets>c.cores()?pc%noutlets:unsigned(home%noutlets));auto& o=outlets[port];
         auto& f=o.inflight;f.erase(std::remove_if(f.begin(),f.end(),[t](u64 d){return d<=t;}),f.end());
         u64 arrival=t;
         while(f.size()>=outstanding){auto m=std::min_element(f.begin(),f.end());t=std::max(t,*m);f.erase(m);}
@@ -117,7 +133,6 @@ struct TimelineMemory {
         u64 b=o.issue.reserve(t,issue,now);
         // The HBM side receives the line after the issue stage (dram_path).
         u64 done=dram->complete(DramRequest{port,address,write,b+issue});
-        unsigned pc=physical_map?physical_map->translate(address).pc:unsigned(pc_first+(address-base)/pc_size);
         if(pc<pc_bytes.size()){if(!pc_bytes[pc])pc_bytes[pc]=&x.counts["pc_"+std::to_string(pc)+"_bytes"];*pc_bytes[pc]+=64;}
         f.push_back(done);o.peak_n=std::max<unsigned>(o.peak_n,unsigned(f.size()));*o.peak=o.peak_n;
         ++*(write?o.writes:o.reads);

@@ -627,9 +627,10 @@ struct Core : sc_module {
                         u64 best=UINT64_MAX;
                         for(unsigned i=0;i<units.size();++i){
                             u64 at=std::max(now,units[i].free);
-                            // A shared issuing port: a new command waits for all
-                            // older command beats to leave, but not their replies.
-                            for(unsigned j=0;j<units.size();++j)if(j!=i)at=std::max(at,units[j].drained);
+                            // The default pair shares one issuing port. V3 can
+                            // explicitly give every unit an independent port.
+                            if(x.c.get_or("tl_lsu_shared_issue",1))
+                                for(unsigned j=0;j<units.size();++j)if(j!=i)at=std::max(at,units[j].drained);
                             if(at<best){best=at;unit_index=i;}
                         }
                         if(best>now){*c_lsu_wait+=best-now;freeze(f,x.cycles(best));now=lnow(f);}

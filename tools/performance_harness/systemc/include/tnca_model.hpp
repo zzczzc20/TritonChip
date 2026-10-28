@@ -108,6 +108,11 @@ struct Config {
         {auto n=get_or("tl_lsu_units",2);
          require(n==2 || n==4 || n==8 || n==16,"exploratory LSU units must be 2|4|8|16");
          require(n==2 || (get("memory_model")==1 && get("core_pipeline")==1),"LSU unit hypothesis needs timeline core pipeline");}
+        {auto n=get_or("tl_memory_lanes",1);
+         require(n==1 || n==2 || n==4 || n==8,"exploratory NoC/home lanes must be 1|2|4|8");
+         require(n==1 || get("memory_model")==1,"parallel memory lanes require timeline memory");}
+        require(get_or("tl_lsu_shared_issue",1)<=1,"tl_lsu_shared_issue must be 0|1");
+        {auto n=get_or("tl_pc_stripe_bytes",0);require(n==0 || (n>=64 && n%64==0),"PC stripe must be zero or whole lines");}
         cache_hot();
         for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag"
                             && k!="mtx_abuf" && k!="launch_cycles" && k!="dispatch_cycles" && k!="load_latency"
@@ -124,7 +129,7 @@ struct Config {
         require(get("nx")*get("ny")<=16,"at most 16 homes");
         require(get("sets")<=65536 && (get("sets")&(get("sets")-1))==0,"sets must be power of two <=65536");
         require(get("ways")<=32 && get("mshrs")<=256 && get("targets")<=4096,"unreasonable cache geometry");
-        require(get("outlets")<=cores(),"outlets exceed homes");
+        require(get("outlets")<=get("pc_count"),"outlets exceed pseudo channels");
         require(get("full_line_tag")<=1 && (get("full_line_tag") || (get("nx")==2 && get("ny")==2)),"compressed tags require frozen 2x2 topology");
         require(get("active_outlets")==1 || get("active_outlets")==get("outlets"),"RTL supports one/all outlets");
         require(get("outstanding")<=256 && get("core_window")<=256,"unreasonable outstanding window");
@@ -137,7 +142,7 @@ struct Config {
     }
     u64 get(const std::string& k)const{return v.at(k);}
     static const std::vector<std::string>& optional_keys(){
-        static const std::vector<std::string> k={"mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units"};return k;}
+        static const std::vector<std::string> k={"mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units","tl_memory_lanes","tl_lsu_shared_issue","tl_pc_stripe_bytes"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

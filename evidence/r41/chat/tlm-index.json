@@ -1241,59 +1241,6 @@
       }
     }
   },
-  "tlm-q35-v2.tgz": {
-    "archive_sha256": "659c7852369aac4545d83870ec41631c86020659d0967ec85422d2ff8a90c640",
-    "members": {
-      "tlm-q35-v2/report.json": {
-        "size": 48208,
-        "sha256": "ead9627d0f3ae9cc7136fd5e7a84bfae473b9eded1b825cacae660f4b6f96a42"
-      },
-      "tlm-q35-v2/journal.log": {
-        "size": 88132,
-        "sha256": "fce5c1e52bdf4b12de07718b2cbea08664f738cfccee6b20795f0982e7dd8087"
-      },
-      "tlm-q35-v2/logits.safetensors": {
-        "size": 1490160,
-        "sha256": "f7e2b25a5b9de472a96adfbc7cb16d64239a6212fe2a2017f83eda1d4ea65bb7"
-      },
-      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/launches.json": {
-        "size": 154078,
-        "sha256": "6b940c9fd4d3979e1f0ec9ce2cb798d2a8f789943d936a36f2632c65ba0514d4"
-      },
-      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/stdout.log": {
-        "size": 0,
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-      },
-      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/model.cfg": {
-        "size": 1914,
-        "sha256": "7f056091354c33389b49980bb83d117ddafc532cf2ab562e77be4beeadb3aee7"
-      },
-      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/stderr.log": {
-        "size": 0,
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-      },
-      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/sockets.json": {
-        "size": 2373,
-        "sha256": "8cd40e109e1cd0ec2298f458fcd6c53f0169b4ada5a89e49b1a7deaaad23eb50"
-      },
-      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/identity.json": {
-        "size": 3634,
-        "sha256": "dcd47a9f5f6b78c6ac254829aa6f3c6fb1c39d8bf36fed0bf330e2f626ee58d4"
-      },
-      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/counters.json": {
-        "size": 9850,
-        "sha256": "b8273868253c8df73993cf6d7a185ce46ab563adbaa0899fe1ec7b8b092e77bc"
-      },
-      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/trace.json": {
-        "size": 125,
-        "sha256": "3e2d97a2d00020a4cb1e17aef31a4a9570f7029ab1a063a438bc9dab738e8ae8"
-      },
-      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/summary.json": {
-        "size": 9459,
-        "sha256": "6ff1a23e8bbdd74f76ee40a36a0465f4690975d07fcc3f3780e9b95a1ea3a217"
-      }
-    }
-  },
   "tlm-q35-v1.tgz": {
     "archive_sha256": "222f79b3215a5f89ead81411b310fa169657a9d314616594dfcb35a3bee4c1f8",
     "members": {
@@ -5096,6 +5043,59 @@
       "tlm-q35-v1/tlm-out/model-905763-3jx3ckr7/summary.json": {
         "size": 9430,
         "sha256": "ed4644f3252f2ea8cf1cf72c0e8b8b781fbe2b9e9af25330dad309e99085368a"
+      }
+    }
+  },
+  "tlm-q35-v2.tgz": {
+    "archive_sha256": "659c7852369aac4545d83870ec41631c86020659d0967ec85422d2ff8a90c640",
+    "members": {
+      "tlm-q35-v2/report.json": {
+        "size": 48208,
+        "sha256": "ead9627d0f3ae9cc7136fd5e7a84bfae473b9eded1b825cacae660f4b6f96a42"
+      },
+      "tlm-q35-v2/journal.log": {
+        "size": 88132,
+        "sha256": "fce5c1e52bdf4b12de07718b2cbea08664f738cfccee6b20795f0982e7dd8087"
+      },
+      "tlm-q35-v2/logits.safetensors": {
+        "size": 1490160,
+        "sha256": "f7e2b25a5b9de472a96adfbc7cb16d64239a6212fe2a2017f83eda1d4ea65bb7"
+      },
+      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/launches.json": {
+        "size": 154078,
+        "sha256": "6b940c9fd4d3979e1f0ec9ce2cb798d2a8f789943d936a36f2632c65ba0514d4"
+      },
+      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/stdout.log": {
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/model.cfg": {
+        "size": 1914,
+        "sha256": "7f056091354c33389b49980bb83d117ddafc532cf2ab562e77be4beeadb3aee7"
+      },
+      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/stderr.log": {
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/sockets.json": {
+        "size": 2373,
+        "sha256": "8cd40e109e1cd0ec2298f458fcd6c53f0169b4ada5a89e49b1a7deaaad23eb50"
+      },
+      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/identity.json": {
+        "size": 3634,
+        "sha256": "dcd47a9f5f6b78c6ac254829aa6f3c6fb1c39d8bf36fed0bf330e2f626ee58d4"
+      },
+      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/counters.json": {
+        "size": 9850,
+        "sha256": "b8273868253c8df73993cf6d7a185ce46ab563adbaa0899fe1ec7b8b092e77bc"
+      },
+      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/trace.json": {
+        "size": 125,
+        "sha256": "3e2d97a2d00020a4cb1e17aef31a4a9570f7029ab1a063a438bc9dab738e8ae8"
+      },
+      "tlm-q35-v2/tlm-out/model-913337-egyxi2g5/summary.json": {
+        "size": 9459,
+        "sha256": "6ff1a23e8bbdd74f76ee40a36a0465f4690975d07fcc3f3780e9b95a1ea3a217"
       }
     }
   },

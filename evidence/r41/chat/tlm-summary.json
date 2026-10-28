@@ -1,6 +1,7 @@
 {
-  "schema": "r41-chat-tlm-closeout/1",
-  "status": "reduced-depth-tlm-pass",
+  "schema": "r41-chat-tlm-closeout/2",
+  "status": "reduced-depth-tlm: VL greedy and sampled pass; Qwen3.5 greedy failed",
+  "fixed_max_rel_l2": 0.05,
   "execution_domain": "SystemC/TLM; not physical-U280 performance or full-model evidence",
   "runs": [
     {
@@ -218,147 +219,11 @@
         "weight_stream_ceiling_tokens_per_second": 1.8532575820474197,
         "interpretation": "Theoretical interface ceiling only, not a measured bandwidth or performance prediction"
       }
-    },
-    {
-      "label": "q35-greedy",
-      "archive": "tlm-q35-v2.tgz",
-      "archive_sha256": "659c7852369aac4545d83870ec41631c86020659d0967ec85422d2ff8a90c640",
-      "report_sha256": "ead9627d0f3ae9cc7136fd5e7a84bfae473b9eded1b825cacae660f4b6f96a42",
-      "model": "qwen3.5-4b-fp8",
-      "repo": "lovedheart/Qwen3.5-4B-FP8",
-      "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
-      "model_scope": "reduced-depth-proof",
-      "decoder_layers": 4,
-      "prompt_tokens": 15,
-      "bucket": 64,
-      "sampling": {
-        "sample": false,
-        "temperature": 1.0,
-        "top_k": 0,
-        "top_p": 1.0,
-        "seed": 0
-      },
-      "generated_tokens": [
-        220,
-        225,
-        225
-      ],
-      "generated_text": " \ufffd\ufffd",
-      "statistics": {
-        "generated_tokens": 3,
-        "decode_steps": 2,
-        "prefill_seconds": 1093.5643128491938,
-        "decode_seconds": 1675.9197656791657,
-        "mean_decode_seconds_per_token": 837.9598828395829,
-        "decode_tokens_per_second": 0.0011933745522653353,
-        "generation_seconds": 2769.4840785283595
-      },
-      "steps": [
-        {
-          "step": 0,
-          "kind": "prefill",
-          "input_tokens": 15,
-          "seconds": 1093.5643128491938,
-          "new_graphs": 1,
-          "token": 220,
-          "candidate_token": 220,
-          "greedy_token": 220,
-          "transfers_inside_step": {
-            "host_read_calls": 39,
-            "host_read_bytes": 137,
-            "host_write_calls": 55,
-            "host_write_bytes": 1024,
-            "launches": 261,
-            "staging_upload_bytes": 0,
-            "staging_download_bytes": 0,
-            "device_cycles": 2565091535
-          }
-        },
-        {
-          "step": 1,
-          "kind": "decode",
-          "input_tokens": 1,
-          "seconds": 841.1502826409414,
-          "new_graphs": 1,
-          "token": 225,
-          "candidate_token": 225,
-          "greedy_token": 225,
-          "transfers_inside_step": {
-            "host_read_calls": 6,
-            "host_read_bytes": 20,
-            "host_write_calls": 8,
-            "host_write_bytes": 88,
-            "launches": 93,
-            "staging_upload_bytes": 0,
-            "staging_download_bytes": 0,
-            "device_cycles": 2051584903
-          }
-        },
-        {
-          "step": 2,
-          "kind": "decode",
-          "input_tokens": 1,
-          "seconds": 834.7694830382243,
-          "new_graphs": 0,
-          "token": 225,
-          "candidate_token": 225,
-          "greedy_token": 225,
-          "transfers_inside_step": {
-            "host_read_calls": 0,
-            "host_read_bytes": 0,
-            "host_write_calls": 2,
-            "host_write_bytes": 40,
-            "launches": 93,
-            "staging_upload_bytes": 0,
-            "staging_download_bytes": 0,
-            "device_cycles": 2050765673
-          }
-        }
-      ],
-      "teacher_forced_cpu_w8a8": {
-        "reference_tokens": [
-          220,
-          225
-        ],
-        "checked_tokens": 2,
-        "max_allowed_rel_l2": 0.05,
-        "cpu_floor_multiplier": 2.0,
-        "passed": true,
-        "steps": [
-          {
-            "step": 0,
-            "rel_l2": 0.035197324952002645,
-            "reference_argmax": 220,
-            "candidate_argmax": 220,
-            "argmax_equal": true,
-            "cpu_scale_rounding_floor": 0.03199982662928769,
-            "allowed_rel_l2": 0.06399965325857539
-          },
-          {
-            "step": 1,
-            "rel_l2": 0.060020090237703445,
-            "reference_argmax": 225,
-            "candidate_argmax": 225,
-            "argmax_equal": true,
-            "cpu_scale_rounding_floor": 0.05941731822088129,
-            "allowed_rel_l2": 0.11883463644176258
-          }
-        ],
-        "interpretation": "Reference tokens feed the device; each allowance is the configured minimum or the logged CPU reciprocal-scale floor times the configured multiplier, whichever is larger"
-      },
-      "decode_weight_bytes": 2989933760,
-      "theoretical_core_port_bound": {
-        "bytes_per_second": 2400000000,
-        "source": "doc/r40_tasks_and_acceptance.md: 8 B/cycle/core, three cores at 100 MHz",
-        "decode_weight_bytes": 2989933760,
-        "weight_stream_ceiling_tokens_per_second": 0.802693368029665,
-        "interpretation": "Theoretical interface ceiling only, not a measured bandwidth or performance prediction"
-      }
     }
   ],
   "preserved_failures": [
     {
-      "label": "q35-rejected-fixed-threshold",
+      "label": "q35-v1-failed-fixed-limit",
       "archive": "tlm-q35-v1.tgz",
       "status": "failed-teacher-forced-tolerance",
       "statistics": {
@@ -395,6 +260,54 @@
           }
         ],
         "interpretation": "Reference tokens feed the device; copied tokens are not the correctness check"
+      }
+    },
+    {
+      "label": "q35-v2-failed-fixed-limit",
+      "archive": "tlm-q35-v2.tgz",
+      "status": "failed-teacher-forced-tolerance (fixed limit 0.05)",
+      "archived_report_status": "pass",
+      "note": "The archived report's pass applied max(0.05, 2 x CPU floor), introduced after q35-v1 failed; under the registered fixed limit the run fails (AUDIT.md R6).",
+      "fixed_max_rel_l2": 0.05,
+      "statistics": {
+        "generated_tokens": 3,
+        "decode_steps": 2,
+        "prefill_seconds": 1093.5643128491938,
+        "decode_seconds": 1675.9197656791657,
+        "mean_decode_seconds_per_token": 837.9598828395829,
+        "decode_tokens_per_second": 0.0011933745522653353,
+        "generation_seconds": 2769.4840785283595
+      },
+      "teacher_forced_cpu_w8a8": {
+        "reference_tokens": [
+          220,
+          225
+        ],
+        "checked_tokens": 2,
+        "max_allowed_rel_l2": 0.05,
+        "cpu_floor_multiplier": 2.0,
+        "passed": true,
+        "steps": [
+          {
+            "step": 0,
+            "rel_l2": 0.035197324952002645,
+            "reference_argmax": 220,
+            "candidate_argmax": 220,
+            "argmax_equal": true,
+            "cpu_scale_rounding_floor": 0.03199982662928769,
+            "allowed_rel_l2": 0.06399965325857539
+          },
+          {
+            "step": 1,
+            "rel_l2": 0.060020090237703445,
+            "reference_argmax": 225,
+            "candidate_argmax": 225,
+            "argmax_equal": true,
+            "cpu_scale_rounding_floor": 0.05941731822088129,
+            "allowed_rel_l2": 0.11883463644176258
+          }
+        ],
+        "interpretation": "Reference tokens feed the device; each allowance is the configured minimum or the logged CPU reciprocal-scale floor times the configured multiplier, whichever is larger"
       }
     }
   ],

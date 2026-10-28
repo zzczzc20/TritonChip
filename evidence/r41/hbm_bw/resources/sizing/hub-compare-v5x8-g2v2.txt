@@ -1,0 +1,5 @@
+control hub_v5x8/dump: 4 programs; candidate hub_g2v2/dump: 4 programs
+_fp8_act_quant_kernel.s: identical; accumulators 0 -> 0, barriers 0 -> 0, instructions 10099 -> 10099
+w8a8_block_dynamic_fp8_matmul_kernel.s: different; accumulators 16 -> 16, barriers 1 -> 1, instructions 11379 -> 11379
+w8a8_block_static_fp8_matmul_kernel.s: different; accumulators 16 -> 16, barriers 1 -> 1, instructions 9662 -> 9662
+w8a8_tensor_dynamic_fp8_matmul_kernel.s: different; accumulators 16 -> 16, barriers 1 -> 1, instructions 7596 -> 7596

@@ -27,8 +27,9 @@ ENV = dict(TNCA_LAUNCH='skip', TNCA_OPT_LEVEL='2', TNCA_TRITON='1', TNCA_KERNEL_
            TNCA_PIPELINE='1', TNCA_TUNE='0')
 # fp8_kernels_cases.block_shapes with K a multiple of the 128 quantisation block
 # (the kernels' act_quant asserts it): tails, then the real projections.
-SHAPES = [(1, 256, 256), (16, 256, 256), (33, 256, 384),
-          (7, 6144, 2048), (7, 2048, 6144), (16, 9216, 2560), (129, 2048, 2048)]
+# The largest projections are left out: with every launch skipped they add no
+# program (the kernels are already compiled) and hours of host-side tensor setup.
+SHAPES = [(1, 256, 256), (16, 256, 256), (33, 256, 384), (7, 6144, 2048)]
 
 
 def main():

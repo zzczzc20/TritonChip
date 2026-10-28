@@ -243,6 +243,7 @@ are checked, and four original X8 FP8 model point pairs are rechecked separately
 Bounded negative/inconclusive studies close S2-02.A and S2-02.D.sensitivity;
 physical candidate gains and unbounded fairness are not inferred from proxies.
 See p1/memory-service-study.md and p1/candidate-sensitivity/README.md.
+> **Correction (2026-10-28 rectification, AUDIT.md R7, R8).** S2-02.D.sensitivity is back to **not measured**: d7314d5 had it not measured, and baadef3 passed it on one-factor probes that its own README calls inconclusive. S2-02.A is SystemC/TLM plus RTL-fixture evidence, not a board measurement; as a Study it does not require the board and stays closed with that domain label.
 
 Current ledger: 35 passed / 2 failed / 49 not measured / 8 blocked. Required
 P1 board comparisons remain awaiting the exact lead commands above; no agent
@@ -456,7 +457,7 @@ static-MMA harness assertion are retained in the archive; both were corrected.
 The bounded static asymmetric-resource analysis is in
 `p2/private-resource-study.md`. RPAIR shares a register base; no larger private
 pool or new capability is claimed. S2-03.C passes as a negative Study. Current
-ledger: 41 passed / 2 failed / 44 not measured / 7 blocked. The corrected
+(correction, 2026-10-28, AUDIT.md R8: S2-03.C is SystemC/TLM plus one-core RTL evidence, not a board measurement) ledger: 41 passed / 2 failed / 44 not measured / 7 blocked. The corrected
 `make compiler` passes 157 tests with 53 skips; the MLIR IR suite is skipped
 because tnca-opt is absent. The first compiler invocation imported the old
 installed package and failed; its corrected PYTHONPATH run passed.
@@ -757,3 +758,7 @@ This section implements the lead's decisions on the `r41` findings R1–R18 of `
 - The gate is restored to the original rule: per-token relative L2 at most 0.05, fixed before the run (`tools/models/chat.py`, `--max-rel-l2`; `--cpu-floor-multiplier` removed). The CPU reciprocal-scale floor is still logged per step, as a diagnostic only.
 - TLM q35-v1 is **failed** (rel_l2 0.060020 at step 1 against 0.05). The bit-identical q35-v2 is failed for the same reason. `chat/chat_tlm_closeout.py` now judges every archive under the fixed limit; `chat/tlm-summary.json` lists both q35 runs under `preserved_failures`, and only the two VL runs pass.
 - The floor-based limit `max(0.05, 2.0 × CPU floor)` was introduced after the q35-v1 result was seen, so it cannot be used for that run. A new tolerance rule may be proposed for future runs only in writing and before those runs.
+
+### Domains and redefined gates (R7, R8)
+- **S2-02.D.sensitivity → not measured.** Reason: the row was redefined after the result. It was not measured in d7314d5; baadef3 marked it passed on one-factor SystemC latency probes that `p1/candidate-sensitivity/README.md` itself calls inconclusive for physical retiming effects. Uncalibrated proxies are not per-candidate RTL counterfactuals, so no candidate has a measured sensitivity. The 48 bitwise SystemC rows stay valid as functional model evidence.
+- **S2-02.A** is labelled *SystemC/TLM model plus RTL fixtures (F07 miter) and earlier board-top RTL cohorts*; **S2-03.C** is labelled *SystemC/TLM model plus one-core RTL*. Neither is board-measured. Both are Study items whose contract text (S2-02 A, S2-03 C) does not require the board, so they stay passed for their stated scope, with the domain in the row.

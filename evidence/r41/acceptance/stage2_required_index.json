@@ -288,7 +288,7 @@
         "evidence/r41/stage2/candidates/F07/functional_report.json",
         "evidence/r41/stage1/f07_ooc/README.md"
       ],
-      "reason": "Bounded home/core service Study delivered: current-source standard Torch depth/outlet runs, ownership/counter identities, separate lookup/miss/admission and bounded queue/resource audit, F07 semantic/physical references, and a conservative no-new-throughput-candidate decision. Unbounded fairness and physical throughput are not claimed; the separate hbm_bw workstream is not substituted for acceptance.",
+      "reason": "Domain: SystemC/TLM model (current-source native standard Torch graph, three cores) plus RTL fixtures (F07 cycle miter) and earlier board-top RTL service cohorts, with a structural resource count; no board measurement (AUDIT.md R8). This Study item does not require the board, so the bounded Study closes on that evidence: ownership/counter identities, separate lookup/miss/admission and bounded queue/resource audit, and a conservative no-new-throughput-candidate decision. Unbounded fairness, physical throughput and any board effect are not claimed; the separate hbm_bw workstream is not substituted for acceptance.",
       "closure_plan": null
     },
     {
@@ -344,15 +344,15 @@
     {
       "id": "S2-02.D.sensitivity",
       "requirement": "Each candidate: SystemC sensitivity",
-      "status": "passed",
+      "status": "not measured",
       "classification": "Study",
       "evidence": [
         "evidence/r41/acceptance/p1/candidate-sensitivity/README.md",
         "evidence/r41/acceptance/p1/candidate-sensitivity/metrics.json",
         "evidence/r41/acceptance/p1/candidate-sensitivity/index.json"
       ],
-      "reason": "Per-candidate bounded SystemC Study delivered: 12 configurations/48 bitwise standard Torch rows with core-pipeline model, exact one-factor executed-configuration checks and unchanged artifact/output hashes; four original X8 FP8 point pairs rechecked separately. Physical retiming effects remain inconclusive and proxies are not RTL counterfactuals; no per-candidate gain or board pass is inferred. This supersedes incomplete grouped-only coverage.",
-      "closure_plan": null
+      "reason": "Not measured (rectification, AUDIT.md R7). d7314d5 recorded this row as not measured; baadef3 then marked it passed on one-factor SystemC latency probes that its own README calls inconclusive for physical retiming effects, which redefined the gate after the result. The 12 configurations / 48 bitwise standard Torch rows remain valid SystemC/TLM functional evidence, but uncalibrated proxies are not per-candidate RTL counterfactuals, so no candidate has a measured sensitivity.",
+      "closure_plan": "P1"
     },
     {
       "id": "S2-02.D.semantics",
@@ -500,7 +500,7 @@
         "rtl/core/tnca_core.v",
         "compiler/python/tnca_cc/window_lifetime.py"
       ],
-      "reason": "Bounded negative Study evaluates real paired producer/consumer command demands, equal two-context/64-register-per-program budgets, current window lifetime reuse and the static asymmetric VRF proposal. Existing RPAIR shares one base and provides no additional register pool; measured representative kernels fit, so no new capability or dynamic reallocation is selected. Other workloads and board speedups are not inferred.",
+      "reason": "Domain: SystemC/TLM model (18 fixed-budget rows) plus one-core RTL rows and static emitted command counts; no board measurement (AUDIT.md R8). This Study item does not require the board. Bounded negative Study: equal two-context/64-register-per-program budgets, current window lifetime reuse and the static asymmetric VRF proposal; existing RPAIR shares one base and provides no additional register pool; the representative kernels fit, so no new capability or dynamic reallocation is selected. Other workloads and board speedups are not inferred. The rtl/core/tnca_core.v hash is review-only (AUDIT.md R12).",
       "closure_plan": null
     },
     {

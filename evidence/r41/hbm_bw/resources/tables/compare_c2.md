@@ -1,6 +1,6 @@
-Base: `/home/ubuntu/TritonChip-bw-res/evidence/r41/hbm_bw/resources/synth/base_67a453b77be8/utilization.rpt`
+Base: `evidence/r41/hbm_bw/resources/synth/base_67a453b77be8/utilization.rpt`
 
-Candidate: `/home/ubuntu/TritonChip-bw-res/evidence/r41/hbm_bw/resources/synth/off2_8017d7ca3368/utilization.rpt`
+Candidate: `evidence/r41/hbm_bw/resources/synth/off2_8017d7ca3368/utilization.rpt`
 
 | Scope | LUT base | LUT cand | Δ | LUTRAM base | LUTRAM cand | Δ | FF base | FF cand | Δ | RAMB36 base | RAMB36 cand | Δ | DSP base | DSP cand | Δ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -20,7 +20,7 @@ Candidate: `/home/ubuntu/TritonChip-bw-res/evidence/r41/hbm_bw/resources/synth/o
 | g_local_tmu.u_tmu | 17,079 | 17,079 | +0 | 1,020 | 1,020 | +0 | 7,632 | 7,632 | +0 | 0 | 0 | +0 | 0 | 0 | +0 |
 | u_mesh | 5,082 | 5,082 | +0 | 2,628 | 2,628 | +0 | 264 | 264 | +0 | 0 | 0 | +0 | 0 | 0 | +0 |
 
-Candidate: `/home/ubuntu/TritonChip-bw-res/evidence/r41/hbm_bw/resources/synth/c2_line_lutram_8017d7ca3368/utilization.rpt`
+Candidate: `evidence/r41/hbm_bw/resources/synth/c2_line_lutram_8017d7ca3368/utilization.rpt`
 
 | Scope | LUT base | LUT cand | Δ | LUTRAM base | LUTRAM cand | Δ | FF base | FF cand | Δ | RAMB36 base | RAMB36 cand | Δ | DSP base | DSP cand | Δ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|

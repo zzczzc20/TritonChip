@@ -1,6 +1,6 @@
-Base: `/home/ubuntu/TritonChip-bw-res/evidence/r41/hbm_bw/resources/synth/base_67a453b77be8/utilization.rpt`
+Base: `evidence/r41/hbm_bw/resources/synth/base_67a453b77be8/utilization.rpt`
 
-Candidate: `/home/ubuntu/TritonChip-bw-res/evidence/r41/hbm_bw/resources/synth/c1b2_08c26014fa5a/utilization.rpt`
+Candidate: `evidence/r41/hbm_bw/resources/synth/c1b2_08c26014fa5a/utilization.rpt`
 
 | Scope | LUT base | LUT cand | Δ | LUTRAM base | LUTRAM cand | Δ | FF base | FF cand | Δ | RAMB36 base | RAMB36 cand | Δ | DSP base | DSP cand | Δ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|

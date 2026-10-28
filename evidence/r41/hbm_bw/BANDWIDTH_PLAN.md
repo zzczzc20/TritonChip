@@ -2,7 +2,30 @@
 
 Status: active, from 2026-10-28. Owner: the lead (Claude), working through subagents. This plan replaces the stopped `R41F_PLAN.md` (stream compute unit). **`doc/engineering_discipline.md` is binding and takes precedence over this plan.**
 
-## 1. Target
+## 0. Decision of 2026-10-28: the one-lane 64 B path
+
+Author decision (source: the author, in the lead's chat, 2026-10-28, answering the lead's question about the G4 phase-1 result): **option (c), build the one-lane 64 B path (about 19 GB/s analytic).**
+
+Why the 32 GB/s target of §1 was set aside: G4's phase-1 design ([`G4_DESIGN.md`](G4_DESIGN.md)) showed it unreachable for the claimed operator classes.
+- **Issue.** On the single-issue core with 16 × 32-bit lanes, only 29 of the 171 large registered points have an ideal issue ceiling of at least 106.7 B/cycle/core: copy/clone and fp32 add/sub/mul/relu. fp16/bf16 element-wise operators, div, casts, the SFU activations, reductions and normalisations are bounded below it whatever the memory path does. Source: `g4/issue_bound.json`, analytic on the compiled kernels of G3's census.
+- **Area and timing.** The memory path sized for 106.7 B/cycle/core needs an estimated net +60–80k LUTs per tile. The SLRs are at 96.7 % (SLR0) and 88.7 % (SLR1) CLB packing in the routed run-1 image, and the one-lane wide tile already screens at only +0.508 ns (G4_DESIGN.md §4).
+- **Model.** SystemC, uncalibrated: the compiled code reached at most 5.0 B/cycle/core even with an idealised memory (G4_DESIGN.md §5).
+
+What stays unchanged:
+- The registered suite (§3), unchanged and frozen: every case is still reported.
+- The non-regression rules of the discipline (§2.4) and §1's definitions of full-link bandwidth and the measurement boundary.
+
+The goal is now the one-lane path of G4_DESIGN.md §6:
+- 64 B per cycle per core through the LSU/TTE, the VRF window port, the NI/NoC and the home slice;
+- lines in flight sized by Little's law;
+- full-line writes without fill;
+- pipelined outlets;
+- the pseudo-channel interleave;
+- the tiled, software-pipelined element-wise lowering.
+
+It is built on G2's reduced profile `core-vrf-sync-v5-x8-g2` and its cuts (`RESOURCES.md` §9). Its analytic chip ceiling is about 19 GB/s (64 B/cycle/core at 100 MHz) for copy and fp32 binary operators. The other classes stay at their issue bounds.
+
+## 1. Target (as registered; see §0 for the decision that replaced it)
 Memory-bound standard PyTorch operators must reach **32 GB/s of full-link bandwidth on the board**. They run on the three cores of the next image at 100 MHz, through the standard path with default settings.
 
 - **Operators:** `copy`/`clone`, the element-wise binary operators and the unary activations of the registered suite (§3).

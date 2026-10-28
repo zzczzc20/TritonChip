@@ -67,8 +67,13 @@ def board():
 
 # ---------------------------------------------------------------------------- rtl
 def rtl():
+    return rtl_rows(sorted(glob.glob(str(E/'rtl/batch*/*.jsonl'))))
+
+
+def rtl_rows(paths):
+    """Stage metrics of every RTL record in `paths` (also used by g4_rtl_report.py)."""
     out = []
-    for path in sorted(glob.glob(str(E/'rtl/batch*/*.jsonl'))):
+    for path in paths:
         for line in Path(path).read_text().splitlines():
             r = json.loads(line)
             if r['status'] != 'pass' or not r['timed_launches']:

@@ -81,6 +81,43 @@ def model_table(path):
     return '\n'.join(out)
 
 
+def tiled_table(base, arms):
+    """Per point and memory configuration: B/cycle/core of the default lowering
+    and of each tiled mode, plus a summary (geometric-mean speedup, points
+    slower by more than 2 %, numerical failures). Every registered point."""
+    import statistics
+    b = json.loads(Path(base).read_text())
+    t = {name: json.loads(Path(p).read_text()) for name, p in arms}
+    out = []
+    for v in ('run1', 'g4'):
+        if v not in b['variants'] or any(v not in d['variants'] for d in t.values()):
+            continue
+        pts = b['variants'][v]['points']
+        out.append(f'### Memory configuration `{v}`\n')
+        summ = ['| Arm | Points | Pass | Geometric-mean speedup | Min | Max | Slower than default by > 2 % |',
+                '|---|---:|---:|---:|---:|---:|---:|']
+        rows = ['| Family | dtype | Layout | default | ' + ' | '.join(t) + ' |',
+                '|---|---|---|---:|' + '---:|' * len(t)]
+        for name, d in t.items():
+            tp = d['variants'][v]['points']
+            sp = [pts[k]['device_cycles'] / tp[k]['device_cycles'] for k in pts
+                  if tp.get(k, {}).get('device_cycles') and pts[k].get('device_cycles')]
+            npass = sum(1 for k in pts if tp.get(k, {}).get('status') == 'pass')
+            summ.append(f'| {name} | {len(pts)} | {npass} | {statistics.geometric_mean(sp):.3f} | '
+                        f'{min(sp):.3f} | {max(sp):.3f} | {sum(1 for x in sp if x < 0.98)} |')
+        key = lambda p: (FAMS.index(p.split('/')[0][3:]) if p.split('/')[0][3:] in FAMS else 99, p)
+        for pid in sorted(pts, key=key):
+            m = re.search(r'/(\w+?)-(?:to-(\w+)-)?\w+?-(contig|strided|broadcast)-r', pid)
+            dt = m.group(1) + (f'→{m.group(2)}' if m.group(2) else '')
+            cells = [fmt(pts[pid]['b_per_cycle_per_core'])]
+            for d in t.values():
+                r = d['variants'][v]['points'].get(pid, {})
+                cells.append(fmt(r.get('b_per_cycle_per_core')) if r.get('status') == 'pass' else r.get('status', 'missing'))
+            rows.append(f"| {pid.split('/')[0][3:]} | {dt} | {m.group(3)} | " + ' | '.join(cells) + ' |')
+        out += summ + [''] + rows + ['']
+    return '\n'.join(out)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dir', default=str(ROOT/'evidence/r41/hbm_bw/g4'))
@@ -88,7 +125,13 @@ def main():
     base = Path(a.dir)
     print('## Issue ceilings (analytic on compiled code)\n')
     print(issue_table(json.loads((base/'issue_bound.json').read_text())))
+    arms = [(f'tiled mode {m}', base/f'model_small_tiled{m}'/'suite_model.json') for m in (1, 2)]
+    if all(p.exists() for _n, p in arms):
+        print('\n## Tiled lowering, small points (model-prediction-uncalibrated, NON-DEFAULT TNCA_TILED_POINTWISE)\n')
+        print(tiled_table(base/'model_small'/'suite_model.json', arms))
     for p in sorted(base.glob('model_*/suite_model.json')):
+        if 'tiled' in p.parent.name:
+            continue
         d = json.loads(p.read_text())
         nd = d.get('non_default_settings') or []
         label = f", NON-DEFAULT {' '.join(nd)}: does not count for any target" if nd else ''

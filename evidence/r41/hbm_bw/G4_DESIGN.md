@@ -6,6 +6,8 @@ Inputs: [`LINK_BUDGET.md`](LINK_BUDGET.md) (G3), [`RESOURCES.md`](RESOURCES.md) 
 
 Domains: every number is labelled **board** (run-1 image, 100 MHz), **rtl** (RTL simulation), **model** (SystemC/TLM, uncalibrated), **screen** (out-of-context synthesis or place and route), or **analytic** (arithmetic on recorded numbers or on compiled code). An **estimate** is an engineering estimate with no run behind it, and is marked as such. Nothing here is a board measurement of a new design.
 
+**Decision (2026-10-28).** Author decision (source: the author, in the lead's chat, 2026-10-28, answering the lead's question about the G4 phase-1 result): **option (c), build the one-lane 64 B path (about 19 GB/s analytic).** Phase 2 (§8) builds that path, on G2's reduced profile `core-vrf-sync-v5-x8-g2`. The 32 GB/s target is recorded as unreachable, with the evidence in §1 and §4–§5. The registered suite is unchanged, and every case is reported.
+
 ## 1. Result
 
 **The target, as defined in BANDWIDTH_PLAN.md §1, cannot be reached with the current ISA and core, whatever the memory path does.** The plan claims 32 GB/s on the board, which is 106.7 B/cycle per core, for copy/clone, the element-wise binary operators and the unary activations of the registered suite. Below that the limit is the core's instruction issue, not memory:
@@ -381,9 +383,14 @@ Both depend on §3.2 being in place. Its added area is the measured +26.3k per t
 | 16 SFU slices per core | exp fp32 8 → 18 B/cycle/core; silu 4 → 8 | the 4-slice SFU routes at 8,748 LUTs (screen); the result stays far below the target |
 | 32 vector lanes | doubles every element-wise bound | 16 more FMAs per core, at about 2,400 LUTs each (RESOURCES.md §3); does not fit in SLR0 |
 
-## 8. Phase 2
+## 8. Phase 2: the one-lane path (option c)
 
-Not started. Under the brief, phase 2 continues only if the design shows the target is reachable within area and timing; §1 and §4 show that it is not. The recommended next step under any of options (a)–(c) is the compiler lowering of §3.2, default-off until the 113-point gate. It is general, it needs no new hardware, and it can be measured with G3's RTL link probes and the model.
+History:
+- The brief stopped phase 2 after the design (§1, §4).
+- The lead then asked for the compiler step that is valid under every option (§8.1).
+- The author chose option (c) (decision above), which authorised the RTL steps (§8.2 onwards).
+
+<!-- G4_PHASE2 -->
 
 ## Reproduction
 

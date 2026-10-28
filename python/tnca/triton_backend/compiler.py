@@ -117,8 +117,8 @@ def _packed_window_unpack():
 
 def _tiled_pointwise():
     value = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
-    if value not in (0, 1, 2):
-        raise ValueError('TNCA_TILED_POINTWISE must be 0, 1 or 2')
+    if value not in (0, 1, 2, 3):
+        raise ValueError('TNCA_TILED_POINTWISE must be 0, 1, 2 or 3')
     return value
 
 

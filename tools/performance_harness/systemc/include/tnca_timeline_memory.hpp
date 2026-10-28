@@ -16,6 +16,7 @@
 #include "tnca_dram.hpp"
 #include "tnca_dram_map.hpp"
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <cstdio>
 #include <cstdlib>
@@ -144,7 +145,7 @@ struct TimelineMemory {
         return false;
     }
     // Home slice (tnca_nuca_slice.v); returns the cycle its response leaves.
-    u64 slice(unsigned h,u64 a,bool write,u64 t,u64 now){
+    u64 slice(unsigned h,u64 a,bool write,u64 t,u64 now,bool full=false){
         auto& H=homes[h];u64 lineaddr=a&~63ULL;
         unsigned s=c.set(a),b=s*ways;Tag* hit=nullptr;
         for(unsigned w=0;w<ways;++w){auto& g=H.tags[b+w];if(g.valid && g.address==lineaddr){hit=&g;break;}}
@@ -178,6 +179,14 @@ struct TimelineMemory {
                 ++hc(h,0);st=H.engine.reserve(st,wb_occ,now)+wb_occ;
                 line(h,victim->address,true,st+to_outlet,now);
             }
+        }
+        if(full && write && c.get_or("tl_full_line_nofill",0)){
+            // HOME_LINE_WRITE_NOFILL: a store of the whole line allocates over the
+            // (written-back) victim without reading memory and without an MSHR.
+            u64 wake=H.engine.reserve(st,fill_occ,now)+fill_occ;
+            victim->address=lineaddr;victim->valid=true;victim->dirty=true;victim->ready=wake;
+            ++x.counts["home_"+std::to_string(h)+"_nofill_installs"];
+            hc(h,9)+=wake-arrival;return wake;
         }
         u64 mreq=H.engine.reserve(st,mreq_occ,now)+mreq_occ;
         u64 data=line(h,lineaddr,false,mreq+to_outlet,now)+from_outlet;
@@ -223,8 +232,11 @@ struct TimelineMemory {
             for(u64 i=0;i<n;++i)last=std::max(last,route(from,to,vn,std::min(payload,data-i*payload),at+i,now));
             return last;
         };
+        bool full=false;
+        if(write && width==64 && words.size()==8){std::set<u64> seen;full=true;
+            for(auto& w:words){full=full && w.be==255;seen.insert(w.address);}full=full && seen.size()==8;}
         u64 r=transfer(core,h,0,req_data,t+inject);
-        r=slice(h,region,write,r,now);
+        r=slice(h,region,write,r,now,full);
         if(!write)for(u64 i=1;i<c.get_or("tl_prefetch_lines",0);++i){
             u64 address=region+i*64;
             if(address<c.get("memory_base") || address>=c.get("memory_base")+c.get("memory_bytes"))break;

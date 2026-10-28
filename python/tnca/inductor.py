@@ -74,6 +74,9 @@ STAGE1_MAX_BLOCK = 16
 # this many lanes; tnca_cc/pointwise_tiles.py runs it as a loop over register
 # tiles, and a kernel it cannot tile falls back to the 16-lane configuration.
 TILED_POINTWISE_BLOCK = 1024
+# Mode 3 (streamed tensor-engine tiles) amortises a program's descriptor setup
+# and its pipeline fill and drain over a longer block.
+TILED_STREAM_BLOCK = 2048
 # The device types whose Triton kernels TNCA runs: `cpu` (CPU tensors, the
 # R39 migration path, B39) and `tnca` (the native device, R40-01). Both get
 # the same heuristics, templates and descriptor rules.
@@ -140,8 +143,17 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
         def get_configs(self, *args, **kwargs):
             import copy
             original = super().get_configs(*args, **kwargs)
-            configs = _with_fallback(copy.deepcopy(original), _pointwise_cap(
-                args[0] if args else kwargs.get('size_hints'), cap))
+            pcap = _pointwise_cap(args[0] if args else kwargs.get('size_hints'), cap)
+            configs = _with_fallback(copy.deepcopy(original), pcap)
+            # Mode 3 streams a longer block than Inductor proposes: widen the
+            # one 1-D block to the cap (which leaves TILED_MIN_PROGRAMS programs).
+            if _STREAM[0] and pcap > cap and configs and list(configs[0].kwargs) == ['XBLOCK']:
+                mode2 = copy.deepcopy(configs[0])
+                configs[0].kwargs['XBLOCK'] = max(configs[0].kwargs['XBLOCK'], pcap)
+                # a program mode 3 cannot stream takes mode 2's lowering, which may not fit
+                # the longer block: mode 2's block is the next candidate, before the narrow one
+                if mode2.kwargs['XBLOCK'] < configs[0].kwargs['XBLOCK']:
+                    configs.insert(1, mode2)
             # Padding and multi-axis gathers can exhaust scalar/predicate
             # registers even at VLEN. Retile the same pointwise program,
             # keeping the first legal configuration without benchmarking.
@@ -339,6 +351,7 @@ def _install_unsplit_scan():
 _NO_X_DIM = [False]
 _BLOCK_CAP = [STAGE1_MAX_BLOCK]
 _POINTWISE_CAP = [0]   # 0: the block cap; set by configure() from TNCA_TILED_POINTWISE
+_STREAM = [False]      # TNCA_TILED_POINTWISE=3
 # With tiling on, a 1-D pointwise block also leaves at least this many
 # programs, so that every context of every core has one (3 cores x 2 role
 # contexts on the image, rounded up to a power of two).
@@ -618,9 +631,11 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     _install_no_x_dim()
     _BLOCK_CAP[0] = max_block
     tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
-    if tiled not in (0, 1, 2):
-        raise ValueError('TNCA_TILED_POINTWISE must be 0, 1 or 2')
-    _POINTWISE_CAP[0] = max(max_block, TILED_POINTWISE_BLOCK) if tiled else 0
+    if tiled not in (0, 1, 2, 3):
+        raise ValueError('TNCA_TILED_POINTWISE must be 0, 1, 2 or 3')
+    _STREAM[0] = tiled == 3
+    _POINTWISE_CAP[0] = (max(max_block, TILED_STREAM_BLOCK if tiled == 3 else TILED_POINTWISE_BLOCK)
+                         if tiled else 0)
     _install_narrow_blocks()
     _install_block_fallback()
     import torch._inductor.config as config

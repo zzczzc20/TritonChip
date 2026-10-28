@@ -14,6 +14,15 @@ Option `tiled_pointwise` (TNCA_TILED_POINTWISE), default 0 (off):
      code generator's ownership check requires). Every other access keeps
      its vector load or store.
   2  the same loop with every access through the vector load/store unit.
+  3  (R41 G4, for the line-wide multi-command tensor engine) the tensor-engine
+     accesses of mode 1, streamed: the program's tiles are unrolled and each
+     transfer has a ring of R windows. The loads of the first R tiles are
+     issued at once; tile i waits only for its own loads (and, before its
+     store window is refilled, for the store of tile i-R), and the loads of
+     tile i+R are issued as soon as tile i has been computed. Up to R tiles
+     of every load stream are in flight, without a vector register held per
+     line by the load/store unit. Stores of the last R tiles are waited at
+     the end of the program.
 
 Which programs (generic, from the TTIR alone; nothing is recognised by name,
 shape or size):
@@ -57,6 +66,7 @@ _SKIP = {'tt.func', 'builtin.module', 'tt.return'}
 EXTENT_UNMASKED = (1 << 31) - 1    # i32 lane indices never reach it
 WINDOW_BUDGET = 48                 # of a context's 64 vector registers
 LSU_GROUP_BUDGET = 56              # registers the in-flight load groups may hold
+STREAM_BUDGET = 48                 # window registers of a mode-3 ring
 
 
 def _shape(value):
@@ -88,7 +98,7 @@ class Plan:
 
     def summary(self):
         return dict(width=self.width, tile=self.tile, double_buffer=self.double,
-                    groups=getattr(self, 'groups', 1),
+                    groups=getattr(self, 'groups', 1), ring=getattr(self, 'ring', 0),
                     accesses=sorted(a.kind for a in self.accesses.values()))
 
 
@@ -125,7 +135,23 @@ def _zero_other(imp, defs, value):
 
 
 def plan(imp, ops, module_text, func_name):
-    """A Plan, or None when the program is not a tileable 1-D element-wise one."""
+    """A Plan, or None when the program is not a tileable 1-D element-wise one.
+
+    Mode 3 applies to programs whose every access can use the tensor engine;
+    any other tileable program takes mode 2's lowering instead."""
+    if getattr(imp, 'tiled_pointwise', 0) == 3:
+        p = _plan(imp, ops, module_text, func_name)
+        if p is not None:
+            return p
+        imp.tiled_pointwise = 2
+        try:
+            return _plan(imp, ops, module_text, func_name)
+        finally:
+            imp.tiled_pointwise = 3
+    return _plan(imp, ops, module_text, func_name)
+
+
+def _plan(imp, ops, module_text, func_name):
     mode = getattr(imp, 'tiled_pointwise', 0)
     vlen = imp.target.vlen
     if not mode or not imp.index_opt:
@@ -242,7 +268,7 @@ def plan(imp, ops, module_text, func_name):
             return _no(imp, 22)
 
     accesses = {}
-    if mode == 1 and imp.target.has('tensor_dma'):
+    if mode in (1, 3) and imp.target.has('tensor_dma'):
         for o in loads + stores:
             store = o.get_name() == 'tt.store'
             if store and not imp.target.has('tensor_store'):
@@ -330,8 +356,26 @@ def plan(imp, ops, module_text, func_name):
             if nvl and g * tile_regs * per_chunk <= LSU_GROUP_BUDGET and width % (g * tile_regs * vlen) == 0:
                 groups = g
                 break
+    ring = 0
+    if mode == 3:
+        if nl + ns != len(loads) + len(stores):
+            return _no(imp, 31)          # mode 3 needs every load and store on the tensor engine
+        best = None
+        for t in (16, 8, 4, 2, 1):
+            nt = width // (t * vlen)
+            if width % (t * vlen) or nt < 2:
+                continue
+            for r in (4, 3, 2):
+                if r <= nt and r * (nl + ns) * t <= STREAM_BUDGET and 2 * r <= imp.target.num_barriers:
+                    if best is None or r * t > best[0] * best[1] or (r * t == best[0] * best[1] and t > best[1]):
+                        best = (r, t)
+                    break
+        if best is None:
+            return _no(imp, 32)
+        ring, tile_regs = best
     p = Plan(width, tile_regs * vlen, scalars, tensor_ops, bases, ranges, accesses, double)
     p.groups = groups
+    p.ring = ring
     return p
 
 
@@ -385,6 +429,8 @@ def _chunk_ids(value, tile, vlen, group=0):
 
 def run(imp, p, dispatch):
     """Emit the program as the loop over tiles that `p` describes."""
+    if getattr(p, 'ring', 0):
+        return run_stream(imp, p, dispatch)
     b = imp.b
     vlen = imp.target.vlen
     tile, width = p.tile, p.width
@@ -573,3 +619,121 @@ def _chunk_value(value, tile, vlen, c, group=0):
     from .register_blocks import _ValueView
     tv = _TValue(value, tile, group)
     return tv if tile == vlen else _ValueView(tv, c, vlen)
+
+
+def run_stream(imp, p, dispatch):
+    """Mode 3: every tile unrolled, a ring of `p.ring` windows per transfer."""
+    b = imp.b
+    vlen = imp.target.vlen
+    tile, width, ring = p.tile, p.width, p.ring
+    nchunk, ntiles = tile // vlen, width // tile
+    b.comment(f'streamed tiled element-wise program: {width} lanes as {ntiles} tiles of {tile}, '
+              f'a ring of {ring} windows per transfer ({len(p.accesses)} tensor-engine transfers)')
+    for o in p.scalars:
+        dispatch(o)
+    tlist = sorted(p.accesses.values(), key=lambda a: imp._op_pos.get(id(a.op), 0))
+    loads = [a for a in tlist if a.kind == 'load']
+    stores = [a for a in tlist if a.kind == 'store']
+    esize = 4
+    for a in tlist:
+        arg = imp._arg_value(a.arg)
+        low = b.sbini('and', arg, 7)
+        base = b.sbin('sub', arg, low)
+        a.delta = b.sbini('lshr', low, 2)
+        if a.n is None:
+            extent = EXTENT_UNMASKED
+        elif isinstance(a.n, int):
+            extent = b.sbini('add', a.delta, a.n)
+        else:
+            extent = b.sbin('add', a.delta, imp._value(a.n))
+        a.desc = imp._build_descriptor(base=base, elem=a.elem, extents=[extent],
+                                       byte_strides=[esize], block_shape=[tile],
+                                       what=f'one {tile}-element tile of {a.arg}')
+        a.windows = [b.window(nchunk, name=f'{a.kind}_{a.arg}_{i}') for i in range(ring)]
+    base_scalar = {bid: imp._value(so.get_operand(0)) for bid, so in p.bases.items()}
+    for a in tlist:
+        a.origin = b.sbin('add', base_scalar[id(a.base_splat)], a.delta)
+    lbar = [b.barrier(name=f'stream_load{i}') for i in range(ring)] if loads else []
+    sbar = [b.barrier(name=f'stream_store{i}') for i in range(ring)] if stores else []
+    tile_ops = [o for o in p.tensor_ops if o.get_name() != 'tt.make_range' and id(o) not in p.bases]
+    for g in range(ntiles):
+        for o in p.tensor_ops:
+            for i in range(o.get_num_results()):
+                r = o.get_result(i)
+                tid = _TValue(r, tile, g).id()
+                imp._value_def[tid] = _TOp(o, tile, g)
+                imp._value_users[tid] = [(_TOp(u, tile, g), k) for u, k in imp._value_users.get(r.id(), [])]
+                printed = getattr(imp, '_printed_consts', None)
+                if printed and r.id() in printed:
+                    printed[tid] = printed[r.id()]
+    caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
+    saved = {n: dict(getattr(imp, n)) for n in caches}
+    load_tok, store_tok = {}, {}
+
+    def issue_loads(i):
+        s = i % ring
+        tok = b.barrier_arm(lbar[s], arrivals=0, ops=len(loads))
+        for a in loads:
+            b.dma_load(a.windows[s], a.desc.value, [b.sbini('add', a.origin, i * tile)], tok, dtype=a.elem)
+        load_tok[i] = tok
+
+    try:
+        if loads:
+            for i in range(min(ring, ntiles)):
+                issue_loads(i)
+        for g in range(ntiles):
+            s = g % ring
+            b.comment(f'tile {g} (ring slot {s}): lanes {g * tile}..{(g + 1) * tile - 1}')
+            for bid, so in p.bases.items():
+                sb = b.sbini('add', base_scalar[bid], g * tile)
+                vec = b.splat(sb, dtype='i32')
+                for cid in _chunk_ids(so.get_result(0), tile, vlen, g):
+                    imp._v[cid] = vec
+                    imp._uscalar[cid] = sb
+                    imp._offsets[cid] = ('uniform', cid)
+            for r in p.ranges:
+                for c, cid in enumerate(_chunk_ids(r.get_result(0), tile, vlen, g)):
+                    v = b.arange()
+                    if c:
+                        v = b.vbin('add', v, b.vmovi(c * vlen))
+                    imp._v[cid] = v
+                    imp._offsets[cid] = ('arange', None) if c == 0 else ('contiguous', cid)
+                    if c:
+                        imp._uscalar[cid] = imp._const_scalar(c * vlen)
+                        imp._nonneg.add(cid)
+                        imp._multiple[cid] = c * vlen
+            if loads:
+                b.barrier_wait(load_tok.pop(g))
+            store_waited = False
+            for o in tile_ops:
+                a = p.accesses.get(id(o))
+                if a is None:
+                    dispatch(_TOp(o, tile, g))
+                    continue
+                if a.kind == 'load':
+                    for c, cid in enumerate(_chunk_ids(o.get_result(0), tile, vlen, g)):
+                        imp._v[cid] = b.window_reg(a.windows[s], c, dtype=a.elem)
+                    continue
+                # a store: its window slot was last used by tile g - ring
+                if not store_waited and g - ring in store_tok:
+                    b.barrier_wait(store_tok.pop(g - ring))
+                    store_waited = True
+                value = o.get_operand(1)
+                w = a.windows[s]
+                for c, cid in enumerate(_chunk_ids(value, tile, vlen, g)):
+                    held = imp._v.get(cid)
+                    if held is None:
+                        held = imp._value(_chunk_value(value, tile, vlen, c, g))
+                    b.window_put(w, c, held)
+                if g not in store_tok:
+                    store_tok[g] = b.barrier_arm(sbar[s], arrivals=0, ops=len(stores))
+                b.dma_store(w, a.desc.value, [b.sbini('add', a.origin, g * tile)], store_tok[g], dtype=a.elem)
+            # this tile's load windows have been read: refill them with tile g + ring
+            if loads and g + ring < ntiles:
+                issue_loads(g + ring)
+        for g in sorted(store_tok):
+            b.barrier_wait(store_tok[g])
+        store_tok.clear()
+    finally:
+        for n, cache in saved.items():
+            setattr(imp, n, cache)

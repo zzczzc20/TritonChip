@@ -49,7 +49,7 @@ KNOWN_OPTIONS = {
     'rctx_role_pairs': 'int, 0..2; cap paired programs for fixed-context comparisons (0 uses the target maximum)',
     'bank_alloc': 'int, 0 or 1; use the target bank-aware vector allocator',
     'packed_window_unpack': 'int, 0 or 1; software lane unpack of packed FP16/BF16 DMA windows',
-    'tiled_pointwise': 'int, 0..2; 1-D element-wise programs as a loop over register tiles, '
+    'tiled_pointwise': 'int, 0..3; 1-D element-wise programs as a loop over register tiles, '
                        '1 with tensor-engine transfers where legal, 2 with vector loads/stores only '
                        '(tnca_cc/pointwise_tiles.py; default 0)',
     'window_reuse': 'int, 0 or 1; reuse disjoint awaited single-role window lifetimes',
@@ -321,7 +321,7 @@ def check_options(options):
             options.pop(name, None)
             if value:
                 options[name] = value
-        allowed = (0, 1, 2) if name in ('rctx_roles', 'rctx_role_pairs', 'tiled_pointwise') else (0, 1)
+        allowed = (0, 1, 2, 3) if name == 'tiled_pointwise' else (0, 1, 2) if name in ('rctx_roles', 'rctx_role_pairs') else (0, 1)
         if value not in allowed:
             raise ValueError(f'{name} must be one of {allowed}')
     if options.get('rctx_role_pairs') and not options.get('rctx_roles'):
@@ -765,8 +765,8 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
     tiled = (options or {}).get('tiled_pointwise')
     if tiled is None:
         tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
-    if tiled not in (0, 1, 2):
-        raise ValueError('tiled_pointwise must be 0, 1 or 2')
+    if tiled not in (0, 1, 2, 3):
+        raise ValueError('tiled_pointwise must be 0, 1, 2 or 3')
     # The extended lowering (large tiles): a kernel the default lowering
     # refuses, or whose code the code store cannot hold, is imported once
     # more with the importer's `large_tiles` set -- separable indices, wide

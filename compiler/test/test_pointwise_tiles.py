@@ -3,8 +3,8 @@
 
 A @triton.jit kernel through Triton's frontend, the importer with the option
 set, the code generator and the core RTL bench, checked word by word against
-the same arithmetic in Python. Covers both modes (1: tensor-engine tiles where
-legal; 2: vector loads and stores only), several blocks, a masked tail and an
+the same arithmetic in Python. Covers the modes (1: tensor-engine tiles where
+legal; 2: vector loads and stores only; 3: streamed tensor-engine tiles), several blocks, a masked tail and an
 exact multiple, and the refusals that keep the default lowering.
 
 Needs Triton importable and the RTL bench (skips otherwise, like
@@ -68,7 +68,7 @@ class TestPointwiseTiles(unittest.TestCase):
         self.assertIsNotNone(imp.tiled_pointwise_plan)
         cg = self._cg(kernel)
         text = cg.b.text()
-        if mode == 1:
+        if mode in (1, 3):
             self.assertIn('t.ld.async', text)
             self.assertIn('t.st.async', text)
         else:
@@ -109,6 +109,36 @@ class TestPointwiseTiles(unittest.TestCase):
         import kernels_triton as K
         imp = self._run(K.axpb_nomask_kernel, 'axpb_nomask_kernel', lambda i: xv(i) * 2.0 + yv(i), 256, 256, 2)
         self.assertGreater(imp.tiled_pointwise_plan['groups'], 1)
+
+    def test_stream_mode3(self):
+        """Mode 3 (R41 G4): every tile unrolled, a ring of windows per
+        transfer, later tiles' loads issued while earlier tiles compute; the
+        result must be unchanged on the RTL, with a masked tail and exact."""
+        if not H.available():
+            self.skipTest(H.why_unavailable())
+        import kernels_triton as K
+        for block in (256, 512):
+            for n in (200, block):
+                with self.subTest(block=block, n=n):
+                    imp = self._run(K.add_kernel, 'add_kernel', lambda i: xv(i) + yv(i), block, n, 3)
+                    self.assertGreaterEqual(imp.tiled_pointwise_plan['ring'], 2)
+        imp = self._run(K.axpb_nomask_kernel, 'axpb_nomask_kernel', lambda i: xv(i) * 2.0 + yv(i), 512, 512, 3)
+        self.assertGreaterEqual(imp.tiled_pointwise_plan['ring'], 2)
+
+    def test_mode3_falls_back_to_mode2(self):
+        """A tileable program with an access the tensor engine cannot take
+        (here a 2-byte element) gets mode 2's lowering under mode 3."""
+        mod, _ctx = triton_bridge.make_ttir(
+            __import__('kernels_triton').add_kernel,
+            {'x_ptr': '*fp16', 'y_ptr': '*fp16', 'o_ptr': '*fp16', 'n': 'i32', 'BLOCK': 'constexpr'},
+            {'BLOCK': 256})
+        imp = TTIRImporter(self.target, 'add_kernel', scratch_addr=0x3000, index_opt=True)
+        imp.tiled_pointwise = 3
+        imp.run(mod, 'add_kernel', {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': 40},
+                param_names=triton_bridge.param_names(__import__('kernels_triton').add_kernel))
+        self.assertIsNotNone(imp.tiled_pointwise_plan)
+        self.assertEqual(imp.tiled_pointwise_plan['ring'], 0)
+        self.assertEqual(imp.tiled_pointwise_plan['accesses'], ['vload', 'vload', 'vstore'])
 
     def test_plan_shape(self):
         import kernels_triton as K

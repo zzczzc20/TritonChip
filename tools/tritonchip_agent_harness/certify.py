@@ -186,14 +186,21 @@ def verdict(record: dict, rows: list, board: list) -> tuple:
     if not stage:
         # The board stage may still be running on the card server.
         return "no-verdict", record.get("error") or "the board stage did not report"
-    if board:
-        bad = [r for r in rows if r["problem"]]
-        if not bad:
-            return "certified", None
-        return "board-disagrees", "; ".join(f"{r['point']}: {r['problem']}" for r in bad[:5])
+    # Point records count only when the board stage and the whole pipeline passed: a failed
+    # ArchBench run, or a retry that failed before replacing an earlier attempt's output,
+    # can leave records behind that match.
     if stage.get("status") in ("ENV_FAIL", "ORPHANED", "PIPELINE_FAIL", None):
         return "no-verdict", f"board {stage.get('status')}: {stage.get('error')}"
-    return "board-fail", f"board {stage.get('status')} at {stage.get('failed_stage')}: {stage.get('error')}"
+    if stage.get("status") != "PASS":
+        return "board-fail", f"board {stage.get('status')} at {stage.get('failed_stage')}: {stage.get('error')}"
+    if record.get("status") != "PASS":
+        return "no-verdict", f"pipeline {record.get('status')}: {record.get('error')}"
+    if not board:
+        return "no-verdict", "the board stage passed but left no point records"
+    bad = [r for r in rows if r["problem"]]
+    if not bad:
+        return "certified", None
+    return "board-disagrees", "; ".join(f"{r['point']}: {r['problem']}" for r in bad[:5])
 
 
 def certified_score(evaluation: dict, outcome: str) -> dict:

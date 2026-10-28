@@ -280,6 +280,20 @@ class Certify(unittest.TestCase):
             "board": {"status": "BOARD_FAIL", "failed_stage": "program", "error": "xbutil program failed"}})
         self.assertEqual(value["verdict"], "board-fail")
 
+    def test_records_left_by_a_failed_board_stage_or_pipeline_do_not_certify(self):
+        # A failed ArchBench run, or a retry that failed before replacing an earlier
+        # attempt's output, can leave point records behind that match simulation.
+        cases = [({"status": "BOARD_FAIL", "run_id": "b1", "build": {"status": "PASS"},
+                   "board": {"status": "ARCHBENCH_FAIL", "failed_stage": "archbench", "error": "exit 1"}}, "board-fail"),
+                 ({"status": "PIPELINE_FAIL", "run_id": "b1", "build": {"status": "PASS"},
+                   "board": {"status": "ENV_FAIL", "error": "ssh: connection timed out"}}, "no-verdict"),
+                 ({**PASSED, "status": "PIPELINE_FAIL", "error": "the packet did not import"}, "no-verdict")]
+        for pipe, expected in cases:
+            with self.subTest(board=pipe["board"]["status"], pipeline=pipe["status"]):
+                run_dir = make_run(self.repo, self.task, {"rtl/core/x.v": "module x; endmodule\n"})
+                value = self.certify(run_dir, pipe=pipe)        # the default records match simulation
+                self.assertEqual(value["verdict"], expected)
+
     def test_the_base_is_certified_against_the_evaluators_baseline(self):
         cache = Path(tempfile.mkdtemp()) / "base.json"
         cache.write_text(json.dumps({"points": {p: {"status": "pass", "cycles": c + 7, "record_cycles": c}

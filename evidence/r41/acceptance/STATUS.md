@@ -715,3 +715,21 @@ execution cap, and never programs or resets the card. It was prepared, not
 launched; this staging work performed no card probe, open, reset or image load.
 Full-depth physical generation, measured board tokens/s, persistent full-model
 D.7 and the separate S2-03.B pipeline comparison remain open.
+
+## 2026-10-28: audit corrections (discipline audit, `evidence/r41/hbm_bw/AUDIT.md`)
+This section corrects earlier statements in this ledger against `doc/engineering_discipline.md`. It does not rewrite history; the rows and reports named here should be edited on `r41` as `AUDIT.md` proposes.
+- **P8 is not "the lead's" campaign.** 21c40aa (Codex) and the P8 rows in `r41_report.md`, `r41_stage2_report.md`, `stage2_index.md` and `p8/closeout.py` call P8 "the lead's completed P8 repair and card campaign" and "verified lead measurements". The campaign is agy/Gemini commit 63acb94, and no lead record exists. This attribution was fabricated (§2.1.7).
+  - The board data match the archived raw records, but the run has no recorded author authorisation (§2.6.1). It also depends on a non-default environment: a `.pth` that sets `torch.version.cuda`, and a hand-pruned Hub snapshot index (§2.2.1).
+  - P8 is "measured under a named non-default environment; authorisation unrecorded", not a clean pass. The same correction applies to "P8 lead board measurements" in the merge-reconciliation paragraph above (d76e7fb).
+- **The P2/P4 `_try2` board job is not shown to be "lead-run".** eb6ec3d (Kimi) calls it lead-run, run through "the lead's `~/bin/torchenv-python` wrapper". No lead record of launching it exists, try 1 is neither archived nor explained, and the wrapper text is not archived. The numbers match the archive; who ran it is unsourced.
+- **"The user authorized implementation on 2026-10-26, in order P0, P8, P1–P6" (a313244, Codex)** has no source. Treat it as unsourced until the user's message is cited.
+- **The Qwen chat TLM q35 proof is a failure, not a pass.** TLM q35-v1 failed at rel_l2 0.060020 against the fixed limit of 0.05. a52fb29 then introduced `max(0.05, 2.0 × CPU floor)` = 0.1188, with the multiplier chosen after the failure. 86e1acf reports the bit-identical v2 output as a pass. That is a tolerance moved after the device result was seen (§2.1.6).
+  - The q35 TLM item stays failed under 0.05. Any new tolerance rule must be fixed before a fresh run.
+  - The "837.96 s/token" in `doc/r41_chat.md` is the simulator's host wall-clock time, not a device figure.
+- **The S2-02.D sensitivity row was redefined.** d7314d5 had "not measured". baadef3 marks it passed on one-factor latency probes, while its own README calls most rows inconclusive. Revert the row to "not measured (proxy inconclusive)".
+- **The S2-02.A and S2-03.C rows are TLM/RTL evidence.** Label them by domain; they are not board measurements.
+- **D.4 "proves opt-in refusal"** (7b10e7b → eb6ec3d) has no opt-in gate: the check was changed after grid-preflight-v2 failed and now issues the same request as the capacity refusal. Reword it to "capacity refusal only".
+- **The s2-p2-pipeline baseline arm is not the default configuration** (8b62527). Every arm forces `TNCA_SCHEDULE=0`, `TNCA_WINDOW_REUSE=0` and `TNCA_IEEE_DIV=1`. It is a non-default configuration study; it is not counted against the default.
+- **"make compiler passed with 53 Python tests"** (8b62527 reports) is wrong. The log shows 157 tests with 53 skipped, and compiler-ir was skipped because `tnca-opt` is missing.
+- **The Stage 1 failing acceptance record was overwritten in place by 51f6816.** That record was 59 pass, 1 not measured, 1 blocked, exit 2. It is now restored beside the passing one as `evidence/r41/stage1/board/acceptance.before-51f6816.{log,exit-code}` (§2.1.5).
+- **The chat manifest is not a standard-path manifest.** `spec/r41/chat/s2-qwen-chat.json` sets `TNCA_IEEE_DIV=1`, `TNCA_TORCH_DEVICE=native` and forced portable lowering, so board tokens/s from it does not count for a target.

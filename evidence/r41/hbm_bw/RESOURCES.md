@@ -173,7 +173,23 @@ Both changes are default-off parameters plumbed to `tnca_multicore_hbm_xo` (the 
 
 The line array maps to `RAM256X1D ×512` alone (the `RAM64M8 ×592` copies are gone). **Mode 1 is not recommended.** Its worst path in the tile screen runs from `u_slice/cur_addr` through the 53-bit tag compare (six CARRY8), the lookup way, the shared read address and a RAM read into the atomic merge's write data (24 levels). This path is structural, not functional: the lookup and the wake never share a cycle, but static timing cannot know that. With the run-1 calibration for RAM-capture families in a ≥ 96 % SLR (−0.9 to −1.0 ns, `stage2/run1/README.md`), +0.286 ns would not close in the image.
 
-**Mode 2, measured:** PENDING-C1B
+**Mode 2, measured** (kernel synthesis `c1b2` and its tile-0 screen; that build also has `AXI_LINE_LUTRAM 1`, which lies outside the tile, so the tile and slice rows below are mode 2's alone):
+
+| Domain | Scope | Base | Mode 2 | Δ |
+|---|---|---:|---:|---:|
+| Kernel synthesis | Slice LUTs, tiles 0 / 1 / 2 | 30,491 / 30,945 / 30,328 | 27,761 / 27,491 / 27,326 | −2,730 / −3,454 / −3,002 |
+| Kernel synthesis | Slice LUTRAM, each tile | 9,632 / 9,644 / 9,632 | 7,300 / 7,292 / 7,300 | −2,332 / −2,352 / −2,332 |
+| Tile screen, SLR0 | Tile 0 routed LUTs | 247,579 | 245,101 | −2,478 |
+| Tile screen, SLR0 | Tile 0 LUT as memory | 15,269 | 12,947 | −2,322 |
+| Tile screen, SLR0 | Tile 0 CLBs (share of SLR0) | 41,878 (76.20 %) | 41,471 (75.46 %) | −407 |
+| Tile screen, SLR0 | WNS at 10 ns | +0.838 ns | +0.772 ns | −0.066 ns |
+| Tile screen, SLR0 | Worst path ending in the slice | +1.267 ns | +1.334 ns | +0.067 ns |
+
+The line array maps to `RAM256X1D ×512` plus `RAM64M8 ×296` (one of the two `RAM64M8` copies is gone). Mode 2's worst tile path is in the SFU's exp2 table address (`u_vfpu/g_sfu`), RTL that this change does not touch; the slice's own worst path is slightly better than in the base screen. One screen per build is a single placement, and run 1 saw the same family move by 0.6 ns between placements, so differences of this size are within placement variance.
+
+**Regression** (§7): the lockstep bench `tb_nuca_shared_read` (both modes, with and without the cache data pipeline, two DCO policies, three seeds, 200,000 cycles each) compares every output of the new and the delivered slice on every cycle under random loads, stores, every atomic opcode, evictions, maintenance and an out-of-order stalling DRAM model. Two deliberately broken variants of mode 1 fail it. `make nuca`, `make nuca-dco` and the board top at the image's parameters (`image_geometry_tests.py`) pass with each mode.
+
+**Risk.** Mode 2: low; it adds one state-decoded multiplexer level on reads whose addresses are all registers. Neither mode changes the number of cycles of any engine state. Mode 1: the 0.552 ns structural path above.
 
 ### 4.2 `AXI_LINE_LUTRAM`: outlet slot lines in distributed RAM (SLR0 only)
 
@@ -189,11 +205,38 @@ The line array maps to `RAM256X1D ×512` alone (the `RAM64M8 ×592` copies are g
 | CLBs | 1,952 | 399 | −1,553 |
 | WNS | +4.083 ns | +4.057 ns | −0.026 ns |
 
-The image has three outlets, all placed in SLR0. Kernel synthesis: PENDING-C2
+Kernel synthesis of the image with `AXI_LINE_LUTRAM 1` (`c2_line_lutram`, commit `8017d7c`; `resources/tables/compare_c2.md`):
 
-### 4.3 Both together
+| Kernel synthesis | Base | `AXI_LINE_LUTRAM 1` | Δ |
+|---|---:|---:|---:|
+| Each outlet adapter: LUTs | 7,676 | 1,523 | −6,153 |
+| Each outlet adapter: LUTRAM | 0 | 552 | +552 |
+| Each outlet adapter: FFs | 6,003 | 1,897 | −4,106 |
+| Kernel LUTs | 814,043 | 796,996 | −17,047 |
+| Kernel FFs | 242,620 | 230,415 | −12,205 |
 
-PENDING-C12
+The kernel delta also contains synthesis noise in RTL that did not change: tile 0's `u_core` moved by +331 LUTs and the TMU by −258. Kernel synthesis of identical core RTL varies by a few hundred LUTs per tile from run to run of different tops (§8). The three outlets are all in SLR0, so the whole outlet saving lands there; the outlet screen puts it at 1,553 CLBs per outlet when routed on its own.
+
+**Regression** (§7): `tools/r40/line_axi_tests.py --line-lutram` runs the 78-configuration outlet matrix with the new build and the delivered build in lockstep inside the bench (`tb_line_axi.LINE_LUTRAM`), comparing every output on every cycle; the board top at the image's parameters runs with the parameter set. Two deliberately broken variants (a wrong read slot, a fixed W slot) fail the lockstep check.
+
+**Risk.** Low. The read of `m_rid`'s beats is now an asynchronous LUTRAM read addressed by the AXI R channel's ID; in the screen it does not limit timing (+4.057 ns at 10 ns). A slot's previous contents are no longer reset to zero, which is not observable because a slot's data is read only after the same tenure wrote it (the lockstep run checks this across reset, fault and malformed-burst modes).
+
+### 4.3 Both together (`NUCA_SHARED_DATA_READ 2`, `AXI_LINE_LUTRAM 1`)
+
+Kernel synthesis (`c1b2`, commit `08c2601`; `resources/tables/compare_c1b_c2.md`):
+
+| Kernel synthesis | Base | Both | Δ |
+|---|---:|---:|---:|
+| Kernel LUTs | 814,043 | 786,966 | −27,077 |
+| Kernel LUTRAM | 55,728 | 50,368 | −5,360 |
+| Kernel FFs | 242,620 | 229,743 | −12,877 |
+| Tile 0 LUTs | 251,804 | 249,405 | −2,399 |
+| Tile 0 slice LUTs (LUTRAM) | 30,491 (9,632) | 27,761 (7,300) | −2,730 (−2,332) |
+| Outlet adapters, three | 23,028 | 4,569 | −18,459 |
+
+Tile-0 screen of this build: §4.1 (mode 2). The outlets are outside the tile, so their saving is the outlet screen's (§4.2) times three, all in SLR0.
+
+**SLR0 in one line** (screens, not an image): tile 0 −2,478 routed LUTs and −407 CLBs, plus three outlets at −5,553 routed LUTs and −1,553 CLBs each. Run 1's SLR0 used 53,170 CLBs (96.74 %). How much of the screens' CLB reduction a linked image keeps depends on placement and can only be known from a link.
 
 ## 5. Measured costs of performance and timing features (author's trade-off)
 
@@ -221,4 +264,34 @@ PENDING-REG
 
 ## 8. Method, provenance and preserved failures
 
-PENDING-METHOD
+**Routed image (read only).** FPGA host `acf3019`, Vivado 2023.2, through `~/r41s2_tools/vivado_slot.sh --min-gb 12`:
+`vivado -mode batch -source hier_run1.tcl -tclargs ~/tnca_images/r41s2_run1_c9f25787494a/level0_wrapper_routed.dcp OUT`.
+- The routed DCP's SHA-256 was checked on the host before use: `311bd49c…7045215`, the value recorded in `stage2/run1/README.md`.
+- The script (`resources/host/hier_run1.tcl`) opens the checkpoint once, writes `report_utilization -hierarchical -hierarchical_depth 20`, `report_utilization -slr` and one row per placed leaf cell (SLR, REF_NAME, PRIMITIVE_TYPE, name), and never writes a checkpoint.
+- Outputs, the Vivado log and `SHA256SUMS` are in `resources/run1_routed/`. The tables in §2 are generated from them by `tools/r41/util_hier.py` (`routed`, `slr`, `bytype`) into `resources/tables/`.
+
+**Kernel syntheses.** x86 host (Vivado 2023.2, at most two jobs), `flow/fpga/synth_r40_multicore.tcl` on a `git archive` of the named commit with `evidence/r41/stage2/integration/image.tcl` or one of the screen images in `resources/screens/` (each differs from `image.tcl` only in the parameters its name says). Runs were queued by `resources/host/screen_chain.sh`. Reports and logs are in `resources/synth/<name>_<commit>/`; base versus candidate tables come from `util_hier.py compare` (`resources/tables/compare_*.md`).
+
+| Run | Commit | Image | Purpose |
+|---|---|---|---|
+| `base` | `67a453b` | `image.tcl` | Baseline for every candidate: the `r41-hbm-bw` head the candidates were built on. Its RTL is not the run-1 source: 39 RTL files differ from `c9f2578` (later T2 timing rounds and default-off additions) |
+| `run1src` | `c9f2578` | `image.tcl` | The exact run-1 source (archive SHA-256 `4a2dcaf6…`), for the synthesis-versus-routed comparison of §2.3 |
+| `c1off` | `2edc9ab` | `image.tcl` | Default-off identity of `NUCA_SHARED_DATA_READ` |
+| `c1` | `2edc9ab` | `image_shared_read.tcl` | Mode 1 |
+| `off2` | `8017d7c` | `image.tcl` | Default-off identity of both parameters |
+| `c2_line_lutram` | `8017d7c` | `image_line_lutram.tcl` | `AXI_LINE_LUTRAM 1` |
+| `c1b2` | `08c2601` | `image_c1b_c2.tcl` | Mode 2 with `AXI_LINE_LUTRAM 1` |
+| `p1`…`p4` | `08c2601` | `image_p*.tcl` | One performance or timing parameter off (§5) |
+
+**Tile screens.** `flow/fpga/screen_r41_tile.tcl` cuts tile 0 from a kernel-synthesis checkpoint and places and routes it alone in SLR0 at 10 ns. These are the same screens that run 1 calibrated (`stage2/run1/README.md`, "Screen-to-image calibration"). The screens are optimistic, because they have no shell, no other tile and none of SLR0's static density. Reports are in `resources/tile_screens/`.
+
+**Outlet screens.** FPGA host, through the slot helper: `flow/fpga/screen_r41_outlet_lines.tcl` on commit `1f6bfcb`, `LINE_LUTRAM` 0 and 1, one `tnca_line_axi` at the image's parameters, in SLR0 at 10 ns (`resources/outlet_screen_1f6bfcb1f0a1/`).
+
+**Kernel-synthesis noise.** Kernels whose core RTL is identical still differ by a few hundred LUTs per core between syntheses with different tops (for example tile 1's `u_core` +552 in `c1`, tile 0's `u_core` +331 in `c2_line_lutram`). The deltas reported above are on the blocks that changed; the kernel totals include this noise.
+
+**Preserved failures and deviations.**
+- The first routed-analysis launch ran with an empty Tcl file: the script did not reach the host through the jump-host pipe, and Vivado exited at once. Its log is kept as `resources/run1_routed/attempt1_failed_*`; the second launch, with the file's SHA-256 checked on the host, is the one used.
+- The first mode-1 synthesis (`c1_shared_read`, before the change was put under a `generate`) was stopped and renamed `c1_shared_read_aborted_pre_generate` on the x86 host; it produced no report. It was stopped with a pattern-matching `pkill` that matched only that job's command line, rather than by PID as the server rules ask. Every later stop used PIDs.
+- The parameter screens were first started on the FPGA host. While they ran, the shared host's available memory fell to about 8 GB with swap nearly full, so they were stopped (by PID) and moved to the x86 host. The stopped run's log is `resources/host/params_fpga_host_stopped.log`.
+- The image-geometry bench refused the stage-2 image in the first two regression runs, because `HAS_TENSOR_XPOSE 2` had no mapping to the board bench. Commit `d33456a` added the mapping. The refused runs are kept in §7's logs.
+- Mode 1 of `NUCA_SHARED_DATA_READ` passed every regression but lost 0.552 ns in the tile screen (§4.1); it is kept in the RTL as a documented, non-recommended mode.

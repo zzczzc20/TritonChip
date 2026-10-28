@@ -257,9 +257,9 @@ Kernel synthesis of commit `08c2601` with images that each differ from `image.tc
 
 **Reading.** The only large saving among the performance features is the second LSU, and it buys the memory-level parallelism that the bandwidth plan needs. `DCO_LOCAL_REPLICAS` and `MTX_ABUF` are timing fixes on near-critical SLR0 families. None of these is recommended for removal; they are listed so that the author can weigh each against the area it costs.
 
-## 6. Options that need the author's approval (not implemented)
+## 6. Options that needed the author's approval
 
-Each of these would remove or narrow an architectural capability, a semantic range or an observability interface. None was built or measured.
+Each of these would remove or narrow an architectural capability, a semantic range or an observability interface, so none was built until the author decided. The author's decisions (source: the author, in the lead's chat, 2026-10-28) and what was done with them are in §9.
 
 | Option | What it saves (from the tables above) | What it removes |
 |---|---|---|
@@ -329,3 +329,94 @@ The lockstep benches were checked for sensitivity by breaking the candidates on 
 - The parameter screens were first started on the FPGA host. While they ran, the shared host's available memory fell to about 8 GB with swap nearly full, so they were stopped (by PID) and moved to the x86 host. The stopped run's log is `resources/host/params_fpga_host_stopped.log`.
 - The image-geometry bench refused the stage-2 image in the first two regression runs, because `HAS_TENSOR_XPOSE 2` had no mapping to the board bench. Commit `d33456a` added the mapping. The refused runs are kept in §7's logs.
 - Mode 1 of `NUCA_SHARED_DATA_READ` passed every regression but lost 0.552 ns in the tile screen (§4.1); it is kept in the RTL as a documented, non-recommended mode.
+
+## 9. The author's decisions on §6 and what was done
+
+Source: the author, in the lead's chat, 2026-10-28. The decisions were:
+1. Sharing the matrix MACs with the vector FMAs: **rejected**. The author's reason: NVIDIA keeps tensor-core and vector MACs separate.
+2. Hardware contexts 4 → 2: **approved**.
+3. Accumulator slots: choose the smallest number that loses no matrix throughput, derived from the matrix compute requirement; if that is 16, keep 16.
+4. Fewer barriers and narrower epochs: **approved**, sized from what the compiler and runtime actually use.
+5. Narrower internal physical address: **approved**, keeping enough bits for the delivered 8 GiB and the full HBM address space the image maps.
+6. Smaller FMA: **rejected**.
+
+Items 2, 4 and 5 are implemented as image parameters whose defaults build the delivered machine (`NUM_RCTX`/`RCTX_W`/`PHYS_VREGS`/`PHYS_W`, which already existed; and new `BAR_N`/`BAR_W`, `BAR_EPOCH_W`, `ACC_N`/`ACC_W` and `PHYS_ADDR_W`, plumbed from `tnca_multicore_hbm_xo` to the core and the home slice). Item 3 resolves to 16 slots, so nothing changes there. The reduced machine is the new profile `core-vrf-sync-v5-x8-g2` (`spec/r1_profiles.json`, generated target `compiler/targets/tnca-sim-vrf-v5-x8-g2.json`): two contexts with 128 physical vector registers, 16 accumulators, 8 barriers and 38-bit epochs, with every instruction, format and capability of v5-x8. The image parameters that build it, plus the home address width and the two §4 changes, are in `resources/screens/image_g2_all.tcl`.
+
+### 9.1 How each size was chosen
+
+The sizing runs compile the frozen 113-point suite (`spec/r40/suites/hbm.json`: every GEMM, linear, bmm, conv and attention shape, plus the GPT-2, LLaMA and ResNet blocks) with `default_change_audit.py run --profile P`. That is the B40-S compile knobs, compile only, with every launch skipped. P is a scratch variant profile: `resources/sizing/mkvariant.py` adds one, and gen_target derives its target from the RTL as for any profile. They also compile the Hub FP8 kernels that Qwen's FP8Linear loads (`tools/r41/fp8_hub_compile_only.py`, the shapes of `fp8_kernels_cases.py`). Code is compared with `default_change_audit.py compare` (the code text and launch structure of every kernel) and `tools/r41/asm_resource_scan.py --compare`. Identical code on the same image executes the same instructions, so it cannot lose throughput. Every report, comparison and dump is in `resources/sizing/`.
+
+**Contexts (approved).** All 113 points compile for two contexts (`run-g2v0-ctx2`), and every Hub FP8 kernel compiles. Every kernel that runs on more than one context runs on both (`rctx_spmd` 2 for 451 of 497 kernels). Their code differs from the four-context machine's, as it must. The performance cost is the one R39 measured, quoted here and not re-measured: "R39-05 4 contexts (reverting to v3's 2)", S_geo 1.076×, +0.5 % suite cycles (`doc/r39_report.md` §3, RTL simulation).
+
+**Accumulators: 16, unchanged.** The derivation:
+- The matrix engine is one 16-MAC column array that issues one row per cycle, k-outer and m-inner. It returns to a row after 16 cycles, against a multiply-accumulate pipeline of `PIPE = FMA_LAT + OPND_REG` = 3 cycles (`tnca_matrix.v`). It runs one command at a time (`busy` until `S_IDLE`). So a single slot keeps the engine at full rate within a command, and the engine itself needs no more than one.
+- The slots a program needs come from two other places:
+  - the compiler's output blocking, one slot per 16×16 C tile held, which sets how often A and B fragments are reloaded per MMA;
+  - context slicing (`RSLICE`): a program run on c contexts gets 1/c of the slots (`tnca_cc/rctx_spmd.slices`).
+- On the two-context machine, the 113-point suite holds at most 6 accumulators per program: 5 or 6 in attention prefill, conv2d, the MLP and the GPT-2, LLaMA-prefill and ResNet blocks. Every such kernel runs on both contexts, so it needs 8 per context, which is 16 in all.
+- With 8 slots, 23 of the 113 points change code. The compiler's recorded reason, for all 40 changed kernels, is `rctx_spmd_refused: the kernel uses 5 (or 6) accumulators, more than a slice of 4`: they would run on one context instead of two.
+- The Hub FP8 matmul kernels hold all 16 accumulators at once. With 8 they do not compile (`ResourceError: 16 accumulators live at once, target has 8`, `resources/sizing/hub_g2v1.log`).
+- 16 is the smallest count that loses nothing, so `ACC_N` stays 16. The slot index is a power of two (`ACC_W`), because slicing shifts the context into the index's top bits.
+
+**Barriers: 8.**
+- On the two-context machine, the suite's programs name at most 3 barriers each (every `addmm`, `bmm`, `gemv`, `linear` and `matmul` template). The Hub FP8 kernels name 1.
+- With 8 barriers (a slice of 4 per context) the code of all 113 points is identical to the 32-barrier machine's (`cmp-g2v0-g2v2-ctx2-bar8.json`: 113 unchanged), and so is every Hub kernel (`hub-compare-g2v0-g2v2.txt`).
+- With 4 barriers, 37 points change. The recorded reason is `rctx_spmd_refused: the kernel uses 3 barriers, more than a slice of 2`.
+- The G2 profile, which combines 8 barriers with the 38-bit epochs, compiles all 113 points to the same code as the 32-barrier two-context machine (`cmp-g2v0-g2final.json`), and the Hub kernels identically (`hub-compare-g2v0-g2final.txt`).
+- A caveat from older evidence: FP8 kernel dumps recorded earlier on the gather route (`evidence/r41/fp8/models_tnca`, without the X8 transposed transfer) name up to 32 barriers. On v5-x8 and G2, which have the transposed transfer, the same kernels take the X8 route and name one.
+
+**Epoch width: 38 bits.**
+- A barrier's epoch counts its generations since the last `mb.init` or launch (`flush` resets every barrier).
+- An epoch can advance at most once per cycle, since it takes one `mb.arm`, and the runtime ends every launch at its deadline. The largest deadline the runtime uses is 200,000,000,000 cycles (the stage-2 board transport, `tools/performance_harness/stage2_board.py`, and the Qwen board manifests). That is below 2^38.
+- An arm that would overflow the epoch is already a fault in `tnca_barrier.v` (it sets the barrier's error and never wraps). A program that outlived the bound would therefore stop with a located fault, not synchronise wrongly.
+
+**Home physical address: 35 bits.**
+- The image maps a core address window of 8 GiB above a 128 KiB local region: `MEM_BASE` 0x20000 in `tnca_multicore_axi.v`; `window_bytes` 8589934592 and `local_limit` 131072 in the board manifests. The TMU register page is at 0x7FFF0000. Every legal line address is below 0x2_0002_0000 < 2^34.
+- The slice keeps 34 address bits plus a fold bit set when any higher bit was set (`rtl/nuca/tnca_addr_fold.v`, used by `tnca_tile.v`). An out-of-range address therefore reaches the outlet as an address at or above 2^34, which no aperture contains, and it still faults instead of aliasing a cached line.
+- The outlet keeps the same 35 bits for its same-line hazard check.
+- The LSU, the NoC flits and the AXI address stay 64-bit. Narrowing them would change the core's datapath and the NoC payload, and was not attempted.
+
+### 9.2 Measured savings
+
+Kernel synthesis, each build compared with `base` (`resources/tables/compare_g2.md`); tile screens of tile 0 in SLR0 at 10 ns. The base tile screen: 247,579 routed LUTs, 41,878 CLBs (76.20 % of SLR0), WNS +0.838 ns.
+
+| Change (image parameters) | Kernel LUTs | Kernel FFs | Tile 0 LUTs (synthesis) | Tile-0 screen: LUTs / CLBs (share of SLR0) / WNS |
+|---|---:|---:|---:|---|
+| Contexts 4 → 2 (`NUM_RCTX 2 RCTX_W 1 PHYS_VREGS 128 PHYS_W 7`) | −18,476 | −10,733 | −6,060 | 241,188 / 41,175 (74.92 %) / +1.223 ns |
+| Home address 64 → 35 bits (`PHYS_ADDR_W 35`) | −319 | −3,168 | −366 | 247,069 / 41,632 (75.75 %) / +0.983 ns |
+| Epochs 48 → 38 bits (`BAR_EPOCH_W 38`) | −1,230 | −1,927 | −689 | not screened alone |
+| Barriers 32 → 8 with 38-bit epochs (`BAR_N 8 BAR_W 3 BAR_EPOCH_W 38`) | −13,042 | −8,736 | −4,482 | 243,014 / 41,266 (75.08 %) / +0.881 ns |
+| Accumulators | 0 (kept at 16) | | | |
+| `NUCA_SHARED_DATA_READ 2` with `AXI_LINE_LUTRAM 1` (§4.3) | −27,077 | −12,877 | −2,399 | 245,101 / 41,471 (75.46 %) / +0.772 ns |
+| **Everything together** (`image_g2_all.tcl`) | **−62,472** | **−35,807** | **−14,789** | **232,925 / 39,974 (72.73 %) / +0.603 ns** |
+
+Notes on the rows:
+- **Contexts.** The saving is in the core: −6,741 LUTs per core. The VRF read side loses 2,757 LUTs, the scalar file loses half its LUTRAM (2,072 → 1,036), and the barrier unit and pipeline lose their per-context state. The vector register file stays in 32 RAMB36 per core, because its width, not its depth, sets the BRAM count.
+- **Home address.**
+  - In synthesis the slice loses 419 LUTs, 794 FFs and 128 LUTRAM. The tag shrinks from 53 to 24 bits, in the 32 × 8 tag LUTRAM and in the eight-way compare.
+  - The outlet adapters gain 431 LUTs and lose 232 FFs each in synthesis, with the hazard check at 35 bits. That LUT increase is measured, not explained.
+  - The saving is small in area. In the screen, the tile's worst path ending in the slice is +1.217 ns (base +1.267), and the tile WNS moved from +0.838 to +0.983, within placement variance.
+- **Barriers.** The barrier unit goes from 7,450 to 1,577 LUTs and from 3,891 to 929 FFs per core; with 38-bit epochs alone it is 6,613 LUTs.
+- **Everything together** is 7.7 % of the kernel's LUTs and 14.8 % of its FFs in kernel synthesis.
+  - Tile-0 screen: −14,654 routed LUTs and −1,904 CLBs, from 76.20 % to 72.73 % of SLR0. The outlets (§4.2) come on top of it in SLR0.
+  - Its WNS is +0.603 ns, 0.235 ns below the base screen. The worst path is the F09 family, VRF bank read to MAC operand capture (`g_bank[0] mem_reg` → `g_mac[7] a_q`), which the run-1 image left at +0.079 ns in SLR0 and which the base screen has at +0.867.
+  - The contexts change shrinks the VRF banks this path starts from. One placement per build cannot separate the change from placement variance, but this family must be watched in a link of the combined build.
+- **Default-off identity.** Kernel syntheses with every new parameter at its default reproduce the base exactly: `off3` at `40ceb89` (the parameters' plumbing) and PENDING-OFF4 at the final RTL.
+
+### 9.3 Regressions and coverage checks
+
+| Run (commit) | Check | Result |
+|---|---|---|
+| `g2_regress6` (`41661b7`) | `make nuca-shared-read` (bench output width corrected, below) | 24/24 pass |
+| | `make nuca-addr-fold`: the 35-bit slice against the 64-bit one in lockstep, addresses spread over 2^34, with and without out-of-range addresses (which must stay at or above 2^34 and change nothing else), with and without the data pipeline, three seeds × 200,000 cycles | 12/12 pass |
+| | `make nuca`, `make nuca-dco`, `make top`, `make mesh`, `r40-line-axi`, `r40-cache-maintenance` (default build) | pass |
+| | `make core-g2`: core-r39sw5's 44 programs, ISA and engine tests, on the G2 core (two contexts, 8 barriers, 38-bit epochs, X8), with in-order and out-of-order memory. It includes `t15_target_vrf_v5_x8_g2`, which reads the context, accumulator and barrier counts back from the hardware and checks them against the generated target | 88/88 pass |
+| | `r1-profile-tests` | pass (6 checks; the G2 profile's own check is `t15` above) |
+| | Board top at the image's parameters: base, `addr35`, `bar8_epoch38` | pass |
+| | Board top, `ctx2` and `g2_all` | **refused**: the multicore runtime required a four-lane physical chunk contract. Fixed in `b36deb5` (the contract now follows the image profile's context count), re-run in `g2_regress7` |
+| | `make compiler` with `tnca-opt` built | unit tests pass (157); `compiler-ir` **skipped**: FileCheck was not found at the default path. Re-run in `g2_regress7` with `TNCA_LLVM` set |
+| `g2_regress7` (`18d045c`) | PENDING-REG7 | |
+| GB10 compile runs | 113 points for two contexts, for the G2 profile and for each scratch variant | 113/113 compile in every run |
+| | Hub FP8 kernels for v5-x8, two contexts, G2 | all compile; with 8 accumulators the matmul kernels do not (above) |
+
+**A bench defect found and fixed.** Both lockstep benches (`tb_nuca_shared_read`, and `tb_nuca_addr_fold` derived from it) declared their output vector 32 bits shorter than the outputs they concatenate, so the top 32 bits were never compared: `maint_ready`/`maint_done`/`maint_busy`/`req_ready`, `rsp_valid`, the response source and tag, and the top bits of the response data. The §4.1 results above were obtained with the short vector. The corrected bench passes all 24 `nuca-shared-read` runs again in `g2_regress6`; the earlier logs are kept.

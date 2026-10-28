@@ -1,0 +1,138 @@
+python3 tools/asm/tnca_asm.py tb/core/progs/t00_scalar.s -o sim/build/t00_scalar.hex --lst sim/build/t00_scalar.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t01_vector.s -o sim/build/t01_vector.hex --lst sim/build/t01_vector.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t02_mem.s -o sim/build/t02_mem.hex --lst sim/build/t02_mem.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t03_fp.s -o sim/build/t03_fp.hex --lst sim/build/t03_fp.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t04_roles.s -o sim/build/t04_roles.hex --lst sim/build/t04_roles.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t05_fault.s -o sim/build/t05_fault.hex --lst sim/build/t05_fault.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t06_alu.s -o sim/build/t06_alu.hex --lst sim/build/t06_alu.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t11_matrix.s -o sim/build/t11_matrix.hex --lst sim/build/t11_matrix.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t12_tensor.s -o sim/build/t12_tensor.hex --lst sim/build/t12_tensor.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t13_share.s -o sim/build/t13_share.hex --lst sim/build/t13_share.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t14_caps.s -o sim/build/t14_caps.hex --lst sim/build/t14_caps.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t15_target_vrf_v5_x8_g2.s -o sim/build/t15_target_vrf_v5_x8_g2.hex --lst sim/build/t15_target_vrf_v5_x8_g2.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t16_vecadd.s -o sim/build/t16_vecadd.hex --lst sim/build/t16_vecadd.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t17_descfault.s -o sim/build/t17_descfault.hex --lst sim/build/t17_descfault.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t18_squash.s -o sim/build/t18_squash.hex --lst sim/build/t18_squash.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t19_waitgen0.s -o sim/build/t19_waitgen0.hex --lst sim/build/t19_waitgen0.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t20_sfu.s -o sim/build/t20_sfu.hex --lst sim/build/t20_sfu.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t21_cvt.s -o sim/build/t21_cvt.hex --lst sim/build/t21_cvt.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t22_atomic.s -o sim/build/t22_atomic.hex --lst sim/build/t22_atomic.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t23_amofault.s -o sim/build/t23_amofault.hex --lst sim/build/t23_amofault.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t25_mmasf.s -o sim/build/t25_mmasf.hex --lst sim/build/t25_mmasf.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t28_count.s -o sim/build/t28_count.hex --lst sim/build/t28_count.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t29_vrfbank.s -o sim/build/t29_vrfbank.hex --lst sim/build/t29_vrfbank.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t40_f2i.s -o sim/build/t40_f2i.hex --lst sim/build/t40_f2i.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t33_tdesc_load.s -o sim/build/t33_tdesc_load.hex --lst sim/build/t33_tdesc_load.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t34_tdesc_store.s -o sim/build/t34_tdesc_store.hex --lst sim/build/t34_tdesc_store.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t36_reduce.s -o sim/build/t36_reduce.hex --lst sim/build/t36_reduce.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t37_lsu_straddle.s -o sim/build/t37_lsu_straddle.hex --lst sim/build/t37_lsu_straddle.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t38_wbfreeze.s -o sim/build/t38_wbfreeze.hex --lst sim/build/t38_wbfreeze.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t39_freeze_drop.s -o sim/build/t39_freeze_drop.hex --lst sim/build/t39_freeze_drop.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t39_switch.s -o sim/build/t39_switch.hex --lst sim/build/t39_switch.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t39_isolate.s -o sim/build/t39_isolate.hex --lst sim/build/t39_isolate.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t39_slice.s -o sim/build/t39_slice.hex --lst sim/build/t39_slice.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_frank.s -o sim/build/t35_tdesc_frank.hex --lst sim/build/t35_tdesc_frank.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_fpad2.s -o sim/build/t35_tdesc_fpad2.hex --lst sim/build/t35_tdesc_fpad2.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_fnanint.s -o sim/build/t35_tdesc_fnanint.hex --lst sim/build/t35_tdesc_fnanint.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_fsb.s -o sim/build/t35_tdesc_fsb.hex --lst sim/build/t35_tdesc_fsb.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_fblock.s -o sim/build/t35_tdesc_fblock.hex --lst sim/build/t35_tdesc_fblock.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t35_tdesc_fclamp.s -o sim/build/t35_tdesc_fclamp.hex --lst sim/build/t35_tdesc_fclamp.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t41_boundary.s -o sim/build/t41_boundary.hex --lst sim/build/t41_boundary.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t39_pair.s -o sim/build/t39_pair.hex --lst sim/build/t39_pair.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t30_xpose.s -o sim/build/t30_xpose.hex --lst sim/build/t30_xpose.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t32_xpose_badsize.s -o sim/build/t32_xpose_badsize.hex --lst sim/build/t32_xpose_badsize.lst --size 16384
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -P tb_tnca_core.RCTX_SWITCH=2 -P tb_tnca_core.LSU_INFLIGHT=2 -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 -P tb_tnca_core.NUM_RCTX=2 -P tb_tnca_core.RCTX_W=1 -P tb_tnca_core.PHYS_W=7 -P tb_tnca_core.HAS_TENSOR_XPOSE=2 -P tb_tnca_core.RPAIR=1 -P tb_tnca_core.MTX_ABUF=1 -P tb_tnca_core.BAR_N=8 -P tb_tnca_core.BAR_W=3 -P tb_tnca_core.BAR_EPOCH_W=38 -o sim/build/tb_core_g2.vvp tb/core/tb_tnca_core.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -P tb_tnca_core.RCTX_SWITCH=2 -P tb_tnca_core.LSU_INFLIGHT=2 -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 -P tb_tnca_core.NUM_RCTX=2 -P tb_tnca_core.RCTX_W=1 -P tb_tnca_core.PHYS_W=7 -P tb_tnca_core.HAS_TENSOR_XPOSE=2 -P tb_tnca_core.RPAIR=1 -P tb_tnca_core.MTX_ABUF=1 -P tb_tnca_core.BAR_N=8 -P tb_tnca_core.BAR_W=3 -P tb_tnca_core.BAR_EPOCH_W=38 -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+   -P tb_tnca_core.MEM_REORDER=1 -o sim/build/tb_core_g2_ooo.vvp tb/core/tb_tnca_core.v
+  t00_scalar (g2)        PASS   cycles=586 issued=290 hazard=127 lsu=0 wb=0 squash=42
+  t00_scalar (g2, ooo mem) PASS   cycles=586 issued=290 hazard=127 lsu=0 wb=0 squash=42
+  t01_vector (g2)        PASS   cycles=1029 issued=492 hazard=239 lsu=0 wb=0 squash=62
+  t01_vector (g2, ooo mem) PASS   cycles=1029 issued=492 hazard=239 lsu=0 wb=0 squash=62
+  t02_mem (g2)           PASS   cycles=945 issued=353 hazard=362 lsu=56 wb=3 squash=40
+  t02_mem (g2, ooo mem)  PASS   cycles=1296 issued=353 hazard=668 lsu=101 wb=0 squash=40
+  t03_fp (g2)            PASS   cycles=3101 issued=1431 hazard=831 lsu=26 wb=0 squash=194
+  t03_fp (g2, ooo mem)   PASS   cycles=3205 issued=1431 hazard=906 lsu=55 wb=0 squash=194
+  t04_roles (g2)         PASS   cycles=122 issued=70 hazard=24 lsu=0 wb=2 squash=9
+  t04_roles (g2, ooo mem) PASS   cycles=151 issued=70 hazard=41 lsu=3 wb=1 squash=9
+  t05_fault (g2)         PASS   cycles=519 issued=228 hazard=21 lsu=4 wb=1 squash=68
+  t05_fault (g2, ooo mem) PASS   cycles=529 issued=228 hazard=31 lsu=4 wb=0 squash=68
+  t06_alu (g2)           PASS   cycles=4636 issued=2099 hazard=1467 lsu=264 wb=0 squash=187
+  t06_alu (g2, ooo mem)  PASS   cycles=5169 issued=2099 hazard=1826 lsu=438 wb=1 squash=187
+  t11_matrix (g2)        PASS   cycles=3515 issued=727 hazard=462 lsu=456 wb=5 squash=77
+  t11_matrix (g2, ooo mem) PASS   cycles=3913 issued=727 hazard=491 lsu=825 wb=0 squash=77
+  t12_tensor (g2)        PASS   cycles=1665 issued=213 hazard=132 lsu=0 wb=0 squash=23
+  t12_tensor (g2, ooo mem) PASS   cycles=2878 issued=213 hazard=132 lsu=0 wb=0 squash=23
+  t13_share (g2)         PASS   cycles=149 issued=71 hazard=26 lsu=10 wb=3 squash=10
+  t13_share (g2, ooo mem) PASS   cycles=184 issued=71 hazard=34 lsu=41 wb=1 squash=10
+  t14_caps (g2)          PASS   cycles=903 issued=189 hazard=175 lsu=6 wb=0 squash=17
+  t14_caps (g2, ooo mem) PASS   cycles=1370 issued=189 hazard=234 lsu=23 wb=0 squash=17
+  t15_target_vrf_v5_x8_g2 (g2) PASS   cycles=184 issued=142 hazard=0 lsu=0 wb=0 squash=22
+  t15_target_vrf_v5_x8_g2 (g2, ooo mem) PASS   cycles=184 issued=142 hazard=0 lsu=0 wb=0 squash=22
+  t16_vecadd (g2)        PASS   cycles=1029 issued=442 hazard=344 lsu=29 wb=3 squash=51
+  t16_vecadd (g2, ooo mem) PASS   cycles=1593 issued=442 hazard=878 lsu=59 wb=0 squash=51
+  t17_descfault (g2)     PASS   cycles=115 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t17_descfault (g2, ooo mem) PASS   cycles=423 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t18_squash (g2)        PASS   cycles=1326 issued=458 hazard=414 lsu=60 wb=20 squash=107
+  t18_squash (g2, ooo mem) PASS   cycles=1869 issued=458 hazard=1126 lsu=35 wb=0 squash=107
+  t19_waitgen0 (g2)      PASS   cycles=90 issued=47 hazard=21 lsu=0 wb=0 squash=5
+  t19_waitgen0 (g2, ooo mem) PASS   cycles=90 issued=47 hazard=21 lsu=0 wb=0 squash=5
+  t20_sfu (g2)           PASS   cycles=1251 issued=409 hazard=541 lsu=121 wb=2 squash=41
+  t20_sfu (g2, ooo mem)  PASS   cycles=1404 issued=409 hazard=587 lsu=226 wb=3 squash=41
+  t21_cvt (g2)           PASS   cycles=1954 issued=572 hazard=1188 lsu=0 wb=0 squash=33
+  t21_cvt (g2, ooo mem)  PASS   cycles=2894 issued=572 hazard=2128 lsu=0 wb=0 squash=33
+  t22_atomic (g2)        PASS   cycles=2994 issued=1429 hazard=996 lsu=90 wb=20 squash=118
+  t22_atomic (g2, ooo mem) PASS   cycles=4557 issued=1429 hazard=2120 lsu=522 wb=6 squash=118
+  t23_amofault (g2)      PASS   cycles=58 issued=28 hazard=20 lsu=0 wb=0 squash=3
+  t23_amofault (g2, ooo mem) PASS   cycles=75 issued=28 hazard=37 lsu=0 wb=0 squash=3
+  t25_mmasf (g2)         PASS   cycles=1242 issued=168 hazard=96 lsu=316 wb=2 squash=10
+  t25_mmasf (g2, ooo mem) PASS   cycles=1509 issued=168 hazard=96 lsu=583 wb=0 squash=10
+  t28_count (g2)         PASS   cycles=14 issued=12 hazard=0 lsu=0 wb=0 squash=1
+  t28_count (g2, ooo mem) PASS   cycles=14 issued=12 hazard=0 lsu=0 wb=0 squash=1
+  t29_vrfbank (g2)       PASS   cycles=521 issued=84 hazard=62 lsu=22 wb=1 squash=10
+  t29_vrfbank (g2, ooo mem) PASS   cycles=550 issued=84 hazard=62 lsu=51 wb=1 squash=10
+  t40_f2i (g2)           PASS   cycles=3011 issued=1057 hazard=1504 lsu=0 wb=0 squash=97
+  t40_f2i (g2, ooo mem)  PASS   cycles=4112 issued=1057 hazard=2605 lsu=0 wb=0 squash=97
+  t33_tdesc_load (g2)    PASS   cycles=12052 issued=5096 hazard=2181 lsu=0 wb=0 squash=689
+  t33_tdesc_load (g2, ooo mem) PASS   cycles=17166 issued=5096 hazard=2181 lsu=0 wb=0 squash=689
+  t34_tdesc_store (g2)   PASS   cycles=8034 issued=3087 hazard=2150 lsu=44 wb=4 squash=410
+  t34_tdesc_store (g2, ooo mem) PASS   cycles=14627 issued=3087 hazard=5855 lsu=76 wb=0 squash=410
+  t36_reduce (g2)        PASS   cycles=8843 issued=4185 hazard=1944 lsu=0 wb=0 squash=545
+  t36_reduce (g2, ooo mem) PASS   cycles=8969 issued=4185 hazard=2070 lsu=0 wb=0 squash=545
+  t37_lsu_straddle (g2)  PASS   cycles=21976 issued=10186 hazard=6294 lsu=69 wb=38 squash=1345
+  t37_lsu_straddle (g2, ooo mem) PASS   cycles=28370 issued=10186 hazard=12481 lsu=276 wb=0 squash=1345
+  t38_wbfreeze (g2)      PASS   cycles=4412 issued=1979 hazard=1067 lsu=0 wb=0 squash=221
+  t38_wbfreeze (g2, ooo mem) PASS   cycles=4768 issued=1981 hazard=1067 lsu=0 wb=0 squash=223
+  t39_freeze_drop (g2)   PASS   cycles=3634 issued=1647 hazard=733 lsu=20 wb=0 squash=173
+  t39_freeze_drop (g2, ooo mem) PASS   cycles=4269 issued=1650 hazard=921 lsu=35 wb=0 squash=176
+  t39_switch (g2)        PASS   cycles=2137 issued=850 hazard=424 lsu=199 wb=41 squash=118
+  t39_switch (g2, ooo mem) PASS   cycles=2788 issued=850 hazard=875 lsu=500 wb=3 squash=118
+  t39_isolate (g2)       PASS   cycles=1389 issued=751 hazard=87 lsu=10 wb=2 squash=129
+  t39_isolate (g2, ooo mem) PASS   cycles=1397 issued=751 hazard=84 lsu=24 wb=2 squash=129
+  t39_slice (g2)         PASS   cycles=1308 issued=213 hazard=29 lsu=212 wb=1 squash=16
+  t39_slice (g2, ooo mem) PASS   cycles=2163 issued=214 hazard=30 lsu=380 wb=0 squash=17
+  t35_tdesc_frank (g2)   PASS   cycles=159 issued=34 hazard=21 lsu=0 wb=0 squash=1
+  t35_tdesc_frank (g2, ooo mem) PASS   cycles=468 issued=34 hazard=21 lsu=0 wb=0 squash=1
+  t35_tdesc_fpad2 (g2)   PASS   cycles=131 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fpad2 (g2, ooo mem) PASS   cycles=440 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fnanint (g2) PASS   cycles=131 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fnanint (g2, ooo mem) PASS   cycles=440 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fsb (g2)     PASS   cycles=138 issued=22 hazard=12 lsu=0 wb=0 squash=1
+  t35_tdesc_fsb (g2, ooo mem) PASS   cycles=447 issued=22 hazard=12 lsu=0 wb=0 squash=1
+  t35_tdesc_fblock (g2)  PASS   cycles=131 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fblock (g2, ooo mem) PASS   cycles=440 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fclamp (g2)  PASS   cycles=131 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fclamp (g2, ooo mem) PASS   cycles=440 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t41_boundary (g2)      PASS   cycles=1910 issued=1006 hazard=425 lsu=102 wb=11 squash=121
+  t41_boundary (g2, ooo mem) PASS   cycles=2365 issued=1006 hazard=757 lsu=179 wb=1 squash=121
+  t39_pair (g2)          PASS   cycles=1887 issued=234 hazard=77 lsu=0 wb=0 squash=18
+  t39_pair (g2, ooo mem) PASS   cycles=2688 issued=235 hazard=77 lsu=0 wb=0 squash=19
+  t30_xpose (g2)         PASS   cycles=3754 issued=1641 hazard=699 lsu=0 wb=0 squash=228
+  t30_xpose (g2, ooo mem) PASS   cycles=4849 issued=1641 hazard=699 lsu=0 wb=0 squash=228
+  t32_xpose_badsize (g2) PASS   cycles=115 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t32_xpose_badsize (g2, ooo mem) PASS   cycles=423 issued=18 hazard=9 lsu=0 wb=0 squash=1
+
+real	7m37.954s
+user	7m33.779s
+sys	0m4.445s

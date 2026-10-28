@@ -1,0 +1,38 @@
+commit 41661b75e0e38c0b0bda9e1e663b2ebc49015ffb start 2026-10-28T12:49:27Z host gx10-6646
+== nuca_shared_read: make nuca-shared-read
+nuca_shared_read exit 0
+== nuca_addr_fold: make nuca-addr-fold
+nuca_addr_fold exit 0
+== nuca: make nuca
+nuca exit 0
+== nuca_dco: make nuca-dco
+nuca_dco exit 0
+== core_g2: make core-g2
+core_g2 exit 0
+== profile_tests: make r1-profile-tests
+profile_tests exit 0
+== top: make top
+top exit 0
+== mesh: make mesh
+mesh exit 0
+== line_axi: make r40-line-axi
+line_axi exit 0
+== cache_maintenance: make r40-cache-maintenance
+cache_maintenance exit 0
+== geometry_image: python3 tools/r40/image_geometry_tests.py --image-tcl images/image.tcl
+geometry_image exit 0
+== geometry_image_g2_ctx2: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_g2_ctx2.tcl
+geometry_image_g2_ctx2 exit 1
+== geometry_image_g2_addr35: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_g2_addr35.tcl
+geometry_image_g2_addr35 exit 0
+== geometry_image_g2_bar8_epoch38: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_g2_bar8_epoch38.tcl
+geometry_image_g2_bar8_epoch38 exit 0
+== geometry_image_g2_all: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_g2_all.tcl
+geometry_image_g2_all exit 1
+== tnca_opt_cmake: cmake -S compiler -B compiler/build -G Ninja -DMLIR_DIR=/home/zhongchun/tc_env/root/usr/lib/llvm-20/lib/cmake/mlir -DLLVM_DIR=/home/zhongchun/tc_env/root/usr/lib/llvm-20/lib/cmake/llvm -DCMAKE_BUILD_TYPE=Release
+tnca_opt_cmake exit 0
+== tnca_opt_build: ninja -j6 -C compiler/build
+tnca_opt_build exit 0
+== compiler: make compiler
+compiler exit 0
+end 2026-10-28T14:03:45Z

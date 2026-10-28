@@ -1,0 +1,36 @@
+tb/nuca/tb_nuca_addr_fold.v:141: warning: Port 5 (req_addr) of tnca_dram_model expects 64 bits, got 96.
+tb/nuca/tb_nuca_addr_fold.v:141:        : Pruning 32 high bits of the expression.
+  NUCA-ADDR-FOLD-oor0-pipe1-seed1 PASS   
+      seed=1 W=35 oor=0 pipeline=1 policy=0 cycles=200000 issued=15618 responses=15618 stores=5988 atomics=1941 maint=49
+  NUCA-ADDR-FOLD-oor0-pipe1-seed7 PASS   
+      seed=7 W=35 oor=0 pipeline=1 policy=0 cycles=200000 issued=15903 responses=15903 stores=6017 atomics=2026 maint=45
+  NUCA-ADDR-FOLD-oor0-pipe1-seed42 PASS   
+      seed=42 W=35 oor=0 pipeline=1 policy=0 cycles=200000 issued=15957 responses=15945 stores=6033 atomics=2025 maint=45
+tb/nuca/tb_nuca_addr_fold.v:141: warning: Port 5 (req_addr) of tnca_dram_model expects 64 bits, got 96.
+tb/nuca/tb_nuca_addr_fold.v:141:        : Pruning 32 high bits of the expression.
+  NUCA-ADDR-FOLD-oor1-pipe1-seed1 PASS   
+      seed=1 W=35 oor=1 pipeline=1 policy=0 cycles=200000 issued=15996 responses=15996 stores=6063 atomics=1937 maint=46
+  NUCA-ADDR-FOLD-oor1-pipe1-seed7 PASS   
+      seed=7 W=35 oor=1 pipeline=1 policy=0 cycles=200000 issued=15976 responses=15965 stores=6075 atomics=1984 maint=45
+  NUCA-ADDR-FOLD-oor1-pipe1-seed42 PASS   
+      seed=42 W=35 oor=1 pipeline=1 policy=0 cycles=200000 issued=15784 responses=15773 stores=5978 atomics=1960 maint=48
+tb/nuca/tb_nuca_addr_fold.v:141: warning: Port 5 (req_addr) of tnca_dram_model expects 64 bits, got 96.
+tb/nuca/tb_nuca_addr_fold.v:141:        : Pruning 32 high bits of the expression.
+  NUCA-ADDR-FOLD-oor0-pipe0-seed1 PASS   
+      seed=1 W=35 oor=0 pipeline=0 policy=0 cycles=200000 issued=15618 responses=15618 stores=5988 atomics=1941 maint=49
+  NUCA-ADDR-FOLD-oor0-pipe0-seed7 PASS   
+      seed=7 W=35 oor=0 pipeline=0 policy=0 cycles=200000 issued=15903 responses=15903 stores=6017 atomics=2026 maint=45
+  NUCA-ADDR-FOLD-oor0-pipe0-seed42 PASS   
+      seed=42 W=35 oor=0 pipeline=0 policy=0 cycles=200000 issued=15957 responses=15945 stores=6033 atomics=2025 maint=45
+tb/nuca/tb_nuca_addr_fold.v:141: warning: Port 5 (req_addr) of tnca_dram_model expects 64 bits, got 96.
+tb/nuca/tb_nuca_addr_fold.v:141:        : Pruning 32 high bits of the expression.
+  NUCA-ADDR-FOLD-oor1-pipe0-seed1 PASS   
+      seed=1 W=35 oor=1 pipeline=0 policy=0 cycles=200000 issued=15996 responses=15996 stores=6063 atomics=1937 maint=46
+  NUCA-ADDR-FOLD-oor1-pipe0-seed7 PASS   
+      seed=7 W=35 oor=1 pipeline=0 policy=0 cycles=200000 issued=15976 responses=15965 stores=6075 atomics=1984 maint=45
+  NUCA-ADDR-FOLD-oor1-pipe0-seed42 PASS   
+      seed=42 W=35 oor=1 pipeline=0 policy=0 cycles=200000 issued=15784 responses=15773 stores=5978 atomics=1960 maint=48
+
+real	4m17.429s
+user	4m17.282s
+sys	0m0.199s

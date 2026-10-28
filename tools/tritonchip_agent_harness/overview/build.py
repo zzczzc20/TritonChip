@@ -9,6 +9,11 @@ so the page never says anything the README and the history do not. The
 diagrams and the role and boundary text in template.html mirror README
 sections 3, 5, 6.4 and 12.3, and its multicore section and task table the
 multicore and task rows of sections 16 and 17; change them together.
+
+The skills section is the one exception: it mirrors two branches this one
+does not contain, testcase-skill (384c165) and model-align (8f132f2), names
+each branch and commit, and says that neither is pushed or merged into PR #9.
+Update it from those branches, not from this README, until they merge.
 """
 
 from __future__ import annotations

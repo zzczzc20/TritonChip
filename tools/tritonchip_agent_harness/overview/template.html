@@ -4,7 +4,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: one reading column for text, wide bands for the diagram and the tables; summary first, detail after.
-   Mirrors README sections 3, 4, 5 (with its mechanism table), 6 (with the leak audit), 7, 12 and the multicore and task rows of 16 and 17 (static text) and reads 16, 17, 19 and git (generated). */
+   Mirrors README sections 3, 4, 5 (with its mechanism table), 6 (with the leak audit), 7, 12 and the multicore and task rows of 16 and 17 (static text) and reads 16, 17, 19 and git (generated).
+   The skills section mirrors two other branches, testcase-skill (384c165) and model-align (8f132f2), not this README, and names them.
+   The roles diagram tags what is built only on those branches, and shows two items the user decided on 2026-10-28 (the multicore memory path opened to the agent, a switchable HBM model) as planned: no README states them yet. */
 :root {
   --bg: #f3f5f8; --surface: #ffffff; --ink: #18212d; --muted: #586477; --line: #d6dce5;
   --accent: #2b4ea2; --accent-soft: #e5ebf8; --copper: #a4561c; --copper-soft: #f6eadf;
@@ -86,6 +88,8 @@ svg .never { stroke: var(--off); stroke-width: 1.2; fill: none; stroke-dasharray
 svg .lbl-back { fill: var(--copper); font: 600 12.5px var(--body) }
 svg .lbl-never { fill: var(--off); font: 600 12.5px var(--body) }
 svg .dot { fill: var(--accent) }
+svg .tag { fill: var(--wip-soft); stroke: var(--wip); stroke-width: 1 }
+svg .tagt { fill: var(--wip); font: 500 11px var(--mono) }
 .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); padding: 4px 6px 2px }
 .legend span { display: inline-flex; align-items: center; gap: 8px }
 .legend svg { width: 34px; height: 8px; min-width: 0 }
@@ -137,13 +141,13 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <div class="eyebrow">TritonChip · TNCA · PR #9</div>
   <h1>TritonChip Agent Harness</h1>
   <p class="premise">让不同的 agent + 模型在同一套环境里联合优化 TNCA 的编译器、ISA 和微架构。前提只有一条：<strong>只有当 agent 碰不到产生分数的东西时，分数才值得比较。</strong></p>
-  <p class="muted">第一版是单核机器：U280，时钟固定 100 MHz（2026-10-18）。2026-10-27 起也能跑多核任务：R40 的三核 U280 机器，时钟 90 MHz，分数是评测器对三核设备的 RTL 仿真；多核的上板认证已定，还没建。</p>
+  <p class="muted">第一版是单核机器：U280，时钟固定 100 MHz（2026-10-18）。2026-10-27 起也能跑多核任务：R40 的三核 U280 机器，时钟 90 MHz，分数是评测器对三核设备的 RTL 仿真；多核的上板认证已定，还没建。另有两个只在本地的分支：测试用例设计技能已经建好，SystemC 模型与 RTL 的对齐有了工具，见<a href="#skills">技能</a>一节。</p>
   <div class="meta"><span id="meta-head">HEAD —</span><span>来源：<code>tools/tritonchip_agent_harness/README.md</code></span><span>进度只在 README §17 维护</span></div>
 </header>
 
 <nav aria-label="页面目录">
   <a href="#summary">进度概览</a><a href="#roles">角色与信息流</a><a href="#visibility">可见性</a><a href="#boundaries">隔离边界</a><a href="#mechanisms">隔离实现</a>
-  <a href="#fpga">FPGA 服务</a><a href="#multicore">多核</a><a href="#threats">威胁与防线</a><a href="#progress">进度明细</a><a href="#decisions">决定</a><a href="#commits">提交</a><a href="#pilot">Pilot 1</a>
+  <a href="#fpga">FPGA 服务</a><a href="#multicore">多核</a><a href="#skills">技能</a><a href="#threats">威胁与防线</a><a href="#progress">进度明细</a><a href="#decisions">决定</a><a href="#commits">提交</a><a href="#pilot">Pilot 1</a>
 </nav>
 
 <section id="summary">
@@ -166,74 +170,117 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 </section>
 
 <section id="roles">
-  <div class="sec-head"><div class="eyebrow">README §3</div><h2>六个角色：结果会不会回到 agent 手里</h2>
+  <div class="sec-head"><div class="eyebrow">README §3 · §10 · §12 · §16–17</div><h2>角色与信息流：结果会不会回到 agent 手里</h2>
   <p class="muted">区分它们只需要问一个问题。会回来的只有 agent 自己产生的东西和服务给出的汇总；终评的结果永远不回来。</p></div>
   <div class="diagram">
-  <svg viewBox="0 0 1000 630" role="img" aria-labelledby="dg-title">
-    <title id="dg-title">Agent sandbox、提交闸门、评分服务、FPGA 服务、FPGA harness 与终评之间的信息流</title>
+  <svg viewBox="0 0 1000 760" role="img" aria-labelledby="dg-title">
+    <title id="dg-title">Agent sandbox、网关、提交闸门、评分服务、FPGA 服务、FPGA harness，以及 agent 停止之后的终评、板上认证、人工复核和 run 记录之间的信息流。实线框已在 PR #9 的分支上建好；虚线框和标着计划的行还没建；带分支标签的在其他分支上建好，没有合进 PR #9</title>
     <defs>
       <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--muted)"/></marker>
       <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--copper)"/></marker>
     </defs>
-    <rect class="box agent" x="20" y="20" width="470" height="210" rx="10"/>
+    <rect class="box agent" x="20" y="20" width="720" height="212" rx="10"/>
     <text class="t" x="40" y="52">Agent sandbox · agent 容器</text>
+    <text class="m" x="724" y="52" text-anchor="end">容器本身 --network none</text>
     <circle class="dot" cx="46" cy="83" r="3.5"/><text class="t" x="58" y="88" style="font-weight:500">工作区：base 的单一提交</text>
-    <text class="s" x="58" y="107">没有 ArchBench、没有 git 历史、没有 harness 代码</text>
+    <text class="s" x="58" y="107">没有 ArchBench、git 历史、harness 代码</text>
     <circle class="dot" cx="46" cy="135" r="3.5"/><text class="t" x="58" y="140" style="font-weight:500">工具链 + 周期精确仿真器</text>
-    <text class="s" x="58" y="159">agent 用自己写的测试用例自测，结果全部可见</text>
+    <text class="s" x="58" y="159">单核和三核的 RTL；agent 用自己写的用例自测</text>
     <circle class="dot" cx="46" cy="187" r="3.5"/><text class="t" x="58" y="192" style="font-weight:500">tnca-service 命令</text>
     <text class="s" x="58" y="211">按需申请评分或 FPGA，按预算扣减</text>
+    <circle class="dot" cx="396" cy="83" r="3.5"/><text class="t" x="408" y="88" style="font-weight:500">SystemC 模型</text>
+    <text class="s" x="408" y="107">多核任务用，未校准的估计</text>
+    <circle class="dot" cx="396" cy="135" r="3.5"/><text class="t" x="408" y="140" style="font-weight:500">技能 testcase-design</text>
+    <rect class="tag" x="588" y="127" width="134" height="17" rx="4"/><text class="tagt" x="594" y="139.5">分支 testcase-skill</text>
+    <text class="s" x="408" y="159">只读挂进三个 CLI 的 skills 目录</text>
+    <rect x="386" y="170" width="344" height="53" rx="6" style="fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 6 4"/>
+    <circle class="dot" cx="396" cy="187" r="3.5"/><text class="t" x="408" y="192" style="font-weight:500">模型与 RTL 对齐 → 技能</text>
+    <rect class="tag" x="608" y="179" width="114" height="17" rx="4"/><text class="tagt" x="614" y="191.5">分支 model-align</text>
+    <text class="s" x="408" y="211">对齐工具已在分支上；技能（计划）</text>
 
-    <rect class="box trusted" x="560" y="36" width="180" height="70" rx="8"/>
-    <text class="t" x="576" y="64">网关 CONNECT</text><text class="s" x="576" y="86">offline：只放行模型 API</text>
-    <rect class="box trusted" x="800" y="36" width="180" height="70" rx="8"/>
-    <text class="t" x="816" y="64">模型服务</text><text class="s" x="816" y="86">按账号的主机白名单</text>
-    <path class="flow" d="M490,71 H556" marker-end="url(#ah)"/><path class="flow" d="M740,71 H796" marker-end="url(#ah)"/>
-    <text class="m" x="560" y="128">容器本身 --network none</text>
+    <rect class="box trusted" x="780" y="36" width="200" height="70" rx="8"/>
+    <text class="t" x="796" y="64">网关 CONNECT</text><text class="s" x="796" y="86">offline：只放行模型 API</text>
+    <rect class="box trusted" x="780" y="146" width="200" height="70" rx="8"/>
+    <text class="t" x="796" y="174">模型服务</text><text class="s" x="796" y="196">按账号的主机白名单</text>
+    <path class="flow" d="M740,71 H776" marker-end="url(#ah)"/><path class="flow" d="M880,106 V142" marker-end="url(#ah)"/>
 
-    <rect class="box trusted" x="140" y="270" width="400" height="62" rx="8"/>
-    <text class="t" x="160" y="297">提交闸门 · Submission gate</text><text class="s" x="160" y="318">只取设计目录的改动，与源仓库里的 base 比较</text>
-    <path class="flow" d="M340,230 V266" marker-end="url(#ah)"/><text class="m" x="350" y="254">service socket（计划）</text>
+    <rect class="box trusted" x="150" y="286" width="470" height="104" rx="8"/>
+    <text class="t" x="170" y="314">提交闸门 · Submission gate</text>
+    <text class="s" x="170" y="336">只取设计目录：编译器、ISA、RTL、profile、机器描述 spec/devices</text>
+    <text class="s" x="170" y="356">与源仓库的 base 比较；RTL 检查</text>
+    <text class="s" x="170" y="376">多核访存通路（rtl/fpga 的 AXI/HBM 通路）开放给 agent（计划）</text>
+    <path class="flow" d="M230,232 V282" marker-end="url(#ah)"/><text class="m" x="240" y="262">service socket</text>
 
-    <rect class="box trusted" x="20" y="380" width="300" height="100" rx="8"/>
-    <text class="t" x="36" y="408">评分服务</text><text class="s" x="36" y="430">隐藏的验证集，仿真</text><text class="s" x="36" y="450">每个 run 限次数</text>
-    <rect class="box trusted" x="360" y="380" width="300" height="100" rx="8"/>
-    <text class="t" x="376" y="408">FPGA 服务</text><text class="s" x="376" y="430">快档：OOC 综合 + 时序，约 25 分钟</text><text class="s" x="376" y="450">慢档：link + 上板，数小时</text><text class="s" x="376" y="470">FPGA 时间有上限，并真实执行</text>
-    <rect class="box trusted" x="700" y="380" width="280" height="100" rx="8"/>
-    <text class="t" x="716" y="408">FPGA harness</text><text class="s" x="716" y="430">build worker：所有构建，容器隔离</text><text class="s" x="716" y="450">card host：只做上板，沙盒</text>
-    <path class="flow" d="M240,332 V356 H170 V376" marker-end="url(#ah)"/>
-    <path class="flow" d="M440,332 V356 H510 V376" marker-end="url(#ah)"/>
-    <path class="flow" d="M660,430 H696" marker-end="url(#ah)"/>
+    <rect class="box trusted" x="20" y="430" width="340" height="126" rx="8"/>
+    <text class="t" x="36" y="458">评分服务</text>
+    <text class="s" x="36" y="480">隐藏验证集，RTL 仿真，每个 run 限次数</text>
+    <text class="s" x="36" y="500">单核：平台计数（P2.1）</text>
+    <text class="s" x="36" y="520">多核：R40 三核顶层，评测器的 MMIO 端点计周期</text>
+    <text class="s" x="36" y="540">HBM 模型 fast（R40 M2）或 Ramulator2（计划）</text>
+    <rect class="box trusted" x="386" y="430" width="284" height="126" rx="8"/>
+    <text class="t" x="402" y="458">FPGA 服务</text>
+    <text class="s" x="402" y="480">快档：OOC 综合 + 时序，实测约 12 分钟</text>
+    <text class="s" x="439.5" y="500">只做单核；多核（计划）</text>
+    <text class="s" x="402" y="520">慢档：完整 link，可选上板，可选启用</text>
+    <text class="s" x="402" y="540">FPGA 时间有上限，并真实执行</text>
+    <rect class="box trusted" x="696" y="430" width="284" height="126" rx="8"/>
+    <text class="t" x="712" y="458">FPGA harness</text>
+    <text class="s" x="712" y="480">target u280：100 MHz</text>
+    <text class="s" x="712" y="500">u280-multicore-r40：90 MHz，只构建</text>
+    <text class="s" x="712" y="520">build worker：所有构建</text>
+    <text class="s" x="712" y="540">card host：只做上板（沙盒计划中）</text>
+    <path class="flow" d="M250,390 V426" marker-end="url(#ah)"/>
+    <path class="flow" d="M480,390 V426" marker-end="url(#ah)"/>
+    <path class="flow" d="M670,493 H692" marker-end="url(#ah)"/>
 
-    <path class="back" d="M44,380 V234" marker-end="url(#ahc)"/>
+    <path class="back" d="M44,430 V236" marker-end="url(#ahc)"/>
     <text class="lbl-back" x="54" y="352">只回汇总</text>
-    <path class="back" d="M620,380 V170 H494" marker-end="url(#ahc)"/>
-    <text class="lbl-back" x="630" y="300">时序 · 资源</text><text class="lbl-back" x="630" y="318">· 汇总</text>
+    <path class="back" d="M640,430 V236" marker-end="url(#ahc)"/>
+    <text class="lbl-back" x="650" y="322">时序 · 资源</text><text class="lbl-back" x="650" y="340">· 汇总</text>
 
-    <line class="never" x1="20" y1="512" x2="980" y2="512"/>
-    <text class="m" x="20" y="535">agent 停止之后</text>
-    <rect class="box trusted" x="20" y="548" width="430" height="70" rx="8"/>
-    <text class="t" x="36" y="576">终评 · Final evaluator</text><text class="s" x="36" y="598">完整 base + 最终候选，测终测集和验证集，逐点判定</text>
-    <rect class="box trusted" x="520" y="548" width="240" height="70" rx="8"/>
-    <text class="t" x="536" y="576">Run 记录</text><text class="s" x="536" y="598">run.json，留在 agent 之外</text>
-    <path class="flow" d="M450,583 H516" marker-end="url(#ah)"/>
-    <text class="lbl-never" x="790" y="590">永不回到 agent</text>
+    <line class="never" x1="20" y1="596" x2="980" y2="596"/>
+    <text class="m" x="20" y="619">agent 停止之后</text>
+    <text class="lbl-never" x="980" y="619" text-anchor="end">永不回到 agent</text>
+    <rect class="box trusted" x="20" y="632" width="210" height="106" rx="8"/>
+    <text class="t" x="36" y="660">终评 · Final evaluator</text>
+    <text class="s" x="36" y="682">完整 base + 最终候选</text>
+    <text class="s" x="36" y="702">测终测集，验证集留档</text>
+    <text class="s" x="36" y="722">逐点判定</text>
+    <rect class="box trusted" x="270" y="632" width="270" height="106" rx="8"/>
+    <text class="t" x="286" y="660">板上认证 · certify</text>
+    <text class="s" x="286" y="682">改了机器的候选：link 后上卡</text>
+    <text class="s" x="286" y="702">逐点核对；单核已建</text>
+    <text class="s" x="286" y="722">多核：容差 + 加速方向一致（计划）</text>
+    <rect class="box trusted" x="580" y="632" width="200" height="106" rx="8"/>
+    <text class="t" x="596" y="660">人工复核</text>
+    <text class="s" x="596" y="682">操作员复核候选和结果路径</text>
+    <text class="s" x="596" y="702">之后才采纳分数（§10.5）</text>
+    <rect class="box trusted" x="820" y="632" width="160" height="106" rx="8"/>
+    <text class="t" x="836" y="660">Run 记录</text>
+    <text class="s" x="836" y="682">run.json</text>
+    <text class="s" x="836" y="702">留在 agent 之外</text>
+    <path class="flow" d="M230,685 H266" marker-end="url(#ah)"/>
+    <path class="flow" d="M540,685 H576" marker-end="url(#ah)"/>
+    <path class="flow" d="M780,685 H816" marker-end="url(#ah)"/>
   </svg>
   <div class="legend">
     <span><svg viewBox="0 0 34 8" aria-hidden="true"><line x1="0" y1="4" x2="34" y2="4" style="stroke: var(--muted); stroke-width: 2"/></svg>请求与数据</span>
     <span><svg viewBox="0 0 34 8" aria-hidden="true"><line x1="0" y1="4" x2="34" y2="4" style="stroke: var(--copper); stroke-width: 2; stroke-dasharray: 6 4"/></svg>回到 agent 的结果（受限）</span>
     <span><svg viewBox="0 0 34 8" aria-hidden="true"><line x1="0" y1="4" x2="34" y2="4" style="stroke: var(--off); stroke-width: 1.5; stroke-dasharray: 2 4"/></svg>从此往下不返回</span>
+    <span><svg viewBox="0 0 34 14" style="height:14px" aria-hidden="true"><rect x="1" y="1" width="32" height="12" rx="3" style="fill: none; stroke: var(--muted); stroke-width: 1.2"/></svg>实线框：在 PR #9 的分支上已建</span>
+    <span><svg viewBox="0 0 34 14" style="height:14px" aria-hidden="true"><rect x="1" y="1" width="32" height="12" rx="3" style="fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 6 4"/></svg>虚线框，或框里标"（计划）"的一行：计划中，或已定未建</span>
+    <span><svg viewBox="0 0 34 14" style="height:14px" aria-hidden="true"><rect class="tag" x="1" y="1" width="32" height="12" rx="3"/></svg>"分支 …"标签：在其他分支上已建，没有合进 PR #9</span>
   </div>
   </div>
   <div class="tbl"><table>
     <thead><tr><th>角色</th><th>做什么</th><th class="nowrap">何时</th><th class="nowrap">谁触发</th><th>回到 agent 的</th></tr></thead>
     <tbody>
-      <tr><td><strong>Agent sandbox</strong></td><td>agent 工作的地方：新的工作区、工具链、仿真器。它自己测的东西都在这里测，用自己写的测试用例。除此之外，它只能从服务拿到有预算的结果</td><td class="nowrap">运行中</td><td>harness</td><td><span class="chip all">自己产生的全部</span></td></tr>
+      <tr><td><strong>Agent sandbox</strong></td><td>agent 工作的地方：新的工作区、工具链、仿真器。它自己测的东西都在这里测，用自己写的测试用例。测试用例设计技能 <code>testcase-design</code> 在分支 <code>testcase-skill</code> 上已建，还没合进来。除此之外，它只能从服务拿到有预算的结果</td><td class="nowrap">运行中</td><td>harness</td><td><span class="chip all">自己产生的全部</span></td></tr>
       <tr><td><strong>提交闸门</strong></td><td>只取设计目录下的改动，存成 base 提交 + overlay</td><td class="nowrap">每次服务请求、结束时</td><td>harness</td><td><span class="chip never">无</span></td></tr>
       <tr><td><strong>评分服务</strong></td><td>从源码重建 base + 候选，在仿真里测隐藏的验证集</td><td class="nowrap">运行中，按需</td><td>agent，限次</td><td><span class="chip back">只有汇总</span></td></tr>
-      <tr><td><strong>FPGA 服务</strong></td><td>快档：整器件 OOC 综合与时序；慢档：实现 + 上板。经由 FPGA harness，构建在 build worker 上，上板阶段在 card host 上</td><td class="nowrap">运行中，按需</td><td>agent，限 FPGA 时间</td><td><span class="chip back">时序、资源；上板时为汇总</span></td></tr>
-      <tr><td><strong>终评</strong></td><td>重建 base + 最终候选，测终测集（以及验证集，留档）</td><td class="nowrap">agent 停止后</td><td>harness</td><td><span class="chip never">永远没有</span></td></tr>
-      <tr><td><strong>FPGA harness</strong></td><td>FPGA 的执行与证据层：驱动仓库自己的 flow、判定构建、烧卡并测量</td><td class="nowrap">FPGA 服务之下；操作员选定候选的板级认证</td><td>FPGA 服务或操作员</td><td><span class="chip never">只经 FPGA 服务</span></td></tr>
+      <tr><td><strong>FPGA 服务</strong></td><td>快档：整器件 OOC 综合与时序，实测约 12 分钟，目前只做单核（多核计划中）；慢档：完整 link，可选上板，按任务和 site 启用。经由 FPGA harness，构建在 build worker 上，上板阶段在 card host 上</td><td class="nowrap">运行中，按需</td><td>agent，限 FPGA 时间</td><td><span class="chip back">时序、资源；上板时为汇总</span></td></tr>
+      <tr><td><strong>终评</strong></td><td>重建 base + 最终候选，测终测集（以及验证集，留档），逐点判定。改了机器的候选随后上板认证（单核已建，多核计划中）；操作员人工复核之后才采纳分数（§10.5）</td><td class="nowrap">agent 停止后</td><td>harness</td><td><span class="chip never">永远没有</span></td></tr>
+      <tr><td><strong>FPGA harness</strong></td><td>FPGA 的执行与证据层：驱动仓库自己的 flow、判定构建、烧卡并测量。target <code>u280</code>（100 MHz）和 <code>u280-multicore-r40</code>（90 MHz，只构建）；build worker 做所有构建，card host 只做上板，它的沙盒计划中</td><td class="nowrap">FPGA 服务之下；操作员选定候选的板级认证</td><td>FPGA 服务或操作员</td><td><span class="chip never">只经 FPGA 服务</span></td></tr>
     </tbody>
   </table></div>
 </section>
@@ -447,6 +494,82 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
       <li><code>run_graphs</code> 留在评测器：它要跑 ArchBench，工作区里没有</li>
     </ul></div>
   </div>
+</section>
+
+<section id="skills">
+  <div class="sec-head"><div class="eyebrow">其他分支 · testcase-skill · model-align</div><h2>技能：测试用例设计已经建好，模型与 RTL 的对齐只有工具</h2>
+  <p class="muted">这一节写的是另外两个分支，不是本页其余部分依据的 README；每一条都取自所写分支上的文件或提交说明。两个分支都只在本地：没有推送，也没有合进 PR #9（远端 PR #9 的 head 是 <code>3e54d3c</code>）。</p></div>
+
+  <div class="sec-head"><h3>测试用例设计：<code>testcase-design</code> <span class="chip local">仅本地</span></h3>
+  <p>分支 <code>testcase-skill</code>，<code>384c165</code>（2026-10-28），从 PR #9 的分支分出，已合入 PR #9 的 head <code>3e54d3c</code>。来源：分支上的 <code>skills/testcase-design/</code>、harness README §6.3、§13、§16、§17 和提交说明。</p></div>
+  <div class="cards">
+    <div class="card"><div class="top"><h3>做什么</h3><span class="chip ok">done</span></div>
+      <p>agent 看不到考它的 benchmark，只看到负载类别和判分规则。这个技能教它在考纲点名的类别里自己设计测试用例，并按评测的方式去测：同样的正确性判据、同样的设备周期、同样的 roofline 下界。技能不点名任何 benchmark 程序，ArchBench 仍然完全隐藏。</p>
+      <div class="row"><span class="k">能写到哪</span><span>方法，加上考纲点名的类别内部的维度；不列族，不给 tier 的规模（2026-10-27 用户定，O15 关闭）</span></div></div>
+    <div class="card"><div class="top"><h3>里面有什么</h3><span class="chip ok">done</span></div>
+      <p><code>SKILL.md</code> 是方法：用例怎么定义、怎么判、怎么计时；roofline 下界，以及哪个资源先到顶；怎样把一个类别展开成让编译器或机器表现不同的维度（表里列了 8 个）。</p>
+      <div class="row"><span class="k">脚本</span><span>3 个。<code>protocol.py</code> 和 <code>bound.py</code> 复制了评测器的正确性协议和下界代码；<code>tnca_case.py</code> 按评测的方式测一个用例：判定、周期、host fallback、η 和先到顶的资源</span></div>
+      <div class="row"><span class="k">例子</span><span>6 个可运行的用例：一个类别按维度展开，每个用例隔离一个维度</span></div></div>
+    <div class="card"><div class="top"><h3>怎么到 agent 手里</h3><span class="chip ok">done</span></div>
+      <p>技能属于环境层，和任务的 base 无关。runner 把 harness 的 <code>skills/</code> 只读挂到每个 run 容器的 <code>/opt/tnca-skills</code>，再把每个技能链接进各个 CLI 自己的 skills 目录：Claude Code、Codex 和 opencode 都按各自厂商的方式发现它，读的是同一份字节。加一个技能就是加一个目录。</p>
+      <div class="row"><span class="k">任务文本</span><span><code>task.render</code> 用一行点名技能，并去掉说明里原来那段测量例子：它用的 <code>assert_close</code> 不是协议的判据</span></div>
+      <div class="row"><span class="k">run 记录</span><span><code>skills</code> 按名字记下每个技能目录的 sha256；技能集合相同的两个 run 才能比较</span></div>
+      <div class="row"><span class="k">对照组</span><span><code>run-task --no-skills</code> 不挂技能，拿到原来的任务文本，是 pilot 的对照组</span></div>
+      <div class="row"><span class="k">实测</span><span><code>smoke --probe skills</code> 让 CLI 列出自己的技能。2026-10-27 三个 CLI 都把 <code>testcase-design</code> 链接进了 skills 目录，也都说出了它的名字，三份记录里的目录 hash 相同</span></div></div>
+    <div class="card"><div class="top"><h3>与机器无关</h3><span class="chip ok">2026-10-28</span></div>
+      <p>和 ArchBench 一样，技能只定义测什么：每次 launch 从开始到结束的周期之和、正确性协议、下界。测哪台机器由环境决定：任务文本写明机器和选它的 backend 设置，脚本像 agent 自己的 Python 一样从 shell 里取，只设 profile 和优化级别。</p>
+      <div class="row"><span class="k">下界</span><span>仍是评测按 profile 算的 <code>spec_peak</code>，所以 L 和 η 在任何机器上都是一个核的，脚本在每个 L 旁边写明。和 base 比要看同一用例上的周期比，所以先测 base、留下数字</span></div>
+      <div class="row"><span class="k">多核任务</span><span><code>r40-multicore-pilot</code> 的说明里只有 Python 例子交给技能替换，上面的环境设置两组都保留；新加的测试对每个任务检查这一点</span></div></div>
+    <div class="card"><div class="top"><h3>测试</h3><span class="chip ok">22 个</span></div>
+      <p><code>tests/test_testcase_skill.py</code> 查三类。等价：复制的代码和 ArchBench 的原版在同样的输入上结果相同。泄露：对照现有的 registry，技能目录里没有点 id、参数串、点的实际输入形状和 tier 常量，也没有哪个例子就是某个点的负载。交付：技能从不进工作区，只读挂在任务文本写的路径上，每个 CLI 都有 skills 目录。</p>
+      <div class="row"><span class="k">跑过</span><span>需要 torch 的 6 个在 toolchain 容器里通过。6 个例子 2026-10-27 在 core-vrf-sync-v5 上端到端跑通；改成与机器无关之后经挂载路径重跑，数字不变</span></div></div>
+    <div class="card"><div class="top"><h3>下一步</h3><span class="chip plan">planned</span></div>
+      <p>验收靠 pilot 3：在 <code>replay-mzero</code> 上，Claude Code 和 Codex 各跑一次带技能、一次不带。从会话记录里记下 agent 跑了哪些不同的用例、覆盖了类别的哪些维度、用没用脚本、花了多少时间；分数照记，但不作判据。之后技能文本冻结，成为环境版本的一部分。</p>
+      <div class="row"><span class="k">PR</span><span>按决定单独开 PR，PR #9 不再变大；分支还没推送</span></div>
+      <div class="row"><span class="k">以后</span><span>O21 把 ArchBench 拆成公开包和隐藏包之后，技能改用公开的那一半，复制的代码退役</span></div></div>
+  </div>
+
+  <div class="sec-head"><h3>SystemC 模型与 RTL 的对齐 <span class="chip local">仅本地</span></h3>
+  <p>分支 <code>model-align</code>，<code>8f132f2</code>（2026-10-28），从 <code>main</code> 的 <code>3e1a282</code> 分出（PR #10 的合并：三核、NUCA、HBM、90 MHz 的 U280）。来源：分支上的 <code>tools/performance_harness/align/</code>（README、工具的头注释、三份时序规格、<code>CYCLE_CORE.md</code>）、<code>evidence/model-align/</code> 和提交说明。对齐的工具已经有了；给 agent 用的对齐技能还没有。</p></div>
+  <div class="cards">
+    <div class="card"><div class="top"><h3>两份代码，一个 gate</h3><span class="chip ok">done</span></div>
+      <p>模型和 RTL 是两份代码：周期级的 C++ 模型（SystemC）和 Verilog 的 RTL。gate 以 RTL 为参照，判断模型是否数出同样的周期：两边各录一份 trace，逐个 launch 比较。这是模型的验证路径，不是预测路径：录下的 RTL trace 只用来判定，从不喂给预测。</p>
+      <div class="row"><span class="k">RTL 一侧</span><span><code>tnca_core_trace.v</code> 是第二个仿真顶层，用层次引用读每个核，<code>rtl/</code> 一行不改；<code>record_rtl.py</code> 跑的是普通的 ArchBench 路径，只多一个监视器</span></div>
+      <div class="row"><span class="k">模型一侧</span><span><code>record_model.py</code> 开着 trace 跑模型自己的标准路径；两边用同一套编译和运行设置，编译、launch 的是同样的程序</span></div>
+      <div class="row"><span class="k">分两片</span><span>第一片：一个核逐周期，回放 RTL 在核端口上录下的访存。第二片：uncore 也逐周期，只回放设备的访存端口</span></div></div>
+    <div class="card"><div class="top"><h3>gate 比什么</h3><span class="chip ok">done</span></div>
+      <p>可观测集故意取得粗（2026-10-26 定）：换一种微结构的模型也能被它约束。launch 按顺序配对，每条流逐条比较，周期从各自 launch 的起点算。</p>
+      <div class="row"><span class="k">核</span><span>launch 的长度；每条指令离开执行级的周期、Role Context 和 pc；核端口接受访存请求的周期、读写、地址和字节使能；响应相对请求的延迟</span></div>
+      <div class="row"><span class="k">uncore</span><span>slice 的请求和响应、tile 的访存请求和响应、设备访存端口的请求和响应（第二片）</span></div>
+      <div class="row"><span class="k">不比</span><span>tag、指令端口、核内部；内部的差别会表现为发射周期的偏移，工具报出第一处</span></div>
+      <div class="row"><span class="k">判定</span><span><code>tracediff.py gate</code> 写出 <code>alignment.json</code>：<code>aligned</code>（每个 launch 的每条流都相同）、<code>diverged</code>、<code>no-verdict</code>（trace 缺失或损坏）</span></div></div>
+    <div class="card"><div class="top"><h3>时序规格</h3><span class="chip wip">草稿</span></div>
+      <p>模型照着写的周期规则，从 Verilog 读出来：<code>CORE_TIMING.md</code> 写核（跨边沿保留的状态、逐级的次态规则、访存端口、矩阵和传输引擎、barrier、launch），<code>UNCORE_TIMING.md</code> 写 uncore（NoC、NUCA slice、到出口的路径、DRAM 模型、派发和完成、运行中的 host 访问），<code>UNCORE_TIMING_BOARD.md</code> 只写板级配置增加或改变的部分（链路级、三个出口、AXI 适配器、派发级）。</p>
+      <div class="row"><span class="k">以谁为准</span><span>三份都标为草稿。核和 uncore 两份写明以 gate 为准；每份都有一节列出读代码定不下来的点</span></div></div>
+    <div class="card"><div class="top"><h3>uncore 的开关</h3><span class="chip ok">done</span></div>
+      <p>配置键 <code>core_model=1</code> 选周期级的核；不设，就是原来事件驱动的核，一点不变。<code>uncore_model=1</code>（要求 <code>core_model=1</code>）把核端口到设备访存端口的整条路径也换成逐周期：派发、NoC、NUCA slice、访存仲裁、DRAM 模型；不设，周期级的核照旧用 M2 的时间线内存。</p>
+      <div class="row"><span class="k">评测配置</span><span>打开：agent 的候选要带着 uncore 的影响被评判</span></div>
+      <div class="row"><span class="k">板级配置</span><span><code>uncore_board=1</code>：同一个模型，换成板子的参数（两级链路、三个出口、AXI 适配器）</span></div></div>
+  </div>
+  <div class="tbl"><table>
+    <caption class="note" style="caption-side:bottom; text-align:left; padding:8px 12px">取自 <code>evidence/model-align/</code> 的 gate 结果，模型对 RTL 仿真，不写点名。板级顶层 bench 是仿真，不是卡。</caption>
+    <thead><tr><th>比对</th><th>范围</th><th class="nowrap">gate</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>原来事件驱动的核，用模型自己的内存</td><td>设备 bench，tiny 级别全部 27 个点，一个活动核</td><td class="nowrap"><span class="chip risk">27 个 diverged</span></td><td>周期误差中位数 9.6%</td></tr>
+      <tr><td>第一片：周期级的核，回放核端口</td><td>同上</td><td class="nowrap"><span class="chip wip">23 / 27 aligned</span></td><td>另外 4 个的 RTL 录制被两小时上限截断；完整录制上 2 个 aligned，另 2 个总周期只差 0 和 2 个周期，个别 launch 内部错开一个周期</td></tr>
+      <tr><td>第二片：核和 uncore 都逐周期，回放设备访存端口</td><td>设备 bench，tiny 级别全部 27 个点，一个活动核</td><td class="nowrap"><span class="chip ok">aligned</span></td><td>每个点的核 trace 和 uncore trace，每条流都相同；第一片留下的单周期差别也没有了</td></tr>
+      <tr><td>同上</td><td>设备 bench，三个活动核，2 个点</td><td class="nowrap"><span class="chip ok">aligned</span></td><td>三个核的 trace 和 uncore 的每条流都相同</td></tr>
+      <tr><td>板级配置，在 AXI 适配器处回放</td><td>板级顶层的仿真 bench，三个活动核；单出口 1 个点，三出口 2 个点</td><td class="nowrap"><span class="chip ok">aligned</span></td><td>运行时默认的单出口模式，和镜像自己的三出口、每个适配器 8 个在途请求的模式，都相同。准入只验证了一个方向：模型不会比录制晚接受</td></tr>
+      <tr><td>板级配置，预测，不回放</td><td>板级顶层的仿真 bench，三个活动核，1 个点</td><td class="nowrap"><span class="chip wip">diverged</span></td><td>三个核合计比录制少 2.9%。模型的 AXI slave 是确定的，bench 按种子随机停顿；分支的结论是差别来自这些停顿，不是结构</td></tr>
+    </tbody>
+  </table></div>
+  <div class="card"><div class="k">还没有的</div><ul class="plain">
+    <li>做成 agent 的技能或新的任务类型：计划中，还没建。分支上写好的只有给 harness 的 gate 接口（只把汇总交给 agent），适配器还没加</li>
+    <li>uncore 还没有 cache 维护路径：两种 bench 的录制都假定 launch 之间没有维护命令</li>
+    <li>U280 的预测配置每个端口用同一个 HBM 延迟（M2 拟合的值），在板上测之前是假设</li>
+    <li>端口上的响应重排和原子操作没有建模</li>
+    <li><code>--data</code> 模式（不属于粗粒度的 gate）下，每个点有同一处读数不一致：RTL 读到 0，模型读到上一次 launch 存的值，原因待查</li>
+  </ul></div>
 </section>
 
 <section id="threats">

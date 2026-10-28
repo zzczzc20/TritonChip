@@ -672,7 +672,8 @@ wrapper, as recorded in the experiment identity.
 Physical locality off/on/off supplies the required traffic and latency
 comparisons and closes S2-03.A.5, without a gain/default-on claim. Four compound
 alias refusals close D.3; bounded grid admission closes D.4; 65,537 completed
-barrier arm/wait iterations close D.6. Targeted eviction passes 117 graphs with
+(correction, 2026-10-28, AUDIT.md R9: D.4 is not measured; its opt-in check
+had been changed after a failure to repeat the capacity refusal) barrier arm/wait iterations close D.6. Targeted eviction passes 117 graphs with
 one unloaded module and intact resident data, but D.7 remains not measured
 because the required persistent full-model session is absent. The separate
 pipeline comparison S2-03.B was not run and remains open.
@@ -765,3 +766,7 @@ This section implements the lead's decisions on the `r41` findings R1–R18 of `
 
 ### Evidence hash (R12)
 - `rtl/core/tnca_core.v` (S2-03.C) moves from `evidence_sha256` to a new `evidence_review_only` map. The Study read the version hashed in 1cfd3b8 (`15416c4c…`); eb6ec3d replaced that hash with the post-merge file (`aae8ab71…`) without a rerun. Both are recorded; neither stands for a measurement. `stage2_acceptance.py` does not re-verify review-only entries, refuses one that is also hashed or lacks a reviewed hash and note, and lists them in its output; the rendered ledger marks the entry "(review-only hash)".
+
+### D.4 opt-in check (R9)
+- After grid-preflight-v2 failed ("large grid was admitted without opt-in"), 7b10e7b changed the `opt-in-required` check in `tools/r40/grid_admission_case.py` to request `max(programs, base_limit + 1)` programs. On the board the base limit is the advertised capacity, 16,777,216, so the board report shows the same request (16,777,217) and the same error for `opt-in-required` and `advertised-capacity-refusal`: the check no longer tested opt-in.
+- The original check is restored: the measured grid, submitted without `large_grid`, must be refused, and is then admitted after opt-in. If the base limit already admits it, the check fails and the failure is kept. **S2-04.D.4 is not measured** until the case is rerun. A rerun needs the P4 manifest regenerated from `acceptance_manifests.py`, because the staged `s2-p4-lifecycle.json` pins the old source hash; that manifest is not changed here.

@@ -659,7 +659,7 @@
     {
       "id": "S2-04.D.4",
       "requirement": "Bounded grid admission",
-      "status": "passed",
+      "status": "not measured",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
@@ -668,8 +668,8 @@
         "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
         "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "The physical AOT/Session case proves opt-in refusal, an eight-task unfinished bound with seven dependent admissions, exact unique program IDs and completion atomics after drain, and refusal above the advertised 16,777,216-program capacity. This is not a standard-Torch or full-model scaling claim. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
-      "closure_plan": null
+      "reason": "Not measured (rectification, AUDIT.md R9). After grid-preflight-v2 failed, 7b10e7b changed the \"opt-in-required\" check to request max(programs, base_limit+1); on the board the base limit equals the advertised capacity (16,777,216), so it issued the same request as the capacity refusal and did not test opt-in. The original check is restored in tools/r40/grid_admission_case.py; D.4 stays not measured until it is rerun. The board run (lead-launched, launch_records/) still shows a bounded eight-task queue, 65,537 exact program IDs, 65,544 completion atomics and the capacity refusal. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; launch records archived.",
+      "closure_plan": "P4"
     },
     {
       "id": "S2-04.D.5",

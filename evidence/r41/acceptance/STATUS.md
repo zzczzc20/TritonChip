@@ -649,3 +649,33 @@ The queue uses a 10,800-second execution cap and never programs or resets the
 card. It was prepared, not launched. Full-depth physical generation, actual
 board tokens/s and the X8 transposed-load fault remain open. No card access,
 image loading or image build occurred during this closeout.
+
+## 2026-10-28 (Kimi) — lead-run P2/P4 physical evidence ingested
+
+Retrieved `~/r41_accept_p2_p4_7b10e7b_try2` read-only as
+`board-p2p4-7b10e7b-try2.tgz`. `board_p2p4_closeout.py` validates every declared
+source against commit 7b10e7b, all output/log hashes, all five successful steps,
+and matching before/after UUID `49964b17-e0b4-5bd2-dd40-7fc37b1205d3` and
+100 MHz probes. The successful run used the lead's `~/bin/torchenv-python`
+wrapper, as recorded in the experiment identity.
+
+Physical locality off/on/off supplies the required traffic and latency
+comparisons and closes S2-03.A.5, without a gain/default-on claim. Four compound
+alias refusals close D.3; bounded grid admission closes D.4; 65,537 completed
+barrier arm/wait iterations close D.6. Targeted eviction passes 117 graphs with
+one unloaded module and intact resident data, but D.7 remains not measured
+because the required persistent full-model session is absent. The separate
+pipeline comparison S2-03.B was not run and remains open.
+
+The acceptance index/report now reads **45 passed, two failed, 40 not measured,
+seven blocked**, integrity passed, overall not accepted. The merged HBM delta
+to `rtl/core/tnca_core.v` was reviewed: its new LSU/SFU options do not alter the
+RPAIR resource claim, so the stale live-source hash was refreshed. Raw archive,
+member index and derived measurements are under `evidence/r41/acceptance/`.
+No card access or board launch occurred during ingestion.
+
+The staged 68b9191 full-chat failure was also archived read-only as
+`chat/board-68b9191-preflight-failure.tgz`; it stopped in experiment.py because
+`expected_counter_changes` was empty and never ran a model. That queue and the
+previous a52fb29 command must not be rerun. A corrected manifest and launcher
+will receive a new immutable staging identity before a replacement is posted.

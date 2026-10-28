@@ -21,11 +21,11 @@ def main():
                 if '=' in line.split('#')[0])
     base.update(clock_hz='100000000', sfu_occupancy='22', sfu_latency='23')
     variants = {'baseline': {}}
-    for units in (8, 16):
-        variants[f'v3_lsu_{units}'] = dict(tl_core_beat_bytes='64', tl_noc_payload_bytes='64',
+    for units, prefetch in ((8, 0), (16, 0), (8, 16), (8, 64), (16, 64)):
+        variants[f'v3_lsu_{units}_prefetch_{prefetch}'] = dict(tl_core_beat_bytes='64', tl_noc_payload_bytes='64',
             tl_lsu_units=str(units), tl_lsu_shared_issue='0', tl_memory_lanes='8',
             lsu_beat_slots=str(max(1, 64//units)), outlets='32', active_outlets='32',
-            tl_pc_stripe_bytes='4096', mshrs='128', targets='256')
+            tl_pc_stripe_bytes='4096', mshrs='128', targets='256', tl_prefetch_lines=str(prefetch))
     rows = []
     for name, changes in variants.items():
         values = dict(base, **changes)

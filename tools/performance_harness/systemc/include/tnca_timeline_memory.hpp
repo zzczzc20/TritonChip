@@ -138,6 +138,11 @@ struct TimelineMemory {
         ++*(write?o.writes:o.reads);
         return done;
     }
+    bool present(unsigned h,u64 a){
+        auto& H=homes[h];u64 lineaddr=a&~63ULL;unsigned b=c.set(a)*ways;
+        for(unsigned w=0;w<ways;++w)if(H.tags[b+w].valid && H.tags[b+w].address==lineaddr)return true;
+        return false;
+    }
     // Home slice (tnca_nuca_slice.v); returns the cycle its response leaves.
     u64 slice(unsigned h,u64 a,bool write,u64 t,u64 now){
         auto& H=homes[h];u64 lineaddr=a&~63ULL;
@@ -220,6 +225,15 @@ struct TimelineMemory {
         };
         u64 r=transfer(core,h,0,req_data,t+inject);
         r=slice(h,region,write,r,now);
+        if(!write)for(u64 i=1;i<c.get_or("tl_prefetch_lines",0);++i){
+            u64 address=region+i*64;
+            if(address<c.get("memory_base") || address>=c.get("memory_base")+c.get("memory_bytes"))break;
+            unsigned ph=x.c.home(address);
+            if(present(ph,address))continue;
+            u64 request=transfer(core,ph,0,8,r);
+            slice(ph,address,false,request,now);
+            x.counts["prefetch_lines"]++;
+        }
         r=transfer(h,core,1,rsp_data,r+eject);
         for(auto& w:words){auto& l=store[w.address&~63ULL];unsigned off=unsigned(w.address&63);w.result=0;
             for(unsigned b=0;b<8;++b)w.result|=u64(l[off+b])<<(8*b);

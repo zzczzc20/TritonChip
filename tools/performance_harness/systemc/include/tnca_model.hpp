@@ -113,6 +113,7 @@ struct Config {
          require(n==1 || get("memory_model")==1,"parallel memory lanes require timeline memory");}
         require(get_or("tl_lsu_shared_issue",1)<=1,"tl_lsu_shared_issue must be 0|1");
         {auto n=get_or("tl_pc_stripe_bytes",0);require(n==0 || (n>=64 && n%64==0),"PC stripe must be zero or whole lines");}
+        require(get_or("tl_prefetch_lines",0)<=256,"prefetch degree must be 0..256");
         cache_hot();
         for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag"
                             && k!="mtx_abuf" && k!="launch_cycles" && k!="dispatch_cycles" && k!="load_latency"
@@ -142,7 +143,7 @@ struct Config {
     }
     u64 get(const std::string& k)const{return v.at(k);}
     static const std::vector<std::string>& optional_keys(){
-        static const std::vector<std::string> k={"mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units","tl_memory_lanes","tl_lsu_shared_issue","tl_pc_stripe_bytes"};return k;}
+        static const std::vector<std::string> k={"mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units","tl_memory_lanes","tl_lsu_shared_issue","tl_pc_stripe_bytes","tl_prefetch_lines"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

@@ -948,3 +948,28 @@ step failed on the second prompt: a different prompt length made `torch.compile`
 length, which the TNCA lowering refuses (`chat/p3/tlm-v3-proofs-1.tgz`, `tlm-vl-quality-v1`). The fix (static-shape
 compilation, chunked prefill in the quality steps) is committed; a replacement staging and command follow after its
 TLM proofs.
+
+### Replacement lead-only chat launches (immutable d7a0185 source; supersede 90f1a60)
+
+Changes since 90f1a60: chat stages compile with static shapes (`dynamic=False`), and the quality steps prefill text in
+chunks of 8. TLM proofs (default settings, X8 profile): a different-length second prompt compiles one new static graph,
+and the same-session repeat reproduces every logit bit for bit (`chat/p3/tlm-vl-shapes-v1.tgz`); Qwen3.5 4 layers
+passes the registered rule with `lm_head` unconverted (`chat/p3/tlm-v3-proofs-1.tgz`). A reduced chunked quality run
+on Qwen3-VL (1 layer, two prompts) is still running on GB10; its result will be appended here.
+
+Commit `d7a0185ea7c467f13d4aa450de813173d3549f39` is staged at `~/r41_chat_d7a0185` on acf3019: 4,176 tracked files match their Git blob SHA-1
+identities, no mismatches (`chat/staged-source-d7a0185.json`); both queues return `prepared-only`,
+`card_access=false` (`chat/staged-queue-check-d7a0185.txt`). Manifests `spec/r41/chat/s2-qwen-chat-v3-q35.json` and
+`-vl.json` carry the registered `tolerance_rule` and `chat_quality` blocks (author decisions, lead's chat,
+2026-10-28) and the author-approved interpreter. With the approved run-1 image already loaded, never alongside another
+U280 job, one after the other:
+
+```sh
+cd ~/r41_chat_d7a0185
+spec/r41/chat/board_queue_v3_q35.sh "$PWD" "$HOME/r41_chat_d7a0185_q35_out"
+# after it has finished:
+spec/r41/chat/board_queue_v3_vl.sh "$PWD" "$HOME/r41_chat_d7a0185_vl_out"
+```
+
+Board time: each queue at most 10,800 s of execution plus at least 900 s of idle wait, so at most about 6.5 h for
+both. No Qwen3.5 board timing exists. Prepared, not launched.

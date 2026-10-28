@@ -540,6 +540,8 @@ sources = ["flow/fpga/"]
 path = "evidence/r41/hbm_bw/R41F_PLAN.md"
 depends_on = []
 sources = ["rtl/fpga/", "tools/r41/"]
+
+[[doc]]
 path = "doc/engineering_discipline.md"
 depends_on = []
 sources = []

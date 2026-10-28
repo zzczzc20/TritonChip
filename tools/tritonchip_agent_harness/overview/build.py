@@ -7,7 +7,8 @@ it: the decisions (section 16), the progress table (section 17) and pilot 1
 (section 19) are read from the README's own tables, and the commits from git,
 so the page never says anything the README and the history do not. The
 diagrams and the role and boundary text in template.html mirror README
-sections 3, 5, 6.4 and 12.3; change them together.
+sections 3, 5, 6.4 and 12.3, and its multicore section and task table the
+multicore and task rows of sections 16 and 17; change them together.
 """
 
 from __future__ import annotations

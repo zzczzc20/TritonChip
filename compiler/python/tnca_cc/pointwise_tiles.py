@@ -316,7 +316,16 @@ def plan(imp, ops, module_text, func_name):
         # a masked access also holds its lane index and predicate per chunk
         masked = any(a.op.get_num_operands() > (2 if a.kind == 'vstore' else 1)
                      for a in accesses.values() if a.kind in ('vload', 'vstore'))
-        per_chunk = nvl + 1 + (2 if masked else 0)
+        # a computed result needs its own register; a plain copy stores the
+        # loaded register itself
+        computes = any(o.get_name().startswith(('arith.', 'math.')) or
+                       o.get_name() in ('tt.fp_to_fp', 'tt.extern_elementwise', 'tt.bitcast',
+                                        'tt.precise_sqrt', 'tt.precise_divf', 'tt.clampf')
+                       for o in tensor_ops if id(o) not in bases and o.get_name() != 'tt.make_range'
+                       and not (o.get_name() == 'arith.addi' and any(
+                           defs.get(o.get_operand(i).id()) in ranges for i in (0, 1)))
+                       and not o.get_name() == 'arith.constant' and not o.get_name() == 'arith.cmpi')
+        per_chunk = nvl + (1 if computes else 0) + (2 if masked else 0)
         for g in (4, 2):
             if nvl and g * tile_regs * per_chunk <= LSU_GROUP_BUDGET and width % (g * tile_regs * vlen) == 0:
                 groups = g

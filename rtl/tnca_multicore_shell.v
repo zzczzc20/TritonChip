@@ -17,7 +17,7 @@ module tnca_multicore_shell #(
  parameter VREGS_PER_RCTX=64,ACC_N=16,ACC_W=4,BAR_N=32,BAR_W=5,BAR_EPOCH_W=48,PHYS_ADDR_W=64,AUTO_VBASE=1,
  parameter HAS_SFU=1,HAS_ATOMICS=1,HAS_SYS_ATOMICS=0,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
  parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
- parameter HYBRID_LSU=0,SFU_LANES=1,HOME_BACKGROUND_READS=0,HOME_LINE_WRITE_NOFILL=0,
+ parameter HYBRID_LSU=0,SFU_LANES=1,HOME_BACKGROUND_READS=0,HOME_LINE_WRITE_NOFILL=0,HOME_LINE_PIPE=0,HOME_MSHR_N=8,LINE_SLOTS=8,MEM_TAG_W=(HOME_MSHR_N>1?$clog2(HOME_MSHR_N):1),
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
  parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,PLATFORM_FAULT=0,CACHE_MAINTENANCE=0
 )(
@@ -44,18 +44,21 @@ module tnca_multicore_shell #(
  output wire [N*64-1:0] fault_pc,output wire [N*24-1:0] fault_detail,
  output wire [MEM_PORTS-1:0] ports_req_valid,input wire [MEM_PORTS-1:0] ports_req_ready,
  output wire [MEM_PORTS*64-1:0] ports_req_addr,output wire [MEM_PORTS-1:0] ports_req_we,
- output wire [MEM_PORTS*512-1:0] ports_req_wdata,output wire [MEM_PORTS*3-1:0] ports_req_tag,
+ output wire [MEM_PORTS*512-1:0] ports_req_wdata,output wire [MEM_PORTS*MEM_TAG_W-1:0] ports_req_tag,
  output wire [MEM_PORTS*SRC_W-1:0] ports_req_src,
- input wire [MEM_PORTS-1:0] ports_rsp_valid,input wire [MEM_PORTS*3-1:0] ports_rsp_tag,
+ input wire [MEM_PORTS-1:0] ports_rsp_valid,input wire [MEM_PORTS*MEM_TAG_W-1:0] ports_rsp_tag,
  input wire [MEM_PORTS*SRC_W-1:0] ports_rsp_src,input wire [MEM_PORTS*512-1:0] ports_rsp_rdata,
  output wire [MEM_PORTS-1:0] memory_protocol_fault,
  output wire [MEM_PORTS*64-1:0] memory_reads,memory_writes,
  output wire mem_req_valid,input wire mem_req_ready,output wire [63:0] mem_req_addr,
  output wire mem_req_we,output wire [511:0] mem_req_wdata,
- output wire [2:0] mem_req_tag,output wire [SRC_W-1:0] mem_req_src,
- input wire mem_rsp_valid,input wire [2:0] mem_rsp_tag,
+ output wire [MEM_TAG_W-1:0] mem_req_tag,output wire [SRC_W-1:0] mem_req_src,
+ input wire mem_rsp_valid,input wire [MEM_TAG_W-1:0] mem_rsp_tag,
  input wire [SRC_W-1:0] mem_rsp_src,input wire [511:0] mem_rsp_rdata
 );
+ // R41 G4: the core port tag: a client bit, a path bit and the line LSU's
+ // slots when they exceed the delivered eight (5 bits on the delivered machine).
+ localparam PORT_TAG_W = (HYBRID_LSU && LINE_SLOTS > 8) ? 2+$clog2(LINE_SLOTS) : 5;
  localparam CODE_BYTES=CODE_WORDS*8;
  wire [N*64-1:0] ia, insn;
  wire [NUM_RCTX*PHYS_W-1:0] effective_vbase;
@@ -175,7 +178,7 @@ module tnca_multicore_shell #(
   .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .PHYS_ADDR_W(PHYS_ADDR_W),
   .HAS_SFU(HAS_SFU),.HAS_ATOMICS(HAS_ATOMICS),.HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),.USE_BANKED_VRF(USE_BANKED_VRF),.VRF_BYPASS(VRF_BYPASS),
   .FE_NOBUBBLE(FE_NOBUBBLE),.VRF_PREFETCH(VRF_PREFETCH),.RCTX_SWITCH(RCTX_SWITCH),
-  .MTX_ABUF(MTX_ABUF),.LSU_INFLIGHT(LSU_INFLIGHT),.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.FPU_OVERLAP(FPU_OVERLAP),
+  .MTX_ABUF(MTX_ABUF),.LSU_INFLIGHT(LSU_INFLIGHT),.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.HOME_LINE_PIPE(HOME_LINE_PIPE),.LSU_TAG_W(PORT_TAG_W),.NOC_PAYLOAD_W(HYBRID_LSU ? 720+PORT_TAG_W-5 : 216),.MSHR_N(HOME_MSHR_N),.MSHR_W(MEM_TAG_W),.TARGET_N(HOME_MSHR_N>8?2*HOME_MSHR_N:16),.TARGET_W(HOME_MSHR_N>8?MEM_TAG_W+1:4),.RQ_N(HOME_MSHR_N>8?16:8),.RQ_W(HOME_MSHR_N>8?4:3),.FPU_OVERLAP(FPU_OVERLAP),
   .RSLICE(RSLICE),.RPAIR(RPAIR),.HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
   .SETS(SETS),.SET_W(SET_W),.WAYS(WAYS),.WAY_W(WAY_W)) u_system (
   .ports_req_valid(ports_req_valid),.ports_req_ready(ports_req_ready),.ports_req_addr(ports_req_addr),

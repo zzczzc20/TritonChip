@@ -84,7 +84,9 @@ module tnca_core_ni #(
     // Preserve every legacy bit position at DATA_W=64. Comparison operands
     // remain 64-bit scalar values; wide data/byte enables expand together.
     localparam BE_L=65, DATA_L=BE_L+BYTE_W, SRC_L=DATA_L+DATA_W;
-    localparam TAG_L=SRC_L+4, AMO_L=TAG_L+5, AOP_L=AMO_L+1, CMP_L=AOP_L+4;
+    // The tag field is TAG_W bits (5 on every delivered layout; R41 G4 widens
+    // it with the line LSU's slots, and the payload grows by the same amount).
+    localparam TAG_L=SRC_L+4, AMO_L=TAG_L+TAG_W, AOP_L=AMO_L+1, CMP_L=AOP_L+4;
 
     // ---- home slice ---------------------------------------------------------
     wire [63:0] line = req_addr >> LINE_SH;
@@ -104,7 +106,7 @@ module tnca_core_ni #(
     assign req_payload[BE_L+:BYTE_W]    = req_be;
     assign req_payload[DATA_L+:DATA_W] = req_wdata;
     assign req_payload[SRC_L+:4]   = MY_ID[3:0];
-    assign req_payload[TAG_L+:5]   = req_tag;
+    assign req_payload[TAG_L+:TAG_W] = req_tag;
     assign req_payload[AMO_L]   = req_amo;
     assign req_payload[AOP_L+:4]   = req_aop;
     assign req_payload[CMP_L+:64]   = req_cmp;
@@ -131,7 +133,7 @@ module tnca_core_ni #(
             rsp_valid <= 1'b0;
         end else begin
             rsp_valid <= net_out_valid_rsp;
-            rsp_tag   <= net_out_flit_rsp[DATA_W+:5];
+            rsp_tag   <= net_out_flit_rsp[DATA_W+:TAG_W];
             rsp_rdata <= net_out_flit_rsp[0+:DATA_W];
         end
     end
@@ -140,7 +142,7 @@ module tnca_core_ni #(
 
 `ifndef SYNTHESIS
     initial if ((DATA_W!=64 && DATA_W!=128 && DATA_W!=256 && DATA_W!=512)
-                || BYTE_W!=DATA_W/8 || PAYLOAD_W!=216+DATA_W-64+BYTE_W-8)
+                || BYTE_W!=DATA_W/8 || TAG_W<5 || PAYLOAD_W!=216+DATA_W-64+BYTE_W-8+TAG_W-5)
         $fatal(1,"invalid NI data/mask/payload geometry");
 `endif
 

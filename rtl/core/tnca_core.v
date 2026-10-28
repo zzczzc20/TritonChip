@@ -1669,13 +1669,19 @@ module tnca_core #(
     wire [63:0]          lm_req_addr;
     wire [MEM_BYTES-1:0] lm_req_be;
     wire [MEM_DW-1:0]    lm_req_wdata;
-    wire [CTAG_W-1:0]    lm_req_tag;
+    // R41 G4: the hybrid LSU's tag grows with the port tag (LSU_TAG_W - 1
+    // bits: a path bit and 2^(LSU_TAG_W-2) line slots); the TTE keeps CTAG_W
+    // and is zero-extended into the shared port tag. LSU_TAG_W = 5 is the
+    // delivered machine: every width below is then CTAG_W.
+    localparam MTAG_W = HYBRID_LSU ? LSU_TAG_W-1 : CTAG_W;
+    wire [MTAG_W-1:0]    lm_req_tag;
     wire [1:0]           lm_req_hint;
     wire                 lm_req_amo;
     wire [3:0]           lm_req_aop;
     wire [63:0]          lm_req_cmp;
     wire                 lm_rsp_valid;
-    wire [CTAG_W-1:0]    lm_rsp_tag;
+    wire [MTAG_W-1:0]    lm_rsp_tag;
+    wire [MTAG_W-1:0]    tm_req_tag_m, tm_rsp_tag_m;   // the TTE's tags in the port tag space
     wire [MEM_DW-1:0]    lm_rsp_rdata;
 
     // R39-08: with LSU_INFLIGHT = 2 a load or store may be accepted while
@@ -1730,7 +1736,7 @@ module tnca_core #(
     tnca_lsu_hybrid #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
-        .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
+        .NUM_BEATS(LSU_BEATS), .BEAT_W(MTAG_W)
     ) u_lsu (
         .req_ready_load(hybrid_ready_load),
         .clk(clk), .rst_n(rst_n),
@@ -1873,7 +1879,7 @@ module tnca_core #(
 
     tnca_mem_mux #(
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES),
-        .CTAG_W(CTAG_W), .TAG_W(LSU_TAG_W)
+        .CTAG_W(MTAG_W), .TAG_W(LSU_TAG_W)
     ) u_mmux (
         .a_req_valid(lm_req_valid), .a_req_ready(lm_req_ready),
         .a_req_addr(lm_req_addr), .a_req_we(lm_req_we),
@@ -1885,8 +1891,8 @@ module tnca_core #(
         .b_req_valid(tm_req_valid), .b_req_ready(tm_req_ready),
         .b_req_addr(tm_req_addr), .b_req_we(tm_req_we),
         .b_req_be(tm_req_be), .b_req_wdata(tm_req_wdata),
-        .b_req_tag(tm_req_tag),
-        .b_rsp_valid(tm_rsp_valid), .b_rsp_tag(tm_rsp_tag),
+        .b_req_tag(tm_req_tag_m),
+        .b_rsp_valid(tm_rsp_valid), .b_rsp_tag(tm_rsp_tag_m),
         .b_rsp_rdata(tm_rsp_rdata),
         .m_req_valid(mem_req_valid), .m_req_ready(mem_req_ready),
         .m_req_addr(mem_req_addr), .m_req_we(mem_req_we),
@@ -1991,6 +1997,8 @@ module tnca_core #(
     wire [CTAG_W-1:0]    tm_req_tag;
     wire                 tm_rsp_valid;
     wire [CTAG_W-1:0]    tm_rsp_tag;
+    assign tm_req_tag_m = tm_req_tag;               // zero-extended into the port tag
+    assign tm_rsp_tag = tm_rsp_tag_m[CTAG_W-1:0];
     wire [MEM_DW-1:0]    tm_rsp_rdata;
 
     localparam TENSOR_DW=HYBRID_LSU ? 64 : MEM_DW;

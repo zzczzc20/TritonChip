@@ -59,6 +59,7 @@ module tnca_tile #(
     parameter HYBRID_LSU = 0,
     parameter HOME_BACKGROUND_READS = 0,
     parameter HOME_LINE_WRITE_NOFILL = 0,   // R41 G4: full-line stores allocate without a fill
+    parameter HOME_LINE_PIPE = 0,                // R41 G4: pipelined home (tnca_home_pipe) when HYBRID_LSU
     parameter SFU_LANES = 1,
     parameter NOC_PAYLOAD_W = HYBRID_LSU ? 720 : 216,
     parameter LSU_INFLIGHT = 1,
@@ -190,6 +191,9 @@ module tnca_tile #(
     localparam CORE_DW=HYBRID_LSU ? 512 : 64;
     localparam CORE_BYTES=CORE_DW/8;
     localparam FW = XW + YW + NOC_PAYLOAD_W;
+    // R41 G4: the slice's tag holds the core's whole port tag when the line
+    // LSU's slots widen it (LSU_TAG_W > 5); otherwise it is SLICE_TAG_W.
+    localparam S_TAG_W = LSU_TAG_W > SLICE_TAG_W ? LSU_TAG_W : SLICE_TAG_W;
     localparam [31:0] TILE_ID_32   = TILE_ID;
     localparam [31:0] NUM_TILES_32 = NUM_TILES;
     localparam VR = `TNCA_VN_REQ;
@@ -322,10 +326,10 @@ module tnca_tile #(
     wire [3:0]              s_req_aop;
     wire [63:0]             s_req_cmp;
     wire [SLICE_SRC_W-1:0]  s_req_src;
-    wire [SLICE_TAG_W-1:0]  s_req_tag;
+    wire [S_TAG_W-1:0]  s_req_tag;
     wire                    s_rsp_valid, s_rsp_ready;
     wire [SLICE_SRC_W-1:0]  s_rsp_src;
-    wire [SLICE_TAG_W-1:0]  s_rsp_tag;
+    wire [S_TAG_W-1:0]  s_rsp_tag;
     wire [CORE_DW-1:0] s_rsp_rdata;
 
     wire            ni_in_v_rsp, ni_in_r_rsp;
@@ -335,7 +339,7 @@ module tnca_tile #(
 
     tnca_slice_ni #(
         .DATA_W(CORE_DW),.PAYLOAD_W(NOC_PAYLOAD_W),
-        .NX(NX), .NY(NY), .XW(XW), .YW(YW), .TAG_W(SLICE_TAG_W), .SRC_W(SLICE_SRC_W)
+        .NX(NX), .NY(NY), .XW(XW), .YW(YW), .TAG_W(S_TAG_W), .WTAG_W(LSU_TAG_W), .SRC_W(SLICE_SRC_W)
     ) u_sni (
         .clk(clk), .rst_n(rst_n),
         .req_valid(s_req_valid), .req_ready(s_req_ready),
@@ -379,6 +383,37 @@ module tnca_tile #(
     //==========================================================================
     // Keep private cache lookup/replacement logic with its state, so the
     // tile's SLR constraint also owns the complete combinational cone.
+    localparam HOME_PIPE_ON = HOME_LINE_PIPE && HYBRID_LSU;
+    wire hs_maint_ready, hp_maint_ready;
+    wire hs_maint_done, hp_maint_done;
+    wire hs_req_ready, hp_req_ready;
+    wire hs_rsp_valid, hp_rsp_valid;
+    wire [SLICE_SRC_W-1:0] hs_rsp_src, hp_rsp_src;
+    wire [S_TAG_W-1:0] hs_rsp_tag, hp_rsp_tag;
+    wire [CORE_DW-1:0] hs_rsp_rdata, hp_rsp_rdata;
+    wire hs_mem_req_valid, hp_mem_req_valid;
+    wire [SA_W-1:0] hs_mem_req_addr, hp_mem_req_addr;
+    wire hs_mem_req_we, hp_mem_req_we;
+    wire [LINE_BITS-1:0] hs_mem_req_wdata, hp_mem_req_wdata;
+    wire [MSHR_W-1:0] hs_mem_req_tag, hp_mem_req_tag;
+    wire [31:0] hs_perf_hit, hp_perf_hit;
+    wire [31:0] hs_perf_miss, hp_perf_miss;
+    wire [31:0] hs_perf_merge, hp_perf_merge;
+    wire [31:0] hs_perf_mshr_full, hp_perf_mshr_full;
+    wire [31:0] hs_perf_wb, hp_perf_wb;
+    wire [31:0] hs_perf_hit_past_block, hp_perf_hit_past_block;
+    wire hs_tmu_wr_valid, hp_tmu_wr_valid;
+    wire [11:0] hs_tmu_wr_off, hp_tmu_wr_off;
+    wire [63:0] hs_tmu_wr_data, hp_tmu_wr_data;
+    wire [SLICE_SRC_W-1:0] hs_tmu_wr_src, hp_tmu_wr_src;
+    wire [11:0] hs_tmu_rd_off, hp_tmu_rd_off;
+    wire hs_tmu_tl_valid, hp_tmu_tl_valid;
+    wire [63:0] hs_tmu_tl_addr, hp_tmu_tl_addr;
+    wire hs_tmu_tl_drop, hp_tmu_tl_drop;
+    wire [31:0] hs_perf_bypass, hp_perf_bypass;
+    wire [31:0] hs_perf_evict, hp_perf_evict;
+    wire [31:0] hs_perf_dead_evict, hp_perf_dead_evict;
+    wire [3:0] hs_perf_gear, hp_perf_gear;
     (* KEEP_HIERARCHY = "yes" *) tnca_nuca_slice #(
         .REGISTER_VICTIM_OWNER(1), .REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .SHARED_DATA_READ(NUCA_SHARED_DATA_READ), .REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK), .MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .FULL_LINE_TAG(!(NX==2 && NY==2)),
@@ -388,40 +423,92 @@ module tnca_tile #(
         .MSHR_N(MSHR_N), .MSHR_W(MSHR_W),
         .TARGET_N(TARGET_N), .TARGET_W(TARGET_W),
         .RQ_N(RQ_N), .RQ_W(RQ_W),
-        .SRC_W(SLICE_SRC_W), .TAG_W(SLICE_TAG_W),
+        .SRC_W(SLICE_SRC_W), .TAG_W(S_TAG_W),
         .SLICE_ID(TILE_ID),
         .DCO_T(DCO_T), .DCO_DEAD(DCO_DEAD), .DCO_ID_W(DCO_ID_W),
         .TMU_BASE(TMU_BASE)
     ) u_slice (
         .clk(clk), .rst_n(rst_n),
-        .maint_valid(cache_maint_valid),.maint_base(sl_maint_base),.maint_size(sl_maint_size),
-        .maint_ready(cache_maint_ready),.maint_done(cache_maint_done),.maint_busy(),
-        .req_ready(s_req_ready), .req_valid(s_req_valid),
+        .maint_valid(cache_maint_valid && !HOME_PIPE_ON),.maint_base(sl_maint_base),.maint_size(sl_maint_size),
+        .maint_ready(hs_maint_ready),.maint_done(hs_maint_done),.maint_busy(),
+        .req_ready(hs_req_ready), .req_valid(s_req_valid && !HOME_PIPE_ON),
         .req_addr(sl_req_addr), .req_we(s_req_we), .req_be(s_req_be),
         .req_wdata(s_req_wdata), .req_src(s_req_src), .req_tag(s_req_tag),
         .req_amo(s_req_amo), .req_aop(s_req_aop), .req_cmp({{(CORE_DW-64){1'b0}},s_req_cmp}),
-        .rsp_valid(s_rsp_valid), .rsp_ready(s_rsp_ready),
-        .rsp_src(s_rsp_src), .rsp_tag(s_rsp_tag), .rsp_rdata(s_rsp_rdata),
-        .mem_req_valid(mem_req_valid), .mem_req_ready(mem_req_ready),
-        .mem_req_addr(sl_mem_req_addr), .mem_req_we(mem_req_we),
-        .mem_req_wdata(mem_req_wdata), .mem_req_tag(mem_req_tag),
-        .mem_rsp_valid(mem_rsp_valid), .mem_rsp_tag(mem_rsp_tag),
+        .rsp_valid(hs_rsp_valid), .rsp_ready(s_rsp_ready),
+        .rsp_src(hs_rsp_src), .rsp_tag(hs_rsp_tag), .rsp_rdata(hs_rsp_rdata),
+        .mem_req_valid(hs_mem_req_valid), .mem_req_ready(mem_req_ready),
+        .mem_req_addr(hs_mem_req_addr), .mem_req_we(hs_mem_req_we),
+        .mem_req_wdata(hs_mem_req_wdata), .mem_req_tag(hs_mem_req_tag),
+        .mem_rsp_valid(mem_rsp_valid && !HOME_PIPE_ON), .mem_rsp_tag(mem_rsp_tag),
         .mem_rsp_rdata(mem_rsp_rdata),
-        .perf_hit(perf_hit), .perf_miss(perf_miss), .perf_merge(perf_merge),
-        .perf_mshr_full(perf_mshr_full), .perf_target_full(),
-        .perf_wb(perf_wb), .perf_hit_past_block(perf_hit_past_block),
+        .perf_hit(hs_perf_hit), .perf_miss(hs_perf_miss), .perf_merge(hs_perf_merge),
+        .perf_mshr_full(hs_perf_mshr_full), .perf_target_full(),
+        .perf_wb(hs_perf_wb), .perf_hit_past_block(hs_perf_hit_past_block),
         .dco_owner_epoch(dco_owner_epoch), .dco_cfg(dco_cfg), .dco_t_valid(dco_t_valid), .dco_t_base(dco_t_base),
         .dco_t_end(dco_t_end), .dco_t_size(dco_t_size), .dco_t_bypass(dco_t_bypass), .dco_t_lsb(dco_t_lsb),
         .dco_dead_valid(dco_dead_valid), .dco_dead_id(dco_dead_id),
         .dco_slow(dco_slow),
-        .tmu_wr_valid(tmu_wr_valid), .tmu_wr_ready(tmu_wr_ready),
-        .tmu_wr_off(tmu_wr_off), .tmu_wr_data(tmu_wr_data), .tmu_wr_src(tmu_wr_src),
-        .tmu_rd_off(tmu_rd_off), .tmu_rd_data(tmu_rd_data),
-        .tmu_tl_valid(tmu_tl_valid), .tmu_tl_ready(tmu_tl_ready),
-        .tmu_tl_addr(tmu_tl_addr), .tmu_tl_drop(tmu_tl_drop),   // a 64-bit port at any ADDR_W
-        .perf_bypass(perf_bypass), .perf_evict(perf_evict),
-        .perf_dead_evict(perf_dead_evict), .perf_gear(perf_gear)
+        .tmu_wr_valid(hs_tmu_wr_valid), .tmu_wr_ready(tmu_wr_ready),
+        .tmu_wr_off(hs_tmu_wr_off), .tmu_wr_data(hs_tmu_wr_data), .tmu_wr_src(hs_tmu_wr_src),
+        .tmu_rd_off(hs_tmu_rd_off), .tmu_rd_data(tmu_rd_data),
+        .tmu_tl_valid(hs_tmu_tl_valid), .tmu_tl_ready(tmu_tl_ready),
+        .tmu_tl_addr(hs_tmu_tl_addr), .tmu_tl_drop(hs_tmu_tl_drop),   // a 64-bit port at any ADDR_W
+        .perf_bypass(hs_perf_bypass), .perf_evict(hs_perf_evict),
+        .perf_dead_evict(hs_perf_dead_evict), .perf_gear(hs_perf_gear)
     );
+
+    // R41 G4: the pipelined home. The serial slice above stays the instance
+    // u_slice in every build (its hierarchy is unchanged); with HOME_LINE_PIPE it
+    // receives no request and its outputs are not used.
+    generate if (HOME_PIPE_ON) begin : g_home_pipe
+    (* KEEP_HIERARCHY = "yes" *) tnca_home_pipe #(
+        .MAINTENANCE(CACHE_MAINTENANCE), .FULL_LINE_TAG(!(NX==2 && NY==2)),
+        .ADDR_W(SA_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
+        .WORD_BITS(CORE_DW), .WORD_BYTES(CORE_BYTES), .LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),
+        .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
+        .MSHR_N(MSHR_N), .MSHR_W(MSHR_W), .TARGET_N(TARGET_N), .TARGET_W(TARGET_W),
+        .RQ_N(RQ_N), .RQ_W(RQ_W), .SRC_W(SLICE_SRC_W), .TAG_W(S_TAG_W),
+        .SLICE_ID(TILE_ID), .DCO_T(DCO_T), .DCO_DEAD(DCO_DEAD), .DCO_ID_W(DCO_ID_W), .TMU_BASE(TMU_BASE)
+    ) u_home_pipe (
+        .clk(clk), .rst_n(rst_n), .maint_valid(cache_maint_valid), .maint_base(sl_maint_base), .maint_size(sl_maint_size), .maint_busy(), .req_valid(s_req_valid), .req_addr(sl_req_addr), .req_we(s_req_we), .req_be(s_req_be), .req_wdata(s_req_wdata), .req_src(s_req_src), .req_tag(s_req_tag), .req_amo(s_req_amo), .req_aop(s_req_aop), .req_cmp({{(CORE_DW-64){1'b0}},s_req_cmp}), .rsp_ready(s_rsp_ready), .mem_req_ready(mem_req_ready), .mem_rsp_valid(mem_rsp_valid), .mem_rsp_tag(mem_rsp_tag), .mem_rsp_rdata(mem_rsp_rdata), .perf_target_full(), .dco_owner_epoch(dco_owner_epoch), .dco_cfg(dco_cfg), .dco_t_valid(dco_t_valid), .dco_t_base(dco_t_base), .dco_t_end(dco_t_end), .dco_t_size(dco_t_size), .dco_t_bypass(dco_t_bypass), .dco_t_lsb(dco_t_lsb), .dco_dead_valid(dco_dead_valid), .dco_dead_id(dco_dead_id), .dco_slow(dco_slow), .tmu_wr_ready(tmu_wr_ready), .tmu_rd_data(tmu_rd_data), .tmu_tl_ready(tmu_tl_ready),
+        .maint_ready(hp_maint_ready), .maint_done(hp_maint_done), .req_ready(hp_req_ready), .rsp_valid(hp_rsp_valid), .rsp_src(hp_rsp_src), .rsp_tag(hp_rsp_tag), .rsp_rdata(hp_rsp_rdata), .mem_req_valid(hp_mem_req_valid), .mem_req_addr(hp_mem_req_addr), .mem_req_we(hp_mem_req_we), .mem_req_wdata(hp_mem_req_wdata), .mem_req_tag(hp_mem_req_tag), .perf_hit(hp_perf_hit), .perf_miss(hp_perf_miss), .perf_merge(hp_perf_merge), .perf_mshr_full(hp_perf_mshr_full), .perf_wb(hp_perf_wb), .perf_hit_past_block(hp_perf_hit_past_block), .tmu_wr_valid(hp_tmu_wr_valid), .tmu_wr_off(hp_tmu_wr_off), .tmu_wr_data(hp_tmu_wr_data), .tmu_wr_src(hp_tmu_wr_src), .tmu_rd_off(hp_tmu_rd_off), .tmu_tl_valid(hp_tmu_tl_valid), .tmu_tl_addr(hp_tmu_tl_addr), .tmu_tl_drop(hp_tmu_tl_drop), .perf_bypass(hp_perf_bypass), .perf_evict(hp_perf_evict), .perf_dead_evict(hp_perf_dead_evict), .perf_gear(hp_perf_gear)
+    );
+    end endgenerate
+    assign cache_maint_ready = HOME_PIPE_ON ? hp_maint_ready : hs_maint_ready;
+    assign cache_maint_done = HOME_PIPE_ON ? hp_maint_done : hs_maint_done;
+    assign s_req_ready = HOME_PIPE_ON ? hp_req_ready : hs_req_ready;
+    assign s_rsp_valid = HOME_PIPE_ON ? hp_rsp_valid : hs_rsp_valid;
+    assign s_rsp_src = HOME_PIPE_ON ? hp_rsp_src : hs_rsp_src;
+    assign s_rsp_tag = HOME_PIPE_ON ? hp_rsp_tag : hs_rsp_tag;
+    assign s_rsp_rdata = HOME_PIPE_ON ? hp_rsp_rdata : hs_rsp_rdata;
+    assign mem_req_valid = HOME_PIPE_ON ? hp_mem_req_valid : hs_mem_req_valid;
+    assign sl_mem_req_addr = HOME_PIPE_ON ? hp_mem_req_addr : hs_mem_req_addr;
+    assign mem_req_we = HOME_PIPE_ON ? hp_mem_req_we : hs_mem_req_we;
+    assign mem_req_wdata = HOME_PIPE_ON ? hp_mem_req_wdata : hs_mem_req_wdata;
+    assign mem_req_tag = HOME_PIPE_ON ? hp_mem_req_tag : hs_mem_req_tag;
+    assign perf_hit = HOME_PIPE_ON ? hp_perf_hit : hs_perf_hit;
+    assign perf_miss = HOME_PIPE_ON ? hp_perf_miss : hs_perf_miss;
+    assign perf_merge = HOME_PIPE_ON ? hp_perf_merge : hs_perf_merge;
+    assign perf_mshr_full = HOME_PIPE_ON ? hp_perf_mshr_full : hs_perf_mshr_full;
+    assign perf_wb = HOME_PIPE_ON ? hp_perf_wb : hs_perf_wb;
+    assign perf_hit_past_block = HOME_PIPE_ON ? hp_perf_hit_past_block : hs_perf_hit_past_block;
+    assign tmu_wr_valid = HOME_PIPE_ON ? hp_tmu_wr_valid : hs_tmu_wr_valid;
+    assign tmu_wr_off = HOME_PIPE_ON ? hp_tmu_wr_off : hs_tmu_wr_off;
+    assign tmu_wr_data = HOME_PIPE_ON ? hp_tmu_wr_data : hs_tmu_wr_data;
+    assign tmu_wr_src = HOME_PIPE_ON ? hp_tmu_wr_src : hs_tmu_wr_src;
+    assign tmu_rd_off = HOME_PIPE_ON ? hp_tmu_rd_off : hs_tmu_rd_off;
+    assign tmu_tl_valid = HOME_PIPE_ON ? hp_tmu_tl_valid : hs_tmu_tl_valid;
+    assign tmu_tl_addr = HOME_PIPE_ON ? hp_tmu_tl_addr : hs_tmu_tl_addr;
+    assign tmu_tl_drop = HOME_PIPE_ON ? hp_tmu_tl_drop : hs_tmu_tl_drop;
+    assign perf_bypass = HOME_PIPE_ON ? hp_perf_bypass : hs_perf_bypass;
+    assign perf_evict = HOME_PIPE_ON ? hp_perf_evict : hs_perf_evict;
+    assign perf_dead_evict = HOME_PIPE_ON ? hp_perf_dead_evict : hs_perf_dead_evict;
+    assign perf_gear = HOME_PIPE_ON ? hp_perf_gear : hs_perf_gear;
+    // home observation for testbench probes (est of whichever home is in use)
+    wire [3:0] home_est;
+    generate if (HOME_PIPE_ON) begin : g_home_est assign home_est = g_home_pipe.u_home_pipe.est; end
+    else begin : g_home_est_s assign home_est = u_slice.est; end endgenerate
 
     //==========================================================================
     // Local mesh port

@@ -76,7 +76,7 @@ module tnca_lsu_line #(
             endcase
         end
     end
-    reg [511:0] landing[0:SLOTS-1];
+    (* ram_style = "distributed" *) reg [511:0] landing[0:SLOTS-1];   // one write (response), one read (completion)
     reg [5:0] offset[0:SLOTS-1];
     reg [1:0] size[0:SLOTS-1];
     reg signed_load[0:SLOTS-1],store[0:SLOTS-1];
@@ -154,8 +154,8 @@ module tnca_lsu_line #(
         end
     end
 `ifndef SYNTHESIS
-    initial if((SLOTS!=2 && SLOTS!=4 && SLOTS!=8) || SLOTS!=(1<<TAG_W))
-        $fatal(1,"line LSU slots must match finite tag space (2|4|8)");
+    initial if(SLOTS<2 || SLOTS>64 || SLOTS!=(1<<TAG_W))
+        $fatal(1,"line LSU slots must match finite tag space (2..64, a power of two)");
     always @(posedge clk) if(rst_n) begin
         if(mem_rsp_valid && (!valid[mem_rsp_tag] || !issued[mem_rsp_tag] || done[mem_rsp_tag])) $fatal(1,"line LSU invalid/duplicate response");
         if(admit && valid[free_tag]) $fatal(1,"line LSU slot reuse");

@@ -39,7 +39,7 @@ BENCH = ('WAYS', 'WAY_W', 'DCO_REGISTERED_RANGES', 'NUCA_REGISTER_VICTIM_SELECT'
          'NUM_RCTX', 'RCTX_W', 'PHYS_VREGS', 'PHYS_W', 'ACC_N', 'ACC_W', 'BAR_N', 'BAR_W', 'BAR_EPOCH_W',
          'PHYS_ADDR_W', 'NUCA_SHARED_DATA_READ', 'AXI_LINE_LUTRAM',
          # R41 G4 one-lane path options
-         'HOME_LINE_WRITE_NOFILL')
+         'HOME_LINE_WRITE_NOFILL', 'HOME_LINE_PIPE', 'HOME_MSHR_N', 'LINE_SLOTS')
 # image parameter -> backend keyword (the opt-in wide path, G4)
 KWARG = dict(HYBRID_LSU=('hybrid_lsu', bool), HOME_BACKGROUND_READS=('home_background_reads', bool),
              SFU_LANES=('sfu_lanes', int))

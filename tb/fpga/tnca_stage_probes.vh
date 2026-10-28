@@ -55,7 +55,7 @@ generate for(genvar sp_c=0;sp_c<N;sp_c=sp_c+1)begin:g_stage_tile
   c_occ_sum<=c_occ_sum+c_occ;
   h_occ<=h_occ+(`SPT.s_req_valid && `SPT.s_req_ready)-(`SPT.s_rsp_valid && `SPT.s_rsp_ready);
   h_occ_sum<=h_occ_sum+h_occ;
-  case(`SPT.u_slice.est)
+  case(`SPT.home_est)
    4'd0: begin e_sel<=e_sel+1; if(`SPT.s_req_valid) e_sel_wait<=e_sel_wait+1; end
    4'd1: e_look<=e_look+1;
    4'd2: e_hit<=e_hit+1;
@@ -72,7 +72,7 @@ generate for(genvar sp_c=0;sp_c<N;sp_c=sp_c+1)begin:g_stage_tile
   $display("STAGE TILE at=%0s c=%0d t=%0d creq=%0d creq_we=%0d creq_stall=%0d crsp=%0d inj=%0d inj_stall=%0d ej=%0d ej_stall=%0d hreq=%0d hreq_stall=%0d hrsp=%0d hrsp_stall=%0d mreq_rd=%0d mreq_wr=%0d mreq_stall=%0d mrsp=%0d c_occ_sum=%0d h_occ_sum=%0d e_sel=%0d e_sel_wait=%0d e_look=%0d e_hit=%0d e_miss=%0d e_wbrd=%0d e_wbsnd=%0d e_mreq=%0d e_fill=%0d e_wake=%0d e_other=%0d hit=%0d miss=%0d merge=%0d mshr_full=%0d wb=%0d cycles=%0d issued=%0d stall=%0d x_hazard=%0d x_lsu=%0d x_fpu=%0d x_txf=%0d x_vrf=%0d x_vrfwb=%0d x_wb=%0d x_frontend=%0d x_fence=%0d x_rsv=%0d",
    stage_end?"END":"BEGIN",stage_cycle,sp_c,creq,creq_we,creq_stall,crsp,inj,inj_stall,ej,ej_stall,hreq,hreq_stall,hrsp,hrsp_stall,mreq_rd,mreq_wr,mreq_stall,mrsp,c_occ_sum,h_occ_sum,
    e_sel,e_sel_wait,e_look,e_hit,e_miss,e_wbrd,e_wbsnd,e_mreq,e_fill,e_wake,e_other,
-   `SPT.u_slice.perf_hit,`SPT.u_slice.perf_miss,`SPT.u_slice.perf_merge,`SPT.u_slice.perf_mshr_full,`SPT.u_slice.perf_wb,
+   `SPT.perf_hit,`SPT.perf_miss,`SPT.perf_merge,`SPT.perf_mshr_full,`SPT.perf_wb,
    `SPT.u_core.perf_cycles,`SPT.u_core.perf_issued,`SPT.u_core.perf_stall_total,`SPT.u_core.perf_x_hazard,`SPT.u_core.perf_x_lsu,
    `SPT.u_core.perf_x_fpu,`SPT.u_core.perf_x_txf,`SPT.u_core.perf_x_vrf,`SPT.u_core.perf_x_vrfwb,`SPT.u_core.perf_x_wb,
    `SPT.u_core.perf_x_frontend,`SPT.u_core.perf_x_fence,`SPT.u_core.perf_x_rsv);

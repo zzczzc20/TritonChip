@@ -19,6 +19,7 @@ module tnca_slice_ni #(
     parameter XW    = 2,
     parameter YW    = 2,
     parameter TAG_W = 5,
+    parameter WTAG_W = 5,           // the tag on the wire (R41 G4: the core's port tag)
     parameter SRC_W = 4
 ) (
     input  wire                     clk,
@@ -66,7 +67,7 @@ module tnca_slice_ni #(
     // Preserve every legacy bit position at DATA_W=64. Comparison operands
     // remain 64-bit scalar values; wide data/byte enables expand together.
     localparam BE_L=65, DATA_L=BE_L+BYTE_W, SRC_L=DATA_L+DATA_W;
-    localparam TAG_L=SRC_L+4, AMO_L=TAG_L+5, AOP_L=AMO_L+1, CMP_L=AOP_L+4;
+    localparam TAG_L=SRC_L+4, AMO_L=TAG_L+WTAG_W, AOP_L=AMO_L+1, CMP_L=AOP_L+4;
 
     // ---- inbound requests ---------------------------------------------------
     assign req_valid         = net_out_valid_req;
@@ -81,14 +82,14 @@ module tnca_slice_ni #(
     assign req_cmp           = net_out_flit_req[CMP_L+:64];
     // The requester's tag is 3 bits on the wire; the slice's tag field is
     // wider, so zero-extend rather than chain a range onto a range.
-    wire [4:0] req_tag_raw = net_out_flit_req[TAG_L+:5];
-    assign req_tag           = {{(TAG_W-5){1'b0}}, req_tag_raw};
+    wire [WTAG_W-1:0] req_tag_raw = net_out_flit_req[TAG_L+:WTAG_W];
+    assign req_tag           = req_tag_raw;   // zero-extended to the slice's tag
 
     // ---- outbound responses -------------------------------------------------
     wire [PW-1:0] rsp_payload;
     assign rsp_payload[0+:DATA_W] = rsp_rdata;
-    assign rsp_payload[DATA_W+:5]   = rsp_tag[4:0];
-    assign rsp_payload[PW-1:DATA_W+5] = {(PW-DATA_W-5){1'b0}};
+    assign rsp_payload[DATA_W+:WTAG_W] = rsp_tag[WTAG_W-1:0];
+    assign rsp_payload[PW-1:DATA_W+WTAG_W] = {(PW-DATA_W-WTAG_W){1'b0}};
 
     // The requester's tile id decodes to mesh coordinates here, which is the
     // only place in the design that knows the topology.
@@ -108,7 +109,7 @@ module tnca_slice_ni #(
 
 `ifndef SYNTHESIS
     initial if ((DATA_W!=64 && DATA_W!=128 && DATA_W!=256 && DATA_W!=512)
-                || BYTE_W!=DATA_W/8 || PAYLOAD_W!=216+DATA_W-64+BYTE_W-8)
+                || BYTE_W!=DATA_W/8 || WTAG_W<5 || TAG_W<WTAG_W || PAYLOAD_W!=216+DATA_W-64+BYTE_W-8+WTAG_W-5)
         $fatal(1,"invalid NI data/mask/payload geometry");
 `endif
 

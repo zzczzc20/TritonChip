@@ -124,6 +124,8 @@ def main():
     ap.add_argument('--image-tcl', default=str(ROOT / 'evidence/r40/v2/convergence/attempt03/image.tcl'))
     ap.add_argument('--image-profile', help='the profile the image implements (default: the backend\'s); '
                     'core-vrf-sync-v5-x8-g2 for an R41 G2 image with two contexts')
+    ap.add_argument('--rtl-param', action='append', default=[], metavar='NAME=VALUE',
+                    help='override a board-bench RTL parameter (repeatable)')
     args = ap.parse_args()
     image = image_parameters(args.image_tcl)
     defaults = rtl_defaults()
@@ -139,6 +141,11 @@ def main():
                                  'and has no bench parameter')
         else:
             raise SystemExit(f'image parameter {name} is unknown to the bench and the RTL top')
+    for item in args.rtl_param:
+        name, separator, value = item.partition('=')
+        if not separator or not re.fullmatch(r'[A-Z][A-Z0-9_]*', name) or not re.fullmatch(r'\d+', value):
+            ap.error(f'--rtl-param expects NAME=VALUE with a non-negative integer, got {item!r}')
+        bench[name] = int(value)
     stages = {link[k] for k in ('link_stages', 'noc_link_stages', 'dispatch_stages', 'home_stages', 'code_stages')}
     print(f'IMAGE GEOMETRY parameters={image}', flush=True)
     lk = ImageLink(bench_parameters=bench, core_count=3, memory_ports=link['memory_ports'],

@@ -1,0 +1,1024 @@
+{
+ "domain": "model-prediction-uncalibrated",
+ "clock_hz_configured": 100000000,
+ "cores": 3,
+ "suite": "spec/r40/suites/hbm.json",
+ "suite_sha256": "22dbb1603d3d5031ba08097729bf4040365bbbea42a0c36c72ee4a71a35fae5b",
+ "size": "all",
+ "binary": "/home/zhongchun/r41-g4-mb/tnca-chip",
+ "variants": {
+  "run1": {
+   "returncode": 1,
+   "config": {
+    "nx": "3",
+    "ny": "1",
+    "sets": "32",
+    "ways": "8",
+    "full_line_tag": "1",
+    "mshrs": "8",
+    "targets": "16",
+    "outlets": "3",
+    "active_outlets": "3",
+    "outstanding": "8",
+    "core_window": "32",
+    "clock_hz": "100000000",
+    "memory_base": "0",
+    "memory_bytes": "1073741824",
+    "pc_bytes": "268435456",
+    "pc_count": "32",
+    "pc_first": "0",
+    "lookup_cycles": "3",
+    "service_cycles": "1",
+    "noc_stages": "3",
+    "noc_bytes_per_cycle": "16",
+    "hbm_latency_cycles": "23",
+    "hbm_bytes_per_cycle": "32",
+    "outlet_issue_cycles": "1",
+    "trace_events": "100000",
+    "dma_queue": "1",
+    "dma_unit_slots": "8",
+    "dma_outstanding": "16",
+    "dma_setup_cycles": "2",
+    "dma_rf_cycles": "1",
+    "issue_cycles": "1",
+    "scalar_latency": "1",
+    "scalar_mul_latency": "5",
+    "vector_int_latency": "3",
+    "vector_fp_latency": "5",
+    "convert_latency": "5",
+    "compare_latency": "1",
+    "predicate_latency": "2",
+    "shuffle_latency": "3",
+    "reduction_latency": "1",
+    "fp_reduction_latency": "16",
+    "sfu_occupancy": "22",
+    "sfu_latency": "23",
+    "load_latency": "5",
+    "lsu_slots": "2",
+    "lsu_beat_slots": "8",
+    "barrier_latency": "2",
+    "acc_read_latency": "3",
+    "mtx_abuf": "1",
+    "mtx_rf_read_cycles": "2",
+    "mtx_mac_cycles": "1",
+    "mtx_mac_unbuffered_cycles": "2",
+    "mtx_pipe_cycles": "4",
+    "mtx_complete_cycles": "1",
+    "mtx_zero_cycles": "16",
+    "mtx_row_cycles": "1",
+    "launch_cycles": "5",
+    "dispatch_cycles": "6",
+    "host_launch_cycles": "0",
+    "host_transfer_cycles": "0",
+    "host_transfer_cycles_per_kib": "0",
+    "memory_model": "1",
+    "tl_noc_inject_cycles": "1",
+    "tl_noc_eject_cycles": "2",
+    "tl_slice_hit_occupancy": "3",
+    "tl_slice_hit_latency": "4",
+    "tl_slice_miss_occupancy": "4",
+    "tl_slice_mreq_occupancy": "2",
+    "tl_slice_fill_occupancy": "2",
+    "tl_slice_wake_occupancy": "2",
+    "tl_slice_writeback_occupancy": "2",
+    "tl_slice_to_outlet_cycles": "4",
+    "tl_outlet_to_slice_cycles": "13",
+    "tl_outlet_read_issue_cycles": "2",
+    "tl_outlet_write_issue_cycles": "3",
+    "tl_outlet_beat_cycles": "1",
+    "tl_hbm_write_latency_cycles": "23",
+    "core_pipeline": "1",
+    "branch_taken_cycles": "4",
+    "park_refetch_cycles": "5",
+    "vrf_banks": "4",
+    "vrf_bank_conflict_cycles": "1",
+    "lsu_setup_cycles": "1",
+    "lsu_vector_load_extra": "1",
+    "lsu_complete_cycles": "3",
+    "lsu_writeback_cycles": "1",
+    "fp_compare_latency": "4",
+    "shuffle_scalar_latency": "1",
+    "reduction_vector_extra": "2",
+    "dma_store_register_cycles": "3",
+    "dma_drain_cycles": "2",
+    "vrf_prefetch": "1",
+    "fp_reduction_vector_extra": "1",
+    "time_quantum": "1000",
+    "dram_path": "0",
+    "dram_fixed_cycles": "20",
+    "dram_clock_ratio": "10",
+    "dram_max_passes": "3",
+    "dram_tolerance_ppm": "5000"
+   },
+   "points": {
+    "model.gpt2_block/medium/fp16-d160-h5-b1-s64": {
+     "status": "pass",
+     "device_cycles": 3740308,
+     "demand_bytes": 659520,
+     "b_per_cycle_per_core": 0.058775908294183256,
+     "gb_per_s_at_100mhz": 0.01763277248825498,
+     "max_rel_err": 0.0002688096589436818
+    },
+    "model.gpt2_block/small/fp16-d128-h4-b1-s64": {
+     "status": "pass",
+     "device_cycles": 2658310,
+     "demand_bytes": 429312,
+     "b_per_cycle_per_core": 0.053832698218040785,
+     "gb_per_s_at_100mhz": 0.016149809465412234,
+     "max_rel_err": 0.000271834996531019
+    },
+    "model.gpt2_block/tiny/fp16-d64-h4-b1-s16": {
+     "status": "pass",
+     "device_cycles": 161300,
+     "demand_bytes": 104064,
+     "b_per_cycle_per_core": 0.2150526968381897,
+     "gb_per_s_at_100mhz": 0.06451580905145692,
+     "max_rel_err": 0.00028864731984040254
+    },
+    "model.llama_decode/hbm/fp16-b1-p512": {
+     "status": "pass",
+     "device_cycles": 171320002,
+     "demand_bytes": 157899272,
+     "b_per_cycle_per_core": 0.30722093189484473,
+     "gb_per_s_at_100mhz": 0.09216627956845343,
+     "max_rel_err": 0.0014924691146655498
+    },
+    "model.llama_decode/large/fp16-b1-p512": {
+     "status": "capacity-exceeded",
+     "device_cycles": null,
+     "demand_bytes": 2488699400,
+     "b_per_cycle_per_core": null,
+     "gb_per_s_at_100mhz": null,
+     "max_rel_err": null
+    },
+    "model.llama_decode/medium/fp16-b1-p256": {
+     "status": "pass",
+     "device_cycles": 13098141,
+     "demand_bytes": 3659784,
+     "b_per_cycle_per_core": 0.09313749180131746,
+     "gb_per_s_at_100mhz": 0.027941247540395238,
+     "max_rel_err": 0.0006621181964874268
+    },
+    "model.llama_decode/small/fp16-b1-p128": {
+     "status": "pass",
+     "device_cycles": 3314365,
+     "demand_bytes": 1741320,
+     "b_per_cycle_per_core": 0.17512856912259211,
+     "gb_per_s_at_100mhz": 0.05253857073677764,
+     "max_rel_err": 0.0003879070281982422
+    },
+    "model.llama_decode/tiny/fp16-b1-p16": {
+     "status": "pass",
+     "device_cycles": 376594,
+     "demand_bytes": 185864,
+     "b_per_cycle_per_core": 0.16451315386508195,
+     "gb_per_s_at_100mhz": 0.049353946159524584,
+     "max_rel_err": 0.0002503395080566406
+    },
+    "model.gpt2_block/large/fp16-d1024-h16-b1-s512": {
+     "status": "pass",
+     "device_cycles": 1109883302,
+     "demand_bytes": 27289600,
+     "b_per_cycle_per_core": 0.00819593674122447,
+     "gb_per_s_at_100mhz": 0.0024587810223673408,
+     "max_rel_err": 0.0004258808587144541
+    },
+    "model.llama_prefill/large/fp16-b1-s512": {
+     "status": "capacity-exceeded",
+     "device_cycles": null,
+     "demand_bytes": 2473986560,
+     "b_per_cycle_per_core": null,
+     "gb_per_s_at_100mhz": null,
+     "max_rel_err": null
+    },
+    "model.llama_prefill/medium/fp16-b1-s64": {
+     "status": "pass",
+     "device_cycles": 22833887,
+     "demand_bytes": 3421312,
+     "b_per_cycle_per_core": 0.0499449495100564,
+     "gb_per_s_at_100mhz": 0.014983484853016921,
+     "max_rel_err": 0.0006047487258911133
+    },
+    "model.llama_prefill/small/fp16-b1-s64": {
+     "status": "pass",
+     "device_cycles": 12342043,
+     "demand_bytes": 1625856,
+     "b_per_cycle_per_core": 0.04391104454910747,
+     "gb_per_s_at_100mhz": 0.013173313364732243,
+     "max_rel_err": 0.00038501620292663574
+    },
+    "model.llama_prefill/tiny/fp16-b1-s16": {
+     "status": "pass",
+     "device_cycles": 540870,
+     "demand_bytes": 183552,
+     "b_per_cycle_per_core": 0.11312145247471667,
+     "gb_per_s_at_100mhz": 0.033936435742415,
+     "max_rel_err": 0.0002256929874420166
+    },
+    "model.mlp/large/fp16-t512-d2048": {
+     "status": "pass",
+     "device_cycles": 1348538207,
+     "demand_bytes": 71323648,
+     "b_per_cycle_per_core": 0.017629867073787202,
+     "gb_per_s_at_100mhz": 0.005288960122136161,
+     "max_rel_err": 0.0004636324810777682
+    },
+    "model.mlp/medium/fp16-t128-d128": {
+     "status": "pass",
+     "device_cycles": 1298960,
+     "demand_bytes": 328960,
+     "b_per_cycle_per_core": 0.08441625094947752,
+     "gb_per_s_at_100mhz": 0.025324875284843257,
+     "max_rel_err": 0.00040567690352445176
+    },
+    "model.mlp/small/fp16-t64-d128": {
+     "status": "pass",
+     "device_cycles": 682453,
+     "demand_bytes": 296192,
+     "b_per_cycle_per_core": 0.14467028010231717,
+     "gb_per_s_at_100mhz": 0.043401084030695154,
+     "max_rel_err": 0.0004595775098984854
+    },
+    "model.mlp/tiny/fp16-t16-d64": {
+     "status": "pass",
+     "device_cycles": 51806,
+     "demand_bytes": 70272,
+     "b_per_cycle_per_core": 0.45214839979925103,
+     "gb_per_s_at_100mhz": 0.1356445199397753,
+     "max_rel_err": 0.0004260301140295764
+    },
+    "model.resnet_block/large/fp32-n8-c64-hw56": {
+     "status": "pass",
+     "device_cycles": 961188799,
+     "demand_bytes": 13142016,
+     "b_per_cycle_per_core": 0.00455755623094813,
+     "gb_per_s_at_100mhz": 0.0013672668692844391,
+     "max_rel_err": 4.2895606288839045e-07
+    },
+    "model.resnet_block/medium/fp32-n1-c24-hw16": {
+     "status": "pass",
+     "device_cycles": 3178858,
+     "demand_bytes": 91392,
+     "b_per_cycle_per_core": 0.009583315769373782,
+     "gb_per_s_at_100mhz": 0.002874994730812135,
+     "max_rel_err": 2.7203150516555184e-07
+    },
+    "model.resnet_block/small/fp32-n1-c16-hw16": {
+     "status": "pass",
+     "device_cycles": 718524,
+     "demand_bytes": 51712,
+     "b_per_cycle_per_core": 0.023989920076898385,
+     "gb_per_s_at_100mhz": 0.007196976023069516,
+     "max_rel_err": 2.0612188335784598e-07
+    },
+    "model.resnet_block/tiny/fp32-n1-c8-hw8": {
+     "status": "pass",
+     "device_cycles": 196329,
+     "demand_bytes": 8960,
+     "b_per_cycle_per_core": 0.015212559869742457,
+     "gb_per_s_at_100mhz": 0.004563767960922737,
+     "max_rel_err": 1.278855455060252e-07
+    },
+    "op.add/hbm/fp16-n67108864": {
+     "status": "pass",
+     "device_cycles": 181388735,
+     "demand_bytes": 402653184,
+     "b_per_cycle_per_core": 0.7399452231694542,
+     "gb_per_s_at_100mhz": 0.2219835669508363,
+     "max_rel_err": 0.00024740227610094015
+    },
+    "op.add/large/fp16-n16777216": {
+     "status": "pass",
+     "device_cycles": 45386475,
+     "demand_bytes": 100663296,
+     "b_per_cycle_per_core": 0.7393046496781254,
+     "gb_per_s_at_100mhz": 0.22179139490343763,
+     "max_rel_err": 0.00024789291026276647
+    },
+    "op.add/medium/fp16-n49152": {
+     "status": "pass",
+     "device_cycles": 132515,
+     "demand_bytes": 294912,
+     "b_per_cycle_per_core": 0.7418330000377317,
+     "gb_per_s_at_100mhz": 0.2225499000113195,
+     "max_rel_err": 0.0003259452411994785
+    },
+    "op.add/small/fp16-n16384": {
+     "status": "pass",
+     "device_cycles": 44505,
+     "demand_bytes": 98304,
+     "b_per_cycle_per_core": 0.7362768228288957,
+     "gb_per_s_at_100mhz": 0.22088304684866872,
+     "max_rel_err": 0.00030330603579011223
+    },
+    "op.add/tiny/fp16-n1000": {
+     "status": "pass",
+     "device_cycles": 1836,
+     "demand_bytes": 6000,
+     "b_per_cycle_per_core": 1.0893246187363834,
+     "gb_per_s_at_100mhz": 0.32679738562091504,
+     "max_rel_err": 0.0003009328919650918
+    },
+    "op.add/tiny/fp32-n256": {
+     "status": "pass",
+     "device_cycles": 771,
+     "demand_bytes": 3072,
+     "b_per_cycle_per_core": 1.3281452658884565,
+     "gb_per_s_at_100mhz": 0.398443579766537,
+     "max_rel_err": 0.0
+    },
+    "op.argmax/large/fp16-r64-v128256": {
+     "status": "pass",
+     "device_cycles": 9556951,
+     "demand_bytes": 16417280,
+     "b_per_cycle_per_core": 0.572612192598525,
+     "gb_per_s_at_100mhz": 0.1717836577795575,
+     "max_rel_err": 0.0
+    },
+    "op.argmax/medium/fp16-r32-v4096": {
+     "status": "pass",
+     "device_cycles": 147129,
+     "demand_bytes": 262400,
+     "b_per_cycle_per_core": 0.594489642875753,
+     "gb_per_s_at_100mhz": 0.17834689286272593,
+     "max_rel_err": 0.0
+    },
+    "op.argmax/small/fp16-r8-v2048": {
+     "status": "pass",
+     "device_cycles": 24671,
+     "demand_bytes": 32832,
+     "b_per_cycle_per_core": 0.44359774634185883,
+     "gb_per_s_at_100mhz": 0.13307932390255767,
+     "max_rel_err": 0.0
+    },
+    "op.argmax/tiny/fp16-r2-v256": {
+     "status": "pass",
+     "device_cycles": 2905,
+     "demand_bytes": 1040,
+     "b_per_cycle_per_core": 0.11933448078026392,
+     "gb_per_s_at_100mhz": 0.03580034423407918,
+     "max_rel_err": 0.0
+    },
+    "op.attention_decode/large/fp16-b1-h32-l2048-d64": {
+     "status": "pass",
+     "device_cycles": 26353493,
+     "demand_bytes": 16785408,
+     "b_per_cycle_per_core": 0.212310982836317,
+     "gb_per_s_at_100mhz": 0.0636932948508951,
+     "max_rel_err": 5.710124969482422e-05
+    },
+    "op.attention_decode/medium/fp16-b1-h8-l256-d32": {
+     "status": "pass",
+     "device_cycles": 422343,
+     "demand_bytes": 263168,
+     "b_per_cycle_per_core": 0.20770479602282188,
+     "gb_per_s_at_100mhz": 0.062311438806846565,
+     "max_rel_err": 9.641051292419434e-05
+    },
+    "op.attention_decode/small/fp16-b1-h4-l256-d32": {
+     "status": "pass",
+     "device_cycles": 213570,
+     "demand_bytes": 131584,
+     "b_per_cycle_per_core": 0.20537216525417115,
+     "gb_per_s_at_100mhz": 0.06161164957625135,
+     "max_rel_err": 9.641051292419434e-05
+    },
+    "op.attention_decode/tiny/fp16-b1-h2-l16-d16": {
+     "status": "pass",
+     "device_cycles": 11637,
+     "demand_bytes": 2176,
+     "b_per_cycle_per_core": 0.062329924665578185,
+     "gb_per_s_at_100mhz": 0.018698977399673456,
+     "max_rel_err": 0.0002162456512451172
+    },
+    "model.llama_prefill/hbm/fp16-b1-s512": {
+     "status": "pass",
+     "device_cycles": 4250542831,
+     "demand_bytes": 156848640,
+     "b_per_cycle_per_core": 0.012300283064716165,
+     "gb_per_s_at_100mhz": 0.0036900849194148495,
+     "max_rel_err": 0.0009694490090565665
+    },
+    "op.attention_prefill/medium/fp16-b1-h4-s96-d32": {
+     "status": "pass",
+     "device_cycles": 3324604,
+     "demand_bytes": 98304,
+     "b_per_cycle_per_core": 0.009856211446536188,
+     "gb_per_s_at_100mhz": 0.002956863433960857,
+     "max_rel_err": 0.00021713849933745582
+    },
+    "op.attention_prefill/small/fp16-b1-h4-s64-d32": {
+     "status": "pass",
+     "device_cycles": 1549707,
+     "demand_bytes": 65536,
+     "b_per_cycle_per_core": 0.014096428120498479,
+     "gb_per_s_at_100mhz": 0.004228928436149543,
+     "max_rel_err": 0.00030923458085006274
+    },
+    "op.attention_prefill/tiny/fp16-b1-h2-s16-d16": {
+     "status": "pass",
+     "device_cycles": 30087,
+     "demand_bytes": 4096,
+     "b_per_cycle_per_core": 0.04537951053057245,
+     "gb_per_s_at_100mhz": 0.013613853159171735,
+     "max_rel_err": 0.0002356018538251215
+    },
+    "op.bmm/large/fp16-b32-m512-k64-n512": {
+     "status": "pass",
+     "device_cycles": 765530620,
+     "demand_bytes": 20971520,
+     "b_per_cycle_per_core": 0.00913158335412719,
+     "gb_per_s_at_100mhz": 0.002739475006238157,
+     "max_rel_err": 0.0003217243165402465
+    },
+    "op.bmm/medium/fp16-b16-m64-k32-n64": {
+     "status": "pass",
+     "device_cycles": 3093915,
+     "demand_bytes": 262144,
+     "b_per_cycle_per_core": 0.02824296508899997,
+     "gb_per_s_at_100mhz": 0.008472889526699992,
+     "max_rel_err": 0.00026487573086833057
+    },
+    "op.bmm/small/fp16-b8-m64-k32-n64": {
+     "status": "pass",
+     "device_cycles": 1587622,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.02751956490062916,
+     "gb_per_s_at_100mhz": 0.008255869470188748,
+     "max_rel_err": 0.00026487573086833057
+    },
+    "op.bmm/tiny/fp16-b2-m16-k16-n16": {
+     "status": "pass",
+     "device_cycles": 2030,
+     "demand_bytes": 3072,
+     "b_per_cycle_per_core": 0.5044334975369459,
+     "gb_per_s_at_100mhz": 0.15133004926108376,
+     "max_rel_err": 0.0004098407477536124
+    },
+    "op.attention_prefill/large/fp16-b1-h32-s512-d64": {
+     "status": "pass",
+     "device_cycles": 1154053747,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 0.0024229397235055006,
+     "gb_per_s_at_100mhz": 0.0007268819170516502,
+     "max_rel_err": 0.00026275715286939316
+    },
+    "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24": {
+     "status": "pass",
+     "device_cycles": 1547763,
+     "demand_bytes": 69888,
+     "b_per_cycle_per_core": 0.015051399988241093,
+     "gb_per_s_at_100mhz": 0.004515419996472328,
+     "max_rel_err": 5.966770982202807e-07
+    },
+    "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16": {
+     "status": "pass",
+     "device_cycles": 340683,
+     "demand_bytes": 41984,
+     "b_per_cycle_per_core": 0.04107826532778761,
+     "gb_per_s_at_100mhz": 0.012323479598336283,
+     "max_rel_err": 4.3919074712933946e-07
+    },
+    "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8": {
+     "status": "pass",
+     "device_cycles": 86757,
+     "demand_bytes": 4224,
+     "b_per_cycle_per_core": 0.016229237986560164,
+     "gb_per_s_at_100mhz": 0.004868771395968049,
+     "max_rel_err": 2.2609059887405376e-07
+    },
+    "op.copy/hbm/fp16-n67108864": {
+     "status": "pass",
+     "device_cycles": 119737788,
+     "demand_bytes": 268435456,
+     "b_per_cycle_per_core": 0.7472869411395284,
+     "gb_per_s_at_100mhz": 0.22418608234185855,
+     "max_rel_err": 0.0
+    },
+    "op.cumsum/medium/fp32-r128-c256": {
+     "status": "pass",
+     "device_cycles": 102870,
+     "demand_bytes": 262144,
+     "b_per_cycle_per_core": 0.8494345614205631,
+     "gb_per_s_at_100mhz": 0.25483036842616896,
+     "max_rel_err": 1.4183553191409392e-07
+    },
+    "op.cumsum/small/fp32-r64-c256": {
+     "status": "pass",
+     "device_cycles": 54332,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.8041424329431397,
+     "gb_per_s_at_100mhz": 0.24124272988294193,
+     "max_rel_err": 7.091776595704696e-08
+    },
+    "op.cumsum/tiny/fp32-r4-c64": {
+     "status": "pass",
+     "device_cycles": 2185,
+     "demand_bytes": 2048,
+     "b_per_cycle_per_core": 0.3124332570556827,
+     "gb_per_s_at_100mhz": 0.09372997711670482,
+     "max_rel_err": 7.220447382770741e-08
+    },
+    "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64": {
+     "status": "pass",
+     "device_cycles": 448713645,
+     "demand_bytes": 12992512,
+     "b_per_cycle_per_core": 0.009651672913430866,
+     "gb_per_s_at_100mhz": 0.00289550187402926,
+     "max_rel_err": 1.0807534667328953e-06
+    },
+    "op.embedding/large/fp16-v128256-d2048-t512": {
+     "status": "pass",
+     "device_cycles": 18509090,
+     "demand_bytes": 4198400,
+     "b_per_cycle_per_core": 0.075609695920581,
+     "gb_per_s_at_100mhz": 0.022682908776174304,
+     "max_rel_err": 0.0
+    },
+    "op.embedding/medium/fp16-v1024-d128-t256": {
+     "status": "pass",
+     "device_cycles": 549881,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 0.08069624761236219,
+     "gb_per_s_at_100mhz": 0.02420887428370866,
+     "max_rel_err": 0.0
+    },
+    "op.embedding/small/fp16-v1024-d128-t64": {
+     "status": "pass",
+     "device_cycles": 133402,
+     "demand_bytes": 33280,
+     "b_per_cycle_per_core": 0.08315717405536148,
+     "gb_per_s_at_100mhz": 0.024947152216608447,
+     "max_rel_err": 0.0
+    },
+    "op.embedding/tiny/fp16-v256-d64-t16": {
+     "status": "pass",
+     "device_cycles": 18916,
+     "demand_bytes": 4224,
+     "b_per_cycle_per_core": 0.07443434129837175,
+     "gb_per_s_at_100mhz": 0.022330302389511527,
+     "max_rel_err": 0.0
+    },
+    "op.gelu_tanh/large/fp16-n16777216": {
+     "status": "pass",
+     "device_cycles": 67493576,
+     "demand_bytes": 67108864,
+     "b_per_cycle_per_core": 0.33143334016460074,
+     "gb_per_s_at_100mhz": 0.09943000204938024,
+     "max_rel_err": 0.00018378063640763273
+    },
+    "op.gelu_tanh/medium/fp16-n65536": {
+     "status": "pass",
+     "device_cycles": 263460,
+     "demand_bytes": 262144,
+     "b_per_cycle_per_core": 0.33166831144512765,
+     "gb_per_s_at_100mhz": 0.0995004934335383,
+     "max_rel_err": 0.00021320515383744718
+    },
+    "op.gelu_tanh/small/fp16-n16384": {
+     "status": "pass",
+     "device_cycles": 66581,
+     "demand_bytes": 65536,
+     "b_per_cycle_per_core": 0.3281016105695819,
+     "gb_per_s_at_100mhz": 0.09843048317087458,
+     "max_rel_err": 0.00023716766009688998
+    },
+    "op.gelu_tanh/tiny/fp16-n256": {
+     "status": "pass",
+     "device_cycles": 1243,
+     "demand_bytes": 1024,
+     "b_per_cycle_per_core": 0.27460445159560204,
+     "gb_per_s_at_100mhz": 0.08238133547868061,
+     "max_rel_err": 0.0002770012201760388
+    },
+    "op.gemv/hbm/fp16-k4096-n11008": {
+     "status": "pass",
+     "device_cycles": 81682164,
+     "demand_bytes": 90207744,
+     "b_per_cycle_per_core": 0.3681250168641467,
+     "gb_per_s_at_100mhz": 0.11043750505924402,
+     "max_rel_err": 0.000474075097945146
+    },
+    "op.gemv/large/fp16-k2048-n8192": {
+     "status": "pass",
+     "device_cycles": 31268672,
+     "demand_bytes": 33574912,
+     "b_per_cycle_per_core": 0.3579185369091893,
+     "gb_per_s_at_100mhz": 0.1073755610727568,
+     "max_rel_err": 0.00022586120790042807
+    },
+    "op.gemv/medium/fp16-k320-n448": {
+     "status": "pass",
+     "device_cycles": 267070,
+     "demand_bytes": 288256,
+     "b_per_cycle_per_core": 0.35977583904344673,
+     "gb_per_s_at_100mhz": 0.10793275171303403,
+     "max_rel_err": 0.0002709982084379438
+    },
+    "op.gemv/small/fp16-k256-n512": {
+     "status": "pass",
+     "device_cycles": 252962,
+     "demand_bytes": 263680,
+     "b_per_cycle_per_core": 0.34745666674572995,
+     "gb_per_s_at_100mhz": 0.104237000023719,
+     "max_rel_err": 0.00031526882425602515
+    },
+    "op.gemv/tiny/fp16-k64-n64": {
+     "status": "pass",
+     "device_cycles": 10678,
+     "demand_bytes": 8448,
+     "b_per_cycle_per_core": 0.2637197977149279,
+     "gb_per_s_at_100mhz": 0.07911593931447837,
+     "max_rel_err": 0.0003614329095968645
+    },
+    "op.embedding/hbm/fp16-v65536-d2048-t8192": {
+     "status": "pass",
+     "device_cycles": 298339540,
+     "demand_bytes": 67174400,
+     "b_per_cycle_per_core": 0.07505363407970216,
+     "gb_per_s_at_100mhz": 0.02251609022391065,
+     "max_rel_err": 0.0
+    },
+    "op.layernorm/medium/fp16-r128-d512": {
+     "status": "pass",
+     "device_cycles": 240867,
+     "demand_bytes": 264192,
+     "b_per_cycle_per_core": 0.36561255796767506,
+     "gb_per_s_at_100mhz": 0.10968376739030253,
+     "max_rel_err": 0.00037694138174931727
+    },
+    "op.layernorm/large/fp16-r512-d2048": {
+     "status": "pass",
+     "device_cycles": 4130148,
+     "demand_bytes": 4202496,
+     "b_per_cycle_per_core": 0.3391723492717453,
+     "gb_per_s_at_100mhz": 0.10175170478152358,
+     "max_rel_err": 0.00037669086824610603
+    },
+    "op.layernorm/small/fp16-r64-d256": {
+     "status": "pass",
+     "device_cycles": 65390,
+     "demand_bytes": 66560,
+     "b_per_cycle_per_core": 0.3392975480450629,
+     "gb_per_s_at_100mhz": 0.10178926441351888,
+     "max_rel_err": 0.00035006346220914494
+    },
+    "op.layernorm/tiny/fp16-r4-d64": {
+     "status": "pass",
+     "device_cycles": 2936,
+     "demand_bytes": 1280,
+     "b_per_cycle_per_core": 0.14532243415077203,
+     "gb_per_s_at_100mhz": 0.04359673024523161,
+     "max_rel_err": 0.00033908726900512526
+    },
+    "op.linear/large/fp16-m512-k2048-n8192": {
+     "status": "pass",
+     "device_cycles": 671586210,
+     "demand_bytes": 44056576,
+     "b_per_cycle_per_core": 0.02186692507181369,
+     "gb_per_s_at_100mhz": 0.0065600775215441075,
+     "max_rel_err": 0.00037305563830953236
+    },
+    "op.linear/medium/fp16-m128-k320-n256": {
+     "status": "pass",
+     "device_cycles": 645084,
+     "demand_bytes": 311808,
+     "b_per_cycle_per_core": 0.16112010218824216,
+     "gb_per_s_at_100mhz": 0.04833603065647265,
+     "max_rel_err": 0.00022744774532427184
+    },
+    "op.linear/small/fp16-m64-k256-n256": {
+     "status": "pass",
+     "device_cycles": 252119,
+     "demand_bytes": 197120,
+     "b_per_cycle_per_core": 0.2606176712848562,
+     "gb_per_s_at_100mhz": 0.07818530138545687,
+     "max_rel_err": 0.00022531546934391724
+    },
+    "op.linear/tiny/fp16-m16-k64-n64": {
+     "status": "pass",
+     "device_cycles": 6730,
+     "demand_bytes": 12416,
+     "b_per_cycle_per_core": 0.6149578999504706,
+     "gb_per_s_at_100mhz": 0.18448736998514118,
+     "max_rel_err": 0.000251381425595787
+    },
+    "op.linear/hbm/fp16-m512-k4096-n11008": {
+     "status": "pass",
+     "device_cycles": 1831626399,
+     "demand_bytes": 105666048,
+     "b_per_cycle_per_core": 0.019229912835515974,
+     "gb_per_s_at_100mhz": 0.005768973850654792,
+     "max_rel_err": 0.00036904376409473193
+    },
+    "op.matmul/large/fp16-m2048-k2048-n2048": {
+     "status": "pass",
+     "device_cycles": 525732189,
+     "demand_bytes": 25165824,
+     "b_per_cycle_per_core": 0.01595604791853443,
+     "gb_per_s_at_100mhz": 0.00478681437556033,
+     "max_rel_err": 0.00026469932364270803
+    },
+    "op.matmul/large/fp32-m2048-k2048-n2048": {
+     "status": "pass",
+     "device_cycles": 1667097597,
+     "demand_bytes": 50331648,
+     "b_per_cycle_per_core": 0.01006372754072178,
+     "gb_per_s_at_100mhz": 0.0030191182622165344,
+     "max_rel_err": 9.009442668154169e-07
+    },
+    "op.matmul/medium/fp16-m128-k192-n128": {
+     "status": "pass",
+     "device_cycles": 231150,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.1890143485471195,
+     "gb_per_s_at_100mhz": 0.056704304564135846,
+     "max_rel_err": 0.00030617475637429787
+    },
+    "op.matmul/medium/fp32-m128-k192-n128": {
+     "status": "pass",
+     "device_cycles": 680163,
+     "demand_bytes": 262144,
+     "b_per_cycle_per_core": 0.128471165490233,
+     "gb_per_s_at_100mhz": 0.0385413496470699,
+     "max_rel_err": 5.990480228345126e-07
+    },
+    "op.matmul/small/fp16-m64-k128-n128": {
+     "status": "pass",
+     "device_cycles": 69765,
+     "demand_bytes": 65536,
+     "b_per_cycle_per_core": 0.31312740390358107,
+     "gb_per_s_at_100mhz": 0.09393822117107432,
+     "max_rel_err": 0.00033043937777909856
+    },
+    "op.matmul/small/fp32-m64-k128-n128": {
+     "status": "pass",
+     "device_cycles": 256374,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.17041769706236462,
+     "gb_per_s_at_100mhz": 0.05112530911870938,
+     "max_rel_err": 4.0376920164815356e-07
+    },
+    "op.matmul/tiny/fp16-m16-k32-n16": {
+     "status": "pass",
+     "device_cycles": 2791,
+     "demand_bytes": 2560,
+     "b_per_cycle_per_core": 0.3057446554401051,
+     "gb_per_s_at_100mhz": 0.09172339663203154,
+     "max_rel_err": 0.00040886770849252635
+    },
+    "op.matmul/tiny/fp32-m16-k32-n16": {
+     "status": "pass",
+     "device_cycles": 6028,
+     "demand_bytes": 5120,
+     "b_per_cycle_per_core": 0.28312320283123205,
+     "gb_per_s_at_100mhz": 0.08493696084936962,
+     "max_rel_err": 1.5000948059917387e-07
+    },
+    "op.matmul/hbm/fp16-m4096-k4096-n4096": {
+     "status": "pass",
+     "device_cycles": 4235765579,
+     "demand_bytes": 100663296,
+     "b_per_cycle_per_core": 0.007921692401098763,
+     "gb_per_s_at_100mhz": 0.002376507720329629,
+     "max_rel_err": 0.0003315556872510049
+    },
+    "op.rmsnorm/hbm/fp16-r8192-d4096": {
+     "status": "pass",
+     "device_cycles": 99169970,
+     "demand_bytes": 134225920,
+     "b_per_cycle_per_core": 0.4511645343175292,
+     "gb_per_s_at_100mhz": 0.13534936029525876,
+     "max_rel_err": 0.00030683452369950317
+    },
+    "op.rmsnorm/large/fp16-r512-d2048": {
+     "status": "pass",
+     "device_cycles": 3091648,
+     "demand_bytes": 4198400,
+     "b_per_cycle_per_core": 0.4526604149847158,
+     "gb_per_s_at_100mhz": 0.13579812449541476,
+     "max_rel_err": 0.00036914207651064855
+    },
+    "op.rmsnorm/medium/fp16-r128-d512": {
+     "status": "pass",
+     "device_cycles": 184661,
+     "demand_bytes": 263168,
+     "b_per_cycle_per_core": 0.47504706823133563,
+     "gb_per_s_at_100mhz": 0.14251412046940068,
+     "max_rel_err": 0.00038018067484086264
+    },
+    "op.rmsnorm/small/fp16-r64-d256": {
+     "status": "pass",
+     "device_cycles": 50583,
+     "demand_bytes": 66048,
+     "b_per_cycle_per_core": 0.43524504280094106,
+     "gb_per_s_at_100mhz": 0.13057351284028232,
+     "max_rel_err": 0.00025110738356150627
+    },
+    "op.rmsnorm/tiny/fp16-r4-d64": {
+     "status": "pass",
+     "device_cycles": 2151,
+     "demand_bytes": 1152,
+     "b_per_cycle_per_core": 0.17852161785216178,
+     "gb_per_s_at_100mhz": 0.05355648535564853,
+     "max_rel_err": 0.00034892976306195747
+    },
+    "op.rope/medium/fp16-b1-h8-s128-d32": {
+     "status": "pass",
+     "device_cycles": 213670,
+     "demand_bytes": 147456,
+     "b_per_cycle_per_core": 0.2300369729021388,
+     "gb_per_s_at_100mhz": 0.06901109187064164,
+     "max_rel_err": 0.00037142977112627004
+    },
+    "op.rope/large/fp16-b1-h32-s512-d64": {
+     "status": "pass",
+     "device_cycles": 6846879,
+     "demand_bytes": 4325376,
+     "b_per_cycle_per_core": 0.21057652691102033,
+     "gb_per_s_at_100mhz": 0.0631729580733061,
+     "max_rel_err": 0.00040238481261403643
+    },
+    "op.rope/small/fp16-b1-h4-s64-d32": {
+     "status": "pass",
+     "device_cycles": 45305,
+     "demand_bytes": 40960,
+     "b_per_cycle_per_core": 0.30136482360298716,
+     "gb_per_s_at_100mhz": 0.09040944708089615,
+     "max_rel_err": 0.00041000898424335257
+    },
+    "op.rope/tiny/fp16-b1-h2-s16-d16": {
+     "status": "pass",
+     "device_cycles": 2772,
+     "demand_bytes": 3072,
+     "b_per_cycle_per_core": 0.3694083694083694,
+     "gb_per_s_at_100mhz": 0.11082251082251082,
+     "max_rel_err": 0.0002342444175425487
+    },
+    "op.silu/large/fp16-n16777216": {
+     "status": "pass",
+     "device_cycles": 51983874,
+     "demand_bytes": 67108864,
+     "b_per_cycle_per_core": 0.43031847402010354,
+     "gb_per_s_at_100mhz": 0.12909554220603106,
+     "max_rel_err": 0.0003660542330245516
+    },
+    "op.silu/medium/fp16-n65536": {
+     "status": "pass",
+     "device_cycles": 202938,
+     "demand_bytes": 262144,
+     "b_per_cycle_per_core": 0.4305814255256942,
+     "gb_per_s_at_100mhz": 0.12917442765770826,
+     "max_rel_err": 0.00025893839061553206
+    },
+    "op.silu/small/fp16-n16384": {
+     "status": "pass",
+     "device_cycles": 51741,
+     "demand_bytes": 65536,
+     "b_per_cycle_per_core": 0.42220547212719767,
+     "gb_per_s_at_100mhz": 0.1266616416381593,
+     "max_rel_err": 0.00024085316383321473
+    },
+    "op.silu/tiny/fp16-n256": {
+     "status": "pass",
+     "device_cycles": 1000,
+     "demand_bytes": 1024,
+     "b_per_cycle_per_core": 0.3413333333333333,
+     "gb_per_s_at_100mhz": 0.1024,
+     "max_rel_err": 0.0001596149365490904
+    },
+    "op.silu/hbm/fp16-n67108864": {
+     "status": "pass",
+     "device_cycles": 207919549,
+     "demand_bytes": 268435456,
+     "b_per_cycle_per_core": 0.4303514785583405,
+     "gb_per_s_at_100mhz": 0.12910544356750217,
+     "max_rel_err": 0.00035549073593246696
+    },
+    "op.softmax/hbm/fp16-r4096-c8192": {
+     "status": "pass",
+     "device_cycles": 214553142,
+     "demand_bytes": 134217728,
+     "b_per_cycle_per_core": 0.20852289670345012,
+     "gb_per_s_at_100mhz": 0.06255686901103504,
+     "max_rel_err": 0.00014925003051757812
+    },
+    "op.softmax/medium/fp16-r80-c512": {
+     "status": "pass",
+     "device_cycles": 251364,
+     "demand_bytes": 163840,
+     "b_per_cycle_per_core": 0.21726791956419111,
+     "gb_per_s_at_100mhz": 0.06518037586925733,
+     "max_rel_err": 0.00020968914031982422
+    },
+    "op.softmax/small/fp16-r64-c512": {
+     "status": "pass",
+     "device_cycles": 199762,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.21871360252033253,
+     "gb_per_s_at_100mhz": 0.06561408075609976,
+     "max_rel_err": 0.00012123584747314453
+    },
+    "op.softmax/tiny/fp16-r4-c64": {
+     "status": "pass",
+     "device_cycles": 2745,
+     "demand_bytes": 1024,
+     "b_per_cycle_per_core": 0.12434729811778993,
+     "gb_per_s_at_100mhz": 0.037304189435336976,
+     "max_rel_err": 7.343292236328125e-05
+    },
+    "op.softmax/tiny/fp32-r3-c37": {
+     "status": "pass",
+     "device_cycles": 1731,
+     "demand_bytes": 888,
+     "b_per_cycle_per_core": 0.170999422299249,
+     "gb_per_s_at_100mhz": 0.0512998266897747,
+     "max_rel_err": 5.960464477539063e-08
+    },
+    "op.softmax/large/fp16-r4096-c4096": {
+     "status": "pass",
+     "device_cycles": 107826082,
+     "demand_bytes": 67108864,
+     "b_per_cycle_per_core": 0.20746020738593965,
+     "gb_per_s_at_100mhz": 0.0622380622157819,
+     "max_rel_err": 0.0002270340919494629
+    },
+    "op.swiglu/medium/fp16-n49152": {
+     "status": "pass",
+     "device_cycles": 190346,
+     "demand_bytes": 294912,
+     "b_per_cycle_per_core": 0.516448992886638,
+     "gb_per_s_at_100mhz": 0.15493469786599143,
+     "max_rel_err": 0.0003923721736978076
+    },
+    "op.swiglu/small/fp16-n16384": {
+     "status": "pass",
+     "device_cycles": 63076,
+     "demand_bytes": 98304,
+     "b_per_cycle_per_core": 0.5195002853700298,
+     "gb_per_s_at_100mhz": 0.15585008561100896,
+     "max_rel_err": 0.0002852491902166705
+    },
+    "op.swiglu/tiny/fp16-n256": {
+     "status": "pass",
+     "device_cycles": 1089,
+     "demand_bytes": 1536,
+     "b_per_cycle_per_core": 0.4701561065197429,
+     "gb_per_s_at_100mhz": 0.14104683195592288,
+     "max_rel_err": 0.00016673345493331242
+    },
+    "op.transpose/hbm/fp32-r8192-c8192": {
+     "status": "capacity-exceeded",
+     "device_cycles": null,
+     "demand_bytes": 536870912,
+     "b_per_cycle_per_core": null,
+     "gb_per_s_at_100mhz": null,
+     "max_rel_err": null
+    },
+    "op.swiglu/large/fp16-n16777216": {
+     "status": "pass",
+     "device_cycles": 65482411,
+     "demand_bytes": 100663296,
+     "b_per_cycle_per_core": 0.5124190066856275,
+     "gb_per_s_at_100mhz": 0.15372570200568825,
+     "max_rel_err": 0.0002708473035146374
+    },
+    "op.transpose/medium/fp32-r160-c256": {
+     "status": "pass",
+     "device_cycles": 184335,
+     "demand_bytes": 327680,
+     "b_per_cycle_per_core": 0.5925443712082169,
+     "gb_per_s_at_100mhz": 0.1777633113624651,
+     "max_rel_err": 0.0
+    },
+    "op.transpose/small/fp32-r128-c256": {
+     "status": "pass",
+     "device_cycles": 136002,
+     "demand_bytes": 262144,
+     "b_per_cycle_per_core": 0.6425003553869305,
+     "gb_per_s_at_100mhz": 0.19275010661607916,
+     "max_rel_err": 0.0
+    },
+    "op.transpose/large/fp32-r4096-c4096": {
+     "status": "pass",
+     "device_cycles": 86906643,
+     "demand_bytes": 134217728,
+     "b_per_cycle_per_core": 0.5147965808168044,
+     "gb_per_s_at_100mhz": 0.15443897424504133,
+     "max_rel_err": 0.0
+    },
+    "op.transpose/tiny/fp32-r32-c32": {
+     "status": "pass",
+     "device_cycles": 1929,
+     "demand_bytes": 8192,
+     "b_per_cycle_per_core": 1.4155866597546225,
+     "gb_per_s_at_100mhz": 0.4246759979263868,
+     "max_rel_err": 0.0
+    }
+   },
+   "missing": []
+  }
+ },
+ "non_default_settings": [],
+ "counts_for_target": true
+}

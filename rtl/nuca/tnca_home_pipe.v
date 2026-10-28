@@ -9,16 +9,21 @@
 //
 // PIPELINE
 //
-//   arbiter -> S1: registered tag read of the set -> S2: decide and act
+//   arbiter -> S1: registered tag read of the set -> S2: decide, update the
+//   metadata -> S3: the data array (read, merge, write), the response and the
+//   victim's writeback
 //   memory response -> MSHR line buffer -> fill unit (one target per cycle)
 //
-// S2 does everything a request needs in one cycle when it hits or when a miss
-// needs no memory read: a read hit answers from the data array, a write hit
-// merges its byte enables, an atomic reads, computes and writes, and a store
-// that writes a whole line (LINE_WRITE_NOFILL) installs the line over a clean
-// or written-back victim. Any other miss allocates an MSHR and a target,
-// claims the victim way, and queues the victim's writeback; the fill unit
-// installs the returned line after applying every target in arrival order.
+// A request needs one S2 and one S3 cycle when it hits or when a miss needs
+// no memory read: a read hit answers from the data array, a write hit merges
+// its byte enables, an atomic reads, computes and writes, and a store that
+// writes a whole line (LINE_WRITE_NOFILL) installs the line over a clean or
+// written-back victim. Any other miss allocates an MSHR and a target in S2,
+// claims the victim way, and queues the victim's writeback in S3; the fill
+// unit installs the returned line after applying every target in arrival
+// order. S3 has the data array's write port and the response queue before
+// the fill unit; when S3 cannot finish (a full response or writeback queue,
+// a TMU store not taken) the whole pipe holds.
 //
 // ORDER (the slice's sec 14.1 rule, unchanged): a request stays live in the
 // request buffer until it completes or joins an MSHR, and the arbiter never
@@ -386,11 +391,34 @@ module tnca_home_pipe #(
     end
     wire [LINE_W-1:0] s2_hit_index = s2_set*WAYS + s2_hit_way;
     wire [LINE_W-1:0] s2_vic_index = s2_set*WAYS + s2_vic_way;
-    wire [LINE_W-1:0] s2_rd_index  = s2_hit ? s2_hit_index : s2_vic_index;
-    wire [LINE_BITS-1:0] s2_line   = data_mem[s2_rd_index];
     wire s2_vic_dirty = v_bits[s2_vic_index] && d_bits[s2_vic_index];
     wire [ADDR_W-1:0] s2_vic_addr = line_addr(lookup_tag[s2_vic_way], s2_set);
-    wire [WORD_BITS-1:0] s2_amo_res = cache_amo_new(s2_aop, s2_be, s2_line, s2_wdata, s2_cmp);
+
+    //==========================================================================
+    // S3: the data array, the response and the writeback of one request
+    //==========================================================================
+    localparam K_HIT_RD = 3'd0, K_HIT_WR = 3'd1, K_HIT_AMO = 3'd2, K_INSTALL = 3'd3,
+               K_ALLOC = 3'd4, K_MMIO_RD = 3'd5, K_MMIO_WR = 3'd6;
+    reg                  s3_v;
+    reg [2:0]            s3_kind;
+    reg [LINE_W-1:0]     s3_index;
+    reg [WORD_BYTES-1:0] s3_be;
+    reg [WORD_BITS-1:0]  s3_wdata;
+    reg [63:0]           s3_cmp;
+    reg [3:0]            s3_aop;
+    reg [SRC_W-1:0]      s3_src;
+    reg [TAG_W-1:0]      s3_tag;
+    reg                  s3_wb;          // the victim is dirty: queue its writeback
+    reg [ADDR_W-1:0]     s3_wb_addr;
+    reg [11:0]           s3_off;         // TMU register offset
+    wire [LINE_BITS-1:0] s3_line = data_mem[s3_index];
+    wire [WORD_BITS-1:0] s3_amo_res = cache_amo_new(s3_aop, s3_be, s3_line, s3_wdata, {448'd0, s3_cmp});
+    wire s3_push = s3_v && (s3_kind != K_ALLOC);
+    wire s3_dw   = s3_v && (s3_kind == K_HIT_WR || s3_kind == K_INSTALL ||
+                            (s3_kind == K_HIT_AMO && s3_aop != `TNCA_AOP_LD));
+    wire s3_hold = s3_v && ((s3_push && rsq_full) || (s3_wb && wbq_full) ||
+                            (s3_kind == K_MMIO_WR && !tmu_wr_ready));
+    wire s3_go   = s3_v && !s3_hold;
 
     //==========================================================================
     // Fill unit: one target of one filled MSHR per cycle
@@ -417,8 +445,11 @@ module tnca_home_pipe #(
         tg_amo[fu_tc] ? ((tg_aop[fu_tc] != `TNCA_AOP_LD) ? merge(fu_cur, fu_amo_res, tg_be[fu_tc]) : fu_cur) :
         tg_we[fu_tc]  ? merge(fu_cur, tg_wdata[fu_tc], tg_be[fu_tc]) : fu_cur;
     wire fu_writes = (tg_amo[fu_tc] && tg_aop[fu_tc] != `TNCA_AOP_LD) || (tg_we[fu_tc] && !tg_amo[fu_tc]);
-    // A step pushes one response; the last also writes the data array.
-    wire fu_step = fu_v && !rsq_full;
+    // A step pushes one response; the last also writes the data array. S3
+    // has both first.
+    // Nor may it overwrite a way whose victim S3 has still to write back.
+    wire fu_step = fu_v && !rsq_full && !s3_push && !(fu_last && s3_dw) &&
+                   !(fu_last && s3_v && s3_wb && s3_index == ms_set[fu_ms]*WAYS + ms_way[fu_ms]);
 
     //==========================================================================
     // Memory requests: queued writebacks first, then MSHR reads that no queued
@@ -433,6 +464,9 @@ module tnca_home_pipe #(
                 for (j = 0; j < WBQ_N; j = j + 1)
                     if (wbq_v[j] && wbq_addr[j][ADDR_W-1:OFF_W] == ms_addr[k][ADDR_W-1:OFF_W])
                         rd_blocked_by_wb = 1'b1;
+                // ... nor one S3 has still to queue
+                if (s3_v && s3_wb && s3_wb_addr[ADDR_W-1:OFF_W] == ms_addr[k][ADDR_W-1:OFF_W])
+                    rd_blocked_by_wb = 1'b1;
                 if (!rd_blocked_by_wb) begin rd_found = 1'b1; rd_pick = k[MSHR_W-1:0]; end
             end
     end
@@ -451,12 +485,12 @@ module tnca_home_pipe #(
     //==========================================================================
     // TMU registers (a load reads, a store waits for the TMU to take it)
     //==========================================================================
-    wire [8:0] tmu_word_shift = ((s1_addr & (WORD_BYTES-1)) >> 3) * 64;
-    assign tmu_wr_off  = s1_addr[11:0];
-    assign tmu_rd_off  = s1_addr[11:0];
-    assign tmu_wr_data = s2_wdata >> tmu_word_shift;
-    assign tmu_wr_src  = s2_src;
-    assign tmu_wr_valid = s1_v && !s1_stale && s2_mmio && s2_we && !s2_amo;
+    wire [8:0] tmu_word_shift = ((s3_off & (WORD_BYTES-1)) >> 3) * 64;
+    assign tmu_wr_off  = s3_off;
+    assign tmu_rd_off  = s3_off;
+    assign tmu_wr_data = s3_wdata >> tmu_word_shift;
+    assign tmu_wr_src  = s3_src;
+    assign tmu_wr_valid = s3_v && s3_kind == K_MMIO_WR;
     assign tmu_tl_valid = 1'b0;
     assign tmu_tl_addr  = 64'd0;
 
@@ -466,8 +500,6 @@ module tnca_home_pipe #(
     // Resources S2 needs (transient: hold the pipe) or lacks (structural:
     // block the request so younger ones go past it, sec 9.3).
     wire s2_live   = s1_v && !s1_stale;
-    wire fu_write_now = fu_step && fu_last;        // the fill unit owns the write port
-    wire s2_push_ok   = !fu_step && !rsq_full;     // and the response push
     reg  s2_act, s2_hold, s2_block, s2_replay;
     reg  s2_kind_hit, s2_kind_merge, s2_kind_install, s2_kind_alloc, s2_kind_mmio;
     always @(*) begin
@@ -476,9 +508,11 @@ module tnca_home_pipe #(
         s2_kind_mmio = 1'b0;
         if (s1_v && s1_stale) s2_replay = 1'b1;
         else if (s2_live) begin
-            if (s2_mmio) begin
+            if (s3_hold) begin
+                s2_hold = 1'b1;               // S3 is occupied next cycle
+            end else if (s2_mmio) begin
                 s2_kind_mmio = 1'b1;
-                if (s2_push_ok && (!s2_we || s2_amo || tmu_wr_ready)) s2_act = 1'b1; else s2_hold = 1'b1;
+                s2_act = 1'b1;
             end else if (s2_ms) begin
                 s2_kind_merge = 1'b1;
                 // the fill unit is closing this MSHR's list: wait, then hit
@@ -486,16 +520,15 @@ module tnca_home_pipe #(
                 else if (tg_has_free) s2_act = 1'b1; else s2_block = 1'b1;
             end else if (s2_hit) begin
                 s2_kind_hit = 1'b1;
-                if (s2_push_ok && !fu_write_now) s2_act = 1'b1; else s2_hold = 1'b1;
+                s2_act = 1'b1;
             end else if (!s2_vic_ok) begin
                 s2_block = 1'b1;
             end else if (s2_full_store) begin
                 s2_kind_install = 1'b1;
-                if (s2_push_ok && !fu_write_now && !(s2_vic_dirty && wbq_full)) s2_act = 1'b1; else s2_hold = 1'b1;
+                s2_act = 1'b1;
             end else begin
                 s2_kind_alloc = 1'b1;
                 if (!ms_has_free || !tg_has_free) s2_block = 1'b1;
-                else if (s2_vic_dirty && wbq_full) s2_hold = 1'b1;
                 else s2_act = 1'b1;
             end
         end
@@ -512,7 +545,7 @@ module tnca_home_pipe #(
     //==========================================================================
     wire maint_requested = (MAINTENANCE != 0) && maint_valid;
     assign maint_hold = maint_requested || m_state != M_IDLE;
-    wire idle = rq_v == 0 && !s1_v && rsq_cnt == 0 && tg_v == 0 && ms_all_free && !fu_v &&
+    wire idle = rq_v == 0 && !s1_v && !s3_v && rsq_cnt == 0 && tg_v == 0 && ms_all_free && !fu_v &&
                 wbq_cnt == 0 && !mem_rsp_valid;
     assign maint_ready = (MAINTENANCE != 0) && rst_n && m_state == M_IDLE && idle;
     assign maint_busy  = (m_state != M_IDLE);
@@ -540,7 +573,7 @@ module tnca_home_pipe #(
             for (i = 0; i < MSHR_N; i = i + 1) ms_state[i] <= MS_FREE;
             tg_v <= 0; wbq_v <= 0; wbq_rd <= 0; wbq_wr <= 0; wbq_cnt <= 0;
             rsq_rd <= 0; rsq_wr <= 0; rsq_cnt <= 0;
-            s1_v <= 0; s1_stale <= 0; fu_v <= 0; ml_v <= 0;
+            s1_v <= 0; s1_stale <= 0; s3_v <= 0; fu_v <= 0; ml_v <= 0;
             m_state <= M_IDLE; maint_done <= 0;
             tmu_tl_drop <= 0; perf_bypass <= 0; perf_evict <= 0; perf_dead_evict <= 0; perf_gear <= 0;
             perf_hit <= 0; perf_miss <= 0; perf_merge <= 0; perf_mshr_full <= 0; perf_target_full <= 0;
@@ -609,9 +642,10 @@ module tnca_home_pipe #(
                 if (!tg_has_free) perf_target_full <= perf_target_full + 1;
             end else if (s2_act) begin
                 rq_v[s1_rq] <= 1'b0; rq_busy[s1_rq] <= 1'b0;
+                s3_src <= s2_src; s3_tag <= s2_tag; s3_be <= s2_be; s3_wdata <= s2_wdata;
+                s3_cmp <= s2_cmp[63:0]; s3_aop <= s2_aop; s3_off <= s1_addr[11:0]; s3_wb <= 1'b0;
                 if (s2_kind_mmio) begin
-                    push = 1; push_src = s2_src; push_tag = s2_tag;
-                    push_data = s2_we ? {WORD_BITS{1'b0}} : ({448'd0, tmu_rd_data} << tmu_word_shift);
+                    s3_kind <= (s2_we && !s2_amo) ? K_MMIO_WR : K_MMIO_RD;
                 end else if (s2_kind_merge) begin
                     perf_merge <= perf_merge + 1;
                     tg_v[tg_free_idx] <= 1'b1; tg_src[tg_free_idx] <= s2_src; tg_tag[tg_free_idx] <= s2_tag;
@@ -622,31 +656,20 @@ module tnca_home_pipe #(
                     ms_tail[s2_ms_id] <= tg_free_idx;
                 end else if (s2_kind_hit) begin
                     perf_hit <= perf_hit + 1;
-                    push = 1; push_src = s2_src; push_tag = s2_tag;
-                    if (s2_amo) begin
-                        push_data = s2_line;
-                        if (s2_aop != `TNCA_AOP_LD) begin
-                            dw_en = 1; dw_index = s2_hit_index; dw_line = merge(s2_line, s2_amo_res, s2_be);
-                            d_bits[s2_hit_index] <= 1'b1;
-                        end
-                    end else if (s2_we) begin
-                        push_data = 0;
-                        dw_en = 1; dw_index = s2_hit_index; dw_line = merge(s2_line, s2_wdata, s2_be);
-                        d_bits[s2_hit_index] <= 1'b1;
-                    end else push_data = s2_line;
+                    s3_index <= s2_hit_index;
+                    s3_kind <= s2_amo ? K_HIT_AMO : s2_we ? K_HIT_WR : K_HIT_RD;
+                    if ((s2_amo && s2_aop != `TNCA_AOP_LD) || (s2_we && !s2_amo)) d_bits[s2_hit_index] <= 1'b1;
                 end else begin
                     // install (full-line store) or allocate (everything else)
                     perf_miss <= perf_miss + 1;
                     if (v_bits[s2_vic_index]) perf_evict <= perf_evict + 1;
-                    if (s2_vic_dirty) begin
-                        wbq_push = 1; wbq_push_addr = s2_vic_addr; wbq_push_data = s2_line;
-                    end
+                    s3_index <= s2_vic_index; s3_wb <= s2_vic_dirty; s3_wb_addr <= s2_vic_addr;
                     victim_ptr[s2_set] <= s2_vic_way + 1'b1;
                     if (s2_kind_install) begin
-                        dw_en = 1; dw_index = s2_vic_index; dw_line = s2_wdata;
+                        s3_kind <= K_INSTALL;
                         v_bits[s2_vic_index] <= 1'b1; d_bits[s2_vic_index] <= 1'b1;
-                        push = 1; push_src = s2_src; push_tag = s2_tag; push_data = 0;
                     end else begin
+                        s3_kind <= K_ALLOC;
                         v_bits[s2_vic_index] <= 1'b0; d_bits[s2_vic_index] <= 1'b0;
                         cl_bits[s2_vic_index] <= 1'b1;
                         ms_state[ms_free_idx] <= MS_REQ;
@@ -660,6 +683,29 @@ module tnca_home_pipe #(
                     end
                 end
             end
+
+            // ---- S3 ----
+            if (s3_go) begin
+                if (s3_push) begin
+                    push = 1; push_src = s3_src; push_tag = s3_tag;
+                    case (s3_kind)
+                    K_HIT_RD, K_HIT_AMO: push_data = s3_line;
+                    K_MMIO_RD:           push_data = {448'd0, tmu_rd_data} << tmu_word_shift;
+                    default:             push_data = {WORD_BITS{1'b0}};
+                    endcase
+                end
+                if (s3_dw) begin
+                    dw_en = 1; dw_index = s3_index;
+                    dw_line = (s3_kind == K_INSTALL) ? s3_wdata :
+                              (s3_kind == K_HIT_AMO) ? merge(s3_line, s3_amo_res, s3_be) :
+                                                       merge(s3_line, s3_wdata, s3_be);
+                end
+                if (s3_wb) begin
+                    wbq_push = 1; wbq_push_addr = s3_wb_addr; wbq_push_data = s3_line;
+                end
+            end
+            // S3 takes S2's request (merges, replays and blocks never reach it)
+            if (!s3_hold) s3_v <= s2_act && !s2_kind_merge;
 
             // ---- S1: load, hold, or empty ----
             if (!s2_hold) begin
@@ -716,7 +762,7 @@ module tnca_home_pipe #(
             default: ;
             endcase
 
-            // ---- data array write port (fill unit or S2, never both) ----
+            // ---- data array write port (S3 or the fill unit, never both) ----
             if (dw_en) data_mem[dw_index] <= dw_line;
 
             // ---- response queue ----

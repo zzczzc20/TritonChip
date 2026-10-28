@@ -2,7 +2,7 @@
 // tb_nuca_shared_read -- lockstep equivalence of SHARED_DATA_READ (R41 G2)
 //
 // Two tnca_nuca_slice instances with the run-1 image's slice parameters, one
-// with SHARED_DATA_READ=0 (the delivered build) and one with =1. Both receive
+// with SHARED_DATA_READ=0 (the delivered build) and one with SHARED_MODE (1 or 2). Both receive
 // the same inputs every cycle; the reference instance drives the DRAM model
 // and the stimulus. Every output of the two instances is compared on every
 // cycle, so any difference in a value read from the line array -- a hit, a
@@ -24,6 +24,7 @@ module tb_nuca_shared_read;
     parameter CACHE_DATA_PIPELINE = 1;
     parameter SETS = 32, SET_W = 5, WAYS = 8, WAY_W = 3;
     parameter POLICY = 0;
+    parameter SHARED_MODE = 1;     // the second instance's SHARED_DATA_READ (1 or 2)
 
     localparam MSHR_N = 8, MSHR_W = 3, TARGET_N = 16, TARGET_W = 4;
     localparam RQ_N = 8, RQ_W = 3, SRC_W = 4, TAG_W = 5;
@@ -73,7 +74,7 @@ module tb_nuca_shared_read;
         wire [3:0] p_gear;
         tnca_nuca_slice #(
             .REGISTER_VICTIM_OWNER(1), .REGISTER_VICTIM_SELECT(1),
-            .CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE), .SHARED_DATA_READ(d),
+            .CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE), .SHARED_DATA_READ(d ? SHARED_MODE : 0),
             .REGISTER_VICTIM_RANK(1), .MAINTENANCE(1), .DCO_REGISTERED_RANGES(1),
             .FULL_LINE_TAG(1),
             .ADDR_W(64), .LINE_BYTES(64), .LINE_BITS(512),
@@ -220,8 +221,8 @@ module tb_nuca_shared_read;
                 phase_left = 2000 + ($random(seed) & 4095);
             end
         end
-        $display("seed=%0d pipeline=%0d policy=%0d cycles=%0d issued=%0d responses=%0d stores=%0d atomics=%0d maint=%0d",
-                 seed0, CACHE_DATA_PIPELINE, POLICY, cyc, n_issue, n_rsp, n_st, n_amo, n_maint);
+        $display("seed=%0d mode=%0d pipeline=%0d policy=%0d cycles=%0d issued=%0d responses=%0d stores=%0d atomics=%0d maint=%0d",
+                 seed0, SHARED_MODE, CACHE_DATA_PIPELINE, POLICY, cyc, n_issue, n_rsp, n_st, n_amo, n_maint);
         $display("engine states with an array read: look=%0d wbrd=%0d wake=%0d mread=%0d; hits=%0d misses=%0d writebacks=%0d",
                  n_look_rd, n_wbrd, n_wake, n_mread, g_dut[0].p_hit, g_dut[0].p_miss, g_dut[0].p_wb);
         if (mismatches == 0 && n_rsp > 1000 && n_amo > 100 && n_maint > 2 && g_dut[0].p_wb > 100)

@@ -84,12 +84,16 @@ module tnca_nuca_slice #(
     parameter SYNC_TAG_BANK = 1,
     parameter REGISTER_VICTIM_OWNER = 0,
     parameter CACHE_DATA_PIPELINE = 0,
-    // R41 G2 (resources): 1 = every read of the line array goes through one
-    // read address, chosen by the engine state. The engine reads the array in
-    // exactly one state per cycle (E_LOOK, E_HIT, E_MREAD, E_WBRD, E_WAKE), so
-    // the values read are the same as with one address per read site; only
-    // the number of LUTRAM read ports changes. 0 (the default) builds exactly
-    // the module that existed before.
+    // R41 G2 (resources): fewer LUTRAM read ports on the line array. The
+    // engine reads the array in exactly one state per cycle (E_LOOK, E_HIT,
+    // E_MREAD, E_WBRD, E_WAKE), so sharing a read address between states
+    // returns the same values; only the number of read ports changes.
+    //   0  one address per read site (the default; the module as before)
+    //   1  one address for every state. Smallest, but the lookup's tag
+    //      compare then reaches the atomic merge's write data through the
+    //      shared port (a structural path; screened 0.55 ns worse).
+    //   2  the lookup keeps its own port; every other read (registered
+    //      addresses only) shares the second one.
     parameter SHARED_DATA_READ = 0,
     parameter REGISTER_VICTIM_SELECT = 0,
     parameter REGISTER_VICTIM_RANK = 0,
@@ -1043,9 +1047,15 @@ module tnca_nuca_slice #(
     integer data_write_index, data_write_byte;
     // SHARED_DATA_READ: the single read address and the line it reads.
     wire [LINE_BITS-1:0] shared_rd_line;
-    generate if (SHARED_DATA_READ) begin : g_shared_read
+    generate if (SHARED_DATA_READ == 1) begin : g_shared_read
         wire [LINE_W-1:0] shared_rd_index =
             (est == E_LOOK)  ? cur_set*WAYS + hit_way :
+            (est == E_HIT)   ? cur_set*WAYS + data_hit_way :
+            (est == E_MREAD) ? maint_index :
+                               service_set*WAYS + service_way;   // E_WBRD, E_WAKE
+        assign shared_rd_line = data_mem[shared_rd_index];
+    end else if (SHARED_DATA_READ == 2) begin : g_shared_aux_read
+        wire [LINE_W-1:0] shared_rd_index =
             (est == E_HIT)   ? cur_set*WAYS + data_hit_way :
             (est == E_MREAD) ? maint_index :
                                service_set*WAYS + service_way;   // E_WBRD, E_WAKE
@@ -1213,7 +1223,7 @@ module tnca_nuca_slice #(
                 else if (hit && !ms_match) begin
                     if(CACHE_DATA_PIPELINE) begin
                         hit_way_q<=hit_way;
-                        hit_word_q<=SHARED_DATA_READ ? shared_rd_line[cur_wsel*WORD_BITS+:WORD_BITS] : data_mem[cur_set*WAYS+hit_way][cur_wsel*WORD_BITS+:WORD_BITS];
+                        hit_word_q<=(SHARED_DATA_READ == 1) ? shared_rd_line[cur_wsel*WORD_BITS+:WORD_BITS] : data_mem[cur_set*WAYS+hit_way][cur_wsel*WORD_BITS+:WORD_BITS];
                     end
                     est <= E_HIT;
                 end

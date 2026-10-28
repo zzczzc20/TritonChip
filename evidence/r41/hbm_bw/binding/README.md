@@ -1,5 +1,7 @@
 # Packaged 32-PC stream CU and two-CU link flow
 
+> **Quarantined (audit 2026-10-28, `../AUDIT.md` Q1).** The 32-PC stream lanes, bank and CU are a constructive exception under discipline §2.2.4. The engine is a fixed-function copy, fill and uint32-reduce unit that bypasses the cores, the compiler and the NUCA hierarchy. The work is kept as data. It must not be linked into an image, enabled in a runtime, or merged into or enabled on `r41` without the author's written approval. None of its results counts for any target.
+
 ## Board binding and packaging
 
 `tnca_stream_hbm_xo.v` wraps the real 32-lane bank with the existing 32-bit AXI-Lite adapter and 32 named 512-bit AXI masters. It shares the 100 MHz clock and uses a synchronized active-low reset. `tools/r41/generate_stream_binding.py` generates the wrapper, kernel XML and combined connectivity file together; `--check` detects stale generated output.

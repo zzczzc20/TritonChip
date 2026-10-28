@@ -1,5 +1,7 @@
 # Replicated stream bank and command binding
 
+> **Quarantined (audit 2026-10-28, `../AUDIT.md` Q1).** The 32-PC stream lanes, bank and CU are a constructive exception under discipline §2.2.4. The engine is a fixed-function copy, fill and uint32-reduce unit that bypasses the cores, the compiler and the NUCA hierarchy. The work is kept as data. It must not be linked into an image, enabled in a runtime, or merged into or enabled on `r41` without the author's written approval. None of its results counts for any target.
+
 ## Implemented behavior
 
 `tnca_stream_bank.v` connects up to 32 real stream lanes to a flat 64-bit register interface. The image candidate uses 32 lanes, one per PC. Each outgoing AXI address has a fixed physical PC tag and a local 28-bit offset, so no lane can issue into another PC. All lanes retain the compact burst engine's operation semantics and credit bounds.

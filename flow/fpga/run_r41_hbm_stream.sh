@@ -2,6 +2,11 @@
 # One immutable full implementation. Run only after the lead allocates a
 # numbered full-run slot. This script never opens, resets or programs a card.
 set -euo pipefail
+# Quarantined (evidence/r41/hbm_bw/AUDIT.md Q1): the 32-PC stream CU is a
+# constructive exception (doc/engineering_discipline.md 2.2.4). No image with
+# it may be built without the author's written approval of that unit.
+echo 'run_r41_hbm_stream.sh is quarantined: the stream CU needs written author approval (see evidence/r41/hbm_bw/AUDIT.md)' >&2
+exit 3
 build=${1:?usage: run_r41_hbm_stream.sh FRESH_BUILD_ROOT IMAGE_CONFIG RUN_NUMBER}
 config=${2:?image configuration required}
 run_number=${3:?approved full-run number required}

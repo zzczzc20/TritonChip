@@ -1,5 +1,7 @@
 # Compact ordered burst stream lane
 
+> **Quarantined (audit 2026-10-28, `../AUDIT.md` Q1).** The 32-PC stream lanes, bank and CU are a constructive exception under discipline §2.2.4. The engine is a fixed-function copy, fill and uint32-reduce unit that bypasses the cores, the compiler and the NUCA hierarchy. The work is kept as data. It must not be linked into an image, enabled in a runtime, or merged into or enabled on `r41` without the author's written approval. None of its results counts for any target.
+
 ## Implemented component and functional evidence
 
 `rtl/fpga/tnca_stream_axi.v` implements a per-PC stream lane with three explicitly defined operations: byte-exact copy of complete 64-byte lines; writes of a repeated 32-bit bit pattern; and reduction of unsigned 32-bit words modulo 2^32. The reduction is integer arithmetic and does not replace any floating-point instruction. Existing instruction implementations are unchanged. Partial lines, type conversion, arbitrary striding and overlapping copies require the existing execution path.

@@ -84,6 +84,13 @@ module tnca_nuca_slice #(
     parameter SYNC_TAG_BANK = 1,
     parameter REGISTER_VICTIM_OWNER = 0,
     parameter CACHE_DATA_PIPELINE = 0,
+    // R41 G2 (resources): 1 = every read of the line array goes through one
+    // read address, chosen by the engine state. The engine reads the array in
+    // exactly one state per cycle (E_LOOK, E_HIT, E_MREAD, E_WBRD, E_WAKE), so
+    // the values read are the same as with one address per read site; only
+    // the number of LUTRAM read ports changes. 0 (the default) builds exactly
+    // the module that existed before.
+    parameter SHARED_DATA_READ = 0,
     parameter REGISTER_VICTIM_SELECT = 0,
     parameter REGISTER_VICTIM_RANK = 0,
     parameter BALANCED_VICTIM = 1,
@@ -1034,6 +1041,18 @@ module tnca_nuca_slice #(
     wire [WAY_W-1:0] data_hit_way = CACHE_DATA_PIPELINE ? hit_way_q : hit_way;
     reg data_write_enable;
     integer data_write_index, data_write_byte;
+    // SHARED_DATA_READ: the single read address and the line it reads.
+    wire [LINE_BITS-1:0] shared_rd_line;
+    generate if (SHARED_DATA_READ) begin : g_shared_read
+        wire [LINE_W-1:0] shared_rd_index =
+            (est == E_LOOK)  ? cur_set*WAYS + hit_way :
+            (est == E_HIT)   ? cur_set*WAYS + data_hit_way :
+            (est == E_MREAD) ? maint_index :
+                               service_set*WAYS + service_way;   // E_WBRD, E_WAKE
+        assign shared_rd_line = data_mem[shared_rd_index];
+    end else begin : g_site_reads
+        assign shared_rd_line = {LINE_BITS{1'b0}};          // unused
+    end endgenerate
     reg [LINE_BITS-1:0] data_write_line;
     reg [LINE_BYTES-1:0] data_write_mask;
     always @(posedge clk) begin
@@ -1172,7 +1191,7 @@ module tnca_nuca_slice #(
                 end
             end
             E_MREAD: begin
-                wb_buf <= data_mem[maint_index];
+                wb_buf <= SHARED_DATA_READ ? shared_rd_line : data_mem[maint_index];
                 est <= E_MSEND;
             end
             E_MSEND: begin
@@ -1194,7 +1213,7 @@ module tnca_nuca_slice #(
                 else if (hit && !ms_match) begin
                     if(CACHE_DATA_PIPELINE) begin
                         hit_way_q<=hit_way;
-                        hit_word_q<=data_mem[cur_set*WAYS+hit_way][cur_wsel*WORD_BITS+:WORD_BITS];
+                        hit_word_q<=SHARED_DATA_READ ? shared_rd_line[cur_wsel*WORD_BITS+:WORD_BITS] : data_mem[cur_set*WAYS+hit_way][cur_wsel*WORD_BITS+:WORD_BITS];
                     end
                     est <= E_HIT;
                 end
@@ -1225,7 +1244,7 @@ module tnca_nuca_slice #(
                     // in flight, which is the serialisation sec 14.1 asks for.
                     if(CACHE_DATA_PIPELINE) amo_word=hit_word_q;
                     else begin
-                        merged=data_mem[cur_set*WAYS + data_hit_way];
+                        merged=SHARED_DATA_READ ? shared_rd_line : data_mem[cur_set*WAYS + data_hit_way];
                         amo_word=merged[cur_wsel*WORD_BITS+:WORD_BITS];
                     end
                     amo_res  = cache_amo_new(cur_aop, cur_be, amo_word, cur_wdata, cur_cmp);
@@ -1257,7 +1276,7 @@ module tnca_nuca_slice #(
                         data_write_line={(LINE_BITS/WORD_BITS){cur_wdata}};
                         data_write_mask={{(LINE_BYTES-WORD_BYTES){1'b0}},cur_be} << (cur_wsel*WORD_BYTES);
                     end else begin
-                    merged = data_mem[cur_set*WAYS + data_hit_way];
+                    merged = SHARED_DATA_READ ? shared_rd_line : data_mem[cur_set*WAYS + data_hit_way];
                     for (i = 0; i < WORD_BYTES; i = i + 1)
                         if (cur_be[i])
                             merged[(cur_wsel*WORD_BYTES + i)*8 +: 8] =
@@ -1273,8 +1292,9 @@ module tnca_nuca_slice #(
                     push_rsp  = 1'b1;
                     push_src  = cur_src;
                     push_tag  = cur_tag;
-                    push_data = CACHE_DATA_PIPELINE ? hit_word_q : data_mem[cur_set*WAYS + data_hit_way]
-                                [cur_wsel*WORD_BITS +: WORD_BITS];
+                    push_data = CACHE_DATA_PIPELINE ? hit_word_q :
+                                SHARED_DATA_READ ? shared_rd_line[cur_wsel*WORD_BITS +: WORD_BITS] :
+                                data_mem[cur_set*WAYS + data_hit_way][cur_wsel*WORD_BITS +: WORD_BITS];
                 end
                 touch(cur_set, data_hit_way);
                 // Reuse E_LOOK's owner classification on hits too. A metadata
@@ -1446,7 +1466,7 @@ module tnca_nuca_slice #(
 
             //---------------------------------------------------------------
             E_WBRD: begin
-                wb_buf <= data_mem[service_set*WAYS + service_way];
+                wb_buf <= SHARED_DATA_READ ? shared_rd_line : data_mem[service_set*WAYS + service_way];
                 est <= E_WBSND;
             end
 
@@ -1504,7 +1524,7 @@ module tnca_nuca_slice #(
                     fill_set = service_set;
                     fill_way = service_way;
                     if (tg_amo[t_cur]) begin
-                        merged   = data_mem[fill_set*WAYS + fill_way];
+                        merged   = SHARED_DATA_READ ? shared_rd_line : data_mem[fill_set*WAYS + fill_way];
                         amo_word = merged[tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
                         amo_res  = cache_amo_new(tg_aop[t_cur], tg_be[t_cur], amo_word,
                                            tg_wdata[t_cur], tg_cmp[t_cur]);
@@ -1529,7 +1549,7 @@ module tnca_nuca_slice #(
                             data_write_line={(LINE_BITS/WORD_BITS){tg_wdata[t_cur]}};
                             data_write_mask={{(LINE_BYTES-WORD_BYTES){1'b0}},tg_be[t_cur]} << (tg_wsel[t_cur]*WORD_BYTES);
                         end else begin
-                        merged = data_mem[fill_set*WAYS + fill_way];
+                        merged = SHARED_DATA_READ ? shared_rd_line : data_mem[fill_set*WAYS + fill_way];
                         for (i = 0; i < WORD_BYTES; i = i + 1)
                             if (tg_be[t_cur][i])
                                 merged[(tg_wsel[t_cur]*WORD_BYTES + i)*8 +: 8] =
@@ -1541,8 +1561,8 @@ module tnca_nuca_slice #(
                     end else if (service_bypass) begin
                         push_data = ms_line[cur_ms][tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
                     end else begin
-                        push_data = data_mem[fill_set*WAYS + fill_way]
-                                    [tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
+                        push_data = SHARED_DATA_READ ? shared_rd_line[tg_wsel[t_cur]*WORD_BITS +: WORD_BITS] :
+                                    data_mem[fill_set*WAYS + fill_way][tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
                     end
                     push_rsp = 1'b1;
                     push_src = tg_src[t_cur];

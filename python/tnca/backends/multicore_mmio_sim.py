@@ -10,13 +10,15 @@ from .u50_sim import SimLink, _repo_root, _tools
 
 class MulticoreMMIOLink(SimLink):
     def __init__(self, *, core_count=3, memory_ports=3,
-                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, hybrid_lsu=False, sfu_lanes=1, home_background_reads=False, cache_sets=32, rtl_params=None, stage_probes=False, **kwargs):
+                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, hybrid_lsu=False, sfu_lanes=1, home_background_reads=False, cache_sets=None, rtl_params=None, stage_probes=False, **kwargs):
         if type(journal) is not bool or (journal and not board_top):
             raise ArgumentError('journal requires a boolean and the board-top stand-in')
         if type(hybrid_lsu) is not bool or type(home_background_reads) is not bool or sfu_lanes not in (1, 2, 3, 4, 8):
             raise ArgumentError('invalid hybrid LSU/SFU geometry')
-        if cache_sets not in (16, 32, 64):
-            raise ArgumentError('cache_sets must be 16, 32 or 64')
+        # None keeps the register bench's own default geometry (SETS=4), as
+        # before the uncommitted 32-set default was checkpointed (AUDIT.md F14).
+        if cache_sets is not None and cache_sets not in (4, 16, 32, 64):
+            raise ArgumentError('cache_sets must be None, 4, 16, 32 or 64')
         self.cache_sets = cache_sets
         # Extra top-level bench parameters (for example an image's cache
         # geometry, tools/r40/image_geometry_tests.py); names are checked by
@@ -102,11 +104,12 @@ class MulticoreMMIOLink(SimLink):
         top = 'tnca_multicore_board_regs' if self.board_top else 'tnca_multicore_regs'
         command = [iverilog, '-g2012', '-I', 'rtl/common', '-I', 'rtl/noc',
                    '-s', top, '-o', output]
+        geometry = {} if self.cache_sets is None else dict(SETS=self.cache_sets, SET_W=self.cache_sets.bit_length()-1)
         for name, value in dict(N=self.core_count, PORTS=self.memory_ports,
                                 MEMORY_BYTES=self.memory_bytes, STAGES=self.link_stages,
                                 HYBRID_LSU=int(self.hybrid_lsu), SFU_LANES=self.sfu_lanes,
                                 HOME_BACKGROUND_READS=int(self.home_background_reads),
-                                SETS=self.cache_sets, SET_W=self.cache_sets.bit_length()-1,
+                                **geometry,
                                 NOC_PIPE=self.noc_link_stages, DISPATCH_PIPE=self.dispatch_stages, HOME_PIPE=self.home_stages, CODE_PIPE=self.code_stages, MAINTENANCE=self.maintenance, MEMORY_CONTROLS=int(self.memory_controls)).items():
             command += [f'-P{top}.{name}={value}']
         for name, value in sorted(self.rtl_params.items()):
@@ -141,7 +144,7 @@ def stand_in(**kwargs):
                             hybrid_lsu=kwargs.pop('hybrid_lsu', False),
                             home_background_reads=kwargs.pop('home_background_reads', False),
                             sfu_lanes=kwargs.pop('sfu_lanes', 1),
-                            cache_sets=kwargs.pop('cache_sets', 32),
+                            cache_sets=kwargs.pop('cache_sets', None),
                             rtl_params=kwargs.pop('rtl_params', None),
                             stage_probes=kwargs.pop('stage_probes', False),
                             trace=kwargs.pop('trace', False),

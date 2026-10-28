@@ -122,6 +122,8 @@ def grid(dev, label):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--image-tcl', default=str(ROOT / 'evidence/r40/v2/convergence/attempt03/image.tcl'))
+    ap.add_argument('--image-profile', help='the profile the image implements (default: the backend\'s); '
+                    'core-vrf-sync-v5-x8-g2 for an R41 G2 image with two contexts')
     args = ap.parse_args()
     image = image_parameters(args.image_tcl)
     defaults = rtl_defaults()
@@ -146,7 +148,8 @@ def main():
                    maintenance=link['maintenance'], memory_controls=bool(link['memory_controls']),
                    host_timeout=3600)
     dev = MulticoreMMIOBackend(lk, core_count=3, memory_ports=link['memory_ports'],
-                               hbm_dma=True, host_timeout=3600)
+                               hbm_dma=True, host_timeout=3600,
+                               **({'image_profile': args.image_profile} if args.image_profile else {}))
     program = ROOT / 'tb/core/progs/r40_grid_mmio_memory.s'
     hexfile = Path(lk.dir) / 'grid.hex'
     subprocess.run(['python3', 'tools/asm/tnca_asm.py', str(program), '-o', str(hexfile), '--size', '256'],

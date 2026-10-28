@@ -32,6 +32,12 @@ class MulticoreMMIOBackend(U50Backend):
         kwargs.setdefault('device_clock', True)
         super().__init__(link, hbm_dma=hbm_dma, **kwargs)
 
+    def _chunk_lanes(self):
+        from ..adapters.r1 import target_for
+        from ..device import base_profile
+        target, _ = target_for(base_profile(self.image_profile))
+        return min(4, int(target.num_rctx))
+
     def _open_window(self, stat):
         striped = bool(stat & STRIPED_CAP)
         if striped and self.link.read_reg(STRIPED_REGISTER) != STRIPED_SIGNATURE:
@@ -82,8 +88,11 @@ class MulticoreMMIOBackend(U50Backend):
             capability = self.physical_grid_capability()
             if capability is None or capability[0] != self.core_count:
                 raise DeviceLost('v2 register image has a different physical core count')
-            if self.physical_chunk_capability() != 4:
-                raise DeviceLost('v2 register image has no four-lane physical chunk contract')
+            # One physical chunk lane per Role Context, up to four: four on the
+            # four-context profiles, two on core-vrf-sync-v5-x8-g2 (R41 G2).
+            if self.physical_chunk_capability() != self._chunk_lanes():
+                raise DeviceLost(f'v2 register image has no {self._chunk_lanes()}-lane physical '
+                                 f'chunk contract (profile {self.image_profile})')
             if self.memory_port_capability() != self.memory_ports:
                 raise DeviceLost('v2 register image has a different memory outlet contract')
             config = self.memory_configuration()

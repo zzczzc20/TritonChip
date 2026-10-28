@@ -25,17 +25,21 @@ def main():
     # Current and loaded Stage-2 source: VLEN=16, scalar SFU LAT=6.
     base.update(clock_hz='100000000', sfu_occupancy='22', sfu_latency='23')
     rows = []
-    for name, units, block, slices in [('baseline', 2, 16, 1), ('wide4', 4, 64, 4), ('wide8', 8, 128, 4)]:
+    for name, units, block, slices in [('baseline', 2, 16, 1), ('wide4', 4, 64, 4), ('wide8', 8, 128, 4), ('v3', 16, 128, 4), ('v3_lsu32', 32, 128, 4), ('v3_lsu32_sfu8', 32, 128, 8)]:
         values = dict(base)
         if name != 'baseline':
             values.update(tl_core_beat_bytes='64', tl_noc_payload_bytes='64',
-                          tl_lsu_units=str(units), lsu_beat_slots=str(16//units),
+                          tl_lsu_units=str(units), lsu_beat_slots=str(max(1, 16//units)),
                           sfu_occupancy=str(16//slices+6), sfu_latency=str(16//slices+7))
+        if name.startswith('v3'):
+            values.update(tl_lsu_shared_issue='0', tl_memory_lanes='8', tl_prefetch_lines='64',
+                          tl_pc_stripe_bytes='4096', outlets='32', active_outlets='32',
+                          mshrs='128', targets='256')
         cfg = a.out/f'{name}.cfg'
         cfg.write_text(''.join(f'{k}={v}\n' for k,v in values.items()))
         command = [sys.executable, str(ROOT/'tools/performance_harness/systemc/run_graphs.py'),
             '--source-root', str(ROOT), '--binary', str(a.binary.resolve()), '--config', str(cfg),
-            '--out', str(a.out/name), '--active-cores', '3', '--env', 'TNCA_RTL_MEM_PORTS=3',
+            '--out', str(a.out/name), '--active-cores', '3', '--env', f'TNCA_RTL_MEM_PORTS={32 if name.startswith("v3") else 3}',
             '--env', 'TNCA_RTL_OUTSTANDING=8', '--env', f'TNCA_MAX_BLOCK={block}',
             '--jobs', '1', '--timeout', '600', '--torch-extensions-dir', str(a.torch_extensions_dir)]
         for point in POINTS:

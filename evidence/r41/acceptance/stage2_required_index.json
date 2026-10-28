@@ -1284,7 +1284,6 @@
     "spec/r41/stage2/acceptance/s2-p2-locality.json": "e59d6b34b383127f8086287336e3b27e2c491a4a41fdb220ad0953917da865bb",
     "evidence/r41/stage2/candidates/F07/functional_report.json": "803488d8b42b7e3f0ce9d194b92a417888ee391f09b4374cece3bc8d3725a5b4",
     "evidence/r41/acceptance/p2/pipeline-summary.json": "0cab207e2fea08d670140e622a0b3d24656964354cc53c331fc69413857b6b44",
-    "rtl/core/tnca_core.v": "aae8ab7141365441eb596d48cd3fc0deae8b09a01228f92ddc807785385074ff",
     "evidence/r41/acceptance/p2/pipeline-index.json": "6dc591805b2fb784d6bf143f3aa24b8a3171219c6007780f42bacd654b50ec2d",
     "evidence/r41/acceptance/p2/private-resource-study.md": "12c48aff5f37cb1fe2a6f3b176848db1fc67f6717b61fcbfdfd2c8c0168bd92a",
     "compiler/python/tnca_cc/window_lifetime.py": "08a7e2ca8eff18bbee82e5f86466fb5242383c7d8e90afed6f199ced4fac0400",
@@ -1324,5 +1323,14 @@
       ],
       "closure_plan": null
     }
-  ]
+  ],
+  "evidence_review_only": {
+    "rtl/core/tnca_core.v": {
+      "reviewed_sha256": "15416c4cdb7b76a9ea2099bdb675f3e9962da04d618a5843eec3558f43f2bc18",
+      "reviewed_in": "1cfd3b8 (file version of 3643bfb)",
+      "later_hash": "aae8ab7141365441eb596d48cd3fc0deae8b09a01228f92ddc807785385074ff",
+      "later_hash_set_by": "eb6ec3d, after the e4770b6 merge changed the file, without a rerun",
+      "note": "Review-only (AUDIT.md R12): the S2-03.C Study read the reviewed version. The later hash only names the current file; no study was rerun on it, and neither hash stands for a measurement."
+    }
+  }
 }

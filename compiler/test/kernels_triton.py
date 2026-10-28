@@ -109,3 +109,13 @@ def sum_kernel(x_ptr, o_ptr, n, BLOCK: tl.constexpr):
     offs = tl.arange(0, BLOCK)
     x = tl.load(x_ptr + offs, mask=offs < n, other=0.0)
     tl.store(o_ptr, tl.sum(x, axis=0))
+
+
+@triton.jit
+def axpb_nomask_kernel(x_ptr, y_ptr, o_ptr, n, BLOCK: tl.constexpr):
+    """An unmasked element-wise kernel (the block divides n), as Inductor
+    emits for exact sizes (test_pointwise_tiles: grouped loads)."""
+    offs = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
+    a = tl.load(x_ptr + offs)
+    b = tl.load(y_ptr + offs)
+    tl.store(o_ptr + offs, a * 2.0 + b)

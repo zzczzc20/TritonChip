@@ -785,7 +785,9 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
             result = _lower_imported(
                 module, kernel_name, params, target, prov, options, stages, opt_level,
                 index_opt=index_opt, sparse=sparse, window_reuse=window_reuse,
-                packed_unpack=packed_unpack, large_tiles=large_tiles, tiled=tiled)
+                packed_unpack=packed_unpack, large_tiles=large_tiles, tiled=tiled,
+                # the retry also keeps one tiled lane group (register pressure)
+                tiled_groups_cap=1 if large_tiles else 0)
         except (UnsupportedError, CompileError) as e:
             if large_tiles:
                 if first and first not in str(e):
@@ -816,13 +818,15 @@ _CODE_STORE_BYTES = 0x20000
 
 
 def _lower_imported(module, kernel_name, params, target, prov, options, stages, opt_level, *,
-                    index_opt, sparse, window_reuse, packed_unpack, large_tiles, tiled=0):
+                    index_opt, sparse, window_reuse, packed_unpack, large_tiles, tiled=0,
+                    tiled_groups_cap=0):
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
         dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse),
         window_reuse=bool(window_reuse), packed_window_unpack=bool(packed_unpack),
-        large_tiles=large_tiles, ieee_div=bool(_ieee_div(options)), tiled_pointwise=tiled)
+        large_tiles=large_tiles, ieee_div=bool(_ieee_div(options)), tiled_pointwise=tiled,
+        tiled_groups_cap=tiled_groups_cap)
     if getattr(imp, 'tiled_pointwise_plan', None) is not None:
         prov.record('tiled_pointwise', imp.tiled_pointwise_plan)
     if imp.large_tiles or imp.ieee_div:

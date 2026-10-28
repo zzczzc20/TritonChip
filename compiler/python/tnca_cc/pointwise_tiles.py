@@ -56,6 +56,7 @@ _SCALAR_OK = {'tt.get_program_id', 'tt.get_num_programs', 'llvm.intr.assume'}
 _SKIP = {'tt.func', 'builtin.module', 'tt.return'}
 EXTENT_UNMASKED = (1 << 31) - 1    # i32 lane indices never reach it
 WINDOW_BUDGET = 48                 # of a context's 64 vector registers
+LSU_GROUP_BUDGET = 56              # registers the in-flight load groups may hold
 
 
 def _shape(value):
@@ -87,6 +88,7 @@ class Plan:
 
     def summary(self):
         return dict(width=self.width, tile=self.tile, double_buffer=self.double,
+                    groups=getattr(self, 'groups', 1),
                     accesses=sorted(a.kind for a in self.accesses.values()))
 
 
@@ -304,16 +306,35 @@ def plan(imp, ops, module_text, func_name):
             else:
                 return _no(imp, 30)
     tile_regs = min(tile_regs, width // (2 * vlen))
-    return Plan(width, tile_regs * vlen, scalars, tensor_ops, bases, ranges, accesses, double)
+    # Without tensor-engine transfers the vector loads of later tiles are
+    # issued before the arithmetic and stores of earlier ones (`groups` tiles
+    # per iteration), so their memory latency overlaps: as many groups as the
+    # registers hold (each tile keeps one register chunk per load plus one).
+    groups = 2 if double else 1
+    if not (nl + ns) and getattr(imp, 'tiled_groups_cap', 0) != 1:
+        nvl = sum(1 for a in accesses.values() if a.kind == 'vload')
+        # a masked access also holds its lane index and predicate per chunk
+        masked = any(a.op.get_num_operands() > (2 if a.kind == 'vstore' else 1)
+                     for a in accesses.values() if a.kind in ('vload', 'vstore'))
+        per_chunk = nvl + 1 + (2 if masked else 0)
+        for g in (4, 2):
+            if nvl and g * tile_regs * per_chunk <= LSU_GROUP_BUDGET and width % (g * tile_regs * vlen) == 0:
+                groups = g
+                break
+    p = Plan(width, tile_regs * vlen, scalars, tensor_ops, bases, ranges, accesses, double)
+    p.groups = groups
+    return p
 
 
 class _TValue:
-    """A TTIR value narrowed to one tile."""
-    def __init__(self, value, tile):
-        self.value, self._tile = value, tile
+    """A TTIR value narrowed to one tile (of lane group `group` of an iteration)."""
+    def __init__(self, value, tile, group=0):
+        self.value, self._tile, self._group = value, tile, group
 
     def id(self):
-        return ('tile-split', self.value.id()) if _shape(self.value) else self.value.id()
+        if not _shape(self.value):
+            return self.value.id()
+        return ('tile-split', self.value.id()) if not self._group else ('tile-split', self.value.id(), self._group)
 
     def get_type(self):
         text = str(self.value.get_type())
@@ -324,14 +345,14 @@ class _TValue:
 
 
 class _TOp:
-    def __init__(self, op, tile):
-        self.op, self._tile = op, tile
+    def __init__(self, op, tile, group=0):
+        self.op, self._tile, self._group = op, tile, group
 
     def get_operand(self, i):
-        return _TValue(self.op.get_operand(i), self._tile)
+        return _TValue(self.op.get_operand(i), self._tile, self._group)
 
     def get_result(self, i):
-        return _TValue(self.op.get_result(i), self._tile)
+        return _TValue(self.op.get_result(i), self._tile, self._group)
 
     def get_int_attr(self, name):
         if self.op.get_name() == 'tt.make_range' and name == 'end':
@@ -345,9 +366,9 @@ class _TOp:
         return str(self.op)
 
 
-def _chunk_ids(value, tile, vlen):
+def _chunk_ids(value, tile, vlen, group=0):
     from .register_blocks import _ValueView
-    tv = _TValue(value, tile)
+    tv = _TValue(value, tile, group)
     if tile == vlen:
         return [tv.id()]
     return [_ValueView(tv, c, vlen).id() for c in range(tile // vlen)]
@@ -410,32 +431,48 @@ def run(imp, p, dispatch):
     saved = {n: dict(getattr(imp, n)) for n in caches}
     start, end = imp._control_label('tiles'), imp._control_label('endtiles')
     tile_ops = [o for o in p.tensor_ops if o.get_name() != 'tt.make_range' and id(o) not in p.bases]
+    tte = bool(loads or stores)
+    groups = nbuf if tte else getattr(p, 'groups', 1)
     # Use and definition maps, and printed literals, for the tile views.
-    for o in p.tensor_ops:
-        for i in range(o.get_num_results()):
-            r = o.get_result(i)
-            tid = _TValue(r, tile).id()
-            imp._value_def[tid] = _TOp(o, tile)
-            imp._value_users[tid] = [(_TOp(u, tile), k) for u, k in imp._value_users.get(r.id(), [])]
-            printed = getattr(imp, '_printed_consts', None)
-            if printed and r.id() in printed:
-                printed[tid] = printed[r.id()]
+    for g in range(groups):
+        for o in p.tensor_ops:
+            for i in range(o.get_num_results()):
+                r = o.get_result(i)
+                tid = _TValue(r, tile, g).id()
+                imp._value_def[tid] = _TOp(o, tile, g)
+                imp._value_users[tid] = [(_TOp(u, tile, g), k) for u, k in imp._value_users.get(r.id(), [])]
+                printed = getattr(imp, '_printed_consts', None)
+                if printed and r.id() in printed:
+                    printed[tid] = printed[r.id()]
+    # The order of one iteration. With tensor-engine transfers: group after
+    # group (their transfers overlap inside emit_ops). Without: every group's
+    # ops up to its last load first, then the rest of every group, so later
+    # groups' loads are in flight while earlier groups compute and store.
+    last_load = max([i for i, o in enumerate(tile_ops)
+                     if getattr(p.accesses.get(id(o)), 'kind', None) == 'vload'] + [-1])
+    if tte or groups == 1:
+        order = [(g, tile_ops) for g in range(groups)]
+    else:
+        order = ([(g, tile_ops[:last_load + 1]) for g in range(groups)] +
+                 [(g, tile_ops[last_load + 1:]) for g in range(groups)])
     b.label(start)
     stores_pending = []
     try:
-        for half in range(nbuf):
-            b.comment(f'tile at lane {"t0" if half == 0 else "t0 + TILE"} (buffer {half})')
+        lane0 = {}
+        for g in range(groups):
+            b.comment(f'tile {g} of the iteration: lanes t0 + {g * tile}')
+            tg = t0 if g == 0 else b.sbini('add', t0, g * tile)
+            lane0[g] = tg
             # The lane index of this tile.
             for bid, so in p.bases.items():
-                sb = b.sbin('add', base_scalar[bid], t0)
+                sb = b.sbin('add', base_scalar[bid], tg)
                 vec = b.splat(sb, dtype='i32')
-                for cid in _chunk_ids(so.get_result(0), tile, vlen):
+                for cid in _chunk_ids(so.get_result(0), tile, vlen, g):
                     imp._v[cid] = vec
                     imp._uscalar[cid] = sb
                     imp._offsets[cid] = ('uniform', cid)
             for r in p.ranges:
-                rid = r.get_result(0).id()
-                for c, cid in enumerate(_chunk_ids(r.get_result(0), tile, vlen)):
+                for c, cid in enumerate(_chunk_ids(r.get_result(0), tile, vlen, g)):
                     v = b.arange()
                     if c:
                         v = b.vbin('add', v, b.vmovi(c * vlen))
@@ -445,77 +482,77 @@ def run(imp, p, dispatch):
                         imp._uscalar[cid] = imp._const_scalar(c * vlen)
                         imp._nonneg.add(cid)
                         imp._multiple[cid] = c * vlen
-            waited = False
-            rowbase = {}
+        rowbase = {}
+        waited = set()
 
-            def tile_base(a):
-                # &arg[s + t0], once per argument and tile
-                key = (a.arg, id(a.base_splat))
-                if key not in rowbase:
-                    esz = imp._ELEM_BYTES[a.elem]
-                    sb = imp._uscalar[_chunk_ids(a.base_splat.get_result(0), tile, vlen)[0]]
-                    off = sb if esz == 1 else b.sbini('shl', sb, esz.bit_length() - 1)
-                    rowbase[key] = b.sbin('add', imp._arg_value(a.arg), off)
-                return rowbase[key]
+        def tile_base(a, g):
+            # &arg[s + t0 + g*TILE], once per argument and tile
+            key = (a.arg, id(a.base_splat), g)
+            if key not in rowbase:
+                esz = imp._ELEM_BYTES[a.elem]
+                sb = imp._uscalar[_chunk_ids(a.base_splat.get_result(0), tile, vlen, g)[0]]
+                off = sb if esz == 1 else b.sbini('shl', sb, esz.bit_length() - 1)
+                rowbase[key] = b.sbin('add', imp._arg_value(a.arg), off)
+            return rowbase[key]
 
-            for o in tile_ops:
+        for g, ops_now in order:
+            for o in ops_now:
                 a = p.accesses.get(id(o))
                 if a is None:
-                    dispatch(_TOp(o, tile))
+                    dispatch(_TOp(o, tile, g))
                     continue
                 if a.kind in ('vload', 'vstore'):
                     from .frontend import _load_suffix, _SIZE_SUFFIX
                     esz = imp._ELEM_BYTES[a.elem]
-                    rb = tile_base(a)
+                    rb = tile_base(a, g)
                     nmask = 2 if a.kind == 'vstore' else 1
                     for c, cid in enumerate(_chunk_ids(o.get_result(0) if a.kind == 'vload'
-                                                       else o.get_operand(1), tile, vlen)):
+                                                       else o.get_operand(1), tile, vlen, g)):
                         mask = None
                         if o.get_num_operands() > nmask:
-                            mask = imp._as_pred(imp._value(_chunk_value(o.get_operand(nmask), tile, vlen, c)))
+                            mask = imp._as_pred(imp._value(_chunk_value(o.get_operand(nmask), tile, vlen, c, g)))
                         if a.kind == 'vload':
-                            imp._v[_chunk_ids(o.get_result(0), tile, vlen)[c]] = b.load(
+                            imp._v[cid] = b.load(
                                 rb, mask=mask, other=0, dtype=a.elem,
                                 size=_load_suffix(_SIZE_SUFFIX[esz], a.elem), offset=c * vlen * esz)
                         else:
-                            val = imp._value(_chunk_value(o.get_operand(1), tile, vlen, c))
+                            val = imp._value(_chunk_value(o.get_operand(1), tile, vlen, c, g))
                             b.store(rb, val, mask=mask, size=_SIZE_SUFFIX[esz], offset=c * vlen * esz)
                     continue
                 if a.kind == 'load':
-                    if not waited:
+                    if g not in waited:
                         # Two tiles per iteration (p.double): tile A's loads,
                         # then tile B's issued at once, so they move while A
                         # is computed. Every command is waited inside the
                         # iteration (compiler_overview.md sec 10.2).
-                        if half == 0:
+                        if g == 0:
                             tok_a = issue_loads(0, t0)
                             b.barrier_wait(tok_a)
                             if p.double:
-                                tok_b = issue_loads(1, b.sbini('add', t0, tile))
+                                tok_b = issue_loads(1, lane0[1])
                         else:
                             b.barrier_wait(tok_b)
-                        waited = True
-                    for c, cid in enumerate(_chunk_ids(o.get_result(0), tile, vlen)):
-                        imp._v[cid] = b.window_reg(a.windows[half], c, dtype=a.elem)
+                        waited.add(g)
+                    for c, cid in enumerate(_chunk_ids(o.get_result(0), tile, vlen, g)):
+                        imp._v[cid] = b.window_reg(a.windows[g], c, dtype=a.elem)
                 else:
                     value = o.get_operand(1)
-                    w = a.windows[half]
-                    for c, cid in enumerate(_chunk_ids(value, tile, vlen)):
+                    w = a.windows[g]
+                    for c, cid in enumerate(_chunk_ids(value, tile, vlen, g)):
                         held = imp._v.get(cid)
                         if held is None:
-                            held = imp._value(_chunk_value(value, tile, vlen, c))
+                            held = imp._value(_chunk_value(value, tile, vlen, c, g))
                         b.window_put(w, c, held)
-                    tok = b.barrier_arm(sbar[half], arrivals=0, ops=1)
-                    b.dma_store(w, a.desc.value, [coord(a, t0)], tok, dtype=a.elem)
+                    tok = b.barrier_arm(sbar[g], arrivals=0, ops=1)
+                    b.dma_store(w, a.desc.value, [coord(a, lane0[g])], tok, dtype=a.elem)
                     stores_pending.append(tok)
-            if half == nbuf - 1:
-                # Tile A's stores overlapped tile B's arithmetic; both finish
-                # before the windows are filled again.
-                for tok in stores_pending:
-                    b.barrier_wait(tok)
-                stores_pending.clear()
-            nt = b.sbini('add', t0, tile)
-            b._emit('assign', [], [t0, nt])
+        # Tile A's stores overlapped tile B's arithmetic; all finish before
+        # the windows are filled again.
+        for tok in stores_pending:
+            b.barrier_wait(tok)
+        stores_pending.clear()
+        nt = b.sbini('add', t0, groups * tile)
+        b._emit('assign', [], [t0, nt])
         b.branch_nz(b.scmp('lt', t0, b.const(width)), start)
         b.label(end)
     finally:
@@ -523,7 +560,7 @@ def run(imp, p, dispatch):
             setattr(imp, n, cache)
 
 
-def _chunk_value(value, tile, vlen, c):
+def _chunk_value(value, tile, vlen, c, group=0):
     from .register_blocks import _ValueView
-    tv = _TValue(value, tile)
+    tv = _TValue(value, tile, group)
     return tv if tile == vlen else _ValueView(tv, c, vlen)

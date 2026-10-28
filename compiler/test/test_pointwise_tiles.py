@@ -101,6 +101,15 @@ class TestPointwiseTiles(unittest.TestCase):
         import kernels_triton as K
         self._run(K.mul_add_kernel, 'mul_add_kernel', lambda i: xv(i) * yv(i) + xv(i), 128, 100, 1)
 
+    def test_grouped_loads_unmasked(self):
+        """Mode 2 issues the loads of two tiles before computing the first
+        (lane groups); the result must be unchanged."""
+        if not H.available():
+            self.skipTest(H.why_unavailable())
+        import kernels_triton as K
+        imp = self._run(K.axpb_nomask_kernel, 'axpb_nomask_kernel', lambda i: xv(i) * 2.0 + yv(i), 256, 256, 2)
+        self.assertGreater(imp.tiled_pointwise_plan['groups'], 1)
+
     def test_plan_shape(self):
         import kernels_triton as K
         imp, _ = self._import(K.add_kernel, 'add_kernel', 256, 40, 1)

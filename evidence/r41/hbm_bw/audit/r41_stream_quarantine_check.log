@@ -1,0 +1,27 @@
+# Proposed r41 quarantine patch check, 2026-10-28T07:59:22Z
+# base: r41 7d805aea9bbd (the local r41 ref; origin/r41 208fbb1 adds only the discipline document, re-checked below)
+# patch sha256: 56948b19516d0b3372ac0c3ce8ab65db9c94326dee85a00f910612108e3b6c17
+$ git apply --check r41_stream_quarantine.patch (on clean origin/r41)
+APPLY_CHECK_OK
+$ python3 -m py_compile python/tnca/{runtime.py,backends/multicore_mmio.py,backends/u50.py,torch_device/copy.py}
+COMPILE_OK
+$ bash -n flow/fpga/link.sh
+OK
+$ python3 -m tools.docmaint check
+ok: 106 documents, acyclic
+$ PYTHONPATH=python:compiler/python:. python3 tools/r41/hbm_layout_tests.py
+Ran 9 tests in 1.003s
+
+OK
+$ PYTHONPATH=python:compiler/python:. python3 tools/r40/multicore_mmio_option_tests.py
+MULTICORE MMIO OPTIONS PASS 13 boundaries
+$ PYTHONPATH=python:compiler/python:. python3 tools/r40/reserved_memory_tests.py
+Ran 4 tests in 0.101s
+
+OK
+
+# Re-check on the current origin/r41 208fbb127421108ebd7353a263f7fc16aff088af, 2026-10-28T07:59:39Z
+$ git apply --index r41_stream_quarantine.patch
+APPLY_OK
+$ python3 -m tools.docmaint check
+ok: 107 documents, acyclic

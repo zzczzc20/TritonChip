@@ -93,12 +93,13 @@ high-water margin. FP8 layers/cache/vision results on SystemC cover different
 models and do not replace that requirement.
 
 The locality consumer now has two standard Torch off/on/off graph runs with
-storage/alias, ownership and fault checks on board-top RTL. Its physical U280
-traffic/latency comparison and the pipeline/resource studies remain unmeasured.
-The eight XL points, final holdout selector execution and core-count scaling
-are incomplete. Barrier wrap and persistent code eviction/state-reuse tests
-need explicit counted evidence. Final software/model rebuild and independent
-full-core reproduction have not happened.
+storage/alias, ownership and fault checks, plus physical U280 traffic/latency
+comparisons. The fixed-budget pipeline comparison remains unmeasured. Compound
+alias refusals, bounded grid admission and 65,537 physical barrier arm/wait
+iterations pass. Targeted physical eviction also passes, but persistent
+full-model eviction/state-reuse evidence remains absent. The eight XL points,
+final holdout selector execution and core-count scaling are incomplete. Final
+software/model rebuild and independent full-core reproduction have not happened.
 
 Performance attribution also remains incomplete. X8's scheduling-model
 fallback changes all 113 compiled texts, so the transition is not solely a
@@ -217,3 +218,27 @@ results are preserved in `evidence/r41/acceptance/p2/pipeline-final-preflight.tg
 and its preflight summary. The locally tested approved-image manifest is
 `spec/r41/stage2/acceptance/s2-p2-pipeline.json`. S2-03.B remains not measured
 until the lead supplies the physical comparison; no acceptance count changes.
+
+## P2/P4 physical-board closeout — 2026-10-28
+
+The lead's completed `7b10e7b` queue on the approved 100 MHz image was retrieved
+read-only and validated by `board_p2p4_closeout.py`. Every declared source hash
+matches that commit, and all five steps retain matching image UUIDs, 100 MHz
+probes and zero-step exit records. The locality step took
+61.24539475608617 seconds. Both graphs preserve numerical outputs and native
+artifact identities across off/on/off replay; actual device cycles, host-scope
+latency and per-port traffic are in `board-p2p4-summary.json`. This closes
+S2-03.A.5 without claiming a speedup or default-on locality decision.
+
+The physical compound alias cases all refuse before admission. Bounded grid
+admission passes opt-in, queue-overflow, exact-drain and advertised-capacity
+checks with 65,537 unique program IDs and 65,544 completion atomics. The
+barrier case completes 65,537 arm/wait iterations. These close S2-04.D.3,
+D.4 and D.6. The targeted eviction case passes 117 graphs with one unloaded
+module and intact resident data, but it is not a persistent full-model session;
+D.7 remains not measured. S2-03.B also remains open because the separate
+pipeline manifest was not in this queue.
+
+The validated ledger is now **45 passed, two failed, 40 not measured, seven
+blocked**. Stage 2 and overall R41 remain not accepted. Raw files and member
+hashes are in `board-p2p4-7b10e7b-try2.tgz` and `board-p2p4-index.json`.

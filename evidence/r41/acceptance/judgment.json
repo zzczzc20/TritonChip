@@ -1,11 +1,11 @@
 {
-  "scope": "Audit plus P0 prospective freeze, P8 measured follow-up, P1 bounded studies and P2 locality/resource work, 2026-10-27; historical failures remain.",
+  "scope": "Audit through lead-run physical P2 locality and P4 lifecycle evidence, 2026-10-28; historical failures and persistent full-model gaps remain.",
   "integrity": "passed",
   "status": "not accepted",
   "counts": {
-    "passed": 41,
+    "passed": 45,
     "failed": 2,
-    "not measured": 44,
+    "not measured": 40,
     "blocked": 7
   },
   "errors": [],
@@ -458,15 +458,16 @@
     {
       "id": "S2-03.A.5",
       "requirement": "Board traffic and latency comparisons",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/p2/rtl-v4/report.json",
-        "evidence/r41/acceptance/p2/summary.json",
+        "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+        "evidence/r41/acceptance/board-p2p4-summary.json",
+        "evidence/r41/acceptance/board-p2p4-index.json",
         "spec/r41/stage2/acceptance/s2-p2-locality.json"
       ],
-      "reason": "Actual RTL counter and host/device timing rows are archived, but no physical U280 locality comparison has run. The approved-image manifest is prepared only; RTL observations do not close this board requirement or establish a performance gain.",
-      "closure_plan": "P2"
+      "reason": "Lead-run physical U280 residual and projection graphs pass off/on/off numerical replay with identical artifacts and outputs. Actual device cycles, host-scope latency and per-port line-counter deltas are archived and validated. Locality control overhead is visible; no speedup or default-on decision is claimed.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.B",
@@ -641,26 +642,28 @@
     {
       "id": "S2-04.D.3",
       "requirement": "High-bit truncation, bounds and illegal-alias negative cases",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/acceptance/board_index.json"
+        "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+        "evidence/r41/acceptance/board-p2p4-summary.json",
+        "evidence/r41/acceptance/board-p2p4-index.json"
       ],
-      "reason": "High-bit anti-alias and out-of-bounds checks pass, but those are not an explicit illegal overlapping-storage/ownership-alias refusal test. The full compound negative-test requirement remains open.",
-      "closure_plan": "P4"
+      "reason": "All four physical-board compound cases refuse undeclared same-storage and distinct-handle overlap, an out-of-bounds view and a forged high-bit storage owner before admission. Raw reports and before/after board probes pass validation.",
+      "closure_plan": null
     },
     {
       "id": "S2-04.D.4",
       "requirement": "Bounded grid admission",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/acceptance/board_index.json"
+        "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+        "evidence/r41/acceptance/board-p2p4-summary.json",
+        "evidence/r41/acceptance/board-p2p4-index.json"
       ],
-      "reason": "Original grids execute, but final capacity stress proof and bound under sustained admission are not archived.",
-      "closure_plan": "P4"
+      "reason": "The physical AOT/Session case proves opt-in refusal, an eight-task unfinished bound with seven dependent admissions, exact unique program IDs and completion atomics after drain, and refusal above the advertised 16,777,216-program capacity. This is not a standard-Torch or full-model scaling claim.",
+      "closure_plan": null
     },
     {
       "id": "S2-04.D.5",
@@ -677,14 +680,15 @@
     {
       "id": "S2-04.D.6",
       "requirement": "More than 65,536 barrier arm cycles",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/acceptance/board_index.json"
+        "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+        "evidence/r41/acceptance/board-p2p4-summary.json",
+        "evidence/r41/acceptance/board-p2p4-index.json"
       ],
-      "reason": "Endurance duration/session count does not establish barrier wrap coverage.",
-      "closure_plan": "P4"
+      "reason": "The physical AOT/Session barrier run completes and observes all 65,537 arm/wait iterations with a successful event, crossing the 16-bit generation boundary.",
+      "closure_plan": null
     },
     {
       "id": "S2-04.D.7",
@@ -692,10 +696,11 @@
       "status": "not measured",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/acceptance/board_index.json"
+        "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+        "evidence/r41/acceptance/board-p2p4-summary.json",
+        "evidence/r41/acceptance/board-p2p4-index.json"
       ],
-      "reason": "Mixed-session endurance passes but does not establish targeted code eviction/reuse/state corruption checks in one persistent full-model session.",
+      "reason": "The targeted physical eviction case passes 117 distinct graphs, unloads one module and preserves the resident tensor. This is real lifecycle evidence, but it does not establish the required persistent full-model code-eviction, allocator-reuse and zero-state-corruption session, so the item remains not measured.",
       "closure_plan": "P4"
     },
     {

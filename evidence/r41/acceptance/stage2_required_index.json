@@ -2,7 +2,7 @@
   "schema": "tnca-r41-stage2-required-index/1",
   "contract": "doc/r41_tasks_and_acceptance.md",
   "contract_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
-  "scope": "Audit plus P0 prospective freeze, P8 measured follow-up, P1 bounded studies and P2 locality/resource work, 2026-10-27; historical failures remain.",
+  "scope": "Audit through lead-run physical P2 locality and P4 lifecycle evidence, 2026-10-28; historical failures and persistent full-model gaps remain.",
   "statuses": [
     "passed",
     "failed",
@@ -458,15 +458,16 @@
     {
       "id": "S2-03.A.5",
       "requirement": "Board traffic and latency comparisons",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/p2/rtl-v4/report.json",
-        "evidence/r41/acceptance/p2/summary.json",
+        "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+        "evidence/r41/acceptance/board-p2p4-summary.json",
+        "evidence/r41/acceptance/board-p2p4-index.json",
         "spec/r41/stage2/acceptance/s2-p2-locality.json"
       ],
-      "reason": "Actual RTL counter and host/device timing rows are archived, but no physical U280 locality comparison has run. The approved-image manifest is prepared only; RTL observations do not close this board requirement or establish a performance gain.",
-      "closure_plan": "P2"
+      "reason": "Lead-run physical U280 residual and projection graphs pass off/on/off numerical replay with identical artifacts and outputs. Actual device cycles, host-scope latency and per-port line-counter deltas are archived and validated. Locality control overhead is visible; no speedup or default-on decision is claimed.",
+      "closure_plan": null
     },
     {
       "id": "S2-03.B",
@@ -641,26 +642,28 @@
     {
       "id": "S2-04.D.3",
       "requirement": "High-bit truncation, bounds and illegal-alias negative cases",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/acceptance/board_index.json"
+        "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+        "evidence/r41/acceptance/board-p2p4-summary.json",
+        "evidence/r41/acceptance/board-p2p4-index.json"
       ],
-      "reason": "High-bit anti-alias and out-of-bounds checks pass, but those are not an explicit illegal overlapping-storage/ownership-alias refusal test. The full compound negative-test requirement remains open.",
-      "closure_plan": "P4"
+      "reason": "All four physical-board compound cases refuse undeclared same-storage and distinct-handle overlap, an out-of-bounds view and a forged high-bit storage owner before admission. Raw reports and before/after board probes pass validation.",
+      "closure_plan": null
     },
     {
       "id": "S2-04.D.4",
       "requirement": "Bounded grid admission",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/acceptance/board_index.json"
+        "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+        "evidence/r41/acceptance/board-p2p4-summary.json",
+        "evidence/r41/acceptance/board-p2p4-index.json"
       ],
-      "reason": "Original grids execute, but final capacity stress proof and bound under sustained admission are not archived.",
-      "closure_plan": "P4"
+      "reason": "The physical AOT/Session case proves opt-in refusal, an eight-task unfinished bound with seven dependent admissions, exact unique program IDs and completion atomics after drain, and refusal above the advertised 16,777,216-program capacity. This is not a standard-Torch or full-model scaling claim.",
+      "closure_plan": null
     },
     {
       "id": "S2-04.D.5",
@@ -677,14 +680,15 @@
     {
       "id": "S2-04.D.6",
       "requirement": "More than 65,536 barrier arm cycles",
-      "status": "not measured",
+      "status": "passed",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/acceptance/board_index.json"
+        "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+        "evidence/r41/acceptance/board-p2p4-summary.json",
+        "evidence/r41/acceptance/board-p2p4-index.json"
       ],
-      "reason": "Endurance duration/session count does not establish barrier wrap coverage.",
-      "closure_plan": "P4"
+      "reason": "The physical AOT/Session barrier run completes and observes all 65,537 arm/wait iterations with a successful event, crossing the 16-bit generation boundary.",
+      "closure_plan": null
     },
     {
       "id": "S2-04.D.7",
@@ -692,10 +696,11 @@
       "status": "not measured",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/acceptance/board_index.json"
+        "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+        "evidence/r41/acceptance/board-p2p4-summary.json",
+        "evidence/r41/acceptance/board-p2p4-index.json"
       ],
-      "reason": "Mixed-session endurance passes but does not establish targeted code eviction/reuse/state corruption checks in one persistent full-model session.",
+      "reason": "The targeted physical eviction case passes 117 distinct graphs, unloads one module and preserves the resident tensor. This is real lifecycle evidence, but it does not establish the required persistent full-model code-eviction, allocator-reuse and zero-state-corruption session, so the item remains not measured.",
       "closure_plan": "P4"
     },
     {
@@ -1215,8 +1220,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "3c95b7731f2fb01de2600bab78f3ae6b1c00012307d28c9ab7c1687e2451ea10",
-    "doc/r41_stage2_report.md": "092bc5c0617cd1274250b4d8bbc2411341cffcce99869927c70649f02edc4b2f",
+    "doc/r41_report.md": "22e5a4ab6f210aaeac32d354f3f3da59b88c37462951a20096f61d79b7fc00bc",
+    "doc/r41_stage2_report.md": "d8cc2c236b4dc23309453f62e7196a2845f2c3cc464ce088b3ee5b527d900079",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "04350417d681c7a3bd90fdbe5b0240c5ebf0e8b27d1c14a9b07e14a72ee59a7e",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1269,14 +1274,17 @@
     "spec/r41/stage2/acceptance/s2-p2-locality.json": "e59d6b34b383127f8086287336e3b27e2c491a4a41fdb220ad0953917da865bb",
     "evidence/r41/stage2/candidates/F07/functional_report.json": "803488d8b42b7e3f0ce9d194b92a417888ee391f09b4374cece3bc8d3725a5b4",
     "evidence/r41/acceptance/p2/pipeline-summary.json": "0cab207e2fea08d670140e622a0b3d24656964354cc53c331fc69413857b6b44",
-    "rtl/core/tnca_core.v": "15416c4cdb7b76a9ea2099bdb675f3e9962da04d618a5843eec3558f43f2bc18",
+    "rtl/core/tnca_core.v": "aae8ab7141365441eb596d48cd3fc0deae8b09a01228f92ddc807785385074ff",
     "evidence/r41/acceptance/p2/pipeline-index.json": "6dc591805b2fb784d6bf143f3aa24b8a3171219c6007780f42bacd654b50ec2d",
     "evidence/r41/acceptance/p2/private-resource-study.md": "12c48aff5f37cb1fe2a6f3b176848db1fc67f6717b61fcbfdfd2c8c0168bd92a",
     "compiler/python/tnca_cc/window_lifetime.py": "08a7e2ca8eff18bbee82e5f86466fb5242383c7d8e90afed6f199ced4fac0400",
     "evidence/r41/acceptance/p2/pipeline-preflight-summary.json": "d9260eced63d0fa1f7a341645627e217889fe5d103710c1ca16a545617e5aae1",
     "spec/r41/stage2/acceptance/s2-p2-pipeline.json": "40c58270883fd3d0ef348c076481d8e6b90f1df060e4f2cdc533f6d74e611608",
     "evidence/r41/acceptance/p2/pipeline-three-sample-model.json": "855264cd3b2bbce376ff9296462bf0de4a6605939f305ed87e4a21088cb12a80",
-    "evidence/r41/acceptance/p2/pipeline-preflight-index.json": "07c39873ce44e8ba8087f7063e8684b1349eccd2d814402fe1f16c098587ca38"
+    "evidence/r41/acceptance/p2/pipeline-preflight-index.json": "07c39873ce44e8ba8087f7063e8684b1349eccd2d814402fe1f16c098587ca38",
+    "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz": "c2e9f804a7cb4fe45b8d5a54fc118930493bdad85a226f927057bc455bfc279a",
+    "evidence/r41/acceptance/board-p2p4-summary.json": "005e270eaa631652213f6ef8899e33665cf325e36c4c76e8fe22f100a23a1ddf",
+    "evidence/r41/acceptance/board-p2p4-index.json": "1f7598115923356f098c84b95e5f6928734efa7cf9bb5ebbfaa99593898b7b02"
   },
   "followups": [
     {

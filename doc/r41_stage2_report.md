@@ -76,8 +76,8 @@ are in `board_index.json`. Large executable bundles remain on the host.
 
 Original-suite and endurance campaigns expose 4 GiB; separate high-address
 and FP8 cases expose 8 GiB. No 8 GiB persistent full-model endurance result
-is claimed. More than 65,536 barrier arm cycles and targeted persistent code
-eviction/reuse are not proved by elapsed endurance time.
+is claimed. A separate physical run proves 65,537 barrier arm/wait iterations
+and targeted eviction; persistent full-model code eviction/reuse remains open.
 
 ## Performance and causal limits
 
@@ -119,7 +119,7 @@ FP8 execution does not qualify final-image timing prediction.
 | S2-00 | Failed process sequencing; freeze fields not measured | No Stage 2 plan/lock, model tolerance lock or XL manifest preceded implementation. Freeze remaining work prospectively; preserve the process failure (P0) |
 | S2-01 | Eight numbered candidate checks passed | Candidate identity reconciled; final B41-F still unselected. A future image needs its own affected qualification and measurements (P6) |
 | S2-02 | RTL MMA/FMA candidate and physical screens evidenced; study/comparison gaps remain | Complete SystemC sensitivity and integrated-mechanism board comparisons; coordinate bandwidth work and address scheduling-model confounder (P1) |
-| S2-03 | Functional locality passed; board comparison and studies not measured | Two standard Torch graphs pass off/on/off numerical, storage/alias, ownership and fault checks on board-top RTL. Physical U280 traffic/latency and final fixed-budget pipeline/resource studies remain absent (P2) |
+| S2-03 | Functional locality and physical traffic/latency passed; pipeline comparison not measured | Two standard Torch graphs pass physical off/on/off numerical, traffic and latency comparisons. The final fixed-budget pipeline comparison remains absent (P2) |
 | S2-04 | Full model blocked; capacity and lifecycle partially passed | No authentic all-layer BF16 Qwen3.5-2B core/tail board inference. Actual full-model peak, state/logit evolution, persistent lifecycle and steady-state host traffic remain unmeasured (P3/P4) |
 | S2-05 | Original suite passed; XL/selector/scaling incomplete | Eight XL points lack a freeze and complete execution; sealed holdout lacks final selector campaign; no final-image 1/2/3-core model comparison (P5) |
 | S2-06 | Blocked | Final identity, complete functional gates, model-domain report, clean software/model rebuild and independent full-core reproduction remain absent (P6) |
@@ -254,3 +254,27 @@ results are preserved in `evidence/r41/acceptance/p2/pipeline-final-preflight.tg
 and its preflight summary. The locally tested approved-image manifest is
 `spec/r41/stage2/acceptance/s2-p2-pipeline.json`. S2-03.B remains not measured
 until the lead supplies the physical comparison; no acceptance count changes.
+
+## P2/P4 physical-board closeout — 2026-10-28
+
+The lead's completed `7b10e7b` queue on the approved 100 MHz image was retrieved
+read-only and validated by `board_p2p4_closeout.py`. Every declared source hash
+matches that commit, and all five steps retain matching image UUIDs, 100 MHz
+probes and zero-step exit records. The locality step took
+61.24539475608617 seconds. Both graphs preserve numerical outputs and native
+artifact identities across off/on/off replay; actual device cycles, host-scope
+latency and per-port traffic are in `board-p2p4-summary.json`. This closes
+S2-03.A.5 without claiming a speedup or default-on locality decision.
+
+The physical compound alias cases all refuse before admission. Bounded grid
+admission passes opt-in, queue-overflow, exact-drain and advertised-capacity
+checks with 65,537 unique program IDs and 65,544 completion atomics. The
+barrier case completes 65,537 arm/wait iterations. These close S2-04.D.3,
+D.4 and D.6. The targeted eviction case passes 117 graphs with one unloaded
+module and intact resident data, but it is not a persistent full-model session;
+D.7 remains not measured. S2-03.B also remains open because the separate
+pipeline manifest was not in this queue.
+
+The validated ledger is now **45 passed, two failed, 40 not measured, seven
+blocked**. Stage 2 and overall R41 remain not accepted. Raw files and member
+hashes are in `board-p2p4-7b10e7b-try2.tgz` and `board-p2p4-index.json`.

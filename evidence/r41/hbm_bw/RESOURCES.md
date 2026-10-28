@@ -284,7 +284,7 @@ All regressions ran on GB10 (RTL simulation, iverilog) through the scripts kept 
 
 The image-geometry bench runs the MMIO v2 protocol through `tnca_multicore_hbm_xo` at the image's 32 sets × 8 ways and every image option. It covers code upload and readback, two 455-program grids with every result checked, four memory-control settings, coherent host writes, dirty-line download through the ownership handoff, a partial-line handoff and a deadline abort.
 
-The lockstep benches were checked for sensitivity by breaking the candidates on purpose (scratch runs, not kept as evidence of the candidates): an off-by-one maintenance index and a wrong service way in the shared slice read, and a wrong read slot and a fixed W slot in the outlet. Each was reported as an output mismatch within the first few hundred cycles.
+The lockstep benches were checked for sensitivity by breaking the candidates on purpose (`resources/regression/mutation/run_mutants.sh`, run on the local development host; output in `mutants.log`). Five mutants were tried: an off-by-one maintenance index (modes 1 and 2), a wrong service way in the shared slice read, a wrong read slot and a fixed W slot in the outlet. The benches reported every one as an output mismatch.
 
 ## 8. Method, provenance and preserved failures
 

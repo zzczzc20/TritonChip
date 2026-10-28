@@ -46,7 +46,12 @@ BENCH = dict(SETS='SETS', SET_W='SET_W', WAYS='WAYS', WAY_W='WAY_W',
              HAS_TENSOR_XPOSE='HAS_TENSOR_XPOSE',
              # R41 G2 resource sizing
              **{k: k for k in ('NUM_RCTX', 'RCTX_W', 'PHYS_VREGS', 'PHYS_W', 'ACC_N', 'ACC_W',
-                               'BAR_N', 'BAR_W', 'BAR_EPOCH_W', 'PHYS_ADDR_W')})
+                               'BAR_N', 'BAR_W', 'BAR_EPOCH_W', 'PHYS_ADDR_W')},
+             # R41 G4 one-lane path (tnca_multicore_board_regs forwards them)
+             **{k: k for k in ('HYBRID_LSU', 'HOME_BACKGROUND_READS', 'HOME_LINE_WRITE_NOFILL', 'HOME_LINE_PIPE',
+                               'HOME_MSHR_N', 'LINE_SLOTS', 'AXI_OUT_N', 'AXI_PIPELINED_ISSUE')})
+# Parameters the bench derives from others; the image must hold the derived value.
+DERIVED = dict(AXI_ID_W=lambda image: max(1, (image.get('AXI_OUT_N', 8) - 1).bit_length()))
 # Parameters the link's own constructor sets.
 LINK = dict(MEM_PORTS='memory_ports', LINK_STAGES='link_stages', NOC_LINK_STAGES='noc_link_stages',
             DISPATCH_STAGES='dispatch_stages', MEM_HOME_STAGES='home_stages',
@@ -114,8 +119,9 @@ def grid(dev, label):
     assert all(row['issued'] == row['completed'] for row in metrics['cores']), (label, metrics)
     got, data = dev.download(0x30000, 455 * 8)
     assert got.ok
-    assert [int.from_bytes(data[k:k + 8], 'little') for k in range(0, len(data), 8)] == \
-        list(range(4096, 455 + 4096)), label
+    values = [int.from_bytes(data[k:k + 8], 'little') for k in range(0, len(data), 8)]
+    wrong = [(k, hex(v)) for k, v in enumerate(values) if v != 4096 + k]
+    assert not wrong, (label, f'{len(wrong)} wrong result slots', wrong[:16])
     return reply
 
 
@@ -135,6 +141,9 @@ def main():
             bench[BENCH[name]] = value
         elif name in LINK:
             link[LINK[name]] = value
+        elif name in DERIVED:
+            if DERIVED[name](image) != value:
+                raise SystemExit(f'{name}={value} differs from the value the bench derives, {DERIVED[name](image)}')
         elif name in defaults:
             if defaults[name] != value:
                 raise SystemExit(f'{name}={value} differs from the RTL default {defaults[name]} '

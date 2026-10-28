@@ -1,0 +1,19 @@
+MULTICORE MMIO OPTIONS PASS 13 boundaries
+DMA HANDOFF GUARDS PASS (8/8)
+MMIO CACHE HANDOFF PASS disabled
+tb/fpga/tb_mmio_cache_handoff.v:37: $finish called at 142000 (1ps)
+MMIO CACHE HANDOFF PASS snapshot drain range faults reset
+tb/fpga/tb_mmio_cache_handoff.v:63: $finish called at 981000 (1ps)
+MULTICORE DMA OWNERSHIP PASS cores=1 ports=1 pipeline=0 board=False
+dirty download, clean invalidation, partial-line preservation, zero/range guards PASS
+MULTICORE DMA OWNERSHIP PASS cores=3 ports=3 pipeline=2 board=True
+dirty download, clean invalidation, partial-line preservation, zero/range guards PASS
+W1028 19:17:43.306000 2327032 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+LEGACY COUNTER FAILURE REPRO {"actual_outlet_delta": [{"port": 0, "read_lines": 352, "write_lines": 83}, {"port": 1, "read_lines": 285, "write_lines": 82}, {"port": 2, "read_lines": 256, "write_lines": 81}], "corrected_legacy_api": "unavailable", "legacy_register_defaults": {"read_beats": 0, "read_cycles": 0, "reads": 0, "writes": 0}}
+NATIVE MEMORY PORTS PASS {"controller_traffic": [{"port": 0, "read_lines": 352, "write_lines": 83}, {"port": 1, "read_lines": 285, "write_lines": 82}, {"port": 2, "read_lines": 256, "write_lines": 81}], "cores": 3, "dma_ownership": true, "physical_activity": {"cores": [{"completed": 88, "core": 0, "issued": 88, "occupied_cycles": 22727}, {"completed": 85, "core": 1, "issued": 85, "occupied_cycles": 22329}, {"completed": 84, "core": 2, "issued": 84, "occupied_cycles": 22099}], "peak_active": 3}, "ports": 3, "zero_tensor_staging": true}
+W1028 19:23:55.694000 2332558 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+PASS 3 recovery epochs with forced physical address reuse
+PASS stale event, copy, view, launch and growing resize rejected
+PASS old storage destruction preserves the new allocation at the same address
+r40-recovery-tests PASS (3/3) multicore_dma=True
+rc=0

@@ -71,6 +71,7 @@ module tnca_multicore_regs;
  wire [PORTS-1:0] m_bvalid;
  wire [PORTS-1:0] m_bready;
  wire [PORTS*3-1:0] m_bid;
+ localparam AXI_ID_W=3;   // the B-channel ID width tnca_multicore_shared_hbm.vh reads
  wire [PORTS*2-1:0] m_bresp;
  wire [PORTS-1:0] m_arvalid;
  wire [PORTS-1:0] m_arready;

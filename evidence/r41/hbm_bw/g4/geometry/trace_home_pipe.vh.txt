@@ -1,0 +1,21 @@
+`ifdef TNCA_HOME_PIPE_TRACE
+    function tr_hit(input [ADDR_W-1:0] a); tr_hit = (a[19:6] == 14'hc25); endfunction
+    always @(posedge clk) if (rst_n) begin
+        if (req_valid && req_ready && tr_hit(req_addr))
+            $display("HPT %m t=%0t ACC we=%0d amo=%0d be=%h", $time, req_we, req_amo, req_be);
+        if (s2_live && tr_hit(s2_addr))
+            $display("HPT %m t=%0t S2 act=%0d hold=%0d block=%0d hit=%0d merge=%0d inst=%0d alloc=%0d hitidx=%0d vicidx=%0d ms=%0d/%0d we=%0d be=%h", $time,
+                s2_act, s2_hold, s2_block, s2_kind_hit, s2_kind_merge, s2_kind_install, s2_kind_alloc, s2_hit_index, s2_vic_index, s2_ms, s2_ms_id, s2_we, s2_be);
+        if (s1_v && s1_stale && tr_hit(s2_addr)) $display("HPT %m t=%0t S2 replay", $time);
+        if (s3_go && s3_wb && tr_hit(s3_wb_addr)) $display("HPT %m t=%0t S3 WBPUSH dirty victim idx=%0d", $time, s3_index);
+        if (s2_act && !s2_kind_hit && !s2_kind_merge && !s2_kind_mmio && v_bits[s2_vic_index] && tr_hit(s2_vic_addr))
+            $display("HPT %m t=%0t EVICT idx=%0d dirty=%0d for %h", $time, s2_vic_index, s2_vic_dirty, s2_addr);
+        if (mem_req_fire && tr_hit(mem_req_addr)) $display("HPT %m t=%0t MEMREQ we=%0d tag=%0d", $time, mem_req_we, mem_req_tag);
+        if (mem_rsp_valid && tr_hit(ms_addr[mem_rsp_tag])) $display("HPT %m t=%0t MEMRSP tag=%0d", $time, mem_rsp_tag);
+        if (fu_step && fu_last && tr_hit(ms_addr[fu_ms])) $display("HPT %m t=%0t FILL idx=%0d dirty=%0d", $time, ms_set[fu_ms]*WAYS + ms_way[fu_ms], fu_dirty || fu_writes);
+        if (m_state == M_SCAN && v_bits[m_index] && m_overlap && tr_hit(m_address) && !(d_bits[m_index] && wbq_full))
+            $display("HPT %m t=%0t MAINT idx=%0d dirty=%0d", $time, m_index, d_bits[m_index]);
+        if (maint_requested && maint_ready) $display("HPT %m t=%0t MAINTSTART base=%h size=%h", $time, maint_base, maint_size);
+        if (maint_done) $display("HPT %m t=%0t MAINTDONE", $time);
+    end
+`endif

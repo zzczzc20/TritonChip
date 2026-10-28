@@ -19,7 +19,29 @@ import sys
 from . import registry
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SUITES = HERE / 'suites'
+# A tier whose frozen file carries a registered name rather than the tier's.
+NAMES = {'membound': 'r41_membound'}
+# The R41 memory-bound suite's non-regression set (BANDWIDTH_PLAN.md section 3,
+# discipline section 2.3.4): the 113 original points of the R40 HBM suite, among
+# them every GEMM point, which cannot show a bandwidth effect but must not slow.
+NON_REGRESSION = 'spec/r40/suites/hbm.json'
+GEMM_FAMILIES = ('matmul', 'linear', 'gemv', 'bmm')
+
+
+def path(tier):
+    return SUITES / f'{NAMES.get(tier, tier)}.json'
+
+
+def non_regression():
+    f = ROOT / NON_REGRESSION
+    doc = json.loads(f.read_text())
+    return dict(suite=NON_REGRESSION, file_sha256=hashlib.sha256(f.read_bytes()).hexdigest(),
+                suite_sha256=doc['sha256'], points=len(doc['points']),
+                gemm_families=list(GEMM_FAMILIES),
+                gemm_points=sorted(p['id'] for p in doc['points'] if p['family'] in GEMM_FAMILIES),
+                baseline='s2-original-suite on the run-1 100 MHz image (evidence/r41/stage2/board/results.md)')
 
 
 def build(tier):
@@ -27,9 +49,16 @@ def build(tier):
     entries = [dict(id=p.id, sha256=p.definition_sha256(), kind=p.kind, family=p.family,
                     dtype=p.dtype, track=list(p.track)) for p in pts]
     blob = json.dumps(entries, sort_keys=True)
-    return dict(schema='archbench-suite/1', tier=tier, points=entries,
-                families=sorted({p.family for p in pts}),
-                sha256=hashlib.sha256(blob.encode()).hexdigest())
+    doc = dict(schema='archbench-suite/1', tier=tier, points=entries,
+               families=sorted({p.family for p in pts}),
+               sha256=hashlib.sha256(blob.encode()).hexdigest())
+    if tier == 'membound':
+        doc.update(name=NAMES[tier], rules='archbench/membound.py (module docstring)',
+                   plan='evidence/r41/hbm_bw/BANDWIDTH_PLAN.md section 3',
+                   status='frozen: registered before any design change is measured; every point is '
+                          'reported, favourable or not; a changed definition is a different suite',
+                   non_regression=non_regression())
+    return doc
 
 
 def main(argv=None):
@@ -42,17 +71,17 @@ def main(argv=None):
     bad = 0
     for tier in registry.TIERS:
         doc = build(tier)
-        path = SUITES / f'{tier}.json'
+        file = path(tier)
         if args.freeze:
-            path.write_text(json.dumps(doc, indent=1, sort_keys=True) + '\n')
-            print(f'{tier}: {len(doc["points"])} points, {len(doc["families"])} families -> {path}')
+            file.write_text(json.dumps(doc, indent=1, sort_keys=True) + '\n')
+            print(f'{tier}: {len(doc["points"])} points, {len(doc["families"])} families -> {file}')
             continue
-        if not path.exists():
-            print(f'{tier}: no frozen suite at {path}')
+        if not file.exists():
+            print(f'{tier}: no frozen suite at {file}')
             bad += 1
             continue
-        frozen = json.loads(path.read_text())
-        if frozen['sha256'] == doc['sha256']:
+        frozen = json.loads(file.read_text())
+        if frozen['sha256'] == doc['sha256'] and frozen.get('non_regression') == doc.get('non_regression'):
             print(f'{tier}: matches the frozen suite ({len(doc["points"])} points)')
             continue
         bad += 1

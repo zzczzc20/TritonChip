@@ -43,7 +43,10 @@ BENCH = dict(SETS='SETS', SET_W='SET_W', WAYS='WAYS', WAY_W='WAY_W',
              DCO_LOCAL_REPLICAS='DCO_LOCAL_REPLICAS', NUCA_SHARED_DATA_READ='NUCA_SHARED_DATA_READ',
              AXI_LINE_LUTRAM='AXI_LINE_LUTRAM',
              # the image's tensor-transpose build (tnca_multicore_board_regs.HAS_TENSOR_XPOSE)
-             HAS_TENSOR_XPOSE='HAS_TENSOR_XPOSE')
+             HAS_TENSOR_XPOSE='HAS_TENSOR_XPOSE',
+             # R41 G2 resource sizing
+             **{k: k for k in ('NUM_RCTX', 'RCTX_W', 'PHYS_VREGS', 'PHYS_W', 'ACC_N', 'ACC_W',
+                               'BAR_N', 'BAR_W', 'BAR_EPOCH_W', 'PHYS_ADDR_W')})
 # Parameters the link's own constructor sets.
 LINK = dict(MEM_PORTS='memory_ports', LINK_STAGES='link_stages', NOC_LINK_STAGES='noc_link_stages',
             DISPATCH_STAGES='dispatch_stages', MEM_HOME_STAGES='home_stages',

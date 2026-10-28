@@ -59,6 +59,10 @@ BENCH_NAME = {
     'core-vrf-sync-v5-x8': 'tnca_device_vrf5x8.vvp',
     'core-vrf-sync-v5-x8/slow': 'tnca_device_vrf5x8_slow.vvp',
     'core-vrf-sync-v5-x8/hbm': 'tnca_device_vrf5x8_hbm.vvp',
+    # R41 G2: v5-x8 with two contexts, eight barriers and 38-bit epochs.
+    'core-vrf-sync-v5-x8-g2': 'tnca_device_vrf5x8g2.vvp',
+    'core-vrf-sync-v5-x8-g2/slow': 'tnca_device_vrf5x8g2_slow.vvp',
+    'core-vrf-sync-v5-x8-g2/hbm': 'tnca_device_vrf5x8g2_hbm.vvp',
 }
 
 # Parameters a profile's device is elaborated with. Both profiles come from
@@ -87,6 +91,9 @@ _V5 = ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1', '-P', 'tnca_device.RPAIR=1',
        '-P', 'tnca_device.MTX_ABUF=1']
 _R39_SW5 = [a.replace('RCTX_SWITCH=1', 'RCTX_SWITCH=2') for a in _R39_SW]
 _V5X8 = [a.replace('HAS_TENSOR_XPOSE=1', 'HAS_TENSOR_XPOSE=2') for a in _V5]
+# R41 G2 (evidence/r41/hbm_bw/RESOURCES.md): two Role Contexts (the bench's
+# default NUM_RCTX=2, RCTX_W=1, PHYS_W=7), eight mbarriers, 38-bit epochs.
+_G2 = ['-P', 'tnca_device.BAR_N=8', '-P', 'tnca_device.BAR_W=3', '-P', 'tnca_device.BAR_EPOCH_W=38']
 # R40-04: the AXI window of the /hbm memory mode, in 64-bit words (32 MiB).
 HBM_SIM_WORDS = 1 << 22
 HBM_LOCAL_LIMIT = 0x20000
@@ -110,6 +117,9 @@ BENCH_PARAMS = {
     'core-vrf-sync-v5-x8': _BANKED + _R39_SW5 + _FOUR + _V5X8,
     'core-vrf-sync-v5-x8/slow': _BANKED + _R39_SW5 + _FOUR + _V5X8 + _SLOW,
     'core-vrf-sync-v5-x8/hbm': _BANKED + _R39_SW5 + _FOUR + _V5X8 + _HBM,
+    'core-vrf-sync-v5-x8-g2': _BANKED + _R39_SW5 + _V5X8 + _G2,
+    'core-vrf-sync-v5-x8-g2/slow': _BANKED + _R39_SW5 + _V5X8 + _G2 + _SLOW,
+    'core-vrf-sync-v5-x8-g2/hbm': _BANKED + _R39_SW5 + _V5X8 + _G2 + _HBM,
     'core-xpose-v1': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'],
     'core-xpose-v1/slow': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'] + _SLOW,
 }

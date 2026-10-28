@@ -407,6 +407,11 @@ depends_on = ["evidence/r41/hbm_bw/BANDWIDTH_PLAN.md", "doc/engineering_discipli
 sources = ["archbench/membound.py", "archbench/suite.py", "archbench/suites/r41_membound.json", "spec/r41/hbm_bw/membound/", "evidence/r41/hbm_bw/launches/membound_baseline.sh", "evidence/r41/hbm_bw/link_budget/", "tools/r41/membound_manifests.py", "tools/r41/link_budget_rtl.py", "tools/r41/link_budget_home.py", "tools/r41/link_budget_report.py", "tools/r41/kernel_census.py", "tb/fpga/tnca_stage_probes.vh", "tb/nuca/tb_nuca_wide.v", "tb/fpga/tb_line_axi_stream.v", "python/tnca/backends/multicore_mmio_sim.py"]
 
 [[doc]]
+path = "evidence/r41/hbm_bw/G4_DESIGN.md"
+depends_on = ["evidence/r41/hbm_bw/BANDWIDTH_PLAN.md", "evidence/r41/hbm_bw/LINK_BUDGET.md", "evidence/r41/hbm_bw/RESOURCES.md", "evidence/r41/hbm_bw/AUDIT.md", "doc/engineering_discipline.md"]
+sources = ["tools/r41/g4_issue_bound.py", "tools/r41/g4_model_suite.py", "tools/r41/g4_report.py", "evidence/r41/hbm_bw/g4/", "tools/performance_harness/systemc/configs/r41-hbm8-device-service.cfg", "tools/performance_harness/systemc/run_graphs.py"]
+
+[[doc]]
 path = "evidence/r41/hbm_bw/STATUS.md"
 depends_on = ["evidence/r41/hbm_bw/HANDOFF.md", "evidence/r41/hbm_bw/capacity_analysis.md"]
 sources = []

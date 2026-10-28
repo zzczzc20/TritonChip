@@ -38,11 +38,14 @@ def load(paths):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--write', action='store_true')
+    ap.add_argument('--arm', action='append', default=[], metavar='NAME=GLOB',
+                    help='an extra column: the RTL records matching GLOB (repository-relative)')
     a = ap.parse_args()
     base = load(sorted(glob.glob(str(ROOT/'evidence/r41/hbm_bw/link_budget/rtl/batch*/*.jsonl'))) +
                 sorted(glob.glob(str(G4/'mode0*.jsonl'))))
     arms = {m: load(sorted(glob.glob(str(G4/f'mode{m}*.jsonl')))) for m in (1, 2)}
-    points = sorted(set(arms[1]) | set(arms[2]))
+    extra = {kv.split('=', 1)[0]: load(sorted(glob.glob(str(ROOT/kv.split('=', 1)[1])))) for kv in a.arm}
+    points = sorted(set(arms[1]) | set(arms[2]) | {p for e in extra.values() for p in e})
     lines = ['| Point (rtl, 64 KiB) | default cycles | mode 1 cycles | mode 2 cycles | default B/cycle/core | '
              'mode 1 | mode 2 | mode 2 speedup | mode 2 IPC | mode 2 LSU stall | mode 2 port words/cycle | '
              'mode 2 port latency | mode 2 home busy |',
@@ -73,6 +76,24 @@ def main():
             summary.append(f'mode {m}: {len(sp[m])} points with a default, geometric-mean speedup '
                            f'{statistics.geometric_mean(sp[m]):.3f}, min {min(sp[m]):.3f}, max {max(sp[m]):.3f}, '
                            f'slower by > 2 %: {sum(1 for x in sp[m] if x < 0.98)}')
+    if extra:
+        lines += ['', '| Point (rtl, 64 KiB) | default cycles (run-1 image) | ' +
+                  ' | '.join(f'{n} cycles | {n} B/cycle/core' for n in extra) + ' |',
+                  '|---|---:|' + '---:|---:|' * len(extra)]
+        for pid in points:
+            b = base.get(pid, {})
+            cells = []
+            for n, e in extra.items():
+                r = e.get(pid, {})
+                cells += [f"{r['cycles']:,}" if r.get('cycles') else (r.get('status') or '–'),
+                          f"{r['per_core']:.2f}" if r.get('per_core') else '–']
+            lines.append(f"| {pid.split('/')[0][3:]} {pid.split('/')[2].split('-r')[0]} | "
+                         f"{b['cycles']:,} | " if b.get('cycles') else f"| {pid} | – | ")
+            lines[-1] += ' | '.join(cells) + ' |'
+            for n, e in extra.items():
+                r = e.get(pid, {})
+                if r.get('cycles'):
+                    out.append(dict(point=pid, arm=n, **{k: r.get(k) for k in METRICS + ('status', 'source')}))
     text = '\n'.join(lines + [''] + summary) + '\n'
     print(text)
     if a.write:

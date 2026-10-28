@@ -70,6 +70,10 @@ module tb_line_axi_stream;
   wait(completed==COUNT && idle);@(negedge clk);
   if(accepted!=COUNT || issued!=COUNT || rd_lines+wr_lines!=COUNT || rd_beats+wr_beats!=COUNT)
    $fatal(1,"traffic accounting");
+  // Observation before the check: the window-limited spans of narrow slot
+  // counts are reported (tools/r41 link budget) and still fail the check.
+  $display("LINE STREAM MEASURE pipeline=%0d write=%0d slots=%0d delay=%0d lines=%0d issue_span=%0d cycles=%0d",
+   PIPELINED_ISSUE,WRITE,OUT_N,DELAY,issued,last_issue-first_issue,cycle);
   if(last_issue-first_issue!=(COUNT-1)*(PIPELINED_ISSUE ? 1 : 2))$fatal(1,"issue throughput");
   $display("LINE STREAM PASS pipeline=%0d write=%0d slots=%0d lines=%0d issue_span=%0d cycles=%0d",
    PIPELINED_ISSUE,WRITE,OUT_N,issued,last_issue-first_issue,cycle);

@@ -14,6 +14,8 @@ module tnca_multicore_board_regs;
  parameter SETS=4,SET_W=2,WAYS=2,WAY_W=1,DCO_REGISTERED_RANGES=0,NUCA_REGISTER_VICTIM_SELECT=0,
   NUCA_CACHE_DATA_PIPELINE=0,NUCA_REGISTER_VICTIM_RANK=0,DCO_TLW_PIPE_STAGES=0,
   DCO_REGISTER_WRITES=0,DCO_LOCAL_REPLICAS=0;
+ // The image's tensor-transpose option (core-vrf-sync-v5-x8 images build 2).
+ parameter HAS_TENSOR_XPOSE=1;
  localparam NX=N>4?4:N,ADDR_BITS=9,WORDS=(131072+MEMORY_BYTES)/8;
  reg clk=0,rst_n_async=0;always #5 clk=~clk;
  reg [8:0] reg_addr;reg [63:0] reg_wdata;reg reg_we,reg_re;
@@ -54,7 +56,7 @@ module tnca_multicore_board_regs;
   .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),.NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT),
   .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE),.NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
   .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES),.DCO_REGISTER_WRITES(DCO_REGISTER_WRITES),
-  .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS)) dut(
+  .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),.HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)) dut(
  .ap_clk(clk),.ap_rst_n(rst_n_async),
  .s_axi_tnca_awvalid(awvalid),
  .s_axi_tnca_awready(awready),
@@ -380,6 +382,13 @@ module tnca_multicore_board_regs;
         $finish;
     end
 
+`define TNCA_PROBE_TOP dut.device.system.shell.u_system
+`define TNCA_PROBE_START dut.device.cmd_valid && dut.device.cmd_ready
+`define TNCA_PROBE_DONE dut.device.done_valid && dut.device.done_ready
+`include "tb/fpga/tnca_stage_probes.vh"
+`undef TNCA_PROBE_TOP
+`undef TNCA_PROBE_START
+`undef TNCA_PROBE_DONE
 endmodule
 
 `default_nettype wire

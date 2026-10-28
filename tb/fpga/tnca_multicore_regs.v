@@ -312,6 +312,13 @@ module tnca_multicore_regs;
         $finish;
     end
 
+`define TNCA_PROBE_TOP dut.system.shell.u_system
+`define TNCA_PROBE_START dut.cmd_valid && dut.cmd_ready
+`define TNCA_PROBE_DONE dut.done_valid && dut.done_ready
+`include "tb/fpga/tnca_stage_probes.vh"
+`undef TNCA_PROBE_TOP
+`undef TNCA_PROBE_START
+`undef TNCA_PROBE_DONE
 endmodule
 
 `default_nettype wire

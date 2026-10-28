@@ -24,7 +24,7 @@ module tb_nuca_wide;
     parameter HIT_CHAIN=0,FAST_FILL_READ=0,BACKGROUND_READ_REQUESTS=0;
     parameter RSP_STALL=0,REQUIRE_BG_CONTENTION=0;
     parameter FULL_LINE_TAG=0,REGISTER_VICTIM_SELECT=0,REGISTER_VICTIM_RANK=0;
-    parameter SERVICE_MODE=0; // 1: hot reads, 2: streaming reads
+    parameter SERVICE_MODE=0; // 1: hot reads, 2: streaming reads, 3: streaming full-word writes
     parameter DCO_REGISTERED_RANGES = 0;
     parameter SYNC_TAG_BANK = 1;
     parameter BALANCED_VICTIM = 1;
@@ -378,7 +378,7 @@ module tb_nuca_wide;
 
                 if(PRESSURE) widx=0;
                 if(SERVICE_MODE==1)widx=(n_issued%16)*WORDS_PER_LINE;
-                if(SERVICE_MODE==2)widx=n_issued%N_WORDS;
+                if(SERVICE_MODE==2 || SERVICE_MODE==3)widx=n_issued%N_WORDS;
 
                 // A home-consistent address: the mesh only ever delivers a
                 // slice the lines whose home bits (line[1:0] ^ line[3:2]) are
@@ -390,13 +390,15 @@ module tb_nuca_wide;
                 req_src   = 4'd1;
                 req_tag   = free_tag;
                 req_be    = {WORD_BYTES{1'b1}};
-                if (SERVICE_MODE==0 && rnd[5:4] == 2'b00) begin
+                if ((SERVICE_MODE==0 && rnd[5:4] == 2'b00) || SERVICE_MODE==3) begin
                     // write
                     req_we    = 1'b1;
                     for(integer bytepos=0;bytepos<WORD_BYTES;bytepos=bytepos+1)begin
                         req_wdata[bytepos*8+:8]=$random(seed);
                         req_be[bytepos]=$random(seed);
                     end
+                    // streaming writes store whole words, as a vector store does
+                    if (SERVICE_MODE==3) req_be = {WORD_BYTES{1'b1}};
                     n_write = n_write + 1;
                     for(integer bytepos=0;bytepos<WORD_BYTES;bytepos=bytepos+1)
                         if(req_be[bytepos])shadow[widx][bytepos*8+:8]=req_wdata[bytepos*8+:8];

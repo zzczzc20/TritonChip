@@ -1,14 +1,24 @@
 # Combined free OOC physical screen for the core kernel and 32-lane stream bank.
-# Arguments: CORE_KERNEL_DCP STREAM_BANK_DCP OUT_DIR
-if {[llength $argv] != 3} {error "expected CORE_KERNEL_DCP STREAM_BANK_DCP OUT_DIR"}
-set core [file normalize [lindex $argv 0]]
-set bank [file normalize [lindex $argv 1]]
+# Arguments: RTL_ROOT IMAGE_CONFIG OUT_DIR
+if {[llength $argv] != 3} {error "expected RTL_ROOT IMAGE_CONFIG OUT_DIR"}
+set root [file normalize [lindex $argv 0]]
+source [file normalize [lindex $argv 1]]
 set out [file normalize [lindex $argv 2]]
 if {[file exists $out]} {error "output must be fresh: $out"}
 file mkdir $out
 set_param general.maxThreads 4
-open_checkpoint $core
-read_checkpoint -cell stream_bank $bank
+set sources [list]
+foreach dir {common core gen nuca noc tile fpga} {
+    foreach source [lsort [glob $root/rtl/$dir/*.v]] {lappend sources $source}
+}
+foreach source [lsort [glob $root/rtl/*.v]] {lappend sources $source}
+lappend sources $root/rtl/board/tnca_multicore_hbm_xo.v $root/flow/fpga/r41_core_stream_screen.v
+read_verilog -sv $sources
+set_property include_dirs [list $root/rtl/common $root/rtl/noc] [current_fileset]
+set generics [list]
+dict for {name value} $TNCA_IMAGE_PARAMS {lappend generics "$name=$value"}
+synth_design -top r41_core_stream_screen -part xcu280-fsvh2892-2L-e -mode out_of_context -flatten_hierarchy none -generic $generics
+create_clock -name ap_clk -period 10 [get_ports ap_clk]
 set pb [create_pblock stream_bank_pb]
 resize_pblock $pb -add SLR0
 add_cells_to_pblock $pb [get_cells stream_bank]

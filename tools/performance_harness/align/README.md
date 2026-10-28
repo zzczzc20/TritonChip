@@ -130,7 +130,10 @@ python3 tools/performance_harness/align/record_model.py --binary BUILD/tnca-chip
 `record_model_container.sh` runs it inside the toolchain image with the host's
 model build mounted; `TNCA_REPLAY_DIR=RUN_RTL` turns on the replay. Without
 `--replay` the model predicts (its own memory system); with it every point's
-model process replays the RTL recording at the chosen `--replay-level`:
+model process replays the RTL recording at the chosen `--replay-level`. The
+model never reads the trace: `record_model.py` first extracts the one stream
+the level replays into `RUN_MODEL/replay/<point>[.uncore].replay`
+(`replay_extract.py`, section 6) and hands the model that file.
 
 - `core` (first slice): the core's port replays the recorded LSU beats
   (`TNCA_MODEL_CORE_REPLAY`, CYCLE_CORE.md); the uncore is not exercised.
@@ -186,6 +189,13 @@ validation points, and hands the agent the `aggregates` only. The `points`
 map names points and is for the evaluator's record, as `certification.json`
 is. Point names never reach the agent through this file.
 
+What the candidate model is given in that run is the replay input of
+section 6 and nothing else of the recording: the evaluator extracts it
+outside the container and mounts only the `.replay` files. A recording's
+traces (the streams the gate compares) stay in the evaluator's directory.
+The recorder and the model's own copies of the platform files (section 6)
+are the evaluator's, whatever the candidate changed.
+
 ## 5. Scope (decided 2026-10-26 and 2026-10-27)
 
 **First slice:** one core. The model's core runs execute/commit cycle by
@@ -202,3 +212,51 @@ device port. The board configuration (link stages, three outlets, the AXI
 adapters) is the same model with the board's parameters, validated against
 the board-top bench's recording at the adapter boundary
 (UNCORE_TIMING_BOARD.md).
+
+## 6. Platform and device (decided 2026-10-28)
+
+The model is split the way the RTL's bench is: a **platform** that observes
+and drives, and a **device** that is the design. In the agent harness the
+platform is evaluator-owned (the gate drops a candidate's changes to it and
+records them, as it does for `device.py` and the testbench); the device is
+what a model task's design paths cover.
+
+| Part | Files | Role |
+|---|---|---|
+| platform: instruments | `systemc/src/platform.inc` | every trace writer (`CoreTrace`, `UncoreTrace`) and every replay reader (`CoreReplay`, `UncoreReplay`). Device code records through these and takes a recorded boundary through these; it opens no trace and no recording itself |
+| platform: host side | `systemc/src/chip_host.inc`, `systemc/src/main.cpp`, `systemc/include/tnca_model.hpp` (`Context`, the clock, the counters) | the chip that holds the cores and the uncore, the command loop the host drives, the cycle count per command, `--serve`, `main` |
+| platform: drivers and tools | `systemc/tlm_backend.py`, `systemc/run_graphs.py`, `align/record_rtl.py`, `align/record_model.py`, `align/replay_extract.py`, `align/tracediff.py`, `align/report.py`, `align/tnca_core_trace.v` | how a point reaches the model, how both sides are recorded, how the two recordings are compared |
+| device | `systemc/src/cycle_core.inc`, `cycle_tensor.inc`, `cycle_matrix.inc`, `cycle_uncore.inc`; the engines and `Core` in `chip.cpp` and the `include/` headers they use | the design: what a model task may change |
+
+**The replay input** (`TNCA_REPLAY 1`, written by `replay_extract.py`) is the
+one stream a replay level needs, with cycles relative to each launch, and
+nothing else of the recording. The model refuses any other file as a replay
+input (a trace, for one):
+
+```
+TNCA_REPLAY 1 level=core                 TNCA_REPLAY 1 level=uncore
+L                                        L
+B <cycle> <we> <addr> <be> <latency|->   X <cycle> <we> <addr> <src> <tag>
+E                                        Y <cycle> <src> <tag>
+                                         E
+```
+
+A core-level input carries the core port's beats and their latencies: no
+instruction record. An uncore-level input carries the device port's accepts
+and responses: no slice stream, no core record. So a candidate model that is
+handed its replay input learns the boundary it replays and nothing the gate
+compares above that boundary; the streams it must reproduce (issue cycles,
+the core port, the slice requests and responses) it can only produce.
+
+**What the split does not do.** The cycle count a model reports is the
+platform's count of its own device, not an independent observer's as the
+RTL testbench's is: a model task's candidate is scored on what it counts.
+The check on that count is the gate at the small configurations, where the
+same design's cycles are compared with the RTL's under the testbench's
+count (the three-level evidence chain of the adaptation plan), and the
+board certification of that configuration.
+
+**Verified** (2026-10-28, after the split): the whole smallest tier in uncore
+replay with one core, the three-core device bench, the board-top bench and
+the image's three-outlet / eight-outstanding mode, each exactly as before the
+split (evidence/model-align/slice2).

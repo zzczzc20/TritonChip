@@ -240,3 +240,18 @@ Verdict: **diverged** (4 of 4 point(s) diverge). Points 4, aligned 0, diverged 4
 | op.add_tiny_fp16-n1000.core1 | 0/11 | 11970 | 10868 | -9.21% | L0 #72 | L0 #16 |
 | op.add_tiny_fp16-n1000.core2 | 0/10 | 12131 | 11544 | -4.84% | L0 #72 | L0 #16 |
 | op.add_tiny_fp16-n1000.uncore | 16/58 | | | | slice: L2 #3 / L1 #3 | port: L1 #1 / L1 #0 |
+
+## After the platform/device split (2026-10-28)
+
+The model's trace writers and replay readers moved into `systemc/src/platform.inc`
+and its host side into `systemc/src/chip_host.inc` (align/README.md section 6);
+the model now takes a `TNCA_REPLAY 1` boundary file extracted by
+`replay_extract.py` instead of the trace. Every recording above was replayed
+again with the split model, nothing re-recorded on the RTL side (`split/`):
+
+| Recording | Model run | Streams | Verdict |
+|---|---|---|---|
+| the smallest tier, one core (rtl7) | cycS1r, `r40-sim-cycle.cfg` | 108 | aligned, 108/108 |
+| three cores, device bench (rtl6) | cycS1t, `r40-sim-cycle.cfg`, `--active-cores 3` | 8 | aligned |
+| three cores, board-top bench (rtl8) | cycS1b, `r40-boardbench-cycle.cfg` | 4 | aligned |
+| three outlets, eight outstanding (rtl9) | cycS1m, `r40-boardbench-cycle.cfg`, `TNCA_RTL_MEM_PORTS=3 TNCA_RTL_OUTSTANDING=8` | 8 | aligned |

@@ -528,7 +528,7 @@ writeback before it if the victim is dirty), granted one at a time since the
 words are serialised, so `rr` resumes after the home of the last host miss
 (`tnca_mem_arbiter.v`, sec 10). A model that warms the slices in zero time
 must move the pointer the same way, or the first tie of the next launch is
-granted in the wrong order (seen on op.transpose, launch 28).
+granted in the wrong order (seen on one launch of one point).
 
 ## 8. Points I am not certain about (with where to look)
 

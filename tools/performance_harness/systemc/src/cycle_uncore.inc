@@ -63,7 +63,6 @@ struct CycleUncore : sc_module {
         bool rvalid=false;unsigned rid=0;bool rlast=false; // the R beat presented during this cycle (picked at the previous edge)
         bool bvalid=false;unsigned bid=0;                  // the B presented during this cycle
         bool rsp_valid=false;unsigned rsp_src=0,rsp_tag=0; // the adapter's rsp_valid during this cycle [B 3.4]
-        unsigned r_xi=0,r_yi=0;                            // replay cursors over this port's X/Y records
         unsigned rr=0;bool held=false;unsigned held_pick=0; // the port's arbiter among its homes' link heads
     };
     std::vector<Port> ports;
@@ -73,13 +72,11 @@ struct CycleUncore : sc_module {
     struct Pool {bool v=false;unsigned cnt=0,tag=0,src=0;u64 id=0;unsigned core=0;u64 got=0;};
     std::array<Pool,32> pool;std::uint32_t lfsr=0xACE12345u;unsigned dram_latency=11;
     DramEvent rsp_pending;   // rsp_valid during the coming cycle (LFSR path)
-    // replay of the device port (X accept cycles, Y response cycles)
-    struct ReplayX {u64 cycle;bool we;u64 addr;unsigned src,tag;};struct ReplayY {u64 cycle;unsigned src,tag;};
-    std::vector<std::vector<ReplayX>> rx;std::vector<std::vector<ReplayY>> ry;unsigned r_launch=0,r_xi=0,r_yi=0;bool r_open=false;u64 r_start=0;u64 r_mismatch=0;
-    bool replaying=false;
+    // replay of the device port (X accept cycles, Y response cycles): the platform's UncoreReplay (platform.inc)
+    std::unique_ptr<UncoreReplay> rp;bool replaying=false;
     //------------------------------------------------------------- misc
     struct Req {unsigned core;u64 id,at,addr;bool store;unsigned be;u64 got;bool engine;unsigned tag;};
-    std::deque<Req> incoming;u64 t=0;std::ofstream trace;u64 last_launch=0;std::ofstream port_debug;   // TNCA_MODEL_PORT_DEBUG=<path>: why an adapter refuses
+    std::deque<Req> incoming;u64 t=0;UncoreTrace trace;u64 last_launch=0;std::ofstream port_debug;   // TNCA_MODEL_PORT_DEBUG=<path>: why an adapter refuses
     u64 *c_hits,*c_misses,*c_merges,*c_blocked,*c_wb,*c_dram_reads,*c_dram_writes,*c_rsq_full,*c_mreq_stall;
     CycleUncore(sc_module_name n,Context& ctx,unsigned cores_):sc_module(n),x(ctx),ncores(cores_){
         nx=unsigned(x.c.get("nx"));ny=unsigned(x.c.get("ny"));sets=unsigned(x.c.get("sets"));ways=unsigned(x.c.get("ways"));
@@ -107,9 +104,8 @@ struct CycleUncore : sc_module {
         }
         c_hits=&x.counts["uncore_hits"];c_misses=&x.counts["uncore_misses"];c_merges=&x.counts["uncore_merges"];c_blocked=&x.counts["uncore_blocked"];
         c_wb=&x.counts["uncore_writebacks"];c_dram_reads=&x.counts["uncore_dram_reads"];c_dram_writes=&x.counts["uncore_dram_writes"];c_rsq_full=&x.counts["uncore_rsq_full"];c_mreq_stall=&x.counts["uncore_mreq_stall"];
-        if(const char* p=std::getenv("TNCA_MODEL_CORE_TRACE")){if(*p){std::string f=std::string(p)=="1"?x.directory+"/uncore_trace.txt":std::string(p)+".uncore";
-            trace.open(f);if(trace)trace<<"TNCA_UNCORE_TRACE 1 cores="<<ncores<<"\n";}}
-        if(const char* p=std::getenv("TNCA_MODEL_UNCORE_REPLAY")){if(*p){load_replay(p);replaying=true;}}
+        trace.open(x,ncores);
+        rp=UncoreReplay::open();replaying=bool(rp);if(rp)rp->ports(unsigned(ports.size()));
         if(const char* p=std::getenv("TNCA_MODEL_PORT_DEBUG")){if(*p)port_debug.open(p);}
         SC_THREAD(run);
     }
@@ -139,27 +135,17 @@ struct CycleUncore : sc_module {
     //------------------------------------------------------------- requests from the cores
     bool req_ready(unsigned core)const{return routers[core].in[P_LOCAL][VN_REQ].in_ready();}   // [1.3]
     void request(const Req& r){incoming.push_back(r);}
-    ~CycleUncore(){if(trace){trace<<"END "<<t<<"\n";trace.close();}}
+    ~CycleUncore(){if(rp)x.counts["uncore_replay_mismatches"]=rp->mismatches;trace.close(t);}
     void launch_record(unsigned core,u64 cycle,u64 pc,unsigned roles){
-        last_launch=cycle;if(replaying)replay_launch();
-        if(trace){char line[96];std::snprintf(line,sizeof line,"L %llu %u %016llx %u\n",(unsigned long long)cycle,core,(unsigned long long)pc,roles);trace<<line;}}
+        last_launch=cycle;if(rp){rp->start_launch();x.counts["uncore_replay_mismatches"]=rp->mismatches;}
+        if(trace)trace.L(cycle,core,pc,roles);}
     void run(){
         wait(x.cycles(1)/2);
         for(;;){t=x.to_cycles(sc_time_stamp()-x.cycles(1)/2);step();wait(x.cycles(1));}
     }
-    //------------------------------------------------------------- replay of the device port
-    void load_replay(const std::string& path){
-        std::ifstream f(path);require(bool(f),"cannot open the uncore replay trace");std::string line;bool in=false;
-        while(std::getline(f,line)){std::istringstream s(line);std::string k;s>>k;
-            if(k=="L"){u64 c;s>>c;rx.emplace_back();ry.emplace_back();in=true;r_start=c;}
-            else if(in && k=="X"){u64 c,we,addr,src,tag;s>>std::dec>>c>>we>>std::hex>>addr>>std::dec>>src>>tag;rx.back().push_back({c-r_start,we!=0,addr,unsigned(src),unsigned(tag)});}
-            else if(in && k=="Y"){u64 c,src,tag;s>>std::dec>>c>>src>>tag;ry.back().push_back({c-r_start,unsigned(src),unsigned(tag)});}}
-        require(!rx.empty(),"uncore replay trace has no launches");
-    }
-    void replay_launch(){if(r_open){++r_launch;}r_open=true;r_xi=0;r_yi=0;for(auto& q:ports){q.r_xi=0;q.r_yi=0;}}
-    // the next recorded X / Y of port p (its src is the home = the port) [B 7]
-    const ReplayX* next_x(unsigned p){if(r_launch>=rx.size())return nullptr;auto& v=rx[r_launch];Port& q=ports[p];while(q.r_xi<v.size() && port_of(v[q.r_xi].src)!=p)++q.r_xi;return q.r_xi<v.size()?&v[q.r_xi]:nullptr;}
-    const ReplayY* next_y(unsigned p){if(r_launch>=ry.size())return nullptr;auto& v=ry[r_launch];Port& q=ports[p];while(q.r_yi<v.size() && port_of(v[q.r_yi].src)!=p)++q.r_yi;return q.r_yi<v.size()?&v[q.r_yi]:nullptr;}
+    //------------------------------------------------------------- replay of the device port (platform.inc)
+    const UncoreReplay::X* next_x(unsigned p){return rp->next_x(p,[this](unsigned s){return port_of(s);});}
+    const UncoreReplay::Y* next_y(unsigned p){return rp->next_y(p,[this](unsigned s){return port_of(s);});}
     //------------------------------------------------------------- one cycle: decisions from the pre-edge state, then the edge
     void step(){
         //---- requests fired by the cores during t: pushed into the source router's local VN_REQ FIFO at E_t [1.1 #3-4]
@@ -221,13 +207,13 @@ struct CycleUncore : sc_module {
                 else{Fifo& nq=routers[neighbour(node,op)].in[opposite(op)][vn];if(nq.in_ready()){nq.push(st.head());st.pop();}}}}
         // slices' responses into the home router's local VN_RSP FIFO [1.1 #13]
         for(auto& s:slices)if(rsq_pop[s.id]){Fifo& q=routers[s.id].in[P_LOCAL][VN_RSP];Flit f=s.rsq.front();s.rsq.pop_front();q.push(f);
-            if(trace){char line[64];std::snprintf(line,sizeof line,"R %llu %u %u %u\n",(unsigned long long)t,s.id,f.src,f.tag);trace<<line;}}
+            if(trace)trace.R(t,s.id,f.src,f.tag);}
         if(board){
             // the responses valid at the slices during t are captured now [B 1.2]
             for(auto& ev:board_rsp)dram_deliver(ev);
             // slices fire into their home links [B 1.2]
             for(auto& s:slices)if(hgrant[s.id]){Flit f;f.valid=true;f.we=s.mreq.write;f.addr=s.mreq.addr;f.tag=s.mreq.ms;f.src=s.id;ports[s.id].hreq[0].push(f);
-                if(trace){char line[96];std::snprintf(line,sizeof line,"M %llu %u %u %016llx %u\n",(unsigned long long)t,s.id,f.we?1U:0U,(unsigned long long)f.addr,f.tag);trace<<line;}
+                if(trace)trace.M(t,s.id,f.we,f.addr,f.tag);
                 if(f.we)++*c_dram_writes;else ++*c_dram_reads;}
             for(unsigned p=0;p<active_outlets;++p)port_edge(p);
             for(auto& q:ports)for(int i=int(q.hreq.size())-2;i>=0;--i){Fifo& st=q.hreq[i];if(st.out_valid() && q.hreq[i+1].in_ready()){q.hreq[i+1].push(st.head());st.pop();}}
@@ -256,15 +242,15 @@ struct CycleUncore : sc_module {
             bool hazard=false;unsigned active_count=0;
             for(unsigned k=0;k<8;++k){const Port::Slot& sl=q.slot[k];if(!sl.active)continue;++active_count;if(sl.addr==f.addr && (sl.writing || f.we))hazard=true;}
             bool ready=!q.issue_valid && free_slot>=0 && !hazard && active_count<q.admission;
-            if(ready && replaying){const ReplayX* e=next_x(p);if(e && last_launch+e->cycle>t)ready=false;}   // no earlier than the recorded accept
-            if(port_debug && !ready){const ReplayX* e=replaying?next_x(p):nullptr;
+            if(ready && replaying){const UncoreReplay::X* e=next_x(p);if(e && last_launch+e->cycle>t)ready=false;}   // no earlier than the recorded accept
+            if(port_debug && !ready){const UncoreReplay::X* e=replaying?next_x(p):nullptr;
                 port_debug<<t<<" port "<<p<<" held: addr="<<std::hex<<f.addr<<std::dec<<" issue="<<q.issue_valid<<"/"<<q.issue_age<<" free="<<free_slot<<" hazard="<<hazard<<" active="<<active_count
                           <<" next_x="<<(e?long(last_launch+e->cycle):-1L)<<" last_launch="<<last_launch<<"\n";}
             if(ready){accept=true;
                 Port::Slot& sl=q.slot[free_slot];sl.active=true;sl.writing=f.we;sl.sent=false;sl.addr=f.addr;sl.src=f.src;sl.tag=f.tag;sl.rbeat=0;
                 q.issue_valid=true;q.issue_slot=unsigned(free_slot);q.issue_age=0;
-                if(trace){char line[96];std::snprintf(line,sizeof line,"X %llu %u %016llx %u %u\n",(unsigned long long)t,f.we?1U:0U,(unsigned long long)f.addr,f.src,f.tag);trace<<line;}
-                if(replaying){const ReplayX* e=next_x(p);if(!e || e->we!=f.we || e->addr!=f.addr || e->src!=f.src){++r_mismatch;}if(e)++q.r_xi;}
+                if(trace)trace.X(t,f.we,f.addr,f.src,f.tag);
+                if(replaying){const UncoreReplay::X* e=next_x(p);if(!e || e->we!=f.we || e->addr!=f.addr || e->src!=f.src){++rp->mismatches;}if(e)rp->take_x(p);}
                 last.pop();}
         }
         // ---- the issue register: AR during a+1; AW+W0 during a+1, W1 during a+2 (every AXI ready high) [B 3.3]
@@ -283,16 +269,16 @@ struct CycleUncore : sc_module {
         if(q.bvalid && !read_final){q.slot[q.bid].active=false;q.wr[q.bid].v=false;q.bvalid=false;}
         // ---- replay: the adapter's rsp_valid is the recorded Y of this port [B 7]; the slot is released at the
         // edge before it (the final R beat's), which the admission of a request in the Y cycle already sees [B 3.4]
-        if(replaying){const ReplayY* y=next_y(p);
+        if(replaying){const UncoreReplay::Y* y=next_y(p);
             if(y && last_launch+y->cycle<=t+1){const u64 yc=last_launch+y->cycle;bool found=false;
                 for(unsigned k=0;k<8;++k){Port::Slot& sl=q.slot[k];if(sl.active && !sl.writing && sl.src==y->src && sl.tag==y->tag){sl.active=false;q.rd[k].v=false;found=true;break;}}
                 if(found){slice_rsp.push_back({yc+outlet_stages+home_stages,DramEvent{true,y->src,y->tag}});
-                    if(trace){char line[64];std::snprintf(line,sizeof line,"Y %llu %u %u\n",(unsigned long long)yc,y->src,y->tag);trace<<line;}}
-                else ++r_mismatch;
-                ++q.r_yi;}
+                    if(trace)trace.Y(yc,y->src,y->tag);}
+                else ++rp->mismatches;
+                rp->take_y(p);}
         }else if(q.rsp_valid){ // set at the previous edge: valid during t [B 3.4], at the slice +outlet +home [B 1.2]
             slice_rsp.push_back({t+outlet_stages+home_stages,DramEvent{true,q.rsp_src,q.rsp_tag}});
-            if(trace){char line[64];std::snprintf(line,sizeof line,"Y %llu %u %u\n",(unsigned long long)t,q.rsp_src,q.rsp_tag);trace<<line;}
+            if(trace)trace.Y(t,q.rsp_src,q.rsp_tag);
             q.rsp_valid=false;}
         // ---- the slave's picks for t+1: the lowest due read's next beat; the lowest due write's B [B 4.2-4.3]
         if(!replaying){int pick=-1;for(unsigned k=0;k<8;++k)if(q.rd[k].v && q.rd[k].due<=t){pick=int(k);break;}
@@ -314,7 +300,7 @@ struct CycleUncore : sc_module {
     //------------------------------------------------------------- the slice's request buffer [3.2]
     void slice_accept(Slice& s,const Flit& f){
         for(unsigned i=0;i<RQ_N;++i)if(!s.rq[i].v){s.rq[i].v=true;s.rq[i].blocked=false;s.rq[i].f=f;s.rq[i].seq=s.seq++;
-            if(trace){char line[96];std::snprintf(line,sizeof line,"S %llu %u %u %u %u %016llx\n",(unsigned long long)t,s.id,f.src,f.tag,f.we?1U:0U,(unsigned long long)f.addr);trace<<line;}
+            if(trace)trace.S(t,s.id,f.src,f.tag,f.we,f.addr);
             return;}
         require(false,"slice request buffer overflow");
     }
@@ -386,18 +372,17 @@ struct CycleUncore : sc_module {
     }
     //------------------------------------------------------------- the DRAM model [5] and its replay
     bool replay_allows_x(const Slice& s){
-        if(r_launch>=rx.size() || r_xi>=rx[r_launch].size())return true;
-        const ReplayX& e=rx[r_launch][r_xi];return last_launch+e.cycle<=t;(void)s;
+        const UncoreReplay::X* e=rp->next_x();(void)s;
+        return !e || last_launch+e->cycle<=t;
     }
     DramEvent dram_cycle(bool& ready){
         DramEvent ev;
         if(replaying){ // ready when the next recorded accept is due; response when the next recorded Y is due
             ready=false;
-            if(r_launch<rx.size() && r_xi<rx[r_launch].size() && last_launch+rx[r_launch][r_xi].cycle<=t)ready=true;
-            if(r_launch<ry.size() && r_yi<ry[r_launch].size() && last_launch+ry[r_launch][r_yi].cycle<=t){
-                const ReplayY& y=ry[r_launch][r_yi];
-                for(unsigned i=0;i<pool.size();++i)if(pool[i].v && pool[i].src==y.src && pool[i].tag==y.tag){ev.fire=true;ev.src=y.src;ev.tag=y.tag;++r_yi;break;}
-                if(!ev.fire)++r_mismatch;}
+            if(const UncoreReplay::X* e=rp->next_x())if(last_launch+e->cycle<=t)ready=true;
+            if(const UncoreReplay::Y* y=rp->next_y())if(last_launch+y->cycle<=t){
+                for(unsigned i=0;i<pool.size();++i)if(pool[i].v && pool[i].src==y->src && pool[i].tag==y->tag){ev.fire=true;ev.src=y->src;ev.tag=y->tag;rp->take_y();break;}
+                if(!ev.fire)++rp->mismatches;}
             return ev;}
         ready=(lfsr>>5)&1u;
         // the response presented during this cycle was chosen at the previous edge
@@ -412,9 +397,8 @@ struct CycleUncore : sc_module {
     }
     void dram_accept(Slice& s,DramEvent& ev){
         (void)ev;const bool write=s.mreq.write;const u64 addr=s.mreq.addr;const unsigned tag=s.mreq.ms;
-        if(trace){char line[96];std::snprintf(line,sizeof line,"M %llu %u %u %016llx %u\nX %llu %u %016llx %u %u\n",(unsigned long long)t,s.id,write?1U:0U,(unsigned long long)addr,tag,
-            (unsigned long long)t,write?1U:0U,(unsigned long long)addr,s.id,tag);trace<<line;}
-        if(replaying){const ReplayX& e=rx[r_launch][r_xi];if(e.we!=write || e.addr!=addr || e.src!=s.id){++r_mismatch;}++r_xi;}
+        if(trace){trace.M(t,s.id,write,addr,tag);trace.X(t,write,addr,s.id,tag);}
+        if(replaying){const UncoreReplay::X* e=rp->next_x();if(!e || e->we!=write || e->addr!=addr || e->src!=s.id){++rp->mismatches;}if(e)rp->take_x();}
         if(write){++*c_dram_writes;return;}
         ++*c_dram_reads;
         for(auto& p:pool)if(!p.v){p.v=true;p.cnt=dram_latency-1;p.tag=tag;p.src=s.id;return;}
@@ -423,10 +407,7 @@ struct CycleUncore : sc_module {
     void dram_deliver(const DramEvent& ev){
         if(replaying)for(auto& p:pool)if(p.v && p.src==ev.src && p.tag==ev.tag){p.v=false;break;}
         Slice& s=slices[ev.src];Mshr& m=s.ms[ev.tag];require(m.st==3,"DRAM response to an MSHR not waiting");m.st=4;
-        if(trace){char line[64];
-            if(board)std::snprintf(line,sizeof line,"D %llu %u %u\n",(unsigned long long)t,ev.src,ev.tag);
-            else std::snprintf(line,sizeof line,"Y %llu %u %u\nD %llu %u %u\n",(unsigned long long)t,ev.src,ev.tag,(unsigned long long)t,ev.src,ev.tag);
-            trace<<line;}
+        if(trace){if(!board)trace.Y(t,ev.src,ev.tag);trace.D(t,ev.src,ev.tag);}
     }
     void pool_tick(){for(auto& p:pool)if(p.v && p.cnt)--p.cnt;}
 };

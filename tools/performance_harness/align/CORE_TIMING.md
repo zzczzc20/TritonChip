@@ -290,8 +290,8 @@ a scatter's on vc with its index on vb (613-614), `v.insert`'s Vd on vb (524),
 `a.mul.row` / `a.fma.row`'s vector on vb (`TNCA_DEC_SRC_VB`, 9B). An
 instruction whose only vector source is `b` therefore competes as port 1:
 with `rr_ptr = 1` it beats the matrix's port 3 on a shared bank, as port 0
-would not (seen on llama_decode launch 168: an `a.fma.row` behind an mma
-cost the engine one refused fragment read). Per cycle each bank accepts at most one read;
+would not (seen on one launch of a graph-level point: an `a.fma.row` behind
+an mma cost the engine one refused fragment read). Per cycle each bank accepts at most one read;
 ports are scanned in order `u_vrf.rr_ptr, +1, ... (mod 5)`, a port is accepted
 if its bank is not yet taken this cycle and the bank's response register is
 free (`bank_accept`, always true here because `rsp_ready` is tied to 1, 987);

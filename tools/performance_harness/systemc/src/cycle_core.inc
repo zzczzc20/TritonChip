@@ -7,44 +7,8 @@
 // section numbers are cited as [2.7] etc.).
 //==============================================================================
 
-// The RTL's recorded memory beats of one point (align/README.md section 2),
-// every beat in port order (LSU and transfer engine), per launch.
-struct ReplayTrace {
-    struct Beat {u64 cycle=0;bool we=false;u64 addr=0;unsigned be=0;u64 latency=0;bool answered=false;};
-    std::vector<std::vector<Beat>> launches;
-    unsigned launch=0,next=0;bool open=false;
-    u64 consumed=0,mismatches=0,unrecorded=0;
-    void load(const std::string& path){
-        std::ifstream f(path);require(bool(f),"cannot open the replay trace");
-        std::string line;u64 start=0;std::map<u64,size_t> pending;bool in_launch=false;
-        while(std::getline(f,line)){
-            std::istringstream s(line);std::string k;s>>k;
-            if(k=="L"){u64 c;s>>c;start=c;launches.emplace_back();pending.clear();in_launch=true;}
-            else if(k=="Q" && in_launch){
-                u64 c,we,addr,be,tag,amo;std::string wd;s>>std::dec>>c>>we>>std::hex>>addr>>be>>std::dec>>tag>>amo>>wd;
-                Beat b;b.cycle=c-start;b.we=we!=0;b.addr=addr;b.be=unsigned(be);
-                pending[tag]=launches.back().size();launches.back().push_back(b);
-            }else if(k=="P" && in_launch){
-                u64 c,tag;s>>std::dec>>c>>tag;auto it=pending.find(tag);
-                if(it==pending.end())continue;
-                auto& b=launches.back()[it->second];b.latency=(c-start)-b.cycle;b.answered=true;pending.erase(it);
-            }else if(k=="E"){in_launch=false;}
-        }
-        // an empty trace (a core the RTL never launched) replays nothing: every beat counts as unrecorded
-    }
-    void start_launch(){if(open){++launch;}open=true;next=0;}
-    // The next recorded LSU beat: earliest issue cycle (relative to the launch)
-    // and the latency; false when the record is exhausted (the caller uses its
-    // own memory then).
-    bool peek(u64& earliest,u64& latency)const{
-        if(launch>=launches.size() || next>=launches[launch].size())return false;
-        const Beat& b=launches[launch][next];earliest=b.cycle;latency=b.answered?b.latency:0;return b.answered;
-    }
-    void advance(bool we,u64 addr){
-        if(launch>=launches.size() || next>=launches[launch].size()){++unrecorded;return;}
-        const Beat& b=launches[launch][next++];++consumed;if(b.we!=we || b.addr!=addr)++mismatches;
-    }
-};
+// The replay of the core's port (first slice) is the platform's CoreReplay
+// (platform.inc): the device asks it what the RTL's memory accepted and when.
 
 struct CycleCore {
     Core& c;Context& x;
@@ -102,7 +66,7 @@ struct CycleCore {
         for(unsigned rc=0;rc<4;++rc){o<<" sb"<<rc<<":";for(unsigned i=0;i<64;++i){if(sb_s[rc][i])o<<" s"<<i;}for(unsigned i=0;i<64;++i){if(sb_v[rc][i])o<<" v"<<i;}for(unsigned i=0;i<16;++i){if(sb_p[rc][i])o<<" p"<<i;}o<<"\n";}
         return o.str();}
 
-    std::unique_ptr<ReplayTrace> replay;u64 trace_tag=0;
+    std::unique_ptr<CoreReplay> replay;u64 trace_tag=0;
     // Every beat on the port gets an id; its response is delivered at a cycle
     // (`rsp` fields set then), either scheduled here (timeline memory,
     // replay) or by the chip's cycle uncore (uncore_model=1).
@@ -119,13 +83,11 @@ struct CycleCore {
             case 3:{auto& g=txf.tg[tg.a];g.rsp=when;u64 keepm=0;for(unsigned j=0;j<8;++j)if((g.xkeep>>j)&1)keepm|=255ULL<<(j*8);g.data=data&keepm;break;}
             case 4:txf.dl_rsp=when;txf.dl_data=data;break;
         }
-        if(c.core_trace){char line[64];std::snprintf(line,sizeof line,"P %llu %llu %016llx\n",(unsigned long long)when,(unsigned long long)id,(unsigned long long)data);c.core_trace<<line;}
+        if(c.core_trace)c.core_trace.P(when,id,data);
     }
     void deliveries(){  // at the start of a cycle: every response due now
         for(size_t i=0;i<scheduled.size();){if(scheduled[i].when<=t){Scheduled s=scheduled[i];scheduled[i]=scheduled.back();scheduled.pop_back();deliver(s.id,t,s.data);}else ++i;}
     }
-    // Beside the core trace: one line per distinct pc, `K pc kind major func mod d a b c` (what the model decoded there).
-    std::ofstream decode_log;std::unordered_map<u64,bool> decoded;
     u64 *c_cycles,*c_instr,*c_stall,*c_replay_mismatch,*c_replay_unrecorded,*c_hazard,*c_lsu,*c_fpu,*c_mtx,*c_txf,*c_fence,*c_arrive,*c_rsv,*c_steal,*c_vrf,*c_park;
     Outcome fault;bool aborting=false;
 
@@ -142,11 +104,7 @@ struct CycleCore {
         if(const char* p=std::getenv("TNCA_MODEL_VRF_DEBUG")){std::string s(p);std::vector<std::string> f;size_t b=0;
             for(;;){size_t e=s.find(':',b);if(e==std::string::npos){f.push_back(s.substr(b));break;}f.push_back(s.substr(b,e-b));b=e+1;}
             if(f.size()==5){vdbg_core=std::stol(f[0]);vdbg_launch=std::stol(f[1]);vdbg_from=std::stoull(f[2]);vdbg_to=std::stoull(f[3]);if(vdbg_core==long(c.id))vdbg.open(f[4]);}}
-        if(const char* p=std::getenv("TNCA_MODEL_CORE_REPLAY")){const char* which=std::getenv("TNCA_MODEL_CORE_TRACE_CORE");
-            const bool all=which && std::string(which)=="all";
-            if(*p && (all || unsigned(which && *which?std::strtoul(which,nullptr,10):0)==c.id)){
-                std::string f=p;if(c.id)f+=".core"+std::to_string(c.id);
-                replay.reset(new ReplayTrace);replay->load(f);}}
+        replay=CoreReplay::open_for(c.id);
     }
     //------------------------------------------------------------ helpers
     static bool is_fpnorm(const Inst& in){return in.kind==K::Cvt || (in.kind==K::Vfp);} // VFP incl. vf.cmp, CVT [2.11]
@@ -416,9 +374,7 @@ struct CycleCore {
         if(uncore || replayed){got=c.tm->access(addr,store,data,store?be:255);}
         else when=c.tm->word(c.id,addr,store,data,store?be:255,at,got);
         if(replayed)when=at+latency;
-        if(c.core_trace){char line[160];
-            std::snprintf(line,sizeof line,"Q %llu %u %016llx %02x %llu 0 %016llx\n",(unsigned long long)at,store?1U:0U,
-                (unsigned long long)addr,store?be:0U,(unsigned long long)id,(unsigned long long)data);c.core_trace<<line;}
+        if(c.core_trace)c.core_trace.Q(at,store,addr,store?be:0U,id,data);
         if(uncore && !replayed)uncore_request(id,at,addr,store,be,got);
         else schedule(id,when,got);
         return id;
@@ -660,9 +616,7 @@ struct CycleCore {
         }
         // X retire effects [2.11]
         if(xb.valid){Ctx& q=ctx[xr];++q.instret;++*c_instr;
-            if(c.core_trace){char line[64];std::snprintf(line,sizeof line,"I %llu %u %016llx\n",(unsigned long long)t,xr,(unsigned long long)xb.pc);c.core_trace<<line;
-                if(!decoded.count(xb.pc)){decoded[xb.pc]=true;if(!decode_log.is_open()){const char* path=std::getenv("TNCA_MODEL_CORE_TRACE");std::string f=std::string(path)=="1"?x.directory+"/core_decode.txt":std::string(path)+".decode";decode_log.open(f);}
-                    const Inst& in=*xb.in;decode_log<<"K "<<std::hex<<xb.pc<<std::dec<<' '<<kind_name(in.kind)<<' '<<in.major<<' '<<in.func<<' '<<in.mod<<' '<<in.d<<' '<<in.a<<' '<<in.b<<' '<<in.c<<"\n";}}
+            if(c.core_trace){c.core_trace.I(t,xr,xb.pc);const Inst& in=*xb.in;c.core_trace.K(xb.pc,kind_name(in.kind),in.major,in.func,in.mod,in.d,in.a,in.b,in.c);}
             if(e.exit)q.running=false;
             if(e.trap){q.running=false;q.faulted=true;record(STATUS_FAULT,e.code,xb.pc,e.why);}
             if(e.sleep){q.blocked=true;q.pc=xb.pc;q.slp_v=true;}
@@ -722,7 +676,7 @@ struct CycleCore {
         if(replay)replay->start_launch();
         scheduled.clear();targets.clear();
         if(uncore)uncore_launch(l.pc,l.roles);
-        if(c.core_trace){++c.trace_launches;char line[64];std::snprintf(line,sizeof line,"L %llu %016llx %u\n",(unsigned long long)t,(unsigned long long)l.pc,unsigned(l.roles));c.core_trace<<line;}
+        if(c.core_trace)c.core_trace.L(t,l.pc,unsigned(l.roles));
     }
     Outcome program(const Launch& l){
         require(!x.functional,"core_model=1 has no untimed mode");
@@ -735,7 +689,7 @@ struct CycleCore {
             if(c.deadline!=SC_ZERO_TIME && sc_time_stamp()>c.deadline){record(STATUS_TIMEOUT,0,0,"device deadline expired");break;}
             wait(c.cycle);
         }
-        if(c.core_trace){c.core_trace<<"E "<<(x.now()+1)<<"\n";c.core_trace.flush();}
+        if(c.core_trace)c.core_trace.E(x.now()+1);
         if(replay){*c_replay_mismatch=replay->mismatches;*c_replay_unrecorded=replay->unrecorded;}
         Outcome out=aborting?fault:Outcome{};u64 retired=0;for(auto& q:ctx){retired+=q.instret;}out.retired=retired;
         return out;

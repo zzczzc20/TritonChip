@@ -34,9 +34,8 @@ core of M1/M2, untouched). It follows CORE_TIMING.md and the TPCS discipline:
 
 Not modelled in this version, each a known divergence source to retire with
 the gate when a kernel reaches it: response reordering on the port, atomics
-(refused as before). On the tiny tier of `spec/r40/suites/existing.json`
-(2026-10-27) every operator point and the MLP model align exactly in replay
-mode (evidence/model-align/slice1).
+(refused as before). On the suite's smallest tier (2026-10-27) every point
+aligns exactly in replay mode (evidence/model-align/slice1).
 
 Validation path: `record_model.py --replay RTL_RUN` gives every point's
 model process the RTL trace of that point; the replay port checks each LSU
@@ -78,7 +77,7 @@ at t+1.
   own, so every core trace and every uncore stream (slice requests and
   responses, tile memory requests and responses, the port) is compared
   whole. With the recorded `X`/`Y` on the simulation bench, the three-core
-  op.add and matmul points align exactly in every stream (2026-10-27).
+  points recorded so far align exactly in every stream (2026-10-27).
 - **Prediction path**: the model's own LFSR and pool; the DRAM's ready
   pattern depends on the absolute cycle, so a prediction's total differs
   from a recording by the phase of that pattern, not by structure.
@@ -119,8 +118,8 @@ invisible under core-level replay because the replayed port hid them):
   (`tnca_tensor.v` 506-511, 1110, 1164): a tag freed by a response at the
   same edge is reused by the next request. The model allocated the post-edge
   tag, so a fast slice hit landing in the middle of a 16-request burst left
-  one tag allocated forever and the engine never drained (op.gemv launch 26,
-  model.mlp, model.gpt2_block: a refusal "core made no progress");
+  one tag allocated forever and the engine never drained (three points: a
+  refusal "core made no progress");
 - the dispatcher above;
 - a vector source reads on the port of its instruction field (a: 0, b: 1,
   c: 2; store data and `v.insert`'s Vd on vb, a scatter's data on vc), not
@@ -128,13 +127,13 @@ invisible under core-level replay because the replayed port hid them):
   in order, so an `a.fma.row` (vector in `b`) asked on port 0 and lost its
   bank to the matrix engine's port 3 where the RTL's port 1 wins (round
   robin from `rr_ptr = 1`): one refused fragment read, the mma one cycle
-  longer, the accumulator read behind it one cycle later (llama_decode,
-  launch 168, invisible in 1.7 M cycles otherwise);
+  longer, the accumulator read behind it one cycle later (one launch of a
+  graph-level point, invisible in 1.7 M cycles otherwise);
 - the memory arbiter's round robin also moves on the host's traffic between
   launches: the host's words go through tile 0 and the homes
   (`tnca_top.v:488`), and every host miss is a fill (and maybe a writeback)
   on the port, so the pointer resumes after that home. The model's zero-time
   host warm-up (`host_touch`) now advances the pointer the same way; without
   it the first three-way tie of a launch could be granted in the wrong order
-  (op.transpose launch 28: 1,2,0 recorded, 2,0,1 modelled, a pure relabelling
+  (one launch of one point: 1,2,0 recorded, 2,0,1 modelled, a pure relabelling
   of the three slices from then on).

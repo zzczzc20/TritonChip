@@ -23,7 +23,7 @@ sec 3.4.** With the RTL-structured board configuration
 (`configs/r40-board-m2.cfg`) fitted on the R40-04 calibration split only, the
 frozen holdout gives a median absolute graph-makespan error of 21.5 % and a
 p95 of 34.7 % (limits 10 % / 20 %): load/store streaming kernels are 10-36 %
-too fast, transfer/matrix-engine kernels and the llama graphs are within about
+too fast, transfer/matrix-engine kernels and the graph-level models are within about
 6 %. Evidence and the per-family breakdown: `evidence/r40/v3/systemc_m2/`.
 
 ## Execution host and dependency identity

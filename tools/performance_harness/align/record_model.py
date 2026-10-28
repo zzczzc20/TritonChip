@@ -28,6 +28,7 @@ ROOT = HERE.parents[2]
 SYSTEMC = HERE.parent / 'systemc'
 sys.path.insert(0, str(HERE))
 from record_rtl import slug  # noqa: E402
+from replay_extract import extract  # noqa: E402
 
 
 def collect(out, run_dirs=None):
@@ -115,11 +116,18 @@ def main():
                 print(f'no RTL trace for {p}: {trace}', file=sys.stderr)
                 continue
             if not args.collect_only:
+                # the model takes a boundary file, never the trace (platform.inc): extract the replayed stream
                 if args.replay_level == 'core':
-                    env = [f'TNCA_MODEL_CORE_REPLAY={trace}', 'TNCA_MODEL_CORE_TRACE_CORE=all']
+                    base = out / 'replay' / f'{slug(p)}.replay'
+                    extract('core', trace, base)
+                    for extra in sorted((replay / 'traces').glob(f'{slug(p)}.core*.trace')):
+                        c = extra.name.split('.')[-2]            # core<c>
+                        extract('core', extra, out / 'replay' / f'{slug(p)}.replay.{c}')
+                    env = [f'TNCA_MODEL_CORE_REPLAY={base}', 'TNCA_MODEL_CORE_TRACE_CORE=all']
                 else:
-                    utrace = replay / 'traces' / f'{slug(p)}.uncore.trace'
-                    env = [f'TNCA_MODEL_UNCORE_REPLAY={utrace}', 'TNCA_MODEL_CORE_TRACE_CORE=all']
+                    ureplay = out / 'replay' / f'{slug(p)}.uncore.replay'
+                    extract('uncore', replay / 'traces' / f'{slug(p)}.uncore.trace', ureplay)
+                    env = [f'TNCA_MODEL_UNCORE_REPLAY={ureplay}', 'TNCA_MODEL_CORE_TRACE_CORE=all']
                 jobs.append((rd, p, env))
         if jobs:
             import concurrent.futures as cf

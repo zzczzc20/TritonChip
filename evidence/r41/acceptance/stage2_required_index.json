@@ -485,7 +485,7 @@
         "evidence/r41/acceptance/p2/pipeline-three-sample-model.json",
         "spec/r41/stage2/acceptance/s2-p2-pipeline.json"
       ],
-      "reason": "Three matched fixed-budget standard Torch policies have 54 timed bitwise model samples, six real RTL rows including BF16 and actual DMA/MMA overlap, and unchanged default artifacts across all 113 points. Model timing is uncalibrated and grid-one does not establish scaling. The approved-image, three-sample lead-only board manifest is prepared; the final-image board comparison remains not measured.",
+      "reason": "Three matched fixed-budget standard Torch policies have 54 timed bitwise model samples, six real RTL rows including BF16 and actual DMA/MMA overlap, and unchanged default artifacts across all 113 points. Model timing is uncalibrated and grid-one does not establish scaling. The approved-image, three-sample lead-only board manifest is prepared; the final-image board comparison remains not measured. Every arm of the s2-p2-pipeline manifest, the baseline included, forces TNCA_SCHEDULE=0, TNCA_WINDOW_REUSE=0 and TNCA_IEEE_DIV=1, so its results are a non-default configuration study and do not count as default standard-path results; the staged manifest is unchanged (AUDIT.md R10). The earlier report line \"make compiler passed with 53 Python tests\" is wrong: 157 tests ran with 53 skipped, and the IR suite was skipped.",
       "closure_plan": "P2"
     },
     {
@@ -525,7 +525,7 @@
         "evidence/r41/stage1/stage2_readiness.md",
         "evidence/r41/stage1/model_estimates.md"
       ],
-      "reason": "No completed full-model board record for this workload.",
+      "reason": "No completed full-model board record for this workload. Board tokens/s from spec/r41/chat/s2-qwen-chat.json would not count as a default standard-path result: the manifest sets TNCA_IEEE_DIV=1 and TNCA_TORCH_DEVICE=native (AUDIT.md R13): it selects the portable core-vrf-sync-v5 profile on the X8 image and runs under the r41s2_fp8env interpreter, whose .pth sets torch.version.cuda (the P8 deviation); the staged manifest is unchanged.",
       "closure_plan": "P3"
     },
     {

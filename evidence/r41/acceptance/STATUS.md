@@ -318,7 +318,8 @@ refuses the invalid graph. Raw failed/successful logs and the derived validator
 output are in evidence/r41/acceptance/p2/.
 
 S2-03.A.1–A.4 now pass for functional delivery. S2-03.A.5 remains not measured:
-RTL counters/timings are not physical U280 evidence and no performance gain or
+(correction, 2026-10-28, AUDIT.md R15: S2-03.A.1–A.5 are not measured; the
+locality controls issue hand-built kernels and are quarantined) RTL counters/timings are not physical U280 evidence and no performance gain or
 default-on decision is claimed. S2-03.B/C remain open. The P2 board manifest is
 prepared, not launched. Reconciled the Stage 1 DoD row and stale evidence hashes
 to the frozen accepted 61/61 record. Current integrity-checked ledger: 40 passed,
@@ -671,7 +672,8 @@ wrapper, as recorded in the experiment identity.
 
 Physical locality off/on/off supplies the required traffic and latency
 comparisons and closes S2-03.A.5, without a gain/default-on claim. Four compound
-alias refusals close D.3; bounded grid admission closes D.4; 65,537 completed
+(correction, 2026-10-28, AUDIT.md R15: S2-03.A.5 is not measured; see the
+rectification section) alias refusals close D.3; bounded grid admission closes D.4; 65,537 completed
 (correction, 2026-10-28, AUDIT.md R9: D.4 is not measured; its opt-in check
 had been changed after a failure to repeat the capacity refusal) barrier arm/wait iterations close D.6. Targeted eviction passes 117 graphs with
 one unloaded module and intact resident data, but D.7 remains not measured
@@ -770,3 +772,8 @@ This section implements the lead's decisions on the `r41` findings R1–R18 of `
 ### D.4 opt-in check (R9)
 - After grid-preflight-v2 failed ("large grid was admitted without opt-in"), 7b10e7b changed the `opt-in-required` check in `tools/r40/grid_admission_case.py` to request `max(programs, base_limit + 1)` programs. On the board the base limit is the advertised capacity, 16,777,216, so the board report shows the same request (16,777,217) and the same error for `opt-in-required` and `advertised-capacity-refusal`: the check no longer tested opt-in.
 - The original check is restored: the measured grid, submitted without `large_grid`, must be refused, and is then admitted after opt-in. If the base limit already admits it, the check fails and the failure is kept. **S2-04.D.4 is not measured** until the case is rerun. A rerun needs the P4 manifest regenerated from `acceptance_manifests.py`, because the staged `s2-p4-lifecycle.json` pins the old source hash; that manifest is not changed here.
+
+### Locality controls quarantined (R15, Q2)
+- `Graph.replay(locality=True)` (`python/tnca/locality.py`, `replay_with_locality`) issues three hand-built TNCA-IR kernels, `_read_controls`, `_set_controls` and `_register_ranges`, that write the TMU maintenance registers. Device code not produced by the compiler violates discipline §2.2.5.
+- They are quarantined: they stay default-off (`replay()` defaults to `locality=False`), they count for no item, and the module now carries an explicit note that the kernels must be replaced with compiler-generated code before any use.
+- Every item judged passed on them goes back to **not measured**: S2-03.A.1, A.2, A.3, A.4 (board-top RTL, `p2/rtl-v4`) and A.5 (physical board, `board-p2p4-7b10e7b-try2.tgz`). The raw evidence is kept; each row records its superseded judgment.

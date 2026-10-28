@@ -18,18 +18,28 @@ def geometry_guards(temp):
 
 
 def main():
+    configurations = 0
+    failures = []
     with tempfile.TemporaryDirectory(prefix='tnca-wide-noc-') as temp:
-        for width in (64, 512):
+        for width, tag_w in ((64, 5), (512, 5), (512, 7)):
             for stages in (0, 2):
                 for stall in (0, 1):
                     binary = str(Path(temp)/'mesh.vvp')
                     subprocess.run(['iverilog', '-g2012', '-Irtl/noc', '-y', 'rtl/noc',
                         '-y', 'rtl/common', '-s', 'tb_wide_ni', f'-Ptb_wide_ni.DATA_W={width}',
-                        f'-Ptb_wide_ni.LINK_STAGES={stages}', f'-Ptb_wide_ni.STALL={stall}',
-                        '-o', binary, 'tb/noc/tb_wide_ni.v'], cwd=ROOT, check=True, timeout=60)
-                    subprocess.run(['vvp', binary], cwd=ROOT, check=True, timeout=180)
+                        f'-Ptb_wide_ni.TAG_W={tag_w}', f'-Ptb_wide_ni.LINK_STAGES={stages}',
+                        f'-Ptb_wide_ni.STALL={stall}', '-o', binary, 'tb/noc/tb_wide_ni.v'],
+                        cwd=ROOT, check=True, timeout=60)
+                    try:
+                        subprocess.run(['vvp', binary], cwd=ROOT, check=True, timeout=180)
+                        configurations += 1
+                    except subprocess.CalledProcessError:
+                        failures.append((width, tag_w, stages, stall))
+                        print(f'WIDE NOC FAIL data={width} tag={tag_w} links={stages} stall={stall}', flush=True)
         geometry_guards(temp)
-    print('WIDE NOC ALL 8 CONFIGURATIONS PASS', flush=True)
+    if failures:
+        raise RuntimeError(f'WIDE NOC {len(failures)} CONFIGURATIONS FAILED: {failures}')
+    print(f'WIDE NOC ALL {configurations} CONFIGURATIONS PASS', flush=True)
 
 
 if __name__ == '__main__':

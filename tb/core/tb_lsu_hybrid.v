@@ -1,11 +1,18 @@
 // Multi-unit candidate versus the original two-unit LSU, using the
-// randomized memory/semantic oracle from tb_lsu_reqreg. Four-bit tags remain
-// fixed; candidate units share exactly sixteen total beat identities.
+// randomized memory/semantic oracle from tb_lsu_reqreg. BEAT_W scales the
+// port tags and response bookkeeping; its default preserves the original geometry.
 `timescale 1ns/1ps
 `include "tnca_defs.vh"
 `default_nettype none
 module tb_lsu_hybrid;
 parameter BURST=0;
+parameter BEAT_W=4;
+parameter BURST_PERIOD=32;
+parameter BURST_DEPTH=24;
+parameter BURST_BASE=2048;
+parameter BURST_LINES=16;
+parameter MEM_WORDS=512;       // memory words (4 KiB window by default)
+parameter CHAIN_PERIOD=64;      // accesses between the known store/CAS chains (>= 37)
 parameter FORCE_LOADS=0;
 parameter SEED = 1;
 parameter ACCESSES = 1500;
@@ -14,8 +21,8 @@ parameter HOLD_PCT = 5;         // % of cycles that start a long port stall
 parameter MAXLAT = 24;          // response delay 1..MAXLAT cycles
 parameter REORDER = 1;
 parameter DIRECTED = 0;
-localparam VLEN=16, ELEN=32, RCTX_W=2, NB=8, BW=4;
-localparam MW = 512;            // memory words (4 KiB window)
+localparam VLEN=16, ELEN=32, RCTX_W=2, NB=8, BW=BEAT_W, TAGS=1<<BEAT_W;
+localparam MW = MEM_WORDS;
 
 reg clk=0; always #5 clk=~clk;
 reg rst_n=0;
@@ -58,20 +65,20 @@ initial begin
   end
   endcase
  end
- if(BURST)for(n=0;n<NACC;n=n+1)if(n%32<24)begin
+ if(BURST)for(n=0;n<NACC;n=n+1)if(n%BURST_PERIOD<BURST_DEPTH)begin
   a_vector[n]=1;a_indexed[n]=0;a_amo[n]=0;a_size[n]=`TNCA_SZ_W;
-  a_base[n]=2048+(n%16)*64;a_offset[n]=0;a_mask[n]=16'hffff;a_store[n]=n%32>=16;
+  a_base[n]=BURST_BASE+(n%BURST_LINES)*64;a_offset[n]=0;a_mask[n]=16'hffff;a_store[n]=n%32>=16;
  end
 
  for(n=0;n<NACC;n=n+1)if(a_amo[n] && a_size[n]==`TNCA_SZ_W && n%2) a_base[n]=a_base[n]+4;
  // Known store/CAS-success/read/CAS-failure/read chains, across fast/slow transitions.
- for(n=0;n<NACC;n=n+1)if(n%64>=32 && n%64<=36)begin
+ for(n=0;n<NACC;n=n+1)if(n%CHAIN_PERIOD>=32 && n%CHAIN_PERIOD<=36)begin
   a_vector[n]=0;a_indexed[n]=0;a_amo[n]=0;a_store[n]=0;a_size[n]=`TNCA_SZ_D;
   a_base[n]=2048;a_offset[n]=0;a_mask[n]=1;a_signed[n]=0;
-  if(n%64==32)begin a_store[n]=1;a_sdata[n]=64'h123456789abcdef0;end
-  if(n%64==33 || n%64==35)begin
+  if(n%CHAIN_PERIOD==32)begin a_store[n]=1;a_sdata[n]=64'h123456789abcdef0;end
+  if(n%CHAIN_PERIOD==33 || n%CHAIN_PERIOD==35)begin
    a_amo[n]=1;a_aop[n]=`TNCA_AOP_CAS;a_sdata[n]=64'h0102030405060708;
-   a_cmp[n]=n%64==33?64'h123456789abcdef0:64'hffffffffffffffff;
+   a_cmp[n]=n%CHAIN_PERIOD==33?64'h123456789abcdef0:64'hffffffffffffffff;
   end
  end
 
@@ -160,8 +167,8 @@ reg [671:0] clog0[0:NACC-1], clog1[0:NACC-1];
 integer rn[0:1], cn[0:1], cbase[0:1];
 reg [NACC-1:0] cdone[0:1];
 // responses in flight: tag, data, due cycle
-reg [BW-1:0] pt[0:1][0:15]; reg [511:0] pd[0:1][0:15]; integer pdue[0:1][0:15]; reg pv[0:1][0:15];
-reg [15:0] out_tags[0:1];
+reg [BW-1:0] pt[0:1][0:TAGS-1]; reg [511:0] pd[0:1][0:TAGS-1]; integer pdue[0:1][0:TAGS-1]; reg pv[0:1][0:TAGS-1];
+reg [TAGS-1:0] out_tags[0:1];
 integer hold[0:1];
 integer ms0, ms1;
 // per-instance stimulus streams, so one side's draws do not shift the other's
@@ -178,7 +185,7 @@ initial begin
  for(k=0;k<MW;k=k+1)begin mem0[k]={$random,$random};mem1[k]=mem0[k];end
  for(k=0;k<2;k=k+1)begin
   rn[k]=0;cn[k]=0;cbase[k]=0;cdone[k]=0;out_tags[k]=0;hold[k]=0;pc[k]=0;
-  for(j=0;j<16;j=j+1)pv[k][j]=0;
+  for(j=0;j<TAGS;j=j+1)pv[k][j]=0;
  end
  ms0=SEED*7+1;ms1=SEED*13+5;
  rv=0;mready=0;rspv=0;ack=0;
@@ -210,8 +217,8 @@ always @(posedge clk) if(rst_n) begin
    if(k)rlog1[rn[k]]={maddr[k],mwe[k],mbe[k],mwd[k],mamo[k],maop[k],mcmp[k]};
    else rlog0[rn[k]]={maddr[k],mwe[k],mbe[k],mwd[k],mamo[k],maop[k],mcmp[k]};
    rn[k]=rn[k]+1;
-   cand=-1;for(j=15;j>=0;j=j-1)if(!pv[k][j])cand=j;
-   if(cand<0)$fatal(1,"dut%0d: more than 16 beats in flight",k);
+   cand=-1;for(j=TAGS-1;j>=0;j=j-1)if(!pv[k][j])cand=j;
+   if(cand<0)$fatal(1,"dut%0d: more than %0d beats in flight",k,TAGS);
    pv[k][cand]=1;pt[k][cand]=mtag[k];pd[k][cand]=old;
    pdue[k][cand]=cycle+1+(DIRECTED ? 3 : $unsigned(rk(k))%MAXLAT);
   end
@@ -244,7 +251,7 @@ always @(negedge clk) if(rst_n) begin
    mready[k]=(hold[k]==0) && ($unsigned(rk(k))%100>=STALL_PCT);
   end
   rspv[k]=0;ncand=0;cand=-1;
-  for(j=0;j<16;j=j+1)if(pv[k][j] && pdue[k][j]<=cycle)begin
+  for(j=0;j<TAGS;j=j+1)if(pv[k][j] && pdue[k][j]<=cycle)begin
    ncand=ncand+1;
    if(cand<0 || (REORDER && $unsigned(rk(k))%ncand==0) || (!REORDER && pdue[k][j]<pdue[k][cand]))cand=j;
   end
@@ -286,7 +293,9 @@ initial begin
   @(negedge clk);
   for(k=0;k<2;k=k+1)
    if(done_cycle[k]<0 && pc[k]==NACC && !rv[k] && rdy[k] && !cplv[k] && cn[k]==NACC)done_cycle[k]=cycle;
-  if(cycle>100*NACC+10000)$fatal(1,"timeout pc=%0d/%0d cpl=%0d/%0d",pc[0],pc[1],cn[0],cn[1]);
+  // Hang detector. The original bound holds for MAXLAT <= 64; the widened
+  // configurations (BEAT_W > 5, MAXLAT 1024) scale it with the latency.
+  if(cycle>(MAXLAT>64 ? 4*MAXLAT : 100)*NACC+10000)$fatal(1,"timeout pc=%0d/%0d cpl=%0d/%0d",pc[0],pc[1],cn[0],cn[1]);
  end
  for(k=0;k<NACC;k=k+1)if(clog0[k]!==clog1[k])$fatal(1,"completion %0d differs:\n%h\n%h",k,clog0[k],clog1[k]);
  for(k=0;k<MW;k=k+1)if(mem0[k]!==mem1[k])$fatal(1,"memory word %0d differs",k);
@@ -297,10 +306,10 @@ initial begin
  if(out_tags[0]!=0 || out_tags[1]!=0)$fatal(1,"undrained memory transactions");
  if(!FORCE_LOADS && (fast_commands==0 || slow_requests==0))$fatal(1,"both paths not covered");
  $display("HYBRID COVERAGE fast=%0d slow_beats=%0d",fast_commands,slow_requests);
- if(BURST && MAXLAT>=32 && peak!=8)$fatal(1,"fast slots not fully exercised peak=%0d",peak);
+ if(BURST && MAXLAT>=32 && peak!=(1<<(BW-1)))$fatal(1,"fast slots not fully exercised peak=%0d expected=%0d",peak,1<<(BW-1));
  $display("HYBRID FAST PEAK %0d",peak);
- $display("HYBRID LSU MITER PASS seed=%0d accesses=%0d requests=%0d stall=%0d%% cycles REQ_REG=0 %0d REQ_REG=1 %0d",
-          SEED,NACC,rn[0],STALL_PCT,done_cycle[0],done_cycle[1]);
+ $display("HYBRID LSU MITER PASS beat_w=%0d seed=%0d accesses=%0d requests=%0d stall=%0d%% cycles REQ_REG=0 %0d REQ_REG=1 %0d",
+          BW,SEED,NACC,rn[0],STALL_PCT,done_cycle[0],done_cycle[1]);
  $finish;
 end
 endmodule

@@ -1,20 +1,20 @@
 `timescale 1ns/1ps
 module tb_wide_ni;
- parameter DATA_W=512, STALL=1, LINK_STAGES=2, TOTAL=768;
- localparam BYTES=DATA_W/8, PW=216+DATA_W-64+BYTES-8, FW=PW+4, N=3;
+ parameter DATA_W=512, STALL=1, LINK_STAGES=2, TOTAL=768, TAG_W=5;
+ localparam BYTES=DATA_W/8, PW=216+DATA_W-64+BYTES-8+TAG_W-5, FW=PW+4, N=3, TAGS=1<<TAG_W;
  reg clk=0; always #5 clk=~clk;
  reg rst_n=0;
  integer cycle=0,sent=0,received=0,first_accept=-1,last_accept=-1;
- reg [31:0] pending=0;
- reg [DATA_W-1:0] expected[0:31];
+ reg [TAGS-1:0] pending=0;
+ reg [DATA_W-1:0] expected[0:TAGS-1];
  wire [5:0] iv,ir,ov,orr;
  wire [6*FW-1:0] inf,outf;
  wire ready,cv;
- wire [4:0] ct;
+ wire [TAG_W-1:0] ct;
  wire [DATA_W-1:0] cd;
- wire valid=sent<TOTAL && !pending[sent%32];
+ wire valid=sent<TOTAL && !pending[sent%TAGS];
  wire [63:0] address=64'h1000+sent*64;
- wire [4:0] tag=sent%32;
+ wire [TAG_W-1:0] tag=sent%TAGS;
  wire [3:0] operation=sent%12;
  wire [1:0] dest=home(address);
  wire [63:0] compare=64'hfedcba9876543210^sent;
@@ -37,7 +37,7 @@ module tb_wide_ni;
  tnca_mesh #(.NX(3),.NY(1),.XW(2),.YW(2),.PAYLOAD_W(PW),.LINK_STAGES(LINK_STAGES)) mesh(
   .clk(clk),.rst_n(rst_n),.l_in_valid(iv),.l_in_ready(ir),.l_in_flit(inf),
   .l_out_valid(ov),.l_out_ready(orr),.l_out_flit(outf));
- tnca_core_ni #(.NX(3),.NY(1),.XW(2),.YW(2),.DATA_W(DATA_W),.MY_ID(0)) core(
+ tnca_core_ni #(.NX(3),.NY(1),.XW(2),.YW(2),.DATA_W(DATA_W),.PAYLOAD_W(PW),.TAG_W(TAG_W),.MY_ID(0)) core(
   .clk(clk),.rst_n(rst_n),.req_valid(valid),.req_ready(ready),.req_addr(address),
   .req_we(sent%2!=0),.req_be(enables(sent)),.req_wdata(pattern(sent)),.req_tag(tag),
   .req_amo(sent%5==0),.req_aop(operation),.req_cmp(64'hfedcba9876543210^sent),
@@ -56,14 +56,14 @@ module tb_wide_ni;
   wire [BYTES-1:0] qbe;
   wire [DATA_W-1:0] qdata;
   wire [3:0] qsrc,qaop;
-  wire [4:0] qtag;
+  wire [TAG_W-1:0] qtag;
   reg response=0;
   reg [DATA_W-1:0] data=0;
-  reg [4:0] rtag=0;
+  reg [TAG_W-1:0] rtag=0;
   reg [3:0] rsrc=0;
   wire response_ready;
   assign qr=(!response || response_ready) && (!STALL || ((cycle+node)%7!=0 && (cycle+node)%11!=0));
-  tnca_slice_ni #(.NX(3),.NY(1),.XW(2),.YW(2),.DATA_W(DATA_W)) slice(
+  tnca_slice_ni #(.NX(3),.NY(1),.XW(2),.YW(2),.DATA_W(DATA_W),.PAYLOAD_W(PW),.TAG_W(TAG_W),.WTAG_W(TAG_W)) slice(
    .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(qr),.req_addr(qaddr),.req_we(qwe),
    .req_be(qbe),.req_wdata(qdata),.req_src(qsrc),.req_tag(qtag),.req_amo(qa),.req_aop(qaop),.req_cmp(qcmp),
    .rsp_valid(response),.rsp_ready(response_ready),.rsp_src(rsrc),.rsp_tag(rtag),.rsp_rdata(data),
@@ -77,7 +77,7 @@ module tb_wide_ni;
     if(response_ready) response<=0;
     if(qv && qr) begin
      seq=(qaddr-64'h1000)/64;
-     if(home(qaddr)!=node || qsrc!=0 || qtag!=seq%32 || qwe!=(seq%2!=0) || qa!=(seq%5==0) || qaop!=seq%12 ||
+     if(home(qaddr)!=node || qsrc!=0 || qtag!=seq%TAGS || qwe!=(seq%2!=0) || qa!=(seq%5==0) || qaop!=seq%12 ||
         qbe!==enables(seq) || qdata!==pattern(seq) || qcmp!==(64'hfedcba9876543210^seq))
       $fatal(1,"wide NI request mismatch node=%0d seq=%0d",node,seq);
      response<=1; rtag<=qtag; rsrc<=qsrc; data<=~qdata;
@@ -102,7 +102,7 @@ module tb_wide_ni;
   if(received==TOTAL) begin
    if(sent!=TOTAL || pending!=0) $fatal(1,"wide NI did not drain");
    if(!STALL && last_accept-first_accept!=TOTAL-1) $fatal(1,"unsaturated wide injection span=%0d",last_accept-first_accept);
-   $display("WIDE NI MESH PASS data=%0d payload=%0d links=%0d stall=%0d requests=%0d injection_span=%0d cycles=%0d",DATA_W,PW,LINK_STAGES,STALL,sent,last_accept-first_accept+1,cycle);
+   $display("WIDE NI MESH PASS data=%0d tag=%0d payload=%0d links=%0d stall=%0d requests=%0d injection_span=%0d cycles=%0d",DATA_W,TAG_W,PW,LINK_STAGES,STALL,sent,last_accept-first_accept+1,cycle);
    $finish;
   end
   if(cycle>20000) $fatal(1,"wide NI timeout sent=%0d received=%0d",sent,received);

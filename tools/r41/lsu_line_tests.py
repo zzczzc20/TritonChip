@@ -4,11 +4,12 @@ from pathlib import Path
 import subprocess
 import tempfile
 ROOT=Path(__file__).resolve().parents[2]
+SLOT_COUNTS=(2,4,8,16,32,64)
 
 
 def reset_tests(temp):
     binary=str(Path(temp)/'reset.vvp')
-    for slots in (2,4,8):
+    for slots in SLOT_COUNTS:
         subprocess.run(['iverilog','-g2012','-Irtl/common','-s','tb_lsu_line_reset',
             f'-Ptb_lsu_line_reset.SLOTS={slots}',f'-Ptb_lsu_line_reset.TAG_W={slots.bit_length()-1}',
             '-o',binary,'rtl/core/tnca_lsu_line.v','tb/core/tb_lsu_line_reset.v'],cwd=ROOT,check=True,timeout=60)
@@ -22,8 +23,9 @@ def reset_tests(temp):
 
 
 def main():
+    configurations=0
     with tempfile.TemporaryDirectory(prefix='tnca-lsu-line-') as temp:
-        for slots in (2,4,8):
+        for slots in SLOT_COUNTS:
             for stall in (0,1):
                 for stream in (0,1):
                     for seed in (1,39):
@@ -34,8 +36,9 @@ def main():
                             f'-Ptb_lsu_line.SEED={seed}','-o',binary,
                             'rtl/core/tnca_lsu_line.v','tb/core/tb_lsu_line.v'],cwd=ROOT,check=True,timeout=60)
                         subprocess.run(['vvp',binary],cwd=ROOT,check=True,timeout=60)
+                        configurations+=1
         reset_tests(temp)
-    print('LINE LSU ALL 24 CONFIGURATIONS PASS',flush=True)
+    print(f'LINE LSU ALL {configurations} CONFIGURATIONS PASS',flush=True)
 
 
 if __name__=='__main__':

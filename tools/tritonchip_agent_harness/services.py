@@ -247,14 +247,18 @@ class Broker:
         else:
             apply_candidate(self.repo, self.task.base_commit, candidate, tree, only=evaluator.HARDWARE)
         seconds = int(min(self.fpga_job, self.fpga_left))
+        started, r = time.monotonic(), {}
         try:
             r = fpga_quick.run(self.site.fpga_worker, tree, self.task.evaluation["profile"], self.period, seconds,
                                job_dir, job["remote_id"])
         finally:
             shutil.rmtree(tree, ignore_errors=True)
-        with self.lock:
-            job["charged_seconds"] = r.get("seconds", 0.0)
-            self.fpga_left = max(0.0, self.fpga_left - job["charged_seconds"])
+            # Charged even when run() raises (its remote clean-up can time out after the job ran):
+            # the worker's own time when it reported one, else the time this request held the worker.
+            charged = r.get("seconds", min(seconds, time.monotonic() - started))
+            with self.lock:
+                job["charged_seconds"] = round(charged, 1)
+                self.fpga_left = max(0.0, self.fpga_left - charged)
         visible = {k: r[k] for k in FPGA_VISIBLE if k in r}
         visible["note"] = FPGA_NOTE
         return visible, r

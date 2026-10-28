@@ -1,6 +1,7 @@
 """The in-run services: budgets, one at a time, snapshots through the gate, and the socket the agent uses."""
 from __future__ import annotations
 
+import subprocess
 import sys
 import tempfile
 import threading
@@ -91,6 +92,19 @@ class Services(unittest.TestCase):
         self.assertIn("may take up to 20 min", self.broker.submit("fpga-quick")["refused"])
         self.broker.slow_left = 120 * 60
         self.assertIn("may take up to 180 min", self.broker.submit("fpga-slow")["refused"])
+
+    def test_quick_tier_time_is_charged_when_the_worker_call_raises(self):
+        # fpga_quick.run() can raise after the job ran, when its remote clean-up times out.
+        job, ticks = {"remote_id": "r1"}, [100.0]
+        clock = types.SimpleNamespace(time=time.time, sleep=time.sleep,
+                                      monotonic=lambda: ticks.pop(0) if ticks else 160.0)
+        with mock.patch("tritonchip_agent_harness.services.fpga_quick.run",
+                        side_effect=subprocess.TimeoutExpired("ssh", 30)), \
+                mock.patch("tritonchip_agent_harness.services.time", clock):
+            with self.assertRaises(subprocess.TimeoutExpired):
+                self.broker._run_fpga(job, None, Path(tempfile.mkdtemp()))
+        self.assertEqual(job["charged_seconds"], 60.0)
+        self.assertEqual(self.broker.fpga_left, 50 * 60 - 60.0)
 
     def test_slow_request_is_agent_chosen_and_excludes_concurrent_fpga_work(self):
         first = self.broker.submit("fpga-slow")

@@ -33,8 +33,8 @@ PORT = 443
 LOCAL_NAMES = ("localhost", "localhost.localdomain", "ip6-localhost", "ip6-loopback")
 
 
-def internal_ip(text: str) -> Optional[bool]:
-    """Whether a literal address is this machine or a private network; None if it is not an address.
+def literal_ip(text: str):
+    """The address a literal stands for, or None if it is a name.
 
     Alternative IPv4 spellings (`127.1`, `2130706433`, `0x7f000001`) count as
     addresses, because a resolver downstream would read them as one.
@@ -48,28 +48,57 @@ def internal_ip(text: str) -> Optional[bool]:
             return None
     if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
         ip = ip.ipv4_mapped
+    return ip
+
+
+def internal_ip(text: str) -> Optional[bool]:
+    """Whether a literal address is this machine or a private network; None if it is not an address."""
+    ip = literal_ip(text)
+    if ip is None:
+        return None
     return (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
             or ip.is_multicast or ip.is_unspecified)
 
 
-async def internal(host: str, resolve: bool) -> bool:
+def internal_name(host: str) -> bool:
     """`open` mode lets unlisted hosts out, but never back in: not loopback, not a private network.
 
-    A name is resolved here only when the tunnel goes out directly; through an
-    upstream proxy the proxy resolves it, and only the name can be checked.
+    This is the check before any lookup: a local name or an internal literal.
+    The caller strips trailing dots first, so `localhost.` is localhost.
     """
-    if host in LOCAL_NAMES or host.endswith(".localhost"):
-        return True
-    literal = internal_ip(host)
-    if literal is not None:
-        return literal
-    if not resolve:
-        return False
-    try:
-        infos = await asyncio.get_running_loop().getaddrinfo(host, None)
-    except OSError:
-        return False                      # it will not connect either
-    return any(internal_ip(i[4][0]) for i in infos)
+    return not host or host in LOCAL_NAMES or host.endswith(".localhost") or bool(internal_ip(host))
+
+
+async def resolve(host: str, port: int) -> list:
+    """The addresses the system resolver gives for a name."""
+    infos = await asyncio.wait_for(asyncio.get_running_loop().getaddrinfo(host, port, type=socket.SOCK_STREAM),
+                                   CONNECT_TIMEOUT)
+    return [i[4][0] for i in infos]
+
+
+class InternalAddress(Exception):
+    """An unlisted name that resolves to this machine or a private network."""
+
+
+async def public_address(host: str, port: int) -> str:
+    """The one address an unlisted host's tunnel goes to.
+
+    The name is resolved once, here, and the tunnel connects to the address
+    that passed, directly or by naming it to the upstream proxy. Connecting by
+    name would resolve again, and a rebinding server can answer a public
+    address to the check and a private one to the connection. Every answer
+    must be a public address, so for `open` mode the gateway's host has to
+    resolve public names itself.
+    """
+    ip = literal_ip(host)
+    if ip is not None:
+        return str(ip)
+    addresses = await resolve(host, port)
+    if not addresses:
+        raise OSError(f"{host} resolved to no address")
+    if any(internal_ip(a) is not False for a in addresses):   # internal, or not an address at all
+        raise InternalAddress(host)
+    return addresses[0]
 
 
 class Gateway:
@@ -102,7 +131,7 @@ class Gateway:
                               method=words[0] if words else "")
             return
         host, _, port = words[1].rpartition(":")
-        host = host.strip("[]").lower()
+        host = host.strip("[]").lower().rstrip(".")       # `localhost.` is localhost
         if not port.isdigit():
             await self.refuse(writer, 400, "Bad Request", reason="no port", target=words[1][:200])
             return
@@ -111,14 +140,21 @@ class Gateway:
         if route is None or int(port) not in ports:
             await self.refuse(writer, 403, "Forbidden", reason="not listed", host=host[:200], port=int(port))
             return
-        if host not in self.routes and await internal(host, resolve=route == "direct"):
+        if host not in self.routes and internal_name(host):
             await self.refuse(writer, 403, "Forbidden", reason="internal address", host=host[:200], port=int(port))
             return
+        address = host
         try:
-            up_reader, up_writer = await self.open(host, route, int(port))
+            if host not in self.routes:
+                address = await public_address(host, int(port))
+            up_reader, up_writer = await self.open(address, route, int(port))
+        except InternalAddress:
+            await self.refuse(writer, 403, "Forbidden", reason="internal address", host=host[:200], port=int(port))
+            return
         except (OSError, asyncio.TimeoutError, ValueError) as exc:
             self.totals["failed"] += 1
-            self.record(event="failed", host=host, route=route, error=type(exc).__name__, detail=str(exc)[:200])
+            self.record(event="failed", host=host, address=address, route=route, error=type(exc).__name__,
+                        detail=str(exc)[:200])
             writer.write(b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\n\r\n")
             await self.drain_close(writer)
             return
@@ -130,8 +166,9 @@ class Gateway:
         self.totals["tunnels"] += 1
         self.totals["bytes_up"] += counts[0]
         self.totals["bytes_down"] += counts[1]
-        self.record(event="tunnel", host=host, port=int(port), route=route, listed=host in self.routes,
-                    bytes_up=counts[0], bytes_down=counts[1], seconds=round(time.time() - start, 3))
+        self.record(event="tunnel", host=host, address=address, port=int(port), route=route,
+                    listed=host in self.routes, bytes_up=counts[0], bytes_down=counts[1],
+                    seconds=round(time.time() - start, 3))
 
     async def refuse(self, writer: asyncio.StreamWriter, code: int, text: str, **fields) -> None:
         self.totals["refused"] += 1
@@ -139,13 +176,15 @@ class Gateway:
         writer.write(f"HTTP/1.1 {code} {text}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".encode())
         await self.drain_close(writer)
 
-    async def open(self, host: str, route: str, port: int = PORT):
+    async def open(self, address: str, route: str, port: int = PORT):
+        """A tunnel to a listed host's name, or to the public address an unlisted name resolved to."""
         if route == "direct":
-            return await asyncio.wait_for(asyncio.open_connection(host, port), CONNECT_TIMEOUT)
+            return await asyncio.wait_for(asyncio.open_connection(address, port), CONNECT_TIMEOUT)
         if self.upstream is None:
             raise ValueError("route is upstream but no upstream proxy was given")
         reader, writer = await asyncio.wait_for(asyncio.open_connection(*self.upstream), CONNECT_TIMEOUT)
-        writer.write(f"CONNECT {host}:{port} HTTP/1.1\r\nHost: {host}:{port}\r\n\r\n".encode())
+        target = f"[{address}]:{port}" if ":" in address else f"{address}:{port}"
+        writer.write(f"CONNECT {target} HTTP/1.1\r\nHost: {target}\r\n\r\n".encode())
         await writer.drain()
         head = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), CONNECT_TIMEOUT)
         first = head.split(b"\r\n", 1)[0]

@@ -383,7 +383,7 @@ size whose JSON has the same top-level keys; otherwise the refusal is recorded.
 **Network modes (decided 2026-10-15).** Exactly one per run, recorded:
 
 - `offline` (default): the gateway allows only the account's model hosts; every CLI web tool is off.
-- `open`: the gateway allows any public host on ports 443 and 80 and logs every tunnel; web tools stay on. Loopback, private, link-local and reserved addresses are refused even then, by literal address, by local name, and, for direct routes, by what a name resolves to. Internal names reached through an upstream proxy cannot be told apart; a site deny list for them is planned.
+- `open`: the gateway allows any public host on ports 443 and 80 and logs every tunnel; web tools stay on. Loopback, private, link-local and reserved addresses are refused even then: by literal address, by local name (trailing dots ignored), and by what a name resolves to. The gateway resolves an unlisted name once, refuses it if any answer is internal, and opens the tunnel to the address that passed, directly or by naming that address to the upstream proxy, so a second DNS answer (rebinding) is never used. For `open` mode the gateway's host must therefore resolve public names itself.
 
 **What the CLIs try anyway.** Codex 0.162.1 fetches from `github.com`,
 `api.github.com`, `files.openai.com` and `*.oaiusercontent.com` at startup, with
@@ -1018,8 +1018,8 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Sandbox | The container uid taken from the site, not fixed at 1000 | planned | — |
 | Sandbox | Podman provider | planned | needs a second host |
 | Network | CONNECT gateway as sidecar, `offline` and `open` | done | `tests/test_gateway.py`; smoke runs |
-| Network | `open` mode refuses loopback, private and link-local addresses | done | `tests/test_gateway.py` |
-| Network | A site deny list for internal names behind an upstream proxy | planned | — |
+| Network | `open` mode refuses loopback, private and link-local addresses | done | `tests/test_gateway.py`; a name is resolved once and its tunnel goes to that address on both routes (DNS rebinding, `localhost.`; PR #9 review) |
+| Network | A site deny list for internal names behind an upstream proxy | not needed | the gateway resolves unlisted names itself and names the checked address to the upstream proxy |
 | Network | API-key proxy | deferred | — |
 | Accounts | Site configuration, credentials by path, never by value | done | `tests/test_siteconfig.py` |
 | Accounts | Codex credential write-back only after checks | done | `tests/test_runner.py` |

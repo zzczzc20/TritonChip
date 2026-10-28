@@ -378,7 +378,7 @@ size whose JSON has the same top-level keys; otherwise the refusal is recorded.
 | Credential | inside the sandbox, with the CLI: `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, or Codex `auth.json` in the run's `CODEX_HOME` | today: inside the sandbox, as an env file. Deferred: outside, injected by an API-key proxy |
 | Why | Anthropic does not permit third parties to "collect, store, or intermediate" claude.ai credentials; OAuth is for the unmodified Claude Code | the key owner may provision its own key |
 | Network | a gateway that accepts only `CONNECT`: in `offline`, to the account's model hosts; in `open`, to any public host. It never decrypts TLS | the same gateway today |
-| Tokens | reported by the CLI, collected outside the sandbox, recorded beside the gateway's byte counts. An automatic cross-check is planned | today the same; with the proxy, measured by it |
+| Tokens | reported by the CLI, collected outside the sandbox, recorded as reported and in one schema (§14), beside the gateway's byte counts. An automatic cross-check is planned | today the same; with the proxy, measured by it |
 
 **Network modes (decided 2026-10-15).** Exactly one per run, recorded:
 
@@ -878,7 +878,10 @@ candidate).
 included. Planned: working time (rate-limit waits excluded), a token budget,
 and the service budgets, which are scoring requests (a count) and FPGA time
 (minutes), both stated in the syllabus and enforced (§12). Reported: wall
-clock, tool calls, service calls, queue waits.
+clock, tool calls, service calls, queue waits, tokens in one schema across
+the CLIs, and which machine each part of a run held and for how long
+(`occupancy`, §14). `stats` (§18) gives each agent framework's run count and
+the totals and means of its tokens and occupancy.
 
 **Equalised CLI conditions.** Off for every CLI: instruction files, web tools
 (offline), memory, MCP, hooks, network-fetched plugins and skills, telemetry,
@@ -888,7 +891,8 @@ the system prompt sits.
 
 **Repetition and reporting.** At least 5 independent runs per cell,
 interleaved in time; paired comparisons on the same task and start; means with
-bootstrap intervals, success rates with Wilson intervals; no best-of-k.
+bootstrap intervals, success rates with Wilson intervals (the intervals are
+planned; `stats` gives totals and means); no best-of-k.
 Simulated cycles are deterministic and need no repeated measurement; board
 numbers do (A10). Confirmed cheating counts as failure. Hardware-changing
 candidates are reported with their feasibility (pending, certified,
@@ -912,17 +916,66 @@ One JSON per run (`run.json`), written outside the sandbox:
 - **identity:** run id, task id and sha256, base commit, workspace commit, agent (account label or pseudo-agent), mode, prompt sha256;
 - **versions:** harness version; for agent runs, the CLI version and launch switches and the image ids;
 - **models:** requested; served, from the CLI's report;
-- **usage:** tokens as the CLI reports them; gateway tunnels with bytes, and refusals;
-- **time:** started, finished, seconds, the reason the agent stopped;
+- **usage:** tokens as the CLI reports them (`usage`, and Claude Code's `model_usage`), and the same in one schema (`tokens`, below); gateway tunnels with bytes, and refusals;
+- **time:** started, finished, seconds, the reason the agent stopped; the agent's container's start and end (`container`); and `occupancy`, which machine each part of the run held, from when to when (below);
+- **services:** every request with its times, snapshot, charge, the result the agent saw and the full result it did not (`agent_result.services`, §12.2);
 - **candidate:** the gate's verdict, the files taken, dropped, evaluator-owned changes, rejections;
 - **evaluation:** both sets, point by point (with the device's own count, `done_cycles`) and in aggregate; machine changes; the validity class;
 - **hardware:** whether the candidate changed the machine (the RTL files, the profile's changed parameters), and `certification`: `not-needed` or `pending`. Certification writes its own record, `certification.json`, beside this one (§10.4).
 
+**Tokens in one schema** (`agent_result.tokens`, `adapters.tokens`):
+`input_uncached`, `cache_write`, `cache_read`, `output`, `reasoning` and
+`total`, each a count of tokens or null where the CLI does not report it, and
+`by_model`, the same per model where the CLI reports per model (Claude Code),
+else null. `output` always includes reasoning and `reasoning` is the part of it
+that was, so `total` (uncached input, cache writes, cache reads and output)
+counts nothing twice. Each CLI's fields are mapped as its own source or
+reference defines them, for the pinned versions (the table is in
+`adapters.tokens`):
+
+- **Claude Code 2.1.287:** the totals are summed over `modelUsage`, which counts subagents; the result's `usage` counts the top-level loop only and is read only when there is no `modelUsage`. Thinking is inside `outputTokens`; `thinkingTokens` is its part. From the Agent SDK reference: no recorded output of this version is in the repository.
+- **Codex 0.162.1:** `input_tokens` holds the cached reads and the cache writes, `output_tokens` the reasoning (the Responses API's fields, as `codex-rs` maps them). `exec` prints its usage once, the thread's running total, when the turn completes.
+- **opencode 1.19.0:** each `step_finish` part is one model call; its `input` is already uncached, and its `output` leaves the reasoning out, so the reasoning is added back.
+
+A run stopped at its budget keeps only what its CLI printed before it was
+stopped: Claude Code and Codex print their usage at the end, so such a run has
+none (null), and opencode's has its finished steps. A 0 can mean "not
+reported" where a CLI writes 0 for what the provider does not report:
+opencode's cache writes and reasoning through GLM's API (whether GLM reports
+reasoning tokens at all is not verified), Codex's cache writes for a model that
+bills none, Claude Code's thinking for a model that gives no breakdown.
+
+**Occupancy** (`occupancy`, `occupancy.py`; decided 2026-10-28): wall clock,
+one entry per segment of the run.
+
+| Role | Segment | `host` | `reserved` |
+|---|---|---|---|
+| `sandbox` | the agent's container, from `docker run` to its removal | null | `{"cpus": resources.cpus}` |
+| `score` | one scoring request, on the evaluation containers | null | the host container's CPUs, plus one per validation point's device container |
+| `final-evaluation` | the evaluation after the agent stops, both sets together | null | the same, with every point |
+| `fpga-quick` | one quick-tier request | `fpga_worker.ssh` | `{"cpus": fpga_worker.threads}` (default 4) |
+| `fpga-slow-build` | a slow-tier request's link: its pipeline's `build:submit` and `build` steps | `fpga_pipeline.build_host` | null |
+| `fpga-slow-board` | its board stage: `board:measure` and `board` | `fpga_pipeline.board_host` | `{"cards": 1}` |
+| `certify-link` | certification's link, the same steps of its own pipeline (in `certification.json`) | `--build-host` | null |
+| `certify-board` | certification's board stage (in `certification.json`) | `--board-host` | `{"cards": 1}` |
+
+Each entry has `role`; `host`, the operator's label from the site
+configuration (or the hosts `certify` was given), never a name looked up at
+run time, and null where none is given, as for the test host; `started`,
+`finished` (epoch seconds) and `seconds`; `queued_seconds`, from a request's
+submission to its start (0 where nothing queues); `reserved`, what the harness
+itself sets for the role, or null; and `id`, for a service request. The
+pipeline's sync, doctor, export and transfer steps belong to neither stage,
+and the slow tier's simulation precheck (board mode) to no entry. A slow-tier
+request whose pipeline left no step timing (stopped before it wrote its
+record, or never reached the build) is one `fpga-slow` entry for the whole
+request, and a certification likewise one `certify` entry for its whole
+pipeline: each with `covers` saying what it spans, and `host` and `reserved`
+null. What a role actually used, its CPU time, is not measured.
+
 Planned additions: the evaluator's image id for every run, pseudo-agents
-included; tokens normalised to one schema across CLIs (uncached input, cache
-write, cache read, output, reasoning) and an API-equivalent cost from a dated
-price table; every service request with its time, snapshot hash, charge and
-result.
+included; an API-equivalent cost from a dated price table; a hash of each
+service request's snapshot; each role's CPU time.
 
 ## 15. When the core is done
 
@@ -986,6 +1039,7 @@ result.
 | 2026-10-27 | *Multicore, in the implementation.* The bench's memory models stall at random from a generator that advances every cycle, so a launch's cycles depended on the host's wall-clock pace (one point: 3559 or 3504 from run to run); with a description the bench reseeds them as each launch starts, and a point counts the same cycles whatever the host does. A mailbox is two directories, one per direction, so the device writes nothing the host can write; the host container sees neither the observers nor the device's build |
 | 2026-10-27 | *Multicore, found by the known-answer submissions; open.* One outlet (`MEM_PORTS` 3→1) makes every pilot point faster in simulation (1.04–1.15), because the bench gives the outlets latencies of 25, 44 and 63 cycles; on the card R40 measured three outlets 1.007× one. The two disagree; until the bench is calibrated against the card, or the field is fixed for the task, an agent could be paid for a bench artefact that certification would reject |
 | 2026-10-27 | *Multicore, found by the review; open.* The drain check cannot fail as built: the control block admits a completion only when the whole device is idle, so the bench always sees it drained. What the candidate's shell does after reporting done is not observed. A real check needs the traffic between a launch's end and the host's next command, which the evaluator-owned outlets can count -- the multicore counterpart of the single-core observer's activity outside a launch |
+| 2026-10-28 | Server occupancy is wall-clock time, per role and per machine: which machine (the operator's label from the site configuration, never a name looked up at run time), start, end and seconds; the queue wait apart; the resources the harness reserved for the role (container CPU limits, the job's threads, one card). CPU use comes later; no cgroup accounting now. Seven segments, one entry per instance: the sandbox, each scoring request, the final evaluation (both sets together), each quick-tier request, each slow-tier request's build on the build worker and its board stage on the card host (one entry for the whole request where no split is recorded), and certification's link and board stage, in `certification.json` (§14). Decided by the user |
 
 **Open.**
 
@@ -1056,7 +1110,10 @@ Status: **done** (built and verified), **in progress** (being built now),
 | FPGA harness | `pipeline` between the two servers, a real candidate | done | 2026-10-17: the base hardware (v2, 100 MHz) linked on the build worker in 105 min, ap_clk WNS +0.138 ns; loaded on the card, conformance 5/5, ArchBench tiny 27/27, every point's cycles equal to the 2023.2 build's (both compiled with the card host's installed tree) |
 | FPGA harness | The board stage compiles with the checkout's runtime and compiler, and refuses an interpreter that imports them from elsewhere | done | `969201b`; found by the v5 base certification (§19) |
 | Metering | Tokens as reported, gateway bytes | done | run records |
-| Metering | Cross-check; one token schema; API-equivalent cost | planned | — |
+| Metering | One token schema across the three CLIs (`tokens`: uncached input, cache writes, cache reads, output with its reasoning inside, reasoning, total; per model where the CLI reports it) | done | `tests/test_adapters.py`, on each CLI's own event stream; the field meanings from Codex 0.162.1's and opencode 1.19.0's source and Claude Code's Agent SDK reference (`adapters.tokens`, §14). Not yet in the record of a real agent's run |
+| Metering | Cross-check; API-equivalent cost | planned | — |
+| Metering | Server occupancy per role: the machine's label, wall clock, queue wait, the resources the harness reserved (`occupancy` in `run.json` and `certification.json`) | done | `tests/test_occupancy.py`, `tests/test_certify.py`: the sandbox, the requests with their queue, the slow tier's build and board stage, the final evaluation, certification's link and board stage. Not yet in the record of a real run; CPU time planned (§14) |
+| Metering | `stats`: per agent framework, the run count and the totals and means of tokens and of occupancy per role; no point ids or per-point results | done | `tests/test_stats.py` |
 | Red team | Scripted (§15 item 2) | planned | — |
 | Red team | LLM red team | deferred | not needed for now (decided 2026-10-15) |
 | Loop | `run-task` with noop, reference, `patch:` and real agents | done | §19 |
@@ -1168,6 +1225,15 @@ PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_ag
 The verdict and the score after certification are in
 `runs/<run_id>/certification.json`. `--base <baseline json>` (from
 `<state_dir>/baselines/` on the evaluation host) certifies the base instead.
+
+**6. Summarise runs per agent framework:** the run count, and the totals and
+means of tokens and of each role's occupancy, as JSON, with no point ids or
+per-point results (no site configuration needed; certification records beside
+the runs are included):
+
+```bash
+PYTHONPATH=tools python3 -m tritonchip_agent_harness stats <state_dir>/runs
+```
 
 **The harness's own tests** (Python 3.9 or later, no Docker):
 

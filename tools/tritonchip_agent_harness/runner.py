@@ -127,6 +127,7 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
     open_route = None
     if mode == "open":
         open_route = "upstream" if site.upstream_proxy else "direct"
+    container_started = None
     try:
         socket_dir, log = doctor.start_gateway(site, run_dir, gw, list(account.hosts), open_route=open_route)
         extra, env = list(launch.mounts), dict(launch.env)
@@ -137,6 +138,7 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         c = AgentContainer(name=agent, image=site.images["agent"], cpus=site.cpus, memory=site.memory,
                            pids=site.pids, mounts=mounts, env=env, env_files=launch.env_files,
                            labels={"tritonchip-agent-harness": "agent", "run": run_id}, workdir=adapters.WORKDIR)
+        container_started = time.time()
         provider.docker(*c.run_args(["python3", BRIDGE_SCRIPT, "--listen", doctor.BRIDGE,
                                      "--socket", doctor.SOCKET], detach=True, remove=False))
         time.sleep(1)
@@ -165,6 +167,9 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         _collect(agent, account, out_dir / "transcript")
     finally:
         provider.remove(agent)
+        if container_started is not None:
+            # The sandbox's occupancy of this host: from `docker run` to the container's removal.
+            result["container"] = {"started": container_started, "finished": time.time()}
         doctor.stop_gateway(gw)
         if services is not None:
             services.stop()

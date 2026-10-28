@@ -11,13 +11,13 @@ from pathlib import Path
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from tritonchip_agent_harness import certify, doctor, loop, smoke
+    from tritonchip_agent_harness import certify, doctor, loop, smoke, stats
     from tritonchip_agent_harness.task import TaskError, load_task
     from tritonchip_agent_harness.provider import ProviderError
     from tritonchip_agent_harness.siteconfig import SiteError, credential_status, load_site
     from tritonchip_agent_harness.workspace import WorkspaceError
 else:
-    from . import certify, doctor, loop, smoke
+    from . import certify, doctor, loop, smoke, stats
     from .task import TaskError, load_task
     from .provider import ProviderError
     from .siteconfig import SiteError, credential_status, load_site
@@ -66,10 +66,16 @@ def main(argv=None) -> int:
     k.add_argument("--work", type=Path, help="where the tree is built (default: beside the record)")
     k.add_argument("--yes", action="store_true", help="run the pipeline; without it, only build the tree and say what would run")
     k.add_argument("--json", action="store_true")
+    st = sub.add_parser("stats", help="runs, tokens and server occupancy per agent framework, as JSON "
+                                      "(no point ids, no per-point results; no site configuration)")
+    st.add_argument("paths", nargs="+", type=Path, help="run directories, or directories that hold them")
     args = parser.parse_args(argv)
     try:
         if args.command == "certify":
             return _certify(args)
+        if args.command == "stats":
+            print(json.dumps(stats.summarise(args.paths), indent=2, sort_keys=True))
+            return 0
         site = load_site(args.site)
         if args.command == "credentials":
             value = {"ok": None, "accounts": [credential_status(a) for a in site.accounts.values()]}

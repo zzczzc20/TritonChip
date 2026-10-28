@@ -112,6 +112,11 @@ def _ns(word: str) -> Optional[float]:
         return None
 
 
+def threads(worker: dict) -> int:
+    """Vivado's thread limit for a job on the worker: the site's `threads`, else 4."""
+    return int(worker.get("threads", 4))
+
+
 def _sandboxed(worker: dict, remote: str, period: float, generics: dict, seconds: int) -> str:
     """The command the build worker runs: the flow's own script, inside bubblewrap, with a hard deadline."""
     binds = ["--ro-bind", "/usr", "/usr", "--ro-bind-try", "/lib", "/lib", "--ro-bind-try", "/lib64", "/lib64",
@@ -132,8 +137,7 @@ def _sandboxed(worker: dict, remote: str, period: float, generics: dict, seconds
              + binds + ["--bind", remote, remote, "--tmpfs", "/tmp", "--tmpfs", "/home/sandbox",
                         "--setenv", "HOME", "/home/sandbox", "--proc", "/proc", "--dev", "/dev", "--chdir", remote,
                         "/bin/bash", "-c", inner])
-    threads = int(worker.get("threads", 4))
-    return (f"cd {shlex.quote(remote)} && sed -i 's/maxThreads 8/maxThreads {threads}/' "
+    return (f"cd {shlex.quote(remote)} && sed -i 's/maxThreads 8/maxThreads {threads(worker)}/' "
             f"flow/synth/vivado_ooc_timing.tcl && {' '.join(shlex.quote(a) for a in bwrap)} > run.log 2>&1")
 
 
@@ -190,4 +194,4 @@ def cancel(worker: dict, job_id: str) -> None:
                     f"pkill -f {shlex.quote(pattern)}"], capture_output=True, timeout=60)
 
 
-__all__ = ["cancel", "effective_params", "parse_paths", "parse_summary", "parse_util", "run"]
+__all__ = ["cancel", "effective_params", "parse_paths", "parse_summary", "parse_util", "run", "threads"]

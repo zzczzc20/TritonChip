@@ -45,7 +45,7 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-from . import evaluator
+from . import evaluator, occupancy
 from .task import Task
 from .workspace import apply_candidate, base_tree, export, git, under
 
@@ -255,7 +255,7 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
     record: dict = {"schema": "tritonchip-agent-certification/1",
                     "task": {"id": task.task_id, "sha256": task.sha256, "base_commit": task.base_commit},
                     "platform_commit": cert["commit"], "target": cert["target"], "clock_mhz": cert["clock_mhz"],
-                    "profile": task.evaluation["profile"], "started": time.time()}
+                    "profile": task.evaluation["profile"], "started": time.time(), "occupancy": []}
     if run_dir is not None:
         run = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
         if (run.get("task") or {}).get("sha256") != task.sha256:
@@ -311,7 +311,10 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
         return record
     if not (hosts and build_host and board_host):
         raise CertifyError("name the FPGA hosts file, the build host and the board host")
+    started = time.time()
     pipe = pipeline(tree, work / "manifest.json", work / "pipeline.json", hosts, build_host, board_host, build_run)
+    record["occupancy"] = occupancy.stages(pipe, build_host, board_host, ("certify-link", "certify-board")) or [
+        occupancy.entry("certify", None, started, time.time(), covers=occupancy.WHOLE_CERTIFY)]
     record["pipeline"] = {"status": pipe.get("status"), "run_id": pipe.get("run_id"), "error": pipe.get("error"),
                           "build": pipe.get("build"), "board": pipe.get("board"), "record": str(work / "pipeline.json")}
     board = fetch(hosts, board_host, pipe["run_id"]) if pipe.get("board") and pipe.get("run_id") else []

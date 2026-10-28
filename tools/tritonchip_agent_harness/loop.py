@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from . import __version__, evaluator, runner
+from . import __version__, evaluator, occupancy, runner
 from .services import Broker
 from .siteconfig import Site, SiteError
 from .task import Task, render
@@ -74,6 +74,7 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
     record["gate"]["rtl_check"] = rtl
 
     pseudo = agent in PSEUDO or agent.startswith("patch:")
+    evaluated = None
     if pseudo and agent != "noop" and not record["agent_result"]["applied"]:
         # The loop's own check failed; nothing it measured would mean anything.
         record["validity"] = "infra-invalid"
@@ -81,7 +82,9 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
         record["validity"] = "integrity-rejected"
     else:
         candidate = run_dir / "candidate" if g["taken"] else None
+        started = time.time()
         record["evaluation"] = evaluator.evaluate(site, repo, task, candidate, run_dir)
+        evaluated = (started, time.time())
         # A changed machine's score stands once certify.py has run it on the card.
         record["hardware"] = evaluator.hardware_changed(repo, task, candidate)
         record["certification"] = "pending" if record["hardware"]["changed"] else "not-needed"
@@ -91,6 +94,7 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
             record["validity"] = "budget-exhausted"
         else:
             record["validity"] = "valid"
+    record["occupancy"] = occupancy.of_run(site, task, record["agent_result"], evaluated)
     record["finished"] = time.time()
     (run_dir / "run.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     record["run_dir"] = str(run_dir)

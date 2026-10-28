@@ -530,6 +530,13 @@ def _measure_trees(site: Site, host: Path, dev: Optional[Path], task: Task, out:
     return _measure_observed(site, host, dev, task, out, name)
 
 
+def reserved(site: Site, task: Task, points) -> dict:
+    """The CPU limits of a measurement's containers that run together: the host's, and one CPU per
+    device container, of which `evaluation.jobs` run at a time."""
+    together = min(len(points), max(1, int(task.evaluation.get("jobs", 1))))
+    return {"cpus": site.cpus + (together if task.evaluation.get("platform") else 0)}
+
+
 def baseline_key(task: Task) -> str:
     """What the base's cycles depend on: the base commit, the profile, the points, the platform --
     and for a multicore task the machine as well: the device, the memory it is given and the drain
@@ -709,5 +716,5 @@ def evaluate(site: Site, repo: Path, task: Task, candidate: Optional[Path], run_
 
 
 __all__ = ["HARDWARE", "baseline", "baseline_key", "device_check", "evaluate", "hardware_changed", "measure_validation",
-           "observed_multicore_point", "observed_point", "read_multicore_observer", "read_observer", "rtl_check",
-           "score"]
+           "observed_multicore_point", "observed_point", "read_multicore_observer", "read_observer", "reserved",
+           "rtl_check", "score"]

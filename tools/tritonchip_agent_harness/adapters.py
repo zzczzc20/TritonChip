@@ -127,8 +127,95 @@ def _events(out: str) -> list:
     return events
 
 
+TOKEN_FIELDS = ("input_uncached", "cache_write", "cache_read", "output", "reasoning", "total")
+
+
+def _counts(input_uncached, cache_write, cache_read, output, reasoning) -> dict:
+    parts = (input_uncached, cache_write, cache_read, output)
+    total = None if all(p is None for p in parts) else sum(p or 0 for p in parts)
+    return dict(zip(TOKEN_FIELDS, (input_uncached, cache_write, cache_read, output, reasoning, total)))
+
+
+def _sum(rows) -> dict:
+    """Field by field: the sum of what was reported, None where nothing was."""
+    out = {}
+    for f in TOKEN_FIELDS:
+        got = [r[f] for r in rows if r[f] is not None]
+        out[f] = sum(got) if got else None
+    return out
+
+
+def tokens(cli: str, usage: Optional[dict], model_usage: Optional[dict] = None) -> dict:
+    """The usage a CLI reported, in one schema, so that runs of different CLIs add up alike.
+
+    Each field is a count of tokens, or None where the CLI did not report it.
+    `output` always includes reasoning, and `reasoning` is the part of it that
+    was; total = input_uncached + cache_write + cache_read + output, so nothing
+    is counted twice. The raw `usage` is kept beside this, untouched.
+
+      field           Claude Code 2.1.287        Codex 0.162.1                    opencode 1.19.0
+                      `result`, per model        `turn.completed`                 `step_finish` parts, summed
+      input_uncached  inputTokens                input_tokens minus the next two  input
+      cache_write     cacheCreationInputTokens   cache_write_input_tokens         cache.write
+      cache_read      cacheReadInputTokens       cached_input_tokens              cache.read
+      output          outputTokens               output_tokens                    output + reasoning
+      reasoning       thinkingTokens             reasoning_output_tokens          reasoning
+      its output      includes thinking          includes reasoning               leaves reasoning out
+      per model       modelUsage                 not reported                     not reported
+
+    Claude Code (the Agent SDK reference's ModelUsage and Usage; no recorded
+    output is in the repository): the totals are the sum over `modelUsage`,
+    which counts subagents; the result's `usage` counts the top-level loop only,
+    and is read (input_tokens, cache_creation_input_tokens,
+    cache_read_input_tokens, output_tokens, output_tokens_details.thinking_tokens)
+    only when there is no `modelUsage`. A model whose entry has no
+    thinkingTokens adds nothing to the total's reasoning, and a thinking count of
+    0 can mean the model gave no breakdown. A run stopped before its `result`
+    event (at its budget) reports no usage at all.
+
+    Codex (codex-rs at rust-v0.162.1: exec_events.rs, codex-api sse/responses.rs):
+    the fields are the Responses API's, whose input_tokens holds the cached reads
+    and the cache writes too, and whose output_tokens holds the reasoning. exec
+    prints one turn.completed, carrying the thread's running total; a run stopped
+    before its turn completed reports no usage at all. cache_write_input_tokens
+    is 0 where the API reports no cache writes (models before GPT-5.6 bill none).
+
+    opencode (packages/opencode/src/session/session.ts, getUsage): each part is
+    one model call; its `input` is already uncached and its `output` has the
+    reasoning taken out. A provider that reports no reasoning or cache writes
+    gives 0 there, not None: an OpenAI-style API such as GLM's never reports
+    cache writes, and whether GLM breaks reasoning out of its output is not
+    verified (if it does not, the reasoning stays inside `output`).
+    """
+    u = usage or {}
+    by_model = None
+    if cli == "claude-code":
+        if model_usage:
+            by_model = {m: _counts(v.get("inputTokens"), v.get("cacheCreationInputTokens"),
+                                   v.get("cacheReadInputTokens"), v.get("outputTokens"), v.get("thinkingTokens"))
+                        for m, v in model_usage.items()}
+            return {**_sum(by_model.values()), "by_model": by_model}
+        counts = _counts(u.get("input_tokens"), u.get("cache_creation_input_tokens"), u.get("cache_read_input_tokens"),
+                         u.get("output_tokens"), (u.get("output_tokens_details") or {}).get("thinking_tokens"))
+    elif cli == "codex":
+        whole, read, write = u.get("input_tokens"), u.get("cached_input_tokens"), u.get("cache_write_input_tokens")
+        counts = _counts(None if whole is None else whole - (read or 0) - (write or 0), write, read,
+                         u.get("output_tokens"), u.get("reasoning_output_tokens"))
+    else:
+        visible, reasoning = u.get("output"), u.get("reasoning")
+        output = None if visible is None and reasoning is None else (visible or 0) + (reasoning or 0)
+        counts = _counts(u.get("input"), u.get("cache.write"), u.get("cache.read"), output, reasoning)
+    return {**counts, "by_model": by_model}
+
+
 def parse(account: Account, out: str, run_dir: Path, export_session=None) -> dict:
-    """What the CLI answered last, which models served it, and the usage it reported."""
+    """What the CLI answered last, which models served it, the usage it reported, and that usage in one schema."""
+    r = _read(account, out, run_dir, export_session)
+    r["tokens"] = tokens(account.cli, r.get("usage"), r.get("model_usage"))
+    return r
+
+
+def _read(account: Account, out: str, run_dir: Path, export_session=None) -> dict:
     r: dict = {"text": None, "served_models": [], "usage": None, "turns": None}
     events = _events(out)
     if account.cli == "claude-code":
@@ -186,4 +273,5 @@ def parse(account: Account, out: str, run_dir: Path, export_session=None) -> dic
     return r
 
 
-__all__ = ["CODEX_HOME", "Launch", "MODES", "WORKDIR", "codex_config", "launch", "opencode_config", "parse"]
+__all__ = ["CODEX_HOME", "Launch", "MODES", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch", "opencode_config",
+           "parse", "tokens"]

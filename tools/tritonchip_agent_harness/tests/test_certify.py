@@ -294,6 +294,28 @@ class Certify(unittest.TestCase):
                 value = self.certify(run_dir, pipe=pipe)        # the default records match simulation
                 self.assertEqual(value["verdict"], expected)
 
+    def test_the_link_and_the_board_stage_are_timed_from_the_pipeline_record(self):
+        run_dir = make_run(self.repo, self.task, {"rtl/core/x.v": "module x; endmodule\n"})
+        names = ("sync:b", "sync:c", "doctor:b", "doctor:c", "build:submit", "build", "export", "transfer",
+                 "board:measure", "board")
+        steps = [{"name": n, "started_at": 1000.0 + 10 * i, "ok": True, "elapsed_s": 5.0} for i, n in enumerate(names)]
+        self.certify(run_dir, pipe={**PASSED, "steps": steps})
+        saved = json.loads((run_dir / "certification.json").read_text())
+        self.assertEqual([(e["role"], e["host"], e["started"], e["finished"], e["seconds"], e["reserved"])
+                          for e in saved["occupancy"]],
+                         [("certify-link", "b", 1040.0, 1055.0, 15.0, None),
+                          ("certify-board", "c", 1080.0, 1095.0, 15.0, {"cards": 1})])
+
+    def test_without_step_timing_the_pipeline_is_one_entry_and_without_a_pipeline_there_is_none(self):
+        run_dir = make_run(self.repo, self.task, {"rtl/core/x.v": "module x; endmodule\n"})
+        value = self.certify(run_dir, pipe={"status": "PIPELINE_FAIL", "error": "the pipeline exited 1 and wrote no record"})
+        (e,) = value["occupancy"]
+        self.assertEqual((e["role"], e["host"], e["reserved"]), ("certify", None, None))
+        self.assertIn("link and board stage together", e["covers"])
+        self.assertTrue(value["started"] <= e["started"] <= e["finished"] <= value["finished"])
+        unchanged = make_run(self.repo, self.task, {"compiler/a.py": "a = 2\n"})
+        self.assertEqual(self.certify(unchanged)["occupancy"], [])
+
     def test_the_base_is_certified_against_the_evaluators_baseline(self):
         cache = Path(tempfile.mkdtemp()) / "base.json"
         cache.write_text(json.dumps({"points": {p: {"status": "pass", "cycles": c + 7, "record_cycles": c}

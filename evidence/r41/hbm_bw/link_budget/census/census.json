@@ -1,0 +1,4464 @@
+{
+ "schema": "tnca-kernel-census/1",
+ "source": "generated TNCA assembly in ArchBench provenance bundles",
+ "points": {
+  "op.add__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_add_expand_0": {
+     "static_instructions": 37,
+     "static_machine_words": 37,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 19,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.add__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_add_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 7,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.add__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_add_slice_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 9,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.add__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_add_expand_0": {
+     "static_instructions": 37,
+     "static_machine_words": 37,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 19,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.add__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_add_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 7,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.add__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_add_slice_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 9,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.add__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_add_expand_0": {
+     "static_instructions": 34,
+     "static_machine_words": 34,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 16,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.add__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_add_0": {
+     "static_instructions": 23,
+     "static_machine_words": 23,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 4,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.add__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_add_slice_0": {
+     "static_instructions": 23,
+     "static_machine_words": 23,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 6,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__bf16-to-fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_expand_0": {
+     "static_instructions": 32,
+     "static_machine_words": 32,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 17,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__bf16-to-fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 5,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__bf16-to-fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_slice_0": {
+     "static_instructions": 22,
+     "static_machine_words": 22,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 7,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__bf16-to-fp32-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_expand_0": {
+     "static_instructions": 31,
+     "static_machine_words": 31,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 16,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__bf16-to-fp32-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 4,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__bf16-to-fp32-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_slice_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 6,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp16-to-bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_expand_0": {
+     "static_instructions": 32,
+     "static_machine_words": 32,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 17,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp16-to-bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 5,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp16-to-bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_slice_0": {
+     "static_instructions": 22,
+     "static_machine_words": 22,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 7,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp16-to-fp32-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_expand_0": {
+     "static_instructions": 31,
+     "static_machine_words": 31,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 16,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp16-to-fp32-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 4,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp16-to-fp32-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_slice_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 6,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp32-to-bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_expand_0": {
+     "static_instructions": 31,
+     "static_machine_words": 31,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 16,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp32-to-bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 4,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp32-to-bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_slice_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 6,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp32-to-fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_expand_0": {
+     "static_instructions": 31,
+     "static_machine_words": 31,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 16,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp32-to-fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 4,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.cast__membound__fp32-to-fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused__to_copy_slice_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 6,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.clone__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_clone_expand_0": {
+     "static_instructions": 30,
+     "static_machine_words": 30,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 15,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.clone__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_clone_0": {
+     "static_instructions": 19,
+     "static_machine_words": 19,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 3,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.clone__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_clone_slice_0": {
+     "static_instructions": 20,
+     "static_machine_words": 20,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 5,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.clone__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_clone_expand_0": {
+     "static_instructions": 30,
+     "static_machine_words": 30,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 15,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.clone__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_clone_0": {
+     "static_instructions": 19,
+     "static_machine_words": 19,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 3,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.clone__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_clone_slice_0": {
+     "static_instructions": 20,
+     "static_machine_words": 20,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 5,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.clone__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_clone_expand_0": {
+     "static_instructions": 30,
+     "static_machine_words": 30,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 15,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.clone__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_clone_0": {
+     "static_instructions": 19,
+     "static_machine_words": 19,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 3,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.clone__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_clone_slice_0": {
+     "static_instructions": 20,
+     "static_machine_words": 20,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 5,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.copy__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_copy_copy__expand_0": {
+     "static_instructions": 30,
+     "static_machine_words": 30,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 15,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.copy__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_copy__0": {
+     "static_instructions": 19,
+     "static_machine_words": 19,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 3,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.copy__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_copy_copy__slice_0": {
+     "static_instructions": 20,
+     "static_machine_words": 20,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 5,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.copy__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_copy_copy__expand_0": {
+     "static_instructions": 30,
+     "static_machine_words": 30,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 15,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.copy__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_copy__0": {
+     "static_instructions": 19,
+     "static_machine_words": 19,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 3,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.copy__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_copy_copy__slice_0": {
+     "static_instructions": 20,
+     "static_machine_words": 20,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 5,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.copy__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_copy_copy__expand_0": {
+     "static_instructions": 30,
+     "static_machine_words": 30,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 15,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.copy__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_copy__0": {
+     "static_instructions": 19,
+     "static_machine_words": 19,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 3,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.copy__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_copy_copy__slice_0": {
+     "static_instructions": 20,
+     "static_machine_words": 20,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 5,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.div__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_div_expand_0": {
+     "static_instructions": 44,
+     "static_machine_words": 48,
+     "pseudo_li": 1,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 25,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.div__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_div_0": {
+     "static_instructions": 33,
+     "static_machine_words": 37,
+     "pseudo_li": 1,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 13,
+      "vector_load": 2,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.div__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_div_slice_0": {
+     "static_instructions": 33,
+     "static_machine_words": 37,
+     "pseudo_li": 1,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 15,
+      "vector_load": 2,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.div__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_div_expand_0": {
+     "static_instructions": 44,
+     "static_machine_words": 48,
+     "pseudo_li": 1,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 25,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.div__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_div_0": {
+     "static_instructions": 33,
+     "static_machine_words": 37,
+     "pseudo_li": 1,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 13,
+      "vector_load": 2,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.div__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_div_slice_0": {
+     "static_instructions": 33,
+     "static_machine_words": 37,
+     "pseudo_li": 1,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 15,
+      "vector_load": 2,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.div__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_div_expand_0": {
+     "static_instructions": 41,
+     "static_machine_words": 45,
+     "pseudo_li": 1,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 22,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.div__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_div_0": {
+     "static_instructions": 30,
+     "static_machine_words": 34,
+     "pseudo_li": 1,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 10,
+      "vector_load": 2,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.div__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_div_slice_0": {
+     "static_instructions": 30,
+     "static_machine_words": 34,
+     "pseudo_li": 1,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 12,
+      "vector_load": 2,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.exp__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_exp_expand_0": {
+     "static_instructions": 41,
+     "static_machine_words": 49,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 25,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.exp__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_exp_0": {
+     "static_instructions": 30,
+     "static_machine_words": 38,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 13,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.exp__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_exp_slice_0": {
+     "static_instructions": 31,
+     "static_machine_words": 39,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 15,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.exp__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_exp_expand_0": {
+     "static_instructions": 41,
+     "static_machine_words": 49,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 25,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.exp__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_exp_0": {
+     "static_instructions": 30,
+     "static_machine_words": 38,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 13,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.exp__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_exp_slice_0": {
+     "static_instructions": 31,
+     "static_machine_words": 39,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 15,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.exp__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_exp_expand_0": {
+     "static_instructions": 39,
+     "static_machine_words": 47,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 23,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.exp__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_exp_0": {
+     "static_instructions": 28,
+     "static_machine_words": 36,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 11,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.exp__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_exp_slice_0": {
+     "static_instructions": 29,
+     "static_machine_words": 37,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 13,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.gelu__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_gelu_0": {
+     "static_instructions": 122,
+     "static_machine_words": 262,
+     "pseudo_li": 35,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 107,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.gelu__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_gelu_0": {
+     "static_instructions": 111,
+     "static_machine_words": 251,
+     "pseudo_li": 35,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 95,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.gelu__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_gelu_slice_0": {
+     "static_instructions": 112,
+     "static_machine_words": 252,
+     "pseudo_li": 35,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 97,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.gelu__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_gelu_0": {
+     "static_instructions": 122,
+     "static_machine_words": 262,
+     "pseudo_li": 35,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 107,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.gelu__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_gelu_0": {
+     "static_instructions": 111,
+     "static_machine_words": 251,
+     "pseudo_li": 35,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 95,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.gelu__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_gelu_slice_0": {
+     "static_instructions": 112,
+     "static_machine_words": 252,
+     "pseudo_li": 35,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 97,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.gelu__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_gelu_0": {
+     "static_instructions": 120,
+     "static_machine_words": 260,
+     "pseudo_li": 35,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 105,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.gelu__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_gelu_0": {
+     "static_instructions": 109,
+     "static_machine_words": 249,
+     "pseudo_li": 35,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 93,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.gelu__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_gelu_slice_0": {
+     "static_instructions": 110,
+     "static_machine_words": 250,
+     "pseudo_li": 35,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 95,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.layernorm__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_expand_native_layer_norm_0": {
+     "static_instructions": 140,
+     "static_machine_words": 160,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 36,
+      "control": 8,
+      "vector_alu": 83,
+      "scalar_memory": 4,
+      "vector_load": 5,
+      "sfu": 3,
+      "vector_store": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 160,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.layernorm__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_native_layer_norm_0": {
+     "static_instructions": 148,
+     "static_machine_words": 168,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 40,
+      "control": 8,
+      "vector_alu": 87,
+      "scalar_memory": 4,
+      "vector_load": 5,
+      "sfu": 3,
+      "vector_store": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 160,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.layernorm__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_native_layer_norm_slice_0": {
+     "static_instructions": 156,
+     "static_machine_words": 176,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 40,
+      "control": 8,
+      "vector_alu": 95,
+      "scalar_memory": 4,
+      "vector_load": 5,
+      "sfu": 3,
+      "vector_store": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 160,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.layernorm__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_expand_native_layer_norm_0": {
+     "static_instructions": 140,
+     "static_machine_words": 160,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 36,
+      "control": 8,
+      "vector_alu": 83,
+      "scalar_memory": 4,
+      "vector_load": 5,
+      "sfu": 3,
+      "vector_store": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 160,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.layernorm__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_native_layer_norm_0": {
+     "static_instructions": 148,
+     "static_machine_words": 168,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 40,
+      "control": 8,
+      "vector_alu": 87,
+      "scalar_memory": 4,
+      "vector_load": 5,
+      "sfu": 3,
+      "vector_store": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 160,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.layernorm__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_native_layer_norm_slice_0": {
+     "static_instructions": 156,
+     "static_machine_words": 176,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 40,
+      "control": 8,
+      "vector_alu": 95,
+      "scalar_memory": 4,
+      "vector_load": 5,
+      "sfu": 3,
+      "vector_store": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 160,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.layernorm__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_expand_native_layer_norm_0": {
+     "static_instructions": 134,
+     "static_machine_words": 154,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 36,
+      "control": 8,
+      "vector_alu": 77,
+      "scalar_memory": 4,
+      "vector_load": 5,
+      "sfu": 3,
+      "vector_store": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 320,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.layernorm__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_native_layer_norm_0": {
+     "static_instructions": 142,
+     "static_machine_words": 162,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 40,
+      "control": 8,
+      "vector_alu": 81,
+      "scalar_memory": 4,
+      "vector_load": 5,
+      "sfu": 3,
+      "vector_store": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 320,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.layernorm__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_native_layer_norm_slice_4": {
+     "static_instructions": 75,
+     "static_machine_words": 95,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 50,
+      "sfu": 2,
+      "scalar_memory": 6,
+      "vector_load": 5,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 320,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    },
+    "triton_red_fused_native_layer_norm_slice_0": {
+     "static_instructions": 53,
+     "static_machine_words": 53,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 25,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    },
+    "triton_red_fused_native_layer_norm_slice_1": {
+     "static_instructions": 77,
+     "static_machine_words": 93,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 27,
+      "control": 2,
+      "scalar_memory": 10,
+      "vector_alu": 34,
+      "sfu": 1,
+      "tensor": 1,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": true
+    },
+    "triton_red_fused_native_layer_norm_slice_2": {
+     "static_instructions": 77,
+     "static_machine_words": 77,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 21,
+      "control": 4,
+      "vector_alu": 46,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    },
+    "triton_red_fused_native_layer_norm_slice_3": {
+     "static_instructions": 68,
+     "static_machine_words": 76,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 27,
+      "control": 2,
+      "scalar_memory": 10,
+      "vector_alu": 26,
+      "tensor": 1,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.max__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_amax_expand_0": {
+     "static_instructions": 59,
+     "static_machine_words": 67,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 19,
+      "control": 4,
+      "vector_alu": 32,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.max__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_amax_0": {
+     "static_instructions": 63,
+     "static_machine_words": 71,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 21,
+      "control": 4,
+      "vector_alu": 34,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.max__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_amax_slice_0": {
+     "static_instructions": 64,
+     "static_machine_words": 72,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 36,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.max__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_amax_expand_0": {
+     "static_instructions": 59,
+     "static_machine_words": 67,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 19,
+      "control": 4,
+      "vector_alu": 32,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.max__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_amax_0": {
+     "static_instructions": 63,
+     "static_machine_words": 71,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 21,
+      "control": 4,
+      "vector_alu": 34,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.max__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_amax_slice_0": {
+     "static_instructions": 64,
+     "static_machine_words": 72,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 36,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.max__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_amax_expand_0": {
+     "static_instructions": 57,
+     "static_machine_words": 65,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 19,
+      "control": 4,
+      "vector_alu": 30,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.max__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_amax_0": {
+     "static_instructions": 61,
+     "static_machine_words": 69,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 21,
+      "control": 4,
+      "vector_alu": 32,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.max__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_amax_slice_0": {
+     "static_instructions": 62,
+     "static_machine_words": 70,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 34,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    },
+    "triton_red_fused_amax_slice_1": {
+     "static_instructions": 77,
+     "static_machine_words": 93,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 28,
+      "control": 2,
+      "scalar_memory": 10,
+      "vector_alu": 34,
+      "tensor": 1,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mean__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_expand_mean_0": {
+     "static_instructions": 59,
+     "static_machine_words": 67,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 19,
+      "control": 4,
+      "vector_alu": 31,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mean__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_mean_0": {
+     "static_instructions": 63,
+     "static_machine_words": 71,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 21,
+      "control": 4,
+      "vector_alu": 33,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mean__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_mean_slice_0": {
+     "static_instructions": 64,
+     "static_machine_words": 72,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 35,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mean__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_expand_mean_0": {
+     "static_instructions": 59,
+     "static_machine_words": 67,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 19,
+      "control": 4,
+      "vector_alu": 31,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mean__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_mean_0": {
+     "static_instructions": 63,
+     "static_machine_words": 71,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 21,
+      "control": 4,
+      "vector_alu": 33,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mean__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_mean_slice_0": {
+     "static_instructions": 64,
+     "static_machine_words": 72,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 35,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mean__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_expand_mean_0": {
+     "static_instructions": 57,
+     "static_machine_words": 65,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 19,
+      "control": 4,
+      "vector_alu": 29,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mean__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_mean_0": {
+     "static_instructions": 61,
+     "static_machine_words": 69,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 21,
+      "control": 4,
+      "vector_alu": 31,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mean__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_mean_slice_0": {
+     "static_instructions": 53,
+     "static_machine_words": 53,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 25,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    },
+    "triton_red_fused_mean_slice_1": {
+     "static_instructions": 77,
+     "static_machine_words": 93,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 27,
+      "control": 2,
+      "scalar_memory": 10,
+      "vector_alu": 34,
+      "sfu": 1,
+      "tensor": 1,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mul__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_mul_0": {
+     "static_instructions": 37,
+     "static_machine_words": 37,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 19,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mul__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_mul_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 7,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mul__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_mul_slice_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 9,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mul__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_mul_0": {
+     "static_instructions": 37,
+     "static_machine_words": 37,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 19,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mul__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_mul_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 7,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mul__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_mul_slice_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 9,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mul__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_mul_0": {
+     "static_instructions": 34,
+     "static_machine_words": 34,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 16,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mul__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_mul_0": {
+     "static_instructions": 23,
+     "static_machine_words": 23,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 4,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.mul__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_mul_slice_0": {
+     "static_instructions": 23,
+     "static_machine_words": 23,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 6,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.relu__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_relu_0": {
+     "static_instructions": 34,
+     "static_machine_words": 34,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 19,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.relu__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_relu_0": {
+     "static_instructions": 23,
+     "static_machine_words": 23,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 7,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.relu__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_relu_slice_0": {
+     "static_instructions": 24,
+     "static_machine_words": 24,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 9,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.relu__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_relu_0": {
+     "static_instructions": 34,
+     "static_machine_words": 34,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 19,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.relu__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_relu_0": {
+     "static_instructions": 23,
+     "static_machine_words": 23,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 7,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.relu__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_relu_slice_0": {
+     "static_instructions": 24,
+     "static_machine_words": 24,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 9,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.relu__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_relu_0": {
+     "static_instructions": 32,
+     "static_machine_words": 32,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 17,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.relu__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_relu_0": {
+     "static_instructions": 21,
+     "static_machine_words": 21,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 5,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.relu__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_relu_slice_0": {
+     "static_instructions": 22,
+     "static_machine_words": 22,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 7,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.rmsnorm__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__to_copy_add_expand_mean_mul_pow_rsqrt_0": {
+     "static_instructions": 96,
+     "static_machine_words": 116,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 28,
+      "control": 6,
+      "vector_alu": 53,
+      "scalar_memory": 3,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 2,
+     "block_elements": [],
+     "vector_load_bytes_static": 96,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.rmsnorm__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": {
+     "static_instructions": 100,
+     "static_machine_words": 120,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 30,
+      "control": 6,
+      "vector_alu": 55,
+      "scalar_memory": 3,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 2,
+     "block_elements": [],
+     "vector_load_bytes_static": 96,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.rmsnorm__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_slice_0": {
+     "static_instructions": 107,
+     "static_machine_words": 127,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 31,
+      "control": 6,
+      "vector_alu": 61,
+      "scalar_memory": 3,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 2,
+     "block_elements": [],
+     "vector_load_bytes_static": 96,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.rmsnorm__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__to_copy_add_expand_mean_mul_pow_rsqrt_0": {
+     "static_instructions": 96,
+     "static_machine_words": 116,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 28,
+      "control": 6,
+      "vector_alu": 53,
+      "scalar_memory": 3,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 2,
+     "block_elements": [],
+     "vector_load_bytes_static": 96,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.rmsnorm__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": {
+     "static_instructions": 100,
+     "static_machine_words": 120,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 30,
+      "control": 6,
+      "vector_alu": 55,
+      "scalar_memory": 3,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 2,
+     "block_elements": [],
+     "vector_load_bytes_static": 96,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.rmsnorm__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_slice_0": {
+     "static_instructions": 107,
+     "static_machine_words": 127,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 31,
+      "control": 6,
+      "vector_alu": 61,
+      "scalar_memory": 3,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 2,
+     "block_elements": [],
+     "vector_load_bytes_static": 96,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.rmsnorm__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_add_expand_mean_mul_pow_rsqrt_0": {
+     "static_instructions": 92,
+     "static_machine_words": 112,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 28,
+      "control": 6,
+      "vector_alu": 49,
+      "scalar_memory": 3,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 2,
+     "block_elements": [],
+     "vector_load_bytes_static": 192,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.rmsnorm__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_add_mean_mul_pow_rsqrt_0": {
+     "static_instructions": 96,
+     "static_machine_words": 116,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 30,
+      "control": 6,
+      "vector_alu": 51,
+      "scalar_memory": 3,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 2,
+     "block_elements": [],
+     "vector_load_bytes_static": 192,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.rmsnorm__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_add_mean_mul_pow_rsqrt_slice_2": {
+     "static_instructions": 69,
+     "static_machine_words": 89,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 48,
+      "sfu": 2,
+      "scalar_memory": 4,
+      "vector_load": 3,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 192,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    },
+    "triton_red_fused_mean_pow_slice_0": {
+     "static_instructions": 54,
+     "static_machine_words": 54,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 26,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    },
+    "triton_red_fused_mean_pow_slice_1": {
+     "static_instructions": 68,
+     "static_machine_words": 76,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 27,
+      "control": 2,
+      "scalar_memory": 10,
+      "vector_alu": 26,
+      "tensor": 1,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sigmoid__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_sigmoid_0": {
+     "static_instructions": 52,
+     "static_machine_words": 68,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 35,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sigmoid__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_sigmoid_0": {
+     "static_instructions": 41,
+     "static_machine_words": 57,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 23,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sigmoid__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_sigmoid_slice_0": {
+     "static_instructions": 42,
+     "static_machine_words": 58,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 25,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sigmoid__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_sigmoid_0": {
+     "static_instructions": 52,
+     "static_machine_words": 68,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 35,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sigmoid__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_sigmoid_0": {
+     "static_instructions": 41,
+     "static_machine_words": 57,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 23,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sigmoid__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_sigmoid_slice_0": {
+     "static_instructions": 42,
+     "static_machine_words": 58,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 25,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sigmoid__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_sigmoid_0": {
+     "static_instructions": 50,
+     "static_machine_words": 66,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 33,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sigmoid__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_sigmoid_0": {
+     "static_instructions": 39,
+     "static_machine_words": 55,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 21,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sigmoid__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_sigmoid_slice_0": {
+     "static_instructions": 40,
+     "static_machine_words": 56,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 23,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.silu__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_silu_0": {
+     "static_instructions": 52,
+     "static_machine_words": 68,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 35,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.silu__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_silu_0": {
+     "static_instructions": 41,
+     "static_machine_words": 57,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 23,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.silu__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_silu_slice_0": {
+     "static_instructions": 42,
+     "static_machine_words": 58,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 25,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.silu__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_silu_0": {
+     "static_instructions": 52,
+     "static_machine_words": 68,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 35,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.silu__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_silu_0": {
+     "static_instructions": 41,
+     "static_machine_words": 57,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 23,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.silu__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_silu_slice_0": {
+     "static_instructions": 42,
+     "static_machine_words": 58,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 25,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.silu__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_silu_0": {
+     "static_instructions": 50,
+     "static_machine_words": 66,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "vector_alu": 33,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.silu__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_silu_0": {
+     "static_instructions": 39,
+     "static_machine_words": 55,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 21,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.silu__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_silu_slice_0": {
+     "static_instructions": 40,
+     "static_machine_words": 56,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 2,
+      "vector_alu": 23,
+      "vector_load": 1,
+      "sfu": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.softmax__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__softmax_expand_0": {
+     "static_instructions": 171,
+     "static_machine_words": 199,
+     "pseudo_li": 7,
+     "classes": {
+      "scalar_alu": 58,
+      "control": 8,
+      "vector_alu": 86,
+      "scalar_memory": 11,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 2,
+      "tensor": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 96,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.softmax__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__softmax_0": {
+     "static_instructions": 175,
+     "static_machine_words": 203,
+     "pseudo_li": 7,
+     "classes": {
+      "scalar_alu": 60,
+      "control": 8,
+      "vector_alu": 88,
+      "scalar_memory": 11,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 2,
+      "tensor": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 96,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.softmax__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__softmax_slice_0": {
+     "static_instructions": 181,
+     "static_machine_words": 209,
+     "pseudo_li": 7,
+     "classes": {
+      "scalar_alu": 60,
+      "control": 8,
+      "vector_alu": 94,
+      "scalar_memory": 11,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 2,
+      "tensor": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 96,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.softmax__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__softmax_expand_0": {
+     "static_instructions": 171,
+     "static_machine_words": 199,
+     "pseudo_li": 7,
+     "classes": {
+      "scalar_alu": 58,
+      "control": 8,
+      "vector_alu": 86,
+      "scalar_memory": 11,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 2,
+      "tensor": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 96,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.softmax__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__softmax_0": {
+     "static_instructions": 175,
+     "static_machine_words": 203,
+     "pseudo_li": 7,
+     "classes": {
+      "scalar_alu": 60,
+      "control": 8,
+      "vector_alu": 88,
+      "scalar_memory": 11,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 2,
+      "tensor": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 96,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.softmax__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused__softmax_slice_0": {
+     "static_instructions": 181,
+     "static_machine_words": 209,
+     "pseudo_li": 7,
+     "classes": {
+      "scalar_alu": 60,
+      "control": 8,
+      "vector_alu": 94,
+      "scalar_memory": 11,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 2,
+      "tensor": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 96,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.softmax__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_red_fused__softmax_expand_0": {
+     "static_instructions": 167,
+     "static_machine_words": 195,
+     "pseudo_li": 7,
+     "classes": {
+      "scalar_alu": 58,
+      "control": 8,
+      "vector_alu": 83,
+      "scalar_memory": 10,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 2,
+      "tensor": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 192,
+     "vector_store_bytes_static": 128,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.softmax__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_red_fused__softmax_0": {
+     "static_instructions": 170,
+     "static_machine_words": 198,
+     "pseudo_li": 7,
+     "classes": {
+      "scalar_alu": 59,
+      "control": 8,
+      "vector_alu": 85,
+      "scalar_memory": 10,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 2,
+      "tensor": 1
+     },
+     "loops": 3,
+     "block_elements": [],
+     "vector_load_bytes_static": 192,
+     "vector_store_bytes_static": 128,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.softmax__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_red_fused__softmax_slice_0": {
+     "static_instructions": 62,
+     "static_machine_words": 70,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 34,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    },
+    "triton_red_fused__softmax_slice_1": {
+     "static_instructions": 77,
+     "static_machine_words": 93,
+     "pseudo_li": 4,
+     "classes": {
+      "scalar_alu": 28,
+      "control": 2,
+      "scalar_memory": 10,
+      "vector_alu": 34,
+      "tensor": 1,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": true
+    },
+    "triton_red_fused__softmax_slice_2": {
+     "static_instructions": 148,
+     "static_machine_words": 168,
+     "pseudo_li": 5,
+     "classes": {
+      "scalar_alu": 55,
+      "control": 6,
+      "scalar_memory": 11,
+      "vector_alu": 68,
+      "vector_load": 3,
+      "sfu": 2,
+      "vector_store": 2,
+      "tensor": 1
+     },
+     "loops": 2,
+     "block_elements": [],
+     "vector_load_bytes_static": 192,
+     "vector_store_bytes_static": 128,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sub__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_sub_0": {
+     "static_instructions": 37,
+     "static_machine_words": 37,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 19,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sub__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_sub_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 7,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sub__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_slice_sub_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 9,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sub__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_sub_0": {
+     "static_instructions": 37,
+     "static_machine_words": 37,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 19,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sub__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_sub_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 7,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sub__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_poi_fused_slice_sub_0": {
+     "static_instructions": 26,
+     "static_machine_words": 26,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 9,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sub__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_expand_sub_0": {
+     "static_instructions": 34,
+     "static_machine_words": 34,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 10,
+      "control": 2,
+      "vector_alu": 16,
+      "scalar_memory": 3,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sub__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_sub_0": {
+     "static_instructions": 23,
+     "static_machine_words": 23,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 11,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 4,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sub__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_poi_fused_slice_sub_0": {
+     "static_instructions": 23,
+     "static_machine_words": 23,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 9,
+      "control": 2,
+      "scalar_memory": 3,
+      "vector_alu": 6,
+      "vector_load": 2,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [
+      16
+     ],
+     "vector_load_bytes_static": 128,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sum__membound__bf16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_expand_sum_0": {
+     "static_instructions": 50,
+     "static_machine_words": 50,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 19,
+      "control": 4,
+      "vector_alu": 23,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sum__membound__bf16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_sum_0": {
+     "static_instructions": 54,
+     "static_machine_words": 54,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 21,
+      "control": 4,
+      "vector_alu": 25,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sum__membound__bf16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_slice_sum_0": {
+     "static_instructions": 55,
+     "static_machine_words": 55,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 27,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sum__membound__fp16-small-broadcast-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_expand_sum_0": {
+     "static_instructions": 50,
+     "static_machine_words": 50,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 19,
+      "control": 4,
+      "vector_alu": 23,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sum__membound__fp16-small-contig-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_sum_0": {
+     "static_instructions": 54,
+     "static_machine_words": 54,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 21,
+      "control": 4,
+      "vector_alu": 25,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sum__membound__fp16-small-strided-r32-c1024": {
+   "kernels": {
+    "triton_red_fused_slice_sum_0": {
+     "static_instructions": 55,
+     "static_machine_words": 55,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 27,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 32,
+     "vector_store_bytes_static": 32,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sum__membound__fp32-small-broadcast-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_expand_sum_0": {
+     "static_instructions": 48,
+     "static_machine_words": 48,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 19,
+      "control": 4,
+      "vector_alu": 21,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sum__membound__fp32-small-contig-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_sum_0": {
+     "static_instructions": 52,
+     "static_machine_words": 52,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 21,
+      "control": 4,
+      "vector_alu": 23,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    }
+   },
+   "constant_clone_kernels": 1
+  },
+  "op.sum__membound__fp32-small-strided-r16-c1024": {
+   "kernels": {
+    "triton_red_fused_slice_sum_0": {
+     "static_instructions": 53,
+     "static_machine_words": 53,
+     "pseudo_li": 0,
+     "classes": {
+      "scalar_alu": 20,
+      "control": 4,
+      "vector_alu": 25,
+      "scalar_memory": 2,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 1,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": false
+    },
+    "triton_red_fused_slice_sum_1": {
+     "static_instructions": 68,
+     "static_machine_words": 76,
+     "pseudo_li": 2,
+     "classes": {
+      "scalar_alu": 27,
+      "control": 2,
+      "scalar_memory": 10,
+      "vector_alu": 26,
+      "tensor": 1,
+      "vector_load": 1,
+      "vector_store": 1
+     },
+     "loops": 0,
+     "block_elements": [],
+     "vector_load_bytes_static": 64,
+     "vector_store_bytes_static": 64,
+     "uses_tensor_engine": true
+    }
+   },
+   "constant_clone_kernels": 1
+  }
+ }
+}

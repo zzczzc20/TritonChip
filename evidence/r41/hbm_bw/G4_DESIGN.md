@@ -1,6 +1,6 @@
 # G4: a general full-link data path for memory-bound operators — design and bound
 
-Status: workstream G4 of [`BANDWIDTH_PLAN.md`](BANDWIDTH_PLAN.md), phase 1 (design), 2026-10-28. **[`doc/engineering_discipline.md`](../../../doc/engineering_discipline.md) is binding and takes precedence over this document.**
+Status: workstream G4 of [`BANDWIDTH_PLAN.md`](BANDWIDTH_PLAN.md), 2026-10-28: phase 1 (design, §1–§7) and phase 2 (the one-lane path, §8). The run-2 candidate is prepared and not linked. **[`doc/engineering_discipline.md`](../../../doc/engineering_discipline.md) is binding and takes precedence over this document.**
 
 Inputs: [`LINK_BUDGET.md`](LINK_BUDGET.md) (G3), [`RESOURCES.md`](RESOURCES.md) (G2), [`AUDIT.md`](AUDIT.md) (G1). Branch `r41-g4`, made from `origin/r41-hbm-bw` with `origin/r41` merged in (the stream engine stays removed).
 
@@ -46,7 +46,7 @@ Area and timing for this:
 
 The model confirms the direction for the code the compiler produces today (§5; model domain). With the G4 memory parameters, the registered small points reach at most 3.1 B/cycle/core. With an idealised memory they reach at most 5.0. The run-1 geometry gives 0.9. The compiled code (one 16-lane vector per program) limits them long before memory does.
 
-**Recommendation.** Per the brief, phase 2 (RTL) is not started. The decision goes back to the lead and the author:
+**Recommendation (phase 1, before the decision).** Per the brief, phase 2 (RTL) was not started. The decision went back to the lead and the author:
 - (a) Restate the target for the classes that can reach it (copy and clone, and fp32 add/sub/mul with a thin margin), and report the issue bound for the rest.
 - (b) Approve, or reject, an ISA or core change that lifts the issue bound (§7).
 - (c) Accept a smaller, buildable memory path (§6). Its estimated chip ceiling is about 19 GB/s for copy and fp32 binary operators, analytic, and it is still worth building because every program benefits.
@@ -390,7 +390,185 @@ History:
 - The lead then asked for the compiler step that is valid under every option (§8.1).
 - The author chose option (c) (decision above), which authorised the RTL steps (§8.2 onwards).
 
-<!-- G4_PHASE2 -->
+### 8.0 Summary of phase 2
+
+Everything in this section is default-off. The delivered machine, the compiler's defaults and the run-1 image are unchanged. Nothing was loaded onto a card, and no full link was started.
+
+| Step | What it is | Where it stands | Best measured effect |
+|---|---|---|---|
+| Tiled lowering (§8.1) | `TNCA_TILED_POINTWISE`: persistent tiled programs for 1-D element-wise kernels, two modes | built, tested, gated default-off; a default change is proposed as a patch | rtl, run-1 image, 20 points: mode 2 geometric mean 1.489x, none slower |
+| Full-line write without fill (§8.2) | `HOME_LINE_WRITE_NOFILL` | built, 50 bench cases, mutant caught | rtl bench: a streaming full-line store needs 0 memory reads instead of 2,048 |
+| Pipelined home (§8.2) | `HOME_LINE_PIPE`: three-stage line home, one line per cycle when it does not stall | built, 189 bench cases | part of s4 (§8.4) |
+| Lines in flight (§8.2) | `HOME_MSHR_N` (memory tags), `LINE_SLOTS` (line LSU slots and NoC tags) up to 64 | built; tag benches §8.2 | part of s4; mostly unused (§8.5) |
+| Pipelined outlets (§8.2) | `AXI_OUT_N` 32 with `AXI_PIPELINED_ISSUE` (existing RTL, new geometry) | board-top bench passes | part of s4 (§8.4) |
+| PC interleave | `HBM_STRIPED` (existing RTL, R41) | in the run-2 candidate only | not measurable in RTL simulation (needs the 8 GiB window) |
+
+**The measured result is far below the 19 GB/s of §6.** The best registered point on the candidate's parameters, clone fp32 at 64 KiB with mode 2, reaches 11.2 B/cycle/core, which is 3.4 GB/s for the chip (rtl, testbench memory, not board). That is 15× the run-1 image under the default compiler, but 18 % of the one-lane ceiling.
+
+**Under the default compiler**, the candidate is 1.15× the run-1 image (geometric mean over 20 points, rtl), and 6 of the 20 points are slower: sum 0.72×, strided add 0.82×, gelu 0.86×, strided clone 0.87×, silu 0.90×, exp 0.94×. For the five such points that were checked, controls on G2's image without the G4 steps (§8.4) show that most of the loss comes from G2's reduced profile; gelu was not checked. The strided points also lose about 10 % to the G4 steps.
+
+The limit is no longer the memory path. It is the number of lines a core keeps in flight (§8.5): the vector LSU path can only hold as many lines as the compiled code has registers for, and the line-beat transfer-engine path that would hold more was not built in this phase.
+
+### 8.1 Compiler step: tiled element-wise lowering
+
+`compiler/python/tnca_cc/pointwise_tiles.py`, option `TNCA_TILED_POINTWISE` (default 0), plumbed through the ahead-of-time options, the R1 adapter, the Triton backend and the Inductor integration (`TILED_POINTWISE_BLOCK=1024`, at least 8 programs). It applies to any 1-D element-wise Triton program whose loads and stores are contiguous in the program index; there is no operator list and no shape test.
+- **Mode 1** keeps the tensor-engine tiles of §3.2 with two-tile software pipelining in each iteration. The descriptor base is rounded down to 8 bytes and the coordinate shifted.
+- **Mode 2** uses the vector LSU with one tile base and immediate offsets (new `offset` attribute on load and store, encoded as `#imm`). Up to four lane groups issue the next groups' loads before the current group computes. A register estimate picks the group count; a copy needs no result register; if registers run out, the lowering retries with one group.
+- The frontend hook refuses an untileable program wider than 128 lanes rather than emitting a slow one. A dead pure-integer vector pass (`drop_dead_pure`) removes the index arithmetic the tiles no longer use.
+
+Tests: `compiler/test/test_pointwise_tiles.py` (7 tests, including RTL runs and a grouped-load test), in `TRITON_SUITES` and `make triton-e2e` as `G4-TILED-POINTWISE`. Mutants of the lowering are caught (`g4/test_mutants.log`).
+
+Results (all mode 2 unless stated; NON-DEFAULT option, recorded in every record):
+
+| Domain | Scope | Result | Evidence |
+|---|---|---|---|
+| model | 171 small points, run-1 configuration | geometric mean 1.268x, no point slower; mode 1 slower on 35–36 points | `g4/model_small_tiled{1,2}` |
+| model | 171 small points, `g4` configuration | geometric mean 1.812x, no point slower | same |
+| model | the 113-point non-regression set, run-1 configuration | 110 pass in both arms (3 exceed capacity in both), geometric mean 1.083, min 0.991, none slower by more than 2 % | `g4/model_nonreg_m{0,2}` |
+| rtl | run-1 image, 20 registered 64 KiB points | mode 2: geometric mean 1.489x, min 1.028, max 1.950, none slower; mode 1: 1.297x, 5 points slower | `g4/rtl/rtl_table.md` |
+
+**Gate for the default-off step** (`g4/gate_compiler/gate-logs.tgz`, sha256 `7d7cc682…`): the 113-point audit unchanged, `make compiler` 157 unit tests and 6 IR files, every RTL lane identical except `triton-e2e` (+7 G4 lines).
+
+**Proposed default change** (`g4/default_change_tiled_pointwise.patch`, not applied): default 2 in `inductor.py` and `triton_backend/compiler.py`. Its gate (`g4/gate_default_change/`, sha256 `b8aefd0e…`): base `2a134be` against base plus the patch.
+- Every lane exits 0 in both trees, with the same pass/fail lines.
+- `make compiler` passes 157 unit tests and 6 IR files; `test_pointwise_tiles.py` passes 7 tests.
+- Compile audit of the 113 frozen points: 128 pointwise kernels get the tiled code. The other 65 pointwise kernels, all 152 reductions and all 152 templates keep identical code, and no Triton source changes.
+- The change has no board measurement, and on the candidate image mode 2 is measured only on the 20 points of §8.4.
+
+Applying it is the lead's and the author's decision.
+
+### 8.2 RTL steps
+
+All are parameters of the existing RTL with the delivered behaviour as default.
+
+1. **Full-line write without fill** (`HOME_LINE_WRITE_NOFILL`, `rtl/nuca/tnca_nuca_slice.v`). A store that writes all 64 bytes of a missing line allocates it without reading memory. `tools/r41/g4_home_tests.py`: 50 cases; a streaming full-line store pass needs 0 memory reads instead of 2,048 (`g4/home_nofill_tests.log`, mutant `g4/home_nofill_mutant.log`). Partial-line stores still fill: a fp16 copy whose 16-lane store covers half a line reads 2.01 lines per demand read (rtl counter, §8.4).
+2. **Pipelined line home** (`HOME_LINE_PIPE`, `rtl/nuca/tnca_home_pipe.v`, with `HYBRID_LSU`). Three stages: S1 registered tag read; S2 hit/miss decision and metadata update; S3 data array, response and writeback queue. S3 holds the pipe when it cannot finish. The fill unit gives S3 priority, does not overwrite a way whose victim writeback S3 still holds, and issues no read while S3 holds that line's writeback. Memory issue is locked while stalled; replacement is invalid-first, then round-robin. The pipe ignores the DCO placement policies (they change only where a line lives, not what it holds) and sends no tile-last-word notices; both remain available with `HOME_LINE_PIPE` 0. Benches `tb/nuca/tb_home_pipe.v` (with a maintenance image check) and `tb_home_pipe_special.v`; `tools/r41/g4_home_pipe_tests.py`: 189 of 189 cases pass after the S3 split (`g4/step2/home_pipe_s3_tests.log`). The split came from the s3 screen (§8.3), whose worst path was 31 levels in the two-stage pipe's S2.
+3. **Lines in flight.** `HOME_MSHR_N` widens the home's memory tag through the shell, the AXI adapter and the board top. `LINE_SLOTS` widens the line LSU slots (up to 64, in LUTRAM), the NoC payload (720 + TAG_W − 5 bits), the NI tags and the core's memory tag; the hybrid LSU's beat tag goes to at most 7 bits. `AXI_ID_W` is derived from `AXI_OUT_N`. Tag benches, written by the Kimi Code agent and corrected here (`g4/tag_tests/README.md`): line LSU 48 of 48 configurations, wide NI 12 of 12 (`TAG_W` 7, 722-bit payload), hybrid LSU 48 of 48 (`BEAT_W` 4–7, fast-slot peak 64 at `BEAT_W` 7). Two failed hybrid attempts are kept: a hang bound too short for the 1,024-cycle latency of the wide configurations, and a stimulus that could not fill 64 slots.
+4. **Pipelined outlets.** `AXI_OUT_N` 32 with `AXI_PIPELINED_ISSUE` 1 (existing adapter). The board-top bench now forwards both (Kimi Code agent; `g4/outlet_bench/README.md`): the default geometry and the 32-outlet pipelined geometry pass.
+5. **Board-top geometry at the candidate's parameters** (`g4/geometry/`). `tools/r40/image_geometry_tests.py` now forwards the G4 parameters. At the s4 parameters (the candidate without striping, which the bench's 1 MiB window cannot hold), it runs two grids, the memory controls 1/1, 1/32, 3/1 and 3/32, the coherent window and the ownership handoff.
+   - The first run failed: one result line read back as zero under 1/32.
+   - A trace of that line showed the device correct: the writeback was issued, and AW/W/B completed before the handoff finished.
+   - The cause was the bench's shared-BO mirror (`tb/fpga/tnca_multicore_shared_hbm.vh`), which sliced the B ID as 3 bits. With 32 outlets, slot 8 mirrored slot 0's stale line. The same defect let the earlier 32-outlet bench pass by chance.
+   - After the fix, s4 and the run-1 integration image pass, and so do `make r40-multicore-dma` and `make r40-multicore-mmio`.
+   - The failures, the bisection (both `HOME_LINE_PIPE=0` and `AXI_PIPELINED_ISSUE=0` passed) and the trace are kept.
+
+### 8.3 Candidate images and screens
+
+`g4/images/image_{g2,s0..s4}.tcl` add the steps one at a time to G2's combined image (`resources/screens/image_g2_all.tcl`, profile `core-vrf-sync-v5-x8-g2`):
+
+| Image | Adds |
+|---|---|
+| g2 | G2 combined image (screen: tile 0 72.73 % of SLR0 CLBs, WNS +0.603 ns) |
+| s0 | hybrid LSU |
+| s1 | + background reads, full-line write without fill |
+| s2 | + pipelined home |
+| s3 | + 32 MSHRs, 32 line slots |
+| s4 | + 32 outlets with pipelined issue |
+| run-2 candidate (`g4/run2/image.tcl`) | s4 + `HBM_STRIPED` 1 |
+
+Screens on the x86 host, 10 ns, kernel synthesis then tile 0 placed and routed out of context in SLR0 (domain: screen):
+
+| Image (tree) | Kernel synthesis | Tile 0 LUTs | Tile 0 CLBs (% of SLR0) | WNS | Worst path | Evidence |
+|---|---|---:|---:|---:|---|---|
+| g2 (G2's screen, RESOURCES.md §9) | — | 232,925 | 39,974 (72.73 %) | +0.603 ns | — | G2 |
+| s3 (`caa25fb`, two-stage pipe) | passes | 247,738 | 41,967 (76.36 %) | +0.359 ns | home pipe S2 data path, 31 levels | `g4/screens/s3_caa25fb0a1d4/` |
+| s4 (`64e3c71`, three-stage pipe; = run-2 candidate without striping) | passes | 246,873 | 41,415 (75.35 %) | +0.423 ns | vector FPU accumulator (`u_core/u_vfpu/acc_reg`), 4 levels | `g4/screens/s4_64e3c71d7f39/` |
+
+The screens are out of context. Run 1's calibration for RAM-capture paths in a ≥ 96 % SLR is −0.9 to −1.0 ns from screen to image (§4.2). The one-lane path costs about 14k routed LUTs and 1.4–2.0k CLBs in tile 0 over G2 (screen). The outlets of s4 lie outside the tile, in SLR0, and are not in these rows. After the S3 split, the worst tile path is no longer in the home. A tile margin of +0.423 ns does not by itself predict closure of the full image at 100 MHz.
+
+### 8.4 Measurements
+
+RTL simulation, 64 KiB registered points, three cores, the testbench memory model (domain: rtl; not board). B/cycle/core is ArchBench demand bytes per cycle per core; at 100 MHz, 1 B/cycle/core is 0.3 GB/s for the chip.
+
+Arms: `run-1 image` = G3's and §8.1's records; `s4` = `g4/images/image_s4.tcl` (the candidate without striping) on profile `core-vrf-sync-v5-x8-g2`. Default = `TNCA_TILED_POINTWISE` 0; mode 2 is NON-DEFAULT. The s4 mode-2 arm uses the grouped lowering (software tree `21fbf302…`, commit `2a134be`), and the run-1 mode-2 arm uses §8.1's records (software tree `8fd94a41…`).
+
+| Point (rtl, 64 KiB) | run-1 image, default: cycles | s4, default: cycles | s4 / run-1, default | run-1 image, mode 2: cycles | s4, mode 2: cycles | s4 mode 2: B/cycle/core | s4 mode 2: GB/s, chip at 100 MHz |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| add bf16-small-contig | 138,001 | 100,718 | 1.37x | 77,466 | 43,900 | 1.49 | 0.45 |
+| add fp16-small-broadcast | 119,521 | 106,033 | 1.13x | 75,203 | 42,796 | 1.04 | 0.31 |
+| add fp16-small-contig | 137,923 | 100,789 | 1.37x | 78,090 | 43,761 | 1.50 | 0.45 |
+| add fp16-small-strided | 153,050 | 186,527 | 0.82x | 118,979 | 129,567 | 0.51 | 0.15 |
+| add fp32-small-contig | 85,707 | 56,235 | 1.52x | 72,235 | 13,809 | 4.75 | 1.42 |
+| cast fp16-to-fp32-small-contig | 108,392 | 67,472 | 1.61x | 75,437 | 22,448 | 2.92 | 0.88 |
+| cast fp32-to-fp16-small-contig | 102,461 | 91,660 | 1.12x | 73,238 | 25,089 | 2.61 | 0.78 |
+| clone fp16-small-broadcast | 79,457 | 70,189 | 1.13x | 49,654 | 26,509 | 0.85 | 0.25 |
+| clone fp16-small-contig | 97,583 | 85,939 | 1.14x | 52,246 | 9,032 | 4.84 | 1.45 |
+| clone fp16-small-strided | 104,441 | 120,242 | 0.87x | 74,389 | 69,780 | 0.63 | 0.19 |
+| clone fp32-small-contig | 59,644 | 34,981 | 1.71x | 49,684 | 3,889 | 11.23 | 3.37 |
+| copy fp16-small-contig | 97,339 | 85,926 | 1.13x | 52,045 | 8,943 | 4.89 | 1.47 |
+| copy fp32-small-contig | 59,282 | 34,971 | 1.70x | 48,525 | 3,924 | 11.13 | 3.34 |
+| div fp16-small-contig | 146,848 | 142,650 | 1.03x | 91,889 | 43,671 | 1.50 | 0.45 |
+| exp fp16-small-contig | 104,672 | 111,150 | 0.94x | 66,514 | 33,357 | 1.31 | 0.39 |
+| gelu fp16-small-contig | 266,587 | 309,104 | 0.86x | 136,701 | 119,750 | 0.36 | 0.11 |
+| relu fp16-small-contig | 97,566 | 93,164 | 1.05x | 51,874 | 22,192 | 1.97 | 0.59 |
+| relu fp32-small-contig | 59,204 | 36,695 | 1.61x | 48,498 | 12,370 | 3.53 | 1.06 |
+| silu fp16-small-contig | 133,177 | 147,818 | 0.90x | 94,523 | 73,534 | 0.59 | 0.18 |
+| sum fp16-small-contig | 34,619 | 48,075 | 0.72x | 33,669 | 48,112 | 0.45 | 0.14 |
+
+Summary (rtl, 20 points):
+
+| Comparison | Geometric mean | Min | Max | Slower by > 2 % |
+|---|---:|---:|---:|---:|
+| s4 vs run-1 image, both default | 1.148 | 0.72 | 1.71 | 6 |
+| s4 vs run-1 image, both mode 2 | 2.523 | 0.70 | 12.78 | 2 (sum, strided add) |
+| s4 mode 2 vs run-1 image default | 3.758 | 0.72 | 15.34 | 1 (sum) |
+
+**Controls** (default compiler, the five points that were slower). The ratio is the run-1 image's cycles over the image's cycles, so values above 1 are faster:
+
+| Point | G2 image | s1 (hybrid, background reads, no-fill) | s4 |
+|---|---:|---:|---:|
+| sum fp16 | 0.64 | 0.71 | 0.72 |
+| strided add fp16 | 0.91 | 0.75 | 0.82 |
+| strided clone fp16 | 0.95 | 0.80 | 0.87 |
+| exp fp16 | 0.80 | 0.90 | 0.94 |
+| silu fp16 | 0.81 | 0.87 | 0.90 |
+
+G2's profile (two contexts, fewer registers and barriers) is slower than run 1 on all five. The G4 steps recover part of it for sum, exp and silu. For the two strided points, they cost about 10 % against G2 (s1 is worse still). The cause has not been isolated. The rest of the table (`g4/rtl_s4/rtl_table.md`) also has mode 1 for the fp32 points (0.60–0.63 B/cycle/core, slower than the default) and mode 2 with the earlier compiler.
+
+The counters behind these numbers are in §8.5.
+
+Model, `onelane` configuration (the §6 path as far as the model has keys), mode 2 (domain: model, uncalibrated): small points at most 10.1 B/cycle/core; medium points copy fp32 13.5, add fp32 13.2, about 4 GB/s for the chip (`g4/model_onelane_{small,medium}_m*`). The home queues in the model's counters.
+
+### 8.5 Why the measured numbers are far below 19 GB/s
+
+Little's law on the rtl counters: lines in flight per outlet = line rate × mean latency.
+
+| Point (s4, mode 2, rtl) | B/cycle/core | Lines per cycle per outlet | Mean outlet latency (cycles) | Lines in flight per outlet (≈ per core) | Home busy | Outlet busy |
+|---|---:|---:|---:|---:|---:|---:|
+| clone fp32 | 11.23 | 0.187 | 48 | 9.0 | 0.26 | 0.41 |
+| copy fp16 | 4.89 | 0.162 | 78 | 12.6 | 0.29 | 0.31 |
+| add fp32 | 4.75 | 0.079 | 56 | 4.5 | 0.13 | 0.22 |
+
+- No stage is saturated. Home and outlet are busy a quarter to two fifths of the time.
+- The §6 ceiling of 64 B/cycle/core is one line per cycle per core. At the measured 48–78-cycle latency, that needs about 50–80 lines in flight per core.
+- The vector path holds 4–13. Each line in flight is a vector load whose destination register cannot be reused until it returns. The context has 64 logical registers, and the tiled lowering uses at most four lane groups, chosen by its register estimate (§8.1).
+- The wider tags (32 MSHRs, 32 slots, 32 outlet IDs) are therefore not used. Raising them further would not help the vector path.
+- copy fp16 reads 2.01 lines per demand line, because its half-line stores still fill (§8.2 item 1). That halves its useful rate.
+- add fp32 issues three instructions per 16 elements plus the loop. Its IPC is 0.15 with a 14 % LSU stall, so the core's issue and dependency waits, not memory, set its rate.
+
+The model's `onelane` configuration (§8.4) gives the same picture from the other side: with the memory path's queues modelled, medium points reach 13.5 B/cycle/core, and its counters show queueing at the home. The model does not represent the line-wide transfer engine either.
+
+**What would use the path:** a requester that keeps lines in flight without registers, which is the line-beat, multi-command transfer engine of §6 (§8.6 item 1). The memory side built here (tags, pipe, outlets) is sized for it.
+
+### 8.6 What remains before the one-lane path can reach its ceiling
+
+1. **A line-beat transfer-engine path.** The tensor engine is command-serial: one transfer command at a time per core, so mode 1 cannot keep many lines in flight. Its line-wide, multi-command form (§6) was not built. It is the only general way to hold 64–80 lines per core without spending vector registers.
+2. **Write-validate for partial-line stores.** fp16/bf16 element-wise outputs store half lines, which still fill (2.01 line reads per demand read). Per-byte valid bits in the home would remove that read.
+3. **DCO placement policies and tile-last-word notices in the pipelined home.** The pipe uses invalid-first, round-robin replacement and sends no notices, so a program that relies on a DCO policy for locality loses it when `HOME_LINE_PIPE` is 1.
+4. **Memory-level parallelism of the vector path.** Limited by registers and latency (§8.5); the compiler's grouping is already at four groups.
+5. **Timing closure** of the run-2 candidate in the full image (§8.3), within the Stage 2 budget of five full runs.
+
+### 8.7 Run-2 candidate
+
+`g4/run2/image.tcl` and `g4/run2/README.md`. Not linked: the lead starts the link. It is s4 plus `HBM_STRIPED` 1.
+- XO packaging with it passes on the x86 host (exit 0, no critical warnings; `g4/run2/package_dryrun.log`).
+- The README lists the parameters against run 1, the evidence above and the link command (`flow/fpga/run_r40_attempt01.sh ROOT evidence/r41/hbm_bw/g4/run2/image.tcl`, per `evidence/r41/stage2/x86_link/README.md`).
+- A link uses one of the five Stage 2 runs.
+
+Two cautions for the lead:
+- (a) The candidate is not a performance claim. The measured gain over run 1 under the default compiler is small, and some points are slower (§8.4).
+- (b) Most of the gain needs `TNCA_TILED_POINTWISE` 2, which is not the default.
+
 
 ## Reproduction
 
@@ -406,3 +584,18 @@ PYTHONPATH=$PWD:$PWD/python $TORCH_PYTHON tools/r41/g4_model_suite.py --binary B
 python3 tools/r41/g4_report.py      # every table above, from the recorded files
 ```
 Raw model records: `g4/model_<size>/{run1,g4,ideal}.log`, `*/results.json`, `*/counters.json`, the configurations and the exact commands (`*.command.json`). Runs were made on GB10 from this branch's tree at 28342ce, plus the three `tools/r41/g4_*.py` scripts committed with this document.
+
+Phase 2 (§8), on GB10 unless stated:
+```sh
+# one RTL probe: a registered point on a candidate image (rtl; records carry the software tree)
+$TORCH_PYTHON tools/r41/link_budget_rtl.py --image evidence/r41/hbm_bw/g4/images/image_s4.tcl \
+    --profile core-vrf-sync-v5-x8-g2 --point op.clone/membound/fp32-small-contig-r16-c1024 \
+    [--set TNCA_TILED_POINTWISE=2] --out OUT.jsonl
+python3 tools/r41/g4_rtl_report.py --arm "NAME=GLOB" ...   # the §8.1/§8.4 tables (g4/rtl_s4/rtl_table.md)
+python3 tools/r41/g4_home_tests.py; python3 tools/r41/g4_home_pipe_tests.py      # home benches
+python3 tools/r41/lsu_line_tests.py; python3 tools/r41/wide_noc_tests.py; python3 tools/r41/lsu_hybrid_tests.py
+python3 tools/r40/image_geometry_tests.py --image-tcl evidence/r41/hbm_bw/g4/images/image_s4.tcl \
+    --image-profile core-vrf-sync-v5-x8-g2
+$TORCH_PYTHON compiler/test/test_pointwise_tiles.py -v
+```
+Batch scripts and job lists are kept next to the records (`g4/rtl/`, `g4/rtl_s4/*/worker.sh`, `jobs.txt`). Screens were run on the x86 host with the G2 screen chain (kernel synthesis, then tile 0 out of context in SLR0 at 10 ns). Their logs and reports are in `g4/screens/`.

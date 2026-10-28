@@ -25,6 +25,11 @@ The goal is now the one-lane path of G4_DESIGN.md §6:
 
 It is built on G2's reduced profile `core-vrf-sync-v5-x8-g2` and its cuts (`RESOURCES.md` §9). Its analytic chip ceiling is about 19 GB/s (64 B/cycle/core at 100 MHz) for copy and fp32 binary operators. The other classes stay at their issue bounds.
 
+**Phase-2 result (2026-10-28, G4_DESIGN.md §8).** All of the above except the line-wide transfer engine was built default-off and tested. The run-2 candidate (`g4/run2/`) is prepared but not linked.
+- **RTL, 64 KiB points, candidate parameters.** The best point reaches 11.2 B/cycle/core (3.4 GB/s for the chip), and only with the non-default tiled lowering. Under the default compiler the candidate is 1.15× run 1, and 6 of 20 points are slower, mostly from G2's profile.
+- **Limit.** The memory path is not saturated. The vector path keeps only 4–13 lines in flight per core, where about 50–80 are needed.
+- **Analysis.** The 19 GB/s ceiling needs the line-wide transfer engine (§6), which is the next step.
+
 ## 1. Target (as registered; see §0 for the decision that replaced it)
 Memory-bound standard PyTorch operators must reach **32 GB/s of full-link bandwidth on the board**. They run on the three cores of the next image at 100 MHz, through the standard path with default settings.
 

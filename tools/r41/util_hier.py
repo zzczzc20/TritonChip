@@ -200,12 +200,15 @@ GROUPS = [
     ('Platform: other dynamic region (ulp)', r'/ulp/'),
     ('Platform: static shell (blp and others)', r''),
 ]
-KINDS = [('LUT (logic)', lambda rn, pt: pt.startswith('CLB.LUT')),
-         ('LUTRAM/SRL', lambda rn, pt: pt.startswith('CLB.LUTRAM') or pt.startswith('CLB.SRL')),
-         ('FF', lambda rn, pt: pt.startswith('REGISTER')),
-         ('CARRY8', lambda rn, pt: rn == 'CARRY8'),
-         ('BRAM', lambda rn, pt: pt.startswith('BLOCKRAM')),
-         ('DSP', lambda rn, pt: pt.startswith('ARITHMETIC.DSP'))]
+KINDS = [('LUT cells', lambda rn, pt, c: pt.startswith('CLB.LUT.')),
+         ('LUTRAM/SRL cells', lambda rn, pt, c: pt.startswith('CLB.LUTRAM') or pt.startswith('CLB.SRL')),
+         ('FF', lambda rn, pt, c: pt.startswith('REGISTER')),
+         ('FF replicas (`_rep`)', lambda rn, pt, c: pt.startswith('REGISTER') and '_rep' in c),
+         ('CARRY8', lambda rn, pt, c: rn == 'CARRY8'),
+         ('RAMB36', lambda rn, pt, c: rn == 'RAMB36E2'),
+         ('RAMB18', lambda rn, pt, c: rn == 'RAMB18E2'),
+         # a DSP48E2 is several leaf cells; DSP_ALU occurs once per DSP
+         ('DSP', lambda rn, pt, c: rn == 'DSP_ALU')]
 
 
 def cmd_slr(path):
@@ -220,11 +223,12 @@ def cmd_slr(path):
             slrs.add(slr)
             grp = next(g for g, p in pat if p.search(cell))
             for k, test in KINDS:
-                if test(rn, pt):
+                if test(rn, pt, cell):
                     count[(slr, grp)][k] += 1
-    print(f'Leaf-cell dump: `{path}` (primitive cells by placement SLR; a LUT6_2 site '
-          'holding two LUT primitives counts twice here, so these LUT counts exceed '
-          'report_utilization\'s site-based LUT figures)\n')
+    print(f'Leaf-cell dump: `{path}`: placed leaf cells by SLR. LUT and LUTRAM '
+          'columns count leaf cells (a LUT site holding two LUT cells, or a LUTRAM macro\'s '
+          'RAMD32 pair, counts twice), so they exceed report_utilization\'s site-based LUT '
+          'figures; FF, CARRY8, RAMB and DSP counts are exact.\n')
     for slr in sorted(slrs):
         print(f'\n#### {slr}\n')
         print('| Group | ' + ' | '.join(k for k, _ in KINDS) + ' |')

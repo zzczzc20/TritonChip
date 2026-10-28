@@ -2,12 +2,16 @@
 """NUCA line-to-AXI geometry, concurrency, ordering and fault matrix."""
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def main():
+    # R41 G2: --line-lutram runs the matrix with LINE_LUTRAM=1 and the
+    # delivered build in lockstep inside the bench (tb_line_axi.LINE_LUTRAM).
+    lutram = 1 if '--line-lutram' in sys.argv[1:] else 0
     cases = [(width, slots, 0, 0, 1) for width in (64, 128, 256, 512)
              for slots in (1, 3, 8)]
     cases += [(width, 3, mode, 0, 1) for width in (64, 256)
@@ -29,7 +33,7 @@ def main():
                 f"-Ptb_line_axi.DATA_W={width}",
                 f"-Ptb_line_axi.PIPELINED_ISSUE={pipeline}",
                 f"-Ptb_line_axi.RUNTIME_LIMIT={limit}",
-                f"-Ptb_line_axi.WRITE_ACK={write_ack}", f"-Ptb_line_axi.STAGES={stages}", f"-Ptb_line_axi.OUT_N={slots}", f"-Ptb_line_axi.MODE={mode}",
+                f"-Ptb_line_axi.WRITE_ACK={write_ack}", f"-Ptb_line_axi.LINE_LUTRAM={lutram}", f"-Ptb_line_axi.STAGES={stages}", f"-Ptb_line_axi.OUT_N={slots}", f"-Ptb_line_axi.MODE={mode}",
                 "-o", output, "rtl/fpga/tnca_line_axi.v", "tb/fpga/tb_line_axi.v", "rtl/common/tnca_line_link.v", "rtl/common/tnca_fifo.v",
             ], cwd=ROOT, check=True, timeout=60)
             subprocess.run(["vvp", output], cwd=ROOT, check=True, timeout=60)
@@ -45,7 +49,7 @@ def main():
                         "rtl/fpga/tnca_line_axi.v", "tb/fpga/tb_line_axi_stream.v",
                     ], cwd=ROOT, check=True, timeout=60)
                     subprocess.run(["vvp", output], cwd=ROOT, check=True, timeout=60)
-    print(f"LINE AXI MATRIX PASS {len(cases)} configurations + 8 stream cases", flush=True)
+    print(f"LINE AXI MATRIX PASS {len(cases)} configurations + 8 stream cases line_lutram={lutram}", flush=True)
 
 
 if __name__ == "__main__":

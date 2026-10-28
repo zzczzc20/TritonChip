@@ -12,6 +12,11 @@ IDENTITY=dict(image_uuid='49964b17-e0b4-5bd2-dd40-7fc37b1205d3',clock_hz=1000000
 def idle(**kwargs):return dict(loaded_uuid=IDENTITY['image_uuid'],clock_counter_mhz=[100],contexts=0,outstanding_execs=0,client_pid=None,**kwargs)
 
 class WaitingRule(unittest.TestCase):
+    def test_python_symlink_is_not_dereferenced(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target=Path(tmp)/'system-python';target.touch()
+            torch_python=Path(tmp)/'torchenv-python';torch_python.symlink_to(target)
+            self.assertEqual(queue.absolute_path(torch_python),torch_python)
     def run_wait(self,rows):
         now=[0];history=[]
         def probe():

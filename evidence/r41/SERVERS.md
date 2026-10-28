@@ -1,5 +1,8 @@
 # The three servers and the shared U280 card
 
+> **Binding:** [`doc/engineering_discipline.md`](../../doc/engineering_discipline.md) (evidence integrity, the standard path, no special-casing, no constructive exceptions, no test poisoning) applies to all work and takes precedence over this file.
+
+
 Every R41 session reaches the servers through helper scripts, which keep the credentials outside the repository. Do not print them, copy them into any file, or commit them.
 
 ```sh

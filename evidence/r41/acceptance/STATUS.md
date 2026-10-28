@@ -679,3 +679,39 @@ The staged 68b9191 full-chat failure was also archived read-only as
 `expected_counter_changes` was empty and never ran a model. That queue and the
 previous a52fb29 command must not be rerun. A corrected manifest and launcher
 will receive a new immutable staging identity before a replacement is posted.
+
+## 2026-10-28 (Kimi) — corrected full-model chat queue prepared
+
+Commit `51aef19ad4a8edf4452247ae385d847b05622fe6` fixes the queue's interpreter
+handling: `acceptance_queue.py` now makes the Python path absolute without
+resolving its symlink. The regression in `test_acceptance_queue.py` preserves a
+Torch-environment symlink instead of silently selecting its system-Python
+target. All 20 queue/experiment unit tests pass. The chat manifest now declares
+observed completion/memory-port counter changes, no added graphs or host reads
+in steady decode, and recorded rather than assumed numerical outcomes; it makes
+no predetermined traffic-reduction or performance claim.
+
+The immutable commit is staged at `~/r41_chat_51aef19` on acf3019. All 4,132
+tracked files match their Git blob SHA-1 identities, with no mismatches
+(`chat/staged-source-51aef19.json`). Both local and staged `--check-only`
+preparations return `prepared-only` and `card_access=false`; the staged result
+is `chat/staged-queue-check-51aef19.json`. The original empty-counter failure
+remains preserved in `chat/board-68b9191-preflight-failure.tgz`. Neither the
+68b9191 nor a52fb29 queue is to be rerun.
+
+### Replacement lead-only full-model chat launch (immutable 51aef19 source)
+
+After the lead alone has loaded the approved run-1 100 MHz image (UUID
+`49964b17-e0b4-5bd2-dd40-7fc37b1205d3`) under the existing idle procedure,
+execute on acf3019, never alongside another U280 job:
+
+```sh
+cd ~/r41_chat_51aef19
+spec/r41/chat/board_queue.sh "$PWD" "$HOME/r41_chat_51aef19_out"
+```
+
+The waiting queue enforces 900 consecutive idle seconds, has a 10,800-second
+execution cap, and never programs or resets the card. It was prepared, not
+launched; this staging work performed no card probe, open, reset or image load.
+Full-depth physical generation, measured board tokens/s, persistent full-model
+D.7 and the separate S2-03.B pipeline comparison remain open.

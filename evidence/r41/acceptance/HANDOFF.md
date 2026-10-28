@@ -1,5 +1,8 @@
 # Handoff: Stage 2 acceptance and the overall R41 acceptance
 
+> **Binding:** [`doc/engineering_discipline.md`](../../../doc/engineering_discipline.md) (evidence integrity, the standard path, no special-casing, no constructive exceptions, no test poisoning) applies to all work and takes precedence over this file.
+
+
 You take over the acceptance work for R41 (`doc/r41_tasks_and_acceptance.md`): Stage 2 sign-off (S2-00 to S2-06) and the final R41 sign-off. This is a long task. It ends when every required item has been judged against its evidence, the reports are written, and what is not accepted is stated plainly. Push your work as soon as it exists.
 
 Read first: `evidence/r41/SERVERS.md` (the three servers, how to connect, and the rules for the shared card; it is part of this handoff).

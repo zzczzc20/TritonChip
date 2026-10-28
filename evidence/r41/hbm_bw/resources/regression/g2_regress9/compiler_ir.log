@@ -1,0 +1,5 @@
+  compiler-ir            PASS   6 file(s), 6 RUN case(s)
+
+real	0m0.240s
+user	0m0.135s
+sys	0m0.133s

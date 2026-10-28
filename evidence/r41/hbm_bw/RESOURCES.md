@@ -20,7 +20,11 @@ Every number below is read from a report produced by a recorded run (§8 lists t
   - Together (kernel synthesis): −27,077 LUTs and −12,877 FFs of the kernel's 814,043 and 242,620.
   - Both changed nothing in the default build (identical kernel synthesis) and passed the lockstep, unit and board-top regressions (§7).
 - **Measured costs of performance and timing features** (§5; removing one keeps every capability but trades performance or timing, so none is recommended). The second LSU (`LSU_INFLIGHT 2`) costs 35,925 kernel LUTs; the three DCO/TMU replicas cost 13,746 LUTs more than one shared TMU; `MTX_ABUF` costs 1,329; `VRF_PREFETCH` costs nothing measurable.
-- **Options that would remove or narrow an architectural capability** are listed in §6 for the author's decision and were not implemented.
+- **Options that would remove or narrow an architectural capability** (§6) went to the author. The decisions and their implementation are in §9:
+  - two contexts instead of four, eight barriers instead of 32, 38-bit epochs and 35-bit home addresses, as image parameters and the new profile `core-vrf-sync-v5-x8-g2`;
+  - accumulators stay at 16, because fewer lose matrix throughput (context slicing) and the Qwen FP8 kernels need 16;
+  - MAC sharing and a smaller FMA were rejected.
+- **Everything together** (the G2 parameters and both §4 changes), in kernel synthesis: −62,472 LUTs (7.7 %) and −35,807 FFs (14.8 %). Tile-0 screen: 247,579 → 232,925 routed LUTs, 41,878 → 39,974 CLBs (76.20 % → 72.73 % of SLR0), WNS +0.838 → +0.603 ns; the three outlets save their §4.2 amount in SLR0 on top.
 
 ## 2. Where the resources go
 
@@ -316,6 +320,10 @@ The lockstep benches were checked for sensitivity by breaking the candidates on 
 | `c2_line_lutram` | `8017d7c` | `image_line_lutram.tcl` | `AXI_LINE_LUTRAM 1` |
 | `c1b2` | `08c2601` | `image_c1b_c2.tcl` | Mode 2 with `AXI_LINE_LUTRAM 1` |
 | `p1`…`p4` | `08c2601` | `image_p*.tcl` | One performance or timing parameter off (§5) |
+| `off3`, `off4` | `40ceb89`, `8057dea` | `image.tcl` | Default-off identity of the §9 parameters |
+| `g2ctx2`, `g2epoch38` | `40ceb89` | `image_g2_ctx2.tcl`, `image_g2_epoch38.tcl` | §9 contexts, epochs |
+| `g2addr35`, `g2bar8e38` | `5430243` | `image_g2_addr35.tcl`, `image_g2_bar8_epoch38.tcl` | §9 home address, barriers |
+| `g2all` | `8057dea` | `image_g2_all.tcl` | Every §9 parameter with both §4 changes |
 
 **Tile screens.** `flow/fpga/screen_r41_tile.tcl` cuts tile 0 from a kernel-synthesis checkpoint and places and routes it alone in SLR0 at 10 ns. These are the same screens that run 1 calibrated (`stage2/run1/README.md`, "Screen-to-image calibration"). The screens are optimistic, because they have no shell, no other tile and none of SLR0's static density. Reports are in `resources/tile_screens/`.
 
@@ -329,6 +337,9 @@ The lockstep benches were checked for sensitivity by breaking the candidates on 
 - The parameter screens were first started on the FPGA host. While they ran, the shared host's available memory fell to about 8 GB with swap nearly full, so they were stopped (by PID) and moved to the x86 host. The stopped run's log is `resources/host/params_fpga_host_stopped.log`.
 - The image-geometry bench refused the stage-2 image in the first two regression runs, because `HAS_TENSOR_XPOSE 2` had no mapping to the board bench. Commit `d33456a` added the mapping. The refused runs are kept in §7's logs.
 - Mode 1 of `NUCA_SHARED_DATA_READ` passed every regression but lost 0.552 ns in the tile screen (§4.1); it is kept in the RTL as a documented, non-recommended mode.
+- §9's sizing runs used scratch variant profiles on GB10 (kept in `resources/sizing/`, not in `spec/r1_profiles.json`). The first Hub FP8 compile on the full shape list spent hours on host-side tensor setup with every launch skipped. It was stopped by PID and re-run on the shorter list (`hub_v5x8_stopped_long_shapes.log`).
+- The first address-width synthesis (`g2addr35` at `40ceb89`) was stopped by PID and renamed `g2addr35_40ceb89e6555_stopped_superseded` on the x86 host, after the fold moved into `tnca_addr_fold` and the TMU notice port was left at 64 bits; `5430243` is the one reported.
+- A local run of `make core-g2` was stopped by PID when the session's temporary-file quota filled; `g2_regress6` is the run reported.
 
 ## 9. The author's decisions on §6 and what was done
 
@@ -401,7 +412,7 @@ Notes on the rows:
   - Tile-0 screen: −14,654 routed LUTs and −1,904 CLBs, from 76.20 % to 72.73 % of SLR0. The outlets (§4.2) come on top of it in SLR0.
   - Its WNS is +0.603 ns, 0.235 ns below the base screen. The worst path is the F09 family, VRF bank read to MAC operand capture (`g_bank[0] mem_reg` → `g_mac[7] a_q`), which the run-1 image left at +0.079 ns in SLR0 and which the base screen has at +0.867.
   - The contexts change shrinks the VRF banks this path starts from. One placement per build cannot separate the change from placement variance, but this family must be watched in a link of the combined build.
-- **Default-off identity.** Kernel syntheses with every new parameter at its default reproduce the base exactly: `off3` at `40ceb89` (the parameters' plumbing) and PENDING-OFF4 at the final RTL.
+- **Default-off identity.** Kernel syntheses with every new parameter at its default reproduce the base exactly: `off3` at `40ceb89` (the parameters' plumbing) and `off4` at `8057dea` (`synth/off4_8057dea1fb61/`). The only RTL change on the branch since `8057dea` is another workstream's removal of the unused stream-engine files (`60b7ab7`), which no image builds.
 
 ### 9.3 Regressions and coverage checks
 
@@ -415,7 +426,12 @@ Notes on the rows:
 | | Board top at the image's parameters: base, `addr35`, `bar8_epoch38` | pass |
 | | Board top, `ctx2` and `g2_all` | **refused**: the multicore runtime required a four-lane physical chunk contract. Fixed in `b36deb5` (the contract now follows the image profile's context count), re-run in `g2_regress7` |
 | | `make compiler` with `tnca-opt` built | unit tests pass (157); `compiler-ir` **skipped**: FileCheck was not found at the default path. Re-run in `g2_regress7` with `TNCA_LLVM` set |
-| `g2_regress7` (`18d045c`) | PENDING-REG7 | |
+| `g2_regress7` (`18d045c`) | Board top at the image's parameters, `ctx2` and `g2_all`, with `--image-profile core-vrf-sync-v5-x8-g2` (two contexts, 8 barriers, 38-bit epochs, 35-bit home addresses and both §4 changes), and base again after the runtime change | 3/3 pass |
+| | `r40-multicore-mmio-checks`, `make compiler` | failed on the environment: an evidence file missing from the GB10 copy, `torch` absent from the system Python, and `R1_STRICT` counting skips as failures. Re-run in `g2_regress8`/`g2_regress9` |
+| `g2_regress9` (`18d045c`) | `r40-multicore-mmio-checks` with the torch Python | pass (the base tree `92b2c85` passes too) |
+| | `make compiler` with the torch Python and `tnca-opt` built | the checks pass, `compiler-unit` **fails 16/157**. The unchanged base tree `92b2c85` fails the same 16 tests in the same environment (`compiler.failed.txt` = `base_compiler.failed.txt`; the errors are `unknown compile option(s): index_opt` from the torch environment's installed backend), so they are not caused by G2 |
+| | `compiler/test/run_tests.py --no-rtl` with the system Python | 157 tests pass, 53 skipped (Triton absent) |
+| | `compiler/test/IR/run_ir_tests.py` with `tnca-opt` and FileCheck (`TNCA_LLVM` = the toolchain's LLVM 20, `R1_STRICT=1`) | pass, 6 files, 6 RUN cases |
 | GB10 compile runs | 113 points for two contexts, for the G2 profile and for each scratch variant | 113/113 compile in every run |
 | | Hub FP8 kernels for v5-x8, two contexts, G2 | all compile; with 8 accumulators the matmul kernels do not (above) |
 

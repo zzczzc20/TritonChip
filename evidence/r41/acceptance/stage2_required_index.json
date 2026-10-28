@@ -2,7 +2,7 @@
   "schema": "tnca-r41-stage2-required-index/1",
   "contract": "doc/r41_tasks_and_acceptance.md",
   "contract_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
-  "scope": "Audit through lead-run physical P2 locality and P4 lifecycle evidence, 2026-10-28; historical failures and persistent full-model gaps remain.",
+  "scope": "Rectified 2026-10-28 against doc/engineering_discipline.md and the discipline audit (evidence/r41/hbm_bw/AUDIT.md, R1-R18): unsourced attributions corrected, post-hoc tolerance and check changes withdrawn, locality-control results quarantined, domains labelled; historical failures and persistent full-model gaps remain.",
   "statuses": [
     "passed",
     "failed",
@@ -464,9 +464,11 @@
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
         "evidence/r41/acceptance/board-p2p4-index.json",
-        "spec/r41/stage2/acceptance/s2-p2-locality.json"
+        "spec/r41/stage2/acceptance/s2-p2-locality.json",
+        "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
+        "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "Lead-run physical U280 residual and projection graphs pass off/on/off numerical replay with identical artifacts and outputs. Actual device cycles, host-scope latency and per-port line-counter deltas are archived and validated. Locality control overhead is visible; no speedup or default-on decision is claimed.",
+      "reason": "Physical U280 residual and projection graphs pass off/on/off numerical replay with identical artifacts and outputs. Actual device cycles, host-scope latency and per-port line-counter deltas are archived and validated. Locality control overhead is visible; no speedup or default-on decision is claimed. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
       "closure_plan": null
     },
     {
@@ -647,9 +649,11 @@
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
-        "evidence/r41/acceptance/board-p2p4-index.json"
+        "evidence/r41/acceptance/board-p2p4-index.json",
+        "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
+        "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "All four physical-board compound cases refuse undeclared same-storage and distinct-handle overlap, an out-of-bounds view and a forged high-bit storage owner before admission. Raw reports and before/after board probes pass validation.",
+      "reason": "All four physical-board compound cases refuse undeclared same-storage and distinct-handle overlap, an out-of-bounds view and a forged high-bit storage owner before admission. Raw reports and before/after board probes pass validation. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
       "closure_plan": null
     },
     {
@@ -660,9 +664,11 @@
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
-        "evidence/r41/acceptance/board-p2p4-index.json"
+        "evidence/r41/acceptance/board-p2p4-index.json",
+        "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
+        "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "The physical AOT/Session case proves opt-in refusal, an eight-task unfinished bound with seven dependent admissions, exact unique program IDs and completion atomics after drain, and refusal above the advertised 16,777,216-program capacity. This is not a standard-Torch or full-model scaling claim.",
+      "reason": "The physical AOT/Session case proves opt-in refusal, an eight-task unfinished bound with seven dependent admissions, exact unique program IDs and completion atomics after drain, and refusal above the advertised 16,777,216-program capacity. This is not a standard-Torch or full-model scaling claim. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
       "closure_plan": null
     },
     {
@@ -685,9 +691,11 @@
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
-        "evidence/r41/acceptance/board-p2p4-index.json"
+        "evidence/r41/acceptance/board-p2p4-index.json",
+        "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
+        "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "The physical AOT/Session barrier run completes and observes all 65,537 arm/wait iterations with a successful event, crossing the 16-bit generation boundary.",
+      "reason": "The physical AOT/Session barrier run completes and observes all 65,537 arm/wait iterations with a successful event, crossing the 16-bit generation boundary. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
       "closure_plan": null
     },
     {
@@ -698,9 +706,11 @@
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
-        "evidence/r41/acceptance/board-p2p4-index.json"
+        "evidence/r41/acceptance/board-p2p4-index.json",
+        "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
+        "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "The targeted physical eviction case passes 117 distinct graphs, unloads one module and preserves the resident tensor. This is real lifecycle evidence, but it does not establish the required persistent full-model code-eviction, allocator-reuse and zero-state-corruption session, so the item remains not measured.",
+      "reason": "The targeted physical eviction case passes 117 distinct graphs, unloads one module and preserves the resident tensor. This is real lifecycle evidence, but it does not establish the required persistent full-model code-eviction, allocator-reuse and zero-state-corruption session, so the item remains not measured. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
       "closure_plan": "P4"
     },
     {
@@ -1220,10 +1230,10 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "22e5a4ab6f210aaeac32d354f3f3da59b88c37462951a20096f61d79b7fc00bc",
-    "doc/r41_stage2_report.md": "d8cc2c236b4dc23309453f62e7196a2845f2c3cc464ce088b3ee5b527d900079",
+    "doc/r41_report.md": "9b5b967cdc7bbea43eda75126556bc6dba4960286e6c7279da672cd66e3cd3ad",
+    "doc/r41_stage2_report.md": "1396cb32a0a39f7d431d5931958d3dc51c494e37490125444504ac830c318334",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
-    "evidence/r41/SERVERS.md": "04350417d681c7a3bd90fdbe5b0240c5ebf0e8b27d1c14a9b07e14a72ee59a7e",
+    "evidence/r41/SERVERS.md": "086995eaffc8cf03784787f6a72d0e1031a6783bdfbe02bd16ccae7dbf2645c0",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
     "evidence/r41/acceptance/board_index.json": "0ddc10cc307bb7bf9474d8915176c4ca67779bc1a06e072893fd77ea71bbeaae",
     "evidence/r41/acceptance/board_metrics.json": "04563d08984ba20dd26abe30cf624748ddac02b980fa90b5db3c2d650d9df769",
@@ -1257,7 +1267,7 @@
     "spec/r41/stage2/xl_core.json": "0b5d7d477bfd781bfef214c9256aeef7b319ce2571addcd91afdac8cf08bcbe6",
     "evidence/r41/acceptance/p8/board-records.tgz": "a44913d53a6a5e3edf26687628b88d7b7ebf881aef2ca877089ae6eb3631b671",
     "evidence/r41/acceptance/p8/environment.json": "94f4dab5565c7e842dbe3d280266fec49b3037158968c75d06d84beb869fee58",
-    "evidence/r41/acceptance/p8/metrics.json": "e1bfe3a624aa8c98bf5f024f93fba4e4f572a7eca166fe4c5f951890317ef0b5",
+    "evidence/r41/acceptance/p8/metrics.json": "0d57f9134fc3a13f891fcca925d187b31f30ebea672ec4fc3ea860fc90081e35",
     "evidence/r41/acceptance/p1/README.md": "0b4e7578fc3d57293be7ef486079ce4406f6cbf3cbeba042b823d5a30a01b397",
     "evidence/r41/acceptance/p1/metrics.json": "2bb2a63c0ef499a3d77d7cb4bf2e5abbd764588163175921730ae9c5d9efe796",
     "evidence/r41/acceptance/p1/index.json": "d3f19d4ce93c4c1ac62c2ad9ce9b2d56280fb954d4d83339aa8c445f2432eb5f",
@@ -1284,18 +1294,22 @@
     "evidence/r41/acceptance/p2/pipeline-preflight-index.json": "07c39873ce44e8ba8087f7063e8684b1349eccd2d814402fe1f16c098587ca38",
     "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz": "c2e9f804a7cb4fe45b8d5a54fc118930493bdad85a226f927057bc455bfc279a",
     "evidence/r41/acceptance/board-p2p4-summary.json": "005e270eaa631652213f6ef8899e33665cf325e36c4c76e8fe22f100a23a1ddf",
-    "evidence/r41/acceptance/board-p2p4-index.json": "1f7598115923356f098c84b95e5f6928734efa7cf9bb5ebbfaa99593898b7b02"
+    "evidence/r41/acceptance/board-p2p4-index.json": "1f7598115923356f098c84b95e5f6928734efa7cf9bb5ebbfaa99593898b7b02",
+    "evidence/r41/stage2/board/fp8_env_and_hub_runs.md": "8b74cba099e0d29d29005ddc491fc755e1343f0f46225cefb6456e85b0103406",
+    "evidence/r41/acceptance/launch_records/README.md": "6d9e47d8d9de305fb88fa8b3b50323a3e0ec0d2ff0d20888f782d807a92a7025",
+    "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz": "d208c99d5ca232b1567f8963b2664a0ef94c0f28169a0fd27cd0405fc600851f"
   },
   "followups": [
     {
       "id": "P8.fp8_hub",
       "status": "passed",
       "classification": "Supplementary",
-      "reason": "Lead-run 35/35 Hub/compile/FP8Linear cases pass on approved run-1 image; isolated environment verified. No new board run by this agent.",
+      "reason": "35/35 Hub/compile/FP8Linear cases pass numerically on the approved run-1 image. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
       "evidence": [
         "evidence/r41/acceptance/p8/metrics.json",
         "evidence/r41/acceptance/p8/environment.json",
-        "evidence/r41/acceptance/p8/board-records.tgz"
+        "evidence/r41/acceptance/p8/board-records.tgz",
+        "evidence/r41/stage2/board/fp8_env_and_hub_runs.md"
       ],
       "closure_plan": null
     },
@@ -1303,7 +1317,7 @@
       "id": "P8.qwen_fp8",
       "status": "passed",
       "classification": "Supplementary",
-      "reason": "Lead-run 14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from required full BF16 model.",
+      "reason": "14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from the required full BF16 model. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
       "evidence": [
         "evidence/r41/acceptance/p8/metrics.json",
         "evidence/r41/acceptance/p8/board-records.tgz"

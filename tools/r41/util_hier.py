@@ -7,6 +7,7 @@ given on the command line; nothing is typed in.
   util_hier.py routed  ROUTED_HIER_RPT            per-tile / per-module tables of the routed image
   util_hier.py compare BASE_RPT CAND_RPT [...]    kernel-synthesis deltas, base vs candidate
   util_hier.py slr     LEAF_CELLS_TSV[.gz]        per-SLR primitive counts per module group
+  util_hier.py bytype  HIER_RPT [MIN_LUT]         totals per module type (all instances, kernel)
 
 Report format: `report_utilization -hierarchical` (synthesis or routed; the
 column set is taken from the header line).
@@ -24,7 +25,8 @@ SHORT = {'Total LUTs': 'LUT', 'Logic LUTs': 'logic', 'LUTRAMs': 'LUTRAM', 'SRLs'
 def parse(path):
     """Rows of (path tuple, module, {col: float}) in report order."""
     rows, header, stack = [], None, []
-    for line in open(path, errors='replace'):
+    op = gzip.open if path.endswith('.gz') else open
+    for line in op(path, 'rt', errors='replace'):
         if not line.startswith('|'):
             continue
         cells = line.rstrip('\n').split('|')[1:-1]
@@ -90,9 +92,10 @@ def cmd_routed(path):
     top = rows[0]
     print(f'Report: `{path}`\n')
     # 1. platform versus kernel
-    lvl = find(rows, ['level0_wrapper', 'level0_i'])
+    lvls = [r for r in rows if r[0][-2:] == ('level0_wrapper', 'level0_i')]
     parts = []
-    for r in children(rows, lvl[0]):
+    lvl = lvls[0] if lvls else None
+    for r in (children(rows, lvl[0]) if lvl else []):
         if r[0][-1].startswith('('):
             continue
         if r[0][-1] == 'ulp':
@@ -104,7 +107,8 @@ def cmd_routed(path):
         else:
             parts.append((r[0][-1], r[2]))
     parts.sort(key=lambda e: -e[1].get('Total LUTs', 0))
-    print(table('Whole design: platform shell versus TNCA kernel (`tnca_u50_1`)', parts, total=top[2]))
+    if lvl:
+        print(table('Whole design: platform shell versus TNCA kernel (`tnca_u50_1`)', parts, total=top[2]))
     # 2. kernel, non-tile part
     sysrow = kernel_root(rows)
     ent = []
@@ -244,7 +248,51 @@ def cmd_slr(path):
         print('| **SLR total** | ' + ' | '.join(f'**{fmt(tot[k])}**' for k, _ in KINDS) + ' |')
 
 
+def base_module(m):
+    m = re.sub(r'^ulp_tnca_u50_1_0_', '', m)
+    m = re.sub(r'(__parameterized\d+)?(__\d+)?(_\d+)?$', '', m)
+    return re.sub(r'__parameterized\d+.*$', '', m)
+
+
+def cmd_bytype(path, min_lut='1000'):
+    rows = parse(path)
+    sysrow = kernel_root(rows)
+    n = len(sysrow[0])
+    agg = defaultdict(lambda: defaultdict(float))
+    cnt = defaultdict(int)
+    for r in rows:
+        if r[0][:n] != sysrow[0] or len(r[0]) == n or r[0][-1].startswith('('):
+            continue
+        t = base_module(r[1])
+        # count an instance once: skip it when an ancestor has the same type
+        anc = [a for a in rows if False]
+        path_types = set()
+        for k in range(n + 1, len(r[0])):
+            pre = r[0][:k]
+            for a in rows:
+                if a[0] == pre:
+                    path_types.add(base_module(a[1]))
+                    break
+        if t in path_types:
+            continue
+        cnt[t] += 1
+        for c in COLS:
+            agg[t][c] += r[2].get(c, 0)
+    tot = sysrow[2].get('Total LUTs', 1)
+    print(f'Report: `{path}`; kernel total LUTs {fmt(tot)}. Every instance of a module type, '
+          'summed (an instance nested in one of its own type is not counted twice).\n')
+    print('| Module type | instances | LUT | % of kernel LUT | LUTRAM | FF | DSP |')
+    print('|---|---:|---:|---:|---:|---:|---:|')
+    for t in sorted(agg, key=lambda t: -agg[t]['Total LUTs']):
+        if agg[t]['Total LUTs'] < float(min_lut):
+            continue
+        a = agg[t]
+        print(f'| {t} | {cnt[t]} | {fmt(a["Total LUTs"])} | {100 * a["Total LUTs"] / tot:.1f} % | '
+              f'{fmt(a["LUTRAMs"])} | {fmt(a["FFs"])} | {fmt(a["DSP Blocks"])} |')
+
+
 if __name__ == '__main__':
-    if len(sys.argv) < 3 or sys.argv[1] not in ('routed', 'compare', 'slr'):
+    if len(sys.argv) < 3 or sys.argv[1] not in ('routed', 'compare', 'slr', 'bytype'):
         sys.exit(__doc__)
-    {'routed': cmd_routed, 'compare': cmd_compare, 'slr': cmd_slr}[sys.argv[1]](*sys.argv[2:])
+    {'routed': cmd_routed, 'compare': cmd_compare, 'slr': cmd_slr,
+     'bytype': cmd_bytype}[sys.argv[1]](*sys.argv[2:])

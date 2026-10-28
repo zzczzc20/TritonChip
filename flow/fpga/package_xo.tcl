@@ -52,25 +52,19 @@ if {$VARIANT eq "hbm"} {
     set TOP     tnca_multicore_hbm_xo
     set KSRC    kernel_multicore_hbm.xml
     set BUSIFS  s_axi_tnca:m_axi_hbm0:m_axi_hbm1:m_axi_hbm2
-} elseif {$VARIANT eq "stream-hbm"} {
-    set TOP     tnca_stream_hbm_xo
-    set KSRC    kernel_stream_hbm.xml
-    set buses [list s_axi_tnca]
-    for {set p 0} {$p < 32} {incr p} {lappend buses m_axi_pc$p}
-    set BUSIFS [join $buses :]
 } elseif {$VARIANT eq ""} {
     set TOP     tnca_u50_xo
     set KSRC    kernel.xml
     set BUSIFS  s_axi_tnca
 } else {
-    puts "TNCA_PKG_ERROR unknown variant '$VARIANT' (none, hbm, multicore-hbm, stream-hbm)"
+    puts "TNCA_PKG_ERROR unknown variant '$VARIANT' (none, hbm, multicore-hbm)"
     exit 2
 }
 puts "TNCA_PKG_VARIANT=[expr {$VARIANT eq {} ? {onchip} : $VARIANT}] TOP=$TOP"
 
 set VENDOR  tnca.com
 set LIB     kernel
-set NAME    [expr {$VARIANT eq "stream-hbm" ? "tnca_stream" : "tnca_u50"}]
+set NAME    tnca_u50
 set VERSION 1.0
 
 # The kernel clock this design asks the platform for, and the one link.sh passes
@@ -224,12 +218,12 @@ proc tnca_busparam {busif name value {resolve ""}} {
 # here is an estimate of what the platform will hand over, and a link that
 # retargets the clock has to be able to say so. AP_CLK_HZ above is the estimate.
 tnca_busparam $clk_if ASSOCIATED_BUSIF $BUSIFS
-if {$VARIANT in {multicore-hbm stream-hbm}} {
+if {$VARIANT eq "multicore-hbm"} {
     tnca_busparam $clk_if ASSOCIATED_RESET ap_rst_n
     set reset_if [ipx::get_bus_interfaces ap_rst_n -of_objects $core]
     if {[llength $reset_if] != 1} {error "multicore HBM reset interface missing"}
     tnca_busparam $reset_if POLARITY ACTIVE_LOW
-    foreach bus [split $BUSIFS :] {
+    foreach bus {s_axi_tnca m_axi_hbm0 m_axi_hbm1 m_axi_hbm2} {
         if {[llength [ipx::get_bus_interfaces $bus -of_objects $core]] != 1} {
             error "multicore HBM interface $bus missing"
         }

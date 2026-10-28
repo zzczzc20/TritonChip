@@ -644,6 +644,46 @@ $(BUILD)/tb_core_r39sw5.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                              $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	   $(R39_SW5) -o $@ $(TB)/core/tb_tnca_core.v
+# R41 G2: core-vrf-sync-v5-x8-g2's bench: v5-x8 with two contexts, eight
+# mbarriers and 38-bit epochs (evidence/r41/hbm_bw/RESOURCES.md).
+R41_G2 := $(subst HAS_TENSOR_XPOSE=1,HAS_TENSOR_XPOSE=2,$(subst -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 -P tb_tnca_core.PHYS_W=8,-P tb_tnca_core.NUM_RCTX=2 -P tb_tnca_core.RCTX_W=1 -P tb_tnca_core.PHYS_W=7,$(R39_SW5))) \
+          -P tb_tnca_core.BAR_N=8 -P tb_tnca_core.BAR_W=3 -P tb_tnca_core.BAR_EPOCH_W=38
+$(BUILD)/tb_core_g2.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                         $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_G2) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_g2_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_G2) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+$(TB)/core/progs/t15_target_vrf_v5_x8_g2.s: $(TB)/core/progs/gen_t15_target.py \
+                                            compiler/targets/tnca-sim-vrf-v5-x8-g2.json
+	$(PYTHON) $< tnca-sim-vrf-v5-x8-g2
+# core-r39sw5's program list and arguments on the G2 core.
+core-g2: export ARGS_t04_roles := +roles=2
+core-g2: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-g2: export ARGS_t13_share := +roles=2 +aliasvrf
+core-g2: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-g2: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-g2: export ARGS_t15_target_vrf_v5_x8_g2 := +allroles
+core-g2: export ARGS_t18_squash := +roles=2
+core-g2: export ARGS_t39_slice := +allroles +slice
+core-g2: export ARGS_t39_pair := +allroles +slice +slicek=1 +pair
+core-g2: export ARGS_t32_xpose_badsize := +expectfault=04
+G2_PROGS := $(patsubst t15_target,t15_target_vrf_v5_x8_g2,$(CORE_PROGS)) t39_pair t30_xpose t32_xpose_badsize
+.PHONY: core-g2
+core-g2: $(patsubst %,$(BUILD)/%.hex,$(G2_PROGS)) $(BUILD)/tb_core_g2.vvp $(BUILD)/tb_core_g2_ooo.vvp | dirs
+	@for p in $(G2_PROGS); do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (g2)" \
+	     "$(VVP) $(BUILD)/tb_core_g2.vvp +hex=$(BUILD)/$$p.hex +maxcycles=200000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (g2, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_g2_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
 # R41 X8: core-vrf-sync-v5-x8's bench (the 1-byte transposed write).
 $(BUILD)/tb_core_r39sw5x8.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                                $(TB)/common/tnca_mem_model.v | dirs
@@ -774,6 +814,25 @@ nuca-shared-read: | dirs
 	   for sd in $(SHARED_READ_SEEDS); do \
 	     $(TOOLS)/run_test.sh "NUCA-SHARED-READ-mode$$1-pipe$$2-policy$$3-seed$$sd" \
 	       "$(VVP) $(BUILD)/tb_nuca_shared_read_$$1_$$2_$$3.vvp +seed=$$sd +cycles=$(SHARED_READ_CYCLES)" \
+	       || exit 1; \
+	   done; \
+	 done
+
+# R41 G2: PHYS_ADDR_W (the home slice's narrowed address, rtl/nuca/tnca_addr_fold.v)
+# against the 64-bit slice in lockstep; OOR=1 adds out-of-range addresses.
+ADDR_FOLD_SEEDS ?= 1 7 42
+ADDR_FOLD_CYCLES ?= 200000
+.PHONY: nuca-addr-fold
+nuca-addr-fold: | dirs
+	@for cfg in "0 1" "1 1" "0 0" "1 0"; do \
+	   set -- $$cfg; \
+	   $(IVERILOG) -g2012 $(IVFLAGS) -I $(RTL)/common -y $(RTL)/common \
+	     -P tb_nuca_addr_fold.OOR=$$1 -P tb_nuca_addr_fold.CACHE_DATA_PIPELINE=$$2 \
+	     -o $(BUILD)/tb_nuca_addr_fold_$$1_$$2.vvp $(TB)/nuca/tb_nuca_addr_fold.v \
+	     $(RTL)/nuca/tnca_nuca_slice.v $(RTL)/nuca/tnca_addr_fold.v $(TB)/common/tnca_dram_model.v || exit 1; \
+	   for sd in $(ADDR_FOLD_SEEDS); do \
+	     $(TOOLS)/run_test.sh "NUCA-ADDR-FOLD-oor$$1-pipe$$2-seed$$sd" \
+	       "$(VVP) $(BUILD)/tb_nuca_addr_fold_$$1_$$2.vvp +seed=$$sd +cycles=$(ADDR_FOLD_CYCLES)" \
 	       || exit 1; \
 	   done; \
 	 done
@@ -2165,7 +2224,8 @@ r1-build-tests:
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
                   $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp $(BUILD)/tb_core_xpose.vvp \
                   $(BUILD)/tb_core_r39hw.vvp $(BUILD)/tb_core_r39sw.vvp \
-                  $(BUILD)/tb_core_r39sw4.vvp $(BUILD)/tb_core_r39sw5.vvp
+                  $(BUILD)/tb_core_r39sw4.vvp $(BUILD)/tb_core_r39sw5.vvp \
+                  $(BUILD)/tb_core_r39sw5x8.vvp $(BUILD)/tb_core_g2.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
 r1-signoff:

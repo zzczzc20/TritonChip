@@ -159,7 +159,8 @@ module tnca_core #(
     parameter ACC_ROWS       = 16,
     parameter ACC_ROW_W      = 4,
     parameter BAR_N          = 32,         // mbarriers
-    parameter BAR_W          = 5
+    parameter BAR_W          = 5,
+    parameter BAR_EPOCH_W    = 48          // mbarrier epoch bits (R41 G2; 48 = the token's field)
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -1600,7 +1601,8 @@ module tnca_core #(
     );
 
     tnca_barrier #(
-        .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .BAR_N(BAR_N), .BAR_W(BAR_W)
+        .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .BAR_N(BAR_N), .BAR_W(BAR_W),
+        .EPOCH_W(BAR_EPOCH_W)
     ) u_bar (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),
         .init_en(x_is_bar && (x_func == `TNCA_MB_INIT)),

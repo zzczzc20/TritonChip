@@ -14,7 +14,7 @@ module tnca_multicore_axi #(
  parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,CODE_LINK_STAGES=0,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
- parameter VREGS_PER_RCTX=64,AUTO_VBASE=1,
+ parameter VREGS_PER_RCTX=64,ACC_N=16,ACC_W=4,BAR_N=32,BAR_W=5,BAR_EPOCH_W=48,PHYS_ADDR_W=64,AUTO_VBASE=1,
  parameter HAS_SFU=1,HAS_ATOMICS=1,HAS_SYS_ATOMICS=0,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
  parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
  parameter HYBRID_LSU=0,SFU_LANES=1,HOME_BACKGROUND_READS=0,
@@ -130,7 +130,7 @@ module tnca_multicore_axi #(
   .RCTX_W(RCTX_W),
   .PHYS_VREGS(PHYS_VREGS),
   .PHYS_W(PHYS_W),
-  .VREGS_PER_RCTX(VREGS_PER_RCTX),
+  .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .PHYS_ADDR_W(PHYS_ADDR_W),
   .AUTO_VBASE(AUTO_VBASE),
   .HAS_SFU(HAS_SFU),
   .HAS_ATOMICS(HAS_ATOMICS),
@@ -287,7 +287,7 @@ module tnca_multicore_axi #(
    .s_rsp_valid(mode_rsp_valid[p]),.s_rsp_rdata(mode_rsp_rdata[p*512+:512]),.s_rsp_src(mode_rsp_src[p*SRC_W+:SRC_W]),.s_rsp_tag(mode_rsp_tag[p*3+:3]),
    .m_req_valid(qv),.m_req_ready(qr),.m_req_addr(qa),.m_req_we(qwe),.m_req_wdata(qd),.m_req_src(qs),.m_req_tag(qt),
    .m_rsp_valid(rv),.m_rsp_rdata(rd),.m_rsp_src(rs),.m_rsp_tag(rt));
-  tnca_line_axi #(.HBM_STRIPED(HBM_STRIPED),.PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.LINE_LUTRAM(AXI_LINE_LUTRAM),.SRC_W(SRC_W),.TAG_W(3),.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.DYNAMIC_LIMIT(MEMORY_CONTROLS),.ID_W(AXI_ID_W),.MEM_BASE(MEM_BASE)) adapter(
+  tnca_line_axi #(.HBM_STRIPED(HBM_STRIPED),.PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.LINE_LUTRAM(AXI_LINE_LUTRAM),.HAZARD_ADDR_W(PHYS_ADDR_W),.SRC_W(SRC_W),.TAG_W(3),.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.DYNAMIC_LIMIT(MEMORY_CONTROLS),.ID_W(AXI_ID_W),.MEM_BASE(MEM_BASE)) adapter(
    .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(qr),.req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
    .rsp_valid(rv),.rsp_rdata(rd),.rsp_src(rs),.rsp_tag(rt),
    .admission_limit(memory_outstanding),.axi_base(axi_base[p*64+:64]),.axi_size(axi_size[p*64+:64]),.fault(adapter_fault[p]),.idle(axi_idle[p]),

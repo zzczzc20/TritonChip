@@ -57,7 +57,7 @@ module tb_nuca_shared_read;
 
     // ---- outputs of both instances, as one vector each ------------------
     localparam OUT_W = 1+1+1+1 + 1+SRC_W+TAG_W+64 + 1+64+1+512+MSHR_W
-                     + 1+12+64+SRC_W+12 + 1+64+1 + 32*9+4;
+                     + 1+12+64+SRC_W+12 + 1+64+1 + 32*10+4;   // ten 32-bit counters and the gear
     wire [OUT_W-1:0] out_ref, out_new;
 
     genvar d;

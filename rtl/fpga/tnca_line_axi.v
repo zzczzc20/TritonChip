@@ -25,7 +25,12 @@ module tnca_line_axi #(
  // every handshake and every response are the same as with 0 (the default,
  // which builds the module that existed before); WDATA differs only while
  // WVALID is low.
- parameter LINE_LUTRAM=0
+ parameter LINE_LUTRAM=0,
+ // R41 G2: bits of a slot's line address kept for the same-line hazard check.
+ // Below 64, addresses that differ only above this width are treated as the
+ // same line (a conservative wait, never a missed hazard); the homes of an
+ // image with PHYS_ADDR_W send no higher bits at all.
+ parameter HAZARD_ADDR_W=64
 )(
  input wire clk,rst_n,
  input wire [7:0] admission_limit,
@@ -54,7 +59,8 @@ module tnca_line_axi #(
  localparam BEATS=512/DATA_W;
  localparam BEAT_W=(BEATS>1?$clog2(BEATS):1);
  reg [OUT_N-1:0] active,writing,sent;
- reg [63:0] address[0:OUT_N-1],bus_address[0:OUT_N-1];
+ reg [HAZARD_ADDR_W-1:0] address[0:OUT_N-1];
+ reg [63:0] bus_address[0:OUT_N-1];
  reg [511:0] line[0:OUT_N-1];
  reg [SRC_W-1:0] source[0:OUT_N-1];
  reg [TAG_W-1:0] tag[0:OUT_N-1];
@@ -110,7 +116,7 @@ module tnca_line_axi #(
   free_slot=-1;hazard=0;
   for(integer k=OUT_N-1;k>=0;k=k-1)begin
    if(!active[k])free_slot=k;
-   if(active[k] && address[k]==req_addr && (writing[k] || req_we))hazard=1;
+   if(active[k] && address[k]==req_addr[HAZARD_ADDR_W-1:0] && (writing[k] || req_we))hazard=1;
   end
  end
  // Invalid addresses are refused and latched as faults, never translated into
@@ -194,7 +200,7 @@ module tnca_line_axi #(
    // A full pending queue refuses admission, even if it drains this cycle.
    if(req_valid && req_ready)begin
     active[free_slot]<=1;writing[free_slot]<=req_we;sent[free_slot]<=0;
-    address[free_slot]<=req_addr;bus_address[free_slot]<=base_q+bus_offset;if(!LINE_LUTRAM)line[free_slot]<=req_wdata;
+    address[free_slot]<=req_addr[HAZARD_ADDR_W-1:0];bus_address[free_slot]<=base_q+bus_offset;if(!LINE_LUTRAM)line[free_slot]<=req_wdata;
     source[free_slot]<=req_src;tag[free_slot]<=req_tag;rbeat[free_slot]<=0;
     if(!issue_valid || (PIPELINED_ISSUE && issue_done && !pending_valid))begin
      issue_slot<=free_slot;issue_valid<=1;aw_done<=0;w_done<=0;wbeat<=0;

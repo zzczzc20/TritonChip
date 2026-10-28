@@ -16,6 +16,8 @@ module tnca_multicore_board_regs;
   DCO_REGISTER_WRITES=0,DCO_LOCAL_REPLICAS=0,NUCA_SHARED_DATA_READ=0,AXI_LINE_LUTRAM=0;
  // The image's tensor-transpose option (core-vrf-sync-v5-x8 images build 2).
  parameter HAS_TENSOR_XPOSE=1;
+ // R41 G2 resource sizing (tools/r40/image_geometry_tests.py sets them from an image.tcl).
+ parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,ACC_N=16,ACC_W=4,BAR_N=32,BAR_W=5,BAR_EPOCH_W=48,PHYS_ADDR_W=64;
  localparam NX=N>4?4:N,ADDR_BITS=9,WORDS=(131072+MEMORY_BYTES)/8;
  reg clk=0,rst_n_async=0;always #5 clk=~clk;
  reg [8:0] reg_addr;reg [63:0] reg_wdata;reg reg_we,reg_re;
@@ -57,7 +59,8 @@ module tnca_multicore_board_regs;
   .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE),.NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
   .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES),.DCO_REGISTER_WRITES(DCO_REGISTER_WRITES),
   .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),.NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ),.AXI_LINE_LUTRAM(AXI_LINE_LUTRAM),
-  .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)) dut(
+  .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),.NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
+  .ACC_N(ACC_N),.ACC_W(ACC_W),.BAR_N(BAR_N),.BAR_W(BAR_W),.BAR_EPOCH_W(BAR_EPOCH_W),.PHYS_ADDR_W(PHYS_ADDR_W)) dut(
  .ap_clk(clk),.ap_rst_n(rst_n_async),
  .s_axi_tnca_awvalid(awvalid),
  .s_axi_tnca_awready(awready),

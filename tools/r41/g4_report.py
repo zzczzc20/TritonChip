@@ -65,6 +65,11 @@ def model_table(path):
     fam_max = defaultdict(lambda: defaultdict(float))
     for pid in sorted(by, key=lambda p: (FAMS.index(p.split('/')[0][3:]) if p.split('/')[0][3:] in FAMS else 99, p)):
         m = re.search(r'/(\w+?)-(?:to-(\w+)-)?\w+?-(contig|strided|broadcast)-r', pid)
+        if m is None:      # a point of another suite (the 113-point non-regression set)
+            out.append(f"| {pid} | | | " + ' | '.join(
+                (fmt(by[pid][v]['b_per_cycle_per_core']) if by[pid].get(v, {}).get('status') == 'pass'
+                 else by[pid].get(v, {}).get('status', 'missing')) for v in vs) + ' |')
+            continue
         dt = m.group(1) + (f'→{m.group(2)}' if m.group(2) else '')
         cells = []
         for v in vs:

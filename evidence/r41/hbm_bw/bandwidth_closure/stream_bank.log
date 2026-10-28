@@ -1,0 +1,8 @@
+STREAM BANK COMMAND PASS lanes=32 mode=1 mask=ffffffff bad=0 cycles=743
+STREAM BANK COMMAND PASS lanes=32 mode=0 mask=aaaaaaaa bad=0 cycles=820
+STREAM BANK COMMAND PASS lanes=32 mode=2 mask=ffffffff bad=0 cycles=620
+STREAM BANK COMMAND PASS lanes=32 mode=1 mask=00000000 bad=0 cycles=35
+STREAM BANK COMMAND PASS lanes=32 mode=0 mask=ffffffff bad=1 cycles=0
+STREAM BANK COMMAND PASS lanes=32 mode=1 mask=ffffffff bad=0 cycles=746
+STREAM BANK AXI PASS lanes=32 tests=6
+tb/fpga/tb_stream_bank.v:135: $finish called at 46230000 (1ps)

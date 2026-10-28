@@ -14,3 +14,5 @@ TNCA_LLVM=$HOME/tc_env/root/usr/lib/llvm-20 make compiler PYTHON=$HOME/tc_env/to
 - `strict.log`: the same command with `R1_STRICT=1` failed on those 53 skips, as required by the strict gate; it names each skip. `core-build.log` records the subsequent build of `sim/build/tb_core.vvp` for a further strict run.
 
 The harness exports the current checkout's `python` and `compiler/python` ahead of any inherited `PYTHONPATH` for `compiler` and `compiler-rtl`, including child processes. It does not alter the installed environment or test expectations.
+
+A follow-up strict run with the simulator built was still in progress when this record was updated: GB10 shell PID 2086811, raw output `~/r41-codex-t9-results/strict-core.log`. Its command is the one above with `R1_STRICT=1`; the runner buffers unit results until the suite finishes. No result is claimed for that run.

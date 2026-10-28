@@ -204,7 +204,7 @@ The data hierarchy stays register file, NUCA, DRAM; the cores keep the arithmeti
 
 ## 6. Limits and open items
 - Not run (needs the lead): the board baseline of the 513 registered points (section 1). Until it runs, the only board numbers are the run-1 records of the original suite.
-- RTL points still running when this was written (`link_budget/rtl/batch1/w*.log`): softmax, rmsnorm, layernorm, gelu, relu, bf16 add, broadcast add and clone, strided sum. The report tool includes whatever has finished; nothing is excluded by outcome.
+- RTL points still running when this was written: softmax, gelu and layernorm (fp16, contiguous) were inside their measured launch after 2–3 hours of simulation, and relu, rmsnorm, bf16 add, broadcast add and clone, and strided sum follow them on the same workers (GB10, worker PIDs 1541576–1541578, outputs `~/r41-bwlink-runs/rtl/batch1/w*.jsonl`). They are reported when they finish by rerunning the report tool on the fetched files; nothing is excluded by outcome.
 - The RTL memory model is not HBM. The 51-cycle outlet round trip is a property of the testbench, so the latency-bound rows (memory-level parallelism, transfer engine) scale with the board's unmeasured HBM round trip. Their absolute values are RTL-only; the board end-to-end row is the measured anchor.
 - The SystemC/TLM model was not rerun. The R40 attribution (`evidence/r40/v3/model_attribution`, uncalibrated, R40 tree) points the same way: for `copy/hbm`, the home-engine queue and core dependency waits dominate, and the outlets are about 12 % busy.
 - The compile census used profile `core-vrf-sync-v5` on `sim-multicore`, because the image-geometry RTL was too slow for 171 points. The kernel bodies match the board's `-x8` kernels for the point compared.

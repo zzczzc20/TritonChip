@@ -7,13 +7,13 @@ This document answers three questions about the run-1 100 MHz three-core U280 im
 2. why the large consumers are as large as they are;
 3. what can be removed or resized without losing an instruction, a numeric format, a precision or an SFU function, and how much each change saves when measured.
 
-Every number below is read from a report produced by a recorded run (§7 lists the commands, hosts, commits and hashes). The domain of each number is stated: **routed image** (the run-1 routed checkpoint), **kernel synthesis** (out-of-context synthesis of the whole kernel at 10 ns), **tile screen** or **outlet screen** (out-of-context place and route at 10 ns, in SLR0), or **RTL simulation**. No number here is a board measurement, and no screen is a substitute for a linked image.
+Every number below is read from a report produced by a recorded run (§8 lists the commands, hosts, commits and hashes). The domain of each number is stated: **routed image** (the run-1 routed checkpoint), **kernel synthesis** (out-of-context synthesis of the whole kernel at 10 ns), **tile screen** or **outlet screen** (out-of-context place and route at 10 ns, in SLR0), or **RTL simulation**. No number here is a board measurement, and no screen is a substitute for a linked image.
 
 ## 1. Summary
 
 - **The platform is not the problem; the three tiles are.** Of the routed design's 927,245 LUTs, the TNCA kernel holds 798,355 and the three tiles 740,674 (246,868 / 247,348 / 246,458). Each tile sits entirely in its own SLR. SLR0 additionally holds all three memory outlets, one DCO/TMU replica, the HBM subsystem and part of the static shell.
-- **Floating point is the largest single cost.** The kernel instantiates 96 binary32 FMAs (16 in each core's vector FPU and 16 in each core's matrix engine). In kernel synthesis they take 228,912 LUTs, 28.2 % of the kernel; their normalisation stage alone takes 130,656 (16.1 %).
-- **Next come the core's data-movement structures:** the two-unit LSU (25,376 LUTs and 13,660 FFs per core), the banked vector register file's read crossbar (13,801 LUTs per core outside the banks), the NUCA slice (30,491 LUTs per tile, 9,632 of them LUTRAM), the tensor transfer engine (14,369) and the barrier unit (7,450).
+- **Floating point is the largest single cost.** The kernel instantiates 96 binary32 FMAs (16 in each core's vector FPU and 16 in each core's matrix engine). In kernel synthesis of the run-1 source they take 229,008 LUTs, 28.3 % of the kernel; their normalisation stage alone takes 130,656 (16.1 %).
+- **Next come the core's data-movement structures:** the two-unit LSU (25,435 LUTs and 13,639 FFs per core), the banked vector register file's read crossbar (13,784 LUTs per core outside the banks), the NUCA slice (30,647 LUTs per tile, 9,644 of them LUTRAM), the tensor transfer engine (14,494) and the barrier unit (7,450).
 - **Two capability-neutral removals were built, regression-tested and screened** (both default-off, behind new image parameters):
   - **`AXI_LINE_LUTRAM=1`**: the outlet's eight 512-bit slot lines move from reset registers into single-write-port distributed RAM. Outlet screen: routed LUTs 6,942 → 1,389, FFs 6,131 → 2,027, CLBs 1,952 → 399 per outlet, WNS +4.083 → +4.057 ns. All three outlets sit in SLR0. *(Kernel synthesis: §4.2.)*
   - **`NUCA_SHARED_DATA_READ`**: fewer LUTRAM read ports on the slice's 128 Kbit line array. Mode 1 (one port) saves 4,684 LUTRAM per slice in kernel synthesis, but the tile-0 screen lost 0.552 ns of slack to a structural path, so it is not recommended. Mode 2 (lookup port kept, the rest shared) is the candidate. *(Measurements: §4.1.)*
@@ -33,7 +33,7 @@ From `report_utilization -hierarchical -hierarchical_depth 20` on the routed DCP
 | HBM memory subsystem (`ulp/hmss_0`) | 13,902 | 1,996 | 3,046 | 27,063 | 4 | 0 | 0 |
 | `ulp/ulp_ucs` | 4,493 | 0 | 20 | 7,375 | 0 | 0 | 0 |
 | `ii_level0_pipe` | 1,482 | 0 | 0 | 6,141 | 0 | 0 | 0 |
-| Other dynamic-region glue (`ulp` own logic, `ulp_cmp`, SLR crossings, resets) | 3,166 in total | | | | | | |
+| Remainder (dynamic-region glue: `ulp` own logic, `ulp_cmp`, SLR crossings, resets) | 2,860 | | | | | | |
 | **Design total** | **927,245** | **62,032** | **4,645** | **400,958** | **389** | **50** | **524** |
 
 The kernel by block (routed):
@@ -64,7 +64,7 @@ Site-level totals come from `report_utilization -slr` (`resources/run1_routed/ut
 | CLB registers | 156,891 | 141,661 | 102,406 |
 | CARRY8 | 10,264 | 10,432 | 9,687 |
 
-To split each SLR by owner, every placed leaf cell of the routed design was dumped with its SLR (`resources/run1_routed/leaf_cells.tsv.gz`, 1.37 M cells) and grouped by hierarchy (`tools/r41/util_hier.py slr`). LUT and LUTRAM columns count leaf cells (a site holding two LUT cells counts twice), so they exceed the site counts above; FF, CARRY8, RAMB and DSP counts are exact. SLR0:
+To split each SLR by owner, every placed leaf cell of the routed design was dumped with its SLR (`resources/run1_routed/leaf_cells.tsv.gz`, 1,585,262 cells) and grouped by hierarchy (`tools/r41/util_hier.py slr`). LUT and LUTRAM columns count leaf cells (a site holding two LUT cells counts twice), so they exceed the site counts above; FF, CARRY8, RAMB and DSP counts are exact. SLR0:
 
 | SLR0 group | LUT cells | LUTRAM/SRL cells | FF | CARRY8 | RAMB36 | RAMB18 | DSP |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -84,66 +84,68 @@ Register replication from timing fixes (`_rep` cells) is small: 1,559 of tile 0'
 ### 2.3 Per tile and per module
 
 Two views are given because they disagree in detail.
-- **Kernel synthesis** keeps the RTL module boundaries (`-flatten_hierarchy none`; `resources/synth/base_67a453b77be8/`). It attributes cost to the module that owns it.
-- **The routed image** (v++'s own synthesis and implementation) moves logic across boundaries: for example, `u_valu` shrinks from 22,885 to 4,459 LUTs and `u_core`'s own logic grows from 7,962 to 23,268, and `u_cni` from 20 to 4,196. Totals per tile agree within 2 % (251,804 synthesis, 246,868 routed).
+- **Kernel synthesis of the exact run-1 source** (`run1src`, commit `c9f2578`, `-flatten_hierarchy none`; `resources/synth/run1src_c9f25787494a/`) keeps the RTL module boundaries, so it attributes cost to the module that owns it.
+- **The routed image** (v++'s own synthesis and implementation) moves logic across module boundaries. For example, `u_valu` shrinks from 23,153 to 4,459 LUTs, `u_core`'s own logic grows from 6,818 to 23,268, and `u_cni` grows from 20 to 4,196. The per-tile totals agree within 1.7 % (251,063 in synthesis, 246,868 routed).
 
-Tile 0, kernel synthesis (all three tiles are within 0.4 % of each other; full tables in `resources/tables/base_synth_hierarchy.md`):
+Tile 0, kernel synthesis of the run-1 source (the three tiles are within 0.4 % of each other; full tables in `resources/tables/run1src_synth_hierarchy.md`):
 
 | Module | LUT | LUTRAM | FF | RAMB36 | RAMB18 | DSP | Share of tile LUTs |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| `u_vfpu` vector FPU (16 FMAs, 16 converters, SFU) | 63,181 | 0 | 8,502 | 0 | 15 | 46 | 25.1 % |
-| `u_mtx` matrix engine (16 MACs, accumulator file) | 50,912 | 2,856 | 11,456 | 0 | 0 | 32 | 20.2 % |
-| `u_slice` NUCA home slice | 30,491 | 9,632 | 4,964 | 0 | 0 | 0 | 12.1 % |
-| `g_lsu_pair` two load/store units | 25,376 | 72 | 13,660 | 0 | 0 | 0 | 10.1 % |
-| `u_valu` vector integer ALU | 22,885 | 0 | 1,963 | 0 | 0 | 64 | 9.1 % |
-| `g_vrf_banked` vector register file | 21,305 | 0 | 6,291 | 32 | 0 | 0 | 8.5 % |
-| `u_txf` tensor transfer engine | 14,369 | 596 | 8,439 | 0 | 0 | 13 | 5.7 % |
-| `u_core` own logic (pipeline, scoreboard, counters) | 7,962 | 0 | 7,461 | 0 | 0 | 0 | 3.2 % |
+| `u_vfpu` vector FPU (16 FMAs, 16 converters, SFU) | 62,834 | 0 | 8,490 | 0 | 15 | 46 | 25.0 % |
+| `u_mtx` matrix engine (16 MACs, accumulator file) | 51,071 | 2,856 | 11,440 | 0 | 0 | 32 | 20.3 % |
+| `u_slice` NUCA home slice | 30,647 | 9,644 | 5,028 | 0 | 0 | 0 | 12.2 % |
+| `g_lsu_pair` two load/store units | 25,435 | 72 | 13,639 | 0 | 0 | 0 | 10.1 % |
+| `u_valu` vector integer ALU | 23,153 | 0 | 0 | 0 | 0 | 64 | 9.2 % |
+| `g_vrf_banked` vector register file | 21,288 | 0 | 6,291 | 32 | 0 | 0 | 8.5 % |
+| `u_txf` tensor transfer engine | 14,494 | 600 | 8,312 | 0 | 0 | 13 | 5.8 % |
 | `u_bar` barrier unit | 7,450 | 0 | 3,891 | 0 | 0 | 0 | 3.0 % |
+| `u_core` own logic (pipeline, scoreboard, counters) | 6,818 | 0 | 5,933 | 0 | 0 | 0 | 2.7 % |
 | `u_srf` scalar register file | 3,756 | 2,072 | 256 | 0 | 0 | 0 | 1.5 % |
-| `u_salu`, `u_prf`, decoders, `u_mul`, memory mux, NIs | 4,021 in total | | | | | | 1.6 % |
-| **Tile 0** | **251,804** | **15,228** | **68,613** | **32** | **15** | **171** | |
+| Remainder (`u_salu`, `u_prf`, decoders, `u_mul`, memory mux, NIs) | 4,117 | 0 | 1,730 | 0 | 0 | 16 | 1.6 % |
+| **Tile 0** | **251,063** | **15,244** | **65,010** | **32** | **15** | **171** | |
 
-By module type, over the whole kernel (`resources/tables/base_synth_bytype.md`):
+The candidates in §4 and §5 are measured against a second baseline, `base` (commit `67a453b`, the branch head they were built on). Its RTL includes later T2 timing rounds, so its tile 0 has 251,804 LUTs and 68,613 FFs (`resources/tables/base_synth_hierarchy.md`).
+
+By module type, over the whole kernel (run-1 source; `resources/tables/run1src_synth_bytype.md`):
 
 | Module type | Instances | LUT | Share of kernel LUTs | FF | DSP |
 |---|---:|---:|---:|---:|---:|
-| `tnca_fp32_fma` (binary32 FMA) | 96 | 228,912 | 28.2 % | 25,632 | 192 |
+| `tnca_fp32_fma` (binary32 FMA) | 96 | 229,008 | 28.3 % | 25,632 | 192 |
 | … of which `tnca_fma_norm_xls` (normalise) | 96 | 130,656 | 16.1 % | 0 | 0 |
-| … of which `tnca_fma_align_xls` (multiply, align) | 96 | 50,928 | 6.3 % | 0 | 192 |
+| … of which `tnca_fma_align_xls` (multiply, align) | 96 | 51,024 | 6.3 % | 0 | 192 |
 | … of which `tnca_fma_round_xls` (round) | 96 | 47,232 | 5.8 % | 0 | 0 |
-| `tnca_nuca_slice` | 3 | 91,764 | 11.3 % | 14,941 | 0 |
-| `tnca_lsu` | 6 | 73,986 | 9.1 % | 40,962 | 0 |
-| `tnca_vector_alu` | 3 | 68,653 | 8.5 % | 5,889 | 192 |
-| `tnca_vrf_banked` | 3 | 63,915 | 7.9 % | 18,873 | 0 |
-| `tnca_tensor` | 3 | 43,107 | 5.3 % | 25,317 | 39 |
-| `tnca_line_axi` (outlets) | 3 | 23,028 | 2.8 % | 18,009 | 0 |
+| `tnca_nuca_slice` | 3 | 92,518 | 11.4 % | 15,044 | 0 |
+| `tnca_lsu` | 6 | 74,178 | 9.2 % | 40,914 | 0 |
+| `tnca_vector_alu` | 3 | 69,459 | 8.6 % | 0 | 192 |
+| `tnca_vrf_banked` | 3 | 63,864 | 7.9 % | 18,873 | 0 |
+| `tnca_tensor` | 3 | 43,476 | 5.4 % | 24,934 | 39 |
+| `tnca_line_axi` (outlets) | 3 | 22,869 | 2.8 % | 18,009 | 0 |
 | `tnca_cvt_comb_xls` (format conversion) | 48 | 22,560 | 2.8 % | 0 | 0 |
 | `tnca_barrier` | 3 | 22,350 | 2.8 % | 11,673 | 0 |
-| `tnca_acc_rf` (accumulator files) | 3 | 19,117 | 2.4 % | 12,288 | 0 |
-| `tnca_tmu` (three DCO replicas) | 3 | 17,079 | 2.1 % | 7,632 | 0 |
+| `tnca_acc_rf` (accumulator files) | 3 | 19,581 | 2.4 % | 12,288 | 0 |
+| `tnca_tmu` (three DCO replicas) | 3 | 16,836 | 2.1 % | 7,632 | 0 |
 
 ## 3. Why the large consumers are large
 
-**Binary32 FMAs (96 instances, 28.2 % of the kernel).** Every vector FP operation goes through one FMA per lane (`tnca_vector_fpu.v` header: add, sub, mul and fma all map onto `tnca_fp32_fma`), and the matrix engine has a second set of 16 per core for its MACs (`tnca_fpu_multi`). Each FMA costs about 2,400 LUTs and 2 DSPs. The DSPs only form the 24×24 product; the alignment, the 80-bit addition, the leading-zero count, the normalising shift and the rounding are in LUTs. The generated normalise stage (`rtl/gen/tnca_fma_norm_xls.v`) evaluates both subtraction orders and both rounding candidates in parallel (`sub_bs_squeezed`, `sub_sb_squeezed`, `dif_squeezed`, `dif_m1_squeezed`, 81 bits each), which is duplicated logic chosen for speed. The device has 9,024 DSPs and the image uses 524, so the arithmetic is LUT-heavy on a part where DSPs are almost unused.
+**Binary32 FMAs (96 instances, 28.3 % of the kernel).** Every vector FP operation goes through one FMA per lane (`tnca_vector_fpu.v` header: add, sub, mul and fma all map onto `tnca_fp32_fma`), and the matrix engine has a second set of 16 per core for its MACs (`tnca_fpu_multi`). Each FMA costs about 2,400 LUTs and 2 DSPs. The DSPs only form the 24×24 product; the alignment, the 80-bit addition, the leading-zero count, the normalising shift and the rounding are in LUTs. The generated normalise stage (`rtl/gen/tnca_fma_norm_xls.v`) evaluates both subtraction orders and both rounding candidates in parallel (`sub_bs_squeezed`, `sub_sb_squeezed`, `dif_squeezed`, `dif_m1_squeezed`, 81 bits each), which is duplicated logic chosen for speed. The device has 9,024 DSPs and the image uses 524, so the arithmetic is LUT-heavy on a part where DSPs are almost unused.
 
-**NUCA slice (30,491 LUTs, 9,632 LUTRAM).** The line array is 32 sets × 8 ways × 512 bits = 128 Kbit (`SETS 32`, `WAYS 8`). Synthesis mapped it to `RAM256X1D ×512` plus `RAM64M8 ×592` (`resources/synth/base_67a453b77be8/synth.log`, distributed-RAM report): one copy per distinct read address. The engine reads the array in five states with four distinct address expressions (lookup, maintenance, write-back/wake service), although only one state is active per cycle. The other large state is the MSHR fill buffer (`ms_line`, 8 × 512 bits) and the request, MSHR and target tables, which keep full 64-bit addresses.
+**NUCA slice (30,647 LUTs, 9,644 LUTRAM).** The line array is 32 sets × 8 ways × 512 bits = 128 Kbit (`SETS 32`, `WAYS 8`). Synthesis mapped it to `RAM256X1D ×512` plus `RAM64M8 ×592` (`resources/synth/run1src_c9f25787494a/synth.log`, distributed-RAM report): one copy per distinct read address. The engine reads the array in five states with four distinct address expressions (lookup, maintenance, write-back/wake service), although only one state is active per cycle. The other large state is the MSHR fill buffer (`ms_line`, 8 × 512 bits) and the request, MSHR and target tables, which keep full 64-bit addresses.
 
-**Load/store units (25,376 LUTs, 13,660 FFs per core).** `LSU_INFLIGHT 2` builds `tnca_lsu_pair`: two complete `tnca_lsu` units, so that a second access can start while the first waits for memory. Each unit holds 16 lanes × (64-bit address, 64-bit write data, 64-bit read data) and a beat planner (6,827 FFs per unit). Only one unit issues at a time, but both carry a full issue path. The second unit never receives an atomic (an atomic needs both units idle and goes to unit 0), yet it carries the atomic path.
+**Load/store units (25,435 LUTs, 13,639 FFs per core).** `LSU_INFLIGHT 2` builds `tnca_lsu_pair`: two complete `tnca_lsu` units, so that a second access can start while the first waits for memory. Each unit holds 16 lanes × (64-bit address, 64-bit write data, 64-bit read data) and a beat planner (12,363 LUTs and 6,819 FFs per unit). Only one unit issues at a time, but both carry a full issue path. The second unit never receives an atomic (an atomic needs both units idle and goes to unit 0), yet it carries the atomic path.
 
-**Vector register file (21,305 LUTs per core).** The 256 × 512-bit file (4 contexts × 64 registers) is in BRAM (32 RAMB36). The LUTs are the read side: five read requesters across four banks of 512-bit words, with per-lane valid bits (`ZERO_INVALID 1`) and two writers (13,801 LUTs outside the banks).
+**Vector register file (21,288 LUTs per core).** The 256 × 512-bit file (4 contexts × 64 registers) is in BRAM (32 RAMB36). The LUTs are the read side: five read requesters across four banks of 512-bit words, with per-lane valid bits (`ZERO_INVALID 1`) and two writers (13,784 LUTs outside the banks).
 
-**Matrix engine (50,912 LUTs).** Sixteen MACs at 2,628 LUTs each are 42,048. The accumulator file (16 slots × 16 rows × 16 lanes × binary32 = 128 Kbit) is efficient LUTRAM (`RAM64M8 ×20` per lane, 2,560 LUTRAM), but its per-lane valid bits (256 × 16) are registers (4,096 FFs) so that a zeroed slot reads as zeros without clearing the RAM. `MTX_ABUF 1` adds an 8 × 512-bit operand buffer (296 LUTRAM).
+**Matrix engine (51,071 LUTs).** Sixteen MACs at about 2,630 LUTs each (2,629 for `g_mac[0]`) are about 42,000. The accumulator file (16 slots × 16 rows × 16 lanes × binary32 = 128 Kbit) is efficient LUTRAM (`RAM64M8 ×20` per lane, 2,560 LUTRAM), but its per-lane valid bits (256 × 16) are registers (4,096 FFs) so that a zeroed slot reads as zeros without clearing the RAM. `MTX_ABUF 1` adds an 8 × 512-bit operand buffer (296 LUTRAM).
 
-**Tensor transfer engine (14,369 LUTs, 8,439 FFs).** Sixteen descriptors (base, five extents, five strides, boxel, rank, dtype, pad) sit in LUTRAM. The registers are the 32-entry 64-bit line buffer (`dl_buf`), the eight store slots, the window table and, with `HAS_TENSOR_XPOSE 2`, the corner-turn state.
+**Tensor transfer engine (14,494 LUTs, 8,312 FFs).** Sixteen descriptors (base, five extents, five strides, boxel, rank, dtype, pad) sit in LUTRAM. The registers are the 32-entry 64-bit line buffer (`dl_buf`), the eight store slots, the window table and, with `HAS_TENSOR_XPOSE 2`, the corner-turn state.
 
 **Barrier unit (7,450 LUTs, 3,891 FFs).** 32 barriers, each with two 48-bit epochs and two 8-bit counters, all held in registers because every barrier is compared every cycle.
 
 **Scalar register file (3,756 LUTs, 2,072 LUTRAM).** 256 × 64 bits (4 contexts × 64 registers) with seven read ports (`ra`…`rg` in `tnca_scalar_rf.v`): `RAM64M8 ×280`, one LUTRAM copy per read port.
 
-**Outlets (7,676 LUTs, 6,003 FFs each, all in SLR0).** `tnca_line_axi` keeps eight 512-bit slot lines in reset registers (4,096 FFs). Each line can be written by two sources (a request's write data on admission and the AXI R beats), and is read by the W channel (one 256-bit beat of the issuing slot) and by the response (the whole line of `m_rid`). This gives a write multiplexer per bit and two wide read multiplexers.
+**Outlets (7,623 LUTs and 6,003 FFs each in the run-1 source synthesis, all three placed in SLR0).** `tnca_line_axi` keeps eight 512-bit slot lines in reset registers (4,096 FFs). Each line can be written by two sources (a request's write data on admission and the AXI R beats), and is read by the W channel (one 256-bit beat of the issuing slot) and by the response (the whole line of `m_rid`). This gives a write multiplexer per bit and two wide read multiplexers.
 
-**DCO/TMU (three replicas, 17,079 LUTs).** `DCO_LOCAL_REPLICAS 1` keeps one TMU state copy next to each slice (a timing fix for the cross-SLR TMU paths); each replica holds the 256-entry live table and the tensor ranges.
+**DCO/TMU (three replicas, 16,836 LUTs).** `DCO_LOCAL_REPLICAS 1` keeps one TMU state copy next to each slice (a timing fix for the cross-SLR TMU paths); each replica holds the 256-entry live table and the tensor ranges.
 
 **Debug, trace and counters.** All `$display` tracing and the scheduling checkers in `tnca_core.v` are under `ifndef SYNTHESIS` and do not reach the image. The image keeps hardware performance counters: 20 × 64-bit counters per core (`perf_*` in `tnca_core.v`), ten 32-bit counters per slice and four 64-bit counters per outlet. They are read by the board diagnostics, so they are listed in §6, not removed.
 
@@ -260,7 +262,29 @@ Each of these would remove or narrow an architectural capability, a semantic ran
 
 ## 7. Regression results
 
-PENDING-REG
+All regressions ran on GB10 (RTL simulation, iverilog) through the scripts kept with their logs in `resources/regression/`. Each run records its commit in `summary.txt`.
+
+| Run (commit) | Test | What it covers | Result |
+|---|---|---|---|
+| `g2_regress` (`082c9a2`) | `make nuca`, `make nuca-dco` | Slice benches, default build | pass |
+| | `make nuca-shared-read` | Mode 1 against the delivered slice in lockstep: pipeline on/off × policies 0/46 × seeds 1/7/42, 200,000 cycles each | 12/12 pass |
+| | `make r40-cache-maintenance` | Ownership handoff on the real-core grid, default build | pass |
+| | `image_geometry_tests.py`, base and mode 1 | Board top at the image's parameters | **refused** (`HAS_TENSOR_XPOSE 2` not mapped to the bench); fixed in `d33456a` |
+| `g2_regress2` (`1f6bfcb`) | `line_axi_tests.py` | Outlet matrix, default build | 78 configurations + 8 stream cases pass |
+| | `line_axi_tests.py --line-lutram` | Same matrix with `LINE_LUTRAM 1` and the delivered outlet in lockstep | 78 + 8 pass |
+| | `multicore_axi_tests.py` (1 and 3 cores) | Multicore AXI top, default build | pass |
+| | `image_geometry_tests.py`, mode 1 + `AXI_LINE_LUTRAM` | Board top | **refused** (same cause) |
+| `g2_regress3` (`d33456a`) | `image_geometry_tests.py` | Board top at the image's parameters: base, mode 1, `AXI_LINE_LUTRAM 1`, mode 1 + `AXI_LINE_LUTRAM 1` | 4/4 pass |
+| `g2_regress4` (`08c2601`) | `make nuca`, `make nuca-dco` | Slice benches | pass |
+| | `make nuca-shared-read` | Modes 1 and 2, as above | 24/24 pass |
+| | `image_geometry_tests.py` | Board top: mode 2; mode 2 + `AXI_LINE_LUTRAM 1` | 2/2 pass |
+| `g2_regress5` (`11e653d`) | `make top`, `make mesh`, `r40-grid-dispatch`, `r40-coherent-host`, `r40-multicore-shell`, `r40-line-axi` | Default build of every top that instantiates the changed modules | pass |
+| | `make lint` | Every RTL file elaborates | **fails on `rtl/fpga/tnca_stream_bank.v`** (SystemVerilog size casts, last changed in `9ab0276`, the stopped stream unit). The files changed here elaborate. Not caused by G2 |
+| | `make compiler` | Compiler tests | exit 0, but `compiler-ir` was **skipped** (no `tnca-opt` build in that tree). The changes are RTL only |
+
+The image-geometry bench runs the MMIO v2 protocol through `tnca_multicore_hbm_xo` at the image's 32 sets × 8 ways and every image option. It covers code upload and readback, two 455-program grids with every result checked, four memory-control settings, coherent host writes, dirty-line download through the ownership handoff, a partial-line handoff and a deadline abort.
+
+The lockstep benches were checked for sensitivity by breaking the candidates on purpose (scratch runs, not kept as evidence of the candidates): an off-by-one maintenance index and a wrong service way in the shared slice read, and a wrong read slot and a fixed W slot in the outlet. Each was reported as an output mismatch within the first few hundred cycles.
 
 ## 8. Method, provenance and preserved failures
 

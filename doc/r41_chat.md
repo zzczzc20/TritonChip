@@ -176,6 +176,82 @@ Qwen3.5 board run is therefore expected to be at risk under the 0.05 gate; it
 will be recorded as it comes out. Any different rule needs a written proposal
 approved before the run that uses it.
 
+### Teacher-forced rule registered on 2026-10-28, and the chat-quality check
+
+Source for both: the author's decision in the lead's chat on 2026-10-28, relayed by the
+coordinator. The acceptance criterion is whether the final model can hold a normal
+conversation and show normal intelligence.
+
+- **Rule (from v3 on).** `--cpu-floor-multiplier 2 --require-argmax`. For each forced
+  step: relative L2 at most max(0.05, 2 × the CPU reference's own reciprocal-versus-IEEE
+  scale-rounding floor at that step), and the device argmax equal to the reference argmax.
+  The rule, its date and its justification are written into `s2-qwen-chat-v3-*.json`
+  (`tolerance_rule`) before any run that uses it. The default of `chat.py` is still the
+  fixed 0.05 limit, and every earlier run keeps its judgment under that limit: the
+  Qwen3.5 TLM runs remain failed.
+- **Quality check.** `spec/r41/chat/quality-v1.json` registers six prompts: factual QA,
+  arithmetic, reasoning, instruction following, a two-turn follow-up, and an image
+  description for VL. `tools/models/chat_quality.py` first records the CPU W8A8 reference
+  model's own greedy answers (CPU, full depth, `evidence/r41/chat/quality-ref/`; both
+  models answer "Paris", "42", "Bob", "OK" and "Alice", and VL lists circle, square and
+  triangle). A device answer then passes a turn when it contains every a-priori keyword
+  the CPU answer contains, and when its normalized text contains the CPU answer's text or
+  the reverse. Token-by-token agreement with the CPU answer is reported for every turn.
+
+### Board environment
+
+The author approved the board interpreter (`~/r41s2_fp8env`, the torchenv whose `.pth`
+sets `torch.version.cuda`) as the default chat environment (lead's chat, 2026-10-28).
+Non-default compiler settings such as `TNCA_IEEE_DIV=1` are a separate matter: the
+v2/v3 manifests use default TNCA settings, and the 51aef19 run that set it stays
+labelled non-default.
+
+### Qwen3.5 output projection (`lm_head.weight_scale_inv | MISSING`)
+
+Qwen3.5-4B-FP8 ties `lm_head` to `embed_tokens`. Its checkpoint holds neither
+`lm_head.weight` nor a scale, and its `modules_to_not_convert` lists `embed_tokens` but
+not `lm_head`. transformers therefore built `lm_head` as an FP8Linear that holds the tied
+bf16 embedding and a newly allocated, uninitialized `weight_scale_inv` (all zeros in the
+GB10 load, `p3/lmhead-diag`). The scale is never read: `FP8Linear.forward` runs
+`F.linear` when its weight is not 8-bit (transformers 5.20.2, both environments). So
+`lm_head` was the intended unquantized bf16 projection on the CPU reference and on the
+device alike, and earlier logits are not affected. Qwen3-VL lists `lm_head` in
+`ignored_layers` and is not affected.
+
+`qwen_fp8_lib.load_model` now leaves unconverted any module that the quantization config
+would convert but whose block scale the checkpoint lacks (or whose weight is not FP8). It
+reloads with those names added to the config's own `modules_to_not_convert`, and the load
+report lists them (`unscaled_modules_not_converted`). This is keyed on the checkpoint's
+contents, not on a model or module name. CPU logits of Qwen3.5 (4 layers) are bit
+identical before and after the change.
+
+### Host memory and the v2 SIGKILL
+
+Board queue 0a8d8db: `q35-session` received SIGKILL after 410 s, with a 17,489,168 KiB
+peak child RSS and no output (`evidence/r41/chat/board-0a8d8db.tgz`). The harness did
+not send it: `experiment.py` kills only on a timeout, which it records as `timeout`.
+acf3019 (62 GB, shared) runs `systemd-oomd`, and the user slice's `memory.events`
+reports `oom_kill 1` (`board-0a8d8db-host-memory-events.txt`). That counter has no
+timestamp, so a kernel OOM kill is the likely cause, but this is not proven.
+
+The CPU part of the same step peaks at 7,192,212 KiB on GB10 (full-depth Qwen3.5,
+two-token teacher check), so most of the board peak came from the device phase. There,
+every host-to-device copy went through `transport.upload`, which turned the payload into
+a Python list of 64-bit integers, one per word (about 44 bytes of host memory per 8
+payload bytes). `_put_payload` then joined that list back into bytes. Further full-size
+copies came from `tobytes`, padding and `bytes()`. The Qwen3-VL board step peaked at
+17,685,692 KiB too.
+
+The upload path now keeps the payload as one bytes-like view from `from_host` down to
+the DMA. `Transport._put_payload_bytes` keeps the per-word path as the
+medium-independent fallback; the MMIO backends override it, sending the register-window
+words one at a time as before and the DMA part as bytes in 64 MiB chunks. On the RTL
+stand-in (`tools/r41/upload_path_tests.py`, RTL simulation), a 256 KiB upload across both
+windows reads back bit for bit on both paths. Its Python allocation peak is 896,215 bytes
+on the new path and 5,900,871 bytes on the word-list path. The DMA, handoff,
+host-copy, MMIO, HBM-layout, backend and hbm8 regression tests pass
+(`p3/upload-tests.tgz`). The board peak with this change is not measured yet.
+
 ### Full-depth board results (queue from immutable source 51aef19)
 
 Domain: **board**, U280 with the run-1 image (sha256 `30e79769…`, UUID

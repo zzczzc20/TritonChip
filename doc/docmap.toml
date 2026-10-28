@@ -248,7 +248,7 @@ sources = ["python/tnca/torch_device/"]
 [[doc]]
 path = "doc/r41_chat.md"
 depends_on = ["doc/r40_tasks_and_acceptance.md", "doc/engineering_discipline.md"]
-sources = ["tools/models/chat.py", "tools/models/qwen_fp8_lib.py", "tools/models/vision_split_check.py", "tools/models/fp8_blockwise_ref.py", "evidence/r41/fp8/models_tnca/README.md", "evidence/r41/fp8/ops/README.md", "spec/r41/chat/", "evidence/r41/chat/"]
+sources = ["tools/models/chat.py", "tools/models/qwen_fp8_lib.py", "tools/models/vision_split_check.py", "tools/models/chat_quality.py", "python/tnca/transport.py", "tools/models/fp8_blockwise_ref.py", "evidence/r41/fp8/models_tnca/README.md", "evidence/r41/fp8/ops/README.md", "spec/r41/chat/", "evidence/r41/chat/"]
 
 [[doc]]
 path = "doc/r41_execution_tasks.md"

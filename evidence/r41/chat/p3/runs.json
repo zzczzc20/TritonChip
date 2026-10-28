@@ -94,6 +94,35 @@
    "settings": "default TNCA settings",
    "command": "chat.py --model vl --device tnca --layers 1 --prompt \"Say hi.\" --new-tokens 4 --check-tokens 2 --bucket 64",
    "archive": "tlm-vl-default-v2.tgz"
+  },
+  {
+   "name": "lmhead-diag",
+   "domain": "CPU",
+   "source": "0a8d8db plus the changes committed with these archives (loader, upload path, quality runner, gate option)",
+   "command": "inline inspection of lm_head after qwen_fp8_lib.load_model; chat.py --model q35 --device cpu --layers 4 --new-tokens 3 from the 0a8d8db tree (base) and the new tree (new), logits compared bitwise",
+   "archive": "lmhead-and-memory-diag.tgz"
+  },
+  {
+   "name": "mem-diag/q35-cpu-full",
+   "domain": "CPU",
+   "source": "0a8d8db plus the changes committed with these archives (loader, upload path, quality runner, gate option)",
+   "command": "/usr/bin/time -v chat.py --model q35 --device cpu --prompt 'Say hi.' --new-tokens 2 --check-tokens 2 --threads 4",
+   "archive": "lmhead-and-memory-diag.tgz"
+  },
+  {
+   "name": "upload-tests",
+   "domain": "unit tests and RTL simulation (multicore MMIO stand-in)",
+   "source": "0a8d8db plus the changes committed with these archives (loader, upload path, quality runner, gate option)",
+   "python": "~/tc_env/torchenv/bin/python",
+   "command": "tools/r40/{host_copy,multicore_mmio,dma_handoff_guard,io_concurrency,memory_control_host,multicore_dma}_tests.py, tools/r41/hbm_layout_tests.py, tools/performance_harness/test_hbm8.py, tools/r36/backend_tests.py, tools/r41/upload_path_tests.py --kib 256",
+   "archive": "upload-tests.tgz"
+  },
+  {
+   "name": "quality-ref",
+   "domain": "CPU",
+   "source": "0a8d8db plus the changes committed with these archives (loader, upload path, quality runner, gate option)",
+   "command": "chat_quality.py --model {vl,q35} --device cpu --spec spec/r41/chat/quality-v1.json",
+   "archive": "../quality-ref/"
   }
  ]
 }

@@ -78,6 +78,10 @@ def backend_args(memory_bytes, image_path=IMAGE, profile=None):
             rtl[name] = value
         elif name in LINK:
             link[LINK[name]] = value
+        elif name == 'AXI_ID_W':
+            if value != max(1, (image.get('AXI_OUT_N', defaults['AXI_OUT_N']) - 1).bit_length()):
+                raise SystemExit('image AXI_ID_W does not follow its AXI_OUT_N')
+            checked[name] = value          # derived from AXI_OUT_N in the bench and the top
         elif name in ('SETS', 'SET_W'):
             checked[name] = value          # cache_sets below
         elif name in defaults:

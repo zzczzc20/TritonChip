@@ -106,7 +106,7 @@ struct Config {
                  "exploratory core/NoC payload bytes must be 8|16|32|64");
          require(b==8 || get("memory_model")==1,"wide core hypothesis requires timeline memory");}
         {auto n=get_or("tl_lsu_units",2);
-         require(n==2 || n==4 || n==8 || n==16,"exploratory LSU units must be 2|4|8|16");
+         require(n==2 || n==4 || n==8 || n==16 || n==32 || n==64,"exploratory LSU units must be 2|4|8|16|32|64");
          require(n==2 || (get("memory_model")==1 && get("core_pipeline")==1),"LSU unit hypothesis needs timeline core pipeline");}
         {auto n=get_or("tl_memory_lanes",1);
          require(n==1 || n==2 || n==4 || n==8,"exploratory NoC/home lanes must be 1|2|4|8");

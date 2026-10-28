@@ -43,7 +43,7 @@ def exploratory_run(binary, config, trace, out, *, mode):
 def streaming_add(binary, out, unroll=1):
     # Three dispatched programs, disjoint 16 KiB slices, real native integer
     # vector arithmetic. This is a model microbenchmark, not standard torch.
-    assert unroll in (1, 2, 4, 8)
+    assert unroll in (1, 2, 4, 8, 16, 32, 64)
     code = out/'stream-add.hex'
     body = []
     for j in range(unroll):

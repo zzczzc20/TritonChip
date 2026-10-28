@@ -20,20 +20,19 @@ def main():
     base = dict(line.split('#')[0].strip().split('=', 1) for line in base_text.splitlines()
                 if '=' in line.split('#')[0])
     base.update(clock_hz='100000000', sfu_occupancy='22', sfu_latency='23')
-    variants = {
-        'baseline': {},
-        'v3_eight_services': dict(tl_core_beat_bytes='64', tl_noc_payload_bytes='64',
-            tl_lsu_units='8', tl_lsu_shared_issue='0', tl_memory_lanes='8',
-            lsu_beat_slots='2', outlets='32', active_outlets='32', tl_pc_stripe_bytes='4096',
-            mshrs='128', targets='256'),
-    }
+    variants = {'baseline': {}}
+    for units in (8, 16):
+        variants[f'v3_lsu_{units}'] = dict(tl_core_beat_bytes='64', tl_noc_payload_bytes='64',
+            tl_lsu_units=str(units), tl_lsu_shared_issue='0', tl_memory_lanes='8',
+            lsu_beat_slots=str(max(1, 64//units)), outlets='32', active_outlets='32',
+            tl_pc_stripe_bytes='4096', mshrs='128', targets='256')
     rows = []
     for name, changes in variants.items():
         values = dict(base, **changes)
         run = args.out/name
         run.mkdir()
         (run/'chip.cfg').write_text(''.join(f'{key}={value}\n' for key, value in values.items()))
-        summary = streaming_add(args.binary.resolve(), run, unroll=8)
+        summary = streaming_add(args.binary.resolve(), run, unroll=16)
         cycles = summary['visible_cycles']
         logical_bytes = 3*3*4096*4
         row = dict(variant=name, configuration=changes, cycles=cycles,
@@ -41,11 +40,12 @@ def main():
             board_measured=False)
         rows.append(row)
         print(json.dumps(row, sort_keys=True), flush=True)
-    speedup = rows[0]['cycles']/rows[1]['cycles']
-    result = dict(evidence='native-SystemC-uncalibrated', rows=rows,
-        predicted_stream_add_speedup=speedup,
-        meets_50gbps=rows[1]['logical_gb_per_s_at_100mhz'] >= 50,
-        meets_5x=speedup >= 5)
+    baseline_cycles = rows[0]['cycles']
+    for row in rows[1:]:
+        row['predicted_stream_add_speedup'] = baseline_cycles/row['cycles']
+        row['meets_50gbps'] = row['logical_gb_per_s_at_100mhz'] >= 50
+        row['meets_5x'] = row['predicted_stream_add_speedup'] >= 5
+    result = dict(evidence='native-SystemC-uncalibrated', rows=rows)
     (args.out/'results.json').write_text(json.dumps(result, indent=2)+'\n')
     print(json.dumps({key: value for key, value in result.items() if key != 'rows'}, sort_keys=True))
 

@@ -1296,7 +1296,11 @@
     "evidence/r41/acceptance/board-p2p4-index.json": "1f7598115923356f098c84b95e5f6928734efa7cf9bb5ebbfaa99593898b7b02",
     "evidence/r41/stage2/board/fp8_env_and_hub_runs.md": "8b74cba099e0d29d29005ddc491fc755e1343f0f46225cefb6456e85b0103406",
     "evidence/r41/acceptance/launch_records/README.md": "6d9e47d8d9de305fb88fa8b3b50323a3e0ec0d2ff0d20888f782d807a92a7025",
-    "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz": "d208c99d5ca232b1567f8963b2664a0ef94c0f28169a0fd27cd0405fc600851f"
+    "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz": "d208c99d5ca232b1567f8963b2664a0ef94c0f28169a0fd27cd0405fc600851f",
+    "evidence/r41/chat/board-51aef19.tgz": "a8d14f9792a18249f7a08f8fcda4ac75a588cb6ebaeeb08bd3e7da7749a1a068",
+    "evidence/r41/chat/board-51aef19-summary.json": "4fb65302973276b38a2c0ca17c6f5735a7fb493ee05bcf58dce4cdab05478065",
+    "evidence/r41/chat/staged-inputs-qwen35-acf3019.json": "1bf011bfa5c9d55256c3e27409cf5e143c7f7c61312e54d75333482bc7e644c1",
+    "spec/r41/chat/s2-qwen-chat-v2.json": "acca48124090a71fd1419f12718d723eb5a9e8242e18e9da30867969a449af4f"
   },
   "followups": [
     {
@@ -1322,6 +1326,30 @@
         "evidence/r41/acceptance/p8/board-records.tgz"
       ],
       "closure_plan": null
+    },
+    {
+      "id": "P3.chat_vl_full",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "Board, run-1 image (UUID 49964b17, 100 MHz before and after): full-checkpoint Qwen3-VL-2B-Instruct-FP8 (28 layers) generated 4 tokens through tools/models/chat.py from staged source 51aef19; both teacher-forced tokens match the CPU W8A8 argmax with relative L2 0.03492688958696281 and 0.03500718871823851, below the fixed 0.05 gate; steady decode 0.015720705662231143 tokens/s with no new graphs or host reads. Deviations from default standard-path settings, so not a default result (doc/engineering_discipline.md 2.2.1): the manifest sets TNCA_IEEE_DIV=1 and TNCA_TORCH_DEVICE=native, compiles for core-vrf-sync-v5 on the X8 image, and runs under r41s2_fp8env, whose .pth sets torch.version.cuda (the P8 deviation). Scope: FP8 VL text chat, not the required BF16 Qwen3.5-2B workload.",
+      "evidence": [
+        "evidence/r41/chat/board-51aef19.tgz",
+        "evidence/r41/chat/board-51aef19-summary.json"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P3.chat_q35_full",
+      "status": "failed",
+      "classification": "Supplementary",
+      "reason": "Board queue 51aef19: the Qwen3.5-4B-FP8 step failed in 20 s before loading, because the pinned checkpoint was not in acf3019's input cache. The failure is preserved. The checkpoint has since been staged and verified (evidence/r41/chat/staged-inputs-qwen35-acf3019.json); s2-qwen-chat-v2 registers the rerun. No Qwen3.5 board generation exists.",
+      "evidence": [
+        "evidence/r41/chat/board-51aef19.tgz",
+        "evidence/r41/chat/board-51aef19-summary.json",
+        "evidence/r41/chat/staged-inputs-qwen35-acf3019.json",
+        "spec/r41/chat/s2-qwen-chat-v2.json"
+      ],
+      "closure_plan": "P3"
     }
   ],
   "evidence_review_only": {

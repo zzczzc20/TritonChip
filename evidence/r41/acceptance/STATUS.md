@@ -790,3 +790,74 @@ Run on GB10 on 2026-10-28 for the merge e4770b6 and the stream removal; full rec
 - RTL regressions (core suites, multicore, `r41-xpose8-rtl`, `lsu-reqreg`, `fma-deep`, `lint`, `r40-*`, board-top MMIO): all pass on head and base, with identical result lines and cycle counts except new added cases and one lane whose counts vary run to run on both trees.
 - FMA miter against the pre-F03 generated FMA: 210,000,000 vectors × 2 latencies, 0 mismatches.
 - Stream-removal unit tests: two stale fixtures (the hbm8 accessor stand-in after 6e4bebf; the large-grid Session fixture since f5ff452) and the stale `SERVERS.md` evidence hash were fixed generically; pre-existing failures (`r36` yosys elaboration, `r2` NOT RUN cases) remain on both trees.
+
+## 2026-10-28 (Claude, workstream D / P3) — 51aef19 chat queue ingested; v2 chat queue prepared
+
+Follows `doc/engineering_discipline.md`. Domains are stated per number.
+
+**51aef19 queue result (board).** The queue the lead launched on acf3019 ended at 2026-10-28T08:15:40Z with
+status `stopped-on-failure`. Raw output: `evidence/r41/chat/board-51aef19.tgz` (read-only copy, caches excluded);
+`board-51aef19-summary.json` is derived from it by `chat/chat_board_closeout.py`. Both steps' probes show UUID
+`49964b17-e0b4-5bd2-dd40-7fc37b1205d3` and a 100 MHz clock counter before and after.
+- `vl-full-chat` **completed**: full-checkpoint Qwen3-VL-2B-FP8 (28 layers) generated `Hello! How can`; both
+  teacher-forced tokens match the CPU W8A8 argmax, relative L2 0.03492688958696281 and 0.03500718871823851, below the
+  fixed 0.05 gate. Steady decode (two calls without new graphs or host reads) measured 0.015720705662231143 tokens/s,
+  about 40.66 s of device time per token at 100 MHz plus host time for 563 launches. Non-default run: the manifest
+  sets `TNCA_IEEE_DIV=1` and `TNCA_TORCH_DEVICE=native`, compiles for `core-vrf-sync-v5`, and uses the `.pth`
+  interpreter (R13 above), so it does not count as a default standard-path result.
+- `q35-full-chat` **failed** after 20 s: `lovedheart/Qwen3.5-4B-FP8@752f65fd…` was not in
+  `~/r41s2_fp8_inputs/hf/hub` on acf3019. No Qwen3.5 board generation exists.
+- Ledger: follow-ups `P3.chat_vl_full` (passed, supplementary, non-default) and `P3.chat_q35_full` (failed) added;
+  no Required row changes, because the required workload is the BF16 Qwen3.5-2B model.
+
+**Fixed since (code, CPU/TLM/RTL evidence, no board):**
+- *Qwen3.5 inputs:* the pinned snapshot is staged on acf3019; all 14 blobs re-hashed there match their names
+  (`chat/staged-inputs-qwen35-acf3019.json`). A host-only, card-free 4-layer CPU run from the staged inputs passes
+  (`chat/hostcheck-q35-4b0eb91.tgz`; the 1-layer attempt in the same archive failed because one Qwen3.5 layer has no
+  full-attention layer, an invalid configuration, kept).
+- *X8 transposed loads:* the earlier chat "X8 DESCRIPTOR_FAULT" came from a stale TLM binary built 2026-10-22 from a
+  tree whose model admitted only 2-byte transposed loads. A model built from the current tree passes the same control
+  3/3 bitwise with 32 `t.ld.async.b.t` (TLM, `chat/p3/cpu-and-x8ctl-tlm.tgz`). On the board, P8 (a deviation run, see
+  above) already executed X8-profile Hub kernels 35/35 bitwise. An RTL (Icarus, `core-vrf-sync-v5-x8`) run of the
+  same control has passed its first case so far.
+- *Persistent session (driver):* `chat.py` keeps one compiled prefill/decode pair and one static cache per process,
+  resets it in place between conversations, reuses cached state for follow-up turns that extend the transcript, and
+  offers fixed-size chunked prefill, `--session-check` (bitwise repeat of the first prompt after another
+  conversation) and `--script` (REPL from a file). TLM, Qwen3-VL 1 layer, X8 profile: the session check passes
+  bitwise with chunked prefill, 3 graphs in total and no new graph after the first prompt; every decode token
+  incurs 18 code-store evictions (`chat/p3/tlm-vl-session-default.tgz`). CPU: multi-turn VL reuses 21 cached tokens;
+  Qwen3.5's template strips earlier thinking blocks, so its follow-ups reset (correct, slower).
+- *Multi-image vision:* the tower runs once per image; on CPU this equals the joint two-segment call bit for bit
+  for three images of two sizes (`vision_split_check.py`). The compiler refusal of one call with several symbolic
+  segments is unchanged.
+- *Default settings:* TLM, Qwen3-VL 1 layer with default TNCA settings and the X8 profile passes both teacher-forced
+  tokens (rel L2 0.024659919041966807, 0.02574394384689021).
+
+**Still running on GB10 (TLM/RTL), results not yet available:** Qwen3.5 4-layer session check (non-default knobs),
+Qwen3.5 4-layer default settings, Qwen3-VL 1-layer two-image prompt (default settings), and the X8 RTL control.
+Known risk under the fixed gate: the earlier Qwen3.5 4-layer TLM runs measured 0.060020090237703445 at the second
+token, above 0.05; a full-depth Qwen3.5 run may fail the same gate. That would be recorded as a failure.
+
+### Prepared lead-only chat launch (immutable 4b0eb91 source, manifest s2-qwen-chat-v2)
+
+Commit `4b0eb9161f1c214b23ec109fa3454eb6383dc0d9` is staged at `~/r41_chat_4b0eb91` on acf3019: all 4,135 tracked
+files match their Git blob SHA-1 identities, no mismatches (`chat/staged-source-4b0eb91.json`); the queue's
+`--check-only` returns `prepared-only`, `card_access=false` (`chat/staged-queue-check-4b0eb91.json`). The manifest
+`spec/r41/chat/s2-qwen-chat-v2.json` declares its expected counter changes and runs, in order and within the
+queue's 10,800-second cap: `q35-session` (full Qwen3.5, two teacher-forced tokens, session check), `vl-session`,
+`vl-two-images` and `vl-script` (three-turn script). TNCA settings are defaults; only the platform identity is
+selected (backend, image arguments, the image's `core-vrf-sync-v5-x8` profile, clock evidence, deadlines). The
+interpreter is still `~/r41s2_fp8env` with the `.pth` deviation, because the Hub FP8 kernel ships only a CUDA build
+that a CPU-only torch does not select; removing it needs an environment decision (for example a CUDA-built torch
+without a GPU, as on GB10). Steps that do not fit the cap stay not run.
+
+The approved run-1 image must already be loaded (the queue never programs or resets the card). On acf3019, never
+alongside another U280 job:
+
+```sh
+cd ~/r41_chat_4b0eb91
+spec/r41/chat/board_queue_v2.sh "$PWD" "$HOME/r41_chat_4b0eb91_out"
+```
+
+Prepared, not launched. The lead decides whether to launch now or after the pending TLM/RTL results; the q35
+session check and the two-image and script steps are not yet proven on TLM for this source.

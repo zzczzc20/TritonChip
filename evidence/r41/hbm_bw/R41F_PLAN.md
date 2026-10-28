@@ -1,5 +1,7 @@
 # R41-F: the final three-core image (high-bandwidth stream compute) and board chat
 
+> **Stopped by the user on 2026-10-28.** The stream-compute-unit direction below (workstreams A, B and C) was stopped before any design work landed. It is kept as a record only. The user found a fixed-function unit next to the HBM too narrow for general PyTorch lowering. Workstream D (complete Qwen models and chat on the run-1 image) continues on `r41`.
+
 Owner: the lead (Claude), from 2026-10-28. Codex and Kimi are out of quota; the work runs in Claude subagents. This plan supersedes the open-ended V2/V3 exploration in `STATUS.md`, whose evidence it builds on.
 
 ## 1. Goals

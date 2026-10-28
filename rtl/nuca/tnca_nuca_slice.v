@@ -57,6 +57,11 @@ module tnca_nuca_slice #(
     parameter HIT_CHAIN = 0,
     parameter FAST_FILL_READ = 0,
     parameter BACKGROUND_READ_REQUESTS = 0,
+    // R41 G4: a store that writes every byte of a line (only possible when a
+    // request word is the whole line, WORD_BYTES == LINE_BYTES) allocates its
+    // line without reading it from memory: the store's data is the fill. A
+    // general write-allocate policy; partial stores and atomics still fill.
+    parameter LINE_WRITE_NOFILL = 0,
     parameter WORD_BYTES = 8,
     parameter SETS       = 64,
     parameter SET_W      = 6,        // $clog2(SETS)
@@ -495,6 +500,7 @@ module tnca_nuca_slice #(
     // A bypassed miss (DCO): the line is fetched for its targets and never
     // allocated, so the MSHR claims no way and the fill writes no array.
     reg [MSHR_N-1:0]    ms_byp;
+    reg [MSHR_N-1:0]    ms_nofill;   // LINE_WRITE_NOFILL: the fill is the store's own data
     reg [LINE_BITS-1:0] ms_line  [0:MSHR_N-1];   // filled data, before wake
     reg [ADDR_W-1:0]    ms_wbadr [0:MSHR_N-1];
 
@@ -595,6 +601,8 @@ module tnca_nuca_slice #(
     reg [MSHR_W-1:0]     cur_ms;
     // The fill may answer its sole ordinary-read target directly from the
     // returned line. Multi-target, write and atomic misses retain E_WAKE.
+    wire full_line_store = LINE_WRITE_NOFILL && WORD_BYTES == LINE_BYTES && cur_we && !cur_amo &&
+                           (&cur_be);
     wire fill_fast_take = FAST_FILL_READ && est==E_FILL && !rsq_full &&
         ms_hasT[cur_ms] && ms_head[cur_ms]==ms_tail[cur_ms] &&
         tg_v[ms_head[cur_ms]] && !tg_we[ms_head[cur_ms]] && !tg_amo[ms_head[cur_ms]];
@@ -1088,6 +1096,7 @@ module tnca_nuca_slice #(
             for (i = 0; i < SETS; i = i + 1)   victim_ptr[i] <= {WAY_W{1'b0}};
             for (i = 0; i < LINES; i = i + 1)  age[i] <= i % WAYS;
             ms_byp <= {MSHR_N{1'b0}};
+            ms_nofill <= {MSHR_N{1'b0}};
             perf_bypass <= 0; perf_evict <= 0; perf_dead_evict <= 0;
             tl_v <= 1'b0; tl_a <= 64'd0; tmu_tl_drop <= 1'b0;
             service_set_q<=0;service_way_q<=0;service_bypass_q<=0;service_tag_q<=0;
@@ -1438,13 +1447,15 @@ module tnca_nuca_slice #(
                     ms_head[ms_free_idx] <= tg_free_idx;
                     ms_tail[ms_free_idx] <= tg_free_idx;
                     ms_hasT[ms_free_idx] <= 1'b1;
+                    ms_nofill[ms_free_idx] <= full_line_store;
+                    if (full_line_store) ms_line[ms_free_idx] <= cur_wdata;
                     // A dirty victim must leave before the fill overwrites it.
                     if (v_bits[cur_set*WAYS + allocation_way] && d_bits[cur_set*WAYS + allocation_way]) begin
                         ms_state[ms_free_idx] <= MS_WB;
                         ms_wbadr[ms_free_idx] <= line_addr(lookup_tag[allocation_way],
                                                            cur_set);
                     end else begin
-                        ms_state[ms_free_idx] <= MS_REQ;
+                        ms_state[ms_free_idx] <= full_line_store ? MS_FILL : MS_REQ;
                     end
                     // the way now belongs to this miss
                     v_bits[cur_set*WAYS + allocation_way] <= 1'b0;
@@ -1484,7 +1495,7 @@ module tnca_nuca_slice #(
                 if (mem_req_fire && mem_req_we) begin
                     perf_wb  <= perf_wb + 1;
                     d_bits[service_set*WAYS + service_way] <= 1'b0;
-                    ms_state[cur_ms] <= MS_REQ;
+                    ms_state[cur_ms] <= ms_nofill[cur_ms] ? MS_FILL : MS_REQ;
                     est <= E_SEL;
                 end
             end

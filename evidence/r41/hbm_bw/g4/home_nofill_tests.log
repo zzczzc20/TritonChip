@@ -1,0 +1,62 @@
+CASE nofill=0 pipe=1 chain=1 bg=0 seed=39 reads=2014 writes=526 nofill_allocs=0
+PASS
+CASE nofill=0 pipe=1 chain=1 bg=1 seed=1 reads=2058 writes=547 nofill_allocs=0
+PASS
+CASE nofill=0 pipe=1 chain=1 bg=1 seed=7 reads=2052 writes=519 nofill_allocs=0
+PASS
+CASE nofill=0 pipe=1 chain=1 bg=1 seed=39 reads=2004 writes=525 nofill_allocs=0
+PASS
+CASE nofill=1 pipe=0 chain=0 bg=0 seed=1 reads=1796 writes=550 nofill_allocs=269
+PASS
+CASE nofill=1 pipe=0 chain=0 bg=0 seed=7 reads=1803 writes=523 nofill_allocs=260
+PASS
+CASE nofill=1 pipe=0 chain=0 bg=0 seed=39 reads=1749 writes=527 nofill_allocs=272
+PASS
+CASE nofill=1 pipe=0 chain=0 bg=1 seed=1 reads=1789 writes=545 nofill_allocs=266
+PASS
+CASE nofill=1 pipe=0 chain=0 bg=1 seed=7 reads=1798 writes=521 nofill_allocs=259
+PASS
+CASE nofill=1 pipe=0 chain=0 bg=1 seed=39 reads=1739 writes=526 nofill_allocs=275
+PASS
+CASE nofill=1 pipe=0 chain=1 bg=0 seed=1 reads=1797 writes=550 nofill_allocs=269
+PASS
+CASE nofill=1 pipe=0 chain=1 bg=0 seed=7 reads=1802 writes=523 nofill_allocs=260
+PASS
+CASE nofill=1 pipe=0 chain=1 bg=0 seed=39 reads=1746 writes=528 nofill_allocs=273
+PASS
+CASE nofill=1 pipe=0 chain=1 bg=1 seed=1 reads=1790 writes=545 nofill_allocs=266
+PASS
+CASE nofill=1 pipe=0 chain=1 bg=1 seed=7 reads=1792 writes=522 nofill_allocs=259
+PASS
+CASE nofill=1 pipe=0 chain=1 bg=1 seed=39 reads=1738 writes=526 nofill_allocs=272
+PASS
+CASE nofill=1 pipe=1 chain=0 bg=0 seed=1 reads=1796 writes=550 nofill_allocs=269
+PASS
+CASE nofill=1 pipe=1 chain=0 bg=0 seed=7 reads=1803 writes=523 nofill_allocs=260
+PASS
+CASE nofill=1 pipe=1 chain=0 bg=0 seed=39 reads=1749 writes=527 nofill_allocs=272
+PASS
+CASE nofill=1 pipe=1 chain=0 bg=1 seed=1 reads=1789 writes=545 nofill_allocs=266
+PASS
+CASE nofill=1 pipe=1 chain=0 bg=1 seed=7 reads=1798 writes=521 nofill_allocs=259
+PASS
+CASE nofill=1 pipe=1 chain=0 bg=1 seed=39 reads=1739 writes=526 nofill_allocs=275
+PASS
+CASE nofill=1 pipe=1 chain=1 bg=0 seed=1 reads=1797 writes=550 nofill_allocs=269
+PASS
+CASE nofill=1 pipe=1 chain=1 bg=0 seed=7 reads=1802 writes=523 nofill_allocs=260
+PASS
+CASE nofill=1 pipe=1 chain=1 bg=0 seed=39 reads=1746 writes=528 nofill_allocs=273
+PASS
+CASE nofill=1 pipe=1 chain=1 bg=1 seed=1 reads=1790 writes=545 nofill_allocs=266
+PASS
+CASE nofill=1 pipe=1 chain=1 bg=1 seed=7 reads=1792 writes=522 nofill_allocs=259
+PASS
+CASE nofill=1 pipe=1 chain=1 bg=1 seed=39 reads=1738 writes=526 nofill_allocs=272
+PASS
+STREAM full-line stores nofill=0: memory reads=2048 span_cycles=31007
+PASS
+STREAM full-line stores nofill=1: memory reads=0 span_cycles=22392
+G4 HOME ALL 50 CASES PASS
+
+[exited with code 0]

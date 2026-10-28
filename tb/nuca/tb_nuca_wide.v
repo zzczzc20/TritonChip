@@ -30,6 +30,7 @@ module tb_nuca_wide;
     parameter BALANCED_VICTIM = 1;
     parameter REGISTER_VICTIM_OWNER = 0;
     parameter EPOCH_CHURN = 0;
+    parameter LINE_WRITE_NOFILL = 0;   // R41 G4: full-line stores allocate without a fill
 
     parameter DRAM_LAT   = 40;
     parameter DRAM_STALL = 1;
@@ -116,7 +117,7 @@ module tb_nuca_wide;
     wire [63:0]             tl_addr;
 
     tnca_nuca_slice #(
-        .FULL_LINE_TAG(FULL_LINE_TAG),.REGISTER_VICTIM_SELECT(REGISTER_VICTIM_SELECT),.REGISTER_VICTIM_RANK(REGISTER_VICTIM_RANK),.HIT_CHAIN(HIT_CHAIN),.FAST_FILL_READ(FAST_FILL_READ),.BACKGROUND_READ_REQUESTS(BACKGROUND_READ_REQUESTS),.CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE),.MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
+        .FULL_LINE_TAG(FULL_LINE_TAG),.REGISTER_VICTIM_SELECT(REGISTER_VICTIM_SELECT),.REGISTER_VICTIM_RANK(REGISTER_VICTIM_RANK),.HIT_CHAIN(HIT_CHAIN),.FAST_FILL_READ(FAST_FILL_READ),.LINE_WRITE_NOFILL(LINE_WRITE_NOFILL),.BACKGROUND_READ_REQUESTS(BACKGROUND_READ_REQUESTS),.CACHE_DATA_PIPELINE(CACHE_DATA_PIPELINE),.MAINTENANCE(MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .SYNC_TAG_BANK(SYNC_TAG_BANK), .BALANCED_VICTIM(BALANCED_VICTIM), .REGISTER_VICTIM_OWNER(REGISTER_VICTIM_OWNER),
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(WORD_BITS), .WORD_BYTES(WORD_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
@@ -277,6 +278,12 @@ module tb_nuca_wide;
         end
     end
     integer service_cycle=0,accepted=0,responses=0,fast_fills=0,first_accept=-1,last_response=-1;
+    integer mem_reads=0,mem_writes=0,nofill_allocs=0;
+    always @(posedge clk)if(rst_n)begin
+        if(m_req_valid && m_req_ready)begin if(m_req_we)mem_writes<=mem_writes+1;else mem_reads<=mem_reads+1;end
+        if(dut.est==3 && dut.full_line_store && !dut.ms_match && dut.ms_has_free && dut.tg_has_free)
+            nofill_allocs<=nofill_allocs+1;
+    end
     always @(posedge clk)begin
         if(rst_n)begin
             service_cycle<=service_cycle+1;
@@ -399,6 +406,8 @@ module tb_nuca_wide;
                     end
                     // streaming writes store whole words, as a vector store does
                     if (SERVICE_MODE==3) req_be = {WORD_BYTES{1'b1}};
+                    // half the random writes cover the whole word (= line when wide)
+                    if (LINE_WRITE_NOFILL && rnd[6]) req_be = {WORD_BYTES{1'b1}};
                     n_write = n_write + 1;
                     for(integer bytepos=0;bytepos<WORD_BYTES;bytepos=bytepos+1)
                         if(req_be[bytepos])shadow[widx][bytepos*8+:8]=req_wdata[bytepos*8+:8];
@@ -449,6 +458,11 @@ module tb_nuca_wide;
         if (EPOCH_CHURN && REGISTER_VICTIM_OWNER && owner_retries==0)
             $fatal(1,"owner epoch mutation was not exercised");
         $display("OWNER_EPOCH retries=%0d",owner_retries);
+        $display("MEMORY reads=%0d writes=%0d nofill_allocs=%0d", mem_reads, mem_writes, nofill_allocs);
+        if (LINE_WRITE_NOFILL && WORD_BYTES==LINE_BYTES && n_write > 0 && nofill_allocs == 0) begin
+            fails = fails + 1;
+            $display("FAIL: no full-line store allocated without a fill");
+        end
         $display("policy=%0d bypass=%0d evict=%0d dead_evict=%0d gear=%0d",
                  POLICY, perf_bypass, perf_evict, perf_dead_evict, perf_gear);
 

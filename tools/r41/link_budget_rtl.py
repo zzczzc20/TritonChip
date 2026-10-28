@@ -34,7 +34,15 @@ PROFILE = 'core-vrf-sync-v5-x8'
 # image parameter -> board-bench parameter passed through rtl_params
 BENCH = ('WAYS', 'WAY_W', 'DCO_REGISTERED_RANGES', 'NUCA_REGISTER_VICTIM_SELECT', 'NUCA_CACHE_DATA_PIPELINE',
          'NUCA_REGISTER_VICTIM_RANK', 'DCO_TLW_PIPE_STAGES', 'DCO_REGISTER_WRITES', 'DCO_LOCAL_REPLICAS',
-         'HAS_TENSOR_XPOSE')
+         'HAS_TENSOR_XPOSE',
+         # R41 G2 sizing and section-4 changes, bench parameters of tnca_multicore_board_regs
+         'NUM_RCTX', 'RCTX_W', 'PHYS_VREGS', 'PHYS_W', 'ACC_N', 'ACC_W', 'BAR_N', 'BAR_W', 'BAR_EPOCH_W',
+         'PHYS_ADDR_W', 'NUCA_SHARED_DATA_READ', 'AXI_LINE_LUTRAM',
+         # R41 G4 one-lane path options
+         'HOME_LINE_WRITE_NOFILL')
+# image parameter -> backend keyword (the opt-in wide path, G4)
+KWARG = dict(HYBRID_LSU=('hybrid_lsu', bool), HOME_BACKGROUND_READS=('home_background_reads', bool),
+             SFU_LANES=('sfu_lanes', int))
 LINK = dict(MEM_PORTS='memory_ports', LINK_STAGES='link_stages', NOC_LINK_STAGES='noc_link_stages',
             DISPATCH_STAGES='dispatch_stages', MEM_HOME_STAGES='home_stages', CODE_LINK_STAGES='code_stages',
             CACHE_MAINTENANCE='maintenance', MEMORY_CONTROLS='memory_controls')
@@ -49,12 +57,24 @@ def rtl_defaults():
     return out
 
 
-def backend_args(memory_bytes):
-    image = json.loads(IMAGE.read_text())['parameters']
+def image_parameters(path):
+    """An image's parameters: image.json's `parameters`, or a Tcl `dict create`."""
+    text = Path(path).read_text()
+    if str(path).endswith('.json'):
+        return json.loads(text)['parameters']
+    m = re.search(r'dict create ([^\]]+)\]', text)
+    toks = m.group(1).split()
+    return {toks[i]: int(toks[i + 1]) for i in range(0, len(toks), 2)}
+
+
+def backend_args(memory_bytes, image_path=IMAGE, profile=None):
+    image = image_parameters(image_path)
     defaults = rtl_defaults()
-    rtl, link, checked = {}, {}, {}
+    rtl, link, checked, kw = {}, {}, {}, {}
     for name, value in sorted(image.items()):
-        if name in BENCH:
+        if name in KWARG:
+            kw[KWARG[name][0]] = KWARG[name][1](value)
+        elif name in BENCH:
             rtl[name] = value
         elif name in LINK:
             link[LINK[name]] = value
@@ -74,8 +94,10 @@ def backend_args(memory_bytes):
                 dispatch_stages=link['dispatch_stages'], home_stages=link['home_stages'],
                 code_stages=link['code_stages'], board_top=True, maintenance=link['maintenance'],
                 memory_controls=bool(link['memory_controls']), cache_sets=image['SETS'], rtl_params=rtl,
-                stage_probes=True, hbm_dma=True, host_timeout=86400)
-    return args, dict(image=image, defaults_equal=checked)
+                stage_probes=True, hbm_dma=True, host_timeout=86400, **kw)
+    if profile:
+        args['image_profile'] = profile
+    return args, dict(image=image, image_file=str(image_path), defaults_equal=checked)
 
 
 LINE = re.compile(r'^STAGE (TILE|PORT|CYCLE) (.*)$')
@@ -126,6 +148,9 @@ def main():
     ap.add_argument('--point', action='append', required=True)
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--memory-bytes', type=int, default=2 << 20)
+    ap.add_argument('--image', default=str(IMAGE),
+                    help='image parameters (image.json or an image .tcl); default: the run-1 image')
+    ap.add_argument('--profile', default=PROFILE, help='the profile the image implements')
     ap.add_argument('--set', action='append', default=[], metavar='TNCA_KEY=VALUE',
                     help='a NON-DEFAULT compiler setting for a default-off candidate (G4); '
                          'recorded in every record, which then counts for no target')
@@ -133,7 +158,7 @@ def main():
     extra = dict(kv.split('=', 1) for kv in a.set)
     if any(not k.startswith('TNCA_') for k in extra):
         ap.error('--set takes TNCA_* settings only')
-    args, identity = backend_args(a.memory_bytes)
+    args, identity = backend_args(a.memory_bytes, a.image, a.profile if a.profile != PROFILE else None)
     for k in [k for k in os.environ if k.startswith('TNCA_')]:
         del os.environ[k]
     os.environ.update(TNCA_BACKEND='fpga-multicore-sim', TNCA_BACKEND_ARGS=json.dumps(args),
@@ -148,7 +173,7 @@ def main():
     for pid in a.point:
         point = registry.get(pid)
         started = time.time()
-        rec = platform.run(point, profile=PROFILE, warmup=0, timed=1)
+        rec = platform.run(point, profile=a.profile, warmup=0, timed=1)
         logs = [s.dev.link.log for s in driver._Sessions.open.values()
                 if getattr(getattr(s, 'dev', None), 'link', None) is not None]
         per_launch = []
@@ -162,7 +187,7 @@ def main():
         out = dict(schema='tnca-link-budget-rtl/1', evidence='rtl-simulation', board=False,
                    point=pid, point_sha256=point.definition_sha256(), status=rec.get('status'),
                    problems=rec.get('problems'), correctness=rec.get('correctness'), demand=point.demand.as_dict(),
-                   kernels=kernels, time=rec.get('time'), device_cycles_samples=t.get('samples'), profile=PROFILE,
+                   kernels=kernels, time=rec.get('time'), device_cycles_samples=t.get('samples'), profile=a.profile,
                    backend='fpga-multicore-sim', backend_args=args, image=identity,
                    memory_model='tb/common/tnca_axi_line_model.v (latency 25+19p cycles, 8 IDs, random ready stalls)',
                    software_tree=(rec.get('platform') or {}).get('software_tree'),

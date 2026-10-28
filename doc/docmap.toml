@@ -546,3 +546,8 @@ path = "doc/engineering_discipline.md"
 depends_on = []
 sources = []
 notes = "Binding rules; must not be weakened by maintenance."
+
+[[doc]]
+path = "evidence/r41/hbm_bw/BANDWIDTH_PLAN.md"
+depends_on = ["doc/engineering_discipline.md"]
+sources = ["rtl/core/", "rtl/nuca/", "rtl/noc/", "rtl/fpga/"]

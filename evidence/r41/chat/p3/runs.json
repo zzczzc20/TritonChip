@@ -160,6 +160,16 @@
    "settings": "non-default: TNCA_IEEE_DIV=1 TNCA_TORCH_DEVICE=native",
    "command": "fp8_kernels_cases.py --out OUT --group transformers --quick",
    "archive": "tlm-v3-proofs-1.tgz"
+  },
+  {
+   "name": "tlm-vl-shapes-v1",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "8bb123d (static-shape compile)",
+   "settings": "default TNCA settings",
+   "command": "chat.py --model vl --device tnca --layers 1 --prompt \"Say hi.\" --new-tokens 2 --check-tokens 2 --bucket 64 --cpu-floor-multiplier 2 --require-argmax --session-check \"What is the capital of France? Answer with one word.\"",
+   "archive": "tlm-vl-shapes-v1.tgz"
   }
  ]
 }

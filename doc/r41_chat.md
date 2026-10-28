@@ -271,6 +271,11 @@ Commands and sources are in `evidence/r41/chat/p3/runs.json`.
   with `dynamic=False` (one static graph per shape; the first compile is static in either
   mode), and the v3 quality steps prefill text in chunks of 8 tokens, so the number of
   shapes stays bounded. The failure is preserved, and its reruns are below.
+- *Static shapes, Qwen3-VL, 1 layer* (`tlm-vl-shapes-v1`): after an 11-token prompt, a
+  20-token prompt in the same session compiled one new static prefill graph and ran.
+  Repeating the first prompt added no graph and reproduced every logit and candidate
+  token bit for bit (80 code-store evictions in between). The teacher check passes the
+  registered rule (0.024659919041966807, 0.02574394384689021, argmax equal).
 - *X8 Hub-kernel control on RTL* (`x8rtl-v2`, Icarus, `core-vrf-sync-v5-x8`): the first
   case (eager, x(1,7,384) → 320) passes bit for bit. The compiled case of the same shape hit
   the 14,400-second host timeout of the simulation, and the 1×16×2048 case exceeded the

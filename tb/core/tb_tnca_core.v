@@ -46,6 +46,7 @@ module tb_tnca_core;
     parameter VLEN           = 16;
     parameter ELEN           = 32;
     parameter VREGS_PER_RCTX = 64;
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48;  // R41 G2 resource sizing (defaults: the delivered machine)
     parameter PHYS_VREGS     = NUM_RCTX * VREGS_PER_RCTX;
     parameter PHYS_W         = 7;
     parameter WORDS          = 65536;
@@ -98,7 +99,7 @@ module tb_tnca_core;
 
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
-        .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
+        .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
         .CORE_ID(0), .NUM_CORES(1), .HAS_SFU(1),
         .USE_BANKED_VRF(USE_BANKED_VRF),
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),

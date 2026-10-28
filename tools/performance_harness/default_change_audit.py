@@ -223,7 +223,8 @@ def run(a):
                   harness=str(HERE), harness_sha256=_sha(HERE.read_bytes()),
                   suite=dict(path=SUITE, sha256=suite['sha256'], file_sha256=_sha(raw),
                              points=len(suite['points'])),
-                  knobs=BASE, harness_env=dict(HARNESS, TNCA_TORCH_DEVICE='native', **RUNTIME, **THREADS),
+                  knobs=BASE, harness_env=dict(HARNESS, TNCA_TORCH_DEVICE='native', **RUNTIME, **THREADS,
+                                               **({'TNCA_PROFILE': a.profile} if a.profile else {})),
                   method='compile-only; fresh process and private caches per point; tnca tensors over a '
                          'host-memory stand-in session; every launch skipped; device sessions forbidden',
                   started=time.strftime('%Y-%m-%dT%H:%M:%S%z'), points={})
@@ -242,6 +243,8 @@ def run(a):
             (run_dir/d).mkdir()
         env = {k: v for k, v in os.environ.items() if not k.startswith(('TNCA_', 'TRITON_', 'TORCHINDUCTOR_'))}
         env.update(HARNESS, TNCA_TORCH_DEVICE='native', **RUNTIME, **BASE, **THREADS)
+        if a.profile:
+            env['TNCA_PROFILE'] = a.profile
         if a.torch_extensions_dir:
             env['TORCH_EXTENSIONS_DIR'] = str(a.torch_extensions_dir)
         env.update(PYTHONPATH=os.pathsep.join(str(x) for x in (root, root/'python', root/'compiler/python',
@@ -437,6 +440,8 @@ def main():
     r.add_argument('--only', nargs='*')
     r.add_argument('--torch-extensions-dir', type=Path)
     r.add_argument('--reverted', help='ablation: the one change reverted in this tree')
+    r.add_argument('--profile', help='compile for this profile instead of the harness\'s '
+                   f"{HARNESS['TNCA_PROFILE']} (R41 G2: resource sizing of a reduced machine)")
     c = sub.add_parser('child')
     for name in ('--source-root', '--software-tree', '--point', '--point-sha256', '--run-dir'):
         c.add_argument(name, required=True)

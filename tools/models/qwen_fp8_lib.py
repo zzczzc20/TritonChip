@@ -414,14 +414,16 @@ def vision_output_class(model):
 
 
 def encoder_outputs(vision, cls):
-    """Image features in the form get_image_features returns them (one image: per-image tuples), for the
-    model's documented `mm_encoder_outputs` input."""
+    """Image features in the form get_image_features returns them: per-image tuples of the pooled embeddings and
+    of each deepstack level, for the model's documented `mm_encoder_outputs` input.  `vision` is (embeds, *deep)
+    for one image, or (per-image embeds, *per-image deep levels) as tuples for several images."""
     if vision is None:
         return None
     embeds, deep = vision[0], list(vision[1:])
-    kw = dict(pooler_output=(embeds,))
+    many = isinstance(embeds, (tuple, list))
+    kw = dict(pooler_output=tuple(embeds) if many else (embeds,))
     if deep:
-        kw["deepstack_features"] = [(d,) for d in deep]
+        kw["deepstack_features"] = [tuple(d) if many else (d,) for d in deep]
     return {"image": cls(**kw)}
 
 

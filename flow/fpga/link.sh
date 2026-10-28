@@ -164,20 +164,6 @@ PLATFORMS_DIR=${XILINX_PLATFORMS:-/opt/xilinx/platforms}
 EXPECT_MHZ=100
 
 XO=$OUT/tnca_u50.xo
-extra_xos=()
-if [ -n "${TNCA_STREAM_XO:-}" ]; then
-    [ "$TNCA_KERNEL_VARIANT" = multicore-hbm ] && [ "$BOARD" = u280 ] || {
-        echo 'link.sh: stream CU requires the U280 multicore core XO' >&2; exit 2;
-    }
-    [ -f "$TNCA_STREAM_XO" ] && [ "$TNCA_STREAM_XO" != "$XO" ] || {
-        echo 'link.sh: a distinct packaged stream XO is required' >&2; exit 2;
-    }
-    stream_marker=$(dirname "$TNCA_STREAM_XO")/tnca_variant.txt
-    [ -f "$stream_marker" ] && [ "$(cat "$stream_marker")" = stream-hbm ] || {
-        echo 'link.sh: stream XO has no matching stream-hbm variant marker' >&2; exit 2;
-    }
-    extra_xos=("$TNCA_STREAM_XO")
-fi
 XCLBIN=$OUT/tnca_${BOARD}.xclbin
 LOG=$OUT/link.log
 if [ "$TNCA_KERNEL_VARIANT" = multicore-hbm ]; then
@@ -185,10 +171,6 @@ if [ "$TNCA_KERNEL_VARIANT" = multicore-hbm ]; then
     # Pass literal paths to v++ without routing them through LINK_EXTRA splitting.
     MULTICORE_CFG=$REPO/fpga/u280_multicore_hbm.cfg
     MULTICORE_PLACE=$REPO/flow/fpga/place_r40_multicore.tcl
-    if [ -n "${TNCA_STREAM_XO:-}" ]; then
-        MULTICORE_CFG=$REPO/fpga/u280_multicore_stream.cfg
-        MULTICORE_PLACE=$REPO/flow/fpga/place_r41_hbm_stream.tcl
-    fi
     [ -f "$MULTICORE_CFG" ] && [ -f "$MULTICORE_PLACE" ] || {
         echo "link.sh: multicore connectivity/placement inputs missing" >&2; exit 2;
     }
@@ -236,10 +218,6 @@ else
         echo "REPO=$REPO"
         echo "RTL_COMMIT=$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo 'not a git tree')"
         echo "XO=$XO"
-        if [ -n "${TNCA_STREAM_XO:-}" ]; then
-            echo "STREAM_XO=$TNCA_STREAM_XO"
-            sha256sum "$TNCA_STREAM_XO"
-        fi
         echo "BOARD=$BOARD"
         echo "KERNEL_VARIANT=$TNCA_KERNEL_VARIANT"
         if [ "$TNCA_KERNEL_VARIANT" = multicore-hbm ]; then
@@ -278,7 +256,7 @@ else
         --log_dir "$OUT/vpp_logs" \
         -s \
         -o "$XCLBIN" \
-        "$XO" "${extra_xos[@]}" >> "$LOG" 2>&1
+        "$XO" >> "$LOG" 2>&1
     rc=$?
 
     echo "VPP_RC=$rc" >> "$LOG"

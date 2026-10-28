@@ -1,10 +1,15 @@
 # R41 Qwen FP8 chat driver
 
+This document follows `doc/engineering_discipline.md`. Every number below comes
+from an archived run and is labelled by domain: **board** (the U280 with the
+run-1 100 MHz image), **TLM** (the SystemC/TLM model, uncalibrated), **RTL**
+(Icarus simulation) or **CPU** (host-only reference or smoke runs).
+
 `tools/models/chat.py` provides one-shot and interactive text chat with the pinned
 Qwen3-VL-2B-Instruct-FP8 and Qwen3.5-4B-FP8 checkpoints. It uses the official
 Hugging Face processor, tokenizer, chat template, model classes, FP8Linear and
-Hub-kernel route. The model is loaded once per process. Text prompts and one
-optional image are supported; the board preflight is text-only.
+Hub-kernel route. The model is loaded once per process. Text prompts and any
+number of images are supported.
 
 ## Usage
 
@@ -27,17 +32,54 @@ greedy generation. Token selection, EOS handling and control flow run on the
 host. Model computation on TNCA uses `torch.compile(fullgraph=True)` and does
 not fall back to CPU numerical execution.
 
-Interactive mode retains the loaded model:
+Interactive mode retains the loaded model and one generation session:
 
 ```sh
 python tools/models/chat.py --model vl --device tnca --interactive
 ```
 
 The REPL commands are `/greedy`, `/sample TEMPERATURE [TOP_K TOP_P SEED]`,
-`/image PATH|none`, `/help` and `/quit`. Each prompt has its own static cache;
-each generation compiles at most one new decode graph, and recompilation is
-refused after that graph. A changed prompt shape can require a new prefill
-graph, which is separate from token-by-token decode.
+`/image PATH [PATH...]|none`, `/reset`, `/help` and `/quit`. `--script FILE`
+runs the same session from a file (one prompt or command per line) and writes
+every turn's report to `OUT/transcript.json`; this is how a chat is queued as a
+board step.
+
+**Session.** The process creates the compiled prefill and decode stages and one
+static cache once, and every prompt reuses them. A new conversation resets the
+cache in place (the same device tensors, zeroed). A follow-up turn whose
+rendered conversation text extends the cached transcript keeps the generated
+token IDs exactly as generated, tokenizes only the new template text, and
+prefills only the new tokens; otherwise the session resets and prefills the
+whole conversation. Qwen3.5's chat template drops the thinking block from
+earlier turns, so its follow-up turns take the reset path (CPU run
+`q35-full-repl.log`); Qwen3-VL text turns reuse the cache (21 cached tokens
+reused in `vl-full-repl.log` and `vl-script`). After the first two decode calls
+of a prompt, recompilation is refused.
+
+**Chunked prefill (optional).** `--prefill-chunk C` prefills text in chunks of
+C tokens and sends the remainder through the decode graph, so the number of
+compiled graphs no longer depends on prompt length. The default (0) prefills
+each prompt whole, which compiles one prefill graph per distinct prompt length.
+Image prompts are always prefilled whole, because an image's placeholder tokens
+must stay in one call.
+
+**Images.** `--image` is repeatable. The vision tower runs once per image, so
+each compiled call has exactly one static attention segment, and the per-image
+features are passed to the language model as the per-image tuples that
+`get_image_features` returns. `tools/models/vision_split_check.py` compares this
+with one joint call over all images on CPU: for three images of two sizes all
+four outputs (pooled features and three deepstack levels) are bitwise equal
+(`evidence/r41/chat/p3/cpu-and-x8ctl-tlm.tgz`, `cpu-smoke/vision-split.json`).
+The compiler still refuses a single compiled call with two or more symbolic
+segments (`evidence/r41/fp8/ops/README.md`, V4); that refusal is not fixed, the
+driver does not need it.
+
+**Persistent-session check.** `--session-check PROMPT` runs, in the same
+process, session and cache, a second conversation and then the first prompt
+again with the first run's tokens forced. It requires bitwise-identical logits
+and candidate tokens, and records new graphs and code-store evictions (modules
+the runtime unloads to make room in the 128 KiB code store). Every step also
+records its code-store evictions.
 
 `--layers N` truncates decoder depth for integration proofs while retaining the
 official checkpoint, tokenizer and remaining weights. Its report says
@@ -45,12 +87,13 @@ official checkpoint, tokenizer and remaining weights. Its report says
 runs the CPU W8A8 reference in `tools/models/fp8_blockwise_ref.py`, feeds its
 first N greedy tokens to the target, and compares target logits and argmax
 choices at every forced step. Copying the reference token IDs is not itself the
-check. The driver also runs the CPU reference with reciprocal scale rounding and
-logs that numerical floor at each forced step. The allowance is the larger of
-`--max-rel-l2` (the configurable minimum) and that measured floor multiplied by
-`--cpu-floor-multiplier` (default 2). A fixed threshold therefore cannot reject
-a target for a difference already produced by the CPU's own scale-rounding
-choice; the floor and the applied allowance appear in every check row.
+check. `--max-rel-l2` (default 0.05) is the fixed per-token gate; it is set
+before the run and never derived from the run's output. The driver also runs
+the CPU reference with reciprocal scale rounding and logs that numerical floor
+at each forced step, as a diagnostic only: it does not change the gate. (A
+floor-based allowance, `max(0.05, 2 × floor)`, was briefly used after the
+q35-v1 failure. It was withdrawn on 2026-10-28 because it moved the tolerance
+after the result was seen; see `evidence/r41/hbm_bw/AUDIT.md`, R6.)
 
 ## Measurements and the memory-bandwidth ceiling
 
@@ -79,16 +122,17 @@ measurements. The generated text is not a model-quality claim.
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | VL greedy | 1 | 3 | 327.4231004854664 | 312.1245263405144 | 0.003203849475478396 | 1.8532575820474197 |
 | VL sampled | 1 | 2 | 305.28765878267586 | 307.43000791873783 | 0.0032527729051886416 | 1.8532575820474197 |
-| Qwen3.5 greedy | 4 | 3 | 1093.5643128491938 | 837.9598828395829 | 0.0011933745522653353 | 0.802693368029665 |
+| Qwen3.5 greedy (v2; failed the fixed 0.05 check) | 4 | 3 | 1093.5643128491938 | 837.9598828395829 | 0.0011933745522653353 | 0.802693368029665 |
 
 The VL sampled run uses temperature 0.8, top-k 40, top-p 0.95 and seed 7. The
 VL greedy teacher check covers two forced tokens: relative L2 values are
 0.024659919041966807 and 0.02574394384689021, and both argmax choices match.
 The Qwen3.5 teacher check also covers two forced tokens: relative L2 values are
 0.035197324952002645 and 0.060020090237703445, and both argmax choices match.
-Its logged CPU reciprocal-scale floors are 0.03199982662928769 and
-0.05941731822088129; the per-step allowances derived from the configured
-multiplier are 0.06399965325857539 and 0.11883463644176258.
+The second value exceeds the fixed 0.05 limit, so **the Qwen3.5 run fails its
+numerical check**; its timing row above is kept as a record, not as a passing
+result. Its logged CPU reciprocal-scale floors are 0.03199982662928769 and
+0.05941731822088129 (diagnostic only).
 
 In the steady second decode, both greedy runs create zero new graphs, perform
 zero host reads, and perform two host writes totaling 40 bytes. The sampled run
@@ -96,10 +140,83 @@ exercises sampling but has only one decode step and therefore does not establish
 steady decode behavior.
 
 The first Qwen3.5 attempt is retained in `tlm-q35-v1.tgz` with its nonzero exit:
-its second relative L2 exceeded the former fixed 0.05 threshold. The independent
-`q35-cpu-floor-v1.tgz` diagnostic established that CPU scale rounding alone
-accounts for 0.05941731822088129 at that step, motivating the logged dynamic
-floor rather than a typed replacement tolerance.
+its second relative L2 exceeded the fixed 0.05 limit. The second attempt
+(`tlm-q35-v2.tgz`) produced bit-identical logits and fails the same limit; its
+archived report says "pass" only because it applied the withdrawn floor-based
+allowance. The independent `q35-cpu-floor-v1.tgz` diagnostic shows that CPU
+scale rounding alone accounts for 0.05941731822088129 at that step. That is a
+reason to propose a different rule for future runs, in writing and before
+they start; it does not turn either recorded run into a pass.
+
+### Session, image and default-settings runs on the TLM model (P3)
+
+Domain: **TLM** (uncalibrated SystemC/TLM model built from the current tree,
+sha256 `276a8f12…`), reduced depth, `core-vrf-sync-v5-x8` profile. Commands,
+launchers and source states are in `evidence/r41/chat/p3/runs.json`; raw output
+is in `p3/tlm-vl-session-default.tgz` and `p3/tlm-q35-and-vl-images.tgz`. These
+sources still applied the withdrawn floor-based allowance, so their reports
+print "pass"; the judgments below apply the fixed 0.05 gate.
+
+| Run | Settings | Teacher rel L2 (token 1, 2) | Gate 0.05 | Other result |
+| --- | --- | --- | --- | --- |
+| VL 1 layer, chunk 5, session check | non-default | 0.024659919041966807, 0.02574394384689021 | pass | session repeat bitwise equal; 3 graphs in total, none after the first prompt; 18 code-store evictions per decode token |
+| VL 1 layer | default | 0.024659919041966807, 0.02574394384689021 | pass | — |
+| VL 1 layer (current source, fixed gate in the report) | default | 0.024659919041966807, 0.02574394384689021 | pass | steady decode: 0 host reads, 40 bytes written per token; the 303872-byte logits download is reported separately as `logits_download_bytes` |
+| VL 1 layer, two images | default | 0.021313732649428156, 0.023404515994576682 | pass | vision tower once per image (5615.917901336215 s and 5505.577816525474 s of model wall time) |
+| Qwen3.5 4 layers, chunk 7, session check | non-default | 0.035197324952002645, 0.060020090237703445 | **fail** | session repeat bitwise equal; the post-reset prompt compiled one new graph, the repeat none |
+| Qwen3.5 4 layers | default | 0.035197324952002645, 0.060020090237703445 | **fail** | 74 code-store evictions per steady decode token |
+
+Both argmax choices match in every run. The few small host reads in the first
+prefill and decode calls come from Inductor's compile-time constant folding
+(`joint_graph.py`), not from model execution. The Qwen3.5 second-token value is the
+same in all four Qwen3.5 TLM runs (default and non-default settings, with and
+without chunked prefill), and the CPU reference's own reciprocal-versus-IEEE
+scale-rounding difference at that token is 0.05941731822088129. A full-depth
+Qwen3.5 board run is therefore expected to be at risk under the 0.05 gate; it
+will be recorded as it comes out. Any different rule needs a written proposal
+approved before the run that uses it.
+
+### Full-depth board results (queue from immutable source 51aef19)
+
+Domain: **board**, U280 with the run-1 image (sha256 `30e79769…`, UUID
+`49964b17-e0b4-5bd2-dd40-7fc37b1205d3`); the experiment's read-only probes show
+the same UUID and a 100 MHz clock counter before and after each step. Raw
+archive: `evidence/r41/chat/board-51aef19.tgz`; the summary
+`board-51aef19-summary.json` is derived from it by `chat_board_closeout.py`.
+The manifest (`spec/r41/chat/s2-qwen-chat.json`) set the non-default
+`TNCA_IEEE_DIV=1` and `TNCA_TORCH_DEVICE=native` and compiled for the
+`core-vrf-sync-v5` profile, so these results are not default-settings results
+(`doc/engineering_discipline.md` §2.2).
+
+**Qwen3-VL-2B-Instruct-FP8, full checkpoint (28 decoder layers), text prompt
+"Say hi.":** the step completed and passed. The model generated
+`Hello! How can` (tokens 9707, 0, 2585, 646). The two teacher-forced tokens
+match the CPU W8A8 argmax; their relative L2 errors are 0.03492688958696281
+and 0.03500718871823851, both below the fixed 0.05 gate. (The 51aef19 source
+still applied the since-withdrawn floor-based allowance, so its report lists
+allowances of 0.08446516185846147 and 0.0671607935159835; the result does not
+depend on them. The logged CPU reciprocal-scale floors, a diagnostic, are
+0.04223258092923073 and 0.03358039675799175.)
+
+| Call | Wall (s) | New graphs | Device cycles | Device time at 100 MHz (s) | Launches | Host reads |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| prefill (11 tokens) | 413.42981309397146 | 1 | 4238154739 | 42.38154739 | 701 | 84 |
+| decode 1 | 346.60041622119024 | 1 | 4065580434 | 40.65580434 | 563 | 84 |
+| decode 2 | 63.094938225112855 | 0 | 4065511739 | 40.65511739 | 563 | 0 |
+| decode 3 | 64.12581400899217 | 0 | 4065552515 | 40.65552515 | 563 | 0 |
+
+The first prefill and decode calls include compilation. In steady decode
+(calls 2 and 3) the measured rate is 0.015720705662231143 tokens/s (about 64 s
+per token): 40.7 s of device time and the rest host time for 563 launches per
+token. Steady decode adds no graph and performs no host read; it writes 40 bytes
+per token. The device peak was 2662758040 bytes. The run reports
+`mean_decode_seconds_per_token` 157.94038948509842 over all three decode
+calls, which includes the decode compilation.
+
+**Qwen3.5-4B-FP8:** the step failed in 20 s before loading the model: the pinned
+checkpoint was not in the FPGA host's input cache (`r41s2_fp8_inputs/hf/hub`).
+That failure is preserved in the archive. The checkpoint has since been staged
+(see `evidence/r41/acceptance/STATUS.md`); no Qwen3.5 board generation exists yet.
 
 ## Operation coverage and remaining blockers
 
@@ -116,19 +233,28 @@ operator evidence in `evidence/r41/fp8/ops/README.md`.
   keeps `grid_thw` and `cu_seqlens` as host integer metadata. Its host reads do
   not execute vision arithmetic on the CPU. The documented multimodal prefill
   also has device scalar reads for masks/counts; text decode has none.
-- **Current X8 small-M prefill blocker:** fresh chat and standalone official-FP8
-  controls on this tree fault in `t.ld.async.b.t` with `DESCRIPTOR_FAULT` for the
-  small-M Hub kernel, on both current and pre-P3 sources. The failed reports and
-  assembly are preserved in `evidence/r41/chat/`. The chat proof and prepared
-  board manifest therefore use the portable `core-vrf-sync-v5` gather lowering;
-  the approved X8 image executes those v5 artifacts. This is not an X8 result and
-  does not close the transposed-load fault.
-- **Still refused:** two or more image/video attention segments with symbolic
-  per-segment lengths. The driver accepts one optional image and does not claim
-  multi-image or video support.
-- **Not established by layer evidence:** full-depth end-to-end prefill/decode,
-  long-context or image-to-decode sessions, and physical-board generation.
-  Those require the chat driver's own logged runs. The `torch._scaled_mm`
+- **X8 transposed loads (corrected diagnosis):** the `DESCRIPTOR_FAULT` that
+  the earlier chat and official-FP8 controls hit in `t.ld.async.b.t`
+  (`evidence/r41/chat/fp8-x8-controls.tgz`) came from a stale SystemC/TLM
+  binary. Both controls ran `~/r41-fp8-ops-build/tnca-chip`, built on
+  2026-10-22 from a tree whose `tnca_tensor_model.hpp` admitted only 2-byte
+  transposed loads; the X8 change that admits 1-byte ones was not in it. With a
+  model built from the current tree (sha256 `276a8f12…`), the same control
+  (`fp8_kernels_cases.py --group transformers`, profile
+  `core-vrf-sync-v5-x8`) passes 3/3 bit for bit, with 32 `t.ld.async.b.t` in the
+  block-dynamic kernel and no faulting launch (TLM; `p3/cpu-and-x8ctl-tlm.tgz`,
+  `x8ctl-v1`). On the board, the P8 campaign (commit 63acb94; `evidence/r41/acceptance/STATUS.md`, P8 milestone) already ran the Hub kernels
+  compiled for `core-vrf-sync-v5-x8` 35/35 bitwise on the run-1 image
+  (`evidence/r41/acceptance/p8/`). The chat manifests from v2 on therefore
+  compile for the image's own `core-vrf-sync-v5-x8` profile.
+- **Still refused by the compiler:** one compiled call with two or more
+  image/video attention segments of symbolic length. The driver does not issue
+  such a call: it runs the vision tower once per image (see Images above).
+  Video input is not supported by the driver.
+- **Established on the board:** full-depth Qwen3-VL text generation (above).
+  **Not yet on the board:** Qwen3.5 generation, image prompts, the persistent
+  session check, scripted multi-turn chat and default-settings runs; they are
+  registered in `spec/r41/chat/s2-qwen-chat-v2.json`. The `torch._scaled_mm`
   blockwise gap is unrelated to this driver, which uses the official FP8Linear
   Hub route instead.
 

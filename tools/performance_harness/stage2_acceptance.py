@@ -33,6 +33,14 @@ def evaluate(root, index, overall=False):
         path = root/name
         if not path.is_file() or digest(path) != expected:
             errors.append(f'evidence missing or changed: {name}')
+    # Review-only entries name the file version a reviewer read. They are not
+    # re-verified against the current tree, and they never stand for a rerun.
+    review_only = index.get('evidence_review_only', {})
+    for name, entry in review_only.items():
+        if name in hashes:
+            errors.append(f'evidence both hashed and review-only: {name}')
+        if not entry.get('reviewed_sha256') or not entry.get('note'):
+            errors.append(f'review-only evidence lacks a reviewed hash or note: {name}')
     for row in rows + index.get('followups', []):
         if row['status'] not in STATUSES:
             errors.append(f"{row['id']}: invalid status")
@@ -41,7 +49,7 @@ def evaluate(root, index, overall=False):
         if row['status'] != 'passed' and not row.get('closure_plan'):
             errors.append(f"{row['id']}: bounded closure plan missing")
         for name in row.get('evidence', []):
-            if name not in hashes:
+            if name not in hashes and name not in review_only:
                 errors.append(f"{row['id']}: unhashed evidence {name}")
     metrics = json.loads((root/'evidence/r41/acceptance/board_metrics.json').read_text())
     board = metrics['board']
@@ -53,7 +61,8 @@ def evaluate(root, index, overall=False):
     accepted = not errors and all(r['status']=='passed' for r in rows)
     result = dict(scope=index['scope'], integrity='failed' if errors else 'passed',
                   status='passed' if accepted else 'not accepted', counts=counts,
-                  errors=errors, items=rows, followups=index.get('followups', []))
+                  errors=errors, review_only_evidence=sorted(review_only),
+                  items=rows, followups=index.get('followups', []))
     if overall:
         s1 = json.loads((root/'evidence/r41/stage1/board/acceptance.json').read_text())
         s1counts = dict(Counter(r['status'] for r in s1['items']))
@@ -73,8 +82,10 @@ def render(index):
            'Identity boundaries are in [identity.md](identity.md).', '',
            '| Item | Type | Requirement | Judgment | Evidence and reason | Closure |',
            '|---|---|---|---|---|---|']
+    review_only = index.get('evidence_review_only', {})
     for r in index['items']:
-        evidence = '; '.join('`'+p+'`' for p in r['evidence'])
+        evidence = '; '.join('`'+p+'`'+(' (review-only hash)' if p in review_only else '')
+                             for p in r['evidence'])
         out.append('| '+ ' | '.join([r['id'],r['classification'],r['requirement'],r['status'],evidence+' — '+r['reason'],r['closure_plan'] or 'Closed for stated scope'])+' |')
     out += ['', '## Supplementary delivery follow-ups', '',
             '| Follow-up | Judgment | Evidence and scope |', '|---|---|---|']

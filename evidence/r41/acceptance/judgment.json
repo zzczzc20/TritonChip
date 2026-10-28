@@ -1,14 +1,17 @@
 {
-  "scope": "Audit through lead-run physical P2 locality and P4 lifecycle evidence, 2026-10-28; historical failures and persistent full-model gaps remain.",
+  "scope": "Rectified 2026-10-28 against doc/engineering_discipline.md and the discipline audit (evidence/r41/hbm_bw/AUDIT.md, R1-R18): unsourced attributions corrected, post-hoc tolerance and check changes withdrawn, locality-control results quarantined, domains labelled; historical failures and persistent full-model gaps remain.",
   "integrity": "passed",
   "status": "not accepted",
   "counts": {
-    "passed": 45,
+    "passed": 38,
     "failed": 2,
-    "not measured": 40,
+    "not measured": 47,
     "blocked": 7
   },
   "errors": [],
+  "review_only_evidence": [
+    "rtl/core/tnca_core.v"
+  ],
   "items": [
     {
       "id": "S2-00.1",
@@ -288,7 +291,7 @@
         "evidence/r41/stage2/candidates/F07/functional_report.json",
         "evidence/r41/stage1/f07_ooc/README.md"
       ],
-      "reason": "Bounded home/core service Study delivered: current-source standard Torch depth/outlet runs, ownership/counter identities, separate lookup/miss/admission and bounded queue/resource audit, F07 semantic/physical references, and a conservative no-new-throughput-candidate decision. Unbounded fairness and physical throughput are not claimed; the separate hbm_bw workstream is not substituted for acceptance.",
+      "reason": "Domain: SystemC/TLM model (current-source native standard Torch graph, three cores) plus RTL fixtures (F07 cycle miter) and earlier board-top RTL service cohorts, with a structural resource count; no board measurement (AUDIT.md R8). This Study item does not require the board, so the bounded Study closes on that evidence: ownership/counter identities, separate lookup/miss/admission and bounded queue/resource audit, and a conservative no-new-throughput-candidate decision. Unbounded fairness, physical throughput and any board effect are not claimed; the separate hbm_bw workstream is not substituted for acceptance.",
       "closure_plan": null
     },
     {
@@ -344,15 +347,15 @@
     {
       "id": "S2-02.D.sensitivity",
       "requirement": "Each candidate: SystemC sensitivity",
-      "status": "passed",
+      "status": "not measured",
       "classification": "Study",
       "evidence": [
         "evidence/r41/acceptance/p1/candidate-sensitivity/README.md",
         "evidence/r41/acceptance/p1/candidate-sensitivity/metrics.json",
         "evidence/r41/acceptance/p1/candidate-sensitivity/index.json"
       ],
-      "reason": "Per-candidate bounded SystemC Study delivered: 12 configurations/48 bitwise standard Torch rows with core-pipeline model, exact one-factor executed-configuration checks and unchanged artifact/output hashes; four original X8 FP8 point pairs rechecked separately. Physical retiming effects remain inconclusive and proxies are not RTL counterfactuals; no per-candidate gain or board pass is inferred. This supersedes incomplete grouped-only coverage.",
-      "closure_plan": null
+      "reason": "Not measured (rectification, AUDIT.md R7). d7314d5 recorded this row as not measured; baadef3 then marked it passed on one-factor SystemC latency probes that its own README calls inconclusive for physical retiming effects, which redefined the gate after the result. The 12 configurations / 48 bitwise standard Torch rows remain valid SystemC/TLM functional evidence, but uncalibrated proxies are not per-candidate RTL counterfactuals, so no candidate has a measured sensitivity.",
+      "closure_plan": "P1"
     },
     {
       "id": "S2-02.D.semantics",
@@ -408,66 +411,68 @@
     {
       "id": "S2-03.A.1",
       "requirement": "Two model-agnostic standard Torch locality/DCO graphs",
-      "status": "passed",
+      "status": "not measured",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/p2/rtl-v4/report.json",
         "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Residual and projection standard Torch graphs execute their captured native Inductor artifacts with locality off/on/off on the board-top MMIO RTL binding. Identical artifact and output hashes pass the closeout validator. This is functional delivery, not a physical-board performance claim.",
-      "closure_plan": null
+      "reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Residual and projection standard Torch graphs execute their captured native Inductor artifacts with locality off/on/off on the board-top MMIO RTL binding. Identical artifact and output hashes pass the closeout validator. This is functional delivery, not a physical-board performance claim.",
+      "closure_plan": "P2"
     },
     {
       "id": "S2-03.A.2",
       "requirement": "Policies traceable to storage, aliasing and lifetimes",
-      "status": "passed",
+      "status": "not measured",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/p2/rtl-v4/report.json",
         "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Each executed plan records Session-owned storage identities, addresses, sizes, aliasing and captured first/last command uses. The applied policy is conservative LRU only; no aggressive hint is inferred from incomplete global access knowledge.",
-      "closure_plan": null
+      "reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Each executed plan records Session-owned storage identities, addresses, sizes, aliasing and captured first/last command uses. The applied policy is conservative LRU only; no aggressive hint is inferred from incomplete global access knowledge.",
+      "closure_plan": "P2"
     },
     {
       "id": "S2-03.A.3",
       "requirement": "Safe handling of aliases and incomplete readers/writers",
-      "status": "passed",
+      "status": "not measured",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/p2/rtl-v4/metadata-tests.log",
         "evidence/r41/acceptance/p2/rtl-v4/report.json",
         "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Seven real-Session tests cover coalesced views, declared aliases, undeclared overlap, descriptors, forged/freed/stale handles, unsupported backends and whole-plan capacity refusal. Every executed range retains incomplete reader/writer flags with dead/bypass disabled.",
-      "closure_plan": null
+      "reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Seven real-Session tests cover coalesced views, declared aliases, undeclared overlap, descriptors, forged/freed/stale handles, unsupported backends and whole-plan capacity refusal. Every executed range retains incomplete reader/writer flags with dead/bypass disabled.",
+      "closure_plan": "P2"
     },
     {
       "id": "S2-03.A.4",
       "requirement": "Off/on numerical, ownership and fault checks",
-      "status": "passed",
+      "status": "not measured",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/p2/rtl-v4/metadata-tests.log",
         "evidence/r41/acceptance/p2/rtl-v4/report.json",
         "evidence/r41/acceptance/p2/summary.json"
       ],
-      "reason": "Both graphs pass numerical off/on/off replay with unchanged outputs and no host retransmission. Injected numerical admission faults after real control registration propagate, restore policy zero and poison the captured graph against later off replay; ownership tests pass.",
-      "closure_plan": null
+      "reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Both graphs pass numerical off/on/off replay with unchanged outputs and no host retransmission. Injected numerical admission faults after real control registration propagate, restore policy zero and poison the captured graph against later off replay; ownership tests pass.",
+      "closure_plan": "P2"
     },
     {
       "id": "S2-03.A.5",
       "requirement": "Board traffic and latency comparisons",
-      "status": "passed",
+      "status": "not measured",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
         "evidence/r41/acceptance/board-p2p4-index.json",
-        "spec/r41/stage2/acceptance/s2-p2-locality.json"
+        "spec/r41/stage2/acceptance/s2-p2-locality.json",
+        "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
+        "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "Lead-run physical U280 residual and projection graphs pass off/on/off numerical replay with identical artifacts and outputs. Actual device cycles, host-scope latency and per-port line-counter deltas are archived and validated. Locality control overhead is visible; no speedup or default-on decision is claimed.",
-      "closure_plan": null
+      "reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Physical U280 residual and projection graphs pass off/on/off numerical replay with identical artifacts and outputs. Actual device cycles, host-scope latency and per-port line-counter deltas are archived and validated. Locality control overhead is visible; no speedup or default-on decision is claimed. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
+      "closure_plan": "P2"
     },
     {
       "id": "S2-03.B",
@@ -483,7 +488,7 @@
         "evidence/r41/acceptance/p2/pipeline-three-sample-model.json",
         "spec/r41/stage2/acceptance/s2-p2-pipeline.json"
       ],
-      "reason": "Three matched fixed-budget standard Torch policies have 54 timed bitwise model samples, six real RTL rows including BF16 and actual DMA/MMA overlap, and unchanged default artifacts across all 113 points. Model timing is uncalibrated and grid-one does not establish scaling. The approved-image, three-sample lead-only board manifest is prepared; the final-image board comparison remains not measured.",
+      "reason": "Three matched fixed-budget standard Torch policies have 54 timed bitwise model samples, six real RTL rows including BF16 and actual DMA/MMA overlap, and unchanged default artifacts across all 113 points. Model timing is uncalibrated and grid-one does not establish scaling. The approved-image, three-sample lead-only board manifest is prepared; the final-image board comparison remains not measured. Every arm of the s2-p2-pipeline manifest, the baseline included, forces TNCA_SCHEDULE=0, TNCA_WINDOW_REUSE=0 and TNCA_IEEE_DIV=1, so its results are a non-default configuration study and do not count as default standard-path results; the staged manifest is unchanged (AUDIT.md R10). The earlier report line \"make compiler passed with 53 Python tests\" is wrong: 157 tests ran with 53 skipped, and the IR suite was skipped.",
       "closure_plan": "P2"
     },
     {
@@ -498,7 +503,7 @@
         "rtl/core/tnca_core.v",
         "compiler/python/tnca_cc/window_lifetime.py"
       ],
-      "reason": "Bounded negative Study evaluates real paired producer/consumer command demands, equal two-context/64-register-per-program budgets, current window lifetime reuse and the static asymmetric VRF proposal. Existing RPAIR shares one base and provides no additional register pool; measured representative kernels fit, so no new capability or dynamic reallocation is selected. Other workloads and board speedups are not inferred.",
+      "reason": "Domain: SystemC/TLM model (18 fixed-budget rows) plus one-core RTL rows and static emitted command counts; no board measurement (AUDIT.md R8). This Study item does not require the board. Bounded negative Study: equal two-context/64-register-per-program budgets, current window lifetime reuse and the static asymmetric VRF proposal; existing RPAIR shares one base and provides no additional register pool; the representative kernels fit, so no new capability or dynamic reallocation is selected. Other workloads and board speedups are not inferred. The rtl/core/tnca_core.v hash is review-only (AUDIT.md R12).",
       "closure_plan": null
     },
     {
@@ -523,7 +528,7 @@
         "evidence/r41/stage1/stage2_readiness.md",
         "evidence/r41/stage1/model_estimates.md"
       ],
-      "reason": "No completed full-model board record for this workload.",
+      "reason": "No completed full-model board record for this workload. Board tokens/s from spec/r41/chat/s2-qwen-chat.json would not count as a default standard-path result: the manifest sets TNCA_IEEE_DIV=1 and TNCA_TORCH_DEVICE=native (AUDIT.md R13): it selects the portable core-vrf-sync-v5 profile on the X8 image and runs under the r41s2_fp8env interpreter, whose .pth sets torch.version.cuda (the P8 deviation); the staged manifest is unchanged.",
       "closure_plan": "P3"
     },
     {
@@ -647,23 +652,27 @@
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
-        "evidence/r41/acceptance/board-p2p4-index.json"
+        "evidence/r41/acceptance/board-p2p4-index.json",
+        "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
+        "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "All four physical-board compound cases refuse undeclared same-storage and distinct-handle overlap, an out-of-bounds view and a forged high-bit storage owner before admission. Raw reports and before/after board probes pass validation.",
+      "reason": "All four physical-board compound cases refuse undeclared same-storage and distinct-handle overlap, an out-of-bounds view and a forged high-bit storage owner before admission. Raw reports and before/after board probes pass validation. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
       "closure_plan": null
     },
     {
       "id": "S2-04.D.4",
       "requirement": "Bounded grid admission",
-      "status": "passed",
+      "status": "not measured",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
-        "evidence/r41/acceptance/board-p2p4-index.json"
+        "evidence/r41/acceptance/board-p2p4-index.json",
+        "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
+        "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "The physical AOT/Session case proves opt-in refusal, an eight-task unfinished bound with seven dependent admissions, exact unique program IDs and completion atomics after drain, and refusal above the advertised 16,777,216-program capacity. This is not a standard-Torch or full-model scaling claim.",
-      "closure_plan": null
+      "reason": "Not measured (rectification, AUDIT.md R9). After grid-preflight-v2 failed, 7b10e7b changed the \"opt-in-required\" check to request max(programs, base_limit+1); on the board the base limit equals the advertised capacity (16,777,216), so it issued the same request as the capacity refusal and did not test opt-in. The original check is restored in tools/r40/grid_admission_case.py; D.4 stays not measured until it is rerun. The board run (lead-launched, launch_records/) still shows a bounded eight-task queue, 65,537 exact program IDs, 65,544 completion atomics and the capacity refusal. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; launch records archived.",
+      "closure_plan": "P4"
     },
     {
       "id": "S2-04.D.5",
@@ -685,9 +694,11 @@
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
-        "evidence/r41/acceptance/board-p2p4-index.json"
+        "evidence/r41/acceptance/board-p2p4-index.json",
+        "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
+        "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "The physical AOT/Session barrier run completes and observes all 65,537 arm/wait iterations with a successful event, crossing the 16-bit generation boundary.",
+      "reason": "The physical AOT/Session barrier run completes and observes all 65,537 arm/wait iterations with a successful event, crossing the 16-bit generation boundary. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
       "closure_plan": null
     },
     {
@@ -698,9 +709,11 @@
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
-        "evidence/r41/acceptance/board-p2p4-index.json"
+        "evidence/r41/acceptance/board-p2p4-index.json",
+        "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
+        "evidence/r41/acceptance/launch_records/README.md"
       ],
-      "reason": "The targeted physical eviction case passes 117 distinct graphs, unloads one module and preserves the resident tensor. This is real lifecycle evidence, but it does not establish the required persistent full-model code-eviction, allocator-reuse and zero-state-corruption session, so the item remains not measured.",
+      "reason": "The targeted physical eviction case passes 117 distinct graphs, unloads one module and preserves the resident tensor. This is real lifecycle evidence, but it does not establish the required persistent full-model code-eviction, allocator-reuse and zero-state-corruption session, so the item remains not measured. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
       "closure_plan": "P4"
     },
     {
@@ -1224,11 +1237,12 @@
       "id": "P8.fp8_hub",
       "status": "passed",
       "classification": "Supplementary",
-      "reason": "Lead-run 35/35 Hub/compile/FP8Linear cases pass on approved run-1 image; isolated environment verified. No new board run by this agent.",
+      "reason": "35/35 Hub/compile/FP8Linear cases pass numerically on the approved run-1 image. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
       "evidence": [
         "evidence/r41/acceptance/p8/metrics.json",
         "evidence/r41/acceptance/p8/environment.json",
-        "evidence/r41/acceptance/p8/board-records.tgz"
+        "evidence/r41/acceptance/p8/board-records.tgz",
+        "evidence/r41/stage2/board/fp8_env_and_hub_runs.md"
       ],
       "closure_plan": null
     },
@@ -1236,12 +1250,36 @@
       "id": "P8.qwen_fp8",
       "status": "passed",
       "classification": "Supplementary",
-      "reason": "Lead-run 14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from required full BF16 model.",
+      "reason": "14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from the required full BF16 model. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
       "evidence": [
         "evidence/r41/acceptance/p8/metrics.json",
         "evidence/r41/acceptance/p8/board-records.tgz"
       ],
       "closure_plan": null
+    },
+    {
+      "id": "P3.chat_vl_full",
+      "status": "passed",
+      "classification": "Supplementary",
+      "reason": "Board, run-1 image (UUID 49964b17, 100 MHz before and after): full-checkpoint Qwen3-VL-2B-Instruct-FP8 (28 layers) generated 4 tokens through tools/models/chat.py from staged source 51aef19; both teacher-forced tokens match the CPU W8A8 argmax with relative L2 0.03492688958696281 and 0.03500718871823851, below the fixed 0.05 gate; steady decode 0.015720705662231143 tokens/s with no new graphs or host reads. Deviations from default standard-path settings, so not a default result (doc/engineering_discipline.md 2.2.1): the manifest sets TNCA_IEEE_DIV=1 and TNCA_TORCH_DEVICE=native, compiles for core-vrf-sync-v5 on the X8 image, and runs under r41s2_fp8env, whose .pth sets torch.version.cuda (the P8 deviation). Scope: FP8 VL text chat, not the required BF16 Qwen3.5-2B workload.",
+      "evidence": [
+        "evidence/r41/chat/board-51aef19.tgz",
+        "evidence/r41/chat/board-51aef19-summary.json"
+      ],
+      "closure_plan": null
+    },
+    {
+      "id": "P3.chat_q35_full",
+      "status": "failed",
+      "classification": "Supplementary",
+      "reason": "Board queue 51aef19: the Qwen3.5-4B-FP8 step failed in 20 s before loading, because the pinned checkpoint was not in acf3019's input cache. The failure is preserved. The checkpoint has since been staged and verified (evidence/r41/chat/staged-inputs-qwen35-acf3019.json); s2-qwen-chat-v2 registers the rerun. No Qwen3.5 board generation exists.",
+      "evidence": [
+        "evidence/r41/chat/board-51aef19.tgz",
+        "evidence/r41/chat/board-51aef19-summary.json",
+        "evidence/r41/chat/staged-inputs-qwen35-acf3019.json",
+        "spec/r41/chat/s2-qwen-chat-v2.json"
+      ],
+      "closure_plan": "P3"
     }
   ],
   "stage1_frozen_snapshot_counts": {

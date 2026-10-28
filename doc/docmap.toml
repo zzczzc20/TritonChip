@@ -247,8 +247,8 @@ sources = ["python/tnca/torch_device/"]
 
 [[doc]]
 path = "doc/r41_chat.md"
-depends_on = ["doc/r40_tasks_and_acceptance.md"]
-sources = ["tools/models/chat.py", "tools/models/qwen_fp8_lib.py", "tools/models/fp8_blockwise_ref.py", "evidence/r41/fp8/models_tnca/README.md", "evidence/r41/fp8/ops/README.md", "spec/r41/chat/", "evidence/r41/chat/"]
+depends_on = ["doc/r40_tasks_and_acceptance.md", "doc/engineering_discipline.md"]
+sources = ["tools/models/chat.py", "tools/models/qwen_fp8_lib.py", "tools/models/vision_split_check.py", "tools/models/fp8_blockwise_ref.py", "evidence/r41/fp8/models_tnca/README.md", "evidence/r41/fp8/ops/README.md", "spec/r41/chat/", "evidence/r41/chat/"]
 
 [[doc]]
 path = "doc/r41_execution_tasks.md"
@@ -429,7 +429,7 @@ sources = ["rtl/fpga/tnca_line_axi.v", "tb/fpga/tb_line_axi.v", "tb/fpga/tb_line
 [[doc]]
 path = "evidence/r41/hbm_bw/stream/README.md"
 depends_on = ["evidence/r41/hbm_bw/model/README.md", "evidence/r41/hbm_bw/outlet/README.md"]
-sources = ["rtl/fpga/tnca_stream_axi.v", "rtl/fpga/tnca_stream_fifo.v", "tb/fpga/tb_stream_axi.v", "tools/r41/hbm_stream_tests.py", "flow/fpga/screen_r41_hbm_stream.tcl", "evidence/r41/hbm_bw/stream/"]
+sources = ["evidence/r41/hbm_bw/stream/"]
 
 [[doc]]
 path = "evidence/r41/hbm_bw/layout/README.md"
@@ -439,12 +439,12 @@ sources = ["python/tnca/hbm_layout.py", "python/tnca/backends/multicore_mmio.py"
 [[doc]]
 path = "evidence/r41/hbm_bw/bank/README.md"
 depends_on = ["evidence/r41/hbm_bw/layout/README.md", "evidence/r41/hbm_bw/stream/README.md"]
-sources = ["rtl/fpga/tnca_stream_bank.v", "tb/fpga/tb_stream_bank.v", "tools/r41/hbm_bank_tests.py", "flow/fpga/screen_r41_hbm_bank.tcl", "evidence/r41/hbm_bw/bank/"]
+sources = ["evidence/r41/hbm_bw/bank/"]
 
 [[doc]]
 path = "evidence/r41/hbm_bw/binding/README.md"
 depends_on = ["evidence/r41/hbm_bw/bank/README.md"]
-sources = ["rtl/board/tnca_stream_hbm_xo.v", "fpga/kernel_stream_hbm.xml", "fpga/u280_multicore_stream.cfg", "flow/fpga/package_xo.tcl", "flow/fpga/link.sh", "tools/r41/generate_stream_binding.py", "tools/r41/stream_binding_tests.py", "tools/r41/audit_stream_package.py", "evidence/r41/hbm_bw/binding/"]
+sources = ["flow/fpga/package_xo.tcl", "flow/fpga/link.sh", "evidence/r41/hbm_bw/binding/"]
 
 [[doc]]
 path = "evidence/r41/hbm_bw/end_to_end.md"

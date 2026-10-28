@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Validate the lead's FP8 board follow-up from read-only archived records."""
+"""Validate the P8 FP8 board follow-up from read-only archived records.
+
+The campaign is agy/Gemini commit 63acb94, run by an agy/Gemini session that
+the lead launched on the author's instruction of 2026-10-26. It is not the
+lead's own run. It depends on a non-default environment: a .pth that sets
+torch.version.cuda on CPU-only torch so that the `kernels` package picks its
+Triton build. Its correctness results stand against their references, but it
+is a named deviation and not a standard-path default result.
+"""
 import hashlib
 import json
 from pathlib import Path
@@ -45,7 +53,12 @@ def main():
     env=json.loads((BASE/'environment.json').read_text())
     assert env['status']=='passed' and env['versions']['torch']=='2.14.0+cpu' and not env['actual_cuda_available']
     result=dict(status='passed',scope='P8 only; two FP8 layers are not full BF16 Qwen3.5-2B',
-                started_by='lead, independent from this acceptance agent',image_sha256=IMAGE,clock_hz=100000000,
+                started_by=('agy/Gemini session (commit 63acb94), launched by the lead on the author\'s '
+                            'instruction of 2026-10-26; not run by the lead itself'),
+                deviation=('non-default environment: a .pth sets torch.version.cuda on CPU-only torch so '
+                           'that the kernels package selects its Triton build; correctness results stand '
+                           'against references; not a standard-path default result'),
+                image_sha256=IMAGE,clock_hz=100000000,
                 hub_cases_passed=count,linears_passed=14,decode_steps_including_prefill=5,
                 steady_state_new_graphs=0,steady_state_host_transfer_calls=0,campaigns=campaigns)
     (BASE/'metrics.json').write_text(json.dumps(result,indent=2)+'\n')

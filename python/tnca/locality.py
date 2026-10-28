@@ -3,6 +3,19 @@
 This module never computes numerical tensor values. A captured interval is not
 proof of the allocation's global last reader or complete writer coverage, so
 it never enables dead-line or bypass hints. Hardware application is explicit.
+
+QUARANTINED (evidence/r41/hbm_bw/AUDIT.md, R15 / Q2). The hardware controls
+applied by `replay_with_locality` (`Graph.replay(locality=True)`) issue the
+hand-built TNCA-IR kernels `_read_controls`, `_set_controls` and
+`_register_ranges`, which write the TMU maintenance registers directly. Device
+code that is not produced by the compiler violates
+doc/engineering_discipline.md section 2.2.5. These kernels must be replaced
+with compiler-generated code before any use. Until then:
+- the controls stay default-off (`Graph.replay()` defaults to locality=False);
+- no result obtained with them counts for any acceptance item or target;
+- items previously judged passed on them are back to not measured
+  (evidence/r41/acceptance/stage2_index.md, S2-03.A.1 to A.5).
+The storage/lifetime planning in `plan_commands` issues no device code.
 """
 from dataclasses import dataclass,asdict
 from .runtime import Buffer
@@ -125,6 +138,9 @@ def _resources(session):
 
 def replay_with_locality(graph,execute):
     """Synchronous opt-in LRU scope on an exclusive supported Session.
+
+    QUARANTINED: issues hand-built TNCA-IR kernels (discipline 2.2.5); see the
+    module docstring. Not counted for any item; replace before any use.
 
     Starts and ends with policy zero and clears temporary range metadata.
     Nonzero pre-existing policy is refused rather than replaced. It does not

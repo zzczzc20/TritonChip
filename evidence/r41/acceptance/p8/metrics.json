@@ -1,7 +1,8 @@
 {
   "status": "passed",
   "scope": "P8 only; two FP8 layers are not full BF16 Qwen3.5-2B",
-  "started_by": "lead, independent from this acceptance agent",
+  "started_by": "agy/Gemini session (commit 63acb94), launched by the lead on the author's instruction of 2026-10-26; not run by the lead itself",
+  "deviation": "non-default environment: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references; not a standard-path default result",
   "image_sha256": "30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de",
   "clock_hz": 100000000,
   "hub_cases_passed": 35,

@@ -68,15 +68,24 @@ def main():
             extension_limit = session.dev.large_grid_limit()
             limit = extension_limit or base_limit
             assert base_limit < 0xFFFFFFFF and args.programs <= limit
-            refused_programs = max(args.programs, base_limit + 1)
+            # Opt-in check: the measured grid itself, submitted without
+            # large_grid, must be refused, and the same grid must be admitted
+            # after opt-in (below). A request above the base limit that is
+            # also above the advertised capacity tests only the capacity
+            # refusal, so it is not used here (audit R9). If the base limit
+            # already admits the grid, this check fails and is reported.
+            report['checks'].append(dict(name='opt-in-required', status='running',
+                base_limit=base_limit, extension_limit=extension_limit,
+                requested=args.programs))
+            save()
             before = session.latest_event
             try:
-                session.submit(module, {'out':result, 'counter':counter}, grid=(refused_programs,1,1))
-                raise AssertionError('above-capability grid was admitted without opt-in')
+                session.submit(module, {'out':result, 'counter':counter}, grid=(args.programs,1,1))
+                raise AssertionError('large grid was admitted without opt-in '
+                                     f'(base limit {base_limit})')
             except AdmissionError as error:
                 assert session.latest_event is before
-                report['checks'].append(dict(name='opt-in-required', status='pass',
-                    base_limit=base_limit, requested=refused_programs, error=str(error)))
+                report['checks'][-1].update(status='pass', error=str(error))
                 save()
                 print('grid admission: opt-in refusal passed', flush=True)
             session.large_grid = True

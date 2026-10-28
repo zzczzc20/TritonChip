@@ -8,11 +8,11 @@ The memory-system design target remains 100 GB/s. HANDOFF section 7 makes severa
 
 The source audit and existing R40 board/model evidence establish an upstream bottleneck. Three 64-bit core request paths admit at most 2.4 GB/s at 100 MHz, before protocol overhead. Three 256-bit outlets provide 9.6 GB/s in each AXI data direction. The prior ports experiment measured no gain from one to three outlets. Its model attributed contention to the home engine and core dependency waits; this attribution is not a new board measurement.
 
-## V2 whole-link projection and active screens
+## V2 theoretical bandwidth and active screen
 
-V2 is the combined three-core wide path plus 32 independent 512-bit stream outlets. The current planning projection is **100–140 GB/s for full-link stream copy/read/write**, corresponding to 50–70% utilization of the 204.8 GB/s interface ceiling. The ordinary core/torch path is projected separately at **5–15 GB/s**, below its 19.2 GB/s three-core port ceiling. These are design projections, not measurements. Stream throughput is expected to be limited by HBM concurrency, AXI outstanding depth and SLR0 routing; ordinary operators remain limited by LSU scheduling, home/cache service and RF/execution absorption.
+V2 combines the three-core wide path with 32 independent 512-bit stream outlets. At 100 MHz its **theoretical one-direction interface bandwidth is 204.8 GB/s**, which satisfies the requested theoretical 100 GB/s-plus geometry. There is no longer a planning claim that the full link must sustain 100–140 GB/s. Board measurements will determine actual throughput and the remaining bottleneck. The ordinary core/torch path retains its 19.2 GB/s three-core port ceiling; cache resizing and additional SFU lanes are not critical-path work and will not be expanded speculatively.
 
-The active combined core/stream-bank OOC screen tests whether this V2 geometry can retain 100 MHz under joint placement and routing. It is not a throughput experiment. Every subsequent experiment report must identify its V2 link, projected whole-link bandwidth and principal bottleneck.
+The active combined core/stream-bank OOC screen tests whether this V2 geometry can retain 100 MHz under joint placement and routing. It is not a throughput experiment. The remaining critical path is to finish this screen, freeze the design, hand it to the lead for full run 2/5 and measure it on the board after approval.
 
 ## Server update
 

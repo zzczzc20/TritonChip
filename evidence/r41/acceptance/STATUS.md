@@ -942,3 +942,9 @@ spec/r41/chat/board_queue_v3_vl.sh "$PWD" "$HOME/r41_chat_90f1a60_vl_out"
 idle wait. Qwen3.5 has no board timing yet; the only board timing is the 51aef19 VL step (about 64 s per steady decode
 token and about 6 minutes of compilation per new prompt length), so the VL queue is expected to need most of its cap.
 Prepared, not launched.
+
+**Withdrawn (2026-10-28, later the same day):** the 90f1a60 commands above must not be run. A TLM run of its quality
+step failed on the second prompt: a different prompt length made `torch.compile` recompile prefill with a symbolic
+length, which the TNCA lowering refuses (`chat/p3/tlm-v3-proofs-1.tgz`, `tlm-vl-quality-v1`). The fix (static-shape
+compilation, chunked prefill in the quality steps) is committed; a replacement staging and command follow after its
+TLM proofs.

@@ -8,11 +8,13 @@ The memory-system design target remains 100 GB/s. HANDOFF section 7 makes severa
 
 The source audit and existing R40 board/model evidence establish an upstream bottleneck. Three 64-bit core request paths admit at most 2.4 GB/s at 100 MHz, before protocol overhead. Three 256-bit outlets provide 9.6 GB/s in each AXI data direction. The prior ports experiment measured no gain from one to three outlets. Its model attributed contention to the home engine and core dependency waits; this attribution is not a new board measurement.
 
-## V2 theoretical bandwidth and active screen
+## V3 bandwidth closure and run-2 gates
 
-V2 combines the three-core wide path with 32 independent 512-bit stream outlets. At 100 MHz its **theoretical one-direction interface bandwidth is 204.8 GB/s**, which satisfies the requested theoretical 100 GB/s-plus geometry. There is no longer a planning claim that the full link must sustain 100–140 GB/s. Board measurements will determine actual throughput and the remaining bottleneck. The ordinary core/torch path retains its 19.2 GB/s three-core port ceiling; cache resizing and additional SFU lanes are not critical-path work and will not be expanded speculatively.
+The lead clarified the run-2 prerequisites on 2026-10-28: the design must have a substantiated **50 GB/s-plus full-link expectation** and **at least 5x end-to-end expected speedup for memory-bound Vector Add and activation operators**, in addition to passing 100 MHz timing. Theoretical outlet bandwidth alone is insufficient. V2 does not meet these gates and will not be proposed for run 2/5.
 
-The active combined core/stream-bank OOC screen tests whether this V2 geometry can retain 100 MHz under joint placement and routing. It is not a throughput experiment. The remaining critical path is to finish this screen, freeze the design, hand it to the lead for full run 2/5 and measure it on the board after approval.
+V2 combines three 512-bit core/NoC ports with 32 independent 512-bit stream outlets. Its outlet ceiling is 204.8 GB/s, but the ordinary three-core path is capped at 19.2 GB/s before home-service stalls. The cost-model screen in `bandwidth_closure/cost_screen.json` rejects the current geometry for 100 GB/s: with four-cycle home miss occupancy, home service is the optimistic limiting resource at 48 B/cycle (4.8 GB/s at 100 MHz). Adding outlets cannot remove that limit.
+
+V3 therefore studies **eight independent 64-byte services per core per cycle at every upstream stage**: LSU 1,536 B/cycle aggregate, NoC payload 1,536 B/cycle and independently banked home service 1,536 B/cycle, or 153.6 GB/s at each stage. The 32-outlet AXI stage remains 2,048 B/cycle (204.8 GB/s). These are capacity targets, not achieved throughput. The next critical experiment is to represent this parallelism in the performance-harness SystemC model and measure predicted full-link bandwidth and end-to-end add/activation speedups. Cache resizing and SFU expansion are not critical-path work. No full link will be requested until the clarified expectations and physical screens pass.
 
 ## Server update
 

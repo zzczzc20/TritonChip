@@ -885,6 +885,8 @@ $(TARGET_JSON): $(RTL)/core/tnca_core.v $(RTL)/tnca_top.v $(ISA_SCHEMA) \
 
 # Generated files are checked, not regenerated, so a stale commit fails here
 # instead of being quietly repaired by the person who runs `make`.
+# Put this checkout ahead of editable installs, including in child processes.
+compiler compiler-rtl: export PYTHONPATH := $(CURDIR)/python:$(CURDIR)/compiler/python$(if $(PYTHONPATH),:$(PYTHONPATH))
 compiler: $(ISA_SCHEMA) $(TARGET_JSON)
 	@$(PYTHON) $(TOOLS)/isa/export_schema.py --check
 	@$(PYTHON) $(TOOLS)/isa/gen.py --check all

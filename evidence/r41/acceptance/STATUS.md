@@ -973,3 +973,27 @@ spec/r41/chat/board_queue_v3_vl.sh "$PWD" "$HOME/r41_chat_d7a0185_vl_out"
 
 Board time: each queue at most 10,800 s of execution plus at least 900 s of idle wait, so at most about 6.5 h for
 both. No Qwen3.5 board timing exists. Prepared, not launched.
+
+### Replacement lead-only chat launches (immutable 51f31e8 source; supersede d7a0185)
+
+The d7a0185 commands must not be run. A reduced TLM quality run on that source showed that chunked prefill
+recompiled two graphs for every new prompt length (input slices kept the prompt length as a stride), which would have
+approached the recompile limit over the seven quality turns. 51f31e8 gives the inputs canonical strides: a CPU
+graph-count check over prompts of 11, 20 and 25 tokens compiles 2 graphs in total with no recompilation
+(`chat/p3/graphcount.tgz`). A TLM confirmation (`tlm-vl-quality-v3`, Qwen3-VL 1 layer, three prompts) is running and
+will be appended.
+
+Commit `51f31e8aee49a649e1a5678bc105b2f155d9fb51` is staged at `~/r41_chat_51f31e8` on acf3019: 4,181 tracked files match their Git blob SHA-1 identities,
+no mismatches (`chat/staged-source-51f31e8.json`); both queues return `prepared-only`, `card_access=false`
+(`chat/staged-queue-check-51f31e8.txt`). With the approved run-1 image already loaded, never alongside another U280
+job, one after the other:
+
+```sh
+cd ~/r41_chat_51f31e8
+spec/r41/chat/board_queue_v3_q35.sh "$PWD" "$HOME/r41_chat_51f31e8_q35_out"
+# after it has finished:
+spec/r41/chat/board_queue_v3_vl.sh "$PWD" "$HOME/r41_chat_51f31e8_vl_out"
+```
+
+Board time: each queue at most 10,800 s of execution plus at least 900 s of idle wait, so at most about 6.5 h for both.
+Prepared, not launched.

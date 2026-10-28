@@ -887,3 +887,58 @@ spec/r41/chat/board_queue_v2.sh "$PWD" "$HOME/r41_chat_0a8d8db_out"
 ```
 
 Prepared, not launched.
+
+## 2026-10-28 (Claude, workstream D / P3) — v2 failure diagnosed; v3 chat queues prepared
+
+Follows `doc/engineering_discipline.md`. Author decisions cited below: the author's decisions of 2026-10-28 in the
+lead's chat, relayed by the coordinator (tolerance rule and chat-quality criterion; board environment).
+
+**0a8d8db queue (board, launched by the lead).** `q35-session` received SIGKILL after 410 s with a 17,489,168 KiB peak
+child RSS and empty stdout; the VL steps did not run; image UUID and 100 MHz clock unchanged before and after
+(`chat/board-0a8d8db.tgz`, `board-0a8d8db-summary.json`). The harness kills only on timeout and did not. acf3019 runs
+`systemd-oomd` and its user slice reports `oom_kill 1` (an untimed counter, `board-0a8d8db-host-memory-events.txt`): a
+kernel OOM kill on the shared host is the likely sender, not proven. Preserved as a failure.
+
+**Cause and generic fix (unit tests, RTL simulation, CPU).** Full-depth Qwen3.5's CPU phase peaks at 7,192,212 KiB on
+GB10; the device phase multiplied host memory, because `transport.upload` expanded every payload into a Python list of
+64-bit integers and the path added further full-size copies. The payload is now passed as one bytes view to the DMA in
+64 MiB chunks (the per-word path stays as the generic fallback). On the RTL stand-in a 256 KiB upload reads back bit for
+bit with a Python allocation peak of 896,215 bytes, against 5,900,871 on the old path; DMA, handoff, host-copy, MMIO,
+HBM-layout, backend and hbm8 regression tests pass (`chat/p3/upload-tests.tgz`). Board memory with the fix is not yet
+measured. acf3019 had 16 GB available at staging, with the membound queue running.
+
+**lm_head finding.** Qwen3.5 ties `lm_head` to the unconverted embedding and its checkpoint has no `lm_head` scale;
+transformers built an FP8Linear with an uninitialized `weight_scale_inv` that `FP8Linear.forward` never reads (it runs
+`F.linear` on a non-8-bit weight). Earlier CPU and device logits therefore used the intended bf16 projection and are
+unaffected; Qwen3-VL ignores `lm_head` in its config. The loader now leaves unconverted any module whose block scale the
+checkpoint lacks; CPU logits are bit identical (`chat/p3/lmhead-and-memory-diag.tgz`), and the board environment's loader
+reports `unscaled_modules_not_converted=['lm_head']` with no missing keys (`chat/hostcheck-q35-90f1a60.tgz`, CPU only).
+
+**Rule and quality check.** The v3 manifests register, before any run, the teacher rule rel_l2 <= max(0.05, 2 x the CPU
+reference's own scale-rounding floor) plus argmax equality, with date, justification and source (`tolerance_rule`), and
+the chat-quality check `spec/r41/chat/quality-v1.json` scored against CPU reference answers archived first
+(`chat/quality-ref/`). Earlier runs keep their judgments; the Qwen3.5 TLM runs remain failed under 0.05. The ledger now
+cites the author's approval of the `.pth` torchenv as the default chat environment (P8 and P3 rows).
+
+**TLM proofs still running on GB10:** Qwen3.5 4 layers under the new rule with the loader fix, and the quality runner on
+Qwen3-VL 1 layer against a 1-layer CPU reference.
+
+### Prepared lead-only chat launches (immutable 90f1a60 source; supersede 0a8d8db)
+
+Commit `90f1a60531e7f86131ca3ce0595b1e86d996892b` is staged at `~/r41_chat_90f1a60` on acf3019: 4,169 tracked files match their Git blob SHA-1 identities,
+no mismatches (`chat/staged-source-90f1a60.json`); both queues return `prepared-only`, `card_access=false`
+(`chat/staged-queue-check-90f1a60.txt`). Two queues, run one after the other, never alongside another U280 job, with the
+approved run-1 image already loaded; neither programs or resets the card:
+
+```sh
+cd ~/r41_chat_90f1a60
+spec/r41/chat/board_queue_v3_q35.sh "$PWD" "$HOME/r41_chat_90f1a60_q35_out"
+# after it has finished:
+spec/r41/chat/board_queue_v3_vl.sh "$PWD" "$HOME/r41_chat_90f1a60_vl_out"
+```
+
+`v3-q35`: `q35-session` (teacher check under the new rule, session check) and `q35-quality`. `v3-vl`: `vl-quality`
+(including the image prompt) and `vl-session`. Each queue is capped at 10,800 s of execution plus at least 900 s of
+idle wait. Qwen3.5 has no board timing yet; the only board timing is the 51aef19 VL step (about 64 s per steady decode
+token and about 6 minutes of compilation per new prompt length), so the VL queue is expected to need most of its cap.
+Prepared, not launched.

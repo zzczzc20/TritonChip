@@ -1,0 +1,16 @@
+clock_utc=2026-10-28T15:08:22Z
+domain=RTL simulation
+host=GB10
+command=python3 tools/r40/image_geometry_tests.py --image-tcl evidence/r41/stage2/integration/image.tcl --rtl-param AXI_OUT_N=32 --rtl-param AXI_PIPELINED_ISSUE=1 --rtl-param AXI_LINE_LUTRAM=1
+base_commit=669c70aa8584cdf63ef59ee026ea05c6ac1526cb
+worktree_diff_sha256=e43775d1750f8628b4bc6ac9c19796d8b9e3a437ccbef5f0912876ad07f1cbd9
+image_tcl_sha256=50843bee977ebad5712205d6a4a8ca4827477d3c5ceafd5b5ecaa93f9bb1b58b
+IMAGE GEOMETRY parameters={'AXI_DATA_W': 256, 'AXI_ID_W': 3, 'AXI_OUT_N': 8, 'CACHE_MAINTENANCE': 1, 'CODE_LINK_STAGES': 2, 'DCO_LOCAL_REPLICAS': 1, 'DCO_REGISTERED_RANGES': 1, 'DCO_REGISTER_WRITES': 1, 'DCO_TLW_PIPE_STAGES': 2, 'DISPATCH_STAGES': 2, 'FE_NOBUBBLE': 1, 'FPU_OVERLAP': 1, 'HAS_ATOMICS': 1, 'HAS_SFU': 1, 'HAS_SYS_ATOMICS': 0, 'HAS_TENSOR_XPOSE': 2, 'LINK_STAGES': 2, 'LSU_INFLIGHT': 2, 'MEMORY_CONTROLS': 1, 'MEM_HOME_STAGES': 2, 'MEM_PORTS': 3, 'MTX_ABUF': 1, 'NOC_LINK_STAGES': 2, 'NUCA_CACHE_DATA_PIPELINE': 1, 'NUCA_REGISTER_VICTIM_RANK': 1, 'NUCA_REGISTER_VICTIM_SELECT': 1, 'NUM_RCTX': 4, 'RCTX_SWITCH': 2, 'RCTX_W': 2, 'RPAIR': 1, 'RSLICE': 1, 'SETS': 32, 'SET_W': 5, 'USE_BANKED_VRF': 1, 'VREGS_PER_RCTX': 64, 'VRF_BYPASS': 1, 'VRF_PREFETCH': 1, 'WAYS': 8, 'WAY_W': 3}
+IMAGE GEOMETRY code upload/readback PASS
+IMAGE GEOMETRY two grids PASS programs=455x2 counters=[{'port': 0, 'read_lines': 38, 'write_lines': 38}, {'port': 1, 'read_lines': 38, 'write_lines': 38}, {'port': 2, 'read_lines': 38, 'write_lines': 38}]
+IMAGE GEOMETRY memory controls 1/1 PASS
+IMAGE GEOMETRY memory controls 1/32 PASS
+IMAGE GEOMETRY memory controls 3/1 PASS
+IMAGE GEOMETRY memory controls 3/32 PASS
+IMAGE GEOMETRY coherent host window and ownership handoff PASS
+IMAGE GEOMETRY PASS sets=32 ways=8 stages=[2] options={'DCO_LOCAL_REPLICAS': 1, 'DCO_REGISTERED_RANGES': 1, 'DCO_REGISTER_WRITES': 1, 'DCO_TLW_PIPE_STAGES': 2, 'HAS_TENSOR_XPOSE': 2, 'NUCA_CACHE_DATA_PIPELINE': 1, 'NUCA_REGISTER_VICTIM_RANK': 1, 'NUCA_REGISTER_VICTIM_SELECT': 1, 'NUM_RCTX': 4, 'RCTX_W': 2, 'SETS': 32, 'SET_W': 5, 'WAYS': 8, 'WAY_W': 3, 'AXI_OUT_N': 32, 'AXI_PIPELINED_ISSUE': 1, 'AXI_LINE_LUTRAM': 1}

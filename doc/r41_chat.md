@@ -252,6 +252,31 @@ on the new path and 5,900,871 bytes on the word-list path. The DMA, handoff,
 host-copy, MMIO, HBM-layout, backend and hbm8 regression tests pass
 (`p3/upload-tests.tgz`). The board peak with this change is not measured yet.
 
+### TLM proofs of the v3 changes (2026-10-28)
+
+Domain: **TLM** (and one **RTL** run), default TNCA settings, `core-vrf-sync-v5-x8`.
+Commands and sources are in `evidence/r41/chat/p3/runs.json`.
+
+- *Qwen3.5, 4 layers, registered rule, loader fix* (`tlm-q35-rule-v1`): passes the rule.
+  Relative L2 is 0.035197324952002645 and 0.060020090237703445 against allowances of
+  0.06399965325857539 and 0.11883463644176258, with argmax equal at both steps. `lm_head`
+  is left unconverted on the device and no key is missing. Steady decode does 0 host reads,
+  with the 496,640-byte logits download counted separately, and 74 code-store evictions per
+  token.
+- *Quality runner, Qwen3-VL, 1 layer* (`tlm-vl-quality-v1`): **failed**. The first prompt
+  ran. The second prompt, of another length, made `torch.compile`'s automatic dynamic
+  shapes recompile the prefill graph with a symbolic length, which the TNCA lowering
+  refuses (`[UNSUPPORTED] scf.if whose branch contains arith.remsi`). The earlier session
+  checks used two prompts of equal length and could not show this. Fix: the stages compile
+  with `dynamic=False` (one static graph per shape; the first compile is static in either
+  mode), and the v3 quality steps prefill text in chunks of 8 tokens, so the number of
+  shapes stays bounded. The failure is preserved, and its reruns are below.
+- *X8 Hub-kernel control on RTL* (`x8rtl-v2`, Icarus, `core-vrf-sync-v5-x8`): the first
+  case (eager, x(1,7,384) → 320) passes bit for bit. The compiled case of the same shape hit
+  the 14,400-second host timeout of the simulation, and the 1×16×2048 case exceeded the
+  simulated device memory. Those two are limits of the simulation setup, not X8 results,
+  and remain errors.
+
 ### Full-depth board results (queue from immutable source 51aef19)
 
 Domain: **board**, U280 with the run-1 image (sha256 `30e79769…`, UUID

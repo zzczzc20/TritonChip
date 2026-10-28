@@ -139,6 +139,8 @@
     "{root}/evidence/r41/chat/quality-ref/vl.json",
     "--root",
     "{root}",
+    "--prefill-chunk",
+    "8",
     "--out",
     "{out}/vl-quality"
    ],
@@ -209,7 +211,8 @@
  "chat_quality": {
   "spec": "spec/r41/chat/quality-v1.json",
   "reference_answers": "evidence/r41/chat/quality-ref/",
-  "source": "author decision, in the lead's chat, 2026-10-28: the acceptance criterion is whether the final model can hold a normal conversation and show normal intelligence; a registered chat-quality check fixed before the run"
+  "source": "author decision, in the lead's chat, 2026-10-28: the acceptance criterion is whether the final model can hold a normal conversation and show normal intelligence; a registered chat-quality check fixed before the run",
+  "prefill": "text turns are prefilled in chunks of 8 tokens with the remainder through the decode graph, so the compiled prefill shapes stay bounded across prompts; image turns are prefilled whole; graphs compile with static shapes"
  },
  "environment": {
   "interpreter": "{home}/r41s2_fp8env/bin/python (torchenv with a .pth that sets torch.version.cuda)",

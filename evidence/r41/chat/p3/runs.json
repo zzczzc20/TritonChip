@@ -123,6 +123,43 @@
    "source": "0a8d8db plus the changes committed with these archives (loader, upload path, quality runner, gate option)",
    "command": "chat_quality.py --model {vl,q35} --device cpu --spec spec/r41/chat/quality-v1.json",
    "archive": "../quality-ref/"
+  },
+  {
+   "name": "tlm-q35-rule-v1",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "90f1a60",
+   "settings": "default TNCA settings",
+   "command": "chat.py --model q35 --device tnca --layers 4 --prompt \"Say hi.\" --new-tokens 3 --check-tokens 2 --bucket 64 --cpu-floor-multiplier 2 --require-argmax",
+   "archive": "tlm-v3-proofs-1.tgz"
+  },
+  {
+   "name": "quality-ref-vl-l1",
+   "domain": "CPU",
+   "source": "90f1a60",
+   "command": "chat_quality.py --model vl --layers 1 --device cpu --spec spec/r41/chat/quality-v1.json",
+   "archive": "tlm-v3-proofs-1.tgz"
+  },
+  {
+   "name": "tlm-vl-quality-v1",
+   "domain": "TLM (failed: symbolic-shape recompile refused)",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "90f1a60",
+   "settings": "default TNCA settings",
+   "command": "chat_quality.py --model vl --layers 1 --device tnca --spec spec/r41/chat/quality-v1.json --reference quality-ref-vl-l1/quality.json",
+   "archive": "tlm-v3-proofs-1.tgz"
+  },
+  {
+   "name": "x8rtl-v2",
+   "domain": "RTL (Icarus sim-file)",
+   "launcher": "rtlrun.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "d8a1ae8 (compiler/runtime as in d8a1ae8)",
+   "settings": "non-default: TNCA_IEEE_DIV=1 TNCA_TORCH_DEVICE=native",
+   "command": "fp8_kernels_cases.py --out OUT --group transformers --quick",
+   "archive": "tlm-v3-proofs-1.tgz"
   }
  ]
 }

@@ -576,7 +576,11 @@ def place(stage, device, compile_mode, tree=None, skip=None):
     dev = use_tnca(tree) if device == "tnca" else torch.device(device)
     to_device_except(stage, dev, skip)
     if device == "tnca" or (device == "cpu" and compile_mode == "inductor"):
-        return torch.compile(stage, fullgraph=True), dev
+        # Static shapes: a second input shape (another prompt length) compiles another static graph. With the
+        # default automatic dynamic shapes, torch.compile would instead recompile with a symbolic length, which
+        # the TNCA lowering refuses (scf.if over arith.remsi, TLM tlm-vl-quality-v1). The first compile is static
+        # in both modes, so graphs that never see a second shape are unchanged.
+        return torch.compile(stage, fullgraph=True, dynamic=False), dev
     return stage, dev
 
 

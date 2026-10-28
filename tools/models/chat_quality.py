@@ -47,6 +47,9 @@ def main():
     ap.add_argument("--reference", type=Path, help="archived CPU reference quality.json (required for tnca)")
     ap.add_argument("--root", type=Path, default=HERE.parents[1], help="tree that image paths are relative to")
     ap.add_argument("--layers", type=int, help="reduced-depth proof only")
+    ap.add_argument("--prefill-chunk", type=int, default=0, help="passed to chat.py (bounds compiled prefill shapes)")
+    ap.add_argument("--prompts", help="comma-separated prompt ids: a reduced proof run, labelled as such")
+    ap.add_argument("--max-new-tokens", type=int, help="override new_tokens: a reduced proof run, labelled as such")
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--tnca-tree")
     ap.add_argument("--out", type=Path, required=True)
@@ -55,18 +58,23 @@ def main():
     if a.device == "tnca" and a.reference is None:
         raise SystemExit("--reference (the archived CPU answers) is required on the device")
     reference = json.loads(a.reference.read_text()) if a.reference else None
-    args = chat.parser().parse_args(["--model", a.model, "--device", a.device, "--new-tokens", str(spec["new_tokens"]),
-                                     "--bucket", str(spec["bucket"]), "--threads", str(a.threads)]
+    new_tokens = a.max_new_tokens or spec["new_tokens"]
+    selected = set(a.prompts.split(",")) if a.prompts else None
+    args = chat.parser().parse_args(["--model", a.model, "--device", a.device, "--new-tokens", str(new_tokens),
+                                     "--bucket", str(spec["bucket"]), "--threads", str(a.threads),
+                                     "--prefill-chunk", str(a.prefill_chunk)]
                                     + (["--layers", str(a.layers)] if a.layers else [])
                                     + (["--tnca-tree", a.tnca_tree] if a.tnca_tree else []))
     app = chat.ChatApplication(args)
     a.out.mkdir(parents=True, exist_ok=True)
     result = dict(schema="tnca-chat-quality-result/1", spec=spec["id"], spec_path=str(a.spec), model=app.spec.name,
                   device=a.device, model_scope="reduced-depth-proof" if a.layers else "full-checkpoint",
-                  reference=str(a.reference) if a.reference else None, prompts=[], status="running")
+                  reference=str(a.reference) if a.reference else None, prompts=[], status="running",
+                  prefill_chunk=a.prefill_chunk, new_tokens=new_tokens,
+                  reduced_proof=bool(a.layers or selected or a.max_new_tokens))
     try:
         for prompt in spec["prompts"]:
-            if a.model not in prompt.get("models", ["vl", "q35"]):
+            if a.model not in prompt.get("models", ["vl", "q35"]) or (selected and prompt["id"] not in selected):
                 continue
             app.reset_conversation()
             images = chat.open_images([a.root / p for p in prompt.get("images", [])])
@@ -82,6 +90,8 @@ def main():
             row = dict(id=prompt["id"], kind=prompt["kind"], keywords=prompt["keywords"], turns=turns)
             if reference is not None:
                 ref = {p["id"]: p for p in reference["prompts"]}[prompt["id"]]
+                if a.max_new_tokens:                 # compare against the reference's first tokens only
+                    ref = dict(ref, turns=[dict(r, tokens=r["tokens"][:new_tokens]) for r in ref["turns"]])
                 scores = [score_turn(t, r, prompt["keywords"] if j == len(turns) - 1 else [])
                           for j, (t, r) in enumerate(zip(turns, ref["turns"], strict=True))]
                 row.update(scores=scores, passed=all(s["passed"] for s in scores))

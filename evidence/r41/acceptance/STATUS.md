@@ -861,3 +861,29 @@ spec/r41/chat/board_queue_v2.sh "$PWD" "$HOME/r41_chat_4b0eb91_out"
 
 Prepared, not launched. The lead decides whether to launch now or after the pending TLM/RTL results; the q35
 session check and the two-image and script steps are not yet proven on TLM for this source.
+
+### Superseding lead-only chat launch (immutable 0a8d8db source) — 2026-10-28
+
+The 4b0eb91 command above must not be run: in that source the logits download for host-side token selection was
+counted inside the step's transfer meter, so steady decode would have reported host reads that the manifest says
+must not happen. `0a8d8db` reports it separately as `logits_download_bytes`; a default-settings TLM run of the
+current source shows 0 host reads and 40 bytes written per steady decode token and passes the fixed 0.05 gate
+(`chat/p3/tlm-vl-default-v2.tgz`). TLM results of the other P3 runs are in `doc/r41_chat.md`: the Qwen3-VL
+session check, default-settings and two-image runs pass; both Qwen3.5 4-layer runs fail the 0.05 gate at the
+second token (0.060020090237703445, argmax equal) and the Qwen3.5 session repeat is bitwise equal. The X8 RTL
+control is still running (first case passed).
+
+Commit `0a8d8dbf5f904a8ad7f1992abe615b8dc423f32a` is staged at `~/r41_chat_0a8d8db` on acf3019: 4,150 tracked files match their Git blob SHA-1
+identities, no mismatches (`chat/staged-source-0a8d8db.json`); `--check-only` returns `prepared-only`,
+`card_access=false` (`chat/staged-queue-check-0a8d8db.json`). Manifest, steps and deviations are as described for
+4b0eb91 (`spec/r41/chat/s2-qwen-chat-v2.json`, unchanged). Board time: at most the queue's 10,800-second execution
+cap plus at least 900 s of idle wait; there is no board measurement of Qwen3.5 yet, so the actual use is unknown.
+
+With the approved run-1 image already loaded, on acf3019, never alongside another U280 job:
+
+```sh
+cd ~/r41_chat_0a8d8db
+spec/r41/chat/board_queue_v2.sh "$PWD" "$HOME/r41_chat_0a8d8db_out"
+```
+
+Prepared, not launched.

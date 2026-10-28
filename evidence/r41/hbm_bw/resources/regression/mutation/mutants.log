@@ -1,0 +1,6 @@
+commit d402646067e398b01aaee394e965198b19027ed5 host ip-172-31-27-25 2026-10-28T10:26:27Z
+MUTANT maint_index_plus1 (mode 1): FAIL tb_nuca_shared_read: mismatches=4029
+MUTANT service_way_xor1 (mode 1): FAIL tb_nuca_shared_read: mismatches=24924
+MUTANT mode2_maint_plus1 (mode 2): FAIL tb_nuca_shared_read: mismatches=4029
+MUTANT rline_wrong_slot: FATAL: tb/fpga/tb_line_axi.v:75: LINE_LUTRAM lockstep: outputs differ at cycle 186
+MUTANT wline_fixed_slot: FATAL: tb/fpga/tb_line_axi.v:78: LINE_LUTRAM lockstep: WDATA differs at cycle 15

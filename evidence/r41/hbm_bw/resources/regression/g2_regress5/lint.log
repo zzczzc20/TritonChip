@@ -1,0 +1,9 @@
+LINT FAIL rtl/fpga/tnca_stream_bank.v
+rtl/fpga/tnca_stream_bank.v:53: error: Size cast requires SystemVerilog.
+rtl/fpga/tnca_stream_bank.v:54: error: Size cast requires SystemVerilog.
+rtl/fpga/tnca_stream_bank.v:75: error: Size cast requires SystemVerilog.
+make: *** [Makefile:226: lint] Error 1
+
+real	0m18.626s
+user	0m16.148s
+sys	0m2.791s

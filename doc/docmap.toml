@@ -561,3 +561,8 @@ sources = ["rtl/core/", "rtl/nuca/", "rtl/noc/", "rtl/fpga/"]
 path = "evidence/r41/hbm_bw/AUDIT.md"
 depends_on = ["doc/engineering_discipline.md", "evidence/r41/hbm_bw/BANDWIDTH_PLAN.md", "evidence/r41/hbm_bw/HANDOFF.md", "evidence/r41/hbm_bw/STATUS.md"]
 sources = ["evidence/r41/hbm_bw/audit/", "tools/r41/compare_torch_rtl.py", "tools/r41/hybrid_torch_rtl.py", "python/tnca/backends/multicore_mmio_sim.py", "flow/fpga/run_r41_hbm_stream.sh"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/RESOURCES.md"
+depends_on = ["doc/engineering_discipline.md", "evidence/r41/hbm_bw/BANDWIDTH_PLAN.md"]
+sources = ["evidence/r41/stage2/run1/README.md", "evidence/r41/stage2/run1/run1-reports.tgz", "evidence/r41/stage2/integration/image.tcl", "evidence/r41/hbm_bw/resources/", "tools/r41/util_hier.py", "rtl/nuca/tnca_nuca_slice.v", "rtl/fpga/tnca_line_axi.v", "rtl/tile/tnca_tile.v", "rtl/tnca_top.v", "rtl/tnca_multicore_shell.v", "rtl/fpga/tnca_multicore_axi.v", "rtl/fpga/tnca_multicore_fpga.v", "rtl/board/tnca_multicore_hbm_xo.v", "tb/nuca/tb_nuca_shared_read.v", "tb/fpga/tb_line_axi.v", "tb/fpga/tnca_multicore_board_regs.v", "tools/r40/line_axi_tests.py", "tools/r40/image_geometry_tests.py", "flow/fpga/screen_r41_outlet_lines.tcl", "flow/fpga/screen_r41_tile.tcl", "flow/fpga/synth_r40_multicore.tcl"]

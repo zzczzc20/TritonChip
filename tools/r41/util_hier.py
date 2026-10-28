@@ -7,6 +7,7 @@ given on the command line; nothing is typed in.
   util_hier.py routed  ROUTED_HIER_RPT            per-tile / per-module tables of the routed image
   util_hier.py compare BASE_RPT CAND_RPT [...]    kernel-synthesis deltas, base vs candidate
   util_hier.py slr     LEAF_CELLS_TSV[.gz]        per-SLR primitive counts per module group
+  util_hier.py bytype  HIER_RPT [MIN_LUT]         totals per module type (all instances, kernel)
 
 Report format: `report_utilization -hierarchical` (synthesis or routed; the
 column set is taken from the header line).
@@ -24,7 +25,8 @@ SHORT = {'Total LUTs': 'LUT', 'Logic LUTs': 'logic', 'LUTRAMs': 'LUTRAM', 'SRLs'
 def parse(path):
     """Rows of (path tuple, module, {col: float}) in report order."""
     rows, header, stack = [], None, []
-    for line in open(path, errors='replace'):
+    op = gzip.open if path.endswith('.gz') else open
+    for line in op(path, 'rt', errors='replace'):
         if not line.startswith('|'):
             continue
         cells = line.rstrip('\n').split('|')[1:-1]
@@ -90,9 +92,10 @@ def cmd_routed(path):
     top = rows[0]
     print(f'Report: `{path}`\n')
     # 1. platform versus kernel
-    lvl = find(rows, ['level0_wrapper', 'level0_i'])
+    lvls = [r for r in rows if r[0][-2:] == ('level0_wrapper', 'level0_i')]
     parts = []
-    for r in children(rows, lvl[0]):
+    lvl = lvls[0] if lvls else None
+    for r in (children(rows, lvl[0]) if lvl else []):
         if r[0][-1].startswith('('):
             continue
         if r[0][-1] == 'ulp':
@@ -104,7 +107,8 @@ def cmd_routed(path):
         else:
             parts.append((r[0][-1], r[2]))
     parts.sort(key=lambda e: -e[1].get('Total LUTs', 0))
-    print(table('Whole design: platform shell versus TNCA kernel (`tnca_u50_1`)', parts, total=top[2]))
+    if lvl:
+        print(table('Whole design: platform shell versus TNCA kernel (`tnca_u50_1`)', parts, total=top[2]))
     # 2. kernel, non-tile part
     sysrow = kernel_root(rows)
     ent = []
@@ -181,6 +185,11 @@ def cmd_compare(base, *cands):
                 rc = [r for r in c if r[0][:len(tc[0])] == tc[0] and r[0][len(tc[0]):] == (sub,)]
                 if rb and rc:
                     pairs.append((f'{tb[0][-1]}/{sub}', rb[0][2], rc[0][2]))
+        for pat in [r'g_outlet\[\d+\]\.adapter', r'g_local_tmu\.u_tmu', r'g_shared_tmu\.u_tmu', r'u_mesh']:
+            rb = {r[0][-1]: r for r in b if re.fullmatch(pat, r[0][-1])}
+            rc = {r[0][-1]: r for r in c if re.fullmatch(pat, r[0][-1])}
+            for k in sorted(set(rb) | set(rc)):
+                pairs.append((k, rb[k][2] if k in rb else {}, rc[k][2] if k in rc else {}))
         for name, vb, vc in pairs:
             cells = []
             for k in ['Total LUTs', 'LUTRAMs', 'FFs', 'RAMB36', 'DSP Blocks']:
@@ -200,12 +209,15 @@ GROUPS = [
     ('Platform: other dynamic region (ulp)', r'/ulp/'),
     ('Platform: static shell (blp and others)', r''),
 ]
-KINDS = [('LUT (logic)', lambda rn, pt: pt.startswith('CLB.LUT')),
-         ('LUTRAM/SRL', lambda rn, pt: pt.startswith('CLB.LUTRAM') or pt.startswith('CLB.SRL')),
-         ('FF', lambda rn, pt: pt.startswith('REGISTER')),
-         ('CARRY8', lambda rn, pt: rn == 'CARRY8'),
-         ('BRAM', lambda rn, pt: pt.startswith('BLOCKRAM')),
-         ('DSP', lambda rn, pt: pt.startswith('ARITHMETIC.DSP'))]
+KINDS = [('LUT cells', lambda rn, pt, c: pt.startswith('CLB.LUT.')),
+         ('LUTRAM/SRL cells', lambda rn, pt, c: pt.startswith('CLB.LUTRAM') or pt.startswith('CLB.SRL')),
+         ('FF', lambda rn, pt, c: pt.startswith('REGISTER')),
+         ('FF replicas (`_rep`)', lambda rn, pt, c: pt.startswith('REGISTER') and '_rep' in c),
+         ('CARRY8', lambda rn, pt, c: rn == 'CARRY8'),
+         ('RAMB36', lambda rn, pt, c: rn == 'RAMB36E2'),
+         ('RAMB18', lambda rn, pt, c: rn == 'RAMB18E2'),
+         # a DSP48E2 is several leaf cells; DSP_ALU occurs once per DSP
+         ('DSP', lambda rn, pt, c: rn == 'DSP_ALU')]
 
 
 def cmd_slr(path):
@@ -220,11 +232,12 @@ def cmd_slr(path):
             slrs.add(slr)
             grp = next(g for g, p in pat if p.search(cell))
             for k, test in KINDS:
-                if test(rn, pt):
+                if test(rn, pt, cell):
                     count[(slr, grp)][k] += 1
-    print(f'Leaf-cell dump: `{path}` (primitive cells by placement SLR; a LUT6_2 site '
-          'holding two LUT primitives counts twice here, so these LUT counts exceed '
-          'report_utilization\'s site-based LUT figures)\n')
+    print(f'Leaf-cell dump: `{path}`: placed leaf cells by SLR. LUT and LUTRAM '
+          'columns count leaf cells (a LUT site holding two LUT cells, or a LUTRAM macro\'s '
+          'RAMD32 pair, counts twice), so they exceed report_utilization\'s site-based LUT '
+          'figures; FF, CARRY8, RAMB and DSP counts are exact.\n')
     for slr in sorted(slrs):
         print(f'\n#### {slr}\n')
         print('| Group | ' + ' | '.join(k for k, _ in KINDS) + ' |')
@@ -240,7 +253,51 @@ def cmd_slr(path):
         print('| **SLR total** | ' + ' | '.join(f'**{fmt(tot[k])}**' for k, _ in KINDS) + ' |')
 
 
+def base_module(m):
+    m = re.sub(r'^ulp_tnca_u50_1_0_', '', m)
+    m = re.sub(r'(__parameterized\d+)?(__\d+)?(_\d+)?$', '', m)
+    return re.sub(r'__parameterized\d+.*$', '', m)
+
+
+def cmd_bytype(path, min_lut='1000'):
+    rows = parse(path)
+    sysrow = kernel_root(rows)
+    n = len(sysrow[0])
+    agg = defaultdict(lambda: defaultdict(float))
+    cnt = defaultdict(int)
+    for r in rows:
+        if r[0][:n] != sysrow[0] or len(r[0]) == n or r[0][-1].startswith('('):
+            continue
+        t = base_module(r[1])
+        # count an instance once: skip it when an ancestor has the same type
+        anc = [a for a in rows if False]
+        path_types = set()
+        for k in range(n + 1, len(r[0])):
+            pre = r[0][:k]
+            for a in rows:
+                if a[0] == pre:
+                    path_types.add(base_module(a[1]))
+                    break
+        if t in path_types:
+            continue
+        cnt[t] += 1
+        for c in COLS:
+            agg[t][c] += r[2].get(c, 0)
+    tot = sysrow[2].get('Total LUTs', 1)
+    print(f'Report: `{path}`; kernel total LUTs {fmt(tot)}. Every instance of a module type, '
+          'summed (an instance nested in one of its own type is not counted twice).\n')
+    print('| Module type | instances | LUT | % of kernel LUT | LUTRAM | FF | DSP |')
+    print('|---|---:|---:|---:|---:|---:|---:|')
+    for t in sorted(agg, key=lambda t: -agg[t]['Total LUTs']):
+        if agg[t]['Total LUTs'] < float(min_lut):
+            continue
+        a = agg[t]
+        print(f'| {t} | {cnt[t]} | {fmt(a["Total LUTs"])} | {100 * a["Total LUTs"] / tot:.1f} % | '
+              f'{fmt(a["LUTRAMs"])} | {fmt(a["FFs"])} | {fmt(a["DSP Blocks"])} |')
+
+
 if __name__ == '__main__':
-    if len(sys.argv) < 3 or sys.argv[1] not in ('routed', 'compare', 'slr'):
+    if len(sys.argv) < 3 or sys.argv[1] not in ('routed', 'compare', 'slr', 'bytype'):
         sys.exit(__doc__)
-    {'routed': cmd_routed, 'compare': cmd_compare, 'slr': cmd_slr}[sys.argv[1]](*sys.argv[2:])
+    {'routed': cmd_routed, 'compare': cmd_compare, 'slr': cmd_slr,
+     'bytype': cmd_bytype}[sys.argv[1]](*sys.argv[2:])

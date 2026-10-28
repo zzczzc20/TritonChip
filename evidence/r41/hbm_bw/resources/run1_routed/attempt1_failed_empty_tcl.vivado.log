@@ -1,0 +1,15 @@
+#-----------------------------------------------------------
+# Vivado v2023.2 (64-bit)
+# SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+# IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+# SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+# Start of session at: Wed Oct 28 15:57:12 2026
+# Process ID: 3812002
+# Current directory: /home/zzhouch/r41bw_res
+# Command line: vivado -mode batch -nojournal -log /home/zzhouch/r41bw_res/hier_run1.log -source /home/zzhouch/r41bw_res/hier_run1.tcl -tclargs /home/zzhouch/tnca_images/r41s2_run1_c9f25787494a/level0_wrapper_routed.dcp /home/zzhouch/r41bw_res/out
+# Log file: /home/zzhouch/r41bw_res/hier_run1.log
+# Journal file: 
+# Running On: acf3019, OS: Linux, CPU Frequency: 1200.000 MHz, CPU Physical cores: 12, Host memory: 67419 MB
+#-----------------------------------------------------------
+source /home/zzhouch/r41bw_res/hier_run1.tcl
+INFO: [Common 17-206] Exiting Vivado at Wed Oct 28 15:57:31 2026...

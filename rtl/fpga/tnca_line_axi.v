@@ -17,7 +17,15 @@
 module tnca_line_axi #(
  parameter SRC_W=2,TAG_W=3,OUT_N=8,DATA_W=256,DYNAMIC_LIMIT=0,
  parameter ID_W=(OUT_N>1?$clog2(OUT_N):1),
- parameter MEM_BASE=64'h20000,WRITE_RESPONSES=0,PIPELINED_ISSUE=0,HBM_STRIPED=0
+ parameter MEM_BASE=64'h20000,WRITE_RESPONSES=0,PIPELINED_ISSUE=0,HBM_STRIPED=0,
+ // R41 G2 (resources): 1 = the slot line buffers are distributed RAM instead
+ // of registers: a write slot's line (written once, on admission, read by the
+ // W channel) and a read slot's beats (written by R, read once, on the last
+ // beat) are kept in separate arrays, each with one write port. The bytes on
+ // every handshake and every response are the same as with 0 (the default,
+ // which builds the module that existed before); WDATA differs only while
+ // WVALID is low.
+ parameter LINE_LUTRAM=0
 )(
  input wire clk,rst_n,
  input wire [7:0] admission_limit,
@@ -117,7 +125,9 @@ module tnca_line_axi #(
  assign m_awaddr=m_araddr;assign m_awid=issue_slot;
  assign m_awlen=BEATS-1;assign m_awsize=m_arsize;assign m_awburst=2'b01;
  assign m_wvalid=issue_valid && writing[issue_slot] && !w_done;
- assign m_wdata=line[issue_slot][wbeat*DATA_W+:DATA_W];
+ wire [511:0] w_line;
+ wire [511:0] r_line;   // LINE_LUTRAM: the read slot m_rid's beats so far
+ assign m_wdata=w_line[wbeat*DATA_W+:DATA_W];
  assign m_wstrb={DATA_W/8{1'b1}};assign m_wlast=wbeat==BEATS-1;
  wire issue_done=issue_valid && (writing[issue_slot] ?
    ((aw_done || m_awready) && (w_done || (m_wready && m_wlast))) : m_arready);
@@ -138,13 +148,28 @@ module tnca_line_axi #(
    tnca_invalid_axi_base_alignment invalid_configuration();
   end
  endgenerate
+ wire r_write=m_rvalid && m_rready && read_match;
+ generate if(LINE_LUTRAM)begin:g_lutram_lines
+  // No reset: a slot's data is read only after this tenure wrote it.
+  (* ram_style="distributed" *) reg [511:0] wbuf[0:OUT_N-1];
+  always @(posedge clk) if(rst_n && req_valid && req_ready) wbuf[free_slot]<=req_wdata;
+  assign w_line=wbuf[issue_slot];
+  for(genvar b=0;b<BEATS;b=b+1)begin:g_rbeat
+   (* ram_style="distributed" *) reg [DATA_W-1:0] rbuf[0:OUT_N-1];
+   always @(posedge clk) if(rst_n && r_write && rbeat[m_rid]==b) rbuf[m_rid]<=m_rdata;
+   assign r_line[b*DATA_W+:DATA_W]=rbuf[m_rid];
+  end
+ end else begin:g_register_lines
+  assign w_line=line[issue_slot];
+  assign r_line=line[m_rid];
+ end endgenerate
  always @(posedge clk)begin
   if(!rst_n)begin
    active<=0;writing<=0;sent<=0;issue_valid<=0;issue_slot<=0;pending_valid<=0;pending_slot<=0;
    aw_done<=0;w_done<=0;wbeat<=0;fault<=0;rsp_valid<=0;
    rsp_src<=0;rsp_tag<=0;rsp_rdata<=0;
    read_lines<=0;write_lines<=0;read_beats<=0;write_beats<=0;
-   for(i=0;i<OUT_N;i=i+1)begin address[i]<=0;bus_address[i]<=0;line[i]<=0;source[i]<=0;tag[i]<=0;rbeat[i]<=0;end
+   for(i=0;i<OUT_N;i=i+1)begin address[i]<=0;bus_address[i]<=0;if(!LINE_LUTRAM)line[i]<=0;source[i]<=0;tag[i]<=0;rbeat[i]<=0;end
   end else begin
    rsp_valid<=0;
    if(req_valid && !fault && !legal_address)fault<=1;
@@ -169,7 +194,7 @@ module tnca_line_axi #(
    // A full pending queue refuses admission, even if it drains this cycle.
    if(req_valid && req_ready)begin
     active[free_slot]<=1;writing[free_slot]<=req_we;sent[free_slot]<=0;
-    address[free_slot]<=req_addr;bus_address[free_slot]<=base_q+bus_offset;line[free_slot]<=req_wdata;
+    address[free_slot]<=req_addr;bus_address[free_slot]<=base_q+bus_offset;if(!LINE_LUTRAM)line[free_slot]<=req_wdata;
     source[free_slot]<=req_src;tag[free_slot]<=req_tag;rbeat[free_slot]<=0;
     if(!issue_valid || (PIPELINED_ISSUE && issue_done && !pending_valid))begin
      issue_slot<=free_slot;issue_valid<=1;aw_done<=0;w_done<=0;wbeat<=0;
@@ -182,10 +207,10 @@ module tnca_line_axi #(
     else begin
      read_beats<=read_beats+1;
      if(m_rresp!=0 || m_rlast!=(rbeat[m_rid]==BEATS-1))fault<=1;
-     line[m_rid][rbeat[m_rid]*DATA_W+:DATA_W]<=m_rdata;
+     if(!LINE_LUTRAM)line[m_rid][rbeat[m_rid]*DATA_W+:DATA_W]<=m_rdata;
      if(read_final)begin
       active[m_rid]<=0;rsp_valid<=1;rsp_src<=source[m_rid];rsp_tag<=tag[m_rid];
-      rsp_rdata<=line[m_rid];rsp_rdata[rbeat[m_rid]*DATA_W+:DATA_W]<=m_rdata;
+      rsp_rdata<=r_line;rsp_rdata[rbeat[m_rid]*DATA_W+:DATA_W]<=m_rdata;
      end else if(rbeat[m_rid]<BEATS-1)rbeat[m_rid]<=rbeat[m_rid]+1;
     end
    end

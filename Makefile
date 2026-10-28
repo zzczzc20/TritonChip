@@ -2224,7 +2224,8 @@ r1-build-tests:
 r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
                   $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp $(BUILD)/tb_core_xpose.vvp \
                   $(BUILD)/tb_core_r39hw.vvp $(BUILD)/tb_core_r39sw.vvp \
-                  $(BUILD)/tb_core_r39sw4.vvp $(BUILD)/tb_core_r39sw5.vvp
+                  $(BUILD)/tb_core_r39sw4.vvp $(BUILD)/tb_core_r39sw5.vvp \
+                  $(BUILD)/tb_core_r39sw5x8.vvp $(BUILD)/tb_core_g2.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
 r1-signoff:

@@ -904,6 +904,14 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
         sr = strength_reduce(kernel)
         cse = pure_scalar_cse(kernel)
         dead = drop_dead_pure(kernel, flat_control=getattr(imp, 'tiled_pointwise_plan', None) is not None)
+        if dict(target.capabilities).get('matrix_dp'):
+            # R41 run-2 issue-stream work, gated by the capability until the audit decides
+            # whether it becomes the default: dominator-scoped value numbering.
+            from tnca_cc.optimization import dominating_value_numbering
+            import os as _os
+            vn = dominating_value_numbering(kernel, scalar_window=int(_os.environ.get('TNCA_VN_SWIN', 400)),
+                                            vector_window=int(_os.environ.get('TNCA_VN_VWIN', 80)))
+            prov.record('opt_value_numbering_merged', vn['merged'])
         prov.record('opt_strength_reduced', sr['sites'])
         prov.record('opt_pure_scalar_merged', cse['merged'])
         prov.record('opt_dead_pure_removed', dead['removed'])
@@ -1284,6 +1292,14 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
         sr = strength_reduce(kernel)
         info = pure_scalar_cse(kernel)
         dead = drop_dead_pure(kernel, flat_control=getattr(imp, 'tiled_pointwise_plan', None) is not None)
+        if dict(target.capabilities).get('matrix_dp'):
+            # R41 run-2 issue-stream work, gated by the capability until the audit decides
+            # whether it becomes the default: dominator-scoped value numbering.
+            from tnca_cc.optimization import dominating_value_numbering
+            import os as _os
+            vn = dominating_value_numbering(kernel, scalar_window=int(_os.environ.get('TNCA_VN_SWIN', 400)),
+                                            vector_window=int(_os.environ.get('TNCA_VN_VWIN', 80)))
+            prov.record('opt_value_numbering_merged', vn['merged'])
         prov.record('opt_strength_reduced', sr['sites'])
         prov.record('opt_pure_scalar_merged', info['merged'])
         prov.record('opt_dead_pure_removed', dead['removed'])

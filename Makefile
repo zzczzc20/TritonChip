@@ -751,9 +751,9 @@ core-g2c4 core-run2: export ARGS_t18_squash := +roles=2
 core-g2c4 core-run2: export ARGS_t17_descfault := $(ARGS_t17_descfault)
 core-g2c4 core-run2: export ARGS_t23_amofault := $(ARGS_t23_amofault)
 core-g2c4 core-run2: export ARGS_t39_slice := +allroles +slice
-# t39_pair's two pairs need 5 barriers each, 10 > the 8 barriers: one pair here
-# (a barrier index beyond a context's slice aliases into the next slice, no fault).
-core-g2c4 core-run2: export ARGS_t39_pair := +roles=2 +slice +slicek=1 +pair
+# t39_pair needs five barriers per pair, so the 8-barrier core runs one pair.
+# Like the runtime's one-program paired launch, leave the resources unsliced.
+core-g2c4 core-run2: export ARGS_t39_pair := +roles=2 +pair
 core-g2c4 core-run2: export ARGS_t32_xpose_badsize := +expectfault=04
 G2C4_PROGS := $(patsubst t15_target,t15_target_vrf_v5_x8_g2c4,$(CORE_PROGS)) t39_pair t30_xpose t32_xpose_badsize
 .PHONY: core-g2c4

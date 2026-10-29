@@ -2,7 +2,7 @@
 
 The compiler's own output for `tl.dot` of E4M3, E5M2, FP16 and BF16 operands (target
 `tnca-sim-dp`: MATRIX_DP) runs on `tb_tnca_core` elaborated with MAC_DP=1 (sim/build/
-tb_core_dp14.vvp, built by `make core-mmadp`), and every output word is compared with the
+tb_core_dp29.vvp, built by `make core-mmadp`), and every output word is compared with the
 exact oracle tools/model/fdp.py (Fractions, groups of 4 for E4M3 x E4M3 and 2 otherwise,
 RO_48). Operands are random encodings over several binades, so the one rounding per group
 differs from the one rounding per product. Domain: RTL simulation of one core.

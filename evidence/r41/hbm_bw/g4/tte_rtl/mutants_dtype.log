@@ -16,3 +16,6 @@
 #           re-taken while its read is in flight only with more than 16 misses outstanding, which 16 tags and
 #           at most 16 source rows exclude. The check stays as a guard for larger NTAG.
 # hits in the miter (seed 1): 606 of 760 transposed unit reads answered from the buffer
+# Row-indexed line buffer (0802ae88): local answer without the word shift -> caught (miter seed 1, XRACE=1);
+# no command-start clear -> caught by XRACE=1; no line-index compare (any filled row entry hits) -> caught on
+# miter seeds 2, 3, 4, 6 (seed 1, 5 do not cross a line inside a transposed row).

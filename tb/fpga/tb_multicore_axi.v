@@ -125,9 +125,9 @@ generate for(genvar c=0;c<N;c=c+1)begin:g_lsu_coverage
  reg [31:0] chain_count=0,fill_count=0,bg_count=0;
  always @(posedge clk)if(!rst)begin chain_count<=0;fill_count<=0;bg_count<=0;end
  else begin
-  if(dut.shell.u_system.g_tile[c].u_tile.u_slice.hit_chain_take)chain_count<=chain_count+1;
-  if(dut.shell.u_system.g_tile[c].u_tile.u_slice.fill_fast_take)fill_count<=fill_count+1;
-  if(dut.shell.u_system.g_tile[c].u_tile.u_slice.use_background && dut.shell.u_system.g_tile[c].u_tile.u_slice.mem_req_ready)bg_count<=bg_count+1;
+  if(dut.shell.u_system.g_tile[c].u_tile.g_slice.u_slice.hit_chain_take)chain_count<=chain_count+1;
+  if(dut.shell.u_system.g_tile[c].u_tile.g_slice.u_slice.fill_fast_take)fill_count<=fill_count+1;
+  if(dut.shell.u_system.g_tile[c].u_tile.g_slice.u_slice.use_background && dut.shell.u_system.g_tile[c].u_tile.g_slice.u_slice.mem_req_ready)bg_count<=bg_count+1;
  end
  assign chained_hits[c*32+:32]=chain_count;
  assign fast_fill_count[c*32+:32]=fill_count;

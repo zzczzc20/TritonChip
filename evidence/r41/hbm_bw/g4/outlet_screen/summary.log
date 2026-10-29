@@ -1,0 +1,3 @@
+R41_OUTLET_LINES_SCREEN line_lutram=1 data_w=256 out_n=32 pipelined=1 striped=1 period_ns=10 wns_ns=3.916
+R41_OUTLET_LINES_SCREEN line_lutram=1 data_w=512 out_n=32 pipelined=1 striped=1 period_ns=10 wns_ns=3.039
+R41_OUTLET_LINES_SCREEN line_lutram=1 data_w=512 out_n=64 pipelined=1 striped=1 period_ns=10 wns_ns=3.565

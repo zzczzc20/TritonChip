@@ -30,8 +30,8 @@ module tnca_multicore_regs;
    always @(posedge clk)begin
     if(!rst_n_async)begin observed_fast_fills<=0;observed_bg_reads<=0;end
     else begin
-     if(dut.system.shell.u_system.g_tile[c].u_tile.u_slice.fill_fast_take)observed_fast_fills<=observed_fast_fills+1;
-     if(dut.system.shell.u_system.g_tile[c].u_tile.u_slice.use_background && dut.system.shell.u_system.g_tile[c].u_tile.u_slice.mem_req_ready)observed_bg_reads<=observed_bg_reads+1;
+     if(dut.system.shell.u_system.g_tile[c].u_tile.g_slice.u_slice.fill_fast_take)observed_fast_fills<=observed_fast_fills+1;
+     if(dut.system.shell.u_system.g_tile[c].u_tile.g_slice.u_slice.use_background && dut.system.shell.u_system.g_tile[c].u_tile.g_slice.u_slice.mem_req_ready)observed_bg_reads<=observed_bg_reads+1;
     end
     if($test$plusargs("trace") && rst_n_async && dut.done_valid)
      $display("FAST FILL WATCH cycle=%0d home=%0d count=%0d background=%0d",diag_cycle,c,observed_fast_fills,observed_bg_reads);

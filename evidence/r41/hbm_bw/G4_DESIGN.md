@@ -626,7 +626,7 @@ On the five points (rtl, default compiler; run-1 cycles divided by the image's c
 Restoring the contexts recovers the slowdown. Two exceptions remain:
 - **exp on `g2c4` (0.89×).** Each kept cut alone left exp at 1.00×.
   - The same `g2c4` image runs exp at 104,400 cycles (1.00×) when the code is compiled for the 32-barrier target `core-vrf-sync-v5-x8` (`g4/g2c4/rtl/x_g2c4_profile_x8_exp.jsonl`). The loss therefore comes from what the compiler does for the 8-barrier target with four contexts, not from the hardware.
-  - The compiled code of the two runs has not been compared yet.
+  - Explained and fixed in §9.6: the resized profile took the flip-flop scheduling model.
 - **Strided add on `s4c4` (0.94×).** Codex owns the strided points.
 
 ### 9.4 (a) The per-program cost
@@ -693,6 +693,126 @@ This lies between the 2-cycle (`pipe`) and 1-cycle (`pipe1`) brackets of §9.2: 
 | relu fp32 | 4,718 | 8,169 | 1.7× |
 
 Model gains are therefore upper bounds until the core pipeline is calibrated.
+
+### 9.6 (c) The line-wide tensor engine in RTL, and the run-2 steps
+
+Further decisions and directions of 2026-10-29:
+- The author (course note): the goal is FP8 model performance. The engine must stream bytes for any element type, and it must serve the matrix engine's weight stream (X8 transposed transfers and matrix-operand loads).
+- The coordinator: also cut the home read miss to one cycle a line and widen the outlets. Go to 64 lines in flight if the screens fit. Run 2 also carries the multi-precision matrix MAC lane (G2) and `FMA_IMPL=1`, so the screens must leave room for them.
+
+**The engine** (`rtl/core/tnca_tensor.v` `LINE_ENGINE`, image parameter `TENSOR_LINE`, default 0; plumbed core → tile → top → shell → AXI → FPGA → XO and the board bench):
+- A transfer whose rows are whole 64-byte lines moves as line requests through 32 line buffers (64 with `LINE_SLOTS 64`), with up to 8 commands in flight. A line must be inside the tensor, with line-aligned row starts and outer strides.
+- The eligibility test has no element-size term. The engine moves bytes, so fp32, fp16/bf16 and fp8 lines take the same path.
+- A TensorMap at a line-aligned address is read as four line requests.
+- Every other transfer keeps the word walk, placed in a line of the same port. That includes the transposed X8 tile, a box with a partial line, and an unaligned map. The walk's register writes take the window port first and line writes take any other cycle, so a word-walk command no longer waits for line commands to drain (commit `4ed6c0d`).
+- A store reads its next line's register while the current line waits (`7d645ec`).
+
+**Verification (rtl):**
+- `tb/core/tb_tensor_line.v` is a miter: the line engine and the word engine run the same programs, with random memory latency, request refusals and register-file refusals. Memories, register files, completions and faults must match.
+- Slots carry fp32, fp16 and fp8 element sizes. Transposed 16-bit and 1-byte loads, some of them whole-line boxes, are interleaved with line commands.
+- `tools/r41/tensor_line_tests.py`: 18 of 18 configurations pass (`g4/tte_rtl/miter_dtypes_xpose.log`).
+- Mutants caught: register index, data, inside test, stride, open count, line count, descriptor data, two prefetch mutants, port arbitration (seeds 3 and 5), and the element size of the line count (`g4/tte_rtl/mutants_dtype.log`).
+- Removing `!t_xpose` from the eligibility is an equivalent mutant: the transposed branch is taken first.
+
+**Defects found on the way, and what they change by default:**
+
+| Defect | Effect | Fix | Default behaviour |
+|---|---|---|---|
+| A mode-3 kernel not wrapped by `rctx_spmd` had no fence between its descriptor stores and `td.load` | the line snapshot read a stale word; runtime fault on copy | `rctx_spmd.publish_scratch_maps`, called by `aot._emit` | **changes default code**: one fence before the first snapshot of a map written since the last fence. Gate audit compare pending |
+| With `HYBRID_LSU`, a fence or arrive could pass an access still in X | race on the line LSU path | fence and arrive also wait for `x_mem_claim` | only with `HYBRID_LSU` (off by default) |
+| A resized profile (x8-g2, x8-g2c4) was scheduled with the flip-flop default model | exp 0.89× on `g2c4` (§9.3) | `schedule.Model` takes the longest listed target prefix; `tools/r39/schedule_tests.py` checks every banked target | **changes code** for those profiles only; g2c4 five-point geometric mean 0.971 → 0.996, exp 1.00× (rtl, `g4/g2c4/rtl_sched_fix/`) |
+| `7b646be` did not elaborate in Vivado with `LINE_ENGINE 0` when the core's slot tag is wider than the port tag | the s4c4 kernel synthesis failed. Icarus accepted it, so the gates did not see it | zero-extend the response tag and data before slicing (`4ed6c0d`); Vivado elaborates both settings (`g4/tte_rtl/vivado_elab_le0_le1.log`) | none after the fix |
+
+**Tried and rejected** (rtl, s5, copy fp32 64 KiB, mode 3):
+- A ring sized by the context's barrier slice: 5,599 against 5,144 cycles.
+- `TILED_MIN_PROGRAMS 16`: 5,984.
+
+**RTL probes** (small 64 KiB registered points, profile g2c4, cycles; `g4/tte_rtl/probes/`):
+
+| Point | s4c4 mode 0 | s4c4 mode 2 | s5 mode 3, `7b646be` | s5 mode 3, `247f43d` | s6 mode 3 |
+|---|---:|---:|---:|---:|---:|
+PROBE_ROWS
+
+- fp16 points take mode 2's lowering under mode 3, because the compiler's tensor-engine accesses still require 4-byte elements. The register layout of 16- and 8-bit vectors, not the engine, sets that limit.
+- At mode 3's 8192-lane block, fp16 add runs at 0.78× mode 2 (rtl). The fallback should use mode 2's block. This affects only the non-default compiler mode, and it is open.
+
+**Home read miss at one cycle a line** (`HOME_LINE_PIPE 2` → `tnca_home_pipe` `FILL_CHAIN`):
+- A read miss cost two cycles because the fill unit idled one cycle between MSHRs. It now starts the next filled MSHR in the cycle it finishes one.
+- `tools/r41/g4_home_pipe_tests.py --fill-chain 1`: 189 of 189 cases pass.
+- Streaming read misses, image slice geometry, cycles per line (rtl, one slice, `g4/home_chain/`):
+
+| MSHRs / requester tags | fill chain | lat 10 | lat 40 | lat 80 |
+|---|---|---:|---:|---:|
+| 32 / 32 | off | 2.01 | 2.02 | 2.78 |
+| 32 / 32 | on | 1.01 | 1.52 | 2.77 |
+| 64 / 128 | off | 2.01 | 2.02 | 2.04 |
+| 64 / 128 | on | 1.01 | 1.02 | 1.38 |
+
+- One line a cycle needs both the chain and about one line in flight per cycle of round trip. The board bench's round trip is 25–63 cycles, so 32 lines in flight bind first.
+- A copy stays at 1.26–1.29 cycles a request. A fill and a full-line install share the data array's write port.
+- The calibration bench's DRAM model silently dropped reads beyond 32 in flight. Its pool is now a parameter.
+
+**Outlets.** `tnca_line_axi` already supports a 512-bit data width (one beat a line). The board bench now takes `AXI_DATA_W`. Screen, one outlet in SLR0 at 10 ns, `LINE_LUTRAM 1`, pipelined issue, striped (screen, `g4/outlet_screen/`):
+
+| Outlet | LUTs | registers | CLBs | WNS |
+|---|---:|---:|---:|---:|
+| 256-bit, 32 slots (s5, s6) | 3,147 | 5,405 | 1,088 | +3.916 ns |
+| 512-bit, 32 slots (s6w) | 2,436 | 5,367 | 997 | +3.039 ns |
+| 512-bit, 64 slots (s7, run-2 candidate) | 4,387 | 9,808 | 1,956 | +3.565 ns |
+
+A 512-bit outlet is smaller than a 256-bit one. Its cost is the platform's 512→256 width converter in front of each HBM port, which v++ inserts and an out-of-context screen does not see. Each 256-bit HBM port at 450 MHz carries 14.4 GB/s, above a 512-bit outlet's 6.4 GB/s at 100 MHz.
+
+**Screens** (tile 0 placed and routed out of context in SLR0 at 10 ns; kernel synthesis LUTs for the whole kernel; screen domain, x86 host):
+
+| Image | what it adds | kernel LUTs | tile LUTs | tile CLBs (% of SLR0) | WNS |
+|---|---|---:|---:|---:|---:|
+SCREEN_ROWS
+
+**Run-2 candidate** (`g4/run2/image.tcl` = `image_s7.tcl` + `HBM_STRIPED 1`):
+- four contexts;
+- the line engine (`TENSOR_LINE 1`);
+- chained fills (`HOME_LINE_PIPE 2`);
+- 512-bit outlets;
+- 64 lines in flight per core and per home (`LINE_SLOTS`, `HOME_MSHR_N`, `AXI_OUT_N 64`).
+
+G2 adds `FMA_IMPL=1` and the matrix MAC lane to the same file. The new options are default-off in the RTL and stay off until the gate.
+
+Not on the line path yet: the transposed X8 tile, which is the FP8 weight stream's corner turn.
+- It still reads 8-byte units, one per source row per column block, so it moves at most 8 bytes a cycle.
+- A line version reads 16 whole rows and turns 64 columns. Its buffer is 1 KiB instead of 128 bytes, and its output multiplexer is about 8× wider.
+- Proposed as the next RTL step if the profile of FP8 decode shows transposed weight loads on its critical path. Non-transposed matrix-operand loads of whole lines already take the line path.
+
+### 9.7 Semantic hardware prefetch into the home (evaluation, 2-hour time box)
+The author's idea (source: the author, in the lead's chat, 2026-10-29), relayed by the coordinator: hardware prefetch through the home/TMU, using either (a) hints from the line TTE about the rest of a descriptor's box, or (b) a stream detector on sequential read misses. Prefetched lines are clean, non-reserving and droppable.
+
+**Decision: no-go for run 2. The design is kept for later.** The reasons, with numbers:
+
+1. **What prefetch buys is a smaller core window, and the run-2 candidate already has a large one.**
+   - Prefetch hides the memory round trip from the core: a demand that finds its line in the home waits only for the core–home round trip.
+   - The other route is enough lines in flight per core. Kernel synthesis, s5 → run-2 candidate, per tile:
+     - 32 → 64 slots costs +957 LUTs in the tensor engine and +848 in the line LSU;
+     - 32 → 64 MSHRs costs +4,367 in the home pipe;
+     - the 512-bit 64-slot outlet costs +1,170 per outlet.
+     The tile screen of the candidate is in the screens table.
+   - A prefetcher is estimated at 2–5 k LUTs per tile (detector or TTE look-ahead, a request injector at the home arbiter, a target-less MSHR, a NoC request class for (a)). That buys no more than the 64 slots already do.
+2. **The upper bound of the gain is measured.** Home bench, streaming reads with chained fills, rtl, one slice, cycles per line (§9.6):
+   - 32 lines in flight with 32 MSHRs: 1.52 at 40 cycles of latency, 2.77 at 80 (42 and 23 B/cycle);
+   - 128 in flight with 64 MSHRs: 1.02 and 1.38 (63 and 46 B/cycle).
+   - Prefetch with a 32-line core window can at best reach the second row, and only if the home itself keeps about one line in flight per cycle of memory latency. Prefetch therefore needs the 64 MSHRs as well: it moves the window from the core to the home but does not shrink it.
+   - With 64 core slots and the bench's 25–63-cycle round trips, a stream is already port-bound (64 lines ÷ ~60 cycles ≈ 1 line a cycle), so prefetch adds nothing there.
+   - It would add bandwidth only if the board's round trip exceeds about 64 cycles. That round trip has not been measured (LINK_BUDGET.md).
+3. **Schedule and risk.** Run 2 is due within two days, behind the gate. Prefetch adds:
+   - a third request source to the home arbiter;
+   - a target-less MSHR state in the fill unit;
+   - interactions with the same-line ordering rule, the writeback-before-read rule, maintenance drain and DCO policy;
+   - for (a), a new NoC request class.
+   Each needs the randomized home regressions and the board-top geometry bench.
+
+**Sketch for later** (all default-off; no recognition of names or shapes):
+- **Home side, common to (a) and (b).** A prefetch request enters the arbiter only when no demand is eligible. It is dropped in S2 on a hit, on a merge, or when fewer than *k* MSHRs are free. Otherwise it allocates an MSHR with no target and claims a clean or written-back victim. The fill unit installs the line clean (no dirty bit, no response) and frees the MSHR. A demand that arrives first merges as an ordinary target. Maintenance drains prefetch MSHRs like any other.
+- **(b) Stream detector per home.** Four entries of {line address, stride = the home interleave}. On a demand read miss that continues an entry, issue up to *k* prefetches at distance *d* ≤ 16 lines per stream. That bounds prefetched lines to 4 × 16 = 64 of the slice's 256 lines.
+- **(a) TTE hints.** The line engine already walks the box's line addresses. A second walker runs up to *d* lines ahead of the issued window and sends prefetch requests (a request bit on the line NoC) at the lowest arbiter priority.
+- **When to revisit:** if the board's measured HBM round trip exceeds the core window, or if the FP8 decode profile shows the vector (non-TTE) load path latency-bound.
 
 ## Reproduction
 

@@ -421,6 +421,10 @@ module tnca_tile #(
     wire [31:0] hs_perf_evict, hp_perf_evict;
     wire [31:0] hs_perf_dead_evict, hp_perf_dead_evict;
     wire [3:0] hs_perf_gear, hp_perf_gear;
+    // R41 G4: the serial slice exists only without the pipelined home, so the
+    // hierarchy reports the area that is built (it was idle but synthesised,
+    // and grew with HOME_MSHR_N). Its outputs read as zero otherwise.
+    generate if (!HOME_PIPE_ON) begin : g_slice
     (* KEEP_HIERARCHY = "yes" *) tnca_nuca_slice #(
         .REGISTER_VICTIM_OWNER(1), .REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .SHARED_DATA_READ(NUCA_SHARED_DATA_READ), .REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK), .MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .FULL_LINE_TAG(!(NX==2 && NY==2)),
@@ -464,10 +468,21 @@ module tnca_tile #(
         .perf_bypass(hs_perf_bypass), .perf_evict(hs_perf_evict),
         .perf_dead_evict(hs_perf_dead_evict), .perf_gear(hs_perf_gear)
     );
+    end else begin : g_no_slice
+        assign hs_maint_ready = 1'b0; assign hs_maint_done = 1'b0; assign hs_req_ready = 1'b0;
+        assign hs_rsp_valid = 1'b0; assign hs_rsp_src = {SLICE_SRC_W{1'b0}}; assign hs_rsp_tag = {S_TAG_W{1'b0}};
+        assign hs_rsp_rdata = {CORE_DW{1'b0}}; assign hs_mem_req_valid = 1'b0; assign hs_mem_req_addr = {SA_W{1'b0}};
+        assign hs_mem_req_we = 1'b0; assign hs_mem_req_wdata = {LINE_BITS{1'b0}}; assign hs_mem_req_tag = {MSHR_W{1'b0}};
+        assign hs_perf_hit = 32'd0; assign hs_perf_miss = 32'd0; assign hs_perf_merge = 32'd0;
+        assign hs_perf_mshr_full = 32'd0; assign hs_perf_wb = 32'd0; assign hs_perf_hit_past_block = 32'd0;
+        assign hs_tmu_wr_valid = 1'b0; assign hs_tmu_wr_off = 12'd0; assign hs_tmu_wr_data = 64'd0;
+        assign hs_tmu_wr_src = {SLICE_SRC_W{1'b0}}; assign hs_tmu_rd_off = 12'd0; assign hs_tmu_tl_valid = 1'b0;
+        assign hs_tmu_tl_addr = 64'd0; assign hs_tmu_tl_drop = 1'b0; assign hs_perf_bypass = 32'd0;
+        assign hs_perf_evict = 32'd0; assign hs_perf_dead_evict = 32'd0; assign hs_perf_gear = 4'd0;
+    end endgenerate
 
     // R41 G4: the pipelined home. The serial slice above stays the instance
-    // u_slice in every build (its hierarchy is unchanged); with HOME_LINE_PIPE it
-    // receives no request and its outputs are not used.
+    // serial slice (g_slice.u_slice) is built only when it is off.
     generate if (HOME_PIPE_ON) begin : g_home_pipe
     (* KEEP_HIERARCHY = "yes" *) tnca_home_pipe #(
         .MAINTENANCE(CACHE_MAINTENANCE), .FULL_LINE_TAG(!(NX==2 && NY==2)),
@@ -516,7 +531,7 @@ module tnca_tile #(
     // home observation for testbench probes (est of whichever home is in use)
     wire [3:0] home_est;
     generate if (HOME_PIPE_ON) begin : g_home_est assign home_est = g_home_pipe.u_home_pipe.est; end
-    else begin : g_home_est_s assign home_est = u_slice.est; end endgenerate
+    else begin : g_home_est_s assign home_est = g_slice.u_slice.est; end endgenerate
 
     //==========================================================================
     // Local mesh port

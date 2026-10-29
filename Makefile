@@ -375,6 +375,8 @@ $(TB)/core/progs/t12_tensor.s: $(TB)/core/progs/gen_t12_tensor.py $(TOOLS)/model
 
 $(TB)/core/progs/t14_caps.s: $(TB)/core/progs/gen_t14_caps.py
 	$(PYTHON) $<
+$(TB)/core/progs/t14_caps_dp.s: $(TB)/core/progs/gen_t14_caps.py
+	T14_DP=1 $(PYTHON) $<
 
 $(TB)/core/progs/t15_target.s: $(TB)/core/progs/gen_t15_target.py \
                                compiler/targets/tnca-sim-v0.1.json
@@ -736,11 +738,15 @@ $(BUILD)/tb_core_g2c4_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
 $(TB)/core/progs/t15_target_vrf_v5_x8_g2c4.s: $(TB)/core/progs/gen_t15_target.py \
                                               compiler/targets/tnca-sim-vrf-v5-x8-g2c4.json
 	$(PYTHON) $< tnca-sim-vrf-v5-x8-g2c4
+$(TB)/core/progs/t15_target_vrf_v5_x8_g2c4_dp.s: $(TB)/core/progs/gen_t15_target.py \
+                                                 compiler/targets/tnca-sim-vrf-v5-x8-g2c4-dp.json
+	$(PYTHON) $< tnca-sim-vrf-v5-x8-g2c4-dp
 # core-r39sw5's program list and arguments (four contexts) on the G2-cut core.
 core-g2c4 core-run2: export ARGS_t04_roles := +roles=2
 core-g2c4 core-run2: export ARGS_t05_fault := +roles=2 +expectfault=01
 core-g2c4 core-run2: export ARGS_t13_share := +roles=2 +aliasvrf
 core-g2c4 core-run2: export ARGS_t15_target_vrf_v5_x8_g2c4 := +allroles
+core-run2: export ARGS_t15_target_vrf_v5_x8_g2c4_dp := +allroles
 core-g2c4 core-run2: export ARGS_t18_squash := +roles=2
 core-g2c4 core-run2: export ARGS_t17_descfault := $(ARGS_t17_descfault)
 core-g2c4 core-run2: export ARGS_t23_amofault := $(ARGS_t23_amofault)
@@ -778,9 +784,10 @@ $(BUILD)/tb_core_run2_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
 	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
 # core-g2c4's program list plus t41_mmadp, on that machine (in-order and slow, reordered memory)
 .PHONY: core-run2
-core-run2: $(patsubst %,$(BUILD)/%.hex,$(G2C4_PROGS)) $(BUILD)/t41_mmadp.hex \
+RUN2_PROGS := $(patsubst t14_caps,t14_caps_dp,$(patsubst t15_target_vrf_v5_x8_g2c4,t15_target_vrf_v5_x8_g2c4_dp,$(G2C4_PROGS)))
+core-run2: $(patsubst %,$(BUILD)/%.hex,$(RUN2_PROGS)) $(BUILD)/t41_mmadp.hex \
            $(BUILD)/tb_core_run2.vvp $(BUILD)/tb_core_run2_ooo.vvp | dirs
-	@for p in $(G2C4_PROGS) t41_mmadp; do \
+	@for p in $(RUN2_PROGS) t41_mmadp; do \
 	   extra=$$(eval echo \$${ARGS_$$p}); \
 	   $(TOOLS)/run_test.sh "$$p (run2)" \
 	     "$(VVP) $(BUILD)/tb_core_run2.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \

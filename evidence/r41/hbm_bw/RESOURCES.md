@@ -443,3 +443,19 @@ Notes on the rows:
 | | Hub FP8 kernels for v5-x8, two contexts, G2 | all compile; with 8 accumulators the matmul kernels do not (above) |
 
 **A bench defect found and fixed.** Both lockstep benches (`tb_nuca_shared_read`, and `tb_nuca_addr_fold` derived from it) declared their output vector 32 bits shorter than the outputs they concatenate, so the top 32 bits were never compared: `maint_ready`/`maint_done`/`maint_busy`/`req_ready`, `rsp_valid`, the response source and tag, and the top bits of the response data. The §4.1 results above were obtained with the short vector. The corrected bench passes all 24 `nuca-shared-read` runs again in `g2_regress6`; the earlier logs are kept.
+
+## 10. G2: the FMA rebuild and the shared multi-precision MAC lane (2026-10-29)
+
+Source: `evidence/r41/hbm_bw/fma_dslx/README.md` (design, proofs, verification), screens in `fma_dslx/screens/results/` (`kernel_compare.md`, `tile0_screens.txt`). Builds: the g2c4 image (`screens/image_g2c4.tcl`, four contexts, G2's approved cuts) with `FMA_IMPL 0` (base), `FMA_IMPL 1`, and `FMA_IMPL 1` plus `MAC_DP 1`, `MAC_CUTS 29`. Domain: kernel synthesis and tile-0 screens (out-of-context place and route at 10 ns, SLR0); no board number.
+
+| Build | Kernel LUT | Δ vs base | Kernel FF | DSP | Tile-0 kernel LUT | Tile-0 routed LUT | Tile-0 CLBs (share of SLR0) | Tile-0 WNS |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| base (`FMA_IMPL 0`, no lane) | 768,110 | — | 217,312 | 520 | 243,739 | 239,446 | 40,959 (74.5 %) | +0.728 ns |
+| `FMA_IMPL 1` | 687,182 | **−80,928 (−10.5 %)** | 217,312 | 520 | 216,763 | 215,094 | 38,228 (69.6 %) | +0.257 ns |
+| `FMA_IMPL 1` + shared lane (cuts 29) | 759,520 | −8,590 (−1.1 %) | 229,885 | 814 | 240,331 | 238,021 | 41,489 (75.5 %) | +0.616 ns |
+
+- **FMA rebuild alone:** the tree leading-zero count in the FMA's normalise stage (proved equal to the current one, 210M × 2-latency miter, 0 mismatches) removes 26,976 LUTs per core (all 96 FMAs: −80,928 over three tiles; 32 FMAs per core). FFs, DSPs and BRAM do not change. In SLR0 (tile 0) the routed screen drops by 24,352 LUTs and 2,731 CLBs. The WNS moved from +0.728 to +0.257 ns; the worst path is a core control path (`x_func` to the vector FPU's delay register, two logic levels, 96.7 % route), not FMA logic, and the run-to-run placement variance of one screen is of that size (§4.1).
+- **Shared lane on top** (the matrix MACs become `tnca_mac_lane`: FP32 1×, FP16/BF16/FP8 pairs 2×, E4M3×E4M3 4×; 48 lanes): costs +72,338 kernel LUTs, +12,573 FFs and +294 DSPs over the FMA-rebuild-only machine, i.e. +24,100 LUTs, +4,180 FFs and +98 DSPs per core (about +1,500 LUTs and 6 more DSPs per lane: 2 → 8). The FMA rebuild pays for it: net **−8,590 kernel LUTs (−1.1 %) against today's machine, +12.6k FFs (+5.8 %), +294 DSPs (3.3 % of the device's 9,024)**. Per tile (kernel synthesis, against base): tile 0 −3,408, tile 1 −2,173, tile 2 −3,007 LUTs.
+- **SLR0 effect** (tile-0 screen): 239,446 → 238,021 routed LUTs (−1,425) and 40,959 → 41,489 CLBs (+530, 74.5 % → 75.5 % of SLR0) with the lane: the lane roughly cancels the FMA saving in CLBs (the DSP-heavy logic packs less densely), so the SLR0 headroom of the FMA rebuild alone (69.6 %) is spent; the lane build is at today's SLR0 CLB occupancy. WNS +0.616 ns, worst path again in the core's control (not in the lane).
+- **Lane timing** (unit screens, 10 ns, SLR0; S1 decode and products 6.2 ns, S2+F2 6.5, B0 4.9, norm 4.6, round 5.2) is what the cut set 0b11101 (result latency 5) balances; per-stage numbers are in the fma_dslx README.
+- An earlier build of the lane (three-adder DP2 sum, four cuts 0b1110, commit `f0c03dec`) is kept in the run directory `g2c4dp_f0c03dec` on the x86 host (kernel 9 min before the one above, tile screen: `tile0_g2c4dp_f0c03dec`); its results are superseded.

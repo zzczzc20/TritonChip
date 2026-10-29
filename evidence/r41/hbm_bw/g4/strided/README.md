@@ -28,3 +28,25 @@ S4 strided clone passed at 118,007 RTL device cycles, 7.09% more than the new G2
 The board testbench additionally prints the existing hybrid LSU counters at the same stage-probe boundaries when `HYBRID_LSU` is enabled. The signals are read-only; the print is absent when stage probes are disabled. Elaborations on GB10 for both `HYBRID_LSU=0` and `HYBRID_LSU=1` exited 0 using `iverilog -g2012` with the board-register bench, one tile and one port; raw output is `probe-elaboration.tgz` (SHA-256 `b967a12a9c7aeba313e4a32947a982445f5122c2a529f4c4207f3078e152a285`). This checks elaboration only, not the counter values or functional correctness. A probe run uses the source at `9714e405965337d4cf66ac46c095ad5c4b599f79` plus this observation-only testbench change, in a separate GB10 checkout so that the original matrix remains unchanged.
 
 G2 strided add passed its numerical check at 167,351 RTL device cycles. The raw JSONL, worker output and register-bench trace are in `g2-add.tgz`, SHA-256 `e37d8949390e67cfbead0a206486dd8ee3b10626248991ab97fe63f70e05b494`. It has the same software-tree hash as the new clone records. The corresponding s4 and the single-change comparisons were still running when recorded.
+
+Probe elaboration command (GB10, after `source ~/tc_env/env.sh`):
+
+```sh
+for hybrid in 0 1; do
+  iverilog -g2012 -I rtl/common -I rtl/noc -s tnca_multicore_board_regs \
+    -Ptnca_multicore_board_regs.N=1 -Ptnca_multicore_board_regs.PORTS=1 \
+    -Ptnca_multicore_board_regs.MEMORY_BYTES=65536 -Ptnca_multicore_board_regs.HYBRID_LSU=$hybrid \
+    -y rtl/common -y rtl/core -y rtl/gen -y rtl/nuca -y rtl/noc -y rtl/tile -y rtl -y rtl/fpga -y rtl/board \
+    -o /tmp/t9b-probe-$hybrid.vvp rtl/common/*.v tb/common/tnca_axi_line_model.v tb/fpga/tnca_multicore_board_regs.v
+done
+```
+
+The read-only observation run was started on GB10 in `~/r41-codex-t9b-probe`, shell PID 2735285, using:
+
+```sh
+~/tc_env/torchenv/bin/python tools/r41/link_budget_rtl.py \
+  --image evidence/r41/hbm_bw/g4/strided/images/hybrid.tcl \
+  --profile core-vrf-sync-v5-x8-g2 \
+  --point op.clone/membound/fp16-small-strided-r32-c1024 \
+  --out ~/r41-codex-t9b-probe-results/hybrid-clone.jsonl
+```

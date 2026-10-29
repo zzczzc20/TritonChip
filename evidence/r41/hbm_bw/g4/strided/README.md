@@ -14,3 +14,5 @@ Domain: RTL simulation, not a board result. The binding rules are in `doc/engine
 | fp16 strided clone | 109,935 | 130,340 | +18.56% | 120,237 | +9.37% |
 
 For both points, s1 combines hybrid LSU, background reads and no-fill, so the observed regression cannot yet be assigned to any one of them. Summed RTL LSU-stall counters and hazard counters increase in s1 while memory read/write counts remain almost the same; the original probe does not establish the cause. The new matrix tests the changes separately and repeats G2 and s4 on the same current tree.
+
+For the new matrix, `python3 evidence/r41/hbm_bw/g4/strided/report.py 'PATH/*.jsonl'` summarizes each completed record, including failures, software-tree identity, per-point G2 comparison and summed probe counters. A missing result is not a pass.

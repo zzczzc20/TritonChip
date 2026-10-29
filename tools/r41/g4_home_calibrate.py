@@ -31,13 +31,21 @@ def run(binary, params, nreq):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--out')
+    ap.add_argument('--mshr', type=int, default=32, help='MSHR_N (targets: the same number)')
+    ap.add_argument('--modes', default='1,2,3,4')
+    ap.add_argument('--req-tag-w', type=int, default=5, help="the requester's tag bits (2^N requests in flight)")
+    ap.add_argument('--image-sets', action='store_true', help='the image slice (32 sets x 8 ways), not the bench default (16 x 4)')
+    ap.add_argument('--fill-chain', type=int, default=0, help='FILL_CHAIN (HOME_LINE_PIPE 2)')
     a = ap.parse_args()
     rows = []
     with tempfile.TemporaryDirectory(prefix='tnca-home-cal-') as t:
-        for mode in (1, 2, 3, 4):
+        for mode in [int(x) for x in a.modes.split(',')]:
             for lat in (10, 40, 80):
-                params = dict(SERVICE_MODE=mode, LINE_WRITE_NOFILL=1, MSHR_N=32, TARGET_N=32,
-                              DRAM_LAT=lat, DRAM_STALL=0, DRAM_OOO=1)
+                params = dict(SERVICE_MODE=mode, LINE_WRITE_NOFILL=1, MSHR_N=a.mshr, TARGET_N=a.mshr,
+                              DRAM_LAT=lat, DRAM_STALL=0, DRAM_OOO=1, FILL_CHAIN=a.fill_chain)
+                params['TAG_W'] = a.req_tag_w
+                if a.image_sets:
+                    params.update(SETS=32, SET_W=5, WAYS=8, WAY_W=3)
                 ok, m, out = run(str(Path(t) / 'cal.vvp'), params, 2048)
                 row = dict(mode=mode, dram_latency=lat, ok=ok)
                 if m:
@@ -47,7 +55,7 @@ def main():
                 rows.append(row)
                 print(json.dumps(row), flush=True)
     if a.out:
-        Path(a.out).write_text(json.dumps(dict(domain='rtl-simulation', module='rtl/nuca/tnca_home_pipe.v',
+        Path(a.out).write_text(json.dumps(dict(domain='rtl-simulation', module='rtl/nuca/tnca_home_pipe.v', fill_chain=a.fill_chain, mshr_n=a.mshr, image_sets=a.image_sets, requester_tag_w=a.req_tag_w,
                                                rows=rows), indent=1) + '\n')
 
 

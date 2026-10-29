@@ -87,7 +87,22 @@ module tnca_tensor #(
     // corner-turn buffer and its states are removed); 1: 16-bit elements
     // (capability `tensor_transpose`); 2: 16-bit and 1-byte elements
     // (adds `tensor_transpose_8bit`, R41 Stage 2 X8).
-    parameter HAS_XPOSE = 0
+    parameter HAS_XPOSE = 0,
+    // R41 G4: the line-wide, multi-command path (default 0: the engine that
+    // existed before, port and all). 1 needs the core's 64-byte line port:
+    // the port becomes one line wide (PORT_DW 512) with PTAG_W-bit tags, a
+    // transfer whose every row is whole 64-byte lines inside the tensor moves
+    // as line requests through LSLOT_N line buffers, and up to CMD_N such
+    // commands are in flight at once. Every other transfer (and every
+    // descriptor load) runs the original word walk, placed into a line.
+    parameter LINE_ENGINE = 0,
+    parameter LSLOT_N   = 32,
+    parameter LSLOT_W   = 5,
+    parameter CMD_N     = 8,
+    parameter CMD_W     = 3,
+    parameter PTAG_W    = TAG_W,
+    parameter PORT_DW   = MEM_DW,
+    parameter PORT_BYTES= MEM_BYTES
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -166,20 +181,34 @@ module tnca_tensor #(
     input  wire                     vr_valid,
     input  wire [VLEN*ELEN-1:0]     vr_data,
 
-    // ---- memory port (one word request per cycle) ----
+    // ---- memory port (one word request per cycle; one line with LINE_ENGINE) ----
     output wire                     mem_req_valid,
     input  wire                     mem_req_ready,
     output wire [63:0]              mem_req_addr,
     output wire                     mem_req_we,
-    output wire [MEM_BYTES-1:0]     mem_req_be,
-    output wire [MEM_DW-1:0]        mem_req_wdata,
-    output wire [TAG_W-1:0]         mem_req_tag,
+    output wire [PORT_BYTES-1:0]    mem_req_be,
+    output wire [PORT_DW-1:0]       mem_req_wdata,
+    output wire [PTAG_W-1:0]        mem_req_tag,
     input  wire                     mem_rsp_valid,
-    input  wire [TAG_W-1:0]         mem_rsp_tag,
-    input  wire [MEM_DW-1:0]        mem_rsp_rdata
+    input  wire [PTAG_W-1:0]        mem_rsp_tag,
+    input  wire [PORT_DW-1:0]       mem_rsp_rdata,
+
+    // ---- R41 G4 (LINE_ENGINE): anything in flight, and per issuing context ----
+    output wire                     busy_any,
+    output wire [(1<<RCTX_W)-1:0]   inflight_rctx
 );
 
     integer i;
+
+    // The word walk's own port (the original engine's mem_req_*/mem_rsp_*).
+    wire                     lg_req_valid, lg_req_ready, lg_req_we;
+    wire [63:0]              lg_req_addr;
+    wire [MEM_BYTES-1:0]     lg_req_be;
+    wire [MEM_DW-1:0]        lg_req_wdata;
+    wire [TAG_W-1:0]         lg_req_tag;
+    wire                     lg_rsp_valid;
+    wire [TAG_W-1:0]         lg_rsp_tag;
+    wire [MEM_DW-1:0]        lg_rsp_rdata;
 
     //==========================================================================
     // Window table
@@ -291,6 +320,74 @@ module tnca_tensor #(
     reg [TAG_W-2:0]   t_slot;
 
     assign busy = (st != S_IDLE);
+
+    //==========================================================================
+    // R41 G4 LINE_ENGINE: line slots (the line buffers) and command records
+    //==========================================================================
+    localparam LE = (LINE_ENGINE != 0);
+    localparam [4:0] S_LRUN = 5'd17,    // load: one 64-byte line request a step
+                     S_LSREAD = 5'd18,  // store: reading the line's window register
+                     S_LSRUN = 5'd19,   // store: one 64-byte line request
+                     S_LEND = 5'd20,    // the command is issued; the engine is free
+                     S_LDLOAD = 5'd21,  // td.load: the TensorMap's four lines, all in flight
+                     S_LDWAIT = 5'd22,
+                     S_LDFOLD = 5'd23;  // the box element count, one dimension a step
+    reg [2:0] dlq, dlr;                    // lines requested / back
+    // Store: the next line's register is read while this line waits for
+    // the port (a window's lines are consecutive registers), so a store
+    // issues a line a cycle when the register file answers in one.
+    reg                  pf_v;
+    reg [VLEN*ELEN-1:0]  sr_next;
+    reg  [LSLOT_N-1:0]   ls_v, ls_rdy, ls_st;
+    reg  [CMD_W-1:0]     ls_cid  [0:LSLOT_N-1];
+    reg  [7:0]           ls_vreg [0:LSLOT_N-1];
+    reg  [RCTX_W-1:0]    ls_rctx [0:LSLOT_N-1];
+    reg  [VLEN*ELEN-1:0] ls_data [0:LSLOT_N-1];
+    reg  [CMD_N-1:0]     cm_v, cm_open;
+    reg  [9:0]           cm_cnt  [0:CMD_N-1];
+    reg                  cm_ben  [0:CMD_N-1];
+    reg  [BAR_W-1:0]     cm_bar  [0:CMD_N-1];
+    reg  [RCTX_W-1:0]    cm_rctx [0:CMD_N-1];
+    reg  [CMD_W-1:0]     t_cid;              // the line command being issued
+    reg  [31:0]          t_line;             // line of the current row
+    wire [31:0]          t_row_lines = t_row_bytes >> 6;
+    wire [7:0]           l_vreg = t_wbase + t_flat[13:6] + t_line[7:0];
+    wire                 l_more = !(last_row && (t_line + 32'd1 == t_row_lines));   // a line after this one
+    wire                 pf_req = (st == S_LSRUN) && !pf_v && l_more;
+    wire [63:0]          l_addr = t_ps + {26'd0, t_line, 6'd0};
+
+    reg [LSLOT_W-1:0] lfree, lrdy_slot;
+    reg               lfree_have, lrdy_have;
+    reg [CMD_W-1:0]   cfree, cdone;
+    reg               cfree_have, cdone_have;
+    always @(*) begin
+        lfree = {LSLOT_W{1'b0}}; lfree_have = 1'b0;
+        lrdy_slot = {LSLOT_W{1'b0}}; lrdy_have = 1'b0;
+        for (i = LSLOT_N-1; i >= 0; i = i - 1) begin
+            if (!ls_v[i]) begin lfree = i[LSLOT_W-1:0]; lfree_have = 1'b1; end
+            if (ls_v[i] && ls_rdy[i]) begin lrdy_slot = i[LSLOT_W-1:0]; lrdy_have = 1'b1; end
+        end
+        cfree = {CMD_W{1'b0}}; cfree_have = 1'b0;
+        cdone = {CMD_W{1'b0}}; cdone_have = 1'b0;
+        for (i = CMD_N-1; i >= 0; i = i - 1) begin
+            if (!cm_v[i]) begin cfree = i[CMD_W-1:0]; cfree_have = 1'b1; end
+            if (cm_v[i] && !cm_open[i] && (cm_cnt[i] == 10'd0)) begin cdone = i[CMD_W-1:0]; cdone_have = 1'b1; end
+        end
+    end
+    wire line_busy = LE && ((|ls_v) || (|cm_v));
+    assign busy_any = busy || line_busy;
+    genvar gr, gc;
+    generate if (LINE_ENGINE != 0) begin : g_infl
+        for (gr = 0; gr < (1 << RCTX_W); gr = gr + 1) begin : g_r
+            wire [CMD_N-1:0] hit;
+            for (gc = 0; gc < CMD_N; gc = gc + 1) begin : g_c
+                assign hit[gc] = cm_v[gc] && (cm_rctx[gc] == gr);
+            end
+            assign inflight_rctx[gr] = |hit;
+        end
+    end else begin : g_no_infl
+        assign inflight_rctx = {(1<<RCTX_W){1'b0}};
+    end endgenerate
 
     //==========================================================================
     // The fill value: zero, or the dtype's quiet NaN repeated across the
@@ -521,9 +618,9 @@ module tnca_tensor #(
             if (!tg_v[i]) begin free_tag = i[TAG_W-1:0]; have_tag = 1'b1; end
     end
 
-    assign vr_req  = (st == S_SREAD);
+    assign vr_req  = (st == S_SREAD) || (LE && ((st == S_LSREAD) || pf_req));
     assign vr_rctx = t_rctx;
-    assign vr_idx  = st_vreg;
+    assign vr_idx  = (LE && (st == S_LSREAD)) ? l_vreg : (LE && (st == S_LSRUN)) ? l_vreg + 8'd1 : st_vreg;
 
     //==========================================================================
     // TRANSPOSED WRITE (ISA sec 9E mod[5]) -- rank 2, 16-bit elements, and
@@ -578,8 +675,8 @@ module tnca_tensor #(
     reg  [16*64-1:0] xbuf;             // unit r at [r*64 +: 64]
     reg  [3:0]  xt_row  [0:NTAG-1];    // which buffered row a tag fills
     reg  [7:0]  xt_keep [0:NTAG-1];
-    wire [3:0]  x_rsp_row    = xt_row[mem_rsp_tag];
-    wire [7:0]  x_rsp_kbits  = xt_keep[mem_rsp_tag];
+    wire [3:0]  x_rsp_row    = xt_row[lg_rsp_tag];
+    wire [7:0]  x_rsp_kbits  = xt_keep[lg_rsp_tag];
     reg  [63:0] x_rsp_keep;
     integer xk;
     always @(*)
@@ -665,30 +762,98 @@ module tnca_tensor #(
     // whenever a field is looked at, and the late valids stay out of the
     // address and enables (timing-008).
     wire st_is_store = (st == S_SRUN);
-    assign mem_req_valid = dl_issue || ld_req || st_req || x_req;
-    assign mem_req_addr  = dl_issue      ? (dl_addr + {56'd0, dl_word, 3'd0})
+    assign lg_req_valid = dl_issue || ld_req || st_req || x_req;
+    assign lg_req_addr  = dl_issue      ? (dl_addr + {56'd0, dl_word, 3'd0})
                          : (st == S_TRUN) ? ld_addr
                          : st_is_store    ? {ld_alo, 3'b000}   // t_P3 + st_g
                          :                  x_unit_addr;
-    assign mem_req_we    = st_is_store;
-    assign mem_req_be    = st_is_store ? st_be : {MEM_BYTES{1'b0}};
-    assign mem_req_wdata = st_is_store ? st_word : {MEM_DW{1'b0}};
+    assign lg_req_we    = st_is_store;
+    assign lg_req_be    = st_is_store ? st_be : {MEM_BYTES{1'b0}};
+    assign lg_req_wdata = st_is_store ? st_word : {MEM_DW{1'b0}};
     // The descriptor load is serial -- one word outstanding at a time -- so it
     // needs exactly one tag.
-    assign mem_req_tag   = dl_issue       ? {TAG_W{1'b0}}
+    assign lg_req_tag   = dl_issue       ? {TAG_W{1'b0}}
                          : (st == S_TRUN) ? {ld_slot, ld_issue_hi}
                          :                  free_tag;
 
     // R41 T2: one handshake per state. Each request is valid only in its own
     // state (dl_issue S_DLOAD, ld_req S_TRUN, st_req S_SRUN, x_req S_XRUN),
-    // so in each state its own fire equals mem_req_valid && mem_req_ready --
+    // so in each state its own fire equals lg_req_valid && lg_req_ready --
     // without the other states' request logic (the load/store row bounds,
     // t_rowv and st_be) in front of the transposed walk and its xbuf writes.
-    // mem_req_ready does not depend on mem_req_valid (tnca_mem_mux).
-    wire dl_fire = dl_issue && mem_req_ready;
-    wire ld_fire = ld_req   && mem_req_ready;
-    wire st_fire = st_req   && mem_req_ready;
-    wire x_fire  = x_req    && mem_req_ready;
+    // lg_req_ready does not depend on lg_req_valid (tnca_mem_mux).
+    wire dl_fire = dl_issue && lg_req_ready;
+    wire ld_fire = ld_req   && lg_req_ready;
+    wire st_fire = st_req   && lg_req_ready;
+    wire x_fire  = x_req    && lg_req_ready;
+
+    //==========================================================================
+    // R41 G4: the port. Without LINE_ENGINE it is the word walk's, unchanged.
+    // With it: one 64-byte line wide; a line request (S_LRUN, S_LSRUN) carries
+    // tag {1, line slot}; a word request is placed in its line (address kept,
+    // enables and data shifted to the word) with tag {0, word tag}, and its
+    // response word is taken back out of the line. Only the walk issues, one
+    // request in one state at a time, so the two never compete.
+    //==========================================================================
+    wire l_req = LE && ((st == S_LRUN) || (st == S_LSRUN)) && lfree_have;
+    // A TensorMap at a line-aligned address is read as four line requests,
+    // tagged {0, 1, line}; any other address takes the word sequence.
+    wire d_req = LE && (st == S_LDLOAD) && (dlq < 3'd4);
+    wire d_fire = d_req && mem_req_ready;
+    wire d_rsp = LE && mem_rsp_valid && !mem_rsp_tag[PTAG_W-1] && mem_rsp_tag[PTAG_W-2];
+    wire l_fire = l_req && mem_req_ready;
+    wire l_rsp  = LE && mem_rsp_valid && mem_rsp_tag[PTAG_W-1];
+    // (zero-extended: without the line engine PTAG_W may be narrower than LSLOT_W)
+    wire [PTAG_W+LSLOT_W-1:0] l_rsp_tag_z = {{LSLOT_W{1'b0}}, mem_rsp_tag};
+    wire [LSLOT_W-1:0] l_rsp_slot = l_rsp_tag_z[LSLOT_W-1:0];
+    wire [PORT_DW+511:0] l_rsp_data_z = {512'd0, mem_rsp_rdata};   // likewise for PORT_DW
+    generate if (LINE_ENGINE != 0) begin : g_line_port
+        reg [2:0] lo_off [0:NTAG-1];
+        always @(posedge clk)
+            if (lg_req_valid && lg_req_ready) lo_off[lg_req_tag] <= lg_req_addr[5:3];
+        assign mem_req_valid = l_req || d_req || lg_req_valid;
+        assign lg_req_ready  = mem_req_ready && !l_req && !d_req;
+        assign mem_req_addr  = l_req ? l_addr : d_req ? (dl_addr + {58'd0, dlq[1:0], 6'd0}) : lg_req_addr;
+        assign mem_req_we    = l_req ? (st == S_LSRUN) : d_req ? 1'b0 : lg_req_we;
+        assign mem_req_be    = (l_req || d_req) ? {PORT_BYTES{1'b1}}
+                             : ({{(PORT_BYTES-MEM_BYTES){1'b0}}, lg_req_be} << {lg_req_addr[5:3], 3'b000});
+        assign mem_req_wdata = l_req ? sr_data
+                             : ({{(PORT_DW-MEM_DW){1'b0}}, lg_req_wdata} << {lg_req_addr[5:3], 6'b000000});
+        assign mem_req_tag   = l_req ? {1'b1, {(PTAG_W-1-LSLOT_W){1'b0}}, lfree}
+                             : d_req ? {2'b01, {(PTAG_W-4){1'b0}}, dlq[1:0]}
+                             : {1'b0, {(PTAG_W-1-TAG_W){1'b0}}, lg_req_tag};
+        assign lg_rsp_valid  = mem_rsp_valid && !mem_rsp_tag[PTAG_W-1] && !mem_rsp_tag[PTAG_W-2];
+        assign lg_rsp_tag    = mem_rsp_tag[TAG_W-1:0];
+        assign lg_rsp_rdata  = mem_rsp_rdata >> {lo_off[mem_rsp_tag[TAG_W-1:0]], 6'b000000};
+    end else begin : g_word_port
+        assign mem_req_valid = lg_req_valid;
+        assign lg_req_ready  = mem_req_ready;
+        assign mem_req_addr  = lg_req_addr;
+        assign mem_req_we    = lg_req_we;
+        assign mem_req_be    = lg_req_be;
+        assign mem_req_wdata = lg_req_wdata;
+        assign mem_req_tag   = lg_req_tag;
+        assign lg_rsp_valid  = mem_rsp_valid;
+        assign lg_rsp_tag    = mem_rsp_tag;
+        assign lg_rsp_rdata  = mem_rsp_rdata;
+    end endgenerate
+
+    // Line slot counts per command: +1 per line issued, -1 per line done (a
+    // store's acknowledgement, a load's register write).
+    // The window write port: the word walk's own writes (a finished load
+    // unit, a fill, a transposed row) go first; a line slot's register write
+    // takes any other cycle. So a word-walk command (a transposed X8 tile, a
+    // box with a partial line) runs while line commands are still in flight.
+    wire legacy_vw = (have_done && !t_store && !t_xpose) ||
+                     ((st == S_TRUN) && !ld_nlo && !ld_nhi && !have_done) ||
+                     (st == S_XWRITE);
+    wire lw_fire = LE && lrdy_have && !vw_hold && !legacy_vw;
+    wire l_ack   = l_rsp && ls_st[l_rsp_slot];
+    // The eligibility of the transfer the walk is about to start (S_TMUL):
+    // every row whole 64-byte lines, in the tensor, row starts line-aligned.
+    wire le_elig = LE && !t_xpose && ((t_acc[5:0] + t_CB[5:0]) == 6'd0) &&
+                   (((t_s0 | t_s1 | t_s2 | t_s3) & 64'h3f) == 64'd0) &&
+                   (t_row_bytes[5:0] == 6'd0) && g_inside;
 
     //==========================================================================
     // Descriptor parsing, once the 256 bytes are in (ISA sec 9D.3)
@@ -824,12 +989,12 @@ module tnca_tensor #(
     reg  [3:0]  rq_row;
     reg  [63:0] rq_keep, rq_data;
     always @(posedge clk) begin
-        rq_dl   <= rst_n && !flush && mem_rsp_valid && (st == S_DLOAD || st == S_DWAIT);
-        rq_x    <= rst_n && !flush && mem_rsp_valid && !(st == S_DLOAD || st == S_DWAIT) && t_xpose;
+        rq_dl   <= rst_n && !flush && lg_rsp_valid && (st == S_DLOAD || st == S_DWAIT);
+        rq_x    <= rst_n && !flush && lg_rsp_valid && !(st == S_DLOAD || st == S_DWAIT) && t_xpose;
         rq_word <= dl_word;
         rq_row  <= x_rsp_row;
         rq_keep <= x_rsp_keep;
-        rq_data <= mem_rsp_rdata;
+        rq_data <= lg_rsp_rdata;
     end
 
     always @(posedge clk) begin
@@ -854,6 +1019,10 @@ module tnca_tensor #(
             done_bar_en <= 1'b0;
             done_err   <= 1'b0;
             sr_v       <= 1'b0;
+            ls_v       <= {LSLOT_N{1'b0}};
+            ls_rdy     <= {LSLOT_N{1'b0}};
+            cm_v       <= {CMD_N{1'b0}};
+            cm_open    <= {CMD_N{1'b0}};
         end else begin
             // A refused write stays presented (vw_hold); nothing below starts
             // another until it is taken.
@@ -887,25 +1056,76 @@ module tnca_tensor #(
             //------------------------------------------------------------------
             // memory responses
             //------------------------------------------------------------------
-            if (mem_rsp_valid) begin
+            if (lg_rsp_valid) begin
                 if (st == S_DLOAD || st == S_DWAIT) begin
                     // captured by the descriptor sequencer below
                 end else if (t_xpose) begin
                     // Into the corner-turn buffer, not the window: a unit
                     // holds one source row's slice of 8/esz columns, which
                     // is a slice of 8/esz DIFFERENT destination rows.
-                    tg_v[mem_rsp_tag] <= 1'b0;
+                    tg_v[lg_rsp_tag] <= 1'b0;
                 end else if (t_store) begin
                     // A write's response says it has been performed.
-                    tg_v[mem_rsp_tag] <= 1'b0;
+                    tg_v[lg_rsp_tag] <= 1'b0;
                 end else begin
-                    if (mem_rsp_tag[0]) begin
-                        sl_dhi[mem_rsp_tag[TAG_W-1:1]] <= mem_rsp_rdata;
-                        sl_ghi[mem_rsp_tag[TAG_W-1:1]] <= 1'b1;
+                    if (lg_rsp_tag[0]) begin
+                        sl_dhi[lg_rsp_tag[TAG_W-1:1]] <= lg_rsp_rdata;
+                        sl_ghi[lg_rsp_tag[TAG_W-1:1]] <= 1'b1;
                     end else begin
-                        sl_dlo[mem_rsp_tag[TAG_W-1:1]] <= mem_rsp_rdata;
-                        sl_glo[mem_rsp_tag[TAG_W-1:1]] <= 1'b1;
+                        sl_dlo[lg_rsp_tag[TAG_W-1:1]] <= lg_rsp_rdata;
+                        sl_glo[lg_rsp_tag[TAG_W-1:1]] <= 1'b1;
                     end
+                end
+            end
+
+            //------------------------------------------------------------------
+            // R41 G4 line slots: a response, a register write, the counts and
+            // a finished command's completion.
+            //------------------------------------------------------------------
+            if (LE) begin : le_seq
+                integer c;
+                if (d_rsp) begin : dl_line
+                    integer q;
+                    for (q = 0; q < 8; q = q + 1)
+                        dl_buf[{mem_rsp_tag[1:0], 3'b000} + q] <= l_rsp_data_z[q*64 +: 64];
+                    dlr <= dlr + 3'd1;
+                end
+                if (l_rsp) begin
+                    if (ls_st[l_rsp_slot]) ls_v[l_rsp_slot] <= 1'b0;
+                    else begin
+                        ls_data[l_rsp_slot] <= mem_rsp_rdata;
+                        ls_rdy[l_rsp_slot]  <= 1'b1;
+                    end
+                end
+                if (lw_fire) begin
+                    vw_en      <= 1'b1;
+                    vw_rctx    <= ls_rctx[lrdy_slot];
+                    vw_idx     <= ls_vreg[lrdy_slot];
+                    vw_lane_en <= {VLEN{1'b1}};
+                    vw_data    <= ls_data[lrdy_slot];
+                    ls_v[lrdy_slot]   <= 1'b0;
+                    ls_rdy[lrdy_slot] <= 1'b0;
+                end
+                if (l_fire) begin
+                    ls_v[lfree]    <= 1'b1;
+                    ls_rdy[lfree]  <= 1'b0;
+                    ls_st[lfree]   <= (st == S_LSRUN);
+                    ls_cid[lfree]  <= t_cid;
+                    ls_vreg[lfree] <= l_vreg;
+                    ls_rctx[lfree] <= t_rctx;
+                end
+                for (c = 0; c < CMD_N; c = c + 1)
+                    cm_cnt[c] <= cm_cnt[c]
+                               + ((l_fire && (t_cid == c)) ? 10'd1 : 10'd0)
+                               - ((l_ack && (ls_cid[l_rsp_slot] == c)) ? 10'd1 : 10'd0)
+                               - ((lw_fire && (ls_cid[lrdy_slot] == c)) ? 10'd1 : 10'd0);
+                // A finished line command signals its barrier when the walk is
+                // not signalling one of its own this cycle.
+                if (cdone_have && !(st == S_DONE) && !(st == S_FAULT)) begin
+                    done        <= 1'b1;
+                    done_bar_en <= cm_ben[cdone];
+                    done_bar    <= cm_bar[cdone];
+                    cm_v[cdone] <= 1'b0;
                 end
             end
 
@@ -933,7 +1153,9 @@ module tnca_tensor #(
                     dl_slot <= cfg_desc;
                     dl_addr <= cfg_addr;
                     dl_word <= 5'd0;
-                    st      <= S_DLOAD;
+                    dlq     <= 3'd0;
+                    dlr     <= 3'd0;
+                    st      <= (LE && (cfg_addr[5:0] == 6'd0)) ? S_LDLOAD : S_DLOAD;
                 end else if (cmd_valid) begin
                     t_store  <= cmd_store;
                     t_fcode  <= `TNCA_TRAP_DESC;
@@ -978,7 +1200,7 @@ module tnca_tensor #(
             end
 
             S_DWAIT: begin
-                if (mem_rsp_valid) begin
+                if (lg_rsp_valid) begin
                     // Words 11-13 (block dims, rank) are in dl_buf by the time
                     // word 14 arrives: fold one dimension per word after that.
                     if (dl_word >= 5'd14 && dl_word <= 5'd18)
@@ -1116,6 +1338,22 @@ module tnca_tensor #(
                         x_row <= 32'd0;
                         x_oob_q <= x_oob_f(32'd0, 32'd0);
                         st <= S_XRUN;
+                    end else if (le_elig && cfree_have) begin
+                        // R41 G4: whole lines; the command gets a record and
+                        // the walk is free again once its lines are issued.
+                        cm_v[cfree]    <= 1'b1;
+                        cm_open[cfree] <= 1'b1;
+                        cm_cnt[cfree]  <= 10'd0;
+                        cm_ben[cfree]  <= t_bar_en;
+                        cm_bar[cfree]  <= t_bar;
+                        cm_rctx[cfree] <= t_rctx;
+                        t_cid  <= cfree;
+                        t_line <= 32'd0;
+                        t_bar_en <= 1'b0;
+                        st <= t_store ? S_LSREAD : S_LRUN;
+                    end else if (le_elig) begin
+                        // a line command waits for a free record
+                        st <= S_TMUL;
                     end else
                         st <= t_store ? S_SRUN : S_TRUN;
                 end
@@ -1192,7 +1430,7 @@ module tnca_tensor #(
             end
 
             S_TDRAIN: begin
-                if ((sl_v == {NSLOT{1'b0}}) && !mem_rsp_valid) st <= S_DONE;
+                if ((sl_v == {NSLOT{1'b0}}) && !lg_rsp_valid) st <= S_DONE;
             end
 
             //---------------------------------------------------------------
@@ -1254,7 +1492,7 @@ module tnca_tensor #(
             end
 
             S_SDRAIN: begin
-                if ((tg_v == {NTAG{1'b0}}) && !mem_rsp_valid) st <= S_DONE;
+                if ((tg_v == {NTAG{1'b0}}) && !lg_rsp_valid) st <= S_DONE;
             end
 
             //---------------------------------------------------------------
@@ -1284,7 +1522,7 @@ module tnca_tensor #(
             end
 
             S_XDRAIN: begin
-                if ((tg_v == {NTAG{1'b0}}) && !mem_rsp_valid) begin
+                if ((tg_v == {NTAG{1'b0}}) && !lg_rsp_valid) begin
                     x_q <= 4'd0;
                     st  <= S_XWRITE;
                 end
@@ -1323,6 +1561,76 @@ module tnca_tensor #(
             //---------------------------------------------------------------
             // Not complete while a write of this transfer is still being held:
             // a reader the completion releases must find it written.
+            //---------------------------------------------------------------
+            // R41 G4 LINE_ENGINE: one 64-byte line of the row per step.
+            S_LRUN, S_LSRUN: begin
+              if ((st == S_LSRUN) && pf_req && vr_valid && !l_fire) begin
+                sr_next <= vr_data;
+                pf_v    <= 1'b1;
+              end
+              if (l_fire) begin
+                // the next store line's register: prefetched, arriving now, or still to read
+                if (st == S_LSRUN && l_more) begin
+                    if (pf_v) begin sr_data <= sr_next; pf_v <= 1'b0; end
+                    else if (pf_req && vr_valid) sr_data <= vr_data;
+                end
+                if (t_line + 32'd1 == t_row_lines) begin
+                    t_line <= 32'd0;
+                    t_flat <= t_flat + t_row_bytes;
+                    if (last_row) st <= S_LEND;
+                    else begin
+                        if (st == S_LSRUN && !pf_v && !(pf_req && vr_valid)) st <= S_LSREAD;
+                        if (inc3) begin
+                            t_i3 <= t_i3 + 32'd1; t_P3 <= t_P3 + t_s3; t_ps <= t_P3 + t_s3 + t_CB;
+                        end else if (inc2) begin
+                            t_i2 <= t_i2 + 32'd1; t_i3 <= 32'd0;
+                            t_P2 <= t_P2 + t_s2; t_P3 <= t_P2 + t_s2; t_ps <= t_P2 + t_s2 + t_CB;
+                        end else if (inc1) begin
+                            t_i1 <= t_i1 + 32'd1; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                            t_P1 <= t_P1 + t_s1; t_P2 <= t_P1 + t_s1; t_P3 <= t_P1 + t_s1; t_ps <= t_P1 + t_s1 + t_CB;
+                        end else begin
+                            t_i0 <= t_i0 + 32'd1; t_i1 <= 32'd0; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                            t_P0 <= t_P0 + t_s0; t_P1 <= t_P0 + t_s0;
+                            t_P2 <= t_P0 + t_s0; t_P3 <= t_P0 + t_s0; t_ps <= t_P0 + t_s0 + t_CB;
+                        end
+                    end
+                end else begin
+                    t_line <= t_line + 32'd1;
+                    if (st == S_LSRUN && !pf_v && !(pf_req && vr_valid)) st <= S_LSREAD;
+                end
+              end
+            end
+
+            S_LSREAD: if (vr_valid) begin
+                sr_data <= vr_data;
+                pf_v    <= 1'b0;
+                st      <= S_LSRUN;
+            end
+
+            S_LDLOAD: begin
+                if (d_fire) dlq <= dlq + 3'd1;
+                if (dlq == 3'd4 || (d_fire && dlq == 3'd3)) st <= S_LDWAIT;
+            end
+
+            S_LDWAIT: if (dlr == 3'd4) begin
+                dl_word <= 5'd0;
+                st <= S_LDFOLD;
+            end
+
+            // The box element count, as S_DWAIT folds it while words 14-18
+            // arrive: one dimension a step, from the words already in dl_buf.
+            S_LDFOLD: begin
+                dl_boxel <= (dl_word == 5'd0) ? box_factor(3'd0)
+                                              : box_mul(dl_boxel, box_factor(dl_word[2:0]));
+                if (dl_word == 5'd4) st <= S_DPARSE;
+                else dl_word <= dl_word + 5'd1;
+            end
+
+            S_LEND: begin
+                cm_open[t_cid] <= 1'b0;
+                st <= S_IDLE;
+            end
+
             S_DONE: if (!vw_hold) begin
                 done        <= 1'b1;
                 done_bar_en <= t_bar_en;

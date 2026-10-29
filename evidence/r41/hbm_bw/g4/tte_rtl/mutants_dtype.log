@@ -1,0 +1,7 @@
+# Mutants of rtl/core/tnca_tensor.v against tb/core/tb_tensor_line.v (rtl, Icarus), 2026-10-29, tree 247f43db + bench
+# esz:  t_row_lines = (t_b4 << 2) >> 6   (line count as if every element were 4 bytes)
+#       seed 1: FATAL memory byte 0000821d differs: 00 vs 59      -> caught
+# xpose-elig: le_elig without !t_xpose
+#       seeds 1, 2: PASS, identical cycles. Equivalent mutant: S_TMUL takes the transposed
+#       branch before it tests le_elig, so a transposed load never reaches the line path.
+# arbitration (earlier, tree 7d645ec + arbitration): lw_fire without !legacy_vw -> caught on seeds 3 and 5

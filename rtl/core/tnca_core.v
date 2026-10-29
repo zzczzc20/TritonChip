@@ -90,6 +90,10 @@ module tnca_core #(
     //               waits for memory; atomics and fences see one access at
     //               a time, as before.
     parameter HYBRID_LSU     = 0,          // opt-in shared vector-line + narrow fallback
+    // R41 G4: the transfer engine's line-wide, multi-command path
+    // (tnca_tensor LINE_ENGINE) on the hybrid line port; 0 keeps the word
+    // engine behind tnca_word_line_adapter. Needs HYBRID_LSU.
+    parameter TENSOR_LINE    = 0,
     parameter LSU_INFLIGHT   = 1,
     //   FPU_OVERLAP (R39-10) ordinary vector FP issues during an SFU pass,
     //               and an SFU pass starts with ordinary FP in flight: the
@@ -2010,7 +2014,10 @@ module tnca_core #(
     wire [CTAG_W-1:0]    tm_req_tag;
     wire                 tm_rsp_valid;
     wire [CTAG_W-1:0]    tm_rsp_tag;
-    assign tm_req_tag_m = tm_req_tag;               // zero-extended into the port tag
+    // zero-extended into the port tag; the line engine (TENSOR_LINE) drives
+    // the whole port tag itself (g_tensor_line_port)
+    wire [MTAG_W-1:0]    tl_req_tag;
+    assign tm_req_tag_m = ((TENSOR_LINE != 0) && (HYBRID_LSU != 0)) ? tl_req_tag : tm_req_tag;
     assign tm_rsp_tag = tm_rsp_tag_m[CTAG_W-1:0];
     wire [MEM_DW-1:0]    tm_rsp_rdata;
 
@@ -2021,7 +2028,32 @@ module tnca_core #(
     wire [TENSOR_BYTES-1:0] tn_req_be;
     wire [TENSOR_DW-1:0] tn_req_wdata,tn_rsp_rdata;
     wire [CTAG_W-1:0] tn_req_tag,tn_rsp_tag;
-    generate if(HYBRID_LSU) begin:g_tensor_line_adapter
+    localparam TXF_LINE = (TENSOR_LINE != 0) && (HYBRID_LSU != 0);
+    wire txf_busy_any;
+    wire [(1<<RCTX_W)-1:0] txf_inflight;
+    // The engine's own port: the word walk's (tn_*), or with TXF_LINE the
+    // core's line port itself.
+    localparam TP_DW = TXF_LINE ? MEM_DW : TENSOR_DW;
+    localparam TP_BY = TXF_LINE ? MEM_BYTES : TENSOR_BYTES;
+    localparam TP_TW = TXF_LINE ? MTAG_W : CTAG_W;
+    wire tp_req_valid, tp_req_ready, tp_req_we, tp_rsp_valid;
+    wire [63:0] tp_req_addr;
+    wire [TP_BY-1:0] tp_req_be;
+    wire [TP_DW-1:0] tp_req_wdata, tp_rsp_rdata;
+    wire [TP_TW-1:0] tp_req_tag, tp_rsp_tag;
+    generate if (TXF_LINE) begin:g_tensor_line_port
+        assign tm_req_valid=tp_req_valid;assign tp_req_ready=tm_req_ready;
+        assign tm_req_addr=tp_req_addr;assign tm_req_we=tp_req_we;assign tm_req_be=tp_req_be;
+        assign tm_req_wdata=tp_req_wdata;assign tl_req_tag=tp_req_tag;assign tm_req_tag={CTAG_W{1'b0}};
+        assign tp_rsp_valid=tm_rsp_valid;assign tp_rsp_tag=tm_rsp_tag_m;assign tp_rsp_rdata=tm_rsp_rdata;
+        assign tn_req_valid=1'b0;
+    end else begin:g_tensor_word_port
+        assign tn_req_valid=tp_req_valid;assign tp_req_ready=tn_req_ready;
+        assign tn_req_addr=tp_req_addr;assign tn_req_we=tp_req_we;assign tn_req_be=tp_req_be;
+        assign tn_req_wdata=tp_req_wdata;assign tn_req_tag=tp_req_tag;assign tl_req_tag={MTAG_W{1'b0}};
+        assign tp_rsp_valid=tn_rsp_valid;assign tp_rsp_tag=tn_rsp_tag;assign tp_rsp_rdata=tn_rsp_rdata;
+    end endgenerate
+    generate if(HYBRID_LSU && !TXF_LINE) begin:g_tensor_line_adapter
         tnca_word_line_adapter #(.TAG_W(CTAG_W)) adapter(
             .clk(clk),.rst_n(rst_n),.n_req_valid(tn_req_valid),.n_req_ready(tn_req_ready),
             .n_req_addr(tn_req_addr),.n_req_wdata(tn_req_wdata),.n_req_we(tn_req_we),.n_req_be(tn_req_be),
@@ -2030,7 +2062,7 @@ module tnca_core #(
             .w_req_valid(tm_req_valid),.w_req_ready(tm_req_ready),.w_req_addr(tm_req_addr),.w_req_we(tm_req_we),
             .w_req_be(tm_req_be),.w_req_wdata(tm_req_wdata),.w_req_tag(tm_req_tag),
             .w_rsp_valid(tm_rsp_valid),.w_rsp_tag(tm_rsp_tag),.w_rsp_rdata(tm_rsp_rdata));
-    end else begin:g_tensor_legacy_port
+    end else if (!TXF_LINE) begin:g_tensor_legacy_port
         assign tm_req_valid=tn_req_valid;assign tn_req_ready=tm_req_ready;
         assign tm_req_addr=tn_req_addr;assign tm_req_we=tn_req_we;assign tm_req_be=tn_req_be;
         assign tm_req_wdata=tn_req_wdata;assign tm_req_tag=tn_req_tag;
@@ -2041,7 +2073,9 @@ module tnca_core #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .DESC_N(DESC_N), .DESC_W(DESC_W), .WIN_N(WIN_N), .WIN_W(WIN_W),
         .BAR_W(BAR_W), .MEM_DW(TENSOR_DW), .MEM_BYTES(TENSOR_BYTES),
-        .TAG_W(CTAG_W), .NTAG(1 << CTAG_W), .HAS_XPOSE(HAS_TENSOR_XPOSE)
+        .TAG_W(CTAG_W), .NTAG(1 << CTAG_W), .HAS_XPOSE(HAS_TENSOR_XPOSE),
+        .LINE_ENGINE(TXF_LINE ? 1 : 0), .LSLOT_N(1 << (MTAG_W - 1)), .LSLOT_W(MTAG_W - 1),
+        .PTAG_W(TP_TW), .PORT_DW(TP_DW), .PORT_BYTES(TP_BY)
     ) u_txf (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),
         .cfg_valid(txf_is_cfg), .cfg_op(txf_cfg_op),
@@ -2065,12 +2099,13 @@ module tnca_core #(
         .vw_lane_en(txf_vw_lane), .vw_data(txf_vw_data), .vw_ready(txf_vw_ready),
         .vr_req(txf_vr_req), .vr_rctx(txf_vr_rctx), .vr_idx(txf_vr_idx),
         .vr_valid(txf_vr_valid), .vr_data(txf_vr_data),
-        .mem_req_valid(tn_req_valid), .mem_req_ready(tn_req_ready),
-        .mem_req_addr(tn_req_addr), .mem_req_we(tn_req_we),
-        .mem_req_be(tn_req_be), .mem_req_wdata(tn_req_wdata),
-        .mem_req_tag(tn_req_tag),
-        .mem_rsp_valid(tn_rsp_valid), .mem_rsp_tag(tn_rsp_tag),
-        .mem_rsp_rdata(tn_rsp_rdata)
+        .mem_req_valid(tp_req_valid), .mem_req_ready(tp_req_ready),
+        .mem_req_addr(tp_req_addr), .mem_req_we(tp_req_we),
+        .mem_req_be(tp_req_be), .mem_req_wdata(tp_req_wdata),
+        .mem_req_tag(tp_req_tag),
+        .mem_rsp_valid(tp_rsp_valid), .mem_rsp_tag(tp_rsp_tag),
+        .mem_rsp_rdata(tp_rsp_rdata),
+        .busy_any(txf_busy_any), .inflight_rctx(txf_inflight)
     );
 
     //==========================================================================
@@ -2379,11 +2414,14 @@ module tnca_core #(
     wire arr_mtx = (RPAIR != 0)
                  ? ((mtx_busy && mtx_rctx == r_rctx) || (mtx_cmd_valid && x_rctx == r_rctx))
                  : mtx_busy;
+    // R41 G4 (TENSOR_LINE): line commands still in flight after the engine
+    // took the next one count for the context that issued them.
     wire arr_txf = (RPAIR != 0)
-                 ? ((txf_busy && txf_rctx == r_rctx)
+                 ? ((txf_busy && txf_rctx == r_rctx) || txf_inflight[r_rctx]
                     || ((txf_is_cfg || txf_is_xfr) && x_rctx == r_rctx))
-                 : txf_busy;
+                 : txf_busy_any;
     wire stall_arrive = r_is_arrive && (rctx_wr_busy[r_rctx] || !lsu_req_ready
+                                        || ((HYBRID_LSU != 0) && x_mem_claim)
                                         || arr_mtx || arr_txf);
 
     wire r_needs_txf = r_valid && (r_fu == `TNCA_FU_TXFER);
@@ -2408,8 +2446,14 @@ module tnca_core #(
     // completes against an mbarrier (sec 9E.1 step 8), and a fence that also
     // waited for them would make the barrier redundant and the fence
     // unpredictably long.
+    // R41 G4: with HYBRID_LSU an access in X has not reached the LSU yet (it
+    // lands in the command register a cycle later), so lsu_req_ready does not
+    // see it; a fence in R beside it let a later transfer engine request
+    // overtake the store (a td.load read a TensorMap word the store before
+    // the fence had not written yet). The access in X counts as issued.
     wire stall_fence = r_valid && r_is_fence
-                    && (!lsu_req_ready || lsu_cpl_valid || rctx_wr_busy[r_rctx]);
+                    && (!lsu_req_ready || lsu_cpl_valid || rctx_wr_busy[r_rctx]
+                        || ((HYBRID_LSU != 0) && x_mem_claim));
     // FPU_OVERLAP: the FMA array is the only thing an ordinary FP op and a
     // multicycle one actually share, and only a reduction uses it -- so an
     // ordinary op waits for a fold (running, or in X and starting next
@@ -3524,7 +3568,7 @@ module tnca_core #(
                     && !d_valid && !r_valid && !x_valid
                     && lsu_req_ready && !lsu_cpl_valid
                     && !fpu_busy && !red_pend && !w_en
-                    && !mtx_busy && !txf_busy
+                    && !mtx_busy && !txf_busy_any
                     && (wb_rsv == {WB_DEPTH{1'b0}});
 
     // Signals decoded but not consumed by the Stage-1 datapath. They are kept

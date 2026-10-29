@@ -122,508 +122,508 @@
     "dma_line_rf_cycles": "1"
    },
    "points": {
+    "op.add/membound/bf16-medium-contig-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 2896413,
+     "demand_bytes": 12582912,
+     "b_per_cycle_per_core": 1.4481028775937685,
+     "gb_per_s_at_100mhz": 0.4344308632781306,
+     "max_rel_err": 0.0022222222222222222
+    },
     "op.add/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 3360005,
+     "device_cycles": 3151388,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.832405110508268,
-     "gb_per_s_at_100mhz": 0.24972153315248044,
+     "b_per_cycle_per_core": 0.8875090383454317,
+     "gb_per_s_at_100mhz": 0.2662527115036295,
      "max_rel_err": 0.002109704641350211
     },
     "op.add/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2894750,
+     "device_cycles": 2833836,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4489347957509284,
-     "gb_per_s_at_100mhz": 0.4346804387252785,
+     "b_per_cycle_per_core": 1.4800800046297669,
+     "gb_per_s_at_100mhz": 0.44402400138893006,
      "max_rel_err": 0.002183406113537118
-    },
-    "op.add/membound/bf16-medium-contig-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 2908096,
-     "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4422852615594532,
-     "gb_per_s_at_100mhz": 0.432685578467836,
-     "max_rel_err": 0.0022222222222222222
     },
     "op.add/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2908096,
+     "device_cycles": 2896413,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4422852615594532,
-     "gb_per_s_at_100mhz": 0.432685578467836,
+     "b_per_cycle_per_core": 1.4481028775937685,
+     "gb_per_s_at_100mhz": 0.4344308632781306,
      "max_rel_err": 0.0002777777777777778
     },
     "op.add/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 3360005,
+     "device_cycles": 3151388,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.832405110508268,
-     "gb_per_s_at_100mhz": 0.24972153315248044,
+     "b_per_cycle_per_core": 0.8875090383454317,
+     "gb_per_s_at_100mhz": 0.2662527115036295,
      "max_rel_err": 0.0002635740643120717
     },
     "op.add/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2894750,
+     "device_cycles": 2833836,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4489347957509284,
-     "gb_per_s_at_100mhz": 0.4346804387252785,
+     "b_per_cycle_per_core": 1.4800800046297669,
+     "gb_per_s_at_100mhz": 0.44402400138893006,
      "max_rel_err": 0.0002733734281027884
     },
     "op.add/membound/fp32-medium-broadcast-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 1326664,
+     "device_cycles": 1230134,
      "demand_bytes": 8392704,
-     "b_per_cycle_per_core": 2.1087238366308276,
-     "gb_per_s_at_100mhz": 0.6326171509892483,
-     "max_rel_err": 0.0
-    },
-    "op.add/membound/fp32-medium-strided-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 1128759,
-     "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 3.7158543143399076,
-     "gb_per_s_at_100mhz": 1.1147562943019724,
+     "b_per_cycle_per_core": 2.2741977703242084,
+     "gb_per_s_at_100mhz": 0.6822593310972627,
      "max_rel_err": 0.0
     },
     "op.add/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 1064601,
+     "device_cycles": 1110962,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 3.939789648891932,
-     "gb_per_s_at_100mhz": 1.1819368946675797,
+     "b_per_cycle_per_core": 3.7753802560303593,
+     "gb_per_s_at_100mhz": 1.1326140768091078,
+     "max_rel_err": 0.0
+    },
+    "op.add/membound/fp32-medium-strided-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 1148704,
+     "demand_bytes": 12582912,
+     "b_per_cycle_per_core": 3.6513357662200185,
+     "gb_per_s_at_100mhz": 1.0954007298660056,
      "max_rel_err": 0.0
     },
     "op.cast/membound/bf16-to-fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2469808,
+     "device_cycles": 2529516,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.5663533359678161,
-     "gb_per_s_at_100mhz": 0.16990600079034485,
-     "max_rel_err": 0.0
-    },
-    "op.cast/membound/bf16-to-fp16-medium-strided-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 2667111,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.0484013101316993,
-     "gb_per_s_at_100mhz": 0.3145203930395098,
+     "b_per_cycle_per_core": 0.5529848397875324,
+     "gb_per_s_at_100mhz": 0.16589545193625976,
      "max_rel_err": 0.0
     },
     "op.cast/membound/bf16-to-fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2430512,
+     "device_cycles": 2426132,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.1504582847838918,
-     "gb_per_s_at_100mhz": 0.3451374854351676,
+     "b_per_cycle_per_core": 1.1525352563944034,
+     "gb_per_s_at_100mhz": 0.345760576918321,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/bf16-to-fp16-medium-strided-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 2347671,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 1.1910538856026534,
+     "gb_per_s_at_100mhz": 0.357316165680796,
      "max_rel_err": 0.0
     },
     "op.cast/membound/bf16-to-fp32-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1937837,
+     "device_cycles": 2008503,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 1.4433026788802843,
-     "gb_per_s_at_100mhz": 0.43299080366408527,
+     "b_per_cycle_per_core": 1.3925223578622157,
+     "gb_per_s_at_100mhz": 0.4177567073586647,
      "max_rel_err": 0.0
     },
     "op.cast/membound/bf16-to-fp32-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2002694,
+     "device_cycles": 1921927,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 2.0943309362288995,
-     "gb_per_s_at_100mhz": 0.6282992808686699,
+     "b_per_cycle_per_core": 2.182343033840515,
+     "gb_per_s_at_100mhz": 0.6547029101521546,
      "max_rel_err": 0.0
     },
     "op.cast/membound/bf16-to-fp32-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1885511,
+     "device_cycles": 1846352,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 2.224491928182864,
-     "gb_per_s_at_100mhz": 0.6673475784548593,
+     "b_per_cycle_per_core": 2.271670840663102,
+     "gb_per_s_at_100mhz": 0.6815012521989307,
      "max_rel_err": 0.0
     },
     "op.cast/membound/fp16-to-bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2469808,
+     "device_cycles": 2529516,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.5663533359678161,
-     "gb_per_s_at_100mhz": 0.16990600079034485,
+     "b_per_cycle_per_core": 0.5529848397875324,
+     "gb_per_s_at_100mhz": 0.16589545193625976,
      "max_rel_err": 0.0
     },
     "op.cast/membound/fp16-to-bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2430512,
+     "device_cycles": 2426132,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.1504582847838918,
-     "gb_per_s_at_100mhz": 0.3451374854351676,
+     "b_per_cycle_per_core": 1.1525352563944034,
+     "gb_per_s_at_100mhz": 0.345760576918321,
      "max_rel_err": 0.0
     },
     "op.cast/membound/fp16-to-bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2667111,
+     "device_cycles": 2347671,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.0484013101316993,
-     "gb_per_s_at_100mhz": 0.3145203930395098,
-     "max_rel_err": 0.0
-    },
-    "op.cast/membound/fp16-to-fp32-medium-broadcast-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 1937837,
-     "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 1.4433026788802843,
-     "gb_per_s_at_100mhz": 0.43299080366408527,
+     "b_per_cycle_per_core": 1.1910538856026534,
+     "gb_per_s_at_100mhz": 0.357316165680796,
      "max_rel_err": 0.0
     },
     "op.cast/membound/fp16-to-fp32-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2002694,
+     "device_cycles": 1921927,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 2.0943309362288995,
-     "gb_per_s_at_100mhz": 0.6282992808686699,
+     "b_per_cycle_per_core": 2.182343033840515,
+     "gb_per_s_at_100mhz": 0.6547029101521546,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp16-to-fp32-medium-broadcast-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 2008503,
+     "demand_bytes": 8390656,
+     "b_per_cycle_per_core": 1.3925223578622157,
+     "gb_per_s_at_100mhz": 0.4177567073586647,
      "max_rel_err": 0.0
     },
     "op.cast/membound/fp16-to-fp32-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1885511,
+     "device_cycles": 1846352,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 2.224491928182864,
-     "gb_per_s_at_100mhz": 0.6673475784548593,
-     "max_rel_err": 0.0
-    },
-    "op.cast/membound/fp32-to-bf16-medium-broadcast-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 2300558,
-     "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.6083161853196776,
-     "gb_per_s_at_100mhz": 0.18249485559590328,
+     "b_per_cycle_per_core": 2.271670840663102,
+     "gb_per_s_at_100mhz": 0.6815012521989307,
      "max_rel_err": 0.0
     },
     "op.cast/membound/fp32-to-bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2418515,
+     "device_cycles": 2317218,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.7342476685073278,
-     "gb_per_s_at_100mhz": 0.5202743005521984,
+     "b_per_cycle_per_core": 1.8100601669760896,
+     "gb_per_s_at_100mhz": 0.5430180500928269,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp32-to-bf16-medium-broadcast-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 2364603,
+     "demand_bytes": 4198400,
+     "b_per_cycle_per_core": 0.5918400114804331,
+     "gb_per_s_at_100mhz": 0.17755200344412994,
      "max_rel_err": 0.0
     },
     "op.cast/membound/fp32-to-bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2503023,
+     "device_cycles": 2367173,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.6756953491837672,
-     "gb_per_s_at_100mhz": 0.5027086047551301,
+     "b_per_cycle_per_core": 1.7718620481054828,
+     "gb_per_s_at_100mhz": 0.5315586144316449,
      "max_rel_err": 0.0
     },
     "op.cast/membound/fp32-to-fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2300558,
+     "device_cycles": 2364603,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.6083161853196776,
-     "gb_per_s_at_100mhz": 0.18249485559590328,
+     "b_per_cycle_per_core": 0.5918400114804331,
+     "gb_per_s_at_100mhz": 0.17755200344412994,
      "max_rel_err": 0.0
     },
     "op.cast/membound/fp32-to-fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2418515,
+     "device_cycles": 2317218,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.7342476685073278,
-     "gb_per_s_at_100mhz": 0.5202743005521984,
+     "b_per_cycle_per_core": 1.8100601669760896,
+     "gb_per_s_at_100mhz": 0.5430180500928269,
      "max_rel_err": 0.0
     },
     "op.cast/membound/fp32-to-fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2503023,
+     "device_cycles": 2367173,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.6756953491837672,
-     "gb_per_s_at_100mhz": 0.5027086047551301,
-     "max_rel_err": 0.0
-    },
-    "op.clone/membound/bf16-medium-contig-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 2229102,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.2544076792657612,
-     "gb_per_s_at_100mhz": 0.37632230377972836,
+     "b_per_cycle_per_core": 1.7718620481054828,
+     "gb_per_s_at_100mhz": 0.5315586144316449,
      "max_rel_err": 0.0
     },
     "op.clone/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2252417,
+     "device_cycles": 2342499,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.6210146700189175,
-     "gb_per_s_at_100mhz": 0.18630440100567525,
+     "b_per_cycle_per_core": 0.5971332325008464,
+     "gb_per_s_at_100mhz": 0.17913996975025392,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/bf16-medium-contig-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 2231229,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 1.2532118696317889,
+     "gb_per_s_at_100mhz": 0.3759635608895367,
      "max_rel_err": 0.0
     },
     "op.clone/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2306865,
+     "device_cycles": 2170995,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.212122368091183,
-     "gb_per_s_at_100mhz": 0.3636367104273549,
+     "b_per_cycle_per_core": 1.2879820850193882,
+     "gb_per_s_at_100mhz": 0.3863946255058165,
      "max_rel_err": 0.0
     },
     "op.clone/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2252417,
+     "device_cycles": 2342499,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.6210146700189175,
-     "gb_per_s_at_100mhz": 0.18630440100567525,
+     "b_per_cycle_per_core": 0.5971332325008464,
+     "gb_per_s_at_100mhz": 0.17913996975025392,
      "max_rel_err": 0.0
     },
     "op.clone/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2229102,
+     "device_cycles": 2231229,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.2544076792657612,
-     "gb_per_s_at_100mhz": 0.37632230377972836,
-     "max_rel_err": 0.0
-    },
-    "op.clone/membound/fp32-medium-broadcast-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 937951,
-     "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 1.4920466705261433,
-     "gb_per_s_at_100mhz": 0.447614001157843,
+     "b_per_cycle_per_core": 1.2532118696317889,
+     "gb_per_s_at_100mhz": 0.3759635608895367,
      "max_rel_err": 0.0
     },
     "op.clone/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2306865,
+     "device_cycles": 2170995,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.212122368091183,
-     "gb_per_s_at_100mhz": 0.3636367104273549,
+     "b_per_cycle_per_core": 1.2879820850193882,
+     "gb_per_s_at_100mhz": 0.3863946255058165,
      "max_rel_err": 0.0
     },
     "op.clone/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 896090,
+     "device_cycles": 897570,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 3.1204484668578676,
-     "gb_per_s_at_100mhz": 0.9361345400573603,
+     "b_per_cycle_per_core": 3.115303170411964,
+     "gb_per_s_at_100mhz": 0.9345909511235893,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/fp32-medium-broadcast-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 978413,
+     "demand_bytes": 4198400,
+     "b_per_cycle_per_core": 1.4303434916202733,
+     "gb_per_s_at_100mhz": 0.429103047486082,
      "max_rel_err": 0.0
     },
     "op.clone/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 977039,
+     "device_cycles": 904389,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 2.8619150992607936,
-     "gb_per_s_at_100mhz": 0.8585745297782381,
+     "b_per_cycle_per_core": 3.091814105066146,
+     "gb_per_s_at_100mhz": 0.9275442315198439,
      "max_rel_err": 0.0
     },
     "op.copy/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2252318,
+     "device_cycles": 2342564,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.6210419665429127,
-     "gb_per_s_at_100mhz": 0.1863125899628738,
+     "b_per_cycle_per_core": 0.5971166636215702,
+     "gb_per_s_at_100mhz": 0.17913499908647107,
      "max_rel_err": 0.0
     },
     "op.copy/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2229108,
+     "device_cycles": 2231274,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.2544043028272596,
-     "gb_per_s_at_100mhz": 0.3763212908481779,
+     "b_per_cycle_per_core": 1.2531865950424137,
+     "gb_per_s_at_100mhz": 0.37595597851272416,
      "max_rel_err": 0.0
     },
     "op.copy/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2305276,
+     "device_cycles": 2170041,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.2129578699759451,
-     "gb_per_s_at_100mhz": 0.3638873609927835,
+     "b_per_cycle_per_core": 1.2885483116064014,
+     "gb_per_s_at_100mhz": 0.3865644934819204,
      "max_rel_err": 0.0
     },
     "op.copy/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2252318,
+     "device_cycles": 2342564,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.6210419665429127,
-     "gb_per_s_at_100mhz": 0.1863125899628738,
+     "b_per_cycle_per_core": 0.5971166636215702,
+     "gb_per_s_at_100mhz": 0.17913499908647107,
      "max_rel_err": 0.0
     },
     "op.copy/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2229108,
+     "device_cycles": 2231274,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.2544043028272596,
-     "gb_per_s_at_100mhz": 0.3763212908481779,
-     "max_rel_err": 0.0
-    },
-    "op.copy/membound/fp16-medium-strided-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 2305276,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.2129578699759451,
-     "gb_per_s_at_100mhz": 0.3638873609927835,
-     "max_rel_err": 0.0
-    },
-    "op.copy/membound/fp32-medium-contig-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 895848,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 3.121291409554597,
-     "gb_per_s_at_100mhz": 0.9363874228663791,
+     "b_per_cycle_per_core": 1.2531865950424137,
+     "gb_per_s_at_100mhz": 0.37595597851272416,
      "max_rel_err": 0.0
     },
     "op.copy/membound/fp32-medium-broadcast-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 937951,
+     "device_cycles": 978413,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 1.4920466705261433,
-     "gb_per_s_at_100mhz": 0.447614001157843,
+     "b_per_cycle_per_core": 1.4303434916202733,
+     "gb_per_s_at_100mhz": 0.429103047486082,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/fp16-medium-strided-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 2170041,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 1.2885483116064014,
+     "gb_per_s_at_100mhz": 0.3865644934819204,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/fp32-medium-contig-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 897514,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 3.1154975484133582,
+     "gb_per_s_at_100mhz": 0.9346492645240074,
      "max_rel_err": 0.0
     },
     "op.copy/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 977091,
+     "device_cycles": 904781,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 2.861762790432689,
-     "gb_per_s_at_100mhz": 0.8585288371298069,
+     "b_per_cycle_per_core": 3.0904745641947238,
+     "gb_per_s_at_100mhz": 0.9271423692584172,
      "max_rel_err": 0.0
     },
     "op.div/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4314961,
+     "device_cycles": 4394787,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.648183224212996,
-     "gb_per_s_at_100mhz": 0.1944549672638988,
+     "b_per_cycle_per_core": 0.6364097585009998,
+     "gb_per_s_at_100mhz": 0.19092292755029994,
      "max_rel_err": 0.0025201458697142777
-    },
-    "op.div/membound/bf16-medium-strided-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 4505139,
-     "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 0.9310043485894663,
-     "gb_per_s_at_100mhz": 0.27930130457683994,
-     "max_rel_err": 0.0018598826806392951
     },
     "op.div/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4296558,
+     "device_cycles": 4337688,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 0.9762009496904266,
-     "gb_per_s_at_100mhz": 0.29286028490712795,
+     "b_per_cycle_per_core": 0.9669446027469011,
+     "gb_per_s_at_100mhz": 0.2900833808240703,
      "max_rel_err": 0.0018733876558101393
     },
-    "op.div/membound/fp16-medium-broadcast-r2048-c1024": {
+    "op.div/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4314961,
-     "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.648183224212996,
-     "gb_per_s_at_100mhz": 0.1944549672638988,
-     "max_rel_err": 0.00039895936589804786
+     "device_cycles": 4333628,
+     "demand_bytes": 12582912,
+     "b_per_cycle_per_core": 0.9678504938587253,
+     "gb_per_s_at_100mhz": 0.2903551481576176,
+     "max_rel_err": 0.0018598826806392951
     },
     "op.div/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4296558,
+     "device_cycles": 4337688,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 0.9762009496904266,
-     "gb_per_s_at_100mhz": 0.29286028490712795,
+     "b_per_cycle_per_core": 0.9669446027469011,
+     "gb_per_s_at_100mhz": 0.2900833808240703,
      "max_rel_err": 0.0002347391453361639
+    },
+    "op.div/membound/fp16-medium-broadcast-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 4394787,
+     "demand_bytes": 8390656,
+     "b_per_cycle_per_core": 0.6364097585009998,
+     "gb_per_s_at_100mhz": 0.19092292755029994,
+     "max_rel_err": 0.00039895936589804786
     },
     "op.div/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4505139,
+     "device_cycles": 4333628,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 0.9310043485894663,
-     "gb_per_s_at_100mhz": 0.27930130457683994,
+     "b_per_cycle_per_core": 0.9678504938587253,
+     "gb_per_s_at_100mhz": 0.2903551481576176,
      "max_rel_err": 0.0004645690890158053
-    },
-    "op.div/membound/fp32-medium-contig-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 1567107,
-     "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 2.676463062190393,
-     "gb_per_s_at_100mhz": 0.8029389186571179,
-     "max_rel_err": 6.131222132829003e-08
     },
     "op.div/membound/fp32-medium-broadcast-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 1729924,
+     "device_cycles": 1621590,
      "demand_bytes": 8392704,
-     "b_per_cycle_per_core": 1.617162372451044,
-     "gb_per_s_at_100mhz": 0.48514871173531326,
+     "b_per_cycle_per_core": 1.725200574744541,
+     "gb_per_s_at_100mhz": 0.5175601724233623,
      "max_rel_err": 5.791073361548987e-08
+    },
+    "op.div/membound/fp32-medium-contig-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 1544751,
+     "demand_bytes": 12582912,
+     "b_per_cycle_per_core": 2.715197465481492,
+     "gb_per_s_at_100mhz": 0.8145592396444477,
+     "max_rel_err": 6.131222132829003e-08
     },
     "op.div/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 1766051,
+     "device_cycles": 1722807,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 2.3749619914713676,
-     "gb_per_s_at_100mhz": 0.7124885974414102,
+     "b_per_cycle_per_core": 2.4345756663398745,
+     "gb_per_s_at_100mhz": 0.7303726999019624,
      "max_rel_err": 6.042094547662216e-08
-    },
-    "op.exp/membound/bf16-medium-contig-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 3751359,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.7453839173128102,
-     "gb_per_s_at_100mhz": 0.22361517519384308,
-     "max_rel_err": 0.0020123462929683028
     },
     "op.exp/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 3861209,
+     "device_cycles": 3793501,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.36226580845533096,
-     "gb_per_s_at_100mhz": 0.10867974253659929,
+     "b_per_cycle_per_core": 0.36873168084046903,
+     "gb_per_s_at_100mhz": 0.11061950425214072,
      "max_rel_err": 0.0009922521314733597
+    },
+    "op.exp/membound/bf16-medium-contig-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 3676829,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 0.7604929863930758,
+     "gb_per_s_at_100mhz": 0.22814789591792276,
+     "max_rel_err": 0.0020123462929683028
     },
     "op.exp/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 3656984,
+     "device_cycles": 3703844,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.7646198798426974,
-     "gb_per_s_at_100mhz": 0.22938596395280922,
+     "b_per_cycle_per_core": 0.7549461226408744,
+     "gb_per_s_at_100mhz": 0.22648383679226233,
      "max_rel_err": 0.0020123462929683028
-    },
-    "op.exp/membound/fp16-medium-contig-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 3751359,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.7453839173128102,
-     "gb_per_s_at_100mhz": 0.22361517519384308,
-     "max_rel_err": 0.0002451024082425712
     },
     "op.exp/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 3861209,
+     "device_cycles": 3793501,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.36226580845533096,
-     "gb_per_s_at_100mhz": 0.10867974253659929,
+     "b_per_cycle_per_core": 0.36873168084046903,
+     "gb_per_s_at_100mhz": 0.11061950425214072,
      "max_rel_err": 0.0002511586023967436
+    },
+    "op.exp/membound/fp16-medium-contig-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 3676829,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 0.7604929863930758,
+     "gb_per_s_at_100mhz": 0.22814789591792276,
+     "max_rel_err": 0.0002451024082425712
+    },
+    "op.exp/membound/fp32-medium-broadcast-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 1589329,
+     "demand_bytes": 4198400,
+     "b_per_cycle_per_core": 0.8805393135509808,
+     "gb_per_s_at_100mhz": 0.2641617940652942,
+     "max_rel_err": 6.312539911033587e-08
     },
     "op.exp/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 3656984,
+     "device_cycles": 3703844,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.7646198798426974,
-     "gb_per_s_at_100mhz": 0.22938596395280922,
+     "b_per_cycle_per_core": 0.7549461226408744,
+     "gb_per_s_at_100mhz": 0.22648383679226233,
      "max_rel_err": 0.00024211112106850243
     },
     "op.exp/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 1499566,
+     "device_cycles": 1523315,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.8646746236355496,
-     "gb_per_s_at_100mhz": 0.5594023870906649,
+     "b_per_cycle_per_core": 1.8356037107667598,
+     "gb_per_s_at_100mhz": 0.5506811132300279,
      "max_rel_err": 1.4470149781243893e-07
-    },
-    "op.exp/membound/fp32-medium-broadcast-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 1516726,
-     "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.9226891783134638,
-     "gb_per_s_at_100mhz": 0.27680675349403916,
-     "max_rel_err": 6.312539911033587e-08
     },
     "op.exp/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 1469762,
+     "device_cycles": 1604567,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.9024867064644935,
-     "gb_per_s_at_100mhz": 0.570746011939348,
+     "b_per_cycle_per_core": 1.7426524829855448,
+     "gb_per_s_at_100mhz": 0.5227957448956635,
      "max_rel_err": 6.110509667223476e-08
     },
     "op.gelu/membound/bf16-medium-broadcast-r2048-c1024": {
@@ -634,14 +634,6 @@
      "gb_per_s_at_100mhz": 0.032805610696046025,
      "max_rel_err": 0.0018821125227925714
     },
-    "op.gelu/membound/bf16-medium-strided-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 12457641,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.22445683469821187,
-     "gb_per_s_at_100mhz": 0.06733705040946357,
-     "max_rel_err": 0.0016142621027795093
-    },
     "op.gelu/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
      "device_cycles": 12746827,
@@ -650,13 +642,13 @@
      "gb_per_s_at_100mhz": 0.06580938142488323,
      "max_rel_err": 0.001614262262725642
     },
-    "op.gelu/membound/fp16-medium-contig-r2048-c1024": {
+    "op.gelu/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 12746827,
+     "device_cycles": 12659033,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.21936460474961075,
-     "gb_per_s_at_100mhz": 0.06580938142488323,
-     "max_rel_err": 0.00020221613077334462
+     "b_per_cycle_per_core": 0.22088596077335976,
+     "gb_per_s_at_100mhz": 0.06626578823200793,
+     "max_rel_err": 0.0016142621027795093
     },
     "op.gelu/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
@@ -666,21 +658,21 @@
      "gb_per_s_at_100mhz": 0.032805610696046025,
      "max_rel_err": 0.00023560052382024186
     },
-    "op.gelu/membound/fp16-medium-strided-r2048-c1024": {
+    "op.gelu/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 12457641,
+     "device_cycles": 12746827,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.22445683469821187,
-     "gb_per_s_at_100mhz": 0.06733705040946357,
+     "b_per_cycle_per_core": 0.21936460474961075,
+     "gb_per_s_at_100mhz": 0.06580938142488323,
      "max_rel_err": 0.00020221613077334462
     },
-    "op.gelu/membound/fp32-medium-contig-r1024-c1024": {
+    "op.gelu/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 6006653,
+     "device_cycles": 12659033,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.46551759634969203,
-     "gb_per_s_at_100mhz": 0.13965527890490761,
-     "max_rel_err": 1.0236444465190305e-07
+     "b_per_cycle_per_core": 0.22088596077335976,
+     "gb_per_s_at_100mhz": 0.06626578823200793,
+     "max_rel_err": 0.00020221613077334462
     },
     "op.gelu/membound/fp32-medium-broadcast-r1024-c1024": {
      "status": "pass",
@@ -690,6 +682,14 @@
      "gb_per_s_at_100mhz": 0.06918930321243114,
      "max_rel_err": 1.1626177920748763e-07
     },
+    "op.gelu/membound/fp32-medium-contig-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 6006653,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 0.46551759634969203,
+     "gb_per_s_at_100mhz": 0.13965527890490761,
+     "max_rel_err": 1.0236444465190305e-07
+    },
     "op.gelu/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
      "device_cycles": 6057199,
@@ -698,796 +698,796 @@
      "gb_per_s_at_100mhz": 0.138489886166857,
      "max_rel_err": 4.9391013739690986e-08
     },
-    "op.layernorm/membound/bf16-medium-contig-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 6585044,
-     "demand_bytes": 8392704,
-     "b_per_cycle_per_core": 0.4248366449791376,
-     "gb_per_s_at_100mhz": 0.12745099349374128,
-     "max_rel_err": 0.002766728811808593
-    },
     "op.layernorm/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 6174690,
+     "device_cycles": 5890560,
      "demand_bytes": 4200448,
-     "b_per_cycle_per_core": 0.22675621502186075,
-     "gb_per_s_at_100mhz": 0.06802686450655823,
+     "b_per_cycle_per_core": 0.2376937563378241,
+     "gb_per_s_at_100mhz": 0.07130812690134723,
      "max_rel_err": 0.0027404403350873266
+    },
+    "op.layernorm/membound/bf16-medium-contig-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 6412921,
+     "demand_bytes": 8392704,
+     "b_per_cycle_per_core": 0.43623927380362243,
+     "gb_per_s_at_100mhz": 0.13087178214108672,
+     "max_rel_err": 0.002766728811808593
     },
     "op.layernorm/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 7177532,
+     "device_cycles": 6958701,
      "demand_bytes": 8392704,
-     "b_per_cycle_per_core": 0.3897674019426176,
-     "gb_per_s_at_100mhz": 0.1169302205827853,
+     "b_per_cycle_per_core": 0.4020244583004788,
+     "gb_per_s_at_100mhz": 0.12060733749014363,
      "max_rel_err": 0.003029452092096305
     },
     "op.layernorm/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 6174690,
+     "device_cycles": 5890560,
      "demand_bytes": 4200448,
-     "b_per_cycle_per_core": 0.22675621502186075,
-     "gb_per_s_at_100mhz": 0.06802686450655823,
+     "b_per_cycle_per_core": 0.2376937563378241,
+     "gb_per_s_at_100mhz": 0.07130812690134723,
      "max_rel_err": 0.00020033170395519025
     },
     "op.layernorm/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 6585044,
+     "device_cycles": 6412921,
      "demand_bytes": 8392704,
-     "b_per_cycle_per_core": 0.4248366449791376,
-     "gb_per_s_at_100mhz": 0.12745099349374128,
+     "b_per_cycle_per_core": 0.43623927380362243,
+     "gb_per_s_at_100mhz": 0.13087178214108672,
      "max_rel_err": 0.00034472022156255044
     },
     "op.layernorm/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 7177532,
+     "device_cycles": 6958701,
      "demand_bytes": 8392704,
-     "b_per_cycle_per_core": 0.3897674019426176,
-     "gb_per_s_at_100mhz": 0.1169302205827853,
+     "b_per_cycle_per_core": 0.4020244583004788,
+     "gb_per_s_at_100mhz": 0.12060733749014363,
      "max_rel_err": 0.0003749095427098425
     },
     "op.layernorm/membound/fp32-medium-broadcast-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 2922250,
+     "device_cycles": 2871454,
      "demand_bytes": 4206592,
-     "b_per_cycle_per_core": 0.479834830467391,
-     "gb_per_s_at_100mhz": 0.14395044914021732,
+     "b_per_cycle_per_core": 0.4883231050657031,
+     "gb_per_s_at_100mhz": 0.14649693151971094,
      "max_rel_err": 1.0209017380035368e-07
     },
     "op.layernorm/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 3226357,
+     "device_cycles": 3152858,
      "demand_bytes": 8396800,
-     "b_per_cycle_per_core": 0.8675212734775889,
-     "gb_per_s_at_100mhz": 0.26025638204327667,
+     "b_per_cycle_per_core": 0.8877448122729706,
+     "gb_per_s_at_100mhz": 0.2663234436818912,
      "max_rel_err": 1.7853917993205335e-07
-    },
-    "op.layernorm/membound/fp32-medium-strided-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 3522494,
-     "demand_bytes": 8396800,
-     "b_per_cycle_per_core": 0.7945885311183876,
-     "gb_per_s_at_100mhz": 0.23837655933551627,
-     "max_rel_err": 1.7526301062768607e-07
     },
     "op.max/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1075617,
+     "device_cycles": 1071728,
      "demand_bytes": 6144,
-     "b_per_cycle_per_core": 0.001904023458164012,
-     "gb_per_s_at_100mhz": 0.0005712070374492036,
+     "b_per_cycle_per_core": 0.0019109326246958182,
+     "gb_per_s_at_100mhz": 0.0005732797874087455,
      "max_rel_err": 0.0
+    },
+    "op.layernorm/membound/fp32-medium-strided-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 3333270,
+     "demand_bytes": 8396800,
+     "b_per_cycle_per_core": 0.8396959542231303,
+     "gb_per_s_at_100mhz": 0.2519087862669391,
+     "max_rel_err": 1.7526301062768607e-07
     },
     "op.max/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1419518,
+     "device_cycles": 1401767,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.9858745480273351,
-     "gb_per_s_at_100mhz": 0.29576236440820053,
-     "max_rel_err": 0.0
-    },
-    "op.max/membound/fp16-medium-broadcast-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 1075617,
-     "demand_bytes": 6144,
-     "b_per_cycle_per_core": 0.001904023458164012,
-     "gb_per_s_at_100mhz": 0.0005712070374492036,
+     "b_per_cycle_per_core": 0.9983589759686643,
+     "gb_per_s_at_100mhz": 0.2995076927905993,
      "max_rel_err": 0.0
     },
     "op.max/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1647192,
+     "device_cycles": 1631851,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.8496074936417046,
-     "gb_per_s_at_100mhz": 0.2548822480925114,
+     "b_per_cycle_per_core": 0.8575946374188983,
+     "gb_per_s_at_100mhz": 0.2572783912256695,
+     "max_rel_err": 0.0
+    },
+    "op.max/membound/fp16-medium-broadcast-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 1071728,
+     "demand_bytes": 6144,
+     "b_per_cycle_per_core": 0.0019109326246958182,
+     "gb_per_s_at_100mhz": 0.0005732797874087455,
      "max_rel_err": 0.0
     },
     "op.max/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1419518,
+     "device_cycles": 1401767,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.9858745480273351,
-     "gb_per_s_at_100mhz": 0.29576236440820053,
+     "b_per_cycle_per_core": 0.9983589759686643,
+     "gb_per_s_at_100mhz": 0.2995076927905993,
      "max_rel_err": 0.0
     },
     "op.max/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1647192,
+     "device_cycles": 1631851,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.8496074936417046,
-     "gb_per_s_at_100mhz": 0.2548822480925114,
+     "b_per_cycle_per_core": 0.8575946374188983,
+     "gb_per_s_at_100mhz": 0.2572783912256695,
      "max_rel_err": 0.0
     },
     "op.max/membound/fp32-medium-broadcast-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 485765,
+     "device_cycles": 490360,
      "demand_bytes": 8192,
-     "b_per_cycle_per_core": 0.005621373846750315,
-     "gb_per_s_at_100mhz": 0.0016864121540250945,
+     "b_per_cycle_per_core": 0.005568697827446502,
+     "gb_per_s_at_100mhz": 0.0016706093482339508,
      "max_rel_err": 0.0
     },
     "op.max/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 749516,
+     "device_cycles": 726668,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 1.867160496462606,
-     "gb_per_s_at_100mhz": 0.5601481489387818,
+     "b_per_cycle_per_core": 1.9258680259302274,
+     "gb_per_s_at_100mhz": 0.5777604077790682,
      "max_rel_err": 0.0
     },
     "op.max/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 791963,
+     "device_cycles": 776360,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 1.7670859202597429,
-     "gb_per_s_at_100mhz": 0.5301257760779229,
+     "b_per_cycle_per_core": 1.8026001683067994,
+     "gb_per_s_at_100mhz": 0.5407800504920398,
      "max_rel_err": 0.0
     },
     "op.mean/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1083459,
+     "device_cycles": 1078628,
      "demand_bytes": 6144,
-     "b_per_cycle_per_core": 0.001890242270358177,
-     "gb_per_s_at_100mhz": 0.000567072681107453,
+     "b_per_cycle_per_core": 0.0018987083591377194,
+     "gb_per_s_at_100mhz": 0.0005696125077413158,
      "max_rel_err": 5.7153403759002686e-05
     },
     "op.mean/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1425735,
+     "device_cycles": 1409540,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.9815755849906657,
-     "gb_per_s_at_100mhz": 0.29447267549719974,
+     "b_per_cycle_per_core": 0.9928534604670082,
+     "gb_per_s_at_100mhz": 0.2978560381401025,
      "max_rel_err": 0.00024255365133285522
     },
     "op.mean/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1654434,
+     "device_cycles": 1642113,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.8458884831106389,
-     "gb_per_s_at_100mhz": 0.2537665449331917,
+     "b_per_cycle_per_core": 0.8522353008999177,
+     "gb_per_s_at_100mhz": 0.25567059026997535,
      "max_rel_err": 0.00024209916591644287
-    },
-    "op.mean/membound/fp16-medium-contig-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 1425735,
-     "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.9815755849906657,
-     "gb_per_s_at_100mhz": 0.29447267549719974,
-     "max_rel_err": 2.9355287551879883e-05
     },
     "op.mean/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1083459,
+     "device_cycles": 1078628,
      "demand_bytes": 6144,
-     "b_per_cycle_per_core": 0.001890242270358177,
-     "gb_per_s_at_100mhz": 0.000567072681107453,
+     "b_per_cycle_per_core": 0.0018987083591377194,
+     "gb_per_s_at_100mhz": 0.0005696125077413158,
      "max_rel_err": 1.1671334505081177e-05
     },
-    "op.mean/membound/fp32-medium-broadcast-r1024-c1024": {
+    "op.mean/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 489461,
-     "demand_bytes": 8192,
-     "b_per_cycle_per_core": 0.0055789259341738505,
-     "gb_per_s_at_100mhz": 0.0016736777802521551,
-     "max_rel_err": 3.725290298461914e-09
+     "device_cycles": 1409540,
+     "demand_bytes": 4198400,
+     "b_per_cycle_per_core": 0.9928534604670082,
+     "gb_per_s_at_100mhz": 0.2978560381401025,
+     "max_rel_err": 2.9355287551879883e-05
     },
     "op.mean/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1654434,
+     "device_cycles": 1642113,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.8458884831106389,
-     "gb_per_s_at_100mhz": 0.2537665449331917,
+     "b_per_cycle_per_core": 0.8522353008999177,
+     "gb_per_s_at_100mhz": 0.25567059026997535,
      "max_rel_err": 3.02046537399292e-05
+    },
+    "op.mean/membound/fp32-medium-broadcast-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 493463,
+     "demand_bytes": 8192,
+     "b_per_cycle_per_core": 0.005533680674471373,
+     "gb_per_s_at_100mhz": 0.0016601042023414118,
+     "max_rel_err": 3.725290298461914e-09
     },
     "op.mean/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 752609,
+     "device_cycles": 731337,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 1.8594870200418365,
-     "gb_per_s_at_100mhz": 0.557846106012551,
+     "b_per_cycle_per_core": 1.9135729036910025,
+     "gb_per_s_at_100mhz": 0.5740718711073008,
      "max_rel_err": 2.0489096641540527e-08
     },
     "op.mean/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 794971,
+     "device_cycles": 778787,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 1.7603996456055209,
-     "gb_per_s_at_100mhz": 0.5281198936816563,
+     "b_per_cycle_per_core": 1.796982572470607,
+     "gb_per_s_at_100mhz": 0.5390947717411821,
      "max_rel_err": 2.60770320892334e-08
     },
     "op.mul/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 3360005,
+     "device_cycles": 3151388,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.832405110508268,
-     "gb_per_s_at_100mhz": 0.24972153315248044,
+     "b_per_cycle_per_core": 0.8875090383454317,
+     "gb_per_s_at_100mhz": 0.2662527115036295,
      "max_rel_err": 0.0022082524531191567
     },
     "op.mul/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2908096,
+     "device_cycles": 2896413,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4422852615594532,
-     "gb_per_s_at_100mhz": 0.432685578467836,
+     "b_per_cycle_per_core": 1.4481028775937685,
+     "gb_per_s_at_100mhz": 0.4344308632781306,
      "max_rel_err": 0.0025301943110162288
     },
     "op.mul/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2894750,
+     "device_cycles": 2833836,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4489347957509284,
-     "gb_per_s_at_100mhz": 0.4346804387252785,
+     "b_per_cycle_per_core": 1.4800800046297669,
+     "gb_per_s_at_100mhz": 0.44402400138893006,
      "max_rel_err": 0.0024926000934725034
     },
     "op.mul/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2908096,
+     "device_cycles": 2896413,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4422852615594532,
-     "gb_per_s_at_100mhz": 0.432685578467836,
+     "b_per_cycle_per_core": 1.4481028775937685,
+     "gb_per_s_at_100mhz": 0.4344308632781306,
      "max_rel_err": 0.0003131764835963779
     },
     "op.mul/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 3360005,
+     "device_cycles": 3151388,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.832405110508268,
-     "gb_per_s_at_100mhz": 0.24972153315248044,
+     "b_per_cycle_per_core": 0.8875090383454317,
+     "gb_per_s_at_100mhz": 0.2662527115036295,
      "max_rel_err": 0.0002824116733864523
+    },
+    "op.mul/membound/fp32-medium-broadcast-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 1230134,
+     "demand_bytes": 8392704,
+     "b_per_cycle_per_core": 2.2741977703242084,
+     "gb_per_s_at_100mhz": 0.6822593310972627,
+     "max_rel_err": 0.0
     },
     "op.mul/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2894750,
+     "device_cycles": 2833836,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4489347957509284,
-     "gb_per_s_at_100mhz": 0.4346804387252785,
+     "b_per_cycle_per_core": 1.4800800046297669,
+     "gb_per_s_at_100mhz": 0.44402400138893006,
      "max_rel_err": 0.00031205954413657825
     },
     "op.mul/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 1064601,
+     "device_cycles": 1110962,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 3.939789648891932,
-     "gb_per_s_at_100mhz": 1.1819368946675797,
-     "max_rel_err": 0.0
-    },
-    "op.mul/membound/fp32-medium-broadcast-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 1326664,
-     "demand_bytes": 8392704,
-     "b_per_cycle_per_core": 2.1087238366308276,
-     "gb_per_s_at_100mhz": 0.6326171509892483,
+     "b_per_cycle_per_core": 3.7753802560303593,
+     "gb_per_s_at_100mhz": 1.1326140768091078,
      "max_rel_err": 0.0
     },
     "op.mul/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 1128759,
+     "device_cycles": 1148704,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 3.7158543143399076,
-     "gb_per_s_at_100mhz": 1.1147562943019724,
-     "max_rel_err": 0.0
-    },
-    "op.relu/membound/bf16-medium-broadcast-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 2583181,
-     "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.5414967050315096,
-     "gb_per_s_at_100mhz": 0.1624490115094529,
+     "b_per_cycle_per_core": 3.6513357662200185,
+     "gb_per_s_at_100mhz": 1.0954007298660056,
      "max_rel_err": 0.0
     },
     "op.relu/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2583521,
+     "device_cycles": 2542666,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.0823224067722566,
-     "gb_per_s_at_100mhz": 0.324696722031677,
+     "b_per_cycle_per_core": 1.0997129259866087,
+     "gb_per_s_at_100mhz": 0.3299138777959827,
      "max_rel_err": 0.0
     },
-    "op.relu/membound/bf16-medium-strided-r2048-c1024": {
+    "op.relu/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2776004,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.0072761662687326,
-     "gb_per_s_at_100mhz": 0.30218284988061983,
-     "max_rel_err": 0.0
-    },
-    "op.relu/membound/fp16-medium-broadcast-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 2583181,
+     "device_cycles": 2664136,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.5414967050315096,
-     "gb_per_s_at_100mhz": 0.1624490115094529,
-     "max_rel_err": 0.0
-    },
-    "op.relu/membound/fp16-medium-strided-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 2776004,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.0072761662687326,
-     "gb_per_s_at_100mhz": 0.30218284988061983,
+     "b_per_cycle_per_core": 0.5250422651095891,
+     "gb_per_s_at_100mhz": 0.15751267953287673,
      "max_rel_err": 0.0
     },
     "op.relu/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2583521,
+     "device_cycles": 2542666,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.0823224067722566,
-     "gb_per_s_at_100mhz": 0.324696722031677,
+     "b_per_cycle_per_core": 1.0997129259866087,
+     "gb_per_s_at_100mhz": 0.3299138777959827,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/fp16-medium-broadcast-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 2664136,
+     "demand_bytes": 4196352,
+     "b_per_cycle_per_core": 0.5250422651095891,
+     "gb_per_s_at_100mhz": 0.15751267953287673,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/bf16-medium-strided-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 2585712,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 1.0814053021630663,
+     "gb_per_s_at_100mhz": 0.3244215906489199,
      "max_rel_err": 0.0
     },
     "op.relu/membound/fp32-medium-broadcast-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 991401,
+     "device_cycles": 1022555,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 1.4116050585652695,
-     "gb_per_s_at_100mhz": 0.42348151756958086,
-     "max_rel_err": 0.0
-    },
-    "op.relu/membound/fp32-medium-strided-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 1028922,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 2.7176041202993684,
-     "gb_per_s_at_100mhz": 0.8152812360898105,
+     "b_per_cycle_per_core": 1.3685979401271,
+     "gb_per_s_at_100mhz": 0.41057938203813005,
      "max_rel_err": 0.0
     },
     "op.relu/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 971671,
+     "device_cycles": 943682,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 2.8777257597135932,
-     "gb_per_s_at_100mhz": 0.863317727914078,
+     "b_per_cycle_per_core": 2.9630772513057013,
+     "gb_per_s_at_100mhz": 0.8889231753917104,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/fp16-medium-strided-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 2585712,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 1.0814053021630663,
+     "gb_per_s_at_100mhz": 0.3244215906489199,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/fp32-medium-strided-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 991887,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 2.8190738125075403,
+     "gb_per_s_at_100mhz": 0.8457221437522622,
      "max_rel_err": 0.0
     },
     "op.rmsnorm/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4889798,
+     "device_cycles": 4787627,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.2862013250172434,
-     "gb_per_s_at_100mhz": 0.08586039750517302,
+     "b_per_cycle_per_core": 0.29230904301163535,
+     "gb_per_s_at_100mhz": 0.08769271290349061,
      "max_rel_err": 0.002664602720491049
     },
     "op.rmsnorm/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 5321386,
+     "device_cycles": 5129051,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.5255933949037588,
-     "gb_per_s_at_100mhz": 0.15767801847112764,
+     "b_per_cycle_per_core": 0.5453026950469655,
+     "gb_per_s_at_100mhz": 0.16359080851408966,
      "max_rel_err": 0.0028171931677335475
     },
     "op.rmsnorm/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 5728223,
+     "device_cycles": 5553436,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.48826404512068283,
-     "gb_per_s_at_100mhz": 0.14647921353620486,
+     "b_per_cycle_per_core": 0.5036315054919753,
+     "gb_per_s_at_100mhz": 0.1510894516475926,
      "max_rel_err": 0.002988698256682522
     },
     "op.rmsnorm/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4889798,
+     "device_cycles": 4787627,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.2862013250172434,
-     "gb_per_s_at_100mhz": 0.08586039750517302,
+     "b_per_cycle_per_core": 0.29230904301163535,
+     "gb_per_s_at_100mhz": 0.08769271290349061,
      "max_rel_err": 0.00027867194258273975
     },
     "op.rmsnorm/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 5321386,
+     "device_cycles": 5129051,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.5255933949037588,
-     "gb_per_s_at_100mhz": 0.15767801847112764,
+     "b_per_cycle_per_core": 0.5453026950469655,
+     "gb_per_s_at_100mhz": 0.16359080851408966,
      "max_rel_err": 0.000353127111355538
-    },
-    "op.rmsnorm/membound/fp16-medium-strided-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 5728223,
-     "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.48826404512068283,
-     "gb_per_s_at_100mhz": 0.14647921353620486,
-     "max_rel_err": 0.000375053304279143
     },
     "op.rmsnorm/membound/fp32-medium-broadcast-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 2402649,
+     "device_cycles": 2411996,
      "demand_bytes": 4202496,
-     "b_per_cycle_per_core": 0.5830364734923829,
-     "gb_per_s_at_100mhz": 0.17491094204771485,
+     "b_per_cycle_per_core": 0.5807770825490589,
+     "gb_per_s_at_100mhz": 0.1742331247647177,
      "max_rel_err": 0.0
-    },
-    "op.rmsnorm/membound/fp32-medium-strided-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 2707756,
-     "demand_bytes": 8392704,
-     "b_per_cycle_per_core": 1.033168424333655,
-     "gb_per_s_at_100mhz": 0.3099505273000965,
-     "max_rel_err": 1.747249065549359e-07
-    },
-    "op.sigmoid/membound/bf16-medium-broadcast-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 5293367,
-     "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.26425222358472406,
-     "gb_per_s_at_100mhz": 0.07927566707541722,
-     "max_rel_err": 0.0019187331199645996
     },
     "op.rmsnorm/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 2525895,
+     "device_cycles": 2478609,
      "demand_bytes": 8392704,
-     "b_per_cycle_per_core": 1.1075551438203093,
-     "gb_per_s_at_100mhz": 0.3322665431460928,
+     "b_per_cycle_per_core": 1.1286846775752044,
+     "gb_per_s_at_100mhz": 0.3386054032725614,
      "max_rel_err": 1.8672159269037246e-07
+    },
+    "op.rmsnorm/membound/fp16-medium-strided-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 5553436,
+     "demand_bytes": 8390656,
+     "b_per_cycle_per_core": 0.5036315054919753,
+     "gb_per_s_at_100mhz": 0.1510894516475926,
+     "max_rel_err": 0.000375053304279143
+    },
+    "op.rmsnorm/membound/fp32-medium-strided-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 2641174,
+     "demand_bytes": 8392704,
+     "b_per_cycle_per_core": 1.0592138193091405,
+     "gb_per_s_at_100mhz": 0.3177641457927422,
+     "max_rel_err": 1.747249065549359e-07
     },
     "op.sigmoid/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4903615,
+     "device_cycles": 5316495,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.5702329132011111,
-     "gb_per_s_at_100mhz": 0.17106987396033335,
+     "b_per_cycle_per_core": 0.5259485180869476,
+     "gb_per_s_at_100mhz": 0.1577845554260843,
      "max_rel_err": 0.0019530653953552246
+    },
+    "op.sigmoid/membound/bf16-medium-broadcast-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 5501953,
+     "demand_bytes": 4196352,
+     "b_per_cycle_per_core": 0.25423408742313863,
+     "gb_per_s_at_100mhz": 0.0762702262269416,
+     "max_rel_err": 0.0019187331199645996
     },
     "op.sigmoid/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4933536,
+     "device_cycles": 5465966,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.5667745541264251,
-     "gb_per_s_at_100mhz": 0.17003236623792753,
+     "b_per_cycle_per_core": 0.511566055600541,
+     "gb_per_s_at_100mhz": 0.15346981668016232,
      "max_rel_err": 0.0019530653953552246
     },
     "op.sigmoid/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 5293367,
+     "device_cycles": 5501953,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.26425222358472406,
-     "gb_per_s_at_100mhz": 0.07927566707541722,
+     "b_per_cycle_per_core": 0.25423408742313863,
+     "gb_per_s_at_100mhz": 0.0762702262269416,
      "max_rel_err": 0.00024330615997314453
     },
     "op.sigmoid/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4903615,
+     "device_cycles": 5316495,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.5702329132011111,
-     "gb_per_s_at_100mhz": 0.17106987396033335,
+     "b_per_cycle_per_core": 0.5259485180869476,
+     "gb_per_s_at_100mhz": 0.1577845554260843,
      "max_rel_err": 0.000244140625
     },
     "op.sigmoid/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4933536,
+     "device_cycles": 5465966,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.5667745541264251,
-     "gb_per_s_at_100mhz": 0.17003236623792753,
+     "b_per_cycle_per_core": 0.511566055600541,
+     "gb_per_s_at_100mhz": 0.15346981668016232,
      "max_rel_err": 0.000244140625
     },
     "op.sigmoid/membound/fp32-medium-broadcast-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 2460575,
+     "device_cycles": 2487703,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.568755947966092,
-     "gb_per_s_at_100mhz": 0.1706267843898276,
-     "max_rel_err": 1.1920928955078125e-07
-    },
-    "op.sigmoid/membound/fp32-medium-strided-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 2149210,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.3010374354607817,
-     "gb_per_s_at_100mhz": 0.39031123063823453,
+     "b_per_cycle_per_core": 0.5625537560820832,
+     "gb_per_s_at_100mhz": 0.168766126824625,
      "max_rel_err": 1.1920928955078125e-07
     },
     "op.sigmoid/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 2186977,
+     "device_cycles": 2410761,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.2785697639557556,
-     "gb_per_s_at_100mhz": 0.3835709291867267,
+     "b_per_cycle_per_core": 1.1598838153872022,
+     "gb_per_s_at_100mhz": 0.3479651446161607,
+     "max_rel_err": 1.1920928955078125e-07
+    },
+    "op.sigmoid/membound/fp32-medium-strided-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 2392236,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 1.1688657250650298,
+     "gb_per_s_at_100mhz": 0.350659717519509,
      "max_rel_err": 1.1920928955078125e-07
     },
     "op.silu/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 5293367,
+     "device_cycles": 5506607,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.26425222358472406,
-     "gb_per_s_at_100mhz": 0.07927566707541722,
+     "b_per_cycle_per_core": 0.25401921727844384,
+     "gb_per_s_at_100mhz": 0.07620576518353317,
      "max_rel_err": 0.001933531516119631
     },
     "op.silu/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4903615,
+     "device_cycles": 5314336,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.5702329132011111,
-     "gb_per_s_at_100mhz": 0.17106987396033335,
+     "b_per_cycle_per_core": 0.5261621897197818,
+     "gb_per_s_at_100mhz": 0.15784865691593455,
      "max_rel_err": 0.0032213994418438512
     },
     "op.silu/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4886266,
+     "device_cycles": 5486062,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.5722575616363633,
-     "gb_per_s_at_100mhz": 0.17167726849090903,
+     "b_per_cycle_per_core": 0.5096921373959439,
+     "gb_per_s_at_100mhz": 0.1529076412187832,
      "max_rel_err": 0.00263475513418652
     },
     "op.silu/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 5293367,
+     "device_cycles": 5506607,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.26425222358472406,
-     "gb_per_s_at_100mhz": 0.07927566707541722,
+     "b_per_cycle_per_core": 0.25401921727844384,
+     "gb_per_s_at_100mhz": 0.07620576518353317,
      "max_rel_err": 0.00022525325331997415
     },
     "op.silu/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4903615,
+     "device_cycles": 5314336,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.5702329132011111,
-     "gb_per_s_at_100mhz": 0.17106987396033335,
+     "b_per_cycle_per_core": 0.5261621897197818,
+     "gb_per_s_at_100mhz": 0.15784865691593455,
      "max_rel_err": 0.0003946266661503203
     },
     "op.silu/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 4886266,
+     "device_cycles": 5486062,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.5722575616363633,
-     "gb_per_s_at_100mhz": 0.17167726849090903,
+     "b_per_cycle_per_core": 0.5096921373959439,
+     "gb_per_s_at_100mhz": 0.1529076412187832,
      "max_rel_err": 0.00040179445625194066
-    },
-    "op.silu/membound/fp32-medium-broadcast-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 2466524,
-     "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.5673841676248302,
-     "gb_per_s_at_100mhz": 0.17021525028744908,
-     "max_rel_err": 5.9091624636763784e-08
     },
     "op.silu/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 2186977,
+     "device_cycles": 2420868,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.2785697639557556,
-     "gb_per_s_at_100mhz": 0.3835709291867267,
+     "b_per_cycle_per_core": 1.1550413598208025,
+     "gb_per_s_at_100mhz": 0.3465124079462408,
      "max_rel_err": 1.033350028825299e-07
+    },
+    "op.silu/membound/fp32-medium-broadcast-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 2489653,
+     "demand_bytes": 4198400,
+     "b_per_cycle_per_core": 0.5621131405327034,
+     "gb_per_s_at_100mhz": 0.16863394215981103,
+     "max_rel_err": 5.9091624636763784e-08
     },
     "op.silu/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 2149210,
+     "device_cycles": 2391638,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 1.3010374354607817,
-     "gb_per_s_at_100mhz": 0.39031123063823453,
+     "b_per_cycle_per_core": 1.1691579857263794,
+     "gb_per_s_at_100mhz": 0.35074739571791386,
      "max_rel_err": 9.957312007691824e-08
     },
     "op.softmax/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 9566843,
+     "device_cycles": 9104374,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.14621166041922085,
-     "gb_per_s_at_100mhz": 0.04386349812576626,
+     "b_per_cycle_per_core": 0.15363867960608824,
+     "gb_per_s_at_100mhz": 0.046091603881826475,
      "max_rel_err": 9.5367431640625e-05
     },
     "op.softmax/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 10136796,
+     "device_cycles": 9451896,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.2758467928788018,
-     "gb_per_s_at_100mhz": 0.08275403786364055,
+     "b_per_cycle_per_core": 0.29583510722786904,
+     "gb_per_s_at_100mhz": 0.08875053216836072,
      "max_rel_err": 0.0001320168375968933
     },
     "op.softmax/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 10699991,
+     "device_cycles": 10213171,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.2613275718331601,
-     "gb_per_s_at_100mhz": 0.07839827154994804,
+     "b_per_cycle_per_core": 0.2737839860574807,
+     "gb_per_s_at_100mhz": 0.08213519581724422,
      "max_rel_err": 0.00012362003326416016
     },
     "op.softmax/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 9566843,
+     "device_cycles": 9104374,
      "demand_bytes": 4196352,
-     "b_per_cycle_per_core": 0.14621166041922085,
-     "gb_per_s_at_100mhz": 0.04386349812576626,
+     "b_per_cycle_per_core": 0.15363867960608824,
+     "gb_per_s_at_100mhz": 0.046091603881826475,
      "max_rel_err": 6.036832928657532e-06
-    },
-    "op.softmax/membound/fp16-medium-strided-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 10699991,
-     "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.2613275718331601,
-     "gb_per_s_at_100mhz": 0.07839827154994804,
-     "max_rel_err": 2.7373433113098145e-05
     },
     "op.softmax/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 10136796,
+     "device_cycles": 9451896,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.2758467928788018,
-     "gb_per_s_at_100mhz": 0.08275403786364055,
+     "b_per_cycle_per_core": 0.29583510722786904,
+     "gb_per_s_at_100mhz": 0.08875053216836072,
      "max_rel_err": 3.013014793395996e-05
-    },
-    "op.softmax/membound/fp32-medium-broadcast-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 4313115,
-     "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.3244677377409753,
-     "gb_per_s_at_100mhz": 0.09734032132229259,
-     "max_rel_err": 9.313225746154785e-10
     },
     "op.softmax/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 4766357,
+     "device_cycles": 4579638,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.5866540560572082,
-     "gb_per_s_at_100mhz": 0.1759962168171625,
+     "b_per_cycle_per_core": 0.6105728589610503,
+     "gb_per_s_at_100mhz": 0.18317185768831512,
      "max_rel_err": 1.862645149230957e-08
+    },
+    "op.softmax/membound/fp32-medium-broadcast-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 4257415,
+     "demand_bytes": 4198400,
+     "b_per_cycle_per_core": 0.3287127674108976,
+     "gb_per_s_at_100mhz": 0.09861383022326929,
+     "max_rel_err": 9.313225746154785e-10
     },
     "op.softmax/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 5020044,
+     "device_cycles": 4945692,
      "demand_bytes": 8388608,
-     "b_per_cycle_per_core": 0.5570076012613966,
-     "gb_per_s_at_100mhz": 0.167102280378419,
+     "b_per_cycle_per_core": 0.5653814808254672,
+     "gb_per_s_at_100mhz": 0.16961444424764016,
      "max_rel_err": 1.4901161193847656e-08
+    },
+    "op.softmax/membound/fp16-medium-strided-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 10213171,
+     "demand_bytes": 8388608,
+     "b_per_cycle_per_core": 0.2737839860574807,
+     "gb_per_s_at_100mhz": 0.08213519581724422,
+     "max_rel_err": 2.7373433113098145e-05
     },
     "op.sub/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 3360005,
+     "device_cycles": 3151388,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.832405110508268,
-     "gb_per_s_at_100mhz": 0.24972153315248044,
+     "b_per_cycle_per_core": 0.8875090383454317,
+     "gb_per_s_at_100mhz": 0.2662527115036295,
      "max_rel_err": 0.002183406113537118
     },
     "op.sub/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2908096,
+     "device_cycles": 2896413,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4422852615594532,
-     "gb_per_s_at_100mhz": 0.432685578467836,
+     "b_per_cycle_per_core": 1.4481028775937685,
+     "gb_per_s_at_100mhz": 0.4344308632781306,
      "max_rel_err": 0.00228310502283105
     },
     "op.sub/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2894750,
+     "device_cycles": 2833836,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4489347957509284,
-     "gb_per_s_at_100mhz": 0.4346804387252785,
+     "b_per_cycle_per_core": 1.4800800046297669,
+     "gb_per_s_at_100mhz": 0.44402400138893006,
      "max_rel_err": 0.0023094688221709007
     },
     "op.sub/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 3360005,
+     "device_cycles": 3151388,
      "demand_bytes": 8390656,
-     "b_per_cycle_per_core": 0.832405110508268,
-     "gb_per_s_at_100mhz": 0.24972153315248044,
+     "b_per_cycle_per_core": 0.8875090383454317,
+     "gb_per_s_at_100mhz": 0.2662527115036295,
      "max_rel_err": 0.00027307482250136535
     },
     "op.sub/membound/fp16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2908096,
+     "device_cycles": 2896413,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4422852615594532,
-     "gb_per_s_at_100mhz": 0.432685578467836,
+     "b_per_cycle_per_core": 1.4481028775937685,
+     "gb_per_s_at_100mhz": 0.4344308632781306,
      "max_rel_err": 0.00028563267637817766
-    },
-    "op.sub/membound/fp32-medium-broadcast-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 1326664,
-     "demand_bytes": 8392704,
-     "b_per_cycle_per_core": 2.1087238366308276,
-     "gb_per_s_at_100mhz": 0.6326171509892483,
-     "max_rel_err": 0.0
     },
     "op.sub/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 2894750,
+     "device_cycles": 2833836,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 1.4489347957509284,
-     "gb_per_s_at_100mhz": 0.4346804387252785,
+     "b_per_cycle_per_core": 1.4800800046297669,
+     "gb_per_s_at_100mhz": 0.44402400138893006,
      "max_rel_err": 0.0002886836027713626
+    },
+    "op.sub/membound/fp32-medium-broadcast-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 1230134,
+     "demand_bytes": 8392704,
+     "b_per_cycle_per_core": 2.2741977703242084,
+     "gb_per_s_at_100mhz": 0.6822593310972627,
+     "max_rel_err": 0.0
     },
     "op.sub/membound/fp32-medium-contig-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 1064601,
+     "device_cycles": 1110962,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 3.939789648891932,
-     "gb_per_s_at_100mhz": 1.1819368946675797,
+     "b_per_cycle_per_core": 3.7753802560303593,
+     "gb_per_s_at_100mhz": 1.1326140768091078,
      "max_rel_err": 0.0
     },
     "op.sum/membound/bf16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1067816,
+     "device_cycles": 1063718,
      "demand_bytes": 6144,
-     "b_per_cycle_per_core": 0.0019179334267326955,
-     "gb_per_s_at_100mhz": 0.0005753800280198087,
+     "b_per_cycle_per_core": 0.0019253223128686363,
+     "gb_per_s_at_100mhz": 0.0005775966938605909,
      "max_rel_err": 0.0017703477483627572
     },
     "op.sub/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 1128759,
+     "device_cycles": 1148704,
      "demand_bytes": 12582912,
-     "b_per_cycle_per_core": 3.7158543143399076,
-     "gb_per_s_at_100mhz": 1.1147562943019724,
+     "b_per_cycle_per_core": 3.6513357662200185,
+     "gb_per_s_at_100mhz": 1.0954007298660056,
      "max_rel_err": 0.0
     },
     "op.sum/membound/bf16-medium-contig-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1411511,
+     "device_cycles": 1395412,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.9914670637824762,
-     "gb_per_s_at_100mhz": 0.29744011913474283,
+     "b_per_cycle_per_core": 1.0029057129125067,
+     "gb_per_s_at_100mhz": 0.300871713873752,
      "max_rel_err": 0.0021369117486626826
     },
     "op.sum/membound/fp16-medium-broadcast-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1067816,
+     "device_cycles": 1063718,
      "demand_bytes": 6144,
-     "b_per_cycle_per_core": 0.0019179334267326955,
-     "gb_per_s_at_100mhz": 0.0005753800280198087,
+     "b_per_cycle_per_core": 0.0019253223128686363,
+     "gb_per_s_at_100mhz": 0.0005775966938605909,
      "max_rel_err": 0.0003629839762212476
-    },
-    "op.sum/membound/fp16-medium-contig-r2048-c1024": {
-     "status": "pass",
-     "device_cycles": 1411511,
-     "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.9914670637824762,
-     "gb_per_s_at_100mhz": 0.29744011913474283,
-     "max_rel_err": 0.00025849743054210127
     },
     "op.sum/membound/bf16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1639782,
+     "device_cycles": 1629156,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.853446779307656,
-     "gb_per_s_at_100mhz": 0.2560340337922968,
+     "b_per_cycle_per_core": 0.8590132968645524,
+     "gb_per_s_at_100mhz": 0.2577039890593657,
      "max_rel_err": 0.0019674869958397827
+    },
+    "op.sum/membound/fp16-medium-contig-r2048-c1024": {
+     "status": "pass",
+     "device_cycles": 1395412,
+     "demand_bytes": 4198400,
+     "b_per_cycle_per_core": 1.0029057129125067,
+     "gb_per_s_at_100mhz": 0.300871713873752,
+     "max_rel_err": 0.00025849743054210127
     },
     "op.sum/membound/fp32-medium-broadcast-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 481559,
+     "device_cycles": 486349,
      "demand_bytes": 8192,
-     "b_per_cycle_per_core": 0.0056704716694458345,
-     "gb_per_s_at_100mhz": 0.0017011415008337503,
+     "b_per_cycle_per_core": 0.005614623792105394,
+     "gb_per_s_at_100mhz": 0.0016843871376316184,
      "max_rel_err": 1.1581316418125825e-07
-    },
-    "op.sum/membound/fp32-medium-contig-r1024-c1024": {
-     "status": "pass",
-     "device_cycles": 745460,
-     "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 1.8773195968484784,
-     "gb_per_s_at_100mhz": 0.5631958790545436,
-     "max_rel_err": 2.2595717100964567e-07
     },
     "op.sum/membound/fp16-medium-strided-r2048-c1024": {
      "status": "pass",
-     "device_cycles": 1639782,
+     "device_cycles": 1629156,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 0.853446779307656,
-     "gb_per_s_at_100mhz": 0.2560340337922968,
+     "b_per_cycle_per_core": 0.8590132968645524,
+     "gb_per_s_at_100mhz": 0.2577039890593657,
      "max_rel_err": 0.0002454801140519745
+    },
+    "op.sum/membound/fp32-medium-contig-r1024-c1024": {
+     "status": "pass",
+     "device_cycles": 724435,
+     "demand_bytes": 4198400,
+     "b_per_cycle_per_core": 1.9318043256698898,
+     "gb_per_s_at_100mhz": 0.579541297700967,
+     "max_rel_err": 2.2595717100964567e-07
     },
     "op.sum/membound/fp32-medium-strided-r1024-c1024": {
      "status": "pass",
-     "device_cycles": 788383,
+     "device_cycles": 772078,
      "demand_bytes": 4198400,
-     "b_per_cycle_per_core": 1.7751101516225827,
-     "gb_per_s_at_100mhz": 0.5325330454867748,
+     "b_per_cycle_per_core": 1.8125975182127538,
+     "gb_per_s_at_100mhz": 0.5437792554638262,
      "max_rel_err": 2.3945005301082103e-07
     }
    },

@@ -37,6 +37,7 @@ def run(binary, top, params, source, args=()):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--quick', action='store_true')
+    ap.add_argument('--fill-chain', type=int, default=0, help='FILL_CHAIN (HOME_LINE_PIPE 2) in every case')
     a = ap.parse_args()
     seeds = (1, 7) if a.quick else (1, 7, 39, 101, 2026)
     n = bad = 0
@@ -53,6 +54,7 @@ def main():
                                           ['+nreq=3000', f'+seed={seed}']))
         cases.append(({'PRESSURE': 1, 'DRAM_LAT': 200}, ['+nreq=100', '+min_wb=0']))
         for params, args in cases:
+            params['FILL_CHAIN'] = a.fill_chain
             ok, out = run(b, 'tb_home_pipe', params, 'tb/nuca/tb_home_pipe.v', args)
             m = re.search(r'MEMORY reads=(\d+) writes=(\d+) nofill_allocs=(\d+)', out)
             mt = re.search(r'MAINTENANCE lower_half_lines=(\d+) mismatches=(\d+)', out)
@@ -63,7 +65,7 @@ def main():
                 print('\n'.join(l for l in out.splitlines() if 'FAIL' in l or 'FATAL' in l)[:2000])
             n += 1
         for nofill in (0, 1):
-            ok, out = run(b, 'tb_home_pipe_special', {'LINE_WRITE_NOFILL': nofill}, 'tb/nuca/tb_home_pipe_special.v')
+            ok, out = run(b, 'tb_home_pipe_special', {'LINE_WRITE_NOFILL': nofill, 'FILL_CHAIN': a.fill_chain}, 'tb/nuca/tb_home_pipe_special.v')
             print(f"SPECIAL {'PASS' if ok else 'FAIL'} nofill={nofill} "
                   f"{(re.search(r'HOME PIPE SPECIAL PASS.*', out) or [''])[0]}", flush=True)
             bad += not ok
@@ -71,7 +73,7 @@ def main():
         for mode in (1, 2, 3):
             for mshr in (8, 32):
                 ok, out = run(b, 'tb_home_pipe', {'SERVICE_MODE': mode, 'LINE_WRITE_NOFILL': 1, 'MSHR_N': mshr,
-                                                  'TARGET_N': max(16, mshr)},
+                                                  'TARGET_N': max(16, mshr), 'FILL_CHAIN': a.fill_chain},
                               'tb/nuca/tb_home_pipe.v', ['+nreq=2048', '+min_wb=0'])
                 m = re.search(r'HOME SERVICE .*', out)
                 print(f"SERVICE {'PASS' if ok else 'FAIL'} mshr={mshr} {m.group(0) if m else ''}", flush=True)

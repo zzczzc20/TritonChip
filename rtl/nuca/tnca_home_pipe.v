@@ -68,6 +68,10 @@ module tnca_home_pipe #(
     parameter DCO_ID_W   = 16,
     parameter MAINTENANCE = 0,
     parameter WBQ_N      = 4,
+    // R41 G4: the fill unit starts the next filled MSHR in the cycle it
+    // finishes one (HOME_LINE_PIPE 2), instead of idling a cycle between
+    // them, so single-target read misses fill at one line a cycle.
+    parameter FILL_CHAIN = 0,
     parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
     input  wire                     clk,
@@ -435,6 +439,15 @@ module tnca_home_pipe #(
         for (k = MSHR_N-1; k >= 0; k = k - 1)
             if (ms_state[k] == MS_FILL) begin fill_found = 1'b1; fill_pick = k[MSHR_W-1:0]; end
     end
+    // FILL_CHAIN: the next filled MSHR other than the one finishing
+    reg fill_next_found; reg [MSHR_W-1:0] fill_next_pick;
+    always @(*) begin
+        fill_next_found = 1'b0; fill_next_pick = 0;
+        for (k = MSHR_N-1; k >= 0; k = k - 1)
+            if (ms_state[k] == MS_FILL && k[MSHR_W-1:0] != fu_ms) begin
+                fill_next_found = 1'b1; fill_next_pick = k[MSHR_W-1:0];
+            end
+    end
     // the line the current target sees: the returned line, or the running merge
     wire [LINE_BITS-1:0] fu_cur  = fu_first ? ms_line[fu_ms] : fu_line;
     wire [TARGET_W-1:0]  fu_tc   = fu_t;
@@ -628,7 +641,11 @@ module tnca_home_pipe #(
                     v_bits[dw_index] <= 1'b1; cl_bits[dw_index] <= 1'b0;
                     d_bits[dw_index] <= fu_dirty || fu_writes;
                     ms_state[fu_ms] <= MS_FREE;
-                    fu_v <= 1'b0;
+                    if (FILL_CHAIN != 0 && fill_next_found) begin
+                        fu_ms <= fill_next_pick; fu_t <= ms_head[fill_next_pick];
+                        fu_first <= 1'b1; fu_dirty <= 1'b0;
+                    end else
+                        fu_v <= 1'b0;
                     free_resources = 1;
                 end else fu_t <= tg_next[fu_tc];
             end

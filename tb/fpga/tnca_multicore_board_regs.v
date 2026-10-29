@@ -20,7 +20,9 @@ module tnca_multicore_board_regs;
  // R41 G2 resource sizing (tools/r40/image_geometry_tests.py sets them from an image.tcl).
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,ACC_N=16,ACC_W=4,BAR_N=32,BAR_W=5,BAR_EPOCH_W=48,PHYS_ADDR_W=64;
  // R41 G4 one-lane path options (defaults: the delivered machine).
- parameter HOME_LINE_WRITE_NOFILL=0,HOME_LINE_PIPE=0,HOME_MSHR_N=8,LINE_SLOTS=8;
+ parameter HOME_LINE_WRITE_NOFILL=0,HOME_LINE_PIPE=0,HOME_MSHR_N=8,LINE_SLOTS=8,TENSOR_LINE=0;
+ // R41 G4: outlet data width (the image's AXI_DATA_W; 256 delivered, 512 one beat a line).
+ parameter AXI_DATA_W=256;
  localparam NX=N>4?4:N,ADDR_BITS=9,WORDS=(131072+MEMORY_BYTES)/8,
   AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1);
  reg clk=0,rst_n_async=0;always #5 clk=~clk;
@@ -35,8 +37,8 @@ module tnca_multicore_board_regs;
  wire [3*2-1:0] m_awburst;
  wire [3-1:0] m_wvalid;
  wire [3-1:0] m_wready;
- wire [3*256-1:0] m_wdata;
- wire [3*256/8-1:0] m_wstrb;
+ wire [3*AXI_DATA_W-1:0] m_wdata;
+ wire [3*AXI_DATA_W/8-1:0] m_wstrb;
  wire [3-1:0] m_wlast;
  wire [3-1:0] m_bvalid;
  wire [3-1:0] m_bready;
@@ -51,19 +53,19 @@ module tnca_multicore_board_regs;
  wire [3*2-1:0] m_arburst;
  wire [3-1:0] m_rvalid;
  wire [3-1:0] m_rready;
- wire [3*256-1:0] m_rdata;
+ wire [3*AXI_DATA_W-1:0] m_rdata;
  wire [3*AXI_ID_W-1:0] m_rid;
  wire [3*2-1:0] m_rresp;
  wire [3-1:0] m_rlast;
  reg awvalid=0,wvalid=0,bready=0,arvalid=0,rready=0;
  reg [11:0] awaddr=0,araddr=0;reg [31:0] wdata=0;reg [3:0] wstrb=15;
  wire awready,wready,bvalid,arready,rvalid;wire [31:0] rdata;wire [1:0] bresp,rresp;
- tnca_multicore_hbm_xo #(.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.HOME_LINE_PIPE(HOME_LINE_PIPE),.HOME_MSHR_N(HOME_MSHR_N),.LINE_SLOTS(LINE_SLOTS),.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(SETS),.SET_W(SET_W),.WAYS(WAYS),.WAY_W(WAY_W),
+ tnca_multicore_hbm_xo #(.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.HOME_LINE_PIPE(HOME_LINE_PIPE),.TENSOR_LINE(TENSOR_LINE),.HOME_MSHR_N(HOME_MSHR_N),.LINE_SLOTS(LINE_SLOTS),.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(SETS),.SET_W(SET_W),.WAYS(WAYS),.WAY_W(WAY_W),
   .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),.NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT),
   .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE),.NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
   .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES),.DCO_REGISTER_WRITES(DCO_REGISTER_WRITES),
   .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),.NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ),.AXI_LINE_LUTRAM(AXI_LINE_LUTRAM),
-  .AXI_OUT_N(AXI_OUT_N),.AXI_PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),
+  .AXI_OUT_N(AXI_OUT_N),.AXI_PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.AXI_DATA_W(AXI_DATA_W),
   .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),.MTX_VRF_REG(MTX_VRF_REG),.NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
   .ACC_N(ACC_N),.ACC_W(ACC_W),.BAR_N(BAR_N),.BAR_W(BAR_W),.BAR_EPOCH_W(BAR_EPOCH_W),.PHYS_ADDR_W(PHYS_ADDR_W)) dut(
  .ap_clk(clk),.ap_rst_n(rst_n_async),
@@ -93,8 +95,8 @@ module tnca_multicore_board_regs;
  .m_axi_hbm0_awburst(m_awburst[0+:2]),
  .m_axi_hbm0_wvalid(m_wvalid[0+:1]),
  .m_axi_hbm0_wready(m_wready[0+:1]),
- .m_axi_hbm0_wdata(m_wdata[0+:256]),
- .m_axi_hbm0_wstrb(m_wstrb[0+:32]),
+ .m_axi_hbm0_wdata(m_wdata[0*AXI_DATA_W+:AXI_DATA_W]),
+ .m_axi_hbm0_wstrb(m_wstrb[0*(AXI_DATA_W/8)+:(AXI_DATA_W/8)]),
  .m_axi_hbm0_wlast(m_wlast[0+:1]),
  .m_axi_hbm0_bvalid(m_bvalid[0+:1]),
  .m_axi_hbm0_bready(m_bready[0+:1]),
@@ -109,7 +111,7 @@ module tnca_multicore_board_regs;
  .m_axi_hbm0_arburst(m_arburst[0+:2]),
  .m_axi_hbm0_rvalid(m_rvalid[0+:1]),
  .m_axi_hbm0_rready(m_rready[0+:1]),
- .m_axi_hbm0_rdata(m_rdata[0+:256]),
+ .m_axi_hbm0_rdata(m_rdata[0*AXI_DATA_W+:AXI_DATA_W]),
  .m_axi_hbm0_rid(m_rid[0+:AXI_ID_W]),
  .m_axi_hbm0_rresp(m_rresp[0+:2]),
  .m_axi_hbm0_rlast(m_rlast[0+:1]),
@@ -122,8 +124,8 @@ module tnca_multicore_board_regs;
  .m_axi_hbm1_awburst(m_awburst[2+:2]),
  .m_axi_hbm1_wvalid(m_wvalid[1+:1]),
  .m_axi_hbm1_wready(m_wready[1+:1]),
- .m_axi_hbm1_wdata(m_wdata[256+:256]),
- .m_axi_hbm1_wstrb(m_wstrb[32+:32]),
+ .m_axi_hbm1_wdata(m_wdata[1*AXI_DATA_W+:AXI_DATA_W]),
+ .m_axi_hbm1_wstrb(m_wstrb[1*(AXI_DATA_W/8)+:(AXI_DATA_W/8)]),
  .m_axi_hbm1_wlast(m_wlast[1+:1]),
  .m_axi_hbm1_bvalid(m_bvalid[1+:1]),
  .m_axi_hbm1_bready(m_bready[1+:1]),
@@ -138,7 +140,7 @@ module tnca_multicore_board_regs;
  .m_axi_hbm1_arburst(m_arburst[2+:2]),
  .m_axi_hbm1_rvalid(m_rvalid[1+:1]),
  .m_axi_hbm1_rready(m_rready[1+:1]),
- .m_axi_hbm1_rdata(m_rdata[256+:256]),
+ .m_axi_hbm1_rdata(m_rdata[1*AXI_DATA_W+:AXI_DATA_W]),
  .m_axi_hbm1_rid(m_rid[AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm1_rresp(m_rresp[2+:2]),
  .m_axi_hbm1_rlast(m_rlast[1+:1]),
@@ -151,8 +153,8 @@ module tnca_multicore_board_regs;
  .m_axi_hbm2_awburst(m_awburst[4+:2]),
  .m_axi_hbm2_wvalid(m_wvalid[2+:1]),
  .m_axi_hbm2_wready(m_wready[2+:1]),
- .m_axi_hbm2_wdata(m_wdata[512+:256]),
- .m_axi_hbm2_wstrb(m_wstrb[64+:32]),
+ .m_axi_hbm2_wdata(m_wdata[2*AXI_DATA_W+:AXI_DATA_W]),
+ .m_axi_hbm2_wstrb(m_wstrb[2*(AXI_DATA_W/8)+:(AXI_DATA_W/8)]),
  .m_axi_hbm2_wlast(m_wlast[2+:1]),
  .m_axi_hbm2_bvalid(m_bvalid[2+:1]),
  .m_axi_hbm2_bready(m_bready[2+:1]),
@@ -167,12 +169,12 @@ module tnca_multicore_board_regs;
  .m_axi_hbm2_arburst(m_arburst[4+:2]),
  .m_axi_hbm2_rvalid(m_rvalid[2+:1]),
  .m_axi_hbm2_rready(m_rready[2+:1]),
- .m_axi_hbm2_rdata(m_rdata[512+:256]),
+ .m_axi_hbm2_rdata(m_rdata[2*AXI_DATA_W+:AXI_DATA_W]),
  .m_axi_hbm2_rid(m_rid[2*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm2_rresp(m_rresp[4+:2]),
  .m_axi_hbm2_rlast(m_rlast[2+:1]));
  generate for(genvar p=0;p<PORTS;p=p+1)begin:g_ram
-  tnca_axi_line_model #(.DATA_W(256),.OUT_N(AXI_OUT_N),.ID_W(AXI_ID_W),.LINES(SPARSE ? SPARSE_LINES : (131072+MEMORY_BYTES)/64),.LATENCY(25+p*19),
+  tnca_axi_line_model #(.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.ID_W(AXI_ID_W),.LINES(SPARSE ? SPARSE_LINES : (131072+MEMORY_BYTES)/64),.LATENCY(25+p*19),
    .WIN_BASE(WIN_BASE),.SPARSE(SPARSE),.SPARSE_MAP(SPARSE_MAP)) ram(
   .clk(clk),.rst_n(rst_n_async),
  .m_awvalid(m_awvalid[p*(1)+:(1)]),
@@ -184,8 +186,8 @@ module tnca_multicore_board_regs;
  .m_awburst(m_awburst[p*(2)+:(2)]),
  .m_wvalid(m_wvalid[p*(1)+:(1)]),
  .m_wready(m_wready[p*(1)+:(1)]),
- .m_wdata(m_wdata[p*(256)+:(256)]),
- .m_wstrb(m_wstrb[p*(256/8)+:(256/8)]),
+ .m_wdata(m_wdata[p*(AXI_DATA_W)+:(AXI_DATA_W)]),
+ .m_wstrb(m_wstrb[p*(AXI_DATA_W/8)+:(AXI_DATA_W/8)]),
  .m_wlast(m_wlast[p*(1)+:(1)]),
  .m_bvalid(m_bvalid[p*(1)+:(1)]),
  .m_bready(m_bready[p*(1)+:(1)]),
@@ -200,7 +202,7 @@ module tnca_multicore_board_regs;
  .m_arburst(m_arburst[p*(2)+:(2)]),
  .m_rvalid(m_rvalid[p*(1)+:(1)]),
  .m_rready(m_rready[p*(1)+:(1)]),
- .m_rdata(m_rdata[p*(256)+:(256)]),
+ .m_rdata(m_rdata[p*(AXI_DATA_W)+:(AXI_DATA_W)]),
  .m_rid(m_rid[p*(AXI_ID_W)+:(AXI_ID_W)]),
  .m_rresp(m_rresp[p*(2)+:(2)]),
  .m_rlast(m_rlast[p*(1)+:(1)]));

@@ -414,7 +414,7 @@ sources = ["archbench/membound.py", "archbench/suite.py", "archbench/suites/r41_
 [[doc]]
 path = "evidence/r41/hbm_bw/G4_DESIGN.md"
 depends_on = ["evidence/r41/hbm_bw/BANDWIDTH_PLAN.md", "evidence/r41/hbm_bw/LINK_BUDGET.md", "evidence/r41/hbm_bw/RESOURCES.md", "evidence/r41/hbm_bw/AUDIT.md", "doc/engineering_discipline.md"]
-sources = ["tools/r41/g4_issue_bound.py", "tools/r41/g4_model_suite.py", "tools/r41/g4_report.py", "tools/r41/g4_rtl_report.py", "tools/r41/g4_g2_cuts_report.py", "tools/r41/g4_home_tests.py", "tools/r41/g4_home_pipe_tests.py", "compiler/python/tnca_cc/pointwise_tiles.py", "rtl/nuca/tnca_home_pipe.v", "tools/r40/image_geometry_tests.py", "tb/fpga/tnca_multicore_shared_hbm.vh", "evidence/r41/hbm_bw/g4/", "tools/performance_harness/systemc/configs/r41-hbm8-device-service.cfg", "tools/performance_harness/systemc/run_graphs.py"]
+sources = ["tools/r41/g4_issue_bound.py", "tools/r41/g4_model_suite.py", "tools/r41/g4_report.py", "tools/r41/g4_rtl_report.py", "tools/r41/g4_g2_cuts_report.py", "tools/r41/g4_home_tests.py", "tools/r41/g4_home_pipe_tests.py", "tools/r41/g4_home_calibrate.py", "tools/r41/tensor_line_tests.py", "tb/core/tb_tensor_line.v", "rtl/core/tnca_tensor.v", "compiler/python/tnca_cc/pointwise_tiles.py", "rtl/nuca/tnca_home_pipe.v", "tools/r40/image_geometry_tests.py", "tb/fpga/tnca_multicore_shared_hbm.vh", "evidence/r41/hbm_bw/g4/", "tools/performance_harness/systemc/configs/r41-hbm8-device-service.cfg", "tools/performance_harness/systemc/run_graphs.py"]
 
 [[doc]]
 path = "evidence/r41/hbm_bw/STATUS.md"
@@ -578,11 +578,26 @@ depends_on = ["doc/engineering_discipline.md", "evidence/r41/hbm_bw/BANDWIDTH_PL
 sources = ["evidence/r41/stage2/run1/README.md", "evidence/r41/stage2/run1/run1-reports.tgz", "evidence/r41/stage2/integration/image.tcl", "evidence/r41/hbm_bw/resources/", "tools/r41/util_hier.py", "tools/r41/resource_usage.py", "tools/r41/asm_resource_scan.py", "tools/r41/fp8_hub_compile_only.py", "tools/performance_harness/default_change_audit.py", "spec/r1_profiles.json", "compiler/targets/tnca-sim-vrf-v5-x8-g2.json", "python/tnca/device.py", "python/tnca/backends/multicore_mmio.py", "rtl/nuca/tnca_addr_fold.v", "rtl/core/tnca_barrier.v", "rtl/core/tnca_core.v", "tb/nuca/tb_nuca_addr_fold.v", "rtl/nuca/tnca_nuca_slice.v", "rtl/fpga/tnca_line_axi.v", "rtl/tile/tnca_tile.v", "rtl/tnca_top.v", "rtl/tnca_multicore_shell.v", "rtl/fpga/tnca_multicore_axi.v", "rtl/fpga/tnca_multicore_fpga.v", "rtl/board/tnca_multicore_hbm_xo.v", "tb/nuca/tb_nuca_shared_read.v", "tb/fpga/tb_line_axi.v", "tb/fpga/tnca_multicore_board_regs.v", "tools/r40/line_axi_tests.py", "tools/r40/image_geometry_tests.py", "flow/fpga/screen_r41_outlet_lines.tcl", "flow/fpga/screen_r41_tile.tcl", "flow/fpga/synth_r40_multicore.tcl"]
 
 [[doc]]
+path = "evidence/r41/hbm_bw/mma_dp/INTERFACE.md"
+depends_on = ["doc/isa/TNCA-ISA-v0.1.md", "evidence/r41/hbm_bw/fma_dslx/README.md"]
+sources = ["rtl/core/tnca_core.v", "rtl/core/tnca_matrix.v", "rtl/core/tnca_mac_lane.v", "tb/core/tb_tnca_core.v", "tools/r41/mtx_vrf_reg_tests.py"]
+
+[[doc]]
 path = "evidence/r41/hbm_bw/timing/README.md"
 depends_on = ["doc/engineering_discipline.md", "evidence/r41/hbm_bw/RESOURCES.md", "evidence/r41/hbm_bw/G4_DESIGN.md"]
-sources = ["rtl/core/tnca_core.v", "rtl/core/tnca_matrix.v", "rtl/core/tnca_vector_fpu.v", "tb/core/tb_tnca_core.v", "tb/fpga/tnca_multicore_board_regs.v", "tools/r41/mtx_vrf_reg_tests.py", "tools/r41/link_budget_rtl.py", "tools/performance_harness/default_change_audit.py", "flow/fpga/synth_r40_multicore.tcl", "flow/fpga/screen_r41_tile.tcl", "evidence/r41/hbm_bw/timing/"]
+sources = ["rtl/core/tnca_core.v", "rtl/core/tnca_matrix.v", "rtl/core/tnca_vector_fpu.v", "rtl/core/tnca_lsu_hybrid.v", "rtl/tile/tnca_tile.v", "tb/core/tb_tnca_core.v", "tb/fpga/tnca_multicore_board_regs.v", "tools/r41/mtx_vrf_reg_tests.py", "tools/r41/lsu_hybrid_tests.py", "tools/r41/link_budget_rtl.py", "tools/performance_harness/default_change_audit.py", "flow/fpga/synth_r40_multicore.tcl", "flow/fpga/screen_r41_tile.tcl", "evidence/r41/hbm_bw/timing/"]
+
+[[doc]]
+path = "evidence/r41/pmac/README.md"
+depends_on = []
+sources = ["evidence/r41/pmac/"]
 
 [[doc]]
 path = "evidence/r41/hbm_bw/fma_dslx/README.md"
 depends_on = ["doc/engineering_discipline.md", "evidence/r41/hbm_bw/RESOURCES.md", "evidence/r41/pmac/README.md"]
 sources = ["evidence/r41/hbm_bw/fma_dslx/", "xls/tnca_lzc.x", "xls/tnca_fmad.x", "xls/tnca_mac.x", "rtl/core/tnca_mac_lane.v", "rtl/core/tnca_fp32_fma.v", "tools/model/fdp.py", "tools/r41/fmax/", "doc/isa/TNCA-ISA-v0.1.md"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/barrier_alias/README.md"
+depends_on = ["doc/engineering_discipline.md", "doc/isa/TNCA-ISA-v0.1.md"]
+sources = ["rtl/core/tnca_core.v", "rtl/core/tnca_barrier.v", "tools/r41/barrier_alias_tests.py", "python/tnca/aot.py", "compiler/python/tnca_cc/codegen.py"]

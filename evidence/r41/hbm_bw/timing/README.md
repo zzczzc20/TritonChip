@@ -113,6 +113,12 @@ The first strict `make compiler` failed because `doc/support_matrix.md` was stal
 
 Raw gate and audit reports are in `gb10-regression-audit.tgz` (SHA256 `9574b17f7ad57ac966397cc07e5f578d336da5eb739ed2622dacb698e063680b`), including the failed compiler/audit attempts and the initial 2 MiB RTL capacity failures.
 
+## Run-2 integration and gate plan
+
+The current integration head contains terminal 9's `255d2ad0ac15bd5a51fb869e04e6a130c3b0e205`, which restores at most eight beats per unit for hybrid narrow-LSU accesses with wide tags while leaving the default configuration unchanged. Its two-point numerical RTL pass and merged add/clone measurements of 135227/90167 cycles, plus its hybrid/line/NoC/home and strict compiler regressions, are terminal 9 handoff results, not independently reproduced by K8. Terminal 9 did not run the 113-point audit or claim the complete gate.
+
+The four in-flight K8 113-point experiments are unchanged. Before the run-2 image is accepted, an independent integration tree must run lint/unit, hybrid/line/NoC/home, the core R40/R41 suites, strict compiler, and directed default-configuration and wide-tag eight-beat tests. That exact head also needs the 113-point default-code audit and complete 113-point numerical/cycle evidence. The audit at `b87a0cc3` and the in-flight K8 runs do not cover `255d2ad0`; a HostSession audit is compile-only code/launch-structure evidence, not device acceptance. The integrated head additionally needs a new tile timing screen. No unapproved full-link or card run is planned.
+
 ## Remaining regression evidence
 
 The full original/candidate 113-point RTL cycle comparison is **still running** and is not reported as complete here. An initial 2 MiB attempt returned `capacity-exceeded`; a 256 MiB GPT-2 probe exceeded its two-hour local task timeout while the remote RTL simulation continued. These attempts must not be read as measured cycles. Final 113-point results and their raw logs will be added when the runs finish.

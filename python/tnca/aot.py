@@ -1142,6 +1142,10 @@ def _emit(kernel, target, prov, opt_level, options, stages):
     instead of being refused. The provenance records the retry.
     """
     options = options or {}
+    from tnca_cc import rctx_spmd as _rs
+    published = _rs.publish_scratch_maps(kernel)
+    if published:
+        prov.record('published_maps', published)
     reuse = options.get('window_reuse')
     if reuse is None:
         reuse = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))

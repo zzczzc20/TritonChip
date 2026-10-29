@@ -1,0 +1,3 @@
+PASS XPERF transfers=32 fixlat=20 word_engine_cycles=6856 line_engine_cycles=4263 weight_bytes=16384
+PASS XPERF transfers=32 fixlat=60 word_engine_cycles=13256 line_engine_cycles=5583 weight_bytes=16384
+PASS XPERF transfers=32 fixlat=100 word_engine_cycles=19656 line_engine_cycles=6903 weight_bytes=16384

@@ -811,8 +811,72 @@ module tnca_tensor #(
         reg [2:0] lo_off [0:NTAG-1];
         always @(posedge clk)
             if (lg_req_valid && lg_req_ready) lo_off[lg_req_tag] <= lg_req_addr[5:3];
-        assign mem_req_valid = l_req || d_req || lg_req_valid;
-        assign lg_req_ready  = mem_req_ready && !l_req && !d_req;
+        //----------------------------------------------------------------------
+        // R41 G4 transposed-load line buffer. The transposed walk reads one
+        // 8-byte unit down every source row for each column block, so the
+        // same source line is requested once per block. The first request of
+        // a line goes to memory as before; the whole line that comes back is
+        // kept (XB lines, one per source row of a tile), and the walk's later
+        // units of that line are answered from it, one a cycle, without a
+        // memory request. The buffer lives for one command: it is emptied
+        // when a command starts and by any write, so it never returns data
+        // older than the command's own reads.
+        //----------------------------------------------------------------------
+        localparam XB = 16;
+        reg  [XB-1:0]  xb_v, xb_f;                 // allocated, filled
+        reg  [57:0]    xb_a [0:XB-1];              // line address
+        (* ram_style = "distributed" *) reg [511:0] xb_d [0:XB-1];
+        reg  [3:0]     xb_ptr;
+        reg  [3:0]     xf_e [0:NTAG-1];            // the entry a memory read fills
+        reg  [NTAG-1:0] xf_v;
+        reg            xh;
+        reg  [3:0]     xh_e;
+        integer xi;
+        always @(*) begin
+            xh = 1'b0; xh_e = 4'd0;
+            for (xi = 0; xi < XB; xi = xi + 1)
+                if (xb_v[xi] && xb_f[xi] && (xb_a[xi] == lg_req_addr[63:6])) begin
+                    xh = 1'b1; xh_e = xi[3:0];
+                end
+        end
+        wire x_hit  = x_req && xh;
+        wire mem_lg = mem_rsp_valid && !mem_rsp_tag[PTAG_W-1] && !mem_rsp_tag[PTAG_W-2];
+        reg                lr_v;
+        reg  [TAG_W-1:0]   lr_tag;
+        reg  [MEM_DW-1:0]  lr_data;
+        wire lr_free = !lr_v || !mem_lg;           // the local answer leaves this cycle
+        wire port_ok = mem_req_ready && !l_req && !d_req;
+        assign lg_req_ready  = lr_free && (x_hit || port_ok);
+        wire lg_mem = lg_req_valid && !x_hit && lr_free;
+        wire x_alloc = x_req && !x_hit && lr_free && port_ok;
+        // a memory read that fills its entry (not one being taken by a new line this cycle)
+        wire x_fill  = mem_lg && xf_v[mem_rsp_tag[TAG_W-1:0]] &&
+                       !(x_alloc && (xf_e[mem_rsp_tag[TAG_W-1:0]] == xb_ptr));
+        wire xb_clear = (st == S_TSETUP) || (lg_req_valid && lg_req_we) || (l_req && (st == S_LSRUN));
+        always @(posedge clk) begin
+            if (!rst_n || flush || xb_clear) begin
+                xb_v <= {XB{1'b0}}; xb_f <= {XB{1'b0}}; xf_v <= {NTAG{1'b0}}; xb_ptr <= 4'd0;
+            end else begin
+                if (x_alloc) begin
+                    xb_v[xb_ptr] <= 1'b1; xb_f[xb_ptr] <= 1'b0; xb_a[xb_ptr] <= lg_req_addr[63:6];
+                    for (xi = 0; xi < NTAG; xi = xi + 1)
+                        if (xf_e[xi] == xb_ptr) xf_v[xi] <= 1'b0;   // an older fill of this entry
+                    xf_v[lg_req_tag] <= 1'b1; xf_e[lg_req_tag] <= xb_ptr;
+                    xb_ptr <= xb_ptr + 4'd1;
+                end
+                if (x_fill) xb_f[xf_e[mem_rsp_tag[TAG_W-1:0]]] <= 1'b1;
+                if (mem_lg && !(x_alloc && (lg_req_tag == mem_rsp_tag[TAG_W-1:0])))
+                    xf_v[mem_rsp_tag[TAG_W-1:0]] <= 1'b0;
+            end
+            if (x_fill)
+                xb_d[xf_e[mem_rsp_tag[TAG_W-1:0]]] <= mem_rsp_rdata[511:0];
+            if (!rst_n || flush) lr_v <= 1'b0;
+            else if (x_hit && lr_free) begin
+                lr_v <= 1'b1; lr_tag <= lg_req_tag;
+                lr_data <= xb_d[xh_e] >> {lg_req_addr[5:3], 6'b000000};
+            end else if (lr_v && !mem_lg) lr_v <= 1'b0;
+        end
+        assign mem_req_valid = l_req || d_req || lg_mem;
         assign mem_req_addr  = l_req ? l_addr : d_req ? (dl_addr + {58'd0, dlq[1:0], 6'd0}) : lg_req_addr;
         assign mem_req_we    = l_req ? (st == S_LSRUN) : d_req ? 1'b0 : lg_req_we;
         assign mem_req_be    = (l_req || d_req) ? {PORT_BYTES{1'b1}}
@@ -822,9 +886,9 @@ module tnca_tensor #(
         assign mem_req_tag   = l_req ? {1'b1, {(PTAG_W-1-LSLOT_W){1'b0}}, lfree}
                              : d_req ? {2'b01, {(PTAG_W-4){1'b0}}, dlq[1:0]}
                              : {1'b0, {(PTAG_W-1-TAG_W){1'b0}}, lg_req_tag};
-        assign lg_rsp_valid  = mem_rsp_valid && !mem_rsp_tag[PTAG_W-1] && !mem_rsp_tag[PTAG_W-2];
-        assign lg_rsp_tag    = mem_rsp_tag[TAG_W-1:0];
-        assign lg_rsp_rdata  = mem_rsp_rdata >> {lo_off[mem_rsp_tag[TAG_W-1:0]], 6'b000000};
+        assign lg_rsp_valid  = mem_lg || lr_v;
+        assign lg_rsp_tag    = mem_lg ? mem_rsp_tag[TAG_W-1:0] : lr_tag;
+        assign lg_rsp_rdata  = mem_lg ? (mem_rsp_rdata >> {lo_off[mem_rsp_tag[TAG_W-1:0]], 6'b000000}) : lr_data;
     end else begin : g_word_port
         assign mem_req_valid = lg_req_valid;
         assign lg_req_ready  = mem_req_ready;

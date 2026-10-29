@@ -19,6 +19,15 @@ parameter NCMD = 400;
 parameter MAXLAT = 40;
 parameter VW_STALL = 20;      // % of cycles the register file refuses a write
 parameter REQ_STALL = 20;     // % of cycles the memory refuses a request
+// XPERF 1: instead of the random program, the compiled Hub FP8 matmul's weight
+// transfer (DECODE_PROFILE.md part 1): 1-byte elements, source rows K = 2048 B
+// apart, a 16-row x 32-byte box loaded transposed, each transfer waiting for
+// the previous one (mb.arm / mb.wait), XN transfers along K. FIXLAT > 0 gives
+// every memory response that latency (no random latency). Reports each
+// engine's cycles.
+parameter XPERF = 0;
+parameter XN = 32;
+parameter FIXLAT = 0;
 localparam MEMB = 65536;      // bytes of memory
 localparam DESC_AT = 32'h0000; // TensorMaps at 0x0000.. (16 x 512 B)
 // every third map is not line-aligned, so the word sequence still runs
@@ -51,6 +60,7 @@ integer ndone [0:1];
 integer nfault [0:1];
 integer nx;   // transposed loads issued
 integer lines_moved;
+integer fin [0:1];   // XPERF: the cycle each engine finished its program
 
 genvar g;
 generate for (g = 0; g < 2; g = g + 1) begin : inst
@@ -142,7 +152,7 @@ generate for (g = 0; g < 2; g = g + 1) begin : inst
                 for (k = 63; k >= 0; k = k - 1) if (!q_v[k]) pick = k;
                 if (pick < 0) $fatal(1, "inst %0d: response queue full", g);
                 q_v[pick] = 1; q_tag[pick] = mreq_tag; q_d[pick] = rd;
-                q_due[pick] = cycle + 1 + ($unsigned($random(seed_m)) % MAXLAT);
+                q_due[pick] = cycle + 1 + ((FIXLAT > 0) ? FIXLAT - 1 : ($unsigned($random(seed_m)) % MAXLAT));
             end
             mrsp_v <= 0;
             pick = -1; n = 0;
@@ -158,6 +168,7 @@ generate for (g = 0; g < 2; g = g + 1) begin : inst
     end
 
     always @(posedge clk) if (rst_n) begin
+        if (done[g] && ndone[g] + 1 == ncomp) fin[g] = cycle;
         if (done[g]) ndone[g] = ndone[g] + 1;
         if (fault[g]) nfault[g] = nfault[g] + 1;
     end
@@ -294,6 +305,21 @@ initial begin
         make_desc(d);
         add(0, d, 0, 0, 0, 0, ncomp);
     end
+    if (XPERF) begin
+        // slot 15: the weight matrix, fp8, 16 rows of 2048 bytes from 0x8000
+        plen = 0; ncomp = 0;
+        sesz[15] = 0; sdt[15] = 7; rrank[15] = 2; rb[15] = 32'h8000; rs[15] = 2048;
+        re0[15] = 16; re1[15] = 2048; bl0[15] = 16; bl1[15] = 32;
+        make_desc(15);
+        add(0, 15, 0, 0, 0, 0, ncomp);
+        add(1, 0, 0, 16, 0, 0, ncomp);
+        for (t = 0; t < XN; t = t + 1) begin
+            j = ncomp;
+            add(2'd2, 15, 0, 0, 64'd0, t * 32, j);
+            p_x[plen-1] = 1'b1;
+            p_wait[plen] = ncomp;
+        end
+    end else begin
     // Eight windows of 16 registers (64 lanes x 16 = 256 fp32).
     for (w = 0; w < 8; w = w + 1) add(1, w, w * 16, 16, 0, 0, ncomp);
     // Groups: loads into distinct windows from anywhere, then stores from
@@ -328,6 +354,7 @@ initial begin
         // the next group starts after all of this one
         p_wait[plen] = ncomp;
     end
+    end
     repeat (4) @(posedge clk); rst_n = 1;
     ncyc = 0;
     while (!(inst[0].pc == plen && inst[1].pc == plen && ndone[0] == ncomp && ndone[1] == ncomp
@@ -342,7 +369,9 @@ initial begin
         if (mem[0][i] !== mem[1][i]) $fatal(1, "memory byte %h differs: %h vs %h", i, mem[0][i], mem[1][i]);
     for (i = 0; i < 256; i = i + 1)
         if (vrf[0][i] !== vrf[1][i]) $fatal(1, "register %0d differs:\n%h\n%h", i, vrf[0][i], vrf[1][i]);
-    if (lines_moved == 0) $fatal(1, "the line engine moved no lines");
+    if (lines_moved == 0 && !XPERF) $fatal(1, "the line engine moved no lines");
+    if (XPERF) $display("XPERF transfers=%0d fixlat=%0d word_engine_cycles=%0d line_engine_cycles=%0d weight_bytes=%0d",
+                        XN, FIXLAT, fin[0], fin[1], XN * 512);
     $display("TENSOR LINE MITER PASS seed=%0d commands=%0d completions=%0d faults=%0d xpose=%0d lines=%0d cycles=%0d",
              SEED, t, ncomp, nfault[0], nx, lines_moved, ncyc);
     $finish;

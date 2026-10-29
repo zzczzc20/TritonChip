@@ -40,12 +40,14 @@ def main():
     ap.add_argument('--shape', action='append', default=[], metavar='M,N,K',
                     help='compile these shapes instead of SHAPES (repeatable)')
     ap.add_argument('--extras', action='store_true',
-                    help='also compile an RMSNorm, a softmax and a fused SDPA (TNCA_SDPA=fused), '
+                    help='also compile an RMSNorm, a softmax and SDPA, '
                          'decode and prefill shapes (R41 G2 barrier census)')
+    ap.add_argument('--sdpa', choices=('decomposed', 'fused'), default='decomposed',
+                    help='SDPA lowering for the compile-only census (default: decomposed)')
     a = ap.parse_args()
     shapes = [tuple(int(x) for x in t.split(',')) for t in a.shape] or SHAPES
     root = a.tree.resolve()
-    os.environ.update(ENV, TNCA_DUMP_DIR=str(a.dump.resolve()))
+    os.environ.update(ENV, TNCA_DUMP_DIR=str(a.dump.resolve()), TNCA_SDPA=a.sdpa)
     a.dump.mkdir(parents=True, exist_ok=True)
     sys.path[:0] = [str(root), str(root/'python'), str(root/'compiler/python'), str(root/'tools/asm'),
                     str(root/'tools/r40'), str(root/'tools/performance_harness')]
@@ -89,7 +91,7 @@ def main():
     tdev.MEMORY.session = lambda index=0: stub
     tdev.register()
     k = kernels.get_kernel('kernels-community/finegrained-fp8', version=4)
-    out = dict(profile=os.environ['TNCA_PROFILE'], status='incomplete', cases=[])
+    out = dict(profile=os.environ['TNCA_PROFILE'], sdpa=a.sdpa, status='incomplete', cases=[])
 
     def save_progress():
         # Preserve the launches captured before a later compile raises; a

@@ -737,18 +737,18 @@ $(TB)/core/progs/t15_target_vrf_v5_x8_g2c4.s: $(TB)/core/progs/gen_t15_target.py
                                               compiler/targets/tnca-sim-vrf-v5-x8-g2c4.json
 	$(PYTHON) $< tnca-sim-vrf-v5-x8-g2c4
 # core-r39sw5's program list and arguments (four contexts) on the G2-cut core.
-core-g2c4: export ARGS_t04_roles := +roles=2
-core-g2c4: export ARGS_t05_fault := +roles=2 +expectfault=01
-core-g2c4: export ARGS_t13_share := +roles=2 +aliasvrf
-core-g2c4: export ARGS_t15_target_vrf_v5_x8_g2c4 := +allroles
-core-g2c4: export ARGS_t18_squash := +roles=2
-core-g2c4: export ARGS_t17_descfault := $(ARGS_t17_descfault)
-core-g2c4: export ARGS_t23_amofault := $(ARGS_t23_amofault)
-core-g2c4: export ARGS_t39_slice := +allroles +slice
+core-g2c4 core-run2: export ARGS_t04_roles := +roles=2
+core-g2c4 core-run2: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-g2c4 core-run2: export ARGS_t13_share := +roles=2 +aliasvrf
+core-g2c4 core-run2: export ARGS_t15_target_vrf_v5_x8_g2c4 := +allroles
+core-g2c4 core-run2: export ARGS_t18_squash := +roles=2
+core-g2c4 core-run2: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-g2c4 core-run2: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-g2c4 core-run2: export ARGS_t39_slice := +allroles +slice
 # t39_pair's two pairs need 5 barriers each, 10 > the 8 barriers: one pair here
 # (a barrier index beyond a context's slice aliases into the next slice, no fault).
-core-g2c4: export ARGS_t39_pair := +roles=2 +slice +slicek=1 +pair
-core-g2c4: export ARGS_t32_xpose_badsize := +expectfault=04
+core-g2c4 core-run2: export ARGS_t39_pair := +roles=2 +slice +slicek=1 +pair
+core-g2c4 core-run2: export ARGS_t32_xpose_badsize := +expectfault=04
 G2C4_PROGS := $(patsubst t15_target,t15_target_vrf_v5_x8_g2c4,$(CORE_PROGS)) t39_pair t30_xpose t32_xpose_badsize
 .PHONY: core-g2c4
 core-g2c4: $(patsubst %,$(BUILD)/%.hex,$(G2C4_PROGS)) $(BUILD)/tb_core_g2c4.vvp $(BUILD)/tb_core_g2c4_ooo.vvp | dirs
@@ -759,6 +759,34 @@ core-g2c4: $(patsubst %,$(BUILD)/%.hex,$(G2C4_PROGS)) $(BUILD)/tb_core_g2c4.vvp 
 	     || exit 1; \
 	   $(TOOLS)/run_test.sh "$$p (g2c4, ooo mem)" \
 	     "$(VVP) $(BUILD)/tb_core_g2c4_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=400000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R41 G2/run 2: the run-2 merged parameter set (G4's run2/image.tcl at 35513d2d)
+# on the core bench: g2c4's four contexts, MTX_VRF_REG 1 (the banked file's
+# matrix response registered), MTX_ABUF 1, FMA_IMPL 1, MAC_DP 1, MAC_CUTS 29.
+R41_RUN2 := $(R41_G2C4) -P tb_tnca_core.MTX_VRF_REG=1 -P tb_tnca_core.FMA_IMPL=1 \
+            -P tb_tnca_core.MAC_DP=1 -P tb_tnca_core.MAC_CUTS=29
+$(BUILD)/tb_core_run2.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                           $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_run2_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                               $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+# core-g2c4's program list plus t41_mmadp, on that machine (in-order and slow, reordered memory)
+.PHONY: core-run2
+core-run2: $(patsubst %,$(BUILD)/%.hex,$(G2C4_PROGS)) $(BUILD)/t41_mmadp.hex \
+           $(BUILD)/tb_core_run2.vvp $(BUILD)/tb_core_run2_ooo.vvp | dirs
+	@for p in $(G2C4_PROGS) t41_mmadp; do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (run2)" \
+	     "$(VVP) $(BUILD)/tb_core_run2.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (run2, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_run2_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
 	     || exit 1; \
 	 done
 

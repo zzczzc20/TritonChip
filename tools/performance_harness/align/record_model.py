@@ -80,6 +80,9 @@ def main():
     ap.add_argument('--active-cores', type=int, default=1, help='run_graphs.py --active-cores (TNCA_ACTIVE_CORES)')
     ap.add_argument('--replay', help='an RTL recording (record_rtl.py RUN_DIR): every point replays its trace, '
                                      'one run_graphs.py call per point')
+    ap.add_argument('--replay-inputs', help='a directory of replay inputs already extracted (replay_extract.py): '
+                    '<point>.replay[.core<c>] or <point>.uncore.replay; with it --replay is not read and nothing '
+                    'of a recording is needed here (the evaluator extracts outside the container)')
     ap.add_argument('--replay-level', choices=['core', 'uncore'], default='core',
                     help="core: the core's port (TNCA_MODEL_CORE_REPLAY, first slice); uncore: the device's "
                          "memory port (TNCA_MODEL_UNCORE_REPLAY, second slice, needs uncore_model=1)")
@@ -104,30 +107,37 @@ def main():
             print(f'run_graphs.py exited {r.returncode}', file=sys.stderr)
 
     run_dirs = None
-    if args.replay:
-        replay = Path(args.replay).resolve()
+    if args.replay or args.replay_inputs:
+        replay = Path(args.replay).resolve() if args.replay else None
+        inputs = Path(args.replay_inputs).resolve() if args.replay_inputs else out / 'replay'
         run_dirs = []
         jobs = []
         for p in points:
-            trace = replay / 'traces' / f'{slug(p)}.trace'   # core c>0: <trace>.core<c>, as record_rtl names them
             rd = out / 'per_point' / slug(p)
             run_dirs.append(rd)
-            if not trace.exists():
-                print(f'no RTL trace for {p}: {trace}', file=sys.stderr)
-                continue
-            if not args.collect_only:
+            if args.replay_level == 'core':
+                base = inputs / f'{slug(p)}.replay'
+            else:
+                base = inputs / f'{slug(p)}.uncore.replay'
+            if replay is not None and not args.collect_only:
                 # the model takes a boundary file, never the trace (platform.inc): extract the replayed stream
+                trace = replay / 'traces' / f'{slug(p)}.trace'   # core c>0: <trace>.core<c>, as record_rtl names them
+                if not trace.exists():
+                    print(f'no RTL trace for {p}: {trace}', file=sys.stderr)
+                    continue
                 if args.replay_level == 'core':
-                    base = out / 'replay' / f'{slug(p)}.replay'
                     extract('core', trace, base)
                     for extra in sorted((replay / 'traces').glob(f'{slug(p)}.core*.trace')):
                         c = extra.name.split('.')[-2]            # core<c>
-                        extract('core', extra, out / 'replay' / f'{slug(p)}.replay.{c}')
-                    env = [f'TNCA_MODEL_CORE_REPLAY={base}', 'TNCA_MODEL_CORE_TRACE_CORE=all']
+                        extract('core', extra, inputs / f'{slug(p)}.replay.{c}')
                 else:
-                    ureplay = out / 'replay' / f'{slug(p)}.uncore.replay'
-                    extract('uncore', replay / 'traces' / f'{slug(p)}.uncore.trace', ureplay)
-                    env = [f'TNCA_MODEL_UNCORE_REPLAY={ureplay}', 'TNCA_MODEL_CORE_TRACE_CORE=all']
+                    extract('uncore', replay / 'traces' / f'{slug(p)}.uncore.trace', base)
+            if not base.exists():
+                print(f'no replay input for {p}: {base}', file=sys.stderr)
+                continue
+            if not args.collect_only:
+                env = [f'TNCA_MODEL_{"CORE" if args.replay_level == "core" else "UNCORE"}_REPLAY={base}',
+                       'TNCA_MODEL_CORE_TRACE_CORE=all']
                 jobs.append((rd, p, env))
         if jobs:
             import concurrent.futures as cf

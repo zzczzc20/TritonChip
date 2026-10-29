@@ -11,6 +11,10 @@ trap 'rc=$?; date -u +%FT%TZ > "$out/end.utc"; printf "%s\n" "$rc" > "$out/exit"
 set +u
 source ~/x86_link_env.sh
 set -u
+if [ -x "$HOME/Xilinx/Vitis_HLS/2023.2/bin/vitis_hls" ]; then
+  export XILINX_HLS="$HOME/Xilinx/Vitis_HLS/2023.2"
+  export PATH="$XILINX_HLS/bin:$PATH"
+fi
 cd "$src"
 export TNCA_BOARD=u280 VPP_JOBS=2 TNCA_IMAGE_CONFIG="$image"
 export LINK_EXTRA='--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=SSI_SpreadSLLs'

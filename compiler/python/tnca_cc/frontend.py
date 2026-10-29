@@ -3121,57 +3121,81 @@ class TTIRImporter:
             acc = b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
             b.acc_zero(acc)
             accs.append(acc)
-        for s0 in range(0, k, step):
+        import os as _os
+
+        def issue(s0, j):
+            """Everything that makes B(s0, j) arrive, up to and including the
+            commands, and none of the wait: the fallback gather arm when the
+            chunk's rows are not affine, then both predicated transfers on one
+            barrier. Returns the window and the token to wait on."""
+            b_win = self._window_for(step, vlen, ae)
+            # Fallback, skipped when the rows are affine: B[kk, :] is one
+            # byte gather of W's column kk into scratch, then a plain
+            # tile transfer. Both transfers are issued, each predicated
+            # (a predicated-off command completes, ISA sec 9A.3).
+            ok = b.vextract(oks, j)
+            done = self._control_label('x8dot_done')
+            b.branch_nz(ok, done)
+            kk = self._copy_value(b.const(0))
+            # The arm's scalars are formed inside it, so none is live
+            # across the whole dot.
+            row = at(r00) if s0 == 0 else b.sbini('add', at(r00), s0)
+            fill = b.sbini('add', scratch, fill_off)
+            with b.loop(kk, step, self._control_label('x8dot_row')):
+                src = b.sbin('add', row, kk)
+                mask = None
+                if limit != 'all':
+                    left = b.sbin('sub', b.sbini('add', limit, -s0), kk)
+                    mask = b.vcmp('gt', b.splat(left, dtype='i32'), b.vmovi(0))
+                g = b.gather(src, lane_vecs[j], mask=mask, other=0, dtype='i32', size='b')
+                b.store(b.sbin('add', fill, b.sbini('shl', kk, (vlen - 1).bit_length())), g, size='b')
+                b.fence()
+            b.label(done)
+            bar = b.barrier(name=f"fill{len(self.kernel.barriers)}")
+            tok = b.barrier_arm(bar, arrivals=0, ops=2)
+            fast_p = b.vcmp('ne', b.splat(ok, dtype='i32'), b.vmovi(0))
+            slow_p = b.vcmp('eq', b.splat(ok, dtype='i32'), b.vmovi(0))
+            b.dma_load(b_win, fill_desc.value, [b.const(0), b.const(0)], tok, dtype=ae, mask=slow_p)
+            b.dma_load(b_win, desc.value, [b.vextract(rows, j), b.const(s0)], tok,
+                       dtype=ae, transpose=True, mask=fast_p)
+            return b_win, tok
+
+        # Software pipeline over the (K step, column chunk) sequence: the
+        # transfers of item i+1 are issued before item i is waited on and
+        # multiplied, so the engine moves the next B while the matrix unit
+        # works on this one. Items are independent (own window, own barrier);
+        # the accumulation order into each accumulator is unchanged, so the
+        # result is bit for bit that of the serial order.
+        lookahead = 0 if _os.environ.get('TNCA_X8_PIPELINE', '1') == '0' else 1
+        items = [(s0, j) for s0 in range(0, k, step) for j in range(nchunks)]
+        pending = {}
+        a_tile = None
+        for idx, (s0, j) in enumerate(items):
             rc = s0 // vlen
-            # A for this K step, row-major: element (m, k) at m*step + k.
-            a_addr = self._spill_region(step * vlen)
-            for c in range(step // vlen):
-                part = a_parts[rc + c]
-                get = self._tile_row_getter(part)
-                for r in range(vlen):
-                    v = get(r)
-                    if part.store != ae:
-                        v = b.vcvt(part.store, ae, v)
-                    b.store(b.sbini('add', a_addr, r * step + c * vlen), v, size='b')
-            b.fence()
-            a_win = self._window_for(vlen, step, ae)
-            for i in range(a_win.length):
-                b.window_put(a_win, i, b.load(a_addr if i == 0 else b.sbini('add', a_addr, i * 64),
-                                              dtype='i32', size='w'))
-            a_tile = Tile('window', a_win, vlen, step, ae)
-            for j in range(nchunks):
-                b_win = self._window_for(step, vlen, ae)
-                # Fallback, skipped when the rows are affine: B[kk, :] is one
-                # byte gather of W's column kk into scratch, then a plain
-                # tile transfer. Both transfers are issued, each predicated
-                # (a predicated-off command completes, ISA sec 9A.3).
-                ok = b.vextract(oks, j)
-                done = self._control_label('x8dot_done')
-                b.branch_nz(ok, done)
-                kk = self._copy_value(b.const(0))
-                # The arm's scalars are formed inside it, so none is live
-                # across the whole dot.
-                row = at(r00) if s0 == 0 else b.sbini('add', at(r00), s0)
-                fill = b.sbini('add', scratch, fill_off)
-                with b.loop(kk, step, self._control_label('x8dot_row')):
-                    src = b.sbin('add', row, kk)
-                    mask = None
-                    if limit != 'all':
-                        left = b.sbin('sub', b.sbini('add', limit, -s0), kk)
-                        mask = b.vcmp('gt', b.splat(left, dtype='i32'), b.vmovi(0))
-                    g = b.gather(src, lane_vecs[j], mask=mask, other=0, dtype='i32', size='b')
-                    b.store(b.sbin('add', fill, b.sbini('shl', kk, (vlen - 1).bit_length())), g, size='b')
-                    b.fence()
-                b.label(done)
-                bar = b.barrier(name=f"fill{len(self.kernel.barriers)}")
-                tok = b.barrier_arm(bar, arrivals=0, ops=2)
-                fast_p = b.vcmp('ne', b.splat(ok, dtype='i32'), b.vmovi(0))
-                slow_p = b.vcmp('eq', b.splat(ok, dtype='i32'), b.vmovi(0))
-                b.dma_load(b_win, fill_desc.value, [b.const(0), b.const(0)], tok, dtype=ae, mask=slow_p)
-                b.dma_load(b_win, desc.value, [b.vextract(rows, j), b.const(s0)], tok,
-                           dtype=ae, transpose=True, mask=fast_p)
-                b.barrier_wait(tok)
-                self._mma_into(accs[j], a_tile, Tile('window', b_win, step, vlen, ae))
+            if idx not in pending:
+                pending[idx] = issue(*items[idx])
+            if lookahead and idx + 1 < len(items):
+                pending[idx + 1] = issue(*items[idx + 1])
+            if j == 0:
+                # A for this K step, row-major: element (m, k) at m*step + k.
+                a_addr = self._spill_region(step * vlen)
+                for c in range(step // vlen):
+                    part = a_parts[rc + c]
+                    get = self._tile_row_getter(part)
+                    for r in range(vlen):
+                        v = get(r)
+                        if part.store != ae:
+                            v = b.vcvt(part.store, ae, v)
+                        b.store(b.sbini('add', a_addr, r * step + c * vlen), v, size='b')
+                b.fence()
+                a_win = self._window_for(vlen, step, ae)
+                for i in range(a_win.length):
+                    b.window_put(a_win, i, b.load(a_addr if i == 0 else b.sbini('add', a_addr, i * 64),
+                                                  dtype='i32', size='w'))
+                a_tile = Tile('window', a_win, vlen, step, ae)
+            b_win, tok = pending.pop(idx)
+            b.barrier_wait(tok)
+            self._mma_into(accs[j], a_tile, Tile('window', b_win, step, vlen, ae))
         for j, acc in enumerate(accs):
             off = self._take_scratch(vlen * vlen * 4)
             addr = b.sbini('add', scratch, off)

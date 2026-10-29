@@ -177,3 +177,15 @@ per case (`raw/vn-dp-kernels-report.json.gz` against `raw/q-dp-report.json.gz`),
 loads and scales, hoisting the quantisation across N blocks, a 64 x 64 accumulator tile, software pipelining of the weight transfers,
 an M = 1 lowering) are not done; the register-pressure result above says the scalar address arithmetic must be removed by the
 lowering (descriptor loads, row-base reuse), not recovered afterwards.
+
+### 9. Software-pipelined weight transfers (milestone 3; model domain, `issue/pipeline-kernels-report.json.gz`)
+
+`_x8_dot` (the FP8 dot with the engine's transposed 1-byte write) now issues the transfers of item i+1 (K step, column
+chunk) before waiting on item i and multiplying it, each item with its own window and barrier (`TNCA_X8_PIPELINE=0` restores the serial
+order). The accumulation order per accumulator is unchanged. A kernel whose vector registers cannot hold the second B window
+is compiled again serially (`x8_pipeline_fallback` in the provenance; the importer only sees the environment switch the retry sets).
+`fp8_kernels_cases.py --group v4 --quick` on the dp profile (12 cases): 12 of 12 bit-identical to the dp reference; device cycles
+against the value-numbering run of section 8 change by -0.1 to -4.0 percent for the block kernels (for example block-dynamic
+129x200x328: 4,729,133 to 4,597,990; block-static 129x200x328: 3,470,963 to 3,317,371). Small: with the weights double buffered the
+FP8 kernels are still bound by the issue stream (sections 5 and 8), which items 2 and 3 of the plan (descriptor weight/scale loads,
+an M = 1 lowering) address and which are not done.

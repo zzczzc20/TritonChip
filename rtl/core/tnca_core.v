@@ -588,8 +588,16 @@ module tnca_core #(
     wire mmadp_unsupported = (dec_major == `TNCA_MAJ_MATRIX) &&
                              (dec_func  == `TNCA_M_MMADP) && (MAC_DP == 0);
 
+    // Check the encoded logical barrier before RSLICE inserts context bits.
+    // Otherwise an oversized local index silently names a different slice.
+    wire [31:0] d_bar_count = d_sl ? (BAR_N >> slice_k) : BAR_N;
+    wire d_bar_index_oob = (dec_major == `TNCA_MAJ_MBAR) &&
+        (((dec_func == `TNCA_MB_INIT) && (dec_dsti >= d_bar_count)) ||
+         (((dec_func == `TNCA_MB_ARM) || (dec_func == `TNCA_MB_ARRIVE) ||
+           (dec_func == `TNCA_MB_INVAL)) && (dec_ra_idx >= d_bar_count)));
+
     wire d_illegal = dec_illegal | vreg_oob | sfu_unsupported
-                   | wrspecial_unsupported | atomic_unsupported | mmadp_unsupported;
+                   | wrspecial_unsupported | atomic_unsupported | mmadp_unsupported | d_bar_index_oob;
 
     //==========================================================================
     // Register files (read in X)
@@ -1541,16 +1549,43 @@ module tnca_core #(
     // distinguishable if the thing that finishes can say so independently of
     // the instruction that started it.
     //==========================================================================
-    wire x_is_bar = x_valid && !x_kill && (x_fu == `TNCA_FU_BAR);
-    wire x_is_mtx = x_valid && !x_kill && (x_fu == `TNCA_FU_MATRIX);
-    wire x_is_avread = x_is_mtx && (x_major == `TNCA_MAJ_ACC)
-                                && (x_func == `TNCA_A_VREAD);
-
     // RSLICE: a barrier a token names is in the issuing context's slice.
     wire [BAR_W-1:0] x_bar_sl = ((RSLICE != 0) && slice_q)
                               ? (({{(BAR_W-RCTX_W){1'b0}}, x_rctx}
                                   >> ((RPAIR != 0) && pair_q)) << bar_sh)
                               : {BAR_W{1'b0}};
+    // Tokens produced by mb.arm already contain the physical slice base;
+    // software-constructed tokens may instead contain a local index. Both
+    // forms must stay within this context's slice and the barrier file.
+    function token_bar_valid;
+        input [15:0] id;
+        input [BAR_W-1:0] base;
+        input sliced;
+        input [1:0] log_slices;
+        reg [31:0] count;
+        begin
+            count = sliced ? (BAR_N >> log_slices) : BAR_N;
+            token_bar_valid = (id < BAR_N) && (count != 0) &&
+                (!sliced || (id < count) || ((id >= base) && (id < (base + count))));
+        end
+    endfunction
+    wire x_sl = (RSLICE != 0) && slice_q;
+    wire x_bar_token_bad =
+        ((x_major == `TNCA_MAJ_MBAR) &&
+         ((x_func == `TNCA_MB_TEST) || (x_func == `TNCA_MB_WAIT)) &&
+         !token_bar_valid(sa_data[15:0], x_bar_sl, x_sl, slice_k)) ||
+        ((x_major == `TNCA_MAJ_MATRIX) &&
+         ((x_func == `TNCA_M_MMA) || (x_func == `TNCA_M_MMADP)) &&
+         (!token_bar_valid(sc_data[15:0], x_bar_sl, x_sl, slice_k) ||
+          (x_mod[4] && !token_bar_valid(sb2_raw[15:0], x_bar_sl, x_sl, slice_k)))) ||
+        ((x_major == `TNCA_MAJ_TXFER) &&
+         ((x_func == `TNCA_T_LD) || (x_func == `TNCA_T_ST)) &&
+         !token_bar_valid(sc_data[15:0], x_bar_sl, x_sl, slice_k));
+    wire x_bar_illegal = x_illegal || x_bar_token_bad;
+    wire x_is_bar = x_valid && !x_kill && !x_bar_illegal && (x_fu == `TNCA_FU_BAR);
+    wire x_is_mtx = x_valid && !x_kill && !x_bar_illegal && (x_fu == `TNCA_FU_MATRIX);
+    wire x_is_avread = x_is_mtx && (x_major == `TNCA_MAJ_ACC)
+                                && (x_func == `TNCA_A_VREAD);
     wire [BAR_W-1:0] tok_bar = sa_data[BAR_W-1:0] | x_bar_sl;
     // The token mb.wait and mb.test hand the barrier file, in the slice. A
     // token mb.arm returned is sliced already (ORing is idempotent); one the
@@ -1993,7 +2028,7 @@ module tnca_core #(
     //==========================================================================
     // Tensor descriptors, RF windows and the transfer engine
     //==========================================================================
-    wire x_is_txf = x_valid && !x_kill && (x_fu == `TNCA_FU_TXFER);
+    wire x_is_txf = x_valid && !x_kill && !x_bar_illegal && (x_fu == `TNCA_FU_TXFER);
 
     wire txf_is_cfg = x_is_txf && (x_major == `TNCA_MAJ_TDESC);
     wire txf_is_xfr = x_is_txf && (x_major == `TNCA_MAJ_TXFER)
@@ -2205,7 +2240,7 @@ module tnca_core #(
 
     wire x_redirect = x_valid && !x_kill &&
                       ((x_is_branch && br_taken) || x_is_exit || x_is_trap ||
-                       x_illegal || x_access_fault || bar_sleep);
+                       x_bar_illegal || x_access_fault || bar_sleep);
 
     //==========================================================================
     // X result mux
@@ -2237,7 +2272,7 @@ module tnca_core #(
     wire x_wb_reg = (x_dstc == `TNCA_DST_S) || (x_dstc == `TNCA_DST_V)
                                             || (x_dstc == `TNCA_DST_P);
     wire x_defers_wb = x_mem_en || x_is_fpmc || x_is_fpnorm || x_is_mul || x_is_vl;
-    wire x_has_dest  = x_valid && !x_kill && x_wb_reg && !x_defers_wb;
+    wire x_has_dest  = x_valid && !x_kill && !x_bar_illegal && x_wb_reg && !x_defers_wb;
 
     //==========================================================================
     // Writeback arbitration
@@ -3262,7 +3297,7 @@ module tnca_core #(
                     fault_pc        <= x_pc;
                     fault_rctx      <= x_rctx;
                     fault_detail    <= 24'd0;
-                end else if (x_illegal) begin
+                end else if (x_bar_illegal) begin
                     running[x_rctx] <= 1'b0;
                     faulted[x_rctx] <= 1'b1;
                     f_code[x_rctx]  <= `TNCA_TRAP_ILLEGAL;

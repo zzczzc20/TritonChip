@@ -47,7 +47,12 @@ module tnca_lsu_pair #(
     parameter MEM_SHIFT = 3,
     parameter NUM_BEATS = 8,          // outstanding beats per unit
     parameter BEAT_W    = 4,          // the port's tag width: unit bit + beat tag
-    parameter REQ_REG   = 1           // registered request boundary per unit
+    parameter REQ_REG   = 1,          // registered request boundary per unit
+    // R41 G4: 1 builds only unit 0 (the hybrid LSU's slow path with
+    // LSU_INFLIGHT 1, where the line path supplies the memory parallelism);
+    // the port, tags and ordering are those of a pair whose second unit is
+    // never idle-and-takeable.
+    parameter UNITS     = 2
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -120,7 +125,8 @@ module tnca_lsu_pair #(
     // An idle unit with the other one draining anything but an atomic takes
     // anything but an atomic.
     assign req_ready      = &u_ready;
-    assign req_ready_load = (&u_ready)
+    assign req_ready_load = (UNITS < 2) ? u_ready[0] :
+                            (&u_ready)
                           | (u_ready[0] & u_drain[1] & ~u_atomic[1])
                           | (u_ready[1] & u_drain[0] & ~u_atomic[0]);
     assign u_take[0] = req_valid && u_ready[0];
@@ -165,7 +171,16 @@ module tnca_lsu_pair #(
 
     genvar g;
     generate
-        for (g = 0; g < 2; g = g + 1) begin : g_unit
+        if (UNITS < 2) begin : g_one
+            assign u_ready[1] = 1'b1; assign u_drain[1] = 1'b0; assign u_atomic[1] = 1'b0;
+            assign u_cplv[1] = 1'b0; assign u_mvalid[1] = 1'b0;
+            assign u_cpl_rctx[1] = {RCTX_W{1'b0}}; assign u_cpl_dstc[1] = 3'd0; assign u_cpl_dsti[1] = 8'd0;
+            assign u_cpl_sdata[1] = 64'd0; assign u_cpl_vdata[1] = {VLEN*ELEN{1'b0}}; assign u_cpl_lane[1] = {VLEN{1'b0}};
+            assign u_addr[1] = 64'd0; assign u_we[1] = 1'b0; assign u_amo[1] = 1'b0; assign u_be[1] = {MEM_BYTES{1'b0}};
+            assign u_wdata[1] = {MEM_DW{1'b0}}; assign u_tag[1] = {UB{1'b0}}; assign u_hint[1] = 2'd0;
+            assign u_aop[1] = {`TNCA_AOP_W{1'b0}}; assign u_cmp[1] = 64'd0;
+        end
+        for (g = 0; g < UNITS; g = g + 1) begin : g_unit
             tnca_lsu #(
                 .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
                 .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),

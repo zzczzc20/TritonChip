@@ -167,7 +167,8 @@ module tnca_core #(
     parameter ACC_ROW_W      = 4,
     parameter BAR_N          = 32,         // mbarriers
     parameter BAR_W          = 5,
-    parameter BAR_EPOCH_W    = 48          // mbarrier epoch bits (R41 G2; 48 = the token's field)
+    parameter BAR_EPOCH_W    = 48,         // mbarrier epoch bits (R41 G2; 48 = the token's field)
+    parameter FMA_IMPL       = 0           // tnca_fp32_fma IMPL (R41 G2 FMA rebuild; 0 = as generated from tnca_fma.x)
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -1473,7 +1474,7 @@ module tnca_core #(
         (r_func == `TNCA_VF_ADD) || (r_func == `TNCA_VF_SUB)};
     reg  [4:0] x_fpctl;
 
-    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT),
+    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT), .FMA_IMPL(FMA_IMPL),
                       .SFU_LAT(SFU_LAT), .SFU_LANES(SFU_LANES), .HAS_SFU(HAS_SFU)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
@@ -1590,7 +1591,7 @@ module tnca_core #(
 
     tnca_matrix #(
         .VLEN(VLEN), .ELEN(ELEN), .ACC_N(ACC_N), .ACC_W(ACC_W),
-        .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT),
+        .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT), .FMA_IMPL(FMA_IMPL),
         .ABUF(MTX_ABUF)
     ) u_mtx (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),

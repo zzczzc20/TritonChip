@@ -238,13 +238,21 @@ lint: dirs
 # The FMA is generated (xls/tnca_fma.x); tnca_fp32_fma picks the instance for
 # its latency. Both latencies are tested against the same oracle.
 FMA_GEN := $(RTL)/gen/tnca_fma_align_xls.v $(RTL)/gen/tnca_fma_norm_xls.v \
-           $(RTL)/gen/tnca_fma_round_xls.v $(RTL)/gen/tnca_fma_l3_xls.v
+           $(RTL)/gen/tnca_fma_round_xls.v $(RTL)/gen/tnca_fma_l3_xls.v \
+           $(RTL)/gen/tnca_fmad_norm_xls.v $(RTL)/gen/tnca_fmad_l3_xls.v
 $(BUILD)/tb_fp32_fma.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
                           $(FMA_GEN) $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
 $(BUILD)/tb_fp32_fma_l3.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
                              $(FMA_GEN) $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_LAT=3 -o $@ $^
+# R41 G2: the same benches on tnca_fp32_fma IMPL=1 (the tnca_fmad.x stages)
+$(BUILD)/tb_fp32_fmad.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
+                           $(FMA_GEN) $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_IMPL=1 -o $@ $^
+$(BUILD)/tb_fp32_fmad_l3.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
+                              $(FMA_GEN) $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_LAT=3 -P tb_fp32_fma.FMA_IMPL=1 -o $@ $^
 
 $(BUILD)/tb_bitops.vvp: $(TB)/core/tb_bitops.v $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
@@ -300,6 +308,16 @@ fma-deep: $(BUILD)/tb_fp32_fma.vvp $(BUILD)/tb_fp32_fma_l3.vvp
 	   "$(VVP) $(BUILD)/tb_fp32_fma.vvp +vec=$(BUILD)/fma_deep.txt"
 	@$(TOOLS)/run_test.sh "fp32_fma (deep, latency 3)" \
 	   "$(VVP) $(BUILD)/tb_fp32_fma_l3.vvp +vec=$(BUILD)/fma_deep.txt"
+
+# R41 G2 FMA rebuild: fma-deep's sweep on tnca_fp32_fma IMPL=1, both latencies.
+.PHONY: fma-deep-impl1
+fma-deep-impl1: $(BUILD)/tb_fp32_fmad.vvp $(BUILD)/tb_fp32_fmad_l3.vvp
+	$(PYTHON) $(TOOLS)/model/gen_fma_vectors.py -o $(BUILD)/fma_deep.txt \
+	   -n 400000 --seed 424242
+	@$(TOOLS)/run_test.sh "fp32_fma IMPL=1 (deep)" \
+	   "$(VVP) $(BUILD)/tb_fp32_fmad.vvp +vec=$(BUILD)/fma_deep.txt"
+	@$(TOOLS)/run_test.sh "fp32_fma IMPL=1 (deep, latency 3)" \
+	   "$(VVP) $(BUILD)/tb_fp32_fmad_l3.vvp +vec=$(BUILD)/fma_deep.txt"
 
 #------------------------------------------------------------------------------
 # Core tests

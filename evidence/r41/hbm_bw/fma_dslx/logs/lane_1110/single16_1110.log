@@ -1,0 +1,17 @@
+single16 codes 0 x 0: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 0 x 1: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 0 x 2: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 0 x 3: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 1 x 0: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 1 x 1: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 1 x 2: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 1 x 3: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 2 x 0: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 2 x 1: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 2 x 2: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 2 x 3: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 3 x 0: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 3 x 1: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 3 x 2: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16 codes 3 x 3: 2 slots x 2000000 pairs, 4000000 checked, 0 mismatches
+single16: 64000000 checked, 0 mismatches: PASS

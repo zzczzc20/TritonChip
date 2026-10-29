@@ -40,6 +40,7 @@ module tnca_vector_fpu #(
     parameter ELEN   = 32,
     parameter LW     = 4,            // log2(VLEN)
     parameter FP_LAT = 2,            // tnca_fp32_fma's latency: 2 or 3 (a generated instance each)
+    parameter FMA_IMPL = 0,          // tnca_fp32_fma IMPL (R41 G2 FMA rebuild)
     parameter SFU_LANES      = 1,          // identical parallel SFU slices
     parameter SFU_LAT = 6,           // must match rtl/gen/tnca_sfu_*_xls.v
     // Follows the core's HAS_SFU. A build with the capability bit clear does
@@ -248,7 +249,7 @@ module tnca_vector_fpu #(
     wire [ELEN-1:0] fma_y [0:VLEN-1];
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fma
-            tnca_fp32_fma #(.LAT(FP_LAT)) u_fma (
+            tnca_fp32_fma #(.LAT(FP_LAT), .IMPL(FMA_IMPL)) u_fma (
                 .clk(clk), .rst_n(rst_n),
                 .a(fa[g]), .b(fb[g]), .c(fc[g]),
                 .sub_c(f_sub), .mul_only(f_mul), .ftz(ftz),

@@ -60,6 +60,7 @@ module tnca_matrix #(
     parameter ROW_W   = 4,
     parameter BAR_W   = 5,
     parameter FMA_LAT = 2,
+    parameter FMA_IMPL = 0,      // tnca_fp32_fma IMPL (R41 G2 FMA rebuild)
     // Register the MAC operands before the FMA (tnca_fpu_multi IN_REG): one
     // more cycle of latency per command, and the A operand's block-RAM read
     // and element select no longer share a cycle with the multiply.
@@ -265,7 +266,7 @@ module tnca_matrix #(
                            : row_mul ? 32'd0
                            : acc_rd[g];
 
-            tnca_fpu_multi #(.LAT(FMA_LAT), .IN_REG(OPND_REG)) u_mac (
+            tnca_fpu_multi #(.LAT(FMA_LAT), .IN_REG(OPND_REG), .IMPL(FMA_IMPL)) u_mac (
                 .clk(clk), .rst_n(rst_n),
                 .fmt(mac_fmt),
                 .a(fa), .b(fb), .c(fc),

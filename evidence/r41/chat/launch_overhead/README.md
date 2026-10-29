@@ -67,7 +67,10 @@ The follow-up `r41-vl-batched-deadline-20261029.service` uses the same setup wit
 40,000,000,000-cycle deadline and output `~/r41-k8launch-runs/vl-batched-deadline`. It is a diagnostic, not a
 default-setting performance acceptance result. A control service `r41-vl-single-controlled-20261029.service` was
 also started with `TNCA_SUBMIT=single`, but omitted the extended deadline; its result must not be treated as a
-matched comparison. The first report's invocation and source identity also remain unverified.
+matched comparison. It also failed with a device-grid deadline error; the preserved journal is
+`/home/zhongchun/r41-k8launch-runs/vl-single-controlled/failure.log`, SHA-256
+`037b5e98d56cd194ca033e4eb80440ceef2f59c6c619964b075aad64c6bd4430`.
+The first report's invocation and source identity also remain unverified.
 The matched single-submission control is `r41-vl-single-deadline-20261029.service`, with the same extended
 deadline and 16 GiB limit, CPUs 14-17, and output `~/r41-k8launch-runs/vl-single-deadline`. Both comparison
 services share the same host, so wall-clock differences require interpretation in light of host contention.

@@ -131,6 +131,9 @@ def build(tiled2=False):
     sys.path.insert(0, str(ROOT))
     from archbench import registry
     estimate, method = estimator()
+    if tiled2:
+        method['fit_wall_seconds'] = {k: float(f'{v:.15g}')
+                                      for k, v in method['fit_wall_seconds'].items()}
     points = []
     for entry in suite['points']:
         p = registry.get(entry['id'])

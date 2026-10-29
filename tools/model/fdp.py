@@ -212,8 +212,9 @@ def lane_mac_ref(mode: int, a: int, b: int, c: int, fa: int = 0, fb: int = 0,
 def mma_dp_ref(fa: str, fb: str, a_bits, b_bits, c_f32, M, N, K):
     """Reference for a whole m.mma.dp: C[MxN] (+)= A[MxK] . B[KxN], groups of
     G consecutive k in increasing order. a_bits is row-major MxK, b_bits KxN."""
-    narrow = fa in ('e4m3', 'e5m2')
-    G = 4 if narrow else 2
+    # ISA sec 9C.4 (approved 2026-10-29): four products only for E4M3 x E4M3,
+    # two for every other pair of formats
+    G = 4 if (fa == 'e4m3' and fb == 'e4m3') else 2
     assert K % G == 0
     out = list(c_f32)
     for m in range(M):

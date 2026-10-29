@@ -714,6 +714,20 @@
       "maskable": false
     },
     {
+      "mnemonic": "m.mma.dp.async",
+      "major": "MATRIX",
+      "major_code": 64,
+      "func": 2,
+      "operands": [
+        "ad",
+        "va",
+        "vb",
+        "sc"
+      ],
+      "suffix_class": "mmadp",
+      "maskable": false
+    },
+    {
       "mnemonic": "m.zero",
       "major": "MATRIX",
       "major_code": 64,

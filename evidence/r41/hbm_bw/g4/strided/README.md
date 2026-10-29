@@ -124,3 +124,5 @@ On the merged candidate snapshot, GB10 RTL regression results were: hybrid LSU 4
 The merged-candidate `python3 tools/r41/g4_home_tests.py` regression passed all 50 RTL cases; raw GB10 output is `merged-home-nofill.tgz` (SHA-256 `081ff5240b42f81b5d00f7d6367407fe91cfd07f67980f37bf602bfff5698c07`).
 
 The merged candidate also passed `R1_STRICT=1 make compiler-rtl` on GB10: 68 RTL tests, exit 0. Raw log: `merged-compiler-rtl.tgz`, SHA-256 `004a079704d2529d6beac4bb76627e3bbebcf68a03ecd4b221c0bf0f7bf448c8`.
+
+On the merged candidate snapshot (upstream `7d3b2864` plus the recorded candidate/test patches), strided clone passed at 90,167 RTL device cycles, compared with 118,007 in the earlier original-s4 sample. This is a cross-snapshot comparison; the two source fingerprints differ and the test is not a noise characterization. Raw JSONL, run log and register trace are `merged-s4-clone.tgz`, SHA-256 `2578c68196895c3d7e578328c3f42b9f8168c68b3e2a880c99cc0f5ea98e1faa`.

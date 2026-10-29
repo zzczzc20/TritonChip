@@ -333,6 +333,11 @@ module tnca_tensor #(
                      S_LDWAIT = 5'd22,
                      S_LDFOLD = 5'd23;  // the box element count, one dimension a step
     reg [2:0] dlq, dlr;                    // lines requested / back
+    // Store: the next line's register is read while this line waits for
+    // the port (a window's lines are consecutive registers), so a store
+    // issues a line a cycle when the register file answers in one.
+    reg                  pf_v;
+    reg [VLEN*ELEN-1:0]  sr_next;
     reg  [LSLOT_N-1:0]   ls_v, ls_rdy, ls_st;
     reg  [CMD_W-1:0]     ls_cid  [0:LSLOT_N-1];
     reg  [7:0]           ls_vreg [0:LSLOT_N-1];
@@ -347,6 +352,8 @@ module tnca_tensor #(
     reg  [31:0]          t_line;             // line of the current row
     wire [31:0]          t_row_lines = t_row_bytes >> 6;
     wire [7:0]           l_vreg = t_wbase + t_flat[13:6] + t_line[7:0];
+    wire                 l_more = !(last_row && (t_line + 32'd1 == t_row_lines));   // a line after this one
+    wire                 pf_req = (st == S_LSRUN) && !pf_v && l_more;
     wire [63:0]          l_addr = t_ps + {26'd0, t_line, 6'd0};
 
     reg [LSLOT_W-1:0] lfree, lrdy_slot;
@@ -611,9 +618,9 @@ module tnca_tensor #(
             if (!tg_v[i]) begin free_tag = i[TAG_W-1:0]; have_tag = 1'b1; end
     end
 
-    assign vr_req  = (st == S_SREAD) || (LE && (st == S_LSREAD));
+    assign vr_req  = (st == S_SREAD) || (LE && ((st == S_LSREAD) || pf_req));
     assign vr_rctx = t_rctx;
-    assign vr_idx  = (LE && (st == S_LSREAD)) ? l_vreg : st_vreg;
+    assign vr_idx  = (LE && (st == S_LSREAD)) ? l_vreg : (LE && (st == S_LSRUN)) ? l_vreg + 8'd1 : st_vreg;
 
     //==========================================================================
     // TRANSPOSED WRITE (ISA sec 9E mod[5]) -- rank 2, 16-bit elements, and
@@ -1548,13 +1555,23 @@ module tnca_tensor #(
             // a reader the completion releases must find it written.
             //---------------------------------------------------------------
             // R41 G4 LINE_ENGINE: one 64-byte line of the row per step.
-            S_LRUN, S_LSRUN: if (l_fire) begin
+            S_LRUN, S_LSRUN: begin
+              if ((st == S_LSRUN) && pf_req && vr_valid && !l_fire) begin
+                sr_next <= vr_data;
+                pf_v    <= 1'b1;
+              end
+              if (l_fire) begin
+                // the next store line's register: prefetched, arriving now, or still to read
+                if (st == S_LSRUN && l_more) begin
+                    if (pf_v) begin sr_data <= sr_next; pf_v <= 1'b0; end
+                    else if (pf_req && vr_valid) sr_data <= vr_data;
+                end
                 if (t_line + 32'd1 == t_row_lines) begin
                     t_line <= 32'd0;
                     t_flat <= t_flat + t_row_bytes;
                     if (last_row) st <= S_LEND;
                     else begin
-                        if (st == S_LSRUN) st <= S_LSREAD;
+                        if (st == S_LSRUN && !pf_v && !(pf_req && vr_valid)) st <= S_LSREAD;
                         if (inc3) begin
                             t_i3 <= t_i3 + 32'd1; t_P3 <= t_P3 + t_s3; t_ps <= t_P3 + t_s3 + t_CB;
                         end else if (inc2) begin
@@ -1571,12 +1588,14 @@ module tnca_tensor #(
                     end
                 end else begin
                     t_line <= t_line + 32'd1;
-                    if (st == S_LSRUN) st <= S_LSREAD;
+                    if (st == S_LSRUN && !pf_v && !(pf_req && vr_valid)) st <= S_LSREAD;
                 end
+              end
             end
 
             S_LSREAD: if (vr_valid) begin
                 sr_data <= vr_data;
+                pf_v    <= 1'b0;
                 st      <= S_LSRUN;
             end
 

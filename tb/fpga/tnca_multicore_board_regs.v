@@ -395,6 +395,23 @@ module tnca_multicore_board_regs;
 `define TNCA_PROBE_START dut.device.cmd_valid && dut.device.cmd_ready
 `define TNCA_PROBE_DONE dut.device.done_valid && dut.device.done_ready
 `include "tb/fpga/tnca_stage_probes.vh"
+// Observe hybrid LSU drain/selection counters at the same launch boundaries as
+// the stage probes. This does not drive the DUT or alter the register protocol.
+generate if (HYBRID_LSU) begin:g_stage_hybrid
+ for (genvar hc=0; hc<N; hc=hc+1) begin:g_tile
+  always @(posedge clk) if (stage_begin || stage_end)
+   $display("STAGE HYBRID at=%0s c=%0d t=%0d fast=%0d slow=%0d retired=%0d fast_retired=%0d switch_stall=%0d wb_stall=%0d request_stall=%0d slot_stall=%0d",
+    stage_end?"END":"BEGIN",stage_cycle,hc,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_accepted,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_slow_accepted,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_retired,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_retired,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_switch_stall,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_writeback_stall,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_request_stall,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_slot_stall);
+ end
+end endgenerate
 `undef TNCA_PROBE_TOP
 `undef TNCA_PROBE_START
 `undef TNCA_PROBE_DONE

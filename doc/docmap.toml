@@ -626,3 +626,9 @@ sources = ["tools/models/decode_profile.py", "tools/models/decode_profile_report
 path = "evidence/r41/chat/launch_overhead/README.md"
 depends_on = ["doc/engineering_discipline.md", "evidence/r41/chat/DECODE_PROFILE.md"]
 sources = ["python/tnca/triton_backend/driver.py", "tools/r40/code_cache_epoch_tests.py", "tools/r40/batch_tests.py", "tools/r40/replay_tests.py", "evidence/r41/chat/launch_overhead/raw/"]
+
+[[doc]]
+path = "evidence/r41/HANDOFF_RUN2.md"
+depends_on = ["doc/engineering_discipline.md", "evidence/r41/SERVERS.md"]
+sources = ["evidence/r41/hbm_bw/g4/run2/"]
+notes = "Lead handoff to the next operator while the run-2 link is running."

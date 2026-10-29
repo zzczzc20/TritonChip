@@ -7,3 +7,5 @@ The ISA specifies the barrier ID as a 16-bit token field (§9A.2) and identifies
 `python3 tools/r41/barrier_alias_tests.py` builds a four-context core twice, with 32 and 8 barriers, and checks the last valid and first invalid index in a four-way slice for `mb.init`, `mb.arm`, `mb.arrive`, and `mb.inval`. Before the fix, all eight valid cases passed and all eight out-of-range cases failed the expected illegal-instruction trap. Raw output including the failures: `before.tgz`, SHA-256 `379c414f216685092337d59d6114e2c11455cbf33966e7bd5cbb3d7aa342398a`.
 
 The RTL fix is work in progress: it has passed elaboration only. Directed regression, token isolation and integration gates are pending; do not treat this revision as validated for an image.
+
+On GB10, source `06f5babf` passed all 16 directed immediate-index RTL cases (8 valid and 8 expected traps); command `python3 tools/r41/barrier_alias_tests.py`. Raw log: `after.tgz`, SHA-256 `e2c9a5290e90a96b99ed0ae273bb1c7f823b96954fc53fde87ee19d51968635a`. This is simulation, not a board result. The token paths, full regressions and default-code audit remain open.

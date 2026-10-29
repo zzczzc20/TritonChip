@@ -172,6 +172,16 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
             cg.assign_shared()
             cg.run()
             text = None
+        # Verify the allocated IDs as well as the pre-allocation resource
+        # counts: sliced launches address only the issuing program's slice.
+        entries = prov.entries if prov is not None else {}
+        slices = (entries.get('rctx_roles_pairs', 1) if entries.get('rctx_roles')
+                  else entries.get('rctx_spmd', 1) if entries.get('rctx_slice') else 1)
+        limit = target.num_barriers // slices
+        for barrier in cg.kernel.barriers:
+            if barrier.reg is None or not 0 <= barrier.reg < limit:
+                raise r1['Diagnostic'](
+                    f'allocated barrier index {barrier.reg} outside slice of {limit}')
     except r1['Unsupported'] as d:
         raise UnsupportedError(str(d).splitlines()[0],
                                where='code generation',

@@ -1,0 +1,19 @@
+# x86 U280 link-flow probe
+
+`doc/engineering_discipline.md` is binding. This is a CPU-only tool-flow experiment, not a board measurement or full run-2 image attempt. No card is accessed. The tiny probe is deliberately not a usable TNCA device.
+
+At 2026-10-29 13:28 UTC, x86 had 16 CPUs, 31,789 MiB RAM, 32,768 MiB swap, 15,686 MiB available and 826 GiB free disk; a G4 Vivado screen was active. The 20 GiB available-memory condition is not met, so the probe has not started. The FPGA run-1 host had 24 CPUs, 64,295 MiB RAM, 8,191 MiB swap, 56,800 MiB available, and 3.6 TiB free disk at the inventory time. Both report Vitis/Vivado 2023.2 and XRT 2.16.204; XRT headers exist on both. The exact run-1 platform `xilinx_u280_gen3x16_xdma_1_202211_1` is present on both, with identical `.xpfm` SHA-256 `33ffbb50935e524e4feafd0cb3b8c39429a7f911b0c42dff065e2f3097fe2bc6` and `hw/hw.xsa` SHA-256 `11c9e4acdfdb6e98e136df84c4af806d1d01a8d69a8e0c7b20477a6692010c91`. Version output on x86 warns the default HLS location is absent; no conclusion about its effect on RTL linking is yet supported. x86 uses `$HOME/Xilinx`, `$HOME/opt/xilinx`, a user compatibility library and `~/x86_link_env.sh`; the FPGA host uses `/tools/Xilinx` and `/opt/xilinx`. Raw inventories: `x86-inventory.tgz` SHA-256 `37300c28327676066a1a2745973e812fe351debbe438f69e07627bffac892bd9`, `fp-inventory.tgz` SHA-256 `b8b315b2eea8d6e3e64b52a5c50265214e756ab34b46cb1cd8d33eb51af7de3a`.
+
+The probe derives a small RTL wrapper with the production parameters and three HBM/AXI-Lite ports, then uses the unmodified `package_xo.tcl`, production `link.sh`, U280 platform, `u280_multicore_hbm.cfg`, 100 MHz and `SSI_SpreadSLLs`. It has read-only synthetic HBM request logic and must not be programmed onto a card. The real three-tile placement hook requires specific actual TNCA hierarchy. The isolated probe replaces its hook with a diagnostic wrapper that sources the original, records only its expected hierarchy refusal, and continues. Therefore even a successful tiny bitstream would not validate the real hierarchy-specific placement, SLR assignments, or SLL guidance. The resource watcher samples summed process-tree RSS, stops its own processes if it exceeds 12 GiB, and pins execution to six CPUs. It waits for at least 20 GiB available, at most one existing Vivado process, and no existing link; other jobs are never killed.
+
+The real run-2 link command, after preparing a clean immutable source snapshot and selecting the final image configuration, is:
+
+```sh
+source ~/x86_link_env.sh
+cd "$RUN2_SOURCE"
+setsid nohup nice -n 5 bash flow/fpga/run_r40_attempt01.sh "$FRESH_BUILD_ROOT" "$RUN2_SOURCE/evidence/r41/hbm_bw/g4/run2/image.tcl" > /dev/null 2>&1 < /dev/null &
+```
+
+`RUN2_SOURCE` and `FRESH_BUILD_ROOT` must be absolute paths; the latter must not exist. This is a command template, not a claim of approval or execution. The source snapshot and image file must be checked against the final accepted commit before launch. The runner requests `VPP_JOBS=2`, the production placement pre-hook, `SSI_SpreadSLLs`, three HBM connections, and 100 MHz. On placement or routing failure inspect the first failing Vivado stage and resource/congestion reports, then the pre-hook hierarchy and SLR assignments, SLL guidance, placement timing and phys-opt/route logs. Preserve the original logs and checkpoints; do not retry a full image without accounting for the budget.
+
+Stage timing, peak RSS, and xclbin result are pending. The x86 small-link probe does not count as one of the five full-image runs; it cannot establish timing, resource usage, or correctness of the run-2 image.

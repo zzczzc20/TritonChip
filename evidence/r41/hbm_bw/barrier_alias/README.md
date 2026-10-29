@@ -27,3 +27,9 @@ The full g2c4 and run-2 runs started with the invalid one-pair sliced arguments 
 The same single-pair program and unsliced launch also passed on the GB10 g2c4 out-of-order-memory core: `vvp sim/build/tb_core_g2c4_ooo.vvp +hex=sim/build/t39_pair.hex +maxcycles=400000 +roles=2 +pair`. Raw log `pair-ooo.tgz`, SHA-256 `14f492a0f7e6e54d3568e1c122ccdcea017b0e94c6c94945a8ce2d7ef4e03593`. This is a standalone case, not a full core gate.
 
 On GB10, `make compiler PYTHON=~/tc_env/torchenv/bin/python` on the compiler/RTL sources of `19295a61` exited zero and reported 165 compiler unit tests passed with 1 skip; the compiler IR suite skipped because `tnca-opt` was absent. This is not a strict compiler-gate pass. Raw output: `compiler.tgz`, SHA-256 `11c26db26af0348a26480d6f38f8bcba5f220adc500ca1a9b7925b466469483c`. The missing tool is being built for a strict IR rerun.
+
+`tnca-opt` was built from the current source on GB10 with LLVM/MLIR 20, then `R1_STRICT=1 python compiler/test/IR/run_ir_tests.py` passed all six files and six RUN cases. Raw build and test logs: `compiler-ir.tgz`, SHA-256 `07bb80ddbd32777a6d6dde6d9fbeec83298476624609f6a129bc9c0cc653bed9`. A full strict `make compiler` was restarted with the DP RTL bench built so the earlier skipped compiler test can run; that gate remains open.
+
+After merging G4's memory-arbiter and tensor-buffer changes, all 62 directed cases passed again on GB10 RTL using source `5e45e057` and `python3 tools/r41/barrier_alias_tests.py`. Raw output: `merged-directed.tgz`, SHA-256 `2dfc9404b68acb6e0d84ff2ffe752fe39954bb986d528d922df8dccedac4b384`. This does not substitute for the full merged-source regressions.
+
+The merged source `5e45e057` also passed `make r41-xpose8-rtl PYTHON=~/tc_env/torchenv/bin/python` on GB10 (seven reported RTL cases). Raw log: `merged-xpose.tgz`, SHA-256 `673d15550dbc30d2dceb2e0ac000438c3b379fd9ded05c2ad4f0b5320f56e94e`.

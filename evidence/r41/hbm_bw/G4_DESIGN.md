@@ -729,12 +729,32 @@ Further decisions and directions of 2026-10-29:
 
 **RTL probes** (small 64 KiB registered points, profile g2c4, cycles; `g4/tte_rtl/probes/`):
 
-| Point | s4c4 mode 0 | s4c4 mode 2 | s5 mode 3, `7b646be` | s5 mode 3, `247f43d` | s6 mode 3 |
+| Point | s4c4 mode 0 | s4c4 mode 2 | s5 mode 3, `7b646be` | s5 mode 3, `247f43d` |
+|---|---:|---:|---:|---:|
+| add fp16-contig-r32 | 68,135 | 26,326 | 33,912 | 33,747 |
+| add fp16-strided-r32 | 170,108 | 127,603 | 180,960 | 180,998 |
+| add fp32-contig-r16 | 37,628 | 5,783 | 7,467 | 7,128 |
+| cast fp16-to-fp32-contig-r32 | — | 14,013 | — | 18,371 |
+| cast fp32-to-fp16-contig-r32 | 57,414 | 15,502 | 19,129 | 19,096 |
+| clone fp16-contig-r32 | 55,937 | 7,331 | 7,427 | 7,433 |
+| clone fp16-strided-r32 | 100,050 | 68,289 | 96,182 | 96,176 |
+| clone fp32-contig-r16 | 23,522 | — | 5,141 | 5,105 |
+| copy fp16-contig-r32 | 55,934 | 7,340 | 7,445 | 7,446 |
+| copy fp32-contig-r16 | — | — | — | 5,017 |
+| div fp16-contig-r32 | 93,416 | 37,655 | 51,207 | 48,306 |
+| exp fp16-contig-r32 | 85,952 | 28,675 | 37,572 | 37,986 |
+| silu fp16-contig-r32 | 111,976 | 53,360 | 65,576 | 64,768 |
+
+The run-2 steps on the same small points (rtl, cycles). These check function; the points are too small to be bandwidth-bound:
+
+| Point | s5 | s6 (chained fills) | s5w (512-bit outlets) | s6w | s7 (64 in flight) |
 |---|---:|---:|---:|---:|---:|
-PROBE_ROWS
+| sum fp16-contig-r32 (mode 0) | 31,287 | 31,479 | 31,008 | 31,124 | 31,664 |
+| clone fp16-contig-r32 (mode 2) | 7,337 | 7,357 | 7,318 | 7,295 | 7,290 |
+| copy fp32-contig-r16 (mode 3) | 5,017 | 4,947 | 4,900 | 4,903 | 4,892 |
 
 - fp16 points take mode 2's lowering under mode 3, because the compiler's tensor-engine accesses still require 4-byte elements. The register layout of 16- and 8-bit vectors, not the engine, sets that limit.
-- At mode 3's 8192-lane block, fp16 add runs at 0.78× mode 2 (rtl). The fallback should use mode 2's block. This affects only the non-default compiler mode, and it is open.
+- Programs that mode 3 hands to mode 2's lowering run at its 8192-lane block, and that is slower than mode 2 at its own block (rtl, s5 mode 3 vs s4c4 mode 2): fp16 add 0.78×, exp 0.76×, div 0.78×, silu 0.82×, strided clone 0.71×. The fallback should use mode 2's block. This affects only the non-default compiler mode, and it is open.
 
 **Home read miss at one cycle a line** (`HOME_LINE_PIPE 2` → `tnca_home_pipe` `FILL_CHAIN`):
 - A read miss cost two cycles because the fill unit idled one cycle between MSHRs. It now starts the next filled MSHR in the cycle it finishes one.

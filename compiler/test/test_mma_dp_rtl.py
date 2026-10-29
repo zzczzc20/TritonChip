@@ -94,6 +94,7 @@ class DotOnRTL(unittest.TestCase):
         return cg
 
     def test_every_format_and_k(self):
+        ran, limited = [], []
         for fmt, ty, width in FORMATS:
             for K in (16, 32, 64):
                 for seed in (1, 2):
@@ -107,6 +108,7 @@ class DotOnRTL(unittest.TestCase):
                             # a fragment pair the target cannot hold is the baseline's limit too
                             from tnca_cc.diagnostics import ResourceError
                             self.assertIsInstance(e, ResourceError)
+                            limited.append((fmt, K))
                             continue
                         self.assertIn(f'm.mma.dp.async.k{K}.{fmt}', cg.b.text())
                         want = expected(fmt, a, b, K)
@@ -118,6 +120,10 @@ class DotOnRTL(unittest.TestCase):
                         p.words(O, H.pack32([SENTINEL] * 256), 'os')
                         ok, out = H.run(p, bench='dp', max_cycles=400000)
                         self.assertTrue(ok, out[-600:])
+                        ran.append((fmt, K, seed))
+        print(f"\nran on the RTL core: {len(ran)} programs {sorted(set((f, k) for f, k, _ in ran))}; "
+              f"not compilable on this target (resource limit): {sorted(set(limited))}")
+        self.assertTrue(ran)
 
 
 if __name__ == '__main__':

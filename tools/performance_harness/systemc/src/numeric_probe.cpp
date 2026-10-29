@@ -80,14 +80,14 @@ int main(int argc,char** argv){
                 const unsigned functions[4]={0,3,1,2};auto got=tnca_sfu::evaluate(functions[op],value);
                 equal=is_nan?tnca_numeric::nan(0,got):low==high?got==low:
                     !tnca_numeric::nan(0,got) && tnca_numeric::floating(got)>=tnca_numeric::floating(low) && tnca_numeric::floating(got)<=tnca_numeric::floating(high);
-            }else if(mode=="matrix_dp"){
+            }else if(mode=="matrix_dp" || mode=="matrix_dp_big"){
                 // fa fb g | a[g] | b[g] | c want (m.mma.dp.async, ISA sec 9C.4, one group step)
                 unsigned fa,fb,g;std::uint32_t a[4]{},b[4]{},c,want;
                 if(!(row>>std::dec>>fa>>fb>>g) || g>4 || g<2)throw std::runtime_error("bad matrix_dp vector");
                 row>>std::hex;for(unsigned i=0;i<g;++i)row>>a[i];for(unsigned i=0;i<g;++i)row>>b[i];
                 if(!(row>>c>>want))throw std::runtime_error("bad matrix_dp vector");
                 if(tnca_matrix_dp::group_size(fa,fb)!=g)throw std::runtime_error("matrix_dp group size disagrees with sec 9C.4");
-                equal=tnca_matrix_dp::group_step(fa,fb,a,b,g,c)==want;
+                equal=(mode=="matrix_dp"?tnca_matrix_dp::group_step(fa,fb,a,b,g,c):tnca_matrix_dp::group_step_big(fa,fb,a,b,g,c))==want;
                 ++per_op[std::to_string(fa)+"x"+std::to_string(fb)][equal];
             }else if(mode=="vfpu"){
                 // RTL-recorded tnca_vector_fpu outputs (rtl_oracle/rtl_oracle.py):

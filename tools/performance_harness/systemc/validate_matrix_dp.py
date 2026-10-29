@@ -110,6 +110,10 @@ def main():
     with (args.out/'probe.stdout').open('x') as so, (args.out/'probe.stderr').open('x') as se:
         r = subprocess.run([str(args.binary), 'matrix_dp', str(vec)], stdout=so, stderr=se, timeout=1800)
     result = json.loads((args.out/'probe.stdout').read_text())
+    # the 1024-bit path alone (the 128-bit fast path falls back to it for far-apart exponents)
+    rb = subprocess.run([str(args.binary), 'matrix_dp_big', str(vec)], stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL, timeout=1800)
+    big = json.loads(rb.stdout)
     # negative control: every 97th expected word corrupted must be reported
     mut = ['l' if i % 97 else l[:-1] + ('0' if l[-1] != '0' else '1') for i, l in enumerate(lines)]
     mut = [m if m != 'l' else lines[i] for i, m in enumerate(mut)]
@@ -120,7 +124,8 @@ def main():
     expected_bad = len([i for i in range(len(lines)) if i % 97 == 0])
     assert control['mismatches'] == expected_bad, (control['mismatches'], expected_bad)
     report = dict(schema='tnca-matrix-dp-validation/1', domain='SystemC/TLM model arithmetic vs exact Fraction oracle',
-                  status='passed' if r.returncode == 0 and result['mismatches'] == 0 else 'failed',
+                  status='passed' if r.returncode == 0 and result['mismatches'] == 0 and rb.returncode == 0 and big['mismatches'] == 0 else 'failed',
+                  result_1024bit_path=big,
                   returncode=r.returncode, seed=args.seed, vectors_per_pair=args.count, result=result,
                   negative_control=dict(corrupted_words=expected_bad, reported_mismatches=control['mismatches']))
     (args.out/'validation.json').write_text(json.dumps(report, indent=2) + '\n')

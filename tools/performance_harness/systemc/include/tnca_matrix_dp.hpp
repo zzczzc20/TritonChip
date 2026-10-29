@@ -14,6 +14,8 @@
 #include "tnca_numeric.hpp"
 #include <array>
 #include <cstdint>
+#include <cstdlib>
+#include <algorithm>
 #include <stdexcept>
 #include <vector>
 
@@ -89,7 +91,7 @@ inline U32 qnan(){return 0x7fc00000U;}
 inline U32 inf32(bool neg){return (U32(neg)<<31)|0x7f800000U;}
 
 // One accumulation step: C <- RNE_f32(C + RO_48(sum_k a[k]*b[k])).
-inline U32 group_step(unsigned fa,unsigned fb,const U32* a,const U32* b,unsigned g,U32 c){
+inline U32 group_step_big(unsigned fa,unsigned fb,const U32* a,const U32* b,unsigned g,U32 c){
     bool nan=false,have_inf=false,inf_neg=false,all_neg_zero=true;
     Elem ea[4],eb[4];int emin=0x7fffffff;
     for(unsigned i=0;i<g;++i){
@@ -151,5 +153,73 @@ inline U32 group_step(unsigned fa,unsigned fb,const U32* a,const U32* b,unsigned
         return (U32(total.neg)<<31)|(U32(top+127)<<23)|U32(mant&0x7fffffU);
     }
     return (U32(total.neg)<<31)|U32(mant);     // subnormal (exp == -149)
+}
+}
+
+namespace tnca_matrix_dp {
+__extension__ typedef unsigned __int128 U128;
+__extension__ typedef __int128 I128;
+inline int bitlen128(U128 v){U64 hi=U64(v>>64);return hi?128-__builtin_clzll(hi):(U64(v)?64-__builtin_clzll(U64(v)):0);}
+// The same step in 128-bit integers when every product lies within 60 bits of the
+// smallest one and C within 70 bits of the (RO_48-rounded) group sum; any other
+// group falls back to the 1024-bit path above. Both paths are exact; the
+// validation runs the vectors through each (probe modes matrix_dp and matrix_dp_big).
+inline U32 group_step(unsigned fa,unsigned fb,const U32* a,const U32* b,unsigned g,U32 c){
+    Elem ea[4],eb[4];int emin=0x7fffffff,emax=-0x7fffffff;
+    bool nan=false,have_inf=false,inf_neg=false,all_neg_zero=true;
+    for(unsigned i=0;i<g;++i){
+        ea[i]=decode(fa,a[i]);eb[i]=decode(fb,b[i]);
+        bool s=ea[i].neg^eb[i].neg;
+        if(ea[i].kind==NaN||eb[i].kind==NaN){nan=true;continue;}
+        if((ea[i].kind==Inf&&eb[i].kind==Zero)||(eb[i].kind==Inf&&ea[i].kind==Zero)){nan=true;continue;}
+        if(ea[i].kind==Inf||eb[i].kind==Inf){if(have_inf&&inf_neg!=s)nan=true;have_inf=true;inf_neg=s;continue;}
+        if(ea[i].kind==Fin&&eb[i].kind==Fin){all_neg_zero=false;int e=ea[i].exp+eb[i].exp;emin=std::min(emin,e);emax=std::max(emax,e);}
+        else if(!s)all_neg_zero=false;
+    }
+    bool c_nan=tnca_numeric::nan(0,c),c_inf=((c>>23)&255)==255 && !(c&0x7fffffU),c_neg=c>>31;
+    if(nan||c_nan)return qnan();
+    if(have_inf)return (c_inf&&c_neg!=inf_neg)?qnan():inf32(inf_neg);
+    if(c_inf)return c;
+    if(emin!=0x7fffffff && emax-emin>60)return group_step_big(fa,fb,a,b,g,c);
+    if(emin==0x7fffffff)emin=0;
+    I128 sum=0;
+    for(unsigned i=0;i<g;++i){
+        if(ea[i].kind!=Fin||eb[i].kind!=Fin)continue;
+        I128 p=(I128)(U64(ea[i].mant)*eb[i].mant)<<(ea[i].exp+eb[i].exp-emin);
+        sum+=(ea[i].neg^eb[i].neg)?-p:p;
+    }
+    bool sneg=sum<0;U128 smag=sneg?U128(-sum):U128(sum);int sexp=emin;
+    int L=bitlen128(smag);
+    if(L>48){int drop=L-48;bool sticky=(smag&((U128(1)<<drop)-1))!=0;smag>>=drop;if(sticky)smag|=1;sexp+=drop;}
+    bool r_zero=smag==0;
+    unsigned cexp=(c>>23)&255;U32 cman=(c&0x7fffffU)|(cexp?0x800000U:0);int cx=(cexp?int(cexp):1)-150;
+    bool c_zero=cman==0;
+    if(r_zero&&c_zero)return U32(all_neg_zero&&c_neg)<<31;
+    int e0;
+    if(r_zero)e0=cx;else if(c_zero)e0=sexp;else{
+        if(std::abs(cx-sexp)>70)return group_step_big(fa,fb,a,b,g,c);
+        e0=std::min(cx,sexp);
+    }
+    I128 total=0;
+    if(!r_zero){I128 t=(I128)(smag<<(sexp-e0));total+=sneg?-t:t;}
+    if(!c_zero){I128 t=(I128)(U128(cman)<<(cx-e0));total+=c_neg?-t:t;}
+    if(total==0)return 0;
+    bool neg=total<0;U128 mag=neg?U128(-total):U128(total);
+    int L2=bitlen128(mag),E=e0+L2-1;
+    int lsb=std::max(E-23,-149),drop=lsb-e0;
+    if(drop>0){
+        bool half=(mag>>(drop-1))&1,below=(mag&((U128(1)<<(drop-1))-1))!=0;
+        mag>>=drop;
+        if(half&&(below||(mag&1)))mag+=1;
+    }else mag<<=-drop;
+    U64 mant=U64(mag);int exp=lsb;
+    if(mant>>24){mant>>=1;++exp;}
+    int top=exp+23;
+    if(mant==0)return U32(neg)<<31;
+    if(mant>>23){
+        if(top>127)return inf32(neg);
+        return (U32(neg)<<31)|(U32(top+127)<<23)|U32(mant&0x7fffffU);
+    }
+    return (U32(neg)<<31)|U32(mant);
 }
 }

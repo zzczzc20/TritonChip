@@ -130,3 +130,5 @@ On the merged candidate snapshot (upstream `7d3b2864` plus the recorded candidat
 With outlet depth alone raised to 32, strided clone passed at 110,504 RTL cycles (G2 sample: 110,197). Raw JSONL, log and register trace: `outlet-depth-clone.tgz`, SHA-256 `be49f0a0e546c19d09255ebda298072fdc86fb3371909ee1fa2d736e64dcce8f`. This is one sample, not a noise estimate.
 
 With outlet depth alone raised to 32, strided add passed at 167,457 RTL cycles (G2 sample: 167,351). Raw JSONL, log and register trace: `outlet-depth-add.tgz`, SHA-256 `445538205004731a0ec41dea455c4c2760228443fa326be4a6ab7ea453e37330`. The separate pipelined-issue arm remains running.
+
+On the same merged candidate snapshot, strided add passed at 135,227 RTL device cycles, compared with 183,876 in the earlier original-s4 sample. This is a cross-snapshot comparison and not a noise characterization. Raw JSONL, run log and register trace are `merged-s4-add.tgz`, SHA-256 `8e39f923945be6431f951f2e0d1fbb72f5139c22ce035f1133a5fbabd3420d39`.

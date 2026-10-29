@@ -66,3 +66,7 @@ With only `HYBRID_LSU=1` added to G2, strided add passed at 205,152 RTL device c
 Adding no-fill to hybrid LSU yielded 131,516 RTL device cycles for strided clone, versus 131,466 with hybrid alone (50 cycles, 0.038% higher); both passed and each recorded 3,087 line reads and 768 writes. These are single samples, not a measured noise range. Raw JSONL, worker output and register-bench trace: `nofill-clone.tgz`, SHA-256 `ef20e127ef39778c45e2f61203902cf61eef80ab488fd28f1b56c90c931e1505`.
 
 Adding the pipelined home to hybrid LSU gave 117,946 RTL device cycles for strided clone (pass), versus 131,466 with hybrid alone and 118,007 with full s4. These single samples show the pipeline improving this point relative to hybrid-only; they do not establish a noise range. Raw JSONL, worker output and register-bench trace: `pipe-clone.tgz`, SHA-256 `8c1d5b24d109ecf40cf4172e9bf963b4c13e84a2dcab157ff3254a3aa350c43c`.
+
+### Candidate under test
+
+The hybrid path reserves tag bits for the outer client, fast/slow path and narrow-pair unit; the current tile hard-limits the narrow pair to four beats per unit even when wider tags have spare capacity. `candidate-beats.patch` (SHA-256 `90839ed707ff15f52ae81038fb63e041d86d8f5af8c2b2698e5bb6572d64c0d0`) proposes choosing up to the configured beat count subject to the actual tag width, keeping the original four-beat limit when the width only permits four. It is a candidate under test, not a validated fix. The default non-hybrid path is unchanged. Performance, timing and full regressions have not yet been established.

@@ -181,7 +181,7 @@ it is a statement about which column of evidence exists.
 | `t.prefetch` | TXFER | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 | `m.zero` | MATRIX | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `m.mma.async` | MATRIX | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `m.mma.dp.async` | MATRIX | matrix_dp | no | no | no | no | no | no | no | no | no | no | yes | no | no | no | no |
+| `m.mma.dp.async` | MATRIX | matrix_dp | no | no | no | no | no | no | no | no | no | no | yes | no | no | yes | no |
 | `a.vread` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `a.vwrite` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `a.mul.row` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
@@ -194,7 +194,7 @@ it is a statement about which column of evidence exists.
 | `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 
-170 instructions: 117 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
+170 instructions: 118 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
 
 `gated` in the emit column means the lowering exists and the capability
 is false everywhere, so asking for it is a compile error rather than a

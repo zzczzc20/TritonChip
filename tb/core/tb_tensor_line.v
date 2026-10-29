@@ -316,6 +316,12 @@ initial begin
                 p_x[plen-1] = 1'b1; nx = nx + 1;
                 // whole 8-byte source units: column offset 8-byte aligned
                 p_c1[plen-1] = p_c1[plen-1] & ~((64'd8 >> sesz[d]) - 64'd1);
+                // half of them a whole-line box inside the tensor, which the
+                // line path would take if it did not exclude transposed loads
+                if ($unsigned($random(seed)) % 2 && re0[d] >= bl0[d] && re1[d] >= bl1[d] + (64 >> sesz[d])) begin
+                    p_c0[plen-1] = $unsigned($random(seed)) % (re0[d] - bl0[d] + 1);
+                    p_c1[plen-1] = ($unsigned($random(seed)) % ((re1[d] - bl1[d]) / (64 >> sesz[d]) + 1)) * (64 >> sesz[d]);
+                end
             end
             t = t + 1;
         end

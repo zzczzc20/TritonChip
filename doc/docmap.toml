@@ -591,3 +591,8 @@ sources = ["evidence/r41/pmac/"]
 path = "evidence/r41/hbm_bw/fma_dslx/README.md"
 depends_on = ["doc/engineering_discipline.md", "evidence/r41/hbm_bw/RESOURCES.md", "evidence/r41/pmac/README.md"]
 sources = ["evidence/r41/hbm_bw/fma_dslx/", "xls/tnca_lzc.x", "xls/tnca_fmad.x", "xls/tnca_mac.x", "rtl/core/tnca_mac_lane.v", "rtl/core/tnca_fp32_fma.v", "tools/model/fdp.py", "tools/r41/fmax/", "doc/isa/TNCA-ISA-v0.1.md"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/barrier_alias/README.md"
+depends_on = ["doc/engineering_discipline.md", "doc/isa/TNCA-ISA-v0.1.md"]
+sources = ["rtl/core/tnca_core.v", "rtl/core/tnca_barrier.v", "tools/r41/barrier_alias_tests.py", "python/tnca/aot.py", "compiler/python/tnca_cc/codegen.py"]

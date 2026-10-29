@@ -120,3 +120,5 @@ After regenerating the support matrix, the merged candidate tree passed strict `
 The isolated outlet clone worker was subsequently started on GB10 as PID 2984917. Its depth and issue arms, like the add arms, remain RTL simulations using the diagnostic tree and synthetic memory.
 
 On the merged candidate snapshot, GB10 RTL regression results were: hybrid LSU 48 existing configurations plus the added eight-beat directed and mixed cases, line LSU 48 configurations, wide NI/NoC 12 configurations, and home pipeline 189 cases, all exit 0. The raw logs and invocation script are in `merged-unit-regressions.tgz` (SHA-256 `2413a3263e4caa6ef089fb2d23421dfef0ba3915adbabba777e9ba9d9c740416`). `make compiler-rtl` and the separate no-fill home regression were started afterward; their outcomes are not implied by these unit results.
+
+The merged-candidate `python3 tools/r41/g4_home_tests.py` regression passed all 50 RTL cases; raw GB10 output is `merged-home-nofill.tgz` (SHA-256 `081ff5240b42f81b5d00f7d6367407fe91cfd07f67980f37bf602bfff5698c07`).

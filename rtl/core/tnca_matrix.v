@@ -68,7 +68,7 @@ module tnca_matrix #(
     // latency becomes OPND_REG + popcount(MAC_CUTS) and every user of it here
     // (the tag pipeline, the drain) follows from PIPE.
     parameter MAC_DP   = 0,
-    parameter [3:0] MAC_CUTS = 4'b1110,
+    parameter [4:0] MAC_CUTS = 5'b11101,
     // Register the MAC operands before the FMA (tnca_fpu_multi IN_REG): one
     // more cycle of latency per command, and the A operand's block-RAM read
     // and element select no longer share a cycle with the multiply.
@@ -347,7 +347,7 @@ module tnca_matrix #(
     // Result tag pipeline, alongside the FMA's own registers
     //==========================================================================
     // A result lands PIPE cycles after its operands are presented.
-    localparam MAC_LAT = MAC_CUTS[0] + MAC_CUTS[1] + MAC_CUTS[2] + MAC_CUTS[3];
+    localparam MAC_LAT = MAC_CUTS[0] + MAC_CUTS[1] + MAC_CUTS[2] + MAC_CUTS[3] + MAC_CUTS[4];
     localparam PIPE = (MAC_DP != 0) ? (OPND_REG + MAC_LAT) : (FMA_LAT + OPND_REG);
     reg              tg_v   [0:PIPE-1];
     reg [ACC_W-1:0]  tg_slot[0:PIPE-1];

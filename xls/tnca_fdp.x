@@ -78,7 +78,7 @@ pub const MODE_DP4 = u2:2;
 
 type FmaProduct = tnca_fma::FmaProduct;
 
-fn lsb_mask64(n: u7) -> u64 { !(all_ones!<u64>() << n) }
+pub fn lsb_mask64(n: u7) -> u64 { !(all_ones!<u64>() << n) }
 fn lsb_mask66(n: u5) -> uN[66] { !(all_ones!<uN[66]>() << n) }
 
 //============================================================================
@@ -206,7 +206,7 @@ pub fn spec4(a: E8[4], b: E8[4]) -> Spec {
     spec_combine<u32:4>([r0.0, r1.0, r2.0, r3.0], [r0.1, r1.1, r2.1, r3.1], [r0.2, r1.2, r2.2, r3.2])
 }
 
-fn spec2(a: E16[2], b: E16[2]) -> Spec {
+pub fn spec2(a: E16[2], b: E16[2]) -> Spec {
     let r0 = spec1(a[0].s, a[0].zero, a[0].inf, a[0].nan, b[0].s, b[0].zero, b[0].inf, b[0].nan);
     let r1 = spec1(a[1].s, a[1].zero, a[1].inf, a[1].nan, b[1].s, b[1].zero, b[1].inf, b[1].nan);
     spec_combine<u32:2>([r0.0, r1.0], [r0.1, r1.1], [r0.2, r1.2])

@@ -189,11 +189,25 @@
       "flop_outputs": false
     },
     {
+      "module": "tnca_mac_s1_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_s1",
+      "pipeline_stages": 0,
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off (tnca_matrix MAC_DP). S1: decode, the binary32 product (fma32_mul), the E4M3 DP4 group sum as a fixed-point DSP cascade, the two DP2 products and the choice of the reference product. Combinational."
+    },
+    {
+      "module": "tnca_mac_s2_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_s2",
+      "pipeline_stages": 0,
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off (tnca_matrix MAC_DP). S2: DP2's shift of the smaller product and the one addition; the other modes' results pass. Combinational."
+    },
+    {
       "module": "tnca_mac_f1_xls",
       "source": "tnca_mac.x",
       "top": "mac_f1",
       "pipeline_stages": 0,
-      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off, not instantiated by the core until the gate passes. F1: the binary32 product (fma32_mul), the E4M3 DP4 group sum as a fixed-point DSP cascade, and the DP2 sum of two 16-bit-slot products. Combinational."
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off (tnca_matrix MAC_DP). F1 = S1 then S2 unregistered (the whole front end; used by the unit screens and the formal proofs). Combinational."
     },
     {
       "module": "tnca_mac_f2_xls",

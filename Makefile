@@ -360,7 +360,7 @@ $(TB)/core/progs/t41_mmadp.s: $(TB)/core/progs/gen_t41_mmadp.py $(TOOLS)/model/f
 # the exact oracle; and, on the machine without the capability, the refusal.
 .PHONY: core-mmadp
 core-mmadp: $(TB)/core/progs/t41_mmadp.s $(BUILD)/t41_mmadp.hex $(BUILD)/tb_core.vvp | dirs
-	@for c in 12 14 15; do \
+	@for c in 0 18 29 31; do \
 	   $(IVERILOG) $(IVFLAGS) -P tb_tnca_core.MAC_DP=1 -P tb_tnca_core.MAC_CUTS=$$c \
 	      -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
 	      -o $(BUILD)/tb_core_dp$$c.vvp $(TB)/core/tb_tnca_core.v || exit 1; \

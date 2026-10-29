@@ -54,12 +54,20 @@ These are not full-model quality or board results. The reports are `/home/zhongc
 (SHA-256 `30a031dca4c08b36a303ccc91b3c53d68306cae46875d82415a3dfbb3312522e`). Their original command and
 submission-policy environment have not yet been recovered; directory names alone do not prove either setting.
 
-A VL reduced-depth TLM session with the default submission policy is running as GB10 user service
-`r41-vl-batched-20261029.service`, with a 16 GiB memory limit and CPUs 6-9. Source directory is
+A VL reduced-depth TLM session with the default submission policy was launched as GB10 user service
+`r41-vl-batched-20261029.service`, with a 16 GiB memory limit and CPUs 6-9. Source directory was
 `/home/zhongchun/r41-k8launch`; profile `core-vrf-sync-v5-x8`, prompt and session-check prompt `Say hi.`,
 one layer, bucket 64, four requested tokens. Output is `~/r41-k8launch-runs/vl-batched`. The service's
-`ExecStart` and journal retain the full invocation and execution log. Do not infer a comparison until the
-first run's invocation and source identity are established and the new run finishes.
+`ExecStart` and journal retain the full invocation and execution log. This first attempt failed with a device-grid
+deadline error: it omitted the extended `TNCA_DEADLINE` used by the project's TLM launcher and therefore used the
+default 5,000,000 cycles. Its preserved journal is `/home/zhongchun/r41-k8launch-runs/vl-batched/failure.log`,
+SHA-256 `a16d465c17b6df4b64860c863392de02b3e47883be117650264c5629bb061119`.
+
+The follow-up `r41-vl-batched-deadline-20261029.service` uses the same setup with the TLM launcher's non-default
+40,000,000,000-cycle deadline and output `~/r41-k8launch-runs/vl-batched-deadline`. It is a diagnostic, not a
+default-setting performance acceptance result. A control service `r41-vl-single-controlled-20261029.service` was
+also started with `TNCA_SUBMIT=single`, but omitted the extended deadline; its result must not be treated as a
+matched comparison. The first report's invocation and source identity also remain unverified.
 
 ## Reproduction and archive
 

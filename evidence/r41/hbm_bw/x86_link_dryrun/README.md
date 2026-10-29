@@ -11,7 +11,7 @@ The real run-2 link command, after preparing a clean immutable source snapshot a
 ```sh
 source ~/x86_link_env.sh
 export XILINX_HLS="$HOME/Xilinx/Vitis_HLS/2023.2"
-export PATH="$XILINX_HLS/bin:$PATH"
+export PATH="$HOME/r41-codex-t9d-bin:$XILINX_HLS/bin:$PATH"
 cd "$RUN2_SOURCE"
 setsid nohup nice -n 5 bash flow/fpga/run_r40_attempt01.sh "$FRESH_BUILD_ROOT" "$RUN2_SOURCE/evidence/r41/hbm_bw/g4/run2/image.tcl" > /dev/null 2>&1 < /dev/null &
 ```
@@ -25,3 +25,5 @@ At 13:31 UTC, the guard observed 23,594 MiB available and one Vivado process. Th
 The documented x86 full-run command also exposed a separate runner issue: `run_r40_attempt01.sh` had `set -e` and unconditionally sourced FPGA-host-only `/tools/Xilinx/...` and `/opt/xilinx/...` paths. On x86, a direct shell check returned status 1 before packaging. The runner now sources each FPGA-host setup only when it exists; a direct x86 shell check of the guarded setup completed successfully, and `bash -n flow/fpga/run_r40_attempt01.sh` passed locally. This checks startup semantics, not a full image run.
 
 The 9.5 GiB Vitis HLS 2023.2 directory was copied from the FPGA host to the x86 user directory. `vitis_hls -version` then exited zero, and the configured HLS path survived sourcing Vitis settings. Raw version output: `hls-version.tgz`, SHA-256 `25d4cc3cdd1937e8133bb0367c3651fb33a33c4b277c15719adc98332081bef5`. A second tiny probe was started in a fresh isolated tree; full link remains pending. The run-2 command above includes the HLS environment explicitly rather than changing the shared `x86_link_env.sh`.
+
+The second tiny probe, with HLS installed, packaged successfully but `system_link` exited 1 with `SdxLink 83-1001` and failure parsing `xo.xml`; no bitstream was produced. The archive contains a readable `xo.xml` and passed a full ZIP integrity check. The x86 host had no `unzip`; the FPGA host's `/usr/bin/unzip` was copied to the x86 user directory and SHA-256 matched (`c2de3370834a29644eb8362e3df7ee2f0fae51f28f04da1a34e898575714693c`). Missing `unzip` is a hypothesis for the metadata failure, not yet a proven cause. Raw second-attempt logs: `second-attempt.tgz`, SHA-256 `293fcc188281650b74308605d41c3b67da43244d87191eafe76ff732fc959edc`. A third probe with `unzip` in PATH was started in a fresh isolated tree.

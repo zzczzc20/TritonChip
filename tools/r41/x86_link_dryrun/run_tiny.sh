@@ -15,6 +15,9 @@ if [ -x "$HOME/Xilinx/Vitis_HLS/2023.2/bin/vitis_hls" ]; then
   export XILINX_HLS="$HOME/Xilinx/Vitis_HLS/2023.2"
   export PATH="$XILINX_HLS/bin:$PATH"
 fi
+if [ -x "$HOME/r41-codex-t9d-bin/unzip" ]; then
+  export PATH="$HOME/r41-codex-t9d-bin:$PATH"
+fi
 cd "$src"
 export TNCA_BOARD=u280 VPP_JOBS=2 TNCA_IMAGE_CONFIG="$image"
 export LINK_EXTRA='--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=SSI_SpreadSLLs'

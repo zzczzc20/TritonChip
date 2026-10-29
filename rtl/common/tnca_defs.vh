@@ -436,7 +436,7 @@
 //------------------------------------------------------------------------------
 `define TNCA_M_ZERO          8'h00
 `define TNCA_M_MMA           8'h01
-`define TNCA_M_MMA_DP        8'h02   // ISA sec 9C.4; decoded only where HAS_MATRIX_DP (R41 G2)
+`define TNCA_M_MMADP         8'h02   // ISA sec 9C.4, gated by CAPABILITY0.MATRIX_DP
 
 `define TNCA_MMA_K16         2'd0
 `define TNCA_MMA_K32         2'd1

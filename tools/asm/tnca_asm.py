@@ -626,24 +626,24 @@ class Assembler:
             return kk | (dt << 2) | (sf_bit << 4), ops
 
         if sclass == 'mmadp':
-            # ".k32", up to two formats (A then B; one format names both),
-            # ".sf" in any order; defaults k16/f16/f16, no sf (ISA sec 9C.4)
-            kk, fmts, sf_bit = 0, [], 0
+            # ISA sec 9C.4: ".k32", one or two dtypes (A, then B; one dtype
+            # names both), ".sf"; mod[1:0] K, [3:2] A, [4] sf, [6:5] B
+            kk, sf_bit, dts = 0, 0, []
             for sf in sfx:
                 if sf in MMA_K:
                     kk = MMA_K[sf]
                 elif sf in MMA_DT:
-                    fmts.append(MMA_DT[sf])
+                    dts.append(MMA_DT[sf])
                 elif sf == 'sf':
                     sf_bit = 1
                 else:
                     self.err(f"unknown m.mma.dp suffix '.{sf}' (expected "
-                             f"k16/k32/k64, {'/'.join(MMA_DT)}, sf)")
-            if len(fmts) > 2:
-                self.err("m.mma.dp takes at most two format suffixes (A, B)")
-            fa = fmts[0] if fmts else 0
-            fb = fmts[1] if len(fmts) > 1 else fa
-            return kk | (fa << 2) | (sf_bit << 4) | (fb << 5), ops
+                             f"k16/k32/k64, up to two of {'/'.join(MMA_DT)}, sf)")
+            if len(dts) > 2:
+                self.err("m.mma.dp takes at most two dtype suffixes (A, then B)")
+            da = dts[0] if dts else 0
+            db = dts[1] if len(dts) > 1 else da
+            return kk | (da << 2) | (sf_bit << 4) | (db << 5), ops
 
         if sclass == 'txf':
             # ".b/.h/.w" element size, optional ".t" transpose

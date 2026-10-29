@@ -711,6 +711,19 @@ module tnca_decoder (
                 bad = bad | (f_mod[1:0] == 2'd3)        // K reserved
                           | (f_mod[4] && (f_c[5:0] == 6'd63));
             end
+            `TNCA_M_MMADP: begin
+                // ISA sec 9C.4 (approved 2026-10-29): m.mma.async's fields, plus
+                // mod[6:5] = B format (any of the four; A is mod[3:2]).
+                // mod[9:7] are reserved and must be zero. Whether the machine
+                // has the capability is the core's check (MAC_DP), not the
+                // decoder's.
+                `TNCA_DEC_DST_A `TNCA_DEC_SRC_SC
+                o_va_idx = f_a; u_a = 1'b1;
+                o_vb_idx = f_b; u_b = 1'b1;
+                u_mod = 10'h07f;
+                bad = bad | (f_mod[1:0] == 2'd3)
+                          | (f_mod[4] && (f_c[5:0] == 6'd63));
+            end
             default: bad = 1'b1;
             endcase
         end

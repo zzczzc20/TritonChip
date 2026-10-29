@@ -80,13 +80,13 @@ def disassemble(word, addr=0):
         if (mod >> 4) & 1:
             name += '.sf'
     elif sfx == 'mmadp':
-        k, fa, fb = mod & 3, (mod >> 2) & 3, (mod >> 5) & 3
+        k, da, db = mod & 3, (mod >> 2) & 3, (mod >> 5) & 3
         if k:
             name += '.' + MMA_K_NAME.get(k, f'k?{k}')
-        if fa or fb:
-            name += '.' + MMA_DT_NAME[fa]
-            if fb != fa:
-                name += '.' + MMA_DT_NAME[fb]
+        if da != db:
+            name += '.' + MMA_DT_NAME[da] + '.' + MMA_DT_NAME[db]
+        elif da:
+            name += '.' + MMA_DT_NAME[da]
         if (mod >> 4) & 1:
             name += '.sf'
     elif sfx == 'txf':

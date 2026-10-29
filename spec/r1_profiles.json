@@ -462,7 +462,7 @@
     "core-vrf-sync-v5-x8-g2c4-dp": {
       "target_file": "tnca-sim-vrf-v5-x8-g2c4-dp.json",
       "executes_artifacts_of": [],
-      "description": "core-vrf-sync-v5-x8-g2c4 with the grouped dot-product matrix opcode m.mma.dp.async (ISA sec 9C.4, approved by the author 2026-10-29; capability matrix_dp, CAPABILITY0 bit 12) elaborated through the elaboration parameter HAS_MATRIX_DP. Compile and SystemC/TLM-model profile only until the shared MAC lane is integrated into tnca_matrix (R41 G2): there is no verification bench bound to it, and no RTL parameter of that name exists yet. Every other instruction, format and capability is unchanged; artifacts using m.mma.dp.async do not run on any image built before that integration.",
+      "description": "core-vrf-sync-v5-x8-g2c4 with the grouped dot-product matrix opcode m.mma.dp.async (ISA sec 9C.4, approved by the author 2026-10-29; capability matrix_dp, CAPABILITY0 bit 12): tnca_core MAC_DP=1 with the shared MAC lane at MAC_CUTS=14 (result latency 4 against 3 for m.mma.async). The compiler lowers every FP8/FP16/BF16 matrix command to it, and the SystemC/TLM model executes it (profile key mtx_dp). The core-level RTL regression is `make core-mmadp` (t41_mmadp); no complete-image bench is bound to this profile yet, and no image has been built from it. Every other instruction, format and capability is unchanged; artifacts using m.mma.dp.async do not run on any image built before one is.",
       "num_cores": 1,
       "topology": "single",
       "elaboration": {
@@ -479,7 +479,8 @@
         "BAR_N": 8,
         "BAR_W": 3,
         "BAR_EPOCH_W": 38,
-        "HAS_MATRIX_DP": 1
+        "MAC_DP": 1,
+        "MAC_CUTS": 14
       },
       "implementation": {
         "vector_register_file": "banked",
@@ -501,7 +502,7 @@
       },
       "platform_binding": {
         "kind": "none",
-        "what": "no RTL elaboration or bench yet; R41 G2 binds one when the lane is integrated into tnca_matrix"
+        "what": "no image and no bench bound yet; the core-level RTL regression is make core-mmadp (MAC_DP=1)"
       }
     }
   },

@@ -290,7 +290,7 @@ ISA = {
     # ---- matrix (ISA sec 9C) -----------------------------------------------
     'm.zero':      ('MATRIX', 0x00, ('ad',),                      None),
     'm.mma.async': ('MATRIX', 0x01, ('ad', 'va', 'vb', 'sc'),     'mma'),
-    # grouped dot-product accumulation (ISA sec 9C.4, CAPABILITY0.MATRIX_DP)
+    # ISA sec 9C.4 (approved 2026-10-29): grouped dot-product accumulation
     'm.mma.dp.async': ('MATRIX', 0x02, ('ad', 'va', 'vb', 'sc'),  'mmadp'),
 
     # ---- tensor descriptor / window (ISA sec 9D) ---------------------------

@@ -45,7 +45,7 @@ module tnca_top #(
     parameter LW          = 4,
     parameter VREGS_PER_RCTX = 64,
     // R41 G2 resource sizing (defaults: the delivered machine): accumulator slots, mbarriers, the barrier epoch width
-    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0,
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0, MAC_DP = 0, MAC_CUTS = 14,
     // and the home slice's physical address width (64: unchanged; below 64 an
     // address at or above 2^(PHYS_ADDR_W-1) is folded so it stays out of range)
     parameter PHYS_ADDR_W = 64,
@@ -486,7 +486,7 @@ module tnca_top #(
                 .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
                 .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .HOST_ACCESS(HOST_ACCESS && GLOBAL_GRID && t==0), .NX(NX), .NY(NY), .XW(XW), .YW(YW),
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
-                .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .PHYS_ADDR_W(PHYS_ADDR_W),
+                .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .PHYS_ADDR_W(PHYS_ADDR_W),
                 .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
                 .USE_BANKED_VRF(USE_BANKED_VRF),
                 .VRF_BYPASS(VRF_BYPASS),

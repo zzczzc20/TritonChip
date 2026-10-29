@@ -580,7 +580,12 @@ sources = ["evidence/r41/stage2/run1/README.md", "evidence/r41/stage2/run1/run1-
 [[doc]]
 path = "evidence/r41/hbm_bw/timing/README.md"
 depends_on = ["doc/engineering_discipline.md", "evidence/r41/hbm_bw/RESOURCES.md", "evidence/r41/hbm_bw/G4_DESIGN.md"]
-sources = ["rtl/core/tnca_core.v", "rtl/core/tnca_matrix.v", "rtl/core/tnca_vector_fpu.v", "tb/core/tb_tnca_core.v", "tb/fpga/tnca_multicore_board_regs.v", "tools/r41/mtx_vrf_reg_tests.py", "tools/r41/link_budget_rtl.py", "tools/performance_harness/default_change_audit.py", "flow/fpga/synth_r40_multicore.tcl", "flow/fpga/screen_r41_tile.tcl", "evidence/r41/hbm_bw/timing/"]
+sources = ["rtl/core/tnca_core.v", "rtl/core/tnca_matrix.v", "rtl/core/tnca_vector_fpu.v", "rtl/core/tnca_lsu_hybrid.v", "rtl/tile/tnca_tile.v", "tb/core/tb_tnca_core.v", "tb/fpga/tnca_multicore_board_regs.v", "tools/r41/mtx_vrf_reg_tests.py", "tools/r41/lsu_hybrid_tests.py", "tools/r41/link_budget_rtl.py", "tools/performance_harness/default_change_audit.py", "flow/fpga/synth_r40_multicore.tcl", "flow/fpga/screen_r41_tile.tcl", "evidence/r41/hbm_bw/timing/"]
+
+[[doc]]
+path = "evidence/r41/pmac/README.md"
+depends_on = []
+sources = ["evidence/r41/pmac/"]
 
 [[doc]]
 path = "evidence/r41/hbm_bw/fma_dslx/README.md"

@@ -1,0 +1,60 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Thu Oct 29 17:01:47 2026
+| Host         : ee4e138 running 64-bit Ubuntu 24.04.5 LTS
+| Command      : report_utilization -hierarchical -file /home/vivado/r41res/g4run2_af2471b0/out/utilization.rpt
+| Design       : tnca_multicore_hbm_xo
+| Device       : xcu280-fsvh2892-2L-e
+| Speed File   : -2L
+| Design State : Synthesized
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++-------------------------------------------------------------------+--------------------------------------+------------+------------+---------+------+--------+--------+--------+------+------------+
+|                              Instance                             |                Module                | Total LUTs | Logic LUTs | LUTRAMs | SRLs |   FFs  | RAMB36 | RAMB18 | URAM | DSP Blocks |
++-------------------------------------------------------------------+--------------------------------------+------------+------------+---------+------+--------+--------+--------+------+------------+
+| tnca_multicore_hbm_xo                                             |                                (top) |    1360104 |    1263117 |   96768 |  219 | 376279 |    192 |     45 |    0 |        526 |
+|   (tnca_multicore_hbm_xo)                                         |                                (top) |          1 |          1 |       0 |    0 |      2 |      0 |      0 |    0 |          0 |
+|   device                                                          |                  tnca_multicore_fpga |    1360060 |    1263073 |   96768 |  219 | 375959 |    192 |     45 |    0 |        526 |
+|     (device)                                                      |                  tnca_multicore_fpga |          0 |          0 |       0 |    0 |      0 |      0 |      0 |    0 |          0 |
+|     control                                                       |                  tnca_multicore_mmio |       1892 |       1892 |       0 |    0 |   2142 |      0 |      0 |    0 |          0 |
+|     system                                                        |                   tnca_multicore_axi |    1358168 |    1261181 |   96768 |  219 | 373817 |    192 |     45 |    0 |        526 |
+|       (system)                                                    |                   tnca_multicore_axi |          8 |          8 |       0 |    0 |      0 |      0 |      0 |    0 |          0 |
+|       g_memory_mode.mode                                          |                     tnca_memory_mode |       1953 |       1953 |       0 |    0 |     31 |      0 |      0 |    0 |          0 |
+|         (g_memory_mode.mode)                                      |                     tnca_memory_mode |       1366 |       1366 |       0 |    0 |     26 |      0 |      0 |    0 |          0 |
+|         arb                                                       |                  tnca_mem_arbiter__1 |        587 |        587 |       0 |    0 |      5 |      0 |      0 |    0 |          0 |
+|       g_outlet[0].adapter                                         |                     tnca_line_axi__1 |       3820 |       3234 |     586 |    0 |   7889 |      0 |      0 |    0 |          0 |
+|       g_outlet[0].link                                            |                    tnca_line_link__4 |        665 |         17 |     648 |    0 |   1052 |      0 |      0 |    0 |          0 |
+|         (g_outlet[0].link)                                        |                    tnca_line_link__4 |          3 |          3 |       0 |    0 |   1042 |      0 |      0 |    0 |          0 |
+|         g_stage[0].request                                        |                         tnca_fifo__9 |        328 |          8 |     320 |    0 |      6 |      0 |      0 |    0 |          0 |
+|         g_stage[1].request                                        |                         tnca_fifo__8 |        334 |          6 |     328 |    0 |      4 |      0 |      0 |    0 |          0 |
+|       g_outlet[1].adapter                                         |                     tnca_line_axi__2 |       3814 |       3228 |     586 |    0 |   7889 |      0 |      0 |    0 |          0 |
+|       g_outlet[1].link                                            |                    tnca_line_link__5 |        673 |         17 |     656 |    0 |   1052 |      0 |      0 |    0 |          0 |
+|         (g_outlet[1].link)                                        |                    tnca_line_link__5 |          3 |          3 |       0 |    0 |   1042 |      0 |      0 |    0 |          0 |
+|         g_stage[0].request                                        |                        tnca_fifo__11 |        328 |          8 |     320 |    0 |      6 |      0 |      0 |    0 |          0 |
+|         g_stage[1].request                                        |                        tnca_fifo__10 |        342 |          6 |     336 |    0 |      4 |      0 |      0 |    0 |          0 |
+|       g_outlet[2].adapter                                         |                        tnca_line_axi |       3814 |       3228 |     586 |    0 |   7889 |      0 |      0 |    0 |          0 |
+|       g_outlet[2].link                                            |                       tnca_line_link |        673 |         17 |     656 |    0 |   1052 |      0 |      0 |    0 |          0 |
+|         (g_outlet[2].link)                                        |                       tnca_line_link |          3 |          3 |       0 |    0 |   1042 |      0 |      0 |    0 |          0 |
+|         g_stage[0].request                                        |                         tnca_fifo__7 |        328 |          8 |     320 |    0 |      6 |      0 |      0 |    0 |          0 |
+|         g_stage[1].request                                        |                            tnca_fifo |        342 |          6 |     336 |    0 |      4 |      0 |      0 |    0 |          0 |
+|       shell                                                       |                 tnca_multicore_shell |    1342748 |    1249479 |   93050 |  219 | 346963 |    192 |     45 |    0 |        526 |
+|         (shell)                                                   |                 tnca_multicore_shell |        466 |        466 |       0 |    0 |    333 |     96 |      0 |    0 |          0 |
+|         g_code[0].commands                                        |                 tnca_elastic_link__1 |        173 |         13 |     160 |    0 |      8 |      0 |      0 |    0 |          0 |
+|           (g_code[0].commands)                                    |                 tnca_elastic_link__1 |          1 |          1 |       0 |    0 |      0 |      0 |      0 |    0 |          0 |
+|           g_stage[0].queue                                        |         tnca_fifo__parameterized0__3 |         86 |          6 |      80 |    0 |      4 |      0 |      0 |    0 |          0 |
+|           g_stage[1].queue                                        |         tnca_fifo__parameterized0__2 |         86 |          6 |      80 |    0 |      4 |      0 |      0 |    0 |          0 |
+|         g_code[0].replies                                         | tnca_elastic_link__parameterized0__1 |         93 |         13 |      80 |    0 |      8 |      0 |      0 |    0 |          0 |
+|           (g_code[0].replies)                                     | tnca_elastic_link__parameterized0__1 |          1 |          1 |       0 |    0 |      0 |      0 |      0 |    0 |          0 |
+|           g_stage[0].queue                                        |         tnca_fifo__parameterized1__3 |         46 |          6 |      40 |    0 |      4 |      0 |      0 |    0 |          0 |
+|           g_stage[1].queue                                        |         tnca_fifo__parameterized1__2 |         46 |          6 |      40 |    0 |      4 |      0 |      0 |    0 |          0 |
+|         g_code[1].commands                                        |                 tnca_elastic_link__2 |        173 |         13 |     160 |    0 |      8 |      0 |      0 |    0 |          0 |

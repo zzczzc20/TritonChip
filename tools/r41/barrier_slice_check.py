@@ -36,7 +36,11 @@ def asm_immediates(path):
 
 
 def allowance(bar_n, mapping):
+    if not isinstance(mapping, dict) or not mapping or '0' not in mapping:
+        raise ValueError('missing or invalid program_to_role mapping')
     width = len(mapping)
+    if width & (width - 1) or width > bar_n or bar_n % width or not mapping['0']:
+        raise ValueError('program_to_role does not define a valid barrier slice')
     return (bar_n // width if width > 1 else bar_n), width, len(mapping['0'])
 
 
@@ -54,7 +58,7 @@ def main():
         if progress.exists() and json.loads(progress.read_text()).get('status') == 'incomplete':
             raise SystemExit(f'{mf}: compile-only census is incomplete; refusing a slice verdict')
         for path, e in json.loads(mf.read_text()).items():
-            lim, width, rpp = allowance(a.bar_n, e['execution'].get('program_to_role', {'0': ['role0']}))
+            lim, width, rpp = allowance(a.bar_n, e['execution'].get('program_to_role'))
             rows.append(dict(source=str(mf.parent.name), kernel=e.get('kernel'), width=width, rpp=rpp,
                              allowed=lim, immediates=e['barrier_immediates'],
                              manifest_barriers=e['resources'].get('barriers')))
@@ -63,12 +67,14 @@ def main():
         for pk, p in report['points'].items():
             for kn, k in p['kernels'].items():
                 ex = k['launch_structure']['execution']
-                lim, width, rpp = allowance(a.bar_n, ex.get('program_to_role', {'0': ['role0']}))
-                imms = asm_immediates(a.audit_runs / pk.replace('/', '__') / k['asm']) if k.get('asm') else None
-                if imms is None:
-                    imms = [-1]
+                lim, width, rpp = allowance(a.bar_n, ex.get('program_to_role'))
+                if not k.get('asm'):
+                    raise SystemExit(f'{pk}/{kn}: assembly missing; refusing a slice verdict')
+                imms = asm_immediates(a.audit_runs / pk.replace('/', '__') / k['asm'])
                 rows.append(dict(source=pk, kernel=kn, width=width, rpp=rpp, allowed=lim, immediates=imms,
                                  manifest_barriers=k['launch_structure']['resources'].get('barriers')))
+    if not rows:
+        raise SystemExit('no launches checked; refusing a slice verdict')
     bad = [r for r in rows if r['immediates'] and max(r['immediates']) >= r['allowed']]
     bad += [r for r in rows if isinstance(r['manifest_barriers'], int) and r['manifest_barriers'] > r['allowed']
             and r not in bad]

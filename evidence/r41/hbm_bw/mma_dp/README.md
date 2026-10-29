@@ -189,3 +189,18 @@ against the value-numbering run of section 8 change by -0.1 to -4.0 percent for 
 129x200x328: 4,729,133 to 4,597,990; block-static 129x200x328: 3,470,963 to 3,317,371). Small: with the weights double buffered the
 FP8 kernels are still bound by the issue stream (sections 5 and 8), which items 2 and 3 of the plan (descriptor weight/scale loads,
 an M = 1 lowering) address and which are not done.
+
+### 10. Bisection of the 10 changed default points (2026-10-29)
+
+Control: tree of `3a37b7e6`. Candidates: the merged head, and the head with only the call
+`rctx_spmd.publish_scratch_maps(kernel)` in `python/tnca/aot.py` removed (G4's commit `7b646be2`; the dp passes, the pipeline and the
+retry wrapper are all still in). Profile of the audit: `core-vrf-sync-v5`.
+* head against `3a37b7e6`, the two tiny llama points: **2 changed** (`audit/audit_head_two_llama_points_vs_3a37b7e6.json.gz`);
+  all 113: the 10 llama points G2 reported.
+* head without that call against `3a37b7e6`, all 113: **113 unchanged, 0 changed**
+  (`audit/audit_head_without_publish_hook_vs_3a37b7e6_113.json.gz`).
+So none of this work changes default-profile code: the value-numbering pass runs only for targets with `matrix_dp`, the pipeline
+only in `_x8_dot` (targets with `tensor_transpose_8bit`, not `core-vrf-sync-v5`), and the retry wrapper re-runs only after a
+vector-register failure. The +1..3 fences in the RMSNorm kernels are the map-publication fence of `7b646be2`, which fires for every
+kernel that writes a TensorMap before a snapshot.
+(The earlier audit of section 7 used control `214f2b3f`, which differs from `3a37b7e6` in those same 10 points.)

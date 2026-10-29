@@ -106,3 +106,74 @@ Build: `cmake -S tools/performance_harness/systemc -B BUILD ...` (README of that
 `validate_matrix_dp.py --binary BUILD/tnca-numeric-probe --out DIR`, `validate_matrix_dp_chip.py --binary BUILD/tnca-chip --out DIR`,
 `TNCA_PROFILE=core-vrf-sync-v5-x8-g2c4-dp TNCA_TLM_CONFIG=.../configs/r41-mma-dp.cfg TNCA_BACKEND=systemc-tlm-grid python tools/performance_harness/fp8_cases.py --out DIR`
 (base: profile `core-vrf-sync-v5-x8-g2c4`, config `r40-three-core.cfg`). Binary hashes: `binaries.sha256`.
+
+
+## Milestone 2 (2026-10-29)
+
+### 5. RTL: the compiled kernels on the core with the shared MAC lane (RTL simulation, one core)
+
+`compiler/test/test_mma_dp_rtl.py` compiles `tl.dot` of E4M3, E5M2, FP16 and BF16 tiles with the compiler (target
+`tnca-sim-dp`, profile `core-sim-dp`: `tnca_core` with `MAC_DP=1`, `MAC_CUTS=14`, G2's integrated engine, bench
+`tb_core_dp14.vvp` built by `make core-mmadp`) and runs the output on the RTL; every one of the 256 output words is compared
+with the exact oracle `tools/model/fdp.py`. Result (`raw/rtl_e2e_test.log`): **16 programs pass**: E4M3 and E5M2 at K16/32/64,
+FP16 and BF16 at K16; FP16/BF16 at K32/64 do not compile on this two-context target (the A and B fragments exceed its
+64 vector registers; the baseline `m.mma.async` has the same limit and the compile fails identically).
+Not an image, not the board.
+
+### 6. Reduced-depth model runs, with and without the packed MAC (SystemC/TLM model, uncalibrated; device cycles of the model)
+
+Profile `core-vrf-sync-v5-x8-g2c4-dp` with `configs/r41-mma-dp.cfg` (`mtx_dp_extra_latency=1`) against `core-vrf-sync-v5-x8-g2c4` with
+`r40-three-core.cfg`; default settings; same commands as `evidence/r41/chat/p3/runs.json`
+(`chat.py ... --prompt "Say hi." --new-tokens 3 --check-tokens 2 --bucket 64`, `--layers 1` for VL and `--layers 4` for Qwen3.5).
+Raw: `raw/chat-*`, summaries `chat-vl.json`, `chat-q35.json` (per-kernel device cycles of every step).
+
+| Model | Step | Base cycles | DP cycles | Base/DP |
+|---|---|---:|---:|---:|
+| Qwen3-VL-2B-FP8 (1 layer) | prefill (step 0) | 571,516,707 | 539,440,036 | 1.059 |
+| Qwen3-VL-2B-FP8 (1 layer) | decode (step 2) | 515,149,716 | 493,464,300 | 1.044 |
+| Qwen3-VL-2B-FP8 (1 layer) | decode: `w8a8_block_dynamic_fp8_matmul_kernel` | 111,659,710 | 98,346,976 | 1.135 |
+| Qwen3-VL-2B-FP8 (1 layer) | decode: BF16 GEMM templates (`triton_tem_*mm*`) | 395,630,303 | 387,257,322 | 1.022 |
+| Qwen3.5-4B-FP8 (4 layers) | prefill (step 0) | 2,410,327,588 | 2,237,260,563 | 1.077 |
+| Qwen3.5-4B-FP8 (4 layers) | decode (step 2) | 1,856,633,599 | 1,684,821,273 | 1.102 |
+| Qwen3.5-4B-FP8 (4 layers) | decode: `w8a8_block_dynamic_fp8_matmul_kernel` | 949,102,418 | 831,575,689 | 1.141 |
+| Qwen3.5-4B-FP8 (4 layers) | decode: BF16 GEMM templates (`triton_tem_*mm*`) | 875,816,140 | 821,472,318 | 1.066 |
+
+Both models generate the same tokens with and without the packed MAC. Teacher-forced relative L2 (gate 0.05):
+VL 0.02466 / 0.02574 in both runs (pass). Qwen3.5 0.0352 / 0.0600 in both runs: **the gate fails, identically to
+the recorded Qwen3.5 runs of `doc/r41_chat.md`; this is not caused by or fixed by the packed MAC** and both rows are kept as failures.
+The decode step gains only 4 to 9 percent because the matrix engine is a small part of a decode step on this model; see the
+balance analysis `evidence/r41/hbm_bw/BALANCE.md` for what binds.
+
+FP8 linear layers alone (`qwen_tnca_layers.py linears`, the official Hub-kernel route, real checkpoint weights and captured
+activations, steady launch, sum of model device cycles; 14 and 26 module/mode cases, all pass in both runs, the dp run bit-identical to the
+exact-sum re-derivation `fp8_block_reference.block_dynamic` in dp mode):
+
+| Layers | Mode | Base cycles | DP cycles | Base/DP |
+|---|---|---:|---:|---:|
+| Qwen3-VL-2B-FP8, layer 0 (7 linears) | decode (M=1) | 112,239,123 | 98,876,176 | 1.135 |
+| Qwen3-VL-2B-FP8, layer 0 (7 linears) | prefill (M=81 / 85) | 974,052,722 | 867,069,938 | 1.123 |
+| Qwen3.5-4B-FP8, layers 0 and 3 (13 linears) | decode (M=1) | 469,319,077 | 411,138,961 | 1.141 |
+| Qwen3.5-4B-FP8, layers 0 and 3 (13 linears) | prefill (M=81 / 85) | 4,012,166,607 | 3,546,793,642 | 1.131 |
+
+Per module and mode: `lin-vl.json`, `lin-q35.json`. M is the captured reference prompt (81 or 85 tokens) and 1.
+
+### 7. Non-regression of the default (compile-only audit)
+
+`default_change_audit.py`, control = tree of `origin/r41-hbm-bw` at `214f2b3f`, candidate = commit `7c0380c1`:
+**113 points unchanged, 0 changed** (`audit/audit.json`, raw reports and logs beside it). `make compiler` passes.
+
+### 8. Issue-stream work (compile-only, in progress; request of 2026-10-29)
+
+`tools/r41/loop_issue_count.py` counts the instructions of the innermost loop of a compiled program by class (the BALANCE.md
+classes). On `core-vrf-sync-v5-x8-g2c4-dp` the loop body of the compiled `w8a8_block_dynamic_fp8_matmul_kernel` is **8,928
+instructions per 16 x 128 x 128 K-block** (32 matrix commands): scalar/predicate/control 2,732, vector fp 2,314, vector
+int/move 1,972, vector load/store 1,358, matrix/accumulator/barrier 552 (`issue/vn_window_sweep.txt`).
+A dominator-scoped value numbering pass (`optimization.dominating_value_numbering`, enabled only for targets with `matrix_dp`)
+removes 31 percent of the loop's pure operations in an unconstrained count (simulated on the IR text), but the allocator cannot
+spill and the unrolled kernel is already at the scalar register limit: windows of 400 operations fail with "out of scalar
+registers"; the largest tried that compile (scalar 64, vector 8) give **8,666 instructions (-2.9 percent)**. Executed on the TLM
+(`fp8_kernels_cases.py --group v4 --quick`, 12 cases): 12 of 12 bit-identical to the dp reference, device cycles between -7.6 and +2.5 percent
+per case (`raw/vn-dp-kernels-report.json.gz` against `raw/q-dp-report.json.gz`), i.e. no demonstrated gain. The remaining items (descriptor weight
+loads and scales, hoisting the quantisation across N blocks, a 64 x 64 accumulator tile, software pipelining of the weight transfers,
+an M = 1 lowering) are not done; the register-pressure result above says the scalar address arithmetic must be removed by the
+lowering (descriptor loads, row-base reuse), not recovered afterwards.

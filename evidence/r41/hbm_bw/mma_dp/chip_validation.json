@@ -259,8 +259,8 @@
     "reserved_modifier": "ILLEGAL_INSTRUCTION"
   },
   "oracle": "tools/model/fdp.py (exact Fractions, RO_48)",
-  "oracle_sha256": "9ba9adac788082f11ab4bcaa22ac05d3a07f27540eb97ef29662134ddf7c65a5",
-  "binary_sha256": "25200afc1780be680511ff60c322a01d1644342b48919a76e08bd5e66ea84f01",
+  "oracle_sha256": "a34f110c604422787a86b98d7c1a7d3e5392e47b430ade45596101898f814e6b",
+  "binary_sha256": "bd703381da85c7431082bd19328af09d8abd18bd2d92b1499f0f1ef7ac9e48c4",
   "performance_gate": "not-measured",
   "timing": "uncalibrated model"
 }

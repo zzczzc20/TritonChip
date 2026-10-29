@@ -138,3 +138,12 @@ the earlier successful VL setup. Each has its four-CPU affinity and 16 GiB
 memory limit configured from launch. Output directories use the same service
 suffix under `~/r41-k8launch-runs`; exact invocations are in the journals.
 The retry results are pending.
+
+During the running online retries, a spot identity check found that
+`~/r41-k8launch` is not a Git checkout. GB10 SHA-256 values at 23:06 UTC were:
+`tools/models/chat.py` `50dfe1f71f8dfe3bd8d122d0c1c6ba1277a8208c4e5762c29d701694c9555e6e`,
+`tools/models/qwen_fp8_lib.py` `4983c12942cb9281aae50564749e9a45fb935c7523c7af150fe88cf2207d232d`,
+`python/tnca/triton_backend/driver.py` `860069090c58eae7068604b55199a6665b5061cc1a8db02822975f0473772b82`,
+and the TLM binary `276a8f1246289f05499da3857e4968e5dea58228a2a8cca8bc58be268118caea`.
+This partial, mid-run check does not establish the identity of every loaded file
+or prove source immutability throughout either run.

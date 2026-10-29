@@ -3,7 +3,8 @@
 # G4's one-lane path (G4_DESIGN.md section 8: hybrid line LSU, pipelined line home, full-line stores
 # without fill, pipelined outlets, striped HBM) and the run-2 steps of section 9.6: the line-wide tensor
 # transfer engine (TENSOR_LINE 1), chained home fills (HOME_LINE_PIPE 2), 512-bit outlets (AXI_DATA_W 512)
-# and 64 lines in flight per core and per home (LINE_SLOTS, HOME_MSHR_N, AXI_OUT_N 32) = image_s7.tcl
+# and 64 lines in flight per core and per home (LINE_SLOTS, HOME_MSHR_N 64) = image_s7.tcl with the outlets
+# kept at 32 IDs (AXI_OUT_N 32: SLR0 packing, G4_DESIGN.md section 9.6),
 # plus HBM_STRIPED; merged 2026-10-29 with G2's FMA_IMPL 1 and shared MAC lane (MAC_DP 1, MAC_CUTS 29 =
 # 0b11101; fma_dslx/screens/image_g2c4_dp.tcl) and K8's registered matrix operand capture (MTX_VRF_REG 1;
 # timing/image_g2c4_mtx_vrf_reg.tcl).

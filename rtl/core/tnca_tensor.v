@@ -824,21 +824,21 @@ module tnca_tensor #(
         //----------------------------------------------------------------------
         localparam XB = 16;
         reg  [XB-1:0]  xb_v, xb_f;                 // allocated, filled
-        reg  [57:0]    xb_a [0:XB-1];              // line address
         (* ram_style = "distributed" *) reg [511:0] xb_d [0:XB-1];
-        reg  [3:0]     xb_ptr;
         reg  [3:0]     xf_e [0:NTAG-1];            // the entry a memory read fills
         reg  [NTAG-1:0] xf_v;
-        reg            xh;
-        reg  [3:0]     xh_e;
         integer xi;
-        always @(*) begin
-            xh = 1'b0; xh_e = 4'd0;
-            for (xi = 0; xi < XB; xi = xi + 1)
-                if (xb_v[xi] && xb_f[xi] && (xb_a[xi] == lg_req_addr[63:6])) begin
-                    xh = 1'b1; xh_e = xi[3:0];
-                end
-        end
+        // The entry of a line is its source row (x_row, at most 16 rows a
+        // tile), so the lookup is that row's entry: filled, and holding the
+        // line this unit falls in -- the line index within the row, from the
+        // row base's offset in its line, compared in a few bits instead of a
+        // 16-way address compare in front of the port's valid.
+        wire [9:0]     x_ls  = {4'd0, r_row_base[5:0]} + {1'b0, t_unit[5:0], 3'b000};
+        wire [7:0]     x_li  = {4'd0, x_ls[9:6]};
+        reg  [7:0]     xb_li [0:XB-1];
+        reg  [7:0]     xf_li [0:NTAG-1];
+        wire [3:0]     xh_e  = x_row[3:0];
+        wire           xh    = xb_v[xh_e] && xb_f[xh_e] && (xb_li[xh_e] == x_li) && (t_unit[31:6] == 26'd0);
         wire x_hit  = x_req && xh;
         wire mem_lg = mem_rsp_valid && !mem_rsp_tag[PTAG_W-1] && !mem_rsp_tag[PTAG_W-2];
         reg                lr_v;
@@ -851,20 +851,22 @@ module tnca_tensor #(
         wire x_alloc = x_req && !x_hit && lr_free && port_ok;
         // a memory read that fills its entry (not one being taken by a new line this cycle)
         wire x_fill  = mem_lg && xf_v[mem_rsp_tag[TAG_W-1:0]] &&
-                       !(x_alloc && (xf_e[mem_rsp_tag[TAG_W-1:0]] == xb_ptr));
+                       !(x_alloc && (xf_e[mem_rsp_tag[TAG_W-1:0]] == xh_e));
         wire xb_clear = (st == S_TSETUP) || (lg_req_valid && lg_req_we) || (l_req && (st == S_LSRUN));
         always @(posedge clk) begin
             if (!rst_n || flush || xb_clear) begin
-                xb_v <= {XB{1'b0}}; xb_f <= {XB{1'b0}}; xf_v <= {NTAG{1'b0}}; xb_ptr <= 4'd0;
+                xb_v <= {XB{1'b0}}; xb_f <= {XB{1'b0}}; xf_v <= {NTAG{1'b0}};
             end else begin
                 if (x_alloc) begin
-                    xb_v[xb_ptr] <= 1'b1; xb_f[xb_ptr] <= 1'b0; xb_a[xb_ptr] <= lg_req_addr[63:6];
+                    xb_v[xh_e] <= 1'b1; xb_f[xh_e] <= 1'b0;
                     for (xi = 0; xi < NTAG; xi = xi + 1)
-                        if (xf_e[xi] == xb_ptr) xf_v[xi] <= 1'b0;   // an older fill of this entry
-                    xf_v[lg_req_tag] <= 1'b1; xf_e[lg_req_tag] <= xb_ptr;
-                    xb_ptr <= xb_ptr + 4'd1;
+                        if (xf_e[xi] == xh_e) xf_v[xi] <= 1'b0;     // an older fill of this entry
+                    xf_v[lg_req_tag] <= 1'b1; xf_e[lg_req_tag] <= xh_e; xf_li[lg_req_tag] <= x_li;
                 end
-                if (x_fill) xb_f[xf_e[mem_rsp_tag[TAG_W-1:0]]] <= 1'b1;
+                if (x_fill) begin
+                    xb_f[xf_e[mem_rsp_tag[TAG_W-1:0]]] <= 1'b1;
+                    xb_li[xf_e[mem_rsp_tag[TAG_W-1:0]]] <= xf_li[mem_rsp_tag[TAG_W-1:0]];
+                end
                 if (mem_lg && !(x_alloc && (lg_req_tag == mem_rsp_tag[TAG_W-1:0])))
                     xf_v[mem_rsp_tag[TAG_W-1:0]] <= 1'b0;
             end

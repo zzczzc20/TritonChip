@@ -1912,7 +1912,8 @@ module tnca_core #(
 
     tnca_mem_mux #(
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES),
-        .CTAG_W(MTAG_W), .TAG_W(LSU_TAG_W)
+        .CTAG_W(MTAG_W), .TAG_W(LSU_TAG_W),
+        .A_FIRST(((TENSOR_LINE != 0) && (HYBRID_LSU != 0)) ? 1 : 0)
     ) u_mmux (
         .a_req_valid(lm_req_valid), .a_req_ready(lm_req_ready),
         .a_req_addr(lm_req_addr), .a_req_we(lm_req_we),

@@ -1,0 +1,37 @@
+== tile0_g2c4off_2a616b33
+| CLB LUTs                   | 239446 |     0 |          0 |   1303680 | 18.37 |
+| CLB Registers              |  64256 |     0 |          0 |   2607360 |  2.46 |
+| CLB                                        |  40959 |     0 |          0 |    162960 | 25.13 |
+| LUT as Memory                              |  12781 |     0 |          0 |    600960 |  2.13 |
+Setup :            0  Failing Endpoints,  Worst Slack        0.728ns,  Total Violation        0.000ns
+  Source:                 u_slice/est_reg[1]/C
+  Destination:            u_slice/data_mem_reg_r2_0_63_203_209/RAME/I
+  Data Path Delay:        9.193ns  (logic 1.592ns (17.317%)  route 7.601ns (82.683%))
+  Logic Levels:           19  (CARRY8=4 LUT2=1 LUT3=2 LUT6=8 MUXF7=2 MUXF8=1 RAMD64E=1)
+0e6465af42bcff1650f3101b113bbfc4d0dd97d0d8a815a02e31053787d48506  timing_routed.rpt
+18b3bdcebce1962721ff9b880cb6086ed3962339e70c69c66adf97a3dd76bdc0  utilization_routed.rpt
+== tile0_g2c4fmad_2a616b33
+| CLB LUTs                   | 215094 |     0 |          0 |   1303680 | 16.50 |
+| CLB Registers              |  64463 |     0 |          0 |   2607360 |  2.47 |
+| CLB                                        |  38228 |     0 |          0 |    162960 | 23.46 |
+| LUT as Memory                              |  12781 |     0 |          0 |    600960 |  2.13 |
+Setup :            0  Failing Endpoints,  Worst Slack        0.257ns,  Total Violation        0.000ns
+  Source:                 u_core/x_func_reg[1]/C
+  Destination:            u_core/u_vfpu/dly_v_reg[0][194]/D
+  Data Path Delay:        9.723ns  (logic 0.320ns (3.291%)  route 9.403ns (96.709%))
+  Logic Levels:           2  (LUT2=1 LUT5=1)
+c76b48be9fd5f073bd9a88e04dd1436095c151eafa816fbb55cd033645bbf596  timing_routed.rpt
+407ae2e89cbb4e91fcc4d3f09a8568ea1df22714908e67da64555fb4d41b5b07  utilization_routed.rpt
+== tile0_g2c4dp2_6b54f5e7
+| CLB LUTs                   | 238021 |     0 |          0 |   1303680 | 18.26 |
+| CLB Registers              |  68559 |     0 |          0 |   2607360 |  2.63 |
+| CLB                                        |  41489 |     0 |          0 |    162960 | 25.46 |
+| LUT as Memory                              |  13065 |     0 |          0 |    600960 |  2.17 |
+Setup :            0  Failing Endpoints,  Worst Slack        0.616ns,  Total Violation        0.000ns
+  Source:                 u_core/x_func_reg[1]/C
+  Destination:            u_core/w_sdata_reg[0]/D
+  Data Path Delay:        9.364ns  (logic 1.309ns (13.978%)  route 8.055ns (86.022%))
+  Logic Levels:           14  (CARRY8=1 LUT2=1 LUT3=1 LUT4=2 LUT5=5 LUT6=3 MUXF7=1)
+289760b8f0b56da6cffe43cc050bce66d9eecaec478ffd9f755882c3e1963402  timing_routed.rpt
+38a68af81abf58a43ca40163ce27565d7df78a0fe10809e58a3144f39c372346  utilization_routed.rpt
+mapping: CLB share of SLR0 = CLB / 54,960 (RESOURCES.md §2)

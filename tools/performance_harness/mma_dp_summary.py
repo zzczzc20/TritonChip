@@ -92,6 +92,28 @@ def chat(args):
     Path(args.out).write_text(json.dumps(out, indent=1) + '\n')
 
 
+def linears(args):
+    base, dp = (json.loads(Path(p).read_text()) for p in (args.base, args.dp))
+    out = dict(schema='tnca-mma-dp-linears-summary/1', domain='SystemC/TLM model (uncalibrated)',
+               inputs={k: dict(path=str(v), sha256=sha(v)) for k, v in (('base', args.base), ('dp', args.dp))},
+               model=base.get('model'), passed=dict(base=[base['passed'], base['total']], dp=[dp['passed'], dp['total']]),
+               rows=[], totals={})
+    for rb, rd in zip(base['rows'], dp['rows']):
+        assert (rb['module'], rb['mode']) == (rd['module'], rd['mode'])
+        out['rows'].append(dict(module=rb['module'], mode=rb['mode'], M=rb['M'], K=rb['K'], N=rb['N'],
+                                base_device_cycles=rb.get('device_cycles'), dp_device_cycles=rd.get('device_cycles'),
+                                ratio=round(rb['device_cycles'] / rd['device_cycles'], 4)
+                                if rb.get('device_cycles') and rd.get('device_cycles') else None,
+                                base_pass=rb['pass'], dp_pass=rd['pass'],
+                                dp_vs_tnca_order_rederivation_bitwise=rd.get('vs_tnca_order_rederivation', {}).get('bitwise'),
+                                dp_rel_l2_vs_exact=rd.get('rel_l2_vs_exact'), bf16_rounding_of_exact=rd.get('bf16_rounding_of_exact')))
+    for mode in ('decode', 'prefill'):
+        rows = [r for r in out['rows'] if r['mode'] == mode and r['ratio']]
+        b, d = sum(r['base_device_cycles'] for r in rows), sum(r['dp_device_cycles'] for r in rows)
+        out['totals'][mode] = dict(rows=len(rows), base_device_cycles=b, dp_device_cycles=d, ratio=round(b / d, 4) if d else None)
+    Path(args.out).write_text(json.dumps(out, indent=1) + '\n')
+
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest='cmd', required=True)
@@ -106,5 +128,10 @@ if __name__ == '__main__':
     h.add_argument('--dp', required=True)
     h.add_argument('--out', required=True)
     h.set_defaults(fn=chat)
+    li = sub.add_parser('linears')
+    li.add_argument('--base', required=True)
+    li.add_argument('--dp', required=True)
+    li.add_argument('--out', required=True)
+    li.set_defaults(fn=linears)
     a = ap.parse_args()
     a.fn(a)

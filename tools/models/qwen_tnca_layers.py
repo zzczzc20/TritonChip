@@ -143,6 +143,15 @@ def cmd_linears(a):
                 with torch.no_grad():
                     y = fn(x.to(dev)).cpu()
                 row["seconds"] = round(time.time() - t0, 1)
+                if a.device == "tnca":
+                    # the second call, under the launch log: the model's device cycles of the steady launches
+                    from tnca.triton_backend.driver import launch_log
+                    with torch.no_grad(), launch_log() as log:
+                        y2 = fn(x.to(dev)).cpu()
+                    row["steady_equals_cold"] = bool(torch.equal(y, y2))
+                    row["launches"] = [dict(kernel=e.get("kernel"), grid=list(e.get("grid") or []),
+                                            device_cycles=e.get("device_cycles")) for e in log]
+                    row["device_cycles"] = sum(int(e.get("device_cycles") or 0) for e in log)
                 y_ref = ref.w8a8_block_matmul(x, W, S, blk, dot="exact", scale_div="ieee")
                 exact = ref.exact_w8a8(x, W, S, blk)
                 y_ord = tref.block_dynamic(x, W, S, blk, torch.bfloat16, ieee=True)

@@ -300,3 +300,28 @@ Seconds per token if a class's NUCA bytes moved at chip-level rate R and nothing
    path will not show until the items above remove the stalls. The counters point to, but do not prove, two candidates:
    more outstanding requests per core, and a NUCA large enough to keep a K block's weight lines and the scratch apart
    (48 KiB in this configuration).
+
+## Part 3. LSU in-flight ablation (TLM; requested for the run-2 freeze)
+
+Domain: **TLM**. Same setup as part 2 (Qwen3-VL 1 layer, `core-vrf-sync-v5-x8`, default settings), with one model-config
+change: `lsu_slots=1` instead of 2 (`decode_profile/abl-lsuslots1-vl-l1/model.cfg`; the only diff against
+`vl-l1/model.cfg`). `tl_lsu_units=1` was tried first and is **refused by the model** ("exploratory LSU units must be
+2|4|8|16"; the refused run is kept in `decode_profile/abl-lsu1-refused/`); and `tl_lsu_units` is read only on the
+`core_pipeline=1` path, while this profile uses `core_pipeline=0`, where the in-flight limit of the LSU is `lsu_slots`.
+The model has no hybrid (line path / word path) LSU, so a cut applies to every access: an upper bound on the cost of
+dropping the second legacy unit. Generated tokens are identical to the default run. Launcher: `tlmrun-profile.sh` with
+`TLMCFG=<cfg>`; compare: `ablation_compare.py`; output `ablation_lsuslots1_vl.txt`.
+
+| Call | FP8 launches (cycles, default -> lsu_slots=1) | Whole call (cycles) | Ratio |
+|---|---|---|---|
+| steady decode, M=1 (call 3) | #101 9,396,737 -> 9,401,950 (1.0006); #102 4,900,293 -> 4,929,564 (1.0060); #115 27,878,350 -> 27,849,825 (0.9990); all 7 FP8 launches 0.9988 | 540,586,727 -> 558,243,818 | **1.0327** |
+| prefill (11-token prompt, padded to M=16; not a 64-row tile) | all 7 FP8 launches 120,472,575 -> 120,642,364 | 582,976,965 -> 596,291,207 | **1.0228** |
+
+- **The FP8 matmul launches do not change** (ratio 0.995-1.007 per launch, 0.9988 for the seven decode launches, 1.0014
+  for the seven prefill launches; run-to-run differences of that size come from the model's timing interactions).
+  Their weight path is the TTE, and the vector LSU traffic they generate is not on the critical path.
+- The whole-call increase comes from the other classes: the bf16 lm_head template (decode #120: 420,623,160 ->
+  438,349,194, ratio 1.0421; prefill #51 1.0271), and the attention kernels (prefill 1.09-1.20, decode #112 1.040,
+  #109 1.006).
+- Not measured: a 64-row prefill tile (the prefill here has 11 tokens), and Qwen3.5.
+

@@ -410,6 +410,54 @@
         ],
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
+    },
+    "core-vrf-sync-v5-x8-g2c4": {
+      "target_file": "tnca-sim-vrf-v5-x8-g2c4.json",
+      "executes_artifacts_of": [],
+      "description": "core-vrf-sync-v5-x8 with R41 G2's approved cuts except the contexts cut: eight mbarriers instead of 32 and 38-bit barrier epochs instead of 48, with four Role Contexts (256 physical vector registers) as in v5-x8. The author withdrew the 4->2 contexts cut on 2026-10-29 because of its measured slowdown (evidence/r41/hbm_bw/g4/g2_cuts/README.md). The accumulator file keeps its 16 slots. Every instruction, format and capability of v5-x8 is unchanged; artifacts compiled for 32 barriers do not run here.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 256,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1,
+        "HAS_TENSOR_XPOSE": 2,
+        "RPAIR": 1,
+        "BAR_N": 8,
+        "BAR_W": 3,
+        "BAR_EPOCH_W": 38
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 2,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1,
+          "MTX_ABUF": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_g2c4.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
     }
   },
   "supported_topologies": {

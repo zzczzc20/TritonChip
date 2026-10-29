@@ -236,6 +236,24 @@ class CodeGen:
                 if born < start and start <= last <= end:
                     self._last_use[key] = end
 
+    def _scalar_run(self, count):
+        """A coordinate run; like _alloc, it returns the registers of tokens and
+        events past their last use when the scalars run out (a long unrolled
+        program leaves one per command), so a kernel that fits keeps exactly
+        the assignment it always had."""
+        try:
+            return self.alloc.scalar_run(count)
+        except ResourceError:
+            if not self._dead_tokens:
+                raise
+            for reg in self._dead_tokens:
+                try:
+                    self.alloc.free('s', reg)
+                except Diagnostic:
+                    pass
+            self._dead_tokens = []
+            return self.alloc.scalar_run(count)
+
     def _alloc(self, v):
         if v.reg is not None:
             return v.reg
@@ -1151,7 +1169,7 @@ class CodeGen:
         # ISA sec 9E: consecutive scalar registers starting at Sb. Place them
         # explicitly; the instruction names only the first, so a scattered
         # allocation would read whatever sat next to it.
-        run = self.alloc.scalar_run(len(coords))
+        run = self._scalar_run(len(coords))
         for c, reg in zip(coords, run):
             self._emit('s.mov', f"s{reg}", f"s{c.reg}",
                         comment='coordinates must be consecutive (ISA sec 9E)')

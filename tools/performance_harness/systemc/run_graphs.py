@@ -298,6 +298,7 @@ def parent(a):
         env = {k: v for k, v in os.environ.items() if not k.startswith(('TNCA_', 'TRITON_', 'TORCHINDUCTOR_'))
                or k in ('TNCA_CACHE', 'TNCA_DRAM_PATH', 'TNCA_RAMULATOR2_CONFIG')}  # RTL simulator cache; DRAM path
         env.update(HARNESS)
+        env['TNCA_PROFILE'] = a.profile
         if a.dataset:   # the board record's knobs and nothing else
             env.update(TNCA_DEADLINE=RUNTIME['TNCA_DEADLINE'], TNCA_HOST_TIMEOUT=RUNTIME['TNCA_HOST_TIMEOUT'])
         else:
@@ -396,6 +397,8 @@ def main():
     ap.add_argument('--monitor', default='aggregate')
     ap.add_argument('--memory-bytes')
     ap.add_argument('--active-cores', help='override the delivered TNCA_ACTIVE_CORES=1 core count (physical-grid backends)')
+    ap.add_argument('--profile', default=HARNESS['TNCA_PROFILE'],
+                    help='the image profile the compiler targets (default core-vrf-sync-v5); recorded with every point')
     ap.add_argument('--dataset', help='board timing dataset: run its configurations (see above)')
     ap.add_argument('--split', action='append', help='dataset split(s) to run (default calibration)')
     ap.add_argument('--key', action='append', help='with --dataset: only these POINT@KNOBHASH configurations')

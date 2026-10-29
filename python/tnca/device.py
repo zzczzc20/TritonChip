@@ -63,6 +63,10 @@ BENCH_NAME = {
     'core-vrf-sync-v5-x8-g2': 'tnca_device_vrf5x8g2.vvp',
     'core-vrf-sync-v5-x8-g2/slow': 'tnca_device_vrf5x8g2_slow.vvp',
     'core-vrf-sync-v5-x8-g2/hbm': 'tnca_device_vrf5x8g2_hbm.vvp',
+    # R41 G2 cuts with four contexts (the author withdrew the contexts cut, 2026-10-29).
+    'core-vrf-sync-v5-x8-g2c4': 'tnca_device_vrf5x8g2c4.vvp',
+    'core-vrf-sync-v5-x8-g2c4/slow': 'tnca_device_vrf5x8g2c4_slow.vvp',
+    'core-vrf-sync-v5-x8-g2c4/hbm': 'tnca_device_vrf5x8g2c4_hbm.vvp',
 }
 
 # Parameters a profile's device is elaborated with. Both profiles come from
@@ -120,6 +124,9 @@ BENCH_PARAMS = {
     'core-vrf-sync-v5-x8-g2': _BANKED + _R39_SW5 + _V5X8 + _G2,
     'core-vrf-sync-v5-x8-g2/slow': _BANKED + _R39_SW5 + _V5X8 + _G2 + _SLOW,
     'core-vrf-sync-v5-x8-g2/hbm': _BANKED + _R39_SW5 + _V5X8 + _G2 + _HBM,
+    'core-vrf-sync-v5-x8-g2c4': _BANKED + _R39_SW5 + _FOUR + _V5X8 + _G2,
+    'core-vrf-sync-v5-x8-g2c4/slow': _BANKED + _R39_SW5 + _FOUR + _V5X8 + _G2 + _SLOW,
+    'core-vrf-sync-v5-x8-g2c4/hbm': _BANKED + _R39_SW5 + _FOUR + _V5X8 + _G2 + _HBM,
     'core-xpose-v1': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'],
     'core-xpose-v1/slow': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'] + _SLOW,
 }

@@ -23,7 +23,10 @@ as one of these memory systems (all at 100 MHz):
          core-side (issue, dependency, SFU) limit of the compiled code;
   onelane  the authorised one-lane 64 B path (option c): one memory lane,
          home occupancy 1 per line, 32 MSHRs, 32 LSU slots, 3 outlets x 32
-         outstanding with single-cycle issue, 4 KiB striping.
+         outstanding with single-cycle issue, 4 KiB striping;
+  cal    onelane with the home calibrated against the RTL home pipe and
+         full-line writes without fill;
+  cal_line  cal with the line-wide, multi-command tensor engine.
 
 The model has no key for a full-line write without fill or for a wider
 transfer engine, so those parts of the design are not represented (stated
@@ -72,7 +75,20 @@ def configs():
                    mshrs='32', targets='64', outlets='3', active_outlets='3', outstanding='32',
                    tl_outlet_read_issue_cycles='1', tl_outlet_write_issue_cycles='1',
                    tl_pc_stripe_bytes='4096')
-    return dict(run1=(base, 3), g4=(g4, 6), ideal=(ideal, 32), onelane=(onelane, 3))
+    # cal: onelane with the home occupancies calibrated against the RTL home pipe
+    # (tools/r41/g4_home_calibrate.py, g4/home_cal/): a hit or a full-line
+    # install costs one home cycle, a read miss two (the pipe's allocate plus the
+    # fill unit's data write), a writeback none (its queue runs beside the pipe);
+    # full-line writes allocate without a fill (HOME_LINE_WRITE_NOFILL).
+    cal = dict(onelane)
+    cal.update(tl_slice_hit_occupancy='1', tl_slice_miss_occupancy='1', tl_slice_mreq_occupancy='0',
+               tl_slice_fill_occupancy='1', tl_slice_wake_occupancy='0', tl_slice_writeback_occupancy='0',
+               tl_slice_install_occupancy='0', tl_full_line_nofill='1')
+    # cal_line: cal with the line-wide, multi-command tensor engine (g4/tte_tlm/)
+    cal_line = dict(cal)
+    cal_line.update(dma_queue='8', dma_line_engine='1', dma_line_buffers='64', dma_line_rf_cycles='1')
+    return dict(run1=(base, 3), g4=(g4, 6), ideal=(ideal, 32), onelane=(onelane, 3), cal=(cal, 3),
+                cal_line=(cal_line, 3))
 
 
 def main():
@@ -87,6 +103,7 @@ def main():
     ap.add_argument('--jobs', type=int, default=3)
     ap.add_argument('--point', action='append', help='restrict to these suite ids (smoke tests only)')
     ap.add_argument('--timeout', type=int, default=3600)
+    ap.add_argument('--profile', help='image profile for the compiler (run_graphs --profile); default the harness one')
     ap.add_argument('--torch-extensions-dir', type=Path)
     ap.add_argument('--env', action='append', default=[],
                     help='NON-DEFAULT compiler/runtime setting KEY=VALUE for an exploratory arm; recorded and labelled')
@@ -116,6 +133,8 @@ def main():
                    '--out', str(a.out/name), '--active-cores', str(CORES),
                    '--env', f'TNCA_RTL_MEM_PORTS={ports}', '--env', f'TNCA_RTL_OUTSTANDING={values["outstanding"]}',
                    '--jobs', str(a.jobs), '--timeout', str(a.timeout)]
+        if a.profile:
+            command += ['--profile', a.profile]
         for e in a.env:
             command += ['--env', e]
         if a.torch_extensions_dir:

@@ -345,13 +345,20 @@ The lockstep benches were checked for sensitivity by breaking the candidates on 
 
 Source: the author, in the lead's chat, 2026-10-28. The decisions were:
 1. Sharing the matrix MACs with the vector FMAs: **rejected**. The author's reason: NVIDIA keeps tensor-core and vector MACs separate.
-2. Hardware contexts 4 → 2: **approved**.
+2. Hardware contexts 4 → 2: **approved** (withdrawn on 2026-10-29; see the decision below).
 3. Accumulator slots: choose the smallest number that loses no matrix throughput, derived from the matrix compute requirement; if that is 16, keep 16.
 4. Fewer barriers and narrower epochs: **approved**, sized from what the compiler and runtime actually use.
 5. Narrower internal physical address: **approved**, keeping enough bits for the delivered 8 GiB and the full HBM address space the image maps.
 6. Smaller FMA: **rejected**.
 
 Items 2, 4 and 5 are implemented as image parameters whose defaults build the delivered machine (`NUM_RCTX`/`RCTX_W`/`PHYS_VREGS`/`PHYS_W`, which already existed; and new `BAR_N`/`BAR_W`, `BAR_EPOCH_W`, `ACC_N`/`ACC_W` and `PHYS_ADDR_W`, plumbed from `tnca_multicore_hbm_xo` to the core and the home slice). Item 3 resolves to 16 slots, so nothing changes there. The reduced machine is the new profile `core-vrf-sync-v5-x8-g2` (`spec/r1_profiles.json`, generated target `compiler/targets/tnca-sim-vrf-v5-x8-g2.json`): two contexts with 128 physical vector registers, 16 accumulators, 8 barriers and 38-bit epochs, with every instruction, format and capability of v5-x8. The image parameters that build it, plus the home address width and the two §4 changes, are in `resources/screens/image_g2_all.tcl`.
+
+**Decision of 2026-10-29: the contexts cut is withdrawn.** Author decision (source: the author, in the lead's chat, 2026-10-29, answering the lead's questions about the G4 §9 results): **restore 4 hardware contexts.** The 4→2 cut is withdrawn because of its measured slowdown. Every other G2 cut is kept.
+- The measurement: one cut at a time on the run-1 image (rtl, `g4/g2_cuts/`). The contexts cut alone made the five points that were slower under G2 0.62–0.94× (geometric mean 0.807), the same as all G2 cuts together (0.808). Every other cut stayed within 1 %.
+- The profile for run 2 is `core-vrf-sync-v5-x8-g2c4` (`spec/r1_profiles.json`, generated `compiler/targets/tnca-sim-vrf-v5-x8-g2c4.json`). It is v5-x8 with 8 barriers and 38-bit epochs, and four contexts with 256 physical vector registers. Its core bench is `make core-g2c4` (86 of 86 runs pass; `g4/g2c4/core_g2c4.log`).
+- One program of that list runs differently: `t39_pair`'s two producer/consumer pairs need 5 barriers each, more than 8 in total. The bench runs it as one pair. A barrier index beyond a context's slice aliases into the next slice instead of faulting, which is a pre-existing property of the slice mapping that 8 barriers exposes earlier.
+- The images: `g4/images/image_g2c4.tcl` (G2's cuts with four contexts), `image_s4c4.tcl`, and the run-2 candidate `g4/run2/image.tcl`.
+- The contexts row's saving (−18,476 kernel LUTs, −6,741 per core) is given back; the other rows' savings stand.
 
 ### 9.1 How each size was chosen
 

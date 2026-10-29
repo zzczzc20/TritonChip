@@ -183,7 +183,8 @@ struct TimelineMemory {
         if(full && write && c.get_or("tl_full_line_nofill",0)){
             // HOME_LINE_WRITE_NOFILL: a store of the whole line allocates over the
             // (written-back) victim without reading memory and without an MSHR.
-            u64 wake=H.engine.reserve(st,fill_occ,now)+fill_occ;
+            u64 inst=c.get_or("tl_slice_install_occupancy",fill_occ); // default: as a fill
+            u64 wake=H.engine.reserve(st,inst,now)+inst;
             victim->address=lineaddr;victim->valid=true;victim->dirty=true;victim->ready=wake;
             ++x.counts["home_"+std::to_string(h)+"_nofill_installs"];
             hc(h,9)+=wake-arrival;return wake;

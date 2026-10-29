@@ -76,7 +76,7 @@ STAGE1_MAX_BLOCK = 16
 TILED_POINTWISE_BLOCK = 1024
 # Mode 3 (streamed tensor-engine tiles) amortises a program's descriptor setup
 # and its pipeline fill and drain over a longer block.
-TILED_STREAM_BLOCK = 2048
+TILED_STREAM_BLOCK = 8192
 # The device types whose Triton kernels TNCA runs: `cpu` (CPU tensors, the
 # R39 migration path, B39) and `tnca` (the native device, R40-01). Both get
 # the same heuristics, templates and descriptor rules.

@@ -1,0 +1,126 @@
+{
+ "domain": "rtl-simulation",
+ "module": "rtl/nuca/tnca_home_pipe.v",
+ "rows": [
+  {
+   "mode": 1,
+   "dram_latency": 10,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 2080,
+   "cycles_per_request": 1.016,
+   "hits": 2023,
+   "misses": 16
+  },
+  {
+   "mode": 1,
+   "dram_latency": 40,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 2110,
+   "cycles_per_request": 1.03,
+   "hits": 2016,
+   "misses": 16
+  },
+  {
+   "mode": 1,
+   "dram_latency": 80,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 2150,
+   "cycles_per_request": 1.05,
+   "hits": 2016,
+   "misses": 16
+  },
+  {
+   "mode": 2,
+   "dram_latency": 10,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 4068,
+   "cycles_per_request": 1.986,
+   "hits": 2,
+   "misses": 2005
+  },
+  {
+   "mode": 2,
+   "dram_latency": 40,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 4124,
+   "cycles_per_request": 2.014,
+   "hits": 2,
+   "misses": 2032
+  },
+  {
+   "mode": 2,
+   "dram_latency": 80,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 5694,
+   "cycles_per_request": 2.78,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 3,
+   "dram_latency": 10,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 2052,
+   "cycles_per_request": 1.002,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 3,
+   "dram_latency": 40,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 2052,
+   "cycles_per_request": 1.002,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 3,
+   "dram_latency": 80,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 2052,
+   "cycles_per_request": 1.002,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 4,
+   "dram_latency": 10,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 2576,
+   "cycles_per_request": 1.258,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 4,
+   "dram_latency": 40,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 2606,
+   "cycles_per_request": 1.272,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 4,
+   "dram_latency": 80,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 3149,
+   "cycles_per_request": 1.538,
+   "hits": 0,
+   "misses": 2048
+  }
+ ]
+}

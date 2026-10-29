@@ -110,6 +110,8 @@ def text_layers(model):
 def cmd_linears(a):
     from safetensors.torch import load_file
     import fp8_block_reference as tref
+    # the tnca-order re-derivation follows the profile's tl.dot reduction (MATRIX_DP: sec 9C.4)
+    tref.set_dot_mode(tref.dot_mode_for_profile(os.environ.get('TNCA_PROFILE', 'core-sim')))
     spec = spec_of(a.model)
     dev = setup(a)
     rt = load_file(str(Path(a.teacher_force) / "tensors.safetensors"))

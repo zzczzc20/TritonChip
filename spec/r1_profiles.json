@@ -26,6 +26,31 @@
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
     },
+    "core-sim-dp": {
+      "target_file": "tnca-sim-dp.json",
+      "description": "core-sim (one core, two Role Contexts) with the shared MAC lane: tnca_core MAC_DP=1, MAC_CUTS=14, so m.mma.dp.async (ISA sec 9C.4, CAPABILITY0.MATRIX_DP bit 12) executes. What the compiler's RTL tests of the packed matrix opcode target (tb_tnca_core with -P MAC_DP=1; built by `make core-mmadp`). Every other instruction, format and capability is core-sim's.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 2,
+        "RCTX_W": 1,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "MAC_DP": 1,
+        "MAC_CUTS": 14
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_dp14.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
     "core-4r": {
       "target_file": "tnca-sim-4rctx.json",
       "description": "One core, four Role Contexts, half the logical vector registers each so the physical file is the same size. compiler_overview.md sec 15 C4's P+M0+M1+E profile.",

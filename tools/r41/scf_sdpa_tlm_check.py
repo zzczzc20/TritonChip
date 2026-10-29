@@ -24,7 +24,7 @@ def main():
     out.mkdir(parents=True, exist_ok=False)
     report = {'domain': 'SystemC/TLM functional test, not board', 'status': 'running',
               'source_tree': software_tree(ROOT, refresh=True),
-              'profile': os.environ.get('TNCA_PROFILE'), 'atol': 0.002, 'rtol': 0.002,
+              'profile': os.environ.get('TNCA_PROFILE'), 'atol': 0.00001, 'rtol': 0.0001,
               'cases': []}
 
     def save():
@@ -45,9 +45,9 @@ def main():
                     'status': 'running'}
             report['cases'].append(case)
             save()
-            q = torch.randn(1, 8, length, 64, dtype=torch.float32) * 0.02
-            k = torch.randn(1, 8, 128, 64, dtype=torch.float32) * 0.02
-            v = torch.randn(1, 8, 128, 64, dtype=torch.float32) * 0.02
+            q = torch.randn(1, 8, length, 64, dtype=torch.float32)
+            k = torch.randn(1, 8, 128, 64, dtype=torch.float32)
+            v = torch.randn(1, 8, 128, 64, dtype=torch.float32)
             reference = attention(q, k, v)
             actual = compiled(q.to('tnca'), k.to('tnca'), v.to('tnca')).cpu()
             case['max_abs_error'] = (actual - reference).abs().max().item()

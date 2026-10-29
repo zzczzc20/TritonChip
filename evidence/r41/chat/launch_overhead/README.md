@@ -125,3 +125,16 @@ service journals retain exact invocations. These are reduced-depth TLM
 functional diagnostics, not full-model quality or board performance evidence.
 The source directory is `~/r41-k8launch`; no runtime source hash has yet been
 verified. Both services were observed active after launch; results are pending.
+
+Both offline attempts exited 1 before device execution: the requested version 4
+of `kernels-community/finegrained-fp8` was not available through the offline
+lookup. Preserved GB10 logs are `q35-batched-matched-20261029/failure.log`
+(SHA-256 `fbbb26a76edf9ea4489ead36984746a8c00854c989bf69b874044844496c8ba4`)
+and `q35-single-matched-20261029/failure.log`
+(SHA-256 `7057fb5cb36a47c950ee28b518b53e6188d04630f9a50f1463793897d5d403a3`),
+both under `~/r41-k8launch-runs`. Retried as user services
+`r41-q35-{batched,single}-online-20261029`, with `HF_HUB_OFFLINE=0`, matching
+the earlier successful VL setup. Each has its four-CPU affinity and 16 GiB
+memory limit configured from launch. Output directories use the same service
+suffix under `~/r41-k8launch-runs`; exact invocations are in the journals.
+The retry results are pending.

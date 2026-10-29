@@ -5,8 +5,8 @@
 > 3 cores, 100 MHz, default TNCA settings), **static** (read from the compiled assembly or the compiler source) or
 > **analytic** (arithmetic on recorded numbers). No card access was used.
 
-Status: **Part 1** (this commit): how the FP8 weights reach the matrix engine. **Part 2**: per-kernel and per-class
-breakdown (added by a later commit).
+Status: **Part 1**: how the FP8 weights reach the matrix engine (static, plus TLM counters). **Part 2**: per-kernel and
+per-class breakdown of one steady decode step for both models, the bound analysis and the priorities.
 
 ## Part 1. How the Hub FP8 block-matmul gets weights and scales into the matrix engine
 
@@ -114,3 +114,189 @@ of different size:
 2. M=1 decode pays the full 16-row tile (activation quantisation, accumulator spills) for one useful row; a GEMV-shaped
    lowering with M=1 would remove most of the 16 x scratch traffic.
 3. Hardware: 8 B per request is the interface for every path. Wider requests would help only after (1) and (2).
+
+## Part 2. Per-kernel and per-class breakdown of one steady decode step
+
+### Method, domains and limits
+
+- **Domain: TLM** (SystemC/TLM model, binary sha256 `276a8f12...`, `core-vrf-sync-v5-x8`, 3 cores, 100 MHz, config in
+  each run's `model.cfg`, `TNCA_DRAM_PATH=fast`, default TNCA settings; launcher `decode_profile/tlmrun-profile.sh`, a
+  copy of `p3/tlmrun-default.sh` with new run directories). Qwen3-VL-2B-FP8 with **1** decoder layer; Qwen3.5-4B-FP8
+  with **4** layers (3 linear-attention + 1 full-attention, one period of its layer pattern). Prompt "Say hi.", bucket 64,
+  4 tokens (1 prefill call + 3 decode calls), no teacher check (`--check-tokens` 0), so the generated tokens are not a
+  quality claim. The tables use the **last decode call** (call 3), in which nothing is compiled.
+- **The step is observed, not changed.** `tools/models/decode_profile.py` runs `chat.py` unchanged and wraps the
+  launcher. For every launch it records the kernel, grid, device cycles, each tensor argument classified as weight
+  (named model parameter), KV/state (named cache tensor) or activation, the code-store load/eviction, and the model's
+  counters before and after the launch (the model's read-only `C` command, read while the device is idle). The device
+  cycles of all four calls of the VL run equal those of the uninstrumented archived run `tlm-vl-default-v2`
+  (582,976,965 / 540,405,261 / 539,710,624 / 540,586,727), so the instrumentation does not move the device.
+  A first attempt read the counters on the wrong thread and attributed them to the wrong launch; its counters were
+  discarded (its cycles are the same), its files are kept on GB10 (`~/r41-fp8prof/runs/*.v1-*`), and the first Qwen3.5
+  run was stopped and restarted with the fix.
+- **Scaling to full depth is analytic**: full = fixed part (embedding, final norm, lm_head, cache bookkeeping) +
+  (full layers / profiled layers) x per-layer part (x28 for VL; x8 for Qwen3.5, i.e. 24 linear-attention + 8
+  full-attention layers, exactly its layer pattern). No full-depth TLM run was made. A launch belongs to the per-layer
+  part if it touches a decoder-layer parameter or cache/state, or follows one before the next fixed launch.
+- **Bytes.** *NUCA bytes* = 8 B x (hits + misses + merges) at the NUCA homes: every core word request, from the vector
+  LSU and from the TTE, as the model counted it. *TTE bytes* = 8 B x `dma_read_words`. *DRAM bytes* = 64 B x (outlet
+  reads + writes). The per-kernel files also give the argument footprint (weights / activations / KV bytes of the
+  tensor arguments; the 622 MB embedding table appears as the footprint of the embedding-lookup kernels and is not
+  traffic).
+- **Class** is assigned from the kernel name and its arguments by `classify()` in `decode_profile_report.py`. Fused
+  Inductor kernels carry several operations and take the first matching class. Qwen3.5's delta-rule, conv1d, and
+  qkv-split kernels are in "linear-attention / conv ops"; its attention class holds only the full-attention layers' KV
+  update and SDPA.
+- **Per-kernel tables** (every launch of the step: grid, cycles, footprints, NUCA/TTE/DRAM bytes, B/cycle, code
+  load/eviction): `decode_profile/per_kernel_vl.md` (23 launches), `decode_profile/per_kernel_q35.md` (93 launches).
+  Raw: `decode_profile/vl-l1/` and `decode_profile/q35-l4/` (`launches.json.gz`, `report.json`, `run.log.gz`,
+  `identity.json`, `model.cfg`); derived: `analysis_vl.json.gz`, `analysis_q35.json.gz`. Reproduce with
+  `python3 tools/models/decode_profile_report.py RUN --full-layers N [--board-report vl-full-chat/report.json]`.
+- **Cross-check against the board.** The archived board run (`board-51aef19.tgz`) records per call only totals
+  (launches, device cycles, wall time, host reads/writes). It has **no per-launch timing and no code-store counters**, so
+  the class shares cannot be checked per class. The totals: board (Qwen3-VL, full depth, non-default `TNCA_IEEE_DIV=1`,
+  steady calls 2 and 3) 4,065,511,739 and 4,065,552,515 device cycles and 563 launches; TLM scaled 3,771,806,705 cycles
+  (0.928 of the board) and 536 launches. The 27 extra board launches are not explained by this data. Qwen3.5 has no
+  board run.
+
+### Qwen3-VL-2B-FP8 (TLM, 1 layer profiled, scaled to 28)
+
+##### Per class, scaled to 28 layers (TLM per-layer part x28 + fixed part; the scaling is analytic)
+
+| Class | Launches/token | Cycles/token | Share of cycles | NUCA bytes/token | Share of NUCA bytes | NUCA B/cycle | TTE bytes/token | DRAM bytes/token | Code loads / evictions per token |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| FP8 matmul/GEMV (weights; act-quant + block dequant fused) | 196 | 3,141,946,696 | 83.3% | 7,107,767,296 | 74.2% | 2.262 | 1,453,326,336 | 9,703,434,496 | 56 / 252 |
+| BF16 matmul/GEMV (unquantized weights, incl. lm_head) | 1 | 420,623,160 | 11.2% | 2,298,411,840 | 24.0% | 5.464 | 1,558,255,616 | 1,480,819,328 | 1 / 0 |
+| attention (QK, softmax, AV, KV write/read) | 140 | 193,344,004 | 5.1% | 164,982,272 | 1.7% | 0.853 | 29,474,816 | 10,316,544 | 140 / 56 |
+| rmsnorm and other norms (+ residual add / embedding lookup) | 113 | 15,084,541 | 0.4% | 1,824,760 | 0.0% | 0.121 | 179,712 | 1,520,256 | 113 / 57 |
+| rmsnorm fused with rotary | 56 | 188,720 | 0.0% | 645,120 | 0.0% | 3.418 | 0 | 177,408 | 56 / 0 |
+| activation/gating (silu*mul etc.) | 28 | 605,220 | 0.0% | 1,290,240 | 0.0% | 2.132 | 0 | 1,243,648 | 28 / 0 |
+| copies, casts, clones | 1 | 173 | 0.0% | 40 | 0.0% | 0.231 | 0 | 128 | 1 / 0 |
+| other | 1 | 14,191 | 0.0% | 3,552 | 0.0% | 0.250 | 0 | 2,176 | 1 / 4 |
+| **total** | 536 | 3,771,806,705 | 100% | 9,574,925,120 | 100% | 2.539 | 3,041,236,480 | 11,197,513,984 | 396 / 369 |
+
+Predicted full-depth device time per token (analytic scaling of TLM): 37.718 s at 100 MHz (3,771,806,705 cycles, 536 launches).
+
+Board steady decode step 2 (full depth; domain: board): 4,065,511,739 device cycles (40.655 s), 563 launches, 63.095 s wall: 22.440 s outside device time = 39.86 ms per launch. TLM full-depth prediction / board device cycles = 0.928.
+
+Board steady decode step 3 (full depth; domain: board): 4,065,552,515 device cycles (40.656 s), 563 launches, 64.126 s wall: 23.470 s outside device time = 41.69 ms per launch. TLM full-depth prediction / board device cycles = 0.928.
+
+Smallest launch in the step: 173 cycles (TLM), an upper bound on the fixed device cost of a launch; x 536 launches = 92,728 cycles/token.
+
+##### Bound analysis (analytic, from the TLM-measured NUCA bytes per class)
+
+Seconds per token if a class's NUCA bytes moved at chip-level rate R and nothing else cost time. The last rows add the fixed per-launch costs: device (smallest launch above) and host (board ms per launch, worst steady step).
+
+| Class | 1 GB/s | 2 GB/s | 4 GB/s | 8 GB/s | 19 GB/s |
+|---|---:|---:|---:|---:|---:|
+| FP8 matmul/GEMV (weights; act-quant + block dequant fused) | 7.1078 | 3.5539 | 1.7769 | 0.8885 | 0.3741 |
+| BF16 matmul/GEMV (unquantized weights, incl. lm_head) | 2.2984 | 1.1492 | 0.5746 | 0.2873 | 0.1210 |
+| attention (QK, softmax, AV, KV write/read) | 0.1650 | 0.0825 | 0.0412 | 0.0206 | 0.0087 |
+| rmsnorm and other norms (+ residual add / embedding lookup) | 0.0018 | 0.0009 | 0.0005 | 0.0002 | 0.0001 |
+| rmsnorm fused with rotary | 0.0006 | 0.0003 | 0.0002 | 0.0001 | 0.0000 |
+| activation/gating (silu*mul etc.) | 0.0013 | 0.0006 | 0.0003 | 0.0002 | 0.0001 |
+| copies, casts, clones | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| other | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| **all classes, s/token** | 9.5749 | 4.7875 | 2.3937 | 1.1969 | 0.5039 |
+| **tokens/s, bytes only** | 0.104 | 0.209 | 0.418 | 0.836 | 1.984 |
+| **tokens/s, + device launch cost (0.0009 s)** | 0.104 | 0.209 | 0.418 | 0.835 | 1.981 |
+| *lower bound: each matmul weight read once (2,031,960,064 B; embedding table excluded), tokens/s* | 0.492 | 0.984 | 1.969 | 3.937 | 9.351 |
+| **tokens/s, + device and board host launch cost (22.34 s)** | 0.0313 | 0.0369 | 0.0404 | 0.0425 | 0.0438 |
+
+
+### Qwen3.5-4B-FP8 (TLM, 4 layers profiled, scaled to 32)
+
+##### Per class, scaled to 32 layers (TLM per-layer part x8 + fixed part; the scaling is analytic)
+
+| Class | Launches/token | Cycles/token | Share of cycles | NUCA bytes/token | Share of NUCA bytes | NUCA B/cycle | TTE bytes/token | DRAM bytes/token | Code loads / evictions per token |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| FP8 matmul/GEMV (weights; act-quant + block dequant fused) | 200 | 7,593,234,760 | 86.9% | 17,980,138,496 | 76.8% | 2.368 | 3,676,569,600 | 19,924,292,096 | 64 / 424 |
+| BF16 matmul/GEMV (unquantized weights, incl. lm_head) | 25 | 881,596,302 | 10.1% | 4,708,636,544 | 20.1% | 5.341 | 3,192,311,808 | 1,975,793,984 | 25 / 8 |
+| attention (QK, softmax, AV, KV write/read) | 40 | 19,414,976 | 0.2% | 49,792,000 | 0.2% | 2.565 | 10,518,528 | 4,431,872 | 40 / 32 |
+| rmsnorm and other norms (+ residual add / embedding lookup) | 129 | 13,987,570 | 0.2% | 4,819,952 | 0.0% | 0.345 | 281,088 | 3,524,800 | 129 / 48 |
+| rmsnorm fused with rotary | 48 | 1,484,960 | 0.0% | 593,920 | 0.0% | 0.400 | 0 | 122,368 | 48 / 0 |
+| activation/gating (silu*mul etc.) | 32 | 1,226,608 | 0.0% | 2,211,840 | 0.0% | 1.803 | 0 | 3,195,392 | 32 / 0 |
+| linear-attention / conv ops (Qwen3.5) | 216 | 224,026,256 | 2.6% | 664,939,392 | 2.8% | 2.968 | 60,567,552 | 581,809,664 | 200 / 80 |
+| copies, casts, clones | 25 | 769,602 | 0.0% | 2,162,728 | 0.0% | 2.810 | 0 | 3,995,264 | 25 / 0 |
+| other | 1 | 13,628 | 0.0% | 1,800 | 0.0% | 0.132 | 0 | 1,408 | 1 / 0 |
+| **total** | 716 | 8,735,754,662 | 100% | 23,413,296,672 | 100% | 2.680 | 6,940,248,576 | 22,497,166,848 | 564 / 592 |
+
+Predicted full-depth device time per token (analytic scaling of TLM): 87.358 s at 100 MHz (8,735,754,662 cycles, 716 launches).
+
+Smallest launch in the step: 194 cycles (TLM), an upper bound on the fixed device cost of a launch; x 716 launches = 138,904 cycles/token.
+
+##### Bound analysis (analytic, from the TLM-measured NUCA bytes per class)
+
+Seconds per token if a class's NUCA bytes moved at chip-level rate R and nothing else cost time. The last rows add the fixed per-launch costs: device (smallest launch above) and host (board ms per launch, worst steady step).
+
+| Class | 1 GB/s | 2 GB/s | 4 GB/s | 8 GB/s | 19 GB/s |
+|---|---:|---:|---:|---:|---:|
+| FP8 matmul/GEMV (weights; act-quant + block dequant fused) | 17.9801 | 8.9901 | 4.4950 | 2.2475 | 0.9463 |
+| BF16 matmul/GEMV (unquantized weights, incl. lm_head) | 4.7086 | 2.3543 | 1.1772 | 0.5886 | 0.2478 |
+| attention (QK, softmax, AV, KV write/read) | 0.0498 | 0.0249 | 0.0124 | 0.0062 | 0.0026 |
+| rmsnorm and other norms (+ residual add / embedding lookup) | 0.0048 | 0.0024 | 0.0012 | 0.0006 | 0.0003 |
+| rmsnorm fused with rotary | 0.0006 | 0.0003 | 0.0001 | 0.0001 | 0.0000 |
+| activation/gating (silu*mul etc.) | 0.0022 | 0.0011 | 0.0006 | 0.0003 | 0.0001 |
+| linear-attention / conv ops (Qwen3.5) | 0.6649 | 0.3325 | 0.1662 | 0.0831 | 0.0350 |
+| copies, casts, clones | 0.0022 | 0.0011 | 0.0005 | 0.0003 | 0.0001 |
+| other | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| **all classes, s/token** | 23.4133 | 11.7066 | 5.8533 | 2.9267 | 1.2323 |
+| **tokens/s, bytes only** | 0.043 | 0.085 | 0.171 | 0.342 | 0.812 |
+| **tokens/s, + device launch cost (0.0014 s)** | 0.043 | 0.085 | 0.171 | 0.342 | 0.811 |
+| *lower bound: each matmul weight read once (4,841,359,360 B; embedding table excluded), tokens/s* | 0.207 | 0.413 | 0.826 | 1.652 | 3.925 |
+
+
+### What the tables show
+
+| | Qwen3-VL-2B-FP8 | Qwen3.5-4B-FP8 |
+|---|---|---|
+| FP8 matmul/GEMV: share of device cycles / of NUCA bytes (TLM, scaled) | 83.3% / 74.2% | 86.9% / 76.8% |
+| BF16 matmul (lm_head; Qwen3.5 also in_proj_a/b): cycles / bytes | 11.2% / 24.0% | 10.1% / 20.1% |
+| attention: cycles / bytes | 5.1% / 1.7% | 0.2% / 0.2% |
+| linear-attention / conv ops: cycles / bytes | n/a | 2.6% / 2.8% |
+| norms, rotary, activation, copies, other: cycles | 0.4% | 0.2% |
+| FP8 class weight bytes per cycle (chip, 3 cores) | 0.449 (1.41 GB / 3.14 G cycles) | 0.470 (3.57 GB / 7.59 G cycles) |
+| TLM device time per token at 100 MHz, scaled | 37.7 s | 87.4 s |
+| Launches per token (TLM scaled) | 536 (board: 563) | 716 |
+| Code-store loads / evictions per token (TLM scaled; board not recorded) | 396 / 369 | 564 / 592 |
+
+- **The FP8 matmul dominates both models (83-87% of device time) and runs at 0.45-0.47 weight bytes per cycle for the
+  whole chip**, about 2% of the 24 B/cycle core-port interface. It takes the X8 transposed TTE path of part 1; its time
+  is stalls (0.08-0.09 instructions per cycle) and its vector-LSU scratch traffic is about 4x the weight bytes.
+- **The BF16 lm_head is the second class (10-11%)** at 1.48 weight B/cycle for VL, 3x the FP8 path's rate, through
+  the Inductor matmul template over the tied bf16 embedding (622 MB for VL, 1.27 GB for Qwen3.5). Its NUCA traffic is 3.7x
+  its weights.
+- Attention, norms, rotary, activation and copies together are about 5.5% (VL) and 0.4% (Qwen3.5) of device time. This
+  profile uses a 64-token bucket, so KV traffic (131,072 B per VL layer) is small; it understates attention for a long
+  conversation.
+- **Fixed per-launch cost.** Device side (TLM): the smallest launch is 173 cycles (VL) and 194 cycles (Qwen3.5), so the
+  fixed device cost of all launches is at most 93 k and 139 k cycles per token, about 0.002% of the totals: negligible.
+  Host side (board, VL): (wall - device time) / launches is 39.9 ms and 41.7 ms per launch in the two steady calls, i.e.
+  22.4 s and 23.5 s of the 63-64 s per token (35-37%). That residual holds everything outside device time (launch round
+  trips, code uploads after evictions, the logits download, host work), not launches alone; the board data cannot
+  split it.
+- **Bound analysis (analytic).** The tables give, per class, seconds per token if its measured NUCA bytes moved at 1,
+  2, 4, 8 or 19 GB/s chip-level, and tokens/s over all classes. With the bytes this code moves today: VL
+  0.10 / 0.21 / 0.42 / 0.84 / 1.98 tokens/s, Qwen3.5 0.043 / 0.085 / 0.17 / 0.34 / 0.81 tokens/s. With every matmul
+  weight read exactly once (lower bound: 2.03 GB for VL, 4.84 GB for Qwen3.5): VL 0.49 / 0.98 / 1.97 / 3.94 / 9.35 and
+  Qwen3.5 0.21 / 0.41 / 0.83 / 1.65 / 3.93 tokens/s. The FP8 class dominates every column. Adding the board's host
+  cost per launch (about 22 s per VL token) caps VL at 0.031-0.044 tokens/s at any of these rates: **once bandwidth is
+  above about 1 GB/s, the per-launch host cost, not bandwidth, is the limit** unless it is reduced. The 22 s is the
+  board residual of an image run with non-default settings, carried over as measured, not modelled.
+
+### Implications for hardware and compiler priorities
+
+1. **Compiler, first: the FP8 matmul loop.** It waits for each 512 B weight transfer before issuing the next (one
+   outstanding), and stages a 16-row activation tile for M=1. Software-pipelined transfers (several `t.ld.async` in
+   flight across the 32 steps, a prefetch of the next K block) and an M=1 lowering that avoids the 16-row staging and the
+   accumulator spill are general mechanisms and address 83-87% of decode time. The 5-6x DRAM read amplification and the 4x
+   LSU scratch traffic in the GEMV are the first things to remove.
+2. **Compiler, second: launches and code-store reloads.** 536-716 launches and 396-564 code loads per token (TLM,
+   scaled) against a 128 KiB code store, and the board spends 35-37% of a token outside device time. Fewer, larger
+   launches (fusing a layer's small kernels) and a kernel set that fits the code store attack that share, which more
+   bandwidth does not touch.
+3. **The BF16 lm_head** is 10-11% and moves 3.7x its weight bytes; it should use the same pipelined weight path.
+4. **Hardware: not bandwidth yet.** The weight path uses 2% of the 8 B/cycle/core interface, so a wider interface or HBM
+   path will not show until the items above remove the stalls. The counters point to, but do not prove, two candidates:
+   more outstanding requests per core, and a NUCA large enough to keep a K block's weight lines and the scratch apart
+   (48 KiB in this configuration).

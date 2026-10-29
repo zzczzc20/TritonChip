@@ -39,17 +39,18 @@ def classify(row):
         return "fp8_gemv", "Hub FP8 block matmul (activation quant and block scales fused inside)"
     if "quant" in t or "dequant" in t:
         return "dequant_scale", "separate quant/dequant kernel"
-    if "state" in roles or t & {"convolution", "cumsum", "softplus", "triangular", "solve"}:
-        return "linear_attn", "touches a linear-attention state, or conv/cumsum/softplus/triangular-solve"
+    if "state" in roles or t & {"convolution", "cumsum", "softplus", "triangular", "solve", "sizes"}:
+        return "linear_attn", ("touches a linear-attention state, or conv/cumsum/softplus/triangular-solve, or the "
+                               "qkv split (split_with_sizes) that only the linear-attention block has")
     if t & {"mm", "addmm"} and "weight" in roles and wdtypes & {"bfloat16", "float16", "float32"}:
         return "bf16_gemv", "Inductor matmul template over an unquantized weight"
     if "kv" in roles or ("scaled" in t and "attention" in t) or "bmm" in t:
         return "attention", "touches the KV cache, or SDPA/bmm"
-    if "rsqrt" in t and ("cat" in t and "neg" in t):
-        return "norm_rotary", "rmsnorm fused with rotate_half (cat, neg)"
+    if "rsqrt" in t and "cat" in t:
+        return "norm_rotary", "rmsnorm fused with rotary (cat)"
     if "cat" in t and "neg" in t:
         return "rotary", "rotate_half (cat, neg)"
-    if "rsqrt" in t:
+    if "rsqrt" in t or {"mean", "pow"} <= t:
         return "norm", "rmsnorm (mean, pow, rsqrt), with any fused residual add"
     if t & {"silu", "sigmoid", "gelu", "exp"}:
         return "act_gate", "silu/sigmoid/exp gating"
@@ -68,7 +69,7 @@ CLASS_TEXT = {
     "bf16_gemv": "BF16 matmul/GEMV (unquantized weights, incl. lm_head)",
     "dequant_scale": "dequant/scale (separate kernels)",
     "attention": "attention (QK, softmax, AV, KV write/read)",
-    "norm": "rmsnorm (+ residual add / embedding)",
+    "norm": "rmsnorm and other norms (+ residual add / embedding lookup)",
     "norm_rotary": "rmsnorm fused with rotary",
     "rotary": "rotary",
     "act_gate": "activation/gating (silu*mul etc.)",
@@ -233,18 +234,18 @@ def tables(a, clock_hz, rates_gbps, board=None):
     L.append(f"#### Per class, scaled to {a['full_layers']} layers (TLM per-layer part x{a['scale']:g} + fixed part; "
              f"the scaling is analytic)\n")
     L.append("| Class | Launches/token | Cycles/token | Share of cycles | NUCA bytes/token | Share of NUCA bytes | "
-             "NUCA B/cycle | TTE bytes/token | DRAM bytes/token | Weight footprint/token | Code loads / evictions per token |")
-    L.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|")
+             "NUCA B/cycle | TTE bytes/token | DRAM bytes/token | Code loads / evictions per token |")
+    L.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---|")
     for k in classes:
         b = by[k]
         L.append(f"| {CLASS_TEXT[k]} | {fmt(b['launches_full'])} | {fmt(b['cycles_full'])} | "
                  f"{100 * b['cycles_full'] / tot['cycles_full']:.1f}% | {fmt(b['nuca_full'])} | "
                  f"{100 * b['nuca_full'] / tot['nuca_full']:.1f}% | "
                  f"{fmt(b['nuca_full'] / b['cycles_full'] if b['cycles_full'] else None, 3)} | {fmt(b['tte_full'])} | "
-                 f"{fmt(b['dram_full'])} | {fmt(b['weight_full'])} | {fmt(b['loads_full'])} / {fmt(b['evict_full'])} |")
+                 f"{fmt(b['dram_full'])} | {fmt(b['loads_full'])} / {fmt(b['evict_full'])} |")
     L.append(f"| **total** | {fmt(tot['launches_full'])} | {fmt(tot['cycles_full'])} | 100% | {fmt(tot['nuca_full'])} | "
              f"100% | {fmt(tot['nuca_full'] / tot['cycles_full'], 3)} | {fmt(tot['tte_full'])} | {fmt(tot['dram_full'])} | "
-             f"{fmt(tot['weight_full'])} | {fmt(tot['loads_full'])} / {fmt(tot['evict_full'])} |")
+             f"{fmt(tot['loads_full'])} / {fmt(tot['evict_full'])} |")
     L.append("")
     L.append(f"Predicted full-depth device time per token (analytic scaling of TLM): "
              f"{tot['cycles_full'] / clock_hz:.3f} s at {clock_hz / 1e6:g} MHz "
@@ -278,6 +279,9 @@ def tables(a, clock_hz, rates_gbps, board=None):
     L.append("| **tokens/s, bytes only** | " + " | ".join(f"{1 / t:.3f}" for t in t_bytes) + " |")
     L.append(f"| **tokens/s, + device launch cost ({t_dev:.4f} s)** | " +
              " | ".join(f"{1 / (t + t_dev):.3f}" for t in t_bytes) + " |")
+    wmin = sum(by[k]["weight_full"] for k in ("fp8_gemv", "bf16_gemv") if k in by)
+    L.append(f"| *lower bound: each matmul weight read once ({fmt(wmin)} B; embedding table excluded), tokens/s* | " +
+             " | ".join(f"{(r * 1e9) / wmin:.3f}" for r in rates_gbps) + " |")
     if host is not None:
         t_host = host * tot['launches_full']
         L.append(f"| **tokens/s, + device and board host launch cost ({t_host:.2f} s)** | " +

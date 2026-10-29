@@ -248,7 +248,7 @@ sources = ["python/tnca/torch_device/"]
 [[doc]]
 path = "doc/r41_chat.md"
 depends_on = ["doc/r40_tasks_and_acceptance.md", "doc/engineering_discipline.md"]
-sources = ["tools/models/chat.py", "tools/models/qwen_fp8_lib.py", "tools/models/vision_split_check.py", "tools/models/fp8_blockwise_ref.py", "evidence/r41/fp8/models_tnca/README.md", "evidence/r41/fp8/ops/README.md", "spec/r41/chat/", "evidence/r41/chat/"]
+sources = ["tools/models/chat.py", "tools/models/qwen_fp8_lib.py", "tools/models/vision_split_check.py", "tools/models/chat_quality.py", "python/tnca/transport.py", "tools/models/fp8_blockwise_ref.py", "evidence/r41/fp8/models_tnca/README.md", "evidence/r41/fp8/ops/README.md", "spec/r41/chat/", "evidence/r41/chat/"]
 
 [[doc]]
 path = "doc/r41_execution_tasks.md"
@@ -601,3 +601,8 @@ sources = ["evidence/r41/hbm_bw/fma_dslx/", "xls/tnca_lzc.x", "xls/tnca_fmad.x",
 path = "evidence/r41/hbm_bw/barrier_alias/README.md"
 depends_on = ["doc/engineering_discipline.md", "doc/isa/TNCA-ISA-v0.1.md"]
 sources = ["rtl/core/tnca_core.v", "rtl/core/tnca_barrier.v", "tools/r41/barrier_alias_tests.py", "python/tnca/aot.py", "compiler/python/tnca_cc/codegen.py"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/mma_dp/README.md"
+depends_on = ["doc/engineering_discipline.md", "doc/isa/TNCA-ISA-v0.1.md", "evidence/r41/hbm_bw/mma_dp/INTERFACE.md", "evidence/r41/hbm_bw/fma_dslx/README.md"]
+sources = ["compiler/python/tnca_cc/codegen.py", "compiler/python/tnca_cc/footprints.py", "compiler/python/tnca_cc/target.py", "compiler/test/test_mma_dp.py", "compiler/targets/tnca-sim-vrf-v5-x8-g2c4-dp.json", "tools/asm/tnca_isa.py", "tools/asm/tnca_asm.py", "tools/asm/tnca_dis.py", "tools/isa/gen_target.py", "spec/r1_profiles.json", "tools/performance_harness/systemc/include/tnca_matrix_dp.hpp", "tools/performance_harness/systemc/include/tnca_matrix_ops.hpp", "tools/performance_harness/systemc/src/chip.cpp", "tools/performance_harness/systemc/validate_matrix_dp.py", "tools/performance_harness/systemc/validate_matrix_dp_chip.py", "tools/performance_harness/systemc/configs/r41-mma-dp.cfg", "tools/performance_harness/fp8_block_reference.py", "tools/performance_harness/fp8_cases.py", "tools/performance_harness/fp8_kernels_cases.py", "tools/performance_harness/mma_dp_summary.py", "tools/performance_harness/test_fp8_dot_dp.py", "tools/performance_harness/default_change_audit.py", "tools/model/fdp.py", "evidence/r41/hbm_bw/mma_dp/"]

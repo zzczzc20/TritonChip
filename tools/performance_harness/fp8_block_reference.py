@@ -207,14 +207,132 @@ def divide(a, y, ieee=False):
     return a * device_rcp(y.float())
 
 
+# Which `tl.dot` reduction the reference follows. 'mma' is ISA sec 9C.1 (one
+# rounding per K index); 'mma.dp' is sec 9C.4's m.mma.dp.async for E4M3 x E4M3
+# (groups of four consecutive K, one rounding per group). It is set by the
+# harness from the profile's MATRIX_DP capability, never from a kernel's name.
+_DOT_MODE = 'mma'
+
+
+def set_dot_mode(mode):
+    global _DOT_MODE
+    if mode not in ('mma', 'mma.dp'):
+        raise ValueError(mode)
+    _DOT_MODE = mode
+
+
+def dot_mode_for_profile(profile):
+    """'mma.dp' when the profile has CAPABILITY0.MATRIX_DP (the compiler then
+    lowers every matrix command to m.mma.dp.async), else 'mma'. The profile is
+    the only input; no kernel, shape or model is consulted."""
+    import sys
+    sys.path.insert(0, str(ROOT / 'python'))
+    from tnca import profiles
+    return 'mma.dp' if profiles.target(profile)['capabilities'].get('matrix_dp') else 'mma'
+
+
 def fp8_dot(q, w):
-    """sum_k q[:, k] * w[:, k] for FP8-valued float32 q (M, K) and w (N, K):
-    one binary32 rounding per K index, ascending K, from +0.0 (ISA sec 9C.1)."""
+    """sum_k q[:, k] * w[:, k] for FP8-valued float32 q (M, K) and w (N, K),
+    ascending K, from +0.0, in binary32: one rounding per K index (ISA sec 9C.1),
+    or one per group of four K (sec 9C.4) when the dot mode is 'mma.dp'."""
+    if _DOT_MODE == 'mma.dp':
+        return fp8_dot_dp(q, w)
     torch = _torch()
     d = torch.zeros(q.shape[0], w.shape[0], dtype=torch.float32)
     for k in range(q.shape[1]):
         d = d + q[:, k:k + 1] * w[:, k][None, :]
     return d
+
+
+def fp8_dot_dp(q, w, group=4):
+    """E4M3 x E4M3 grouped dot product, exactly as ISA sec 9C.4 defines it.
+
+    Every E4M3 x E4M3 group sum is a multiple of 2^-18 below 2^38 in magnitude
+    (tools/model/fdp.py checks this over all 256 encodings), so it is exact in
+    float64 and RO_48 is the identity. C + S is then one float64 add with its
+    exact error term (TwoSum); the binary32 rounding of that pair is the
+    correctly rounded RNE_f32(C + S): float64 rounding of a value that is not
+    a binary32 midpoint cannot cross a midpoint, and the one case it can hit
+    (the float64 sum lands on a midpoint) is resolved by the error's sign.
+    Zero padding to a whole group adds exactly zero, as the transfer engine's
+    zero fill does. Independent of the compiler, the model and the RTL."""
+    import numpy as np
+    torch = _torch()
+    qa = q.detach().cpu().double().numpy()
+    wa = w.detach().cpu().double().numpy()
+    m, kk = qa.shape
+    n = wa.shape[0]
+    pad = (-kk) % group
+    if pad:
+        qa = np.pad(qa, ((0, 0), (0, pad)))
+        wa = np.pad(wa, ((0, 0), (0, pad)))
+    c = np.zeros((m, n), dtype=np.float32)
+    for k0 in range(0, qa.shape[1], group):
+        sgrp = np.zeros((m, n))
+        for j in range(group):
+            sgrp += qa[:, k0 + j][:, None] * wa[:, k0 + j][None, :]
+        cd = c.astype(np.float64)
+        t = cd + sgrp
+        bb = t - cd
+        err = (cd - (t - bb)) + (sgrp - bb)           # exact: C + S == t + err
+        r = t.astype(np.float32)
+        rd = r.astype(np.float64)
+        diff = t - rd
+        up = np.nextafter(r, np.float32(np.inf)).astype(np.float64)
+        dn = np.nextafter(r, np.float32(-np.inf)).astype(np.float64)
+        with np.errstate(invalid='ignore'):
+            tie_up = np.isfinite(t) & (diff == (up - rd) / 2) & (err != 0)
+            tie_dn = np.isfinite(t) & (diff == (dn - rd) / 2) & (err != 0)
+        r = np.where(tie_up & (err > 0), np.nextafter(r, np.float32(np.inf)), r)
+        r = np.where(tie_dn & (err < 0), np.nextafter(r, np.float32(-np.inf)), r)
+        c = r.astype(np.float32)
+    return torch.from_numpy(c)
+
+
+_FDP_FORMAT = {'torch.float16': 'f16', 'torch.bfloat16': 'bf16',
+               'torch.float8_e5m2': 'e5m2', 'torch.float8_e4m3fn': 'e4m3'}
+
+
+def dp_chain(a, b):
+    """C[M, N] = A[M, K] . B[K, N] by m.mma.dp.async (ISA sec 9C.4), from +0.0,
+    ascending K, for FP16/BF16/FP8 operands given in their own dtype.
+
+    The group is four consecutive K for E4M3 x E4M3 and two for every other
+    pair; K is zero padded to a whole group (the transfer engine's zero fill).
+    E4M3 x E4M3 takes the vectorised exact form (fp8_dot_dp); every other pair
+    is evaluated group by group with tools/model/fdp.py (exact rationals,
+    RO_48), which is slow and meant for test-sized operands. Independent of the
+    compiler, the model and the RTL."""
+    torch = _torch()
+    fa, fb = _FDP_FORMAT[str(a.dtype)], _FDP_FORMAT[str(b.dtype)]
+    if fa == 'e4m3' and fb == 'e4m3':
+        return fp8_dot_dp(a.float(), b.t().float())
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools' / 'model'))
+    import fdp
+    wa = 8 if fa in ('e4m3', 'e5m2') else 16
+    wb = 8 if fb in ('e4m3', 'e5m2') else 16
+    ai = a.contiguous().view(torch.uint8 if wa == 8 else torch.int16).to(torch.int64) & ((1 << wa) - 1)
+    bi = b.contiguous().view(torch.uint8 if wb == 8 else torch.int16).to(torch.int64) & ((1 << wb) - 1)
+    al, bl = ai.tolist(), bi.tolist()
+    m, k = len(al), a.shape[1]
+    n = b.shape[1]
+    pad = (-k) % 2
+    out = []
+    for i in range(m):
+        row = []
+        arow = al[i] + [0] * pad
+        for j in range(n):
+            bcol = [bl[t][j] for t in range(k)] + [0] * pad
+            acc = 0
+            for k0 in range(0, k + pad, 2):
+                g = fdp.group_sum(fa, fb, arow[k0:k0 + 2], bcol[k0:k0 + 2])
+                if g[0] == 'fin':
+                    g = ('fin', fdp.ro(g[1]), g[2])
+                acc = fdp.add_round(g, acc)
+            row.append(acc - (1 << 32) if acc & 0x80000000 else acc)
+        out.append(row)
+    return torch.tensor(out, dtype=torch.int32).view(torch.float32)
 
 
 def act_quant_inline(x, ieee=False):

@@ -662,6 +662,27 @@ class U50Backend(Transport):
             data = b''.join(int(w).to_bytes(WORD, 'little') for w in words[k:])
             self.link.hbm_write(addr + k * WORD - self.local_limit, data)
 
+    #: Largest piece one DMA write moves; bounds the host-side staging copy.
+    DMA_CHUNK_BYTES = 1 << 26
+
+    def _put_payload_bytes(self, addr, data):
+        """`_put_payload` for a bytes-like payload: the words below the AXI
+        window's local limit go through the register window one at a time as
+        before; the rest goes to DMA as bytes, in bounded chunks, never as a
+        list of integers."""
+        nwords = len(data) // WORD
+        self._check_window(addr, nwords, 'upload')
+        k = self._dma_split(addr, nwords)
+        for i in range(k):
+            self._window(addr + i * WORD, int.from_bytes(data[i * WORD:(i + 1) * WORD], 'little'),
+                         write=True)
+        start = k * WORD
+        base = addr + start - (self.local_limit or 0)
+        while start < len(data):
+            end = min(len(data), start + self.DMA_CHUNK_BYTES)
+            self.link.hbm_write(base + start - k * WORD, data[start:end])
+            start = end
+
     def _get_payload(self, addr, nwords):
         self._check_window(addr, nwords, 'download')
         k = self._dma_split(addr, nwords)

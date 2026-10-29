@@ -101,6 +101,8 @@ struct Config {
         {u64 g16=get_or("mtx_dp_group_16",1),g8=get_or("mtx_dp_group_8",1);
          require((g16==1 || g16==2) && (g8==1 || g8==2 || g8==4) && get_or("mtx_dp_b_prefetch",0)<=1,
                  "mtx_dp_group_16 is 1|2, mtx_dp_group_8 1|2|4 (one 64-byte B register per group), mtx_dp_b_prefetch 0|1");}
+        require(get_or("mtx_dp",0)<=1 && get_or("mtx_dp_prefetch",0)<=1 && get_or("mtx_dp_extra_latency",1)<=8,
+                "mtx_dp 0|1 (CAPABILITY0.MATRIX_DP, m.mma.dp.async), mtx_dp_prefetch 0|1, mtx_dp_extra_latency 0..8 cycles");
         {auto b=get_or("tl_core_beat_bytes",8),n=get_or("tl_noc_payload_bytes",8);
          require((b==8 || b==16 || b==32 || b==64) && (n==8 || n==16 || n==32 || n==64),
                  "exploratory core/NoC payload bytes must be 8|16|32|64");
@@ -148,7 +150,7 @@ struct Config {
     }
     u64 get(const std::string& k)const{return v.at(k);}
     static const std::vector<std::string>& optional_keys(){
-        static const std::vector<std::string> k={"mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units","tl_memory_lanes","tl_lsu_shared_issue","tl_pc_stripe_bytes","tl_prefetch_lines",
+        static const std::vector<std::string> k={"mtx_dp","mtx_dp_extra_latency","mtx_dp_prefetch","mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units","tl_memory_lanes","tl_lsu_shared_issue","tl_pc_stripe_bytes","tl_prefetch_lines",
             // R41 G4 what-ifs (default off): full-line writes allocate without a memory read
             // (HOME_LINE_WRITE_NOFILL); the line-wide multi-command tensor engine.
             "tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine"};return k;}

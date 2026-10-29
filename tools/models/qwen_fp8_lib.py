@@ -234,8 +234,25 @@ def load_model(spec, weights="fp8", dtype=torch.bfloat16, layers=None):
     with pinned_fp8_quantizer(record):
         model, info = getattr(transformers, spec.cls).from_pretrained(snap, config=cfg, dtype=dtype,
                                                                        output_loading_info=True)
+    unscaled = unscaled_fp8_modules(model, info) if weights == "fp8" else []
+    if unscaled:
+        # A module the quantization config converts but whose block scale the checkpoint does not contain holds
+        # unquantized weights (for example an output projection tied to an unconverted embedding). Converting it
+        # leaves its scale uninitialized. Reload with those modules added to the config's own exclusion list.
+        effective = list(getattr(model.hf_quantizer.quantization_config, "modules_to_not_convert", None) or [])
+        del model
+        gc.collect()
+        qc["modules_to_not_convert"] = sorted(set(effective) | set(unscaled))
+        cfg.quantization_config = qc
+        with pinned_fp8_quantizer(record):
+            model, info = getattr(transformers, spec.cls).from_pretrained(snap, config=cfg, dtype=dtype,
+                                                                           output_loading_info=True)
+        left = unscaled_fp8_modules(model, info)
+        if left:
+            raise UnsupportedQuantization(f"modules still converted without a checkpoint scale: {left}")
     model.eval().requires_grad_(False)          # inference only (FlopCounterMode's module tracker hooks grads)
     report = dict(format=fmt, weights=weights, quantizer=record, load_seconds=round(time.perf_counter() - t0, 3),
+                  unscaled_modules_not_converted=unscaled,
                   snapshot_view=view_note,
                   loading_info={k: sorted(map(str, v)) if isinstance(v, (list, set, tuple)) else str(v) for k, v in info.items()},
                   attn_implementation=getattr(model.config, "_attn_implementation", None))
@@ -251,6 +268,17 @@ def load_model(spec, weights="fp8", dtype=torch.bfloat16, layers=None):
     out_emb, in_emb = model.get_output_embeddings(), model.get_input_embeddings()
     report["tied_embeddings"] = bool(out_emb is not None and out_emb.weight is in_emb.weight)
     return model, report
+
+
+def unscaled_fp8_modules(model, info):
+    """FP8Linear modules whose `weight_scale_inv` the checkpoint did not provide (reported missing by the loader)
+    or whose weight is not an FP8 tensor: they hold unquantized weights and must not be converted."""
+    missing = {k[:-len(".weight_scale_inv")] for k in info.get("missing_keys", []) if k.endswith(".weight_scale_inv")}
+    out = set(missing)
+    for name, module in fp8_modules(model, quantized_only=False).items():
+        if module.weight.dtype not in (torch.float8_e4m3fn, torch.float8_e5m2):
+            out.add(name)
+    return sorted(out)
 
 
 def fp8_modules(model, quantized_only=True):
@@ -548,7 +576,11 @@ def place(stage, device, compile_mode, tree=None, skip=None):
     dev = use_tnca(tree) if device == "tnca" else torch.device(device)
     to_device_except(stage, dev, skip)
     if device == "tnca" or (device == "cpu" and compile_mode == "inductor"):
-        return torch.compile(stage, fullgraph=True), dev
+        # Static shapes: a second input shape (another prompt length) compiles another static graph. With the
+        # default automatic dynamic shapes, torch.compile would instead recompile with a symbolic length, which
+        # the TNCA lowering refuses (scf.if over arith.remsi, TLM tlm-vl-quality-v1). The first compile is static
+        # in both modes, so graphs that never see a second shape are unchanged.
+        return torch.compile(stage, fullgraph=True, dynamic=False), dev
     return stage, dev
 
 

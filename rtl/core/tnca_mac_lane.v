@@ -17,7 +17,7 @@
 //==============================================================================
 `default_nettype none
 module tnca_mac_lane #(
-    parameter [4:0] CUTS   = 5'b11110,
+    parameter [4:0] CUTS   = 5'b11101,
     parameter       IN_REG = 1
 ) (
     input  wire        clk,

@@ -72,7 +72,7 @@ module tnca_shell #(
     parameter ELEN           = 32,
     parameter VREGS_PER_RCTX = 64,
     // R41 G2 resource sizing (defaults: the delivered machine): accumulator slots, mbarriers, the barrier epoch width
-    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0, MAC_DP = 0, MAC_CUTS = 30,
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0, MAC_DP = 0, MAC_CUTS = 29,
     parameter PHYS_VREGS     = NUM_RCTX * VREGS_PER_RCTX,
     parameter PHYS_W         = 7,
     parameter LSU_TAG_W      = 5,

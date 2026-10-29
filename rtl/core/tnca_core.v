@@ -173,7 +173,7 @@ module tnca_core #(
     // sec 9C.4) executes, CAPABILITY0.MATRIX_DP set; 0 = the machine as before
     // (the encoding raises ILLEGAL_INSTRUCTION). MAC_CUTS: the lane's register cuts.
     parameter MAC_DP         = 0,
-    parameter MAC_CUTS       = 30
+    parameter MAC_CUTS       = 29
 ) (
     input  wire                     clk,
     input  wire                     rst_n,

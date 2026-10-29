@@ -42,7 +42,7 @@ module tb_tnca_core;
     parameter MTX_VRF_REG    = 0;
     parameter FMA_IMPL       = 0;   // R41 G2 FMA rebuild
     parameter MAC_DP         = 0;   // R41 G2 shared MAC lane + m.mma.dp.async
-    parameter MAC_CUTS       = 30;
+    parameter MAC_CUTS       = 29;
     parameter HAS_TENSOR_XPOSE = 0;
 
     parameter NUM_RCTX       = 2;

@@ -74,7 +74,7 @@ fn e4m3_ms(x: u8) -> (u4, u4) {
 // One product as two DSP operands with a * b * 2^18 = A * B exactly: B keeps
 // at most 13 of the shift (< 2^17, inside the 18-bit signed port), A takes
 // the rest (< 2^20) and the product's sign.
-fn dp4_operands(a: u8, b: u8) -> (s27, s18) {
+fn dp4_operands(a: u8, b: u8) -> (s27, s18, s48) {
     let (ma, sa) = e4m3_ms(a);
     let (mb, sb) = e4m3_ms(b);
     let sb2 = if sb > u4:13 { u4:13 } else { sb };
@@ -82,7 +82,10 @@ fn dp4_operands(a: u8, b: u8) -> (s27, s18) {
     let afix = ((ma as u20) << sa2) as s27;
     let bfix = ((mb as u17) << sb2) as s18;
     let neg = a[7+:u1] ^ b[7+:u1];
-    (if neg == u1:1 { -afix } else { afix }, bfix)
+    // -x = !x + 1: the multiplier takes !x (one XOR level in front of the DSP,
+    // no carry chain), and !x * B = -x*B - B, so +B is added back after, with
+    // the product, where the DSP's C port takes it.
+    (if neg == u1:1 { !afix } else { afix }, bfix, if neg == u1:1 { bfix as s48 } else { s48:0 })
 }
 
 pub struct Dp4Fix {
@@ -91,15 +94,15 @@ pub struct Dp4Fix {
 }
 
 pub fn dp4_e4m3(a: u32, b: u32) -> Dp4Fix {
-    let (a0, b0) = dp4_operands(a[0+:u8], b[0+:u8]);
-    let (a1, b1) = dp4_operands(a[8+:u8], b[8+:u8]);
-    let (a2, b2) = dp4_operands(a[16+:u8], b[16+:u8]);
-    let (a3, b3) = dp4_operands(a[24+:u8], b[24+:u8]);
+    let (a0, b0, k0) = dp4_operands(a[0+:u8], b[0+:u8]);
+    let (a1, b1, k1) = dp4_operands(a[8+:u8], b[8+:u8]);
+    let (a2, b2, k2) = dp4_operands(a[16+:u8], b[16+:u8]);
+    let (a3, b3, k3) = dp4_operands(a[24+:u8], b[24+:u8]);
     // a cascade: ((p0 + p1) + p2) + p3, each product a 27 x 18 multiply
-    let p0 = std::smul(a0, b0) as s48;
-    let p1 = std::smul(a1, b1) as s48;
-    let p2 = std::smul(a2, b2) as s48;
-    let p3 = std::smul(a3, b3) as s48;
+    let p0 = (std::smul(a0, b0) as s48) + k0;
+    let p1 = (std::smul(a1, b1) as s48) + k1;
+    let p2 = (std::smul(a2, b2) as s48) + k2;
+    let p3 = (std::smul(a3, b3) as s48) + k3;
     let ea = [tnca_fdp::dec8_e4m3(a[0+:u8]), tnca_fdp::dec8_e4m3(a[8+:u8]),
               tnca_fdp::dec8_e4m3(a[16+:u8]), tnca_fdp::dec8_e4m3(a[24+:u8])];
     let eb = [tnca_fdp::dec8_e4m3(b[0+:u8]), tnca_fdp::dec8_e4m3(b[8+:u8]),
@@ -333,12 +336,12 @@ fn dp4_sum_is_v3(a: u32, b: u32) -> bool {
 // the shared spec4 give dp4_sum_is_v3.
 #[quickcheck(exhaustive)]
 fn dp4_term_is_v3(a: u8, b: u8) -> bool {
-    let (x, y) = dp4_operands(a, b);
+    let (x, y, k) = dp4_operands(a, b);
     let ea = tnca_fdp::dec8_e4m3(a);
     let eb = tnca_fdp::dec8_e4m3(b);
     let f = tnca_fdp::dp4e_field(ea, eb) as s48;
     let want = if (ea.s ^ eb.s) == u1:1 { -f } else { f };
-    (std::smul(x, y) as s48) == want
+    ((std::smul(x, y) as s48) + k) == want
 }
 
 // DP2 with FP16/BF16 codes is tnca_fdp's DP2 (verified against the oracle).

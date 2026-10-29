@@ -5,7 +5,7 @@
 // product's exactly widened operands. Latencies: lane 1 + popcount(CUTS),
 // reference 3.
 module mac_tb #(
-    parameter [4:0] CUTS = 5'b11110
+    parameter [4:0] CUTS = 5'b11101
 ) (
     input  wire        clk,
     input  wire        rst_n,

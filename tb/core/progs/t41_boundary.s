@@ -185,8 +185,8 @@ looph:
     .assert_eq  s60, #0, #46
 
 // ---------------------------------------------------------------- G
-// Roles 0/1 are a pair on barriers b8 (producer -> consumer) and b9 (back);
-// roles 2/3 on b10 and b11. Six rounds.
+// Roles 0/1 are a pair on barriers b0 (producer -> consumer) and b1 (back);
+// roles 2/3 on b2 and b3. Six rounds.
     .li         s41, #pbuf
     s.andi      s42, s1, #2
     s.shli      s43, s42, #2             // 8 bytes per pair, at pbuf + 8*(r & 2)
@@ -202,7 +202,7 @@ looph:
     br.nz       s42, pair1
     br.nz       s46, cons0
 prod0:
-    mb.arm      s47, b8, #1, #0          // generation k
+    mb.arm      s47, b0, #1, #0          // generation k
     mb.test     s48, s47                 // the arm's token, forwarded from X
     .assert_eq  s48, #0, #50
     s.ld.d      s49, [s41, #0]           // a little delay before publishing
@@ -210,9 +210,9 @@ prod0:
     s.muli      s50, s44, #1000
     s.add       s50, s50, s1
     s.st.d      [s41, #0], s50
-    mb.arrive   b8
+    mb.arrive   b0
     s.shli      s51, s44, #16
-    s.ori       s51, s51, #9             // {k, b9}, built right before the wait
+    s.ori       s51, s51, #1             // {k, b1}, built right before the wait
     mb.wait     s51
     s.addi      s44, s44, #1
     s.addi      s45, s45, #-1
@@ -220,7 +220,7 @@ prod0:
     br          done
 cons0:
     s.shli      s51, s44, #16
-    s.ori       s51, s51, #8             // {k, b8}
+    s.ori       s51, s51, #0             // {k, b0}
     mb.wait     s51
     s.ld.d      s52, [s41, #0]
     s.muli      s53, s44, #1000
@@ -228,8 +228,8 @@ cons0:
     s.subi      s53, s53, #1             // the producer is role - 1
     s.sub       s54, s52, s53
     .assert_eq  s54, #0, #51
-    mb.arm      s55, b9, #1, #0
-    mb.arrive   b9
+    mb.arm      s55, b1, #1, #0
+    mb.arrive   b1
     s.addi      s44, s44, #1
     s.addi      s45, s45, #-1
     br.nz       s45, cons0
@@ -237,7 +237,7 @@ cons0:
 pair1:
     br.nz       s46, cons1
 prod1:
-    mb.arm      s47, b10, #1, #0
+    mb.arm      s47, b2, #1, #0
     mb.test     s48, s47
     .assert_eq  s48, #0, #52
     s.ld.d      s49, [s41, #0]
@@ -245,9 +245,9 @@ prod1:
     s.muli      s50, s44, #1000
     s.add       s50, s50, s1
     s.st.d      [s41, #0], s50
-    mb.arrive   b10
+    mb.arrive   b2
     s.shli      s51, s44, #16
-    s.ori       s51, s51, #11
+    s.ori       s51, s51, #3
     mb.wait     s51
     s.addi      s44, s44, #1
     s.addi      s45, s45, #-1
@@ -255,7 +255,7 @@ prod1:
     br          done
 cons1:
     s.shli      s51, s44, #16
-    s.ori       s51, s51, #10
+    s.ori       s51, s51, #2
     mb.wait     s51
     s.ld.d      s52, [s41, #0]
     s.muli      s53, s44, #1000
@@ -263,8 +263,8 @@ cons1:
     s.subi      s53, s53, #1
     s.sub       s54, s52, s53
     .assert_eq  s54, #0, #53
-    mb.arm      s55, b11, #1, #0
-    mb.arrive   b11
+    mb.arm      s55, b3, #1, #0
+    mb.arrive   b3
     s.addi      s44, s44, #1
     s.addi      s45, s45, #-1
     br.nz       s45, cons1

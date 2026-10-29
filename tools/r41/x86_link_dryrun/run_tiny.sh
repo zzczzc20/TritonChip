@@ -11,6 +11,13 @@ trap 'rc=$?; date -u +%FT%TZ > "$out/end.utc"; printf "%s\n" "$rc" > "$out/exit"
 set +u
 source ~/x86_link_env.sh
 set -u
+if [ -x "$HOME/Xilinx/Vitis_HLS/2023.2/bin/vitis_hls" ]; then
+  export XILINX_HLS="$HOME/Xilinx/Vitis_HLS/2023.2"
+  export PATH="$XILINX_HLS/bin:$PATH"
+fi
+if [ -x "$HOME/r41-codex-t9d-bin/unzip" ]; then
+  export PATH="$HOME/r41-codex-t9d-bin:$PATH"
+fi
 cd "$src"
 export TNCA_BOARD=u280 VPP_JOBS=2 TNCA_IMAGE_CONFIG="$image"
 export LINK_EXTRA='--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=SSI_SpreadSLLs'
@@ -35,6 +42,7 @@ cp tools/r41/x86_link_dryrun/tiny_place_hook.tcl flow/fpga/place_r40_multicore.t
 sha256sum rtl/board/tnca_multicore_hbm_xo.v flow/fpga/place_r40_multicore.real.tcl flow/fpga/place_r40_multicore.tcl fpga/u280_multicore_hbm.cfg
 printf 'PACKAGE_START %s\n' "$(date -u +%FT%TZ)"
 python3 tools/r41/x86_link_dryrun/resource_watch.py "$out/package-memory.log" \
+  systemd-run --user --scope -p MemoryMax=12G -p MemorySwapMax=0 -p CPUQuota=600% \
   taskset -c 0-5 vivado -mode batch -source flow/fpga/package_xo.tcl \
   -tclargs "$src" "$out/xo" xcu280-fsvh2892-2L-e multicore-hbm >"$out/package.log" 2>&1
 printf 'PACKAGE_END %s\n' "$(date -u +%FT%TZ)"
@@ -42,5 +50,6 @@ sha256sum "$out/xo/tnca_u50.xo"
 wait_slot
 printf 'LINK_START %s\n' "$(date -u +%FT%TZ)"
 python3 tools/r41/x86_link_dryrun/resource_watch.py "$out/link-memory.log" \
+  systemd-run --user --scope -p MemoryMax=12G -p MemorySwapMax=0 -p CPUQuota=600% \
   taskset -c 0-5 bash flow/fpga/link.sh "$out/xo" >"$out/link.stdout" 2>&1
 printf 'LINK_END %s\n' "$(date -u +%FT%TZ)"

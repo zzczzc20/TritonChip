@@ -194,11 +194,19 @@ class Session:
         return per_image, calls
 
     def _call_prefill(self, ids, positions, vision):
+        # Canonical strides: a slice of the whole prompt keeps the prompt length as the stride of its size-1 batch
+        # dimension, and the compiled graph is guarded on input strides, so every new prompt length recompiled
+        # (dynamo: "tensor 'input_ids' stride mismatch at index 0"; CPU graph-count check,
+        # evidence/r41/chat/p3/graphcount.tgz).
+        ids = ids.clone(memory_format=torch.contiguous_format)
+        positions = positions.clone(memory_format=torch.contiguous_format)
         result = self.prefill(ids.to(self.dev), positions.to(self.dev), self.cache,
                               None if vision is None else vision)
         return result[0][0, -1]
 
     def _call_decode(self, ids, positions):
+        ids = ids.clone(memory_format=torch.contiguous_format)
+        positions = positions.clone(memory_format=torch.contiguous_format)
         return self.decode(ids.to(self.dev), positions.to(self.dev), self.cache)[0]
 
     def prefill_prompt(self, inputs, per_image):
@@ -466,19 +474,25 @@ class ChatApplication:
         result["versions"] = L.versions()
         if reference is not None:
             comparison = compare_logits(reference["logits"], result["logits"][:args.check_tokens])
-            # The gate is the fixed --max-rel-l2 limit, set before any device
-            # output is seen (discipline 2.1.6). The CPU reciprocal-scale floor
-            # is logged as a diagnostic only; it never raises the limit. A
-            # floor-derived limit was introduced after TLM q35-v1 failed and
-            # was withdrawn (evidence/r41/hbm_bw/AUDIT.md, R6).
+            # Default: the fixed --max-rel-l2 limit (the rule every run before 2026-10-28 is judged by; a
+            # floor-derived limit used after TLM q35-v1 failed was withdrawn, evidence/r41/hbm_bw/AUDIT.md R6).
+            # --cpu-floor-multiplier K > 0 selects the rule registered on 2026-10-28 before any run that uses it
+            # (author decision, spec/r41/chat/s2-qwen-chat-v3.json "tolerance_rule"): per step
+            # rel_l2 <= max(max_rel_l2, K x the CPU reference's own reciprocal-vs-IEEE scale-rounding floor).
+            # --require-argmax adds that the device argmax equal the reference argmax at every step.
             for row, floor in zip(comparison, scale_floor, strict=True):
                 row["cpu_scale_rounding_floor"] = floor["rel_l2"]
-                row["allowed_rel_l2"] = args.max_rel_l2
-            passed = all(row["rel_l2"] <= args.max_rel_l2 for row in comparison)
+                row["allowed_rel_l2"] = max(args.max_rel_l2, args.cpu_floor_multiplier * floor["rel_l2"])
+            passed = all(row["rel_l2"] <= row["allowed_rel_l2"] and (row["argmax_equal"] or not args.require_argmax)
+                         for row in comparison)
+            rule = ("fixed max_rel_l2" if args.cpu_floor_multiplier == 0 else
+                    "max(max_rel_l2, cpu_floor_multiplier x CPU scale-rounding floor)") + \
+                   (" and argmax equal" if args.require_argmax else "")
             result["teacher_forced_cpu_w8a8"] = dict(
                 reference_tokens=reference["generated_tokens"], checked_tokens=len(comparison),
-                max_allowed_rel_l2=args.max_rel_l2, passed=passed, steps=comparison,
-                interpretation="Reference tokens feed the device; the fixed max_allowed_rel_l2 is the gate; the CPU reciprocal-scale floor is a logged diagnostic and does not change the gate")
+                max_allowed_rel_l2=args.max_rel_l2, cpu_floor_multiplier=args.cpu_floor_multiplier,
+                require_argmax=args.require_argmax, rule=rule, passed=passed, steps=comparison,
+                interpretation="Reference tokens feed the device; the gate is the rule named in 'rule', fixed before the run")
             if not passed:
                 result["status"] = "failed-teacher-forced-tolerance"
         if keep_history:
@@ -609,6 +623,11 @@ def parser():
                     help="teacher-force this many greedy CPU-W8A8 tokens before free generation")
     ap.add_argument("--max-rel-l2", type=float, default=0.05,
                     help="fixed per-token relative-L2 limit; fixed before the run, never derived from its output")
+    ap.add_argument("--cpu-floor-multiplier", type=float, default=0.0,
+                    help="0 (default): the fixed limit alone; K > 0: the 2026-10-28 registered rule, limit "
+                         "max(max-rel-l2, K x the CPU reference's own scale-rounding floor)")
+    ap.add_argument("--require-argmax", action="store_true",
+                    help="also require the device argmax to equal the reference argmax at every checked step")
     ap.add_argument("--prefill-chunk", type=int, default=0,
                     help="prefill text in chunks of this many tokens (remainder through the decode graph), so the "
                          "compiled graphs do not depend on prompt length; 0 prefills each prompt whole")
@@ -626,7 +645,7 @@ def main(argv=None):
     validate_sampling(args.temperature, args.top_k, args.top_p)
     if args.check_tokens < 0 or args.check_tokens > args.new_tokens:
         raise ValueError("check-tokens must be in 0..new-tokens")
-    if args.max_rel_l2 < 0:
+    if args.max_rel_l2 < 0 or args.cpu_floor_multiplier < 0:
         raise ValueError("numerical allowances must be nonnegative")
     if (args.interactive or args.script) and args.check_tokens:
         raise ValueError("interactive teacher forcing would move the model between CPU and TNCA; use one-shot mode")

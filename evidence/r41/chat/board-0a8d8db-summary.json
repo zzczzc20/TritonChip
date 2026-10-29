@@ -1,0 +1,23 @@
+{
+ "domain": "board",
+ "archive": "evidence/r41/chat/board-0a8d8db.tgz",
+ "archive_sha256": "d57b2c03d58f7ae47f5ab05e797d0b810d3ad6f5553e14b824b7dca6dc9d6942",
+ "steps": [
+  {
+   "step": "q35-session",
+   "status": "failed",
+   "returncode": -9,
+   "host_wall_seconds": 410.1606444939971,
+   "started_utc": "2026-10-28T12:45:00.847747+00:00",
+   "ended_utc": "2026-10-28T12:51:51.010217+00:00",
+   "image_sha256": "30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de",
+   "image_uuid": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+   "clock_hz": 100000000,
+   "uuid_before": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+   "uuid_after": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+   "clock_mhz_before": 100,
+   "clock_mhz_after": 100,
+   "stderr_tail": "ash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.\n[transformers] `causal_conv1d_update` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.\n[transformers] `fused_recurrent_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.\n"
+  }
+ ]
+}

@@ -861,3 +861,144 @@ spec/r41/chat/board_queue_v2.sh "$PWD" "$HOME/r41_chat_4b0eb91_out"
 
 Prepared, not launched. The lead decides whether to launch now or after the pending TLM/RTL results; the q35
 session check and the two-image and script steps are not yet proven on TLM for this source.
+
+### Superseding lead-only chat launch (immutable 0a8d8db source) — 2026-10-28
+
+The 4b0eb91 command above must not be run: in that source the logits download for host-side token selection was
+counted inside the step's transfer meter, so steady decode would have reported host reads that the manifest says
+must not happen. `0a8d8db` reports it separately as `logits_download_bytes`; a default-settings TLM run of the
+current source shows 0 host reads and 40 bytes written per steady decode token and passes the fixed 0.05 gate
+(`chat/p3/tlm-vl-default-v2.tgz`). TLM results of the other P3 runs are in `doc/r41_chat.md`: the Qwen3-VL
+session check, default-settings and two-image runs pass; both Qwen3.5 4-layer runs fail the 0.05 gate at the
+second token (0.060020090237703445, argmax equal) and the Qwen3.5 session repeat is bitwise equal. The X8 RTL
+control is still running (first case passed).
+
+Commit `0a8d8dbf5f904a8ad7f1992abe615b8dc423f32a` is staged at `~/r41_chat_0a8d8db` on acf3019: 4,150 tracked files match their Git blob SHA-1
+identities, no mismatches (`chat/staged-source-0a8d8db.json`); `--check-only` returns `prepared-only`,
+`card_access=false` (`chat/staged-queue-check-0a8d8db.json`). Manifest, steps and deviations are as described for
+4b0eb91 (`spec/r41/chat/s2-qwen-chat-v2.json`, unchanged). Board time: at most the queue's 10,800-second execution
+cap plus at least 900 s of idle wait; there is no board measurement of Qwen3.5 yet, so the actual use is unknown.
+
+With the approved run-1 image already loaded, on acf3019, never alongside another U280 job:
+
+```sh
+cd ~/r41_chat_0a8d8db
+spec/r41/chat/board_queue_v2.sh "$PWD" "$HOME/r41_chat_0a8d8db_out"
+```
+
+Prepared, not launched.
+
+## 2026-10-28 (Claude, workstream D / P3) — v2 failure diagnosed; v3 chat queues prepared
+
+Follows `doc/engineering_discipline.md`. Author decisions cited below: the author's decisions of 2026-10-28 in the
+lead's chat, relayed by the coordinator (tolerance rule and chat-quality criterion; board environment).
+
+**0a8d8db queue (board, launched by the lead).** `q35-session` received SIGKILL after 410 s with a 17,489,168 KiB peak
+child RSS and empty stdout; the VL steps did not run; image UUID and 100 MHz clock unchanged before and after
+(`chat/board-0a8d8db.tgz`, `board-0a8d8db-summary.json`). The harness kills only on timeout and did not. acf3019 runs
+`systemd-oomd` and its user slice reports `oom_kill 1` (an untimed counter, `board-0a8d8db-host-memory-events.txt`): a
+kernel OOM kill on the shared host is the likely sender, not proven. Preserved as a failure.
+
+**Cause and generic fix (unit tests, RTL simulation, CPU).** Full-depth Qwen3.5's CPU phase peaks at 7,192,212 KiB on
+GB10; the device phase multiplied host memory, because `transport.upload` expanded every payload into a Python list of
+64-bit integers and the path added further full-size copies. The payload is now passed as one bytes view to the DMA in
+64 MiB chunks (the per-word path stays as the generic fallback). On the RTL stand-in a 256 KiB upload reads back bit for
+bit with a Python allocation peak of 896,215 bytes, against 5,900,871 on the old path; DMA, handoff, host-copy, MMIO,
+HBM-layout, backend and hbm8 regression tests pass (`chat/p3/upload-tests.tgz`). Board memory with the fix is not yet
+measured. acf3019 had 16 GB available at staging, with the membound queue running.
+
+**lm_head finding.** Qwen3.5 ties `lm_head` to the unconverted embedding and its checkpoint has no `lm_head` scale;
+transformers built an FP8Linear with an uninitialized `weight_scale_inv` that `FP8Linear.forward` never reads (it runs
+`F.linear` on a non-8-bit weight). Earlier CPU and device logits therefore used the intended bf16 projection and are
+unaffected; Qwen3-VL ignores `lm_head` in its config. The loader now leaves unconverted any module whose block scale the
+checkpoint lacks; CPU logits are bit identical (`chat/p3/lmhead-and-memory-diag.tgz`), and the board environment's loader
+reports `unscaled_modules_not_converted=['lm_head']` with no missing keys (`chat/hostcheck-q35-90f1a60.tgz`, CPU only).
+
+**Rule and quality check.** The v3 manifests register, before any run, the teacher rule rel_l2 <= max(0.05, 2 x the CPU
+reference's own scale-rounding floor) plus argmax equality, with date, justification and source (`tolerance_rule`), and
+the chat-quality check `spec/r41/chat/quality-v1.json` scored against CPU reference answers archived first
+(`chat/quality-ref/`). Earlier runs keep their judgments; the Qwen3.5 TLM runs remain failed under 0.05. The ledger now
+cites the author's approval of the `.pth` torchenv as the default chat environment (P8 and P3 rows).
+
+**TLM proofs still running on GB10:** Qwen3.5 4 layers under the new rule with the loader fix, and the quality runner on
+Qwen3-VL 1 layer against a 1-layer CPU reference.
+
+### Prepared lead-only chat launches (immutable 90f1a60 source; supersede 0a8d8db)
+
+Commit `90f1a60531e7f86131ca3ce0595b1e86d996892b` is staged at `~/r41_chat_90f1a60` on acf3019: 4,169 tracked files match their Git blob SHA-1 identities,
+no mismatches (`chat/staged-source-90f1a60.json`); both queues return `prepared-only`, `card_access=false`
+(`chat/staged-queue-check-90f1a60.txt`). Two queues, run one after the other, never alongside another U280 job, with the
+approved run-1 image already loaded; neither programs or resets the card:
+
+```sh
+cd ~/r41_chat_90f1a60
+spec/r41/chat/board_queue_v3_q35.sh "$PWD" "$HOME/r41_chat_90f1a60_q35_out"
+# after it has finished:
+spec/r41/chat/board_queue_v3_vl.sh "$PWD" "$HOME/r41_chat_90f1a60_vl_out"
+```
+
+`v3-q35`: `q35-session` (teacher check under the new rule, session check) and `q35-quality`. `v3-vl`: `vl-quality`
+(including the image prompt) and `vl-session`. Each queue is capped at 10,800 s of execution plus at least 900 s of
+idle wait. Qwen3.5 has no board timing yet; the only board timing is the 51aef19 VL step (about 64 s per steady decode
+token and about 6 minutes of compilation per new prompt length), so the VL queue is expected to need most of its cap.
+Prepared, not launched.
+
+**Withdrawn (2026-10-28, later the same day):** the 90f1a60 commands above must not be run. A TLM run of its quality
+step failed on the second prompt: a different prompt length made `torch.compile` recompile prefill with a symbolic
+length, which the TNCA lowering refuses (`chat/p3/tlm-v3-proofs-1.tgz`, `tlm-vl-quality-v1`). The fix (static-shape
+compilation, chunked prefill in the quality steps) is committed; a replacement staging and command follow after its
+TLM proofs.
+
+### Replacement lead-only chat launches (immutable d7a0185 source; supersede 90f1a60)
+
+Changes since 90f1a60: chat stages compile with static shapes (`dynamic=False`), and the quality steps prefill text in
+chunks of 8. TLM proofs (default settings, X8 profile): a different-length second prompt compiles one new static graph,
+and the same-session repeat reproduces every logit bit for bit (`chat/p3/tlm-vl-shapes-v1.tgz`); Qwen3.5 4 layers
+passes the registered rule with `lm_head` unconverted (`chat/p3/tlm-v3-proofs-1.tgz`). A reduced chunked quality run
+on Qwen3-VL (1 layer, two prompts) is still running on GB10; its result will be appended here.
+
+Commit `d7a0185ea7c467f13d4aa450de813173d3549f39` is staged at `~/r41_chat_d7a0185` on acf3019: 4,176 tracked files match their Git blob SHA-1
+identities, no mismatches (`chat/staged-source-d7a0185.json`); both queues return `prepared-only`,
+`card_access=false` (`chat/staged-queue-check-d7a0185.txt`). Manifests `spec/r41/chat/s2-qwen-chat-v3-q35.json` and
+`-vl.json` carry the registered `tolerance_rule` and `chat_quality` blocks (author decisions, lead's chat,
+2026-10-28) and the author-approved interpreter. With the approved run-1 image already loaded, never alongside another
+U280 job, one after the other:
+
+```sh
+cd ~/r41_chat_d7a0185
+spec/r41/chat/board_queue_v3_q35.sh "$PWD" "$HOME/r41_chat_d7a0185_q35_out"
+# after it has finished:
+spec/r41/chat/board_queue_v3_vl.sh "$PWD" "$HOME/r41_chat_d7a0185_vl_out"
+```
+
+Board time: each queue at most 10,800 s of execution plus at least 900 s of idle wait, so at most about 6.5 h for
+both. No Qwen3.5 board timing exists. Prepared, not launched.
+
+### Replacement lead-only chat launches (immutable 51f31e8 source; supersede d7a0185)
+
+The d7a0185 commands must not be run. A reduced TLM quality run on that source showed that chunked prefill
+recompiled two graphs for every new prompt length (input slices kept the prompt length as a stride), which would have
+approached the recompile limit over the seven quality turns. 51f31e8 gives the inputs canonical strides: a CPU
+graph-count check over prompts of 11, 20 and 25 tokens compiles 2 graphs in total with no recompilation
+(`chat/p3/graphcount.tgz`). A TLM confirmation (`tlm-vl-quality-v3`, Qwen3-VL 1 layer, three prompts) is running and
+will be appended.
+
+Commit `51f31e8aee49a649e1a5678bc105b2f155d9fb51` is staged at `~/r41_chat_51f31e8` on acf3019: 4,181 tracked files match their Git blob SHA-1 identities,
+no mismatches (`chat/staged-source-51f31e8.json`); both queues return `prepared-only`, `card_access=false`
+(`chat/staged-queue-check-51f31e8.txt`). With the approved run-1 image already loaded, never alongside another U280
+job, one after the other:
+
+```sh
+cd ~/r41_chat_51f31e8
+spec/r41/chat/board_queue_v3_q35.sh "$PWD" "$HOME/r41_chat_51f31e8_q35_out"
+# after it has finished:
+spec/r41/chat/board_queue_v3_vl.sh "$PWD" "$HOME/r41_chat_51f31e8_vl_out"
+```
+
+Board time: each queue at most 10,800 s of execution plus at least 900 s of idle wait, so at most about 6.5 h for both.
+Prepared, not launched.
+
+TLM confirmation of 51f31e8 (appended): `tlm-vl-quality-v3` (Qwen3-VL, 1 layer, default settings, three prompts of
+different lengths with chunked prefill) passes. The session compiled 2 graphs for the first prompt and none afterwards,
+and every device answer equals the 1-layer CPU reference token for token (`chat/p3/tlm-vl-quality-v3.tgz`; a
+reduced-depth mechanism proof, not a quality result). The 51f31e8 commands above stand.

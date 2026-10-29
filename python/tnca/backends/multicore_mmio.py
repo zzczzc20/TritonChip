@@ -72,6 +72,14 @@ class MulticoreMMIOBackend(U50Backend):
             self._handoff(addr + register_words * 8, (len(words)-register_words)*8)
         return super()._put_payload(addr, words)
 
+    def _put_payload_bytes(self, addr, data):
+        nwords = len(data) // 8
+        self._check_window(addr, nwords, 'upload')
+        register_words = self._dma_split(addr, nwords)
+        if register_words < nwords:
+            self._handoff(addr + register_words * 8, (nwords - register_words) * 8)
+        return super()._put_payload_bytes(addr, data)
+
     def _get_payload(self, addr, nwords):
         self._check_window(addr, nwords, 'download')
         register_words = self._dma_split(addr, nwords)

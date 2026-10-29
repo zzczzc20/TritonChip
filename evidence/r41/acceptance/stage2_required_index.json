@@ -1300,14 +1300,15 @@
     "evidence/r41/chat/board-51aef19.tgz": "a8d14f9792a18249f7a08f8fcda4ac75a588cb6ebaeeb08bd3e7da7749a1a068",
     "evidence/r41/chat/board-51aef19-summary.json": "4fb65302973276b38a2c0ca17c6f5735a7fb493ee05bcf58dce4cdab05478065",
     "evidence/r41/chat/staged-inputs-qwen35-acf3019.json": "1bf011bfa5c9d55256c3e27409cf5e143c7f7c61312e54d75333482bc7e644c1",
-    "spec/r41/chat/s2-qwen-chat-v2.json": "acca48124090a71fd1419f12718d723eb5a9e8242e18e9da30867969a449af4f"
+    "spec/r41/chat/s2-qwen-chat-v2.json": "acca48124090a71fd1419f12718d723eb5a9e8242e18e9da30867969a449af4f",
+    "evidence/r41/chat/board-0a8d8db.tgz": "d57b2c03d58f7ae47f5ab05e797d0b810d3ad6f5553e14b824b7dca6dc9d6942"
   },
   "followups": [
     {
       "id": "P8.fp8_hub",
       "status": "passed",
       "classification": "Supplementary",
-      "reason": "35/35 Hub/compile/FP8Linear cases pass numerically on the approved run-1 image. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
+      "reason": "35/35 Hub/compile/FP8Linear cases pass numerically on the approved run-1 image. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result. Environment: the author approved this torchenv with the .pth that sets torch.version.cuda as the default environment for chat (author decision, in the lead's chat, 2026-10-28, relayed by the coordinator); non-default compiler knobs such as TNCA_IEEE_DIV=1 remain labelled.",
       "evidence": [
         "evidence/r41/acceptance/p8/metrics.json",
         "evidence/r41/acceptance/p8/environment.json",
@@ -1320,7 +1321,7 @@
       "id": "P8.qwen_fp8",
       "status": "passed",
       "classification": "Supplementary",
-      "reason": "14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from the required full BF16 model. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result.",
+      "reason": "14/14 linears and five two-layer prefill/decode states pass; steady state has no recompilation or host transfers. Different checkpoint/scope from the required full BF16 model. Run by an agy/Gemini session (63acb94) that the lead launched on the author's instruction of 2026-10-26, not by the lead itself. Deviation: a .pth sets torch.version.cuda on CPU-only torch so that the kernels package selects its Triton build; correctness results stand against references, but this is not a standard-path default result. Environment: the author approved this torchenv with the .pth that sets torch.version.cuda as the default environment for chat (author decision, in the lead's chat, 2026-10-28, relayed by the coordinator); non-default compiler knobs such as TNCA_IEEE_DIV=1 remain labelled.",
       "evidence": [
         "evidence/r41/acceptance/p8/metrics.json",
         "evidence/r41/acceptance/p8/board-records.tgz"
@@ -1331,7 +1332,7 @@
       "id": "P3.chat_vl_full",
       "status": "passed",
       "classification": "Supplementary",
-      "reason": "Board, run-1 image (UUID 49964b17, 100 MHz before and after): full-checkpoint Qwen3-VL-2B-Instruct-FP8 (28 layers) generated 4 tokens through tools/models/chat.py from staged source 51aef19; both teacher-forced tokens match the CPU W8A8 argmax with relative L2 0.03492688958696281 and 0.03500718871823851, below the fixed 0.05 gate; steady decode 0.015720705662231143 tokens/s with no new graphs or host reads. Deviations from default standard-path settings, so not a default result (doc/engineering_discipline.md 2.2.1): the manifest sets TNCA_IEEE_DIV=1 and TNCA_TORCH_DEVICE=native, compiles for core-vrf-sync-v5 on the X8 image, and runs under r41s2_fp8env, whose .pth sets torch.version.cuda (the P8 deviation). Scope: FP8 VL text chat, not the required BF16 Qwen3.5-2B workload.",
+      "reason": "Board, run-1 image (UUID 49964b17, 100 MHz before and after): full-checkpoint Qwen3-VL-2B-Instruct-FP8 (28 layers) generated 4 tokens through tools/models/chat.py from staged source 51aef19; both teacher-forced tokens match the CPU W8A8 argmax with relative L2 0.03492688958696281 and 0.03500718871823851, below the fixed 0.05 gate; steady decode 0.015720705662231143 tokens/s with no new graphs or host reads. Deviations from default standard-path settings, so not a default result (doc/engineering_discipline.md 2.2.1): the manifest sets TNCA_IEEE_DIV=1 and TNCA_TORCH_DEVICE=native, compiles for core-vrf-sync-v5 on the X8 image, and runs under r41s2_fp8env, whose .pth sets torch.version.cuda (the P8 deviation). Scope: FP8 VL text chat, not the required BF16 Qwen3.5-2B workload. Environment: the author approved this torchenv with the .pth that sets torch.version.cuda as the default environment for chat (author decision, in the lead's chat, 2026-10-28, relayed by the coordinator); non-default compiler knobs such as TNCA_IEEE_DIV=1 remain labelled.",
       "evidence": [
         "evidence/r41/chat/board-51aef19.tgz",
         "evidence/r41/chat/board-51aef19-summary.json"
@@ -1342,10 +1343,11 @@
       "id": "P3.chat_q35_full",
       "status": "failed",
       "classification": "Supplementary",
-      "reason": "Board queue 51aef19: the Qwen3.5-4B-FP8 step failed in 20 s before loading, because the pinned checkpoint was not in acf3019's input cache. The failure is preserved. The checkpoint has since been staged and verified (evidence/r41/chat/staged-inputs-qwen35-acf3019.json); s2-qwen-chat-v2 registers the rerun. No Qwen3.5 board generation exists.",
+      "reason": "Board queue 51aef19: the Qwen3.5-4B-FP8 step failed in 20 s before loading, because the pinned checkpoint was not in acf3019's input cache. Board queue 0a8d8db (s2-qwen-chat-v2): its first step q35-session was killed by SIGKILL after 410 s at 17,489,168 KiB peak child RSS, before any output, on the shared 62 GB host; the harness did not kill it (no timeout) and the user slice records a kernel OOM kill. Both failures are preserved. Causes fixed: the inputs are staged and verified; the host upload path no longer expands payloads into Python integer lists. No Qwen3.5 board generation exists.",
       "evidence": [
-        "evidence/r41/chat/board-51aef19.tgz",
+        "evidence/r41/chat/board-0a8d8db.tgz",
         "evidence/r41/chat/board-51aef19-summary.json",
+        "evidence/r41/chat/board-51aef19.tgz",
         "evidence/r41/chat/staged-inputs-qwen35-acf3019.json",
         "spec/r41/chat/s2-qwen-chat-v2.json"
       ],

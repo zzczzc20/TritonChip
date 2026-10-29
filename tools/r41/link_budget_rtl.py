@@ -34,7 +34,7 @@ PROFILE = 'core-vrf-sync-v5-x8'
 # image parameter -> board-bench parameter passed through rtl_params
 BENCH = ('WAYS', 'WAY_W', 'DCO_REGISTERED_RANGES', 'NUCA_REGISTER_VICTIM_SELECT', 'NUCA_CACHE_DATA_PIPELINE',
          'NUCA_REGISTER_VICTIM_RANK', 'DCO_TLW_PIPE_STAGES', 'DCO_REGISTER_WRITES', 'DCO_LOCAL_REPLICAS',
-         'HAS_TENSOR_XPOSE',
+         'HAS_TENSOR_XPOSE', 'MTX_VRF_REG',
          # R41 G2 sizing and section-4 changes, bench parameters of tnca_multicore_board_regs
          'NUM_RCTX', 'RCTX_W', 'PHYS_VREGS', 'PHYS_W', 'ACC_N', 'ACC_W', 'BAR_N', 'BAR_W', 'BAR_EPOCH_W',
          'PHYS_ADDR_W', 'NUCA_SHARED_DATA_READ', 'AXI_LINE_LUTRAM',

@@ -82,6 +82,9 @@ module tnca_core #(
     //               buffer first (tnca_matrix ABUF) instead of one register
     //               read per MAC.
     parameter MTX_ABUF       = 0,
+    //   MTX_VRF_REG (R41 K8) register the banked VRF's matrix response.
+    //               The matrix's valid handshake absorbs the extra cycle.
+    parameter MTX_VRF_REG    = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
     //               (tnca_lsu_pair), so an access starts while the one ahead
     //               waits for memory; atomics and fences see one access at
@@ -913,12 +916,22 @@ module tnca_core #(
                 $display("FAIL tnca_core assert @%0t: the FPU's operand copy differs", $time);
 `endif
 
-        // The matrix consumes its data in the cycle its response is valid,
-        // so it comes straight off port 3. Leaving this undriven left the
-        // matrix reading Z, and the Z propagated as far as the writeback
-        // reservation shift register, which then disagreed with reality --
-        // an assertion firing three stages away from its cause.
-        assign mtx_vrf_data = vrf_rsp_data[3*VW +: VW];
+        // The matrix consumes its data in the cycle its response is valid.
+        wire [VW-1:0] mtx_vrf_rsp_data = vrf_rsp_data[3*VW +: VW];
+        wire mtx_vrf_rsp_valid = vrf_rsp_valid[3];
+        if (MTX_VRF_REG == 0) begin : g_mtx_vrf_direct
+            assign mtx_vrf_data = mtx_vrf_rsp_data;
+            assign mtx_vrf_valid_w = mtx_vrf_rsp_valid;
+        end else begin : g_mtx_vrf_reg
+            reg [VW-1:0] data_q;
+            reg valid_q;
+            always @(posedge clk) begin
+                valid_q <= rst_n && !launch_valid && mtx_vrf_rsp_valid;
+                if (mtx_vrf_rsp_valid) data_q <= mtx_vrf_rsp_data;
+            end
+            assign mtx_vrf_data = data_q;
+            assign mtx_vrf_valid_w = valid_q;
+        end
         assign txf_vr_valid = vrf_rsp_valid[4];
         assign txf_vr_data  = vrf_rsp_data[4*VW +: VW];
 
@@ -1057,7 +1070,7 @@ module tnca_core #(
         wire pf_go = pf_sel && !(r_valid && r_vsrc_haz) && !pf_haz_w;
         wire [2:0] rq_src = pf_go ? pf_need : of_want;
         wire [4:0] rq_v = {txf_vr_req && !txf_vr_valid,
-                           mtx_vrf_req && !mtx_vrf_valid_w, rq_src};
+                           mtx_vrf_req && !mtx_vrf_rsp_valid && !mtx_vrf_valid_w, rq_src};
         wire [RCTX_W-1:0] rq_src_rctx = pf_sel ? d_rctx : r_rctx;
         wire [5*RCTX_W-1:0] rq_rctx = {txf_vr_rctx, mtx_rctx, {3{rq_src_rctx}}};
         wire [5*8-1:0] rq_idx = pf_sel
@@ -1118,7 +1131,6 @@ module tnca_core #(
                 $display("FAIL tnca_core assert @%0t: engine write ready %b, the file says %b",
                          $time, txf_vw_ready, !txf_vw_en || wr_ok[1]);
 `endif
-        assign mtx_vrf_valid_w = vrf_rsp_valid[3];
 
         tnca_vrf_banked #(
             .PHYS_VREGS(PHYS_VREGS), .VREGS_PER_RCTX(VREGS_PER_RCTX),

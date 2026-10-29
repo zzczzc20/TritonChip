@@ -39,6 +39,7 @@ module tb_tnca_core;
     parameter RSLICE         = 0;
     parameter RPAIR          = 0;
     parameter MTX_ABUF       = 0;
+    parameter MTX_VRF_REG    = 0;
     parameter HAS_TENSOR_XPOSE = 0;
 
     parameter NUM_RCTX       = 2;
@@ -105,7 +106,7 @@ module tb_tnca_core;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_VRF_REG(MTX_VRF_REG),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),
@@ -157,6 +158,11 @@ module tb_tnca_core;
     integer cyc;
     integer expectfault;
     reg do_trace, do_dump, want_fault;
+    integer mtx_vrf_reads = 0;
+    always @(posedge clk) begin
+        if (!rst_n || launch_valid) mtx_vrf_reads <= 0;
+        else if (dut.vrf_req_accept[3]) mtx_vrf_reads <= mtx_vrf_reads + 1;
+    end
 
     initial begin
         if (!$value$plusargs("hex=%s", hexfile)) begin
@@ -229,6 +235,7 @@ module tb_tnca_core;
         if (do_dump) u_mem.dump_hex(dumpfile, dumpfirst, dumpcount);
 
         $display("---- tnca core run ----");
+        $display("mtx_vrf_reads=%0d", mtx_vrf_reads);
         $display("cycles=%0d issued=%0d hazard=%0d lsu=%0d wb=%0d squash=%0d",
                  cyc, perf_issued, perf_stall_hazard, perf_stall_lsu,
                  perf_stall_wb, perf_squash);
@@ -319,6 +326,17 @@ module tb_tnca_core;
             $display("[%0t] rctx=%0d pc=%08h maj=%02h fn=%02h dst=%0d/%0d",
                      $time, dut.x_rctx, dut.x_pc, dut.x_major, dut.x_func,
                      dut.x_dstc, dut.x_dsti);
+        if (rst_n && $test$plusargs("mtxtrace")) begin
+            if (dut.u_mtx.acc_w_en)
+                $display("[mtx] cyc=%0d acc slot=%0d row=%0d lanes=%04h data=%0128h",
+                         cyc, dut.u_mtx.acc_w_slot, dut.u_mtx.acc_w_row,
+                         dut.u_mtx.acc_w_lane, dut.u_mtx.acc_w_data);
+            if (dut.mtx_free)
+                $display("[mtx] cyc=%0d src_free bar=%0d", cyc, dut.mtx_free_bar);
+            if (dut.mtx_done)
+                $display("[mtx] cyc=%0d done slot=%0d bar_en=%0d bar=%0d",
+                         cyc, dut.mtx_done_slot, dut.mtx_done_bar_en, dut.mtx_done_bar);
+        end
     end
 
 endmodule

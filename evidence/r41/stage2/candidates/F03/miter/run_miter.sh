@@ -11,7 +11,7 @@ wd=$(mktemp -d ${TMPDIR:-/tmp}/fma_miter.XXXX)
 sed 's/module tnca_fma_xls(/module tnca_fma_xls_ref(/' $REF/tnca_fma_xls.v > $wd/ref_l2.v
 sed 's/module tnca_fma_l3_xls(/module tnca_fma_l3_xls_ref(/' $REF/tnca_fma_l3_xls.v > $wd/ref_l3.v
 mkdir -p $wd/new
-cp $NEW/gen/tnca_fma_*_xls.v $wd/new/
+cp $NEW/gen/tnca_fma*_xls.v $wd/new/
 # Verilator resolves the pins of the untaken g_bad branch (a deliberate
 # refusal to elaborate an unsupported LAT); the miter only builds LAT 2 and 3,
 # so that one instance line is dropped from the copy it compiles.

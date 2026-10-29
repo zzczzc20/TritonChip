@@ -27,6 +27,7 @@ module tb_fp32_fma;
     // FMA_LAT is the DUT's: 2 or 3 (tnca_fp32_fma's generated instances);
     // the queue offset is one less, for the reason above.
     parameter  FMA_LAT = 2;
+    parameter  FMA_IMPL = 0;    // tnca_fp32_fma IMPL (R41 G2: 1 = the tnca_fmad.x stages)
     localparam LATENCY = FMA_LAT - 1;
     localparam MAXQ    = 8;
 
@@ -38,7 +39,7 @@ module tb_fp32_fma;
     reg         sub_c, mul_only, ftz;
     wire [31:0] y;
 
-    tnca_fp32_fma #(.LAT(FMA_LAT)) dut (
+    tnca_fp32_fma #(.LAT(FMA_LAT), .IMPL(FMA_IMPL)) dut (
         .clk(clk), .rst_n(rst_n),
         .a(a), .b(b), .c(c),
         .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz),

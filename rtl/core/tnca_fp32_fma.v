@@ -58,7 +58,12 @@
 //==============================================================================
 
 module tnca_fp32_fma #(
-    parameter LAT = 2
+    parameter LAT = 2,
+    // R41 G2 area rebuild (xls/tnca_fmad.x, evidence/r41/hbm_bw/fma_dslx/):
+    // 0 = the stages generated from xls/tnca_fma.x (the default, unchanged);
+    // 1 = the same function, bit for bit, with each stage replaced by its
+    //     proved-equal tnca_fmad.x counterpart where one exists.
+    parameter IMPL = 0
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -91,12 +96,23 @@ module tnca_fp32_fma #(
                 if (!rst_n) s0_q <= {W_ALIGN{1'b0}};
                 else        s0_q <= s0_d;
 
-            tnca_fma_norm_xls u_s1 (.s(s0_q), .out(s1_d));
+            if (IMPL == 1) begin : g_norm_d
+                tnca_fmad_norm_xls u_s1 (.s(s0_q), .out(s1_d));
+            end else begin : g_norm
+                tnca_fma_norm_xls u_s1 (.s(s0_q), .out(s1_d));
+            end
             always @(posedge clk)
                 if (!rst_n) s1_q <= {W_NORM{1'b0}};
                 else        s1_q <= s1_d;
 
             tnca_fma_round_xls u_s2 (.s(s1_q), .out(y));
+        end else if (LAT == 3 && IMPL == 1) begin : g_l3d
+            tnca_fmad_l3_xls u_xls (
+                .clk(clk), .rst(!rst_n),
+                .a(a), .b(b), .c(c),
+                .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz),
+                .out(y)
+            );
         end else if (LAT == 3) begin : g_l3
             tnca_fma_l3_xls u_xls (
                 .clk(clk), .rst(!rst_n),

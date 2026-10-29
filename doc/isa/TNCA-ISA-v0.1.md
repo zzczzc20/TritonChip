@@ -894,6 +894,60 @@ compiler owns all three (§12.12):
 
 ---
 
+### 9C.4 PROPOSAL, NOT APPROVED: `m.mma.dp.async` (grouped dot-product accumulation)
+
+> **Status: proposal for author approval (R41 G2, 2026-10-29).** Nothing in
+> this subsection is part of the ISA until the author approves it. No
+> implementation decodes it; the lane that would execute it
+> (`rtl/core/tnca_mac_lane.v`, `xls/tnca_mac.x`) is default-off and
+> uninstantiated. Evidence: `evidence/r41/hbm_bw/fma_dslx/README.md`; the
+> earlier r41-pmac study: `evidence/r41/pmac/README.md` §3.
+
+| `func` | Mnemonic | Fields | `mod` |
+|---:|---|---|---|
+| `0x02` | `m.mma.dp.async Ad, Va, Vb, Sc` | as `m.mma.async` | `[1:0]` K, `[3:2]` A format, `[4]` source-free, `[6:5]` B format, `[9:7]` reserved, zero |
+
+`mod[1:0]`, `mod[4]`, the fragment layout (§9C.2) and the completion events are
+those of `m.mma.async`. A and B formats are coded `0` = FP16, `1` = BF16,
+`2` = FP8 E5M2, `3` = FP8 E4M3, independently (a mixed pair such as E4M3
+weights with FP16 activations is legal). Gated by a new capability bit
+`CAPABILITY0.MATRIX_DP` (proposed bit 12); the formats used must also have
+their `MATRIX_*` bits.
+
+**Semantics.** The K dimension is taken in groups of G consecutive `k`, in
+increasing order, with
+
+| A × B formats | G |
+|---|---:|
+| E4M3 × E4M3 | 4 |
+| any other pair | 2 |
+
+and for each group
+
+```
+C <- RNE_f32( C + RO_48( sum over k in group of exact(A[m][k]) * exact(B[k][n]) ) )
+```
+
+`RO_48` rounds the exact group sum to 48 significant bits, round to odd,
+unbounded exponent. For E4M3 × E4M3 every group sum fits in 38 bits, so RO_48
+is the identity and the step is the correctly rounded `RNE_f32(C + sum)`.
+Specials: a NaN element, 0 × Inf, or Inf products of opposite sign give NaN;
+otherwise an Inf product follows IEEE addition with C. A group sum that is
+zero takes the sign of IEEE addition of its zero products (negative only if all
+are negative zeros). There is no flush-to-zero and no `mul_only`. The
+reference is `tools/model/fdp.py` (`lane_mac_ref` for one group).
+
+**Why a new opcode and not a faster `m.mma.async`.** §9C.1 fixes one rounding
+per product in increasing k order; grouping changes the result in the last
+place (only through the one RNE per group and, for spread exponents, RO_48), so
+it is a different operation with its own name, as §9C.1 requires.
+
+**Why these G.** The lane forms one "product" per cycle for the shared FP32
+back end (align, normalise, round). Four E4M3 × E4M3 products sum exactly in a
+fixed-point DSP cascade at no LUT cost; four E5M2 (or mixed FP8) products need
+a 66-bit (52-bit) field and an alignment network that costs more than the lane
+it rides on, so those formats, like the 16-bit ones, are taken two per cycle.
+
 ## 9D. `major = 0x30` — Tensor descriptor and RF window
 
 ### 9D.1 Two objects, deliberately separate (§7.1)
@@ -1178,6 +1232,7 @@ turn into a silent hang.
 | 9 | `PACKED_F16` | Stage 2 |
 | 10 | `CACHE_HINTS` | Stage 4 |
 | 11 | `MATRIX_FP8` | native `m.mma` with OCP FP8 E5M2 **and** E4M3 inputs |
+| (12) | (`MATRIX_DP`) | **proposed, not approved** (§9C.4): native `m.mma.dp.async` |
 
 A capability bit being clear means the corresponding encodings raise
 `ILLEGAL_INSTRUCTION`. It never means "works, but slowly, by some other route" —

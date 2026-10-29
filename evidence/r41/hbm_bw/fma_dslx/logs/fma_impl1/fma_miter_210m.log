@@ -1,0 +1,18 @@
+52a3c66203b2b80c2c31222a8d739fb1ca56930596155117d8fe0fef49924b2f  ref_l2.v
+61af8d67fa8b49d7e12db9716b1cd1f2b9744e514ef7b6bf9602f2c4dd43b891  ref_l3.v
+35dacaaa8ba50cabb8f5ba4eb141ac7f2dc1c9861f5c78875d77d17ea94e40f3  new/tnca_fma_align_xls.v
+9fd604dd513cf64df508323e0db23b40b3601c84e58ccdb4d30e42a8fc331399  new/tnca_fmad_l3_xls.v
+fd0676476170ad101e3713a06f99abcc73dab71195ee4a031f0b3a425ea42794  new/tnca_fmad_norm_xls.v
+61da943c3f9943506020e6b06f457a332baf04b1690c8c589e03713ba8b7f7e5  new/tnca_fma_l3_xls.v
+092a89235f8ef9f3f2da2686f32c9a845977ba4476df0165037e943e934557a0  new/tnca_fma_norm_xls.v
+237dfb996a1b59730d6a5e33eca92343b7debfe47425df128c9357cde1ce9ccf  new/tnca_fma_round_xls.v
+6f49bfd707dbe6be7eee5e49f04232b4e52b7e0e2b5168f4db77423d62dffc4f  new/tnca_fp32_fma.v
+class 0: 30000000 vectors, 0 mismatches
+class 1: 30000000 vectors, 0 mismatches
+class 2: 30000000 vectors, 0 mismatches
+class 3: 30000000 vectors, 0 mismatches
+class 4: 30000000 vectors, 0 mismatches
+class 5: 30000000 vectors, 0 mismatches
+class 6: 30000000 vectors, 0 mismatches
+fma_miter: 210000000 vectors x 2 latencies, 0 mismatches
+PASS

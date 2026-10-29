@@ -181,6 +181,34 @@ def lane_dp_ref(mode: int, a: int, b: int, c: int, alt_a: int, alt_b: int,
     return add_round(g, c, sub_c)
 
 
+# The shared MAC lane (xls/tnca_mac.x, rtl/core/tnca_mac_lane.v, R41 G2):
+# DP2 takes a 2-bit element code per operand, each element in a 16-bit slot
+# (an 8-bit element in the slot's low byte, the high byte ignored); DP4 is
+# E4M3 x E4M3 only.
+MAC_CODE16 = ('f16', 'bf16', 'e5m2', 'e4m3')
+
+
+def lane_mac_ref(mode: int, a: int, b: int, c: int, fa: int = 0, fb: int = 0,
+                 sub_c: int = 0, exact: bool = False) -> int:
+    """Expected y of tnca_mac_lane in a packed mode (one group)."""
+    if mode == MODE_DP4:
+        fma, fmb = 'e4m3', 'e4m3'
+        ae, be = unpack(MODE_DP4, a), unpack(MODE_DP4, b)
+    elif mode == MODE_DP2:
+        fma, fmb = MAC_CODE16[fa], MAC_CODE16[fb]
+        ae, be = unpack(MODE_DP2, a), unpack(MODE_DP2, b)
+        if fa >= 2:
+            ae = [x & 0xff for x in ae]
+        if fb >= 2:
+            be = [x & 0xff for x in be]
+    else:
+        raise ValueError('lane_mac_ref: packed modes only')
+    g = group_sum(fma, fmb, ae, be)
+    if g[0] == 'fin' and not exact:
+        g = ('fin', ro(g[1]), g[2])
+    return add_round(g, c, sub_c)
+
+
 def mma_dp_ref(fa: str, fb: str, a_bits, b_bits, c_f32, M, N, K):
     """Reference for a whole m.mma.dp: C[MxN] (+)= A[MxK] . B[KxN], groups of
     G consecutive k in increasing order. a_bits is row-major MxK, b_bits KxN."""

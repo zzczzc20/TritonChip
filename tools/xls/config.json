@@ -170,6 +170,44 @@
       "top": "fdp_v3_f2",
       "pipeline_stages": 0,
       "why": "R41 packed dot-product lane, FEASIBILITY PROTOTYPE (evidence/r41/pmac/lane): not instantiated by the core. V3 front end, second half: |sum| as an unnormalised 48-bit product (RO_48 is the identity for E4M3) and the mode's select. Combinational."
+    },
+    {
+      "module": "tnca_fmad_norm_xls",
+      "source": "tnca_fmad.x",
+      "top": "fma32d_normalise",
+      "pipeline_stages": 0,
+      "why": "R41 G2 FMA rebuild (evidence/r41/hbm_bw/fma_dslx): the binary32 FMA's second stage with the 89-bit leading-zero count as a balanced tree (xls/tnca_lzc.x) instead of the stdlib clz, proved equal to tnca_fma::fma32_normalise for every input (prove_quickcheck normalise_equiv). Used by tnca_fp32_fma IMPL=1 (default 0) and by tnca_mac_lane. Combinational."
+    },
+    {
+      "module": "tnca_fmad_l3_xls",
+      "source": "tnca_fmad.x",
+      "top": "fma32d",
+      "pipeline_stages": 4,
+      "clock_period_ps": null,
+      "delay_model": "asap7",
+      "why": "R41 G2 FMA rebuild: tnca_fma_l3_xls's function (fma32d = fma32 with the tree leading-zero count, its normalise proved equal) scheduled the same way, four stages, for tnca_fp32_fma IMPL=1 at LAT 3 (default IMPL 0).",
+      "flop_outputs": false
+    },
+    {
+      "module": "tnca_mac_f1_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_f1",
+      "pipeline_stages": 0,
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off, not instantiated by the core until the gate passes. F1: the binary32 product (fma32_mul), the E4M3 DP4 group sum as a fixed-point DSP cascade, and the DP2 sum of two 16-bit-slot products. Combinational."
+    },
+    {
+      "module": "tnca_mac_f2_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_f2",
+      "pipeline_stages": 0,
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off, not instantiated by the core until the gate passes. F2: |sum|, RO_48 (tree leading-zero count) and the mode's product as an FmaProduct. Combinational."
+    },
+    {
+      "module": "tnca_mac_b0_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_b0",
+      "pipeline_stages": 0,
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off, not instantiated by the core until the gate passes. B0: the binary32 FMA's alignment with C (fma32_align_p), mul_only and ftz forced off in the packed modes. Combinational."
     }
   ]
 }

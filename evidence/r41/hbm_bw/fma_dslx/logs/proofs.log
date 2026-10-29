@@ -1,0 +1,34 @@
+Thu Oct 29 08:15:04 UTC 2026
+== prove_quickcheck tnca_lzc.x lzc89_is_clz
+[                    OK ] lzc89_is_clz
+rc=0 seconds=0
+== prove_quickcheck tnca_lzc.x lzc64_is_clz
+[                    OK ] lzc64_is_clz
+rc=0 seconds=0
+== prove_quickcheck tnca_lzc.x lzc48_is_clz
+[                    OK ] lzc48_is_clz
+rc=0 seconds=0
+== prove_quickcheck tnca_lzc.x lzc128_is_clz
+[                    OK ] lzc128_is_clz
+rc=0 seconds=0
+== prove_quickcheck tnca_fmad.x normalise_equiv
+[                    OK ] normalise_equiv
+rc=0 seconds=3
+== prove_quickcheck tnca_mac.x fp32_mode_is_fma32
+[                    OK ] fp32_mode_is_fma32
+rc=0 seconds=9
+== prove_quickcheck tnca_mac.x dp2_fp16_bf16_is_v2
+[                    OK ] dp2_fp16_bf16_is_v2
+rc=0 seconds=0
+== prove_quickcheck tnca_mac.x dp4_term_is_v3
+[                    OK ] dp4_term_is_v3
+rc=0 seconds=72
+e64d341f75ce61d921c665c6dadcfcc31965b1bdab3896b4e653f8b5736a8c60  tnca_lzc.x
+99883bd1e26a0c467e3ad85906140ed04a989249ff0ee9e2c489514b84830f7e  tnca_fmad.x
+8089bdbed6e6f9f63fbe8cb16914cd93c98cd67fa733cd5506d816893fe42448  tnca_mac.x
+9941e1a0483f6a368caa9e74a21858930affb4f3ee25235ab3a06c81859b1483  tnca_fdp.x
+e5dae730f55059b6fa651b66afd625227a2a353833bbd9b2cbf218b62d72418c  tnca_fma.x
+[            OK ]
+[===============] 1 test(s) ran; 0 failed; 0 skipped.
+
+== earlier run (task b9lh340po, 900 s limit per proof): dp4_sum_is_v3 timed out (real 15m0s, no verdict); dp2_fp16_bf16_is_v2 OK; fp32_mode_is_fma32 OK

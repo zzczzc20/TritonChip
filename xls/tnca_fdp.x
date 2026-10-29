@@ -198,7 +198,7 @@ fn spec_combine<N: u32>(n: u1[N], i: u1[N], s: u1[N]) -> Spec {
     }
 }
 
-fn spec4(a: E8[4], b: E8[4]) -> Spec {
+pub fn spec4(a: E8[4], b: E8[4]) -> Spec {
     let r0 = spec1(a[0].s, a[0].zero, a[0].inf, a[0].nan, b[0].s, b[0].zero, b[0].inf, b[0].nan);
     let r1 = spec1(a[1].s, a[1].zero, a[1].inf, a[1].nan, b[1].s, b[1].zero, b[1].inf, b[1].nan);
     let r2 = spec1(a[2].s, a[2].zero, a[2].inf, a[2].nan, b[2].s, b[2].zero, b[2].inf, b[2].nan);
@@ -260,7 +260,7 @@ pub struct Dp2Sum {
 }
 
 // The alignment from the two products, however they were multiplied.
-fn dp2_align(ea: E16[2], eb: E16[2], p0: u22, p1: u22) -> Dp2Sum {
+pub fn dp2_align(ea: E16[2], eb: E16[2], p0: u22, p1: u22) -> Dp2Sum {
     let l0 = ea[0].l + eb[0].l;
     let l1 = ea[1].l + eb[1].l;
     let z0 = ea[0].zero == u1:1 || eb[0].zero == u1:1;
@@ -450,7 +450,7 @@ fn term39(s: u1, f: u38) -> (u39, u39) {
     ((f as u39) ^ m, s as u39)
 }
 
-fn dp4e_field(a: E8, b: E8) -> u38 {
+pub fn dp4e_field(a: E8, b: E8) -> u38 {
     let p = std::umul(a.sig, b.sig);                // u8
     let pos = (a.q as u6) + (b.q as u6);            // 0..30, value = p * 2^(pos - 20)
     (((p as u40) << pos) >> u40:2) as u38

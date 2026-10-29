@@ -1,0 +1,3 @@
+mac_1100                                 routed lut=3501 logic=3501 mem=0 ff=451 carry=103 dsp=8 clb=535 wns=-2.431
+mac_1110                                 routed lut=3366 logic=3366 mem=0 ff=513 carry=103 dsp=8 clb=542 wns=0.229
+mac_v0                                   routed lut=2733 logic=2733 mem=0 ff=405 carry=145 dsp=2 clb=464 wns=3.165

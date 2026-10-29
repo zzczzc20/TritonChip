@@ -1,0 +1,23 @@
+file lines 11072; K loop lines 725..9466
+K-loop instructions (static) 8675; fallback-arm instructions 696 in 32 arms ([21, 22] each); fast path 7979
+transposed weight transfers t.ld.async.b.t 32; gathered-fallback tile transfers t.ld.async.b 32; mma 32; weight-side vector loads: none (v.ld.gather.b 32 are only in the fallback arms)
+weight bytes per K-loop iteration: 32 transfers x 16 rows x 32 B = 16384 B = 256 x 64 B
+fast-path instructions per iteration 7979 = 31.2 per 64 B of weights (249.3 per 512 B transfer)
+v.ld.gather.w            8
+v.ld.w                   544
+v.st.w                   384
+v.st.b                   160
+a.vread                  256
+a.vwrite                 128
+vf.cvt.f32.e4m3          128
+vf.cvt.f32.bf16          0
+vf.cvt.bf16.f32          128
+vf.fms                   516
+vf.mul                   385
+v.rcp.approx             129
+mb.arm                   64
+mb.wait                  64
+fence.acq_rel.device     60
+m.zero                   8
+td.load                  2
+whole file: td.load 2 t.ld.async.b.t 32

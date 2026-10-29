@@ -666,6 +666,67 @@ class TTIRImporter:
         def get_num_results(self):
             return 1
 
+    def _branch_integer_if(self, op, cond, then_ops, else_ops):
+        """Lower integer division branches without speculating either arm.
+
+        Initially this supports scalar and single-register i32 results. Other
+        result representations and effects retain the existing refusal.
+        """
+        divs = {'arith.divsi', 'arith.divui', 'arith.remsi', 'arith.remui'}
+        body = list(then_ops) + list(else_ops)
+        if not self.target.has('matrix_dp') or not any(x.get_name() in divs for x in body):
+            return False
+        if any((x.get_name() in self._IFCONV_IMPURE and x.get_name() not in divs)
+               or (x.get_name() != 'scf.yield' and x.get_num_regions()) for x in body):
+            return False
+        results = []
+        for i in range(op.get_num_results()):
+            shape, elem = _parse_type(str(op.get_result(i).get_type()))
+            if elem != 'i32' or (shape is not None and
+                                 (not isinstance(shape, int) or shape > self.target.vlen)):
+                return False
+            results.append(self.b.sbini('add', self.b.const(0), 0) if shape is None
+                           else self.b.vmovi(0, dtype='i32'))
+        caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
+        saved = {name: dict(getattr(self, name)) for name in caches}
+        saved_single = (self._scratch, self._lane0_mask)
+        pending_values = {k for k in self._pending_const if k in self._v}
+
+        def reset_caches():
+            for name, cache in saved.items():
+                setattr(self, name, dict(cache))
+            self._scratch, self._lane0_mask = saved_single
+            for key in self._pending_const.keys() - pending_values:
+                self._v.pop(key, None)
+
+        def emit_arm(ops):
+            yielded = False
+            for inner in ops:
+                if inner.get_name() == 'scf.yield':
+                    if inner.get_num_operands() != len(results):
+                        raise Unsupported('scf.if region without a yield of every result')
+                    for i, dst in enumerate(results):
+                        self.b._emit('assign', [], [dst, self._value(inner.get_operand(i))])
+                    yielded = True
+                else:
+                    self._dispatch(inner)
+            if not yielded:
+                raise Unsupported('scf.if region without a yield of every result')
+
+        otherwise, end = self._control_label('else'), self._control_label('endif')
+        c = self._condition_scalar(self._value(cond))
+        self.b.branch_nz(self.b.scmp('eq', c, self.b.const(0)), otherwise)
+        emit_arm(then_ops)
+        self.b.branch_nz(self.b.const(1), end)
+        self.b.label(otherwise)
+        reset_caches()
+        emit_arm(else_ops)
+        self.b.label(end)
+        reset_caches()
+        for i, value in enumerate(results):
+            self._v[op.get_result(i).id()] = value
+        return True
+
     def _op_scf_if(self, op):
         """`scf.if` on a scalar condition.
 
@@ -700,6 +761,8 @@ class TTIRImporter:
             self._scratch, self._lane0_mask = saved_single
             for key in self._pending_const.keys() - pending_values:
                 self._v.pop(key, None)
+            return
+        if self._branch_integer_if(op, cond, then_ops, else_ops):
             return
         for inner in list(then_ops) + list(else_ops):
             name = inner.get_name()

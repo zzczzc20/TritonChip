@@ -399,8 +399,19 @@ module tnca_multicore_board_regs;
 // the stage probes. This does not drive the DUT or alter the register protocol.
 generate if (HYBRID_LSU) begin:g_stage_hybrid
  for (genvar hc=0; hc<N; hc=hc+1) begin:g_tile
+  reg [63:0] pending_wait=0, mode_wait=0;
+  always @(posedge clk) if (stage_probe_on && rst_n_async) begin
+   if (`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.pending &&
+       !`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.consume) begin
+    pending_wait<=pending_wait+1;
+    if (`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.fast_eligible ?
+        !`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.fast_mode :
+        !`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.slow_mode)
+     mode_wait<=mode_wait+1;
+   end
+  end
   always @(posedge clk) if (stage_begin || stage_end)
-   $display("STAGE HYBRID at=%0s c=%0d t=%0d fast=%0d slow=%0d retired=%0d fast_retired=%0d switch_stall=%0d wb_stall=%0d request_stall=%0d slot_stall=%0d",
+   $display("STAGE HYBRID at=%0s c=%0d t=%0d fast=%0d slow=%0d retired=%0d fast_retired=%0d switch_stall=%0d wb_stall=%0d request_stall=%0d slot_stall=%0d pending_wait=%0d mode_wait=%0d",
     stage_end?"END":"BEGIN",stage_cycle,hc,
     `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_accepted,
     `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_slow_accepted,
@@ -409,7 +420,8 @@ generate if (HYBRID_LSU) begin:g_stage_hybrid
     `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_switch_stall,
     `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_writeback_stall,
     `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_request_stall,
-    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_slot_stall);
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_slot_stall,
+    pending_wait,mode_wait);
  end
 end endgenerate
 `undef TNCA_PROBE_TOP

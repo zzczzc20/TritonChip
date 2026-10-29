@@ -32,6 +32,7 @@ module tb_home_pipe;
     parameter REGISTER_VICTIM_OWNER = 0;
     parameter EPOCH_CHURN = 0;
     parameter LINE_WRITE_NOFILL = 0;   // R41 G4: full-line stores allocate without a fill
+    parameter FILL_CHAIN = 0;          // R41 G4: chained fills (HOME_LINE_PIPE 2)
 
     parameter DRAM_LAT   = 40;
     parameter DRAM_STALL = 1;
@@ -60,7 +61,7 @@ module tb_home_pipe;
     localparam RQ_N       = 8;
     localparam RQ_W       = 3;
     localparam SRC_W      = 4;
-    localparam TAG_W      = 5;
+    parameter  TAG_W      = 5;     // the requester's tags: 2^TAG_W requests in flight
     localparam SLICE_ID   = 0;
 
     // Address space: 8x the slice capacity, so eviction is the common case.
@@ -118,7 +119,7 @@ module tb_home_pipe;
     wire [63:0]             tl_addr;
 
     tnca_home_pipe #(
-        .FULL_LINE_TAG(FULL_LINE_TAG),.LINE_WRITE_NOFILL(LINE_WRITE_NOFILL),.MAINTENANCE(MAINTENANCE),
+        .FULL_LINE_TAG(FULL_LINE_TAG),.LINE_WRITE_NOFILL(LINE_WRITE_NOFILL),.MAINTENANCE(MAINTENANCE),.FILL_CHAIN(FILL_CHAIN),
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(WORD_BITS), .WORD_BYTES(WORD_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),
@@ -194,7 +195,7 @@ module tb_home_pipe;
     tnca_dram_model #(
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .LINES(N_LINES * 4), .TAG_W(MSHR_W), .SRC_W(1),   // home-consistent lines span 4x
-        .LATENCY(DRAM_LAT), .RANDOM_STALL(DRAM_STALL), .REORDER(DRAM_OOO)
+        .LATENCY(DRAM_LAT), .RANDOM_STALL(DRAM_STALL), .REORDER(DRAM_OOO), .POOL(MSHR_N > 32 ? MSHR_N : 32)
     ) u_dram (
         .clk(clk), .rst_n(rst_n),
         .req_valid(m_req_valid), .req_ready(m_req_ready),

@@ -28,6 +28,16 @@ parameter REQ_STALL = 20;     // % of cycles the memory refuses a request
 parameter XPERF = 0;
 parameter XN = 32;
 parameter FIXLAT = 0;
+// XRACE (with XPERF's matrix): another requester writes the weight lines.
+// 1: between two transposed loads of the same box, at the point where the
+// first has completed and the second has not started (a store ordered before
+// the second command) -- both engines must return the new bytes, so the line
+// buffer must not keep lines across commands. 2: while the second load is in
+// flight, XRACE_AT cycles after it starts -- an unordered race, which the ISA
+// leaves open; the run reports how many window bytes differ between the two
+// engines instead of comparing them.
+parameter XRACE = 0;
+parameter XRACE_AT = 40;
 localparam MEMB = 65536;      // bytes of memory
 localparam DESC_AT = 32'h0000; // TensorMaps at 0x0000.. (16 x 512 B)
 // every third map is not line-aligned, so the word sequence still runs
@@ -167,6 +177,23 @@ generate for (g = 0; g < 2; g = g + 1) begin : inst
         end
     end
 
+    // XRACE: the other requester's store to the 16 weight lines (every byte inverted)
+    integer xr_l, xr_b, xr_t2 = -1, xr_one = 0;
+    always @(posedge clk) if (rst_n && XRACE) begin
+        // once the first load has completed (whichever order this block and the
+        // completion count run in at that edge); the second starts a cycle later
+        if (XRACE == 1 && !xr_one && ndone[g] >= ncomp - 1) begin
+            xr_one = 1;
+            for (xr_l = 0; xr_l < 16; xr_l = xr_l + 1)
+                for (xr_b = 0; xr_b < 64; xr_b = xr_b + 1)
+                    mem[g][32'h8000 + xr_l * 2048 + xr_b] = ~mem[g][32'h8000 + xr_l * 2048 + xr_b];
+        end
+        if (XRACE == 2 && cmd_v && pc == plen - 1 && xr_t2 < 0) xr_t2 = cycle;
+        if (XRACE == 2 && xr_t2 >= 0 && cycle == xr_t2 + XRACE_AT)
+            for (xr_l = 0; xr_l < 16; xr_l = xr_l + 1)
+                for (xr_b = 0; xr_b < 64; xr_b = xr_b + 1)
+                    mem[g][32'h8000 + xr_l * 2048 + xr_b] = ~mem[g][32'h8000 + xr_l * 2048 + xr_b];
+    end
     always @(posedge clk) if (rst_n) begin
         if (done[g] && ndone[g] + 1 == ncomp) fin[g] = cycle;
         if (done[g]) ndone[g] = ndone[g] + 1;
@@ -313,9 +340,10 @@ initial begin
         make_desc(15);
         add(0, 15, 0, 0, 0, 0, ncomp);
         add(1, 0, 0, 16, 0, 0, ncomp);
-        for (t = 0; t < XN; t = t + 1) begin
+        if (XRACE) add(1, 1, 16, 16, 0, 0, ncomp);
+        for (t = 0; t < (XRACE ? 2 : XN); t = t + 1) begin
             j = ncomp;
-            add(2'd2, 15, 0, 0, 64'd0, t * 32, j);
+            add(2'd2, 15, (XRACE ? t : 0), 0, 64'd0, (XRACE ? 0 : t * 32), j);
             p_x[plen-1] = 1'b1;
             p_wait[plen] = ncomp;
         end
@@ -367,6 +395,14 @@ initial begin
     if (nfault[0] != nfault[1]) $fatal(1, "faults differ: %0d vs %0d", nfault[0], nfault[1]);
     for (i = 0; i < MEMB; i = i + 1)
         if (mem[0][i] !== mem[1][i]) $fatal(1, "memory byte %h differs: %h vs %h", i, mem[0][i], mem[1][i]);
+    if (XRACE == 2) begin : race_report
+        integer nb;
+        nb = 0;
+        for (i = 16; i < 32; i = i + 1)
+            for (j = 0; j < 64; j = j + 1)
+                if (vrf[0][i][j*8 +: 8] !== vrf[1][i][j*8 +: 8]) nb = nb + 1;
+        $display("XRACE 2: store %0d cycles into the second load; window bytes that differ between the engines: %0d of 512 (both legal: the ISA does not order an unordered store against a command in flight)", XRACE_AT, nb);
+    end else
     for (i = 0; i < 256; i = i + 1)
         if (vrf[0][i] !== vrf[1][i]) $fatal(1, "register %0d differs:\n%h\n%h", i, vrf[0][i], vrf[1][i]);
     if (lines_moved == 0 && !XPERF) $fatal(1, "the line engine moved no lines");

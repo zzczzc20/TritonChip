@@ -31,6 +31,20 @@ def xperf():
             print(f"{'PASS' if ok else 'FAIL'} {m.group(0) if m else out[-400:]}", flush=True)
             if not ok:
                 return 1
+        # another requester's store to the weight lines: ordered before the second
+        # load (both engines must return the new bytes), and racing with it (reported)
+        for xr in (1, 2):
+            subprocess.run(['iverilog', '-g2012', '-Irtl/common', '-s', 'tb_tensor_line',
+                            '-Ptb_tensor_line.XPERF=1', f'-Ptb_tensor_line.XRACE={xr}', '-Ptb_tensor_line.FIXLAT=60',
+                            '-Ptb_tensor_line.VW_STALL=0', '-Ptb_tensor_line.REQ_STALL=0',
+                            '-o', b, 'tb/core/tb_tensor_line.v', 'rtl/core/tnca_tensor.v'],
+                           cwd=ROOT, check=True, timeout=120)
+            out = subprocess.run(['vvp', b], cwd=ROOT, capture_output=True, text=True, timeout=1800).stdout
+            ok = 'TENSOR LINE MITER PASS' in out and 'FATAL' not in out
+            m = re.search(r'XRACE 2.*', out)
+            print(f"{'PASS' if ok else 'FAIL'} XRACE={xr} {m.group(0) if m else ''}", flush=True)
+            if not ok:
+                return 1
     return 0
 
 

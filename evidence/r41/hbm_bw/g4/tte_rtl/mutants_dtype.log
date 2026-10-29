@@ -7,7 +7,12 @@
 # arbitration (earlier, tree 7d645ec + arbitration): lw_fire without !legacy_vw -> caught on seeds 3 and 5
 # Transposed-load line buffer (tnca_tensor g_line_port), tree after ce4a6f82:
 # xb-shift: local answer without the word shift          -> caught, seeds 1 and 3 (memory differs)
-# xb-clear: no clear at command start                    -> survives: in the miter only the engine writes memory,
-#           and its own writes still clear the buffer; the command-start clear guards against other agents.
-# xb-fill:  fill on any legacy response (no xf_v check)  -> survives seeds 1, 3 (coverage gap, noted)
+# xb-clear: no clear at command start                    -> survived the random miter (only the engine writes its
+#           memory there); killed by the directed test XRACE=1 (another requester's store between two loads of the
+#           same box): FATAL register 16 differs (the second load returned the pre-store bytes)
+# xb-fill:  fill on any legacy response (no xf_v check)  -> survives seeds 1, 3. Equivalent under the engine's limits:
+#           during a transposed command every memory response is a buffer fill (hits make no request; the
+#           buffer is emptied at each command start, after the previous command's responses), and an entry is
+#           re-taken while its read is in flight only with more than 16 misses outstanding, which 16 tags and
+#           at most 16 source rows exclude. The check stays as a guard for larger NTAG.
 # hits in the miter (seed 1): 606 of 760 transposed unit reads answered from the buffer

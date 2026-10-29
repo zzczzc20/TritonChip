@@ -782,12 +782,28 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
             stages.stages.update(saved_stages)
             prov.record('extended_lowering', first)
         try:
-            result = _lower_imported(
-                module, kernel_name, params, target, prov, options, stages, opt_level,
-                index_opt=index_opt, sparse=sparse, window_reuse=window_reuse,
-                packed_unpack=packed_unpack, large_tiles=large_tiles, tiled=tiled,
-                # the retry also keeps one tiled lane group (register pressure)
-                tiled_groups_cap=1 if large_tiles else 0)
+            def _once():
+                return _lower_imported(
+                    module, kernel_name, params, target, prov, options, stages, opt_level,
+                    index_opt=index_opt, sparse=sparse, window_reuse=window_reuse,
+                    packed_unpack=packed_unpack, large_tiles=large_tiles, tiled=tiled,
+                    # the retry also keeps one tiled lane group (register pressure)
+                    tiled_groups_cap=1 if large_tiles else 0)
+            try:
+                result = _once()
+            except CompileError as pe:
+                # The software-pipelined weight transfers hold a second B window
+                # live; a kernel whose vector registers cannot take it is lowered
+                # again with the serial order (same results, no overlap).
+                if (os.environ.get('TNCA_X8_PIPELINE', '1') == '0'
+                        or 'out of vector registers' not in str(pe)):
+                    raise
+                os.environ['TNCA_X8_PIPELINE'] = '0'
+                try:
+                    prov.record('x8_pipeline_fallback', 'out of vector registers')
+                    result = _once()
+                finally:
+                    os.environ.pop('TNCA_X8_PIPELINE', None)
         except (UnsupportedError, CompileError) as e:
             if large_tiles:
                 if first and first not in str(e):

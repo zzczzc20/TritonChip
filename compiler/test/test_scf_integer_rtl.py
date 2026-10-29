@@ -53,6 +53,15 @@ if triton_bridge.available():
             value = lane + 13
         tl.store(O + lane, value)
 
+    @triton.jit
+    def branch_unsigned_divide(O, flag, divisor):
+        lane = tl.arange(0, 16).to(tl.uint32)
+        if flag > 0:
+            value = lane // divisor
+        else:
+            value = lane + 13
+        tl.store(O + lane, value)
+
 
 @unittest.skipUnless(triton_bridge.available(), 'Triton is required')
 class IntegerIfRTL(unittest.TestCase):
@@ -111,24 +120,29 @@ class IntegerIfRTL(unittest.TestCase):
                 ok, log = H.run(p, bench='dp', max_cycles=400000 if flag else 600)
                 self.assertTrue(ok, log[-1200:])
 
-    def test_unsigned_remainder(self):
+    def test_unsigned_division_and_remainder(self):
         if not H.bench_available('dp'):
             self.skipTest('run make core-mmadp first')
         target, out = TargetInfo.load('tnca-sim-dp'), 0x12000
-        for flag, divisor in ((1, 3), (0, 0)):
-            with self.subTest(flag=flag, divisor=divisor):
+        cases = ((branch_unsigned, 'branch_unsigned', False, 1, 3),
+                 (branch_unsigned, 'branch_unsigned', False, 0, 0),
+                 (branch_unsigned_divide, 'branch_unsigned_divide', True, 1, 3),
+                 (branch_unsigned_divide, 'branch_unsigned_divide', True, 0, 0))
+        for fn, name, divide, flag, divisor in cases:
+            with self.subTest(name=name, flag=flag, divisor=divisor):
                 module, ctx = triton_bridge.make_ttir(
-                    branch_unsigned, {'O': '*u32', 'flag': 'i32', 'divisor': 'u32'}, {})
-                imp = TTIRImporter(target, 'branch_unsigned', index_opt=True)
-                kernel, _ = imp.run(module, 'branch_unsigned',
+                    fn, {'O': '*u32', 'flag': 'i32', 'divisor': 'u32'}, {})
+                imp = TTIRImporter(target, name, index_opt=True)
+                kernel, _ = imp.run(module, name,
                                     {'O': out, 'flag': flag, 'divisor': divisor},
-                                    param_names=triton_bridge.param_names(branch_unsigned))
+                                    param_names=triton_bridge.param_names(fn))
                 cg = CodeGen(kernel, target, check_protocol=False)
                 cg.assign_shared()
                 cg.run()
-                p = H.Program(f'if_unsigned_{flag}').kernel(cg).check_base(out)
+                p = H.Program(f'{name}_{flag}').kernel(cg).check_base(out)
                 for lane in range(16):
-                    p.check_word(out, 4 * lane, lane % divisor if flag else lane + 13)
+                    expected = ((lane // divisor if divide else lane % divisor) if flag else lane + 13)
+                    p.check_word(out, 4 * lane, expected)
                 p.words(out, H.pack32([0xdeadbeef] * 16), 'out')
                 ok, log = H.run(p, bench='dp', max_cycles=400000 if flag else 600)
                 self.assertTrue(ok, log[-1200:])

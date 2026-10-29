@@ -44,6 +44,23 @@ Consequently there is no honest after-run launch-count, host-time, reload-count 
 Board impact is also unmeasured. A full working-set residency fix still requires smaller code or a larger code store;
 artifact deduplication only removes exact duplicates.
 
+## Follow-up in progress, 2026-10-29
+
+Two later reduced-depth TLM reports were found on GB10. Their persistent-session checks report bitwise-identical
+repeat logits and candidate tokens after an intervening conversation: VL (one layer) and Qwen3.5 (four layers).
+These are not full-model quality or board results. The reports are `/home/zhongchun/r41-k8launch-runs/vl-single/report.json`
+(SHA-256 `e1d1cd03e73dab69aa3d005fe8d8552ec5d19cc98d929c0936e4bed687627439`) and
+`/home/zhongchun/r41-k8launch-runs/q35-single/report.json`
+(SHA-256 `30a031dca4c08b36a303ccc91b3c53d68306cae46875d82415a3dfbb3312522e`). Their original command and
+submission-policy environment have not yet been recovered; directory names alone do not prove either setting.
+
+A VL reduced-depth TLM session with the default submission policy is running as GB10 user service
+`r41-vl-batched-20261029.service`, with a 16 GiB memory limit and CPUs 6-9. Source directory is
+`/home/zhongchun/r41-k8launch`; profile `core-vrf-sync-v5-x8`, prompt and session-check prompt `Say hi.`,
+one layer, bucket 64, four requested tokens. Output is `~/r41-k8launch-runs/vl-batched`. The service's
+`ExecStart` and journal retain the full invocation and execution log. Do not infer a comparison until the
+first run's invocation and source identity are established and the new run finishes.
+
 ## Reproduction and archive
 
 Runtime tests were run after `source ~/tc_env/env.sh` with `~/tc_env/torchenv/bin/python`. The default audit candidate

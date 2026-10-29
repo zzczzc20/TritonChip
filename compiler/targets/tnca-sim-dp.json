@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "tnca-sim-dp",
-  "description": "core-sim (one core, two Role Contexts) with the shared MAC lane: tnca_core MAC_DP=1, MAC_CUTS=14, so m.mma.dp.async (ISA sec 9C.4, CAPABILITY0.MATRIX_DP bit 12) executes. What the compiler's RTL tests of the packed matrix opcode target (tb_tnca_core with -P MAC_DP=1; built by `make core-mmadp`). Every other instruction, format and capability is core-sim's.",
+  "description": "core-sim (one core, two Role Contexts) with the shared MAC lane: tnca_core MAC_DP=1, MAC_CUTS=29, so m.mma.dp.async (ISA sec 9C.4, CAPABILITY0.MATRIX_DP bit 12) executes. What the compiler's RTL tests of the packed matrix opcode target (tb_tnca_core with -P MAC_DP=1; built by `make core-mmadp`). Every other instruction, format and capability is core-sim's.",
   "note": "Generated file -- do not edit. Run `make target`. Derived from rtl/core/tnca_core.v, rtl/tnca_top.v and isa/tnca-isa-v0.1.json; see compiler_overview.md sec 15 C0.",
   "isa_version": "0.1",
   "num_rctx": 2,
@@ -152,6 +152,6 @@
     "HAS_ATOMICS": 1,
     "HAS_SYS_ATOMICS": 0,
     "MAC_DP": 1,
-    "MAC_CUTS": 14
+    "MAC_CUTS": 29
   }
 }

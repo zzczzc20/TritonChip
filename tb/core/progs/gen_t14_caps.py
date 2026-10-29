@@ -24,12 +24,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Build configuration of tb/core/tb_tnca_core.v.
 HAS_SFU = 1
+# R41 G2: T14_DP=1 generates t14_caps_dp.s for a core built with MAC_DP=1,
+# whose CAPABILITY0 also has MATRIX_DP (bit 12) and which executes it.
+DP = os.environ.get('T14_DP', '0') == '1'
 
 CAP = {
     'VECTOR_FP32': 0, 'SFU': 1, 'GATHER_SCATTER': 2,
     'ATOMICS_DEVICE': 3, 'SYSTEM_ATOMICS': 4,
     'MATRIX_F16': 5, 'MATRIX_BF16': 6, 'TENSOR_DMA': 7,
     'MBARRIER': 8, 'PACKED_F16': 9, 'CACHE_HINTS': 10, 'MATRIX_FP8': 11,
+    'MATRIX_DP': 12,
 }
 
 # What this build implements. Anything not listed must read 0, and its
@@ -39,6 +43,8 @@ IMPLEMENTED = ['VECTOR_FP32', 'GATHER_SCATTER', 'ATOMICS_DEVICE',
                'TENSOR_DMA', 'MBARRIER']
 if HAS_SFU:
     IMPLEMENTED.append('SFU')
+if DP:
+    IMPLEMENTED.append('MATRIX_DP')
 
 EXPECT = 0
 for name in IMPLEMENTED:
@@ -196,6 +202,21 @@ w("    a.vread   v6, a1, s5")
 w(f"    .assert_lane v6, #7,  #{F32_SIXTEEN:#x}, #{n}")
 n += 1
 w("")
+if DP:
+    # bit 12 MATRIX_DP -- m.mma.dp.async executes: four E4M3 products per group,
+    # four groups, every element of C exactly 16.0 (the same fragments)
+    w("    // bit 12 MATRIX_DP -- a real grouped E4M3 product")
+    w("    m.zero    a1")
+    w("    mb.arm    s8, b0, #0, #1")
+    w("    m.mma.dp.async.k16.e4m3 a1, v40, v44, s8")
+    w("    mb.wait   s8")
+    w("    .li       s5, #3")
+    w("    a.vread   v6, a1, s5")
+    w(f"    .assert_lane v6, #0,  #{F32_SIXTEEN:#x}, #{n}")
+    n += 1
+    w(f"    .assert_lane v6, #15, #{F32_SIXTEEN:#x}, #{n}")
+    n += 1
+    w("")
 w("    exit")
 w("")
 
@@ -223,6 +244,6 @@ emit_words(IDX_BASE, [((2 * k + 1) << 32) | (2 * k) for k in range(8)], "idx")
 emit_words(VAL_BASE, [(GVAL(2 * k + 1) << 32) | GVAL(2 * k)
                       for k in range(8)], "vals")
 
-path = os.path.join(HERE, 't14_caps.s')
+path = os.path.join(HERE, 't14_caps_dp.s' if DP else 't14_caps.s')
 open(path, 'w').write('\n'.join(out) + '\n')
 print(f"wrote {path}: CAPABILITY0 expected {EXPECT:#x}")

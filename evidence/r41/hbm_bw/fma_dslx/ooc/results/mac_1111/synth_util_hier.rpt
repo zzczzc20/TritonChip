@@ -1,0 +1,34 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Thu Oct 29 16:05:14 2026
+| Host         : ee4e138 running 64-bit Ubuntu 24.04.5 LTS
+| Command      : report_utilization -hierarchical -file /home/vivado/fmax/runs/mac_1111/synth_util_hier.rpt
+| Design       : mac_ooc_1111_rw
+| Device       : xcu280-fsvh2892-2L-e
+| Speed File   : -2L
+| Design State : Synthesized
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++---------------------+-----------------+------------+------------+---------+------+-----+--------+--------+------+------------+
+|       Instance      |      Module     | Total LUTs | Logic LUTs | LUTRAMs | SRLs | FFs | RAMB36 | RAMB18 | URAM | DSP Blocks |
++---------------------+-----------------+------------+------------+---------+------+-----+--------+--------+------+------------+
+| mac_ooc_1111_rw     |           (top) |       3216 |       3216 |       0 |    0 | 734 |      0 |      0 |    0 |          8 |
+|   (mac_ooc_1111_rw) |           (top) |          0 |          0 |       0 |    0 | 140 |      0 |      0 |    0 |          0 |
+|   u_dut             |    mac_ooc_1111 |       3216 |       3216 |       0 |    0 | 594 |      0 |      0 |    0 |          8 |
+|     (u_dut)         |    mac_ooc_1111 |          5 |          5 |       0 |    0 |   0 |      0 |      0 |    0 |          0 |
+|     u               |   tnca_mac_lane |       3211 |       3211 |       0 |    0 | 594 |      0 |      0 |    0 |          8 |
+|       (u)           |   tnca_mac_lane |       2071 |       2071 |       0 |    0 | 594 |      0 |      0 |    0 |          0 |
+|       u_f1          | tnca_mac_f1_xls |       1140 |       1140 |       0 |    0 |   0 |      0 |      0 |    0 |          8 |
++---------------------+-----------------+------------+------------+---------+------+-----+--------+--------+------+------------+
+
+

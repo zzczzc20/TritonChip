@@ -169,10 +169,10 @@ classes). On `core-vrf-sync-v5-x8-g2c4-dp` the loop body of the compiled `w8a8_b
 instructions per 16 x 128 x 128 K-block** (32 matrix commands): scalar/predicate/control 2,732, vector fp 2,314, vector
 int/move 1,972, vector load/store 1,358, matrix/accumulator/barrier 552 (`issue/vn_window_sweep.txt`).
 A dominator-scoped value numbering pass (`optimization.dominating_value_numbering`, enabled only for targets with `matrix_dp`)
-removes 31 percent of the loop's pure operations in an unconstrained count (simulated on the IR text), but the allocator cannot
+would remove 2,634 of the loop's 8,450 IR operations in an unconstrained count (simulated on the dumped IR text, not executed), but the allocator cannot
 spill and the unrolled kernel is already at the scalar register limit: windows of 400 operations fail with "out of scalar
 registers"; the largest tried that compile (scalar 64, vector 8) give **8,666 instructions (-2.9 percent)**. Executed on the TLM
-(`fp8_kernels_cases.py --group v4 --quick`, 12 cases): 12 of 12 bit-identical to the dp reference, device cycles between -7.6 and +2.5 percent
+(`fp8_kernels_cases.py --group v4 --quick`, 12 cases): 12 of 12 bit-identical to the dp reference, device cycles between -8.7 and +2.8 percent
 per case (`raw/vn-dp-kernels-report.json.gz` against `raw/q-dp-report.json.gz`), i.e. no demonstrated gain. The remaining items (descriptor weight
 loads and scales, hoisting the quantisation across N blocks, a 64 x 64 accumulator tile, software pipelining of the weight transfers,
 an M = 1 lowering) are not done; the register-pressure result above says the scalar address arithmetic must be removed by the

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Board manifests for the baseline of the registered R41 memory-bound suite.
 
-    python3 tools/r41/membound_manifests.py [--check]
+    python3 tools/r41/membound_manifests.py [--tiled2] [--check]
 
 Writes spec/r41/hbm_bw/membound/<id>.json: experiment.py manifests whose one
 `fpga` step runs tools/performance_harness/board_batch.py over a slice of
@@ -19,6 +19,10 @@ here from the run-1 records in evidence/r41/hbm_bw/link_budget/board_run1/
 the slowest measured streaming rate of the operator's class). The estimate
 decides only where a slice ends; it is not a result.
 
+--tiled2 writes the parallel spec/r41/hbm_bw/membound_tiled2/ set with only
+TNCA_TILED_POINTWISE=2 added to the run knobs, plus the s2-original-suite copy.
+Those manifests are non-default default-change-gate evidence, not target results.
+
 --check regenerates in memory and exits 1 if a written manifest differs.
 """
 import argparse
@@ -33,6 +37,7 @@ SUITE = 'archbench/suites/r41_membound.json'
 TEMPLATE = 'spec/r41/stage2/board/s2-original-suite.json'
 RUN1 = 'evidence/r41/hbm_bw/link_budget/board_run1/run1_streaming.tgz'
 OUT = 'spec/r41/hbm_bw/membound'
+TILED_OUT = 'spec/r41/hbm_bw/membound_tiled2'
 SLICE_HOURS = 1.5
 KNOBS = {
     # The same explicit set as s2-original-suite. TNCA_ACTIVE_CORES=3 equals the
@@ -117,10 +122,12 @@ def estimator():
                           source_sha256=sha(ROOT/RUN1))
 
 
-def build():
+def build(tiled2=False):
     suite_path = ROOT/SUITE
     suite = json.loads(suite_path.read_text())
     template = json.loads((ROOT/TEMPLATE).read_text())
+    out_dir = TILED_OUT if tiled2 else OUT
+    knobs = dict(KNOBS, **({'TNCA_TILED_POINTWISE': '2'} if tiled2 else {}))
     sys.path.insert(0, str(ROOT))
     from archbench import registry
     estimate, method = estimator()
@@ -154,7 +161,10 @@ def build():
         name = mid.replace('-', '_')
         spec = dict(
             schema='tnca-experiment-spec/1', id=mid, allowed_hosts=template['allowed_hosts'],
-            hypothesis=('Baseline of the registered R41 memory-bound suite (archbench/suites/r41_membound.json) on the '
+            hypothesis=('Non-default TNCA_TILED_POINTWISE=2 gate measurement on the run-1 100 MHz image through '
+                        'the standard path: every point of this slice is recorded with its device time and '
+                        'numerical result, pass or fail.' if tiled2 else
+                        'Baseline of the registered R41 memory-bound suite (archbench/suites/r41_membound.json) on the '
                         'run-1 100 MHz image through the standard path with default knobs: every point of this slice '
                         'is recorded with its device time and numerical result, pass or fail.'),
             competing_explanations=[
@@ -163,35 +173,45 @@ def build():
                 'card state from earlier points leaks into later ones',
                 'the loaded image, clock or card ownership changes during the slice',
             ],
-            expected_counter_changes=[
+            expected_counter_changes=([
+                'eligible pointwise kernels use tiled lane-group lowering; launch counts, grids and per-launch '
+                'device cycles may change against the default baseline',
+                'no host fallback and no upload/download inside a resident call',
+                'only TNCA_TILED_POINTWISE changes; the image, other knobs, sampling and timing boundary are unchanged',
+            ] if tiled2 else [
                 'none against a previous run: this is the first measurement of these points; it records '
                 'per-launch device cycles (serial grid and graph makespan) for every point',
                 'no host fallback and no upload/download inside a resident call',
                 'launch counts and grids are those the default compiler produces; no knob changes them',
-            ],
+            ]),
             expected_observations=[
                 f'{len(pts)} configurations recorded, each pass or a preserved failure with its reason',
                 'device cycles per passing point, from which full-link bandwidth (demand bytes / device time) '
                 'is computed for evidence/r41/hbm_bw/LINK_BUDGET.md',
             ],
             board=template['board'], sources=sorted(set(template['sources'] + [
-                SUITE, 'archbench/membound.py', f'{OUT}/{mid}.json'])),
+                SUITE, 'archbench/membound.py', f'{out_dir}/{mid}.json'])),
             env=template['env'],
             registration=dict(
                 status='registered-not-run', registered_utc='2026-10-28',
-                contract='evidence/r41/hbm_bw/BANDWIDTH_PLAN.md sections 1 and 3 (baseline of the registered suite)',
-                launch='evidence/r41/hbm_bw/launches/membound_baseline.sh',
+                contract=('evidence/r41/hbm_bw/g4/gate_default_change (board gate evidence, not a target result)'
+                          if tiled2 else
+                          'evidence/r41/hbm_bw/BANDWIDTH_PLAN.md sections 1 and 3 (baseline of the registered suite)'),
+                launch=('evidence/r41/hbm_bw/launches/membound_tiled2.sh' if tiled2 else
+                        'evidence/r41/hbm_bw/launches/membound_baseline.sh'),
                 generator='tools/r41/membound_manifests.py',
                 suite=dict(path=SUITE, sha256=sha(suite_path), suite_sha256=suite['sha256']),
                 expected_board_hours=round(seconds / 3600, 3),
                 estimate_method=method,
-                knobs=KNOBS,
+                knobs=knobs,
                 sampling_rule=template['registration']['sampling_rule'],
-                reference='none: these points have no earlier board record; the non-regression set keeps the '
-                          's2-original-suite run-1 records as its baseline'),
+                reference=('evidence/r41/hbm_bw/membound_baseline: the same points with default knobs'
+                           if tiled2 else
+                           'none: these points have no earlier board record; the non-regression set keeps the '
+                           's2-original-suite run-1 records as its baseline')),
             steps=[dict(
                 id=name, kind='fpga',
-                argv=['{python}', 'tools/performance_harness/board_batch.py', '--manifest', f'{OUT}/{mid}.json',
+                argv=['{python}', 'tools/performance_harness/board_batch.py', '--manifest', f'{out_dir}/{mid}.json',
                       '--batch', name, '--root', '{root}', '--out', '{out}/' + name, '--python', '{python}'],
                 timeout_seconds=10800,
                 timing_boundary=template['steps'][0]['timing_boundary'],
@@ -201,21 +221,50 @@ def build():
             suites=[dict(path=SUITE, sha256=sha(suite_path))],
             board_batches={name: dict(
                 sampling='device-rule',
-                configurations=[dict(id=p['id'], point=p['id'], point_sha256=p['sha256'], knobs=dict(KNOBS))
+                configurations=[dict(id=p['id'], point=p['id'], point_sha256=p['sha256'], knobs=dict(knobs))
                                 for p in pts])})
-        out[f'{OUT}/{mid}.json'] = json.dumps(spec, indent=1) + '\n'
+        if tiled2:
+            spec['registration']['non_default'] = True
+            spec['registration']['evidence_scope'] = 'default-change gate only; not a bandwidth-target result'
+        out[f'{out_dir}/{mid}.json'] = json.dumps(spec, indent=1) + '\n'
     covered = [c['point'] for text in out.values()
                for b in json.loads(text)['board_batches'].values() for c in b['configurations']]
     if sorted(covered) != sorted(p['id'] for p in points) or len(set(covered)) != len(covered):
         raise SystemExit('the slices do not partition the suite exactly')
+    if tiled2:
+        rel = f'{TILED_OUT}/s2-original-suite.json'
+        nonreg = json.loads(json.dumps(template))
+        nonreg['hypothesis'] = ('Non-default TNCA_TILED_POINTWISE=2 gate measurement: the original R40 full suite '
+                                'passes its numeric references on the run-1 image with no fallback.')
+        nonreg['expected_counter_changes'] = [
+            'eligible pointwise kernels use tiled lane-group lowering; launch counts, grids and per-launch '
+            'device cycles may change against the default run-1 records',
+            'no new host fallback or upload/download inside resident calls',
+            'only TNCA_TILED_POINTWISE changes; the image, other knobs, sampling and timing boundary are unchanged',
+        ]
+        nonreg['sources'] = sorted((set(template['sources']) - {TEMPLATE}) |
+                                   {rel, 'tools/r41/membound_manifests.py'})
+        nonreg['registration'].update(
+            contract='evidence/r41/hbm_bw/g4/gate_default_change (board gate evidence, not a target result)',
+            launch='evidence/r41/hbm_bw/launches/membound_tiled2.sh',
+            generator='tools/r41/membound_manifests.py', knobs=knobs,
+            non_default=True, evidence_scope='default-change gate only; not a bandwidth-target result')
+        nonreg['steps'][0]['argv'] = [rel if arg == TEMPLATE else arg
+                                      for arg in nonreg['steps'][0]['argv']]
+        for expansion in nonreg['board_batches']['original']['expand']:
+            expansion['knobs'] = dict(knobs)
+        out[rel] = json.dumps(nonreg, indent=1) + '\n'
     return out
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--check', action='store_true')
+    ap.add_argument('--tiled2', action='store_true',
+                    help='generate the parallel non-default TNCA_TILED_POINTWISE=2 board gate manifests')
     args = ap.parse_args()
-    out = build()
+    out = build(tiled2=args.tiled2)
+    out_dir = TILED_OUT if args.tiled2 else OUT
     bad = 0
     for rel, text in out.items():
         path = ROOT/rel
@@ -227,10 +276,12 @@ def main():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text)
         spec = json.loads(text)
-        print(f"{rel}: {len(next(iter(spec['board_batches'].values()))['configurations'])} points, "
-              f"estimated {spec['registration']['expected_board_hours']} h")
+        batch = next(iter(spec['board_batches'].values()))
+        count = (len(batch['configurations']) if 'configurations' in batch else
+                 sum(len(json.loads((ROOT/e['suite']).read_text())['points']) for e in batch['expand']))
+        print(f"{rel}: {count} points, estimated {spec['registration']['expected_board_hours']} h")
     if args.check:
-        stale = sorted(set(str(p.relative_to(ROOT)) for p in (ROOT/OUT).glob('*.json')) - set(out))
+        stale = sorted(set(str(p.relative_to(ROOT)) for p in (ROOT/out_dir).glob('*.json')) - set(out))
         for rel in stale:
             print(f'not generated: {rel}')
         bad += len(stale)

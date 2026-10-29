@@ -236,7 +236,11 @@ module tnca_tile #(
         .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
-        .LSU_BEATS(HYBRID_LSU ? 4 : LSU_BEATS), .LSU_TAG_W(LSU_TAG_W)
+        // The hybrid path adds a path bit ahead of the pair's unit bit.
+        // Use every beat tag representable in the remaining port bits, up to
+        // the configured LSU limit; the default five-bit port still fits four.
+        .LSU_BEATS(HYBRID_LSU && LSU_BEATS > (1 << (LSU_TAG_W-3)) ?
+                   (1 << (LSU_TAG_W-3)) : LSU_BEATS), .LSU_TAG_W(LSU_TAG_W)
     ) u_core (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),

@@ -170,7 +170,7 @@ module tnca_lsu_hybrid #(
         end
     end
 `ifndef SYNTHESIS
-    initial if(VLEN!=16 || ELEN!=32 || MEM_DW!=512 || MEM_BYTES!=64 || MEM_SHIFT!=6 || BEAT_W<4 || BEAT_W>7 || NUM_BEATS>4)
+    initial if(VLEN!=16 || ELEN!=32 || MEM_DW!=512 || MEM_BYTES!=64 || MEM_SHIFT!=6 || BEAT_W<4 || BEAT_W>7 || NUM_BEATS<1 || NUM_BEATS>(1<<(BEAT_W-2)))
         $fatal(1,"invalid hybrid LSU geometry");
     always @(posedge clk) if(rst_n) begin
         if(fmv && smv) $fatal(1,"hybrid LSU paths issue concurrently");

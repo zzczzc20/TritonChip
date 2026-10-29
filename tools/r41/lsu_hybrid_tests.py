@@ -34,6 +34,27 @@ def main():
                         except (subprocess.CalledProcessError,subprocess.TimeoutExpired):
                             failures.append((beat_w,seed,stall,burst))
                             print(f'HYBRID LSU FAIL beat_w={beat_w} seed={seed} stall={stall} burst={burst}',flush=True)
+        # Indexed loads use the narrow pair. Fill all eight beat tags in each
+        # unit while comparing completion data and memory to the original pair.
+        for beat_w in (5, 6, 7):
+            binary=str(Path(tmp)/'indexed-eight.vvp')
+            subprocess.run(['iverilog','-g2012','-Irtl/common','-y','rtl/core','-s','tb_lsu_hybrid',
+                f'-Ptb_lsu_hybrid.BEAT_W={beat_w}', '-Ptb_lsu_hybrid.CAND_BEATS=8',
+                '-Ptb_lsu_hybrid.FORCE_INDEXED=1', '-Ptb_lsu_hybrid.ACCESSES=32',
+                '-Ptb_lsu_hybrid.MAXLAT=64', '-Ptb_lsu_hybrid.STALL_PCT=0',
+                '-Ptb_lsu_hybrid.HOLD_PCT=0', '-o',binary,'tb/core/tb_lsu_hybrid.v'],
+                cwd=ROOT,check=True,timeout=60)
+            subprocess.run(['vvp',binary],cwd=ROOT,check=True,timeout=600)
+        # Exercise eight-beat slow units in the same mixed, backpressured miter.
+        for beat_w in (5, 6, 7):
+            binary=str(Path(tmp)/'mixed-eight.vvp')
+            subprocess.run(['iverilog','-g2012','-Irtl/common','-y','rtl/core','-s','tb_lsu_hybrid',
+                f'-Ptb_lsu_hybrid.BEAT_W={beat_w}', '-Ptb_lsu_hybrid.CAND_BEATS=8',
+                '-Ptb_lsu_hybrid.SEED=7', '-Ptb_lsu_hybrid.STALL_PCT=30',
+                '-Ptb_lsu_hybrid.HOLD_PCT=5', '-Ptb_lsu_hybrid.MAXLAT=64',
+                '-Ptb_lsu_hybrid.ACCESSES=600', '-o',binary,'tb/core/tb_lsu_hybrid.v'],
+                cwd=ROOT,check=True,timeout=60)
+            subprocess.run(['vvp',binary],cwd=ROOT,check=True,timeout=600)
         reset_binary=str(Path(tmp)/'reset.vvp')
         subprocess.run(['iverilog','-g2012','-Irtl/common','-y','rtl/core','-s','tb_lsu_hybrid_reset',
             '-o',reset_binary,'tb/core/tb_lsu_hybrid_reset.v'],cwd=ROOT,check=True,timeout=60)

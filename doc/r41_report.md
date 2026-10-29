@@ -10,6 +10,20 @@ Required criteria. R40 remains `closed-with-failures`; its history is unchanged.
 > at the end of this report. The current ledger is **38 passed, two failed,
 > 47 not measured, seven blocked**.
 
+
+## Run-2 image update — 2026-10-29 UTC
+
+The frozen run-2 full link produced an xclbin, but it is **not qualified**.
+Vitis automatically reduced the HBM clock from the requested 450 MHz to
+441.1 MHz. On the original 450 MHz routed design, Vivado reports setup WNS
+-0.045 ns and two failing endpoints; hold WNS is +0.001 ns. The affected
+setup paths are in the platform HBM subsystem; the kernel setup WNS is
++0.038 ns. These are implementation results, not board measurements. No
+board test of this image has been performed. A post-route recovery diagnostic
+is in progress; it does not establish a qualified image. The acceptance
+ledger remains governed by its existing evidence. See the
+[run-2 link evidence](../evidence/r41/hbm_bw/g4/run2/link_1f0a5aff/README.md).
+
 ## Delivery update: P8 FPGA-host FP8
 
 P8 is closed from the completed runs at `86a3d929cf3d_fp8`, retrieved

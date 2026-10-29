@@ -73,16 +73,40 @@ The hybrid path reserves tag bits for the outer client, fast/slow path and narro
 
 The revised observation run passed strided clone at 131,086 RTL device cycles. Across its three tiles in the timed probe window, 2,048 fast and 6,144 slow commands retired; the pending-command wait summed to 204,940 cycles, of which 30 were counted with the selected fast/slow mode unavailable. Thus the mode-drain condition measured here does not explain most of the pending wait; its remainder includes readiness/resource waits and needs the candidate comparison. The raw JSONL, stdout and complete stage-probe trace are in `probe2-clone.tgz`, SHA-256 `d9191a1059aa7066e1e634c43e51709d9d875b501435c1d5299618b00b788291`.
 
-The candidate's s4 clone comparison was started on GB10 in `~/r41-codex-t9b-fix`, shell PID 2793044; output is in `~/r41-codex-t9b-fix-results/`. That tree uses the source at `9714e405965337d4cf66ac46c095ad5c4b599f79`, the observation-only testbench changes in `09ae45a0` and `6e877c47`, and `candidate-beats.patch`. Its exact run command is `tools/r41/link_budget_rtl.py --image evidence/r41/hbm_bw/g4/strided/images/s4.tcl --profile core-vrf-sync-v5-x8-g2 --point op.clone/membound/fp16-small-strided-r32-c1024 --out ~/r41-codex-t9b-fix-results/s4-clone.jsonl`, with `~/tc_env/torchenv/bin/python` after sourcing `~/tc_env/env.sh`. It is still running; no performance result is claimed.
+The candidate's s4 clone comparison was started on GB10 in `~/r41-codex-t9b-fix`, shell PID 2793044; output is in `~/r41-codex-t9b-fix-results/`. That tree uses the source at `9714e405965337d4cf66ac46c095ad5c4b599f79`, the observation-only testbench changes in `09ae45a0` and `6e877c47`, and `candidate-beats.patch`. Its exact run command is `tools/r41/link_budget_rtl.py --image evidence/r41/hbm_bw/g4/strided/images/s4.tcl --profile core-vrf-sync-v5-x8-g2 --point op.clone/membound/fp16-small-strided-r32-c1024 --out ~/r41-codex-t9b-fix-results/s4-clone.jsonl`, with `~/tc_env/torchenv/bin/python` after sourcing `~/tc_env/env.sh`. It subsequently completed; the result is recorded below.
 
 The s1 combination passed strided add at 203,195 RTL device cycles, 21.42% above G2 and 0.95% below hybrid-only in these single samples. Raw JSONL, worker output and register-bench trace: `s1-add.tgz`, SHA-256 `4e6124402fd7c7710f5c5d06a4c1c1a7fcae40a01bb711f11ac4cbcfe5d78925`.
 
 Candidate verification so far (RTL simulation, GB10): the existing `python3 tools/r41/lsu_hybrid_tests.py` matrix passed all 48 configurations and its reset test. That run used the candidate RTL and the initial directed-test variant; the 48 existing configurations retain their original four-beat candidate setting. Separately, the strengthened directed test and a mixed, backpressured reference comparison each passed at `BEAT_W=5,6,7` with `CAND_BEATS=8`. The directed test observed 16 simultaneously outstanding narrow tags, filling both units, and the miter checked completions and memory against the original pair. `candidate-tests.tgz` (SHA-256 `c16cb8422c10523aeafaf2d4300af0c77d3647971740d932513a33c3f19b211c`) preserves both sets of raw output, including the initial directed run. `candidate-tests.patch` (SHA-256 `8248739d91d68c547db28e34d14468e100f3452377d8a7cc3c140cd31ecca1e5`) contains the final test changes and the repeatable runner invocations. These tests do not establish board timing or performance.
 
-A second s4 candidate run for strided add was started in the same GB10 candidate tree, shell PID 2795978, using the same command as the candidate clone with the point changed to `op.add/membound/fp16-small-strided-r32-c1024` and output `~/r41-codex-t9b-fix-results/s4-add.jsonl`. Both candidate point runs were still in progress when this was written.
+A second s4 candidate run for strided add was started in the same GB10 candidate tree, shell PID 2795978, using the same command as the candidate clone with the point changed to `op.add/membound/fp16-small-strided-r32-c1024` and output `~/r41-codex-t9b-fix-results/s4-add.jsonl`. Both candidate point runs subsequently completed; their results are recorded below.
 
 Enabling background reads alone on G2 passed strided clone at 108,639 RTL device cycles, 1.41% below the G2 sample; a single sample does not establish a noise range or causal improvement. Raw JSONL, worker output and register-bench trace: `background-clone.tgz`, SHA-256 `3a2ec5ac1f27f33738ecf113aba31cf5fbcb6fd02d1c5f45120e112283bd5bf7`.
 
 With hybrid LSU and `LINE_SLOTS=32` on the original RTL, strided clone passed at 131,381 RTL device cycles, close to the hybrid-only sample of 131,466. The original tile still caps the narrow pair at four beats despite the wider tag; this run precedes the candidate. Raw JSONL, worker output and register-bench trace: `slots-clone.tgz`, SHA-256 `e6e9c398afcb335ed24dc93acc9c85a68346e093ae011ef2b4a402966047f31e`.
 
 The candidate s4 strided clone passed at 90,189 RTL device cycles, 23.57% below the original s4 sample and 18.16% below the G2 sample. The three-tile LSU stall sum fell from 169,089 in original s4 to 82,187, while line reads/writes remained 3,087/768. This is a single simulation sample, not a board result or noise characterization. The candidate record has a different software-tree fingerprint (`files:5014abefbf3d1527c5011162b90678b9274dc6df91c09982844e4e6de50c7512`) because it includes the RTL and testbench changes; `git diff 8f19b113 9714e405 -- compiler/python python/tnca archbench tools/r41/link_budget_rtl.py rtl` is empty, and the candidate tree adds the recorded testbench and RTL patches to that source. Raw JSONL, worker output and register-bench trace: `candidate-s4-clone.tgz`, SHA-256 `b8feb72b579fc100fb81482e59c232369a5b01583e10dfdc7bde379090d68f0d`. The add comparison and full non-regression gates remain open.
+
+
+## Completed matrix and candidate (RTL simulation)
+
+All 22 diagnostic records and both candidate records passed their numerical checks. `all-runs.tgz` (SHA-256 `7c8d952c520ef1ff0c1dd2411b2b7654ccecb8161b0186945ef7dcd410853cad`) contains the worker logs, all JSONL records, each recorded register-bench trace, a computed summary, and compiler build/test logs. These are single samples on the synthetic-memory board bench, not board results or a noise characterization. The source and non-default diagnostic geometry are recorded in each JSONL; the synthetic bench has no board image hash and its cycle records leave the clock unspecified.
+
+| RTL configuration | add cycles | clone cycles |
+|---|---:|---:|
+| G2 | 167,351 | 110,197 |
+| G2 + hybrid LSU | 205,152 | 131,466 |
+| G2 + background reads | 164,543 | 108,639 |
+| hybrid + no-fill | 205,085 | 131,516 |
+| hybrid + 32 line slots | 205,386 | 131,381 |
+| hybrid + home pipeline | 184,273 | 117,946 |
+| G2 + 32 MSHRs | 166,653 | 110,166 |
+| G2 + 32 outlets and pipelined issue | 167,236 | 110,052 |
+| s1 | 203,195 | 130,422 |
+| s2 | 183,946 | 118,137 |
+| s4 | 183,876 | 118,007 |
+| s4 + candidate | 135,109 | 90,189 |
+
+The outlet arm changes depth and pipelined issue together, so it does not isolate those two parameters individually. HBM striping is not represented by this small synthetic memory model. The candidate reduces s4 cycles by 26.52% for add and 23.57% for clone; compared with G2 it is 19.27% and 18.16% lower, respectively. The one-change runs show that hybrid LSU is sufficient to create the regression, while the home pipeline reduces it. The pending-wait probe rules out mode-drain wait as its principal source for clone in the measured window. The fixed four-beat narrow-unit limit, despite widened available tags, is the identified design limitation; the candidate's controlled correction and lower LSU stalls support this attribution.
+
+On the candidate snapshot, `R1_STRICT=1` `make compiler` passed 157 unit tests and six IR RUN cases, after building `tnca-opt` and `sim/build/tb_core.vvp`; its logs are in `all-runs.tgz`. Those results predate the later upstream merge and do not validate unrelated later changes. The remaining gates and final integration are recorded below when completed.

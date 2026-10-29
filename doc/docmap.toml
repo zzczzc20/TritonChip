@@ -611,3 +611,8 @@ sources = ["compiler/python/tnca_cc/codegen.py", "compiler/python/tnca_cc/footpr
 path = "evidence/r41/hbm_bw/BALANCE.md"
 depends_on = ["doc/engineering_discipline.md", "evidence/r41/hbm_bw/G4_DESIGN.md", "evidence/r41/hbm_bw/LINK_BUDGET.md", "doc/r41_chat.md"]
 sources = ["evidence/r41/hbm_bw/balance/", "evidence/r41/hbm_bw/mma_dp/", "evidence/r41/hbm_bw/fma_dslx/", "evidence/r41/hbm_bw/timing/", "evidence/r41/fp8/kernels/", "evidence/r41/fp8/qwen/", "evidence/r41/chat/board-51aef19-summary.json", "evidence/r41/hbm_bw/g4/run2/image.tcl", "rtl/core/tnca_matrix.v", "rtl/core/tnca_mac_lane.v", "tools/r41/balance_model.py"]
+
+[[doc]]
+path = "evidence/r41/hbm_bw/x86_link_dryrun/README.md"
+depends_on = ["doc/engineering_discipline.md", "evidence/r41/SERVERS.md", "evidence/r41/stage2/x86_link/README.md"]
+sources = ["tools/r41/x86_link_dryrun/", "flow/fpga/package_xo.tcl", "flow/fpga/link.sh", "flow/fpga/place_r40_multicore.tcl", "flow/fpga/run_r40_attempt01.sh", "fpga/u280_multicore_hbm.cfg", "evidence/r41/hbm_bw/g4/run2/image.tcl", "evidence/r41/stage2/run1/README.md"]

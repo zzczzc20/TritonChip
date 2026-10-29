@@ -1,0 +1,5 @@
+clock_utc=2026-10-29T02:48:22Z
+source_commit=f3385ab683d658e77be092783ca34c953dfdd57e
+archive_root=~/r41_tiled2_f3385ab6
+command=git archive COMMIT | fp tar extract
+archive_extract=PASS

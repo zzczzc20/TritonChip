@@ -726,6 +726,10 @@ core-g2c4: $(patsubst %,$(BUILD)/%.hex,$(G2C4_PROGS)) $(BUILD)/tb_core_g2c4.vvp 
 	     || exit 1; \
 	 done
 
+.PHONY: core-mtx-vrf-reg
+core-mtx-vrf-reg:
+	$(PYTHON) tools/r41/mtx_vrf_reg_tests.py
+
 # R41 X8: core-vrf-sync-v5-x8's bench (the 1-byte transposed write).
 $(BUILD)/tb_core_r39sw5x8.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                                $(TB)/common/tnca_mem_model.v | dirs

@@ -1,0 +1,8241 @@
+clock_utc=2026-10-29T02:55:05Z
+archive_commit=f3385ab683d658e77be092783ca34c953dfdd57e
+host=acf3019
+card_access=false
+command=board_batch.py --dry-run for every tiled2 manifest
+DRY-RUN membound-large-1 BATCH membound_large_1
+{
+  "batch": "membound_large_1",
+  "sampling": "device-rule",
+  "configurations": 99,
+  "first_stage": [
+    [
+      "op.add/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp32-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp32-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp32-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-fp32-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-fp32-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-fp32-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ]
+  ],
+  "estimate": {
+    "expected_board_hours": 1.1,
+    "runs": [
+      {
+        "config": "op.add/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp32-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp32-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp32-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-fp32-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-fp32-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-fp32-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      }
+    ],
+    "method": "per-process wall seconds of the nearest reference record (R40 fe1b board runs); short configurations add one formal process; extra timed calls add their device time"
+  }
+}
+DRY-RUN membound-large-2 BATCH membound_large_2
+{
+  "batch": "membound_large_2",
+  "sampling": "device-rule",
+  "configurations": 72,
+  "first_stage": [
+    [
+      "op.mul/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/bf16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/bf16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/bf16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp16-large-broadcast-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp16-large-contig-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp16-large-strided-r32768-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp32-large-broadcast-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp32-large-contig-r16384-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp32-large-strided-r16384-c1024",
+      "q",
+      0,
+      1
+    ]
+  ],
+  "estimate": {
+    "expected_board_hours": 0.8,
+    "runs": [
+      {
+        "config": "op.mul/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/bf16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/bf16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/bf16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp16-large-broadcast-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp16-large-contig-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp16-large-strided-r32768-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp32-large-broadcast-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp32-large-contig-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp32-large-strided-r16384-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      }
+    ],
+    "method": "per-process wall seconds of the nearest reference record (R40 fe1b board runs); short configurations add one formal process; extra timed calls add their device time"
+  }
+}
+DRY-RUN membound-medium-1 BATCH membound_medium_1
+{
+  "batch": "membound_medium_1",
+  "sampling": "device-rule",
+  "configurations": 132,
+  "first_stage": [
+    [
+      "op.add/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp32-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp32-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp32-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-fp32-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-fp32-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-fp32-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ]
+  ],
+  "estimate": {
+    "expected_board_hours": 1.467,
+    "runs": [
+      {
+        "config": "op.add/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp32-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp32-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp32-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-fp32-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-fp32-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-fp32-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      }
+    ],
+    "method": "per-process wall seconds of the nearest reference record (R40 fe1b board runs); short configurations add one formal process; extra timed calls add their device time"
+  }
+}
+DRY-RUN membound-medium-2 BATCH membound_medium_2
+{
+  "batch": "membound_medium_2",
+  "sampling": "device-rule",
+  "configurations": 39,
+  "first_stage": [
+    [
+      "op.sigmoid/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/bf16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/bf16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/bf16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp16-medium-broadcast-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp16-medium-contig-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp16-medium-strided-r2048-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp32-medium-broadcast-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp32-medium-contig-r1024-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp32-medium-strided-r1024-c1024",
+      "q",
+      0,
+      1
+    ]
+  ],
+  "estimate": {
+    "expected_board_hours": 0.433,
+    "runs": [
+      {
+        "config": "op.sigmoid/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/bf16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/bf16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/bf16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp16-medium-broadcast-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp16-medium-contig-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp16-medium-strided-r2048-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp32-medium-broadcast-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp32-medium-contig-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp32-medium-strided-r1024-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      }
+    ],
+    "method": "per-process wall seconds of the nearest reference record (R40 fe1b board runs); short configurations add one formal process; extra timed calls add their device time"
+  }
+}
+DRY-RUN membound-small-1 BATCH membound_small_1
+{
+  "batch": "membound_small_1",
+  "sampling": "device-rule",
+  "configurations": 142,
+  "first_stage": [
+    [
+      "op.add/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp32-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp32-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/bf16-to-fp32-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-fp32-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-fp32-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp16-to-fp32-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cast/membound/fp32-to-fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.clone/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.div/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.exp/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.max/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mean/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.mul/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.relu/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sigmoid/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ]
+  ],
+  "estimate": {
+    "expected_board_hours": 1.578,
+    "runs": [
+      {
+        "config": "op.add/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp32-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp32-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/bf16-to-fp32-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-fp32-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-fp32-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp16-to-fp32-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.cast/membound/fp32-to-fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.clone/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.copy/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.div/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.exp/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gelu/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.layernorm/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.max/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mean/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.mul/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.relu/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rmsnorm/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sigmoid/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      }
+    ],
+    "method": "per-process wall seconds of the nearest reference record (R40 fe1b board runs); short configurations add one formal process; extra timed calls add their device time"
+  }
+}
+DRY-RUN membound-small-2 BATCH membound_small_2
+{
+  "batch": "membound_small_2",
+  "sampling": "device-rule",
+  "configurations": 29,
+  "first_stage": [
+    [
+      "op.silu/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sub/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/bf16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/bf16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/bf16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp16-small-broadcast-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp16-small-contig-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp16-small-strided-r32-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp32-small-broadcast-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp32-small-contig-r16-c1024",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.sum/membound/fp32-small-strided-r16-c1024",
+      "q",
+      0,
+      1
+    ]
+  ],
+  "estimate": {
+    "expected_board_hours": 0.322,
+    "runs": [
+      {
+        "config": "op.silu/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sub/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/bf16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/bf16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/bf16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp16-small-broadcast-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp16-small-contig-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp16-small-strided-r32-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp32-small-broadcast-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp32-small-contig-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.sum/membound/fp32-small-strided-r16-c1024",
+        "runs": 2,
+        "seconds": 40.0,
+        "source": "default",
+        "reference_device_seconds": 0.0
+      }
+    ],
+    "method": "per-process wall seconds of the nearest reference record (R40 fe1b board runs); short configurations add one formal process; extra timed calls add their device time"
+  }
+}
+DRY-RUN s2-original-suite BATCH original
+{
+  "batch": "original",
+  "sampling": "device-rule",
+  "configurations": 113,
+  "first_stage": [
+    [
+      "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.llama_decode/medium/fp16-b1-p256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.llama_decode/small/fp16-b1-p128",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.llama_decode/tiny/fp16-b1-p16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.llama_prefill/medium/fp16-b1-s64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.llama_prefill/small/fp16-b1-s64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.llama_prefill/tiny/fp16-b1-s16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/medium/fp16-t128-d128",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/small/fp16-t64-d128",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/tiny/fp16-t16-d64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.resnet_block/medium/fp32-n1-c24-hw16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.resnet_block/small/fp32-n1-c16-hw16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.resnet_block/tiny/fp32-n1-c8-hw8",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/medium/fp16-n49152",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/small/fp16-n16384",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/tiny/fp16-n1000",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/tiny/fp32-n256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.argmax/medium/fp16-r32-v4096",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.argmax/small/fp16-r8-v2048",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.argmax/tiny/fp16-r2-v256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.attention_decode/small/fp16-b1-h4-l256-d32",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.bmm/medium/fp16-b16-m64-k32-n64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.bmm/small/fp16-b8-m64-k32-n64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.bmm/tiny/fp16-b2-m16-k16-n16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cumsum/medium/fp32-r128-c256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cumsum/small/fp32-r64-c256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.cumsum/tiny/fp32-r4-c64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.embedding/medium/fp16-v1024-d128-t256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.embedding/small/fp16-v1024-d128-t64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.embedding/tiny/fp16-v256-d64-t16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu_tanh/medium/fp16-n65536",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu_tanh/small/fp16-n16384",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu_tanh/tiny/fp16-n256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gemv/medium/fp16-k320-n448",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gemv/small/fp16-k256-n512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gemv/tiny/fp16-k64-n64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/medium/fp16-r128-d512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/small/fp16-r64-d256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/tiny/fp16-r4-d64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.linear/medium/fp16-m128-k320-n256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.linear/small/fp16-m64-k256-n256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.linear/tiny/fp16-m16-k64-n64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/medium/fp16-m128-k192-n128",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/medium/fp32-m128-k192-n128",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/small/fp16-m64-k128-n128",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/small/fp32-m64-k128-n128",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/tiny/fp16-m16-k32-n16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/tiny/fp32-m16-k32-n16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/medium/fp16-r128-d512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/small/fp16-r64-d256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/tiny/fp16-r4-d64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rope/medium/fp16-b1-h8-s128-d32",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rope/small/fp16-b1-h4-s64-d32",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rope/tiny/fp16-b1-h2-s16-d16",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/medium/fp16-n65536",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/small/fp16-n16384",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/tiny/fp16-n256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/medium/fp16-r80-c512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/small/fp16-r64-c512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/tiny/fp16-r4-c64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/tiny/fp32-r3-c37",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.swiglu/medium/fp16-n49152",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.swiglu/small/fp16-n16384",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.swiglu/tiny/fp16-n256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.transpose/medium/fp32-r160-c256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.transpose/small/fp32-r128-c256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.transpose/tiny/fp32-r32-c32",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.llama_decode/hbm/fp16-b1-p512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.llama_prefill/hbm/fp16-b1-s512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/hbm/fp16-n67108864",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.copy/hbm/fp16-n67108864",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.embedding/hbm/fp16-v65536-d2048-t8192",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gemv/hbm/fp16-k4096-n11008",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.linear/hbm/fp16-m512-k4096-n11008",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/hbm/fp16-r8192-d4096",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/hbm/fp16-n67108864",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/hbm/fp16-r4096-c8192",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.transpose/hbm/fp32-r8192-c8192",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.llama_decode/large/fp16-b1-p512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.llama_prefill/large/fp16-b1-s512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/large/fp16-t512-d2048",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.resnet_block/large/fp32-n8-c64-hw56",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/large/fp16-n16777216",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.argmax/large/fp16-r64-v128256",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.bmm/large/fp16-b32-m512-k64-n512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.embedding/large/fp16-v128256-d2048-t512",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gelu_tanh/large/fp16-n16777216",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gemv/large/fp16-k2048-n8192",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.layernorm/large/fp16-r512-d2048",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.linear/large/fp16-m512-k2048-n8192",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/large/fp16-m2048-k2048-n2048",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/large/fp32-m2048-k2048-n2048",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rmsnorm/large/fp16-r512-d2048",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.rope/large/fp16-b1-h32-s512-d64",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.silu/large/fp16-n16777216",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.softmax/large/fp16-r4096-c4096",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.swiglu/large/fp16-n16777216",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.transpose/large/fp32-r4096-c4096",
+      "q",
+      0,
+      1
+    ]
+  ],
+  "estimate": {
+    "expected_board_hours": 2.048,
+    "runs": [
+      {
+        "config": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+        "runs": 2,
+        "seconds": 50.1,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0453
+      },
+      {
+        "config": "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+        "runs": 2,
+        "seconds": 50.3,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0312
+      },
+      {
+        "config": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+        "runs": 2,
+        "seconds": 40.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0019
+      },
+      {
+        "config": "model.llama_decode/medium/fp16-b1-p256",
+        "runs": 2,
+        "seconds": 61.9,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.1664
+      },
+      {
+        "config": "model.llama_decode/small/fp16-b1-p128",
+        "runs": 2,
+        "seconds": 59.9,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0398
+      },
+      {
+        "config": "model.llama_decode/tiny/fp16-b1-p16",
+        "runs": 2,
+        "seconds": 50.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0047
+      },
+      {
+        "config": "model.llama_prefill/medium/fp16-b1-s64",
+        "runs": 2,
+        "seconds": 87.7,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.2664
+      },
+      {
+        "config": "model.llama_prefill/small/fp16-b1-s64",
+        "runs": 2,
+        "seconds": 85.1,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.1461
+      },
+      {
+        "config": "model.llama_prefill/tiny/fp16-b1-s16",
+        "runs": 2,
+        "seconds": 61.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0062
+      },
+      {
+        "config": "model.mlp/medium/fp16-t128-d128",
+        "runs": 2,
+        "seconds": 29.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0144
+      },
+      {
+        "config": "model.mlp/small/fp16-t64-d128",
+        "runs": 2,
+        "seconds": 29.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0075
+      },
+      {
+        "config": "model.mlp/tiny/fp16-t16-d64",
+        "runs": 2,
+        "seconds": 30.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0007
+      },
+      {
+        "config": "model.resnet_block/medium/fp32-n1-c24-hw16",
+        "runs": 2,
+        "seconds": 54.9,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.038
+      },
+      {
+        "config": "model.resnet_block/small/fp32-n1-c16-hw16",
+        "runs": 2,
+        "seconds": 54.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0089
+      },
+      {
+        "config": "model.resnet_block/tiny/fp32-n1-c8-hw8",
+        "runs": 2,
+        "seconds": 54.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0025
+      },
+      {
+        "config": "op.add/medium/fp16-n49152",
+        "runs": 2,
+        "seconds": 25.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.002
+      },
+      {
+        "config": "op.add/small/fp16-n16384",
+        "runs": 2,
+        "seconds": 25.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0007
+      },
+      {
+        "config": "op.add/tiny/fp16-n1000",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.add/tiny/fp32-n256",
+        "runs": 2,
+        "seconds": 26.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.argmax/medium/fp16-r32-v4096",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.002
+      },
+      {
+        "config": "op.argmax/small/fp16-r8-v2048",
+        "runs": 2,
+        "seconds": 25.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0004
+      },
+      {
+        "config": "op.argmax/tiny/fp16-r2-v256",
+        "runs": 2,
+        "seconds": 26.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+        "runs": 2,
+        "seconds": 29.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.005
+      },
+      {
+        "config": "op.attention_decode/small/fp16-b1-h4-l256-d32",
+        "runs": 2,
+        "seconds": 27.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0025
+      },
+      {
+        "config": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+        "runs": 2,
+        "seconds": 28.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0001
+      },
+      {
+        "config": "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+        "runs": 2,
+        "seconds": 41.9,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.041
+      },
+      {
+        "config": "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+        "runs": 2,
+        "seconds": 42.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0189
+      },
+      {
+        "config": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+        "runs": 2,
+        "seconds": 33.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0004
+      },
+      {
+        "config": "op.bmm/medium/fp16-b16-m64-k32-n64",
+        "runs": 2,
+        "seconds": 29.3,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.038
+      },
+      {
+        "config": "op.bmm/small/fp16-b8-m64-k32-n64",
+        "runs": 2,
+        "seconds": 28.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0191
+      },
+      {
+        "config": "op.bmm/tiny/fp16-b2-m16-k16-n16",
+        "runs": 2,
+        "seconds": 26.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+        "runs": 2,
+        "seconds": 36.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0185
+      },
+      {
+        "config": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+        "runs": 2,
+        "seconds": 35.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0042
+      },
+      {
+        "config": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+        "runs": 2,
+        "seconds": 34.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0012
+      },
+      {
+        "config": "op.cumsum/medium/fp32-r128-c256",
+        "runs": 2,
+        "seconds": 26.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0013
+      },
+      {
+        "config": "op.cumsum/small/fp32-r64-c256",
+        "runs": 2,
+        "seconds": 25.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0007
+      },
+      {
+        "config": "op.cumsum/tiny/fp32-r4-c64",
+        "runs": 2,
+        "seconds": 27.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.embedding/medium/fp16-v1024-d128-t256",
+        "runs": 2,
+        "seconds": 27.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0066
+      },
+      {
+        "config": "op.embedding/small/fp16-v1024-d128-t64",
+        "runs": 2,
+        "seconds": 26.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0016
+      },
+      {
+        "config": "op.embedding/tiny/fp16-v256-d64-t16",
+        "runs": 2,
+        "seconds": 28.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0002
+      },
+      {
+        "config": "op.gelu_tanh/medium/fp16-n65536",
+        "runs": 2,
+        "seconds": 27.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0031
+      },
+      {
+        "config": "op.gelu_tanh/small/fp16-n16384",
+        "runs": 2,
+        "seconds": 25.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0008
+      },
+      {
+        "config": "op.gelu_tanh/tiny/fp16-n256",
+        "runs": 2,
+        "seconds": 27.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.gemv/medium/fp16-k320-n448",
+        "runs": 2,
+        "seconds": 27.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0031
+      },
+      {
+        "config": "op.gemv/small/fp16-k256-n512",
+        "runs": 2,
+        "seconds": 26.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0027
+      },
+      {
+        "config": "op.gemv/tiny/fp16-k64-n64",
+        "runs": 2,
+        "seconds": 27.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0001
+      },
+      {
+        "config": "op.layernorm/medium/fp16-r128-d512",
+        "runs": 2,
+        "seconds": 26.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0031
+      },
+      {
+        "config": "op.layernorm/small/fp16-r64-d256",
+        "runs": 2,
+        "seconds": 25.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0009
+      },
+      {
+        "config": "op.layernorm/tiny/fp16-r4-d64",
+        "runs": 2,
+        "seconds": 27.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.linear/medium/fp16-m128-k320-n256",
+        "runs": 2,
+        "seconds": 26.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0074
+      },
+      {
+        "config": "op.linear/small/fp16-m64-k256-n256",
+        "runs": 2,
+        "seconds": 26.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0031
+      },
+      {
+        "config": "op.linear/tiny/fp16-m16-k64-n64",
+        "runs": 2,
+        "seconds": 28.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0001
+      },
+      {
+        "config": "op.matmul/medium/fp16-m128-k192-n128",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.matmul/medium/fp32-m128-k192-n128",
+        "runs": 2,
+        "seconds": 28.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0074
+      },
+      {
+        "config": "op.matmul/small/fp16-m64-k128-n128",
+        "runs": 2,
+        "seconds": 26.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0008
+      },
+      {
+        "config": "op.matmul/small/fp32-m64-k128-n128",
+        "runs": 2,
+        "seconds": 28.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0029
+      },
+      {
+        "config": "op.matmul/tiny/fp16-m16-k32-n16",
+        "runs": 2,
+        "seconds": 27.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.matmul/tiny/fp32-m16-k32-n16",
+        "runs": 2,
+        "seconds": 28.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0001
+      },
+      {
+        "config": "op.rmsnorm/medium/fp16-r128-d512",
+        "runs": 2,
+        "seconds": 26.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0024
+      },
+      {
+        "config": "op.rmsnorm/small/fp16-r64-d256",
+        "runs": 2,
+        "seconds": 26.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0007
+      },
+      {
+        "config": "op.rmsnorm/tiny/fp16-r4-d64",
+        "runs": 2,
+        "seconds": 27.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.rope/medium/fp16-b1-h8-s128-d32",
+        "runs": 2,
+        "seconds": 27.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0031
+      },
+      {
+        "config": "op.rope/small/fp16-b1-h4-s64-d32",
+        "runs": 2,
+        "seconds": 27.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0006
+      },
+      {
+        "config": "op.rope/tiny/fp16-b1-h2-s16-d16",
+        "runs": 2,
+        "seconds": 27.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.silu/medium/fp16-n65536",
+        "runs": 2,
+        "seconds": 26.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.silu/small/fp16-n16384",
+        "runs": 2,
+        "seconds": 26.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0007
+      },
+      {
+        "config": "op.silu/tiny/fp16-n256",
+        "runs": 2,
+        "seconds": 26.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/medium/fp16-r80-c512",
+        "runs": 2,
+        "seconds": 26.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0029
+      },
+      {
+        "config": "op.softmax/small/fp16-r64-c512",
+        "runs": 2,
+        "seconds": 27.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0023
+      },
+      {
+        "config": "op.softmax/tiny/fp16-r4-c64",
+        "runs": 2,
+        "seconds": 26.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.softmax/tiny/fp32-r3-c37",
+        "runs": 2,
+        "seconds": 26.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.swiglu/medium/fp16-n49152",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.swiglu/small/fp16-n16384",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0009
+      },
+      {
+        "config": "op.swiglu/tiny/fp16-n256",
+        "runs": 2,
+        "seconds": 26.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "op.transpose/medium/fp32-r160-c256",
+        "runs": 2,
+        "seconds": 26.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0018
+      },
+      {
+        "config": "op.transpose/small/fp32-r128-c256",
+        "runs": 2,
+        "seconds": 26.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0015
+      },
+      {
+        "config": "op.transpose/tiny/fp32-r32-c32",
+        "runs": 2,
+        "seconds": 27.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0
+      },
+      {
+        "config": "model.llama_decode/hbm/fp16-b1-p512",
+        "runs": 1,
+        "seconds": 63.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 1.8959
+      },
+      {
+        "config": "model.llama_prefill/hbm/fp16-b1-s512",
+        "runs": 1,
+        "seconds": 214.7,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 49.2416
+      },
+      {
+        "config": "op.add/hbm/fp16-n67108864",
+        "runs": 1,
+        "seconds": 61.3,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 2.7106
+      },
+      {
+        "config": "op.copy/hbm/fp16-n67108864",
+        "runs": 1,
+        "seconds": 44.3,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 1.8091
+      },
+      {
+        "config": "op.embedding/hbm/fp16-v65536-d2048-t8192",
+        "runs": 1,
+        "seconds": 57.3,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 3.5233
+      },
+      {
+        "config": "op.gemv/hbm/fp16-k4096-n11008",
+        "runs": 2,
+        "seconds": 55.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.8783
+      },
+      {
+        "config": "op.linear/hbm/fp16-m512-k4096-n11008",
+        "runs": 1,
+        "seconds": 85.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 19.6084
+      },
+      {
+        "config": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+        "runs": 1,
+        "seconds": 167.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 47.2359
+      },
+      {
+        "config": "op.rmsnorm/hbm/fp16-r8192-d4096",
+        "runs": 1,
+        "seconds": 31.1,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 1.253
+      },
+      {
+        "config": "op.silu/hbm/fp16-n67108864",
+        "runs": 1,
+        "seconds": 49.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 2.6941
+      },
+      {
+        "config": "op.softmax/hbm/fp16-r4096-c8192",
+        "runs": 1,
+        "seconds": 34.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 2.4909
+      },
+      {
+        "config": "op.transpose/hbm/fp32-r8192-c8192",
+        "runs": 1,
+        "seconds": 67.9,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 4.3084
+      },
+      {
+        "config": "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+        "runs": 1,
+        "seconds": 64.7,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 12.3145
+      },
+      {
+        "config": "model.llama_decode/large/fp16-b1-p512",
+        "runs": 1,
+        "seconds": 492.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 27.2525
+      },
+      {
+        "config": "model.llama_prefill/large/fp16-b1-s512",
+        "runs": 1,
+        "seconds": 2340.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 637.7634
+      },
+      {
+        "config": "model.mlp/large/fp16-t512-d2048",
+        "runs": 1,
+        "seconds": 63.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 13.2556
+      },
+      {
+        "config": "model.resnet_block/large/fp32-n8-c64-hw56",
+        "runs": 1,
+        "seconds": 66.7,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 11.722
+      },
+      {
+        "config": "op.add/large/fp16-n16777216",
+        "runs": 2,
+        "seconds": 51.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.6782
+      },
+      {
+        "config": "op.argmax/large/fp16-r64-v128256",
+        "runs": 2,
+        "seconds": 30.5,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.1307
+      },
+      {
+        "config": "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+        "runs": 2,
+        "seconds": 34.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.3238
+      },
+      {
+        "config": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+        "runs": 1,
+        "seconds": 64.1,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 14.3472
+      },
+      {
+        "config": "op.bmm/large/fp16-b32-m512-k64-n512",
+        "runs": 1,
+        "seconds": 44.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 9.2455
+      },
+      {
+        "config": "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64",
+        "runs": 1,
+        "seconds": 36.7,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 5.5508
+      },
+      {
+        "config": "op.embedding/large/fp16-v128256-d2048-t512",
+        "runs": 2,
+        "seconds": 155.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.2203
+      },
+      {
+        "config": "op.gelu_tanh/large/fp16-n16777216",
+        "runs": 2,
+        "seconds": 47.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.8019
+      },
+      {
+        "config": "op.gemv/large/fp16-k2048-n8192",
+        "runs": 2,
+        "seconds": 39.5,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.3333
+      },
+      {
+        "config": "op.layernorm/large/fp16-r512-d2048",
+        "runs": 2,
+        "seconds": 28.1,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0536
+      },
+      {
+        "config": "op.linear/large/fp16-m512-k2048-n8192",
+        "runs": 1,
+        "seconds": 38.3,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 6.4561
+      },
+      {
+        "config": "op.matmul/large/fp16-m2048-k2048-n2048",
+        "runs": 1,
+        "seconds": 33.7,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 5.9366
+      },
+      {
+        "config": "op.matmul/large/fp32-m2048-k2048-n2048",
+        "runs": 1,
+        "seconds": 70.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 17.3562
+      },
+      {
+        "config": "op.rmsnorm/large/fp16-r512-d2048",
+        "runs": 2,
+        "seconds": 26.5,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0392
+      },
+      {
+        "config": "op.rope/large/fp16-b1-h32-s512-d64",
+        "runs": 2,
+        "seconds": 27.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.1051
+      },
+      {
+        "config": "op.silu/large/fp16-n16777216",
+        "runs": 2,
+        "seconds": 44.1,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.6727
+      },
+      {
+        "config": "op.softmax/large/fp16-r4096-c4096",
+        "runs": 1,
+        "seconds": 23.7,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 1.2444
+      },
+      {
+        "config": "op.swiglu/large/fp16-n16777216",
+        "runs": 2,
+        "seconds": 52.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.875
+      },
+      {
+        "config": "op.transpose/large/fp32-r4096-c4096",
+        "runs": 1,
+        "seconds": 26.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 1.0731
+      }
+    ],
+    "method": "per-process wall seconds of the nearest reference record (R40 fe1b board runs); short configurations add one formal process; extra timed calls add their device time"
+  }
+}

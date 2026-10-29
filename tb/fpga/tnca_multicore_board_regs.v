@@ -16,7 +16,7 @@ module tnca_multicore_board_regs;
   DCO_REGISTER_WRITES=0,DCO_LOCAL_REPLICAS=0,NUCA_SHARED_DATA_READ=0,AXI_LINE_LUTRAM=0,
   AXI_OUT_N=8,AXI_PIPELINED_ISSUE=0;
  // The image's tensor-transpose option (core-vrf-sync-v5-x8 images build 2).
- parameter HAS_TENSOR_XPOSE=1;
+ parameter HAS_TENSOR_XPOSE=1,MTX_VRF_REG=0;
  // R41 G2 resource sizing (tools/r40/image_geometry_tests.py sets them from an image.tcl).
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,ACC_N=16,ACC_W=4,BAR_N=32,BAR_W=5,BAR_EPOCH_W=48,PHYS_ADDR_W=64;
  // R41 G4 one-lane path options (defaults: the delivered machine).
@@ -64,7 +64,7 @@ module tnca_multicore_board_regs;
   .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES),.DCO_REGISTER_WRITES(DCO_REGISTER_WRITES),
   .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),.NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ),.AXI_LINE_LUTRAM(AXI_LINE_LUTRAM),
   .AXI_OUT_N(AXI_OUT_N),.AXI_PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),
-  .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),.NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
+  .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),.MTX_VRF_REG(MTX_VRF_REG),.NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
   .ACC_N(ACC_N),.ACC_W(ACC_W),.BAR_N(BAR_N),.BAR_W(BAR_W),.BAR_EPOCH_W(BAR_EPOCH_W),.PHYS_ADDR_W(PHYS_ADDR_W)) dut(
  .ap_clk(clk),.ap_rst_n(rst_n_async),
  .s_axi_tnca_awvalid(awvalid),
@@ -399,8 +399,19 @@ module tnca_multicore_board_regs;
 // the stage probes. This does not drive the DUT or alter the register protocol.
 generate if (HYBRID_LSU) begin:g_stage_hybrid
  for (genvar hc=0; hc<N; hc=hc+1) begin:g_tile
+  reg [63:0] pending_wait=0, mode_wait=0;
+  always @(posedge clk) if (stage_probe_on && rst_n_async) begin
+   if (`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.pending &&
+       !`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.consume) begin
+    pending_wait<=pending_wait+1;
+    if (`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.fast_eligible ?
+        !`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.fast_mode :
+        !`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.slow_mode)
+     mode_wait<=mode_wait+1;
+   end
+  end
   always @(posedge clk) if (stage_begin || stage_end)
-   $display("STAGE HYBRID at=%0s c=%0d t=%0d fast=%0d slow=%0d retired=%0d fast_retired=%0d switch_stall=%0d wb_stall=%0d request_stall=%0d slot_stall=%0d",
+   $display("STAGE HYBRID at=%0s c=%0d t=%0d fast=%0d slow=%0d retired=%0d fast_retired=%0d switch_stall=%0d wb_stall=%0d request_stall=%0d slot_stall=%0d pending_wait=%0d mode_wait=%0d",
     stage_end?"END":"BEGIN",stage_cycle,hc,
     `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_accepted,
     `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_slow_accepted,
@@ -409,7 +420,8 @@ generate if (HYBRID_LSU) begin:g_stage_hybrid
     `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_switch_stall,
     `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_writeback_stall,
     `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_request_stall,
-    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_slot_stall);
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_slot_stall,
+    pending_wait,mode_wait);
  end
 end endgenerate
 `undef TNCA_PROBE_TOP

@@ -2272,14 +2272,17 @@ module tnca_core #(
     wire x_wb_reg = (x_dstc == `TNCA_DST_S) || (x_dstc == `TNCA_DST_V)
                                             || (x_dstc == `TNCA_DST_P);
     wire x_defers_wb = x_mem_en || x_is_fpmc || x_is_fpnorm || x_is_mul || x_is_vl;
-    wire x_has_dest  = x_valid && !x_kill && !x_bar_illegal && x_wb_reg && !x_defers_wb;
+    // A fault discovered in X still owns the writeback slot reserved in R.
+    // Occupy that slot without committing a register write.
+    wire x_sched_dest = x_valid && !x_kill && x_wb_reg && !x_defers_wb;
+    wire x_has_dest  = x_sched_dest && !x_bar_illegal;
 
     //==========================================================================
     // Writeback arbitration
     //==========================================================================
     // Exactly one scheduled result can land per cycle -- the reservation
     // register guarantees it -- so these three are mutually exclusive.
-    wire sched_wb  = x_has_dest | fp_wb | mul_wb | vl_wb;
+    wire sched_wb  = x_sched_dest | fp_wb | mul_wb | vl_wb;
 
     wire cpl_req   = lsu_cpl_valid | red_pend;
     wire cpl_grant = cpl_req && !sched_wb;
@@ -3197,6 +3200,18 @@ module tnca_core #(
                 endcase
             end
 
+            // A rejected instruction does not write or start its engine, so
+            // release the destination claim made at issue.
+            if (x_valid && !x_kill && x_bar_illegal) begin
+                case (x_dstc)
+                `TNCA_DST_S: if (x_dsti[5:0] != 6'd0) sb_s[x_rctx*64 + x_dsti[5:0]] <= 1'b0;
+                `TNCA_DST_V: sb_v[x_rctx*VREGS_PER_RCTX + x_dsti] <= 1'b0;
+                `TNCA_DST_P: if (x_dsti[3:0] != 4'd0) sb_p[x_rctx*16 + x_dsti[3:0]] <= 1'b0;
+                `TNCA_DST_A: sb_acc[x_dsti[ACC_W-1:0]] <= 1'b0;
+                default: ;
+                endcase
+            end
+
             //------------------------------------------------------------------
             // matrix engine ownership, and barrier wake-ups
             //------------------------------------------------------------------
@@ -3517,7 +3532,7 @@ module tnca_core #(
         if (rst_n && !launch_valid) begin
             // The message starts with FAIL so tools/run_test.sh treats it as a
             // failure: an assertion nobody acts on is decoration.
-            if (({2'd0, x_has_dest} + {2'd0, fp_wb} + {2'd0, mul_wb} + {2'd0, vl_wb}) > 3'd1)
+            if (({2'd0, x_sched_dest} + {2'd0, fp_wb} + {2'd0, mul_wb} + {2'd0, vl_wb}) > 3'd1)
                 $display("FAIL tnca_core assert @%0t: two scheduled writebacks in one cycle (alu=%b fp=%b mul=%b vl=%b)",
                          $time, x_has_dest, fp_wb, mul_wb, vl_wb);
             // R41 T2 (F04): the late result is the unit's original result.

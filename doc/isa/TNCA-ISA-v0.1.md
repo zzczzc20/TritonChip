@@ -894,13 +894,14 @@ compiler owns all three (§12.12):
 
 ---
 
-### 9C.4 PROPOSAL, NOT APPROVED: `m.mma.dp.async` (grouped dot-product accumulation)
+### 9C.4 `m.mma.dp.async` (grouped dot-product accumulation; approved 2026-10-29) (grouped dot-product accumulation)
 
-> **Status: proposal for author approval (R41 G2, 2026-10-29).** Nothing in
-> this subsection is part of the ISA until the author approves it. No
-> implementation decodes it; the lane that would execute it
-> (`rtl/core/tnca_mac_lane.v`, `xls/tnca_mac.x`) is default-off and
-> uninstantiated. Evidence: `evidence/r41/hbm_bw/fma_dslx/README.md`; the
+> **Status: APPROVED by the author, 2026-10-29** (source: the author, in the
+> lead's chat, approving §9C.4 as written: func 0x02, `mod[3:2]` A format,
+> `mod[6:5]` B format, capability bit 12 `MATRIX_DP`, group of 4 products for
+> E4M3 x E4M3 and 2 for every other pair). Implementation is in progress
+> (R41 G2); until an image builds it, no shipped profile has the capability
+> (`rtl/core/tnca_mac_lane.v`, `xls/tnca_mac.x`). Evidence: `evidence/r41/hbm_bw/fma_dslx/README.md`; the
 > earlier r41-pmac study: `evidence/r41/pmac/README.md` §3.
 
 | `func` | Mnemonic | Fields | `mod` |
@@ -1232,7 +1233,7 @@ turn into a silent hang.
 | 9 | `PACKED_F16` | Stage 2 |
 | 10 | `CACHE_HINTS` | Stage 4 |
 | 11 | `MATRIX_FP8` | native `m.mma` with OCP FP8 E5M2 **and** E4M3 inputs |
-| (12) | (`MATRIX_DP`) | **proposed, not approved** (§9C.4): native `m.mma.dp.async` |
+| 12 | `MATRIX_DP` | native `m.mma.dp.async` (§9C.4; approved 2026-10-29) |
 
 A capability bit being clear means the corresponding encodings raise
 `ILLEGAL_INSTRUCTION`. It never means "works, but slowly, by some other route" —

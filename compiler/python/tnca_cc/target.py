@@ -297,6 +297,15 @@ class TargetInfo:
     def capabilities(self):
         return dict(self._d['capabilities'])
 
+    @property
+    def snapshot_fence(self):
+        """R41 G4: fence the context's map stores before every TensorMap
+        snapshot (rctx_spmd.publish_scratch_maps). Set by the profiles whose
+        images build the line-wide transfer engine (TENSOR_LINE), whose
+        one-request snapshot can overtake the LSU's map stores; absent, the
+        compiled code is what it was before R41 G4."""
+        return bool(self._d.get('compiler', {}).get('snapshot_fence', False))
+
     # ---- resource budgeting (sec 10.1, 10.3) ------------------------------
     def check_budget(self, *, barriers=0, accumulators=0, windows=0,
                      descriptors=0, rctx=0):

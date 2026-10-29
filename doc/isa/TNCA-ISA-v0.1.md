@@ -899,8 +899,10 @@ compiler owns all three (§12.12):
 > **Status: APPROVED by the author, 2026-10-29** (source: the author, in the
 > lead's chat, approving §9C.4 as written: func 0x02, `mod[3:2]` A format,
 > `mod[6:5]` B format, capability bit 12 `MATRIX_DP`, group of 4 products for
-> E4M3 x E4M3 and 2 for every other pair). Implementation is in progress
-> (R41 G2); until an image builds it, no shipped profile has the capability
+> E4M3 x E4M3 and 2 for every other pair). The assembler, disassembler, schema,
+> compiler lowering and the SystemC/TLM model implement it
+> (`evidence/r41/hbm_bw/mma_dp/README.md`); the RTL lane is R41 G2's work, and
+> until an image builds it no shipped profile has the capability
 > (`rtl/core/tnca_mac_lane.v`, `xls/tnca_mac.x`). Evidence: `evidence/r41/hbm_bw/fma_dslx/README.md`; the
 > earlier r41-pmac study: `evidence/r41/pmac/README.md` §3.
 
@@ -912,7 +914,7 @@ compiler owns all three (§12.12):
 those of `m.mma.async`. A and B formats are coded `0` = FP16, `1` = BF16,
 `2` = FP8 E5M2, `3` = FP8 E4M3, independently (a mixed pair such as E4M3
 weights with FP16 activations is legal). Gated by a new capability bit
-`CAPABILITY0.MATRIX_DP` (proposed bit 12); the formats used must also have
+`CAPABILITY0.MATRIX_DP` (bit 12); the formats used must also have
 their `MATRIX_*` bits.
 
 **Semantics.** The K dimension is taken in groups of G consecutive `k`, in

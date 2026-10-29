@@ -357,7 +357,12 @@ class TransferMeter:
     def summary(self):
         lg = self.log
         cyc = [e.get("device_cycles") for e in lg]
-        return dict(self.stats, host_sites=self.sites, launches=len(lg),
+        by_kernel = {}
+        for e in lg:
+            k = by_kernel.setdefault(str(e.get("kernel")), dict(launches=0, device_cycles=0))
+            k["launches"] += 1
+            k["device_cycles"] += int(e.get("device_cycles") or 0)
+        return dict(self.stats, host_sites=self.sites, launches=len(lg), by_kernel=by_kernel,
                     staging_upload_bytes=sum(e.get("upload_bytes", 0) for e in lg),
                     staging_download_bytes=sum(e.get("download_bytes", 0) for e in lg),
                     resident_bytes=sum(e.get("resident_bytes", 0) for e in lg),

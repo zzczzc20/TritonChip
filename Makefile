@@ -352,6 +352,24 @@ $(TB)/core/progs/t39_pair.s: $(TB)/core/progs/gen_t39_pair.py $(TB)/core/progs/g
 $(TB)/core/progs/t11_matrix.s: $(TB)/core/progs/gen_t11_matrix.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
 
+$(TB)/core/progs/t41_mmadp.s: $(TB)/core/progs/gen_t41_mmadp.py $(TOOLS)/model/fdp.py
+	$(PYTHON) $<
+
+# R41 G2: m.mma.dp.async (ISA sec 9C.4) through the core with the shared MAC
+# lane (MAC_DP=1), at three register-cut placements (latency 3, 4, 5), against
+# the exact oracle; and, on the machine without the capability, the refusal.
+.PHONY: core-mmadp
+core-mmadp: $(TB)/core/progs/t41_mmadp.s $(BUILD)/t41_mmadp.hex $(BUILD)/tb_core.vvp | dirs
+	@for c in 0 18 29 31; do \
+	   $(IVERILOG) $(IVFLAGS) -P tb_tnca_core.MAC_DP=1 -P tb_tnca_core.MAC_CUTS=$$c \
+	      -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	      -o $(BUILD)/tb_core_dp$$c.vvp $(TB)/core/tb_tnca_core.v || exit 1; \
+	   $(TOOLS)/run_test.sh "t41_mmadp (MAC_DP=1, cuts $$c)" \
+	      "$(VVP) $(BUILD)/tb_core_dp$$c.vvp +hex=$(BUILD)/t41_mmadp.hex +maxcycles=3000000" || exit 1; \
+	 done
+	@$(TOOLS)/run_test.sh "t41_mmadp (no MATRIX_DP: ILLEGAL_INSTRUCTION)" \
+	   "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t41_mmadp.hex +maxcycles=100000 +expectfault=01"
+
 $(TB)/core/progs/t12_tensor.s: $(TB)/core/progs/gen_t12_tensor.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
 
@@ -1029,6 +1047,8 @@ $(TARGET_JSON): $(RTL)/core/tnca_core.v $(RTL)/tnca_top.v $(ISA_SCHEMA) \
 
 # Generated files are checked, not regenerated, so a stale commit fails here
 # instead of being quietly repaired by the person who runs `make`.
+# Put this checkout ahead of editable installs, including in child processes.
+compiler compiler-rtl: export PYTHONPATH := $(CURDIR)/python:$(CURDIR)/compiler/python$(if $(PYTHONPATH),:$(PYTHONPATH))
 compiler: $(ISA_SCHEMA) $(TARGET_JSON)
 	@$(PYTHON) $(TOOLS)/isa/export_schema.py --check
 	@$(PYTHON) $(TOOLS)/isa/gen.py --check all

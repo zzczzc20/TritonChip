@@ -625,6 +625,26 @@ class Assembler:
                              f"k16/k32/k64, {'/'.join(MMA_DT)}, sf)")
             return kk | (dt << 2) | (sf_bit << 4), ops
 
+        if sclass == 'mmadp':
+            # ISA sec 9C.4: ".k32", one or two dtypes (A, then B; one dtype
+            # names both), ".sf"; mod[1:0] K, [3:2] A, [4] sf, [6:5] B
+            kk, sf_bit, dts = 0, 0, []
+            for sf in sfx:
+                if sf in MMA_K:
+                    kk = MMA_K[sf]
+                elif sf in MMA_DT:
+                    dts.append(MMA_DT[sf])
+                elif sf == 'sf':
+                    sf_bit = 1
+                else:
+                    self.err(f"unknown m.mma.dp suffix '.{sf}' (expected "
+                             f"k16/k32/k64, up to two of {'/'.join(MMA_DT)}, sf)")
+            if len(dts) > 2:
+                self.err("m.mma.dp takes at most two dtype suffixes (A, then B)")
+            da = dts[0] if dts else 0
+            db = dts[1] if len(dts) > 1 else da
+            return kk | (da << 2) | (sf_bit << 4) | (db << 5), ops
+
         if sclass == 'txf':
             # ".b/.h/.w" element size, optional ".t" transpose
             esz, tr = 1, 0

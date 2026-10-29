@@ -142,13 +142,15 @@ class DeviceMemory:
         the data only partly covers are read first and written back whole,
         so no byte outside [addr, addr + len) changes."""
         self.synchronize()
-        data = bytes(data)
+        # A bytes-like view is passed down as is (no full-size copy); only a
+        # transfer that partly covers its end words is rebuilt.
+        data = memoryview(data).cast('B')
         a0 = addr - addr % WORD
         a1 = -(-(addr + len(data)) // WORD) * WORD
         if a0 != addr or a1 != addr + len(data):
             word = bytearray(self.read(a0, a1 - a0))
             word[addr - a0:addr - a0 + len(data)] = data
-            data = bytes(word)
+            data = memoryview(word)
         buf, off = self.locate(a0)
         self.session().upload(buf, data, off)
 
@@ -220,16 +222,18 @@ def from_host(dst, src):
         return
     base, n, lo = _span(dst)
     def write_dense(data):
-        # A whole storage copy may define its allocator's word padding.
-        # Those bytes lie beyond Storage.nbytes(), so no valid alias names
-        # them. Partial storage copies still preserve neighboring bytes.
-        if dst.storage_offset() == 0 and n == dst.untyped_storage().nbytes():
-            data += bytes(-len(data) % WORD)
-        MEMORY.write(base, data)
+        # `data` is a uint8 CPU tensor. A whole storage copy may define its
+        # allocator's word padding. Those bytes lie beyond Storage.nbytes(),
+        # so no valid alias names them. Partial storage copies still preserve
+        # neighboring bytes. The tensor's memory is handed down as a view.
+        pad = -data.numel() % WORD
+        if pad and dst.storage_offset() == 0 and n == dst.untyped_storage().nbytes():
+            data = torch.cat([data, torch.zeros(pad, dtype=torch.uint8)])
+        MEMORY.write(base, memoryview(data.numpy()))
     if dst.is_contiguous() and n == dst.numel() * dst.element_size():
         host = torch.empty(dst.shape, dtype=dst.dtype)
         host.copy_(src)
-        write_dense(host.view(-1).view(torch.uint8).numpy().tobytes())
+        write_dense(host.view(-1).view(torch.uint8))
         return
     dense, extent = True, 1
     for stride, size in sorted((stride, size) for size, stride in
@@ -244,7 +248,7 @@ def from_host(dst, src):
         flat = torch.empty(n, dtype=torch.uint8)
         view = flat.view(dst.dtype).as_strided(dst.shape, dst.stride(), -lo)
         view.copy_(src)
-        write_dense(flat.numpy().tobytes())
+        write_dense(flat)
         return
     # A view with gaps: the bytes between its elements belong to other
     # tensors and must come back unchanged, so the span is read first.

@@ -262,6 +262,9 @@ def main():
     ap.add_argument('--group', action='append', choices=GROUPS)
     ap.add_argument('--quick', action='store_true')
     ap.add_argument('--v1-path', type=Path, help='a local copy of the repository at main (with build/torch-cuda)')
+    ap.add_argument('--reference-dot-mode', choices=('auto', 'mma', 'mma.dp'), default='auto',
+                    help="tl.dot reduction the reference follows: 'auto' reads the profile's MATRIX_DP "
+                         "capability; the others exist only as negative controls")
     args = ap.parse_args()
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
@@ -286,9 +289,13 @@ def main():
         tlm_backend.register()
     import tnca.torch_device as device
     device.register()
+    import fp8_block_reference as _ref
+    dot_mode = args.reference_dot_mode if args.reference_dot_mode != 'auto' else \
+        _ref.dot_mode_for_profile(os.environ['TNCA_PROFILE'])
+    _ref.set_dot_mode(dot_mode)
     run = Run(out)
     import kernels
-    run.report = dict(schema='tnca-fp8-hub-kernels/1', backend=backend, quick=args.quick,
+    run.report = dict(schema='tnca-fp8-hub-kernels/1', backend=backend, quick=args.quick, reference_dot_mode=dot_mode,
                       toolchain=dict(torch=torch.__version__, triton=triton.__version__,
                                      kernels=kernels.__version__),
                       knobs={k: v for k, v in sorted(os.environ.items()) if k.startswith('TNCA_')})

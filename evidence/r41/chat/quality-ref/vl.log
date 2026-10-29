@@ -1,0 +1,10 @@
+[transformers] Using FP8 quantized models requires a GPU or XPU, we will default to dequantizing the model to bf16 since no GPU or XPU is available
+Loading weights:   0%|          | 0/822 [00:00<?, ?it/s]Loading weights:  42%|████▏     | 343/822 [00:00<00:00, 3383.29it/s]Loading weights: 100%|██████████| 822/822 [00:00<00:00, 4368.88it/s]
+{"prompt": "fact", "turn": 0, "user": "What is the capital of France? Answer with one word.", "assistant": "Paris"}
+{"prompt": "arith", "turn": 0, "user": "What is 17 + 25? Answer with the number only.", "assistant": "42"}
+{"prompt": "reason", "turn": 0, "user": "Tom is taller than Ann. Ann is taller than Bob. Who is the shortest? Answer with one name.", "assistant": "Bob is the shortest.  \n\nHere's the reasoning:  \n"}
+{"prompt": "instruct", "turn": 0, "user": "Reply with exactly the word OK in capital letters and nothing else.", "assistant": "OK"}
+{"prompt": "multiturn", "turn": 0, "user": "My name is Alice. Please remember it and reply with one short sentence.", "assistant": "Got it, Alice!"}
+{"prompt": "multiturn", "turn": 1, "user": "What is my name? Answer with one word.", "assistant": "Alice."}
+{"prompt": "image", "turn": 0, "user": "Which shapes are in this image? Answer with a short list.", "assistant": " circle, square, triangle"}
+{"status": "reference-recorded", "model": "qwen3vl-2b-fp8", "device": "cpu", "passed": null}

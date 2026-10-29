@@ -38,7 +38,7 @@ module tnca_tile #(
     parameter LW          = 4,
     parameter VREGS_PER_RCTX = 64,
     // R41 G2 resource sizing (defaults: the delivered machine): accumulator slots, mbarriers, the barrier epoch width
-    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0,
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0, MAC_DP = 0, MAC_CUTS = 29,
     // and the home slice's physical address width (64: unchanged; below 64 an
     // address at or above 2^(PHYS_ADDR_W-1) is folded so it stays out of range)
     parameter PHYS_ADDR_W = 64,
@@ -221,7 +221,7 @@ module tnca_tile #(
         .HYBRID_LSU(HYBRID_LSU),.TENSOR_LINE(TENSOR_LINE),.SFU_LANES(SFU_LANES),
         .MEM_DW(CORE_DW),.MEM_BYTES(CORE_BYTES),.MEM_SHIFT(HYBRID_LSU ? 6 : 3),
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(LW),
-        .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
+        .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
         .CORE_ID(TILE_ID), .NUM_CORES(NUM_TILES),
         .USE_BANKED_VRF(USE_BANKED_VRF),
         .VRF_BYPASS(VRF_BYPASS),

@@ -26,7 +26,7 @@ sec 11.1: 资源不够可以先明确报错。Nothing here approximates.
 from .asm import AsmBuilder, RegisterAllocator
 from .diagnostics import Diagnostic, ResourceError
 from .footprints import (OwnershipChecker, RegRange, fragment_registers,
-                         mma_shape_of)
+                         mma_dp_group, mma_shape_of)
 from .ir import EVENT, PRED, SCALAR, TOKEN, VECTOR
 from .protocol import ProtocolModel
 
@@ -1275,7 +1275,29 @@ class CodeGen:
                             f"emit m.mma.async with {dtype} inputs")
         bar = self._token_barrier[id(token)]
         self._count_operation(bar)
-        self._emit(f"m.mma.async.{op.attrs['k']}.{op.attrs['dtype']}",
+        # ISA sec 9C.4: where the target has CAPABILITY0.MATRIX_DP every
+        # matrix command takes the grouped dot-product opcode. The choice is
+        # the operand format and the capability, nothing else; a target
+        # without the bit is lowered exactly as before. The fragment layout
+        # (sec 9C.2) is the same for both opcodes, so the windows, the
+        # footprints and the K stepping below do not change. The group (4
+        # products for E4M3 x E4M3, 2 otherwise) divides every K step
+        # (16/32/64), and a short K is zero-padded by the transfer engine
+        # to a whole K16 fragment, so a group never straddles two commands
+        # and a padded group adds exactly zero.
+        if self.target.has('matrix_dp'):
+            group = mma_dp_group(dtype, dtype)
+            kstep = mma_shape_of(op.attrs)[2]
+            if kstep % group:
+                raise Diagnostic(
+                    f"a K{kstep} step is not a whole number of "
+                    f"{group}-product groups",
+                    because='ISA sec 9C.4 takes K in groups of consecutive k',
+                    source='doc/isa/TNCA-ISA-v0.1.md sec 9C.4')
+            mnemonic = 'm.mma.dp.async'
+        else:
+            mnemonic = 'm.mma.async'
+        self._emit(f"{mnemonic}.{op.attrs['k']}.{op.attrs['dtype']}",
                     f"a{acc.reg}", f"v{aw.reg}", f"v{bw.reg}",
                     f"s{token.reg}")
         # sec 13.4 / ISA sec 9C.3: the matrix unit reads both fragments in
@@ -1305,12 +1327,12 @@ class CodeGen:
         # rather than through the channel protocol.
         cmd = f"mma{len(self._events)}"
         self.own.hold(cmd, [RegRange('v', aw.reg, want_a),
-                            RegRange('v', bw.reg, want_b)], 'm.mma.async')
+                            RegRange('v', bw.reg, want_b)], mnemonic)
         # ISA sec 9C.3: the destination accumulator may not be read by the
         # vector unit until the command completes. Holding it as a *written*
         # range is what makes a.vread before the wait a compile error rather
         # than a race whose symptom is a plausible wrong number.
-        self.own.hold(cmd, [RegRange('a', acc.reg, 1)], 'm.mma.async',
+        self.own.hold(cmd, [RegRange('a', acc.reg, 1)], mnemonic,
                       mode='write')
         self._events[id(op.results[0])] = cmd
         self._mma_pending.setdefault(bar, []).append(cmd)

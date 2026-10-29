@@ -21,179 +21,180 @@ it is a statement about which column of evidence exists.
 
 ## Instructions
 
-| mnemonic | major | capability | core-4r | core-sim | core-vrf-sync-v1 | core-vrf-sync-v2 | core-vrf-sync-v3 | core-vrf-sync-v4 | core-vrf-sync-v5 | core-vrf-sync-v5-x8 | core-vrf-sync-v5-x8-g2 | core-vrf-sync-v5-x8-g2c4 | core-xpose-v1 | system-2x2 | compiler can emit | machine verified |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `nop` | SYS | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.rdspecial` | SYS | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `s.wrspecial` | SYS | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.mov` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `s.add` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `s.sub` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.mul` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `s.mulh.s` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.mulh.u` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.and` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.or` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.xor` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.andn` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.shl` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `s.lshr` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.ashr` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.min.s` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.max.s` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.min.u` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.max.u` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.clz` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.popc` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.sext.w` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.zext.w` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.cmp` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `s.sel` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.addi` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `s.subi` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.muli` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.andi` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.ori` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.xori` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.shli` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `s.lshri` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.ashri` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `s.cmpi` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.movz` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.movk` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `s.movn` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `br` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `br.nz` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `br.z` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes |
-| `br.r` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `call` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `ret` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `yield` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `trap` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `exit` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `v.mov` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.add` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.sub` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.mul` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.mulh.s` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.mulh.u` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.and` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.or` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.xor` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.andn` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.shl` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.lshr` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.ashr` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.min.s` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.max.s` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.min.u` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.max.u` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.clz` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.popc` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.cmp` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.sel` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.splat` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.iota` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.addi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.subi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.muli` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.andi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.ori` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.xori` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.shli` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.lshri` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.ashri` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.cmpi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.movi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.add` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.sub` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.mul` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.fma` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.fms` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.min` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.max` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.neg` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.abs` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.cmp` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.cvt.s32.f32` | CVT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `vf.cvt.u32.f32` | CVT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `vf.cvt.f32.s32` | CVT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `vf.cvt.f32.u32` | CVT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `vf.cvt` | CVT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `p.mov` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `p.and` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `p.or` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `p.xor` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `p.not` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `p.andn` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `p.any` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `p.all` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `p.ballot` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `p.frombits` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `p.popc` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.shuffle.xor` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.shuffle.up` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.shuffle.down` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.permute` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.rotate` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.extract` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.insert` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.reduce.add` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.reduce.max.s` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.reduce.min.s` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.reduce.and` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.reduce.or` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.reduce.xor` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.reduce.max.u` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.reduce.min.u` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.reduce.add` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.reduce.max` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `vf.reduce.min` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.exp2.approx` | SFU | sfu | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes | no |
-| `v.rcp.approx` | SFU | sfu | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes | no |
-| `v.rsqrt.approx` | SFU | sfu | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes | no |
-| `v.log2.approx` | SFU | sfu | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes | no |
-| `s.ld` | LSU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `s.st` | LSU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `v.ld` | LSU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.st` | LSU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.ld.gather` | LSU | gather_scatter | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.st.scatter` | LSU | gather_scatter | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `atom.add` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `atom.and` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `atom.or` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `atom.xor` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `atom.xchg` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `atom.min.s` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `atom.max.s` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `atom.min.u` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `atom.max.u` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
-| `atom.cas` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `atom.ld` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes |
-| `atom.st` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `fence` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes |
-| `td.load` | TDESC | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `td.release` | TDESC | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `w.def` | TDESC | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `w.release` | TDESC | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `t.ld.async` | TXFER | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `t.st.async` | TXFER | tensor_store | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `t.prefetch` | TXFER | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `m.zero` | MATRIX | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `m.mma.async` | MATRIX | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `a.vread` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `a.vwrite` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `a.mul.row` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `a.fma.row` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `a.zero` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `mb.init` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `mb.arm` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `mb.arrive` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `mb.test` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| mnemonic | major | capability | core-4r | core-sim | core-sim-dp | core-vrf-sync-v1 | core-vrf-sync-v2 | core-vrf-sync-v3 | core-vrf-sync-v4 | core-vrf-sync-v5 | core-vrf-sync-v5-x8 | core-vrf-sync-v5-x8-g2 | core-vrf-sync-v5-x8-g2c4 | core-vrf-sync-v5-x8-g2c4-dp | core-xpose-v1 | system-2x2 | compiler can emit | machine verified |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `nop` | SYS | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.rdspecial` | SYS | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `s.wrspecial` | SYS | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.mov` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `s.add` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `s.sub` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.mul` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `s.mulh.s` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.mulh.u` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.and` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.or` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.xor` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.andn` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.shl` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `s.lshr` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.ashr` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.min.s` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.max.s` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.min.u` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.max.u` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.clz` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.popc` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.sext.w` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.zext.w` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.cmp` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `s.sel` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.addi` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `s.subi` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.muli` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.andi` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.ori` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.xori` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.shli` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `s.lshri` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.ashri` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `s.cmpi` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.movz` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.movk` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `s.movn` | SALU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `br` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `br.nz` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `br.z` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes |
+| `br.r` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `call` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `ret` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `yield` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `trap` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `exit` | CTRL | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `v.mov` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.add` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.sub` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.mul` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.mulh.s` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.mulh.u` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.and` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.or` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.xor` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.andn` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.shl` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.lshr` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.ashr` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.min.s` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.max.s` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.min.u` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.max.u` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.clz` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.popc` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.cmp` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.sel` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.splat` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.iota` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.addi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.subi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.muli` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.andi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.ori` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.xori` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.shli` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.lshri` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.ashri` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.cmpi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.movi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.add` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.sub` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.mul` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.fma` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.fms` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.min` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.max` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.neg` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.abs` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.cmp` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.cvt.s32.f32` | CVT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `vf.cvt.u32.f32` | CVT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `vf.cvt.f32.s32` | CVT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `vf.cvt.f32.u32` | CVT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `vf.cvt` | CVT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `p.mov` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `p.and` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `p.or` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `p.xor` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `p.not` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `p.andn` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `p.any` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `p.all` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `p.ballot` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `p.frombits` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `p.popc` | PRED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.shuffle.xor` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.shuffle.up` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.shuffle.down` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.permute` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.rotate` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.extract` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.insert` | SHUF | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.reduce.add` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.reduce.max.s` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.reduce.min.s` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.reduce.and` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.reduce.or` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.reduce.xor` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.reduce.max.u` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.reduce.min.u` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.reduce.add` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.reduce.max` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `vf.reduce.min` | RED | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.exp2.approx` | SFU | sfu | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes | no |
+| `v.rcp.approx` | SFU | sfu | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes | no |
+| `v.rsqrt.approx` | SFU | sfu | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes | no |
+| `v.log2.approx` | SFU | sfu | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes | no |
+| `s.ld` | LSU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `s.st` | LSU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `v.ld` | LSU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.st` | LSU | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.ld.gather` | LSU | gather_scatter | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `v.st.scatter` | LSU | gather_scatter | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `atom.add` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `atom.and` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `atom.or` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `atom.xor` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `atom.xchg` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `atom.min.s` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `atom.max.s` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `atom.min.u` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `atom.max.u` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+| `atom.cas` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `atom.ld` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes |
+| `atom.st` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `fence` | ATOM | atomics_device | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | yes |
+| `td.load` | TDESC | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `td.release` | TDESC | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `w.def` | TDESC | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `w.release` | TDESC | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `t.ld.async` | TXFER | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `t.st.async` | TXFER | tensor_store | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `t.prefetch` | TXFER | tensor_dma | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `m.zero` | MATRIX | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `m.mma.async` | MATRIX | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `m.mma.dp.async` | MATRIX | matrix_dp | no | no | yes | no | no | no | no | no | no | no | no | yes | no | no | yes | no |
+| `a.vread` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `a.vwrite` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `a.mul.row` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `a.fma.row` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `a.zero` | ACC | matrix_f16 | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `mb.init` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `mb.arm` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `mb.arrive` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `mb.test` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
+| `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 
-169 instructions: 117 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
+170 instructions: 118 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
 
 `gated` in the emit column means the lowering exists and the capability
 is false everywhere, so asking for it is a compile error rather than a

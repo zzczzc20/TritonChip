@@ -74,7 +74,7 @@ fn e4m3_ms(x: u8) -> (u4, u4) {
 // One product as two DSP operands with a * b * 2^18 = A * B exactly: B keeps
 // at most 13 of the shift (< 2^17, inside the 18-bit signed port), A takes
 // the rest (< 2^20) and the product's sign.
-fn dp4_operands(a: u8, b: u8) -> (s27, s18) {
+fn dp4_operands(a: u8, b: u8) -> (s27, s18, s48) {
     let (ma, sa) = e4m3_ms(a);
     let (mb, sb) = e4m3_ms(b);
     let sb2 = if sb > u4:13 { u4:13 } else { sb };
@@ -82,7 +82,10 @@ fn dp4_operands(a: u8, b: u8) -> (s27, s18) {
     let afix = ((ma as u20) << sa2) as s27;
     let bfix = ((mb as u17) << sb2) as s18;
     let neg = a[7+:u1] ^ b[7+:u1];
-    (if neg == u1:1 { -afix } else { afix }, bfix)
+    // -x = !x + 1: the multiplier takes !x (one XOR level in front of the DSP,
+    // no carry chain), and !x * B = -x*B - B, so +B is added back after, with
+    // the product, where the DSP's C port takes it.
+    (if neg == u1:1 { !afix } else { afix }, bfix, if neg == u1:1 { bfix as s48 } else { s48:0 })
 }
 
 pub struct Dp4Fix {
@@ -91,15 +94,15 @@ pub struct Dp4Fix {
 }
 
 pub fn dp4_e4m3(a: u32, b: u32) -> Dp4Fix {
-    let (a0, b0) = dp4_operands(a[0+:u8], b[0+:u8]);
-    let (a1, b1) = dp4_operands(a[8+:u8], b[8+:u8]);
-    let (a2, b2) = dp4_operands(a[16+:u8], b[16+:u8]);
-    let (a3, b3) = dp4_operands(a[24+:u8], b[24+:u8]);
+    let (a0, b0, k0) = dp4_operands(a[0+:u8], b[0+:u8]);
+    let (a1, b1, k1) = dp4_operands(a[8+:u8], b[8+:u8]);
+    let (a2, b2, k2) = dp4_operands(a[16+:u8], b[16+:u8]);
+    let (a3, b3, k3) = dp4_operands(a[24+:u8], b[24+:u8]);
     // a cascade: ((p0 + p1) + p2) + p3, each product a 27 x 18 multiply
-    let p0 = std::smul(a0, b0) as s48;
-    let p1 = std::smul(a1, b1) as s48;
-    let p2 = std::smul(a2, b2) as s48;
-    let p3 = std::smul(a3, b3) as s48;
+    let p0 = (std::smul(a0, b0) as s48) + k0;
+    let p1 = (std::smul(a1, b1) as s48) + k1;
+    let p2 = (std::smul(a2, b2) as s48) + k2;
+    let p3 = (std::smul(a3, b3) as s48) + k3;
     let ea = [tnca_fdp::dec8_e4m3(a[0+:u8]), tnca_fdp::dec8_e4m3(a[8+:u8]),
               tnca_fdp::dec8_e4m3(a[16+:u8]), tnca_fdp::dec8_e4m3(a[24+:u8])];
     let eb = [tnca_fdp::dec8_e4m3(b[0+:u8]), tnca_fdp::dec8_e4m3(b[8+:u8]),
@@ -127,9 +130,78 @@ pub fn dec16x(x: u16, code: u2) -> tnca_fdp::E16 {
     else { e4m3_as_e16(x[0+:u8]) }
 }
 
+// tnca_fdp::dp2_align with one adder. The original sums three terms and three
+// carries (the reference, the shifted smaller product, a borrow unit) in a
+// 67-bit field: sum = sb*B + ss*Ssh + (borrow ? ss : 0), sx*v meaning -v for
+// sx = 1. Here the reference is only 22 bits at [63:42], so its signed value
+// is a small negation (22 bits) with zeros below, and -(Ssh + 1) = ~Ssh folds
+// the borrow into the one carry-in: sum = tb + (ss ? ~Ssh : Ssh) + (ss ^ borrow).
+// dp2_x_is_ref proves it equal to tnca_fdp::dp2_align for every operand pair.
+pub struct Dp2Mid {
+    pb: u22,                 // the reference product (larger scale)
+    ps: u22,                 // the smaller
+    d: u7,                   // the scale difference, capped at 64
+    sb: u1,
+    ss: u1,
+    lb: s12,
+    sp: tnca_fdp::Spec,
+}
+
+// Products' scales and the reference choice (before the shift).
+pub fn dp2_pre(ea: tnca_fdp::E16[2], eb: tnca_fdp::E16[2], p0: u22, p1: u22) -> Dp2Mid {
+    let l0 = ea[0].l + eb[0].l;
+    let l1 = ea[1].l + eb[1].l;
+    let z0 = ea[0].zero == u1:1 || eb[0].zero == u1:1;
+    let z1 = ea[1].zero == u1:1 || eb[1].zero == u1:1;
+    let sg0 = ea[0].s ^ eb[0].s;
+    let sg1 = ea[1].s ^ eb[1].s;
+    let ref1 = if z0 { true } else if z1 { false } else { l1 > l0 };
+    let d01 = l0 - l1;
+    let d10 = l1 - l0;
+    let dabs = if ref1 { d10 } else { d01 };
+    Dp2Mid {
+        pb: if ref1 { p1 } else { p0 },
+        ps: if ref1 { p0 } else { p1 },
+        d: if dabs > s12:64 { u7:64 } else { dabs as u7 },
+        sb: if ref1 { sg1 } else { sg0 },
+        ss: if ref1 { sg0 } else { sg1 },
+        lb: if ref1 { l1 } else { l0 },
+        sp: tnca_fdp::spec2(ea, eb),
+    }
+}
+
+// The shift of the smaller product and the one addition.
+pub fn dp2_post(m: Dp2Mid) -> tnca_fdp::Dp2Sum {
+    let sf = (m.ps as u64) << u64:42;
+    let sh = sf >> m.d;
+    let sticky = (sf & tnca_fdp::lsb_mask64(m.d)) != u64:0;
+    let borrow = sticky && (m.sb != m.ss);
+    let pbs = m.pb as sN[25];
+    let tbh = if m.sb == u1:1 { -pbs } else { pbs };
+    let tb = (tbh as sN[67]) << u32:42;
+    let ts = if m.ss == u1:1 { !(sh as uN[67]) } else { sh as uN[67] };
+    let cs = (m.ss ^ (borrow as u1)) as uN[67];
+    let sum = (tb as uN[67]) + ts + cs;
+    tnca_fdp::Dp2Sum { sum: sum as sN[67], sticky: sticky as u1, lb: m.lb, sp: m.sp }
+}
+
+pub fn dp2_align1(ea: tnca_fdp::E16[2], eb: tnca_fdp::E16[2], p0: u22, p1: u22) -> tnca_fdp::Dp2Sum {
+    dp2_post(dp2_pre(ea, eb, p0, p1))
+}
+
+fn dp2_decode(a: u32, b: u32, fa: u2, fb: u2) -> (tnca_fdp::E16[2], tnca_fdp::E16[2]) {
+    ([dec16x(a[0+:u16], fa), dec16x(a[16+:u16], fa)],
+     [dec16x(b[0+:u16], fb), dec16x(b[16+:u16], fb)])
+}
+
 pub fn dp2_x(a: u32, b: u32, fa: u2, fb: u2) -> tnca_fdp::Dp2Sum {
-    let ea = [dec16x(a[0+:u16], fa), dec16x(a[16+:u16], fa)];
-    let eb = [dec16x(b[0+:u16], fb), dec16x(b[16+:u16], fb)];
+    let (ea, eb) = dp2_decode(a, b, fa, fb);
+    dp2_align1(ea, eb, std::umul(ea[0].sig, eb[0].sig), std::umul(ea[1].sig, eb[1].sig))
+}
+
+// The original (three adders), the reference of dp2_x_is_ref.
+pub fn dp2_x_orig(a: u32, b: u32, fa: u2, fb: u2) -> tnca_fdp::Dp2Sum {
+    let (ea, eb) = dp2_decode(a, b, fa, fb);
     tnca_fdp::dp2_align(ea, eb, std::umul(ea[0].sig, eb[0].sig), std::umul(ea[1].sig, eb[1].sig))
 }
 
@@ -184,6 +256,13 @@ fn dp4_product(g: Dp4Fix) -> tnca_fma::FmaProduct {
 // Stage functions
 //============================================================================
 
+pub struct MacMid1 {
+    mode: u2,
+    fp: tnca_fma::FmaProduct,   // mode 0
+    d4: Dp4Fix,                 // mode 2
+    d2: Dp2Mid,                 // mode 1
+}
+
 pub struct MacMid {
     mode: u2,
     fp: tnca_fma::FmaProduct,   // mode 0
@@ -191,10 +270,23 @@ pub struct MacMid {
     d2: tnca_fdp::Dp2Sum,       // mode 1
 }
 
-// F1: decode, products and group sums. In mode 0, a and b are already
-// widened to binary32 (the lane wrapper widens by fmt, as tnca_fpu_multi).
+// S1: decode, the products (and DP4's whole sum), the DP2 reference choice.
+// In mode 0, a and b are already widened to binary32 by the lane wrapper
+// (as tnca_fpu_multi does).
+pub fn mac_s1(mode: u2, a: u32, b: u32, fa: u2, fb: u2, ftz: u1) -> MacMid1 {
+    let (ea, eb) = dp2_decode(a, b, fa, fb);
+    MacMid1 { mode: mode, fp: tnca_fma::fma32_mul(a, b, ftz), d4: dp4_e4m3(a, b),
+              d2: dp2_pre(ea, eb, std::umul(ea[0].sig, eb[0].sig), std::umul(ea[1].sig, eb[1].sig)) }
+}
+
+// S2: DP2's shift and addition; the other modes' results pass.
+pub fn mac_s2(m: MacMid1) -> MacMid {
+    MacMid { mode: m.mode, fp: m.fp, d4: m.d4, d2: dp2_post(m.d2) }
+}
+
+// F1 = S1 then S2 (the two stages unregistered).
 pub fn mac_f1(mode: u2, a: u32, b: u32, fa: u2, fb: u2, ftz: u1) -> MacMid {
-    MacMid { mode: mode, fp: tnca_fma::fma32_mul(a, b, ftz), d4: dp4_e4m3(a, b), d2: dp2_x(a, b, fa, fb) }
+    mac_s2(mac_s1(mode, a, b, fa, fb, ftz))
 }
 
 // F2: the mode's product.
@@ -244,12 +336,12 @@ fn dp4_sum_is_v3(a: u32, b: u32) -> bool {
 // the shared spec4 give dp4_sum_is_v3.
 #[quickcheck(exhaustive)]
 fn dp4_term_is_v3(a: u8, b: u8) -> bool {
-    let (x, y) = dp4_operands(a, b);
+    let (x, y, k) = dp4_operands(a, b);
     let ea = tnca_fdp::dec8_e4m3(a);
     let eb = tnca_fdp::dec8_e4m3(b);
     let f = tnca_fdp::dp4e_field(ea, eb) as s48;
     let want = if (ea.s ^ eb.s) == u1:1 { -f } else { f };
-    (std::smul(x, y) as s48) == want
+    ((std::smul(x, y) as s48) + k) == want
 }
 
 // DP2 with FP16/BF16 codes is tnca_fdp's DP2 (verified against the oracle).
@@ -258,6 +350,13 @@ fn dp2_fp16_bf16_is_v2(a: u32, b: u32, fa: u1, fb: u1) -> bool {
     let mine = dp2_x(a, b, fa as u2, fb as u2);
     let v2 = tnca_fdp::dp2_sum(a, b, fa, fb);
     mine == v2
+}
+
+// The one-adder DP2 sum equals the original for every operand pair and every
+// element code (all four codes per operand).
+#[quickcheck]
+fn dp2_x_is_ref(a: u32, b: u32, fa: u2, fb: u2) -> bool {
+    dp2_x(a, b, fa, fb) == dp2_x_orig(a, b, fa, fb)
 }
 
 #[test]

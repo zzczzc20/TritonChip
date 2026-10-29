@@ -26,6 +26,31 @@
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
     },
+    "core-sim-dp": {
+      "target_file": "tnca-sim-dp.json",
+      "description": "core-sim (one core, two Role Contexts) with the shared MAC lane: tnca_core MAC_DP=1, MAC_CUTS=14, so m.mma.dp.async (ISA sec 9C.4, CAPABILITY0.MATRIX_DP bit 12) executes. What the compiler's RTL tests of the packed matrix opcode target (tb_tnca_core with -P MAC_DP=1; built by `make core-mmadp`). Every other instruction, format and capability is core-sim's.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 2,
+        "RCTX_W": 1,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "MAC_DP": 1,
+        "MAC_CUTS": 14
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_dp14.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
     "core-4r": {
       "target_file": "tnca-sim-4rctx.json",
       "description": "One core, four Role Contexts, half the logical vector registers each so the physical file is the same size. compiler_overview.md sec 15 C4's P+M0+M1+E profile.",
@@ -457,6 +482,52 @@
           "+allroles"
         ],
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
+    "core-vrf-sync-v5-x8-g2c4-dp": {
+      "target_file": "tnca-sim-vrf-v5-x8-g2c4-dp.json",
+      "executes_artifacts_of": [],
+      "description": "core-vrf-sync-v5-x8-g2c4 with the grouped dot-product matrix opcode m.mma.dp.async (ISA sec 9C.4, approved by the author 2026-10-29; capability matrix_dp, CAPABILITY0 bit 12): tnca_core MAC_DP=1 with the shared MAC lane at MAC_CUTS=14 (result latency 4 against 3 for m.mma.async). The compiler lowers every FP8/FP16/BF16 matrix command to it, and the SystemC/TLM model executes it (profile key mtx_dp). The core-level RTL regression is `make core-mmadp` (t41_mmadp); no complete-image bench is bound to this profile yet, and no image has been built from it. Every other instruction, format and capability is unchanged; artifacts using m.mma.dp.async do not run on any image built before one is.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 256,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1,
+        "HAS_TENSOR_XPOSE": 2,
+        "RPAIR": 1,
+        "BAR_N": 8,
+        "BAR_W": 3,
+        "BAR_EPOCH_W": 38,
+        "MAC_DP": 1,
+        "MAC_CUTS": 14
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 2,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1,
+          "MTX_ABUF": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "none",
+        "what": "no image and no bench bound yet; the core-level RTL regression is make core-mmadp (MAC_DP=1)"
       }
     }
   },

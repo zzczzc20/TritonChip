@@ -133,6 +133,13 @@ written down:
   differ by one parameter in one widening step and share every other gate --
   unlike FP16 and BF16, where an implementation could plausibly build one
   exponent range and not the other.
+* `CAPABILITY0.MATRIX_DP` (bit 12, ISA sec 9C.4) is set only where `m.mma.dp.async`
+  executes. The assembler, disassembler and compiler know the opcode; a target
+  without the capability is lowered exactly as before, because the compiler's
+  only input to the choice is that capability and the operand formats. The
+  SystemC/TLM model (profile key `mtx_dp`, default off) executes it with the
+  exact group arithmetic of sec 9C.4, validated against `tools/model/fdp.py`.
+  No RTL image has the bit yet; model results are model results.
 * Major `0x21` (atomics) decoded as illegal until the home slice existed to
   execute them at. It does now, so `CAPABILITY0.ATOMICS_DEVICE` reads 1 and the
   family runs — `t22_atomic` checks every operation at both widths, and

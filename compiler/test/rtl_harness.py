@@ -35,9 +35,9 @@ BENCHES = {
     # arranges.
     'rctx4-slow': 'tb_core4_slow.vvp',
     'rctx4-ooo': 'tb_core4_ooo.vvp',
-    # One core with the shared MAC lane (MAC_DP=1, MAC_CUTS=14): m.mma.dp.async
+    # One core with the shared MAC lane (MAC_DP=1, MAC_CUTS=29): m.mma.dp.async
     # executes (ISA sec 9C.4). Built by `make core-mmadp`.
-    'dp': 'tb_core_dp14.vvp',
+    'dp': 'tb_core_dp29.vvp',
     # The whole machine: four cores, four NUCA slices, the 2x2 mesh and DRAM.
     'system': 'tb_top.vvp',
 }

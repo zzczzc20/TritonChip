@@ -797,10 +797,45 @@ SCREEN_ROWS
 
 G2 adds `FMA_IMPL=1` and the matrix MAC lane to the same file. The new options are default-off in the RTL and stay off until the gate.
 
-Not on the line path yet: the transposed X8 tile, which is the FP8 weight stream's corner turn.
-- It still reads 8-byte units, one per source row per column block, so it moves at most 8 bytes a cycle.
-- A line version reads 16 whole rows and turns 64 columns. Its buffer is 1 KiB instead of 128 bytes, and its output multiplexer is about 8× wider.
-- Proposed as the next RTL step if the profile of FP8 decode shows transposed weight loads on its critical path. Non-transposed matrix-operand loads of whole lines already take the line path.
+**The transposed X8 tile: a line buffer for the FP8 weight stream.**
+
+The FP8 decode profile (`evidence/r41/chat/DECODE_PROFILE.md` on `r41`, part 1) found that the Hub FP8 matmul's weights, 83–87 % of decode device time, arrive by the X8 transposed transfer, which here still used the word walk.
+- One transfer is a box of 16 source rows × 32 B, with the rows K = 2048 B apart.
+- The walk reads one 8-byte unit per source row per column block, so 64 requests ask for each source line 4 times.
+- One transfer waits for the previous one.
+
+The line port now keeps a small line buffer for transposed reads (part of `TENSOR_LINE`, no ISA or numerics change):
+- The first unit of a line goes to memory as before, and the whole 64-byte line that returns is kept. There are 16 lines, one per source row of a tile, in distributed RAM, with a 16-entry address compare.
+- The walk's later units of that line are answered from the buffer, one a cycle, with no memory request.
+- Corner turn, xbuf and window writes are unchanged.
+- The buffer lives for one command: it is emptied when a command starts and by any write.
+
+Hub pattern, 32 transfers (16 KiB of weights), fixed memory latency, 16 tags (rtl, `tools/r41/tensor_line_tests.py --xperf`, `g4/tte_rtl/xperf_hub_fp8.log`):
+
+| Engine | latency 20 | 60 | 100 |
+|---|---:|---:|---:|
+| word engine (`TENSOR_LINE 0`) | 6,856 | 13,256 | 19,656 |
+| line engine, no buffer | 6,183 | 11,343 | 16,503 |
+| line engine with the buffer | 4,263 | 5,583 | 6,903 |
+
+At latency 60:
+- a 512-byte transfer drops from 414 to 174 cycles;
+- the transfer stream goes from 1.24 to 2.93 B/cycle/core;
+- memory requests per transfer drop from 64 to 16.
+
+In the decode kernel the transfer wait is about 28 % of the FP8 launch (TLM, profile part 1). So this removes roughly 15–20 % of the launch (analytic); the rest needs the compiler changes the profile lists (issuing the next transfer before waiting, and an M=1 lowering).
+- The engine already supports several windows. Transposed transfers run one at a time but back to back, so a double-buffered schedule overlaps a transfer with the previous tile's MMA.
+
+**Memory ordering.**
+- A store by another core reaches this engine's transfer only through the ISA's ordering: a release/acquire pair, a fence and an atomic flag, or a barrier. Such a store is ordered before the transfer command starts.
+- The buffer is emptied at every command start. An ordered store is therefore always seen.
+- A store that races with a command in flight has no ordering against it in the ISA (§9.2, §9A.5 cover only ordered accesses), so returning the bytes from before the store is legal. The word engine can return either bytes too, unit by unit.
+
+Tests:
+- `XRACE=1`: a store to the weight lines between two loads of the same box. Both engines must return the new bytes. This kills the mutant without the command-start clear, which the random miter could not see.
+- `XRACE=2`: a store 40 cycles into the second load. It is reported, not compared: 384 of 512 window bytes differ between the two engines, and both results are legal.
+- The remaining fill-check mutant is equivalent under the engine's limits (`g4/tte_rtl/mutants_dtype.log`).
+
 
 ### 9.7 Semantic hardware prefetch into the home (evaluation, 2-hour time box)
 The author's idea (source: the author, in the lead's chat, 2026-10-29), relayed by the coordinator: hardware prefetch through the home/TMU, using either (a) hints from the line TTE about the rest of a descriptor's box, or (b) a stream detector on sequential read misses. Prefetched lines are clean, non-reserving and droppable.

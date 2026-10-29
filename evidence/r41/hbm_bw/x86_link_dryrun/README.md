@@ -10,6 +10,8 @@ The real run-2 link command, after preparing a clean immutable source snapshot a
 
 ```sh
 source ~/x86_link_env.sh
+export XILINX_HLS="$HOME/Xilinx/Vitis_HLS/2023.2"
+export PATH="$XILINX_HLS/bin:$PATH"
 cd "$RUN2_SOURCE"
 setsid nohup nice -n 5 bash flow/fpga/run_r40_attempt01.sh "$FRESH_BUILD_ROOT" "$RUN2_SOURCE/evidence/r41/hbm_bw/g4/run2/image.tcl" > /dev/null 2>&1 < /dev/null &
 ```
@@ -21,3 +23,5 @@ Stage timing, peak RSS, and xclbin result are pending. The x86 small-link probe 
 At 13:31 UTC, the guard observed 23,594 MiB available and one Vivado process. The isolated probe packaged an XO in 22 seconds; sampled summed process-tree RSS peaked at 985,180 KiB. The subsequent link failed immediately with `v++ 84-18: Application not found: vitis_hls`; it produced no xclbin. This demonstrates that package-only validation missed a real x86 prerequisite. Raw package, link and memory logs: `first-attempt.tgz`, SHA-256 `a8d636a3d8bc4cb57ab625edf5dccc7a4c20f0aa772b48928aae8873f97365a7`. The FPGA host has Vitis HLS 2023.2; its files are being copied to the x86 user directory for verification. No production image run was started.
 
 The documented x86 full-run command also exposed a separate runner issue: `run_r40_attempt01.sh` had `set -e` and unconditionally sourced FPGA-host-only `/tools/Xilinx/...` and `/opt/xilinx/...` paths. On x86, a direct shell check returned status 1 before packaging. The runner now sources each FPGA-host setup only when it exists; a direct x86 shell check of the guarded setup completed successfully, and `bash -n flow/fpga/run_r40_attempt01.sh` passed locally. This checks startup semantics, not a full image run.
+
+The 9.5 GiB Vitis HLS 2023.2 directory was copied from the FPGA host to the x86 user directory. `vitis_hls -version` then exited zero, and the configured HLS path survived sourcing Vitis settings. Raw version output: `hls-version.tgz`, SHA-256 `25d4cc3cdd1937e8133bb0367c3651fb33a33c4b277c15719adc98332081bef5`. A second tiny probe was started in a fresh isolated tree; full link remains pending. The run-2 command above includes the HLS environment explicitly rather than changing the shared `x86_link_env.sh`.

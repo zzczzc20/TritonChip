@@ -909,8 +909,8 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
             # whether it becomes the default: dominator-scoped value numbering.
             from tnca_cc.optimization import dominating_value_numbering
             import os as _os
-            vn = dominating_value_numbering(kernel, scalar_window=int(_os.environ.get('TNCA_VN_SWIN', 400)),
-                                            vector_window=int(_os.environ.get('TNCA_VN_VWIN', 80)))
+            vn = dominating_value_numbering(kernel, scalar_window=int(_os.environ.get('TNCA_VN_SWIN', 64)),
+                                            vector_window=int(_os.environ.get('TNCA_VN_VWIN', 8)))
             prov.record('opt_value_numbering_merged', vn['merged'])
         prov.record('opt_strength_reduced', sr['sites'])
         prov.record('opt_pure_scalar_merged', cse['merged'])
@@ -1297,8 +1297,8 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
             # whether it becomes the default: dominator-scoped value numbering.
             from tnca_cc.optimization import dominating_value_numbering
             import os as _os
-            vn = dominating_value_numbering(kernel, scalar_window=int(_os.environ.get('TNCA_VN_SWIN', 400)),
-                                            vector_window=int(_os.environ.get('TNCA_VN_VWIN', 80)))
+            vn = dominating_value_numbering(kernel, scalar_window=int(_os.environ.get('TNCA_VN_SWIN', 64)),
+                                            vector_window=int(_os.environ.get('TNCA_VN_VWIN', 8)))
             prov.record('opt_value_numbering_merged', vn['merged'])
         prov.record('opt_strength_reduced', sr['sites'])
         prov.record('opt_pure_scalar_merged', info['merged'])

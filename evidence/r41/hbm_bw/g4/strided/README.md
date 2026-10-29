@@ -50,3 +50,5 @@ The read-only observation run was started on GB10 in `~/r41-codex-t9b-probe`, sh
   --point op.clone/membound/fp16-small-strided-r32-c1024 \
   --out ~/r41-codex-t9b-probe-results/hybrid-clone.jsonl
 ```
+
+S4 strided add passed at 183,876 RTL device cycles, 9.87% more than the new G2 add sample; both records carry the same software-tree hash and default compiler settings. The raw JSONL, worker output and register-bench trace are in `s4-add.tgz`, SHA-256 `6f91db512635e1289db90529f270ae3510470f7c38e49d387c131489508ac348`. RTL tile sums: G2/s4 memory reads 5,142/5,143, writes 862/861, LSU-stall cycles 187,034/196,916, and hazard-stall cycles 143,940/224,262. These single samples reproduce the slowdown but do not isolate its cause.

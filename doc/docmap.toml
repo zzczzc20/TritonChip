@@ -616,3 +616,13 @@ sources = ["evidence/r41/hbm_bw/balance/", "evidence/r41/hbm_bw/mma_dp/", "evide
 path = "evidence/r41/hbm_bw/x86_link_dryrun/README.md"
 depends_on = ["doc/engineering_discipline.md", "evidence/r41/SERVERS.md", "evidence/r41/stage2/x86_link/README.md"]
 sources = ["tools/r41/x86_link_dryrun/", "flow/fpga/package_xo.tcl", "flow/fpga/link.sh", "flow/fpga/place_r40_multicore.tcl", "flow/fpga/run_r40_attempt01.sh", "fpga/u280_multicore_hbm.cfg", "evidence/r41/hbm_bw/g4/run2/image.tcl", "evidence/r41/stage2/run1/README.md"]
+
+[[doc]]
+path = "evidence/r41/chat/DECODE_PROFILE.md"
+depends_on = ["doc/engineering_discipline.md", "doc/r41_chat.md"]
+sources = ["tools/models/decode_profile.py", "tools/models/decode_profile_report.py", "evidence/r41/chat/decode_profile/", "compiler/python/tnca_cc/frontend.py", "tools/performance_harness/systemc/include/tnca_tensor_engine.hpp", "doc/isa/TNCA-ISA-v0.1.md", "rtl/core/tnca_tensor.v"]
+
+[[doc]]
+path = "evidence/r41/chat/launch_overhead/README.md"
+depends_on = ["doc/engineering_discipline.md", "evidence/r41/chat/DECODE_PROFILE.md"]
+sources = ["python/tnca/triton_backend/driver.py", "tools/r40/code_cache_epoch_tests.py", "tools/r40/batch_tests.py", "tools/r40/replay_tests.py", "evidence/r41/chat/launch_overhead/raw/"]

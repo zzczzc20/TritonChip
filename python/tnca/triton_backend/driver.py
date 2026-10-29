@@ -28,6 +28,8 @@ that the same torch program reaches any of them unchanged:
                        a simulator runs ~500 target cycles per second)
     TNCA_LAUNCH=skip   compile every kernel and run none (coverage sweeps);
                        the launch log marks each entry `skipped`
+    TNCA_SUBMIT=single restore per-kernel host waits; native resident launches
+                       otherwise share the bounded asynchronous device queue
     TNCA_GUARD_BYTES, TNCA_GUARD_CHECK
                        debugging: poisoned margins around every buffer, to
                        catch out-of-bounds writes and reads (_guards)
@@ -244,10 +246,13 @@ class TNCALauncher:
         session, module = _load(_Sessions.get(self.profile), function)
         guard, poisons = _guards()
         grid = (max(gridX, 1), max(gridY, 1), max(gridZ, 1))
-        submit_policy = os.environ.get('TNCA_SUBMIT', 'single')
+        submit_policy = os.environ.get('TNCA_SUBMIT', 'batched')
         if submit_policy not in ('single', 'batched'):
             raise TNCALaunchError(f'unsupported TNCA_SUBMIT {submit_policy!r}')
-        asynchronous = submit_policy == 'batched'
+        native = all(v.device.type == 'tnca' for v in values if isinstance(v, torch.Tensor)) and \
+            all(v.base.device.type == 'tnca' for v in values
+                if type(v).__name__ == 'TensorDescriptor' and hasattr(v, 'base'))
+        asynchronous = submit_policy == 'batched' and native
         runs = [self._launch_once(session, module, values, grid, guard, poison,
                                   asynchronous=asynchronous)
                 for poison in poisons]
@@ -464,6 +469,7 @@ class TNCALauncher:
                     pass
 
 _loaded = {}
+_loaded_by_artifact = {}
 _artifact_hashes = {}
 evicted = 0                  # modules unloaded to make code room (resident sessions)
 
@@ -489,9 +495,19 @@ def _load(session, path):
     """
     from tnca.errors import BufferError as _BE
     key = (session.id, session.epoch, path)
-    m = _loaded.pop(key, None)
+    digest = _artifact_sha256(path)
+    artifact_key = (session.id, session.epoch, digest)
+    m = _loaded.get(key)
+    if m is None:
+        resident_key = _loaded_by_artifact.get(artifact_key)
+        m = _loaded.get(resident_key)
+        if m is not None:
+            _loaded[key] = m
     if m is not None:
-        _loaded[key] = m             # most recently used last (eviction order)
+        for alias, module in list(_loaded.items()):
+            if module is m:
+                _loaded[alias] = _loaded.pop(alias)
+        _loaded_by_artifact[artifact_key] = key
         return session, m
     try:
         m = session.load(path)
@@ -502,7 +518,14 @@ def _load(session, path):
         for old_key in list(_loaded):
             if old_key[0] != session.id or old_key[1] != session.epoch:
                 continue
-            session.unload(_loaded.pop(old_key))
+            old = _loaded[old_key]
+            session.unload(old)
+            for alias, module in list(_loaded.items()):
+                if module is old:
+                    del _loaded[alias]
+            for alias, resident_key in list(_loaded_by_artifact.items()):
+                if resident_key not in _loaded:
+                    del _loaded_by_artifact[alias]
             global evicted
             evicted += 1
             try:
@@ -516,6 +539,7 @@ def _load(session, path):
                 'the code region cannot hold this kernel even with every other module '
                 'unloaded (capacity-exceeded: code region)') from e
     _loaded[key] = m
+    _loaded_by_artifact[artifact_key] = key
     return session, m
 
 

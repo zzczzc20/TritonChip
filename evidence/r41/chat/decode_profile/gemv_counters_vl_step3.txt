@@ -1,0 +1,42 @@
+#101 w8a8_block_dynamic_fp8_matmul_kernel grid [1, 16, 1] cycles 9396737 weight_bytes 4195328
+  weight B/cycle (chip) 0.446; TTE bytes 4325376 (= 1.031 x weights); NUCA bytes 21154944 (2.251 B/cycle)
+  DRAM reads 23515136 B (5.61 x weights), writes 6676032 B; home hits 1572746 misses 367424 merges 704198
+  core_{0,1,2}_programs_completed: [5, 6, 5]
+  core_{0,1,2}_instructions: [682525, 819030, 682525]
+  core_{0,1,2}_class_lsu: [97245, 116694, 97245]
+  core_{0,1,2}_class_xfer: [5120, 6144, 5120]
+  core_{0,1,2}_class_mma: [2560, 3072, 2560]
+  core_{0,1,2}_class_a_vread: [21120, 25344, 21120]
+  core_{0,1,2}_dma_read_words: [168960, 202752, 168960]
+  core_{0,1,2}_barrier_sleep_cycles: [2657144, 2614364, 2655352]
+  core_{0,1,2}_dependency_wait_cycles: [609855, 731878, 609855]
+  core_{0,1,2}_matrix_engine_busy_cycles: [1457960, 1749552, 1457960]
+  critical core steps (xfer/2) 3072: cycles per 512 B transfer step 3059; instructions/cycle (core 1) 0.087
+#102 w8a8_block_dynamic_fp8_matmul_kernel grid [1, 8, 1] cycles 4900293 weight_bytes 2097664
+  weight B/cycle (chip) 0.428; TTE bytes 2162688 (= 1.031 x weights); NUCA bytes 10577472 (2.159 B/cycle)
+  DRAM reads 10498112 B (5.00 x weights), writes 3051392 B; home hits 834194 misses 164033 merges 323957
+  core_{0,1,2}_programs_completed: [2, 3, 3]
+  core_{0,1,2}_instructions: [273010, 409515, 409515]
+  core_{0,1,2}_class_lsu: [38898, 58347, 58347]
+  core_{0,1,2}_class_xfer: [2048, 3072, 3072]
+  core_{0,1,2}_class_mma: [1024, 1536, 1536]
+  core_{0,1,2}_class_a_vread: [8448, 12672, 12672]
+  core_{0,1,2}_dma_read_words: [67584, 101376, 101376]
+  core_{0,1,2}_barrier_sleep_cycles: [1056131, 1309374, 1506688]
+  core_{0,1,2}_dependency_wait_cycles: [243942, 365968, 365913]
+  core_{0,1,2}_matrix_engine_busy_cycles: [583184, 874776, 874776]
+  critical core steps (xfer/2) 1536: cycles per 512 B transfer step 3190; instructions/cycle (core 1) 0.084
+#115 w8a8_block_dynamic_fp8_matmul_kernel grid [1, 48, 1] cycles 27878350 weight_bytes 12585984
+  weight B/cycle (chip) 0.451; TTE bytes 12976128 (= 1.031 x weights); NUCA bytes 63464832 (2.276 B/cycle)
+  DRAM reads 72870080 B (5.79 x weights), writes 20286400 B; home hits 4657807 misses 1138595 merges 2136702
+  core_{0,1,2}_programs_completed: [16, 17, 15]
+  core_{0,1,2}_instructions: [2184080, 2320585, 2047575]
+  core_{0,1,2}_class_lsu: [311184, 330633, 291735]
+  core_{0,1,2}_class_xfer: [16384, 17408, 15360]
+  core_{0,1,2}_class_mma: [8192, 8704, 7680]
+  core_{0,1,2}_class_a_vread: [67584, 71808, 63360]
+  core_{0,1,2}_dma_read_words: [540672, 574464, 506880]
+  core_{0,1,2}_barrier_sleep_cycles: [8546512, 7430789, 8081137]
+  core_{0,1,2}_dependency_wait_cycles: [1951610, 2073538, 1829565]
+  core_{0,1,2}_matrix_engine_busy_cycles: [4665472, 4957064, 4373880]
+  critical core steps (xfer/2) 8704: cycles per 512 B transfer step 3203; instructions/cycle (core 1) 0.083

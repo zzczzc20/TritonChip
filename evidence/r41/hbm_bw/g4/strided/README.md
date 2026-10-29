@@ -16,3 +16,7 @@ Domain: RTL simulation, not a board result. The binding rules are in `doc/engine
 For both points, s1 combines hybrid LSU, background reads and no-fill, so the observed regression cannot yet be assigned to any one of them. Summed RTL LSU-stall counters and hazard counters increase in s1 while memory read/write counts remain almost the same; the original probe does not establish the cause. The new matrix tests the changes separately and repeats G2 and s4 on the same current tree.
 
 For the new matrix, `python3 evidence/r41/hbm_bw/g4/strided/report.py 'PATH/*.jsonl'` summarizes each completed record, including failures, software-tree identity, per-point G2 comparison and summed probe counters. A missing result is not a pass.
+
+## New runs (RTL simulation)
+
+G2 strided clone passed its numerical check at 110,197 device cycles (one timed sample; `clock_hz` is unspecified by the RTL harness). The raw JSONL, worker output and register-bench trace are in `g2-clone.tgz`, SHA-256 `95cf2beb7bfc86ab3dcee813db08126f593598915577f218136dd634a62fe442`. It used software tree `files:cb25a432a4544b5cc1082550237f90a0d89d0d465e58f66a29aa063e4648d6dd`, source commit above and the G2 diagnostic image; no board image hash applies. The remaining arms were still running when this record was written.

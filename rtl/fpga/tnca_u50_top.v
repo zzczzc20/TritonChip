@@ -101,7 +101,8 @@ module tnca_u50_top #(
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
     parameter VREGS_PER_RCTX = 64,
-    // Architectural switches passed from the image profile, with legacy defaults.
+
+    // The machine's switches, passed to tnca_fpga_top; defaults are its own.
     parameter HAS_SFU              = 1,
     parameter HAS_ATOMICS          = 1,
     parameter HAS_SYS_ATOMICS      = 0,

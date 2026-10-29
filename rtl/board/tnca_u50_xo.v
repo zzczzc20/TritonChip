@@ -90,8 +90,8 @@
 // path post-synthesis was 7.76 ns. The /2 link of that RTL routed with
 // clk_dev at +0.471 ns of slack against 13.333 ns (75 MHz), worst path the
 // predicate index into vector writeback, 12.7 ns and 80 % routing; on the
-// U280 it passed conformance, the profiler and ArchBench tiny 27/27 with
-// every cycle count identical to RTL simulation, and two spin kernels timed
+// U280 it passed conformance and the profiler with every cycle count
+// identical to RTL simulation, and two spin kernels timed
 // on the host put the device clock at 74.97 and 75.02 MHz
 // (flow/fpga/measure_clock.py). The RTL here is a further 0.9 ns faster
 // post-synthesis (timing-004..009), so two is the default.
@@ -102,8 +102,8 @@
 // it undivided. The RTL with timing-004..011 -- 6.84 ns post-synthesis, and the
 // accumulator file in distributed RAM, which cleared the routing congestion of
 // an SLR at 97.7 % CLB use -- routed at +0.127 ns against 10 ns with nothing
-// failing; on the U280 it passed conformance, the profiler and ArchBench tiny
-// 27/27 with every cycle count identical to RTL simulation, and the spin-kernel
+// failing; on the U280 it passed conformance and the profiler with every
+// cycle count identical to RTL simulation, and the spin-kernel
 // measurement read 100.07 and 100.01 MHz (evidence/r38/u280_100mhz/). BUFGCE_DIV
 // stays in the path with a divide of one, so going back to /2 is this
 // parameter and the kernel clock, and nothing else.
@@ -128,22 +128,23 @@ module tnca_u50_xo #(
     parameter NUM_RCTX       = 2,
     parameter RCTX_W         = 1,
     parameter VREGS_PER_RCTX = 64,
-    // Architectural switches passed from the image profile, with legacy defaults.
-    parameter HAS_SFU              = 1,
-    parameter HAS_ATOMICS          = 1,
-    parameter HAS_SYS_ATOMICS      = 0,
-    parameter USE_BANKED_VRF       = 1,
-    parameter VRF_BYPASS           = 1,
-    parameter FE_NOBUBBLE          = 1,
-    parameter VRF_PREFETCH         = 1,
-    parameter RCTX_SWITCH          = 0,
-    parameter LSU_INFLIGHT         = 1,
-    parameter FPU_OVERLAP          = 0,
-    parameter RSLICE               = 0,
-    parameter RPAIR                = 0,
-    parameter MTX_ABUF             = 0,
-    parameter HAS_TENSOR_XPOSE     = 0,
-
+    // The machine's switches, set per image by TNCA_IMAGE_CONFIG
+    // (flow/fpga/package_xo.tcl); the defaults are tnca_fpga_top's, so an
+    // image built without a config is the one built before these existed.
+    parameter HAS_SFU          = 1,
+    parameter HAS_ATOMICS      = 1,
+    parameter HAS_SYS_ATOMICS  = 0,
+    parameter USE_BANKED_VRF   = 1,
+    parameter VRF_BYPASS       = 1,
+    parameter FE_NOBUBBLE      = 1,
+    parameter VRF_PREFETCH     = 1,
+    parameter RCTX_SWITCH      = 0,
+    parameter LSU_INFLIGHT     = 1,
+    parameter FPU_OVERLAP      = 0,
+    parameter RSLICE           = 0,
+    parameter RPAIR            = 0,
+    parameter MTX_ABUF         = 0,
+    parameter HAS_TENSOR_XPOSE = 0,
     // ap_clk / DEV_DIV is the device clock: 1 -> 100 MHz with the 100 MHz
     // kernel clock, measured on the U280 on 2026-10-09 (see above). The /2
     // image (150 MHz kernel clock, 75 MHz device) ran the same day; the one

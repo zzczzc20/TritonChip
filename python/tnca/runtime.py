@@ -194,9 +194,9 @@ class _Allocator:
     Without merging, the free list fills with pieces sized by earlier
     launches, the top of the heap creeps upward past all of them, and a
     request fails with the space it needs free but in pieces: on the U280,
-    2026-10-08, LLaMA small's decode could not place its 128 KiB output-head
-    weight, with 96 KiB of the heap never touched and the free space below
-    it split along earlier launches' storages.
+    2026-10-08, a long model run could not place one of its larger weights,
+    with part of the heap never touched and the free space below it split
+    along earlier launches' storages.
     """
 
     def __init__(self, base, limit, *, reserved=()):

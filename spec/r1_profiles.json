@@ -93,7 +93,10 @@
         "ports_per_bank": "1 read, 1 write",
         "read_latency_cycles": 1,
         "unwritten_reads": "zero, from per-lane valid bits",
-        "contract": "spec/r3v2_contract.json"
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1
+        }
       },
       "platform_binding": {
         "kind": "simulation",

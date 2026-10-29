@@ -39,7 +39,7 @@ def main():
         print(f"  {k:<28s} {config[k]}")
 
     torch.manual_seed(0)
-    x, w, g = torch.randn(16, 32), torch.randn(32, 16), torch.randn(16)
+    x, w, g = torch.randn(16, 48), torch.randn(48, 16), torch.randn(16)
     want = mlp_block(x, w, g)
     got, code = run_and_get_code(torch.compile(mlp_block), x, w, g)
     kernels = tnca.inductor.triton_kernels(code)

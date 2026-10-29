@@ -1,0 +1,43 @@
+{
+  "name": "u280-multicore-r40",
+  "adapter": "u280",
+  "board": "u280",
+  "part": "xcu280-fsvh2892-2L-e",
+  "platform": "xilinx_u280_gen3x16_xdma_1_202211_1",
+  "package_variant": "multicore-hbm",
+  "device_platform": {
+    "core_count": 3,
+    "AXI_DATA_W": 256,
+    "hbm_bytes": 4294967296,
+    "MEMORY_CONTROLS": 1,
+    "CACHE_MAINTENANCE": 1
+  },
+  "vitis_root": "/tools/Xilinx/Vitis/2023.2",
+  "vitis_versions": [
+    "2023.2"
+  ],
+  "platforms_root": "/opt/xilinx/platforms",
+  "kernel_clock_mhz": 90,
+  "device_clock_mhz": 90,
+  "device_divider": 1,
+  "full_slots": 1,
+  "package_script": "flow/fpga/package_xo.tcl",
+  "link_script": "flow/fpga/link.sh",
+  "program_script": "flow/fpga/program.sh",
+  "xo_name": "tnca_u50.xo",
+  "xclbin_name": "tnca_u280.xclbin",
+  "board_vpp_opts": "",
+  "allowed_auto_frequency_rules": [
+    "AUTO-FREQ-SCALING-08"
+  ],
+  "environment": {
+    "VPP_JOBS": "2",
+    "LINK_EXTRA": "--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=SSI_SpreadSLLs"
+  },
+  "expected_artifacts": [
+    "tnca_u50.xo",
+    "tnca_u280.xclbin"
+  ],
+  "require_routed_timing": true,
+  "require_drc": true
+}

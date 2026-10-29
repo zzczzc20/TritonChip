@@ -1,0 +1,117 @@
+{
+  "schema": "tritonchip-agent-task/1",
+  "task_id": "r40-multicore-pilot",
+  "kind": "cross-layer",
+  "note": "Pilot on R40's three-core U280 machine (spec/devices/u280-3core-r40.json: three core-vrf-sync-v5 cores, NUCA, three HBM outlets, 90 MHz), starting from PR9 at 6b36db5, a descendant of main with R40 (PR #10) merged. The score is the evaluator's own simulation of the image's top level, built from the candidate's description in a device container of its own; each launch's cycles are the control block's MMIO endpoints, kept where the candidate's code cannot reach them, and a launch that reports completion before its memory traffic drains fails. Validated before use by known-answer submissions (VALIDATION.md). Certification of a hardware-changing candidate on the card is not yet wired for multicore.",
+  "base_commit": "6b36db5a069792686c5bbbeb8b713364c5bb5519",
+  "design": [
+    "compiler/",
+    "python/tnca/",
+    "isa/",
+    "rtl/",
+    "spec/r1_profiles.json",
+    "spec/devices/"
+  ],
+  "evaluator_owned": [
+    "python/tnca/device.py",
+    "python/tnca/runtime.py",
+    "python/tnca/transport.py",
+    "python/tnca/backend.py",
+    "python/tnca/backends/",
+    "python/tnca/triton_backend/driver.py",
+    "python/tnca/inductor.py",
+    "python/tnca/profiles.py",
+    "python/tnca/_data.py",
+    "rtl/board/",
+    "rtl/fpga/",
+    "python/tnca/devices.py"
+  ],
+  "hide": [
+    "archbench/",
+    "compiler/README.md",
+    "doc/architecture_overview.md",
+    "doc/compiler_overview.md",
+    "doc/r38_board_bringup.md",
+    "doc/r38_pytorch_p1plus.md",
+    "doc/r38_stage1_status.md",
+    "doc/r39_report.md",
+    "doc/r39_tasks_and_acceptance.md",
+    "doc/r40_closeout_plan.md",
+    "doc/r40_cold_call_audit.md",
+    "doc/r40_hbm.md",
+    "doc/r40_report.md",
+    "doc/r40_tasks_and_acceptance.md",
+    "doc/r40_tasks_and_acceptance_v2.md",
+    "doc/r40_tasks_and_acceptance_v3.md",
+    "doc/r40_tnca_device.md",
+    "doc/r40_v3/",
+    "flow/fpga/README.md",
+    "spec/r35_workloads.json",
+    "spec/r38/design_changes/xpose-dma-001.json",
+    "spec/r38/evidence_registry.json",
+    "spec/r38/suites/dev.json",
+    "spec/r39/baseline_archbench.json",
+    "spec/r39/baseline_archbench.jsonl",
+    "spec/r39/baseline_archbench_medium.jsonl",
+    "spec/r3_workloads.json",
+    "spec/r3v2_inventory.json",
+    "spec/r40/",
+    "tools/performance_harness/audit.py",
+    "tools/performance_harness/systemc/board_dataset.py",
+    "tools/performance_harness/systemc/calibrate.py",
+    "tools/performance_harness/systemc/configs/r40-board-m2.sources.json",
+    "tools/performance_harness/systemc/fit.py",
+    "tools/performance_harness/systemc/run.py",
+    "tools/performance_harness/systemc/run_graphs.py",
+    "tools/performance_harness/tests.py",
+    "tools/r37/aot_run.py",
+    "tools/r37/upstream_cases.py",
+    "tools/r38/archbench/",
+    "tools/r38/dev_cases.py",
+    "tools/r38/tdesc_tests.py",
+    "tools/r38/triton_native_run.py",
+    "tools/r40/",
+    "tutorial/11_running_on_the_u280.md"
+  ],
+  "instruction": "instruction.md",
+  "budget": {
+    "wall_seconds": 3600
+  },
+  "evaluation": {
+    "profile": "core-vrf-sync-v5",
+    "device": "u280-3core-r40",
+    "validation": [
+      "op.add/tiny/fp16-n1000",
+      "op.layernorm/tiny/fp16-r4-d64",
+      "op.linear/tiny/fp16-m16-k64-n64"
+    ],
+    "final": [
+      "op.transpose/tiny/fp32-r32-c32",
+      "op.softmax/tiny/fp16-r4-c64",
+      "op.rope/tiny/fp16-b1-h2-s16-d16"
+    ],
+    "jobs": 6,
+    "timeout_seconds": 3600,
+    "drain_cycles": 8,
+    "platform": {
+      "commit": "6b36db5a069792686c5bbbeb8b713364c5bb5519",
+      "paths": [
+        "python/tnca/backends/multicore_mmio.py",
+        "python/tnca/backends/multicore_mmio_sim.py",
+        "python/tnca/backends/u50_sim.py",
+        "python/tnca/devices.py",
+        "rtl/fpga/tnca_multicore_mmio.v",
+        "tb/common/tnca_axi_line_model.v",
+        "tb/fpga/tnca_mmio_journal.vh",
+        "tb/fpga/tnca_multicore_board_regs.v",
+        "tb/fpga/tnca_multicore_dma.vh",
+        "tb/fpga/tnca_multicore_shared_hbm.vh"
+      ]
+    }
+  },
+  "services": {
+    "score": {
+      "requests": 3
+    }
+  }
+}

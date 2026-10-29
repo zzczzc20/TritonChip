@@ -69,7 +69,7 @@ def g_softmax_nan(x):
 
 
 def make_softmax_nan():
-    x = torch.randn(3, 37)
+    x = torch.randn(3, 41)
     x[1, 5] = float('nan')                        # row 1 must come out all NaN
     return (x,)
 
@@ -91,8 +91,7 @@ def g_fallback_detected(x):
     return torch.sort(x, dim=-1).values          # no Triton lowering on this path
 
 
-# 2026-10-07: the graphs ArchBench needed (doc/r38_pytorch_p1plus.md section 6).
-# Each one is the smallest graph that reaches one fix.
+# Each graph below is the smallest graph that reaches one fix.
 
 def g_bmm(a, b):
     return torch.bmm(a, b)                       # the batched store mask: a 2-D i1 splat
@@ -153,16 +152,16 @@ GRAPHS = {
     'elementwise': (g_elementwise, lambda: (torch.randn(37), torch.randn(37)), 0.0, True),
     'fused_act': (g_fused_act, lambda: (torch.randn(45), torch.randn(45), torch.randn(45)), 2 ** -17, True),
     'row_sum': (g_row_sum, lambda: (torch.randn(3, 37),), 2 ** -18, True),
-    'softmax': (g_softmax, lambda: (torch.randn(3, 37),), 2 ** -17, True),
+    'softmax': (g_softmax, lambda: (torch.randn(3, 41),), 2 ** -17, True),
     'rmsnorm': (g_rmsnorm, lambda: (torch.randn(3, 37), torch.randn(37)), 2 ** -16, True),
-    'matmul': (g_matmul, lambda: (torch.randn(16, 32), torch.randn(32, 16)), 2 ** -16, True),
-    'mlp_block': (g_mlp_block, lambda: (torch.randn(16, 32), torch.randn(32, 16), torch.randn(16)), 2 ** -14, True),
+    'matmul': (g_matmul, lambda: (torch.randn(16, 48), torch.randn(48, 16)), 2 ** -16, True),
+    'mlp_block': (g_mlp_block, lambda: (torch.randn(16, 48), torch.randn(48, 16), torch.randn(16)), 2 ** -14, True),
     'softmax_nan': (g_softmax_nan, make_softmax_nan, 2 ** -17, True),
     'sliced_view': (g_sliced_view, lambda: (torch.randn(3, 37),), 0.0, True),
     'transposed_input': (g_transposed_input, lambda: (torch.randn(20, 12), torch.randn(12, 20)), 0.0, True),
     'inplace_add': (g_inplace_add, lambda: (torch.randn(37), torch.randn(37)), 0.0, True),
-    'bmm': (g_bmm, lambda: (torch.randn(2, 16, 16).half(), torch.randn(2, 16, 16).half()), 2 ** -8, True),
-    'sdpa_causal': (g_sdpa_causal, lambda: tuple(torch.randn(1, 2, 16, 16).half() for _ in range(3)), 2 ** -7, True),
+    'bmm': (g_bmm, lambda: (torch.randn(3, 16, 16).half(), torch.randn(3, 16, 16).half()), 2 ** -8, True),
+    'sdpa_causal': (g_sdpa_causal, lambda: tuple(torch.randn(1, 3, 16, 16).half() for _ in range(3)), 2 ** -7, True),
     'embedding_i64': (g_embedding, make_embedding, 0.0, True),
     'argmax_fp16': (g_argmax, lambda: (torch.randn(2, 64).half(),), 0.0, True),
     'gemv': (g_gemv, lambda: (torch.randn(1, 64).half(), torch.randn(64, 16).half()), 2 ** -8, True),
@@ -171,8 +170,8 @@ GRAPHS = {
     'where_flag': (g_where_flag, lambda: (torch.randn(2, 16), torch.tensor([True, False])), 2 ** -18, True),
     'mask_float_max': (g_mask_float_max, make_masked_rows, 0.0, True),
     'mask_count': (g_mask_count, make_masked_rows, 0.0, True),
-    'sdpa_decode': (g_sdpa_decode, lambda: (torch.randn(1, 2, 1, 16).half(), torch.randn(1, 2, 16, 16).half(),
-                                            torch.randn(1, 2, 16, 16).half()), 2 ** -7, True),
+    'sdpa_decode': (g_sdpa_decode, lambda: (torch.randn(1, 3, 1, 16).half(), torch.randn(1, 3, 16, 16).half(),
+                                            torch.randn(1, 3, 16, 16).half()), 2 ** -7, True),
     'fallback_detected': (g_fallback_detected, lambda: (torch.randn(3, 8),), 0.0, False),
 }
 

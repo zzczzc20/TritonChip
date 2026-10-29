@@ -64,46 +64,16 @@ BENCH_NAME = {
 _SLOW = ['-P', 'tnca_device.MEM_LATENCY=7',
          '-P', 'tnca_device.RANDOM_STALL=1',
          '-P', 'tnca_device.MEM_REORDER=1']
-_BANKED = ['-P', 'tnca_device.USE_BANKED_VRF=1']
-# The R39 hardware switches (spec/r1_profiles.json core-vrf-sync-v2's
-# implementation.rtl_parameters).
-_R39 = ['-P', 'tnca_device.VRF_BYPASS=1', '-P', 'tnca_device.FE_NOBUBBLE=1',
-        '-P', 'tnca_device.VRF_PREFETCH=1']
-# core-vrf-sync-v3: R39-05's RCTX_SWITCH and RSLICE, R39-08's LSU_INFLIGHT and
-# R39-10's FPU_OVERLAP on top of them.
-_R39_SW = _R39 + ['-P', 'tnca_device.RCTX_SWITCH=1', '-P', 'tnca_device.LSU_INFLIGHT=2',
-                  '-P', 'tnca_device.FPU_OVERLAP=1', '-P', 'tnca_device.RSLICE=1']
-# core-vrf-sync-v4: and four Role Contexts of 64 vector registers each.
-_FOUR = ['-P', 'tnca_device.NUM_RCTX=4', '-P', 'tnca_device.RCTX_W=2',
-         '-P', 'tnca_device.PHYS_W=8']
-# core-vrf-sync-v5: and the transposed transfer and Role Context pairs, and a
-# context gives way to another while it waits for the matrix unit or the
-# transfer engine too (RCTX_SWITCH=2) (R39-12).
-_V5 = ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1', '-P', 'tnca_device.RPAIR=1',
-       '-P', 'tnca_device.MTX_ABUF=1']
-_R39_SW5 = [a.replace('RCTX_SWITCH=1', 'RCTX_SWITCH=2') for a in _R39_SW]
+# Which microarchitecture a profile's device is is no longer said here: the
+# profile itself is compiled into it, as one generated header
+# (profiles.uarch_header). What is left is the platform's own business, the
+# memory model a variant runs on: '/slow' above, and '/hbm' below.
+#
 # R40-04: the AXI window of the /hbm memory mode, in 64-bit words (32 MiB).
 HBM_SIM_WORDS = 1 << 22
 HBM_LOCAL_LIMIT = 0x20000
 _HBM = ['-P', 'tnca_device.DATA_AXI=1', '-P', f'tnca_device.AXI_WORDS={HBM_SIM_WORDS}',
         '-P', f'tnca_device.LOCAL_LIMIT={HBM_LOCAL_LIMIT}']
-
-BENCH_PARAMS = {
-    'core-vrf-sync-v1': _BANKED,
-    'core-sim/slow': _SLOW,
-    'core-vrf-sync-v1/slow': _BANKED + _SLOW,
-    'core-vrf-sync-v2': _BANKED + _R39,
-    'core-vrf-sync-v2/slow': _BANKED + _R39 + _SLOW,
-    'core-vrf-sync-v3': _BANKED + _R39_SW,
-    'core-vrf-sync-v3/slow': _BANKED + _R39_SW + _SLOW,
-    'core-vrf-sync-v4': _BANKED + _R39_SW + _FOUR,
-    'core-vrf-sync-v4/slow': _BANKED + _R39_SW + _FOUR + _SLOW,
-    'core-vrf-sync-v5': _BANKED + _R39_SW5 + _FOUR + _V5,
-    'core-vrf-sync-v5/slow': _BANKED + _R39_SW5 + _FOUR + _V5 + _SLOW,
-    'core-vrf-sync-v5/hbm': _BANKED + _R39_SW5 + _FOUR + _V5 + _HBM,
-    'core-xpose-v1': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'],
-    'core-xpose-v1/slow': ['-P', 'tnca_device.HAS_TENSOR_XPOSE=1'] + _SLOW,
-}
 
 
 # R39 ablations of the hardware switches on the device simulation:
@@ -119,6 +89,12 @@ RTL_SWITCHES = ('VRF_BYPASS', 'FE_NOBUBBLE', 'VRF_PREFETCH', 'RCTX_SWITCH', 'LSU
                 # (tb/device/tnca_device.v): burst lines, buffered lines,
                 # lines ahead, writes in flight
                 'AXI_RAM_CACHE', 'AXI_LOCAL_PIPE', 'AXI_LINE', 'AXI_LB_N', 'AXI_PF', 'AXI_WAIT_N', 'AXI_OUT_N')
+# Of those, the ones that belong to the /hbm memory mode's bench rather than to
+# the device: they are parameters of tb/device/tnca_device.v (its AXI bridge),
+# so they go there by -P like the memory model's own, not into the header.
+# Derived, not listed again: an AXI switch added above and missed here would go
+# into the header and set nothing.
+BENCH_SWITCHES = tuple(k for k in RTL_SWITCHES if k.startswith('AXI_'))
 
 
 def rtl_overrides():
@@ -135,9 +111,23 @@ def rtl_overrides():
 
 
 def bench_params(profile):
-    """The -P arguments this profile's device is elaborated with."""
-    return BENCH_PARAMS.get(profile, []) + [
-        a for k, v in rtl_overrides() for a in ('-P', f'tnca_device.{k}={v}')]
+    """The -P arguments this profile's device is elaborated with: the memory
+    model only -- a variant's, and any TNCA_RTL_PARAMS ablation of the /hbm
+    bench's AXI bridge (BENCH_SWITCHES). The profile, and every other
+    ablation, is the header."""
+    params = list(_SLOW) if profile.endswith('/slow') else []
+    if profile.endswith('/hbm'):
+        params += _HBM
+    for k, v in rtl_overrides():
+        if k in BENCH_SWITCHES:
+            params += ['-P', f'tnca_device.{k}={v}']
+    return params
+
+
+def uarch_header(profile):
+    """The generated header this profile's device is compiled with."""
+    return profiles.uarch_header(base_profile(profile),
+                                 [(k, v) for k, v in rtl_overrides() if k not in BENCH_SWITCHES])
 
 
 def memory_limit(profile):
@@ -192,7 +182,11 @@ def expected_path(profile):
     elaboration is a different file rather than a surprise.
     """
     h = profiles.config_hash(base_profile(profile))[:16]
-    src = source_fingerprint(profile)[:12]
+    # The header too: the config hash covers the elaboration and the
+    # capabilities, not the implementation's switches, and a device built
+    # with different switches must be a different file.
+    src = hashlib.sha256((source_fingerprint(profile)
+                          + uarch_header(profile)).encode()).hexdigest()[:12]
     ov = rtl_overrides()
     tag = ('-' + '-'.join(f'{k.lower()}{v}' for k, v in ov)) if ov else ''
     return os.path.join(cache_root(),
@@ -527,6 +521,10 @@ def prepare(profile='core-sim', *, force=False, verbose=True):
     # removes the whole class rather than the one case.
     prune(profile, verbose=verbose)
     os.makedirs(os.path.dirname(target), exist_ok=True)
+    header = os.path.join(os.path.dirname(target), 'tnca_uarch.vh')
+    with open(header, 'w') as f:
+        f.write(uarch_header(profile))
+    argv.insert(argv.index(source), header)
     # Publish only a complete executable. Parallel preparations must never
     # truncate the cached file while another Session is starting vvp.
     fd, temporary = tempfile.mkstemp(prefix='.building-', suffix='.vvp',

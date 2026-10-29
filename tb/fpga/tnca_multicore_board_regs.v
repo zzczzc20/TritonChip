@@ -3,6 +3,9 @@
 `default_nettype none
 module tnca_multicore_board_regs;
  parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0;
+ // The AXI ID width of the outlets: the wrapper derives it from AXI_OUT_N, and a
+ // device description (python/tnca/devices.py) passes the same derived value.
+ parameter AXI_ID_W=3;
  localparam NX=N>4?4:N,ADDR_BITS=9,WORDS=(131072+MEMORY_BYTES)/8;
  reg clk=0,rst_n_async=0;always #5 clk=~clk;
  reg [8:0] reg_addr;reg [63:0] reg_wdata;reg reg_we,reg_re;
@@ -10,7 +13,7 @@ module tnca_multicore_board_regs;
  wire [3-1:0] m_awvalid;
  wire [3-1:0] m_awready;
  wire [3*64-1:0] m_awaddr;
- wire [3*3-1:0] m_awid;
+ wire [3*AXI_ID_W-1:0] m_awid;
  wire [3*8-1:0] m_awlen;
  wire [3*3-1:0] m_awsize;
  wire [3*2-1:0] m_awburst;
@@ -21,25 +24,33 @@ module tnca_multicore_board_regs;
  wire [3-1:0] m_wlast;
  wire [3-1:0] m_bvalid;
  wire [3-1:0] m_bready;
- wire [3*3-1:0] m_bid;
+ wire [3*AXI_ID_W-1:0] m_bid;
  wire [3*2-1:0] m_bresp;
  wire [3-1:0] m_arvalid;
  wire [3-1:0] m_arready;
  wire [3*64-1:0] m_araddr;
- wire [3*3-1:0] m_arid;
+ wire [3*AXI_ID_W-1:0] m_arid;
  wire [3*8-1:0] m_arlen;
  wire [3*3-1:0] m_arsize;
  wire [3*2-1:0] m_arburst;
  wire [3-1:0] m_rvalid;
  wire [3-1:0] m_rready;
  wire [3*256-1:0] m_rdata;
- wire [3*3-1:0] m_rid;
+ wire [3*AXI_ID_W-1:0] m_rid;
  wire [3*2-1:0] m_rresp;
  wire [3-1:0] m_rlast;
  reg awvalid=0,wvalid=0,bready=0,arvalid=0,rready=0;
  reg [11:0] awaddr=0,araddr=0;reg [31:0] wdata=0;reg [3:0] wstrb=15;
  wire awready,wready,bvalid,arready,rvalid;wire [31:0] rdata;wire [1:0] bresp,rresp;
+ // With a device description, the wrapper takes every parameter its image is
+ // packaged with: TNCA_IMAGE_PARAMS is generated from the description
+ // (python/tnca/backends/multicore_mmio_sim.py) and compiled before this file.
+ // Without one, the small stand-in machine below.
+`ifdef TNCA_IMAGE_PARAMS
+ tnca_multicore_hbm_xo #(`TNCA_IMAGE_PARAMS) dut(
+`else
  tnca_multicore_hbm_xo #(.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+`endif
  .ap_clk(clk),.ap_rst_n(rst_n_async),
  .s_axi_tnca_awvalid(awvalid),
  .s_axi_tnca_awready(awready),
@@ -61,7 +72,7 @@ module tnca_multicore_board_regs;
  .m_axi_hbm0_awvalid(m_awvalid[0+:1]),
  .m_axi_hbm0_awready(m_awready[0+:1]),
  .m_axi_hbm0_awaddr(m_awaddr[0+:64]),
- .m_axi_hbm0_awid(m_awid[0+:3]),
+ .m_axi_hbm0_awid(m_awid[0*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm0_awlen(m_awlen[0+:8]),
  .m_axi_hbm0_awsize(m_awsize[0+:3]),
  .m_axi_hbm0_awburst(m_awburst[0+:2]),
@@ -72,25 +83,25 @@ module tnca_multicore_board_regs;
  .m_axi_hbm0_wlast(m_wlast[0+:1]),
  .m_axi_hbm0_bvalid(m_bvalid[0+:1]),
  .m_axi_hbm0_bready(m_bready[0+:1]),
- .m_axi_hbm0_bid(m_bid[0+:3]),
+ .m_axi_hbm0_bid(m_bid[0*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm0_bresp(m_bresp[0+:2]),
  .m_axi_hbm0_arvalid(m_arvalid[0+:1]),
  .m_axi_hbm0_arready(m_arready[0+:1]),
  .m_axi_hbm0_araddr(m_araddr[0+:64]),
- .m_axi_hbm0_arid(m_arid[0+:3]),
+ .m_axi_hbm0_arid(m_arid[0*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm0_arlen(m_arlen[0+:8]),
  .m_axi_hbm0_arsize(m_arsize[0+:3]),
  .m_axi_hbm0_arburst(m_arburst[0+:2]),
  .m_axi_hbm0_rvalid(m_rvalid[0+:1]),
  .m_axi_hbm0_rready(m_rready[0+:1]),
  .m_axi_hbm0_rdata(m_rdata[0+:256]),
- .m_axi_hbm0_rid(m_rid[0+:3]),
+ .m_axi_hbm0_rid(m_rid[0*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm0_rresp(m_rresp[0+:2]),
  .m_axi_hbm0_rlast(m_rlast[0+:1]),
  .m_axi_hbm1_awvalid(m_awvalid[1+:1]),
  .m_axi_hbm1_awready(m_awready[1+:1]),
  .m_axi_hbm1_awaddr(m_awaddr[64+:64]),
- .m_axi_hbm1_awid(m_awid[3+:3]),
+ .m_axi_hbm1_awid(m_awid[1*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm1_awlen(m_awlen[8+:8]),
  .m_axi_hbm1_awsize(m_awsize[3+:3]),
  .m_axi_hbm1_awburst(m_awburst[2+:2]),
@@ -101,25 +112,25 @@ module tnca_multicore_board_regs;
  .m_axi_hbm1_wlast(m_wlast[1+:1]),
  .m_axi_hbm1_bvalid(m_bvalid[1+:1]),
  .m_axi_hbm1_bready(m_bready[1+:1]),
- .m_axi_hbm1_bid(m_bid[3+:3]),
+ .m_axi_hbm1_bid(m_bid[1*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm1_bresp(m_bresp[2+:2]),
  .m_axi_hbm1_arvalid(m_arvalid[1+:1]),
  .m_axi_hbm1_arready(m_arready[1+:1]),
  .m_axi_hbm1_araddr(m_araddr[64+:64]),
- .m_axi_hbm1_arid(m_arid[3+:3]),
+ .m_axi_hbm1_arid(m_arid[1*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm1_arlen(m_arlen[8+:8]),
  .m_axi_hbm1_arsize(m_arsize[3+:3]),
  .m_axi_hbm1_arburst(m_arburst[2+:2]),
  .m_axi_hbm1_rvalid(m_rvalid[1+:1]),
  .m_axi_hbm1_rready(m_rready[1+:1]),
  .m_axi_hbm1_rdata(m_rdata[256+:256]),
- .m_axi_hbm1_rid(m_rid[3+:3]),
+ .m_axi_hbm1_rid(m_rid[1*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm1_rresp(m_rresp[2+:2]),
  .m_axi_hbm1_rlast(m_rlast[1+:1]),
  .m_axi_hbm2_awvalid(m_awvalid[2+:1]),
  .m_axi_hbm2_awready(m_awready[2+:1]),
  .m_axi_hbm2_awaddr(m_awaddr[128+:64]),
- .m_axi_hbm2_awid(m_awid[6+:3]),
+ .m_axi_hbm2_awid(m_awid[2*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm2_awlen(m_awlen[16+:8]),
  .m_axi_hbm2_awsize(m_awsize[6+:3]),
  .m_axi_hbm2_awburst(m_awburst[4+:2]),
@@ -130,28 +141,28 @@ module tnca_multicore_board_regs;
  .m_axi_hbm2_wlast(m_wlast[2+:1]),
  .m_axi_hbm2_bvalid(m_bvalid[2+:1]),
  .m_axi_hbm2_bready(m_bready[2+:1]),
- .m_axi_hbm2_bid(m_bid[6+:3]),
+ .m_axi_hbm2_bid(m_bid[2*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm2_bresp(m_bresp[4+:2]),
  .m_axi_hbm2_arvalid(m_arvalid[2+:1]),
  .m_axi_hbm2_arready(m_arready[2+:1]),
  .m_axi_hbm2_araddr(m_araddr[128+:64]),
- .m_axi_hbm2_arid(m_arid[6+:3]),
+ .m_axi_hbm2_arid(m_arid[2*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm2_arlen(m_arlen[16+:8]),
  .m_axi_hbm2_arsize(m_arsize[6+:3]),
  .m_axi_hbm2_arburst(m_arburst[4+:2]),
  .m_axi_hbm2_rvalid(m_rvalid[2+:1]),
  .m_axi_hbm2_rready(m_rready[2+:1]),
  .m_axi_hbm2_rdata(m_rdata[512+:256]),
- .m_axi_hbm2_rid(m_rid[6+:3]),
+ .m_axi_hbm2_rid(m_rid[2*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm2_rresp(m_rresp[4+:2]),
  .m_axi_hbm2_rlast(m_rlast[2+:1]));
  generate for(genvar p=0;p<PORTS;p=p+1)begin:g_ram
-  tnca_axi_line_model #(.DATA_W(256),.OUT_N(8),.LINES((131072+MEMORY_BYTES)/64),.LATENCY(25+p*19)) ram(
+  tnca_axi_line_model #(.DATA_W(256),.OUT_N(1<<AXI_ID_W),.LINES((131072+MEMORY_BYTES)/64),.LATENCY(25+p*19)) ram(
   .clk(clk),.rst_n(rst_n_async),
  .m_awvalid(m_awvalid[p*(1)+:(1)]),
  .m_awready(m_awready[p*(1)+:(1)]),
  .m_awaddr(m_awaddr[p*(64)+:(64)]),
- .m_awid(m_awid[p*(3)+:(3)]),
+ .m_awid(m_awid[p*(AXI_ID_W)+:(AXI_ID_W)]),
  .m_awlen(m_awlen[p*(8)+:(8)]),
  .m_awsize(m_awsize[p*(3)+:(3)]),
  .m_awburst(m_awburst[p*(2)+:(2)]),
@@ -162,23 +173,103 @@ module tnca_multicore_board_regs;
  .m_wlast(m_wlast[p*(1)+:(1)]),
  .m_bvalid(m_bvalid[p*(1)+:(1)]),
  .m_bready(m_bready[p*(1)+:(1)]),
- .m_bid(m_bid[p*(3)+:(3)]),
+ .m_bid(m_bid[p*(AXI_ID_W)+:(AXI_ID_W)]),
  .m_bresp(m_bresp[p*(2)+:(2)]),
  .m_arvalid(m_arvalid[p*(1)+:(1)]),
  .m_arready(m_arready[p*(1)+:(1)]),
  .m_araddr(m_araddr[p*(64)+:(64)]),
- .m_arid(m_arid[p*(3)+:(3)]),
+ .m_arid(m_arid[p*(AXI_ID_W)+:(AXI_ID_W)]),
  .m_arlen(m_arlen[p*(8)+:(8)]),
  .m_arsize(m_arsize[p*(3)+:(3)]),
  .m_arburst(m_arburst[p*(2)+:(2)]),
  .m_rvalid(m_rvalid[p*(1)+:(1)]),
  .m_rready(m_rready[p*(1)+:(1)]),
  .m_rdata(m_rdata[p*(256)+:(256)]),
- .m_rid(m_rid[p*(3)+:(3)]),
+ .m_rid(m_rid[p*(AXI_ID_W)+:(AXI_ID_W)]),
  .m_rresp(m_rresp[p*(2)+:(2)]),
  .m_rlast(m_rlast[p*(1)+:(1)]));
  end endgenerate
+`ifdef TNCA_IMAGE_PARAMS
+    //==========================================================================
+    // Every launch meets the same memory (a described machine)
+    //
+    // The line models draw their stalls from a generator that advances every
+    // cycle, idle or not. A launch's cycles would then depend on how many idle
+    // cycles came before it -- on how long the host took, in wall-clock time
+    // -- and one machine would count differently from one run to the next.
+    // Reseeding every line model as a launch starts makes a launch cost the
+    // same whenever it runs. Only with a device description: the stand-in
+    // machine below and R40's tests keep the generator as it was.
+    //==========================================================================
+    reg [63:0] reseed_start=0;
+    reg reseed=0;
+    always @(posedge clk) begin
+        reseed <= rst_n_async && dut.device.control.launch_start != reseed_start;
+        if (rst_n_async) reseed_start <= dut.device.control.launch_start;
+    end
+    generate for(genvar p=0;p<PORTS;p=p+1)begin:g_reseed
+        always @(posedge clk) if (reseed) g_ram[p].ram.seed = 123;
+    end endgenerate
+`endif
 `include "tb/fpga/tnca_multicore_shared_hbm.vh"
+    //==========================================================================
+    // The platform's own count (+observe=<file>)
+    //
+    // What the agent harness scores, kept by the bench and not by the host:
+    // every launch's MMIO endpoints, launch_end - launch_start on the device
+    // clock of rtl/fpga/tnca_multicore_mmio.v (evaluator-owned), beside the
+    // count the device reports (done_cycles, from rtl/), which only
+    // cross-checks the host's record. After each completion the bench counts
+    // the cycles until every core is idle and every outlet has no read or
+    // write in flight ("settle"); a launch that reports done before its work
+    // has drained shows as a long settle, or as none ("quiet=0") when the
+    // next command arrives first. A write-back cache may still write behind
+    // a launch, so the evaluator judges settle against a bound calibrated on
+    // the base, not against zero. Observation only: nothing here drives the
+    // device. One line per launch, flushed, so the log needs no clean exit.
+    //==========================================================================
+    integer obs_fd=0;
+    reg obs_on=0,obs_settling=0;
+    reg [8*512-1:0] obs_path;
+    reg [63:0] obs_last_end=0,obs_start=0,obs_end=0,obs_done=0,obs_settle=0,obs_launches=0;
+    reg [3:0] obs_status=0;
+    reg [15:0] obs_rd [0:2];
+    reg [15:0] obs_wr [0:2];
+    integer obs_k;
+    wire obs_quiet=dut.device.all_idle && (obs_rd[0]==0) && (obs_wr[0]==0) && (obs_rd[1]==0)
+                   && (obs_wr[1]==0) && (obs_rd[2]==0) && (obs_wr[2]==0);
+    initial for(obs_k=0;obs_k<3;obs_k=obs_k+1)begin obs_rd[obs_k]=0;obs_wr[obs_k]=0;end
+    task obs_line;
+        input quiet;
+        begin
+            $fwrite(obs_fd,"cmd op=1 seq=%0d obs=%0d done=%0d status=%0d settle=%0d quiet=%0d rd=%0d wr=%0d\n",
+                    obs_launches,obs_end-obs_start,obs_done,obs_status,obs_settle,quiet,
+                    obs_rd[0]+obs_rd[1]+obs_rd[2],obs_wr[0]+obs_wr[1]+obs_wr[2]);
+            $fflush(obs_fd);
+        end
+    endtask
+    always @(posedge clk)if(rst_n_async)begin
+        for(obs_k=0;obs_k<PORTS;obs_k=obs_k+1)begin
+            obs_rd[obs_k]<=obs_rd[obs_k]+(m_arvalid[obs_k]&&m_arready[obs_k])
+                          -(m_rvalid[obs_k]&&m_rready[obs_k]&&m_rlast[obs_k]);
+            obs_wr[obs_k]<=obs_wr[obs_k]+(m_awvalid[obs_k]&&m_awready[obs_k])
+                          -(m_bvalid[obs_k]&&m_bready[obs_k]);
+        end
+        if(obs_on)begin
+            if(obs_settling)begin
+                if(obs_quiet)begin obs_line(1);obs_settling<=0;end
+                else if(dut.device.control.launch_start!=obs_start)begin obs_line(0);obs_settling<=0;end
+                else obs_settle<=obs_settle+1;
+            end
+            if(dut.device.control.launch_end!=obs_last_end)begin
+                obs_last_end<=dut.device.control.launch_end;
+                obs_start<=dut.device.control.launch_start;obs_end<=dut.device.control.launch_end;
+                obs_done<={dut.device.control.rsp_r1[31:0],dut.device.control.rsp_r0[31:0]};
+                obs_status<=dut.device.control.rsp_status;
+                obs_launches<=obs_launches+1;obs_settle<=0;obs_settling<=1;
+            end
+        end
+    end
 `include "tb/fpga/tnca_multicore_dma.vh"
     reg [8*512-1:0] cmd_path, rsp_path;
     integer         pollcycles, intercycle, watchdog;
@@ -324,6 +415,11 @@ module tnca_multicore_board_regs;
         // nobody can tell from a slow one.
         if (!$value$plusargs("watchdog=%d", watchdog)) watchdog = 200000000;
         journal_init;
+        if ($value$plusargs("observe=%s", obs_path)) begin
+            obs_fd = $fopen(obs_path, "w");
+            if (obs_fd == 0) $fatal(1, "tnca_multicore_board_regs: cannot write the observer log");
+            obs_on = 1;
+        end
 
         // Reset, asserted asynchronously and released synchronously, the same
         // shape rtl/fpga/tnca_fpga_top.v asks a board to supply.

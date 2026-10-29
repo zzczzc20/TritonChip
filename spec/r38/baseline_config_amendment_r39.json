@@ -1,0 +1,9 @@
+{
+  "schema": "r38-baseline-config-amendment/1",
+  "profile": "core-sim",
+  "from_config_hash": "f32bff11099e93c1db0c2820d920d41323b63fefcaa4277d9cb63022a7b3f7de",
+  "to_config_hash": "b8fb71a90255e476cbe9e948a10373bb8c3ea89da22ef77ea69341d77c156192",
+  "first_main_commit": "ac28ca182b249e293731161656a4e1e638b9bd8e",
+  "reason": "After the R38 freeze, core-sim's target declares tensor_store=true and adds rctx_slice=false and rctx_pair=false. The configuration identity changed; the frozen 149 cycle values remain the comparison authority. CI must still run every case twice and compare every cycle before accepting this exact hash transition.",
+  "observed_ci": "https://github.com/zzczzc20/TritonChip/actions/runs/38229215807"
+}

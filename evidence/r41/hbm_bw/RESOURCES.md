@@ -459,3 +459,24 @@ Source: `evidence/r41/hbm_bw/fma_dslx/README.md` (design, proofs, verification),
 - **SLR0 effect** (tile-0 screen): 239,446 → 238,021 routed LUTs (−1,425) and 40,959 → 41,489 CLBs (+530, 74.5 % → 75.5 % of SLR0) with the lane: the lane roughly cancels the FMA saving in CLBs (the DSP-heavy logic packs less densely), so the SLR0 headroom of the FMA rebuild alone (69.6 %) is spent; the lane build is at today's SLR0 CLB occupancy. WNS +0.616 ns, worst path again in the core's control (not in the lane).
 - **Lane timing** (unit screens, 10 ns, SLR0; S1 decode and products 6.2 ns, S2+F2 6.5, B0 4.9, norm 4.6, round 5.2) is what the cut set 0b11101 (result latency 5) balances; per-stage numbers are in the fma_dslx README.
 - An earlier build of the lane (three-adder DP2 sum, four cuts 0b1110, commit `f0c03dec`) is kept in the run directory `g2c4dp_f0c03dec` on the x86 host (kernel 9 min before the one above, tile screen: `tile0_g2c4dp_f0c03dec`); its results are superseded.
+
+## 11. G4: the frozen run-2 candidate and its SLR0 trims (2026-10-29)
+
+All rows are screens (x86, Vivado 2023.2, tile out of context in its SLR at 10 ns; kernel = whole-kernel synthesis). The full tables and the trim history are in [`G4_DESIGN.md`](G4_DESIGN.md) §9.6; the reports are in `g4/screens/`.
+
+| | Kernel LUTs | Tile-0 LUTs | Tile-0 CLBs | Tile-0 WNS | Tile-1 WNS |
+|---|---:|---:|---:|---:|---:|
+| Frozen candidate (RTL of `0802ae88`, image `g4/run2/image.tcl`) | 812,545 | 252,228 | 43,345 (78.9 %) | +0.600 ns | +0.641 ns |
+
+- **Whole-SLR0 estimate: 95.5 ± 2.5 % CLB.** Method: start from run 1's routed SLR0 (§2.2, 53,170 CLBs) and replace tile 0 (run 1's tile screen, 41,878 CLBs) with the frozen tile. Replace run 1's three outlets (1,952 CLBs each) with the 512-bit, 32-ID outlets (997 each), and add three platform 512→256 width converters (237 CLBs each, out-of-context estimate). The fallback image `g4/run2/image_fallback_axi256.tcl` (256-bit outlets, no converters) is 94.7 ± 2.5 %.
+- **Outlet IDs 64 → 32** (decision of the lead, 2026-10-29) saves 2,877 SLR0 CLBs. The 64-ID outlet doubles the slot registers and the same-line compare: 1,956 against 997 CLBs.
+- **`LSU_INFLIGHT 1` with the hybrid LSU** builds one word-path load/store unit instead of two. It saves −35.4 k kernel LUTs (−11.8 k per tile) and −1,732 tile-0 CLBs.
+  - **Trade-off, approved by the author** (source: the author, in the lead's chat, 2026-10-29). The second unit carried memory-level parallelism for word-path accesses: scalar loads and stores, gathers, sub-line stores. Whole-line vector accesses take the line path and are not affected.
+  - RTL (same tree, s5-class bench image): copy fp32 64 KiB in mode 3, 4,870 → 5,347 cycles (+9.8 %).
+  - TLM, an upper bound because the model has no hybrid line path (`lsu_slots` 1 against 2; Qwen3-VL, 1 layer; `evidence/r41/chat/DECODE_PROFILE.md` part 3 on `r41`):
+    - the Hub FP8 matmul launches are unaffected (0.999 decode, 1.001 prefill);
+    - the whole decode step is +3.3 % and prefill +2.3 %;
+    - bf16 lm_head is +4.2 %;
+    - attention is +4 % in decode and +9 to +20 % in prefill.
+- `DCO_LOCAL_REPLICAS 0` was screened and rejected (tile-0 WNS +0.198 ns).
+- The idle serial slice is no longer built with the pipelined home. With 64 MSHRs it had added 60 k LUTs per tile to kernel synthesis, which made kernel numbers overstate the image.

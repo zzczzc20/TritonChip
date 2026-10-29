@@ -1420,7 +1420,7 @@ def ring_estimate(ops, producer_idx, first, last):
     the board: linear, mlp and matmul at small and medium 2-5 % slower).
     One that also loads, gathers or stores in the loop -- a GEMV's single A
     row, loaded and repacked through scratch every step -- does overlap
-    (gemv +11 %, llama_decode +5 % in simulation). Raises NotSpecialised."""
+    (the two affected points +5 % and +11 % in simulation). Raises NotSpecialised."""
     work = sum(1 for i in producer_idx if first <= i <= last and ops[i].kind in _LSU_WORK)
     if not work:
         raise NotSpecialised('the producer would only issue transfers, which Mode B already '

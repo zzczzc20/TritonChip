@@ -2,7 +2,7 @@
 
 <!-- TNCA ISA v0.1 -- GENERATED FILE, DO NOT EDIT. Source: isa/tnca-isa-v0.1.json (itself generated from tools/asm/tnca_isa.py). Regenerate with `make isa`. Normative text: doc/isa/TNCA-ISA-v0.1.md. -->
 
-169 instructions across 17 allocated majors. Normative semantics live in `doc/isa/TNCA-ISA-v0.1.md`; this file only records which encodings are taken.
+170 instructions across 17 allocated majors. Normative semantics live in `doc/isa/TNCA-ISA-v0.1.md`; this file only records which encodings are taken.
 
 ## `SYS` (major `0x00`)
 
@@ -240,6 +240,7 @@ Allocated, no instructions defined yet.
 |---|---|---|---|---|
 | `0x00` | `m.zero` | `ad` | -- | no |
 | `0x01` | `m.mma.async` | `ad`, `va`, `vb`, `sc` | `mma` | no |
+| `0x02` | `m.mma.dp.async` | `ad`, `va`, `vb`, `sc` | `mmadp` | no |
 
 ## `ACC` (major `0x41`)
 

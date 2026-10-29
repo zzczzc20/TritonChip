@@ -105,7 +105,7 @@ def build_expectations():
         'a.vread': 'TNCA_A_VREAD', 'a.vwrite': 'TNCA_A_VWRITE',
         'a.mul.row': 'TNCA_A_MULROW', 'a.fma.row': 'TNCA_A_FMAROW',
         'a.zero': 'TNCA_A_ZERO',
-        'm.zero': 'TNCA_M_ZERO', 'm.mma.async': 'TNCA_M_MMA',
+        'm.zero': 'TNCA_M_ZERO', 'm.mma.async': 'TNCA_M_MMA', 'm.mma.dp.async': 'TNCA_M_MMA_DP',
         'td.load': 'TNCA_TD_LOAD', 'td.release': 'TNCA_TD_RELEASE',
         'w.def': 'TNCA_W_DEF', 'w.release': 'TNCA_W_RELEASE',
         't.ld.async': 'TNCA_T_LD', 't.st.async': 'TNCA_T_ST',

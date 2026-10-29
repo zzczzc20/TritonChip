@@ -41,6 +41,7 @@ CAP_BIT = {
     'atomics_device': 3, 'atomics_system': 4,
     'matrix_f16': 5, 'matrix_bf16': 6, 'tensor_dma': 7,
     'mbarrier': 8, 'packed_f16': 9, 'cache_hints': 10, 'matrix_fp8': 11,
+    'matrix_dp': 12,
 }
 
 cap0 = 0

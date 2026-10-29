@@ -458,6 +458,51 @@
         ],
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
+    },
+    "core-vrf-sync-v5-x8-g2c4-dp": {
+      "target_file": "tnca-sim-vrf-v5-x8-g2c4-dp.json",
+      "executes_artifacts_of": [],
+      "description": "core-vrf-sync-v5-x8-g2c4 with the grouped dot-product matrix opcode m.mma.dp.async (ISA sec 9C.4, approved by the author 2026-10-29; capability matrix_dp, CAPABILITY0 bit 12) elaborated through the elaboration parameter HAS_MATRIX_DP. Compile and SystemC/TLM-model profile only until the shared MAC lane is integrated into tnca_matrix (R41 G2): there is no verification bench bound to it, and no RTL parameter of that name exists yet. Every other instruction, format and capability is unchanged; artifacts using m.mma.dp.async do not run on any image built before that integration.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 256,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1,
+        "HAS_TENSOR_XPOSE": 2,
+        "RPAIR": 1,
+        "BAR_N": 8,
+        "BAR_W": 3,
+        "BAR_EPOCH_W": 38,
+        "HAS_MATRIX_DP": 1
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 2,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1,
+          "MTX_ABUF": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "none",
+        "what": "no RTL elaboration or bench yet; R41 G2 binds one when the lane is integrated into tnca_matrix"
+      }
     }
   },
   "supported_topologies": {

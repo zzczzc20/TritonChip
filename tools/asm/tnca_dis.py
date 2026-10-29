@@ -79,6 +79,16 @@ def disassemble(word, addr=0):
             name += '.' + MMA_DT_NAME.get(dt, f'dt?{dt}')
         if (mod >> 4) & 1:
             name += '.sf'
+    elif sfx == 'mmadp':
+        k, fa, fb = mod & 3, (mod >> 2) & 3, (mod >> 5) & 3
+        if k:
+            name += '.' + MMA_K_NAME.get(k, f'k?{k}')
+        if fa or fb:
+            name += '.' + MMA_DT_NAME[fa]
+            if fb != fa:
+                name += '.' + MMA_DT_NAME[fb]
+        if (mod >> 4) & 1:
+            name += '.sf'
     elif sfx == 'txf':
         name += '.' + SIZE_NAME.get(mod & 7, '?')
         if (mod >> 5) & 1:

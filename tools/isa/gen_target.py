@@ -109,6 +109,10 @@ def build_target(core, top, isa, name, description, profile=None):
         # gather path on every image built before it.
         **({'tensor_transpose_8bit': True}
            if int(core.get('HAS_TENSOR_XPOSE', 0)) >= 2 else {}),
+        # ISA sec 9C.4 (approved 2026-10-29): m.mma.dp.async, CAPABILITY0 bit 12.
+        # Emitted only where true, so every older target file is unchanged;
+        # TargetInfo.has() reads an absent key as False.
+        **({'matrix_dp': True} if int(core.get('HAS_MATRIX_DP', 0)) else {}),
         'mbarrier': True,
         'packed_f16': False,
         'cache_hints': False,

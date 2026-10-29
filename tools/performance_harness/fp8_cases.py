@@ -298,7 +298,7 @@ def _sum_key(tree, key):
     return 0
 
 
-_MMA_RE = re.compile(r'^\s*(?:@\S+\s+)?(m\.mma\.async(?:\.\w+)*)\b', re.M)
+_MMA_RE = re.compile(r'^\s*(?:@\S+\s+)?(m\.mma\.(?:dp\.)?async(?:\.\w+)*)\b', re.M)
 
 
 def mma_census(dump_dir):
@@ -509,6 +509,9 @@ def per_k_fma(A, B):
     order (ISA sec 9C.1). FP8 x FP8 and BF16 x BF16 products are exact in
     binary32 (checked), so each add of a product rounds as an FMA does."""
     torch = _torch()
+    import fp8_block_reference as _ref
+    if _ref._DOT_MODE == 'mma.dp' and A.dtype != torch.float32 and B.dtype != torch.float32:
+        return _ref.dp_chain(A, B)   # ISA sec 9C.4, chosen by the profile's capability
     A, B = A.float(), B.float()
     acc = torch.zeros(A.shape[0], B.shape[1], dtype=torch.float32)
     A64, B64 = A.double(), B.double()
@@ -787,6 +790,9 @@ def main():
     ap.add_argument('--group', action='append', choices=GROUPS)
     ap.add_argument('--quick', action='store_true',
                     help='reduced inputs and matrix (for the RTL simulators)')
+    ap.add_argument('--reference-dot-mode', choices=('auto', 'mma', 'mma.dp'), default='auto',
+                    help="tl.dot reduction the reference follows: 'auto' reads the profile's MATRIX_DP "
+                         "capability; the others exist only as negative controls")
     args = ap.parse_args()
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
@@ -794,6 +800,10 @@ def main():
                       TRITON_CACHE_DIR=str(out/'triton-cache'), TORCHINDUCTOR_CACHE_DIR=str(out/'inductor-cache'))
     os.environ.setdefault('TNCA_PROFILE', 'core-vrf-sync-v5')
     backend = os.environ.setdefault('TNCA_BACKEND', 'systemc-tlm-grid')
+    import fp8_block_reference as _ref
+    dot_mode = args.reference_dot_mode if args.reference_dot_mode != 'auto' else \
+        _ref.dot_mode_for_profile(os.environ['TNCA_PROFILE'])
+    _ref.set_dot_mode(dot_mode)
     run = Run(out, args.quick, backend)
     import torch
     import triton
@@ -808,7 +818,7 @@ def main():
     device.register()
     torch._dynamo.config.recompile_limit = 1 << 20
     torch._dynamo.config.accumulated_recompile_limit = 1 << 20
-    run.report = dict(schema='tnca-fp8-cases/1', status='running', quick=args.quick, backend=backend,
+    run.report = dict(schema='tnca-fp8-cases/1', status='running', reference_dot_mode=dot_mode, quick=args.quick, backend=backend,
                       execution='torch.compile(backend=inductor, fullgraph=True) on tnca tensors, Session on '
                                 + backend, evidence=('model-prediction-uncalibrated' if backend.startswith('systemc')
                                                      else 'rtl-simulation'),

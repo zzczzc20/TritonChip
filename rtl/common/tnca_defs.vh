@@ -436,6 +436,7 @@
 //------------------------------------------------------------------------------
 `define TNCA_M_ZERO          8'h00
 `define TNCA_M_MMA           8'h01
+`define TNCA_M_MMA_DP        8'h02   // ISA sec 9C.4; decoded only where HAS_MATRIX_DP (R41 G2)
 
 `define TNCA_MMA_K16         2'd0
 `define TNCA_MMA_K32         2'd1
@@ -504,6 +505,7 @@
 `define TNCA_CAP_PACKED_F16  9
 `define TNCA_CAP_CACHE_HINTS 10
 `define TNCA_CAP_MATRIX_FP8  11
+`define TNCA_CAP_MATRIX_DP   12
 
 //------------------------------------------------------------------------------
 // Internal microarchitecture encodings (NOT architectural)

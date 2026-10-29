@@ -59,6 +59,10 @@ def main():
     ap.add_argument('--profile', default='core-vrf-sync-v5-x8-g2c4-dp')
     ap.add_argument('--shape', action='append', default=[], metavar='M,N,K')
     ap.add_argument('--memory-bytes', type=int, default=1 << 22)
+    ap.add_argument('--ops', action='store_true',
+                    help='instead of the Hub kernel: an RMSNorm, a softmax and a 113-point matmul '
+                         '(op.matmul/tiny fp16 m16 k32 n16) through the same bench; checks closeness to the CPU '
+                         'and reports each launch\'s slice mode and barrier use (R41 G2 barrier-slice freeze check)')
     ap.add_argument('--reference-dot-mode', choices=('auto', 'mma', 'mma.dp'), default='auto')
     a = ap.parse_args()
     shapes = [tuple(int(x) for x in s.split(',')) for s in a.shape] or [(1, 256, 256), (16, 256, 256)]
@@ -80,10 +84,63 @@ def main():
     import kernels
     mode = a.reference_dot_mode if a.reference_dot_mode != 'auto' else ref.dot_mode_for_profile(a.profile)
     ref.set_dot_mode(mode)
+    # every launched artifact: its execution mapping, barriers and the slice mode the runtime derives from it
+    from tnca.artifact import load
+    from tnca.triton_backend import driver
+    import re
+    from tnca_dis import disassemble
+    launches = []
+    original_call = driver.TNCALauncher.__call__
+
+    def call(self, *args, **kwargs):
+        path = Path(args[4] if len(args) > 4 else kwargs['function'])
+        m, segments = load(path)
+        text = segments['text']
+        imms = sorted({int(g) for k in range(0, len(text), 8)
+                       for line in [disassemble(int.from_bytes(text[k:k + 8], 'little'))]
+                       if re.match(r'\s*mb\.(init|arm|arrive|inval)\b', line)
+                       for g in re.findall(r'\bb(\d+)\b', line)})
+        mapping = m['execution'].get('program_to_role', {'0': ['role0']})
+        width, rpp = len(mapping), len(mapping['0'])
+        bar_n = image.get('BAR_N', 32)
+        launches.append(dict(kernel=m['identity'].get('kernel_name'), width=width, roles_per_program=rpp,
+                             slice_flag=width > 1, slice_log2=(width.bit_length() - 1) if width > 1 else 0,
+                             pair=rpp == 2, barriers_allowed=bar_n // width if width > 1 else bar_n,
+                             barrier_immediates=imms, manifest_barriers=m['resources'].get('barriers')))
+        return original_call(self, *args, **kwargs)
+    driver.TNCALauncher.__call__ = call
     run = fk.Run(out)
     run.report = dict(schema='tnca-fp8-hub-rtl/1', backend='fpga-multicore-sim (board-top RTL)', profile=a.profile,
                       reference_dot_mode=mode, image_tcl=str(a.image_tcl), image=image, backend_args=backend_args,
                       toolchain=dict(torch=torch.__version__), evidence='RTL simulation, not a board result')
+    if a.ops:
+        import torch.nn.functional as F
+        torch.manual_seed(5)
+        x = torch.randn(16, 256, dtype=torch.bfloat16)
+        w = torch.randn(256, dtype=torch.bfloat16)
+        A = torch.randn(16, 32, dtype=torch.float16)
+        B = torch.randn(32, 16, dtype=torch.float16)
+
+        def rms(x, w):
+            xf = x.float()
+            return (xf * torch.rsqrt(xf.pow(2).mean(-1, keepdim=True) + 1e-6)).to(x.dtype) * w
+
+        def close(name, fn, *args):
+            def f():
+                got = torch.compile(fn, backend='inductor', fullgraph=True)(*[t.to('tnca') for t in args])
+                want = fn(*args)
+                torch.testing.assert_close(got.cpu().float(), want.float(), rtol=2e-2, atol=2e-2)
+                return (got,), (got.cpu(),), None
+            run.case('ops-rtl', name, f)
+        close('rmsnorm 16x256 bf16', rms, x, w)
+        close('softmax 16x256 bf16', lambda t: torch.softmax(t.float(), -1).to(t.dtype), x)
+        close('op.matmul tiny fp16 m16 k32 n16', lambda p, q: p @ q, A, B)
+        run.report['launches'] = launches
+        run.report['status'] = 'complete'
+        run.save()
+        print(json.dumps(run.report['summary']))
+        print(json.dumps(launches))
+        return 0 if not (run.report['summary']['fail'] or run.report['summary']['error']) else 1
     k = kernels.get_kernel('kernels-community/finegrained-fp8', version=4)
     for M, N, K in shapes:
         def f(M=M, N=N, K=K):
@@ -91,6 +148,7 @@ def main():
             C = k.matmul_2d(fk.dev(A), fk.dev(W), fk.dev(Ws), [128, 128], torch.bfloat16)
             return (C,), (ref.block_dynamic(A, W, Ws, [128, 128], torch.bfloat16, ieee=True),), None
         run.case('hub-rtl', f'matmul_2d block-dynamic {M}x{N}x{K} bf16', f)
+    run.report['launches'] = launches
     run.report['code'] = fk.code_facts(out / 'dump')
     run.report['status'] = 'complete'
     run.save()

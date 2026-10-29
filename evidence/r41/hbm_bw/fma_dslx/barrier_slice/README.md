@@ -1,0 +1,8 @@
+# Barrier-slice guard on the frozen run-2 profile (4 contexts, BAR_N 8): partial verdict 2026-10-29
+
+Status: partial (the Hub/norm/softmax/fused-attention compile census and the RTL matmul case were still running when this was written).
+
+- Slice rule the runtime applies (`python/tnca/runtime.py`, `_run_physical_grid`): `width = len(program_to_role)` programs per launch; width > 1 sets the RSLICE flag with log2(width), and every program owns BAR_N // width barriers (4 contexts: 2; 2 programs/pairs: 4). Width 1 is unsliced (all 8). The core's guard (`d_bar_index_oob`) faults an mb.init/arm/arrive/inval immediate >= BAR_N >> slice_k. The compiler enforces the same bound at code generation (`python/tnca/adapters/r1.py`: allocated barrier index outside the slice is a CompileError; kernels that need more barriers than a 4-way slice are not SPMD-ed 4-wide, `rctx_spmd_refused/fallback`).
+- 113 points compiled for the frozen profile `core-vrf-sync-v5-x8-g2c4-dp` (tools: `default_change_audit.py run --profile ...`; tree = merged `bb579d42` + G2): all 113 compile, 497 kernels. `barrier_slice_check.py` (per-launch, from the artifact's own `program_to_role` and the dumped assembly): `slice_check_113_dp_profile.txt`. No launch exceeds its slice.
+- Hub FP8 `w8a8_block_dynamic_fp8_matmul_kernel` at M=1 and M=16 (dp profile, pipelined `_x8_dot` as the profile selects): one barrier, b0 (64 mb.arm on it); allowed 2 or 4.
+- RTL (board-top bench, run-2 t1 image, tree `bb579d42`, which contains the guard commits 362524be/19295a61): Hub kernel M=1 and M=16 pass bit-exact; RMSNorm 16x256 and softmax 16x256 pass: no trap. `rtl_partial.txt`.

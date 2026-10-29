@@ -17,7 +17,11 @@ module tnca_mem_mux #(
     parameter MEM_DW    = 64,
     parameter MEM_BYTES = 8,
     parameter CTAG_W    = 4,     // per-client tag
-    parameter TAG_W     = 5      // CTAG_W + 1 owner bit
+    parameter TAG_W     = 5,
+    // R41 G4: 1 makes a (the LSU) the priority client. Its valid is a queue
+    // register, so the engine's deep request valid (b) leaves the LSU's ready
+    // and the engine's ready depends only on that register. Line-engine builds.
+    parameter A_FIRST = 0      // CTAG_W + 1 owner bit
 ) (
     // ---- client 0: LSU ------------------------------------------------------
     input  wire                     a_req_valid,
@@ -66,7 +70,7 @@ module tnca_mem_mux #(
     input  wire [MEM_DW-1:0]        m_rsp_rdata
 );
 
-    wire pick_b = b_req_valid;
+    wire pick_b = A_FIRST ? (b_req_valid && !a_req_valid) : b_req_valid;
 
     assign m_req_valid = a_req_valid | b_req_valid;
     assign m_req_addr  = pick_b ? b_req_addr  : a_req_addr;
@@ -83,8 +87,8 @@ module tnca_mem_mux #(
     // b_req_valid && b_req_ready is unchanged (pick_b IS b_req_valid); the
     // engine's request valid -- a wide OR over its states' requests -- is no
     // longer in front of its own handshake (u_txf -> xbuf family).
-    assign b_req_ready = m_req_ready;
-    assign a_req_ready = !pick_b && m_req_ready;
+    assign b_req_ready = A_FIRST ? (!a_req_valid && m_req_ready) : m_req_ready;
+    assign a_req_ready = A_FIRST ? m_req_ready : (!pick_b && m_req_ready);
 
     assign a_rsp_valid = m_rsp_valid && !m_rsp_tag[TAG_W-1];
     assign a_rsp_tag   = m_rsp_tag[CTAG_W-1:0];

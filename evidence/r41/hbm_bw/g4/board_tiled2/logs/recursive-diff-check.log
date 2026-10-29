@@ -1,0 +1,11 @@
+clock_utc=2026-10-29T02:54:00Z
+source_commit=eda7f8c6caca78710b111445e44531efe0333a7b
+command=recursive baseline versus tiled2 manifest diff audit
+membound-large-1.json: recursive diff limited to gate metadata, manifest paths and tiled knobs
+membound-large-2.json: recursive diff limited to gate metadata, manifest paths and tiled knobs
+membound-medium-1.json: recursive diff limited to gate metadata, manifest paths and tiled knobs
+membound-medium-2.json: recursive diff limited to gate metadata, manifest paths and tiled knobs
+membound-small-1.json: recursive diff limited to gate metadata, manifest paths and tiled knobs
+membound-small-2.json: recursive diff limited to gate metadata, manifest paths and tiled knobs
+s2-original-suite: recursive diff limited to gate metadata, manifest paths and tiled knobs
+RECURSIVE MANIFEST DIFF AUDIT PASS

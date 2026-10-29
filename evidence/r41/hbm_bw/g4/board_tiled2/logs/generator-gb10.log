@@ -1,0 +1,10 @@
+clock_utc=2026-10-29T02:25:05Z
+source_commit=8f19b1131c8f8b4b454831b6317d772774f93383
+host=GB10
+command=python3 tools/r41/membound_manifests.py --check && python3 tools/r41/membound_manifests.py --tiled2
+differs: spec/r41/hbm_bw/membound/membound-small-1.json
+differs: spec/r41/hbm_bw/membound/membound-small-2.json
+differs: spec/r41/hbm_bw/membound/membound-medium-1.json
+differs: spec/r41/hbm_bw/membound/membound-medium-2.json
+differs: spec/r41/hbm_bw/membound/membound-large-1.json
+differs: spec/r41/hbm_bw/membound/membound-large-2.json

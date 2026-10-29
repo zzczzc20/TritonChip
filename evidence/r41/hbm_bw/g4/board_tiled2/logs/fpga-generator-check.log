@@ -1,0 +1,11 @@
+clock_utc=2026-10-29T02:36:24Z
+source_commit=1241d5ce5d4be73f9e409e82690c171617d21111
+host=acf3019
+card_access=false
+command=membound_manifests.py --check and --tiled2 --check on archive
+differs: spec/r41/hbm_bw/membound/membound-small-1.json
+differs: spec/r41/hbm_bw/membound/membound-small-2.json
+differs: spec/r41/hbm_bw/membound/membound-medium-1.json
+differs: spec/r41/hbm_bw/membound/membound-medium-2.json
+differs: spec/r41/hbm_bw/membound/membound-large-1.json
+differs: spec/r41/hbm_bw/membound/membound-large-2.json

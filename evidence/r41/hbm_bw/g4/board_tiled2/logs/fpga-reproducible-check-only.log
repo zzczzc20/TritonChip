@@ -1,0 +1,20 @@
+clock_utc=2026-10-29T02:54:33Z
+archive_commit=f3385ab683d658e77be092783ca34c953dfdd57e
+host=acf3019
+card_access=false
+command=tiled2 generator check and acceptance_queue.py --check-only for every manifest
+GENERATOR-TILED2-CHECK-PASS
+CHECK membound-large-1
+{"status": "prepared-only", "manifests": ["/home/zzhouch/r41_tiled2_f3385ab6/spec/r41/hbm_bw/membound_tiled2/membound-large-1.json"], "card_access": false}
+CHECK membound-large-2
+{"status": "prepared-only", "manifests": ["/home/zzhouch/r41_tiled2_f3385ab6/spec/r41/hbm_bw/membound_tiled2/membound-large-2.json"], "card_access": false}
+CHECK membound-medium-1
+{"status": "prepared-only", "manifests": ["/home/zzhouch/r41_tiled2_f3385ab6/spec/r41/hbm_bw/membound_tiled2/membound-medium-1.json"], "card_access": false}
+CHECK membound-medium-2
+{"status": "prepared-only", "manifests": ["/home/zzhouch/r41_tiled2_f3385ab6/spec/r41/hbm_bw/membound_tiled2/membound-medium-2.json"], "card_access": false}
+CHECK membound-small-1
+{"status": "prepared-only", "manifests": ["/home/zzhouch/r41_tiled2_f3385ab6/spec/r41/hbm_bw/membound_tiled2/membound-small-1.json"], "card_access": false}
+CHECK membound-small-2
+{"status": "prepared-only", "manifests": ["/home/zzhouch/r41_tiled2_f3385ab6/spec/r41/hbm_bw/membound_tiled2/membound-small-2.json"], "card_access": false}
+CHECK s2-original-suite
+{"status": "prepared-only", "manifests": ["/home/zzhouch/r41_tiled2_f3385ab6/spec/r41/hbm_bw/membound_tiled2/s2-original-suite.json"], "card_access": false}

@@ -1,0 +1,1178 @@
+{
+ "const": {
+  "clock_hz": [
+   100000000.0,
+   "spec: 100 MHz run image (evidence/r41/hbm_bw/g4/run2/README.md)"
+  ],
+  "cores": [
+   3,
+   "rtl: MEM_PORTS 3 / nx=3 (g4/run2/image.tcl, configs/r40-three-core.cfg)"
+  ],
+  "vlen": [
+   16,
+   "rtl: tnca_matrix VLEN=16, one tnca_mac_lane per lane"
+  ],
+  "step_overhead": [
+   1,
+   "rtl: tnca_matrix S_LOADB, one cycle per k-step (S_MAC -> S_LOADB)"
+  ],
+  "rows": [
+   16,
+   "rtl: tnca_matrix ROWS=16, S_MAC sweeps mm=0..15"
+  ],
+  "vreg_bytes": [
+   64,
+   "rtl: VLEN*ELEN = 512 bit"
+  ],
+  "phys_vregs": [
+   256,
+   "rtl: image PHYS_VREGS 256 (4 contexts x 64)"
+  ],
+  "acc_slots": [
+   16,
+   "rtl: tnca_matrix ACC_N=16"
+  ],
+  "vrf_banks": [
+   4,
+   "rtl: tnca_core NUM_BANKS(4), one read and one write port per bank, 5 read requesters"
+  ],
+  "sfu_elem_per_cycle": [
+   1,
+   "rtl: tnca_sfu one slice, one lane per cycle; image sets no SFU_LANES"
+  ],
+  "issue_per_cycle": [
+   1,
+   "rtl/doc: one instruction per cycle per core (G4_DESIGN sec 1)"
+  ],
+  "line_bytes": [
+   64,
+   "rtl: line = 64 B"
+  ],
+  "nuca_bytes_per_home": [
+   16384,
+   "rtl: image SETS 32 x WAYS 8 x 64 B"
+  ],
+  "pipe_dp": [
+   5,
+   "rtl: OPND_REG + popcount(MAC_CUTS 0b11101) = result latency"
+  ],
+  "pipe_legacy": [
+   3,
+   "rtl: FMA_LAT 2 + OPND_REG 1"
+  ]
+ },
+ "peak": {
+  "legacy m.mma.async (any format; FP32 vector FMA is 16/cycle too)": {
+   "group": 1,
+   "macs_per_cycle_core": 16,
+   "macs_per_cycle_after_step_bubble": 15.058823529411764,
+   "chip_gmac_s": 4.8,
+   "chip_tflops": 0.0096
+  },
+  "DP2 (FP16/BF16/mixed FP8)": {
+   "group": 2,
+   "macs_per_cycle_core": 32,
+   "macs_per_cycle_after_step_bubble": 30.11764705882353,
+   "chip_gmac_s": 9.6,
+   "chip_tflops": 0.0192
+  },
+  "DP4 (E4M3 x E4M3)": {
+   "group": 4,
+   "macs_per_cycle_core": 64,
+   "macs_per_cycle_after_step_bubble": 60.23529411764706,
+   "chip_gmac_s": 19.2,
+   "chip_tflops": 0.0384
+  }
+ },
+ "prof": {
+  "loop_instr": 11192,
+  "mma": 32,
+  "regions": {
+   "pre_mma (act-quant, B scatter)": 2735,
+   "mma_window (weight row loads, mma)": 5997,
+   "post_mma (scale, accumulate, store)": 2460
+  },
+  "mnemonics": {
+   "s.cmp.ge": 1,
+   "br.nz": 2,
+   "s.muli": 2,
+   "s.mul": 1,
+   "s.movz": 401,
+   "v.iota": 5,
+   "v.splat": 288,
+   "s.sub": 1,
+   "s.rdspecial": 1,
+   "v.mul": 10,
+   "s.add": 817,
+   "s.ld.d": 1,
+   "v.extract": 912,
+   "v.cmp.lt": 8,
+   "v.movi": 681,
+   "v.ld.h": 128,
+   "s.addi": 1465,
+   "vf.cvt.bf16.f32": 128,
+   "v.st.w": 256,
+   "v.add": 7,
+   "fence.acq_rel.device": 28,
+   "v.ld.w": 1056,
+   "vf.abs": 128,
+   "vf.max.ieee": 240,
+   "vf.reduce.max.b": 16,
+   "v.insert": 16,
+   ".li": 3,
+   "v.rcp.approx": 129,
+   "vf.fms": 516,
+   "vf.neg": 258,
+   "vf.cmp.o": 258,
+   "v.sel": 262,
+   "vf.mul": 385,
+   "v.ld.gather.w": 8,
+   "v.and": 385,
+   "v.shl": 9,
+   "v.lshr": 130,
+   "v.cmp.eq": 2,
+   "m.zero": 8,
+   "vf.cvt.f32.e4m3": 128,
+   "v.or": 384,
+   "v.st.scatter.b": 128,
+   "w.def": 36,
+   "v.mov": 288,
+   "v.sub": 8,
+   "v.cmp.gt": 4,
+   "v.max.s": 4,
+   "v.min.s": 4,
+   "p.and": 512,
+   "v.cmp.ge": 4,
+   "mb.arm": 32,
+   "m.mma.async.k32.e4m3": 32,
+   "mb.wait": 32,
+   "a.vread": 256,
+   "v.st.scatter.w": 128,
+   "vf.add": 128,
+   "s.mov": 4,
+   "a.vwrite": 128
+  },
+  "classes": {
+   "scalar/predicate/ctl": 3339,
+   "vector int/move": 3540,
+   "vector load/store": 1704,
+   "vector fp": 2185,
+   "matrix/accumulator": 424
+  }
+ },
+ "eng": {
+  "dp_e4m3": {
+   "16": 110,
+   "32": 182,
+   "64": 566
+  },
+  "legacy_e4m3": {
+   "16": 313,
+   "32": 589,
+   "64": 2149
+  },
+  "dp_f16": {
+   "16": 182,
+   "32": 566
+  },
+  "legacy_f16": {
+   "16": 317,
+   "32": 1093
+  }
+ },
+ "tlm_point": {
+  "cycles": 60518611,
+  "grid": [
+   1,
+   72,
+   1
+  ],
+  "profile": "core-vrf-sync-v5",
+  "t_iter": 126080.43958333334
+ },
+ "board": {
+  "prefill11": 4238154739,
+  "decode": 4065511739,
+  "decode3": 4065552515,
+  "wall": [
+   63.094938225112855,
+   64.12581400899217
+  ],
+  "prompt_tokens": 11,
+  "decode_weight_bytes": 2654538240
+ },
+ "plans": {
+  "vl": {
+   "params_fp8": 1409286144,
+   "flops_from_shapes": 2818572288,
+   "flops_recorded": 2818572288,
+   "rel_diff": 0.0,
+   "lm_head_bytes_bf16": 622329856,
+   "recorded_decode_weight_bytes_read": 2032208128,
+   "shapes_fp8_bytes_plus_lm": 2031616000,
+   "prefill_prompt_tokens": 81
+  },
+  "q35": {
+   "params_fp8": 3565158400,
+   "flops_from_shapes": 7130316800,
+   "flops_recorded": 7130316800,
+   "rel_diff": 0.0,
+   "lm_head_bytes_bf16": 1271398400,
+   "recorded_decode_weight_bytes_read": 4847214720,
+   "shapes_fp8_bytes_plus_lm": 4836556800,
+   "prefill_prompt_tokens": 85
+  }
+ },
+ "aux": {
+  "I": 11192,
+  "Ipre": 2735,
+  "Imma": 5997,
+  "Ipost": 2460,
+  "I_fixed": 2652,
+  "t_leg": 18848,
+  "t_dp": 5824,
+  "macs": 262144,
+  "w_bytes": 16384,
+  "a_bytes": 4096
+ },
+ "scen": {
+  "run-1 image, TLM point 16x9216x2560 (as compiled, legacy engine)": {
+   "domain": "tlm",
+   "t_opt": 126080.43958333334,
+   "t_pess": 126080.43958333334,
+   "macs": 262144,
+   "util_dp4_peak_opt": 0.03248719637666502,
+   "util_dp4_peak_pess": 0.03248719637666502,
+   "binding": "memory latency / LSU MLP (run-1)"
+  },
+  "run-2, kernel as compiled, legacy engine (no DP)": {
+   "domain": "analytic",
+   "issue": 11192,
+   "mma": 18848,
+   "mem": 706.2068965517242,
+   "t_opt": 18848,
+   "t_pess": 30746.206896551725,
+   "macs": 262144,
+   "util_dp4_peak_opt": 0.21731748726655348,
+   "util_dp4_peak_pess": 0.1332196850746938,
+   "binding": "mma"
+  },
+  "run-2, kernel as compiled, DP4 engine": {
+   "domain": "analytic",
+   "issue": 11192,
+   "mma": 5824,
+   "mem": 706.2068965517242,
+   "t_opt": 11192,
+   "t_pess": 17722.206896551725,
+   "macs": 262144,
+   "util_dp4_peak_opt": 0.365975696926376,
+   "util_dp4_peak_pess": 0.23112245692137665,
+   "binding": "issue"
+  },
+  "run-2, DP4, issue cut by software (tile loads, quant hoisted)": {
+   "domain": "analytic projection",
+   "issue": 2652,
+   "mma": 5824,
+   "mem": 564.9655172413793,
+   "t_opt": 5824,
+   "t_pess": 9040.965517241379,
+   "macs": 262144,
+   "util_dp4_peak_opt": 0.7032967032967034,
+   "util_dp4_peak_pess": 0.45304895723679195,
+   "binding": "mma"
+  }
+ },
+ "ai": [
+  {
+   "shape": "VL q/o",
+   "K": 2048,
+   "N": 2048,
+   "T": 128,
+   "ai_current": 25.28395061728395,
+   "ai_tile64": 62.06060606060606,
+   "w_bytes_current": 33554432
+  },
+  {
+   "shape": "VL q/o",
+   "K": 2048,
+   "N": 2048,
+   "T": 512,
+   "ai_current": 25.28395061728395,
+   "ai_tile64": 62.06060606060606,
+   "w_bytes_current": 134217728
+  },
+  {
+   "shape": "VL q/o",
+   "K": 2048,
+   "N": 2048,
+   "T": 2048,
+   "ai_current": 25.28395061728395,
+   "ai_tile64": 62.06060606060606,
+   "w_bytes_current": 536870912
+  },
+  {
+   "shape": "VL q/o",
+   "K": 2048,
+   "N": 2048,
+   "T": 1,
+   "ai_current": 1.967339097022094,
+   "ai_tile64": 1.967339097022094,
+   "w_bytes_current": 4194304
+  },
+  {
+   "shape": "VL gate/up",
+   "K": 2048,
+   "N": 6144,
+   "T": 128,
+   "ai_current": 25.28395061728395,
+   "ai_tile64": 62.06060606060606,
+   "w_bytes_current": 100663296
+  },
+  {
+   "shape": "VL gate/up",
+   "K": 2048,
+   "N": 6144,
+   "T": 512,
+   "ai_current": 25.28395061728395,
+   "ai_tile64": 62.06060606060606,
+   "w_bytes_current": 402653184
+  },
+  {
+   "shape": "VL gate/up",
+   "K": 2048,
+   "N": 6144,
+   "T": 2048,
+   "ai_current": 25.28395061728395,
+   "ai_tile64": 62.06060606060606,
+   "w_bytes_current": 1610612736
+  },
+  {
+   "shape": "VL gate/up",
+   "K": 2048,
+   "N": 6144,
+   "T": 1,
+   "ai_current": 1.967339097022094,
+   "ai_tile64": 1.967339097022094,
+   "w_bytes_current": 12582912
+  },
+  {
+   "shape": "VL down",
+   "K": 6144,
+   "N": 2048,
+   "T": 128,
+   "ai_current": 25.493775933609957,
+   "ai_tile64": 63.34020618556701,
+   "w_bytes_current": 100663296
+  },
+  {
+   "shape": "VL down",
+   "K": 6144,
+   "N": 2048,
+   "T": 512,
+   "ai_current": 25.493775933609957,
+   "ai_tile64": 63.34020618556701,
+   "w_bytes_current": 402653184
+  },
+  {
+   "shape": "VL down",
+   "K": 6144,
+   "N": 2048,
+   "T": 2048,
+   "ai_current": 25.493775933609957,
+   "ai_tile64": 63.34020618556701,
+   "w_bytes_current": 1610612736
+  },
+  {
+   "shape": "VL down",
+   "K": 6144,
+   "N": 2048,
+   "T": 1,
+   "ai_current": 1.968599807753925,
+   "ai_tile64": 1.968599807753925,
+   "w_bytes_current": 12582912
+  },
+  {
+   "shape": "Q35 gate/up",
+   "K": 2560,
+   "N": 9216,
+   "T": 128,
+   "ai_current": 25.346534653465348,
+   "ai_tile64": 62.4390243902439,
+   "w_bytes_current": 188743680
+  },
+  {
+   "shape": "Q35 gate/up",
+   "K": 2560,
+   "N": 9216,
+   "T": 512,
+   "ai_current": 25.346534653465348,
+   "ai_tile64": 62.4390243902439,
+   "w_bytes_current": 754974720
+  },
+  {
+   "shape": "Q35 gate/up",
+   "K": 2560,
+   "N": 9216,
+   "T": 2048,
+   "ai_current": 25.346534653465348,
+   "ai_tile64": 62.4390243902439,
+   "w_bytes_current": 3019898880
+  },
+  {
+   "shape": "Q35 gate/up",
+   "K": 2560,
+   "N": 9216,
+   "T": 1,
+   "ai_current": 1.9677171406610299,
+   "ai_tile64": 1.9677171406610299,
+   "w_bytes_current": 23592960
+  },
+  {
+   "shape": "Q35 down",
+   "K": 9216,
+   "N": 2560,
+   "T": 128,
+   "ai_current": 25.52908587257618,
+   "ai_tile64": 63.55862068965517,
+   "w_bytes_current": 188743680
+  },
+  {
+   "shape": "Q35 down",
+   "K": 9216,
+   "N": 2560,
+   "T": 512,
+   "ai_current": 25.52908587257618,
+   "ai_tile64": 63.55862068965517,
+   "w_bytes_current": 754974720
+  },
+  {
+   "shape": "Q35 down",
+   "K": 9216,
+   "N": 2560,
+   "T": 2048,
+   "ai_current": 25.52908587257618,
+   "ai_tile64": 63.55862068965517,
+   "w_bytes_current": 3019898880
+  },
+  {
+   "shape": "Q35 down",
+   "K": 9216,
+   "N": 2560,
+   "T": 1,
+   "ai_current": 1.9688100833155309,
+   "ai_tile64": 1.9688100833155309,
+   "w_bytes_current": 23592960
+  },
+  {
+   "shape": "Q35 lin-attn qkv",
+   "K": 2560,
+   "N": 8192,
+   "T": 128,
+   "ai_current": 25.346534653465348,
+   "ai_tile64": 62.4390243902439,
+   "w_bytes_current": 167772160
+  },
+  {
+   "shape": "Q35 lin-attn qkv",
+   "K": 2560,
+   "N": 8192,
+   "T": 512,
+   "ai_current": 25.346534653465348,
+   "ai_tile64": 62.4390243902439,
+   "w_bytes_current": 671088640
+  },
+  {
+   "shape": "Q35 lin-attn qkv",
+   "K": 2560,
+   "N": 8192,
+   "T": 2048,
+   "ai_current": 25.346534653465348,
+   "ai_tile64": 62.4390243902439,
+   "w_bytes_current": 2684354560
+  },
+  {
+   "shape": "Q35 lin-attn qkv",
+   "K": 2560,
+   "N": 8192,
+   "T": 1,
+   "ai_current": 1.9677171406610299,
+   "ai_tile64": 1.9677171406610299,
+   "w_bytes_current": 20971520
+  }
+ ],
+ "tlm_all": {
+  "1x256x256": 246905,
+  "7x136x144": 215965,
+  "16x256x256": 266512,
+  "33x256x384": 1465218,
+  "129x200x328": 5282611,
+  "7x6144x2048": 32523722,
+  "7x2048x6144": 34001676,
+  "16x9216x2560": 60518611,
+  "129x2048x2048": 180272870
+ },
+ "tlm_grid": {
+  "1x256x256": [
+   246905,
+   [
+    1,
+    2,
+    1
+   ]
+  ],
+  "7x136x144": [
+   215965,
+   [
+    1,
+    2,
+    1
+   ]
+  ],
+  "16x256x256": [
+   266512,
+   [
+    1,
+    2,
+    1
+   ]
+  ],
+  "33x256x384": [
+   1465218,
+   [
+    1,
+    2,
+    1
+   ]
+  ],
+  "129x200x328": [
+   5282611,
+   [
+    2,
+    2,
+    1
+   ]
+  ],
+  "7x6144x2048": [
+   32523722,
+   [
+    1,
+    48,
+    1
+   ]
+  ],
+  "7x2048x6144": [
+   34001676,
+   [
+    1,
+    16,
+    1
+   ]
+  ],
+  "16x9216x2560": [
+   60518611,
+   [
+    1,
+    72,
+    1
+   ]
+  ],
+  "129x2048x2048": [
+   180272870,
+   [
+    2,
+    16,
+    1
+   ]
+  ]
+ },
+ "e2e": {
+  "vl": {
+   "run-1 image, TLM point 16x9216x2560 (as compiled, legacy engine)|t_opt": {
+    "128": {
+     "gemm_cycles": 28919826909.86667,
+     "other_cycles": 35639296.0,
+     "att": 19726336.0,
+     "exp": 1232896.0,
+     "silu": 14680064.0,
+     "cycles": 28955466205.86667,
+     "tokens_per_s": 0.4420581561006464
+    },
+    "512": {
+     "gemm_cycles": 115679307639.46667,
+     "other_cycles": 392118272.0,
+     "att": 313786368.0,
+     "exp": 19611648.0,
+     "silu": 58720256.0,
+     "cycles": 116071425911.46667,
+     "tokens_per_s": 0.4411077024163788
+    },
+    "2048": {
+     "gemm_cycles": 462717230557.8667,
+     "other_cycles": 5561450496.0,
+     "att": 5013241856.0,
+     "exp": 313327616.0,
+     "silu": 234881024.0,
+     "cycles": 468278681053.8667,
+     "tokens_per_s": 0.4373464099179044
+    },
+    "decode": {
+     "body_cycles": 3614978363.7333336,
+     "lm_head_cycles_same_rate": 450533375.2666664,
+     "lm_head_cycles_path_bound": 450533375.2666664,
+     "tokens_per_s_lm_body_rate": 0.024597149490606846,
+     "tokens_per_s": 0.024597149490606846
+    }
+   },
+   "run-1 image, TLM point 16x9216x2560 (as compiled, legacy engine)|t_pess": {
+    "128": {
+     "gemm_cycles": 28919826909.86667,
+     "other_cycles": 35639296.0,
+     "att": 19726336.0,
+     "exp": 1232896.0,
+     "silu": 14680064.0,
+     "cycles": 28955466205.86667,
+     "tokens_per_s": 0.4420581561006464
+    },
+    "512": {
+     "gemm_cycles": 115679307639.46667,
+     "other_cycles": 392118272.0,
+     "att": 313786368.0,
+     "exp": 19611648.0,
+     "silu": 58720256.0,
+     "cycles": 116071425911.46667,
+     "tokens_per_s": 0.4411077024163788
+    },
+    "2048": {
+     "gemm_cycles": 462717230557.8667,
+     "other_cycles": 5561450496.0,
+     "att": 5013241856.0,
+     "exp": 313327616.0,
+     "silu": 234881024.0,
+     "cycles": 468278681053.8667,
+     "tokens_per_s": 0.4373464099179044
+    },
+    "decode": {
+     "body_cycles": 3614978363.7333336,
+     "lm_head_cycles_same_rate": 450533375.2666664,
+     "lm_head_cycles_path_bound": 450533375.2666664,
+     "tokens_per_s_lm_body_rate": 0.024597149490606846,
+     "tokens_per_s": 0.024597149490606846
+    }
+   },
+   "run-2, kernel as compiled, legacy engine (no DP)|t_opt": {
+    "128": {
+     "gemm_cycles": 4323278848.0,
+     "other_cycles": 35639296.0,
+     "att": 19726336.0,
+     "exp": 1232896.0,
+     "silu": 14680064.0,
+     "cycles": 4358918144.0,
+     "tokens_per_s": 2.936508458553885
+    },
+    "512": {
+     "gemm_cycles": 17293115392.0,
+     "other_cycles": 392118272.0,
+     "att": 313786368.0,
+     "exp": 19611648.0,
+     "silu": 58720256.0,
+     "cycles": 17685233664.0,
+     "tokens_per_s": 2.895070598033575
+    },
+    "2048": {
+     "gemm_cycles": 69172461568.0,
+     "other_cycles": 5561450496.0,
+     "att": 5013241856.0,
+     "exp": 313327616.0,
+     "silu": 234881024.0,
+     "cycles": 74733912064.0,
+     "tokens_per_s": 2.7403891264867157
+    },
+    "decode": {
+     "body_cycles": 540409856.0,
+     "lm_head_cycles_same_rate": 238640810.6666667,
+     "lm_head_cycles_path_bound": 7153216.735632184,
+     "tokens_per_s_lm_body_rate": 0.12836135604359492,
+     "tokens_per_s": 0.18262736290889506
+    }
+   },
+   "run-2, kernel as compiled, legacy engine (no DP)|t_pess": {
+    "128": {
+     "gemm_cycles": 7052441953.103448,
+     "other_cycles": 35639296.0,
+     "att": 19726336.0,
+     "exp": 1232896.0,
+     "silu": 14680064.0,
+     "cycles": 7088081249.103448,
+     "tokens_per_s": 1.8058483742153828
+    },
+    "512": {
+     "gemm_cycles": 28209767812.41379,
+     "other_cycles": 392118272.0,
+     "att": 313786368.0,
+     "exp": 19611648.0,
+     "silu": 58720256.0,
+     "cycles": 28601886084.41379,
+     "tokens_per_s": 1.7900917390164959
+    },
+    "2048": {
+     "gemm_cycles": 112839071249.65517,
+     "other_cycles": 5561450496.0,
+     "att": 5013241856.0,
+     "exp": 313327616.0,
+     "silu": 234881024.0,
+     "cycles": 118400521745.65517,
+     "tokens_per_s": 1.729722107474711
+    },
+    "decode": {
+     "body_cycles": 881555244.137931,
+     "lm_head_cycles_same_rate": 389287974.25287354,
+     "lm_head_cycles_path_bound": 7153216.735632184,
+     "tokens_per_s_lm_body_rate": 0.07868791252364256,
+     "tokens_per_s": 0.11252284005679905
+    }
+   },
+   "run-2, kernel as compiled, DP4 engine|t_opt": {
+    "128": {
+     "gemm_cycles": 2567176192.0,
+     "other_cycles": 35639296.0,
+     "att": 19726336.0,
+     "exp": 1232896.0,
+     "silu": 14680064.0,
+     "cycles": 2602815488.0,
+     "tokens_per_s": 4.917751588237053
+    },
+    "512": {
+     "gemm_cycles": 10268704768.0,
+     "other_cycles": 392118272.0,
+     "att": 313786368.0,
+     "exp": 19611648.0,
+     "silu": 58720256.0,
+     "cycles": 10660823040.0,
+     "tokens_per_s": 4.802631073407255
+    },
+    "2048": {
+     "gemm_cycles": 41074819072.0,
+     "other_cycles": 5561450496.0,
+     "att": 5013241856.0,
+     "exp": 313327616.0,
+     "silu": 234881024.0,
+     "cycles": 46636269568.0,
+     "tokens_per_s": 4.391431859732748
+    },
+    "decode": {
+     "body_cycles": 320897024.0,
+     "lm_head_cycles_same_rate": 141705642.66666666,
+     "lm_head_cycles_path_bound": 7153216.735632184,
+     "tokens_per_s_lm_body_rate": 0.21616823076390973,
+     "tokens_per_s": 0.30483135685484103
+    }
+   },
+   "run-2, kernel as compiled, DP4 engine|t_pess": {
+    "128": {
+     "gemm_cycles": 4065048929.1034484,
+     "other_cycles": 35639296.0,
+     "att": 19726336.0,
+     "exp": 1232896.0,
+     "silu": 14680064.0,
+     "cycles": 4100688225.1034484,
+     "tokens_per_s": 3.1214272574153314
+    },
+    "512": {
+     "gemm_cycles": 16260195716.413794,
+     "other_cycles": 392118272.0,
+     "att": 313786368.0,
+     "exp": 19611648.0,
+     "silu": 58720256.0,
+     "cycles": 16652313988.413794,
+     "tokens_per_s": 3.0746477658074127
+    },
+    "2048": {
+     "gemm_cycles": 65040782865.655174,
+     "other_cycles": 5561450496.0,
+     "att": 5013241856.0,
+     "exp": 313327616.0,
+     "silu": 234881024.0,
+     "cycles": 70602233361.65518,
+     "tokens_per_s": 2.9007580957237686
+    },
+    "decode": {
+     "body_cycles": 508131116.13793105,
+     "lm_head_cycles_same_rate": 224386768.91954026,
+     "lm_head_cycles_path_bound": 7153216.735632184,
+     "tokens_per_s_lm_body_rate": 0.13651543810722694,
+     "tokens_per_s": 0.19406761203534842
+    }
+   },
+   "run-2, DP4, issue cut by software (tile loads, quant hoisted)|t_opt": {
+    "128": {
+     "gemm_cycles": 1335885824.0,
+     "other_cycles": 35639296.0,
+     "att": 19726336.0,
+     "exp": 1232896.0,
+     "silu": 14680064.0,
+     "cycles": 1371525120.0,
+     "tokens_per_s": 9.332676312920903
+    },
+    "512": {
+     "gemm_cycles": 5343543296.0,
+     "other_cycles": 392118272.0,
+     "att": 313786368.0,
+     "exp": 19611648.0,
+     "silu": 58720256.0,
+     "cycles": 5735661568.0,
+     "tokens_per_s": 8.92660757490495
+    },
+    "2048": {
+     "gemm_cycles": 21374173184.0,
+     "other_cycles": 5561450496.0,
+     "att": 5013241856.0,
+     "exp": 313327616.0,
+     "silu": 234881024.0,
+     "cycles": 26935623680.0,
+     "tokens_per_s": 7.603313828298926
+    },
+    "decode": {
+     "body_cycles": 166985728.0,
+     "lm_head_cycles_same_rate": 73739605.33333333,
+     "lm_head_cycles_path_bound": 7153216.735632184,
+     "tokens_per_s_lm_body_rate": 0.4154112017015243,
+     "tokens_per_s": 0.5742540828636253
+    }
+   },
+   "run-2, DP4, issue cut by software (tile loads, quant hoisted)|t_pess": {
+    "128": {
+     "gemm_cycles": 2073780506.4827585,
+     "other_cycles": 35639296.0,
+     "att": 19726336.0,
+     "exp": 1232896.0,
+     "silu": 14680064.0,
+     "cycles": 2109419802.4827585,
+     "tokens_per_s": 6.068019265266484
+    },
+    "512": {
+     "gemm_cycles": 8295122025.931034,
+     "other_cycles": 392118272.0,
+     "att": 313786368.0,
+     "exp": 19611648.0,
+     "silu": 58720256.0,
+     "cycles": 8687240297.931034,
+     "tokens_per_s": 5.893701364769877
+    },
+    "2048": {
+     "gemm_cycles": 33180488103.724136,
+     "other_cycles": 5561450496.0,
+     "att": 5013241856.0,
+     "exp": 313327616.0,
+     "silu": 234881024.0,
+     "cycles": 38741938599.72414,
+     "tokens_per_s": 5.286261023640626
+    },
+    "decode": {
+     "body_cycles": 259222563.31034482,
+     "lm_head_cycles_same_rate": 114470678.06896551,
+     "lm_head_cycles_path_bound": 7153216.735632184,
+     "tokens_per_s_lm_body_rate": 0.26759916671465,
+     "tokens_per_s": 0.3754095060096672
+    }
+   }
+  },
+  "q35": {
+   "run-1 image, TLM point 16x9216x2560 (as compiled, legacy engine)|t_opt": {
+    "128": {
+     "gemm_cycles": 73160276408.8889,
+     "other_cycles": 36790272.0,
+     "att": 11272192.0,
+     "exp": 352256.0,
+     "silu": 25165824.0,
+     "cycles": 73197066680.8889,
+     "tokens_per_s": 0.17487039550099848
+    },
+    "512": {
+     "gemm_cycles": 292641105635.5556,
+     "other_cycles": 285573120.0,
+     "att": 179306496.0,
+     "exp": 5603328.0,
+     "silu": 100663296.0,
+     "cycles": 292926678755.5556,
+     "tokens_per_s": 0.1747877667459777
+    },
+    "2048": {
+     "gemm_cycles": 1170564422542.2224,
+     "other_cycles": 3356884992.0,
+     "att": 2864709632.0,
+     "exp": 89522176.0,
+     "silu": 402653184.0,
+     "cycles": 1173921307534.2224,
+     "tokens_per_s": 0.17445803111809488
+    },
+    "decode": {
+     "body_cycles": 9145034551.111113,
+     "lm_head_cycles_same_rate": 920424123.8598703,
+     "lm_head_cycles_path_bound": 920424123.8598703,
+     "tokens_per_s_lm_body_rate": 0.009934967022284087,
+     "tokens_per_s": 0.009934967022284087
+    }
+   },
+   "run-1 image, TLM point 16x9216x2560 (as compiled, legacy engine)|t_pess": {
+    "128": {
+     "gemm_cycles": 73160276408.8889,
+     "other_cycles": 36790272.0,
+     "att": 11272192.0,
+     "exp": 352256.0,
+     "silu": 25165824.0,
+     "cycles": 73197066680.8889,
+     "tokens_per_s": 0.17487039550099848
+    },
+    "512": {
+     "gemm_cycles": 292641105635.5556,
+     "other_cycles": 285573120.0,
+     "att": 179306496.0,
+     "exp": 5603328.0,
+     "silu": 100663296.0,
+     "cycles": 292926678755.5556,
+     "tokens_per_s": 0.1747877667459777
+    },
+    "2048": {
+     "gemm_cycles": 1170564422542.2224,
+     "other_cycles": 3356884992.0,
+     "att": 2864709632.0,
+     "exp": 89522176.0,
+     "silu": 402653184.0,
+     "cycles": 1173921307534.2224,
+     "tokens_per_s": 0.17445803111809488
+    },
+    "decode": {
+     "body_cycles": 9145034551.111113,
+     "lm_head_cycles_same_rate": 920424123.8598703,
+     "lm_head_cycles_path_bound": 920424123.8598703,
+     "tokens_per_s_lm_body_rate": 0.009934967022284087,
+     "tokens_per_s": 0.009934967022284087
+    }
+   },
+   "run-2, kernel as compiled, legacy engine (no DP)|t_opt": {
+    "128": {
+     "gemm_cycles": 10936866133.333334,
+     "other_cycles": 36790272.0,
+     "att": 11272192.0,
+     "exp": 352256.0,
+     "silu": 25165824.0,
+     "cycles": 10973656405.333334,
+     "tokens_per_s": 1.166429814020698
+    },
+    "512": {
+     "gemm_cycles": 43747464533.333336,
+     "other_cycles": 285573120.0,
+     "att": 179306496.0,
+     "exp": 5603328.0,
+     "silu": 100663296.0,
+     "cycles": 44033037653.333336,
+     "tokens_per_s": 1.1627632961207734
+    },
+    "2048": {
+     "gemm_cycles": 174989858133.33334,
+     "other_cycles": 3356884992.0,
+     "att": 2864709632.0,
+     "exp": 89522176.0,
+     "silu": 402653184.0,
+     "cycles": 178346743125.33334,
+     "tokens_per_s": 1.148324866555464
+    },
+    "decode": {
+     "body_cycles": 1367108266.6666667,
+     "lm_head_cycles_same_rate": 487534933.3333334,
+     "lm_head_cycles_path_bound": 14613774.712643677,
+     "tokens_per_s_lm_body_rate": 0.05391872679337999,
+     "tokens_per_s": 0.07237345645885082
+    }
+   },
+   "run-2, kernel as compiled, legacy engine (no DP)|t_pess": {
+    "128": {
+     "gemm_cycles": 17840998988.50575,
+     "other_cycles": 36790272.0,
+     "att": 11272192.0,
+     "exp": 352256.0,
+     "silu": 25165824.0,
+     "cycles": 17877789260.50575,
+     "tokens_per_s": 0.7159721939600656
+    },
+    "512": {
+     "gemm_cycles": 71363995954.023,
+     "other_cycles": 285573120.0,
+     "att": 179306496.0,
+     "exp": 5603328.0,
+     "silu": 100663296.0,
+     "cycles": 71649569074.023,
+     "tokens_per_s": 0.7145890849267212
+    },
+    "2048": {
+     "gemm_cycles": 285455983816.092,
+     "other_cycles": 3356884992.0,
+     "att": 2864709632.0,
+     "exp": 89522176.0,
+     "silu": 402653184.0,
+     "cycles": 288812868808.092,
+     "tokens_per_s": 0.7091096766054557
+    },
+    "decode": {
+     "body_cycles": 2230124873.5632186,
+     "lm_head_cycles_same_rate": 795301885.0574714,
+     "lm_head_cycles_path_bound": 14613774.712643677,
+     "tokens_per_s_lm_body_rate": 0.033053188187437924,
+     "tokens_per_s": 0.044548615972201465
+    }
+   },
+   "run-2, kernel as compiled, DP4 engine|t_opt": {
+    "128": {
+     "gemm_cycles": 6494344533.333333,
+     "other_cycles": 36790272.0,
+     "att": 11272192.0,
+     "exp": 352256.0,
+     "silu": 25165824.0,
+     "cycles": 6531134805.333333,
+     "tokens_per_s": 1.959843179097682
+    },
+    "512": {
+     "gemm_cycles": 25977378133.333332,
+     "other_cycles": 285573120.0,
+     "att": 179306496.0,
+     "exp": 5603328.0,
+     "silu": 100663296.0,
+     "cycles": 26262951253.333332,
+     "tokens_per_s": 1.9495143369883696
+    },
+    "2048": {
+     "gemm_cycles": 103909512533.33333,
+     "other_cycles": 3356884992.0,
+     "att": 2864709632.0,
+     "exp": 89522176.0,
+     "silu": 402653184.0,
+     "cycles": 107266397525.33333,
+     "tokens_per_s": 1.9092652007039945
+    },
+    "decode": {
+     "body_cycles": 811793066.6666666,
+     "lm_head_cycles_same_rate": 289499733.3333333,
+     "lm_head_cycles_path_bound": 14613774.712643677,
+     "tokens_per_s_lm_body_rate": 0.09080237335611384,
+     "tokens_per_s": 0.12100577462923165
+    }
+   },
+   "run-2, kernel as compiled, DP4 engine|t_pess": {
+    "128": {
+     "gemm_cycles": 10283605921.83908,
+     "other_cycles": 36790272.0,
+     "att": 11272192.0,
+     "exp": 352256.0,
+     "silu": 25165824.0,
+     "cycles": 10320396193.83908,
+     "tokens_per_s": 1.2402624627571137
+    },
+    "512": {
+     "gemm_cycles": 41134423687.35632,
+     "other_cycles": 285573120.0,
+     "att": 179306496.0,
+     "exp": 5603328.0,
+     "silu": 100663296.0,
+     "cycles": 41419996807.35632,
+     "tokens_per_s": 1.236117912759151
+    },
+    "2048": {
+     "gemm_cycles": 164537694749.4253,
+     "other_cycles": 3356884992.0,
+     "att": 2864709632.0,
+     "exp": 89522176.0,
+     "silu": 402653184.0,
+     "cycles": 167894579741.4253,
+     "tokens_per_s": 1.2198130536162204
+    },
+    "decode": {
+     "body_cycles": 1285450740.229885,
+     "lm_head_cycles_same_rate": 458414418.39080465,
+     "lm_head_cycles_path_bound": 14613774.712643677,
+     "tokens_per_s_lm_body_rate": 0.05734388321577283,
+     "tokens_per_s": 0.07691925966029513
+    }
+   },
+   "run-2, DP4, issue cut by software (tile loads, quant hoisted)|t_opt": {
+    "128": {
+     "gemm_cycles": 3379473066.6666665,
+     "other_cycles": 36790272.0,
+     "att": 11272192.0,
+     "exp": 352256.0,
+     "silu": 25165824.0,
+     "cycles": 3416263338.6666665,
+     "tokens_per_s": 3.7467837608197128
+    },
+    "512": {
+     "gemm_cycles": 13517892266.666666,
+     "other_cycles": 285573120.0,
+     "att": 179306496.0,
+     "exp": 5603328.0,
+     "silu": 100663296.0,
+     "cycles": 13803465386.666666,
+     "tokens_per_s": 3.7092134884806662
+    },
+    "2048": {
+     "gemm_cycles": 54071569066.666664,
+     "other_cycles": 3356884992.0,
+     "att": 2864709632.0,
+     "exp": 89522176.0,
+     "silu": 402653184.0,
+     "cycles": 57428454058.666664,
+     "tokens_per_s": 3.5661764426182243
+    },
+    "decode": {
+     "body_cycles": 422434133.3333333,
+     "lm_head_cycles_same_rate": 150647466.66666666,
+     "lm_head_cycles_path_bound": 14613774.712643677,
+     "tokens_per_s_lm_body_rate": 0.17449522022692754,
+     "tokens_per_s": 0.228807867876764
+    }
+   },
+   "run-2, DP4, issue cut by software (tile loads, quant hoisted)|t_pess": {
+    "128": {
+     "gemm_cycles": 5246170924.137931,
+     "other_cycles": 36790272.0,
+     "att": 11272192.0,
+     "exp": 352256.0,
+     "silu": 25165824.0,
+     "cycles": 5282961196.137931,
+     "tokens_per_s": 2.4228835921333935
+    },
+    "512": {
+     "gemm_cycles": 20984683696.551723,
+     "other_cycles": 285573120.0,
+     "att": 179306496.0,
+     "exp": 5603328.0,
+     "silu": 100663296.0,
+     "cycles": 21270256816.551723,
+     "tokens_per_s": 2.4071171515032233
+    },
+    "2048": {
+     "gemm_cycles": 83938734786.2069,
+     "other_cycles": 3356884992.0,
+     "att": 2864709632.0,
+     "exp": 89522176.0,
+     "silu": 402653184.0,
+     "cycles": 87295619778.2069,
+     "tokens_per_s": 2.3460512740540476
+    },
+    "decode": {
+     "body_cycles": 655771365.5172414,
+     "lm_head_cycles_same_rate": 233859641.37931034,
+     "lm_head_cycles_path_bound": 14613774.712643677,
+     "tokens_per_s_lm_body_rate": 0.11240615404002911,
+     "tokens_per_s": 0.14916798419145824
+    }
+   }
+  }
+ },
+ "board_check": {
+  "iters_vl": 86016,
+  "t_iter_from_board_decode_upper": 141793.79670061384,
+  "t_iter_from_board_prefill11_upper": 147815.10668945312,
+  "decode_from_tlm_iter": 3614978363.7333336,
+  "rest_cycles": 450533375.2666664,
+  "lm_bytes": 622329856
+ }
+}

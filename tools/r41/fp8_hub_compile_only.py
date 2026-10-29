@@ -15,6 +15,7 @@ compiled programs (TNCA_KERNEL_DUMP, under --dump) and nothing else. Results
 are not computed, so nothing here is a numeric or performance claim.
 """
 import argparse
+import atexit
 import json
 import os
 import sys
@@ -88,7 +89,15 @@ def main():
     tdev.MEMORY.session = lambda index=0: stub
     tdev.register()
     k = kernels.get_kernel('kernels-community/finegrained-fp8', version=4)
-    out = dict(profile=os.environ['TNCA_PROFILE'], cases=[])
+    out = dict(profile=os.environ['TNCA_PROFILE'], status='incomplete', cases=[])
+
+    def save_progress():
+        # Preserve the launches captured before a later compile raises; a
+        # partial census must remain distinguishable from a completed one.
+        (a.dump/'manifests.json').write_text(json.dumps(manifests, indent=1, default=str))
+        (a.dump/'compile_only.json').write_text(json.dumps(out, indent=1, default=str))
+
+    atexit.register(save_progress)
     for M, N, K in shapes:
         torch.manual_seed(M * 7919 + N * 31 + K)
         A = torch.randn(M, K, dtype=torch.bfloat16)
@@ -102,6 +111,7 @@ def main():
             k.matmul_2d(A.to('tnca'), W.to('tnca'), torch.tensor(0.0117).to('tnca'), None, torch.bfloat16)
         out['cases'].append(dict(shape=[M, N, K], launches=[dict(kernel=e['kernel'], grid=list(e['grid']),
                                                                   skipped=e.get('skipped')) for e in log]))
+        save_progress()
         print(f'compiled {M}x{N}x{K}: {len(log)} launches', flush=True)
     if a.extras:
         import torch.nn.functional as F
@@ -118,6 +128,7 @@ def main():
                               fullgraph=True)(x.to('tnca'))
             out['cases'].append(dict(shape=[M, D], kind='rmsnorm+softmax',
                                      launches=[dict(kernel=e['kernel'], grid=list(e['grid'])) for e in log]))
+            save_progress()
             print(f'compiled rmsnorm/softmax {M}x{D}: {len(log)} launches', flush=True)
         for Mq, Mk, H, Dh in ((1, 128, 8, 64), (16, 128, 8, 64), (128, 128, 8, 64)):
             q = torch.randn(1, H, Mq, Dh, dtype=torch.bfloat16)
@@ -127,9 +138,10 @@ def main():
                               backend='inductor', fullgraph=True)(q.to('tnca'), kv.to('tnca'), kv.to('tnca'))
             out['cases'].append(dict(shape=[Mq, Mk, H, Dh], kind='sdpa',
                                      launches=[dict(kernel=e['kernel'], grid=list(e['grid'])) for e in log]))
+            save_progress()
             print(f'compiled sdpa q{Mq} kv{Mk}: {len(log)} launches', flush=True)
-    (a.dump/'manifests.json').write_text(json.dumps(manifests, indent=1, default=str))
-    (a.dump/'compile_only.json').write_text(json.dumps(out, indent=1, default=str))
+    out['status'] = 'complete'
+    save_progress()
 
 
 if __name__ == '__main__':

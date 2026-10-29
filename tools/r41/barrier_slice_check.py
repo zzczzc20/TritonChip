@@ -50,6 +50,9 @@ def main():
     a = ap.parse_args()
     rows = []
     for mf in a.manifests:
+        progress = mf.parent / 'compile_only.json'
+        if progress.exists() and json.loads(progress.read_text()).get('status') == 'incomplete':
+            raise SystemExit(f'{mf}: compile-only census is incomplete; refusing a slice verdict')
         for path, e in json.loads(mf.read_text()).items():
             lim, width, rpp = allowance(a.bar_n, e['execution'].get('program_to_role', {'0': ['role0']}))
             rows.append(dict(source=str(mf.parent.name), kernel=e.get('kernel'), width=width, rpp=rpp,

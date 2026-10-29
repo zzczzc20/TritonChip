@@ -1766,7 +1766,10 @@ module tnca_core #(
     tnca_lsu_hybrid #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
-        .NUM_BEATS(LSU_BEATS), .BEAT_W(MTAG_W)
+        .NUM_BEATS(LSU_BEATS), .BEAT_W(MTAG_W),
+        // R41 G4: LSU_INFLIGHT 1 builds one word-path unit (every hybrid
+        // build so far uses 2, the multicore default)
+        .SLOW_UNITS(LSU_INFLIGHT >= 2 ? 2 : 1)
     ) u_lsu (
         .req_ready_load(hybrid_ready_load),
         .clk(clk), .rst_n(rst_n),

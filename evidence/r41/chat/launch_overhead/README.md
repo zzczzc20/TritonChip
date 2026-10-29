@@ -109,3 +109,19 @@ is `report.json`, whose identity records the software-tree hash and run configur
 `~/r41-k8launch-runs/vl-session` and `~/r41-k8launch-runs/q35-session` on GB10.
 
 `raw/launch-overhead.tgz` contains the raw logs/reports. No credentials or helper-script contents are included.
+
+## Qwen3.5 matched session comparison started — 2026-10-29 UTC
+
+GB10 user services `r41-q35-batched-matched-20261029` and
+`r41-q35-single-matched-20261029` were started with explicit batched and single
+submission policies respectively, four Qwen3.5 layers, four requested tokens,
+bucket 64, first prompt `Say hi.` and intervening prompt `What is two plus two?`.
+Both use `core-vrf-sync-v5-x8`, the same TLM binary and extended 40-billion-cycle
+non-default deadline as the VL comparison, offline model lookup, and 16 GiB
+memory limits. Their cgroups were restricted shortly after launch to CPUs 6-9
+and 14-17, respectively. They share the host; wall time is contention-sensitive.
+The outputs are `~/r41-k8launch-runs/q35-{batched,single}-matched-20261029`;
+service journals retain exact invocations. These are reduced-depth TLM
+functional diagnostics, not full-model quality or board performance evidence.
+The source directory is `~/r41-k8launch`; no runtime source hash has yet been
+verified. Both services were observed active after launch; results are pending.

@@ -49,7 +49,8 @@ BENCH = dict(SETS='SETS', SET_W='SET_W', WAYS='WAYS', WAY_W='WAY_W',
                                'BAR_N', 'BAR_W', 'BAR_EPOCH_W', 'PHYS_ADDR_W')},
              # R41 G4 one-lane path (tnca_multicore_board_regs forwards them)
              **{k: k for k in ('HYBRID_LSU', 'HOME_BACKGROUND_READS', 'HOME_LINE_WRITE_NOFILL', 'HOME_LINE_PIPE',
-                               'HOME_MSHR_N', 'LINE_SLOTS', 'AXI_OUT_N', 'AXI_PIPELINED_ISSUE', 'TENSOR_LINE')})
+                               'HOME_MSHR_N', 'LINE_SLOTS', 'AXI_OUT_N', 'AXI_PIPELINED_ISSUE', 'TENSOR_LINE',
+                               'AXI_DATA_W')})
 # Parameters the bench derives from others; the image must hold the derived value.
 DERIVED = dict(AXI_ID_W=lambda image: max(1, (image.get('AXI_OUT_N', 8) - 1).bit_length()))
 # Parameters the link's own constructor sets.

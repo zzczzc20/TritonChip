@@ -786,16 +786,40 @@ A 512-bit outlet is smaller than a 256-bit one. Its cost is the platform's 512�
 
 | Image | what it adds | kernel LUTs | tile LUTs | tile CLBs (% of SLR0) | WNS |
 |---|---|---:|---:|---:|---:|
-SCREEN_ROWS
+| s4 (2 contexts, `64e3c71`) | one-lane path | 1,131,744 | 246,873 | 41,415 (75.4 %) | +0.423 |
+| s5 (`247f43d`) | s4c4 + line engine | 1,156,041 | 254,451 | 42,509 (77.4 %) | +0.574 |
+| G4 run-2 path (`af2471b0`) | s5 + chained fills, 512-bit outlets, 64 slots/MSHRs/outlet IDs, striped | 1,360,104 (idle slice counted) | 260,280 | 42,527 (77.4 %) | +0.455 |
+| merged (`35513d2d`) | + FMA_IMPL 1, MAC_DP 1, MTX_VRF_REG 1 (G2, K8) | 841,757 | 258,978 | 44,035 (80.1 %) | +0.705 |
+| merged, tile 1 in SLR1 | | | 257,020 | 43,050 | +0.664 |
+| t1 (`ce4a6f82`) | merged, 32 outlet IDs, LSU_INFLIGHT 1 | 806,366 | 249,418 | 42,303 (77.0 %) | +0.386 |
+| t2 (`ce4a6f82`) | t1 + DCO_LOCAL_REPLICAS 0 (rejected) | 790,060 | 247,679 | 42,398 | +0.198 |
+| x (`691e36b8`) | merged + X8 line buffer | | 263,679 | 44,534 | +0.287 |
+| t1 + x (`691e36b8`) | | | 251,187 | 43,015 | +0.277 |
+| **frozen (`0802ae88`)** | t1 + row-indexed X8 buffer + LSU-first memory mux in line-engine builds | 812,545 | 252,228 | 43,345 (78.9 %) | **+0.600** |
+| frozen, tile 1 in SLR1 | | | 248,099 | 42,369 | **+0.641** |
 
-**Run-2 candidate** (`g4/run2/image.tcl` = `image_s7.tcl` + `HBM_STRIPED 1`):
+**Whole-SLR0 estimate** (RESOURCES §2.2 method): start from run 1's routed SLR0 (53,170 CLBs, 96.74 %), and replace tile 0 (run 1's tile screen: 41,878 CLBs), the three outlets (run 1: 1,952 CLBs each; 512-bit 32 IDs: 997) and the platform's 512→256 width converters (237 CLBs each, out-of-context, ±50 %) by the candidate's. The error bar of about ±2.5 points is the spread between in-context and out-of-context packing and the converter estimate.
+
+| Candidate | SLR0 CLBs | % |
+|---|---:|---:|
+| merged, 64 outlet IDs | 56,050 | 102.0 ± 2.5 |
+| merged, 32 outlet IDs | 53,173 | 96.7 ± 2.5 |
+| t1 | 51,441 | 93.6 ± 2.5 |
+| frozen | 52,483 | 95.5 ± 2.5 |
+
+The memory path's area per tile, kernel synthesis: 32 → 64 slots adds +957 LUTs (tensor engine) and +848 (line LSU); 32 → 64 MSHRs adds +4,367 (home pipe); the X8 line buffer adds about +700 CLBs in the tile screens; LSU_INFLIGHT 1 saves −11.8 k LUTs per tile (−1.7 k CLBs). The idle serial slice, which grew by +60 k LUTs per tile with 64 MSHRs in kernel synthesis, is no longer built with the pipelined home.
+
+**Run-2 candidate** (`g4/run2/image.tcl`; lead's decisions of 2026-10-29). It has:
 - four contexts;
-- the line engine (`TENSOR_LINE 1`);
+- the line engine with the X8 line buffer (`TENSOR_LINE 1`);
 - chained fills (`HOME_LINE_PIPE 2`);
-- 512-bit outlets;
-- 64 lines in flight per core and per home (`LINE_SLOTS`, `HOME_MSHR_N`, `AXI_OUT_N 64`).
+- 64 lines in flight per core and per home (`LINE_SLOTS`, `HOME_MSHR_N 64`);
+- 512-bit outlets with 32 IDs;
+- `LSU_INFLIGHT 1`;
+- `HBM_STRIPED`;
+- G2's `FMA_IMPL 1`, `MAC_DP 1` and `MAC_CUTS 29`, and K8's `MTX_VRF_REG 1`.
 
-G2 adds `FMA_IMPL=1` and the matrix MAC lane to the same file. The new options are default-off in the RTL and stay off until the gate.
+Every new option is default-off in the RTL.
 
 **The transposed X8 tile: a line buffer for the FP8 weight stream.**
 

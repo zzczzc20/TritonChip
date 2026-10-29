@@ -104,9 +104,9 @@
   "expected_board_hours": 1.49,
   "estimate_method": {
    "fit_wall_seconds": {
-    "constant": 18.9826507852601,
-    "per_mib": 0.15364944024896,
-    "per_device_second": 1.03878886486713
+    "constant": 18.9826507853,
+    "per_mib": 0.153649440249,
+    "per_device_second": 1.03878886487
    },
    "device_bytes_per_second": {
     "stream": 157284722.2962955,

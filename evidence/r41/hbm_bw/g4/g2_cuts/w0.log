@@ -1,0 +1,15 @@
+op.sum/membound/fp16-small-contig-r32-c1024 pass [33636] [33641]
+job base op.sum/membound/fp16-small-contig-r32-c1024 rc=0
+op.sum/membound/fp16-small-contig-r32-c1024 pass [54457] [54462]
+job ctx2 op.sum/membound/fp16-small-contig-r32-c1024 rc=0
+op.sum/membound/fp16-small-contig-r32-c1024 pass [33579] [33584]
+job addr35 op.sum/membound/fp16-small-contig-r32-c1024 rc=0
+op.sum/membound/fp16-small-contig-r32-c1024 pass [33728] [33733]
+job bar8e38 op.sum/membound/fp16-small-contig-r32-c1024 rc=0
+op.sum/membound/fp16-small-contig-r32-c1024 pass [33621] [33626]
+job epoch38 op.sum/membound/fp16-small-contig-r32-c1024 rc=0
+op.sum/membound/fp16-small-contig-r32-c1024 pass [33946] [33951]
+job shread2 op.sum/membound/fp16-small-contig-r32-c1024 rc=0
+op.sum/membound/fp16-small-contig-r32-c1024 pass [34146] [34151]
+job lutram op.sum/membound/fp16-small-contig-r32-c1024 rc=0
+done

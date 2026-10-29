@@ -570,6 +570,37 @@ Two cautions for the lead:
 - (b) Most of the gain needs `TNCA_TILED_POINTWISE` 2, which is not the default.
 
 
+## 9. After phase 2 (coordinator's next steps, 2026-10-29)
+
+### 9.1 Which G2 cut causes the slowdown (rtl)
+One cut at a time on the run-1 image, on the five points that were slower under G2 (`g4/g2_cuts/`). **The contexts cut (4 → 2 per core) accounts for all of it.** Its geometric mean is 0.807 against 0.808 for all of G2's cuts together, ranging from sum 0.62× to strided clone 0.94×. The barrier/epoch, address, shared-read and LUTRAM cuts each change these points by at most 1 %. The mechanism is fewer requests in flight per core at unchanged request latency (sum: 4.14 → 2.47 outstanding, IPC 0.497 → 0.307). This is a measured cost of an approved capability cut (discipline §2.4.2), for the author.
+
+### 9.2 Line-wide, multi-command tensor engine: TLM first (model)
+`g4/tte_tlm/README.md`. The engine was modelled with default-off keys:
+- line requests that hold engine line buffers instead of vector registers;
+- overlapped commands;
+- a store's window lease that ends when its registers have been read;
+- a line-wide descriptor snapshot;
+- optional combining of partial lines;
+- full-line writes without a fill.
+
+It was used through a new lowering, `TNCA_TILED_POINTWISE=3` (NON-DEFAULT): tensor-engine tiles streamed through a ring of windows, which falls back to mode 2 for programs it cannot stream. The mode is correct on the existing RTL (9 unit tests).
+
+On medium fp32 points (model, uncalibrated), it is 1.0–1.8× the vector path:
+- with a 2-cycle home: copy 1.00×, add 1.20×, relu 1.67×;
+- with a 1-cycle home: copy 1.27×, add 1.58×, relu 1.76×;
+- with ideal memory: 1.29–1.50×.
+
+The best point reaches 39 B/cycle/core (ideal memory) and 28.6 (1-cycle home). With the default compiler, the line engine and full-line no-fill make no point slower; fp32 element-wise points gain about 1.2× and bmm 1.26×.
+
+It does not reach the one-lane ceiling of 64 B/cycle/core:
+- Inside a program, the engine already runs at about 0.9 lines a cycle on the core's single 64-byte port, which is the ceiling.
+- The average loses about a third to the gap between programs (descriptor build, fence, pipeline fill).
+- The ring holds at most 48 lines per core, against the 50–80 the design asks for.
+- With a 2-cycle home, the home binds copy.
+
+The RTL is not started; the decision to build it waits on this result.
+
 ## Reproduction
 
 ```sh

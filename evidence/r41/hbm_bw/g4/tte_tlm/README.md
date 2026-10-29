@@ -58,12 +58,15 @@ Line buffers in use reached 48 per core (`core_*_dma_line_buffers_peak`). That i
 ## What this says
 - **The line engine helps.** With mode 3, its gain over the vector path is 1.0–1.8× on the fp32 points, and it is never slower, even under the default compiler.
 - **It does not reach the one-lane ceiling of 64 B/cycle/core.** The best point is 39 B/cycle/core with ideal memory and 28.6 with the optimistic home.
+- **A command trace** (`TLM_DEBUG_LINE=1`, copy fp32, `ideal`, core 0; `trace_ideal_copy.txt`):
+  - Inside a pair of programs (the two contexts run in step), commands issue every 8–9 cycles at 8 lines each. That is about 0.9 lines a cycle on the core's 64-byte port, which loads and stores share; this is the one-lane bound (about 58 B/cycle/core while it lasts).
+  - Between pairs there is a gap of about 270 cycles: the next programs' descriptor builds, their fences and snapshots, and the first loads' latency. The gap brings the average down to 39 B/cycle/core.
 - **What binds, with ideal memory:**
-  - command issue: an 8-line tile takes about 11 cycles per command;
-  - the per-program descriptor build and fence;
-  - the ring's 48 window registers.
+  - inside a program, the core's one 64-byte port (the one-lane ceiling itself);
+  - between programs, the descriptor build, fence and pipeline fill (the gap above);
+  - lines in flight are capped by the ring's 48 window registers.
 - **With the 2-cycle home:** the home engine binds copy. copy fp32 gains nothing in `pipe`.
-- **For RTL to be worth building:** the measured RTL home (§8.5) should be closer to `pipe1` than to `pipe`, and the compiled code needs longer tiles or fewer commands per line.
+- **For RTL to be worth building:** the measured RTL home (§8.5) should be closer to `pipe1` than to `pipe`, and the compiled code needs less per-program overhead (longer programs, or descriptors reused across a context's programs).
 
 Raw records:
 - `runs.tgz`: each run's log, `results.json` and per-point model counters, the configurations and the scripts;

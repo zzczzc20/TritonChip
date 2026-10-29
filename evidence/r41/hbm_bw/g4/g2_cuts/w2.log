@@ -1,0 +1,15 @@
+op.clone/membound/fp16-small-strided-r32-c1024 pass [104347] [104352]
+job base op.clone/membound/fp16-small-strided-r32-c1024 rc=0
+op.clone/membound/fp16-small-strided-r32-c1024 pass [110512] [110517]
+job ctx2 op.clone/membound/fp16-small-strided-r32-c1024 rc=0
+op.clone/membound/fp16-small-strided-r32-c1024 pass [104156] [104161]
+job addr35 op.clone/membound/fp16-small-strided-r32-c1024 rc=0
+op.clone/membound/fp16-small-strided-r32-c1024 pass [104597] [104602]
+job bar8e38 op.clone/membound/fp16-small-strided-r32-c1024 rc=0
+op.clone/membound/fp16-small-strided-r32-c1024 pass [104347] [104352]
+job epoch38 op.clone/membound/fp16-small-strided-r32-c1024 rc=0
+op.clone/membound/fp16-small-strided-r32-c1024 pass [104612] [104617]
+job shread2 op.clone/membound/fp16-small-strided-r32-c1024 rc=0
+op.clone/membound/fp16-small-strided-r32-c1024 pass [104367] [104372]
+job lutram op.clone/membound/fp16-small-strided-r32-c1024 rc=0
+done

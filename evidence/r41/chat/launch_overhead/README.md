@@ -75,6 +75,33 @@ The matched single-submission control is `r41-vl-single-deadline-20261029.servic
 deadline and 16 GiB limit, CPUs 14-17, and output `~/r41-k8launch-runs/vl-single-deadline`. Both comparison
 services share the same host, so wall-clock differences require interpretation in light of host contention.
 
+Both services subsequently finished with exit 0. These are **uncalibrated TLM, one-layer VL functional
+diagnostics**, not full-model, board or default-setting performance results: both used the extended device
+deadline, and the control explicitly set `TNCA_SUBMIT=single`. The first prompt and `--session-check` prompt
+were both `Say hi.`, so this checks repeated sessions and cache resets but not an intervening different prompt.
+Each report's within-session repeat has bitwise-identical logits and candidate tokens. The four exported first-run
+logit tensors are also byte-identical across the two policies (`logits.safetensors` SHA-256
+`0e12919663c38dcba10b068021fb26a5de4495b5d241d78fd9d2e1b80a640f47` for each).
+
+The TLM model recorded 314 grid launches for the entire three-prompt check in each run. The reports record
+152 code-store evictions across the intervening and repeated prompts in each run; `loaded_modules` is a
+resident count, not a load counter, so actual code-store load counts remain unmeasured. The first prompt's
+reported mean decode wall times were 312.343 s/token for batched and 318.190 s/token for single; these are
+contended host/model wall times, not board speed or a reliable performance claim. The model backend's
+`host_seconds` totals across the entire check were upload 73.988 s and launch 3677.898 s for batched, and
+upload 1.561 s and launch 3715.850 s for single; they are backend counters rather than total host overhead.
+
+Raw GB10 reports: `~/r41-k8launch-runs/vl-batched-deadline/report.json`, SHA-256
+`ef49f56e5da0971c65299c122c4695ddeb7fe5099aa0651b0bdf3362c5d4683f`, and
+`~/r41-k8launch-runs/vl-single-deadline/report.json`, SHA-256
+`08ddaaa67a905179c4f53d1c0fdb7da6186f33c8e5a933d8bcc3aced2744a139`. The full service invocations and
+logs are `run.log` in the same directories, SHA-256 `c8171d8c168e1983ec0a2b243d852766bd38cdb25be149d913ea1acdab455376`
+and `2f04dd5daa8bcced1582e4ee406b76a7ef969edaa0d63d80b9c647148a739669` respectively. Both used
+`~/r41-p3/build-tlm/tnca-chip`, SHA-256 `276a8f1246289f05499da3857e4968e5dea58228a2a8cca8bc58be268118caea`.
+The source directory's product-tree hash, checked after completion, is
+`files:c8b4b3289c4eb8c894ebff4f43b4ccd6b633f199d019729a63f914f44686bdc6`; the report did not record a
+run-time tree hash, so this later check alone cannot prove the entire source tree was unchanged during the runs.
+
 ## Reproduction and archive
 
 Runtime tests were run after `source ~/tc_env/env.sh` with `~/tc_env/torchenv/bin/python`. The default audit candidate

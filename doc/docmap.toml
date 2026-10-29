@@ -414,7 +414,7 @@ sources = ["archbench/membound.py", "archbench/suite.py", "archbench/suites/r41_
 [[doc]]
 path = "evidence/r41/hbm_bw/G4_DESIGN.md"
 depends_on = ["evidence/r41/hbm_bw/BANDWIDTH_PLAN.md", "evidence/r41/hbm_bw/LINK_BUDGET.md", "evidence/r41/hbm_bw/RESOURCES.md", "evidence/r41/hbm_bw/AUDIT.md", "doc/engineering_discipline.md"]
-sources = ["tools/r41/g4_issue_bound.py", "tools/r41/g4_model_suite.py", "tools/r41/g4_report.py", "tools/r41/g4_rtl_report.py", "tools/r41/g4_g2_cuts_report.py", "tools/r41/g4_home_tests.py", "tools/r41/g4_home_pipe_tests.py", "tools/r41/g4_home_calibrate.py", "tools/r41/tensor_line_tests.py", "tb/core/tb_tensor_line.v", "rtl/core/tnca_tensor.v", "compiler/python/tnca_cc/pointwise_tiles.py", "rtl/nuca/tnca_home_pipe.v", "tools/r40/image_geometry_tests.py", "tb/fpga/tnca_multicore_shared_hbm.vh", "evidence/r41/hbm_bw/g4/", "tools/performance_harness/systemc/configs/r41-hbm8-device-service.cfg", "tools/performance_harness/systemc/run_graphs.py"]
+sources = ["tools/r41/g4_issue_bound.py", "tools/r41/g4_model_suite.py", "tools/r41/g4_report.py", "tools/r41/g4_rtl_report.py", "tools/r41/g4_g2_cuts_report.py", "tools/r41/g4_home_tests.py", "tools/r41/g4_home_pipe_tests.py", "tools/r41/g4_home_calibrate.py", "tools/r41/tensor_line_tests.py", "tools/r41/run2_postlink/", "tb/core/tb_tensor_line.v", "rtl/core/tnca_tensor.v", "compiler/python/tnca_cc/pointwise_tiles.py", "rtl/nuca/tnca_home_pipe.v", "tools/r40/image_geometry_tests.py", "tb/fpga/tnca_multicore_shared_hbm.vh", "evidence/r41/hbm_bw/g4/", "tools/performance_harness/systemc/configs/r41-hbm8-device-service.cfg", "tools/performance_harness/systemc/run_graphs.py"]
 
 [[doc]]
 path = "evidence/r41/hbm_bw/STATUS.md"

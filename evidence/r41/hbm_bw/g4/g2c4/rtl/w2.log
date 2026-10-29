@@ -1,0 +1,5 @@
+op.clone/membound/fp16-small-strided-r32-c1024 pass [105789] [105794]
+job g2c4 op.clone/membound/fp16-small-strided-r32-c1024 rc=0
+op.add/membound/fp16-small-strided-r32-c1024 pass [163177] [163182]
+job s4c4 op.add/membound/fp16-small-strided-r32-c1024 rc=0
+done

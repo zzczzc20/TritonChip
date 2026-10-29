@@ -601,6 +601,99 @@ It does not reach the one-lane ceiling of 64 B/cycle/core:
 
 The RTL is not started; the decision to build it waits on this result.
 
+### 9.3 Author decisions of 2026-10-29
+Author decisions (source: the author, in the lead's chat, 2026-10-29, answering the lead's questions about the G4 §9 results):
+1. **Restore 4 hardware contexts.** The 4→2 cut is withdrawn because of its measured slowdown. Keep every other G2 cut.
+2. **Cut the per-program gap first, then the TTE RTL**, in order:
+   - (a) reduce the inter-program cost generically;
+   - (b) calibrate the TLM home against the RTL home;
+   - (c) build the engine RTL, default-off.
+
+**Decision 1 is done** (`g4/g2c4/`, RESOURCES.md §9):
+- The profile is `core-vrf-sync-v5-x8-g2c4`: v5-x8 with 8 barriers and 38-bit epochs, and four contexts with 256 physical vector registers.
+- `make core-g2c4` passes 86 of 86 runs. `t39_pair` runs as one pair: two pairs need 10 barriers, and a barrier index beyond a context's slice aliases instead of faulting, a pre-existing property.
+- The images are `image_g2c4.tcl` and `image_s4c4.tcl`, and the run-2 candidate now has four contexts. Board-top geometry at `image_s4c4.tcl` passes (`g4/g2c4/s4c4_geometry.log`).
+
+On the five points (rtl, default compiler; run-1 cycles divided by the image's cycles, `g4/g2c4/rtl/`):
+
+| Image | strided add | strided clone | exp | silu | sum | geometric mean |
+|---|---:|---:|---:|---:|---:|---:|
+| G2, 2 contexts | 0.91 | 0.95 | 0.80 | 0.81 | 0.62 | 0.808 |
+| G2 cuts, 4 contexts (`g2c4`) | 0.99 | 0.99 | 0.89 | 0.99 | 1.00 | 0.971 |
+| s4, 2 contexts | 0.82 | 0.87 | 0.94 | 0.90 | 0.70 | 0.841 |
+| s4, 4 contexts (`s4c4`) | 0.94 | 1.04 | 1.34 | 1.35 | 1.08 | 1.136 |
+
+Restoring the contexts recovers the slowdown. Two exceptions remain:
+- **exp on `g2c4` (0.89×).** Each kept cut alone left exp at 1.00×.
+  - The same `g2c4` image runs exp at 104,400 cycles (1.00×) when the code is compiled for the 32-barrier target `core-vrf-sync-v5-x8` (`g4/g2c4/rtl/x_g2c4_profile_x8_exp.jsonl`). The loss therefore comes from what the compiler does for the 8-barrier target with four contexts, not from the hardware.
+  - The compiled code of the two runs has not been compared yet.
+- **Strided add on `s4c4` (0.94×).** Codex owns the strided points.
+
+### 9.4 (a) The per-program cost
+- **Longer programs, and the compile failure that blocked them.**
+  - The 4096-lane failure ("no run of 1 consecutive scalar registers") was a code-generator allocation gap. A transfer's coordinate run did not take back the registers of tokens and events past their last use, which `_alloc` already did for single registers. A long unrolled program leaves one token and one event per command.
+  - `codegen._scalar_run` now does the same. A kernel that already fit keeps exactly its assignment, because the reuse happens only on the failure path.
+  - Mode 3 now compiles 8192-lane programs (`TILED_STREAM_BLOCK = 8192`, with mode 2's block as the next candidate and the narrow one last).
+- **Effect, model, medium fp32, `ideal` / `pipe1` memory:**
+  - 2048 → 8192 lanes: copy 71,527 → 56,239 cycles (39 → 50 B/cycle/core), add 110,353 → 89,488, relu 116,111 → 101,443 (ideal);
+  - copy 97,713 → 62,688 (pipe1);
+  - in a command trace, the gap between program pairs stays about 263 cycles, but it now recurs every ~2,560 cycles instead of every ~840, about 10 % of the time.
+- **Descriptor reuse across programs of a context.** `rctx_spmd` already builds a launch-invariant TensorMap once per context when a context loops over its programs. Under the physical-chunk dispatch the model and the board use, each dispatch runs one program per context, so the map is rebuilt each time.
+  - Reusing it across dispatches needs a way to know that the context's descriptor slot still holds this launch's map, such as a launch-scoped validity bit in the runtime or the engine. Nothing in the ISA provides that today.
+  - Proposed, not built. Its remaining value is bounded by the 10 % above.
+- **Fence and pipeline refill.** The fence before a snapshot orders the context's scalar stores into the map before the engine reads it; it is part of the same per-program cost. The refill is the ring's first loads.
+  - Both shrink with program length; neither was changed.
+- **Mode 3 no longer takes programs with special-function or division operations.** In the registered-suite model run (below), gelu, sigmoid, silu, exp and div fp32 were 0.36–0.88× mode 2. Mode 2's lane groups overlap the SFU's 22-cycle occupancy with memory; mode 3's ring does not. Such programs now take mode 2's lowering. This is an operation-class rule, not a benchmark rule.
+
+**Registered suite, model** (171 medium points, profile `core-vrf-sync-v5-x8-g2c4`, `cal` / `cal_line` memory, `g4/model_c4/`):
+
+| Arm | pass | max B/cycle/core | geometric mean |
+|---|---:|---:|---:|
+| default compiler | 171/171 | 3.9 | 0.64 |
+| default compiler + line engine | 171/171 | 3.9 | 0.64 (1.001× the default; none slower) |
+| mode 2 | 171/171 | 21.7 | 1.25 |
+| mode 3 + line engine | 171/171 | 33.5 | 1.30 |
+
+- Mode 3 + line engine against mode 2: geometric mean 1.036×, max 2.66× (fp32 add/sub/mul).
+- Ten fp16/bf16 broadcast and cast points are 0.977–0.98×: they take mode 2's lowering at the longer block.
+- Against the default compiler: 2.01×, none slower.
+- The best points reach 33.5 B/cycle/core (fp32 add/sub/mul) and 27.8 (fp32 copy/clone), about 10 GB/s for the chip (model). fp16/bf16 element-wise points stay at mode 2's ≤ 8.9, because the engine path needs 4-byte elements.
+
+**RTL probes on `image_s4c4.tcl`** (64 KiB, rtl, `g4/g2c4/rtl_mode3/`):
+- Mode 2: copy fp32 3,583 cycles (12.3 B/cycle/core), clone 3,581, add 9,506, relu 8,169.
+- Mode 3 on the existing tensor engine: copy 51,627, add 105,797, relu 51,706, clone 51,294, 14× slower. That engine moves 8-byte units and runs one command at a time; mode 3 is for the line engine and must not be used without it.
+
+### 9.5 (b) The home, calibrated against the RTL
+`tools/r41/g4_home_calibrate.py` drives `tnca_home_pipe` (32 MSHRs, no memory stalls) at memory latencies of 10, 40 and 80 cycles. A new copy mode alternates streaming reads and full-line writes (`g4/home_cal/home_cal.json`; rtl, one slice). Cycles per request:
+
+| Traffic | lat 10 | lat 40 | lat 80 |
+|---|---:|---:|---:|
+| hits | 1.02 | 1.03 | 1.05 |
+| streaming read misses | 1.99 | 2.01 | 2.78 |
+| streaming full-line writes, no fill (with victim writebacks) | 1.00 | 1.00 | 1.00 |
+| copy (read + write alternating) | 1.26 | 1.27 | 1.54 |
+
+- A read miss costs the home 2 cycles: the pipe's allocate, plus the fill unit's write of the data array.
+- A full-line install costs 1, and a writeback costs nothing extra (its queue runs beside the pipe).
+- Only at 80 cycles of latency do the 32 MSHRs bind reads.
+
+The calibrated model occupancies, variant `cal`:
+- hit 1, miss 1, fill 1;
+- request 0, wake 0, writeback 0;
+- install 0 (new key `tl_slice_install_occupancy`).
+
+This lies between the 2-cycle (`pipe`) and 1-cycle (`pipe1`) brackets of §9.2: reads as `pipe`, writes as `pipe1`.
+
+**The core side of the model is still uncalibrated.** The model is faster than RTL on the same image and settings:
+
+| Point (s4c4, mode 2) | model `cal` | RTL | model faster by |
+|---|---:|---:|---:|
+| copy fp32 | 2,517 | 3,583 | 1.4× |
+| add fp32 | 6,401 | 9,506 | 1.5× |
+| relu fp32 | 4,718 | 8,169 | 1.7× |
+
+Model gains are therefore upper bounds until the core pipeline is calibrated.
+
 ## Reproduction
 
 ```sh

@@ -67,6 +67,9 @@ EXTENT_UNMASKED = (1 << 31) - 1    # i32 lane indices never reach it
 WINDOW_BUDGET = 48                 # of a context's 64 vector registers
 LSU_GROUP_BUDGET = 56              # registers the in-flight load groups may hold
 STREAM_BUDGET = 48                 # window registers of a mode-3 ring
+_LONG_OPS = {'arith.divf', 'tt.precise_divf', 'tt.precise_sqrt', 'tt.extern_elementwise',
+             'math.exp', 'math.exp2', 'math.log', 'math.log2', 'math.sqrt', 'math.rsqrt',
+             'math.sin', 'math.cos', 'math.erf', 'math.log1p', 'math.tanh'}
 
 
 def _shape(value):
@@ -360,6 +363,12 @@ def _plan(imp, ops, module_text, func_name):
     if mode == 3:
         if nl + ns != len(loads) + len(stores):
             return _no(imp, 31)          # mode 3 needs every load and store on the tensor engine
+        # An operation on the special-function unit or a division keeps the core
+        # busy for many cycles per tile; mode 2's lane groups overlap that with
+        # memory, mode 3's tile ring does not (model, g4/model_c4/), so such a
+        # program takes mode 2's lowering.
+        if any(o.get_name() in _LONG_OPS for o in tensor_ops):
+            return _no(imp, 33)
         best = None
         for t in (16, 8, 4, 2, 1):
             nt = width // (t * vlen)

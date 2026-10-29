@@ -812,7 +812,7 @@ The author's idea (source: the author, in the lead's chat, 2026-10-29), relayed 
 - **Home side, common to (a) and (b).** A prefetch request enters the arbiter only when no demand is eligible. It is dropped in S2 on a hit, on a merge, or when fewer than *k* MSHRs are free. Otherwise it allocates an MSHR with no target and claims a clean or written-back victim. The fill unit installs the line clean (no dirty bit, no response) and frees the MSHR. A demand that arrives first merges as an ordinary target. Maintenance drains prefetch MSHRs like any other.
 - **(b) Stream detector per home.** Four entries of {line address, stride = the home interleave}. On a demand read miss that continues an entry, issue up to *k* prefetches at distance *d* ≤ 16 lines per stream. That bounds prefetched lines to 4 × 16 = 64 of the slice's 256 lines.
 - **(a) TTE hints.** The line engine already walks the box's line addresses. A second walker runs up to *d* lines ahead of the issued window and sends prefetch requests (a request bit on the line NoC) at the lowest arbiter priority.
-- **When to revisit:** if the board's measured HBM round trip exceeds the core window, or if the FP8 decode profile shows the vector (non-TTE) load path latency-bound.
+- **When to revisit** (coordinator, 2026-10-29): the decision depends on the board's HBM round trip, which is unmeasured. If the first run-2 board run shows more than about 64 cycles of latency at the cores, prefetch is the next step for run 3. It is also worth revisiting if the FP8 decode profile shows the vector (non-TTE) load path latency-bound.
 
 ## Reproduction
 

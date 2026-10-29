@@ -1,0 +1,19 @@
+PASS seed=1 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=8 xpose=19 lines=473 cycles=66332
+PASS seed=1 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=8 xpose=19 lines=473 cycles=31250
+PASS seed=1 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=8 xpose=19 lines=473 cycles=164456
+PASS seed=2 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=14 lines=482 cycles=71640
+PASS seed=2 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=14 lines=482 cycles=36038
+PASS seed=2 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=14 lines=482 cycles=176208
+PASS seed=3 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=2 xpose=13 lines=477 cycles=72930
+PASS seed=3 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=2 xpose=13 lines=477 cycles=34740
+PASS seed=3 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=2 xpose=13 lines=477 cycles=180908
+PASS seed=4 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=14 lines=733 cycles=79182
+PASS seed=4 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=14 lines=733 cycles=38940
+PASS seed=4 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=14 lines=733 cycles=197066
+PASS seed=5 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=3 xpose=19 lines=520 cycles=59694
+PASS seed=5 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=3 xpose=19 lines=520 cycles=28014
+PASS seed=5 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=3 xpose=19 lines=520 cycles=147630
+PASS seed=6 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=4 xpose=16 lines=333 cycles=67338
+PASS seed=6 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=4 xpose=16 lines=333 cycles=31254
+PASS seed=6 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=4 xpose=16 lines=333 cycles=167722
+TENSOR LINE 18 of 18 configurations pass

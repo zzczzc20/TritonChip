@@ -803,7 +803,10 @@ module tnca_tensor #(
     wire d_rsp = LE && mem_rsp_valid && !mem_rsp_tag[PTAG_W-1] && mem_rsp_tag[PTAG_W-2];
     wire l_fire = l_req && mem_req_ready;
     wire l_rsp  = LE && mem_rsp_valid && mem_rsp_tag[PTAG_W-1];
-    wire [LSLOT_W-1:0] l_rsp_slot = mem_rsp_tag[LSLOT_W-1:0];
+    // (zero-extended: without the line engine PTAG_W may be narrower than LSLOT_W)
+    wire [PTAG_W+LSLOT_W-1:0] l_rsp_tag_z = {{LSLOT_W{1'b0}}, mem_rsp_tag};
+    wire [LSLOT_W-1:0] l_rsp_slot = l_rsp_tag_z[LSLOT_W-1:0];
+    wire [PORT_DW+511:0] l_rsp_data_z = {512'd0, mem_rsp_rdata};   // likewise for PORT_DW
     generate if (LINE_ENGINE != 0) begin : g_line_port
         reg [2:0] lo_off [0:NTAG-1];
         always @(posedge clk)
@@ -837,7 +840,14 @@ module tnca_tensor #(
 
     // Line slot counts per command: +1 per line issued, -1 per line done (a
     // store's acknowledgement, a load's register write).
-    wire lw_fire = LE && lrdy_have && !vw_hold;
+    // The window write port: the word walk's own writes (a finished load
+    // unit, a fill, a transposed row) go first; a line slot's register write
+    // takes any other cycle. So a word-walk command (a transposed X8 tile, a
+    // box with a partial line) runs while line commands are still in flight.
+    wire legacy_vw = (have_done && !t_store && !t_xpose) ||
+                     ((st == S_TRUN) && !ld_nlo && !ld_nhi && !have_done) ||
+                     (st == S_XWRITE);
+    wire lw_fire = LE && lrdy_have && !vw_hold && !legacy_vw;
     wire l_ack   = l_rsp && ls_st[l_rsp_slot];
     // The eligibility of the transfer the walk is about to start (S_TMUL):
     // every row whole 64-byte lines, in the tensor, row starts line-aligned.
@@ -1077,7 +1087,7 @@ module tnca_tensor #(
                 if (d_rsp) begin : dl_line
                     integer q;
                     for (q = 0; q < 8; q = q + 1)
-                        dl_buf[{mem_rsp_tag[1:0], 3'b000} + q] <= mem_rsp_rdata[q*64 +: 64];
+                        dl_buf[{mem_rsp_tag[1:0], 3'b000} + q] <= l_rsp_data_z[q*64 +: 64];
                     dlr <= dlr + 3'd1;
                 end
                 if (l_rsp) begin
@@ -1341,10 +1351,8 @@ module tnca_tensor #(
                         t_line <= 32'd0;
                         t_bar_en <= 1'b0;
                         st <= t_store ? S_LSREAD : S_LRUN;
-                    end else if (le_elig || line_busy) begin
-                        // a line command waits for a record; a word walk
-                        // waits until no line is in flight (one port order,
-                        // one window write port)
+                    end else if (le_elig) begin
+                        // a line command waits for a free record
                         st <= S_TMUL;
                     end else
                         st <= t_store ? S_SRUN : S_TRUN;

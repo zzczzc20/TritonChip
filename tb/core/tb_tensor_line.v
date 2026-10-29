@@ -38,6 +38,8 @@ localparam PMAX = 2048;
 reg [1:0]  p_kind [0:PMAX-1];
 integer    p_a [0:PMAX-1], p_b [0:PMAX-1], p_c [0:PMAX-1], p_wait [0:PMAX-1];
 reg [63:0] p_c0 [0:PMAX-1], p_c1 [0:PMAX-1];
+reg [2:0]  p_esz [0:PMAX-1];
+reg        p_x [0:PMAX-1];      // a transposed load (X8 path: 16-bit and 1-byte elements)
 integer    plen, ncomp;   // entries; completions the whole program signals
 
 // ---- per instance ----
@@ -47,6 +49,7 @@ reg  [7:0] mem [0:1][0:MEMB-1];
 reg  [511:0] vrf [0:1][0:255];
 integer ndone [0:1];
 integer nfault [0:1];
+integer nx;   // transposed loads issued
 integer lines_moved;
 
 genvar g;
@@ -77,17 +80,19 @@ generate for (g = 0; g < 2; g = g + 1) begin : inst
     wire [3:0]  cmd_desc = p_a[pc];
     wire [4:0]  cmd_win = p_b[pc];
     wire [63:0] cmd_c0 = p_c0[pc], cmd_c1 = p_c1[pc];
+    wire [2:0]  cmd_esz = p_esz[pc];
+    wire        cmd_xpose = p_x[pc];
     wire [4:0]  cmd_bar = pc % 32;
     always @(posedge clk) if (pe) pc <= pc + 1;
     tnca_tensor #(.VLEN(16), .ELEN(32), .RCTX_W(1), .BAR_W(5), .MEM_DW(64), .MEM_BYTES(8),
-                  .TAG_W(4), .NTAG(16), .HAS_XPOSE(0), .LINE_ENGINE(LEN), .LSLOT_N(32), .LSLOT_W(5),
+                  .TAG_W(4), .NTAG(16), .HAS_XPOSE(2), .LINE_ENGINE(LEN), .LSLOT_N(32), .LSLOT_W(5),
                   .CMD_N(8), .CMD_W(3), .PTAG_W(PTW), .PORT_DW(PDW), .PORT_BYTES(PBY)) dut (
         .clk(clk), .rst_n(rst_n), .flush(1'b0),
         .cfg_valid(cfg_v), .cfg_op(cfg_op), .cfg_desc(cfg_desc), .cfg_win(cfg_win),
         .cfg_addr(cfg_addr), .cfg_wbase(cfg_wbase), .cfg_wlen(cfg_wlen),
         .cmd_valid(cmd_v), .cmd_store(cmd_store), .cmd_desc(cmd_desc), .cmd_win(cmd_win),
         .cmd_c0(cmd_c0), .cmd_c1(cmd_c1), .cmd_c2(64'd0), .cmd_c3(64'd0), .cmd_c4(64'd0),
-        .cmd_sb(6'd1), .cmd_esz(3'd2), .cmd_xpose(1'b0), .cmd_layout(2'd0),
+        .cmd_sb(6'd1), .cmd_esz(cmd_esz), .cmd_xpose(cmd_xpose), .cmd_layout(2'd0),
         .cmd_bar_en(1'b1), .cmd_bar(cmd_bar), .cmd_rctx(1'b0), .cmd_pc(64'd0), .cmd_active(1'b1),
         .busy(busy[g]), .done(done[g]), .done_bar_en(done_ben[g]), .done_bar(done_bar[g]),
         .fault(fault[g]), .fault_code(fcode), .fault_rctx(frctx), .fault_pc(fpc), .done_err(done_err[g]),
@@ -162,6 +167,7 @@ end endgenerate
 integer seed = SEED, i, j, k2, w, d, t, grp, gsize, nreg, ncyc;
 integer rb [0:15], rs [0:15], re0 [0:15], re1 [0:15], rrank [0:15];   // slot d and d+8: region d
 integer bl0 [0:15], bl1 [0:15];   // each slot's box (rows, row elements)
+integer sesz [0:15], sdt [0:15];  // element size (log2 bytes) and dtype code: fp32, fp16, fp8
 integer bb0, bb1;
 
 task put64(input integer a, input [63:0] v);
@@ -191,21 +197,22 @@ task make_desc(input integer slot);
         for (k2 = 0; k2 < 256; k2 = k2 + 8) put64(a + k2, 64'd0);
         put64(a + 0, rb[slot]);
         if (rrank[slot] == 1) begin
-            put64(a + 8, re1[slot]);  put64(a + 48, 4);
+            put64(a + 8, re1[slot]);  put64(a + 48, 1 << sesz[slot]);
         end else begin
             put64(a + 8, re0[slot]);  put64(a + 16, re1[slot]);
-            put64(a + 48, rs[slot]);  put64(a + 56, 4);
+            put64(a + 48, rs[slot]);  put64(a + 56, 1 << sesz[slot]);
         end
         if (rrank[slot] == 1) put64(a + 88, {32'd0, bl1[slot][31:0]});
         else                  put64(a + 88, {bl1[slot][31:0], bl0[slot][31:0]});
         mem[0][a + 108] = rrank[slot]; mem[1][a + 108] = rrank[slot];
-        mem[0][a + 109] = 8'd2;        mem[1][a + 109] = 8'd2;
+        mem[0][a + 109] = sdt[slot];   mem[1][a + 109] = sdt[slot];
     end
 endtask
 
 task add(input [1:0] kind, input integer a, input integer b, input integer c,
          input [63:0] c0, input [63:0] c1, input integer wt);
     begin
+        p_esz[plen] = (kind >= 2) ? sesz[a] : 3'd2; p_x[plen] = 1'b0;
         p_kind[plen] = kind; p_a[plen] = a; p_b[plen] = b; p_c[plen] = c;
         p_c0[plen] = c0; p_c1[plen] = c1; p_wait[plen] = wt;
         if (kind != 2'd1) ncomp = ncomp + 1;   // a w.def signals nothing
@@ -215,15 +222,24 @@ endtask
 
 // A box for slot d's rank: rank 1 a row of bb1 elements, rank 2 bb0 rows of bb1.
 task pick_box(input integer slot);
+    integer rb_;
     begin
         case ($unsigned($random(seed)) % 6)
-        0: bb1 = 16; 1: bb1 = 32; 2: bb1 = 64; 3: bb1 = 48; 4: bb1 = 8; default: bb1 = 2;
+        0: rb_ = 64; 1: rb_ = 128; 2: rb_ = 256; 3: rb_ = 192; 4: rb_ = 32; default: rb_ = 8;
         endcase
         if (rrank[slot] == 1) begin
             bb0 = 1;
-            if ($unsigned($random(seed)) % 2) bb1 = bb1 * 4;          // up to 256 elements
+            if ($unsigned($random(seed)) % 2) rb_ = rb_ * 4;           // up to 1 KiB
         end else
-            bb0 = 1 + $unsigned($random(seed)) % (256 / bb1 > 8 ? 8 : 256 / bb1);
+            bb0 = 1 + $unsigned($random(seed)) % ((1024 / rb_) > 8 ? 8 : (1024 / rb_));
+        bb1 = rb_ >> sesz[slot];
+        // transposed-capable slots (8..15, 16-bit and 1-byte rank 2): 4, 8 or 16 rows
+        if (slot >= 8 && rrank[slot] == 2 && sesz[slot] <= 1 && rs[slot] % 8 == 0 && rb[slot] % 8 == 0) begin
+            case ($unsigned($random(seed)) % 3) 0: bb0 = 4; 1: bb0 = 8; default: bb0 = 16; endcase
+            if (bb0 * rb_ > 1024) rb_ = 1024 / bb0;
+            bb1 = rb_ >> sesz[slot];
+        end
+        if (bb1 > 256) bb1 = 256;          // a block dimension is at most 256 elements
     end
 endtask
 
@@ -243,7 +259,7 @@ function [63:0] coord(input integer ext, input integer box);
 endfunction
 
 initial begin
-    plen = 0; ncomp = 0; lines_moved = 0;
+    plen = 0; ncomp = 0; lines_moved = 0; nx = 0;
     ndone[0] = 0; ndone[1] = 0; nfault[0] = 0; nfault[1] = 0;
     for (i = 0; i < MEMB; i = i + 1) begin
         mem[0][i] = $random(seed); mem[1][i] = mem[0][i];
@@ -254,21 +270,26 @@ initial begin
     // Eight regions of 4 KiB from 0x8000; slot d describes region d. Some
     // bases and row strides are line multiples, some are not.
     for (d = 0; d < 16; d = d + 1) begin
+        // element sizes 4, 2, 1 bytes; the aligned rank-2 slots 9 and 15 are
+        // 16-bit and 1-byte so transposed loads through them are legal
+        sesz[d] = (d == 9) ? 1 : (d == 15) ? 0 : (d % 3 == 0) ? 2 : (d % 3 == 1) ? 1 : 0;
+        sdt[d]  = (sesz[d] == 2) ? 2 : (sesz[d] == 1) ? 0 : 7;
         if (d < 8) begin
             rrank[d] = (d % 2) ? 2 : 1;
-            rb[d] = 32'h8000 + d * 4096 + ((d % 4 == 3) ? 4 * (1 + $unsigned($random(seed)) % 15) : 0);
+            rb[d] = 32'h8000 + d * 4096 + ((d == 3) ? 4 * (1 + $unsigned($random(seed)) % 15) : 0);
             if (rrank[d] == 1) begin
-                re1[d] = 512 + $unsigned($random(seed)) % 400; re0[d] = 1; rs[d] = 0;
+                re1[d] = (2048 + $unsigned($random(seed)) % 1600) >> sesz[d]; re0[d] = 1; rs[d] = 0;
             end else begin
                 rs[d] = (d == 5) ? 196 : 256;              // slot 5: a stride that is not a line multiple
-                re1[d] = (rs[d] / 4) - ($unsigned($random(seed)) % 2) * 3;
+                re1[d] = (rs[d] >> sesz[d]) - ($unsigned($random(seed)) % 2) * 3;
                 re0[d] = 3000 / rs[d];
             end
         end else begin
-            rrank[d] = rrank[d-8]; rb[d] = rb[d-8]; rs[d] = rs[d-8]; re0[d] = re0[d-8]; re1[d] = re1[d-8];
+            rrank[d] = rrank[d-8]; rb[d] = rb[d-8]; rs[d] = rs[d-8]; re0[d] = re0[d-8];
+            // the same region seen with this slot's element size
+            re1[d] = (rrank[d] == 1) ? ((re1[d-8] << sesz[d-8]) >> sesz[d]) : ((rs[d] >> sesz[d]) - 1);
         end
         pick_box(d);
-        if (bb0 * bb1 > 256) bb0 = 256 / bb1;
         bl0[d] = bb0; bl1[d] = bb1;
         make_desc(d);
         add(0, d, 0, 0, 0, 0, ncomp);
@@ -287,6 +308,15 @@ initial begin
             add((grp % 2 == 0) ? 2'd2 : 2'd3, d, w, 0,
                 (rrank[d] == 1) ? coord(re1[d], bl1[d]) : coord(re0[d], bl0[d]),
                 (rrank[d] == 1) ? 64'd0 : coord(re1[d], bl1[d]), j);
+            // some loads through a 16-bit or 1-byte rank-2 slot are transposed (X8)
+            // (slots 11 and 13 are not transposable: their faults must match too)
+            if (grp % 2 == 0 && d >= 8 && rrank[d] == 2 && sesz[d] <= 1 &&
+                $unsigned($random(seed)) % ((d == 9 || d == 15) ? 2 : 6) == 0)
+            begin
+                p_x[plen-1] = 1'b1; nx = nx + 1;
+                // whole 8-byte source units: column offset 8-byte aligned
+                p_c1[plen-1] = p_c1[plen-1] & ~((64'd8 >> sesz[d]) - 64'd1);
+            end
             t = t + 1;
         end
         // the next group starts after all of this one
@@ -307,8 +337,8 @@ initial begin
     for (i = 0; i < 256; i = i + 1)
         if (vrf[0][i] !== vrf[1][i]) $fatal(1, "register %0d differs:\n%h\n%h", i, vrf[0][i], vrf[1][i]);
     if (lines_moved == 0) $fatal(1, "the line engine moved no lines");
-    $display("TENSOR LINE MITER PASS seed=%0d commands=%0d completions=%0d faults=%0d lines=%0d cycles=%0d",
-             SEED, t, ncomp, nfault[0], lines_moved, ncyc);
+    $display("TENSOR LINE MITER PASS seed=%0d commands=%0d completions=%0d faults=%0d xpose=%0d lines=%0d cycles=%0d",
+             SEED, t, ncomp, nfault[0], nx, lines_moved, ncyc);
     $finish;
 end
 endmodule

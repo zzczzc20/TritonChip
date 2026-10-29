@@ -160,5 +160,9 @@
     "BAR_EPOCH_W": 38,
     "MAC_DP": 1,
     "MAC_CUTS": 29
+  },
+  "compiler": {
+    "snapshot_fence": true,
+    "why": "The run-2 images of this profile build the line-wide transfer engine (TENSOR_LINE): its TensorMap snapshot is one line request beside the LSU, so the context's map stores must be fenced before td.load (R41 G4, evidence/r41/hbm_bw/G4_DESIGN.md sec 9.6)."
   }
 }

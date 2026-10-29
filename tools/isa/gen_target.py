@@ -278,6 +278,9 @@ def main():
         t['num_cores'] = spec['num_cores']
         t['topology'] = spec['topology']
         t['elaboration'] = spec['elaboration']
+        # R41 G4: compiler conventions a profile's images need (absent: none)
+        if 'compiler' in spec:
+            t['compiler'] = spec['compiler']
         # The bench is deliberately NOT copied here. Phase 3.6 section
         # 3.1: a compile target describes the ISA, the ABI, the
         # capabilities and the resources, and may not be equated with a

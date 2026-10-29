@@ -1167,7 +1167,9 @@ def _emit(kernel, target, prov, opt_level, options, stages):
     """
     options = options or {}
     from tnca_cc import rctx_spmd as _rs
-    published = _rs.publish_scratch_maps(kernel)
+    # R41 G4: only for targets whose images have the line-wide transfer
+    # engine (target.snapshot_fence); every other target compiles as before.
+    published = _rs.publish_scratch_maps(kernel) if getattr(target, 'snapshot_fence', False) else 0
     if published:
         prov.record('published_maps', published)
     reuse = options.get('window_reuse')

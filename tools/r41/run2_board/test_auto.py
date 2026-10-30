@@ -239,5 +239,24 @@ class WatchTests(unittest.TestCase):
                 proc.wait(timeout=5)
 
 
+class Run2QualificationTests(unittest.TestCase):
+    def test_exception_cannot_be_misrepresented_as_full_design_closure(self):
+        import json
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parents[3]/'python'))
+        from tnca.operating_clock import qualified_clock
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'qualified.json'
+            path.write_text(json.dumps({'schema': 'tnca-qualified-operating-clock/1',
+                'image_sha256': auto.IMAGE_SHA, 'qualification': 'r41-run2-100mhz-hbm441',
+                'clock_hz': 100_000_000, 'setup_scope': 'full-design',
+                'original_design_setup_wns_ns': -0.045, 'hbm_metadata_mhz': 441,
+                'setup_wns_ns': 0.038}))
+            with self.assertRaisesRegex(ValueError, 'kernel-only'):
+                qualified_clock(path, auto.IMAGE_SHA)
+            with self.assertRaisesRegex(ValueError, 'another image'):
+                qualified_clock(path, '0'*64)
+
+
 if __name__ == '__main__':
     unittest.main()

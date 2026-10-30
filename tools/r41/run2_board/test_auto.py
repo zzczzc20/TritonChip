@@ -304,6 +304,8 @@ class CandidateQueueTests(unittest.TestCase):
             state['boot_id'] = 'other-boot'
             path.write_text(json.dumps(state))
             self.assertIsNone(mod.monitored_idle(path, 1001, 15, proc))
+            state['boot_id'] = 'boot-a'
+            path.write_text(json.dumps(state))
             (proc/'123/cmdline').unlink()
             self.assertIsNone(mod.monitored_idle(path, 1001, 15, proc))
 

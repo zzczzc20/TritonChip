@@ -468,7 +468,7 @@ def count_cases(report):
                             if isinstance(c, dict) and c.get('status') != 'pass'][:20])
 
 
-def fp8_summary(out, groups, dumps, require_x8, image_label='run-1'):
+def fp8_summary(out, groups, dumps, require_x8, image_label='run-1', require_dp=False):
     rows, problems = {}, []
     for spec in groups:
         name, path = spec.split('=', 1)
@@ -480,16 +480,23 @@ def fp8_summary(out, groups, dumps, require_x8, image_label='run-1'):
         rows[name] = dict(report=str(p), sha256=file_sha(p), status=rep.get('status'), **count_cases(rep))
         if not rows[name]['cases'] or rows[name]['passed'] != rows[name]['cases']:
             problems.append(f"{name}: {rows[name]['passed']}/{rows[name]['cases']} pass")
-    x8 = {}
+    x8, dp = {}, {}
     for d in dumps:
         for s in sorted(Path(d).rglob('*.s')) if Path(d).is_dir() else []:
-            n = len(re.findall(r'\b' + re.escape(X8_LOAD) + r'\b', s.read_text()))
+            assembly = s.read_text()
+            n = len(re.findall(r'\b' + re.escape(X8_LOAD) + r'\b', assembly))
             if n:
                 x8[str(s.relative_to(d))] = n
+            n = len(re.findall(r'\b' + re.escape('m.mma.dp.async') + r'\b', assembly))
+            if n:
+                dp[str(s.relative_to(d))] = n
     if require_x8 and not x8:
         problems.append(f'no {X8_LOAD} in any dumped kernel: X8 not exercised')
+    if require_dp and not dp:
+        problems.append('no m.mma.dp.async in any dumped kernel: DP not exercised')
     record = dict(schema='tnca-r41s2-fp8-summary/1', groups=rows, x8_transposed_loads=x8,
                   x8_kernels=len(x8), x8_instructions=sum(x8.values()),
+                  dp_kernels=len(dp), dp_instructions=sum(dp.values()),
                   result='pass' if not problems else 'fail', residual=problems or 'none',
                   conclusion=(f'every FP8 case passed on the {image_label} image' + (
                       f'; X8 transposed load in {len(x8)} kernels' if x8 else '')) if not problems
@@ -517,11 +524,12 @@ def main():
     fs.add_argument('--dump', action='append', default=[])
     fs.add_argument('--require-x8', action='store_true')
     fs.add_argument('--image-label', choices=('run-1', 'run-2'), default='run-1')
+    fs.add_argument('--require-dp', action='store_true')
     a = ap.parse_args()
     if a.cmd == 'source-check':
         return source_check(a.root, a.out)
     if a.cmd == 'fp8-summary':
-        return fp8_summary(a.out, a.group, a.dump, a.require_x8, a.image_label)
+        return fp8_summary(a.out, a.group, a.dump, a.require_x8, a.image_label, a.require_dp)
     if a.image_source:
         (ROOT / SOURCE).write_text(json.dumps(image_source(), indent=1) + '\n')
     if a.write:

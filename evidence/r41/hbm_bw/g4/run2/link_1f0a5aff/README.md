@@ -117,3 +117,13 @@ are both traced into that endpoint, but extending the prior disposition to the
 new source still requires establishing those assumptions for the implemented
 source and aggregation; matching only the endpoint or finding count is not
 enough.
+
+A second read-only checkpoint trace captured the implemented combinational
+cones: [`original_cdc_logic.txt`](original_cdc_logic.txt), SHA-256
+`c2018fea38f9eac440dbf444192db5eb3828fc326fd9c3ea4e39d8f0deacf682`.
+The destination cone reports eleven LUT2s with `INIT=4'hE` and one LUT3 with
+`INIT=8'hFE`, consistent with OR aggregation, and the source register's Q
+appears in its own D-cone trace. This strengthens the structural comparison
+with the earlier firewall-level review. It does not itself prove the minimum
+assertion time or glitch freedom of the implemented path; the review remains
+open.

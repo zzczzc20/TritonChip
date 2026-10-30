@@ -1,0 +1,259 @@
+{
+ "schema": "tnca-experiment-spec/1",
+ "id": "r2-s2-original-suite",
+ "allowed_hosts": [
+  "acf3019"
+ ],
+ "hypothesis": "Run-2 board execution of the workload registered in spec/r41/stage2/board/s2-original-suite.json passes its explicit numerical and structural checks on the approved 100 MHz image.",
+ "competing_explanations": [
+  "the run-2 image, its striped HBM layout, or its four-context DP profile changes behavior",
+  "a workload fails, falls back, times out, or is omitted from its registered checks",
+  "the card identity or clock changes during the run"
+ ],
+ "expected_counter_changes": [
+  "launch counts and per-launch cycles change only where Stage 1 compiler changes apply (GEMM fragments, barriers)",
+  "no new host fallback or upload/download inside resident calls"
+ ],
+ "expected_observations": [
+  "the registered workload completes with its numerical and structural checks passing on run-2",
+  "the experiment records the observed image, clock, software tree and raw results"
+ ],
+ "board": {
+  "image": "{home}/r41run2-auto/run2.xclbin",
+  "image_sha256": "1bf769fdbfbeb93586be86561664d43e785af3a01a739d19a3882647132d2d13",
+  "image_uuid": "01490bbd-d831-23bf-d783-56ec51bd71ce",
+  "clock_evidence": "{home}/r41run2-auto/qualified_clock.json",
+  "clock_hz": 100000000,
+  "device": "0000:04:00.1",
+  "mgmt_device": "0000:04:00.0",
+  "backend": "fpga-u280-multicore",
+  "backend_args": {
+   "xclbin": "{home}/r41run2-auto/run2.xclbin",
+   "image_profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "core_count": 3,
+   "memory_ports": 3,
+   "hbm_dma": true,
+   "hbm_bytes": 8589934592,
+   "device_clock": true
+  },
+  "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+  "transport": {
+   "deadline_cycles": 200000000000,
+   "host_timeout_seconds": 28800,
+   "source": "evidence/r40/v3/campaign_fe1b/campaign.json transport"
+  },
+  "memory_map": {
+   "window_base": 0,
+   "window_bytes": 8589934592,
+   "local_limit": 131072,
+   "bank": "MBG[0:31]",
+   "physical_pcs": "PC0-PC31",
+   "source": "evidence/r41/hbm_bw/g4/run2/link_1f0a5aff/xclbin_map.json",
+   "source_sha256": "c1e7b1a4f8fb4f05107fc231dcb6fbbb54361c568053e95107d34c03ae65b9fc"
+  },
+  "image_source": {
+   "commit": "1f0a5aff4b5d2df6ef9f3805513d37638bf5bc0d",
+   "branch": "r41-hbm-bw",
+   "record": "{home}/r41run2-auto/source_review_fullflow.json",
+   "parameters": "evidence/r41/hbm_bw/g4/run2/image.tcl",
+   "run": "evidence/r41/hbm_bw/g4/run2/BRINGUP.md"
+  },
+  "load_policy": "approved run-2 image after 15 consecutive idle minutes; every FPGA step checks identity"
+ },
+ "sources": [
+  "tools/performance_harness",
+  "archbench",
+  "python/tnca",
+  "compiler/python",
+  "compiler/targets",
+  "tools/asm",
+  "isa",
+  "evidence/r41/hbm_bw/g4/run2/link_1f0a5aff/xclbin_map.json",
+  "{home}/r41run2-auto/source_review_fullflow.json",
+  "archbench",
+  "spec/r40/suites",
+  "spec/r41/stage1/plan.json",
+  "spec/r41/run2/board/r2-s2-original-suite.json"
+ ],
+ "env": {
+  "MAX_JOBS": "1",
+  "OMP_NUM_THREADS": "1",
+  "MKL_NUM_THREADS": "1",
+  "CUDA_VISIBLE_DEVICES": "",
+  "PYTHONFAULTHANDLER": "1",
+  "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm",
+  "TRITON_CACHE_DIR": "{out}/caches/triton",
+  "TORCHINDUCTOR_CACHE_DIR": "{out}/caches/inductor",
+  "TORCH_EXTENSIONS_DIR": "{out}/caches/torch-extensions"
+ },
+ "registration": {
+  "status": "registered-not-run",
+  "derived_from": "spec/r41/stage2/board/s2-original-suite.json",
+  "derived_from_sha256": "aae3c4de48fad32ae497a58309af9160a178f865fd2e59600a0c1a8ad9b0a8e1",
+  "generator": "tools/r41/run2_board/manifests.py",
+  "image_source_commit": "1f0a5aff4b5d2df6ef9f3805513d37638bf5bc0d",
+  "source_scope": "frozen image source separately verified; runtime tree recorded by experiment.py",
+  "inherited_expected_observations": [
+   "113 configurations pass numerically (max_rel_err <= tol), evidence_level measured-board",
+   "device cycles per point recorded for the S2-01 cycles/wall-time report vs B40"
+  ],
+  "inherited_registration": {
+   "status": "registered-not-run",
+   "registered_utc": "2026-10-23",
+   "contract": "doc/r41_tasks_and_acceptance.md S2-01 (S2-04/S2-05 board items)",
+   "launch": "evidence/r41/stage2/board/launches/board_queue.sh",
+   "generator": "tools/performance_harness/stage2_board.py",
+   "expected_board_hours": 2.0,
+   "coverage": "spec/r40/suites/hbm.json (113 unique points) as existing.json + hbm-tier.json + large.json",
+   "order": "native tiny/small/medium, HBM tier, large (longest last)",
+   "sampling_rule": "plan.json measurement.long_device_tasks: qualification record (0 warm-up, 1 timed call); when every configuration of a group qualifies at <= 1 s, a formal record with 3 timed calls, else the qualification record is formal (1 timed call); anchors: 3 independent interleaved processes; borderline rechecks (3 more samples per arm, at most 2 blocks) only by a later registered judgement, never by repeating until significant",
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "reference": "Stage 1 B40 board records of the same points and knobs (evidence/r41/stage1, evidence/r40/v3/R40-04.hbm/board_run_fe1b)"
+  }
+ },
+ "steps": [
+  {
+   "id": "original",
+   "kind": "fpga",
+   "argv": [
+    "{python}",
+    "tools/performance_harness/board_batch.py",
+    "--manifest",
+    "spec/r41/run2/board/r2-s2-original-suite.json",
+    "--batch",
+    "original",
+    "--root",
+    "{root}",
+    "--out",
+    "{out}/original",
+    "--python",
+    "{python}"
+   ],
+   "timeout_seconds": 259200,
+   "timing_boundary": "ArchBench protocol 2: cold call untimed; registered warm-up/timed steady calls; device-cycles-serial-grid and device-graph-makespan from first accepted launch to last device completion (MMIO common-clock endpoints); request-latency recorded, not ranked",
+   "cache_state": "fresh experiment-local Triton/Inductor/extension caches under {out}/caches; one ArchBench process per run",
+   "outputs": [
+    "{out}/original/batch.json",
+    "{out}/original/formal.jsonl"
+   ]
+  }
+ ],
+ "plan": "spec/r41/stage1/plan.json",
+ "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+ "measurement": {
+  "long_device_tasks": {
+   "qualification_samples": 1,
+   "short_threshold_seconds": 1,
+   "short_timed_samples": 3,
+   "long_timed_samples": 1,
+   "anchor_stability_samples": 3
+  },
+  "host_latency": {
+   "warmup": 5,
+   "timed": 30,
+   "blocks": 3,
+   "order": "interleaved seeded A/B"
+  },
+  "borderline_device_recheck": {
+   "additional_samples_per_arm": 3,
+   "max_recheck_blocks": 2
+  },
+  "bootstrap": {
+   "resamples": 2000,
+   "seed": 20261020,
+   "alpha": 0.05
+  },
+  "overall_nonregression_budget": 0.05,
+  "report_point_regression_above": 0.05,
+  "confirmed_new_default_regression_block": 0.1
+ },
+ "suites": [
+  {
+   "path": "spec/r40/suites/existing.json",
+   "sha256": "f3e4ba5f3a346d45d3289b4b58f380d0103f4a5edfe6c88abd6b136868154a0f"
+  },
+  {
+   "path": "spec/r40/suites/large.json",
+   "sha256": "9279cf341d9c631f103a15abdbff1d6d932329fbc0a0336352bbac8b22b223bf"
+  },
+  {
+   "path": "spec/r40/suites/hbm-tier.json",
+   "sha256": "a36483591c755273db172d11455301e8a9a164932340a5827fccd0f5703d5d6f"
+  },
+  {
+   "path": "spec/r40/suites/hbm.json",
+   "sha256": "7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd"
+  },
+  {
+   "path": "spec/r40/suites/R40-03.gemm-reuse.json",
+   "sha256": "2ae243782413f4970616dfef3e02aca60e8f8f34907d18cf2ea4a6ac48807c3f"
+  },
+  {
+   "path": "spec/r40/suites/R40-09.tune.json",
+   "sha256": "2e5a0c346123f6cd2fe896baa176be3dc2138d6bd4e189b62564ae67f1347484"
+  }
+ ],
+ "estimates": [
+  {
+   "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_tiny.jsonl"
+  },
+  {
+   "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_small.jsonl"
+  },
+  {
+   "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_medium.jsonl"
+  },
+  {
+   "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/large24.jsonl"
+  },
+  {
+   "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/hbm14.jsonl"
+  },
+  {
+   "campaign": "evidence/r40/v3/campaign_fe1b/campaign.json",
+   "state": "evidence/r40/v3/campaign_fe1b/state.json"
+  }
+ ],
+ "board_batches": {
+  "original": {
+   "sampling": "device-rule",
+   "expand": [
+    {
+     "suite": "spec/r40/suites/existing.json",
+     "sha256": "f3e4ba5f3a346d45d3289b4b58f380d0103f4a5edfe6c88abd6b136868154a0f",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "suite": "spec/r40/suites/hbm-tier.json",
+     "sha256": "a36483591c755273db172d11455301e8a9a164932340a5827fccd0f5703d5d6f",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "suite": "spec/r40/suites/large.json",
+     "sha256": "9279cf341d9c631f103a15abdbff1d6d932329fbc0a0336352bbac8b22b223bf",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    }
+   ],
+   "coverage": {
+    "suite": "spec/r40/suites/hbm.json",
+    "sha256": "7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd"
+   }
+  }
+ }
+}

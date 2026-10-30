@@ -1,0 +1,1528 @@
+{
+ "schema": "tnca-experiment-spec/1",
+ "id": "r2-membound-medium-1-default",
+ "allowed_hosts": [
+  "acf3019"
+ ],
+ "hypothesis": "Run-2 board execution of the workload registered in spec/r41/hbm_bw/membound/membound-medium-1.json passes its explicit numerical and structural checks on the approved 100 MHz image.",
+ "competing_explanations": [
+  "the run-2 image, its striped HBM layout, or its four-context DP profile changes behavior",
+  "a workload fails, falls back, times out, or is omitted from its registered checks",
+  "the card identity or clock changes during the run"
+ ],
+ "expected_counter_changes": [
+  "none against a previous run: this is the first measurement of these points; it records per-launch device cycles (serial grid and graph makespan) for every point",
+  "no host fallback and no upload/download inside a resident call",
+  "launch counts and grids are those the default compiler produces; no knob changes them"
+ ],
+ "expected_observations": [
+  "the registered workload completes with its numerical and structural checks passing on run-2",
+  "the experiment records the observed image, clock, software tree and raw results"
+ ],
+ "board": {
+  "image": "{home}/r41run2-auto/run2.xclbin",
+  "image_sha256": "1bf769fdbfbeb93586be86561664d43e785af3a01a739d19a3882647132d2d13",
+  "image_uuid": "01490bbd-d831-23bf-d783-56ec51bd71ce",
+  "clock_evidence": "{home}/r41run2-auto/qualified_clock.json",
+  "clock_hz": 100000000,
+  "device": "0000:04:00.1",
+  "mgmt_device": "0000:04:00.0",
+  "backend": "fpga-u280-multicore",
+  "backend_args": {
+   "xclbin": "{home}/r41run2-auto/run2.xclbin",
+   "image_profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "core_count": 3,
+   "memory_ports": 3,
+   "hbm_dma": true,
+   "hbm_bytes": 8589934592,
+   "device_clock": true
+  },
+  "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+  "transport": {
+   "deadline_cycles": 200000000000,
+   "host_timeout_seconds": 28800,
+   "source": "evidence/r40/v3/campaign_fe1b/campaign.json transport"
+  },
+  "memory_map": {
+   "window_base": 0,
+   "window_bytes": 8589934592,
+   "local_limit": 131072,
+   "bank": "MBG[0:31]",
+   "physical_pcs": "PC0-PC31",
+   "source": "evidence/r41/hbm_bw/g4/run2/link_1f0a5aff/xclbin_map.json",
+   "source_sha256": "c1e7b1a4f8fb4f05107fc231dcb6fbbb54361c568053e95107d34c03ae65b9fc"
+  },
+  "image_source": {
+   "commit": "1f0a5aff4b5d2df6ef9f3805513d37638bf5bc0d",
+   "branch": "r41-hbm-bw",
+   "record": "{home}/r41run2-auto/source_review_fullflow.json",
+   "parameters": "evidence/r41/hbm_bw/g4/run2/image.tcl",
+   "run": "evidence/r41/hbm_bw/g4/run2/BRINGUP.md"
+  },
+  "load_policy": "approved run-2 image after 15 consecutive idle minutes; every FPGA step checks identity"
+ },
+ "sources": [
+  "archbench",
+  "archbench/membound.py",
+  "archbench/suites/r41_membound.json",
+  "compiler/python",
+  "compiler/targets",
+  "{home}/r41run2-auto/source_review_fullflow.json",
+  "evidence/r41/hbm_bw/g4/run2/link_1f0a5aff/xclbin_map.json",
+  "isa",
+  "python/tnca",
+  "spec/r40/suites",
+  "spec/r41/run2/board/r2-membound-medium-1-default.json",
+  "spec/r41/stage1/plan.json",
+  "spec/r41/stage2/board/s2-original-suite.json",
+  "tools/asm",
+  "tools/performance_harness"
+ ],
+ "env": {
+  "MAX_JOBS": "1",
+  "OMP_NUM_THREADS": "1",
+  "MKL_NUM_THREADS": "1",
+  "CUDA_VISIBLE_DEVICES": "",
+  "PYTHONFAULTHANDLER": "1",
+  "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm",
+  "TRITON_CACHE_DIR": "{out}/caches/triton",
+  "TORCHINDUCTOR_CACHE_DIR": "{out}/caches/inductor",
+  "TORCH_EXTENSIONS_DIR": "{out}/caches/torch-extensions"
+ },
+ "registration": {
+  "status": "registered-not-run",
+  "derived_from": "spec/r41/hbm_bw/membound/membound-medium-1.json",
+  "derived_from_sha256": "fe1b18c37266c025c3e8b69956688f789b5234795ff837e45773addaf30b6e60",
+  "generator": "tools/r41/run2_board/manifests.py",
+  "image_source_commit": "1f0a5aff4b5d2df6ef9f3805513d37638bf5bc0d",
+  "source_scope": "frozen image source separately verified; runtime tree recorded by experiment.py",
+  "inherited_expected_observations": [
+   "132 configurations recorded, each pass or a preserved failure with its reason",
+   "device cycles per passing point, from which full-link bandwidth (demand bytes / device time) is computed for evidence/r41/hbm_bw/LINK_BUDGET.md"
+  ],
+  "inherited_registration": {
+   "status": "registered-not-run",
+   "registered_utc": "2026-10-28",
+   "contract": "evidence/r41/hbm_bw/BANDWIDTH_PLAN.md sections 1 and 3 (baseline of the registered suite)",
+   "launch": "evidence/r41/hbm_bw/launches/membound_baseline.sh",
+   "generator": "tools/r41/membound_manifests.py",
+   "suite": {
+    "path": "archbench/suites/r41_membound.json",
+    "sha256": "3ecab39ee849662662b158b0ae6e23c9f413cbfb0eef39cacf643817cf7ae91f",
+    "suite_sha256": "775984cb248354f77add3ec4b3097314907923a9853d44ecd5d43ee7aa94845d"
+   },
+   "expected_board_hours": 1.49,
+   "estimate_method": {
+    "fit_wall_seconds": {
+     "constant": 18.982650785260088,
+     "per_mib": 0.15364944024895993,
+     "per_device_second": 1.0387888648671308
+    },
+    "device_bytes_per_second": {
+     "stream": 157284722.2962955,
+     "sfu": 88914214.3894067,
+     "row": 60231645.71191149
+    },
+    "reference_runs": 202,
+    "source": "evidence/r41/hbm_bw/link_budget/board_run1/run1_streaming.tgz",
+    "source_sha256": "f09ca6ce0f497012f749df787f87ebe345a8a0563274c5541f11607ec39e400b"
+   },
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "sampling_rule": "plan.json measurement.long_device_tasks: qualification record (0 warm-up, 1 timed call); when every configuration of a group qualifies at <= 1 s, a formal record with 3 timed calls, else the qualification record is formal (1 timed call); anchors: 3 independent interleaved processes; borderline rechecks (3 more samples per arm, at most 2 blocks) only by a later registered judgement, never by repeating until significant",
+   "reference": "none: these points have no earlier board record; the non-regression set keeps the s2-original-suite run-1 records as its baseline"
+  }
+ },
+ "steps": [
+  {
+   "id": "membound_medium_1",
+   "kind": "fpga",
+   "argv": [
+    "{python}",
+    "tools/performance_harness/board_batch.py",
+    "--manifest",
+    "spec/r41/run2/board/r2-membound-medium-1-default.json",
+    "--batch",
+    "membound_medium_1",
+    "--root",
+    "{root}",
+    "--out",
+    "{out}/membound_medium_1",
+    "--python",
+    "{python}"
+   ],
+   "timeout_seconds": 10800,
+   "timing_boundary": "ArchBench protocol 2: cold call untimed; registered warm-up/timed steady calls; device-cycles-serial-grid and device-graph-makespan from first accepted launch to last device completion (MMIO common-clock endpoints); request-latency recorded, not ranked",
+   "cache_state": "fresh experiment-local Triton/Inductor/extension caches under {out}/caches; one ArchBench process per run",
+   "outputs": [
+    "{out}/membound_medium_1/batch.json",
+    "{out}/membound_medium_1/formal.jsonl"
+   ]
+  }
+ ],
+ "plan": "spec/r41/stage1/plan.json",
+ "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+ "measurement": {
+  "long_device_tasks": {
+   "qualification_samples": 1,
+   "short_threshold_seconds": 1,
+   "short_timed_samples": 3,
+   "long_timed_samples": 1,
+   "anchor_stability_samples": 3
+  },
+  "host_latency": {
+   "warmup": 5,
+   "timed": 30,
+   "blocks": 3,
+   "order": "interleaved seeded A/B"
+  },
+  "borderline_device_recheck": {
+   "additional_samples_per_arm": 3,
+   "max_recheck_blocks": 2
+  },
+  "bootstrap": {
+   "resamples": 2000,
+   "seed": 20261020,
+   "alpha": 0.05
+  },
+  "overall_nonregression_budget": 0.05,
+  "report_point_regression_above": 0.05,
+  "confirmed_new_default_regression_block": 0.1
+ },
+ "suites": [
+  {
+   "path": "archbench/suites/r41_membound.json",
+   "sha256": "3ecab39ee849662662b158b0ae6e23c9f413cbfb0eef39cacf643817cf7ae91f"
+  }
+ ],
+ "board_batches": {
+  "membound_medium_1": {
+   "sampling": "device-rule",
+   "configurations": [
+    {
+     "id": "op.add/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.add/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "326185940fd1d230a2a79776eafa101eb57e810d95d21ceea5f96735c664a949",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.add/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.add/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "9852443764d0e143e392e907be2b9ab818af43bf86fa51ca88e1e18fd860d1fa",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.add/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.add/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "5beff12cd38da1c1d515b967a76d45fcaa8e42b021f612e23b78959576382a8f",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.add/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.add/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "4aac9a781af7cb1a4f32447ced17d538b07064c1d91e22d7c165d4ed65d2a973",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.add/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.add/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "9a46c77b5be064915a8edd15258fef68b7dc562f8dcd00be2c0ae676f5105941",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.add/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.add/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "32e43e54d5b8c9c87b6e3547989ec8a3127060b1801b9c67e395ed6ccc5f93c6",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.add/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.add/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "b483065ca82f0939d0ac5d0ce5931c76e51c26f9165746a19f7162fbc48b2927",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.add/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.add/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "d6d1c4445e4932c2d48f42c2234fcce66dbdd68d241a05b42f7b4c9f90aba675",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.add/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.add/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "b7bc97541c0bea602082f0dcc363388281ad3f7455a15951b035da1ff00e0d75",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/bf16-to-fp16-medium-broadcast-r2048-c1024",
+     "point": "op.cast/membound/bf16-to-fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "7c2c71c2cec89f7ccd781128d4a113e034874cd1f0ae5480e4a97de91672c3eb",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/bf16-to-fp16-medium-contig-r2048-c1024",
+     "point": "op.cast/membound/bf16-to-fp16-medium-contig-r2048-c1024",
+     "point_sha256": "315f0f6b2e849b47c3a3af8a38c215b01e6a37837212f20183e7d6d262999bb8",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/bf16-to-fp16-medium-strided-r2048-c1024",
+     "point": "op.cast/membound/bf16-to-fp16-medium-strided-r2048-c1024",
+     "point_sha256": "3d4d16b952c1a4c07ee926ba0bd3d73e557da23e5dcf5676e8bc694f570d4f42",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/bf16-to-fp32-medium-broadcast-r2048-c1024",
+     "point": "op.cast/membound/bf16-to-fp32-medium-broadcast-r2048-c1024",
+     "point_sha256": "5d7d1e361f91bf916250a0524f7e641fcb178dbcd9efc13cf7d2ff79fc1067be",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/bf16-to-fp32-medium-contig-r2048-c1024",
+     "point": "op.cast/membound/bf16-to-fp32-medium-contig-r2048-c1024",
+     "point_sha256": "019666d23dfab74be575c97f42b0f0b14186aeb2136ac7481f74112880641f84",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/bf16-to-fp32-medium-strided-r2048-c1024",
+     "point": "op.cast/membound/bf16-to-fp32-medium-strided-r2048-c1024",
+     "point_sha256": "a7dde4ae91d24496bfb1f10d822a8304ac02efba4e1aa82665971683f2a491c7",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp16-to-bf16-medium-broadcast-r2048-c1024",
+     "point": "op.cast/membound/fp16-to-bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "1a82d946b318798d8a604eca32df42127615c288719c1844d1633c80e83850f4",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp16-to-bf16-medium-contig-r2048-c1024",
+     "point": "op.cast/membound/fp16-to-bf16-medium-contig-r2048-c1024",
+     "point_sha256": "c2fd1c2f85c46497acf7add58d20e2a75602c2c29dd0ff769420929f8f4920bc",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp16-to-bf16-medium-strided-r2048-c1024",
+     "point": "op.cast/membound/fp16-to-bf16-medium-strided-r2048-c1024",
+     "point_sha256": "54d9a0f675dc09752e38b956f350873ad0064458d3718e9b0d776110c9cdee27",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp16-to-fp32-medium-broadcast-r2048-c1024",
+     "point": "op.cast/membound/fp16-to-fp32-medium-broadcast-r2048-c1024",
+     "point_sha256": "6111392badcd9e9797c173f7d3f4a7a645f97ad69a40a6bf414897589dbc5c83",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp16-to-fp32-medium-contig-r2048-c1024",
+     "point": "op.cast/membound/fp16-to-fp32-medium-contig-r2048-c1024",
+     "point_sha256": "b13146ff934b8d579f4947d3b6fa1edf81388d9dc470ea03186d869611352606",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp16-to-fp32-medium-strided-r2048-c1024",
+     "point": "op.cast/membound/fp16-to-fp32-medium-strided-r2048-c1024",
+     "point_sha256": "326197d06359b67c0205d462a35b9c68c0df757656af867c368268ccc0f400f9",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp32-to-bf16-medium-broadcast-r2048-c1024",
+     "point": "op.cast/membound/fp32-to-bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "354fbda199509f7c8099ffc81dc3eabca77135254c0cc8fad1127141b3a0050d",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp32-to-bf16-medium-contig-r2048-c1024",
+     "point": "op.cast/membound/fp32-to-bf16-medium-contig-r2048-c1024",
+     "point_sha256": "1e3bf325121d695655db343df5fb6f6cdfb5f6cf93eead6766da22df0f10449b",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp32-to-bf16-medium-strided-r2048-c1024",
+     "point": "op.cast/membound/fp32-to-bf16-medium-strided-r2048-c1024",
+     "point_sha256": "01c133f8ef1545db16dd25278c739c3755c3d72302ea6efdd97f6fe1fe82a8f5",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp32-to-fp16-medium-broadcast-r2048-c1024",
+     "point": "op.cast/membound/fp32-to-fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "325ab59b104fb1326a64f8983a1df0fd68b75f0b83c26556edcad48cde6056d2",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp32-to-fp16-medium-contig-r2048-c1024",
+     "point": "op.cast/membound/fp32-to-fp16-medium-contig-r2048-c1024",
+     "point_sha256": "09dd9f92f4e00230886de5e68abc950a62a1bba6a63ea7e4a6a95cb3b95a4e64",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.cast/membound/fp32-to-fp16-medium-strided-r2048-c1024",
+     "point": "op.cast/membound/fp32-to-fp16-medium-strided-r2048-c1024",
+     "point_sha256": "d400984c1342116b5f6a0b0e2fbc4c88bd544b867d1da769307fe96ffffa2e9a",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.clone/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.clone/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "1f511646657f76a7b8baa4bacc8a6bf563a79a76be9d2dfbb2abeea63d485f8a",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.clone/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.clone/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "98c7c8e72b70d6477be3934964e84bf960371dd87ff07da6d46821c2cfc816d0",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.clone/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.clone/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "490431e3a48f9af756931633c8e4ab1e7f15fb3de759557cd089523e8df85bfc",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.clone/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.clone/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "7c52843f2a1980c87e002f46d812090ea9a7fa3c6eb85857c95db9f3c524daae",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.clone/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.clone/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "0f84067f79b3998d9e80434527e46cf4e6ebad0317805af6b5eda3814aee58ce",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.clone/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.clone/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "cca73aa0330ee90a042d52349e2c4d4c961b09371b30ad8768018a8b219c0e5f",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.clone/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.clone/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "14edb45e8946ecd0cd98d6b2bdeeadce1bd877a5823dcc6028fd3be1307a4e7b",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.clone/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.clone/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "22a9e6d19e60f6b9e1e70f08aa40f7fe0fa46279112bdae37cf19bae9470ef61",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.clone/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.clone/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "db83f59369a19554494fb69d78d5b1839c15c718b8527a660cc451fadf6bc892",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.copy/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.copy/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "c4c494bf02537622381f1c2e8b6208bef4cd87da0a9846f90b3a38b2a8e10637",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.copy/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.copy/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "126fcc2b30306ec24c9d0830fe8e525b789fd2bc5f233edbe4b3e1f0f5959bfc",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.copy/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.copy/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "19eb38b513abcf099e29ac50740c0f21b3e1f90199a1be9a0bd981531e5f007b",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.copy/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.copy/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "f0963f2d982ca00f42409a6dc0cecc9e3083bfcf1028bef204605d93903011de",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.copy/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.copy/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "da785ce8d1c4c2548f70e884891329a466beccf7981f74491497923337b4a297",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.copy/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.copy/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "3520a4765323778a5a6a6f8e760bc2bb9432c3d00f03b2aad7ab8a67b8b690ac",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.copy/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.copy/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "8bf15bbd516a8dc8bf01ae644dd6832ce52c8d1c68a0ec10de845c5112cfe905",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.copy/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.copy/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "6fedcfad50470180989873b3bbb20c9f2290792d249b83e618145bc24ba09bf6",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.copy/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.copy/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "893eec3e4205a918243c914edfd5b47e4989710d789ce672d963cf5f6e456f35",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.div/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.div/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "f16a93158300a0fdd4498bbe5d5d2a578a4e0fe752b7b08dbe2d103de2722f88",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.div/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.div/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "6bab0e7779145e8facba331d526e4eab525fdc9c72560e4985fe33595d0f4ca6",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.div/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.div/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "d6975b1d7e074f883f44f7f27a636895be01484be18b051bbff9d580cd939e0e",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.div/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.div/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "e75feb2a91004d6a624321d50ac1f4683d8bcffd0c61ea1436d343eeb57290af",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.div/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.div/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "16a41c44992ab4f8185f32f2cae7b1c0ef5095c5c90405295ea9384cbeeaa758",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.div/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.div/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "34243186b07e144ddb3b5a3cf88a8c002590c04f3436d929d2b680c165903d21",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.div/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.div/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "5ca3e10dceef91ab26a26983f23b8da1f6e28d907fa6b31ed4949a3da8845cb1",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.div/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.div/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "16819c8b9a872d992ae6ea28b6ce6e104981569b703c7e9f4823f0bc91d67417",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.div/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.div/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "37c82b7b958e0bcd06535fa5242dc1db0df129b3004fd3081b6bf68ef494b23b",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.exp/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.exp/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "a828dc639ca8c0fbff4548a9837bbd46a834e2beb7144274d82ceda9aa19e5fc",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.exp/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.exp/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "18b7e47a5905de1732403ed0317feea0874ae9ec6036db297f91b830e93d6d4a",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.exp/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.exp/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "d972cda80ea505848dc19e13fe7c6186801d3a535291236b024b4d38a478683c",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.exp/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.exp/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "f79fa16c2c384a47d2d83c05ca5cb7eb1e11ec7193f22f1bc7fc7896628a38a8",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.exp/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.exp/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "3d3a38bfee0b89c3e0b7a822d4e0e819a933ad7cbc1e8a781ff65f16c222e4b1",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.exp/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.exp/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "e203007c5a1854c286a733542920b64c7d651a9807a58699b1294754b269b7ba",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.exp/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.exp/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "8236cb7b9da70f0c9065e41effb31fa2e422a01c102e7d15550ae0a2828778e6",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.exp/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.exp/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "e69106ea8af228227c75edb4c1d675164127a094f8d7612a06692e9be2d4bbe5",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.exp/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.exp/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "a98b3ad1bc1012f5600b1c3b550761c82bcd39e5fd95ca0c4c2dd4d172fd6f3c",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.gelu/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.gelu/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "5be7a0146240ede92b41432755af082c6d8db652bef2afa774b65bad22f92c32",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.gelu/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.gelu/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "554d7d356b15ecacb61b31a57d79d7526d67f53b48a80516d6596f77eba18072",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.gelu/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.gelu/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "5c14de2488c3481c7174423079146271b107e6dd2f5b01e6bc580891214a255e",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.gelu/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.gelu/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "521a6fae5740eb703021ef4ae7719d849f87f2155daa79340dd868cf39372fed",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.gelu/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.gelu/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "46b4e9d464bd9762fecfaf736633c9c24ef54fbf784bea6b1e6e1432bbee8753",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.gelu/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.gelu/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "299ddf49030cc5e1daa8067e9d4f96bfd2bdd9bb2eae5c4c5083d2a3123b2253",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.gelu/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.gelu/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "7d03e10462e6da799bf1db81ad7e30a5656622787567ac9b93629a8dea5a46df",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.gelu/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.gelu/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "f32e92b3f8467e2a61df92aab5eec6b3d478300fcb042015aadc4fc3f67e437c",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.gelu/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.gelu/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "7774c36c6543a3ed8b111fea74b5f262cd64bb977287d53f6ddae0eeeff81b51",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.layernorm/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.layernorm/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "3a6c699fef413b38ece4675560a25d835b36f14ff70ecc4ea1c51f88c0962c0d",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.layernorm/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.layernorm/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "3a9f5113cc08300bf89c3e665ec523e30d42292954ea88db7a75bbeeda5a9df9",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.layernorm/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.layernorm/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "5dca8945bb5a02de3200780add3e06c8897e579b5eecab52d329e1c093f17d19",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.layernorm/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.layernorm/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "7046b7abd2dfeeffbd0e607320bc471a2927add9e7e93f856ffd7a8190d5a636",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.layernorm/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.layernorm/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "2407dbd406282c44919093c2c60fe5ae77c999288622e9df53c52d1a3370a242",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.layernorm/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.layernorm/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "55554c6b42d930723258897b94769dec8f79d7f31f5c9d8ecec685f6a2f39b34",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.layernorm/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.layernorm/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "ab7073256b5fd2d2d479f951ff7f7778d85e238e7e73108df3e6716495e675d9",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.layernorm/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.layernorm/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "c100cd6852ef330396cf8236d5ffbf93387606572b27e90432c56040af409de1",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.layernorm/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.layernorm/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "f358f9b1f8e91580f25a549e818fb01b290e392f37799e5ba09ec17e905676b8",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.max/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.max/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "4860a49d35486a591fbd8d70d59c08abb2a8ef2f8b8f78f604c2cf387d511893",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.max/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.max/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "48a879cc86d54ddc14297c6c7cfcc2d5f63cee49ce70fbc85e55a3a084a7a649",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.max/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.max/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "27753a2074d650cbb24b1db8a38c42692df4a7878053d8d788dbb3324af836a8",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.max/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.max/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "e0a490d56a7c02350efc36a6129a7b8582f95796626031c3cba8109d4cc82b56",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.max/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.max/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "4ca70137219d849f4bf4807ec9f2d620b97651e1a3b9d36259301f72efc6e10e",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.max/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.max/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "38471fed6537537a2ace4aaa7c90a6eb933b00f7bf26c6b39bd08ff164897f11",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.max/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.max/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "bc2c35c402f9dadf15826cc38223021c48a346c43724c0b2ce8ec5af6ed98b99",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.max/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.max/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "2d0e81b83e33eb8788afab1aa5c284b80cc383e076edbb5e22b1abe0b3b30054",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.max/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.max/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "51e04c418b4e70096f0331f37e24b0eb6c3e4a04c793fe3ca50f8e48f1577572",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mean/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.mean/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "4397c0c6d19fac46e5c08245a8c1f20248638be0639331f5efb1b756ae723cd3",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mean/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.mean/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "937b7727d3ed9251418b017c1bace241cc93f1e4880f8e6baef54c8092a95622",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mean/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.mean/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "87fbf7d332b2fc79b8fd267cbc8495074651ed36835f9a6eafa32fce68bfdc0a",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mean/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.mean/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "74f45fa666db57f1ccbf2d7b1b679837ab469cc275db87ea548cf08d69bcbe2a",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mean/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.mean/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "c765d5653a4e83938b989eee5eb24134c090443d387f11a3b9e7f6c13fcd1d12",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mean/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.mean/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "00ead02d4839aad04054a3375924c62d617b6fdd3e5ace6352e59a0c544a18ae",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mean/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.mean/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "3c427f69ed632bce1b4e4efe5de9cea68e2d7eb0229780beac38b53e632c0b5c",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mean/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.mean/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "20e53e16e6fa7460bc7817252eb1bc860539b21dbfcb814142c4655966da0742",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mean/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.mean/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "a5bbd87f2fc20b3db00624f14ca6eccfaa00d7a2373d178da69416688621a99b",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mul/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.mul/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "2146c3f142248d533939c2928c25bad4fe83104c8e86d5859f1e14371b733f98",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mul/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.mul/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "6dcd7b14def8397f721df78c2010cea5e678aa9633765a334df4f5d26c49088b",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mul/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.mul/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "f9253f885f60312d745d6bcd733d5bdc1d798734dd933b567865f941901020b0",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mul/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.mul/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "9ab9663b0bfa7a1d4ce8f29a04294d26ce668d964dbc953328f9ab54de11437c",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mul/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.mul/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "10ded4f1116c130d69927ea8c2f3e923d62eb10abd5c8d7d76872e39abe4b906",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mul/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.mul/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "96d0d17331f5e8876d5947bea6861e22d924369ea463ebad8497f97b12fab4c3",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mul/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.mul/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "f0da0e49bb731ba391dde17fd15922c9ecf87327cc88eb4d4e6e743f233b358f",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mul/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.mul/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "2617f98720ae9de2188a70cf60d371dba0784760148319324794f5070e886e88",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.mul/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.mul/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "3cee8eeebcb259cfcaf7a15ca63ca954fdf141508b9adcf665921b5c70d20d58",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.relu/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.relu/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "a1bebc4f7371d7e146fbafe863c5197b2c8450e2a7ffb5a2ae9df44d34917543",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.relu/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.relu/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "423cef9c35605dfed36073baa9eb79057f9f936a2257a16710c19469fdc4090f",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.relu/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.relu/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "15a4239be0566e49918289df428a87d7156230e7e5f2fdecc33e3168043ffccd",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.relu/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.relu/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "47bef7946da7d7a90747164b0586fa341f74886dcf79ed036b1f260d7f746f75",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.relu/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.relu/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "bd4c0fecdeb2b9487182c8e04cc6d5b1d0ed87c87304ecf59c86e04c5343328d",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.relu/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.relu/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "d0ca8f27cfb5b79d8b3d374ccbc7543e93125573f64f84fcd31ebbdaa7a4ced8",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.relu/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.relu/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "6c0208506e03f9ce96bacc47335c6e50395fcdbc88f4486bf5caa3a840455817",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.relu/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.relu/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "79e2a2f1cfe39197064201245f6e74b326ee3dcb713198734d604161ce52ff66",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.relu/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.relu/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "3f03c94626ed85dd51b515e292210bedcb1a21ba173112d74d258086ac1d5cac",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.rmsnorm/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.rmsnorm/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "d8959c2aac0d40960079bb1a1bfdf9ed3228eab9fa310970ee1342edea56e617",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.rmsnorm/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.rmsnorm/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "7054487c841d87e70298201cd27e4d56e4b10f5e24102f954e410e352bac69fd",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.rmsnorm/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.rmsnorm/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "b27c134aef013c85eba5519e58aab69509465b809c408a4b34f1174bbc00e830",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.rmsnorm/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.rmsnorm/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "8f608384a7dcdc997b7d18db85b275f6e9c47639233bc93c5b37e8484ba6489b",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.rmsnorm/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.rmsnorm/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "30fe4c0ae100d1b736447c2af01d0938c532d32371e7c3b01d6bc0a43d788d8e",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.rmsnorm/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.rmsnorm/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "044b1276c9fc6661bbb6443f98999324310c690493df620384589cbc34e03f5a",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.rmsnorm/membound/fp32-medium-broadcast-r1024-c1024",
+     "point": "op.rmsnorm/membound/fp32-medium-broadcast-r1024-c1024",
+     "point_sha256": "d7e7e326836d899eb46e7b67e45ed34834b03d6ec8cbe5a21b8ec240c0ff26d4",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.rmsnorm/membound/fp32-medium-contig-r1024-c1024",
+     "point": "op.rmsnorm/membound/fp32-medium-contig-r1024-c1024",
+     "point_sha256": "1d588391672048186f6bed29d1962c83a9be50f6155fcf7f6429cadbe7845e1b",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.rmsnorm/membound/fp32-medium-strided-r1024-c1024",
+     "point": "op.rmsnorm/membound/fp32-medium-strided-r1024-c1024",
+     "point_sha256": "e5828c17697be67dc0dabf4cf53d374156357d8713477451f725461c1e0c6907",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.sigmoid/membound/bf16-medium-broadcast-r2048-c1024",
+     "point": "op.sigmoid/membound/bf16-medium-broadcast-r2048-c1024",
+     "point_sha256": "4c40f9a8ca2731fc95d48ce37b32c1c451d77606b1e65be153f495641cc29966",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.sigmoid/membound/bf16-medium-contig-r2048-c1024",
+     "point": "op.sigmoid/membound/bf16-medium-contig-r2048-c1024",
+     "point_sha256": "df55f32585be86f80b1a508c4b4351a1f1f41dee3bd2b8b3fc42cdf1516d767a",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.sigmoid/membound/bf16-medium-strided-r2048-c1024",
+     "point": "op.sigmoid/membound/bf16-medium-strided-r2048-c1024",
+     "point_sha256": "97765d412abbbd6aab8a3fb8ee2722088f2d95caff8d5bcee65b09ecd7d66119",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.sigmoid/membound/fp16-medium-broadcast-r2048-c1024",
+     "point": "op.sigmoid/membound/fp16-medium-broadcast-r2048-c1024",
+     "point_sha256": "7b088d27d1eaf753c9a2bb5f991589187bedc37fc6b07405e36da28534070a92",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.sigmoid/membound/fp16-medium-contig-r2048-c1024",
+     "point": "op.sigmoid/membound/fp16-medium-contig-r2048-c1024",
+     "point_sha256": "931faac3c7696a9de28a4518a3bf58a510edaed26090ed6bf4ef68657b671f70",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.sigmoid/membound/fp16-medium-strided-r2048-c1024",
+     "point": "op.sigmoid/membound/fp16-medium-strided-r2048-c1024",
+     "point_sha256": "5bb814ed329b1c3f2ad95cb2a0206ad70d9b4a32df7e471d0cdb1f4c9f93a30b",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    }
+   ]
+  }
+ }
+}

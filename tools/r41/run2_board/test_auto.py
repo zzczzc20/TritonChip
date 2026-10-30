@@ -135,5 +135,33 @@ class HbmReviewTests(unittest.TestCase):
                 mod.review(altered)
 
 
+class StageTests(unittest.TestCase):
+    def test_failed_result_never_publishes_a_passing_stage(self):
+        import json
+        from unittest.mock import patch
+        folder = Path(__file__).parent
+        spec = importlib.util.spec_from_file_location('run2_stage', folder/'stage.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)/'root'
+            root.mkdir()
+            manifest = root/'manifest.json'
+            manifest.write_text('{}')
+            out = Path(tmp)/'output'
+            registration = {'experiments': [{'id': 'smoke', 'manifest': 'manifest.json',
+                'sha256': mod.sha(manifest), 'checks': [{'path': 'batch.json',
+                    'field': ['status'], 'equals': 'complete'}]}]}
+            def fake_run(command, **kwargs):
+                target = out/'smoke'
+                target.mkdir()
+                (target/'report.json').write_text(json.dumps({'status': 'completed-experiment'}))
+                (target/'batch.json').write_text(json.dumps({'status': 'failed-preserved'}))
+            with patch.object(mod.subprocess, 'run', side_effect=fake_run):
+                with self.assertRaisesRegex(RuntimeError, 'result check failed'):
+                    mod.run(root, out, '/usr/bin/python3', registration)
+            self.assertFalse((out/'stage.json').exists())
+
+
 if __name__ == '__main__':
     unittest.main()

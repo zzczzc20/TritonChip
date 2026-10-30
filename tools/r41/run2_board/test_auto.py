@@ -217,5 +217,27 @@ class CdcIdentityTests(unittest.TestCase):
             self.assertEqual(got['absent'], [('CDC-10', 'old/C', 'irq/D')])
 
 
+class WatchTests(unittest.TestCase):
+    def test_missing_plan_only_waits(self):
+        import subprocess
+        import sys
+        import time
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)/'watch'
+            proc = subprocess.Popen([sys.executable, str(Path(__file__).with_name('watch_plan.py')),
+                    '--plan', str(Path(tmp)/'missing.json'), '--image', str(Path(tmp)/'missing.xclbin'),
+                    '--out', str(out), '--poll', '1'])
+            try:
+                for _ in range(50):
+                    if (out/'watch.jsonl').exists() and (out/'watch.jsonl').stat().st_size:
+                        break
+                    time.sleep(.02)
+                self.assertIn('waiting', (out/'watch.jsonl').read_text())
+                self.assertFalse((out/'queue-process.log').exists())
+            finally:
+                proc.terminate()
+                proc.wait(timeout=5)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -44,8 +44,7 @@ The detailed [`cdc.rpt.gz`](cdc.rpt.gz) has decompressed SHA-256
 `8c98866634215f258f21c6baf2b1a3c848425ae65b50289a7ccaf4679dcae529`.
 Its 56 critical rule/source/destination triples are exactly the same as the
 original run-2 CDC report. One of those differs from the earlier individually
-reviewed platform baseline, so this comparison is not a disposition; that
-source still needs an individual circuit and constraint review.
+reviewed platform baseline; the comparison alone is not a disposition.
 
 The closed early reports additionally show the three cores and three local
 TMUs physically placed in their respective SLRs, with no failures:
@@ -61,8 +60,8 @@ The candidate's [`platform_irq_trace.txt`](platform_irq_trace.txt) has
 SHA-256 `2b13c1d5191c0693b057ca5cce743357900d1a8c394b51d0096bea17f66f2f59`.
 Its separate implemented source/D and IRQ/D cone trace has SHA-256
 `c2018fea38f9eac440dbf444192db5eb3828fc326fd9c3ea4e39d8f0deacf682`,
-identical to the original run-2 trace. Structural identity does not itself
-close the outstanding CDC disposition.
+identical to the original run-2 trace. Structural identity alone does not
+establish safe asynchronous operation.
 
 A second read-only Vivado trace resolves the candidate source register's
 hierarchical net segments: [`platform_irq_segments.txt`](platform_irq_segments.txt),
@@ -77,3 +76,18 @@ every combination of the other inputs. Clear-control is one only for
 `r_state[2:0]=011` and `unblock=0`. This is implemented-netlist evidence of
 a local sticky invariant; it does not prove the minimum assertion duration,
 glitch-free multi-source aggregation, or dispose the CDC finding.
+
+The subsequent individual review is recorded in
+[`candidate_cdc_review.json`](candidate_cdc_review.json), SHA-256
+`adec6741f5082aac7992cfe244bbf1b77fd8308f5cd832f6db16c8bd11f48129`.
+The 55 unchanged findings retain their earlier platform-scoped explanations.
+The new finding is the same vendor MI firewall read-error level into the same
+management IRQ synchronizer as the prior reviewed SI error. The traced
+asserted-state retention and the documented [AXI Firewall v1.2 port contract](https://docs.amd.com/r/en-US/pg293-axi-firewall/Port-Descriptions)
+support its sticky-error interpretation; the [recovery protocol](https://docs.amd.com/r/en-US/pg293-axi-firewall/Recovery)
+recommends detecting and handling a blocked condition before unblocking. The
+[AXI INTC v4.1 guide](https://docs.amd.com/v/u/en-US/pg099-axi-intc) describes
+synchronization of asynchronous interrupt inputs. The raw finding remains
+Critical. This is conditional platform-scoped operation under the vendor
+recovery and coordinated-reset assumptions, not a proof of minimum pulse width
+or glitch-free simultaneous assertion and clear, and not a blanket waiver.

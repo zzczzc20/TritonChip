@@ -347,7 +347,10 @@ module tnca_matrix #(
     // Result tag pipeline, alongside the FMA's own registers
     //==========================================================================
     // A result lands PIPE cycles after its operands are presented.
-    localparam MAC_LAT = MAC_CUTS[0] + MAC_CUTS[1] + MAC_CUTS[2] + MAC_CUTS[3] + MAC_CUTS[4];
+    // Vivado evaluates an untyped sum of bit-selects at one-bit width, while
+    // simulators may widen it. The explicit integer context is essential:
+    // CUTS=11101 must give 4, not 0, for the result-tag pipeline and drain.
+    localparam integer MAC_LAT = MAC_CUTS[0] + MAC_CUTS[1] + MAC_CUTS[2] + MAC_CUTS[3] + MAC_CUTS[4];
     localparam PIPE = (MAC_DP != 0) ? (OPND_REG + MAC_LAT) : (FMA_LAT + OPND_REG);
     reg              tg_v   [0:PIPE-1];
     reg [ACC_W-1:0]  tg_slot[0:PIPE-1];

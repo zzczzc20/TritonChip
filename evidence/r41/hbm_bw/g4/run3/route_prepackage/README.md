@@ -63,3 +63,17 @@ Its separate implemented source/D and IRQ/D cone trace has SHA-256
 `c2018fea38f9eac440dbf444192db5eb3828fc326fd9c3ea4e39d8f0deacf682`,
 identical to the original run-2 trace. Structural identity does not itself
 close the outstanding CDC disposition.
+
+A second read-only Vivado trace resolves the candidate source register's
+hierarchical net segments: [`platform_irq_segments.txt`](platform_irq_segments.txt),
+SHA-256 `ff70d990058bae3cabb246ad2cacc60e27ce015ec9ea7893d8dde54e70de9976`;
+the corresponding Tcl is [`platform_irq_segments.tcl`](platform_irq_segments.tcl).
+It connects source Q to I5 of the actual D-driving LUT6
+(`INIT=64'h5554FFFF55545554`) and its I4 to a LUT4
+(`INIT=16'h0008`) of `r_state` and `unblock`. The exhaustive 16-case check
+`python3 tools/r41/run2_postlink/check_irq_sticky.py` passes: if Q is asserted,
+reset is inactive and that clear-control LUT is zero, D remains asserted for
+every combination of the other inputs. Clear-control is one only for
+`r_state[2:0]=011` and `unblock=0`. This is implemented-netlist evidence of
+a local sticky invariant; it does not prove the minimum assertion duration,
+glitch-free multi-source aggregation, or dispose the CDC finding.

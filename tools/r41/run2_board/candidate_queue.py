@@ -21,6 +21,28 @@ import stage
 from tnca.operating_clock import validate_candidate_cdc
 
 
+def monitored_idle(path, now, max_gap, proc=Path('/proc')):
+    """Recover only a fresh interval from our still-running same-boot monitor."""
+    try:
+        state = json.loads(Path(path).read_text())
+        pid = state['pid']
+        if (state['schema'] != 'tnca-idle-monitor/1' or type(pid) is not int or pid <= 0
+                or state['boot_id'] != (proc/'sys/kernel/random/boot_id').read_text().strip()
+                or b'idle_monitor.py' not in (proc/str(pid)/'cmdline').read_bytes()):
+            return None
+        start, last, identity = state['start'], state['last'], state['identity']
+        if (type(start) not in (int, float) or type(last) not in (int, float)
+                or not 0 <= start <= last <= now or now-last > max_gap
+                or not isinstance(identity, list) or len(identity) != 2
+                or not isinstance(identity[0], str) or type(identity[1]) is not int):
+            return None
+        tracker = auto.IdleTracker(max_gap=max_gap)
+        tracker.start, tracker.last, tracker.identity = start, last, tuple(identity)
+        return tracker
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
 def approval(path, image_sha, image_uuid):
     decision = json.loads(Path(path).read_text())
     if (decision.get('status') != 'accepted' or decision.get('image_sha256') != image_sha
@@ -101,7 +123,10 @@ def main():
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         def record(kind,**kw):
             log.write(json.dumps(dict(utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),kind=kind,**kw))+'\n')
-        tracker = auto.IdleTracker(max_gap=max(15,a.poll*2.5))
+        max_gap=max(15,a.poll*2.5)
+        tracker = monitored_idle(work/'idle_monitor.json',time.monotonic(),max_gap)
+        if tracker is None:
+            tracker = auto.IdleTracker(max_gap=max_gap)
         while True:
             try:
                 row=auto.probe(a.sysfs);ready=tracker.observe(time.monotonic(),row)

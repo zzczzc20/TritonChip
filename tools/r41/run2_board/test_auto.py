@@ -278,6 +278,35 @@ class CandidateQueueTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'exact candidate image'):
                 mod.approval(path, 'f'*64, auto.IMAGE_UUID)
 
+    def test_live_idle_monitor_reuses_only_fresh_same_boot_interval(self):
+        import json
+        import sys
+        folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        sys.modules.setdefault('auto', auto)
+        spec = importlib.util.spec_from_file_location('candidate_queue_idle_test', folder/'candidate_queue.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = Path(tmp)/'proc'
+            (proc/'sys/kernel/random').mkdir(parents=True)
+            (proc/'sys/kernel/random/boot_id').write_text('boot-a')
+            (proc/'123').mkdir()
+            (proc/'123/cmdline').write_bytes(b'python\0idle_monitor.py\0')
+            state = dict(schema='tnca-idle-monitor/1', boot_id='boot-a', pid=123,
+                         start=100, last=1000, identity=[auto.IMAGE_UUID, 0])
+            path = Path(tmp)/'idle.json'
+            path.write_text(json.dumps(state))
+            tracker = mod.monitored_idle(path, 1001, 15, proc)
+            self.assertTrue(tracker.observe(1001, row(uuid=auto.IMAGE_UUID)))
+            self.assertFalse(tracker.observe(1002, row(uuid=auto.IMAGE_UUID, total=1)))
+            self.assertIsNone(mod.monitored_idle(path, 1016, 15, proc))
+            state['boot_id'] = 'other-boot'
+            path.write_text(json.dumps(state))
+            self.assertIsNone(mod.monitored_idle(path, 1001, 15, proc))
+            (proc/'123/cmdline').unlink()
+            self.assertIsNone(mod.monitored_idle(path, 1001, 15, proc))
+
     def test_new_client_before_go_stops_programming(self):
         import sys
         from unittest.mock import patch

@@ -40,6 +40,12 @@ records are in [`membound_default_large1.tgz`](membound_default_large1.tgz)
 and [`membound_default_large2.tgz`](membound_default_large2.tgz).
 The first medium batch also completed 132/132 with no missing or failed
 configurations: [`membound_default_medium1.tgz`](membound_default_medium1.tgz).
+Its matching 100 MHz baseline comparison shows 1.134× speedup in the sum of
+point medians, with 10 points over 5% slower and two strided BF16/FP16 division
+points about 12.6% slower; the point hashes, demands and samples are in
+[`membound_default_medium1_comparison.json`](membound_default_medium1_comparison.json).
+This is a descriptive comparison of different complete stacks, not a
+statistical gate or an isolated attribution to an optimization.
 For this batch only, declared logical read-plus-write bytes divided by
 serial-grid device time has a median of 0.134 GB/s and a maximum of 0.544 GB/s:
 [`membound_default_large1_rates.json`](membound_default_large1_rates.json).

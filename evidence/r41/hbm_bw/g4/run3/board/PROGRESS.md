@@ -29,3 +29,6 @@ tiny RoPE by 20.3%; the registered performance recheck remains necessary.
 Among the 171 completed large memory-bound points, 12 are over 5% slower and
 two strided division points are about 12.4% slower; preserve those comparisons
 and distinguish the image change from any new-default optimization decision.
+The 132 completed medium points have 10 over 5% slower, including two strided
+division points about 12.6% slower; the full point comparison is linked in the
+board README and likewise requires registered rechecks.

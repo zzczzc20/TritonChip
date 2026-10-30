@@ -26,10 +26,26 @@ Vitis automatically reduced the HBM clock from the requested 450 MHz to
 -0.045 ns and two failing endpoints; hold WNS is +0.001 ns. The affected
 setup paths are in the platform HBM subsystem; the kernel setup WNS is
 +0.038 ns. These are implementation results, not board measurements. No
-board test of this image has been performed. A post-route recovery diagnostic
+board test of this image had been performed as of that update. A post-route recovery diagnostic
 is in progress; it does not establish a qualified image. The acceptance
 ledger remains governed by its existing evidence. See the
 [run-2 link evidence](../evidence/r41/hbm_bw/g4/run2/link_1f0a5aff/README.md).
+
+## Corrected candidate board campaign — 2026-10-30 UTC
+
+The original image subsequently failed FP16 matmul identity on the board; a
+synthesis-specific matrix-latency fix produced a corrected candidate. The
+author authorized its use including the 433 MHz HBM clock exception. Its
+100 MHz kernel-clock routed WNS is +0.111 ns, but HBM setup WNS is -0.085 ns
+with 22 failing endpoints; the link reports `freq-moved`, and the Critical CDC
+review is conditional. These implementation results are not clean timing
+closure. The board measured the DATA clock at 100 MHz; identity passed 3/3,
+HBM checks passed after a documented host-driver clamp fix, the original suite
+passed 113/113, and the completed large and medium memory batches passed
+342/342. Matched baseline comparisons have individual regressions requiring
+recheck. Small and tiled memory, FP8, endurance and full-model chat remain in
+progress or pending; R41 is not accepted. See the [board evidence](../evidence/r41/hbm_bw/g4/run3/board/README.md)
+and [routed review](../evidence/r41/hbm_bw/g4/run3/route_prepackage/README.md).
 
 ## Delivery update: P8 FPGA-host FP8
 

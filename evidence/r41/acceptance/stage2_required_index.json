@@ -300,9 +300,9 @@
         "evidence/r41/acceptance/p1/README.md",
         "evidence/r41/acceptance/p1/metrics.json",
         "evidence/r41/acceptance/p1/index.json",
-        "tools/performance_harness/systemc/include/tnca_tensor_engine.hpp"
+        "evidence/r41/acceptance/historical_20261028/tnca_tensor_engine.hpp"
       ],
-      "reason": "Bounded negative study distinguishes admitted immutable commands from execution: actual queue-depth 1/2 artifact runs pass eight bitwise rows, with mixed makespan changes; the single controller serializes setup and transfer. No transfer-overlap or throughput optimization is selected. This closes the Study distinction, not a physical throughput claim.",
+      "reason": "Bounded negative study distinguishes admitted immutable commands from execution: actual queue-depth 1/2 artifact runs pass eight bitwise rows, with mixed makespan changes; the single controller serializes setup and transfer. No transfer-overlap or throughput optimization is selected. This closes the Study distinction, not a physical throughput claim. Source evidence is the archived study version; the current SystemC file has since changed.",
       "closure_plan": null
     },
     {
@@ -1136,9 +1136,11 @@
       "classification": "Required",
       "evidence": [
         "doc/r41_stage2_report.md",
-        "doc/r41_report.md"
+        "doc/r41_report.md",
+        "evidence/r41/acceptance/historical_20261028/r41_report.md",
+        "evidence/r41/acceptance/historical_20261028/r41_stage2_report.md"
       ],
-      "reason": "Reports and bounded closure plans expose misses without upgrading them.",
+      "reason": "Reports and bounded closure plans expose misses without upgrading them. Historical report versions remain archived; current reports record the corrected candidate and pending checks.",
       "closure_plan": null
     },
     {
@@ -1230,8 +1232,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "d069ad6833e133b05e201bc15de3069225e65632c6dc50809d60380bb463da00",
-    "doc/r41_stage2_report.md": "9715e8ca4c05701b45ee8109059a25fbc9454220c946aed2ac2c650ef4a180c9",
+    "doc/r41_report.md": "7904da8be3138c7bcfc10df8da1fcd69299590e06d610593fc5863ae08bcaf79",
+    "doc/r41_stage2_report.md": "75e411055eb9da0fe56ccdcb86c6521c59554b660e04d2acc2685941c9f3eb7c",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "086995eaffc8cf03784787f6a72d0e1031a6783bdfbe02bd16ccae7dbf2645c0",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1271,7 +1273,6 @@
     "evidence/r41/acceptance/p1/README.md": "0b4e7578fc3d57293be7ef486079ce4406f6cbf3cbeba042b823d5a30a01b397",
     "evidence/r41/acceptance/p1/metrics.json": "2bb2a63c0ef499a3d77d7cb4bf2e5abbd764588163175921730ae9c5d9efe796",
     "evidence/r41/acceptance/p1/index.json": "d3f19d4ce93c4c1ac62c2ad9ce9b2d56280fb954d4d83339aa8c445f2432eb5f",
-    "tools/performance_harness/systemc/include/tnca_tensor_engine.hpp": "46efa44368b4b3e3654c2646a8d418f9f02e3bfb87b106707c9b1e32ff8b0ee7",
     "evidence/r41/acceptance/p1/candidate-sensitivity/README.md": "48c41c97f5b51bf7213cf301a5ce678e5d3ff087778f514dd3664fb41b703068",
     "evidence/r41/stage1/f07_ooc/README.md": "245343198105787ec30a3b5ad8202b85e6eb7bb2ac44cfe96abfcb389080018a",
     "evidence/r41/stage1/memory_service.md": "63c8ad43a0e6a194817e3b9821ffab9097032a5177bf22d38de86f428deb1e43",
@@ -1301,7 +1302,10 @@
     "evidence/r41/chat/board-51aef19-summary.json": "4fb65302973276b38a2c0ca17c6f5735a7fb493ee05bcf58dce4cdab05478065",
     "evidence/r41/chat/staged-inputs-qwen35-acf3019.json": "1bf011bfa5c9d55256c3e27409cf5e143c7f7c61312e54d75333482bc7e644c1",
     "spec/r41/chat/s2-qwen-chat-v2.json": "acca48124090a71fd1419f12718d723eb5a9e8242e18e9da30867969a449af4f",
-    "evidence/r41/chat/board-0a8d8db.tgz": "d57b2c03d58f7ae47f5ab05e797d0b810d3ad6f5553e14b824b7dca6dc9d6942"
+    "evidence/r41/chat/board-0a8d8db.tgz": "d57b2c03d58f7ae47f5ab05e797d0b810d3ad6f5553e14b824b7dca6dc9d6942",
+    "evidence/r41/acceptance/historical_20261028/r41_report.md": "d069ad6833e133b05e201bc15de3069225e65632c6dc50809d60380bb463da00",
+    "evidence/r41/acceptance/historical_20261028/r41_stage2_report.md": "9715e8ca4c05701b45ee8109059a25fbc9454220c946aed2ac2c650ef4a180c9",
+    "evidence/r41/acceptance/historical_20261028/tnca_tensor_engine.hpp": "46efa44368b4b3e3654c2646a8d418f9f02e3bfb87b106707c9b1e32ff8b0ee7"
   },
   "followups": [
     {

@@ -58,3 +58,11 @@ latency for all 32 masks against popcount. Its raw probe, synthesized netlist
 and log are in `vivado_fixed_32_masks.tgz` (SHA-256
 `db26ba9d243f57c0eb99e9d7009cf3e960a580dd92a330a952cabb0668451e0c`). These
 are RTL and synthesis results, not corrected-image board results.
+
+As a negative RTL control, the same regression was compiled with `MAC_LAT`
+forced to zero while retaining `MAC_CUTS=29`; it failed on the first matrix
+assertion (`trap code=0x40 id=1`). Icarus exits zero on `$finish` even for this
+failure, so the recorded failure is taken from the log, not its exit code.
+The passing regression log and negative-control source and log are in
+`rtl_fixed_and_bad_latency.tgz` (SHA-256
+`3c39ece81ce6b8a5c146f18b788f6e913f1af2939076bb77e08b9df6742b4af3`).

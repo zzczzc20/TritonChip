@@ -27,6 +27,33 @@ RUN2_RAW={
 }
 
 
+def validate_run2_cdc(review_path,cdc_path,image_sha256):
+    if image_sha256!=QUALIFICATIONS['r41-run2-100mhz-hbm441']['image_sha256']:
+        raise ValueError('CDC review belongs to another image')
+    cdc_path=Path(cdc_path)
+    if hashlib.sha256(cdc_path.read_bytes()).hexdigest()!=RUN2_RAW['cdc']:
+        raise ValueError('run-2 CDC report is not the original report')
+    review=json.loads(Path(review_path).read_text())
+    if review.get('status')!='pass' or review.get('kind')!='cdc-review' or review.get('image_sha256')!=image_sha256:
+        raise ValueError('run-2 CDC review is incomplete')
+    if (review.get('cdc_report_sha256')!=RUN2_RAW['cdc'] or
+            review.get('trace_sha256')!='ed2ec1ced819e81a3df0248ec3d4ba80bd462ef06e142fe3d4d4433ad7a65859' or
+            review.get('logic_sha256')!='c2018fea38f9eac440dbf444192db5eb3828fc326fd9c3ea4e39d8f0deacf682'):
+        raise ValueError('run-2 CDC review lacks the original circuit evidence')
+    rows=review.get('reviewed_critical',[])
+    if not isinstance(rows,list) or len(rows)!=56 or any(r.get('disposition')!='accepted-platform-scoped' for r in rows):
+        raise ValueError('run-2 CDC critical findings need individual dispositions')
+    reviewed={(r['rule'],r['source'],r['destination']) for r in rows}
+    actual=[]
+    for line in cdc_path.read_text().splitlines():
+        match=re.match(r'\s*\d+\s+(CDC-\d+)\s+Critical\s',line)
+        if match:
+            fields=line.split();actual.append((match.group(1),fields[-2],fields[-1]))
+    if len(actual)!=56 or len(reviewed)!=56 or set(actual)!=reviewed:
+        raise ValueError('run-2 CDC review does not match the reported endpoints')
+    return review
+
+
 def qualified_clock(path,image_sha256):
     path=Path(path).resolve();data=json.loads(path.read_text())
     if data.get('schema')!='tnca-qualified-operating-clock/1':raise ValueError('unknown clock evidence schema')
@@ -58,25 +85,8 @@ def qualified_clock(path,image_sha256):
     if run2:
         if any(files[k]['sha256']!=v for k,v in RUN2_RAW.items()):raise ValueError('run-2 raw reports are not the original reviewed reports')
         f=Path(files['cdc_review']['path']);f=f if f.is_absolute() else path.parent/f
-        review=json.loads(f.read_text())
-        if review.get('status')!='pass' or review.get('kind')!='cdc-review' or review.get('image_sha256')!=image_sha256:
-            raise ValueError('run-2 CDC review is incomplete')
-        if (review.get('cdc_report_sha256')!=RUN2_RAW['cdc'] or
-                review.get('trace_sha256')!='ed2ec1ced819e81a3df0248ec3d4ba80bd462ef06e142fe3d4d4433ad7a65859' or
-                review.get('logic_sha256')!='c2018fea38f9eac440dbf444192db5eb3828fc326fd9c3ea4e39d8f0deacf682'):
-            raise ValueError('run-2 CDC review lacks the original circuit evidence')
-        rows=review.get('reviewed_critical',[])
-        if not isinstance(rows,list) or len(rows)!=56 or any(r.get('disposition')!='accepted-platform-scoped' for r in rows):
-            raise ValueError('run-2 CDC critical findings need individual dispositions')
-        reviewed={(r['rule'],r['source'],r['destination']) for r in rows}
         c=Path(files['cdc']['path']);c=c if c.is_absolute() else path.parent/c
-        actual=[]
-        for line in c.read_text().splitlines():
-            match=re.match(r'\s*\d+\s+(CDC-\d+)\s+Critical\s',line)
-            if match:
-                fields=line.split();actual.append((match.group(1),fields[-2],fields[-1]))
-        if len(actual)!=56 or len(reviewed)!=56 or set(actual)!=reviewed:
-            raise ValueError('run-2 CDC review does not match the reported endpoints')
+        validate_run2_cdc(f,c,image_sha256)
         f=Path(files['board_clock']['path']);f=f if f.is_absolute() else path.parent/f
         capture=json.loads(f.read_text())
         samples=capture.get('counter_samples',[])

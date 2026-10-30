@@ -12,7 +12,7 @@ import auto
 import clock_qualify
 import clock_review
 import stage
-from tnca.operating_clock import qualified_clock
+from tnca.operating_clock import qualified_clock, validate_run2_cdc
 
 PLACEMENT_SHA = 'eb5a884a26b7d2cab5fed2b26121aa044a257bcdb3551aaa94e5f29e02fd657f'
 CDC_SHA = '35617dbb86a0ddb86718ea622492634bf91ff3c51effe52e19b7a299841785c5'
@@ -24,9 +24,7 @@ def capture_and_qualify(image, reports, cdc_review, capture_path, qualified_path
     if capture_path.exists() or qualified_path.exists():
         raise ValueError('clock evidence already exists; preserve it')
     static = clock_review.review(image, reports, xclbinutil)
-    review = json.loads(cdc_review.read_text())
-    if review.get('status') != 'pass' or review.get('kind') != 'cdc-review' or review.get('image_sha256') != auto.IMAGE_SHA:
-        raise ValueError('individual run-2 CDC review is not complete')
+    validate_run2_cdc(cdc_review, reports/'cdc.rpt', auto.IMAGE_SHA)
     if auto.sha(reports/'actual_cores.rpt') != PLACEMENT_SHA or auto.sha(reports/'cdc.rpt') != CDC_SHA:
         raise ValueError('original placement or CDC report changed')
     slrs = clock_qualify.actual_cores((reports/'actual_cores.rpt').read_text())

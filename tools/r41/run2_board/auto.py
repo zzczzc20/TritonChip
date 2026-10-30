@@ -9,6 +9,7 @@ import argparse
 import datetime
 import fcntl
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -96,6 +97,11 @@ def validate_plan(plan, image):
             raise ValueError('each stage requires a complete argv')
         if not isinstance(stage.get('timeout_seconds'), int) or stage['timeout_seconds'] <= 0:
             raise ValueError('each stage requires a positive timeout')
+        registration = stage.get('registration', {})
+        registered_path = Path(registration.get('path', ''))
+        if (not registered_path.is_file() or sha(registered_path) != registration.get('sha256')
+                or str(registered_path) not in argv):
+            raise ValueError('each stage must bind its registered workload file')
         checks = stage.get('checks')
         if not isinstance(checks, list) or not checks or any(
             not isinstance(c, dict) or not isinstance(c.get('path'), str) or not c['path']
@@ -114,6 +120,14 @@ def validate_plan(plan, image):
             raise ValueError('preflight evidence is not a passing image-bound review: ' + str(p))
     if not Path(plan.get('root', '')).is_dir():
         raise ValueError('plan source root is missing')
+    # The review must actually cover the original 56 identities. A JSON file
+    # labelled pass is not enough, and the report can change during the wait.
+    module_path = Path(plan['root'])/'python/tnca/operating_clock.py'
+    spec = importlib.util.spec_from_file_location('_run2_clock_preflight', module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    cdc = next(item for item in evidence if item['kind'] == 'cdc-review')
+    module.validate_run2_cdc(cdc['path'], Path(plan['reports'])/'cdc.rpt', IMAGE_SHA)
 
 
 def board_environment():
@@ -183,6 +197,9 @@ def main():
         if row['uuid'] != IMAGE_UUID or clock_mhz(a.sysfs) != 100:
             raise RuntimeError('loaded image UUID or clock differs; stopping')
         for stage in plan['stages']:
+            registration = stage['registration']
+            if sha(Path(registration['path'])) != registration['sha256']:
+                raise RuntimeError('stage registration changed before ' + stage['id'])
             row = probe(a.sysfs)
             if not idle(row) or row['uuid'] != IMAGE_UUID or clock_mhz(a.sysfs) != 100:
                 raise RuntimeError('card busy or image/clock changed before ' + stage['id'])

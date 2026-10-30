@@ -1,4 +1,4 @@
-# Board campaign progress, 2026-10-30 19:30 UTC
+# Board campaign progress, 2026-10-30 20:00 UTC
 
 The author explicitly authorized final-image loading without further approval,
 including the 433 MHz exception. The 15-minute idle rule and protection of
@@ -13,8 +13,8 @@ state and raw records under
 `/home/zzhouch/r41run3/queue_resume_2/results/original113/r3-s2-original-suite/original/`.
 The 113-point stage passed 113/113; its raw records and preliminary performance
 comparison are linked from `README.md`. The queue has started the default
-513-point memory-bound stage; at the time above its first batch had 16
-successful sample processes and no failures. The queue will run later
+513-point memory-bound stage; at the time above its first batch had covered 51
+configurations with 83 successful sample processes and no failures. The queue will run later
 registered stages in order, stopping on failure. The
 previous identity and HBM clamp failures and fixes are preserved in `README.md`.
 

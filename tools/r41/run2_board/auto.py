@@ -151,6 +151,9 @@ def main():
         # program.sh performs its own device and idle checks; repeat the probe
         # immediately before each operation and refuse a changed idle identity.
         for mode in ('--check', '--go'):
+            # The image and review files may have changed during the wait or
+            # between --check and --go. Never rely on the initial digest alone.
+            validate_plan(plan, a.image)
             now = probe(a.sysfs)
             if not idle(now) or (now['uuid'], now['total execs']) != tracker.identity:
                 raise RuntimeError('card changed or became busy before programming')
@@ -164,6 +167,8 @@ def main():
             row = probe(a.sysfs)
             if not idle(row) or row['uuid'] != IMAGE_UUID or clock_mhz(a.sysfs) != 100:
                 raise RuntimeError('card busy or image/clock changed before ' + stage['id'])
+            if any(Path(check['path']).exists() for check in stage['checks']):
+                raise RuntimeError('stage result already exists; use a fresh output: ' + stage['id'])
             record('stage-start', stage=stage['id'])
             with (a.out / (stage['id'] + '.log')).open('a') as f:
                 result = subprocess.run(stage['argv'], cwd=plan['root'], env=os.environ.copy(), stdout=f,

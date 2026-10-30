@@ -36,3 +36,13 @@ assemblies both have SHA-256
 `d0f5f8d65b544945fa935f7ae7b8dc0cf8e672c3f297b59dff143ac193bf043e`,
 the same as the large-point assembly. This repeat across shapes does not
 isolate the hardware change or substitute for the registered recheck.
+
+An earlier controlled RTL simulation of a different small strided add point
+found that enabling the hybrid LSU alone raised its measured cycles by 22.59%
+relative to the G2 arm, with one sample per arm; see
+[`../../../strided/README.md`](../../../strided/README.md). That bench uses synthetic
+memory and a different point and configuration, so it does not attribute the
+board division result. Its later narrow-pair beat-count candidate is already
+present in the frozen `8d237223` RTL: reverse-checking the recorded patch
+succeeds and those two RTL files are unchanged between that commit and this
+checkout. Reapplying that candidate is therefore not a fix for this image.

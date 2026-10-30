@@ -35,3 +35,14 @@ routed checkpoint used by the independent post-link review is SHA-256
 Post-link reports and individual CDC review are in progress. A new,
 image-specific author decision is needed both for the 433 MHz HBM deviation
 and before loading this image on the shared card.
+
+The independent routed-checkpoint analysis records 1,278,501 fully routed
+out of 1,278,501 routable nets, with zero routing errors:
+[`route_status.rpt`](route_status.rpt), SHA-256
+`2f9a29b957406fb7356caf23aa467a9322238dc828b64937374db166e9caa06b`.
+The detailed [`cdc.rpt.gz`](cdc.rpt.gz) has decompressed SHA-256
+`8c98866634215f258f21c6baf2b1a3c848425ae65b50289a7ccaf4679dcae529`.
+Its 56 critical rule/source/destination triples are exactly the same as the
+original run-2 CDC report. One of those differs from the earlier individually
+reviewed platform baseline, so this comparison is not a disposition; that
+source still needs an individual circuit and constraint review.

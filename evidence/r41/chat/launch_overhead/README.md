@@ -147,3 +147,14 @@ During the running online retries, a spot identity check found that
 and the TLM binary `276a8f1246289f05499da3857e4968e5dea58228a2a8cca8bc58be268118caea`.
 This partial, mid-run check does not establish the identity of every loaded file
 or prove source immutability throughout either run.
+
+The two online Qwen3.5 retries both exited 0 and reported `status: pass` and
+`persistent_session_check.passed: true` after the different intervening prompt.
+The exported logits files are identical across submission policies (SHA-256
+`600150fdd88faf90d8701a89974205a90d220d977331415727f1a02db4409228`).
+This is a four-layer TLM session check, not a board measurement or full-model
+quality judgment. GB10 report paths under `~/r41-k8launch-runs` are
+`q35-batched-online-20261029/report.json` (SHA-256
+`54cabca20aa1b1a67a87595a433345d9a891bd778506fa0680d2b6a83c8ab3fc`)
+and `q35-single-online-20261029/report.json` (SHA-256
+`f3d813202e930fd334a84789b4df2302df409d641c90e52047739c8fac1fa37b`).

@@ -46,3 +46,20 @@ Its 56 critical rule/source/destination triples are exactly the same as the
 original run-2 CDC report. One of those differs from the earlier individually
 reviewed platform baseline, so this comparison is not a disposition; that
 source still needs an individual circuit and constraint review.
+
+The closed early reports additionally show the three cores and three local
+TMUs physically placed in their respective SLRs, with no failures:
+[`actual_cores.rpt`](actual_cores.rpt), SHA-256
+`edef2c1486e20da4b73f1a54129f2f8bb6648751a08dee7299d4f94552a710f4`.
+All 22 rows in [`failing_setup_all_groups.tsv`](failing_setup_all_groups.tsv)
+are HBM platform paths; SHA-256
+`a2d778630f4d11e6296ebd7dbdda592eb2befff34d33f03ff182e574a9f4553d`.
+The [`bus_skew.rpt.gz`](bus_skew.rpt.gz) report contains 145 MET and zero
+VIOLATED entries; decompressed SHA-256
+`e897d0999580e6c17d177d47b5261f4cf3d48125c8f3046fb6075ca329067082`.
+The candidate's [`platform_irq_trace.txt`](platform_irq_trace.txt) has
+SHA-256 `2b13c1d5191c0693b057ca5cce743357900d1a8c394b51d0096bea17f66f2f59`.
+Its separate implemented source/D and IRQ/D cone trace has SHA-256
+`c2018fea38f9eac440dbf444192db5eb3828fc326fd9c3ea4e39d8f0deacf682`,
+identical to the original run-2 trace. Structural identity does not itself
+close the outstanding CDC disposition.

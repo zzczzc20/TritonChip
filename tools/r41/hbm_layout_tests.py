@@ -147,6 +147,14 @@ class LayoutTests(unittest.TestCase):
                 self.open_link(accessor, size=size)
             self.assertEqual(accessor.allocations, [])
 
+    def test_oversized_request_is_clamped_to_complete_striped_group(self):
+        accessor = Accessor()
+        link = self.open_link(accessor, size=2 * STRIPED_BYTES)
+        self.assertEqual(accessor.allocations, [(STRIPED_BYTES, 32)])
+        self.assertEqual(link.hbm_allocation['requested_bytes'], 2 * STRIPED_BYTES)
+        self.assertEqual(link.hbm_allocation['exposed_bytes'], STRIPED_BYTES)
+        self.assertEqual(link.hbm_allocation['layout'], StripedHBMLayout.name)
+
     def test_nonzero_base_and_incorrect_topology_refused(self):
         with self.assertRaises(DependencyFailed):
             self.open_link(Accessor(base=1 << 28))

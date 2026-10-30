@@ -17,6 +17,7 @@ def main():
         p.add_argument('--' + name, type=Path, required=True)
     p.add_argument('--xclbinutil', default='xclbinutil')
     p.add_argument('--sysfs', type=Path, default=Path('/sys/bus/pci/devices'))
+    p.add_argument('--prior', type=Path, help='reuse validated passing stages from this queue output')
     a = p.parse_args()
     root, work, image, out = (v.resolve() for v in (a.root, a.work, a.image, a.out))
     state = candidate_queue.preflight(root, work, image, a.approval, a.waiver,
@@ -38,6 +39,24 @@ def main():
             reg = Path(item['path'])
             if auto.sha(reg) != item['sha256']:
                 raise RuntimeError('candidate registration changed')
+            if a.prior:
+                previous = a.prior/'results'/item['id']
+                summary = previous/'stage.json'
+                if summary.is_file():
+                    result = json.loads(summary.read_text())
+                    rows = json.loads(reg.read_text())['experiments']
+                    done = result.get('experiments', [])
+                    if result.get('status') != 'pass' or len(rows) != len(done):
+                        raise ValueError('prior stage summary is incomplete')
+                    for row, prior in zip(rows, done):
+                        report = previous/row['id']/'report.json'
+                        if (prior.get('id') != row['id'] or prior.get('manifest_sha256') != row['sha256']
+                                or prior.get('report_sha256') != auto.sha(report)
+                                or len(prior.get('checks', [])) != len(row['checks'])
+                                or any(auto.sha(Path(c['path'])) != c['sha256'] for c in prior['checks'])):
+                            raise ValueError('prior stage evidence changed')
+                    record('stage-reused', stage=item['id'], prior=str(summary), sha256=auto.sha(summary))
+                    continue
             target = out/'results'/item['id']
             cmd = [str(a.python), str(root/'tools/r41/run2_board/stage.py'), '--root', str(root),
                    '--out', str(target), '--python', str(a.python), '--registration', str(reg)]

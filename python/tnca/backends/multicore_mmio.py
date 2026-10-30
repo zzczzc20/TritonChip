@@ -209,8 +209,8 @@ class MulticoreXDMALink(XDMALink):
         if striped:
             if self.read_reg(STRIPED_REGISTER) != STRIPED_SIGNATURE:
                 raise DeviceLost('invalid striped HBM layout signature')
-            if operator.index(nbytes) != STRIPED_BYTES:
-                raise ArgumentError('striped HBM requires an explicit 8 GiB allocation')
+            if min(operator.index(nbytes), banks[0]['size']) != STRIPED_BYTES:
+                raise ArgumentError('striped HBM requires an exposed 8 GiB allocation')
         allocation = super().hbm_open(nbytes)
         if striped:
             banks = self.hbm_allocation.get('physical_banks', [])

@@ -1,4 +1,4 @@
-# Board campaign progress, 2026-10-30 23:13 UTC
+# Board campaign progress, 2026-10-30 23:45 UTC
 
 The author explicitly authorized final-image loading without further approval,
 including the 433 MHz exception. The 15-minute idle rule and protection of
@@ -15,7 +15,7 @@ The 113-point stage passed 113/113; its raw records and preliminary performance
 comparison are linked from `README.md`. The queue has started the default
 513-point memory-bound stage; at the time above both large batches passed
 171/171 and both medium batches passed 171/171. The first small batch had
-covered 30 configurations with no failures. The queue will run later
+covered 86 configurations with no failures. The queue will run later
 registered stages in order, stopping on failure. The
 previous identity and HBM clamp failures and fixes are preserved in `README.md`.
 
@@ -41,13 +41,14 @@ The Stage 2 integrity checker also passes after the original evidence versions
 were preserved; the acceptance judgments remain unchanged and not accepted
 ([`../../../../acceptance/historical_20261028/README.md`](../../../../acceptance/historical_20261028/README.md)).
 
-The existing candidate queue does not include the mandatory BF16 Q41-core,
-XL-core or final independent reproduction. The exact Qwen3.5-2B checkpoint
-at revision `15852e8c16360a2fea060d615a32b45270f8a8fc` is being copied
-without board access to `/home/zzhouch/r41s2_2b_inputs/snapshot` by local
-staging PID 3279258; `/tmp/r41_stage_qwen35_2b.exit` and the destination
-`verification.json` must both indicate success before use. PID 3279405 waits
-for that verification, then copies and verifies the locked FP32 reference;
-its exit file is `/tmp/r41_stage_qwen35_ref.exit`. Neither staging job is a
-model execution or an acceptance result. A standard-path runner and bounded
-pilot still need to be established before those workloads can be queued.
+The original candidate queue does not include mandatory BF16 Q41-core, XL-core
+or final independent reproduction. Qwen3.5-2B checkpoint, independent FP32
+reference and pinned official sources are staged and verified; the pilot
+passed a two-step CPU check, not a board acceptance run
+([`../../../../acceptance/q41_pilot/README.md`](../../../../acceptance/q41_pilot/README.md)).
+Board-host PID 1132297 waits for all twelve original candidate queue stages,
+verifies their recorded evidence, and then waits for the matching idle card to
+run the preregistered one-hour, two-step Q41 pilot. Its log is
+`/home/zzhouch/r41run3/q41_pilot_queue/queue.jsonl`. It never loads an image;
+it stops if the predecessor or pilot fails. Full Q41-core, XL-core and
+independent reproduction still require subsequent work and are not passes.

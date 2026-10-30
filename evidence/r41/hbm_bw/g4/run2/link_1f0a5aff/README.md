@@ -45,3 +45,21 @@ The recovery diagnostic completed with exit 0 and produced
 After its Vivado process exited, a separate read-only bus-skew and check-timing
 audit was launched with `audit_skew.tcl` on that checkpoint (x86 PID 561140).
 Results are pending; this audit does not create or load an image.
+
+### Original image CDC identity comparison — 2026-10-30
+
+A source/destination/rule comparison of the original run-2 `analysis_g4/cdc.rpt`
+against the 56 individually listed findings in
+`evidence/r40/v2/convergence/attempt03/qualified_clock90_after_load.json`
+found **one new and one absent** finding, despite both reports having 56 total.
+The new finding is CDC-10, depth 2, false-path exception, from
+`level0_i/blp/blp_i/PLP/ss_fic/inst/user_fanout_firewall_and_regslices/axi_firewall_ctrl_user/inst/gen_mi.mi_r_error_i_reg/C`
+to
+`level0_i/blp/blp_i/PLP/ss_dma/inst/axi_intc_aggregated_mgmt/U0/INTC_CORE_I/INTR_DETECT_GEN[0].ASYNC_GEN.intr_ff_reg[0]/D`.
+The absent finding has the same destination and rule, but source
+`level0_i/blp/blp_i/PLP/ss_fic/inst/data_firewalls_and_regslices/axi_firewall_data_c2h/inst/gen_si.si_r_error_i_reg/C`.
+Both reported endpoints are under the platform static logic. Their exact
+identity is different: the previous count-only comparison cannot establish
+that the prior individual review covers the new path. Circuit and constraint
+review remains outstanding; the user's HBM clock exception does not by itself
+constitute a CDC disposition.

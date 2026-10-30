@@ -64,11 +64,20 @@ def run(root, out, python, registration):
             raise RuntimeError('experiment did not complete: ' + row['id'])
         checked = []
         for check in row['checks']:
-            path = target / check['path']
+            relative = Path(check['path'])
+            if relative.is_absolute() or '..' in relative.parts:
+                raise ValueError('result check must stay under its experiment output')
+            path = target / relative
             value = json.loads(path.read_text())
             for key in check['field']:
                 value = value[key]
-            if value != check['equals']:
+            if 'equals' in check:
+                passed = value == check['equals'] and type(value) is type(check['equals'])
+            elif 'length_equals' in check:
+                passed = isinstance(value, (list, dict)) and len(value) == check['length_equals']
+            else:
+                raise ValueError('result check needs equals or length_equals')
+            if not passed:
                 raise RuntimeError('experiment result check failed: ' + row['id'] + ' ' + str(path))
             checked.append(dict(path=str(path), sha256=sha(path)))
         results.append(dict(id=row['id'], manifest_sha256=row['sha256'], report_sha256=sha(report), checks=checked))

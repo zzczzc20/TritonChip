@@ -1,0 +1,27 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "endurance",
+ "experiments": [
+  {
+   "id": "r2-s2-endurance",
+   "manifest": "spec/r41/run2/board/r2-s2-endurance.json",
+   "sha256": "6324cb5b679922b943c71e3db2673885b68856982b99580c9b767d1aaf3beaf7",
+   "checks": [
+    {
+     "path": "mix/endurance.json",
+     "field": [
+      "result"
+     ],
+     "equals": "pass"
+    },
+    {
+     "path": "mix/endurance.json",
+     "field": [
+      "hours"
+     ],
+     "minimum": 2
+    }
+   ]
+  }
+ ]
+}

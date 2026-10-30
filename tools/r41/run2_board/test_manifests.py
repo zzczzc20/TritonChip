@@ -6,6 +6,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).parent))
 import auto
 import manifests
+import registrations
 import stage
 
 
@@ -45,6 +46,15 @@ class Run2Manifests(unittest.TestCase):
             self.assertIn('--require-x8', args)
             self.assertIn('--require-dp', args)
             self.assertIn('run-2', args)
+
+    def test_every_required_stage_has_registered_results_and_current_hashes(self):
+        for name in auto.REQUIRED:
+            registration = registrations.group(name)
+            self.assertEqual(json.loads((manifests.ROOT/registrations.OUT/(name+'.json')).read_text()), registration)
+            self.assertTrue(registration['experiments'])
+            for experiment in registration['experiments']:
+                self.assertTrue(experiment['checks'])
+                self.assertEqual(experiment['sha256'], stage.sha(manifests.ROOT/experiment['manifest']))
 
 
 if __name__ == '__main__':

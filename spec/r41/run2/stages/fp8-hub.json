@@ -1,0 +1,20 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "fp8-hub",
+ "experiments": [
+  {
+   "id": "r2-s2-fp8-hub",
+   "manifest": "spec/r41/run2/board/r2-s2-fp8-hub.json",
+   "sha256": "73eec75b9addfb77d11d8353952d30d34cb86d0ad279184df84733cd15e18427",
+   "checks": [
+    {
+     "path": "summary.json",
+     "field": [
+      "result"
+     ],
+     "equals": "pass"
+    }
+   ]
+  }
+ ]
+}

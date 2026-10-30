@@ -1,0 +1,56 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "chat-q35",
+ "experiments": [
+  {
+   "id": "r2-s2-qwen-chat-v3-q35",
+   "manifest": "spec/r41/run2/board/r2-s2-qwen-chat-v3-q35.json",
+   "sha256": "b40bfd5693ef39c68ee754ac822f0e7c43884f22fda9b77d88adc6cf26a8f82b",
+   "checks": [
+    {
+     "path": "q35-quality/quality.json",
+     "field": [
+      "status"
+     ],
+     "equals": "pass"
+    },
+    {
+     "path": "q35-quality/quality.json",
+     "field": [
+      "model_scope"
+     ],
+     "equals": "full-checkpoint"
+    },
+    {
+     "path": "q35-quality/quality.json",
+     "field": [
+      "reduced_proof"
+     ],
+     "equals": false
+    },
+    {
+     "path": "q35-quality/quality.json",
+     "field": [
+      "prompts"
+     ],
+     "length_equals": 5
+    },
+    {
+     "path": "q35-session/report.json",
+     "field": [
+      "status"
+     ],
+     "equals": "pass"
+    },
+    {
+     "path": "q35-session/report.json",
+     "field": [
+      "persistent_session_check",
+      "passed"
+     ],
+     "equals": true
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,96 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "membound-default",
+ "experiments": [
+  {
+   "id": "r2-membound-large-1-default",
+   "manifest": "spec/r41/run2/board/r2-membound-large-1-default.json",
+   "sha256": "cc81acfbd5aeababbdbbdb879ba8a4d90e6ee98ff4e0cbc19a43ae84c097c547",
+   "checks": [
+    {
+     "path": "membound_large_1/batch.json",
+     "field": [
+      "status"
+     ],
+     "equals": "complete"
+    }
+   ]
+  },
+  {
+   "id": "r2-membound-large-2-default",
+   "manifest": "spec/r41/run2/board/r2-membound-large-2-default.json",
+   "sha256": "bd197fe49521f7d638321d577075569c587c2373042d13af18a088c88df574e2",
+   "checks": [
+    {
+     "path": "membound_large_2/batch.json",
+     "field": [
+      "status"
+     ],
+     "equals": "complete"
+    }
+   ]
+  },
+  {
+   "id": "r2-membound-medium-1-default",
+   "manifest": "spec/r41/run2/board/r2-membound-medium-1-default.json",
+   "sha256": "791a7028ee24907a62824ccf5a8662e993523f3a939b5e1334da19083802ad59",
+   "checks": [
+    {
+     "path": "membound_medium_1/batch.json",
+     "field": [
+      "status"
+     ],
+     "equals": "complete"
+    }
+   ]
+  },
+  {
+   "id": "r2-membound-medium-2-default",
+   "manifest": "spec/r41/run2/board/r2-membound-medium-2-default.json",
+   "sha256": "d882e6281f73d3c0b58d7dc4ea40b21784b214de1cac3003da2ec8bf9b2d5135",
+   "checks": [
+    {
+     "path": "membound_medium_2/batch.json",
+     "field": [
+      "status"
+     ],
+     "equals": "complete"
+    }
+   ]
+  },
+  {
+   "id": "r2-membound-small-1-default",
+   "manifest": "spec/r41/run2/board/r2-membound-small-1-default.json",
+   "sha256": "bc54edb4cb042c5f4ac1457bcacad52f180f3dceba03c25e27791696dbc53a89",
+   "checks": [
+    {
+     "path": "membound_small_1/batch.json",
+     "field": [
+      "status"
+     ],
+     "equals": "complete"
+    }
+   ]
+  },
+  {
+   "id": "r2-membound-small-2-default",
+   "manifest": "spec/r41/run2/board/r2-membound-small-2-default.json",
+   "sha256": "254b5fe9e929fb8930355aca659c6534b9fde4ee185cbfacbe2ccbb447ab4d85",
+   "checks": [
+    {
+     "path": "membound_small_2/batch.json",
+     "field": [
+      "status"
+     ],
+     "equals": "complete"
+    }
+   ]
+  }
+ ],
+ "coverage": {
+  "suite": "archbench/suites/r41_membound.json",
+  "suite_sha256": "3ecab39ee849662662b158b0ae6e23c9f413cbfb0eef39cacf643817cf7ae91f",
+  "count": 513,
+  "tiled_pointwise": "0"
+ }
+}

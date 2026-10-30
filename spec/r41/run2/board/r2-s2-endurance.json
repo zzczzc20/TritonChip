@@ -144,7 +144,9 @@
     "--duration",
     "7200",
     "--fp8-every",
-    "3"
+    "3",
+    "--image-label",
+    "run-2"
    ],
    "timeout_seconds": 14400,
    "timing_boundary": "ArchBench protocol 2: cold call untimed; registered warm-up/timed steady calls; device-cycles-serial-grid and device-graph-makespan from first accepted launch to last device completion (MMIO common-clock endpoints); request-latency recorded, not ranked",

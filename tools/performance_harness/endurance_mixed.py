@@ -225,7 +225,8 @@ def run(args, probe=None, batch_cls=None, fp8_runner=None):
                   sessions_record=str(sessions_path), host_record=str(out / 'host.jsonl'),
                   result='pass' if ok and not residual else ('pass-with-residual' if ok else 'fail'),
                   residual=residual or 'none',
-                  conclusion=(f'{len(sessions)} sessions over {hours:.2f} h on the run-1 image, '
+                  conclusion=(f'{len(sessions)} sessions over {hours:.2f} h on the '
+                              f'{getattr(args, "image_label", "run-1")} image, '
                               f'{sum(1 for s in sessions if s["ok"])} passed'),
                   next_step='fold into the S2-01 delivery record' if ok else 'triage from sessions.jsonl')
     experiment.publish(out / 'endurance.json', record)
@@ -273,6 +274,7 @@ def main():
     ap.add_argument('--fp8-every', type=int, default=3)
     ap.add_argument('--seed', type=int, default=20261023)
     ap.add_argument('--sample-seconds', type=float, default=60)
+    ap.add_argument('--image-label', choices=('run-1', 'run-2'), default='run-1')
     args = ap.parse_args()
     import experiment
     record = run(args, probe=experiment.sysfs_probe)

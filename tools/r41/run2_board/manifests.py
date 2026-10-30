@@ -120,6 +120,8 @@ def derive(path, name):
                 step['argv'].append('--require-dp')
                 if '--require-x8' not in step['argv']:
                     step['argv'].append('--require-x8')
+        if 'tools/performance_harness/endurance_mixed.py' in step['argv']:
+            step['argv'] += ['--image-label', 'run-2']
     return spec
 
 

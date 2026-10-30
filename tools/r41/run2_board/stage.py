@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import subprocess
 import auto
@@ -101,8 +102,10 @@ def run(root, out, python, registration):
                 passed = value == check['equals'] and type(value) is type(check['equals'])
             elif 'length_equals' in check:
                 passed = isinstance(value, (list, dict)) and len(value) == check['length_equals']
+            elif 'minimum' in check:
+                passed = type(value) in (int, float) and math.isfinite(value) and value >= check['minimum']
             else:
-                raise ValueError('result check needs equals or length_equals')
+                raise ValueError('result check needs equals, length_equals or minimum')
             if not passed:
                 raise RuntimeError('experiment result check failed: ' + row['id'] + ' ' + str(path))
             checked.append(dict(path=str(path), sha256=sha(path)))

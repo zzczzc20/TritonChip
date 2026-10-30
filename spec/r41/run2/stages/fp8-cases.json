@@ -1,0 +1,20 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "fp8-cases",
+ "experiments": [
+  {
+   "id": "r2-s2-fp8-cases",
+   "manifest": "spec/r41/run2/board/r2-s2-fp8-cases.json",
+   "sha256": "5cfa647899f697a945227404fb31ac2b6c125e1555e561d7a3bff789bad6fa05",
+   "checks": [
+    {
+     "path": "summary.json",
+     "field": [
+      "result"
+     ],
+     "equals": "pass"
+    }
+   ]
+  }
+ ]
+}

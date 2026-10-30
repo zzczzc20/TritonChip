@@ -20,6 +20,11 @@ tiny RoPE at 4,276 versus 3,554 cycles (20.3% slower). See all sample counts
 and matched values in [`original113_comparison.json`](original113_comparison.json).
 This descriptive comparison is not the statistical performance gate; the
 slower points need the registered recheck.
+The profiles, software trees and compiled artifacts differ between the two
+images, so this comparison measures the whole candidate stack and does not
+isolate an RTL cause. In tiny RoPE, the three first-sample kernel cycle counts
+change from 801/757/2,101 to 1,009/1,015/2,365; the three-sample median
+changes from 3,554 to 4,276 cycles. The cause is not yet established.
 
 The suite includes a passing
 [`llama_prefill/large`](llama_prefill_large.jsonl) sample with maximum relative

@@ -51,6 +51,14 @@ on `PATH` started as `~/r41run3/build_8d237223_retry1` (x86 PID 566798).
 It remains the third full synthesis candidate out of the permitted five;
 the original run-2 image remains incorrect and is not accepted.
 
+A subsequent x86 source audit compared the staged candidate against the
+original hash-pinned frozen archive over 331 image-source files: only
+`rtl/core/tnca_matrix.v` differs, with no missing or extra files. The staged
+matrix file SHA-256 is
+`95556ee3e373fe2be239a30aebf5df8264d1018a5a324a4af7a31e63282ce9da`.
+The separately generated candidate source archive from commit `8d237223` has
+SHA-256 `d64c78c9edb6c22b86a6a31cb8f19347cc87d2db20de5900896b3e95b54d3521`.
+
 The corrected source passed the RTL `make core-mmadp` test for cut masks 0,
 18, 29 and 31, and the capability-off refusal case. A separate Vivado 2023.2
 synthesis regression using the corrected declaration verified the output

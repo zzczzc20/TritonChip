@@ -97,3 +97,14 @@ This trace establishes the structure and reconciles why both named sources
 can feed the same endpoint, but it does not establish the pulse or glitch
 behavior of all asynchronous inputs, or dispose the CDC-10 finding. The
 original CDC review gate remains open pending that analysis.
+
+The installed Vivado 2023.2 vendor RTL is a useful lead, not proof that it is
+byte-identical to the source used to build the static platform. In its
+`axi_firewall_v1_2_vl_rfs.sv` (SHA-256
+`043f70b671e3523ddb75fd00207863dec9ce5c82086b88f03b1f954d2338c9cf`),
+`mi_r_error_i` is a clocked state bit set by `r_error_set` and cleared by
+reset or `r_error_reset`. Its `axi_intc_v4_1_vh_rfs.vhd` (SHA-256
+`2108f76aa615004a7ccaf4afd3139b2565bed31d1ae03fdeb94fc2173ad149a6`)
+contains an `ASYNC_REG` synchronizer chain for an asynchronous interrupt.
+Neither inspection establishes a minimum pulse duration or excludes glitches
+in the implemented multi-source aggregation.

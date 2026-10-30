@@ -60,6 +60,18 @@ report_timing -hold -max_paths 200 -nworst 1 -unique_pins -file $out/top_hold_pa
 if {[catch {report_design_analysis -timing -setup -max_paths 5000 -file $out/design_analysis.rpt} m]} {puts "WARN da $m"}
 if {[catch {report_design_analysis -logic_level_distribution -logic_level_dist_paths 5000 -file $out/logic_levels.rpt} m]} {puts "WARN ll $m"}
 if {[catch {report_design_analysis -congestion -file $out/congestion.rpt} m]} {puts "WARN cg $m"}
+# Reuse the open routed checkpoint for the three-core SLR audit. Standalone
+# post-link packages may omit this script; in that case no placement result is
+# claimed, and the board clock qualification must obtain it separately.
+set root [file normalize [file join [file dirname [info script]] ../../..]]
+set placement_audit [file join $root flow fpga audit_r40_placed_cores.tcl]
+if {[file isfile $placement_audit]} {
+    set ::r40_shared_checkpoint [file normalize $checkpoint]
+    set argv [list $checkpoint [file join $out actual_cores.rpt]]
+    source $placement_audit
+    unset ::r40_shared_checkpoint
+    stamp "actual core placement verified"
+}
 stamp done
 puts "R41RUN2_ANALYSIS_DONE"
 exit

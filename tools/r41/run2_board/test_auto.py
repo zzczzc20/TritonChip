@@ -276,6 +276,77 @@ class Run2QualificationTests(unittest.TestCase):
                                             root/'qualified.json', root/'sysfs', 'xclbinutil')
                 capture.assert_not_called()
 
+    def test_candidate_clock_rejects_unreviewed_cdc_endpoint(self):
+        import json
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parents[3]/'python'))
+        from tnca.operating_clock import qualified_clock
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            image_sha = 'a'*64
+            uid = '11111111-2222-3333-4444-555555555555'
+            names = ('timing', 'route', 'cdc', 'board_clock', 'placement', 'clock_review',
+                     'cdc_review', 'bus_skew', 'failing_setup')
+            paths = {n: root/(n+'.json') for n in names}
+            for name in ('timing', 'route', 'bus_skew', 'failing_setup'):
+                paths[name].write_text(name)
+            paths['cdc'].write_text(' 1 CDC-10 Critical combinational 2 False Path source/C dest/D\n')
+            paths['placement'].write_text(''.join(f'core {i} actual_slrs {{SLR{i}}} expected SLR{i} pass 1\n' for i in range(3))+'failing_cores {}\n')
+            paths['board_clock'].write_text(json.dumps(dict(image_sha256=image_sha, loaded_xclbin_uuid=uid,
+                clock_hz=100_000_000, counter_samples=[{'frequencies_mhz': [100]}]*3)))
+            cdc = dict(schema='tnca-candidate-cdc-review/1', kind='cdc-review', status='pass',
+                image_sha256=image_sha, cdc_report_sha256=auto.sha(paths['cdc']),
+                reviewed_critical=[dict(rule='CDC-10', source='source/C', destination='dest/D',
+                                        disposition='accepted-platform-scoped', review='reviewed')])
+            paths['cdc_review'].write_text(json.dumps(cdc))
+            review = dict(schema='tnca-candidate-clock-review/1', kind='clock-review', status='pass',
+                image_sha256=image_sha, image_uuid=uid, clocks_mhz={'DATA_CLK': 100, 'hbm_aclk': 450},
+                original_design_timing=dict(wns=0.02, whs=0.001, setup_failing=0, hold_failing=0),
+                kernel_timing=dict(wns=0.04, whs=0.001, setup_failing=0, hold_failing=0),
+                pulse_width_timing=dict(wpws=0.0, tpws_failing=0),
+                route=dict(routable=1, fully_routed=1, errors=0, unrouted=0),
+                report_sha256={raw: auto.sha(paths[name]) for name,raw in
+                    (('timing','timing.rpt'), ('route','route_status.rpt'), ('bus_skew','bus_skew.rpt'),
+                     ('failing_setup','failing_setup_all_groups.tsv'))})
+            paths['clock_review'].write_text(json.dumps(review))
+            data = dict(schema='tnca-qualified-operating-clock/1', image_sha256=image_sha,
+                qualification='r41-corrected-candidate-100mhz', clock_hz=100_000_000,
+                setup_scope='full-design', setup_wns_ns=0.02, hold_whs_ns=0.001, pulse_width_wpws_ns=0.0,
+                route_legal=True, cdc_review='passed', physical_core_slrs={'0': 0, '1': 1, '2': 2},
+                clock_source='measured-board-counter', evidence_files={n: dict(path=str(p), sha256=auto.sha(p)) for n,p in paths.items()})
+            qualified = root/'qualified.json'
+            qualified.write_text(json.dumps(data))
+            self.assertEqual(qualified_clock(qualified, image_sha)['clock_hz'], 100_000_000)
+            cdc['reviewed_critical'][0]['destination'] = 'other/D'
+            paths['cdc_review'].write_text(json.dumps(cdc))
+            data['evidence_files']['cdc_review']['sha256'] = auto.sha(paths['cdc_review'])
+            qualified.write_text(json.dumps(data))
+            with self.assertRaisesRegex(ValueError, 'exact critical endpoints'):
+                qualified_clock(qualified, image_sha)
+
+    def test_candidate_identity_does_not_capture_without_cdc_review(self):
+        import json
+        import sys
+        from unittest.mock import patch
+        folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        sys.modules.setdefault('auto', auto)
+        spec = importlib.util.spec_from_file_location('candidate_identity_test', folder/'candidate_identity.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            image = root/'image'
+            image.write_bytes(b'candidate')
+            review = root/'clock.json'
+            review.write_text(json.dumps({'status': 'pass'}))
+            with patch.object(mod.candidate_clock, 'review', return_value={'status': 'pass'}), \
+                 patch.object(mod.clock_qualify, 'capture') as capture:
+                with self.assertRaises(FileNotFoundError):
+                    mod.qualify(image, root, review, root/'missing-cdc.json', root/'capture.json',
+                                root/'qualified.json', root/'sysfs', 'xclbinutil')
+                capture.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

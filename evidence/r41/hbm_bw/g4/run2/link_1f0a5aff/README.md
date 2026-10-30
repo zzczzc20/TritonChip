@@ -108,3 +108,12 @@ reset or `r_error_reset`. Its `axi_intc_v4_1_vh_rfs.vhd` (SHA-256
 contains an `ASYNC_REG` synchronizer chain for an asynchronous interrupt.
 Neither inspection establishes a minimum pulse duration or excludes glitches
 in the implemented multi-source aggregation.
+
+The previous conditional review described the old source as a vendor sticky
+firewall-error level into this same management IRQ synchronizer, and retained
+the original Critical severity. It relied on the platform IP contract and
+unchanged vendor IP logic and constraints. The new and old reported sources
+are both traced into that endpoint, but extending the prior disposition to the
+new source still requires establishing those assumptions for the implemented
+source and aggregation; matching only the endpoint or finding count is not
+enough.

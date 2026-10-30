@@ -1,0 +1,74 @@
+destination pin_count 1
+destination pin level0_i/blp/blp_i/PLP/ss_dma/inst/axi_intc_aggregated_mgmt/U0/INTC_CORE_I/INTR_DETECT_GEN[0].ASYNC_GEN.intr_ff_reg[0]/D
+destination cell level0_i/blp/blp_i/PLP/ss_dma/inst/axi_intc_aggregated_mgmt/U0/INTC_CORE_I/INTR_DETECT_GEN[0].ASYNC_GEN.intr_ff_reg[0]
+destination clocks 
+destination properties Property            Type    Read-only  Value
+ASYNC_REG           bool    false      1
+BEL                 string  false      SLICEM.DFF2
+CLASS               string  true       cell
+DONT_TOUCH          bool    false      1
+FILE_NAME           string  true       /proj/ipeng/staff/paulav/platforms/Platforms_paulav_2022/Platforms/sources/u280/chassis/gen3x16_xdma/1/children/partitions/base/bd_synth/base/base.gen/sources_1/bd/blp/ipshared/802b/hdl/axi_intc_v4_1_vh_rfs.vhd
+INIT                string  false      1'b0
+IS_BEL_FIXED        bool    false      1
+IS_BLACKBOX         bool    true       0
+IS_BOUNDARY_INST    bool    true       0
+IS_DEBUGGABLE       bool    true       1
+IS_LOC_FIXED        bool    false      1
+IS_MATCHED          bool    true       1
+IS_ORIG_CELL        bool    true       1
+IS_PRIMITIVE        bool    true       1
+IS_REUSED           bool    true       0
+IS_SEQUENTIAL       bool    true       1
+KEEP                string  false      yes
+LINE_NUMBER         int     true       1904
+LOC                 site    false      SLICE_X212Y546
+NAME                string  true       level0_i/blp/blp_i/PLP/ss_dma/inst/axi_intc_aggregated_mgmt/U0/INTC_CORE_I/INTR_DETECT_GEN[0].ASYNC_GEN.intr_ff_reg[0]
+ORIG_REF_NAME       string  true       FDRE
+PARENT              cell    true       level0_i/blp/blp_i/PLP/ss_dma/inst/axi_intc_aggregated_mgmt/U0/INTC_CORE_I
+PBLOCK              pblock  true       pblock_blp
+PRIMITIVE_COUNT     int     true       1
+PRIMITIVE_GROUP     enum    true       REGISTER
+PRIMITIVE_LEVEL     enum    true       LEAF
+PRIMITIVE_SUBGROUP  enum    true       SDR
+PRIMITIVE_TYPE      enum    true       REGISTER.SDR.FDRE
+REF_NAME            string  true       FDRE
+REUSE_STATUS        enum    true       
+SLR_INDEX           int     true       2
+STATUS              enum    true       FIXED
+source pin_count 1
+source pin level0_i/blp/blp_i/PLP/ss_fic/inst/user_fanout_firewall_and_regslices/axi_firewall_ctrl_user/inst/gen_mi.mi_r_error_i_reg/C
+source cell level0_i/blp/blp_i/PLP/ss_fic/inst/user_fanout_firewall_and_regslices/axi_firewall_ctrl_user/inst/gen_mi.mi_r_error_i_reg
+source clocks dma_ip_axi_aclk_1
+source properties Property            Type    Read-only  Value
+BEL                 string  false      SLICEL.HFF
+CLASS               string  true       cell
+DONT_TOUCH          bool    false      1
+FILE_NAME           string  true       /proj/ipeng/staff/paulav/platforms/Platforms_paulav_2022/Platforms/sources/u280/chassis/gen3x16_xdma/1/children/partitions/base/bd_synth/base/base.gen/sources_1/bd/blp/ipshared/48f5/hdl/axi_firewall_v1_2_vl_rfs.sv
+INIT                string  false      1'b0
+IS_BEL_FIXED        bool    false      1
+IS_BLACKBOX         bool    true       0
+IS_BOUNDARY_INST    bool    true       0
+IS_DEBUGGABLE       bool    true       1
+IS_LOC_FIXED        bool    false      1
+IS_MATCHED          bool    true       1
+IS_ORIG_CELL        bool    true       1
+IS_PRIMITIVE        bool    true       1
+IS_REUSED           bool    true       0
+IS_SEQUENTIAL       bool    true       1
+LINE_NUMBER         int     true       2250
+LOC                 site    false      SLICE_X199Y449
+NAME                string  true       level0_i/blp/blp_i/PLP/ss_fic/inst/user_fanout_firewall_and_regslices/axi_firewall_ctrl_user/inst/gen_mi.mi_r_error_i_reg
+ORIG_REF_NAME       string  true       FDRE
+PARENT              cell    true       level0_i/blp/blp_i/PLP/ss_fic/inst/user_fanout_firewall_and_regslices/axi_firewall_ctrl_user/inst
+PBLOCK              pblock  true       pblock_blp
+PRIMITIVE_COUNT     int     true       1
+PRIMITIVE_GROUP     enum    true       REGISTER
+PRIMITIVE_LEVEL     enum    true       LEAF
+PRIMITIVE_SUBGROUP  enum    true       SDR
+PRIMITIVE_TYPE      enum    true       REGISTER.SDR.FDRE
+REF_NAME            string  true       FDRE
+REUSE_STATUS        enum    true       
+SLR_INDEX           int     true       1
+STATUS              enum    true       FIXED
+destination fanin level0_i/blp/blp_i/PLP/ss_fic/inst/mgmt_fanout_firewall_and_regslices/axi_firewall_ctrl_mgmt/inst/gen_mi.mi_r_error_i_reg/C level0_i/blp/blp_i/PLP/ss_fic/inst/mgmt_fanout_firewall_and_regslices/axi_firewall_ctrl_mgmt/inst/gen_mi.mi_w_error_i_reg/C level0_i/blp/blp_i/PLP/ss_fic/inst/data_firewalls_and_regslices/axi_firewall_data_c2h/inst/gen_si.si_r_error_i_reg/C level0_i/blp/blp_i/PLP/ss_fic/inst/data_firewalls_and_regslices/axi_firewall_data_c2h/inst/gen_si.si_w_error_i_reg/C level0_i/blp/blp_i/PLP/ss_fic/inst/data_firewalls_and_regslices/axi_firewall_data_h2c/inst/gen_mi.mi_r_error_i_reg/C level0_i/blp/blp_i/PLP/ss_fic/inst/data_firewalls_and_regslices/axi_firewall_data_h2c/inst/gen_mi.mi_w_error_i_reg/C level0_i/blp/blp_i/PLP/ss_fic/inst/user_fanout_firewall_and_regslices/axi_firewall_ctrl_user_dbg/inst/gen_mi.mi_r_error_i_reg/C level0_i/blp/blp_i/PLP/ss_fic/inst/user_fanout_firewall_and_regslices/axi_firewall_ctrl_user_dbg/inst/gen_mi.mi_w_error_i_reg/C level0_i/blp/blp_i/PLP/ss_fic/inst/user_fanout_firewall_and_regslices/axi_firewall_ctrl_user/inst/gen_mi.mi_r_error_i_reg/C level0_i/blp/blp_i/PLP/ss_fic/inst/user_fanout_firewall_and_regslices/axi_firewall_ctrl_user/inst/gen_mi.mi_w_error_i_reg/C level0_i/blp/blp_i/ss_hif/inst/axi_firewall_ctrl_user/inst/gen_mi.mi_r_error_i_reg/C level0_i/blp/blp_i/ss_hif/inst/axi_firewall_ctrl_user/inst/gen_mi.mi_w_error_i_reg/C level0_i/blp/blp_i/ss_hif/inst/axi_firewall_ctrl_mgmt/inst/gen_mi.mi_r_error_i_reg/C level0_i/blp/blp_i/ss_hif/inst/axi_firewall_ctrl_mgmt/inst/gen_mi.mi_w_error_i_reg/C
+destination fanout level0_i/blp/blp_i/PLP/ss_dma/inst/axi_intc_aggregated_mgmt/U0/INTC_CORE_I/INTR_DETECT_GEN[0].ASYNC_GEN.intr_ff_reg[0]/D

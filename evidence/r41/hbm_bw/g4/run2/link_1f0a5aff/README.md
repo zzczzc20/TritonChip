@@ -80,3 +80,20 @@ and the xclbin HBM mapping passed. Their artifacts are
 `~/r41run2-auto/clock_review_pulse.json` (`c7249676f02803ed36c849ec0de54f1c2443d18827f90f33d6397099e2359892`),
 and `~/r41run2-auto/hbm_review.json` (`94ef907d957074744673e09f6a6624c81b56c66faaaddbd5a9f95f1f90e20b16`).
 These pre-load results are neither board measurements nor a CDC disposition.
+
+### New CDC-10 trace — 2026-10-30
+
+A read-only Vivado audit of the original routed checkpoint exited 0; its raw
+[`original_cdc_trace.txt`](original_cdc_trace.txt) SHA-256 is
+`ed2ec1ced819e81a3df0248ec3d4ba80bd462ef06e142fe3d4d4433ad7a65859`.
+The reported source and destination each resolve to one fixed primitive in the
+static `pblock_blp`. The source is an AXI firewall read-error register clocked
+by `dma_ip_axi_aclk_1`; the destination is the first management interrupt
+synchronizer register, marked `ASYNC_REG`. The destination's traced fan-in
+includes 14 static-platform firewall error register clocks, including both the
+newly reported source and the source absent from the new CDC report.
+
+This trace establishes the structure and reconciles why both named sources
+can feed the same endpoint, but it does not establish the pulse or glitch
+behavior of all asynchronous inputs, or dispose the CDC-10 finding. The
+original CDC review gate remains open pending that analysis.

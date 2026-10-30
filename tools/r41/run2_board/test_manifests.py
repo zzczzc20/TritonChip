@@ -9,6 +9,7 @@ import manifests
 import registrations
 import stage
 import candidate_manifests
+import candidate_source
 
 
 class Run2Manifests(unittest.TestCase):
@@ -93,6 +94,14 @@ class Run2Manifests(unittest.TestCase):
                 self.assertEqual(reg['image_identity'], {'sha256': digest, 'uuid': uid})
                 for row in reg['experiments']:
                     self.assertEqual(row['sha256'], stage.sha(root/row['manifest']))
+
+    def test_candidate_source_refuses_wrong_image_before_reading_archive(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp)/'image'
+            image.write_bytes(b'wrong')
+            with self.assertRaisesRegex(ValueError, 'image hash changed'):
+                candidate_source.review(Path(tmp)/'missing-archive', Path(tmp), image, '0'*64)
 
 
 if __name__ == '__main__':

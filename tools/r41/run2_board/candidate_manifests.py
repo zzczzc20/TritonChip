@@ -32,7 +32,9 @@ def prepare(image, image_sha, image_uuid, mapping, xclbinutil):
         raise ValueError('candidate UUID must use canonical lowercase form')
     info = subprocess.run([xclbinutil, '--info', '--input', str(image)],
                           capture_output=True, text=True, check=True).stdout
-    if image_uuid not in info.lower() or not re.search(r'Name:\s*DATA_CLK\s*\n\s*Index:.*\n\s*Type:.*\n\s*Frequency:\s*100 MHz', info):
+    actual_uuid = re.search(r'UUID\s*\(xclbin\):\s*(\S+)', info, re.I)
+    if (not actual_uuid or actual_uuid.group(1).lower() != image_uuid or
+            not re.search(r'Name:\s*DATA_CLK\s*\n\s*Index:.*\n\s*Type:.*\n\s*Frequency:\s*100 MHz', info)):
         raise ValueError('xclbin metadata does not show the candidate UUID and 100 MHz DATA_CLK')
     topology = json.loads(mapping.read_text())
     if topology.get('image_sha256') != image_sha:
@@ -41,7 +43,10 @@ def prepare(image, image_sha, image_uuid, mapping, xclbinutil):
     if len(groups) != 3 or any(x['tag'] != 'MBG[0:31]' or x['size'] != 8 << 30 or x['base'] != 0 or not x['used'] for x in groups):
         raise ValueError('candidate does not expose three 8 GiB HBM ports')
     banks = topology['allocation_8gib']['physical_banks']
-    if len(banks) != 32 or any(x['pc'] != i or x['allocated_size'] != 1 << 28 or not x['used'] for i,x in enumerate(banks)):
+    if len(banks) != 32 or any(x['pc'] != i or x['tag'] != f'HBM[{i}]' or not x['used']
+                               or x['base'] != i * (1 << 28) or x['size'] != 1 << 28
+                               or x['allocated_base'] != i * (1 << 28) or x['allocated_size'] != 1 << 28
+                               for i,x in enumerate(banks)):
         raise ValueError('candidate HBM allocation does not cover PC0 through PC31')
     destination = ROOT/OUT
     destination.mkdir(parents=True, exist_ok=False)

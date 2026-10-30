@@ -37,6 +37,10 @@ performance gate.
 The default 513-point memory-bound campaign is in progress. Its first large
 batch completed 99/99 with zero missing or failed configurations; the raw
 records are in [`membound_default_large1.tgz`](membound_default_large1.tgz).
+For this batch only, declared logical read-plus-write bytes divided by
+serial-grid device time has a median of 0.134 GB/s and a maximum of 0.544 GB/s:
+[`membound_default_large1_rates.json`](membound_default_large1_rates.json).
+These are effective logical rates, not physical HBM throughput.
 The remaining batches and the tiled variant have not yet completed.
 
 The first identity attempt failed before device execution because the queue

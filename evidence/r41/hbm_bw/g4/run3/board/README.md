@@ -34,6 +34,11 @@ compared with 582.598 s for the same point on the previous 100 MHz image
 device-time speedup. This single comparison does not establish the suite-wide
 performance gate.
 
+The default 513-point memory-bound campaign is in progress. Its first large
+batch completed 99/99 with zero missing or failed configurations; the raw
+records are in [`membound_default_large1.tgz`](membound_default_large1.tgz).
+The remaining batches and the tiled variant have not yet completed.
+
 The first identity attempt failed before device execution because the queue
 resolved the virtualenv symlink to system Python, which lacked PyTorch:
 [`identity_first_failure.log`](identity_first_failure.log). Commit `498b760a`

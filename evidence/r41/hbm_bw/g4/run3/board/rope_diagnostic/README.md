@@ -7,7 +7,8 @@ cycles were 801/757/2,101 and 1,009/1,015/2,365 respectively. The measured
 point, hashes and samples are in `../original113_comparison.json`.
 
 The generated assemblies copied from the original board bundles are in
-`old/` and `new/`. In the first two kernels, the old schedules place gather
+`old/` and `new/`. For each of the three kernels, the two `opt.tnir` files are
+byte-identical; the `sched.tnir` files differ. In the first two kernels, the old schedules place gather
 loads before independent address work; the new schedules place them closer
 to their consumers. This is a candidate explanation for reduced overlap, not
 a proven cause: both the image and compiler software tree changed.

@@ -34,14 +34,20 @@ compared with 582.598 s for the same point on the previous 100 MHz image
 device-time speedup. This single comparison does not establish the suite-wide
 performance gate.
 
-The default 513-point memory-bound campaign is in progress. Its first large
-batch completed 99/99 with zero missing or failed configurations; the raw
-records are in [`membound_default_large1.tgz`](membound_default_large1.tgz).
+The default 513-point memory-bound campaign is in progress. Both large
+batches completed, 171/171 with zero missing or failed configurations; raw
+records are in [`membound_default_large1.tgz`](membound_default_large1.tgz)
+and [`membound_default_large2.tgz`](membound_default_large2.tgz).
 For this batch only, declared logical read-plus-write bytes divided by
 serial-grid device time has a median of 0.134 GB/s and a maximum of 0.544 GB/s:
 [`membound_default_large1_rates.json`](membound_default_large1_rates.json).
-These are effective logical rates, not physical HBM throughput.
-The remaining batches and the tiled variant have not yet completed.
+For all 171 large points, the effective logical-rate median is 0.133 GB/s,
+versus 0.138 GB/s on the prior image; the sum of point medians is 1.13× faster
+in cycles, with 28 individual points slower. The matched-point data and
+samples are in [`membound_default_large_comparison.json`](membound_default_large_comparison.json).
+These are effective logical rates, not physical HBM throughput. The medium,
+small and tiled batches remain in progress or pending; this descriptive subset
+is not the complete performance gate.
 
 The first identity attempt failed before device execution because the queue
 resolved the virtualenv symlink to system Python, which lacked PyTorch:

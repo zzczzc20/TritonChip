@@ -50,3 +50,11 @@ no full synthesis or placement occurred. A retry with `unzip` and Vitis HLS
 on `PATH` started as `~/r41run3/build_8d237223_retry1` (x86 PID 566798).
 It remains the third full synthesis candidate out of the permitted five;
 the original run-2 image remains incorrect and is not accepted.
+
+The corrected source passed the RTL `make core-mmadp` test for cut masks 0,
+18, 29 and 31, and the capability-off refusal case. A separate Vivado 2023.2
+synthesis regression using the corrected declaration verified the output
+latency for all 32 masks against popcount. Its raw probe, synthesized netlist
+and log are in `vivado_fixed_32_masks.tgz` (SHA-256
+`db26ba9d243f57c0eb99e9d7009cf3e960a580dd92a330a952cabb0668451e0c`). These
+are RTL and synthesis results, not corrected-image board results.

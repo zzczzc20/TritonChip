@@ -1,0 +1,613 @@
+{
+ "schema": "tnca-r41-hbm8-case/1",
+ "case": "bigoffset",
+ "mode": "board",
+ "status": "functional-pass",
+ "requested_hbm_bytes": 8589934592,
+ "performance_gate": "not-measured",
+ "backend_args": {
+  "xclbin": "/home/zzhouch/r41run3/tnca_u280.xclbin",
+  "image_profile": "core-vrf-sync-v5-x8-g2c4-dp",
+  "core_count": 3,
+  "memory_ports": 3,
+  "hbm_dma": true,
+  "hbm_bytes": 8589934592,
+  "device_clock": true
+ },
+ "backend": "fpga-u280-multicore",
+ "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+ "torch": "2.14.0+cpu",
+ "triton": "3.8.0",
+ "knobs": {
+  "TNCA_ACTIVE_CORES": "3",
+  "TNCA_BACKEND": "fpga-u280-multicore",
+  "TNCA_BACKEND_ARGS": "{\"xclbin\":\"/home/zzhouch/r41run3/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8-g2c4-dp\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":8589934592,\"device_clock\":true}",
+  "TNCA_DEADLINE": "200000000000",
+  "TNCA_HOST_TIMEOUT": "28800",
+  "TNCA_MAX_BLOCK": "16",
+  "TNCA_OPERATING_CLOCK_EVIDENCE": "/home/zzhouch/r41run3/qualified_clock.json",
+  "TNCA_PROFILE": "core-vrf-sync-v5-x8-g2c4-dp",
+  "TNCA_RCTX_SPMD": "1",
+  "TNCA_TENSOR_DESCRIPTORS": "1",
+  "TNCA_TORCH_DEVICE": "native",
+  "TNCA_TRITON": "1",
+  "TNCA_TUNE": "0"
+ },
+ "window": {
+  "base": "0x0",
+  "size": 8589934592,
+  "local_limit": "0x20000"
+ },
+ "big": {
+  "start": "0x7fff1000",
+  "end": "0x10fff1000",
+  "bytes": 2415919104,
+  "largest_touched_byte_offset": 2348810368,
+  "launches": [
+   {
+    "label": "strided-read",
+    "launches": 27,
+    "kernels": [
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "_copy_kernel",
+     "triton_poi_fused_add_mul_0"
+    ],
+    "grids": [
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      1,
+      1,
+      1
+     ],
+     [
+      36,
+      1,
+      1
+     ]
+    ],
+    "device_cycles": 15226,
+    "last_launch_cores": [
+     {
+      "core": 0,
+      "issued": 12,
+      "completed": 12
+     },
+     {
+      "core": 1,
+      "issued": 12,
+      "completed": 12
+     },
+     {
+      "core": 2,
+      "issued": 12,
+      "completed": 12
+     }
+    ],
+    "peak_active": 3,
+    "outlets": [
+     {
+      "port": 0,
+      "read_lines": 38,
+      "write_lines": 2
+     },
+     {
+      "port": 1,
+      "read_lines": 27,
+      "write_lines": 3
+     },
+     {
+      "port": 2,
+      "read_lines": 33,
+      "write_lines": 6
+     }
+    ],
+    "upload_bytes": 0,
+    "download_bytes": 0
+   },
+   {
+    "label": "strided-write",
+    "launches": 1,
+    "kernels": [
+     "triton_poi_fused_copy_copy__view_0"
+    ],
+    "grids": [
+     [
+      36,
+      1,
+      1
+     ]
+    ],
+    "device_cycles": 1949,
+    "last_launch_cores": [
+     {
+      "core": 0,
+      "issued": 12,
+      "completed": 12
+     },
+     {
+      "core": 1,
+      "issued": 12,
+      "completed": 12
+     },
+     {
+      "core": 2,
+      "issued": 12,
+      "completed": 12
+     }
+    ],
+    "peak_active": 3,
+    "outlets": [
+     {
+      "port": 0,
+      "read_lines": 24,
+      "write_lines": 4
+     },
+     {
+      "port": 1,
+      "read_lines": 28,
+      "write_lines": 5
+     },
+     {
+      "port": 2,
+      "read_lines": 23,
+      "write_lines": 4
+     }
+    ],
+    "upload_bytes": 0,
+    "download_bytes": 0
+   }
+  ]
+ },
+ "checks": [
+  {
+   "name": "window-geometry",
+   "ok": true,
+   "window": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000"
+   }
+  },
+  {
+   "name": "placed:big",
+   "ok": true,
+   "want": "0x7fff1000",
+   "got": "0x7fff1000"
+  },
+  {
+   "name": "read-beyond-2GiB-bytes",
+   "ok": true
+  },
+  {
+   "name": "write-beyond-2GiB-bytes",
+   "ok": true
+  },
+  {
+   "name": "offset-exceeds-int32",
+   "ok": true
+  },
+  {
+   "name": "final-axi-status-clear",
+   "ok": true,
+   "status": {
+    "error": false,
+    "stray": false
+   }
+  }
+ ],
+ "launches": [
+  {
+   "label": "strided-read",
+   "launches": 27,
+   "kernels": [
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "triton_poi_fused_add_mul_0"
+   ],
+   "grids": [
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     36,
+     1,
+     1
+    ]
+   ],
+   "device_cycles": 15226,
+   "last_launch_cores": [
+    {
+     "core": 0,
+     "issued": 12,
+     "completed": 12
+    },
+    {
+     "core": 1,
+     "issued": 12,
+     "completed": 12
+    },
+    {
+     "core": 2,
+     "issued": 12,
+     "completed": 12
+    }
+   ],
+   "peak_active": 3,
+   "outlets": [
+    {
+     "port": 0,
+     "read_lines": 38,
+     "write_lines": 2
+    },
+    {
+     "port": 1,
+     "read_lines": 27,
+     "write_lines": 3
+    },
+    {
+     "port": 2,
+     "read_lines": 33,
+     "write_lines": 6
+    }
+   ],
+   "upload_bytes": 0,
+   "download_bytes": 0
+  },
+  {
+   "label": "strided-write",
+   "launches": 1,
+   "kernels": [
+    "triton_poi_fused_copy_copy__view_0"
+   ],
+   "grids": [
+    [
+     36,
+     1,
+     1
+    ]
+   ],
+   "device_cycles": 1949,
+   "last_launch_cores": [
+    {
+     "core": 0,
+     "issued": 12,
+     "completed": 12
+    },
+    {
+     "core": 1,
+     "issued": 12,
+     "completed": 12
+    },
+    {
+     "core": 2,
+     "issued": 12,
+     "completed": 12
+    }
+   ],
+   "peak_active": 3,
+   "outlets": [
+    {
+     "port": 0,
+     "read_lines": 24,
+     "write_lines": 4
+    },
+    {
+     "port": 1,
+     "read_lines": 28,
+     "write_lines": 5
+    },
+    {
+     "port": 2,
+     "read_lines": 23,
+     "write_lines": 4
+    }
+   ],
+   "upload_bytes": 0,
+   "download_bytes": 0
+  }
+ ],
+ "axi_status_at_end": {
+  "error": false,
+  "stray": false
+ },
+ "wall_seconds": 44.9
+}

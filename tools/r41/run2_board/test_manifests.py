@@ -80,6 +80,9 @@ class Run2Manifests(unittest.TestCase):
                 stdout = info
             with patch.object(candidate_manifests, 'ROOT', root), \
                  patch.object(candidate_manifests.subprocess, 'run', return_value=Result()):
+                with self.assertRaisesRegex(ValueError, 'image hash mismatch'):
+                    candidate_manifests.prepare(image, '0'*64, uid, mapping, 'xclbinutil')
+                self.assertFalse((root/candidate_manifests.OUT).exists())
                 self.assertEqual(candidate_manifests.prepare(image, digest, uid, mapping, 'xclbinutil'), 23)
             for path in (root/candidate_manifests.OUT/'board').glob('*.json'):
                 spec = json.loads(path.read_text())

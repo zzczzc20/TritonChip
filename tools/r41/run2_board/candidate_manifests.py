@@ -40,7 +40,8 @@ def prepare(image, image_sha, image_uuid, mapping, xclbinutil):
     if topology.get('image_sha256') != image_sha:
         raise ValueError('HBM map belongs to another image')
     groups = topology['groups']
-    if len(groups) != 3 or any(x['tag'] != 'MBG[0:31]' or x['size'] != 8 << 30 or x['base'] != 0 or not x['used'] for x in groups):
+    if (len(groups) != 3 or len({x['index'] for x in groups}) != 1 or
+            any(x['tag'] != 'MBG[0:31]' or x['size'] != 8 << 30 or x['base'] != 0 or not x['used'] for x in groups)):
         raise ValueError('candidate does not expose three 8 GiB HBM ports')
     banks = topology['allocation_8gib']['physical_banks']
     if len(banks) != 32 or any(x['pc'] != i or x['tag'] != f'HBM[{i}]' or not x['used']

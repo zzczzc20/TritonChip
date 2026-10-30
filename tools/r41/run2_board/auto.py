@@ -116,6 +116,23 @@ def validate_plan(plan, image):
         raise ValueError('plan source root is missing')
 
 
+def board_environment():
+    # The documented loader and later tests need the Vitis and XRT setup even
+    # when the watcher was launched from a non-interactive login session.
+    result = subprocess.run(['bash', '-c',
+        'set -e; source /tools/Xilinx/Vitis/2023.2/settings64.sh >/dev/null; '
+        'source /opt/xilinx/xrt/setup.sh >/dev/null; export TNCA_BOARD=u280; env -0'],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+    env = {}
+    for entry in result.stdout.split(b'\0'):
+        if entry:
+            key, value = entry.split(b'=', 1)
+            env[os.fsdecode(key)] = os.fsdecode(value)
+    if env.get('TNCA_BOARD') != 'u280':
+        raise ValueError('board environment setup failed')
+    return env
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--plan', type=Path, required=True)
@@ -131,6 +148,7 @@ def main():
     validate_plan(plan, a.image)
     if not a.program.is_file():
         raise ValueError('program.sh missing')
+    env = board_environment()
     a.out.mkdir(parents=True, exist_ok=True)
     with (a.out / 'queue.lock').open('w') as lock, (a.out / 'queue.jsonl').open('a', buffering=1) as log:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -159,7 +177,8 @@ def main():
                 raise RuntimeError('card changed or became busy before programming')
             record('program', mode=mode, previous=now['uuid'])
             with (a.out / 'program.log').open('a') as f:
-                subprocess.run(['bash', str(a.program), mode, str(a.image)], stdout=f, stderr=subprocess.STDOUT, check=True)
+                subprocess.run(['bash', str(a.program), mode, str(a.image)], stdout=f, stderr=subprocess.STDOUT,
+                               env=env, check=True)
         row = probe(a.sysfs)
         if row['uuid'] != IMAGE_UUID or clock_mhz(a.sysfs) != 100:
             raise RuntimeError('loaded image UUID or clock differs; stopping')
@@ -171,7 +190,7 @@ def main():
                 raise RuntimeError('stage result already exists; use a fresh output: ' + stage['id'])
             record('stage-start', stage=stage['id'])
             with (a.out / (stage['id'] + '.log')).open('a') as f:
-                result = subprocess.run(stage['argv'], cwd=plan['root'], env=os.environ.copy(), stdout=f,
+                result = subprocess.run(stage['argv'], cwd=plan['root'], env=env, stdout=f,
                                         stderr=subprocess.STDOUT, timeout=stage['timeout_seconds'])
             record('stage-end', stage=stage['id'], returncode=result.returncode)
             if result.returncode:

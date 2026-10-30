@@ -50,7 +50,8 @@
      ],
      "equals": true
     }
-   ]
+   ],
+   "budget_seconds": 10800
   }
  ]
 }

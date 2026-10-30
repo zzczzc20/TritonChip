@@ -71,6 +71,9 @@ def run(root, out, python, registration):
             raise ValueError('experiment output already exists: ' + row['id'])
         if not row.get('checks'):
             raise ValueError('each experiment needs explicit result checks')
+        if 'budget_seconds' in row and (type(row['budget_seconds']) not in (int, float)
+                or not math.isfinite(row['budget_seconds']) or not 0 < row['budget_seconds'] <= 10800):
+            raise ValueError('registered experiment budget must be at most three hours')
     if registration.get('coverage'):
         check_coverage(root, rows, registration['coverage'])
     out.mkdir(parents=True, exist_ok=True)
@@ -82,6 +85,8 @@ def run(root, out, python, registration):
         command = [str(python), str(root / 'tools/performance_harness/experiment.py'),
                    str(root / row['manifest']), '--root', str(root), '--out', str(target),
                    '--python', str(python)]
+        if 'budget_seconds' in row:
+            command += ['--budget-seconds', str(row['budget_seconds'])]
         with (out / (row['id'] + '.log')).open('x') as log:
             subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
         if sha(root / row['manifest']) != row['sha256']:

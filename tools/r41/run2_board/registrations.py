@@ -57,6 +57,7 @@ def group(name):
             equal(quality, 'reduced_proof', False), dict(path=quality, field=['prompts'], length_equals=count),
             equal(session, 'status', 'pass'),
             dict(path=session, field=['persistent_session_check', 'passed'], equals=True)])]
+        table['chat-' + model][0]['budget_seconds'] = 10800
     result = dict(schema='tnca-run2-stage-registration/1', id=name, experiments=table[name])
     if name.startswith('membound-'):
         result['coverage'] = dict(suite=str(SUITE), suite_sha256=stage.sha(ROOT/SUITE), count=513,

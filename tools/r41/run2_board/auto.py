@@ -96,6 +96,12 @@ def validate_plan(plan, image):
             raise ValueError('each stage requires a complete argv')
         if not isinstance(stage.get('timeout_seconds'), int) or stage['timeout_seconds'] <= 0:
             raise ValueError('each stage requires a positive timeout')
+        checks = stage.get('checks')
+        if not isinstance(checks, list) or not checks or any(
+            not isinstance(c, dict) or not isinstance(c.get('path'), str) or not c['path']
+            or not isinstance(c.get('field'), list) or not c['field'] or 'equals' not in c for c in checks
+        ):
+            raise ValueError('each stage must declare result-file checks')
     evidence = plan.get('preflight_evidence', [])
     if not isinstance(evidence, list) or {item.get('kind') for item in evidence} != {'source', 'clock-review', 'cdc-review', 'hbm-map'}:
         raise ValueError('source, clock, CDC and HBM map evidence is required')
@@ -103,6 +109,11 @@ def validate_plan(plan, image):
         p = Path(item['path'])
         if not p.is_file() or sha(p) != item['sha256']:
             raise ValueError('preflight evidence missing or changed: ' + str(p))
+        result = json.loads(p.read_text())
+        if result.get('status') != 'pass' or result.get('image_sha256') != IMAGE_SHA or result.get('kind') != item['kind']:
+            raise ValueError('preflight evidence is not a passing image-bound review: ' + str(p))
+    if not Path(plan.get('root', '')).is_dir():
+        raise ValueError('plan source root is missing')
 
 
 def main():
@@ -160,6 +171,12 @@ def main():
             record('stage-end', stage=stage['id'], returncode=result.returncode)
             if result.returncode:
                 raise RuntimeError('stage failed: ' + stage['id'])
+            for check in stage['checks']:
+                value = json.loads(Path(check['path']).read_text())
+                for key in check['field']:
+                    value = value[key]
+                if value != check['equals']:
+                    raise RuntimeError('stage result check failed: ' + stage['id'])
             row = probe(a.sysfs)
             if row['uuid'] != IMAGE_UUID or not idle(row) or clock_mhz(a.sysfs) != 100:
                 raise RuntimeError('card busy or image/clock changed after ' + stage['id'])

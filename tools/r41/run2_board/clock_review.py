@@ -16,9 +16,11 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'tools/r41/run2_postlink'))
+sys.path.insert(0, str(ROOT / 'tools/performance_harness'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import auto
 import check_run2
+import clock_qualify
 
 REPORTS = {
     'timing.rpt': 'cd4c6254c960f5f368ea38f4a9e86b606747fba5d467fc4ac07c00f17971f577',
@@ -45,11 +47,14 @@ def review(image, reports, xclbinutil):
             raise ValueError('xclbin clock metadata differs: ' + name)
     timing = (reports / 'timing.rpt').read_text()
     design = check_run2.design_summary(timing)
+    pulse = clock_qualify.design_timing(timing)
     kernel = check_run2.clock_row(timing, check_run2.KERNEL_CLOCK)
     if (design['wns'], design['setup_failing']) != (-0.045, 2):
         raise ValueError('original full-design setup failure is not the reviewed exception')
     if design['whs'] < 0 or design['hold_failing'] or not kernel or kernel['wns'] < 0 or kernel['whs'] < 0 or kernel['setup_failing'] or kernel['hold_failing']:
         raise ValueError('kernel or full-design hold timing not met')
+    if pulse['wpws'] < 0 or pulse['tpws_failing']:
+        raise ValueError('full-design pulse width timing not met')
     with (reports / 'failing_setup_all_groups.tsv').open() as f:
         paths = list(csv.DictReader(f, delimiter='\t'))
     if len(paths) != 2 or any(row['group'] != 'hbm_aclk' or '/hmss_0/' not in row['startpoint'] or '/hmss_0/' not in row['endpoint'] for row in paths):
@@ -65,6 +70,7 @@ def review(image, reports, xclbinutil):
                 decision='author accepts hbm_aclk automatic reduction 450 to 441 MHz for this image',
                 clock_scope='xclbin metadata, not measured board counter', kernel_clock_mhz=100,
                 hbm_clock_mhz=441, original_450mhz_design=design, kernel_timing=kernel,
+                pulse_width_timing=pulse,
                 exception_paths=paths, route=route, report_sha256=REPORTS,
                 remaining='independent CDC review, placement, board counter and runtime gates')
 

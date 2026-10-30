@@ -239,6 +239,55 @@ class WatchTests(unittest.TestCase):
                 proc.wait(timeout=5)
 
 
+class CandidateQueueTests(unittest.TestCase):
+    def test_candidate_cannot_use_approval_for_another_image(self):
+        import json
+        import sys
+        folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        sys.modules.setdefault('auto', auto)
+        spec = importlib.util.spec_from_file_location('candidate_queue_approval_test', folder/'candidate_queue.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'approval.json'
+            path.write_text(json.dumps(dict(status='accepted', image_sha256=auto.IMAGE_SHA,
+                                             image_uuid=auto.IMAGE_UUID, author_decision='original image only')))
+            with self.assertRaisesRegex(ValueError, 'exact candidate image'):
+                mod.approval(path, 'f'*64, auto.IMAGE_UUID)
+
+    def test_new_client_before_go_stops_programming(self):
+        import sys
+        from unittest.mock import patch
+        folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        sys.modules.setdefault('auto', auto)
+        spec = importlib.util.spec_from_file_location('candidate_queue_test', folder/'candidate_queue.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            image = root/'image'
+            image.write_bytes(b'candidate')
+            idle_row = row()
+            busy_row = row(contexts=1)
+            state = dict(image_sha256=auto.sha(image), image_uuid=auto.IMAGE_UUID,
+                         evidence={}, registrations=[])
+            argv = ['candidate_queue.py','--root',str(root),'--work',str(root),'--image',str(image),
+                    '--approval',str(root/'approval.json'),'--out',str(root/'output'),'--python',sys.executable]
+            tracker = mod.auto.IdleTracker
+            with patch.object(sys, 'argv', argv), patch.object(mod, 'preflight', return_value=state), \
+                 patch.object(mod.auto, 'board_environment', return_value={}), \
+                 patch.object(mod.auto, 'IdleTracker', side_effect=lambda **kw: tracker(seconds=0, **kw)), \
+                 patch.object(mod.auto, 'probe', side_effect=[idle_row,idle_row,busy_row]), \
+                 patch.object(mod.subprocess, 'run') as run:
+                with self.assertRaisesRegex(RuntimeError, 'busy before programming'):
+                    mod.main()
+                self.assertEqual(run.call_count, 1)
+                self.assertIn('--check', run.call_args.args[0])
+                self.assertNotIn('--go', run.call_args.args[0])
+
+
 class Run2QualificationTests(unittest.TestCase):
     def test_exception_cannot_be_misrepresented_as_full_design_closure(self):
         import json

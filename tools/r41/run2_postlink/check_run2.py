@@ -20,7 +20,8 @@ import argparse, json, re, sys
 from pathlib import Path
 
 KERNEL_CLOCK = 'clk_kernel_00_unbuffered_net'
-CDC_REVIEWED = 56          # platform-only Critical CDC findings (run 1 = attempt 3)
+CDC_REVIEWED = 56          # count alone does not prove the reviewed identities match
+REVIEW = Path(__file__).resolve().parents[3] / 'evidence/r40/v2/convergence/attempt03/qualified_clock90_after_load.json'
 SLR0_ESTIMATE = (95.5, 2.5)
 SCREENS = {'tile0_wns_ns': 0.600, 'tile1_wns_ns': 0.641, 'tile0_clb': 43345, 'tile1_clb': 42369}
 
@@ -79,6 +80,20 @@ def cdc_critical(text):
     return rules
 
 
+def cdc_identity(text, review_path=REVIEW):
+    rows = []
+    for line in text.splitlines():
+        match = re.match(r'\s*\d+\s+(CDC-\d+)\s+Critical\s', line)
+        if match:
+            cells = line.split()
+            rows.append((match.group(1), cells[-2], cells[-1]))
+    reviewed = json.loads(review_path.read_text())['qualified_clock']['cdc_review_scope']['reviewed_critical']
+    expected = {(x['rule'], x['source'], x['destination']) for x in reviewed}
+    found = set(rows)
+    return dict(reported=len(rows), unique=len(found), reviewed=len(expected),
+                added=sorted(found - expected), absent=sorted(expected - found))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('analysis')
@@ -108,6 +123,14 @@ def main():
     if res['cdc_critical'] is not None and sum(res['cdc_critical'].values()) != CDC_REVIEWED:
         fails.append(f"Critical CDC findings {sum(res['cdc_critical'].values())} != {CDC_REVIEWED} reviewed "
                      '(a new review is needed)')
+    if res['cdc_critical'] is None:
+        fails.append('CDC report missing; individual review cannot be verified')
+    else:
+        identity = cdc_identity((d / 'cdc.rpt').read_text())
+        res['cdc_identity'] = identity
+        if (identity['reported'] != CDC_REVIEWED or identity['unique'] != CDC_REVIEWED
+                or identity['reviewed'] != CDC_REVIEWED or identity['added'] or identity['absent']):
+            fails.append('Critical CDC identities differ from the individual attempt-3 review; a new review is needed')
     clb = res['slr'].get('CLB', {})
     est, err = SLR0_ESTIMATE
     if clb:

@@ -178,5 +178,22 @@ class StageTests(unittest.TestCase):
                 run.assert_not_called()
 
 
+class CdcIdentityTests(unittest.TestCase):
+    def test_equal_count_does_not_hide_a_changed_endpoint(self):
+        import json
+        module = Path(__file__).resolve().parents[1]/'run2_postlink/check_run2.py'
+        spec = importlib.util.spec_from_file_location('run2_postlink_test', module)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            review = Path(tmp)/'review.json'
+            review.write_text(json.dumps({'qualified_clock': {'cdc_review_scope': {
+                'reviewed_critical': [{'rule': 'CDC-10', 'source': 'old/C', 'destination': 'irq/D'}]}}}))
+            got = mod.cdc_identity(' 1 CDC-10 Critical combinational 2 False Path new/C irq/D', review)
+            self.assertEqual(got['reported'], got['reviewed'])
+            self.assertEqual(got['added'], [('CDC-10', 'new/C', 'irq/D')])
+            self.assertEqual(got['absent'], [('CDC-10', 'old/C', 'irq/D')])
+
+
 if __name__ == '__main__':
     unittest.main()

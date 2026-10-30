@@ -11,3 +11,25 @@ The same routed report gives kernel-clock setup WNS +0.038 ns and no failing ker
 ## Post-route diagnostic
 
 The original routed checkpoint is preserved at `xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed.dcp`, SHA-256 `fc3f84bbaebd81c59a4289389c1edf3fdf69319479e8abc93914b26b01d95454`. After the full link ended, an independent diagnostic was launched on x86 at `/home/vivado/r41run2/recovery_postroute_20261029`, PID 553718. `recover.tcl` opens that checkpoint read-only, reports the original timing, runs post-route physical optimisation and routing in memory, then writes reports and a new checkpoint to the separate diagnostic directory. It does not run synthesis, generate an xclbin, alter the original checkpoint, or access the board; it is not a new full synthesis plus place-and-route run. Its outcome is pending and cannot be counted as a passing image. Any candidate must still pass full timing, routing, CDC, clock metadata, source identity and normal packaging checks before a board-load request.
+
+### Recovery diagnostic: preliminary reports, 2026-10-30 UTC
+
+The independent reroute finished and its timing summary reports setup WNS
++0.016 ns, TNS 0.000 ns, zero failing endpoints; hold WHS +0.001 ns,
+THS 0.000 ns, zero failing endpoints. Pulse-width failing endpoints are zero.
+The route report records 1,275,538/1,275,538 routable nets fully routed and
+zero routing errors. The router log attributes improvement of a platform HBM
+path to relocation of a Laguna register. These are diagnostic Vivado results at
+the original constraints, not an xclbin or board evidence.
+
+The CDC report lists 56 critical findings (CDC-7: 13, CDC-10: 7, CDC-11: 32,
+CDC-13: 4). Counts match the previous report, but a count match is not an
+individual review and is not CDC sign-off. Vivado also requests a separate
+`report_bus_skew`; that check remains outstanding. The diagnostic process was
+still writing its recovered checkpoint when last checked. Reports on x86 at
+`~/r41run2/recovery_postroute_20261029`: `after_timing.rpt` SHA-256
+`fbdc20371adc1fd8a387e13e8187f76ed2b495929a5b68fb9648bf4b842e187d`,
+`after_route.rpt` `a9f8adc3cd14885894ad79341aa1ba3673432cd5fac136d778c8e2fd141c4980`,
+`after_cdc.rpt` `28a1cd250f8912685edd36b641f3c99a53b26ee55b9c5c3acb741a97400fcf3d`.
+The original scaled xclbin remains unqualified; normal Vitis packaging and
+clock-metadata verification are required for any new image.

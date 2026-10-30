@@ -13,10 +13,9 @@ zero failing endpoints. Design hold and pulse-width summaries report zero
 failing endpoints. The worst setup path shown is within `hmss_0`, between HBM
 platform registers. These are routed timing results, not board measurements.
 
-Implementation, clock metadata, bus-skew and CDC review, actual placement
-audit, final image identity and board verification remain outstanding. The
-old image's HBM-clock exception and load approval do not apply to this
-candidate. No board load or acceptance is implied by this report.
+At the time of this preliminary report, implementation, clock metadata,
+bus-skew and CDC review, actual placement audit, final image identity and
+board verification remained outstanding. See the later updates below.
 
 During packaging, Vitis estimated and selected a 433.4 MHz HBM system clock
 instead of the requested 450 MHz. The retained
@@ -32,9 +31,8 @@ UUID `ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3`. Its xclbin metadata records
 (`LINK_FAILED freq-moved`); it is not a clean timing closure. The original
 routed checkpoint used by the independent post-link review is SHA-256
 `e2e9f6880f04c22a0200f43128eae41037e406dcc5297fa309ddbb7b1f595b94`.
-Post-link reports and individual CDC review are in progress. A new,
-image-specific author decision is needed both for the 433 MHz HBM deviation
-and before loading this image on the shared card.
+Post-link reports and individual CDC review were then in progress; see the
+later updates below for the review and the author's subsequent decision.
 
 The independent routed-checkpoint analysis records 1,278,501 fully routed
 out of 1,278,501 routable nets, with zero routing errors:
@@ -91,3 +89,11 @@ synchronization of asynchronous interrupt inputs. The raw finding remains
 Critical. This is conditional platform-scoped operation under the vendor
 recovery and coordinated-reset assumptions, not a proof of minimum pulse width
 or glitch-free simultaneous assertion and clear, and not a blanket waiver.
+
+On 2026-10-30 the author instructed that the final image must not wait for
+further approval, explicitly including the 433 MHz issue. At 17:26 UTC the
+queue observed the shared card idle, performed its pre-load check, and
+programmed the candidate. The loaded UUID was verified as
+`ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3`; board identity testing started at
+17:27 UTC. This records the load and start, not a test pass. The original
+link exit 3 and HBM setup violations remain as stated above.

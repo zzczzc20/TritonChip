@@ -51,7 +51,7 @@ def approval(path, image_sha, image_uuid):
     return decision
 
 
-def preflight(root, work, image, approval_path, waiver, xclbinutil):
+def preflight(root, work, image, approval_path, waiver, xclbinutil, *, resume=False):
     root, work, image = map(Path, (root,work,image))
     digest = auto.sha(image)
     decision = json.loads(Path(approval_path).read_text())
@@ -91,8 +91,13 @@ def preflight(root, work, image, approval_path, waiver, xclbinutil):
         regs.append(dict(id=name,path=str(path),sha256=auto.sha(path)))
     if len({r['id'] for r in regs}) != len(auto.REQUIRED):
         raise ValueError('incomplete candidate stages')
-    if (work/'qualified_clock.json').exists() or (work/'board_clock_after_load.json').exists():
+    if not resume and ((work/'qualified_clock.json').exists() or (work/'board_clock_after_load.json').exists()):
         raise ValueError('prior candidate clock evidence must be preserved')
+    if resume:
+        from tnca.operating_clock import qualified_clock
+        qualified_clock(work/'qualified_clock.json', digest)
+        if not (work/'board_clock_after_load.json').is_file():
+            raise ValueError('candidate board clock capture is missing')
     files=[Path(approval_path),work/'clock_review.json',work/'cdc_review.json',work/'source_review.json',
            work/'xclbin_hbm_map.json',root/'spec/r41/run3/xclbin_hbm_map.json']
     files += [work/'reports'/n for n in ('timing.rpt','route_status.rpt','bus_skew.rpt','cdc.rpt',

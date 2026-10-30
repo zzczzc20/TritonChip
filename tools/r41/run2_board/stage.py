@@ -44,7 +44,9 @@ def sha(path):
 
 
 def run(root, out, python, registration):
-    root, out, python = Path(root).resolve(), Path(out).resolve(), Path(python).resolve()
+    # Preserve the virtualenv executable path: resolving its symlink escapes
+    # the environment and silently loses its installed dependencies.
+    root, out, python = Path(root).resolve(), Path(out).resolve(), Path(python).absolute()
     rows = registration.get('experiments')
     if not isinstance(rows, list) or not rows:
         raise ValueError('a stage must register at least one experiment')

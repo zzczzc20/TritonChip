@@ -25,3 +25,6 @@ software-tree, and prior-result evidence. Do not mark R41 accepted until the
 remaining tests and delivery gates actually finish.
 Nine original-suite points were slower in the preliminary comparison, including
 tiny RoPE by 20.3%; the registered performance recheck remains necessary.
+Among the 171 completed large memory-bound points, 12 are over 5% slower and
+two strided division points are about 12.4% slower; preserve those comparisons
+and distinguish the image change from any new-default optimization decision.

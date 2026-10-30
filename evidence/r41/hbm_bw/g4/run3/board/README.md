@@ -43,7 +43,8 @@ serial-grid device time has a median of 0.134 GB/s and a maximum of 0.544 GB/s:
 [`membound_default_large1_rates.json`](membound_default_large1_rates.json).
 For all 171 large points, the effective logical-rate median is 0.133 GB/s,
 versus 0.138 GB/s on the prior image; the sum of point medians is 1.13× faster
-in cycles, with 28 individual points slower. The matched-point data and
+in cycles, with 28 individual points slower. Twelve exceed 5% slower and two
+strided BF16/FP16 division points are approximately 12.4% slower. The matched-point data and
 samples are in [`membound_default_large_comparison.json`](membound_default_large_comparison.json).
 These are effective logical rates, not physical HBM throughput. The medium,
 small and tiled batches remain in progress or pending; this descriptive subset

@@ -1,4 +1,4 @@
-# Board campaign progress, 2026-10-30 18:38 UTC
+# Board campaign progress, 2026-10-30 19:30 UTC
 
 The author explicitly authorized final-image loading without further approval,
 including the 433 MHz exception. The 15-minute idle rule and protection of
@@ -11,9 +11,11 @@ The active detached board queue is PID 1080780, output
 `/home/zzhouch/r41run3/queue_resume_2/queue.jsonl`, with the 113-point stage's
 state and raw records under
 `/home/zzhouch/r41run3/queue_resume_2/results/original113/r3-s2-original-suite/original/`.
-At the time above it had recorded 154 successful sample processes across 77
-configurations, with no failures; this is not a completed 113-point suite.
-The queue will run later registered stages in order, stopping on failure. The
+The 113-point stage passed 113/113; its raw records and preliminary performance
+comparison are linked from `README.md`. The queue has started the default
+513-point memory-bound stage; at the time above its first batch had 16
+successful sample processes and no failures. The queue will run later
+registered stages in order, stopping on failure. The
 previous identity and HBM clamp failures and fixes are preserved in `README.md`.
 
 Inspect the queue and running processes before any intervention; do not stop
@@ -21,3 +23,5 @@ other users' processes or program over an active image. If a stage fails,
 retain its output, diagnose it, and resume only with valid image, clock,
 software-tree, and prior-result evidence. Do not mark R41 accepted until the
 remaining tests and delivery gates actually finish.
+Nine original-suite points were slower in the preliminary comparison, including
+tiny RoPE by 20.3%; the registered performance recheck remains necessary.

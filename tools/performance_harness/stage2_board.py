@@ -468,7 +468,7 @@ def count_cases(report):
                             if isinstance(c, dict) and c.get('status') != 'pass'][:20])
 
 
-def fp8_summary(out, groups, dumps, require_x8):
+def fp8_summary(out, groups, dumps, require_x8, image_label='run-1'):
     rows, problems = {}, []
     for spec in groups:
         name, path = spec.split('=', 1)
@@ -491,7 +491,7 @@ def fp8_summary(out, groups, dumps, require_x8):
     record = dict(schema='tnca-r41s2-fp8-summary/1', groups=rows, x8_transposed_loads=x8,
                   x8_kernels=len(x8), x8_instructions=sum(x8.values()),
                   result='pass' if not problems else 'fail', residual=problems or 'none',
-                  conclusion=('every FP8 case passed on the run-1 image' + (
+                  conclusion=(f'every FP8 case passed on the {image_label} image' + (
                       f'; X8 transposed load in {len(x8)} kernels' if x8 else '')) if not problems
                   else 'FP8 board check failed: ' + '; '.join(problems),
                   next_step='compare cycles with the simulator reports' if not problems
@@ -516,11 +516,12 @@ def main():
     fs.add_argument('--group', action='append', default=[])
     fs.add_argument('--dump', action='append', default=[])
     fs.add_argument('--require-x8', action='store_true')
+    fs.add_argument('--image-label', choices=('run-1', 'run-2'), default='run-1')
     a = ap.parse_args()
     if a.cmd == 'source-check':
         return source_check(a.root, a.out)
     if a.cmd == 'fp8-summary':
-        return fp8_summary(a.out, a.group, a.dump, a.require_x8)
+        return fp8_summary(a.out, a.group, a.dump, a.require_x8, a.image_label)
     if a.image_source:
         (ROOT / SOURCE).write_text(json.dumps(image_source(), indent=1) + '\n')
     if a.write:

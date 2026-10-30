@@ -8,6 +8,7 @@ import auto
 import manifests
 import registrations
 import stage
+import candidate_manifests
 
 
 class Run2Manifests(unittest.TestCase):
@@ -59,6 +60,39 @@ class Run2Manifests(unittest.TestCase):
                 self.assertEqual(experiment['sha256'], stage.sha(manifests.ROOT/experiment['manifest']))
         self.assertCountEqual(used, [name for _, name in manifests.jobs()])
         self.assertEqual(len(used), len(set(used)))
+
+    def test_candidate_rebinds_every_workload_without_board_access(self):
+        import tempfile
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            image = root/'candidate.xclbin'
+            image.write_bytes(b'candidate')
+            digest = stage.sha(image)
+            uid = '11111111-2222-3333-4444-555555555555'
+            mapping = root/'candidate-map.json'
+            data = json.loads((manifests.ROOT/manifests.MAP).read_text())
+            data['image_sha256'] = digest
+            mapping.write_text(json.dumps(data))
+            info = 'UUID (xclbin): ' + uid + '\nName: DATA_CLK\n Index: 0\n Type: DATA\n Frequency: 100 MHz\n'
+            class Result:
+                stdout = info
+            with patch.object(candidate_manifests, 'ROOT', root), \
+                 patch.object(candidate_manifests.subprocess, 'run', return_value=Result()):
+                self.assertEqual(candidate_manifests.prepare(image, digest, uid, mapping, 'xclbinutil'), 23)
+            for path in (root/candidate_manifests.OUT/'board').glob('*.json'):
+                spec = json.loads(path.read_text())
+                self.assertEqual(spec['board']['image_sha256'], digest)
+                self.assertEqual(spec['board']['image_uuid'], uid)
+                self.assertTrue(spec['id'].startswith('r3-'))
+                self.assertNotIn(auto.IMAGE_SHA, json.dumps(spec))
+            stages = list((root/candidate_manifests.OUT/'stages').glob('*.json'))
+            self.assertEqual(len(stages), len(auto.REQUIRED))
+            for path in stages:
+                reg = json.loads(path.read_text())
+                self.assertEqual(reg['image_identity'], {'sha256': digest, 'uuid': uid})
+                for row in reg['experiments']:
+                    self.assertEqual(row['sha256'], stage.sha(root/row['manifest']))
 
 
 if __name__ == '__main__':

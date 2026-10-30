@@ -49,6 +49,13 @@ def run(root, out, python, registration):
     if not isinstance(rows, list) or not rows:
         raise ValueError('a stage must register at least one experiment')
     ids = [r['id'] for r in rows]
+    identity = registration.get('image_identity', {})
+    image_sha = identity.get('sha256', auto.IMAGE_SHA)
+    image_uuid = identity.get('uuid', auto.IMAGE_UUID)
+    if (not isinstance(image_sha, str) or len(image_sha) != 64 or
+            any(c not in '0123456789abcdef' for c in image_sha) or
+            not isinstance(image_uuid, str) or len(image_uuid) != 36):
+        raise ValueError('invalid registered image identity')
     if len(ids) != len(set(ids)) or any(not x.replace('-', '').replace('_', '').isalnum() for x in ids):
         raise ValueError('experiment IDs must be unique simple names')
     summary = out / 'stage.json'
@@ -61,8 +68,8 @@ def run(root, out, python, registration):
         spec = json.loads(manifest.read_text())
         board = spec.get('board', {})
         args = board.get('backend_args', {})
-        if (spec.get('id') != row['id'] or board.get('image_sha256') != auto.IMAGE_SHA
-                or board.get('image_uuid') != auto.IMAGE_UUID or board.get('clock_hz') != 100_000_000
+        if (spec.get('id') != row['id'] or board.get('image_sha256') != image_sha
+                or board.get('image_uuid') != image_uuid or board.get('clock_hz') != 100_000_000
                 or board.get('profile') != PROFILE or args.get('image_profile') != PROFILE
                 or args.get('core_count') != 3 or args.get('memory_ports') != 3
                 or args.get('hbm_bytes') != 8 * (1 << 30) or args.get('hbm_dma') is not True):

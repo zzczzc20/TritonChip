@@ -49,3 +49,21 @@ class IdleTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class ClockReviewTests(unittest.TestCase):
+    def test_unapproved_image_is_rejected_before_running_tools(self):
+        import sys
+        import importlib.util
+        from unittest.mock import patch
+        folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        spec = importlib.util.spec_from_file_location('clock_review_test', folder/'clock_review.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp)/'image'
+            image.write_bytes(b'not the approved xclbin')
+            with patch.object(mod.subprocess, 'run') as run:
+                with self.assertRaisesRegex(ValueError, 'explicitly approved'):
+                    mod.review(image, tmp, 'xclbinutil')
+                run.assert_not_called()

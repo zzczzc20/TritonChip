@@ -47,9 +47,6 @@ class IdleTests(unittest.TestCase):
                 auto.validate_plan({'schema': 'tnca-r41-run2-board-plan/1', 'stages': []}, image)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
 class ClockReviewTests(unittest.TestCase):
     def test_unapproved_image_is_rejected_before_running_tools(self):
         import sys
@@ -67,3 +64,28 @@ class ClockReviewTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'explicitly approved'):
                     mod.review(image, tmp, 'xclbinutil')
                 run.assert_not_called()
+
+
+class QueuePreflightTests(unittest.TestCase):
+    def test_incomplete_plan_stops_before_programming_even_with_approved_hash(self):
+        import json
+        import sys
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            image, plan, program = root/'image', root/'plan.json', root/'program.sh'
+            image.write_bytes(b'fixture')
+            program.write_text('exit 99\n')
+            plan.write_text(json.dumps({'schema': 'tnca-r41-run2-board-plan/1', 'stages': []}))
+            argv = ['auto.py', '--plan', str(plan), '--image', str(image),
+                    '--program', str(program), '--out', str(root/'out')]
+            with patch.object(sys, 'argv', argv), patch.object(auto, 'sha', return_value=auto.IMAGE_SHA), \
+                 patch.object(auto.subprocess, 'run') as run:
+                with self.assertRaisesRegex(ValueError, 'all required stages'):
+                    auto.main()
+                run.assert_not_called()
+                self.assertFalse((root/'out').exists())
+
+
+if __name__ == '__main__':
+    unittest.main()

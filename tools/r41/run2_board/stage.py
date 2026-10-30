@@ -5,6 +5,9 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import auto
+
+PROFILE = 'core-vrf-sync-v5-x8-g2c4-dp'
 
 
 def sha(path):
@@ -30,8 +33,17 @@ def run(root, out, python, registration):
         manifest = root / row['manifest']
         if not manifest.is_file() or sha(manifest) != row['sha256']:
             raise ValueError('registered manifest missing or changed: ' + str(manifest))
-        if (out / row['id'] / 'report.json').exists():
-            raise ValueError('experiment result already exists: ' + row['id'])
+        spec = json.loads(manifest.read_text())
+        board = spec.get('board', {})
+        args = board.get('backend_args', {})
+        if (spec.get('id') != row['id'] or board.get('image_sha256') != auto.IMAGE_SHA
+                or board.get('image_uuid') != auto.IMAGE_UUID or board.get('clock_hz') != 100_000_000
+                or board.get('profile') != PROFILE or args.get('image_profile') != PROFILE
+                or args.get('core_count') != 3 or args.get('memory_ports') != 3
+                or args.get('hbm_bytes') != 8 * (1 << 30) or args.get('hbm_dma') is not True):
+            raise ValueError('manifest is not registered for the run-2 board configuration: ' + row['id'])
+        if (out / row['id']).exists():
+            raise ValueError('experiment output already exists: ' + row['id'])
         if not row.get('checks'):
             raise ValueError('each experiment needs explicit result checks')
     out.mkdir(parents=True, exist_ok=True)

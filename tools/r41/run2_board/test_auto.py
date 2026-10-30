@@ -138,8 +138,11 @@ class HbmReviewTests(unittest.TestCase):
 class StageTests(unittest.TestCase):
     def test_failed_result_never_publishes_a_passing_stage(self):
         import json
+        import sys
         from unittest.mock import patch
         folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        sys.modules.setdefault('auto', auto)
         spec = importlib.util.spec_from_file_location('run2_stage', folder/'stage.py')
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -147,7 +150,11 @@ class StageTests(unittest.TestCase):
             root = Path(tmp)/'root'
             root.mkdir()
             manifest = root/'manifest.json'
-            manifest.write_text('{}')
+            manifest.write_text(json.dumps({'id': 'smoke', 'board': {
+                'image_sha256': auto.IMAGE_SHA, 'image_uuid': auto.IMAGE_UUID,
+                'clock_hz': 100_000_000, 'profile': mod.PROFILE,
+                'backend_args': {'image_profile': mod.PROFILE, 'core_count': 3,
+                    'memory_ports': 3, 'hbm_bytes': 8 << 30, 'hbm_dma': True}}}))
             out = Path(tmp)/'output'
             registration = {'experiments': [{'id': 'smoke', 'manifest': 'manifest.json',
                 'sha256': mod.sha(manifest), 'checks': [{'path': 'batch.json',
@@ -161,6 +168,14 @@ class StageTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'result check failed'):
                     mod.run(root, out, '/usr/bin/python3', registration)
             self.assertFalse((out/'stage.json').exists())
+            wrong = json.loads(manifest.read_text())
+            wrong['board']['image_sha256'] = '30e79769' * 8
+            manifest.write_text(json.dumps(wrong))
+            registration['experiments'][0]['sha256'] = mod.sha(manifest)
+            with patch.object(mod.subprocess, 'run') as run:
+                with self.assertRaisesRegex(ValueError, 'run-2 board configuration'):
+                    mod.run(root, Path(tmp)/'other', '/usr/bin/python3', registration)
+                run.assert_not_called()
 
 
 if __name__ == '__main__':

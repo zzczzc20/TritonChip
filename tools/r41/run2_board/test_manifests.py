@@ -10,6 +10,7 @@ import registrations
 import stage
 import candidate_manifests
 import candidate_source
+import candidate_clock
 
 
 class Run2Manifests(unittest.TestCase):
@@ -105,6 +106,32 @@ class Run2Manifests(unittest.TestCase):
             image.write_bytes(b'wrong')
             with self.assertRaisesRegex(ValueError, 'image hash changed'):
                 candidate_source.review(Path(tmp)/'missing-archive', Path(tmp), image, '0'*64)
+
+    def test_candidate_frequency_change_requires_image_specific_decision(self):
+        import tempfile
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            image = root/'candidate'
+            image.write_bytes(b'candidate')
+            for name in candidate_clock.FILES:
+                (root/name).write_text('Slack (MET)' if name == 'bus_skew.rpt' else '')
+            info = ('UUID (xclbin): 11111111-2222-3333-4444-555555555555\n'
+                    'Name: DATA_CLK\n Index: 0\n Type: DATA\n Frequency: 100 MHz\n'
+                    'Name: hbm_aclk\n Index: 1\n Type: SYSTEM\n Frequency: 441 MHz\n')
+            class Result:
+                stdout = info
+            design = dict(wns=0.02, setup_failing=0, whs=0.001, hold_failing=0)
+            kernel = dict(wns=0.04, whs=0.001, setup_failing=0, hold_failing=0)
+            with patch.object(candidate_clock.subprocess, 'run', return_value=Result()), \
+                 patch.object(candidate_clock.check_run2, 'design_summary', return_value=design), \
+                 patch.object(candidate_clock.check_run2, 'clock_row', return_value=kernel), \
+                 patch.object(candidate_clock.check_run2, 'route_status',
+                              return_value=dict(routable=1, fully_routed=1, errors=0, unrouted=0)), \
+                 patch.object(candidate_clock.clock_qualify, 'design_timing',
+                              return_value=dict(wpws=0, tpws_failing=0)):
+                with self.assertRaisesRegex(ValueError, 'new image-specific author decision'):
+                    candidate_clock.review(image, root, 'xclbinutil')
 
 
 if __name__ == '__main__':

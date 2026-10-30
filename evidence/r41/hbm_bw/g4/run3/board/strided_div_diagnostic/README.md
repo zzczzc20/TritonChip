@@ -15,3 +15,12 @@ values are `f9f474efc3dcc62f0ab88167f8af3bc4b77d7bf7e3957c213f12ff7535a2c8c3`,
 This rules out a difference in these captured instructions for this kernel;
 it does not isolate the effect of hardware, memory layout, surrounding runtime
 or measurement conditions. Investigate those after the active board campaign.
+
+Both records contain exactly one launch of this kernel with 2,097,152 grid
+programs. Dividing the aggregate cycle difference by the grid size gives
+approximately 8.91 cycles per program, including multicore overlap. The
+assembly contains two halfword gathers. Run 1 configured
+`LSU_INFLIGHT=2`, while the candidate configures `LSU_INFLIGHT=1` alongside
+other changes including striped HBM and the hybrid LSU. The in-flight limit
+is a concrete hypothesis to isolate, not an established cause or a reason to
+change the running image.

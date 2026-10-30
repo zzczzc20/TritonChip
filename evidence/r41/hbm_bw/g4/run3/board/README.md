@@ -12,6 +12,14 @@ and tiny Llama decode. Their individual raw records are in
 [`identity_results.tgz`](identity_results.tgz); the original 113-point suite
 and other delivery stages are still running or pending.
 
+The still-running 113-point suite produced a passing
+[`llama_prefill/large`](llama_prefill_large.jsonl) sample with maximum relative
+error 0.00237 (tolerance 0.05). Serial-grid device time was 336.820 s,
+compared with 582.598 s for the same point on the previous 100 MHz image
+([`board_metrics.json`](../../../../acceptance/board_metrics.json)), a 1.73×
+device-time speedup. This single comparison does not establish the suite-wide
+performance gate.
+
 The first identity attempt failed before device execution because the queue
 resolved the virtualenv symlink to system Python, which lacked PyTorch:
 [`identity_first_failure.log`](identity_first_failure.log). Commit `498b760a`

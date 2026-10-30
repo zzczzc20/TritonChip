@@ -62,7 +62,7 @@ Inductor, as configured for TNCA:
 mlp_block, compiled:
   Triton kernels run on TNCA  ['triton_red_fused_add_mean_mul_pow_rsqrt_silu_1', 'triton_tem_fused_mm_0']
   host fallbacks              none
-  max |compiled - eager|      9.54e-07  (tolerance 0.000186)
+  max |compiled - eager|      9.54e-07  (tolerance 0.000366)
 
 with_sort, compiled:
   host fallbacks              ['ATen op: torch.ops.aten.sort']

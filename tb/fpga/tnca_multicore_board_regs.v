@@ -27,8 +27,8 @@ module tnca_multicore_board_regs;
  parameter HOME_LINE_WRITE_NOFILL=0,HOME_LINE_PIPE=0,HOME_MSHR_N=8,LINE_SLOTS=8,TENSOR_LINE=0;
  // R41 G4: outlet data width (the image's AXI_DATA_W; 256 delivered, 512 one beat a line).
  parameter AXI_DATA_W=256;
- localparam NX=N>4?4:N,ADDR_BITS=9,WORDS=(131072+MEMORY_BYTES)/8,
-  AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1);
+ parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1);
+ localparam NX=N>4?4:N,ADDR_BITS=9,WORDS=(131072+MEMORY_BYTES)/8;
  reg clk=0,rst_n_async=0;always #5 clk=~clk;
  reg [8:0] reg_addr;reg [63:0] reg_wdata;reg reg_we,reg_re;
  wire [63:0] reg_rdata;
@@ -64,6 +64,9 @@ module tnca_multicore_board_regs;
  reg awvalid=0,wvalid=0,bready=0,arvalid=0,rready=0;
  reg [11:0] awaddr=0,araddr=0;reg [31:0] wdata=0;reg [3:0] wstrb=15;
  wire awready,wready,bvalid,arready,rvalid;wire [31:0] rdata;wire [1:0] bresp,rresp;
+`ifdef TNCA_IMAGE_PARAMS
+ tnca_multicore_hbm_xo #(`TNCA_IMAGE_PARAMS) dut(
+`else
  tnca_multicore_hbm_xo #(.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.HOME_LINE_PIPE(HOME_LINE_PIPE),.TENSOR_LINE(TENSOR_LINE),.HOME_MSHR_N(HOME_MSHR_N),.LINE_SLOTS(LINE_SLOTS),.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(SETS),.SET_W(SET_W),.WAYS(WAYS),.WAY_W(WAY_W),
   .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),.NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT),
   .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE),.NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
@@ -72,6 +75,7 @@ module tnca_multicore_board_regs;
   .AXI_OUT_N(AXI_OUT_N),.AXI_PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.AXI_DATA_W(AXI_DATA_W),
   .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),.MTX_VRF_REG(MTX_VRF_REG),.FMA_IMPL(FMA_IMPL),.MAC_DP(MAC_DP),.MAC_CUTS(MAC_CUTS),.LSU_INFLIGHT(LSU_INFLIGHT),.NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
   .ACC_N(ACC_N),.ACC_W(ACC_W),.BAR_N(BAR_N),.BAR_W(BAR_W),.BAR_EPOCH_W(BAR_EPOCH_W),.PHYS_ADDR_W(PHYS_ADDR_W)) dut(
+`endif
  .ap_clk(clk),.ap_rst_n(rst_n_async),
  .s_axi_tnca_awvalid(awvalid),
  .s_axi_tnca_awready(awready),
@@ -211,7 +215,87 @@ module tnca_multicore_board_regs;
  .m_rresp(m_rresp[p*(2)+:(2)]),
  .m_rlast(m_rlast[p*(1)+:(1)]));
  end endgenerate
+`ifdef TNCA_IMAGE_PARAMS
+    //==========================================================================
+    // Every launch meets the same memory (a described machine)
+    //
+    // The line models draw their stalls from a generator that advances every
+    // cycle, idle or not. A launch's cycles would then depend on how many idle
+    // cycles came before it -- on how long the host took, in wall-clock time
+    // -- and one machine would count differently from one run to the next.
+    // Reseeding every line model as a launch starts makes a launch cost the
+    // same whenever it runs. Only with a device description: the stand-in
+    // machine below and R40's tests keep the generator as it was.
+    //==========================================================================
+    reg [63:0] reseed_start=0;
+    reg reseed=0;
+    always @(posedge clk) begin
+        reseed <= rst_n_async && dut.device.control.launch_start != reseed_start;
+        if (rst_n_async) reseed_start <= dut.device.control.launch_start;
+    end
+    generate for(genvar p=0;p<PORTS;p=p+1)begin:g_reseed
+        always @(posedge clk) if (reseed) g_ram[p].ram.seed = 123;
+    end endgenerate
+`endif
 `include "tb/fpga/tnca_multicore_shared_hbm.vh"
+    //==========================================================================
+    // The platform's own count (+observe=<file>)
+    //
+    // What the agent harness scores, kept by the bench and not by the host:
+    // every launch's MMIO endpoints, launch_end - launch_start on the device
+    // clock of rtl/fpga/tnca_multicore_mmio.v (evaluator-owned), beside the
+    // count the device reports (done_cycles, from rtl/), which only
+    // cross-checks the host's record. After each completion the bench counts
+    // the cycles until every core is idle and every outlet has no read or
+    // write in flight ("settle"); a launch that reports done before its work
+    // has drained shows as a long settle, or as none ("quiet=0") when the
+    // next command arrives first. A write-back cache may still write behind
+    // a launch, so the evaluator judges settle against a bound calibrated on
+    // the base, not against zero. Observation only: nothing here drives the
+    // device. One line per launch, flushed, so the log needs no clean exit.
+    //==========================================================================
+    integer obs_fd=0;
+    reg obs_on=0,obs_settling=0;
+    reg [8*512-1:0] obs_path;
+    reg [63:0] obs_last_end=0,obs_start=0,obs_end=0,obs_done=0,obs_settle=0,obs_launches=0;
+    reg [3:0] obs_status=0;
+    reg [15:0] obs_rd [0:2];
+    reg [15:0] obs_wr [0:2];
+    integer obs_k;
+    wire obs_quiet=dut.device.all_idle && (obs_rd[0]==0) && (obs_wr[0]==0) && (obs_rd[1]==0)
+                   && (obs_wr[1]==0) && (obs_rd[2]==0) && (obs_wr[2]==0);
+    initial for(obs_k=0;obs_k<3;obs_k=obs_k+1)begin obs_rd[obs_k]=0;obs_wr[obs_k]=0;end
+    task obs_line;
+        input quiet;
+        begin
+            $fwrite(obs_fd,"cmd op=1 seq=%0d obs=%0d done=%0d status=%0d settle=%0d quiet=%0d rd=%0d wr=%0d\n",
+                    obs_launches,obs_end-obs_start,obs_done,obs_status,obs_settle,quiet,
+                    obs_rd[0]+obs_rd[1]+obs_rd[2],obs_wr[0]+obs_wr[1]+obs_wr[2]);
+            $fflush(obs_fd);
+        end
+    endtask
+    always @(posedge clk)if(rst_n_async)begin
+        for(obs_k=0;obs_k<PORTS;obs_k=obs_k+1)begin
+            obs_rd[obs_k]<=obs_rd[obs_k]+(m_arvalid[obs_k]&&m_arready[obs_k])
+                          -(m_rvalid[obs_k]&&m_rready[obs_k]&&m_rlast[obs_k]);
+            obs_wr[obs_k]<=obs_wr[obs_k]+(m_awvalid[obs_k]&&m_awready[obs_k])
+                          -(m_bvalid[obs_k]&&m_bready[obs_k]);
+        end
+        if(obs_on)begin
+            if(obs_settling)begin
+                if(obs_quiet)begin obs_line(1);obs_settling<=0;end
+                else if(dut.device.control.launch_start!=obs_start)begin obs_line(0);obs_settling<=0;end
+                else obs_settle<=obs_settle+1;
+            end
+            if(dut.device.control.launch_end!=obs_last_end)begin
+                obs_last_end<=dut.device.control.launch_end;
+                obs_start<=dut.device.control.launch_start;obs_end<=dut.device.control.launch_end;
+                obs_done<={dut.device.control.rsp_r1[31:0],dut.device.control.rsp_r0[31:0]};
+                obs_status<=dut.device.control.rsp_status;
+                obs_launches<=obs_launches+1;obs_settle<=0;obs_settling<=1;
+            end
+        end
+    end
 `include "tb/fpga/tnca_multicore_dma.vh"
     reg [8*512-1:0] cmd_path, rsp_path;
     integer         pollcycles, intercycle, watchdog;
@@ -358,6 +442,11 @@ module tnca_multicore_board_regs;
         // nobody can tell from a slow one.
         if (!$value$plusargs("watchdog=%d", watchdog)) watchdog = 200000000;
         journal_init;
+        if ($value$plusargs("observe=%s", obs_path)) begin
+            obs_fd = $fopen(obs_path, "w");
+            if (obs_fd == 0) $fatal(1, "tnca_multicore_board_regs: cannot write the observer log");
+            obs_on = 1;
+        end
 
         // Reset, asserted asynchronously and released synchronously, the same
         // shape rtl/fpga/tnca_fpga_top.v asks a board to supply.

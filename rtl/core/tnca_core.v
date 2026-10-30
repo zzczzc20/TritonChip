@@ -265,8 +265,8 @@ module tnca_core #(
     // Cycles a role context runs in which nothing is stalled and nothing
     // issues: R holds no live instruction -- a fetch bubble, a squash, a
     // redirect. With it, perf_issued + perf_stall_total + perf_x_frontend
-    // == perf_cycles exactly (R39-00); without it 14 % of ArchBench's
-    // cycles had no name.
+    // == perf_cycles exactly (R39-00); without it a sizeable share of the
+    // measured cycles had no name.
     output reg  [63:0]              perf_x_frontend
 );
 
@@ -3002,8 +3002,8 @@ module tnca_core #(
                 // Round robin starts from context 0 at every launch, as it
                 // does after reset: with several contexts the interleaving
                 // -- and so the cycle count -- would otherwise depend on
-                // what ran before (B4 found board and simulation 1-8
-                // cycles apart on three points of 27).
+                // what ran before (B4 found board and simulation a few
+                // cycles apart on some kernels).
                 rr_ptr   <= {RCTX_W{1'b0}};
                 fault_valid <= 1'b0;
             end else begin

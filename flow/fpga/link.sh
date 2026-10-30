@@ -136,10 +136,13 @@ set -u
 OUT=${1:?usage: link.sh <build-dir>    # the directory package_xo.tcl wrote into}
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
 
-# Variant metadata is written only after successful XO packaging.
+# Variant metadata is written only after successful XO packaging. The on-chip
+# build is `none`; an empty file is the same build, as package_xo.tcl wrote it
+# before it named it.
 TNCA_KERNEL_VARIANT=none
 if [ -f "$OUT/tnca_variant.txt" ]; then
     TNCA_KERNEL_VARIANT=$(cat "$OUT/tnca_variant.txt")
+    [ -n "$TNCA_KERNEL_VARIANT" ] || TNCA_KERNEL_VARIANT=none
 fi
 case "$TNCA_KERNEL_VARIANT" in
 none|hbm|multicore-hbm) ;;
@@ -155,13 +158,27 @@ VITIS=${XILINX_VITIS:-$BOARD_VITIS}
 PLATFORM=$BOARD_PLATFORM
 PLATFORMS_DIR=${XILINX_PLATFORMS:-/opt/xilinx/platforms}
 
-# The clock this build asks for, and the one flow/fpga/ooc.xdc constrains and
-# rtl/board/tnca_u50_xo.v divides by DEV_DIV (1 since 2026-10-09: the device at
-# 100 MHz, measured on the U280; before that 150 MHz divided by 4, 3, then 2).
+# The clock this build asks for: the one rtl/board/tnca_u50_xo.v divides by
+# DEV_DIV (1 since 2026-10-09: the device at 100 MHz, measured on the U280;
+# before that 150 MHz divided by 4, 3, then 2), and that the three-core top runs
+# on undivided. flow/fpga/ooc.xdc's 10 ns is at least as tight as every
+# target's clock up to 100 MHz.
 # The header says why it is not the platform default of 300; the four checks at
 # the bottom of this file are what make sure it is this number that reaches the
 # .xclbin.
-EXPECT_MHZ=100
+#
+# A target names its own clock (R40's three-core image closes at 90 MHz, not
+# 100): TNCA_KERNEL_MHZ, the same number package_xo.tcl declares as the
+# kernel's FREQ_HZ. Unset, it is 100, as before. A build that cannot close at
+# the clock it asked for is still refused below: the tool moving the clock is
+# a failed build, whatever the number.
+EXPECT_MHZ=${TNCA_KERNEL_MHZ:-100}
+case "$EXPECT_MHZ" in
+''|*[!0-9]*) echo "link.sh: TNCA_KERNEL_MHZ must be a whole number of MHz, not '$EXPECT_MHZ'" >&2; exit 2 ;;
+esac
+if [ "$EXPECT_MHZ" -lt 10 ] || [ "$EXPECT_MHZ" -gt 650 ]; then
+    echo "link.sh: TNCA_KERNEL_MHZ=$EXPECT_MHZ is outside the platform's 10..650 MHz" >&2; exit 2
+fi
 
 XO=$OUT/tnca_u50.xo
 XCLBIN=$OUT/tnca_${BOARD}.xclbin
@@ -207,6 +224,16 @@ if [ "${LINK_RECHECK:-0}" = 1 ]; then
     [ -f "$LOG" ] || { echo "link.sh: LINK_RECHECK=1 but no $LOG" >&2; exit 2; }
     rc=$(sed -n 's/^VPP_RC=//p' "$LOG" | tail -1)
     [ -n "$rc" ] || { echo "link.sh: LINK_RECHECK=1 but $LOG has no VPP_RC line" >&2; exit 2; }
+    # The clock is the one that link asked for, which its log records: a 90 MHz
+    # link rechecked without TNCA_KERNEL_MHZ is not a 100 MHz one that moved.
+    asked=$(sed -n 's/^EXPECT_MHZ=//p' "$LOG" | head -1)
+    if [ -n "$asked" ] && [ "$asked" != "$EXPECT_MHZ" ]; then
+        if [ -n "${TNCA_KERNEL_MHZ:-}" ]; then
+            echo "link.sh: LINK_RECHECK=1 with TNCA_KERNEL_MHZ=$EXPECT_MHZ, but that link asked for $asked MHz" >&2
+            exit 2
+        fi
+        EXPECT_MHZ=$asked
+    fi
     {
         echo "=== RECHECK $(date) ==="
         echo "CHECKS_COMMIT=$(git -C "$REPO" rev-parse HEAD 2>/dev/null || echo 'not a git tree')"
@@ -407,21 +434,26 @@ fi
 
 if [ "$got" != "$EXPECT_MHZ" ]; then
     echo "link.sh: FAILED -- the kernel clock is ${got} MHz and this build"
-    echo "         asked for ${EXPECT_MHZ} MHz. ap_clk is what the divider in"
-    echo "         rtl/board/tnca_u50_xo.v counts against, so the device clock"
-    echo "         is not what the header says either."
+    echo "         asked for ${EXPECT_MHZ} MHz. ap_clk is the clock the device"
+    echo "         runs on (divided by DEV_DIV in rtl/board/tnca_u50_xo.v), so"
+    echo "         the device clock is not what the header says either."
     echo "LINK_FAILED freq=$got $(date)" >> "$LOG"
     echo "=== LINK_DONE $(date) ===" >> "$LOG"
     exit 5
 fi
 
-# The divider is read from the wrapper this tree packages, not assumed: the
-# message said /4 long after DEV_DIV became 3 and then 2.
-div=$(sed -n 's/^[[:space:]]*parameter DEV_DIV[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/p' \
-      "$REPO/rtl/board/tnca_u50_xo.v" | head -1)
-dev=$(awk -v f="$got" -v d="${div:-0}" 'BEGIN { if (d > 0) printf "%g", f / d; else printf "?" }')
 echo "link.sh: OK -- $XCLBIN"
-echo "         kernel clock ${got} MHz, DEV_DIV ${div:-?}, device clock ${dev} MHz"
+if [ "$TNCA_KERNEL_VARIANT" = multicore-hbm ]; then
+    # The three-core top has no divider: its device runs on ap_clk.
+    echo "         kernel clock ${got} MHz, the three-core device on it undivided"
+else
+    # The divider is read from the wrapper this tree packages, not assumed: the
+    # message said /4 long after DEV_DIV became 3 and then 2.
+    div=$(sed -n 's/^[[:space:]]*parameter DEV_DIV[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/p' \
+          "$REPO/rtl/board/tnca_u50_xo.v" | head -1)
+    dev=$(awk -v f="$got" -v d="${div:-0}" 'BEGIN { if (d > 0) printf "%g", f / d; else printf "?" }')
+    echo "         kernel clock ${got} MHz, DEV_DIV ${div:-?}, device clock ${dev} MHz"
+fi
 echo "         bitstream is in the .xclbin; loading it is a separate decision"
 echo "         and has not been taken."
 echo "LINK_OK $(date)" >> "$LOG"

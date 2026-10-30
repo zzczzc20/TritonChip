@@ -65,18 +65,19 @@
 //==============================================================================
 `default_nettype none
 
+`include "tnca_uarch_defaults.vh"
+
 module tnca_shell #(
-    parameter NUM_RCTX       = 2,
-    parameter RCTX_W         = 1,
-    parameter VLEN           = 16,
-    parameter ELEN           = 32,
-    parameter VREGS_PER_RCTX = 64,
-    // R41 G2 resource sizing (defaults: the delivered machine): accumulator slots, mbarriers, the barrier epoch width
-    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0, MAC_DP = 0, MAC_CUTS = 29,
-    parameter PHYS_VREGS     = NUM_RCTX * VREGS_PER_RCTX,
-    parameter PHYS_W         = 7,
-    parameter LSU_TAG_W      = 5,
-    parameter HAS_SFU        = 1,
+    parameter NUM_RCTX       = `TNCA_IF_NUM_RCTX,
+    parameter RCTX_W         = `TNCA_IF_RCTX_W,
+    parameter VLEN           = `TNCA_UARCH_VLEN,
+    parameter ELEN           = `TNCA_UARCH_ELEN,
+    parameter VREGS_PER_RCTX = `TNCA_UARCH_VREGS_PER_RCTX,
+    parameter PHYS_VREGS     = `TNCA_UARCH_PHYS_VREGS,
+    parameter PHYS_W         = `TNCA_UARCH_PHYS_W,
+    parameter LSU_TAG_W      = `TNCA_IF_LSU_TAG_W,
+    parameter HAS_SFU        = `TNCA_UARCH_HAS_SFU,
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = `TNCA_UARCH_BAR_N, BAR_W = `TNCA_UARCH_BAR_W, BAR_EPOCH_W = `TNCA_UARCH_BAR_EPOCH_W, FMA_IMPL = `TNCA_UARCH_FMA_IMPL, MAC_DP = `TNCA_UARCH_MAC_DP, MAC_CUTS = `TNCA_UARCH_MAC_CUTS,
     // Forwarded to the core, not because this shell uses them, but
     // because spec/r1_profiles.json names them in its elaboration and a
     // platform that cannot set them cannot reproduce the profile. They
@@ -84,19 +85,19 @@ module tnca_shell #(
     // this configuration right by luck; another profile would have been
     // silently wrong. R36-CFG-01 asks the export description to agree
     // with the profile field by field, and it now does.
-    parameter HAS_ATOMICS    = 1,
-    parameter HAS_SYS_ATOMICS = 0,
-    parameter USE_BANKED_VRF = 0,
-    parameter VRF_BYPASS     = 0,
-    parameter FE_NOBUBBLE    = 0,
-    parameter VRF_PREFETCH   = 0,
-    parameter RCTX_SWITCH    = 0,
-    parameter LSU_INFLIGHT   = 1,
-    parameter RSLICE         = 0,
-    parameter RPAIR          = 0,
-    parameter MTX_ABUF       = 0,
-    parameter FPU_OVERLAP    = 0,
-    parameter HAS_TENSOR_XPOSE = 0,
+    parameter HAS_ATOMICS    = `TNCA_UARCH_HAS_ATOMICS,
+    parameter HAS_SYS_ATOMICS = `TNCA_UARCH_HAS_SYS_ATOMICS,
+    parameter USE_BANKED_VRF = `TNCA_UARCH_USE_BANKED_VRF,
+    parameter VRF_BYPASS     = `TNCA_UARCH_VRF_BYPASS,
+    parameter FE_NOBUBBLE    = `TNCA_UARCH_FE_NOBUBBLE,
+    parameter VRF_PREFETCH   = `TNCA_UARCH_VRF_PREFETCH,
+    parameter RCTX_SWITCH    = `TNCA_UARCH_RCTX_SWITCH,
+    parameter LSU_INFLIGHT   = `TNCA_UARCH_LSU_INFLIGHT,
+    parameter RSLICE         = `TNCA_UARCH_RSLICE,
+    parameter RPAIR          = `TNCA_UARCH_RPAIR,
+    parameter MTX_ABUF       = `TNCA_UARCH_MTX_ABUF,
+    parameter FPU_OVERLAP    = `TNCA_UARCH_FPU_OVERLAP,
+    parameter HAS_TENSOR_XPOSE = `TNCA_UARCH_HAS_TENSOR_XPOSE,
     parameter CORE_ID        = 0,
     parameter NUM_CORES      = 1,
     // The tag the shell uses for its own host accesses. The core is idle

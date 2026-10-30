@@ -1,0 +1,125 @@
+# The TNCA toolchain image: what an agent works in and what the evaluator
+# builds and simulates with. It follows .github/workflows/ci.yml, which
+# installs the same packages on ubuntu-24.04; `make r1-doctor` inside the
+# image reports every difference from spec/r1_toolchain.lock.json.
+#
+# The repository is not in the image. A run mounts its own workspace at
+# /work, so the image is the same for every candidate and every task.
+FROM ubuntu:24.04 AS toolchain
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+      iverilog yosys build-essential cmake ninja-build make git ca-certificates \
+      python3 python3-venv python3-dev \
+      libmlir-20-dev mlir-20-tools llvm-20-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV LLVM_PREFIX=/usr/lib/llvm-20 \
+    TNCA_LLVM=/usr/lib/llvm-20
+
+# One unprivileged user. Ubuntu's image ships `ubuntu` at uid 1000; it is
+# replaced so the uid can be chosen to match the host user that owns /work.
+# The venv is created as this user, in one layer; a run's root filesystem,
+# the venv included, is read-only.
+ARG UID=1000
+RUN userdel -r ubuntu 2>/dev/null || true \
+ && useradd -m -u "$UID" -s /bin/bash tnca \
+ && install -d -o tnca -g tnca /opt/torchenv /opt/Tilebench
+USER tnca
+
+# The versions are build arguments so the harness passes them from the locks
+# (spec/r38/torch.lock.json, spec/r1_toolchain.lock.json) instead of this file
+# holding a second copy. torch comes from the CPU index: the default wheel
+# brings CUDA, which nothing here uses.
+ARG TORCH_VERSION
+ARG TRITON_VERSION
+RUN test -n "$TORCH_VERSION" && test -n "$TRITON_VERSION" \
+ && python3 -m venv /opt/torchenv \
+ && /opt/torchenv/bin/pip install -q --no-cache-dir \
+      --index-url https://download.pytorch.org/whl/cpu "torch==${TORCH_VERSION}" \
+ && /opt/torchenv/bin/pip install -q --no-cache-dir "triton==${TRITON_VERSION}" numpy \
+ && /opt/torchenv/bin/python -c "import torch, triton; print('torch', torch.__version__, 'triton', triton.__version__)"
+
+# The TNCA package is used from the run's /work, whatever its commit. A run's
+# root filesystem is read-only, so `pip install -e .` cannot happen there; this
+# does once, in the image, what it would do: a .pth puts the source
+# directories that pyproject.toml maps (python, compiler/python, python/_staged)
+# on the path, and a dist-info registers the Triton backend and the two scripts
+# pyproject.toml declares. If those mappings change, so must this.
+RUN SP=$(/opt/torchenv/bin/python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])") \
+ && printf '/work/python\n/work/compiler/python\n/work/python/_staged\n' > "$SP/tnca-work.pth" \
+ && mkdir -p "$SP/tnca-0.0.0.dist-info" \
+ && printf 'Metadata-Version: 2.1\nName: tnca\nVersion: 0.0.0\n' > "$SP/tnca-0.0.0.dist-info/METADATA" \
+ && printf '[triton.backends]\ncpu = tnca.triton_backend\n\n[console_scripts]\ntnca-aot = tnca.cli:aot_main\ntnca-sim = tnca.cli:sim_main\n' \
+      > "$SP/tnca-0.0.0.dist-info/entry_points.txt" \
+ && : > "$SP/tnca-0.0.0.dist-info/RECORD" \
+ && for s in aot sim; do \
+      printf '#!/opt/torchenv/bin/python\nimport sys\nfrom tnca.cli import %s_main\nsys.exit(%s_main())\n' "$s" "$s" \
+        > "/opt/torchenv/bin/tnca-$s" && chmod +x "/opt/torchenv/bin/tnca-$s"; \
+    done
+
+# The validated TileBench sources, at the commit CI checks out. Fetched by
+# hash, as actions/checkout does: the commit is not on the default branch, so
+# a plain clone does not contain it.
+ARG TILEBENCH_COMMIT
+RUN test -n "$TILEBENCH_COMMIT" \
+ && git init -q /opt/Tilebench \
+ && git -C /opt/Tilebench fetch -q --depth 1 \
+      https://github.com/Deep-Learning-Profiling-Tools/Tilebench "$TILEBENCH_COMMIT" \
+ && git -C /opt/Tilebench checkout -q FETCH_HEAD
+
+WORKDIR /work
+ENV TRITON_PYTHON=/opt/torchenv/bin/python \
+    TORCH_PYTHON=/opt/torchenv/bin/python \
+    TILEBENCH_SOURCE=/opt/Tilebench
+
+# The agent image: the toolchain and the CLIs under test, at pinned versions.
+# The evaluator builds and measures with `toolchain`; only an agent's
+# container has a CLI in it. Node comes from nodejs.org, checked against its
+# published SHA-256, because Claude Code needs Node 22 and Ubuntu 24.04 ships
+# 18.
+FROM toolchain AS agent
+USER root
+# SystemC 3.0.2 (Accellera, with TLM-2.0), at the commit
+# tools/performance_harness/systemc/bootstrap.sh pins, for the architectural
+# model an agent builds from its own workspace: a run is offline, so the
+# library has to be here. Only the agent image has it; the evaluator scores
+# from the RTL and never runs the model.
+ARG SYSTEMC_COMMIT
+RUN test -n "$SYSTEMC_COMMIT" \
+ && git init -q /tmp/systemc \
+ && git -C /tmp/systemc fetch -q --depth 1 https://github.com/accellera-official/systemc.git "$SYSTEMC_COMMIT" \
+ && git -C /tmp/systemc checkout -q FETCH_HEAD \
+ && cmake -S /tmp/systemc -B /tmp/systemc-build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 \
+      -DCMAKE_INSTALL_PREFIX=/opt/systemc -DBUILD_SHARED_LIBS=ON -DENABLE_EXAMPLES=OFF \
+ && cmake --build /tmp/systemc-build \
+ && cmake --install /tmp/systemc-build \
+ && rm -rf /tmp/systemc /tmp/systemc-build
+ENV CMAKE_PREFIX_PATH=/opt/systemc
+ARG NODE_VERSION
+ARG NODE_SHA256
+RUN test -n "$NODE_VERSION" && test -n "$NODE_SHA256" \
+ && apt-get update -qq \
+ && apt-get install -y --no-install-recommends curl xz-utils \
+ && rm -rf /var/lib/apt/lists/* \
+ && curl -fsSL -o /tmp/node.tar.xz \
+      "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+ && echo "${NODE_SHA256}  /tmp/node.tar.xz" | sha256sum -c - \
+ && tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1 \
+ && rm /tmp/node.tar.xz
+ARG CLAUDE_CODE_VERSION
+ARG CODEX_VERSION
+ARG OPENCODE_VERSION
+RUN test -n "$CLAUDE_CODE_VERSION" && test -n "$CODEX_VERSION" && test -n "$OPENCODE_VERSION" \
+ && npm install -g --no-fund --no-audit \
+      "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" "@openai/codex@${CODEX_VERSION}" \
+      "opencode-ai@${OPENCODE_VERSION}" \
+ && npm cache clean --force
+USER tnca
+# An agent's `python` is the venv's, which has torch, triton and (from /work) tnca.
+# Only here: the toolchain image keeps the system python3 first, as CI does.
+ENV PATH=/opt/torchenv/bin:$PATH
+# Not `import triton` here: it loads its registered backends, and the TNCA one
+# lives in a run's /work, which a build does not have.
+RUN claude --version && codex --version && opencode --version && python -c "import torch"

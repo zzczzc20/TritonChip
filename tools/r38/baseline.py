@@ -33,6 +33,7 @@ from tnca import profiles                                  # noqa: E402
 
 OUT = ROOT / 'sim' / 'build' / 'r38'
 FROZEN = ROOT / 'spec' / 'r38' / 'baseline_cycles.json'
+CONFIG_AMENDMENT = ROOT / 'spec' / 'r38' / 'baseline_config_amendment_r39.json'
 AOT_RUN = ROOT / 'tools' / 'r37' / 'aot_run.py'
 
 
@@ -145,7 +146,14 @@ def main():
     bad = problems_with(runs[0]) + problems_with(runs[1])
     a, b = cycles_of(runs[0]), cycles_of(runs[1])
     if frozen['config_hash'] != runs[0]['config_hash']:
-        bad.append('profile configuration differs from the frozen baseline')
+        amendment = json.loads(CONFIG_AMENDMENT.read_text()) if CONFIG_AMENDMENT.exists() else {}
+        amended = (amendment.get('profile') == args.profile == frozen['profile']
+                   and amendment.get('from_config_hash') == frozen['config_hash']
+                   and amendment.get('to_config_hash') == runs[0]['config_hash'] == runs[1]['config_hash'])
+        if amended:
+            print('CHECK profile configuration: recorded R39 amendment; cycles still compared case by case')
+        else:
+            bad.append('profile configuration differs from the frozen baseline and its recorded amendment')
     for case in sorted(set(a) | set(b) | set(frozen['cycles'])):
         if a.get(case) != b.get(case):
             bad.append(f'{case}: not deterministic ({a.get(case)} vs {b.get(case)})')

@@ -24,3 +24,29 @@ board-bench test did not exercise; board HBM diagnostics are in progress.
 
 The raw logs and two original smoke records are in `raw.tgz`, SHA-256
 `befbdc1fc7817f8b5493741262df0eb357832a1ea0720cddf33cc6094668e7b4`.
+
+Six board HBM cases (window, negatives, samples, alias, crossing, DMA) passed.
+Independent 4x16 and 16x16 tensor load/store copies also matched byte for
+byte. A diagnostic assembly loaded all-one fragments via vector loads and
+ran the matrix operation separately on each physical core. All 256 values on
+each core were 12 for DP and 13 for legacy MMA, instead of 16. The raw board
+diagnostics and earlier refused diagnostic attempts are in `isolation.tgz`
+(SHA-256 `3b0b691e2867f9f42a4404de23eee8fae5f3b734a636a8e3b9c18c724b3ecf63`).
+
+The run-2 RTL declared `MAC_LAT` as an untyped sum of bit-selects. A Vivado
+2023.2 synthesis probe with `MAC_CUTS=29` produced zero for that expression
+and four for an explicitly `integer`-typed equivalent. The same expression
+in Icarus simulation produces four. Thus simulation and synthesis disagree,
+which predicts a result-tag pipeline and drain four cycles too short and is
+consistent with the board failures. The corrected image still needs board
+verification. Raw
+Vivado probe source, netlist and log are `vivado_width_probe.tgz` (SHA-256
+`0ba5fd5774ffc1791fa58e08c1f71ac93a6721e234764e42ee8fd8b4059b2766`).
+
+The fix explicitly types `MAC_LAT` as an integer. The next image source is
+commit `8d237223`, exactly frozen source `1f0a5aff` plus that change. Its
+first launch stopped at system link because `unzip` was absent from `PATH`;
+no full synthesis or placement occurred. A retry with `unzip` and Vitis HLS
+on `PATH` started as `~/r41run3/build_8d237223_retry1` (x86 PID 566798).
+It remains the third full synthesis candidate out of the permitted five;
+the original run-2 image remains incorrect and is not accepted.

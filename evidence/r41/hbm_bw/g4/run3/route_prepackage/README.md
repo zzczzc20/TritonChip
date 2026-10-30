@@ -23,3 +23,15 @@ instead of the requested 450 MHz. The retained
 [`hbm_scaling_log.txt`](hbm_scaling_log.txt) has SHA-256
 `794a573524f1c9a072dfc7fac14b13297f7999f7e03a391488ed989e85221751`.
 This tool estimate is not the completed xclbin metadata or an author waiver.
+
+At 2026-10-30 16:38 UTC the third full link produced
+`xo/tnca_u280.xclbin`, SHA-256
+`791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09`,
+UUID `ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3`. Its xclbin metadata records
+100 MHz DATA_CLK and 433 MHz hbm_aclk. The runner retained exit 3
+(`LINK_FAILED freq-moved`); it is not a clean timing closure. The original
+routed checkpoint used by the independent post-link review is SHA-256
+`e2e9f6880f04c22a0200f43128eae41037e406dcc5297fa309ddbb7b1f595b94`.
+Post-link reports and individual CDC review are in progress. A new,
+image-specific author decision is needed both for the 433 MHz HBM deviation
+and before loading this image on the shared card.

@@ -76,7 +76,7 @@ unplaced non-constant primitives and `failing_cores {}`. The raw x86 report
 On the board host, checks of the frozen source archive and extracted image
 source, the original report-bound HBM clock exception including pulse width,
 and the xclbin HBM mapping passed. Their artifacts are
-`~/r41run2-auto/source_review.json` (SHA-256 `8b864f0c4bfab6ee2f24da49700f67bddcf80f2e732c462ccbf3ea3c644aba5d`),
+`~/r41run2-auto/source_review_fullflow.json` (SHA-256 `b49c4ad9ad40666585d6519a6aceb49aac93d1b74c54762f6d280a52c3b7cfc4`),
 `~/r41run2-auto/clock_review_pulse.json` (`c7249676f02803ed36c849ec0de54f1c2443d18827f90f33d6397099e2359892`),
 and `~/r41run2-auto/hbm_review.json` (`94ef907d957074744673e09f6a6624c81b56c66faaaddbd5a9f95f1f90e20b16`).
 These pre-load results are neither board measurements nor a CDC disposition.

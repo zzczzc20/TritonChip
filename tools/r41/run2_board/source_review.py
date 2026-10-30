@@ -9,7 +9,7 @@ import auto
 
 ARCHIVE_SHA = '435831da62fe43a3c0cd66c1fc29c792dc91f98390403b11111700f43057482a'
 SOURCE_COMMIT = '1f0a5aff4b5d2df6ef9f3805513d37638bf5bc0d'
-PATHS = ('rtl', 'tb', 'flow/fpga', 'flow/synth', 'xls', 'spec/r1_profiles.json',
+PATHS = ('rtl', 'tb', 'flow', 'xls', 'spec/r1_profiles.json',
          'compiler/targets', 'evidence/r41/hbm_bw/g4/run2/image.tcl')
 
 
@@ -38,6 +38,8 @@ def review(archive, root):
     found = {}
     for name in PATHS:
         base = root / name
+        if any(p.is_symlink() for p in (base, *base.parents) if p != root.parent):
+            raise ValueError('source path contains a symlink: ' + str(base))
         paths = [base] if base.is_file() else sorted(p for p in base.rglob('*') if p.is_file())
         for path in paths:
             if path.is_symlink():

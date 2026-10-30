@@ -38,6 +38,8 @@ The default 513-point memory-bound campaign is in progress. Both large
 batches completed, 171/171 with zero missing or failed configurations; raw
 records are in [`membound_default_large1.tgz`](membound_default_large1.tgz)
 and [`membound_default_large2.tgz`](membound_default_large2.tgz).
+The first medium batch also completed 132/132 with no missing or failed
+configurations: [`membound_default_medium1.tgz`](membound_default_medium1.tgz).
 For this batch only, declared logical read-plus-write bytes divided by
 serial-grid device time has a median of 0.134 GB/s and a maximum of 0.544 GB/s:
 [`membound_default_large1_rates.json`](membound_default_large1_rates.json).

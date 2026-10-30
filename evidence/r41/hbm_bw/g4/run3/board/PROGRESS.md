@@ -1,4 +1,4 @@
-# Board campaign progress, 2026-10-30 22:00 UTC
+# Board campaign progress, 2026-10-30 22:32 UTC
 
 The author explicitly authorized final-image loading without further approval,
 including the 433 MHz exception. The 15-minute idle rule and protection of
@@ -14,8 +14,8 @@ state and raw records under
 The 113-point stage passed 113/113; its raw records and preliminary performance
 comparison are linked from `README.md`. The queue has started the default
 513-point memory-bound stage; at the time above both large batches passed
-171/171 and its first medium batch had covered 78 configurations with 156
-successful sample processes and no failures. The queue will run later
+171/171 and the first medium batch passed 132/132. The second medium batch
+was running with no failures. The queue will run later
 registered stages in order, stopping on failure. The
 previous identity and HBM clamp failures and fixes are preserved in `README.md`.
 

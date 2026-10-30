@@ -14,13 +14,8 @@ stamp opened
 report_route_status -file $out/route_status.rpt
 report_timing_summary -delay_type min_max -max_paths 20 -file $out/timing.rpt
 stamp timing
-report_utilization -slr -file $out/utilization_slr.rpt
-report_utilization -hierarchical -hierarchical_depth 7 -file $out/utilization_hier.rpt
-report_clock_interaction -delay_type min_max -file $out/clock_interaction.rpt
 report_cdc -details -file $out/cdc.rpt
 report_bus_skew -file $out/bus_skew.rpt
-check_timing -verbose -file $out/checks.rpt
-stamp audit
 set clock_name clk_kernel_00_unbuffered_net
 proc slr_of_pin {pin} {
     set cell [get_cells -quiet -of_objects [get_pins -quiet $pin]]
@@ -44,22 +39,12 @@ proc dump {paths file} {
     close $f
     return $tns
 }
-# Kernel clock: every endpoint below +0.5 ns (failing subset = slack < 0), census columns.
-set near [get_timing_paths -setup -group $clock_name -max_paths 60000 -nworst 1 -unique_pins -slack_lesser_than 0.5]
-set tns [dump $near $out/near_endpoints_0p5.tsv]
-stamp "kernel near=[llength $near] tns=$tns"
 # All path groups, failing setup and hold (shell, platform, inter-clock).
 set fs [get_timing_paths -setup -max_paths 20000 -nworst 1 -unique_pins -slack_lesser_than 0]
 dump $fs $out/failing_setup_all_groups.tsv
 set fh [get_timing_paths -hold -max_paths 20000 -nworst 1 -unique_pins -slack_lesser_than 0]
 dump $fh $out/failing_hold_all_groups.tsv
 stamp "all-groups setup=[llength $fs] hold=[llength $fh]"
-report_timing -max_paths 2000 -nworst 1 -unique_pins -file $out/top_paths_routed.rpt
-report_timing -of_objects [lrange $near 0 199] -path_type full_clock_expanded -file $out/top_paths_full.rpt
-report_timing -hold -max_paths 200 -nworst 1 -unique_pins -file $out/top_hold_paths.rpt
-if {[catch {report_design_analysis -timing -setup -max_paths 5000 -file $out/design_analysis.rpt} m]} {puts "WARN da $m"}
-if {[catch {report_design_analysis -logic_level_distribution -logic_level_dist_paths 5000 -file $out/logic_levels.rpt} m]} {puts "WARN ll $m"}
-if {[catch {report_design_analysis -congestion -file $out/congestion.rpt} m]} {puts "WARN cg $m"}
 # Reuse the open routed checkpoint for the three-core SLR audit. Standalone
 # post-link packages may omit this script; in that case no placement result is
 # claimed, and the board clock qualification must obtain it separately.
@@ -76,6 +61,30 @@ set irq_trace_script [file join $root tools r41 run2_postlink trace_platform_irq
 if {[file isfile $irq_trace_script]} {
     if {[catch {source $irq_trace_script} msg]} {puts "WARN platform IRQ trace $msg"} else {stamp "platform IRQ trace recorded"}
 }
+# A closed-file marker allows independent review of the raw reports while
+# the remaining, potentially lengthy diagnostic reports are being generated.
+# It is not an acceptance, clock waiver or author load approval.
+if {[file isfile [file join $out actual_cores.rpt]]} {
+    set early [open [file join $out essential.ready] {WRONLY CREAT EXCL}]
+    puts $early "raw route, timing, CDC, bus skew, setup census and placement reports closed"
+    close $early
+    stamp "essential reports ready for review"
+}
+report_utilization -slr -file $out/utilization_slr.rpt
+report_utilization -hierarchical -hierarchical_depth 7 -file $out/utilization_hier.rpt
+report_clock_interaction -delay_type min_max -file $out/clock_interaction.rpt
+check_timing -verbose -file $out/checks.rpt
+stamp audit
+# Kernel clock: every endpoint below +0.5 ns (failing subset = slack < 0), census columns.
+set near [get_timing_paths -setup -group $clock_name -max_paths 60000 -nworst 1 -unique_pins -slack_lesser_than 0.5]
+set tns [dump $near $out/near_endpoints_0p5.tsv]
+stamp "kernel near=[llength $near] tns=$tns"
+report_timing -max_paths 2000 -nworst 1 -unique_pins -file $out/top_paths_routed.rpt
+report_timing -of_objects [lrange $near 0 199] -path_type full_clock_expanded -file $out/top_paths_full.rpt
+report_timing -hold -max_paths 200 -nworst 1 -unique_pins -file $out/top_hold_paths.rpt
+if {[catch {report_design_analysis -timing -setup -max_paths 5000 -file $out/design_analysis.rpt} m]} {puts "WARN da $m"}
+if {[catch {report_design_analysis -logic_level_distribution -logic_level_dist_paths 5000 -file $out/logic_levels.rpt} m]} {puts "WARN ll $m"}
+if {[catch {report_design_analysis -congestion -file $out/congestion.rpt} m]} {puts "WARN cg $m"}
 stamp done
 puts "R41RUN2_ANALYSIS_DONE"
 exit

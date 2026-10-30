@@ -1,4 +1,4 @@
-# Board campaign progress, 2026-10-30 22:32 UTC
+# Board campaign progress, 2026-10-30 22:54 UTC
 
 The author explicitly authorized final-image loading without further approval,
 including the 433 MHz exception. The 15-minute idle rule and protection of
@@ -14,8 +14,8 @@ state and raw records under
 The 113-point stage passed 113/113; its raw records and preliminary performance
 comparison are linked from `README.md`. The queue has started the default
 513-point memory-bound stage; at the time above both large batches passed
-171/171 and the first medium batch passed 132/132. The second medium batch
-was running with no failures. The queue will run later
+171/171 and both medium batches passed 171/171. The first small batch had
+started with no failures. The queue will run later
 registered stages in order, stopping on failure. The
 previous identity and HBM clamp failures and fixes are preserved in `README.md`.
 
@@ -29,6 +29,6 @@ tiny RoPE by 20.3%; the registered performance recheck remains necessary.
 Among the 171 completed large memory-bound points, 12 are over 5% slower and
 two strided division points are about 12.4% slower; preserve those comparisons
 and distinguish the image change from any new-default optimization decision.
-The 132 completed medium points have 10 over 5% slower, including two strided
+The 171 completed medium points have 13 over 5% slower, including two strided
 division points about 12.6% slower; the full point comparison is linked in the
 board README and likewise requires registered rechecks.

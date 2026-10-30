@@ -40,10 +40,15 @@ records are in [`membound_default_large1.tgz`](membound_default_large1.tgz)
 and [`membound_default_large2.tgz`](membound_default_large2.tgz).
 The first medium batch also completed 132/132 with no missing or failed
 configurations: [`membound_default_medium1.tgz`](membound_default_medium1.tgz).
-Its matching 100 MHz baseline comparison shows 1.134× speedup in the sum of
-point medians, with 10 points over 5% slower and two strided BF16/FP16 division
+The second medium batch completed 39/39 likewise:
+[`membound_default_medium2.tgz`](membound_default_medium2.tgz).
+The first batch's matching 100 MHz baseline comparison shows 1.134× speedup in
+the sum of point medians, with 10 points over 5% slower and two strided BF16/FP16 division
 points about 12.6% slower; the point hashes, demands and samples are in
 [`membound_default_medium1_comparison.json`](membound_default_medium1_comparison.json).
+Across all 171 medium points, the sum of point medians is 1.141× faster,
+with 13 points over 5% slower and two over 10% slower:
+[`membound_default_medium_comparison.json`](membound_default_medium_comparison.json).
 This is a descriptive comparison of different complete stacks, not a
 statistical gate or an isolated attribution to an optimization.
 For this batch only, declared logical read-plus-write bytes divided by
@@ -54,8 +59,8 @@ versus 0.138 GB/s on the prior image; the sum of point medians is 1.13× faster
 in cycles, with 28 individual points slower. Twelve exceed 5% slower and two
 strided BF16/FP16 division points are approximately 12.4% slower. The matched-point data and
 samples are in [`membound_default_large_comparison.json`](membound_default_large_comparison.json).
-These are effective logical rates, not physical HBM throughput. The medium,
-small and tiled batches remain in progress or pending; this descriptive subset
+These are effective logical rates, not physical HBM throughput. The small and
+tiled batches remain in progress or pending; this descriptive subset
 is not the complete performance gate.
 
 The first identity attempt failed before device execution because the queue

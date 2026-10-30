@@ -7,10 +7,16 @@ and tiny Llama decode. Their individual raw records are in
 [`identity_results.tgz`](identity_results.tgz); the original 113-point suite
 and other delivery stages are still running or pending.
 
+The first identity attempt failed before device execution because the queue
+resolved the virtualenv symlink to system Python, which lacked PyTorch:
+[`identity_first_failure.log`](identity_first_failure.log). Commit `498b760a`
+preserves the virtualenv path; the passing identity above is the subsequent
+attempt on the already-loaded image.
+
 The first HBM attempt passed six cases but failed the 16 GiB request clamp:
 the striped driver rejected the oversized request before applying the group's
-8 GiB limit. Software commit `134b78c2` fixes the clamp, retaining the original
-failed attempt on the board. Identity was run before this host-driver change;
+8 GiB limit: [`hbm8_clamp_first_failure.json`](hbm8_clamp_first_failure.json).
+Software commit `134b78c2` fixes the clamp. Identity was run before this host-driver change;
 its 8 GiB request is unaffected by the changed oversized-request branch.
 On the corrected driver, both HBM experiments passed by 17:40 UTC:
 [`hbm8_summary.json`](hbm8_summary.json) and

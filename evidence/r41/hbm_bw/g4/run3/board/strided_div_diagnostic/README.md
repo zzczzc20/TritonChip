@@ -24,3 +24,15 @@ assembly contains two halfword gathers. Run 1 configured
 other changes including striped HBM and the hybrid LSU. The in-flight limit
 is a concrete hypothesis to isolate, not an established cause or a reason to
 change the running image.
+
+The separately completed medium BF16 strided point shows a similar difference:
+three old samples 9,369,186/9,374,197/9,374,366 cycles versus three candidate
+samples 10,553,709/10,551,033/10,549,707 cycles (median 12.55% slower).
+The FP16 medium point also has three samples per image and a 12.56% slower
+candidate median. The complete matching data are in
+[`../membound_default_medium1_comparison.json`](../membound_default_medium1_comparison.json).
+For the BF16 medium point, the old and candidate formal bundles' kernel
+assemblies both have SHA-256
+`d0f5f8d65b544945fa935f7ae7b8dc0cf8e672c3f297b59dff143ac193bf043e`,
+the same as the large-point assembly. This repeat across shapes does not
+isolate the hardware change or substitute for the registered recheck.

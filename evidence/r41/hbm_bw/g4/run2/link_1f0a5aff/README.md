@@ -38,3 +38,10 @@ A further comparison of the 56 detailed critical CDC rows against the original
 run-2 `analysis_g4/cdc.rpt`, ignoring only each displayed row number, found
 zero added or removed rows. This establishes equality to that prior run-2 CDC
 report, not an independent disposition of the 56 findings.
+
+The recovery diagnostic completed with exit 0 and produced
+`recovered_routed.dcp` (620 MiB; SHA-256
+`256788a457c9165f656e20184afd5289a152aea5f9e1d95ae819053613c12a6a`).
+After its Vivado process exited, a separate read-only bus-skew and check-timing
+audit was launched with `audit_skew.tcl` on that checkpoint (x86 PID 561140).
+Results are pending; this audit does not create or load an image.

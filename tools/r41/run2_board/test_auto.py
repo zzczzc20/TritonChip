@@ -257,6 +257,25 @@ class Run2QualificationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'another image'):
                 qualified_clock(path, '0'*64)
 
+    def test_identity_refuses_unapproved_image_before_clock_capture(self):
+        import sys
+        from unittest.mock import patch
+        folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        sys.modules.setdefault('auto', auto)
+        spec = importlib.util.spec_from_file_location('run2_identity_test', folder/'identity.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            image = root/'wrong.xclbin'
+            image.write_bytes(b'wrong image')
+            with patch.object(mod.clock_qualify, 'capture') as capture:
+                with self.assertRaisesRegex(ValueError, 'explicitly approved'):
+                    mod.capture_and_qualify(image, root, root/'cdc.json', root/'capture.json',
+                                            root/'qualified.json', root/'sysfs', 'xclbinutil')
+                capture.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

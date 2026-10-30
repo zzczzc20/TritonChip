@@ -10,6 +10,30 @@ import auto
 PROFILE = 'core-vrf-sync-v5-x8-g2c4-dp'
 
 
+def check_coverage(root, rows, config):
+    suite_path = root / config['suite']
+    if sha(suite_path) != config['suite_sha256']:
+        raise ValueError('registered suite changed')
+    points = json.loads(suite_path.read_text())['points']
+    expected = {p['id']: p['sha256'] for p in points}
+    if len(expected) != len(points) or len(expected) != config['count']:
+        raise ValueError('suite has duplicate points or wrong size')
+    found = {}
+    for row in rows:
+        spec = json.loads((root / row['manifest']).read_text())
+        for batch in spec.get('board_batches', {}).values():
+            for case in batch.get('configurations', []):
+                name = case['point']
+                if name in found:
+                    raise ValueError('point appears more than once: ' + name)
+                knobs = case.get('knobs', {})
+                if knobs.get('TNCA_TILED_POINTWISE', '0') != config['tiled_pointwise']:
+                    raise ValueError('wrong tiled pointwise setting: ' + name)
+                found[name] = case['point_sha256']
+    if found != expected:
+        raise ValueError('registered experiment points do not exactly match the suite')
+
+
 def sha(path):
     h = hashlib.sha256()
     with Path(path).open('rb') as f:
@@ -46,6 +70,8 @@ def run(root, out, python, registration):
             raise ValueError('experiment output already exists: ' + row['id'])
         if not row.get('checks'):
             raise ValueError('each experiment needs explicit result checks')
+    if registration.get('coverage'):
+        check_coverage(root, rows, registration['coverage'])
     out.mkdir(parents=True, exist_ok=True)
     results = []
     for row in rows:

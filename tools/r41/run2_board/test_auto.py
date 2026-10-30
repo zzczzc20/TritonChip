@@ -177,6 +177,28 @@ class StageTests(unittest.TestCase):
                     mod.run(root, Path(tmp)/'other', '/usr/bin/python3', registration)
                 run.assert_not_called()
 
+    def test_suite_coverage_refuses_duplicate_points(self):
+        import json
+        import sys
+        folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        sys.modules.setdefault('auto', auto)
+        spec = importlib.util.spec_from_file_location('run2_stage_coverage', folder/'stage.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            suite = root/'suite.json'
+            suite.write_text(json.dumps({'points': [{'id': 'p', 'sha256': 'digest'}]}))
+            case = {'point': 'p', 'point_sha256': 'digest', 'knobs': {}}
+            (root/'manifest.json').write_text(json.dumps({'board_batches': {'b': {'configurations': [case]}}}))
+            config = {'suite': 'suite.json', 'suite_sha256': mod.sha(suite), 'count': 1, 'tiled_pointwise': '0'}
+            rows = [{'manifest': 'manifest.json'}]
+            mod.check_coverage(root, rows, config)
+            (root/'manifest.json').write_text(json.dumps({'board_batches': {'b': {'configurations': [case, case]}}}))
+            with self.assertRaisesRegex(ValueError, 'more than once'):
+                mod.check_coverage(root, rows, config)
+
 
 class CdcIdentityTests(unittest.TestCase):
     def test_equal_count_does_not_hide_a_changed_endpoint(self):

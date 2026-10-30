@@ -33,3 +33,8 @@ still writing its recovered checkpoint when last checked. Reports on x86 at
 `after_cdc.rpt` `28a1cd250f8912685edd36b641f3c99a53b26ee55b9c5c3acb741a97400fcf3d`.
 The original scaled xclbin remains unqualified; normal Vitis packaging and
 clock-metadata verification are required for any new image.
+
+A further comparison of the 56 detailed critical CDC rows against the original
+run-2 `analysis_g4/cdc.rpt`, ignoring only each displayed row number, found
+zero added or removed rows. This establishes equality to that prior run-2 CDC
+report, not an independent disposition of the 56 findings.

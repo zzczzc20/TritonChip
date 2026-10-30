@@ -9,10 +9,19 @@ capture is scoped to the measured 100 MHz DATA clock; the 433 MHz HBM value
 is xclbin metadata.
 At 2026-10-30 17:32 UTC, identity passed 3/3: add, FP16 16×32×16 matmul,
 and tiny Llama decode. Their individual raw records are in
-[`identity_results.tgz`](identity_results.tgz); the original 113-point suite
-and other delivery stages are still running or pending.
+[`identity_results.tgz`](identity_results.tgz); later delivery stages are
+still running or pending.
 
-The still-running 113-point suite produced a passing
+The 113-point suite completed with 113/113 passing numeric records:
+[`original113_records.tgz`](original113_records.tgz). A preliminary comparison
+of matching point hashes and 100 MHz serial-grid cycle medians shows 1.68×
+speedup in the sum of point medians; 9 points have larger medians, including
+tiny RoPE at 4,276 versus 3,554 cycles (20.3% slower). See all sample counts
+and matched values in [`original113_comparison.json`](original113_comparison.json).
+This descriptive comparison is not the statistical performance gate; the
+slower points need the registered recheck.
+
+The suite includes a passing
 [`llama_prefill/large`](llama_prefill_large.jsonl) sample with maximum relative
 error 0.00237 (tolerance 0.05). Serial-grid device time was 336.820 s,
 compared with 582.598 s for the same point on the previous 100 MHz image

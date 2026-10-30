@@ -1,0 +1,5 @@
+{"utc": "2026-10-30T17:26:54.834438+00:00", "kind": "idle-probe", "outstanding execs": 0, "total execs": 0, "contexts": 0, "client pid": "", "uuid": "01490bbd-d831-23bf-d783-56ec51bd71ce"}
+{"utc": "2026-10-30T17:26:55.227489+00:00", "kind": "program", "mode": "--check", "previous": "01490bbd-d831-23bf-d783-56ec51bd71ce"}
+{"utc": "2026-10-30T17:26:57.709792+00:00", "kind": "program", "mode": "--go", "previous": "01490bbd-d831-23bf-d783-56ec51bd71ce"}
+{"utc": "2026-10-30T17:27:09.372454+00:00", "kind": "stage-start", "stage": "identity"}
+{"utc": "2026-10-30T17:27:36.193655+00:00", "kind": "stage-end", "stage": "identity", "returncode": 1}

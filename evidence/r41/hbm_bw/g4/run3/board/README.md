@@ -2,6 +2,11 @@
 
 Image SHA-256 `791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09`,
 UUID `ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3`; board counter measured 100 MHz.
+The author's current [load decision](author_approval.json) and
+[433 MHz exception](clock_waiver.json), [load log](program.log), and
+[clock capture](board_clock_after_load.json) are retained here. The clock
+capture is scoped to the measured 100 MHz DATA clock; the 433 MHz HBM value
+is xclbin metadata.
 At 2026-10-30 17:32 UTC, identity passed 3/3: add, FP16 16×32×16 matmul,
 and tiny Llama decode. Their individual raw records are in
 [`identity_results.tgz`](identity_results.tgz); the original 113-point suite

@@ -72,6 +72,10 @@ if {[file isfile $placement_audit]} {
     unset ::r40_shared_checkpoint
     stamp "actual core placement verified"
 }
+set irq_trace_script [file join $root tools r41 run2_postlink trace_platform_irq.tcl]
+if {[file isfile $irq_trace_script]} {
+    if {[catch {source $irq_trace_script} msg]} {puts "WARN platform IRQ trace $msg"} else {stamp "platform IRQ trace recorded"}
+}
 stamp done
 puts "R41RUN2_ANALYSIS_DONE"
 exit

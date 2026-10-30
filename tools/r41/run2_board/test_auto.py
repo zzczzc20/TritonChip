@@ -240,6 +240,28 @@ class WatchTests(unittest.TestCase):
 
 
 class CandidateQueueTests(unittest.TestCase):
+    def test_waiter_never_starts_queue_without_approval(self):
+        import subprocess
+        import sys
+        import time
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            proc = subprocess.Popen([sys.executable, str(Path(__file__).with_name('candidate_waiter.py')),
+                '--root',str(work),'--work',str(work),'--image',str(work/'image'),
+                '--approval',str(work/'missing-approval'),'--out',str(work/'out'),
+                '--python',sys.executable,'--poll','1'])
+            try:
+                log = work/'candidate_waiter.jsonl'
+                for _ in range(50):
+                    if log.exists() and log.stat().st_size:
+                        break
+                    time.sleep(.02)
+                self.assertIn('missing-approval', log.read_text())
+                self.assertFalse((work/'candidate_queue_process.log').exists())
+            finally:
+                proc.terminate()
+                proc.wait(timeout=5)
+
     def test_candidate_cannot_use_approval_for_another_image(self):
         import json
         import sys

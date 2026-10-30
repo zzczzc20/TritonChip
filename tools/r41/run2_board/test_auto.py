@@ -87,5 +87,34 @@ class QueuePreflightTests(unittest.TestCase):
                 self.assertFalse((root/'out').exists())
 
 
+class SourceReviewTests(unittest.TestCase):
+    def test_changed_frozen_source_is_rejected(self):
+        import io
+        import sys
+        import tarfile
+        from unittest.mock import patch
+        folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        sys.modules.setdefault('auto', auto)
+        spec = importlib.util.spec_from_file_location('source_review_test', folder/'source_review.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)/'tree'
+            (root/'rtl').mkdir(parents=True)
+            (root/'rtl/a').write_bytes(b'changed')
+            (root/'image.tcl').write_bytes(b'image')
+            archive = Path(tmp)/'source.tgz'
+            with tarfile.open(archive, 'w:gz') as tar:
+                for name, contents in [('rtl/a', b'original'), ('image.tcl', b'image')]:
+                    info = tarfile.TarInfo(name)
+                    info.size = len(contents)
+                    tar.addfile(info, io.BytesIO(contents))
+            with patch.object(mod, 'PATHS', ('rtl', 'image.tcl')), \
+                 patch.object(mod, 'ARCHIVE_SHA', auto.sha(archive)):
+                with self.assertRaisesRegex(ValueError, '1 changed'):
+                    mod.review(archive, root)
+
+
 if __name__ == '__main__':
     unittest.main()

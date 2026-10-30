@@ -48,13 +48,17 @@ class Run2Manifests(unittest.TestCase):
             self.assertIn('run-2', args)
 
     def test_every_required_stage_has_registered_results_and_current_hashes(self):
+        used = []
         for name in auto.REQUIRED:
             registration = registrations.group(name)
             self.assertEqual(json.loads((manifests.ROOT/registrations.OUT/(name+'.json')).read_text()), registration)
             self.assertTrue(registration['experiments'])
             for experiment in registration['experiments']:
+                used.append(experiment['id'])
                 self.assertTrue(experiment['checks'])
                 self.assertEqual(experiment['sha256'], stage.sha(manifests.ROOT/experiment['manifest']))
+        self.assertCountEqual(used, [name for _, name in manifests.jobs()])
+        self.assertEqual(len(used), len(set(used)))
 
 
 if __name__ == '__main__':

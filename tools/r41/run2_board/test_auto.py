@@ -116,5 +116,24 @@ class SourceReviewTests(unittest.TestCase):
                     mod.review(archive, root)
 
 
+class HbmReviewTests(unittest.TestCase):
+    def test_original_mapping_passes_and_altered_map_is_rejected(self):
+        import sys
+        folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        sys.modules.setdefault('auto', auto)
+        spec = importlib.util.spec_from_file_location('hbm_review_test', folder/'hbm_review.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        root = folder.resolve().parents[2]
+        mapping = root/'evidence/r41/hbm_bw/g4/run2/link_1f0a5aff/xclbin_map.json'
+        self.assertEqual(mod.review(mapping)['allocated_bytes'], 8 << 30)
+        with tempfile.TemporaryDirectory() as tmp:
+            altered = Path(tmp)/'map.json'
+            altered.write_bytes(mapping.read_bytes() + b' ')
+            with self.assertRaisesRegex(ValueError, 'changed'):
+                mod.review(altered)
+
+
 if __name__ == '__main__':
     unittest.main()

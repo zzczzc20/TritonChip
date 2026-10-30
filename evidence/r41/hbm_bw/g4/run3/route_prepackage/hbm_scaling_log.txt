@@ -1,0 +1,6 @@
+   original frequency : 450.0 MHz
+   scaled frequency   : 433.4 MHz
+WARNING: One or more timing paths failed timing targeting 450 MHz for system clock 'hbm_aclk'. The frequency is being automatically changed to 433.4 MHz to enable proper functionality
+Command: write_bitstream -force -cell level0_i/ulp level0_i_ulp_my_rm_partial.bit
+Attempting to get a license for feature 'Implementation' and/or device 'xcu280'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xcu280'

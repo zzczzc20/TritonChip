@@ -17,3 +17,9 @@ Implementation, clock metadata, bus-skew and CDC review, actual placement
 audit, final image identity and board verification remain outstanding. The
 old image's HBM-clock exception and load approval do not apply to this
 candidate. No board load or acceptance is implied by this report.
+
+During packaging, Vitis estimated and selected a 433.4 MHz HBM system clock
+instead of the requested 450 MHz. The retained
+[`hbm_scaling_log.txt`](hbm_scaling_log.txt) has SHA-256
+`794a573524f1c9a072dfc7fac14b13297f7999f7e03a391488ed989e85221751`.
+This tool estimate is not the completed xclbin metadata or an author waiver.

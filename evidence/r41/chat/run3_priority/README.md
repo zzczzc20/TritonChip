@@ -280,3 +280,13 @@ user-visible token throughput. The returned-ID rate was
 0.0021479550200169235/s over generation wall time, excluding output retrieval.
 The measured non-device decode wall residual was 0.46064795638806766, including
 transfers, waits and possible overlap, not a direct host-only measurement.
+
+A [standalone DP-profile TLM attention replay](vl_reason_attention_dp_tlm.tgz)
+uses the saved CPU attention inputs from the layer trace above. Compiled wrapper
+checks report no host fallback. The one-query TLM result differs from CPU
+flash SDPA by relative L2 0.0017929725581780076 (max 0.001953125), but matches
+CPU math SDPA bitwise for all 2,048 values. The six-query result differs from
+CPU flash by relative L2 0.0015059992438182235; against CPU math, 9 of 12,288
+values differ (max 0.00048828125). Comparing the first query across the two
+TLM shapes shows one differing value out of 2,048 (max 4.76837158203125e-7).
+This is an isolated attention replay, not full-model logits or a board result.

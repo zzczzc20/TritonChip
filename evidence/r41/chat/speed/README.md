@@ -96,3 +96,18 @@ speedup; larger shapes, default-path behavior and the 113-point audit remain
 unverified. Earlier forced-K64 Torch compilation without the experimental
 row-chunk handling was rejected, so that failure is not presented as a
 successful baseline. No board retest is queued for this ungated experiment.
+
+The same forced-tile Torch diagnostic was extended to three boundary shapes;
+[raw records](k32_torch_shapes_20261031.tgz) report the second call:
+
+| M×N×K | Instructions/MAC K64 → K32 | Cycles K64 → K32 | Launches | Loads/evictions | Bit mismatches |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1×16×64 | 0.802734375 → 0.86328125 | 8218 → 8087 | 1 → 1 | 0/0 → 0/0 | 0/16 each |
+| 1×17×64 | 4.5900735294 → 4.7352941176 | 21388 → 21245 | 1 → 1 | 0/0 → 0/0 | 0/17 each |
+| 16×17×128 | 0.2447150735 → 0.2537913603 | 43652 → 43491 | 1 → 1 | 0/0 → 0/0 | 0/272 each |
+
+These show slightly fewer cycles but more instructions, and do not change the
+non-default configuration or acceptance caveats above. The [initial shape
+runner log](k32_torch_shape_initial_20261031.log.gz) also preserves its path
+collision mistakes and the explicit rejection of a forced K64 tile without
+window reuse.

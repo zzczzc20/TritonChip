@@ -465,3 +465,11 @@ A third DP TLM attempt is running the same 30-token reason prompt as one
 whole prefill, to compare its first logits directly with the whole-prompt CPU
 reference. Its prefill segmentation differs from the board's chunked path and
 will be reported separately; it has not produced logits yet.
+
+A [selected-output DP TLM LM-head diagnostic](vl_reason_lmhead_dp_tlm.tgz)
+used CPU-captured final hidden states from whole, legacy-chunked and
+grouped-tail reason-prefill paths, and the union of their CPU top-five output
+rows (`To`, `We`, `From`, `Let`, `Bob`). All five TLM output logits matched
+the corresponding CPU logits bitwise for each of the three hidden states.
+These are selected output rows with CPU-captured hidden states, not a
+full-model TLM or board logit measurement.

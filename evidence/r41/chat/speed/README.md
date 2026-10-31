@@ -198,3 +198,24 @@ normalisation and a per-step instruction count are therefore not claimed. The
 decode regression and increased evictions mean this candidate is **not
 accepted or queued for board retest**. The 16 exact-reference FP8 checks and
 113-point default audit above remain distinct from this model comparison.
+
+## Experimental size-aware eviction (not merged)
+
+A second [cache patch](code_cache_sqrt_experiment.patch) scores code by recent
+use divided by the square root of its resident size; it is a generic runtime
+policy and was tested with non-default `TNCA_CODE_CACHE_POLICY=lfu-sqrt`.
+A first-fit [offline trace simulation](code_cache_trace_sim.py), using the
+previous one-layer DP run's actual artifact identities and sizes, reproduced
+its LRU and LFU load/eviction counts. It estimated LRU → size-aware prefill
+loads 23 → 14 and evictions 24 → 18; decode loads 19 → 18 and evictions
+17 → 13. These are simulation outputs, not actual model TLM measurements.
+
+In the separate [synthetic DP TLM pressure replay](code_cache_sqrt_tlm_20261031.tgz),
+11 steady repetitions with one exact DP dot each had LRU → size-aware loads
+203 → 132, evictions 202 → 132 and uploaded code bytes 2,634,816 → 2,145,088.
+All 2,816 dot output elements per route matched the independent reference;
+instructions/MAC stayed 0.1002197265625, cycles stayed 7271, and probe launch
+count stayed one per repetition. The candidate passed 4/4 cache lifecycle
+checks and 16/16 fixed-revision FP8/compiled-graph checks. A default-code
+audit and real reduced-depth model TLM comparison are running. This policy is
+not accepted, integrated or queued for board retest.

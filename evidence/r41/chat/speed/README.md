@@ -111,3 +111,26 @@ non-default configuration or acceptance caveats above. The [initial shape
 runner log](k32_torch_shape_initial_20261031.log.gz) also preserves its path
 collision mistakes and the explicit rejection of a forced K64 tile without
 window reuse.
+
+## Experimental frequency-aware code eviction (not merged)
+
+A generic [experimental runtime patch](code_cache_lfu_experiment.patch) ranks
+resident code by recent artifact use, aging counts every 256 lookups. The
+control is the existing least-recently-used eviction. The
+[diagnostic runner](../../../tools/r41/chat_speed/bench_code_cache_dp.py)
+replays the recorded legacy VL one-layer decode load-request order, mapping
+its kernels to unique existing DP artifacts by name or closest size. It
+loads those artifacts but does **not** execute them; after each sequence it
+executes one compiled E4M3 DP dot and checks all 256 FP32 bits against the
+independent exact DP reference. Thus this is a synthetic code-pressure test,
+not a full-model trace or a board result.
+
+In 11 measured steady repetitions (23 mapped load requests and one dot launch
+per repetition), the control → candidate totals were 203 → 187 code loads,
+202 → 187 evictions and 2,634,816 → 1,229,888 uploaded code bytes. The dot
+had 0 mismatches in all 2,816 output elements for each route, 0.1002197265625
+instructions/MAC and 7,271 device cycles per launch for both. The candidate
+used non-default `TNCA_CODE_CACHE_POLICY=lfu`; it is not integrated. Raw
+results, artifact mapping and [earlier failed setup attempts](code_cache_synthetic_20261031.tgz)
+are preserved. Real reduced-depth model profiling and a default-code audit
+are running; no full-model speedup or board acceptance is claimed.

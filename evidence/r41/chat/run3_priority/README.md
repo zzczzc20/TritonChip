@@ -479,3 +479,26 @@ registered multi-turn test as passed: the first response acknowledged Alice
 and the follow-up answered `Alice.`. Both turns and the previous four prompts
 recorded zero host reads in every decode step. The image prompt, persistent
 session and scripted chat are still pending. This is not full VL acceptance.
+
+
+The [complete warmup-retry board quality result](vl_nohost_v5_quality.json)
+passed all six registered VL prompts against the archived CPU answers. The
+image answer was `circle, square, triangle` with all six token IDs matching
+the reference. Across seven turns, all 77 executed decode steps recorded
+zero host reads and zero new graphs. The reported 822 parameter tensors and
+four buffers were on TNCA; the captured prefill, decode, selection and vision
+wrappers reported no CPU numerical fallbacks. This result does not change the
+failed previous attempts. VL persistent-session and scripted-chat checks are
+still pending, so this is not complete VL acceptance.
+
+For the image turn on the 100 MHz run-2 board, model prefill was
+0.18079277384592407 input tokens/s, excluding the separately recorded
+182.17397727200296 s vision call. Decode executed 11 steps at
+0.010688780698798469 steps/s, with 6,215 launches and 25,692,997,580
+device cycles. The six returned token IDs divided by generation wall time
+(excluding output retrieval) give 0.003972640770455757 IDs/s. The estimated
+decode non-device wall residual was 0.7503392576114729; it includes host
+work, transfers, waits and possible counter overlap, so it is not host-only
+time. Decode executed all 11 steps even when EOS was reached earlier.
+The vision setup recorded host reads during compilation; these are not
+decode reads.

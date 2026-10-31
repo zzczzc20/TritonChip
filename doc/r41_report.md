@@ -19,9 +19,10 @@ Paris but failed the strict zero-read check: its first decode compiled and
 recorded 84 scalar reads during constant folding; all ten later decode steps recorded zero reads.
 The subsequent Qwen3.5 device-feedback session generated text but also failed
 the strict read check: its compiling first decode recorded 48 reads; later
-decode steps recorded zero. The warmup VL retry has passed fact, arithmetic, reason, instruction and
-multi-turn on board, with zero host reads during their decode steps; image and
-session checks remain incomplete. Qwen3.5 is queued. Neither chat has passed the author scope. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
+decode steps recorded zero. The warmup VL retry passed all six registered board quality prompts,
+including the shapes image, with zero host reads across all 77 decode steps.
+VL session and scripted-chat checks remain incomplete; Qwen3.5 is queued.
+Neither chat has passed the complete author scope. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
 The older gate judgments below are historical and do not override this decision.
 
 Date: 2026-10-26 UTC. Overall verdict: **not accepted**.

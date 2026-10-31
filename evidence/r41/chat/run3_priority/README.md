@@ -290,3 +290,16 @@ CPU flash by relative L2 0.0015059992438182235; against CPU math, 9 of 12,288
 values differ (max 0.00048828125). Comparing the first query across the two
 TLM shapes shows one differing value out of 2,048 (max 4.76837158203125e-7).
 This is an isolated attention replay, not full-model logits or a board result.
+
+A full-model [CPU math-attention diagnostic](vl_reason_cpu_math_attention.tgz)
+used the same prompt and checkpoint with PyTorch's math SDPA explicitly
+selected for diagnosis. Its whole-prompt, legacy-chunked and grouped-tail
+logits are bitwise identical and each selects `We`, not the archived CPU
+flash-reference answer `Bob`. Compared with the original full-prompt CPU flash
+logits, the math result has relative L2 0.11928296089172363 and max absolute
+6.0: `Bob` changes from 38.25 to 32.25 and `We` from 37.25 to 38.75. This
+is a substantial whole-model CPU numerical effect, not merely a tie, and
+warns that fixing the prompt tail alone may not fix board quality. The math
+backend was used only for diagnosis; the registered CPU reference and scoring
+rule remain unchanged. The isolated TLM attention match to CPU math is not a
+full-model TLM or board result.

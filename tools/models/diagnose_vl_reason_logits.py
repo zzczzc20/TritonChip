@@ -5,6 +5,7 @@ The legacy chat file is the immutable source used before grouped prefill tails.
 The TLM execution uses the normal full-checkpoint model and original prompt.
 """
 import argparse
+import contextlib
 import hashlib
 import importlib.util
 import json
@@ -37,6 +38,7 @@ def main():
     p.add_argument('--tree', required=True)
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--cpu-reference', type=Path)
+    p.add_argument('--cpu-sdpa', choices=['default','math'], default='default')
     a=p.parse_args()
     if a.mode=='tlm':
         chat.L.use_tnca(a.tree)
@@ -46,7 +48,9 @@ def main():
     t0=time.monotonic(); app=chat.ChatApplication(args)
     inputs,text=chat.make_inputs(app.spec, app.processor, [chat.user_message(PROMPT)])
     tok=app.processor.tokenizer
-    result=dict(schema='r41-vl-reason-logits-diagnostic/1',mode=a.mode,prompt=PROMPT,prompt_text=text,
+    if a.mode=='tlm' and a.cpu_sdpa!='default':
+        raise ValueError('CPU SDPA override is only a CPU diagnostic')
+    result=dict(schema='r41-vl-reason-logits-diagnostic/1',mode=a.mode,cpu_sdpa=a.cpu_sdpa,prompt=PROMPT,prompt_text=text,
                 input_ids=inputs['input_ids'].tolist(),model=app.spec.name,revision=app.spec.revision,
                 legacy_chat_sha256=hashlib.sha256(a.old_chat.read_bytes()).hexdigest(),
                 load=app.load_report,versions=chat.L.versions(), paths={})
@@ -61,7 +65,12 @@ def main():
     for name, cls, chunk in modes:
         start=time.monotonic()
         session=cls(app.model,app.spec,'cpu' if a.mode=='cpu' else 'tnca',256,chunk)
-        with torch.no_grad(): logits,calls,reused=session.prefill_prompt(inputs,None)
+        if a.cpu_sdpa=='math':
+            from torch.nn.attention import sdpa_kernel, SDPBackend
+            attention_context=sdpa_kernel(SDPBackend.MATH)
+        else:
+            attention_context=contextlib.nullcontext()
+        with torch.no_grad(), attention_context: logits,calls,reused=session.prefill_prompt(inputs,None)
         value=logits.detach().cpu().contiguous().reshape(-1)
         tensors[name]=value; result['paths'][name]=dict(seconds=time.monotonic()-start,calls=calls,reused=reused,
                                                        logits=summary(value,tok))

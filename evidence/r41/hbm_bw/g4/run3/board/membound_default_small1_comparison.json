@@ -1,0 +1,2855 @@
+{
+  "schema": "r41-membound-small1-comparison/1",
+  "scope": "142 small points only; declared logical bytes over serial-grid device time; not physical HBM throughput or a complete 513-point gate; descriptive medians, no statistical conclusion",
+  "old_archive_sha256": "a90221ea93b64d3dce04bab3e5217ce5ac0975a2a27e8ea4d3021e7205e988d3",
+  "new_archive_sha256": "3e2a9172b8dfa67988c983fc37f019660807d5bf6790a9c41d660e14c6272a52",
+  "points": 142,
+  "old_median_gb_s": 0.13080630964120632,
+  "new_median_gb_s": 0.1325799039646247,
+  "sum_cycles_speedup": 1.126674362287299,
+  "slower_points": 20,
+  "slower_over_5_percent": 10,
+  "slower_over_10_percent": 4,
+  "rows": [
+    {
+      "point": "op.add/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "0ec5ea75aec6d9c8b8b633260a0e0fea0890579704c0eeab790b825eb62ee76f",
+      "logical_bytes": 133120,
+      "old_cycles": 108154,
+      "new_cycles": 83544,
+      "old_samples": [
+        107010,
+        108725,
+        108154
+      ],
+      "new_samples": [
+        83544,
+        84035,
+        83471
+      ],
+      "old_logical_gb_s": 0.12308375094772268,
+      "new_logical_gb_s": 0.15934118548309872,
+      "new_over_old": 0.7724540932374208
+    },
+    {
+      "point": "op.add/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "e441e96f82300840709759f509fc1ded8ee748e73c7a0c93ac6205c48d56dfcb",
+      "logical_bytes": 196608,
+      "old_cycles": 121589,
+      "new_cycles": 74649,
+      "old_samples": [
+        120120,
+        121589,
+        121629
+      ],
+      "new_samples": [
+        74649,
+        74728,
+        74450
+      ],
+      "old_logical_gb_s": 0.1616988378882958,
+      "new_logical_gb_s": 0.2633766024996986,
+      "new_over_old": 0.6139453404502052
+    },
+    {
+      "point": "op.add/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "8eed757fefbc406eac7aebb1c88f61164ff9f304f5276f378bf638ec6fadd6ec",
+      "logical_bytes": 196608,
+      "old_cycles": 137439,
+      "new_cycles": 149215,
+      "old_samples": [
+        137439,
+        137344,
+        137564
+      ],
+      "new_samples": [
+        149105,
+        149215,
+        149279
+      ],
+      "old_logical_gb_s": 0.14305109903302554,
+      "new_logical_gb_s": 0.13176155212277588,
+      "new_over_old": 1.0856816478583227
+    },
+    {
+      "point": "op.add/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "dbbf1931d2c5e5641c9293cccfce7fb1493128254bf0cab5b654743e79c29516",
+      "logical_bytes": 133120,
+      "old_cycles": 108894,
+      "new_cycles": 83564,
+      "old_samples": [
+        107129,
+        109325,
+        108894
+      ],
+      "new_samples": [
+        83362,
+        84047,
+        83564
+      ],
+      "old_logical_gb_s": 0.1222473230848348,
+      "new_logical_gb_s": 0.15930304915992533,
+      "new_over_old": 0.7673884695208184
+    },
+    {
+      "point": "op.add/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "856b4135d2b605dfe34f7008c01859c9051709a3d8879a49d33eea61af868ecc",
+      "logical_bytes": 196608,
+      "old_cycles": 121600,
+      "new_cycles": 74678,
+      "old_samples": [
+        119781,
+        122503,
+        121600
+      ],
+      "new_samples": [
+        74493,
+        74678,
+        74803
+      ],
+      "old_logical_gb_s": 0.1616842105263158,
+      "new_logical_gb_s": 0.2632743244328986,
+      "new_over_old": 0.6141282894736843
+    },
+    {
+      "point": "op.add/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "220d6006734007b9641e706054ab60fe1653cb05e3917f38f085f753fc171593",
+      "logical_bytes": 196608,
+      "old_cycles": 137622,
+      "new_cycles": 149068,
+      "old_samples": [
+        137129,
+        137673,
+        137622
+      ],
+      "new_samples": [
+        148910,
+        149068,
+        149094
+      ],
+      "old_logical_gb_s": 0.14286087980119458,
+      "new_logical_gb_s": 0.13189148576488582,
+      "new_over_old": 1.0831698420310707
+    },
+    {
+      "point": "op.add/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "15fdd4b63743ae18ed482754a4c40b9215f7eff553f78d45cb935c5c8190cab2",
+      "logical_bytes": 135168,
+      "old_cycles": 72152,
+      "new_cycles": 49998,
+      "old_samples": [
+        71152,
+        72152,
+        72313
+      ],
+      "new_samples": [
+        49627,
+        50334,
+        49998
+      ],
+      "old_logical_gb_s": 0.18733784233285286,
+      "new_logical_gb_s": 0.2703468138725549,
+      "new_over_old": 0.6929537642754185
+    },
+    {
+      "point": "op.add/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "f4054856b8b7a41755cf26c55be5816c0588d2305d072e51c53f73669c2878e1",
+      "logical_bytes": 196608,
+      "old_cycles": 78092,
+      "new_cycles": 40106,
+      "old_samples": [
+        77350,
+        78406,
+        78092
+      ],
+      "new_samples": [
+        40157,
+        39876,
+        40106
+      ],
+      "old_logical_gb_s": 0.25176458536085644,
+      "new_logical_gb_s": 0.4902209145763726,
+      "new_over_old": 0.5135737335450494
+    },
+    {
+      "point": "op.add/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "1171363fca0eeba63991ae55f700e4e4d95a6cc8349065d95e6f9728ead84d51",
+      "logical_bytes": 196608,
+      "old_cycles": 121584,
+      "new_cycles": 110373,
+      "old_samples": [
+        121584,
+        122658,
+        121288
+      ],
+      "new_samples": [
+        110595,
+        110373,
+        110278
+      ],
+      "old_logical_gb_s": 0.16170548756415318,
+      "new_logical_gb_s": 0.17813052105134408,
+      "new_over_old": 0.9077921437031188
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp16-small-broadcast-r32-c1024",
+      "point_sha256": "0c77041945c388d82134377a968d86a3766f6df69810ac299aac676c828ae9dd",
+      "logical_bytes": 67584,
+      "old_cycles": 74640,
+      "new_cycles": 71993,
+      "old_samples": [
+        72432,
+        74640,
+        75053
+      ],
+      "new_samples": [
+        71848,
+        71993,
+        72127
+      ],
+      "old_logical_gb_s": 0.09054662379421222,
+      "new_logical_gb_s": 0.09387579347992166,
+      "new_over_old": 0.9645364415862808
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp16-small-contig-r32-c1024",
+      "point_sha256": "050e7a129f8c30feda07d6792a7450830141058f0632625a9afb46514ffa89c7",
+      "logical_bytes": 131072,
+      "old_cycles": 85284,
+      "new_cycles": 62985,
+      "old_samples": [
+        84439,
+        85284,
+        85390
+      ],
+      "new_samples": [
+        63019,
+        62937,
+        62985
+      ],
+      "old_logical_gb_s": 0.15368885136719665,
+      "new_logical_gb_s": 0.20810034135111533,
+      "new_over_old": 0.7385324328127199
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp16-small-strided-r32-c1024",
+      "point_sha256": "31d1546783a11e5f49ebde7159e3aca231d9b055c6a16804f97f8ac65f9ce66b",
+      "logical_bytes": 131072,
+      "old_cycles": 94635,
+      "new_cycles": 92358,
+      "old_samples": [
+        93485,
+        94840,
+        94635
+      ],
+      "new_samples": [
+        92452,
+        92345,
+        92358
+      ],
+      "old_logical_gb_s": 0.13850266814603476,
+      "new_logical_gb_s": 0.14191732172632582,
+      "new_over_old": 0.9759391345696624
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp32-small-broadcast-r32-c1024",
+      "point_sha256": "b34e2ce59582f3d7aeec4de0bd5d60688520641ad4b88bfff4d5abb3ade8f8ec",
+      "logical_bytes": 133120,
+      "old_cycles": 84456,
+      "new_cycles": 57373,
+      "old_samples": [
+        83045,
+        84456,
+        84674
+      ],
+      "new_samples": [
+        57238,
+        57373,
+        57498
+      ],
+      "old_logical_gb_s": 0.15762053613716018,
+      "new_logical_gb_s": 0.23202551722935877,
+      "new_over_old": 0.679324145116984
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp32-small-contig-r32-c1024",
+      "point_sha256": "54fd1ebcae7a6ce385b4a4b4f6ca89cf9471df02c8db557efda1eb1b1c654330",
+      "logical_bytes": 196608,
+      "old_cycles": 96106,
+      "new_cycles": 52315,
+      "old_samples": [
+        94745,
+        96106,
+        96408
+      ],
+      "new_samples": [
+        52281,
+        52315,
+        52537
+      ],
+      "old_logical_gb_s": 0.20457411608016146,
+      "new_logical_gb_s": 0.3758157316257288,
+      "new_over_old": 0.5443468670010198
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp32-small-strided-r32-c1024",
+      "point_sha256": "002fde81636a0935b5c37647be92f2c76ed286d99c36364f655af44f05f8dd6e",
+      "logical_bytes": 196608,
+      "old_cycles": 104323,
+      "new_cycles": 81248,
+      "old_samples": [
+        103856,
+        104515,
+        104323
+      ],
+      "new_samples": [
+        81249,
+        81218,
+        81248
+      ],
+      "old_logical_gb_s": 0.18846083797436808,
+      "new_logical_gb_s": 0.24198503347774714,
+      "new_over_old": 0.7788119590119149
+    },
+    {
+      "point": "op.cast/membound/fp16-to-bf16-small-broadcast-r32-c1024",
+      "point_sha256": "bc471f14d19f0ce9d1292718854e9e8e0d9b753518ba46707daafc1d926017bb",
+      "logical_bytes": 67584,
+      "old_cycles": 74582,
+      "new_cycles": 71985,
+      "old_samples": [
+        72654,
+        74582,
+        74711
+      ],
+      "new_samples": [
+        71985,
+        72177,
+        71720
+      ],
+      "old_logical_gb_s": 0.09061703896382504,
+      "new_logical_gb_s": 0.09388622629714524,
+      "new_over_old": 0.9651792657745837
+    },
+    {
+      "point": "op.cast/membound/fp16-to-bf16-small-contig-r32-c1024",
+      "point_sha256": "60ce67a8f2df0741c23fdc727b1fc6b9aa905965c91f435cb924fb228e38d6f2",
+      "logical_bytes": 131072,
+      "old_cycles": 84511,
+      "new_cycles": 63003,
+      "old_samples": [
+        84064,
+        84511,
+        85406
+      ],
+      "new_samples": [
+        62993,
+        63003,
+        63004
+      ],
+      "old_logical_gb_s": 0.1550946030694229,
+      "new_logical_gb_s": 0.20804088694189166,
+      "new_over_old": 0.7455005857225686
+    },
+    {
+      "point": "op.cast/membound/fp16-to-bf16-small-strided-r32-c1024",
+      "point_sha256": "93cfe29e5fce85af383c593a73becb97ce2308bf2cfbd924687379a1952a0235",
+      "logical_bytes": 131072,
+      "old_cycles": 94479,
+      "new_cycles": 92476,
+      "old_samples": [
+        93957,
+        94853,
+        94479
+      ],
+      "new_samples": [
+        92476,
+        92507,
+        92370
+      ],
+      "old_logical_gb_s": 0.1387313582912605,
+      "new_logical_gb_s": 0.14173623426618798,
+      "new_over_old": 0.9787995215868076
+    },
+    {
+      "point": "op.cast/membound/fp16-to-fp32-small-broadcast-r32-c1024",
+      "point_sha256": "4998713cfc91ec51c87fed2e194cfe3b91a94ea8e2a00eea12c9d6748d32c29f",
+      "logical_bytes": 133120,
+      "old_cycles": 84477,
+      "new_cycles": 57318,
+      "old_samples": [
+        82999,
+        84505,
+        84477
+      ],
+      "new_samples": [
+        57252,
+        57351,
+        57318
+      ],
+      "old_logical_gb_s": 0.15758135350450417,
+      "new_logical_gb_s": 0.23224815939146515,
+      "new_over_old": 0.6785042082460314
+    },
+    {
+      "point": "op.cast/membound/fp16-to-fp32-small-contig-r32-c1024",
+      "point_sha256": "ff264541f9530149da2e2c2bea374571a5d9f09170a9316a8307c894c966a2f6",
+      "logical_bytes": 196608,
+      "old_cycles": 96332,
+      "new_cycles": 52301,
+      "old_samples": [
+        95353,
+        96332,
+        96463
+      ],
+      "new_samples": [
+        52301,
+        52279,
+        52343
+      ],
+      "old_logical_gb_s": 0.2040941743138313,
+      "new_logical_gb_s": 0.3759163304716927,
+      "new_over_old": 0.542924469542831
+    },
+    {
+      "point": "op.cast/membound/fp16-to-fp32-small-strided-r32-c1024",
+      "point_sha256": "10d39a1406f563fe3a7d1d025d5bdd83854c301b036f6dcb79dd593e2fffb6cb",
+      "logical_bytes": 196608,
+      "old_cycles": 104547,
+      "new_cycles": 81254,
+      "old_samples": [
+        103624,
+        104547,
+        105004
+      ],
+      "new_samples": [
+        81221,
+        81254,
+        81261
+      ],
+      "old_logical_gb_s": 0.18805704611323137,
+      "new_logical_gb_s": 0.2419671646934305,
+      "new_over_old": 0.7772006848594412
+    },
+    {
+      "point": "op.cast/membound/fp32-to-bf16-small-broadcast-r32-c1024",
+      "point_sha256": "af7047e705ba8ead0341d210aecfb05f2c42e62fc273c5212573edb3c8510a4e",
+      "logical_bytes": 69632,
+      "old_cycles": 79101,
+      "new_cycles": 72998,
+      "old_samples": [
+        77001,
+        79385,
+        79101
+      ],
+      "new_samples": [
+        72874,
+        72998,
+        73191
+      ],
+      "old_logical_gb_s": 0.08802922845476037,
+      "new_logical_gb_s": 0.09538891476478809,
+      "new_over_old": 0.9228454760369654
+    },
+    {
+      "point": "op.cast/membound/fp32-to-bf16-small-contig-r32-c1024",
+      "point_sha256": "d47b0887aeb84524d27a6e563ac2540a0984b58ec060adea6842a6652d0d3799",
+      "logical_bytes": 196608,
+      "old_cycles": 91774,
+      "new_cycles": 58888,
+      "old_samples": [
+        91296,
+        91774,
+        92236
+      ],
+      "new_samples": [
+        58829,
+        58888,
+        58971
+      ],
+      "old_logical_gb_s": 0.21423060997668184,
+      "new_logical_gb_s": 0.3338676810216003,
+      "new_over_old": 0.6416632161614401
+    },
+    {
+      "point": "op.cast/membound/fp32-to-bf16-small-strided-r32-c1024",
+      "point_sha256": "47dc6ba2b96061eb0ad3870a07a8b103e793a9891969140b6c445161f0420c44",
+      "logical_bytes": 196608,
+      "old_cycles": 138586,
+      "new_cycles": 128791,
+      "old_samples": [
+        138058,
+        138586,
+        139561
+      ],
+      "new_samples": [
+        129325,
+        128791,
+        128768
+      ],
+      "old_logical_gb_s": 0.14186714386734592,
+      "new_logical_gb_s": 0.15265662973344413,
+      "new_over_old": 0.9293218651234613
+    },
+    {
+      "point": "op.cast/membound/fp32-to-fp16-small-broadcast-r32-c1024",
+      "point_sha256": "f8690c1de9f9fe4f3fbfad9545c1ca0bd7c7279454f852c459feff218a0f5490",
+      "logical_bytes": 69632,
+      "old_cycles": 79119,
+      "new_cycles": 72927,
+      "old_samples": [
+        76680,
+        79119,
+        79356
+      ],
+      "new_samples": [
+        72903,
+        72927,
+        73092
+      ],
+      "old_logical_gb_s": 0.0880092013296427,
+      "new_logical_gb_s": 0.09548178315301603,
+      "new_over_old": 0.9217381412808554
+    },
+    {
+      "point": "op.cast/membound/fp32-to-fp16-small-contig-r32-c1024",
+      "point_sha256": "506e4c990251d566177abde6dfb3af9fa609540708d7ae00bf48d24d06094baf",
+      "logical_bytes": 196608,
+      "old_cycles": 91945,
+      "new_cycles": 58826,
+      "old_samples": [
+        91230,
+        91945,
+        92133
+      ],
+      "new_samples": [
+        58826,
+        58880,
+        58672
+      ],
+      "old_logical_gb_s": 0.2138321822828865,
+      "new_logical_gb_s": 0.3342195627783633,
+      "new_over_old": 0.639795529936375
+    },
+    {
+      "point": "op.cast/membound/fp32-to-fp16-small-strided-r32-c1024",
+      "point_sha256": "e8ae85bb4565a1df95177179d57528316bf23ce26b3fb188e604acf564c6de29",
+      "logical_bytes": 196608,
+      "old_cycles": 138831,
+      "new_cycles": 128996,
+      "old_samples": [
+        138831,
+        139904,
+        138275
+      ],
+      "new_samples": [
+        128996,
+        128899,
+        129039
+      ],
+      "old_logical_gb_s": 0.14161678587635326,
+      "new_logical_gb_s": 0.1524140283419641,
+      "new_over_old": 0.9291584732516512
+    },
+    {
+      "point": "op.clone/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "d15874d47abc43c17c6cc7c8952226a57910a927f3923c3bdb1a349ef8499774",
+      "logical_bytes": 67584,
+      "old_cycles": 75759,
+      "new_cycles": 70345,
+      "old_samples": [
+        73144,
+        75800,
+        75759
+      ],
+      "new_samples": [
+        70128,
+        70345,
+        70399
+      ],
+      "old_logical_gb_s": 0.08920920286698611,
+      "new_logical_gb_s": 0.09607505863956216,
+      "new_over_old": 0.928536543512982
+    },
+    {
+      "point": "op.clone/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "3ecba3de18f3406df0682861d1c0ffab481a0597d140f672ff17778594fdddf9",
+      "logical_bytes": 131072,
+      "old_cycles": 84560,
+      "new_cycles": 59708,
+      "old_samples": [
+        84252,
+        85248,
+        84560
+      ],
+      "new_samples": [
+        59766,
+        59708,
+        59696
+      ],
+      "old_logical_gb_s": 0.15500473036896878,
+      "new_logical_gb_s": 0.21952167213773696,
+      "new_over_old": 0.7061021759697257
+    },
+    {
+      "point": "op.clone/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "f3cae6fa46a62191b15723b37cba5af6e7c39be0252b524598c0d4b7a077969c",
+      "logical_bytes": 131072,
+      "old_cycles": 93564,
+      "new_cycles": 92759,
+      "old_samples": [
+        92201,
+        93564,
+        93702
+      ],
+      "new_samples": [
+        92787,
+        92736,
+        92759
+      ],
+      "old_logical_gb_s": 0.14008806806036508,
+      "new_logical_gb_s": 0.14130380879483392,
+      "new_over_old": 0.9913962635201573
+    },
+    {
+      "point": "op.clone/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "7a232e75a91b1af0e7cda1e63ac4c330c65fedeeb5f40d63e70a2d9037c69c89",
+      "logical_bytes": 67584,
+      "old_cycles": 75887,
+      "new_cycles": 70426,
+      "old_samples": [
+        72864,
+        75887,
+        75923
+      ],
+      "new_samples": [
+        70426,
+        70464,
+        70363
+      ],
+      "old_logical_gb_s": 0.08905873206214503,
+      "new_logical_gb_s": 0.09596455854371964,
+      "new_over_old": 0.9280377403244298
+    },
+    {
+      "point": "op.clone/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "2f2ed538dee28000e802f8ebdde15e05bee1f5fcc833dbc2badab74b434b477e",
+      "logical_bytes": 131072,
+      "old_cycles": 85005,
+      "new_cycles": 59793,
+      "old_samples": [
+        84556,
+        85498,
+        85005
+      ],
+      "new_samples": [
+        59793,
+        59773,
+        59842
+      ],
+      "old_logical_gb_s": 0.15419328274807365,
+      "new_logical_gb_s": 0.21920960647567442,
+      "new_over_old": 0.7034056820187048
+    },
+    {
+      "point": "op.clone/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "7469867dd364e1158112297bc04fe6a8ad22d66084fd38fe901bd15d6ae7a1b7",
+      "logical_bytes": 131072,
+      "old_cycles": 93035,
+      "new_cycles": 92663,
+      "old_samples": [
+        92874,
+        93035,
+        93095
+      ],
+      "new_samples": [
+        92663,
+        92735,
+        92531
+      ],
+      "old_logical_gb_s": 0.14088461331756866,
+      "new_logical_gb_s": 0.1414502012669566,
+      "new_over_old": 0.9960015048100177
+    },
+    {
+      "point": "op.clone/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "6b8e5c37247d6a50c4ca0b4835cf6ff068941feda806f6b4792eb8c36d280659",
+      "logical_bytes": 69632,
+      "old_cycles": 46718,
+      "new_cycles": 33431,
+      "old_samples": [
+        45141,
+        46718,
+        47062
+      ],
+      "new_samples": [
+        33378,
+        33431,
+        33564
+      ],
+      "old_logical_gb_s": 0.14904747634744636,
+      "new_logical_gb_s": 0.20828572283210195,
+      "new_over_old": 0.7155914208656192
+    },
+    {
+      "point": "op.clone/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "fa0e954805c55db5e90bc4269f88d9f28fb8237b0e729d8ba583f4c94274f115",
+      "logical_bytes": 131072,
+      "old_cycles": 53882,
+      "new_cycles": 26843,
+      "old_samples": [
+        53115,
+        54458,
+        53882
+      ],
+      "new_samples": [
+        26843,
+        26824,
+        26852
+      ],
+      "old_logical_gb_s": 0.24325748858616975,
+      "new_logical_gb_s": 0.48829117460790517,
+      "new_over_old": 0.49818121079395716
+    },
+    {
+      "point": "op.clone/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "59a954af8401c7dce32964a21df5d0ea1e6611acbb7c61587faa0893a10561c0",
+      "logical_bytes": 131072,
+      "old_cycles": 77494,
+      "new_cycles": 62373,
+      "old_samples": [
+        75914,
+        77570,
+        77494
+      ],
+      "new_samples": [
+        62380,
+        62373,
+        62177
+      ],
+      "old_logical_gb_s": 0.1691382558649702,
+      "new_logical_gb_s": 0.21014220896862423,
+      "new_over_old": 0.8048752161457661
+    },
+    {
+      "point": "op.copy/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "4cde891daae42723f5d8e98623b8df469868b1664830f6714bfedbd99cd11491",
+      "logical_bytes": 67584,
+      "old_cycles": 75719,
+      "new_cycles": 70290,
+      "old_samples": [
+        72958,
+        75950,
+        75719
+      ],
+      "new_samples": [
+        70308,
+        70290,
+        70263
+      ],
+      "old_logical_gb_s": 0.08925632932289121,
+      "new_logical_gb_s": 0.09615023474178404,
+      "new_over_old": 0.9283006907117104
+    },
+    {
+      "point": "op.copy/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "e6a80718e41942880dc7bafffc72e15f2089e3b9b72dbc5104f1b7591462f691",
+      "logical_bytes": 131072,
+      "old_cycles": 84985,
+      "new_cycles": 59817,
+      "old_samples": [
+        84331,
+        84985,
+        85441
+      ],
+      "new_samples": [
+        59896,
+        59704,
+        59817
+      ],
+      "old_logical_gb_s": 0.15422956992410425,
+      "new_logical_gb_s": 0.21912165437918985,
+      "new_over_old": 0.7038536212272754
+    },
+    {
+      "point": "op.copy/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "40fe392305de7917ef759648a72f82d60e0f8ad50292ac57c563851464c0f895",
+      "logical_bytes": 131072,
+      "old_cycles": 93365,
+      "new_cycles": 92579,
+      "old_samples": [
+        92256,
+        93365,
+        93543
+      ],
+      "new_samples": [
+        92633,
+        92579,
+        92468
+      ],
+      "old_logical_gb_s": 0.14038665452792803,
+      "new_logical_gb_s": 0.14157854373021958,
+      "new_over_old": 0.9915814277298773
+    },
+    {
+      "point": "op.copy/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "a13ed79b539ce11167a3f69f9212808d397ffb499778849f9c7211b01dbc99d8",
+      "logical_bytes": 67584,
+      "old_cycles": 75562,
+      "new_cycles": 70338,
+      "old_samples": [
+        73028,
+        75701,
+        75562
+      ],
+      "new_samples": [
+        70106,
+        70338,
+        70591
+      ],
+      "old_logical_gb_s": 0.08944178290675207,
+      "new_logical_gb_s": 0.09608461997782138,
+      "new_over_old": 0.9308647203620868
+    },
+    {
+      "point": "op.copy/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "8d6513a3b7ac69e79c63a5e5aaa89e76086e804059563ad909ce2a9ac1a69606",
+      "logical_bytes": 131072,
+      "old_cycles": 85231,
+      "new_cycles": 59926,
+      "old_samples": [
+        84380,
+        85408,
+        85231
+      ],
+      "new_samples": [
+        59958,
+        59926,
+        59817
+      ],
+      "old_logical_gb_s": 0.15378442116131455,
+      "new_logical_gb_s": 0.2187230918132363,
+      "new_over_old": 0.7031009843836163
+    },
+    {
+      "point": "op.copy/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "59d1fe6c575a579592d8e1b2ebfb92014639e01e29503a2ef05fde1768301e90",
+      "logical_bytes": 131072,
+      "old_cycles": 93192,
+      "new_cycles": 92670,
+      "old_samples": [
+        92568,
+        93633,
+        93192
+      ],
+      "new_samples": [
+        93004,
+        92670,
+        92655
+      ],
+      "old_logical_gb_s": 0.14064726585973045,
+      "new_logical_gb_s": 0.14143951656415238,
+      "new_over_old": 0.9943986608292558
+    },
+    {
+      "point": "op.copy/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "67a138f16d945e08ce14b33a76a9fdad7665d4330714a4c7e3ddfd7e07d905b3",
+      "logical_bytes": 69632,
+      "old_cycles": 46826,
+      "new_cycles": 33334,
+      "old_samples": [
+        45539,
+        46826,
+        46903
+      ],
+      "new_samples": [
+        33316,
+        33405,
+        33334
+      ],
+      "old_logical_gb_s": 0.14870371161320634,
+      "new_logical_gb_s": 0.20889182216355673,
+      "new_over_old": 0.7118694742237218
+    },
+    {
+      "point": "op.copy/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "64570ba2e16cfda0ddb7bdd46a87007a121d9b8aeca6333e543f8df67e2acb29",
+      "logical_bytes": 131072,
+      "old_cycles": 53864,
+      "new_cycles": 26878,
+      "old_samples": [
+        53395,
+        53864,
+        54061
+      ],
+      "new_samples": [
+        26912,
+        26856,
+        26878
+      ],
+      "old_logical_gb_s": 0.24333877914748253,
+      "new_logical_gb_s": 0.48765533149787926,
+      "new_over_old": 0.49899747512253084
+    },
+    {
+      "point": "op.copy/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "d8110ac47634ccb71a5ae0fa23f26b6a3af48783240bf73a6974243aaced3814",
+      "logical_bytes": 131072,
+      "old_cycles": 76935,
+      "new_cycles": 62258,
+      "old_samples": [
+        75775,
+        77783,
+        76935
+      ],
+      "new_samples": [
+        62258,
+        62239,
+        62372
+      ],
+      "old_logical_gb_s": 0.1703671930850718,
+      "new_logical_gb_s": 0.2105303736066048,
+      "new_over_old": 0.8092285695717164
+    },
+    {
+      "point": "op.div/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "ba4cd7f7812d1ebbb5e52bd57fbe0cee1a926230c50738a1507d055d2e31a0f7",
+      "logical_bytes": 133120,
+      "old_cycles": 115529,
+      "new_cycles": 99753,
+      "old_samples": [
+        114299,
+        116226,
+        115529
+      ],
+      "new_samples": [
+        99753,
+        100211,
+        99613
+      ],
+      "old_logical_gb_s": 0.11522647993144579,
+      "new_logical_gb_s": 0.13344962056279008,
+      "new_over_old": 0.8634455418120126
+    },
+    {
+      "point": "op.div/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "5adf68b078ba300887dbe6202f76cda6e76c8f547c603b9c054ce5885c4f6b91",
+      "logical_bytes": 196608,
+      "old_cycles": 129750,
+      "new_cycles": 92919,
+      "old_samples": [
+        128373,
+        129750,
+        130291
+      ],
+      "new_samples": [
+        92919,
+        92997,
+        92899
+      ],
+      "old_logical_gb_s": 0.15152832369942199,
+      "new_logical_gb_s": 0.21159074032221614,
+      "new_over_old": 0.7161387283236994
+    },
+    {
+      "point": "op.div/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "3d2bc2186632151c7b81ad4103f551dfd67e6f40b42f61169cfa67b7219d0005",
+      "logical_bytes": 196608,
+      "old_cycles": 146791,
+      "new_cycles": 163720,
+      "old_samples": [
+        146635,
+        146791,
+        146998
+      ],
+      "new_samples": [
+        163584,
+        163720,
+        164145
+      ],
+      "old_logical_gb_s": 0.13393736673229287,
+      "new_logical_gb_s": 0.12008795504519912,
+      "new_over_old": 1.1153272339584852
+    },
+    {
+      "point": "op.div/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "2c41d3831829b3640b04bdb3787dd8a15208f651955f97c70fa0ff3817fed2d6",
+      "logical_bytes": 133120,
+      "old_cycles": 115142,
+      "new_cycles": 99896,
+      "old_samples": [
+        114164,
+        115142,
+        115734
+      ],
+      "new_samples": [
+        100010,
+        99896,
+        99563
+      ],
+      "old_logical_gb_s": 0.11561376387417277,
+      "new_logical_gb_s": 0.1332585889324898,
+      "new_over_old": 0.8675895850341317
+    },
+    {
+      "point": "op.div/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "40a2862ba6d94c1905928bfde59bcf9287b57359119a3e11eababdff1c541ba4",
+      "logical_bytes": 196608,
+      "old_cycles": 129233,
+      "new_cycles": 92900,
+      "old_samples": [
+        128826,
+        129233,
+        130264
+      ],
+      "new_samples": [
+        92780,
+        92900,
+        92960
+      ],
+      "old_logical_gb_s": 0.15213451672560413,
+      "new_logical_gb_s": 0.21163401506996773,
+      "new_over_old": 0.7188566387842115
+    },
+    {
+      "point": "op.div/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "25c80f90e6ed22f84995dac4ec408b939a8b3514ebf171d1d3b19f0cfd2fa414",
+      "logical_bytes": 196608,
+      "old_cycles": 146332,
+      "new_cycles": 163762,
+      "old_samples": [
+        146977,
+        146332,
+        146302
+      ],
+      "new_samples": [
+        163762,
+        163821,
+        163610
+      ],
+      "old_logical_gb_s": 0.13435748845091983,
+      "new_logical_gb_s": 0.12005715611680365,
+      "new_over_old": 1.1191127026214363
+    },
+    {
+      "point": "op.div/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "6727ec7e64a703f561b0aaf0b240ca141af950bc9beeba93c064c308ca058e3d",
+      "logical_bytes": 135168,
+      "old_cycles": 75972,
+      "new_cycles": 58709,
+      "old_samples": [
+        75408,
+        76391,
+        75972
+      ],
+      "new_samples": [
+        58333,
+        58709,
+        58871
+      ],
+      "old_logical_gb_s": 0.1779181803822461,
+      "new_logical_gb_s": 0.23023386533580883,
+      "new_over_old": 0.7727715474122046
+    },
+    {
+      "point": "op.div/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "569cc31265d7b2983f2542ca215eb372842159f912fc9175fc2fbb050683587f",
+      "logical_bytes": 196608,
+      "old_cycles": 80184,
+      "new_cycles": 49312,
+      "old_samples": [
+        79845,
+        80184,
+        80974
+      ],
+      "new_samples": [
+        49312,
+        49307,
+        49338
+      ],
+      "old_logical_gb_s": 0.2451960490870997,
+      "new_logical_gb_s": 0.3987021414665802,
+      "new_over_old": 0.614985533273471
+    },
+    {
+      "point": "op.div/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "847e246a7b0393520dda3830fe2215ecb132fd63fa72fed1d5770fecd363bc42",
+      "logical_bytes": 196608,
+      "old_cycles": 126884,
+      "new_cycles": 111650,
+      "old_samples": [
+        126884,
+        127709,
+        125619
+      ],
+      "new_samples": [
+        111609,
+        111650,
+        111736
+      ],
+      "old_logical_gb_s": 0.1549509788468207,
+      "new_logical_gb_s": 0.17609314823107927,
+      "new_over_old": 0.879937580782447
+    },
+    {
+      "point": "op.exp/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "d49f3ea4ecca71506034d1ddfe34daffcfb3e465c0cd8182be9001a2422c46ea",
+      "logical_bytes": 67584,
+      "old_cycles": 95222,
+      "new_cycles": 88844,
+      "old_samples": [
+        92968,
+        95383,
+        95222
+      ],
+      "new_samples": [
+        89046,
+        88765,
+        88844
+      ],
+      "old_logical_gb_s": 0.07097519480792254,
+      "new_logical_gb_s": 0.07607041555985773,
+      "new_over_old": 0.933019680325975
+    },
+    {
+      "point": "op.exp/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "d633b9bc9a9116e33705e103e572a19fa5c31fcbc3ce15faf734ffe774bc3881",
+      "logical_bytes": 131072,
+      "old_cycles": 94589,
+      "new_cycles": 88708,
+      "old_samples": [
+        94463,
+        94713,
+        94589
+      ],
+      "new_samples": [
+        88708,
+        88622,
+        88745
+      ],
+      "old_logical_gb_s": 0.1385700239985622,
+      "new_logical_gb_s": 0.14775668485367724,
+      "new_over_old": 0.9378257514087261
+    },
+    {
+      "point": "op.exp/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "211b8e53c799c881a78587464d422c5c87cdb5b6b9e18600f47ce2c00941a1b2",
+      "logical_bytes": 131072,
+      "old_cycles": 110927,
+      "new_cycles": 106078,
+      "old_samples": [
+        109687,
+        111228,
+        110927
+      ],
+      "new_samples": [
+        106323,
+        106078,
+        106077
+      ],
+      "old_logical_gb_s": 0.11816059210111154,
+      "new_logical_gb_s": 0.1235619072757782,
+      "new_over_old": 0.956286566841256
+    },
+    {
+      "point": "op.exp/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "47d8e07e54ef1cf1c15a93723dd0de193af3afded48cd1f1eeeb8b049f99dd42",
+      "logical_bytes": 67584,
+      "old_cycles": 95460,
+      "new_cycles": 88969,
+      "old_samples": [
+        92601,
+        95476,
+        95460
+      ],
+      "new_samples": [
+        88969,
+        89076,
+        88861
+      ],
+      "old_logical_gb_s": 0.07079824010056568,
+      "new_logical_gb_s": 0.07596353786150231,
+      "new_over_old": 0.9320029331657239
+    },
+    {
+      "point": "op.exp/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "c095286c36211f01cc81d00c1f5e0607ec73aaeee638cc76499c9c6c5e7cf8b4",
+      "logical_bytes": 131072,
+      "old_cycles": 94660,
+      "new_cycles": 88635,
+      "old_samples": [
+        94660,
+        95092,
+        94243
+      ],
+      "new_samples": [
+        88635,
+        88630,
+        88834
+      ],
+      "old_logical_gb_s": 0.13846608916120853,
+      "new_logical_gb_s": 0.14787837761606587,
+      "new_over_old": 0.9363511514895415
+    },
+    {
+      "point": "op.exp/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "288e424eae593e5e0a5fb0528340bae7554b86495233cf0ae671847d9aff0ca0",
+      "logical_bytes": 131072,
+      "old_cycles": 110719,
+      "new_cycles": 106182,
+      "old_samples": [
+        110277,
+        110742,
+        110719
+      ],
+      "new_samples": [
+        106084,
+        106268,
+        106182
+      ],
+      "old_logical_gb_s": 0.11838257209693007,
+      "new_logical_gb_s": 0.12344088451903337,
+      "new_over_old": 0.9590223900143606
+    },
+    {
+      "point": "op.exp/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "0fccf53f50dcaeb4ae0e79bac959075bd25b0883f4f60c0e4725627ff78eb28b",
+      "logical_bytes": 69632,
+      "old_cycles": 53645,
+      "new_cycles": 41651,
+      "old_samples": [
+        52108,
+        53645,
+        54140
+      ],
+      "new_samples": [
+        41651,
+        41571,
+        41682
+      ],
+      "old_logical_gb_s": 0.12980147264423525,
+      "new_logical_gb_s": 0.16717965955199154,
+      "new_over_old": 0.7764190511697269
+    },
+    {
+      "point": "op.exp/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "015820543d86e955d4db6fea1f00a31423b62374c172cacf42dafe01ec930c47",
+      "logical_bytes": 131072,
+      "old_cycles": 57140,
+      "new_cycles": 40398,
+      "old_samples": [
+        56336,
+        57328,
+        57140
+      ],
+      "new_samples": [
+        40398,
+        40435,
+        40358
+      ],
+      "old_logical_gb_s": 0.22938746937346868,
+      "new_logical_gb_s": 0.32445170552997676,
+      "new_over_old": 0.7070003500175008
+    },
+    {
+      "point": "op.exp/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "c3ecdb90773c981c9cd990877b302e843853eb906fd864b4ec921d34eda8721e",
+      "logical_bytes": 131072,
+      "old_cycles": 82086,
+      "new_cycles": 68641,
+      "old_samples": [
+        81287,
+        82288,
+        82086
+      ],
+      "new_samples": [
+        68599,
+        68795,
+        68641
+      ],
+      "old_logical_gb_s": 0.15967643690763347,
+      "new_logical_gb_s": 0.19095292900744454,
+      "new_over_old": 0.8362083668347831
+    },
+    {
+      "point": "op.gelu/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "222371934a7317a77df88d6ad296852f876b88e4568d64bb2df353c4dbb82f82",
+      "logical_bytes": 67584,
+      "old_cycles": 262545,
+      "new_cycles": 259589,
+      "old_samples": [
+        260348,
+        263467,
+        262545
+      ],
+      "new_samples": [
+        259589,
+        259522,
+        259723
+      ],
+      "old_logical_gb_s": 0.025741872821801976,
+      "new_logical_gb_s": 0.02603500148311369,
+      "new_over_old": 0.9887409777371499
+    },
+    {
+      "point": "op.gelu/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "423cc5c66f121ca18ade279ba1bab2830072c21ab609ef4bb01761afbf300f8d",
+      "logical_bytes": 131072,
+      "old_cycles": 258815,
+      "new_cycles": 250708,
+      "old_samples": [
+        258329,
+        258855,
+        258815
+      ],
+      "new_samples": [
+        250708,
+        250887,
+        250648
+      ],
+      "old_logical_gb_s": 0.05064312346656878,
+      "new_logical_gb_s": 0.052280740941653234,
+      "new_over_old": 0.9686764677472326
+    },
+    {
+      "point": "op.gelu/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "8f7794f247e30a4a51ae7f2a7c646b330c6a7d83da70f5097a2053ba66bf7cdd",
+      "logical_bytes": 131072,
+      "old_cycles": 260438,
+      "new_cycles": 268942,
+      "old_samples": [
+        260338,
+        260603,
+        260438
+      ],
+      "new_samples": [
+        268942,
+        269026,
+        268899
+      ],
+      "old_logical_gb_s": 0.050327525169138146,
+      "new_logical_gb_s": 0.0487361587256732,
+      "new_over_old": 1.0326526850920372
+    },
+    {
+      "point": "op.gelu/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "e925f9fcd5d20be30f74a5bffe5a3c5208b26f4faf4171a38cc74ed584b2d6d0",
+      "logical_bytes": 67584,
+      "old_cycles": 263048,
+      "new_cycles": 259646,
+      "old_samples": [
+        260326,
+        263048,
+        263110
+      ],
+      "new_samples": [
+        259339,
+        259646,
+        259806
+      ],
+      "old_logical_gb_s": 0.025692649250326938,
+      "new_logical_gb_s": 0.02602928602789952,
+      "new_over_old": 0.9870669991788571
+    },
+    {
+      "point": "op.gelu/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "58e07277f47e7b7493cd749e07f0cf3a3451695b9c8e3f187cfbd7995e06e5c5",
+      "logical_bytes": 131072,
+      "old_cycles": 258829,
+      "new_cycles": 250702,
+      "old_samples": [
+        258829,
+        259293,
+        258344
+      ],
+      "new_samples": [
+        250630,
+        250702,
+        250852
+      ],
+      "old_logical_gb_s": 0.050640384191879585,
+      "new_logical_gb_s": 0.05228199216599788,
+      "new_over_old": 0.9686008909357143
+    },
+    {
+      "point": "op.gelu/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "5162af1921e343519032bb7e5b5467fb121030f537deb3647f93f2a38c69ceed",
+      "logical_bytes": 131072,
+      "old_cycles": 260382,
+      "new_cycles": 268678,
+      "old_samples": [
+        260382,
+        260977,
+        260111
+      ],
+      "new_samples": [
+        268883,
+        268646,
+        268678
+      ],
+      "old_logical_gb_s": 0.05033834904102434,
+      "new_logical_gb_s": 0.04878404633055181,
+      "new_over_old": 1.0318608813205215
+    },
+    {
+      "point": "op.gelu/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "52ed643273b7534adba24cb655eb1f4197cd33391fbc10449ffc03e807a3cf36",
+      "logical_bytes": 69632,
+      "old_cycles": 136899,
+      "new_cycles": 126917,
+      "old_samples": [
+        135270,
+        136899,
+        137271
+      ],
+      "new_samples": [
+        126697,
+        126951,
+        126917
+      ],
+      "old_logical_gb_s": 0.050863775484116025,
+      "new_logical_gb_s": 0.05486420258909366,
+      "new_over_old": 0.9270849312266708
+    },
+    {
+      "point": "op.gelu/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "7dcea330f7d5d6210174567b1af0aa264dd14633fa0bea32f876f57c7e0e0f6e",
+      "logical_bytes": 131072,
+      "old_cycles": 133009,
+      "new_cycles": 120929,
+      "old_samples": [
+        132179,
+        133215,
+        133009
+      ],
+      "new_samples": [
+        120929,
+        120851,
+        120963
+      ],
+      "old_logical_gb_s": 0.09854370756866077,
+      "new_logical_gb_s": 0.10838756625788686,
+      "new_over_old": 0.9091790781074964
+    },
+    {
+      "point": "op.gelu/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "ab7ca23da570713ae905d48956b8c5ae3849405cdd096f295df5af01af59e513",
+      "logical_bytes": 131072,
+      "old_cycles": 151025,
+      "new_cycles": 144993,
+      "old_samples": [
+        151139,
+        149929,
+        151025
+      ],
+      "new_samples": [
+        144993,
+        144793,
+        145102
+      ],
+      "old_logical_gb_s": 0.08678828008607846,
+      "new_logical_gb_s": 0.09039884684088198,
+      "new_over_old": 0.9600595927826518
+    },
+    {
+      "point": "op.layernorm/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "1a308068299024872fb3f2e81e31474149e2933e83ee13fc19a2a5ade6497c60",
+      "logical_bytes": 71680,
+      "old_cycles": 142539,
+      "new_cycles": 127841,
+      "old_samples": [
+        140995,
+        142987,
+        142539
+      ],
+      "new_samples": [
+        127808,
+        127841,
+        128079
+      ],
+      "old_logical_gb_s": 0.05028799135675148,
+      "new_logical_gb_s": 0.05606964901713848,
+      "new_over_old": 0.8968843614730003
+    },
+    {
+      "point": "op.layernorm/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "77673e5ed1cb85ba4eb2fe68d26e43a9146b8bcb53affa7e43183df567007c68",
+      "logical_bytes": 135168,
+      "old_cycles": 152052,
+      "new_cycles": 140741,
+      "old_samples": [
+        151920,
+        152052,
+        152394
+      ],
+      "new_samples": [
+        140741,
+        141148,
+        140075
+      ],
+      "old_logical_gb_s": 0.08889590403283087,
+      "new_logical_gb_s": 0.09604024413639238,
+      "new_over_old": 0.9256109751926972
+    },
+    {
+      "point": "op.layernorm/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "46efcdca2755e6cedd7a4592b7c08136d2d3d0e05ca9f5c34d30f07f34dc0a67",
+      "logical_bytes": 135168,
+      "old_cycles": 190591,
+      "new_cycles": 185781,
+      "old_samples": [
+        190491,
+        190591,
+        192799
+      ],
+      "new_samples": [
+        190310,
+        185781,
+        185617
+      ],
+      "old_logical_gb_s": 0.0709204526971368,
+      "new_logical_gb_s": 0.0727566328095984,
+      "new_over_old": 0.9747627117754774
+    },
+    {
+      "point": "op.layernorm/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "7415e4ffca893fb2e331538dab1541fd906cb620a6b9cf1d7272637bcefaa857",
+      "logical_bytes": 71680,
+      "old_cycles": 141958,
+      "new_cycles": 127559,
+      "old_samples": [
+        141958,
+        141263,
+        142799
+      ],
+      "new_samples": [
+        127457,
+        127844,
+        127559
+      ],
+      "old_logical_gb_s": 0.0504938080277265,
+      "new_logical_gb_s": 0.056193604528100724,
+      "new_over_old": 0.8985685907099283
+    },
+    {
+      "point": "op.layernorm/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "356c7c3d8b9fba6604e09dc3729a20f71611d273a8917d5bb49ddc317c28692d",
+      "logical_bytes": 135168,
+      "old_cycles": 152908,
+      "new_cycles": 140894,
+      "old_samples": [
+        152173,
+        152908,
+        153449
+      ],
+      "new_samples": [
+        139840,
+        141042,
+        140894
+      ],
+      "old_logical_gb_s": 0.08839825254401339,
+      "new_logical_gb_s": 0.09593595185032719,
+      "new_over_old": 0.9214298794046093
+    },
+    {
+      "point": "op.layernorm/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "05e4c60d4e625538c0b943edaef13376b9c45ba4b874d9549f26ffd052a8bf26",
+      "logical_bytes": 135168,
+      "old_cycles": 191074,
+      "new_cycles": 185464,
+      "old_samples": [
+        191074,
+        190351,
+        191507
+      ],
+      "new_samples": [
+        186484,
+        185464,
+        184677
+      ],
+      "old_logical_gb_s": 0.07074117881030387,
+      "new_logical_gb_s": 0.07288099038088255,
+      "new_over_old": 0.9706396474664266
+    },
+    {
+      "point": "op.layernorm/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "0461760f143b1b6139e4a318ebda868cf16811c5e595589a3aa8eb07f97f4372",
+      "logical_bytes": 77824,
+      "old_cycles": 117154,
+      "new_cycles": 78224,
+      "old_samples": [
+        113521,
+        117638,
+        117154
+      ],
+      "new_samples": [
+        77520,
+        81314,
+        78224
+      ],
+      "old_logical_gb_s": 0.06642880311385015,
+      "new_logical_gb_s": 0.09948864798527306,
+      "new_over_old": 0.6677023405090735
+    },
+    {
+      "point": "op.layernorm/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "c38699bf531658857d2bf966c1219aa350e983e53aa7d9479cf8bfe9c5a39877",
+      "logical_bytes": 139264,
+      "old_cycles": 138034,
+      "new_cycles": 90504,
+      "old_samples": [
+        135885,
+        138267,
+        138034
+      ],
+      "new_samples": [
+        90699,
+        90504,
+        89694
+      ],
+      "old_logical_gb_s": 0.10089108480519293,
+      "new_logical_gb_s": 0.15387607177583312,
+      "new_over_old": 0.6556645464161004
+    },
+    {
+      "point": "op.layernorm/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "c3f006435ffc94fb866a509728c9a70a8df3773ec137a84e3db7bd7d61f9f7a9",
+      "logical_bytes": 139264,
+      "old_cycles": 254388,
+      "new_cycles": 260349,
+      "old_samples": [
+        254857,
+        254388,
+        254000
+      ],
+      "new_samples": [
+        260859,
+        260349,
+        259971
+      ],
+      "old_logical_gb_s": 0.05474472066292435,
+      "new_logical_gb_s": 0.05349127517294093,
+      "new_over_old": 1.0234327090900515
+    },
+    {
+      "point": "op.max/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "ba69c4563d30a73b9f68b4db3b9b6f4ca98074e8d8795fc4203cc46472f70e1a",
+      "logical_bytes": 2112,
+      "old_cycles": 23982,
+      "new_cycles": 21568,
+      "old_samples": [
+        24002,
+        23982,
+        23982
+      ],
+      "new_samples": [
+        21569,
+        21568,
+        21568
+      ],
+      "old_logical_gb_s": 0.008806604953715286,
+      "new_logical_gb_s": 0.009792284866468843,
+      "new_over_old": 0.8993411725460763
+    },
+    {
+      "point": "op.max/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "f195e624d2cfd7cef02379cf21e0cb2ce1695a5728965aa3d2f727e21cd7dcf5",
+      "logical_bytes": 65600,
+      "old_cycles": 30938,
+      "new_cycles": 29519,
+      "old_samples": [
+        31016,
+        30938,
+        30760
+      ],
+      "new_samples": [
+        30405,
+        29519,
+        28572
+      ],
+      "old_logical_gb_s": 0.21203697718016676,
+      "new_logical_gb_s": 0.22222975033029574,
+      "new_over_old": 0.9541340746008146
+    },
+    {
+      "point": "op.max/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "8aecd75cd8bf8508a4b010f62ebee02637fd3a5177f686267a083932815ec64b",
+      "logical_bytes": 65600,
+      "old_cycles": 51134,
+      "new_cycles": 54884,
+      "old_samples": [
+        51278,
+        51134,
+        50679
+      ],
+      "new_samples": [
+        54811,
+        55390,
+        54884
+      ],
+      "old_logical_gb_s": 0.12829037431063478,
+      "new_logical_gb_s": 0.11952481597551198,
+      "new_over_old": 1.0733367231196465
+    },
+    {
+      "point": "op.max/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "939ad80adbe527b1733610ef597117076b0249481a0326df4011e20f41940a79",
+      "logical_bytes": 2112,
+      "old_cycles": 23982,
+      "new_cycles": 21568,
+      "old_samples": [
+        23602,
+        23982,
+        23982
+      ],
+      "new_samples": [
+        21569,
+        21568,
+        21568
+      ],
+      "old_logical_gb_s": 0.008806604953715286,
+      "new_logical_gb_s": 0.009792284866468843,
+      "new_over_old": 0.8993411725460763
+    },
+    {
+      "point": "op.max/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "b5edd37e573580942227a4a777a8312cc068cc1b5599531ecdd05d4951310463",
+      "logical_bytes": 65600,
+      "old_cycles": 30819,
+      "new_cycles": 29587,
+      "old_samples": [
+        31248,
+        30710,
+        30819
+      ],
+      "new_samples": [
+        30063,
+        29433,
+        29587
+      ],
+      "old_logical_gb_s": 0.21285570589571368,
+      "new_logical_gb_s": 0.22171899820867275,
+      "new_over_old": 0.9600246601122684
+    },
+    {
+      "point": "op.max/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "7a437588ded341b9c049ce0c2757b4f16ccc9302d9dbfcdc404b75ec9b56a9f8",
+      "logical_bytes": 65600,
+      "old_cycles": 50177,
+      "new_cycles": 55529,
+      "old_samples": [
+        50177,
+        51707,
+        49176
+      ],
+      "new_samples": [
+        55509,
+        55725,
+        55529
+      ],
+      "old_logical_gb_s": 0.13073719034617454,
+      "new_logical_gb_s": 0.11813646923229304,
+      "new_over_old": 1.1066624150507205
+    },
+    {
+      "point": "op.max/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "941a85a378f6a912b3d7788c655c82cf58e8b928e8fe634d0f728caddff0412b",
+      "logical_bytes": 4160,
+      "old_cycles": 16398,
+      "new_cycles": 13211,
+      "old_samples": [
+        16417,
+        16385,
+        16398
+      ],
+      "new_samples": [
+        13249,
+        13211,
+        13211
+      ],
+      "old_logical_gb_s": 0.025368947432613732,
+      "new_logical_gb_s": 0.031488910756188024,
+      "new_over_old": 0.8056470301256251
+    },
+    {
+      "point": "op.max/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "fdf1446df9d17690d32c7a5b5bd355aeb0134c30d62fcf26eb0e56d8ad5c5dcd",
+      "logical_bytes": 65600,
+      "old_cycles": 26079,
+      "new_cycles": 22435,
+      "old_samples": [
+        27010,
+        24370,
+        26079
+      ],
+      "new_samples": [
+        22435,
+        22595,
+        18193
+      ],
+      "old_logical_gb_s": 0.2515433873998236,
+      "new_logical_gb_s": 0.292400267439269,
+      "new_over_old": 0.8602707159016834
+    },
+    {
+      "point": "op.max/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "5536e420c4eb0a1a72a07c80c4c2be874a651874b2bf487d4fce0d032bbdeea7",
+      "logical_bytes": 65600,
+      "old_cycles": 50124,
+      "new_cycles": 51189,
+      "old_samples": [
+        49405,
+        50189,
+        50124
+      ],
+      "new_samples": [
+        51034,
+        51189,
+        51263
+      ],
+      "old_logical_gb_s": 0.13087542893623813,
+      "new_logical_gb_s": 0.12815253277071245,
+      "new_over_old": 1.021247306679435
+    },
+    {
+      "point": "op.mean/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "ecd946abba3e0fb2e3edd422cac026e17c88758336db23bc140899ffbc7364f6",
+      "logical_bytes": 2112,
+      "old_cycles": 23957,
+      "new_cycles": 21871,
+      "old_samples": [
+        23957,
+        23957,
+        23957
+      ],
+      "new_samples": [
+        21871,
+        21871,
+        21871
+      ],
+      "old_logical_gb_s": 0.008815794965980716,
+      "new_logical_gb_s": 0.009656622925334918,
+      "new_over_old": 0.9129273281295655
+    },
+    {
+      "point": "op.mean/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "bd038ebccebaa129589df0577870e1afd30c606334e01d8c0e094cc657050c3c",
+      "logical_bytes": 65600,
+      "old_cycles": 31484,
+      "new_cycles": 30082,
+      "old_samples": [
+        31907,
+        31484,
+        31081
+      ],
+      "new_samples": [
+        30082,
+        30394,
+        29773
+      ],
+      "old_logical_gb_s": 0.20835980180409094,
+      "new_logical_gb_s": 0.21807060700751282,
+      "new_over_old": 0.9554694447973574
+    },
+    {
+      "point": "op.mean/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "3d15cafff050b4df2cc161898629008db80b0933fe2cc7444ee13eb92a3d4312",
+      "logical_bytes": 65600,
+      "old_cycles": 51020,
+      "new_cycles": 55228,
+      "old_samples": [
+        51128,
+        50399,
+        51020
+      ],
+      "new_samples": [
+        55506,
+        55228,
+        54950
+      ],
+      "old_logical_gb_s": 0.12857702861622894,
+      "new_logical_gb_s": 0.11878032881871514,
+      "new_over_old": 1.0824774598196785
+    },
+    {
+      "point": "op.mean/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "943dcf8cb835f4f70ebb4953496b4f7c406846c61145225911187e4111178e52",
+      "logical_bytes": 2112,
+      "old_cycles": 23957,
+      "new_cycles": 21871,
+      "old_samples": [
+        23957,
+        23957,
+        23957
+      ],
+      "new_samples": [
+        21871,
+        21871,
+        21871
+      ],
+      "old_logical_gb_s": 0.008815794965980716,
+      "new_logical_gb_s": 0.009656622925334918,
+      "new_over_old": 0.9129273281295655
+    },
+    {
+      "point": "op.mean/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "cb962e721fff9158737c566de1faac627d9b51b8d1e30ab18c7f17c798137cb3",
+      "logical_bytes": 65600,
+      "old_cycles": 31315,
+      "new_cycles": 30455,
+      "old_samples": [
+        31402,
+        31281,
+        31315
+      ],
+      "new_samples": [
+        30862,
+        30455,
+        30335
+      ],
+      "old_logical_gb_s": 0.20948427271275744,
+      "new_logical_gb_s": 0.21539977015268427,
+      "new_over_old": 0.972537122784608
+    },
+    {
+      "point": "op.mean/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "b12781c75ebf97e9feecf8dc07709bdd728ff6b1d6e74a6cb4841e1343ec8f55",
+      "logical_bytes": 65600,
+      "old_cycles": 50346,
+      "new_cycles": 55505,
+      "old_samples": [
+        50346,
+        50078,
+        50790
+      ],
+      "new_samples": [
+        55505,
+        55381,
+        55780
+      ],
+      "old_logical_gb_s": 0.13029833551821396,
+      "new_logical_gb_s": 0.11818755067111071,
+      "new_over_old": 1.102470901362571
+    },
+    {
+      "point": "op.mean/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "026a4d010b52b88d5f9eca915fd53f42e55cd0df5610d6f9eda36778121b6876",
+      "logical_bytes": 4160,
+      "old_cycles": 16570,
+      "new_cycles": 13428,
+      "old_samples": [
+        16593,
+        16549,
+        16570
+      ],
+      "new_samples": [
+        13444,
+        13403,
+        13428
+      ],
+      "old_logical_gb_s": 0.02510561255280628,
+      "new_logical_gb_s": 0.030980041703902294,
+      "new_over_old": 0.8103802051901026
+    },
+    {
+      "point": "op.mean/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "6a1d071c42a97da87ea4201f75dce128d64f43958180afed04f00585d5844114",
+      "logical_bytes": 65600,
+      "old_cycles": 26551,
+      "new_cycles": 19135,
+      "old_samples": [
+        27643,
+        26551,
+        24284
+      ],
+      "new_samples": [
+        19135,
+        19219,
+        17935
+      ],
+      "old_logical_gb_s": 0.24707167338330005,
+      "new_logical_gb_s": 0.3428272798536713,
+      "new_over_old": 0.7206884863093669
+    },
+    {
+      "point": "op.mean/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "06f6d759a86427fe7e319d73fab9f6d03331ba7db4c75b32c6d7b128fcbbab73",
+      "logical_bytes": 65600,
+      "old_cycles": 49113,
+      "new_cycles": 50609,
+      "old_samples": [
+        48696,
+        49113,
+        50310
+      ],
+      "new_samples": [
+        50609,
+        50662,
+        50475
+      ],
+      "old_logical_gb_s": 0.13356952334412478,
+      "new_logical_gb_s": 0.12962121361813117,
+      "new_over_old": 1.0304603669089651
+    },
+    {
+      "point": "op.mul/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "48457712e7aafdfd535d9b4e31cdfd42714504e908ec2ba6f2f64fcb215740d0",
+      "logical_bytes": 133120,
+      "old_cycles": 109093,
+      "new_cycles": 83613,
+      "old_samples": [
+        106591,
+        109134,
+        109093
+      ],
+      "new_samples": [
+        83370,
+        83856,
+        83613
+      ],
+      "old_logical_gb_s": 0.12202432786704923,
+      "new_logical_gb_s": 0.1592096922727327,
+      "new_over_old": 0.7664378099419761
+    },
+    {
+      "point": "op.mul/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "aac2165e5d083e919ee49ee3191bf01e4615d2d9a4d196309b7e77b6702533d7",
+      "logical_bytes": 196608,
+      "old_cycles": 121703,
+      "new_cycles": 74714,
+      "old_samples": [
+        120806,
+        121703,
+        122119
+      ],
+      "new_samples": [
+        74714,
+        74742,
+        74579
+      ],
+      "old_logical_gb_s": 0.1615473735240709,
+      "new_logical_gb_s": 0.2631474690151779,
+      "new_over_old": 0.6139043408954586
+    },
+    {
+      "point": "op.mul/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "fb3b9326888d15c9adde6734b6ea0517112cdcf5fcab0b1fb94cbb4e53352f73",
+      "logical_bytes": 196608,
+      "old_cycles": 137929,
+      "new_cycles": 149057,
+      "old_samples": [
+        137565,
+        138050,
+        137929
+      ],
+      "new_samples": [
+        149108,
+        149057,
+        149017
+      ],
+      "old_logical_gb_s": 0.14254290250781199,
+      "new_logical_gb_s": 0.13190121899675963,
+      "new_over_old": 1.0806791900180528
+    },
+    {
+      "point": "op.mul/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "07d16c619b5fd98e2c8fdfcc0906b2b61cd3a5ab139240022619b705f1f45cda",
+      "logical_bytes": 133120,
+      "old_cycles": 108759,
+      "new_cycles": 83873,
+      "old_samples": [
+        106816,
+        108759,
+        108987
+      ],
+      "new_samples": [
+        83275,
+        83937,
+        83873
+      ],
+      "old_logical_gb_s": 0.12239906582443752,
+      "new_logical_gb_s": 0.15871615418549473,
+      "new_over_old": 0.7711821550400426
+    },
+    {
+      "point": "op.mul/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "e0957154c120198d8f392871dfd3c4e1b4f7e34678016df463de2063b9ada862",
+      "logical_bytes": 196608,
+      "old_cycles": 121938,
+      "new_cycles": 74579,
+      "old_samples": [
+        120104,
+        121938,
+        121974
+      ],
+      "new_samples": [
+        74579,
+        74424,
+        74708
+      ],
+      "old_logical_gb_s": 0.16123603798651773,
+      "new_logical_gb_s": 0.26362380831065046,
+      "new_over_old": 0.6116140989683282
+    },
+    {
+      "point": "op.mul/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "a72e6fc2be5bb662d61fb6790173b23ce7895dfd1ac94821103fdbe02c7d65a5",
+      "logical_bytes": 196608,
+      "old_cycles": 137277,
+      "new_cycles": 149206,
+      "old_samples": [
+        137476,
+        137086,
+        137277
+      ],
+      "new_samples": [
+        149206,
+        149279,
+        149017
+      ],
+      "old_logical_gb_s": 0.1432199130225748,
+      "new_logical_gb_s": 0.13176949988606357,
+      "new_over_old": 1.0868972952497504
+    },
+    {
+      "point": "op.mul/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "04d26f2f2fe0b93576d26a108a7355b776456f742d190f9c1e2878edf525e3d2",
+      "logical_bytes": 135168,
+      "old_cycles": 71861,
+      "new_cycles": 50084,
+      "old_samples": [
+        71220,
+        73022,
+        71861
+      ],
+      "new_samples": [
+        49675,
+        50467,
+        50084
+      ],
+      "old_logical_gb_s": 0.18809646400690222,
+      "new_logical_gb_s": 0.26988259723664243,
+      "new_over_old": 0.6969566245947036
+    },
+    {
+      "point": "op.mul/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "ccbb5e1f4c75204a995f297109fdd21a2fb2df0e5c6b6e433234c205cb1df8cf",
+      "logical_bytes": 196608,
+      "old_cycles": 78075,
+      "new_cycles": 40054,
+      "old_samples": [
+        77514,
+        78075,
+        78239
+      ],
+      "new_samples": [
+        40054,
+        40065,
+        39982
+      ],
+      "old_logical_gb_s": 0.25181940441882805,
+      "new_logical_gb_s": 0.4908573425875069,
+      "new_over_old": 0.5130195325008005
+    },
+    {
+      "point": "op.mul/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "9dab715c61a58e309a884f7a6faa01a852a9067d03dc26f55b80e5f4370ec05a",
+      "logical_bytes": 196608,
+      "old_cycles": 121598,
+      "new_cycles": 110276,
+      "old_samples": [
+        120327,
+        122559,
+        121598
+      ],
+      "new_samples": [
+        110107,
+        110331,
+        110276
+      ],
+      "old_logical_gb_s": 0.16168686984983305,
+      "new_logical_gb_s": 0.1782872066451449,
+      "new_over_old": 0.906889915952565
+    },
+    {
+      "point": "op.relu/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "5e288f7411d030876004523e1e572022ff24df623e6f6c7f065fa652623149d1",
+      "logical_bytes": 67584,
+      "old_cycles": 76870,
+      "new_cycles": 74458,
+      "old_samples": [
+        74358,
+        76870,
+        76939
+      ],
+      "new_samples": [
+        74458,
+        74786,
+        74345
+      ],
+      "old_logical_gb_s": 0.08791986470664759,
+      "new_logical_gb_s": 0.09076794971661876,
+      "new_over_old": 0.9686223494211006
+    },
+    {
+      "point": "op.relu/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "b65c5dca28d48793af5b70c2e5150cde30504ec0e1fbaeba100d6f487fc92123",
+      "logical_bytes": 131072,
+      "old_cycles": 84810,
+      "new_cycles": 64203,
+      "old_samples": [
+        84810,
+        84709,
+        85113
+      ],
+      "new_samples": [
+        64260,
+        64140,
+        64203
+      ],
+      "old_logical_gb_s": 0.15454781275792948,
+      "new_logical_gb_s": 0.20415245393517437,
+      "new_over_old": 0.7570215776441457
+    },
+    {
+      "point": "op.relu/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "378858ae3a6a5c8c6a2c975789346693ba99043003f4bfdac627935e882c8b00",
+      "logical_bytes": 131072,
+      "old_cycles": 93759,
+      "new_cycles": 93216,
+      "old_samples": [
+        92945,
+        93759,
+        94126
+      ],
+      "new_samples": [
+        93216,
+        93288,
+        93206
+      ],
+      "old_logical_gb_s": 0.13979671284889983,
+      "new_logical_gb_s": 0.14061105389632683,
+      "new_over_old": 0.994208555978626
+    },
+    {
+      "point": "op.relu/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "e4b0f020ffad949cb09052cf29d7a3c28df89d61ac208d4b44a9a23a3d1ef60b",
+      "logical_bytes": 67584,
+      "old_cycles": 76860,
+      "new_cycles": 74488,
+      "old_samples": [
+        74580,
+        76860,
+        77010
+      ],
+      "new_samples": [
+        74488,
+        74646,
+        74299
+      ],
+      "old_logical_gb_s": 0.08793130366900859,
+      "new_logical_gb_s": 0.09073139297604983,
+      "new_over_old": 0.9691386937288576
+    },
+    {
+      "point": "op.relu/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "cd5065e6398b765223c548e1aed4b94db09a670a4c3c6e464d77a2f4aff54de6",
+      "logical_bytes": 131072,
+      "old_cycles": 85287,
+      "new_cycles": 64216,
+      "old_samples": [
+        84019,
+        85373,
+        85287
+      ],
+      "new_samples": [
+        64216,
+        64207,
+        64237
+      ],
+      "old_logical_gb_s": 0.1536834453081947,
+      "new_logical_gb_s": 0.20411112495328268,
+      "new_over_old": 0.7529400729302238
+    },
+    {
+      "point": "op.relu/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "1c12ef1d0965ab370c529bb8c224d79e798629bf6063636c878eb93d1081fa28",
+      "logical_bytes": 131072,
+      "old_cycles": 93787,
+      "new_cycles": 93226,
+      "old_samples": [
+        92845,
+        93793,
+        93787
+      ],
+      "new_samples": [
+        93069,
+        93226,
+        93302
+      ],
+      "old_logical_gb_s": 0.13975497670252807,
+      "new_logical_gb_s": 0.1405959710810289,
+      "new_over_old": 0.9940183607536226
+    },
+    {
+      "point": "op.relu/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "2713fe58f1f04fa0b90cdcc66b92170e2a0d0bcdd9160c26527e68fc7f21adc4",
+      "logical_bytes": 69632,
+      "old_cycles": 46987,
+      "new_cycles": 33798,
+      "old_samples": [
+        45022,
+        46987,
+        47373
+      ],
+      "new_samples": [
+        33734,
+        33798,
+        34068
+      ],
+      "old_logical_gb_s": 0.14819418136931492,
+      "new_logical_gb_s": 0.20602402509024204,
+      "new_over_old": 0.7193053397748314
+    },
+    {
+      "point": "op.relu/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "95f30444356439d85f7bf9898308c732a5c668f06e477b98bd78a787314e9faa",
+      "logical_bytes": 131072,
+      "old_cycles": 53720,
+      "new_cycles": 27688,
+      "old_samples": [
+        53216,
+        53720,
+        54146
+      ],
+      "new_samples": [
+        27663,
+        27688,
+        27739
+      ],
+      "old_logical_gb_s": 0.24399106478034255,
+      "new_logical_gb_s": 0.47338919387460276,
+      "new_over_old": 0.5154132539091586
+    },
+    {
+      "point": "op.relu/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "3f1a5880372b3e2b0af1d25cfff458ba46e76d3e727ae4bdc8596d161100ea67",
+      "logical_bytes": 131072,
+      "old_cycles": 77032,
+      "new_cycles": 62584,
+      "old_samples": [
+        77032,
+        76806,
+        77201
+      ],
+      "new_samples": [
+        62551,
+        62584,
+        62673
+      ],
+      "old_logical_gb_s": 0.17015266382801952,
+      "new_logical_gb_s": 0.20943372107887,
+      "new_over_old": 0.8124415827188701
+    },
+    {
+      "point": "op.rmsnorm/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "a76ef72c9089de600cb8053053f40dafc2ee84d1c5a5ac46a424cf142b934258",
+      "logical_bytes": 69632,
+      "old_cycles": 113168,
+      "new_cycles": 104776,
+      "old_samples": [
+        113656,
+        112832,
+        113168
+      ],
+      "new_samples": [
+        105429,
+        104369,
+        104776
+      ],
+      "old_logical_gb_s": 0.061529761063198074,
+      "new_logical_gb_s": 0.0664579674734672,
+      "new_over_old": 0.9258447617701117
+    },
+    {
+      "point": "op.rmsnorm/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "32d49a0e7fbef7903e9e8303f35f5e27f672177752f496ea9dc75b8e102b2a54",
+      "logical_bytes": 133120,
+      "old_cycles": 118259,
+      "new_cycles": 113409,
+      "old_samples": [
+        119160,
+        118259,
+        118073
+      ],
+      "new_samples": [
+        113409,
+        113089,
+        113591
+      ],
+      "old_logical_gb_s": 0.11256648542605636,
+      "new_logical_gb_s": 0.11738045481399184,
+      "new_over_old": 0.9589883222418589
+    },
+    {
+      "point": "op.rmsnorm/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "95e09306bc12b7d47670f1407150b98e2c602717d03597e97988767c8247a96f",
+      "logical_bytes": 133120,
+      "old_cycles": 148626,
+      "new_cycles": 148131,
+      "old_samples": [
+        148240,
+        148626,
+        150032
+      ],
+      "new_samples": [
+        148364,
+        148131,
+        145225
+      ],
+      "old_logical_gb_s": 0.08956710131470941,
+      "new_logical_gb_s": 0.08986640203603567,
+      "new_over_old": 0.9966694925517743
+    },
+    {
+      "point": "op.rmsnorm/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "8258029fec1285ae6cd6f935df72cda28d3c83f474bb85931656d3ddf43a191d",
+      "logical_bytes": 69632,
+      "old_cycles": 111068,
+      "new_cycles": 104740,
+      "old_samples": [
+        110543,
+        111068,
+        113385
+      ],
+      "new_samples": [
+        104740,
+        104884,
+        104570
+      ],
+      "old_logical_gb_s": 0.0626931249324738,
+      "new_logical_gb_s": 0.06648080962383043,
+      "new_over_old": 0.9430258940468902
+    },
+    {
+      "point": "op.rmsnorm/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "d3c2499ebb87587d4bedc5922517d208c61383495da1a7d035565fdecd248f92",
+      "logical_bytes": 133120,
+      "old_cycles": 120291,
+      "new_cycles": 113789,
+      "old_samples": [
+        120382,
+        117908,
+        120291
+      ],
+      "new_samples": [
+        113789,
+        113018,
+        113834
+      ],
+      "old_logical_gb_s": 0.1106649707791938,
+      "new_logical_gb_s": 0.11698846109905174,
+      "new_over_old": 0.9459477433889485
+    },
+    {
+      "point": "op.rmsnorm/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "e4840fd3495450893df1dd942eca43f3c5923405ac0fc90e2795b0dd01adaef2",
+      "logical_bytes": 133120,
+      "old_cycles": 148097,
+      "new_cycles": 148724,
+      "old_samples": [
+        148007,
+        148097,
+        149019
+      ],
+      "new_samples": [
+        152763,
+        147127,
+        148724
+      ],
+      "old_logical_gb_s": 0.0898870334983153,
+      "new_logical_gb_s": 0.08950808208493585,
+      "new_over_old": 1.0042337116889606
+    },
+    {
+      "point": "op.rmsnorm/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "68f952148a05e370bf3925f73d039536dc7c9ba8bd223446e4f12133d7cf3ddb",
+      "logical_bytes": 73728,
+      "old_cycles": 85880,
+      "new_cycles": 67449,
+      "old_samples": [
+        84059,
+        89342,
+        85880
+      ],
+      "new_samples": [
+        67398,
+        68301,
+        67449
+      ],
+      "old_logical_gb_s": 0.08585002328830928,
+      "new_logical_gb_s": 0.10930925588222214,
+      "new_over_old": 0.7853865859338612
+    },
+    {
+      "point": "op.rmsnorm/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "1ac676f4be3141318701b1c7059f5925653105e419fa5cae69eb4556e0bed5bc",
+      "logical_bytes": 135168,
+      "old_cycles": 102500,
+      "new_cycles": 73152,
+      "old_samples": [
+        100633,
+        102500,
+        103348
+      ],
+      "new_samples": [
+        73142,
+        73475,
+        73152
+      ],
+      "old_logical_gb_s": 0.1318712195121951,
+      "new_logical_gb_s": 0.1847769028871391,
+      "new_over_old": 0.7136780487804878
+    },
+    {
+      "point": "op.rmsnorm/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "daf57fd195dcdf2154af6994b510a82b6a51f0afe7b4becb143b14785a6e1375",
+      "logical_bytes": 135168,
+      "old_cycles": 181413,
+      "new_cycles": 176672,
+      "old_samples": [
+        179000,
+        182789,
+        181413
+      ],
+      "new_samples": [
+        176862,
+        176672,
+        176433
+      ],
+      "old_logical_gb_s": 0.0745084420631377,
+      "new_logical_gb_s": 0.0765078790074262,
+      "new_over_old": 0.973866260962555
+    },
+    {
+      "point": "op.sigmoid/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "7fdff25cdd6e51453d54e926f1fed0375591bd2be3f083678ba8d2b13986878a",
+      "logical_bytes": 67584,
+      "old_cycles": 122973,
+      "new_cycles": 116160,
+      "old_samples": [
+        120730,
+        122973,
+        122992
+      ],
+      "new_samples": [
+        116160,
+        116122,
+        116197
+      ],
+      "old_logical_gb_s": 0.05495840550364715,
+      "new_logical_gb_s": 0.05818181818181818,
+      "new_over_old": 0.9445975945939352
+    },
+    {
+      "point": "op.sigmoid/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "fc7fa4eb8e4ee819855f08d997f5e006bf8a67f9d965c9c7fab0cf82afcda6c9",
+      "logical_bytes": 131072,
+      "old_cycles": 123277,
+      "new_cycles": 114066,
+      "old_samples": [
+        122320,
+        123277,
+        123449
+      ],
+      "new_samples": [
+        114066,
+        114089,
+        113965
+      ],
+      "old_logical_gb_s": 0.10632315841560065,
+      "new_logical_gb_s": 0.11490891238405836,
+      "new_over_old": 0.9252820883051989
+    },
+    {
+      "point": "op.sigmoid/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "63c9f4920648bc0ba0ac19cd6a5061808984e92edebec2d534cd83fbb326c5db",
+      "logical_bytes": 131072,
+      "old_cycles": 135848,
+      "new_cycles": 137204,
+      "old_samples": [
+        135207,
+        135894,
+        135848
+      ],
+      "new_samples": [
+        137204,
+        137132,
+        137330
+      ],
+      "old_logical_gb_s": 0.09648430598904659,
+      "new_logical_gb_s": 0.09553074254394915,
+      "new_over_old": 1.0099817443024557
+    },
+    {
+      "point": "op.sigmoid/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "2042a0d067274b622e83677b23037f489d589d5920ec9e61602bbd501b9e390f",
+      "logical_bytes": 67584,
+      "old_cycles": 122857,
+      "new_cycles": 116065,
+      "old_samples": [
+        120557,
+        123212,
+        122857
+      ],
+      "new_samples": [
+        116065,
+        116289,
+        116064
+      ],
+      "old_logical_gb_s": 0.05501029652360061,
+      "new_logical_gb_s": 0.05822944039977599,
+      "new_over_old": 0.9447162147862963
+    },
+    {
+      "point": "op.sigmoid/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "0b0bee4b80e888f37b5f8265eddff2c1f0215a45ce9ff738c0772853b90aab79",
+      "logical_bytes": 131072,
+      "old_cycles": 123429,
+      "new_cycles": 114036,
+      "old_samples": [
+        122556,
+        123642,
+        123429
+      ],
+      "new_samples": [
+        114045,
+        114036,
+        113993
+      ],
+      "old_logical_gb_s": 0.10619222386959304,
+      "new_logical_gb_s": 0.11493914202532533,
+      "new_over_old": 0.9238995697931605
+    },
+    {
+      "point": "op.sigmoid/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "3025b932794c12ace544893225244b80352a62e644e07f4693cf686d9909e791",
+      "logical_bytes": 131072,
+      "old_cycles": 135967,
+      "new_cycles": 137202,
+      "old_samples": [
+        135967,
+        136187,
+        135863
+      ],
+      "new_samples": [
+        137181,
+        137228,
+        137202
+      ],
+      "old_logical_gb_s": 0.09639986173115536,
+      "new_logical_gb_s": 0.09553213510007143,
+      "new_over_old": 1.0090830863371258
+    },
+    {
+      "point": "op.sigmoid/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "7b3706cd532aa159af9c6ba8e4a5710ebc9f52b3aaab24835274e6157a806b22",
+      "logical_bytes": 69632,
+      "old_cycles": 66480,
+      "new_cycles": 55049,
+      "old_samples": [
+        65314,
+        66480,
+        66742
+      ],
+      "new_samples": [
+        54906,
+        55086,
+        55049
+      ],
+      "old_logical_gb_s": 0.10474127557160048,
+      "new_logical_gb_s": 0.12649094443132483,
+      "new_over_old": 0.8280535499398315
+    },
+    {
+      "point": "op.sigmoid/membound/fp32-small-contig-r16-c1024",
+      "point_sha256": "7bbbea68cd2ae508b8147effb98470f30c97f50814c9b852928a82c257745d71",
+      "logical_bytes": 131072,
+      "old_cycles": 67183,
+      "new_cycles": 54614,
+      "old_samples": [
+        67183,
+        67247,
+        66759
+      ],
+      "new_samples": [
+        54614,
+        54562,
+        54619
+      ],
+      "old_logical_gb_s": 0.19509697393685904,
+      "new_logical_gb_s": 0.23999707034826234,
+      "new_over_old": 0.8129139812154861
+    },
+    {
+      "point": "op.sigmoid/membound/fp32-small-strided-r16-c1024",
+      "point_sha256": "2ebf90849b2db912542e4581801528432f19b874325a124bba91bac7be764b41",
+      "logical_bytes": 131072,
+      "old_cycles": 93908,
+      "new_cycles": 81790,
+      "old_samples": [
+        93384,
+        93908,
+        94091
+      ],
+      "new_samples": [
+        81732,
+        81865,
+        81790
+      ],
+      "old_logical_gb_s": 0.13957490309664777,
+      "new_logical_gb_s": 0.16025430981782612,
+      "new_over_old": 0.8709588107509477
+    },
+    {
+      "point": "op.silu/membound/bf16-small-broadcast-r32-c1024",
+      "point_sha256": "04a22589d2d3ad02eef79265e89629d0ea4096aed42710caa2bb5a74a7eb23ac",
+      "logical_bytes": 67584,
+      "old_cycles": 123499,
+      "new_cycles": 116436,
+      "old_samples": [
+        121475,
+        123817,
+        123499
+      ],
+      "new_samples": [
+        116285,
+        116436,
+        116454
+      ],
+      "old_logical_gb_s": 0.054724329751657905,
+      "new_logical_gb_s": 0.058043903947232814,
+      "new_over_old": 0.9428092535162228
+    },
+    {
+      "point": "op.silu/membound/bf16-small-contig-r32-c1024",
+      "point_sha256": "22f6d347f5db9363f8303d5d516e268cad80cbd9c52a5d86c735e2b4a5decf46",
+      "logical_bytes": 131072,
+      "old_cycles": 123167,
+      "new_cycles": 111560,
+      "old_samples": [
+        122817,
+        123167,
+        123678
+      ],
+      "new_samples": [
+        111558,
+        111645,
+        111560
+      ],
+      "old_logical_gb_s": 0.10641811524190732,
+      "new_logical_gb_s": 0.11749013983506633,
+      "new_over_old": 0.9057620953664537
+    },
+    {
+      "point": "op.silu/membound/bf16-small-strided-r32-c1024",
+      "point_sha256": "3d6a81b039c54a6c70bbe217b36bc3ff626ecc6a4ed46101f8bfa53912338b75",
+      "logical_bytes": 131072,
+      "old_cycles": 136348,
+      "new_cycles": 137837,
+      "old_samples": [
+        135464,
+        136348,
+        136634
+      ],
+      "new_samples": [
+        137663,
+        137837,
+        137844
+      ],
+      "old_logical_gb_s": 0.09613048962947751,
+      "new_logical_gb_s": 0.09509202899076445,
+      "new_over_old": 1.0109205855604777
+    },
+    {
+      "point": "op.silu/membound/fp16-small-broadcast-r32-c1024",
+      "point_sha256": "cc0f1061a9536be1cf72e584e0575abca90127e6dd2427265f22217820780049",
+      "logical_bytes": 67584,
+      "old_cycles": 123862,
+      "new_cycles": 116446,
+      "old_samples": [
+        121469,
+        123862,
+        124120
+      ],
+      "new_samples": [
+        116446,
+        116506,
+        116381
+      ],
+      "old_logical_gb_s": 0.05456395020264489,
+      "new_logical_gb_s": 0.05803891932741356,
+      "new_over_old": 0.9401269154381489
+    },
+    {
+      "point": "op.silu/membound/fp16-small-contig-r32-c1024",
+      "point_sha256": "77008ffab3bfea19caca55154e426ede9c6014a3bed27679fb2c74f31599c51c",
+      "logical_bytes": 131072,
+      "old_cycles": 123498,
+      "new_cycles": 111577,
+      "old_samples": [
+        122802,
+        123581,
+        123498
+      ],
+      "new_samples": [
+        111589,
+        111523,
+        111577
+      ],
+      "old_logical_gb_s": 0.10613289284036989,
+      "new_logical_gb_s": 0.11747223890228273,
+      "new_over_old": 0.9034721210060082
+    },
+    {
+      "point": "op.silu/membound/fp16-small-strided-r32-c1024",
+      "point_sha256": "63e5d017feadb5795cd655b2028437935d5e3f387474bb99488cc903b599f8eb",
+      "logical_bytes": 131072,
+      "old_cycles": 136358,
+      "new_cycles": 137666,
+      "old_samples": [
+        135283,
+        136531,
+        136358
+      ],
+      "new_samples": [
+        137595,
+        137787,
+        137666
+      ],
+      "old_logical_gb_s": 0.09612343976884377,
+      "new_logical_gb_s": 0.09521014629610797,
+      "new_over_old": 1.0095923964857214
+    },
+    {
+      "point": "op.silu/membound/fp32-small-broadcast-r16-c1024",
+      "point_sha256": "80c359bbcc2630e219ce0702065418344c72cc843032378d32b93935f0f3fb6d",
+      "logical_bytes": 69632,
+      "old_cycles": 66297,
+      "new_cycles": 55056,
+      "old_samples": [
+        64998,
+        66297,
+        66794
+      ],
+      "new_samples": [
+        54902,
+        55056,
+        55060
+      ],
+      "old_logical_gb_s": 0.1050303935321357,
+      "new_logical_gb_s": 0.12647486195873292,
+      "new_over_old": 0.8304448165075343
+    }
+  ]
+}

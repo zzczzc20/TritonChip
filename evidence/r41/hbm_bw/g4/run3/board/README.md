@@ -63,6 +63,15 @@ These are effective logical rates, not physical HBM throughput. The small and
 tiled batches remain in progress or pending; this descriptive subset
 is not the complete performance gate.
 
+The first small batch completed 142/142 with no missing or failed
+configurations: [`membound_default_small1.tgz`](membound_default_small1.tgz).
+Its matched 100 MHz comparison has 1.127× speedup in the sum of point medians;
+10 points are over 5% slower, including four over 10% slower. The complete
+point data and samples are in
+[`membound_default_small1_comparison.json`](membound_default_small1_comparison.json).
+This is a descriptive comparison of different stacks, not a causal attribution
+or a registered recheck. The second small batch is running.
+
 The first identity attempt failed before device execution because the queue
 resolved the virtualenv symlink to system Python, which lacked PyTorch:
 [`identity_first_failure.log`](identity_first_failure.log). Commit `498b760a`

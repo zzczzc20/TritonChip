@@ -65,3 +65,21 @@ functional probe returned the expected four tokens, recorded zero reads in the
 three decode steps, and recorded new graph counts `[2, 1, 0, 0]`; this is not a
 board result. The separately registered replacement VL board stage started at
 05:26:56 UTC; Qwen3.5 remains queued behind it.
+
+## Device-feedback VL partial output, run-2 board
+
+The [05:46 UTC snapshot](vl_nohost_partial_20261031.json) records one
+full-checkpoint text prompt: `Paris`, passing its reference comparison. The
+model lists 822 parameters and four buffers on `tnca:0`; compiled-wrapper
+checks for prefill, decode and device selection report no host fallback.
+Across 11 executed decode steps, the recorded host-read and staging-download
+counts are zero, with 6,215 launches, 25,644,252,382 summed device cycles,
+and zero new graphs in each decode step. Output retrieval occurs after the
+generation loop and separately records 24 host reads totaling 3,646,560 bytes.
+
+The returned sequence contains two token IDs including EOS, but the device
+loop executed 12 steps before EOS was inspected; the cache was then reset.
+The recorded 0.023328746064501065 decode steps/s describes those executed steps,
+not user-visible tokens/s. Prefill includes compilation. This is one text
+prompt only: the image, remaining quality prompts, full session and scripted
+chat, and the Qwen3.5 device-feedback run remain outstanding.

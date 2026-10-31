@@ -1014,3 +1014,8 @@ The next report update records the second Qwen3.5 quality checkpoint; the prior 
 
 - `doc/r41_report.md`: `59d9c42876f113a9c0609b72ba459847a76a06c76e5b132e1413f7ebac3655d1` → `0b961332a1fb04d656b98d0691714146ff12d79f639d45ad76aa18c6cdc78337`
 - `doc/r41_stage2_report.md`: `417313d330dcc96c0ed84fa9528db64a939a5c6f453d1d432d7104001e99bc57` → `d4162d8444f6a4a7221558e8c1aa599fe0e74bd981df84631baed4941f15c232`
+
+The following report update records the third Qwen3.5 quality checkpoint; prior report versions are at `4c806516`. Only the two current report hashes were refreshed.
+
+- `doc/r41_report.md`: `0b961332a1fb04d656b98d0691714146ff12d79f639d45ad76aa18c6cdc78337` → `e9e32adb7ac41fc1195db0ccda7339d5e79e49dc8e7e4d84c53168e0d153a055`
+- `doc/r41_stage2_report.md`: `d4162d8444f6a4a7221558e8c1aa599fe0e74bd981df84631baed4941f15c232` → `c5ff6bce52740573f63eeeb375363735e462cfb53b5375213fb69306fae66c39`

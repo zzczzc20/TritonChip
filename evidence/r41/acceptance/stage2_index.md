@@ -6,7 +6,7 @@ Status is a manual evidence judgment, protected by the integrity checker. Passed
 
 Each non-pass names a bounded plan in [closure_plan.md](closure_plan.md). Identity boundaries are in [identity.md](identity.md).
 
-Under the author’s chat closure, the [VL quality, session and scripted chat](../chat/run3_priority/README.md) have completed with zero captured CPU numerical fallback and zero steady decode host reads. The Qwen3.5 session has passed; its quality run has recorded two of five prompts passing and is still running. These observations do not change the historical judgments below. Acceleration board A/B measurements remain queued.
+Under the author’s chat closure, the [VL quality, session and scripted chat](../chat/run3_priority/README.md) have completed with zero captured CPU numerical fallback and zero steady decode host reads. The Qwen3.5 session has passed; its quality run has recorded three of five prompts passing and is still running. These observations do not change the historical judgments below. Acceleration board A/B measurements remain queued.
 
 | Item | Type | Requirement | Judgment | Evidence and reason | Closure |
 |---|---|---|---|---|---|

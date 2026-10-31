@@ -773,3 +773,11 @@ failed before touching the card because the recovery-helper path was wrong;
 the corrected v2 queue is waiting. Before executing it checks the source and
 manifest hashes, takes the existing queue lock, and verifies the loaded UUID,
 clock, image-file hash and card idle state. Its result is pending.
+
+The [22:30 UTC whole-prefill first-turn checkpoint](q35_whole_turn0_checkpoint_20261031.log.gz)
+prints `I have remembered your name, Alice.`, identical to the first answer
+of the failed grouped attempt. The unchanged CPU reference is `Hello Alice,
+I have noted your name.`; the first turn therefore cannot satisfy the registered
+containment rule. This is a live stdout checkpoint, not the final structured
+quality report: the second turn and its counters were not yet recorded at the
+checkpoint. The original grouped failure and timeout remain unchanged.

@@ -541,3 +541,17 @@ whole-prefill TLM run did not reproduce the earlier board failure. The grouped
 and legacy chunked full-model TLM runs remain in progress. This is uncalibrated
 SystemC evidence, not a board throughput or timing result; the prior failed
 board attempt remains unchanged.
+
+A separate [event-scan candidate patch](event_active_candidate.patch) retains
+historical events for dependency identity and keeps a bounded index of active
+events for submission, drain and code eviction. It has **not** been applied to
+the live board queue or released code. The [candidate evidence](event_active_candidate.tgz)
+records 113/113 unchanged in the compile-only audit, 5/5 standard Torch
+batch tests on DP TLM, 21 synthetic TLM submissions including an old-event
+dependency, and 5/5 graph-replay/recovery tests on an isolated RTL simulator.
+The first audit start rejected a mistyped tree hash; the next reported 113 not
+compared because the staged ISA was missing, and a subsequent incomplete run
+was stopped after a missing tool dependency was found. Those attempts remain
+in the archive. A TLM attempt to run the replay test was refused because that
+test requires isolated RTL; the later RTL run is reported separately. There is
+no board A/B measurement or speedup claim for the candidate.

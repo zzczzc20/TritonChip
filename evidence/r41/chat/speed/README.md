@@ -86,6 +86,14 @@ and the [research patch](k32_research_20261031.patch) are retained. The patch
 is based on the experimental worktree and also includes its earlier X8 lane
 spill experiment; it is not an integration patch.
 
+For a 16×16×16 generated FP8 dot, the K16 control → padded K32 diagnostic
+had 0.0844726563 → 0.1118164063 instructions/MAC and 2774 → 3052 steady
+cycles, with one launch, zero steady loads/evictions, and 0/256 bit mismatches
+against the DP reference for each. Separate negative-zero, mixed-finite and
+NaN/infinity cases also had zero mismatches. Padding slowed this case and the
+all-E4M3-K32 change is not integrated; the existing chat fused kernel remains
+K32.
+
 A standard Torch `torch._scaled_mm` 16x16x64 test, using a forced 16x16x64
 GEMM tile and non-default `TNCA_WINDOW_REUSE=1`, required experimental handling
 of packed FP8 row chunks on both sides: K64 baseline used

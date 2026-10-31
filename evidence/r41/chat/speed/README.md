@@ -162,10 +162,11 @@ payload checks. A [new experimental patch](precise_div_nanfix_experiment_2026103
 passed those 256 payload combinations, 65536 finite random pairs and two
 256-value special/tile tests. Its fresh suite and audit later completed 16/16 and 113/113 unchanged. A further [cross-architecture CPU comparison](nan_reference_cross_arch_20261031.json)
 of the same 256 NaN/infinity/zero pairs found 16 bit-pattern differences
-between the board host x86 CPU and the GB10 CPU. The latest experimental
-TLM division matched the GB10 patterns, so it cannot be claimed bitwise equal
-to the board-host CPU reference for these pairs. The patches and diagnostic
-route remain unmerged, and no board test is queued for them.
+between the board host x86 CPU and the GB10 CPU. The registered Qwen3.5 and
+VL CPU references were generated on GB10 ARM; the latest experimental TLM
+division matched that GB10 sample but not an x86 CPU reference for these
+pairs. This is a cross-platform NaN-bit limitation, not an observed model
+failure. The guarded route is integrated and queued with this limitation explicitly retained.
 
 [Boundary comparisons](hoist_precise_boundary_20261031.tgz), fused → hoisted,
 all matched the independent reference bitwise and had zero steady code
@@ -189,8 +190,13 @@ show its full FP8 suite passed 16/16 and its 113-point default-code audit
 compared 113 unchanged; the corresponding [final wrapper source](fp8_hoist_final_experiment_20261031.py)
 adds device and shape guards. Direct and compiled-graph tests matched the
 reference at M=1 and M=16. Qwen3.5 model TLM remains in progress. The
-board-host NaN bit mismatch above prevents accepting the general division
-candidate; this route is neither integrated nor queued for board test.
+cross-platform NaN bit mismatch above remains a limitation; the board test
+is queued with the registered GB10 ARM reference and the non-default route
+explicitly identified. The opt-in is `TNCA_FP8_HOIST_V1_PATH`, pointing to
+pinned finegrained-FP8 revision `48f42b23bb4e0122d4775c6d16753dd2efc7f580`;
+the default official route remains selected when it is unset. The queue
+registration SHA-256 is `57f088dd9251bc5402ae87a4eaa63f4f707076d8b0548bf3ddeee100a9a686b9`
+and it waits for the four earlier gated speed sessions.
 
 The [one-layer VL model TLM comparison](hoist_model_tlm_20261031.tgz) used
 the initial prototype before its final device/shape guard and the completed-

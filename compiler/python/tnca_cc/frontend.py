@@ -5236,6 +5236,62 @@ class TTIRImporter:
                         for i in range(op.get_num_operands()))):
             self._uniform_vectors.add(op.get_result(0).id())
 
+    def _op_tt_precise_divf(self, op):
+        """Explicit correctly rounded Triton division, independent of defaults."""
+        self.target.require('sfu', 'emit a precise float division')
+        def div(b, k, a, y, dtype):
+            # Keep the reciprocal and residual in the normal range when
+            # scaling both operands by an exact power of two is safe.
+            ay = b.vun('abs', y, dtype=dtype)
+            aa = b.vun('abs', a, dtype=dtype)
+            huge = b.vcmp('gt', ay, k(2.0**126))
+            tiny = b.pbin('or', b.vcmp('lt', aa, k(2.0**-100)),
+                          b.vcmp('lt', ay, k(2.0**-60)))
+            fits = b.pbin('and', b.vcmp('lt', aa, k(2.0**63)),
+                          b.vcmp('lt', ay, k(2.0**63)))
+            up = b.pbin('and', tiny, fits)
+            scale = b.vselect(huge, k(2.0**-64),
+                              b.vselect(up, k(2.0**64), k(1.0)))
+            result = mathlib.div_ieee(b, k, b.vbin('mul', a, scale, dtype=dtype),
+                                      b.vbin('mul', y, scale, dtype=dtype), dtype=dtype)
+            # The residual correction can change +0 to -0. For a zero
+            # quotient and an ordered nonzero denominator, IEEE fixes the
+            # result's sign to the XOR of the operand sign bits.
+            zero_quotient = b.vcmp('eq', result, k(0.0))
+            nonzero_den = b.vcmp('ne', y, k(0.0))
+            ordered_den = b.vcmp('o', y, y)
+            fix = b.pbin('and', zero_quotient, b.pbin('and', nonzero_den, ordered_den))
+            sign = b.vbin('and', b.vbin('xor', a, y, dtype='i32'),
+                          b.vmovi(-2147483648), dtype='i32')
+            result = b.vselect(fix, sign, result)
+            # The CPU bitwise reference propagates a signalling NaN before
+            # a quiet NaN, preferring the numerator when both have the same
+            # class; quiet the selected payload without changing its sign.
+            anan = b.vcmp('uo', a, a)
+            ynan = b.vcmp('uo', y, y)
+            quiet_bit = b.vmovi(0x400000)
+            azero = b.vcmp('eq', b.vbin('and', a, quiet_bit, dtype='i32'), b.vmovi(0))
+            yzero = b.vcmp('eq', b.vbin('and', y, quiet_bit, dtype='i32'), b.vmovi(0))
+            asnan = b.pbin('and', anan, azero)
+            ysnan = b.pbin('and', ynan, yzero)
+            quiet_a = b.vbin('or', a, quiet_bit, dtype='i32')
+            quiet_y = b.vbin('or', y, quiet_bit, dtype='i32')
+            ordinary = b.vselect(anan, quiet_a, b.vselect(ynan, quiet_y, result))
+            return b.vselect(asnan, quiet_a, b.vselect(ysnan, quiet_y, ordinary))
+        if self._is_2d(op):
+            self._tile_binary(op, lambda xs, e: div(
+                self.b, lambda c: self._fconst(c, e), xs[0], xs[1], dtype=e))
+            return
+        _, elem, _bcast = self._float_shape(op)
+        self._v[op.get_result(0).id()] = div(
+            self.b, lambda c: self._fconst(c, elem),
+            self._vec(op.get_operand(0), elem),
+            self._vec(op.get_operand(1), elem), dtype=elem)
+        if (self._equal_a_stage_enabled()
+                and all(self._uniform_lanes(op.get_operand(i))
+                        for i in range(op.get_num_operands()))):
+            self._uniform_vectors.add(op.get_result(0).id())
+
     # ---- conversions ------------------------------------------------------
     def _convert(self, op, src, dst):
         # A mask converted to a number is 0 or 1 -- -1 for a signed

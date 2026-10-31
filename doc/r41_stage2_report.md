@@ -17,7 +17,10 @@ tail passed all six VL and five Qwen3.5 CPU quality prompts. These are CPU
 diagnostics, not board acceptance. The grouped-tail VL board retry returned
 Paris but failed the strict zero-read check: its first decode compiled and
 recorded 84 scalar reads during constant folding; all ten later decode steps recorded zero reads.
-Qwen3.5 is running. Neither chat has passed the author scope. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
+The subsequent Qwen3.5 device-feedback session generated text but also failed
+the strict read check: its compiling first decode recorded 48 reads; later
+decode steps recorded zero. The warmup VL retry is running and Qwen3.5 is
+queued. Neither chat has passed the author scope. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
 The older gate judgments below are historical and do not override this decision.
 
 Date: 2026-10-26 UTC. Sign-off: `R41_S2_100MHZ_AND_FULL_MODEL`.

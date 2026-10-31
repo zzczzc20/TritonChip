@@ -1443,8 +1443,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "8542a73ccc86839f50b13ffb67c3403368903747b8376970ea72c3d5f9100359",
-    "doc/r41_stage2_report.md": "6ef44723656d3fd916731a8ab478b14384f34391bb9ce5f3ddbe3bc27ae4f26f",
+    "doc/r41_report.md": "7a18a506fea3f1b89947ad2b26e7f54b6f5fd528f760a43ce042c5f5dd7ca658",
+    "doc/r41_stage2_report.md": "33a64d0d026d562ffcd389d81f2be93c8a2689b4778a6348281f7914ee874dab",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "086995eaffc8cf03784787f6a72d0e1031a6783bdfbe02bd16ccae7dbf2645c0",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1535,7 +1535,8 @@
     "evidence/r41/chat/run3_priority/vl_nohost_partial_four_20261031.json": "39dbe53ffa74182088c409acf7e91629408dcc5a6cb60b24f05de519fa3f373b",
     "evidence/r41/chat/run3_priority/vl_nohost_v3_timeout.tgz": "4af5ad50445793d08b7c3abda30d4f35ec620449105ec54c0c6faaef3fca37fe",
     "evidence/r41/chat/run3_priority/vl_nohost_v4_failed.tgz": "59d8ec0dc8543062c875e20f3e707a40063a862ebb753275aac8ab13a6b7a5b5",
-    "evidence/r41/chat/run3_priority/warmup_tlm_evidence.tgz": "e2bcfa9c430a6da40b7d6f9a43cd24072f37ff18ab79c8bbd883ea3b14a6ccfe"
+    "evidence/r41/chat/run3_priority/warmup_tlm_evidence.tgz": "e2bcfa9c430a6da40b7d6f9a43cd24072f37ff18ab79c8bbd883ea3b14a6ccfe",
+    "evidence/r41/chat/run3_priority/q35_nohost_v4_failed.tgz": "f13a6d2fd0ae677975a55a920fd841fddffa0276e5fdfabfdc895b556febffa5"
   },
   "followups": [
     {
@@ -1634,7 +1635,7 @@
           "evidence/r41/chat/run3_priority/vl_nohost_v3_timeout.tgz",
           "evidence/r41/chat/run3_priority/vl_nohost_v4_failed.tgz"
         ],
-        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and a CPU diagnostic localized divergence to the single-token prefill tail; grouped-tail CPU checks passed, but do not establish board acceptance. The graph-reuse quality attempt subsequently timed out after four completed prompts; the grouped-tail retry failed the strict decode-read check because the first decode compiled constants and recorded 84 host reads; all later decode steps recorded zero reads. Qwen3.5 is running."
+        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and a CPU diagnostic localized divergence to the single-token prefill tail; grouped-tail CPU checks passed, but do not establish board acceptance. The graph-reuse quality attempt subsequently timed out after four completed prompts; the grouped-tail retry failed the strict decode-read check because the first decode compiled constants and recorded 84 host reads; all later decode steps recorded zero reads. The separate warmup VL retry is running; Qwen3.5 is queued."
       },
       {
         "model": "Qwen3.5-4B-FP8",
@@ -1656,9 +1657,10 @@
           "evidence/r41/chat/run3_priority/q35_session_board.tgz",
           "evidence/r41/chat/run3_priority/q35_session_summary.json",
           "evidence/r41/chat/run3_priority/q35_quality_preempted.tgz",
-          "evidence/r41/chat/run3_priority/q35_cpu_tail_compare.tgz"
+          "evidence/r41/chat/run3_priority/q35_cpu_tail_compare.tgz",
+          "evidence/r41/chat/run3_priority/q35_nohost_v4_failed.tgz"
         ],
-        "failure_reason": "Run-2 full-checkpoint session and teacher/session checks passed under the old harness, but per-step logits were downloaded and argmax ran on the CPU; the author no-host criterion fails. The old quality attempt was interrupted before producing a prompt result; the same workload is queued with device feedback."
+        "failure_reason": "Run-2 full-checkpoint session and teacher/session checks passed under the old harness, but per-step logits were downloaded and argmax ran on the CPU; the author no-host criterion fails. The old quality attempt was interrupted before producing a prompt result; the same workload is queued with device feedback. A later device-feedback board session generated text and passed its teacher check, but failed the strict zero-read check: its first decode recorded 48 scalar reads during compilation; later decode steps read zero. The repeated prompts matched bitwise, but the persistent-session check remained false because the first generation failed. Quality did not run; warmup retries are queued."
       }
     ]
   }

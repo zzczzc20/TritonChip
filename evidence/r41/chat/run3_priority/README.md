@@ -177,3 +177,27 @@ host-read counts `[0,0,0]`, graph counts `[2,0,0,0]` for the measured steps,
 and eight separately recorded post-generation output reads. This simulation
 is not a full-checkpoint or board result. The original strict per-step
 zero-read gate is unchanged; warmup transfers are recorded separately.
+
+## Qwen3.5 device-feedback board session
+
+The run-2 full-checkpoint session returned `Hi there! How` and passed its
+teacher check. It is **failed** under the strict decode-read check: the first
+decode step recorded 48 reads (160 bytes) at Inductor constant folding while
+compiling; the following two recorded zero. All 924 parameters and four
+buffers were on TNCA and captured wrappers reported no host fallback. The
+intervening and repeated prompts reported zero decode reads and equal repeat
+logits, but the overall persistent-session check was false because the first
+generation failed. The quality step did not run. Preserve the complete
+[`q35_nohost_v4_failed.tgz`](q35_nohost_v4_failed.tgz).
+
+Board measurement of the first generation, including compilation: prefill
+0.025798144433082662 tokens/s, decode 0.006675754800987785 executed steps/s;
+4,061 launches and 18,336,258,848 device cycles across its four steps. Its
+estimated non-device decode wall residual was 0.7474951188224942; this includes
+transfers, waits and possible counter overlap and is not a direct host-only
+measurement. The repeated prompt (no new graphs and no decode reads) recorded
+prefill 0.10871953129237351 tokens/s and decode 0.014292778234838077 executed
+steps/s. These measurements do not pass the full author acceptance.
+
+At 08:04:41 UTC the separately registered warmup VL retry began on the same
+run-2 image; Qwen3.5 is queued behind it. No image was reloaded.

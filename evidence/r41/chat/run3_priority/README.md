@@ -919,3 +919,14 @@ source of the quality failure. An [instrumented decomposition](q35_gate_parts_tl
 is running to compare variance, rsqrt, normalized and weighted values, SiLU,
 and final product; it checks its CPU reconstruction and compares its final
 TLM output with the uninstrumented standalone operation.
+
+The [completed gated-norm decomposition](q35_gate_parts_tlm_20261031.tgz)
+reconstructed the captured CPU output bitwise and reproduced the uninstrumented
+standalone TLM output bitwise. CPU/TLM variance differed in 427/864 FP32 values
+(relative L2 6.17e-8), rsqrt in 377/864 (4.72e-8), and the normalized FP32
+values in 41461/110592 (6.46e-8). After BF16 weighting, 28575/110592 values
+differed (relative L2 0.0027097). SiLU also differed in 40209/110592 FP32
+values, with relative L2 4.57e-8. Final output difference remained
+38067/110592 (relative L2 0.00279098). These results identify multiple small
+operator differences and their BF16 impact in this isolated test; they do not
+yet identify the specific implementation defect or prove full-model causality.

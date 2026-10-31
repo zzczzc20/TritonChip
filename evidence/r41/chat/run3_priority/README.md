@@ -441,3 +441,8 @@ A [full-checkpoint VL CPU image diagnostic](vl_warmup_image_cpu.json) ran the
 registered shapes image after a factual prompt, with and without the earlier
 dummy decode warmup. Both CPU runs generated identical token IDs and answered
 `circle, square, triangle`. This is not a board image result.
+
+In addition to the original single-token-tail DP TLM replay, a separate
+full-checkpoint DP TLM replay of the grouped-tail path is running. Both use
+the same registered reason prompt and compare first-step logits against the
+saved CPU paths; neither has produced full-model logits yet.

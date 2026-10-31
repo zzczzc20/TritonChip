@@ -77,6 +77,7 @@ def main():
     p.add_argument('--tree', required=True)
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--cpu-reference', type=Path)
+    p.add_argument('--tlm-path', choices=['legacy_chunk8','grouped_chunk8'], default='legacy_chunk8')
     p.add_argument('--cpu-sdpa', choices=['default','math','flash-approx','flash-sve-prototype'], default='default')
     a=p.parse_args()
     if a.mode=='tlm':
@@ -100,7 +101,7 @@ def main():
     else:
         if not a.cpu_reference: raise ValueError('TLM mode requires --cpu-reference')
         chat.L.install_fp8_route('official',dot='exact',scale_div='ieee')
-        modes=[('legacy_chunk8',old.Session,8)]
+        modes=[(a.tlm_path,old.Session if a.tlm_path=='legacy_chunk8' else chat.Session,8)]
     for name, cls, chunk in modes:
         start=time.monotonic()
         session=cls(app.model,app.spec,'cpu' if a.mode=='cpu' else 'tnca',256,chunk)
@@ -124,7 +125,7 @@ def main():
         result['comparisons']={name:compare(tensors['whole'],tensors[name]) for name in ('legacy_chunk8','grouped_chunk8')}
     else:
         ref=load_file(str(a.cpu_reference))
-        result['comparisons']={name:compare(ref[name],tensors['legacy_chunk8']) for name in ('whole','legacy_chunk8','grouped_chunk8')}
+        result['comparisons']={name:compare(ref[name],tensors[a.tlm_path]) for name in ('whole','legacy_chunk8','grouped_chunk8')}
     a.out.mkdir(parents=True,exist_ok=True)
     save_file(tensors,str(a.out/'logits.safetensors'))
     result['elapsed_seconds']=time.monotonic()-t0

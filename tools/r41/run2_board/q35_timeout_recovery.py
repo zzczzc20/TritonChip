@@ -64,9 +64,13 @@ def check_prompt(p):
             raise ValueError('missing no-CPU-fallback evidence')
         if any(ev['compiled_wrapper_fallbacks'].values()):
             raise ValueError('compiled wrapper reported a CPU fallback')
-        for placement in ev['model_tensor_placements'].values():
-            if any(not name.startswith('tnca:') for name in placement):
-                raise ValueError('a model tensor is not on TNCA')
+        placements = ev['model_tensor_placements']
+        for kind in ('parameters', 'buffers'):
+            placement = placements.get(kind)
+            if (not isinstance(placement, dict) or not placement
+                    or any(not name.startswith('tnca:') or type(count) is not int or count <= 0
+                           for name, count in placement.items())):
+                raise ValueError(f'{kind} placement is missing or not fully on TNCA')
         decode = [s for s in turn['steps'] if s.get('kind') == 'decode']
         if not decode or any(s['transfers_inside_step']['host_read_calls'] != 0 for s in decode):
             raise ValueError('decode host-read evidence is missing or nonzero')
@@ -75,8 +79,21 @@ def check_prompt(p):
 def prepare():
     # This independent copy is prepared before waiting; no file in ORIG is
     # changed. All per-prompt manifests are frozen before any resumed run.
+    if ROOT.exists() and OUT.exists():
+        # Reattachment to our already-prepared queue is safe only before it
+        # starts an experiment and only if every registered manifest is intact.
+        if (OUT / 'segmented-coverage.json').exists() or any((OUT / x).exists() for x in IDS):
+            raise FileExistsError('recovery already ran; do not attach')
+        for prompt in IDS:
+            name = 'r41-q35-segment-' + prompt + '-20261031'
+            reg = json.loads((OUT / (name + '-registration.json')).read_text())
+            row = reg['experiments'][0]
+            if row['id'] != name or digest(ROOT / row['manifest']) != row['sha256']:
+                raise ValueError('prepared recovery manifest changed')
+        record('reattached', stage_pid=PIDS[0])
+        return
     if ROOT.exists() or OUT.exists():
-        raise FileExistsError('recovery tree or output already exists')
+        raise FileExistsError('incomplete recovery tree or output')
     subprocess.run(['cp', '-a', '--reflink=auto', str(ORIG), str(ROOT)], check=True)
     OUT.mkdir()
     reg0 = json.loads((ROOT / 'spec/r41/run3/stages/chat-q35-nohost-v5-20261031.json').read_text())

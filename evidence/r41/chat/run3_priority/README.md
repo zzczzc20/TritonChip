@@ -513,3 +513,17 @@ The board quality record also shows decode wall time growing while device
 cycles remain similar, so these scans are a plausible contributor, not a
 measured board causal attribution or an advertised speedup. No runtime change
 was applied to the live board or running TLM attempts.
+
+
+The [VL warmup-retry board session](vl_nohost_v5_session.json) passed both
+the registered two-token teacher check and persistent-session repeat on the
+100 MHz run-2 image. The first conversation generated `Hello! How can`;
+after an intervening conversation, the repeat had no bitwise logit mismatch
+and introduced zero new graphs. Each of the three conversations had zero
+host reads on all three decode steps and no compiled-wrapper CPU numerical
+fallback. The first prefill recorded 84 compiler constant-folding reads,
+separately from decode. Its model prefill rate was 0.04642312187807423 input
+tokens/s; decode executed three steps at 0.030273089259719835 steps/s with
+5,049,325,197 device cycles. Its estimated non-device decode wall residual
+was 0.4904710920328885, including transfers, waits and possible counter
+overlap; it is not host-only time. The scripted chat remains pending.

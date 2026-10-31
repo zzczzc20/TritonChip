@@ -42,6 +42,8 @@ registered recheck queued after the existing candidate tests; see
 The first tiled large batch passed 99/99. Its same-image, same-source paired
 comparison with default is in [`membound_tiled2_large1_comparison.json`](membound_tiled2_large1_comparison.json);
 the remaining tiled batches are in progress or pending.
+The restored S2-04.D.4 grid-admission check is also queued after the run-1
+rechecks; its scope and prior audit are in [`grid_rerun.md`](grid_rerun.md).
 
 The merged-source strict compiler gate passed 170 unit tests and six IR cases
 ([`../merge_gate/README.md`](../merge_gate/README.md)); the merged harness

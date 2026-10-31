@@ -527,3 +527,17 @@ tokens/s; decode executed three steps at 0.030273089259719835 steps/s with
 5,049,325,197 device cycles. Its estimated non-device decode wall residual
 was 0.4904710920328885, including transfers, waits and possible counter
 overlap; it is not host-only time. The scripted chat remains pending.
+
+The [complete-model whole-prefill DP TLM diagnostic](vl_reason_whole_dp_tlm.tgz)
+ran the registered 30-token reason prompt with the same DP profile as run-2.
+This whole-prefill segmentation differs from the board's grouped chunks. Its
+first-logit top five were Bob 38.5, We 37.75, Let 37.5, To 36.5 and From
+33.75, with top-two gap 0.75. The matching whole-prefill CPU reference gave
+Bob 38.25, We 37.25, To 37.25, Let 36.75 and From 33.75, with gap 1.0.
+TLM versus that CPU reference had relative L2 0.03805557265877724 and maximum
+absolute difference 1.4375, while the top token was the same. Thus there is a
+measured numerical difference, not merely a flipped near-tie, and this
+whole-prefill TLM run did not reproduce the earlier board failure. The grouped
+and legacy chunked full-model TLM runs remain in progress. This is uncalibrated
+SystemC evidence, not a board throughput or timing result; the prior failed
+board attempt remains unchanged.

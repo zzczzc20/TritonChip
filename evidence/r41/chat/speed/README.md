@@ -132,8 +132,9 @@ had 0 mismatches in all 2,816 output elements for each route, 0.1002197265625
 instructions/MAC and 7,271 device cycles per launch for both. The candidate
 used non-default `TNCA_CODE_CACHE_POLICY=lfu`; it is not integrated. Raw
 results, artifact mapping and [earlier failed setup attempts](code_cache_synthetic_20261031.tgz)
-are preserved. Real reduced-depth model profiling and a default-code audit
-are running; no full-model speedup or board acceptance is claimed.
+are preserved. The [default-code audit](code_cache_audit_20261031.tgz)
+compared 113/113 points unchanged. Reduced-depth model profiling remains in
+progress; no full-model speedup or board acceptance is claimed.
 
 ## Unmerged activation and accumulator experiments
 

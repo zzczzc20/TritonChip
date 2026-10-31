@@ -11,7 +11,7 @@ import time
 home = Path.home()
 work = home/'r41run3'
 root = work/'runtime_nohost_20261031'
-out = work/'chat_nohost_20261031'
+out = work/'chat_nohost_v2_20261031'
 sys.path.insert(0, str(root/'tools/r41/run2_board'))
 import auto
 

@@ -26,7 +26,7 @@ class Meter:
         return {'host_read_calls': 0, 'staging_download_bytes': 0}
 
 class Session:
-    def __init__(self, choices):
+    def __init__(self, choices, prefill_compiles_decode=False):
         self.device = 'tnca'
         self.dev = torch.device('cpu')
         self.bucket = 64
@@ -36,6 +36,7 @@ class Session:
         self.cached = []
         self.choices = iter(choices)
         self.fed = []
+        self.prefill_compiles_decode = prefill_compiles_decode
         self.greedy = lambda logits: Tensor([[int(logits.value.argmax())]])
         self.model = types.SimpleNamespace(
             named_parameters=lambda: iter(()), named_buffers=lambda: iter(()),
@@ -43,7 +44,8 @@ class Session:
         self.cache = object()
     def prefill_prompt(self, inputs, images):
         self.cached = inputs['input_ids'][0].tolist()
-        return self.next_logits(), [], 0
+        calls = ([{'kind': 'token', 'new_graphs': 1}] if self.prefill_compiles_decode else [])
+        return self.next_logits(), calls, 0
     def next_logits(self):
         token = next(self.choices)
         return Tensor([int(i == token) for i in range(4)])
@@ -55,16 +57,21 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
-    def run_case(self, choices, forced=None):
-        session = Session(choices)
+    def run_case(self, choices, forced=None, prefill_compiles_decode=False):
+        session = Session(choices, prefill_compiles_decode)
         processor = types.SimpleNamespace(batch_decode=lambda ids, **kw: [str(ids.tolist())])
         spec = types.SimpleNamespace(name='test', repo='test', revision='test')
         tnca = types.ModuleType('tnca')
         tnca.__path__ = []
         ind = types.ModuleType('tnca.inductor')
         ind.host_fallbacks = lambda code: []
+        capture_count = 0
         def capture(fn):
-            return fn(), ['test wrapper']
+            nonlocal capture_count
+            capture_count += 1
+            # The decode graph compiled inside prefill is reused in generation.
+            cached_decode = prefill_compiles_decode and capture_count == 3
+            return fn(), ([] if cached_decode else ['test wrapper'])
         with mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind}), \
              mock.patch('torch._inductor.utils.run_and_get_code', capture), \
              mock.patch.object(chat, 'transfer_meter', lambda enabled: Meter()), \
@@ -91,6 +98,10 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(session.cached, [])
         self.assertEqual(session.resets, 1)
         self.assertEqual(report['executed_generation_steps'], 3)
+    def test_decode_compiled_during_prefill_is_accounted_for(self):
+        _, report = self.run_case([1, 2], prefill_compiles_decode=True)
+        self.assertTrue(report['compiled_wrapper_roles_covered'])
+        self.assertEqual(report['status'], 'pass')
 
 if __name__ == '__main__':
     unittest.main()

@@ -335,7 +335,13 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
             started = time.perf_counter()
             with transfer_meter(True) as meter:
                 if index == 0:
+                    prior_prefill_code = len(code_by_role.get("prefill", []))
                     logits, calls, reused = capture("prefill", lambda: session.prefill_prompt(inputs, per_image))
+                    # A chunked prompt can compile the one-token decode graph before
+                    # generation starts. Attribute that captured wrapper to decode too.
+                    if any(c["kind"] == "token" and c["new_graphs"] for c in calls):
+                        code_by_role.setdefault("decode", []).extend(
+                            code_by_role["prefill"][prior_prefill_code:])
                 else:
                     # A forced token is a test input; otherwise feedback remains on TNCA.
                     feed = teacher[index - 1] if index - 1 < len(teacher) else current

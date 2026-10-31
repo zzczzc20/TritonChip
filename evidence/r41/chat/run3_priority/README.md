@@ -431,3 +431,8 @@ missing. Layer-3 value-cache relative L2 remained 0.025762162718081426 in
 prefill and 0.025658220925427053 in decode, within the recorded available
 floor rule. This experimental setting was not applied to the board or product;
 no complete-model or original-audit pass is claimed.
+
+A [full-checkpoint VL CPU multi-turn diagnostic](vl_warmup_multiturn_cpu.json)
+compared the registered Alice conversation before and after dummy decode
+warmup and reset. Both turns' generated text and token IDs were identical
+between the two CPU runs. This does not establish a board multi-turn result.

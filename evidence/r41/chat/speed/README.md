@@ -147,6 +147,14 @@ board. These are samples, not a proof over all float32 inputs. The current
 patch and diagnostic route remain unmerged while their fresh suite and
 113-point default-code audit run; no board test is queued for them.
 
+[Boundary comparisons](hoist_precise_boundary_20261031.tgz), fused → hoisted,
+all matched the independent reference bitwise and had zero steady code
+loads/evictions. Each changed from one to two launches. At 1×7×256 the
+instructions/MAC were 28.245536 → 28.457589 and cycles 189841 → 191978;
+at 1×250×384 they were 0.475490 → 0.469250 and 162680 → 150132; at
+16×250×384 they were 0.047169 → 0.050641 and 274449 → 183816. The N=7
+regression means the route must not be applied unconditionally.
+
 ## Experimental frequency-aware code eviction (not merged)
 
 A generic [experimental runtime patch](code_cache_lfu_experiment.patch) ranks

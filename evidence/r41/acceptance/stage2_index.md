@@ -120,7 +120,7 @@ FP8 layer campaigns do not replace the mandatory BF16 Qwen3.5-2B full-model work
 
 Status: **pending**. Historical failures and measured results remain unchanged.
 
-| Model | Chat status | Required evidence |
+| Model | Chat status | Required evidence and recorded result |
 |---|---|---|
-| Qwen3-VL-2B-FP8 | not measured | full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing |
+| Qwen3-VL-2B-FP8 | failed | full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing; Run-3 VL quality attempt stalled with no observed progress and was interrupted; cause not yet established.; `evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz` |
 | Qwen3.5-4B-FP8 | not measured | full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing |

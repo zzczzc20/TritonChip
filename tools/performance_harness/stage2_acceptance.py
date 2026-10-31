@@ -19,7 +19,7 @@ AUTHOR_DIRECTIVE = 'evidence/r41/AUTHOR_DIRECTIVE_20261031.md'
 CHAT_CHECKS = {'full_checkpoint', 'registered_quality', 'persistent_session', 'scripted_chat',
                'weights_activations_on_tnca', 'zero_cpu_numerical_fallback',
                'zero_steady_host_tensor_reads', 'board_prefill_decode_rates',
-               'device_launch_cycles_host_share'}
+               'device_launch_cycles_host_share', 'runtime_liveness'}
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -83,6 +83,10 @@ def evaluate(root, index, overall=False):
                     or any(name not in hashes for name in model['evidence'])
                     or not model.get('checks') or any(v != 'passed' for v in model['checks'].values())):
                 errors.append(f"{model.get('model')}: passing chat requires hashed evidence and passing checks")
+            if model.get('status') == 'failed' and (not model.get('evidence')
+                    or any(name not in hashes for name in model['evidence'])
+                    or 'failed' not in model.get('checks', {}).values()):
+                errors.append(f"{model.get('model')}: failed chat requires hashed evidence and a failed check")
         if author.get('status') == 'evidence complete' and any(m.get('status') != 'passed' for m in models):
             errors.append('author scope cannot be complete before both chat models pass')
         if author.get('status') not in ('pending', 'evidence complete'):
@@ -131,9 +135,14 @@ def render(index):
         out += ['## Author-defined chat closure', '',
                 '[Author directive](../AUTHOR_DIRECTIVE_20261031.md): '+scope['rule'], '',
                 'Status: **'+scope['status']+'**. Historical failures and measured results remain unchanged.', '',
-                '| Model | Chat status | Required evidence |', '|---|---|---|']
+                '| Model | Chat status | Required evidence and recorded result |', '|---|---|---|']
         for model in scope['models']:
-            out.append('| '+model['model']+' | '+model['status']+' | '+model['evidence_required']+' |')
+            detail = model['evidence_required']
+            if model.get('failure_reason'):
+                detail += '; '+model['failure_reason']
+            if model.get('evidence'):
+                detail += '; '+ '; '.join('`'+p+'`' for p in model['evidence'])
+            out.append('| '+model['model']+' | '+model['status']+' | '+detail+' |')
         out.append('')
     return '\n'.join(out)
 

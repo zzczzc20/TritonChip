@@ -5,8 +5,11 @@ makes the two full FP8 board chats and proof of no CPU numerical fallback and
 no steady-decode host tensor reads the closure focus. Q41/XL and other old-gate
 requirements are descoped, not passed or failed; prior results and failures
 remain recorded in the [ledger](../evidence/r41/acceptance/stage2_index.md).
-Both requested run-2 chats are pending. The older gate judgments below are
-historical and do not silently override this decision.
+The run-2 VL chat attempt stalled and was interrupted; Qwen3.5 is running.
+Neither chat has passed the new scope. The existing code transfers vision
+intermediates and logits through the host, so its static no-fallback flag is
+not proof of the requested criterion. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
+The older gate judgments below are historical and do not override this decision.
 
 Date: 2026-10-26 UTC. Sign-off: `R41_S2_100MHZ_AND_FULL_MODEL`.
 Verdict: **not accepted**. The acceptance audit is complete; product acceptance

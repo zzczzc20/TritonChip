@@ -1503,7 +1503,7 @@
     "models": [
       {
         "model": "Qwen3-VL-2B-FP8",
-        "status": "not measured",
+        "status": "failed",
         "checks": {
           "full_checkpoint": "not measured",
           "registered_quality": "not measured",
@@ -1514,10 +1514,14 @@
           "zero_steady_host_tensor_reads": "not measured",
           "board_prefill_decode_rates": "not measured",
           "device_launch_cycles_host_share": "not measured",
-          "image_prompt": "not measured"
+          "image_prompt": "not measured",
+          "runtime_liveness": "failed"
         },
         "evidence_required": "full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing",
-        "evidence": []
+        "evidence": [
+          "evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz"
+        ],
+        "failure_reason": "Run-3 VL quality attempt stalled with no observed progress and was interrupted; cause not yet established."
       },
       {
         "model": "Qwen3.5-4B-FP8",
@@ -1531,7 +1535,8 @@
           "zero_cpu_numerical_fallback": "not measured",
           "zero_steady_host_tensor_reads": "not measured",
           "board_prefill_decode_rates": "not measured",
-          "device_launch_cycles_host_share": "not measured"
+          "device_launch_cycles_host_share": "not measured",
+          "runtime_liveness": "not measured"
         },
         "evidence_required": "full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing",
         "evidence": []

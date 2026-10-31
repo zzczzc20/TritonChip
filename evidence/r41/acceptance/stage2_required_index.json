@@ -1443,8 +1443,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "617da7a80f08e5665ed61c491b1053a47afe216a10ea15a02683fabd2fc3fde5",
-    "doc/r41_stage2_report.md": "6267b55de152962b6b68a5a06f6d41bf84bbb2162ef9f97289c38d2127c0645e",
+    "doc/r41_report.md": "bcc083ff7763760e8805e5a69c6dce2975671f1d8bb697002b71bcc717d171a9",
+    "doc/r41_stage2_report.md": "239bd6c0fb61c53d32bec8a2ca59f9bcc5c065d9bfc08488481c9bf366978149",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "086995eaffc8cf03784787f6a72d0e1031a6783bdfbe02bd16ccae7dbf2645c0",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1517,7 +1517,8 @@
     "evidence/r41/acceptance/historical_20261028/r41_report.md": "d069ad6833e133b05e201bc15de3069225e65632c6dc50809d60380bb463da00",
     "evidence/r41/acceptance/historical_20261028/r41_stage2_report.md": "9715e8ca4c05701b45ee8109059a25fbc9454220c946aed2ac2c650ef4a180c9",
     "evidence/r41/acceptance/historical_20261028/tnca_tensor_engine.hpp": "46efa44368b4b3e3654c2646a8d418f9f02e3bfb87b106707c9b1e32ff8b0ee7",
-    "evidence/r41/AUTHOR_DIRECTIVE_20261031.md": "146f29c46a124be6a99cf918b434d7b1c5fd6dc21350910ab4ed06746d529e8c"
+    "evidence/r41/AUTHOR_DIRECTIVE_20261031.md": "146f29c46a124be6a99cf918b434d7b1c5fd6dc21350910ab4ed06746d529e8c",
+    "evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz": "9b4c070b79e4ac2940a0bfeb51e1190c423c4b1fd0dd5a74fba43b19a96fc2b4"
   },
   "followups": [
     {
@@ -1586,7 +1587,7 @@
     "models": [
       {
         "model": "Qwen3-VL-2B-FP8",
-        "status": "not measured",
+        "status": "failed",
         "checks": {
           "full_checkpoint": "not measured",
           "registered_quality": "not measured",
@@ -1597,10 +1598,14 @@
           "zero_steady_host_tensor_reads": "not measured",
           "board_prefill_decode_rates": "not measured",
           "device_launch_cycles_host_share": "not measured",
-          "image_prompt": "not measured"
+          "image_prompt": "not measured",
+          "runtime_liveness": "failed"
         },
         "evidence_required": "full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing",
-        "evidence": []
+        "evidence": [
+          "evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz"
+        ],
+        "failure_reason": "Run-3 VL quality attempt stalled with no observed progress and was interrupted; cause not yet established."
       },
       {
         "model": "Qwen3.5-4B-FP8",
@@ -1614,7 +1619,8 @@
           "zero_cpu_numerical_fallback": "not measured",
           "zero_steady_host_tensor_reads": "not measured",
           "board_prefill_decode_rates": "not measured",
-          "device_launch_cycles_host_share": "not measured"
+          "device_launch_cycles_host_share": "not measured",
+          "runtime_liveness": "not measured"
         },
         "evidence_required": "full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing",
         "evidence": []

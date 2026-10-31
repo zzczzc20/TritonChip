@@ -321,3 +321,11 @@ failed to reproduce the full-model reference: grouped-tail relative L2 was
 0.05127841234207153 and its first token was `We`, while the original CPU flash
 reference selected `Bob`. This candidate was not integrated or sent to the
 board; its failed result and unchanged registered reference are preserved.
+
+The [candidate's CPU full-model trace](vl_reason_cpu_flashsve_trace.tgz)
+compared each attention call with the original CPU flash operation using the
+same inputs. Its first mismatch appeared in layer 7 of the first 8-token
+block: one of 16,384 values differed, with maximum absolute difference
+0.0001220703125. The candidate's final first token remained `We`. This
+localizes a numerical discrepancy in the candidate; it does not establish that
+the single mismatch alone caused the final token change.

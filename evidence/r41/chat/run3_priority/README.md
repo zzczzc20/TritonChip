@@ -723,3 +723,12 @@ logits. An auxiliary CPU norm override in the same archive failed with an
 attribute error (`Qwen3_5RMSNorm` uses `eps`, not `variance_epsilon`); it did
 not produce a comparison and is not a pass. The full-model grouped and whole
 DP TLM runs remain separate and pending.
+
+Two additional [CPU-only attention approximations](q35_multiturn_cpu_flash_20261031.tgz)
+also chose `Hello` on the grouped prompt. The unnormalised-probability rounding
+prototype produced `Hello` 22.25 versus `I` 21.75 (gap 0.5), and its SVE-exp
+prototype produced 22.25 versus 21.625 (gap 0.625). Against the default CPU
+grouped logits, their relative L2 differences were 0.0612189882 and
+0.0636935830; both had the same argmax. These are CPU prototypes, not a
+bit-exact model of the board attention, and do not establish the board's
+cause of the first-token difference.

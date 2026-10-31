@@ -667,3 +667,19 @@ three of five prompts passing, adding the reasoning answer `Bob`. Its prefill
 rate was 0.02334469452375064 input tokens/s and decode rate was
 0.008263454449353351 executed steps/s, including work after EOS. The quality
 run continues; the remaining two prompts are not yet scored.
+
+The [final checkpoint of the original Qwen3.5 quality attempt](q35_nohost_v6_four_prompts_timeout.json)
+contains four passing prompts; the added instruction-following answer was
+`OK`. Its 11 executed decode steps had zero host reads, zero new graphs and
+no captured CPU numerical fallback; all 924 parameters and four buffers were
+on TNCA. Prefill was 0.022209985250415985 input tokens/s and decode was
+0.007195171218281826 executed steps/s, including work after EOS.
+
+The experiment reached its registered 10800-second limit and terminated the
+quality process; its [report](q35_nohost_v6_timeout_report.json) records the
+step as `timeout`, and the [original raw attempt](q35_nohost_v6_timeout.tgz)
+is preserved. The checkpoint's `running` status reflects the forced process
+termination, not completion. At 16:51:52 UTC a separate registered reduced
+proof for the missing `multiturn` prompt started on the same run-2 image;
+it leaves the original timeout unchanged. The speed A/B stages remain queued
+behind the segmented coverage check.

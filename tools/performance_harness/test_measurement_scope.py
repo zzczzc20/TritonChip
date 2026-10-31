@@ -18,6 +18,7 @@ def session():
     s._measurement_owner = None
     s._lock = threading.RLock()
     s._events = OrderedDict()
+    s._active_events = OrderedDict()
     s._deadline, s._host_timeout = 2000000, 30
     s.dev = SimpleNamespace(deadline_cycles=2000000, host_timeout=30, bounded_launch_limits=True)
     return s
@@ -41,6 +42,7 @@ class MeasurementScopeTests(unittest.TestCase):
         e = Event(1, s.epoch, 'delayed')
         with s.measurement_scope(wall_seconds=.2, clock_hz=1000000):
             s._events[1] = e
+            s._active_events[1] = e
             with self.assertRaises(Timeout):
                 s.wait(e, timeout=.001)
             self.assertFalse(e.terminal)
@@ -58,6 +60,7 @@ class MeasurementScopeTests(unittest.TestCase):
         with self.assertRaises(DeviceLost):
             with s.measurement_scope(wall_seconds=.02, clock_hz=1000000):
                 s._events[1] = e
+                s._active_events[1] = e
         self.assertTrue(s.poisoned)
         self.assertFalse(e.terminal)
         self.assertEqual(s.epoch, 7)
@@ -66,9 +69,11 @@ class MeasurementScopeTests(unittest.TestCase):
     def test_busy_and_unsupported_sessions_are_refused(self):
         s = session()
         s._events[1] = Event(1, s.epoch, 'existing')
+        s._active_events[1] = s._events[1]
         with self.assertRaises(SessionBusy), s.measurement_scope(wall_seconds=1, clock_hz=1):
             self.fail('an existing task entered measurement scope')
         s._events.clear()
+        s._active_events.clear()
         s.dev.bounded_launch_limits = False
         with self.assertRaises(CapabilityError), s.measurement_scope(wall_seconds=1, clock_hz=1):
             self.fail('an unsupported backend entered measurement scope')

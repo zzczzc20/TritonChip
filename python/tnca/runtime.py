@@ -415,6 +415,9 @@ class Session:
         self._modules = []
         self._queue = []
         self._events = OrderedDict()
+        # Keep historical events for dependency identity and post-run inspection;
+        # hot-path admission and code eviction only need unfinished events.
+        self._active_events = OrderedDict()
         self._next_buffer = 0
         self._next_job = 0
         explicit_limit = heap_limit is not None
@@ -495,7 +498,7 @@ class Session:
     @property
     def unfinished(self):
         with self._lock:
-            return [e for e in self._events.values() if not e.terminal]
+            return [e for e in self._active_events.values() if not e.terminal]
 
     @property
     def memory_stats(self):
@@ -687,7 +690,7 @@ class Session:
         with self._lock:
             if module.epoch != self.epoch or not module.alive:
                 return False
-            if any(not e.terminal for e in self._events.values()):
+            if self.unfinished:
                 # Conservative: a task records its kernel by name, not by
                 # module, so any unfinished task keeps every module loaded.
                 raise BufferBusy(f'{module.name}: tasks are unfinished; unload waits for none')
@@ -843,6 +846,7 @@ class Session:
             for buf in leased:
                 buf.leases += 1
             self._events[ev.job_id] = ev
+            self._active_events[ev.job_id] = ev
             self._queue.append(task)
             ev._to(QUEUED)
             return ev
@@ -1115,6 +1119,8 @@ class Session:
         ev = task['event']
         if not ev.terminal:
             ev._to(state, error)
+        if self._active_events.get(ev.job_id) is ev:
+            del self._active_events[ev.job_id]
         allocation = task.pop('allocation', None)
         if allocation is not None:
             self._heap.release(*allocation)
@@ -1157,7 +1163,7 @@ class Session:
                    'wait again, or let the device deadline decide')
 
     def drain(self, timeout=None):
-        for ev in list(self._events.values()):
+        for ev in self.unfinished:
             if not ev.terminal:
                 self.wait(ev, timeout)
         return True
@@ -1228,6 +1234,7 @@ class Session:
                         'the session was recovered before this task ran'))
             self.epoch += 1
             self._events.clear()
+            self._active_events.clear()
             self._queue.clear()
             self._buffers.clear()
             self._modules.clear()

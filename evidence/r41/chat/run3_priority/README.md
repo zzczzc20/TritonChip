@@ -602,3 +602,19 @@ did not run. The retry prepopulates the real prompt cache, separately records
 prefill and decode warmup, clears the cache, and then executes the unchanged
 zero-host-read checks. The source and output are separate from the v5 archive;
 the retry's result is pending.
+
+The [full-checkpoint CPU comparison](q35_populated_warmup_cpu.json) of the
+populated-cache warmup found identical prompt logits and identical captured
+cache state after reset, versus a fresh session. This is a CPU diagnostic,
+not a board result.
+
+The active-event index is now applied to the development branch. A matched
+standard Torch FP32 TLM comparison, recorded in
+[speed diagnostics](../speed/matched_tlm_20261031.tgz), ran 1,000 matmuls
+after 1,027 previous events: host wall time was 3.190009760670364 s before
+and 2.8428647201508284 s after. Both were bitwise equal to the reference
+(0/256 mismatches); the final call had 0.265869140625 instructions/MAC,
+3553 device cycles, one launch, and zero code loads and evictions in both.
+This change does not reduce launch or reload counts. Its separate 113/113
+default-code audit and TLM/RTL checks are in `event_active_candidate.tgz`;
+board A/B remains pending and the fixed board source is unchanged.

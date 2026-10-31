@@ -550,3 +550,16 @@ loads were 141 → 146, bytes 1881792 → 2050880 and cycles 2227778949 →
 instructions/MAC stayed 0.0342451794 prefill and 0.4137841797 decode,
 and both output logits matched bitwise. Decode cycles rose despite fewer
 loads, so this policy remains unmerged and is not queued for board testing.
+
+## TNCA-IR AOT compile fix
+
+A descriptor-GEMM experiment exposed an existing optimized `tnca-ir` AOT
+compile failure: the optimization pass referenced `imp`, which only exists
+in the Triton-import path. The fix uses the normal dead-code pass for the
+native IR path. The [gate evidence](ir_aot_fix_gate_20261031.tgz) preserves a
+matched baseline failure at optimization level 1 and the fixed DP TLM runs.
+The [FP16 descriptor-GEMM test](../../../../compiler/test/test_ir_gemm_tlm.py)
+passed 256/256 output bits at each of levels 0, 1 and 2, with one launch and
+zero code loads during each launch. The 113-point default-code audit compared
+113 unchanged, zero changed or uncompared. These are TLM results, not a board
+speed or board correctness claim.

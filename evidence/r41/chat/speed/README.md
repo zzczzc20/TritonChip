@@ -580,3 +580,9 @@ passed 256/256 output bits at each of levels 0, 1 and 2, with one launch and
 zero code loads during each launch. The 113-point default-code audit compared
 113 unchanged, zero changed or uncompared. These are TLM results, not a board
 speed or board correctness claim.
+The [short board regression queue](ir_aot_board_queue_20261031.tgz) is
+registered after the whole-prefill Qwen3.5 diagnostic. It checks the same
+three optimization levels and exact FP16 outputs on the already-loaded image;
+source and manifest hashes, the queue lock, image identity, clock and card
+idle state are checked before launch. It does not program a new image. Its
+result is pending.

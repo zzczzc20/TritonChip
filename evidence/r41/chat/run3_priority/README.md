@@ -851,3 +851,15 @@ contraction, and their combination, against the registered IEEE-division,
 non-contracted reference. These variants are CPU approximations and are not
 claimed to reproduce every TNCA reciprocal or board operation. Results are
 pending.
+
+The [completed CPU scale/FMA comparisons](q35_cpu_scale_fma_20261031.tgz)
+show that whole-prefill FMA with IEEE scaling produced a tie between `I` and
+`Hello` at 21.75; `argmax` selected the lower token ID `I`. Its logits had
+relative L2 0.0686228648 and max absolute difference 0.8125 against the
+registered CPU whole-prefill reference, and relative L2 0.0738517269 against
+the whole-prefill DP TLM logits. Thus a small arithmetic change can change the
+selected token, but FMA alone does not reproduce the TLM logits or establish
+the board cause. The same FMA experiment with grouped prefill selected `Hello`
+(22.25 vs `I` 21.5). Rounded reciprocal alone and reciprocal plus FMA both
+selected `Hello` on both prompt paths. These are CPU-only arithmetic
+approximations, not a change to the reference or a board-quality pass.

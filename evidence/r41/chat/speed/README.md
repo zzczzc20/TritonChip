@@ -586,3 +586,16 @@ three optimization levels and exact FP16 outputs on the already-loaded image;
 source and manifest hashes, the queue lock, image identity, clock and card
 idle state are checked before launch. It does not program a new image. Its
 result is pending.
+
+## Experimental descriptor E4M3 K32 (not merged)
+
+The [aligned descriptor-GEMM experiment](k32_descriptor_pending_20261031.md)
+fixes an existing E4M3 transfer-codegen error and tests K32 for K divisible by
+32. The [candidate patch](k32_descriptor_research_20261031.patch.gz),
+[TLM records](k32_descriptor_tlm_20261031.tgz) and
+[113-point audit](k32_descriptor_audit_20261031.tgz) are retained. Exact DP
+outputs matched, but the finite-input cold launches became slower at both
+measured shapes. The original source failed to compile; the K16 control first
+needed the compiler fixes. Generic tails, partitioned variants, model execution
+and board tests are unverified, so this does not establish universal K32 or a
+board speedup.

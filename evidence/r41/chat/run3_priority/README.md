@@ -653,3 +653,11 @@ prefill ran at 0.03310412431217009 tokens/s and the eleven decode steps at
 0.01292878839389162 steps/s, including any work after EOS. Compilation
 warmup and post-generation output retrieval are recorded separately. The
 other four prompts were not yet recorded at this checkpoint.
+
+The [15:25 UTC quality checkpoint](q35_nohost_v6_two_prompts.json) records
+two of five prompts passing. The new arithmetic answer was `42`; its
+prefill ran at 0.02921525881795749 input tokens/s and decode at
+0.010352622915114129 executed steps/s, including work after EOS. The remaining
+three prompts have not yet been scored. The three-hour experiment limit may
+expire before all turns finish at the observed rate; this is a risk, not a
+recorded timeout.

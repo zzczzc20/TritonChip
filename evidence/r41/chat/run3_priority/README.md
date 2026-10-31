@@ -346,3 +346,21 @@ Q projection differed in 1/2,048 values (maximum 0.00390625) and the MLP up
 projection in 3/6,144 (maximum 0.0009765625); the other five matched. This is
 CPU mathematical emulation on seven projections, not a device or full-model
 claim. The Q projection alone was also run on TLM as recorded above.
+
+The [three-prompt warmup-retry board snapshot](vl_nohost_v5_three_prompts.json)
+now records `fact`, `arith`, and `reason` as passed. The reason answer was
+`Bob is the shortest.  \n\nHere's the reasoning:  \n`; all 12 token IDs
+match the registered CPU reference. All three prompts record 822 TNCA
+parameters and four TNCA buffers, no captured-wrapper numerical fallback, and
+zero host reads and zero new graphs in every decode step. The observed board
+reason result supersedes no prior failure; it shows that the CPU math
+experiment alone could not predict this grouped-tail board result. Image,
+remaining prompts, session and scripted chat are pending.
+
+For the reason prompt on the board, prefill was 0.07936876882250843 tokens/s;
+11 decode steps were 0.016516948675659057 executed steps/s, with 6,215 decode
+launches and 25,675,912,458 decode device cycles. All 12 generated token IDs
+were returned; the generation-wall returned-ID rate was
+0.011494638196582864/s, excluding output retrieval. The estimated non-device
+decode wall residual was 0.6144657015731809, including transfers, waits and
+possible overlap; it is not direct host-only time.

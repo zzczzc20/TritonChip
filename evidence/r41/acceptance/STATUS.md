@@ -1024,3 +1024,8 @@ The next report update preserves the Qwen3.5 quality timeout and records four pa
 
 - `doc/r41_report.md`: `e9e32adb7ac41fc1195db0ccda7339d5e79e49dc8e7e4d84c53168e0d153a055` → `08e3b2bbf1771ce19958c56227dcc01cb486a7904c556875dcc5a6f6d35668e6`
 - `doc/r41_stage2_report.md`: `c5ff6bce52740573f63eeeb375363735e462cfb53b5375213fb69306fae66c39` → `c7400b824382f731756f75ab8a8325c87c78dc20fe2edb0adbf74397587bc201`
+
+The next report update records the segmented Qwen3.5 multi-turn failure; prior reports remain in git at `eef0a08d`. Only the two living report hashes were refreshed.
+
+- `doc/r41_report.md`: `08e3b2bbf1771ce19958c56227dcc01cb486a7904c556875dcc5a6f6d35668e6` → `d6d7bb73ab27846689230b362c4242eb3a42d005ce9c421bb01bc90b839d2be3`
+- `doc/r41_stage2_report.md`: `c7400b824382f731756f75ab8a8325c87c78dc20fe2edb0adbf74397587bc201` → `5d666c6bd6f6657c44c8949f9a81ba4aa56c8a6902305ced7763ad8e3d41f6ca`

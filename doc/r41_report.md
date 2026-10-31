@@ -35,14 +35,17 @@ zero host reads, captured wrappers had no numerical CPU fallback, and 924
 parameters and four buffers were TNCA. Its [quality attempt](../evidence/r41/chat/run3_priority/q35_nohost_v6_four_prompts_timeout.json)
 recorded four of five prompts passing, including `Bob` and `OK`, before the
 registered three-hour timeout. A separate reduced proof for the remaining
-multi-turn prompt is running. Decode
+multi-turn prompt failed its first-turn CPU-reference containment check; its
+follow-up `Alice` matched the reference. Both turns recorded zero decode host
+reads and no captured numerical CPU fallback. Decode
 rates count executed steps, including work after EOS. The first VL script and
 Qwen3.5 session decode wall-time residuals after subtracting device cycles at
 100 MHz were 0.5211 and 0.4607 respectively; this includes waits, transfers
 and possible counter overlap and is not a host-only measurement.
 
-Qwen3.5's original registered quality run timed out; its segmented continuation
-and the queued acceleration A/B board measurements remain pending. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md)
+Qwen3.5's original registered quality run timed out and its segmented multi-turn
+continuation failed the registered first-turn comparison. The acceleration
+A/B board sessions have begun; CPU/TLM diagnosis is in progress. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md)
 and [speed evidence](../evidence/r41/chat/speed/README.md). The older gate
 judgments below are historical and do not override this decision.
 

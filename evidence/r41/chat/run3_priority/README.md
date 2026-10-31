@@ -681,5 +681,21 @@ step as `timeout`, and the [original raw attempt](q35_nohost_v6_timeout.tgz)
 is preserved. The checkpoint's `running` status reflects the forced process
 termination, not completion. At 16:51:52 UTC a separate registered reduced
 proof for the missing `multiturn` prompt started on the same run-2 image;
-it leaves the original timeout unchanged. The speed A/B stages remain queued
-behind the segmented coverage check.
+it leaves the original timeout unchanged. At that checkpoint the speed A/B stages
+were queued behind the segmented coverage check.
+
+
+The separate [multi-turn board attempt](q35_multiturn_segment_failed_20261031.tgz)
+finished at 18:43 UTC and **failed** the registered quality rule. Its first
+answer, `I have remembered your name, Alice.`, differed from the CPU reference
+`Hello Alice, I have noted your name.` from the first token and neither
+normalized answer contained the other. The follow-up `Alice` matched all four
+reference tokens. This result does not convert the original timeout or the
+failed prompt into a pass. The [summary](q35_multiturn_segment_failed_20261031.json)
+records both turns: 11 decode steps each, zero decode host reads, no captured
+CPU numerical fallback, all 924 parameters and four buffers on TNCA. Prefill
+rates were 0.0305566080 and 0.0337049922 input tokens/s; decode rates were
+0.0126348384 and 0.0090442224 executed steps/s. CPU and DP TLM first-logit
+comparison is in progress. After preserving this failure, a new safety-checked
+queue started the previously gated acceleration A/B sessions at 18:49 UTC on
+the already loaded image; these sessions do not change the quality judgment.

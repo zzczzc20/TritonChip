@@ -642,6 +642,7 @@ No-board TLM A/B scripts for chat launch overhead.
 | `tools/r41/chat_speed/bench_runtime_events.py` | Runtime-history A/B: standard Torch matmul on DP TLM, no board. | none found | one-off |
 | `tools/r41/chat_speed/queue_event_board.py` | Run the event-index board comparison after the priority chat stage passes. | none found | one-off |
 | `tools/r41/chat_speed/queue_activation_board.py` | Queue the gated activation-staging board session after prior tests pass. | none found | care |
+| `tools/r41/chat_speed/queue_after_quality_failure.py` | Preserve the completed quality failure and queue gated board speed sessions. | none found | care |
 
 ### Model drivers and diagnostics (`tools/models/`)
 

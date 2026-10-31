@@ -142,9 +142,12 @@ acceptance is claimed.
 Moving activation quantisation outside the N-block programs via the official
 separate quantiser and prequantised matmul reduced DP TLM cycles but added a
 launch and required non-default `TNCA_IEEE_DIV=1`. These are diagnostic
-measurements, not a shipped default. The [raw M=16 run](hoist_m16_tlm.tgz)
-and [matched follow-ups](matched_tlm_20261031.tgz) compare bitwise with the
-independent exact reference:
+measurements, not a shipped default. A [default-division check](hoist_default_failure_20261031.tgz)
+of the standalone route failed against that reference: M=16, N=256, K=256
+had 232/4096 bit mismatches on its first call, with two launches and 110626
+cycles. It was stopped and is not accepted. The [raw M=16 run](hoist_m16_tlm.tgz)
+and [matched follow-ups](matched_tlm_20261031.tgz) below use the non-default
+division setting and compare bitwise with the independent exact reference:
 
 | M×N×K | Instructions/MAC fused → hoisted | Cycles fused → hoisted | Launches | Loads/evictions | Mismatches |
 | --- | ---: | ---: | ---: | ---: | ---: |

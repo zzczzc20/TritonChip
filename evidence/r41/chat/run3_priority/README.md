@@ -555,3 +555,10 @@ was stopped after a missing tool dependency was found. Those attempts remain
 in the archive. A TLM attempt to run the replay test was refused because that
 test requires isolated RTL; the later RTL run is reported separately. There is
 no board A/B measurement or speedup claim for the candidate.
+
+The [partial VL scripted-chat stdout](vl_script_v5_partial_stdout.log)
+records the first board turn answering `Paris`; the second turn had started.
+This partial output is not a completed transcript. Its prefill call took
+477.3567802280013 s and the 31 executed decode steps averaged
+0.020542654856751778 steps/s; these steps can include work after EOS. The
+per-step transfer evidence for the script is pending its final transcript.

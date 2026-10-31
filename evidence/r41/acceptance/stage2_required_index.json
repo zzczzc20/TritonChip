@@ -1569,7 +1569,8 @@
     "evidence/r41/chat/run3_priority/vl_nohost_v5_session.json": "c627126d93f103ffdacd7bb95e3a61cde69a8958e8d9691a16d381d7bc502427",
     "evidence/r41/chat/run3_priority/vl_reason_whole_dp_tlm.tgz": "003bcbffbc5e347f43167f030a860f329391391f4f08c1f31599d7063da1e43d",
     "evidence/r41/chat/run3_priority/event_active_candidate.patch": "6df10ae05435a27cff064d04deb2d256d8a33b13e1b6ff8dc39f88b9dda3e52d",
-    "evidence/r41/chat/run3_priority/event_active_candidate.tgz": "23ff9bc38d27d08e6e4cce5c575c3f3f7ee6b3645b0490808c61ff96fa36d699"
+    "evidence/r41/chat/run3_priority/event_active_candidate.tgz": "23ff9bc38d27d08e6e4cce5c575c3f3f7ee6b3645b0490808c61ff96fa36d699",
+    "evidence/r41/chat/run3_priority/vl_script_v5_partial_stdout.log": "8b655a8005e7e6627b8c1ac9b6840cf6caf61156d09ca5b6a1a35d917a23c8c1"
   },
   "followups": [
     {

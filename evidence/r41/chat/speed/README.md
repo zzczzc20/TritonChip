@@ -161,8 +161,12 @@ NaN sign checks; an intermediate fix failed 8/256 mixed signalling/quiet NaN
 payload checks. A [new experimental patch](precise_div_nanfix_experiment_20261031.patch)
 passed those 256 payload combinations, 65536 finite random pairs and two
 256-value special/tile tests. Its fresh suite, audit and performance runs are
-in progress. The patches and diagnostic route remain unmerged, and no board
-test is queued for them.
+in progress. A further [cross-architecture CPU comparison](nan_reference_cross_arch_20261031.json)
+of the same 256 NaN/infinity/zero pairs found 16 bit-pattern differences
+between the board host x86 CPU and the GB10 CPU. The latest experimental
+TLM division matched the GB10 patterns, so it cannot be claimed bitwise equal
+to the board-host CPU reference for these pairs. The patches and diagnostic
+route remain unmerged, and no board test is queued for them.
 
 [Boundary comparisons](hoist_precise_boundary_20261031.tgz), fused → hoisted,
 all matched the independent reference bitwise and had zero steady code

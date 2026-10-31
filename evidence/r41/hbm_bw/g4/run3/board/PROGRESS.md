@@ -36,6 +36,10 @@ board README and likewise requires registered rechecks.
 Across all 513 default points, 39 are over 5% slower and eight over 10% slower
 in the descriptive matched comparison; the registered rechecks remain
 necessary.
+The independent LSU in-flight RTL sensitivity completed with both arms
+numerically passing. Its one-request arm took 58.14% more cycles than the
+two-request arm in synthetic memory; this does not establish board causation
+([raw scope and results](strided_div_diagnostic/rtl_compare/README.md)).
 The 39 memory-bound and two original-suite points over 5% slower now have a
 registered recheck queued after the existing candidate tests; see
 [`performance_recheck.md`](performance_recheck.md). No recheck result exists yet.

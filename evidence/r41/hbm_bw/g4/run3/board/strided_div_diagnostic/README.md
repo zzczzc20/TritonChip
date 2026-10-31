@@ -46,3 +46,9 @@ board division result. Its later narrow-pair beat-count candidate is already
 present in the frozen `8d237223` RTL: reverse-checking the recorded patch
 succeeds and those two RTL files are unchanged between that commit and this
 checkout. Reapplying that candidate is therefore not a fix for this image.
+
+A later single-parameter RTL simulation of the small FP16 strided division
+point reports 195,477 cycles with one in-flight LSU request versus 123,610
+with two. Both numerical checks pass. Its synthetic memory and non-striped
+configuration are not the board; see [`rtl_compare/README.md`](rtl_compare/README.md)
+for the exact source, parameters and raw evidence.

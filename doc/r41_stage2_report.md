@@ -54,6 +54,9 @@ constraint substitution still reports one HBM setup endpoint at −0.001 ns;
 its recreated 450 MHz baseline differs by 1 ps, so it is not image signoff.
 Clean-archive reproduction and registered performance rechecks are queued;
 their board results remain pending.
+In a separate single-sample RTL simulation of small FP16 strided division,
+one versus two in-flight LSU requests used 58.14% more cycles. Synthetic
+memory and disabled striping prevent attributing the board regression to it.
 
 ## Delivery update: P8 FPGA-host FP8
 

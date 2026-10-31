@@ -832,3 +832,15 @@ refused duplicate storage. Its paired TLM run was stopped because it would hit
 the same save error; no numerical result is claimed. A separately recorded
 [v2 diagnostic](q35_first_headless_v2_pending_20261031.tgz) clones outputs
 before saving and is running alongside the original full-head diagnostic.
+
+The [first-layer FP8 dot probe](q35_first_fp8_dp_20261031.tgz) captures the
+real CPU activation at position 26 of the same prompt, and compares the
+ISA-defined four-product `m.mma.dp` accumulation emulation with the registered
+CPU FP8 reference, both using IEEE activation division. QKV, Z, gate and up
+projections had respectively 0/8192, 0/4096, 0/9216 and 0/9216 bit mismatches;
+the captured module outputs also matched their CPU reference. Against a
+separate exact BF16 oracle, both the grouped emulation and registered reference
+differed in one gate value (max 3.8146973e-6) and one up value (max
+4.7683716e-7). This CPU arithmetic probe rules out a grouped-vs-reference
+difference only for these sampled inputs; it is not TLM, board, or a proof
+about other positions and layers.

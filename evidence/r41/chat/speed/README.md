@@ -457,3 +457,17 @@ instructions/MAC was 0.0472591285 on both routes. Both model logits tensors
 had 0/151936 bit mismatches against the TLM control, no captured CPU numerical
 fallback, and zero host reads in prefill and decode. This reduced-depth check
 is not independent full-model CPU quality or board throughput evidence.
+
+
+A [four-layer Qwen3.5 DP TLM activation-stage run](activation_stage_q35_tlm_20261031.tgz)
+produced two 248320-element logits tensors bitwise equal to the earlier LRU
+TLM control, with no captured CPU numerical fallback and zero steady-decode
+host reads. Against that earlier control, prefill had 239 → 239 launches
+and 2224324414 → 2206641939 cycles; decode had 95 → 95 launches and
+1473757373 → 1344816549 cycles. Both recorded 33 prefill host reads during
+compilation. The new completed-event profiler measured 141/77 physical
+loads in prefill/decode, while the earlier profiler only recorded load marks;
+those two measurements must not be equated. The new run's 25 FP8 decode
+matmuls had 0.2536279297 instructions/MAC and 494071298 cycles. A control
+using the corrected profiler is still running. These are reduced-depth TLM
+observations, not board throughput or full-model CPU-quality results.

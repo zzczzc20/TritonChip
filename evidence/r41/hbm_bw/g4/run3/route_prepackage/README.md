@@ -98,13 +98,16 @@ programmed the candidate. The loaded UUID was verified as
 17:27 UTC. This records the load and start, not a test pass. The original
 link exit 3 and HBM setup violations remain as stated above.
 
-On 2026-10-31 a read-only x86 inspection of the same routed checkpoint began
+On 2026-10-31 a read-only x86 inspection of the same routed checkpoint completed
 at `~/r41run3/hbm_clock_inspect_20261031` using
 [`inspect_hbm_clock.tcl`](../../../../../../tools/r41/run2_postlink/inspect_hbm_clock.tcl).
+The raw properties, timing paths, interaction report and log are preserved in
+[`hbm_clock_inspection.tgz`](hbm_clock_inspection.tgz), SHA-256
+`990b4d490998f207fc992329942d0f37634ed587f6b2d843898912cbd9208c28`.
 It found that `hbm_aclk` is a generated clock derived from the 100 MHz free
 running clock; the original routed timing analysis uses a 2.222 ns period.
 An exploratory 450 MHz recreation and 433.4 MHz sensitivity analysis is
-queued after that inspection, under `~/r41run3/hbm_clock_sensitivity_20261031`.
+running after that inspection, under `~/r41run3/hbm_clock_sensitivity_20261031`.
 It must reproduce the original constraints and timing before its changed-clock
 report can be interpreted. Neither job changes the image or establishes timing
-closure; no new timing result is claimed while the jobs are running.
+closure; no changed-clock timing result is claimed while that job is running.

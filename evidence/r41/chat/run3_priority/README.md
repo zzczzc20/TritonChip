@@ -303,3 +303,13 @@ warns that fixing the prompt tail alone may not fix board quality. The math
 backend was used only for diagnosis; the registered CPU reference and scoring
 rule remain unchanged. The isolated TLM attention match to CPU math is not a
 full-model TLM or board result.
+
+An exploratory [CPU-only attention candidate](vl_reason_cpu_flashapprox_failed.tgz)
+rounded the unnormalized softmax weights to BF16 before the value product,
+following a visible feature of the pinned upstream
+[CPU flash implementation](https://github.com/pytorch/pytorch/blob/08187d9e0fba026dc8217405802ab5381dc88d90/aten/src/ATen/native/cpu/FlashAttentionKernel.cpp).
+This brought grouped-tail logits closer to the flash reference (relative L2
+0.05607813224196434 versus 0.12522464990615845 for CPU math), but still chose
+`We` rather than `Bob`; it did not fix the registered reason prompt. It was a
+CPU diagnostic only, is not a product change, and did not alter the reference,
+quality rule, board run, or existing failures.

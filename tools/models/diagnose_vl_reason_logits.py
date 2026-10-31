@@ -9,6 +9,7 @@ import contextlib
 import hashlib
 import importlib.util
 import json
+import math
 from pathlib import Path
 import time
 import torch
@@ -16,6 +17,31 @@ from safetensors.torch import load_file, save_file
 import chat
 
 PROMPT = 'Tom is taller than Ann. Ann is taller than Bob. Who is the shortest? Answer with one name.'
+
+
+@contextlib.contextmanager
+def flash_approximation():
+    """CPU experiment: round unnormalized attention weights before V matmul."""
+    import torch.nn.functional as functional
+    original=functional.scaled_dot_product_attention
+    def attention(q,k,v,attn_mask=None,dropout_p=0.0,is_causal=False,*,scale=None,enable_gqa=False):
+        if dropout_p: raise ValueError('diagnostic supports inference only')
+        if enable_gqa and q.shape[-3]!=k.shape[-3]:
+            repeats=q.shape[-3]//k.shape[-3]; k=k.repeat_interleave(repeats,-3); v=v.repeat_interleave(repeats,-3)
+        score=torch.matmul(q.float(),k.float().transpose(-2,-1))*(scale if scale is not None else 1/math.sqrt(q.shape[-1]))
+        if is_causal:
+            allowed=torch.ones(q.shape[-2],k.shape[-2],dtype=torch.bool,device=q.device).tril()
+            score=score.masked_fill(~allowed,float('-inf'))
+        if attn_mask is not None:
+            score=score.masked_fill(~attn_mask,float('-inf')) if attn_mask.dtype==torch.bool else score+attn_mask.float()
+        maximum=score.amax(-1,keepdim=True); finite=torch.isfinite(maximum)
+        prob=torch.exp(score-torch.where(finite,maximum,torch.zeros_like(maximum)))
+        denominator=prob.sum(-1,keepdim=True)
+        numerator=torch.matmul(prob.to(q.dtype).float(),v.float())
+        return torch.where(denominator>0,numerator/denominator.clamp_min(1e-30),0).to(q.dtype)
+    functional.scaled_dot_product_attention=attention
+    try: yield
+    finally: functional.scaled_dot_product_attention=original
 
 
 def summary(logits, tokenizer):
@@ -38,7 +64,7 @@ def main():
     p.add_argument('--tree', required=True)
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--cpu-reference', type=Path)
-    p.add_argument('--cpu-sdpa', choices=['default','math'], default='default')
+    p.add_argument('--cpu-sdpa', choices=['default','math','flash-approx'], default='default')
     a=p.parse_args()
     if a.mode=='tlm':
         chat.L.use_tnca(a.tree)
@@ -68,6 +94,8 @@ def main():
         if a.cpu_sdpa=='math':
             from torch.nn.attention import sdpa_kernel, SDPBackend
             attention_context=sdpa_kernel(SDPBackend.MATH)
+        elif a.cpu_sdpa=='flash-approx':
+            attention_context=flash_approximation()
         else:
             attention_context=contextlib.nullcontext()
         with torch.no_grad(), attention_context: logits,calls,reused=session.prefill_prompt(inputs,None)

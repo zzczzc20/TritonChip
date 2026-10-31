@@ -863,3 +863,15 @@ the board cause. The same FMA experiment with grouped prefill selected `Hello`
 (22.25 vs `I` 21.5). Rounded reciprocal alone and reciprocal plus FMA both
 selected `Hello` on both prompt paths. These are CPU-only arithmetic
 approximations, not a change to the reference or a board-quality pass.
+
+The [completed headless two-layer CPU/DP-TLM probe](q35_first_headless_v2_20261031.tgz)
+found 0/69120 embedding bit mismatches. After the first layer it found
+63732/69120 differing values, relative L2 0.0119732721 and maximum absolute
+difference 0.03125; the partial CPU embedding and first-layer output each
+matched the corresponding full CPU capture bitwise. After the second layer's
+final norm the relative L2 was 0.0361934826. This is a truncated, instrumented
+model; it does not show board intermediates or prove the precise cause.
+
+A [one-layer component probe](q35_first_components_pending_20261031.tgz)
+was started to compare normalization, attention projections and MLP outputs.
+Its graph hooks and truncation may change compilation; results are pending.

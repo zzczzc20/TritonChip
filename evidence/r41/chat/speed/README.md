@@ -309,5 +309,9 @@ instruction/cycle counts. Five additional [boundary controls](model_profile_and_
 cover equal and different addresses, partial row masks, differing row scales
 and zero inputs, each 0/256 against the DP reference with the option off/on.
 Those five custom kernels compiled identically off/on, so they are negative
-controls, not proof that the packed path fired. Board A/B testing is queued;
-these TLM results are not board throughput claims.
+controls, not proof that the packed path fired. A custom K=128 boundary kernel
+was rejected for register exhaustion with the option both off and on; prior
+setup attempts also failed. The [failure logs](activation_mask_setup_failures_20261031.tgz)
+are retained and are not counted as passes. The official fused K=256 and K=384
+cases above did pass. Board A/B testing is queued; these TLM results are not
+board throughput claims.

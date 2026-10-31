@@ -742,3 +742,15 @@ last token remained identical. At layer 7, the last-token relative L2 was
 0.0427951515; at layer 31 it was 0.0615154132. This isolates a CPU
 segmentation effect but does not determine the source of the board's
 first-token difference. Matching-source full-model DP TLM remains pending.
+
+The [CPU layer-4 component probes](q35_multiturn_cpu_layer4_20261031.tgz)
+showed identical whole/grouped input normalization and QKV, Z, A and B
+projections. The linear-attention gated-normalization input from the attention
+core first differed at flattened head vector 283, with 22/110592 unequal bit
+patterns and max absolute difference 1.1920928955e-7. The other normalization
+input Z was bitwise identical. After normalization, 20/110592 patterns differed;
+the attention output projection differed in 14/69120 values. These are CPU
+segmentation comparisons and do not establish the board failure's cause. The
+first input-probe setup failed locally before sending its source; the resulting
+empty remote program exited without testing anything and is not a pass. The
+separate v2 input-probe result is the one reported here.

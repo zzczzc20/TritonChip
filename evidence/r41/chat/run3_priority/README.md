@@ -699,3 +699,14 @@ rates were 0.0305566080 and 0.0337049922 input tokens/s; decode rates were
 comparison is in progress. After preserving this failure, a new safety-checked
 queue started the previously gated acceleration A/B sessions at 18:49 UTC on
 the already loaded image; these sessions do not change the quality judgment.
+
+
+The [full-checkpoint CPU first-logit replay](q35_multiturn_cpu_logits_20261031.tgz)
+used the same 27-token first turn. Whole-prompt CPU top five were `Hello`
+22.25, `I` 21.75, `Alice` 19.375, `Nice` 19.375 and `Your` 19.0; gap 0.5.
+With the board's 8+8+8+3 grouped chunks they were `Hello` 22.0, `I` 21.875,
+`Alice` 19.375, `Nice` 19.125 and `Your` 18.75; gap 0.125. CPU grouped vs
+whole relative L2 was 0.0589486696, maximum absolute difference 0.578125,
+and both chose `Hello`. The board selected `I`, but its full logits were not
+captured: the close CPU gap alone does not establish the reason for the board
+flip. Matching-source DP TLM is running. No quality judgment is revised.

@@ -201,3 +201,23 @@ steps/s. These measurements do not pass the full author acceptance.
 
 At 08:04:41 UTC the separately registered warmup VL retry began on the same
 run-2 image; Qwen3.5 is queued behind it. No image was reloaded.
+
+## Reason-prompt first-logit CPU diagnostic
+
+With the same full VL checkpoint and 30-token reason prompt, the archived
+[CPU logits and diagnostic source](vl_reason_cpu_logits.tgz) show:
+
+| CPU prefill path | Top five token strings (descending) | Top-two gap |
+| --- | --- | ---: |
+| Whole prompt | Bob, We, To, Let, From | 1.0 |
+| Original 8-token chunks and single-token tail | We, Let, To, Bob, From | 1.25 |
+| 8-token chunks with grouped short tail | Bob, We, To, Let, From | 0.25 |
+
+The original chunked logits differ from whole-prompt logits by relative L2
+0.052061811089515686 (max absolute difference 1.9609375); grouped-tail logits
+differ by relative L2 0.0329294428229332 (max 1.125). The grouped top choice
+has a narrow 0.25 margin; the original path has a larger change, reproduced
+on CPU without TNCA. The previous board output matches the CPU original path's
+12 token IDs, but this is not a measurement of board logits and does not rule
+out an additional device numerical contribution. A full-prompt DP-profile TLM
+comparison is in progress.

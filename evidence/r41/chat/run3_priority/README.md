@@ -30,3 +30,11 @@ The full-checkpoint session generated `Hi there! How`; its two-token teacher che
 At 100 MHz, the first prefill took 574.5629690899805 s for 15 input tokens, including compilation and output download; the derived rate is 0.026106799092461 tokens/s. The two last decode steps took 131.43974856898421 s in total, 0.015216097274793016 tokens/s, with 723 launches per step and 7,572,841,707 summed device cycles. Subtracting cycles at 100 MHz from wall time gives a 42.385451969839194% residual; it includes host work, transfers, waits and possible counter/overlap effects, not a direct host-only measurement.
 
 This is **not a pass of the author's no-host-fallback rule**: each step downloaded 496,640 bytes of logits outside the model transfer meter and selected its token on the CPU. The old report's `cpu_numerical_fallback: false` was hardcoded. The original result remains preserved; a device-feedback retry is queued.
+
+## VL diagnostic partial output, run-2 board
+
+A live snapshot at 2026-10-31 04:44 UTC records two quality prompts:
+`fact` answered `Paris` and `arith` answered `42`, both passing their recorded
+reference scores. The full-checkpoint diagnostic remained running at the
+snapshot; [`vl_quality_partial_20261031.json`](vl_quality_partial_20261031.json)
+is a partial result, not a complete quality run or proof of no host fallback.

@@ -1519,7 +1519,8 @@
         },
         "evidence_required": "full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing",
         "evidence": [
-          "evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz"
+          "evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz",
+          "evidence/r41/chat/run3_priority/vl_quality_partial_20261031.json"
         ],
         "failure_reason": "Run-3 VL quality attempt stalled with no observed progress and was interrupted; cause not yet established."
       },

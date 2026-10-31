@@ -1521,7 +1521,8 @@
     "evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz": "9b4c070b79e4ac2940a0bfeb51e1190c423c4b1fd0dd5a74fba43b19a96fc2b4",
     "evidence/r41/chat/run3_priority/q35_session_board.tgz": "36423c1160495e0281e4f11bc6525e14cf2717b8cfa4de894bc06b52fa8f9641",
     "evidence/r41/chat/run3_priority/q35_session_summary.json": "81bf57a325c44dcc847798f77f56ea74b4425ba4cdf16381f497d0a2cc53e0de",
-    "evidence/r41/chat/run3_priority/q35_quality_preempted.tgz": "b3b0ae9971acce074f1d144bf55a6dcc4b2f1bfa4ad5271127a724c9a060bb1d"
+    "evidence/r41/chat/run3_priority/q35_quality_preempted.tgz": "b3b0ae9971acce074f1d144bf55a6dcc4b2f1bfa4ad5271127a724c9a060bb1d",
+    "evidence/r41/chat/run3_priority/vl_quality_partial_20261031.json": "eea274c655f3b8290b35892506d087ebe640c15e4211e52df1966b9c435113a7"
   },
   "followups": [
     {
@@ -1606,7 +1607,8 @@
         },
         "evidence_required": "full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing",
         "evidence": [
-          "evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz"
+          "evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz",
+          "evidence/r41/chat/run3_priority/vl_quality_partial_20261031.json"
         ],
         "failure_reason": "Run-3 VL quality attempt stalled with no observed progress and was interrupted; cause not yet established."
       },

@@ -337,3 +337,12 @@ outputs also matched the CPU reference bitwise. Its recorded call wall time was
 25.601286967284977 seconds). These are individual diagnostic wall times, not
 board performance, and the settings differ; no speedup is claimed. The
 original full-model timed TLM attempt continues without modification.
+
+A [CPU DP-order rederivation over all seven layer-2 FP8 projections](vl_reason_fp8_all_cpu.tgz)
+used the actual position-24 inputs from the legacy reason prompt. With IEEE
+activation division in both paths, all 20,480 BF16 output values matched the
+CPU W8A8 reference bitwise. Against BF16-rounded float64 W8A8 exact results,
+Q projection differed in 1/2,048 values (maximum 0.00390625) and the MLP up
+projection in 3/6,144 (maximum 0.0009765625); the other five matched. This is
+CPU mathematical emulation on seven projections, not a device or full-model
+claim. The Q projection alone was also run on TLM as recorded above.

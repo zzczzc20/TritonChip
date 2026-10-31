@@ -24,7 +24,14 @@ def main():
     layers=app.model.model.language_model.layers
     targets={'embedding':app.model.model.language_model.embed_tokens,'layer0_input_norm':layers[0].input_layernorm,
              'layer0_attention':layers[0].self_attn,'layer0_post_attention_norm':layers[0].post_attention_layernorm,
-             'layer0_mlp':layers[0].mlp,'layer0':layers[0],'layer14':layers[14],'layer27':layers[27]}
+             'layer0_mlp':layers[0].mlp}
+    targets.update({f'layer{i}': layer for i,layer in enumerate(layers)})
+    for i in (1,2):
+        layer=layers[i]
+        for attr in ('input_layernorm','self_attn','post_attention_layernorm','mlp'):
+            targets[f'layer{i}_{attr}']=getattr(layer,attr)
+        for attr in ('q_proj','k_proj','v_proj','o_proj'):
+            targets[f'layer{i}_{attr}']=getattr(layer.self_attn,attr)
     traces={}; results={}
     for name,cls in [('legacy_chunk8',old.Session),('grouped_chunk8',chat.Session)]:
         rows={k:[] for k in targets}; handles=[]

@@ -221,3 +221,25 @@ on CPU without TNCA. The previous board output matches the CPU original path's
 12 token IDs, but this is not a measurement of board logits and does not rule
 out an additional device numerical contribution. A full-prompt DP-profile TLM
 comparison is in progress.
+
+A further [full-checkpoint CPU trace](vl_reason_cpu_layer_attention_dp.tgz)
+compares the original and grouped-tail paths, using the same first three
+8-token chunks. Embeddings and layer 0 outputs are bit-identical. Layer 1 first
+differs at position 26; layer 2 first differs at position 24, with the last
+position's relative L2 0.011049733497202396, growing to 0.0950397476553917
+at layer 27. These are CPU activation comparisons, not TLM or board values.
+
+At layer 2, position 24, CPU Q/K/V projections, the preceding 24-token cache,
+rotary inputs, and per-query attention mask match bitwise. The actual SDPA
+query and the valid first 25 K/V entries also match, with equal mask, scale and
+causal flag; the CPU SDPA output nevertheless differs between query lengths
+1 and 6 (max absolute 0.0009765625, relative L2 0.0004917397163808346).
+This locates a shape-dependent CPU attention numerical difference; it does
+not establish what the board or TLM will produce.
+
+Separately, for the actual position-24 activation of layer 2's Q projection,
+CPU mathematical emulation of the ISA DP four-product grouped dot and the CPU
+reference path produced identical BF16 outputs for all 2,048 values. Both
+differed from BF16-rounded float64 W8A8 exact output at one value (max absolute
+0.00390625). This is one projection, not proof for all matrices or a device
+result. The full-model DP-profile TLM comparison remains in progress.

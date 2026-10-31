@@ -1,4 +1,4 @@
-# Board campaign progress, 2026-10-30 23:55 UTC
+# Board campaign progress, 2026-10-31 00:11 UTC
 
 The author explicitly authorized final-image loading without further approval,
 including the 433 MHz exception. The 15-minute idle rule and protection of
@@ -15,7 +15,7 @@ The 113-point stage passed 113/113; its raw records and preliminary performance
 comparison are linked from `README.md`. The queue has started the default
 513-point memory-bound stage; at the time above both large batches passed
 171/171 and both medium batches passed 171/171. The first small batch had
-covered 105 configurations with no failures. The queue will run later
+covered 133 configurations with no failures. The queue will run later
 registered stages in order, stopping on failure. The
 previous identity and HBM clamp failures and fixes are preserved in `README.md`.
 
@@ -56,5 +56,9 @@ that Q41 pilot to pass, validates its result and then queues a one-hour
 `/home/zzhouch/r41run3/xl41_pilot_queue/queue.jsonl`. The XL pilot's CPU
 preflight and registered inputs are in
 [`../../../../acceptance/xl41_pilot/README.md`](../../../../acceptance/xl41_pilot/README.md).
-Full Q41-core, the other XL points and independent reproduction still require
-subsequent work and are not passes.
+Board-host PID 1134314 waits for that GEMV pilot to pass and then queues the
+one-hour, >2 GiB `XL41-stream` pilot; its log is
+`/home/zzhouch/r41run3/xl41_stream_queue/queue.jsonl`, and its full-size CPU
+preflight is in [`../../../../acceptance/xl41_stream_pilot/README.md`](../../../../acceptance/xl41_stream_pilot/README.md).
+Full Q41-core, XL-core and independent reproduction still require subsequent
+work and are not passes.

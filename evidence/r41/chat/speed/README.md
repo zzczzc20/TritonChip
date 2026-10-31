@@ -163,3 +163,8 @@ issue only one descriptor/fallback DMA were refused by window-lifetime and
 barrier verification ([first](branchdma_refused_20261031.tgz),
 [second](branchdma_b_refused_20261031.tgz)); the [patch](branchdma_experiment.patch)
 is preserved for review and was not shipped.
+
+The candidate's [cache lifecycle unit checks](code_cache_unit_20261031.tgz)
+passed 3/3, covering eviction choice, duplicate artifact aliases and adaptation
+after a workload phase change. These checks do not replace device or board
+validation.

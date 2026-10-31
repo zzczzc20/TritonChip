@@ -49,3 +49,19 @@ established. The [preserved run](vl_traced_sigsegv.tgz) contains the partial
 quality result, raw stacks and experiment failure. The board remained bound
 to `xocl` with the candidate UUID, and the separately registered device-feedback
 VL retry started at 04:50:00 UTC.
+
+## Device-feedback retry and graph reuse
+
+The first device-feedback retry repeatedly recompiled the same model graph:
+two captured 7,249-line wrappers differ only in their AOT identifier. The
+runtime's `run_and_get_code` resets Dynamo each time, and the original retry
+called it on every generation step. The attempt was interrupted at a new
+compilation boundary on 2026-10-31 05:26:54 UTC; its logs and both wrappers are
+preserved in [`vl_graph_reset_interrupted.tgz`](vl_graph_reset_interrupted.tgz).
+This is an interrupted attempt, not a completed chat result.
+
+The replacement captures generated wrappers without resetting Dynamo. A TLM
+functional probe returned the expected four tokens, recorded zero reads in the
+three decode steps, and recorded new graph counts `[2, 1, 0, 0]`; this is not a
+board result. The separately registered replacement VL board stage started at
+05:26:56 UTC; Qwen3.5 remains queued behind it.

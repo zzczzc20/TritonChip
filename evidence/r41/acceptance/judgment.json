@@ -1521,7 +1521,8 @@
         "evidence": [
           "evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz",
           "evidence/r41/chat/run3_priority/vl_quality_partial_20261031.json",
-          "evidence/r41/chat/run3_priority/vl_traced_sigsegv.tgz"
+          "evidence/r41/chat/run3_priority/vl_traced_sigsegv.tgz",
+          "evidence/r41/chat/run3_priority/vl_graph_reset_interrupted.tgz"
         ],
         "failure_reason": "The initial VL attempt stalled and was interrupted; the traced retry answered two prompts but exited with SIGSEGV during a register-write path. Its old host-selected token path also violates no-host criteria; the root cause of the crash is not established."
       },

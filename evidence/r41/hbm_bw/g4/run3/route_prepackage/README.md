@@ -106,8 +106,14 @@ The raw properties, timing paths, interaction report and log are preserved in
 `990b4d490998f207fc992329942d0f37634ed587f6b2d843898912cbd9208c28`.
 It found that `hbm_aclk` is a generated clock derived from the 100 MHz free
 running clock; the original routed timing analysis uses a 2.222 ns period.
-An exploratory 450 MHz recreation and 433.4 MHz sensitivity analysis is
-running after that inspection, under `~/r41run3/hbm_clock_sensitivity_20261031`.
-It must reproduce the original constraints and timing before its changed-clock
-report can be interpreted. Neither job changes the image or establishes timing
-closure; no changed-clock timing result is claimed while that job is running.
+The first exploratory clock-sensitivity attempt failed because Vivado requires
+`-add` when `-master_clock` is specified. Its original script and log are in
+[`hbm_clock_sensitivity_first_failure.tgz`](hbm_clock_sensitivity_first_failure.tgz),
+SHA-256 `af4710169b7b4e1c2613cef65ad60bb80175d7023c6ae7dc91c41b36bb006f12`.
+A retry lets Vivado infer the master and checks its identity explicitly; it is
+running under `~/r41run3/hbm_clock_sensitivity_retry_20261031`. The retry's
+launcher has a malformed exit-status trap, so its actual process exit code
+will not be available and the log and reports must be examined directly.
+The recreated 450 MHz timing must match the original report before the
+433.4 MHz sensitivity can be interpreted. Neither job changes the image or
+establishes timing closure; no changed-clock result is claimed yet.

@@ -19,7 +19,7 @@ if {[llength $master] != 1 || [llength $source] != 1 || [llength $sink] != 1 ||
 foreach {label mhz} {recreated450 450.0 exploratory433p4 433.4} {
     set period [expr {1000.0/$mhz}]
     set shift [list 0.0 [expr {$period/2.0-5.0}] [expr {$period-10.0}]]
-    create_generated_clock -name hbm_aclk -source $source -master_clock $master \
+    create_generated_clock -name hbm_aclk -source $source \
         -edges {1 2 3} -edge_shift $shift $sink
     set current [get_clocks -quiet hbm_aclk]
     if {[llength $current] != 1 || abs([get_property PERIOD $current]-$period) > 0.001 ||

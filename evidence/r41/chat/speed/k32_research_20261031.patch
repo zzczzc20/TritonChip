@@ -1,0 +1,184 @@
+diff --git a/compiler/python/tnca_cc/frontend.py b/compiler/python/tnca_cc/frontend.py
+index 03f566cb..f55f66d0 100644
+--- a/compiler/python/tnca_cc/frontend.py
++++ b/compiler/python/tnca_cc/frontend.py
+@@ -3184,6 +3184,16 @@ class TTIRImporter:
+             return base if off == 0 else (b.sbini('add', base, off) if isinstance(off, int)
+                                           else b.sbin('add', base, off))
+         scratch = self._scratch_base()
++        lane_spill = None
++        if os.environ.get('TNCA_X8_SPILL_LANES') == '1':
++            # Keep fallback gather indices out of the live vector set while
++            # the normal descriptor transfers and MMA windows overlap.
++            lane_spill = []
++            for lane_vec in lane_vecs:
++                off = self._take_scratch(vlen * 4)
++                b.store(b.sbini('add', scratch, off), lane_vec, size='w')
++                lane_spill.append(off)
++            b.fence()
+         # Run-time check, once per call: chunk j's lanes are column indices
+         # c_j + lane (W rows c_j .. c_j+15, so one transfer at row c_j) --
+         # false where `offs_bn % N` wraps inside the chunk. Lane j of `oks`
+@@ -3230,6 +3240,8 @@ class TTIRImporter:
+             done = self._control_label('x8dot_done')
+             b.branch_nz(ok, done)
+             kk = self._copy_value(b.const(0))
++            fallback_lanes = (b.load(b.sbini('add', scratch, lane_spill[j]), dtype='i32', size='w')
++                              if lane_spill is not None else lane_vecs[j])
+             # The arm's scalars are formed inside it, so none is live
+             # across the whole dot.
+             row = at(r00) if s0 == 0 else b.sbini('add', at(r00), s0)
+@@ -3240,7 +3252,7 @@ class TTIRImporter:
+                 if limit != 'all':
+                     left = b.sbin('sub', b.sbini('add', limit, -s0), kk)
+                     mask = b.vcmp('gt', b.splat(left, dtype='i32'), b.vmovi(0))
+-                g = b.gather(src, lane_vecs[j], mask=mask, other=0, dtype='i32', size='b')
++                g = b.gather(src, fallback_lanes, mask=mask, other=0, dtype='i32', size='b')
+                 b.store(b.sbin('add', fill, b.sbini('shl', kk, (vlen - 1).bit_length())), g, size='b')
+                 b.fence()
+             b.label(done)
+@@ -4425,6 +4437,22 @@ class TTIRImporter:
+         # sec 8.4 reserves the pack that would put it there -- so it
+         # goes out to memory and comes back through the engine, which
+         # is the repack path a scratchpad-free design leaves.
++        # For the experimental K64 split, release a nonzero C tile before
++        # reserving the retiled operand windows.
++        preacc = None
++        import os as _os
++        cin = op.get_operand(2)
++        if (_os.environ.get('TNCA_FP8_PACKED_K32') == '1' and self.target.has('matrix_dp')
++                and a.dtype == b.dtype == 'f8E4M3FN' and a.cols == 64
++                and not self._is_zero_tensor(cin)):
++            _, ctype = _parse_type(str(cin.get_type()))
++            get_c = self._row_getter(cin, a.rows, ctype)
++            preacc = self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
++            for r in range(a.rows):
++                row = get_c(r)
++                if ctype.startswith('i'):
++                    row = self.b.vcvt('s32', 'f32', row)
++                self.b.acc_write(preacc, self.b.const(r), row)
+         fragments = iter(self._mma_fragments(a, b))
+         a, b = next(fragments)
+         if a.dtype != b.dtype:
+@@ -4446,13 +4474,14 @@ class TTIRImporter:
+             for left, right in fragments:
+                 self._mma_into(fused.handle, left, right)
+             return
+-        acc = self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
++        acc = preacc if preacc is not None else self.b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
+         # `tt.dot`'s third operand is the value accumulated into. Triton
+         # passes an explicit zero tensor for a plain product, and an
+         # accumulator carried across a loop otherwise; only the first is
+         # expressible while a tile has no way to enter an accumulator.
+-        cin = op.get_operand(2)
+-        if self._is_zero_tensor(cin):
++        if preacc is not None:
++            pass
++        elif self._is_zero_tensor(cin):
+             self.b.acc_zero(acc)
+         else:
+             _, ctype = _parse_type(str(cin.get_type()))
+@@ -4506,6 +4535,24 @@ class TTIRImporter:
+         # K32 fragments without changing the ascending grouped sum order.
+         # Already-packed windows need a separate safe repack path.
+         import os as _os
++        if (_os.environ.get('TNCA_FP8_PAD_K32') == '1' and self.target.has('matrix_dp')
++                and a.dtype == b.dtype == 'f8E4M3FN' and logical == 16
++                and a.rows == b.cols == 16):
++            left = self._as_fragment(a, 'K16 left operand')
++            right = self._as_fragment(b, 'K16 right operand')
++            yield self._pad_e4m3_k32(left, right)
++            return
++        if (_os.environ.get('TNCA_FP8_PACKED_K32') == '1' and self.target.has('matrix_dp')
++                and a.dtype == b.dtype == 'f8E4M3FN' and logical == 64
++                and a.rows == b.cols == 16):
++            left = self._as_fragment(a, 'K64 left operand')
++            right = (b if b.kind == 'row-chunks' and len(b.handle) == 4
++                     and all(p.kind == 'window' and p.rows == p.cols == 16
++                             for p in b.handle)
++                     else self._as_fragment(b, 'K64 right operand'))
++            for start in (0, 32):
++                yield self._slice_e4m3_k64(left, right, start)
++            return
+         if (_os.environ.get('TNCA_FP8_MMA_K32') == '1' and self.target.has('matrix_dp')
+                 and a.dtype == b.dtype == 'f8E4M3FN' and logical > 32 and logical % 32 == 0
+                 and a.kind == 'column-chunks' and b.kind == 'row-chunks'
+@@ -4556,6 +4603,49 @@ class TTIRImporter:
+                 pair.append(fragment)
+             yield tuple(pair)
+ 
++    def _pad_e4m3_k32(self, a, b):
++        """Experimental: pad K16 to K32 with -0 × +1, preserving signed zero."""
++        v = self.b
++        aw = self._window_for(16, 32, a.dtype)
++        bw = self._window_for(32, 16, b.dtype)
++        lane = v.arange()
++        first = v.vcmp('lt', lane, v.vmovi(4))
++        second = v.pbin('and', v.vcmp('ge', lane, v.vmovi(8)),
++                        v.vcmp('lt', lane, v.vmovi(12)))
++        negative_zeros = v.vmovi(0x80808080, dtype='i32')
++        ones = v.vmovi(0x38383838, dtype='i32')
++        for i in range(8):
++            source = v.window_reg(a.handle, i // 2, dtype='i32')
++            low = v.vshuffle('down', source, v.const(8), dtype='i32') if i % 2 else source
++            high = v.vshuffle('down', source, v.const(4), dtype='i32') if i % 2 else \
++                v.vshuffle('up', source, v.const(4), dtype='i32')
++            padded = v.vselect(second, high, v.vselect(first, low, negative_zeros))
++            v.window_put(aw, i, padded)
++            v.window_put(bw, i, v.window_reg(b.handle, i, dtype='i32') if i < 4 else ones)
++        return Tile('window', aw, 16, 32, a.dtype), Tile('window', bw, 32, 16, b.dtype)
++
++    def _slice_e4m3_k64(self, a, b, start):
++        """Experimental: split packed K64 operands into ordered K32 windows."""
++        v = self.b
++        aw = self._window_for(16, 32, a.dtype)
++        bw = self._window_for(32, 16, b.dtype)
++        low_lanes = v.vcmp('lt', v.arange(), v.vmovi(8))
++        for i in range(8):
++            even = v.window_reg(a.handle, 2 * i, dtype='i32')
++            odd = v.window_reg(a.handle, 2 * i + 1, dtype='i32')
++            if start == 0:
++                odd = v.vshuffle('up', odd, v.const(8), dtype='i32')
++            else:
++                even = v.vshuffle('down', even, v.const(8), dtype='i32')
++            v.window_put(aw, i, v.vselect(low_lanes, even, odd))
++            if b.kind == 'row-chunks':
++                part = b.handle[start // 16 + i // 4]
++                right = v.window_reg(part.handle, i % 4, dtype='i32')
++            else:
++                right = v.window_reg(b.handle, i + start // 4, dtype='i32')
++            v.window_put(bw, i, right)
++        return Tile('window', aw, 16, 32, a.dtype), Tile('window', bw, 32, 16, b.dtype)
++
+     def _dot_f32(self, op, a, b):
+         """Full binary32 dot through vector FMAs, with no FP16 narrowing.
+ 
+@@ -4602,6 +4692,18 @@ class TTIRImporter:
+     def _as_fragment_uncached(self, tile, what):
+         """This tile in the layout `m.mma.async` reads."""
+         if tile.kind == 'row-chunks':
++            # Diagnostic baseline for the same packed FP8 chunk layout.
++            import os as _os
++            if (_os.environ.get('TNCA_FP8_PACKED_ROW_CHUNKS') == '1'
++                    and tile.dtype == 'f8E4M3FN' and tile.cols == 16
++                    and tile.rows == 64 and len(tile.handle) == 4
++                    and all(p.kind == 'window' and p.rows == p.cols == 16
++                            for p in tile.handle)):
++                window = self._window_for(tile.rows, tile.cols, tile.dtype)
++                for i in range(16):
++                    v = self.b.window_reg(tile.handle[i // 4].handle, i % 4, dtype='i32')
++                    self.b.window_put(window, i, v)
++                return Tile('window', window, tile.rows, tile.cols, tile.dtype)
+             getters = [self._tile_row_getter(p) for p in tile.handle]
+             return self._rows_to_window(
+                 lambda r: getters[r // self.target.vlen](r % self.target.vlen),
+@@ -4939,6 +5041,9 @@ class TTIRImporter:
+             # window's registers ARE the rows, named not copied.
+             return lambda r: self.b.window_reg(tile.handle, r,
+                                                dtype=tile.dtype)
++        if os.environ.get('TNCA_TRACE_F8_WINDOW') == '1' and tile.dtype.startswith('f8'):
++            import traceback
++            traceback.print_stack(limit=18)
+         raise Unsupported(
+             f"elementwise arithmetic on a {tile.dtype} tile that is in a "
+             f"transfer window",

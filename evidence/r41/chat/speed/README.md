@@ -63,3 +63,36 @@ The 1×7×256 consecutive-wrap case also matched 0/7 bits. The FP8 and
 compiled-graph suite passed 16/16, and the 113-point default-code audit
 compared 113 unchanged, zero changed or uncompared. The uncalibrated TLM
 result does not establish a board speedup; board A/B is pending.
+
+## Experimental E4M3 K32 retiling (not merged)
+
+The DP TLM profile was used for these **diagnostics**, not the board. The
+existing chat FP8 fused path already emits K32. A separate worktree explored
+padding K16 with negative-zero times positive-one and splitting packed K64
+into two ordered K32 commands. [Raw diagnostic records](k32_pad_packed_20261031.tgz)
+and the [research patch](k32_research_20261031.patch) are retained. The patch
+is based on the experimental worktree and also includes its earlier X8 lane
+spill experiment; it is not an integration patch.
+
+A standard Torch `torch._scaled_mm` 16x16x64 test, using a forced 16x16x64
+GEMM tile and non-default `TNCA_WINDOW_REUSE=1`, required experimental handling
+of packed FP8 row chunks on both sides: K64 baseline used
+`TNCA_FP8_PACKED_ROW_CHUNKS=1`, K32 used `TNCA_FP8_PACKED_K32=1`. These are
+not unchanged default-code measurements. Each result was compared bitwise
+with the independent DP reference.
+
+| Steady route | Instructions/MAC | Device cycles | Launches | Code loads/evictions | Mismatches |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| K64 | 0.0552978515625 | 8355 | 1 | 0/0 | 0/256 |
+| K32 + K32 | 0.05908203125 | 8227 | 1 | 0/0 | 0/256 |
+
+The K32 assembly contains two DP K32 commands and no K64 command; the
+baseline has one K64. An additional transposed-weight AOT test with nonzero
+accumulator compared signed zeros, mixed finite values and NaN/infinity
+against the exact DP reference: each case had 0/256 mismatches. The
+[raw Torch and special-value runs](k32_torch_20261031.tgz) include compiled
+assembly and results. The small cycle difference does not establish a chat
+speedup; larger shapes, default-path behavior and the 113-point audit remain
+unverified. Earlier forced-K64 Torch compilation without the experimental
+row-chunk handling was rejected, so that failure is not presented as a
+successful baseline. No board retest is queued for this ungated experiment.

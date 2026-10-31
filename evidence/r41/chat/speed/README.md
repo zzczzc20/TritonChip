@@ -145,7 +145,12 @@ launch and required non-default `TNCA_IEEE_DIV=1`. These are diagnostic
 measurements, not a shipped default. A [default-division check](hoist_default_failure_20261031.tgz)
 of the standalone route failed against that reference: M=16, N=256, K=256
 had 232/4096 bit mismatches on its first call, with two launches and 110626
-cycles. It was stopped and is not accepted. The [raw M=16 run](hoist_m16_tlm.tgz)
+cycles. It was stopped and is not accepted. A [follow-up diagnosis](hoist_faithful_diagnosis_20261031.tgz)
+compared the same inputs against the bit-exact model of the device reciprocal:
+the standalone route matched 0/4096 and the fused route differed 232/4096.
+The fused wide lowering selects IEEE division while the standalone default
+selects faithful division. This explains the observed difference; the routes
+remain unequal and no acceptance follows from the diagnosis. The [raw M=16 run](hoist_m16_tlm.tgz)
 and [matched follow-ups](matched_tlm_20261031.tgz) below use the non-default
 division setting and compare bitwise with the independent exact reference:
 

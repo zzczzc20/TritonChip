@@ -22,9 +22,27 @@ the strict read check: its compiling first decode recorded 48 reads; later
 decode steps recorded zero. The warmup VL retry passed all six registered board quality prompts,
 including the shapes image, with zero host reads across all 77 decode steps.
 The VL teacher and persistent-session checks also passed with zero decode
-host reads; scripted chat remains incomplete and Qwen3.5 is queued.
-Neither chat has passed the complete author scope. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
-The older gate judgments below are historical and do not override this decision.
+host reads. The [completed VL scripted chat](../evidence/r41/chat/run3_priority/vl_nohost_v5_script.json)
+passed three turns: prefill 0.0418973833/0.0767939185/0.0650971411 input
+tokens/s and decode 0.0205426549/0.0147603899/0.0116946094 executed
+steps/s, respectively. Its 93 decode steps had zero host reads and zero
+captured CPU numerical fallbacks; 822 parameters and four buffers were TNCA.
+
+The [Qwen3.5 populated-cache session](../evidence/r41/chat/run3_priority/q35_nohost_v6_session.json)
+passed its teacher and persistent-session checks: first prefill 0.0331967168
+tokens/s and decode 0.0142360176 executed steps/s. All nine decode steps had
+zero host reads, captured wrappers had no numerical CPU fallback, and 924
+parameters and four buffers were TNCA. Its [quality checkpoint](../evidence/r41/chat/run3_priority/q35_nohost_v6_partial.json)
+records the first of five prompts passing; the rest remain pending. Decode
+rates count executed steps, including work after EOS. The first VL script and
+Qwen3.5 session decode wall-time residuals after subtracting device cycles at
+100 MHz were 0.5211 and 0.4607 respectively; this includes waits, transfers
+and possible counter overlap and is not a host-only measurement.
+
+Qwen3.5's complete registered quality run and the queued acceleration A/B
+board measurements remain pending. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md)
+and [speed evidence](../evidence/r41/chat/speed/README.md). The older gate
+judgments below are historical and do not override this decision.
 
 Date: 2026-10-26 UTC. Sign-off: `R41_S2_100MHZ_AND_FULL_MODEL`.
 Verdict: **not accepted**. The acceptance audit is complete; product acceptance

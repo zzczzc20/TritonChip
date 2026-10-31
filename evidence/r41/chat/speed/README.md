@@ -134,3 +134,32 @@ used non-default `TNCA_CODE_CACHE_POLICY=lfu`; it is not integrated. Raw
 results, artifact mapping and [earlier failed setup attempts](code_cache_synthetic_20261031.tgz)
 are preserved. Real reduced-depth model profiling and a default-code audit
 are running; no full-model speedup or board acceptance is claimed.
+
+## Unmerged activation and accumulator experiments
+
+Moving activation quantisation outside the N-block programs via the official
+separate quantiser and prequantised matmul reduced DP TLM cycles but added a
+launch and required non-default `TNCA_IEEE_DIV=1`. These are diagnostic
+measurements, not a shipped default. The [raw M=16 run](hoist_m16_tlm.tgz)
+and [matched follow-ups](matched_tlm_20261031.tgz) compare bitwise with the
+independent exact reference:
+
+| M×N×K | Instructions/MAC fused → hoisted | Cycles fused → hoisted | Launches | Loads/evictions | Mismatches |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 16×256×256 | 0.0474281311 → 0.0433139801 | 186575 → 123126 | 1 → 2 | 0/0 → 0/0 | 0/4096 each |
+| 1×256×256 | 0.7086791992 → 0.5082702637 | 161804 → 90331 | 1 → 2 | 0/0 → 0/0 | 0/256 each |
+| 16×1024×256 | 0.0474281311 → 0.0359439850 | 598636 → 386256 | 1 → 2 | 0/0 → 0/0 | 0/16384 each |
+
+The nominal 64×64 scaled-mm attempt was split into 16-row passes and did not
+reuse weights across all 64 rows. At 64×256×256, it had 0/16384 mismatches but
+regressed from 345180 to 404950 cycles, 0.0196266174 to 0.0245447159
+instructions/MAC, with one launch and zero steady loads/evictions on both.
+A later fallback 64×64 route cost 780226 cycles. Actual multirow reuse was
+slower or refused for accumulator/register or code-store capacity; none was
+accepted. [Later logs](latest_tlm_20261031.tgz) retain these outcomes and the
+uniform-address load experiment. An M=1 spill experiment also regressed from
+161804 to 216737 cycles ([record](spill_m1_tlm_20261031.tgz)). Attempts to
+issue only one descriptor/fallback DMA were refused by window-lifetime and
+barrier verification ([first](branchdma_refused_20261031.tgz),
+[second](branchdma_b_refused_20261031.tgz)); the [patch](branchdma_experiment.patch)
+is preserved for review and was not shipped.

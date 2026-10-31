@@ -132,6 +132,21 @@ An earlier audit was invalidated by changing its source during execution;
 the fixed-source audit and suite were stopped after the random test failed.
 Neither is counted as a pass.
 
+A further [scaled-division patch](precise_div_scaled_experiment_20261031.patch)
+normalises operands by an exact power of two and fixes the sign of zero
+quotients. In [DP TLM](hoist_precise_scaled_20261031.tgz), 2,686,976 sampled
+finite float32 divisions and two 256-value special/boundary tests had zero
+bit mismatches versus CPU IEEE float32. An intermediate 65536-value sample
+failed 23 zero-sign bits before the final sign correction; its log is kept.
+On M=16, N=2048, K=2048 the latest hoisted diagnostic has 0/32768 output-bit
+mismatches, 0.0210611820 instructions/MAC, 5130958 cycles, two launches,
+and zero steady loads/evictions. Its control has 0/32768 mismatches,
+0.0328402519 instructions/MAC, 8595658 cycles, one launch and zero steady
+loads/evictions. The extra launch can offset this device-cycle saving on the
+board. These are samples, not a proof over all float32 inputs. The current
+patch and diagnostic route remain unmerged while their fresh suite and
+113-point default-code audit run; no board test is queued for them.
+
 ## Experimental frequency-aware code eviction (not merged)
 
 A generic [experimental runtime patch](code_cache_lfu_experiment.patch) ranks

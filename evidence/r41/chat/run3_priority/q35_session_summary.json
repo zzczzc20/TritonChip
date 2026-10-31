@@ -1,0 +1,42 @@
+{
+  "schema": "r41-run2-q35-session-summary/1",
+  "domain": "board",
+  "image_uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+  "clock_hz": 100000000,
+  "source_archive": "evidence/r41/chat/run3_priority/q35_session_board.tgz",
+  "source_sha256": "36423c1160495e0281e4f11bc6525e14cf2717b8cfa4de894bc06b52fa8f9641",
+  "legacy_harness_status": "pass",
+  "author_scope_status": "failed: host token selection and logits downloads",
+  "model": "qwen3.5-4b-fp8",
+  "model_scope": "full-checkpoint",
+  "generated_text": "Hi there! How",
+  "teacher_forced_passed": true,
+  "persistent_session_passed": true,
+  "prompt_tokens": 15,
+  "prefill_seconds": 574.5629690899805,
+  "prefill_tokens_per_second": 0.026106799092461,
+  "prefill_rate_boundary": "whole first prefill wall time, including compilation and output download",
+  "all_decode_tokens_per_second": 0.006632080465254454,
+  "steady_decode_steps": 2,
+  "steady_decode_seconds": 131.43974856898421,
+  "steady_decode_tokens_per_second": 0.015216097274793016,
+  "steady_decode_launches": [
+    723,
+    723
+  ],
+  "steady_decode_device_cycles": 7572841707,
+  "steady_decode_host_reads_inside_model": [
+    0,
+    0
+  ],
+  "logits_download_bytes_per_step": [
+    496640,
+    496640,
+    496640,
+    496640
+  ],
+  "host_share_caveat": "Residual wall time after subtracting summed launch cycles at 100 MHz; includes host, transfer, wait and any counter/overlap effects, and is not a directly measured host-only fraction.",
+  "no_fallback_evidence": "The original host token selection executes argmax on the CPU and downloads each step logits outside the meter; the hardcoded cpu_numerical_fallback field is not proof.",
+  "quality_status": "running at 2026-10-31 04:15 UTC",
+  "steady_decode_estimated_non_device_wall_fraction": 0.42385451969839194
+}

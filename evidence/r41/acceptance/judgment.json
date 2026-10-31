@@ -1525,21 +1525,25 @@
       },
       {
         "model": "Qwen3.5-4B-FP8",
-        "status": "not measured",
+        "status": "failed",
         "checks": {
-          "full_checkpoint": "not measured",
+          "full_checkpoint": "passed",
           "registered_quality": "not measured",
-          "persistent_session": "not measured",
+          "persistent_session": "passed",
           "scripted_chat": "not measured",
           "weights_activations_on_tnca": "not measured",
-          "zero_cpu_numerical_fallback": "not measured",
-          "zero_steady_host_tensor_reads": "not measured",
-          "board_prefill_decode_rates": "not measured",
+          "zero_cpu_numerical_fallback": "failed",
+          "zero_steady_host_tensor_reads": "failed",
+          "board_prefill_decode_rates": "passed",
           "device_launch_cycles_host_share": "not measured",
-          "runtime_liveness": "not measured"
+          "runtime_liveness": "passed"
         },
         "evidence_required": "full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing",
-        "evidence": []
+        "evidence": [
+          "evidence/r41/chat/run3_priority/q35_session_board.tgz",
+          "evidence/r41/chat/run3_priority/q35_session_summary.json"
+        ],
+        "failure_reason": "Run-2 full-checkpoint session and teacher/session checks passed under the old harness, but per-step logits were downloaded and argmax ran on the CPU; the author no-host criterion fails. Quality is running."
       }
     ]
   },

@@ -5,10 +5,11 @@ makes the two full FP8 board chats and proof of no CPU numerical fallback and
 no steady-decode host tensor reads the closure focus. Q41/XL and other old-gate
 requirements are descoped, not passed or failed; prior results and failures
 remain recorded in the [ledger](../evidence/r41/acceptance/stage2_index.md).
-The run-2 VL chat attempt stalled and was interrupted; Qwen3.5 is running.
-Neither chat has passed the new scope. The existing code transfers vision
-intermediates and logits through the host, so its static no-fallback flag is
-not proof of the requested criterion. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
+The run-2 VL chat attempt stalled and was interrupted. A Qwen3.5 board
+session generated text and passed its teacher and session checks, but selected
+tokens on the CPU and downloaded logits during decode; its quality run is in
+progress. Neither chat has passed the author scope. A device-feedback retry
+is queued. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
 The older gate judgments below are historical and do not override this decision.
 
 Date: 2026-10-26 UTC. Sign-off: `R41_S2_100MHZ_AND_FULL_MODEL`.
@@ -18,7 +19,7 @@ pre-implementation Stage 2 freeze was missed.
 
 > **Rectification, 2026-10-28.** Several judgments in the dated sections below
 > were corrected after the discipline audit; see "Rectification — 2026-10-28"
-> at the end of this report. The current ledger is **38 passed, two failed,
+> at the end of this report. The ledger at that rectification was **38 passed, two failed,
 > 47 not measured, seven blocked**.
 
 The [item ledger](../evidence/r41/acceptance/stage2_index.md) judges every

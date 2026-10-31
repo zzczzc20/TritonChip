@@ -13,10 +13,10 @@ work = home/'r41run3'
 sys.path.insert(0, str(work/'runtime_prepared/tools/r41/run2_board'))
 import auto
 
-pid = 1150557
-marker = 'runtime_prepared/tools/models/chat.py'
+pid = int(sys.argv[1]) if len(sys.argv) > 1 else 1150557
+marker = sys.argv[2] if len(sys.argv) > 2 else 'runtime_prepared/tools/models/chat.py'
 output = work/'chat_priority_20261031/chat-q35'
-log_path = work/'chat_priority_20261031/q35-liveness-watch.jsonl'
+log_path = work/'chat_priority_20261031'/f'q35-liveness-watch-{pid}.jsonl'
 idle_start = None
 prior = None
 last_notice = 0.0
@@ -49,7 +49,8 @@ with log_path.open('x', buffering=1) as log:
         now = time.monotonic()
         snapshot = (ticks, logs, board.get('total execs'))
         owned = (board.get('uuid') == 'ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3' and
-                 str(pid) in str(board.get('client pid', '')) and board.get('contexts') == 1)
+                 ((str(pid) in str(board.get('client pid', '')) and board.get('contexts') == 1) or
+                  (board.get('contexts') == 0 and not board.get('client pid'))))
         quiet = owned and board.get('outstanding execs') == 0 and not children
         if not quiet or snapshot != prior:
             idle_start = now

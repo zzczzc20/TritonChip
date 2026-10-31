@@ -16,6 +16,22 @@ The same queue was restarted in a new output directory at 19:01 UTC with a
 24 GiB limit after verifying the image, 100 MHz clock and idle card. This is
 an operational retry, not a passed measurement.
 
+The [event-index board session](event_index_board_20261031.tgz) completed at
+19:40 UTC on the 100 MHz run-2 image; its [summary](event_index_board_20261031.json)
+records a full-checkpoint Qwen3.5 session. Teacher and persistent-session
+checks passed. Across three rounds, all nine decode steps had zero host reads,
+all 924 parameters and four buffers were on TNCA and captured wrappers had no
+CPU numerical fallback. The first answer and four token IDs were identical to
+the earlier session. For the first call, recorded baseline → event-index
+prefill was 0.0331967168 → 0.0344526656 input tokens/s; decode was
+0.0142360176 → 0.0157428920 executed steps/s, with 11365085627 → 11320317067
+device cycles over three steps. Each decode step had 725 launches and
+561/559/559 evictions on both runs. Physical code reload counts were not
+recorded on the board. Decode non-device wall residual was 0.4606881353 →
+0.4059515709; this includes waits and transfers, not just host execution.
+These are single board sessions, not a repeated controlled benchmark. The
+quality failure above remains unchanged; equal-row board testing has started.
+
 ## Equal-row lowering
 
 On a DP target the compiler now proves equal row addresses and masks before

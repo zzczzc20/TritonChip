@@ -1029,3 +1029,8 @@ The next report update records the segmented Qwen3.5 multi-turn failure; prior r
 
 - `doc/r41_report.md`: `08e3b2bbf1771ce19958c56227dcc01cb486a7904c556875dcc5a6f6d35668e6` → `d6d7bb73ab27846689230b362c4242eb3a42d005ce9c421bb01bc90b839d2be3`
 - `doc/r41_stage2_report.md`: `c7400b824382f731756f75ab8a8325c87c78dc20fe2edb0adbf74397587bc201` → `5d666c6bd6f6657c44c8949f9a81ba4aa56c8a6902305ced7763ad8e3d41f6ca`
+
+The next report update records the completed event-index board session; prior reports remain in git at `fece0def`. Only the two living report hashes were refreshed.
+
+- `doc/r41_report.md`: `d6d7bb73ab27846689230b362c4242eb3a42d005ce9c421bb01bc90b839d2be3` → `d37075cb1fc0b894c31213b663c9b737599b22d07876cd9f706de7ce46a88793`
+- `doc/r41_stage2_report.md`: `5d666c6bd6f6657c44c8949f9a81ba4aa56c8a6902305ced7763ad8e3d41f6ca` → `f2e57c7cc8f2834a33f129361ae5a0b97b1a12be5bd9c90723a93807bd9c560b`

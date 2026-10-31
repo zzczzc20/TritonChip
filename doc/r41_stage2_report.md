@@ -43,6 +43,12 @@ Qwen3.5 session decode wall-time residuals after subtracting device cycles at
 100 MHz were 0.5211 and 0.4607 respectively; this includes waits, transfers
 and possible counter overlap and is not a host-only measurement.
 
+The later [event-index board session](../evidence/r41/chat/speed/event_index_board_20261031.json)
+passed its teacher and persistent-session checks with zero decode host reads
+and no captured CPU numerical fallback. Its first decode ran at 0.0157428920
+executed steps/s, compared with 0.0142360176 in the earlier session; these are
+single observations, with physical code reload counts unmeasured.
+
 Qwen3.5's original registered quality run timed out and its segmented multi-turn
 continuation failed the registered first-turn comparison. The acceleration
 A/B board sessions have begun; CPU/TLM diagnosis is in progress. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md)

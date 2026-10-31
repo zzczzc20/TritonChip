@@ -47,6 +47,11 @@ The first tiled batch completed 99/99 with no failed or missing configurations:
 99 default configurations on the same image and software tree, the sum of
 serial-grid cycle medians is 1.742× faster; 15 points are slower, none by more
 than 5% ([comparison and samples](membound_tiled2_large1_comparison.json)).
+The second large batch passed 72/72
+([raw records](membound_tiled2_large2.tgz)). Across both large batches,
+171/171 passed; the same-image sum of cycle medians is 1.578× faster, with
+31 points slower and none over 5% slower
+([all matched samples](membound_tiled2_large_comparison.json)).
 This is a descriptive subset, not a full-suite or statistical acceptance.
 Both large
 batches completed, 171/171 with zero missing or failed configurations; raw

@@ -39,8 +39,9 @@ necessary.
 The 39 memory-bound and two original-suite points over 5% slower now have a
 registered recheck queued after the existing candidate tests; see
 [`performance_recheck.md`](performance_recheck.md). No recheck result exists yet.
-The first tiled large batch passed 99/99. Its same-image, same-source paired
-comparison with default is in [`membound_tiled2_large1_comparison.json`](membound_tiled2_large1_comparison.json);
+The two tiled large batches passed 171/171. Their same-image, same-source
+paired comparison with default is in
+[`membound_tiled2_large_comparison.json`](membound_tiled2_large_comparison.json);
 the remaining tiled batches are in progress or pending.
 The restored S2-04.D.4 grid-admission check is also queued after the run-1
 rechecks; its scope and prior audit are in [`grid_rerun.md`](grid_rerun.md).

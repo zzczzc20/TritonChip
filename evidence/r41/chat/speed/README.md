@@ -218,5 +218,25 @@ instructions/MAC stayed 0.1002197265625, cycles stayed 7271, and probe launch
 count stayed one per repetition. The candidate passed 4/4 cache lifecycle
 checks and 16/16 fixed-revision FP8/compiled-graph checks. Its
 [default-code audit](code_cache_sqrt_audit_20261031.tgz) compared 113/113
-points unchanged. Real reduced-depth VL and Qwen3.5 TLM comparisons are
-running. This policy is not accepted, integrated or queued for board retest.
+points unchanged. The reduced-depth VL comparison below completed; the
+Qwen3.5 comparison is running. This policy is not accepted, integrated or
+queued for board retest.
+
+The [one-layer VL DP TLM comparison](code_cache_sqrt_model_20261031.tgz)
+used the earlier recorded LRU control. Both logits tensors had 0/151936 bit
+mismatches against that control and all 130 code texts and launch metadata
+matched. Each route reported zero CPU numerical fallback and zero host reads
+inside measured prefill/decode. It is reduced-depth and `--check-tokens 0`:
+it is not an independent CPU quality check or board performance evidence.
+
+| Step | Device cycles LRU → size-aware | Launches | Load marks | Evictions |
+| --- | ---: | ---: | ---: | ---: |
+| Prefill | 530227895 → 546235470 | 28 → 28 | 23 → 14 | 24 → 18 |
+| Decode | 487191706 → 490524791 | 25 → 25 | 19 → 18 | 17 → 13 |
+
+The load marks are path-residency indicators, not independently counted
+physical loads. Whole-process instructions were 599723788 for each; the
+profiler's per-launch counters were null, so per-step instructions/MAC is
+unavailable. Both measured device-cycle totals increased, despite fewer load
+marks and evictions. No end-to-end gain is established; the policy remains
+unmerged while the Qwen3.5 comparison runs.

@@ -258,3 +258,21 @@ included three code loads and 13632 code bytes. This is a correctness check,
 not a performance comparison. The profile report's scope and legacy-format
 checks passed 3/3. Fresh reduced-depth VL A/B runs using the corrected
 profiler are in progress.
+
+## Experimental equal-row activation staging
+
+The compiler's existing equal-row proof can be retained through a uniform
+row reduction, scalar division, expansion and broadcast, then used to stage
+one packed activation register for repeated rows. The generic
+[experimental patch](activation_equal_stage_experiment.patch) is guarded by
+`TNCA_X8_EQUAL_A_STAGE=1` and does not assume a model name. The
+[initial TLM records](activation_equal_stage_initial_20261031.tgz) include an
+unchanged first attempt where the proof did not propagate and the later
+successful proof diagnostic.
+
+For the official fused FP8 kernel at 1×256×256, control → candidate steady
+instructions/MAC were 0.64068603515625 → 0.48052978515625, device cycles
+113675 → 91280, one launch for each and zero steady code loads/evictions.
+Both outputs had 0/256 bit mismatches against the independent DP reference.
+Broader shape, boundary and default-code gates are running; this candidate is
+not yet integrated or queued for board retest.

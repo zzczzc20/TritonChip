@@ -383,3 +383,15 @@ setup attempts also failed. The [failure logs](activation_mask_setup_failures_20
 are retained and are not counted as passes. The official fused K=256 and K=384
 cases above did pass. Board A/B testing is queued; these TLM results are not
 board throughput claims.
+
+The [one-layer VL model DP TLM comparison](activation_stage_model_tlm_20261031.tgz)
+used the corrected completed-event profiler. Control → candidate prefill:
+28 → 28 launches, 543716965 → 529853540 cycles, 23 → 23 physical loads,
+328000 → 328000 code bytes and 24 → 26 evictions. Decode: 25 → 25 launches,
+499900292 → 489017348 cycles, 19 → 19 loads, 186176 → 165184 code bytes
+and 17 → 15 evictions. The seven FP8 matmuls had decode instructions/MAC
+0.4194615682 → 0.2593053182 and cycles 69476943 → 58568312; prefill
+instructions/MAC was 0.0472591285 on both routes. Both model logits tensors
+had 0/151936 bit mismatches against the TLM control, no captured CPU numerical
+fallback, and zero host reads in prefill and decode. This reduced-depth check
+is not independent full-model CPU quality or board throughput evidence.

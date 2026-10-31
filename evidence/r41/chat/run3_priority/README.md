@@ -394,3 +394,15 @@ cache's 0.010808053152941194. This supports normalization error amplified by
 FP8 quantization as an explanation of that particular TLM cache discrepancy;
 it does not prove the board's full-model numerics or change its passing reason
 result.
+
+The [four-prompt board snapshot](vl_nohost_v5_four_prompts.json) adds the
+`instruct` answer `OK` as passed. All four completed prompts report zero host
+reads in their 11 decode steps. The remaining quality prompts, image, session
+and script are still pending.
+
+For the same static-cache norm input, [CPU Inductor versus eager CPU](vl_reason_norm_cpu_inductor.tgz)
+differed in 15,989/61,440 values (relative L2 0.0029609480407088995). CPU
+Inductor versus TLM differed in just 1/61,440 values (relative L2
+0.00002958305412903428). This supports a compiled-versus-eager numerical-path
+explanation of most of the isolated norm discrepancy; it is not a board
+measurement or a full-model acceptance result.

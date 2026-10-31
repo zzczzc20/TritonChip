@@ -1533,9 +1533,10 @@
           "evidence/r41/chat/run3_priority/vl_nohost_v3_timeout.tgz",
           "evidence/r41/chat/run3_priority/vl_nohost_v4_failed.tgz",
           "evidence/r41/chat/run3_priority/vl_nohost_v5_first_prompt.json",
-          "evidence/r41/chat/run3_priority/vl_nohost_v5_three_prompts.json"
+          "evidence/r41/chat/run3_priority/vl_nohost_v5_three_prompts.json",
+          "evidence/r41/chat/run3_priority/vl_nohost_v5_four_prompts.json"
         ],
-        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and a CPU diagnostic localized divergence to the single-token prefill tail; grouped-tail CPU checks passed, but do not establish board acceptance. The graph-reuse quality attempt subsequently timed out after four completed prompts; the grouped-tail retry failed the strict decode-read check because the first decode compiled constants and recorded 84 host reads; all later decode steps recorded zero reads. The separate warmup VL retry is running; Qwen3.5 is queued. The warmup retry has passed fact, arith, and reason with zero decode host reads and reason tokens equal to the registered reference; remaining prompts, image and session are still running or pending."
+        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and a CPU diagnostic localized divergence to the single-token prefill tail; grouped-tail CPU checks passed, but do not establish board acceptance. The graph-reuse quality attempt subsequently timed out after four completed prompts; the grouped-tail retry failed the strict decode-read check because the first decode compiled constants and recorded 84 host reads; all later decode steps recorded zero reads. The separate warmup VL retry is running; Qwen3.5 is queued. The warmup retry has passed fact, arith, reason, and instruct with zero decode host reads and reason tokens equal to the registered reference; remaining prompts, image and session are still running or pending."
       },
       {
         "model": "Qwen3.5-4B-FP8",

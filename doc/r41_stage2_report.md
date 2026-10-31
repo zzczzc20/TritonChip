@@ -41,9 +41,9 @@ with 22 failing endpoints; the link reports `freq-moved`, and the Critical CDC
 review is conditional. These implementation results are not clean timing
 closure. The board measured the DATA clock at 100 MHz; identity passed 3/3,
 HBM checks passed after a documented host-driver clamp fix, the original suite
-passed 113/113, and the completed large and medium memory batches passed
-342/342. Matched baseline comparisons have individual regressions requiring
-recheck. Small and tiled memory, FP8, endurance and full-model chat remain in
+passed 113/113, and the default memory suite passed 513/513. In a descriptive
+matched-point comparison, 39 points are over 5% slower and eight over 10%
+slower; these require recheck. Tiled memory, FP8, endurance and full-model chat remain in
 progress or pending; R41 is not accepted. See the [board evidence](../evidence/r41/hbm_bw/g4/run3/board/README.md)
 and [routed review](../evidence/r41/hbm_bw/g4/run3/route_prepackage/README.md).
 

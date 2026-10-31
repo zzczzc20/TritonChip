@@ -34,7 +34,15 @@ compared with 582.598 s for the same point on the previous 100 MHz image
 device-time speedup. This single comparison does not establish the suite-wide
 performance gate.
 
-The default 513-point memory-bound campaign is in progress. Both large
+The default 513-point memory-bound campaign completed 513/513 with no missing
+or failed configurations ([stage summary](membound_default_stage.json)). Across all matched 100 MHz points, the sum of
+point medians is 1.133× faster and the geometric mean speedup is 1.178×;
+81 points are slower, 39 by over 5%, and eight by over 10%.
+All point hashes, demand, samples and medians are in
+[`membound_default_comparison.json`](membound_default_comparison.json).
+This descriptive comparison covers different complete stacks, so it does not
+isolate an optimization or replace the registered performance rechecks.
+Both large
 batches completed, 171/171 with zero missing or failed configurations; raw
 records are in [`membound_default_large1.tgz`](membound_default_large1.tgz)
 and [`membound_default_large2.tgz`](membound_default_large2.tgz).
@@ -51,7 +59,7 @@ with 13 points over 5% slower and two over 10% slower:
 [`membound_default_medium_comparison.json`](membound_default_medium_comparison.json).
 This is a descriptive comparison of different complete stacks, not a
 statistical gate or an isolated attribution to an optimization.
-For this batch only, declared logical read-plus-write bytes divided by
+For the first large batch only, declared logical read-plus-write bytes divided by
 serial-grid device time has a median of 0.134 GB/s and a maximum of 0.544 GB/s:
 [`membound_default_large1_rates.json`](membound_default_large1_rates.json).
 For all 171 large points, the effective logical-rate median is 0.133 GB/s,
@@ -59,8 +67,8 @@ versus 0.138 GB/s on the prior image; the sum of point medians is 1.13× faster
 in cycles, with 28 individual points slower. Twelve exceed 5% slower and two
 strided BF16/FP16 division points are approximately 12.4% slower. The matched-point data and
 samples are in [`membound_default_large_comparison.json`](membound_default_large_comparison.json).
-These are effective logical rates, not physical HBM throughput. The small and
-tiled batches remain in progress or pending; this descriptive subset
+These are effective logical rates, not physical HBM throughput. The tiled
+batches remain in progress or pending; this descriptive subset
 is not the complete performance gate.
 
 The first small batch completed 142/142 with no missing or failed
@@ -70,7 +78,8 @@ Its matched 100 MHz comparison has 1.127× speedup in the sum of point medians;
 point data and samples are in
 [`membound_default_small1_comparison.json`](membound_default_small1_comparison.json).
 This is a descriptive comparison of different stacks, not a causal attribution
-or a registered recheck. The second small batch is running.
+or a registered recheck. The second small batch completed 29/29:
+[`membound_default_small2.tgz`](membound_default_small2.tgz).
 
 The first identity attempt failed before device execution because the queue
 resolved the virtualenv symlink to system Python, which lacked PyTorch:

@@ -1,4 +1,4 @@
-# Board campaign progress, 2026-10-31 00:16 UTC
+# Board campaign progress, 2026-10-31 00:34 UTC
 
 The author explicitly authorized final-image loading without further approval,
 including the 433 MHz exception. The 15-minute idle rule and protection of
@@ -14,8 +14,9 @@ state and raw records under
 The 113-point stage passed 113/113; its raw records and preliminary performance
 comparison are linked from `README.md`. The queue has started the default
 513-point memory-bound stage; at the time above both large batches passed
-171/171, both medium batches passed 171/171, and the first small batch passed
-142/142. The second small batch is running. The queue will run later
+171/171, both medium batches passed 171/171, and both small batches passed
+171/171. The default 513-point suite completed 513/513 and the tiled2 suite
+has started. The queue will run later
 registered stages in order, stopping on failure. The
 previous identity and HBM clamp failures and fixes are preserved in `README.md`.
 
@@ -32,9 +33,9 @@ and distinguish the image change from any new-default optimization decision.
 The 171 completed medium points have 13 over 5% slower, including two strided
 division points about 12.6% slower; the full point comparison is linked in the
 board README and likewise requires registered rechecks.
-Among the 142 first-batch small points, 10 are over 5% slower and four over
-10% slower in the descriptive matched comparison; the registered rechecks
-remain necessary.
+Across all 513 default points, 39 are over 5% slower and eight over 10% slower
+in the descriptive matched comparison; the registered rechecks remain
+necessary.
 
 The merged-source strict compiler gate passed 170 unit tests and six IR cases
 ([`../merge_gate/README.md`](../merge_gate/README.md)); the merged harness

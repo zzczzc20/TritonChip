@@ -825,3 +825,10 @@ localizing the first-layer output. It truncates the model, replaces `lm_head`
 with identity, and requests hidden outputs, so it is diagnostic only. The
 comparator checks the CPU embedding and first layer against the full CPU
 capture; results are pending.
+
+The first headless CPU diagnostic [failed while saving](q35_first_headless_v1_failed_20261031.log.gz):
+the identity head shared storage with the final hidden tensor, and safetensors
+refused duplicate storage. Its paired TLM run was stopped because it would hit
+the same save error; no numerical result is claimed. A separately recorded
+[v2 diagnostic](q35_first_headless_v2_pending_20261031.tgz) clones outputs
+before saving and is running alongside the original full-head diagnostic.

@@ -3162,6 +3162,17 @@ class TTIRImporter:
             return base if off == 0 else (b.sbini('add', base, off) if isinstance(off, int)
                                           else b.sbin('add', base, off))
         scratch = self._scratch_base()
+        import os as _os
+        lane_spill = None
+        if self.target.has('matrix_dp') and _os.environ.get('TNCA_X8_SPILL_LANES', '1') != '0':
+            # Fallback gather indices are only used in the slow arm. Keep
+            # them in scratch while descriptor transfers and MMA overlap.
+            lane_spill = []
+            for lane_vec in lane_vecs:
+                off = self._take_scratch(vlen * 4)
+                b.store(b.sbini('add', scratch, off), lane_vec, size='w')
+                lane_spill.append(off)
+            b.fence()
         # Run-time check, once per call: chunk j's lanes are column indices
         # c_j + lane (W rows c_j .. c_j+15, so one transfer at row c_j) --
         # false where `offs_bn % N` wraps inside the chunk. Lane j of `oks`
@@ -3182,18 +3193,21 @@ class TTIRImporter:
             base=at(r00), elem=ae, extents=[self._OPEN_EXTENT, k if limit == 'all' else limit],
             byte_strides=[stride, 1], block_shape=[vlen, step],
             what="W's rows for a transposed FP8 B", check=isinstance(stride, int))
-        fill_off = self._take_scratch(step * vlen)
-        fill_desc = self._build_descriptor(
-            base=b.sbini('add', scratch, fill_off), elem=ae, extents=[step, vlen], byte_strides=[vlen, 1],
-            block_shape=[step, vlen], what='the gathered fallback B tile')
+        lookahead = 0 if _os.environ.get('TNCA_X8_PIPELINE', '1') == '0' else 1
+        # Two outstanding fallback transfers must not read the same scratch
+        # tile while the next gather overwrites it. A slot is reused only
+        # after its preceding transfer has been waited on.
+        fill_count = 2 if lane_spill is not None and lookahead else 1
+        fill_offs = [self._take_scratch(step * vlen) for _ in range(fill_count)]
+        fill_descs = [self._build_descriptor(
+            base=b.sbini('add', scratch, off), elem=ae, extents=[step, vlen], byte_strides=[vlen, 1],
+            block_shape=[step, vlen], what='the gathered fallback B tile') for off in fill_offs]
         accs = []
         for j in range(nchunks):
             acc = b.accumulator(name=f"acc{len(self.kernel.accumulators)}")
             b.acc_zero(acc)
             accs.append(acc)
-        import os as _os
-
-        def issue(s0, j):
+        def issue(s0, j, slot):
             """Everything that makes B(s0, j) arrive, up to and including the
             commands, and none of the wait: the fallback gather arm when the
             chunk's rows are not affine, then both predicated transfers on one
@@ -3207,17 +3221,19 @@ class TTIRImporter:
             done = self._control_label('x8dot_done')
             b.branch_nz(ok, done)
             kk = self._copy_value(b.const(0))
+            fallback_lanes = (b.load(b.sbini('add', scratch, lane_spill[j]), dtype='i32', size='w')
+                              if lane_spill is not None else lane_vecs[j])
             # The arm's scalars are formed inside it, so none is live
             # across the whole dot.
             row = at(r00) if s0 == 0 else b.sbini('add', at(r00), s0)
-            fill = b.sbini('add', scratch, fill_off)
+            fill = b.sbini('add', scratch, fill_offs[slot])
             with b.loop(kk, step, self._control_label('x8dot_row')):
                 src = b.sbin('add', row, kk)
                 mask = None
                 if limit != 'all':
                     left = b.sbin('sub', b.sbini('add', limit, -s0), kk)
                     mask = b.vcmp('gt', b.splat(left, dtype='i32'), b.vmovi(0))
-                g = b.gather(src, lane_vecs[j], mask=mask, other=0, dtype='i32', size='b')
+                g = b.gather(src, fallback_lanes, mask=mask, other=0, dtype='i32', size='b')
                 b.store(b.sbin('add', fill, b.sbini('shl', kk, (vlen - 1).bit_length())), g, size='b')
                 b.fence()
             b.label(done)
@@ -3225,7 +3241,7 @@ class TTIRImporter:
             tok = b.barrier_arm(bar, arrivals=0, ops=2)
             fast_p = b.vcmp('ne', b.splat(ok, dtype='i32'), b.vmovi(0))
             slow_p = b.vcmp('eq', b.splat(ok, dtype='i32'), b.vmovi(0))
-            b.dma_load(b_win, fill_desc.value, [b.const(0), b.const(0)], tok, dtype=ae, mask=slow_p)
+            b.dma_load(b_win, fill_descs[slot].value, [b.const(0), b.const(0)], tok, dtype=ae, mask=slow_p)
             b.dma_load(b_win, desc.value, [b.vextract(rows, j), b.const(s0)], tok,
                        dtype=ae, transpose=True, mask=fast_p)
             return b_win, tok
@@ -3236,16 +3252,15 @@ class TTIRImporter:
         # works on this one. Items are independent (own window, own barrier);
         # the accumulation order into each accumulator is unchanged, so the
         # result is bit for bit that of the serial order.
-        lookahead = 0 if _os.environ.get('TNCA_X8_PIPELINE', '1') == '0' else 1
         items = [(s0, j) for s0 in range(0, k, step) for j in range(nchunks)]
         pending = {}
         a_tile = None
         for idx, (s0, j) in enumerate(items):
             rc = s0 // vlen
             if idx not in pending:
-                pending[idx] = issue(*items[idx])
+                pending[idx] = issue(*items[idx], idx % fill_count)
             if lookahead and idx + 1 < len(items):
-                pending[idx + 1] = issue(*items[idx + 1])
+                pending[idx + 1] = issue(*items[idx + 1], (idx + 1) % fill_count)
             if j == 0:
                 # A for this K step, row-major: element (m, k) at m*step + k.
                 a_addr = self._spill_region(step * vlen)

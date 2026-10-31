@@ -1505,13 +1505,13 @@
         "model": "Qwen3-VL-2B-FP8",
         "status": "failed",
         "checks": {
-          "full_checkpoint": "not measured",
-          "registered_quality": "not measured",
+          "full_checkpoint": "passed",
+          "registered_quality": "failed",
           "persistent_session": "not measured",
           "scripted_chat": "not measured",
           "weights_activations_on_tnca": "not measured",
-          "zero_cpu_numerical_fallback": "not measured",
-          "zero_steady_host_tensor_reads": "not measured",
+          "zero_cpu_numerical_fallback": "failed",
+          "zero_steady_host_tensor_reads": "failed",
           "board_prefill_decode_rates": "not measured",
           "device_launch_cycles_host_share": "not measured",
           "image_prompt": "not measured",
@@ -1520,9 +1520,10 @@
         "evidence_required": "full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing",
         "evidence": [
           "evidence/r41/chat/run3_priority/vl_stalled_attempt.tgz",
-          "evidence/r41/chat/run3_priority/vl_quality_partial_20261031.json"
+          "evidence/r41/chat/run3_priority/vl_quality_partial_20261031.json",
+          "evidence/r41/chat/run3_priority/vl_traced_sigsegv.tgz"
         ],
-        "failure_reason": "Run-3 VL quality attempt stalled with no observed progress and was interrupted; cause not yet established."
+        "failure_reason": "The initial VL attempt stalled and was interrupted; the traced retry answered two prompts but exited with SIGSEGV during a register-write path. Its old host-selected token path also violates no-host criteria; the root cause of the crash is not established."
       },
       {
         "model": "Qwen3.5-4B-FP8",

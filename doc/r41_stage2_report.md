@@ -5,7 +5,8 @@ makes the two full FP8 board chats and proof of no CPU numerical fallback and
 no steady-decode host tensor reads the closure focus. Q41/XL and other old-gate
 requirements are descoped, not passed or failed; prior results and failures
 remain recorded in the [ledger](../evidence/r41/acceptance/stage2_index.md).
-The run-2 VL chat attempt stalled and was interrupted. A Qwen3.5 board
+The first run-2 VL chat attempt stalled and was interrupted; a traced retry
+answered two prompts before SIGSEGV during a register-write path. A Qwen3.5 board
 session generated text and passed its teacher and session checks, but selected
 tokens on the CPU and downloaded logits during decode. Its original quality
 run was interrupted before a result; the same workload is queued with device

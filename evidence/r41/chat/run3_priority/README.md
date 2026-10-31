@@ -38,3 +38,14 @@ A live snapshot at 2026-10-31 04:44 UTC records two quality prompts:
 reference scores. The full-checkpoint diagnostic remained running at the
 snapshot; [`vl_quality_partial_20261031.json`](vl_quality_partial_20261031.json)
 is a partial result, not a complete quality run or proof of no host fallback.
+
+## VL diagnostic termination
+
+The traced full-checkpoint VL quality run subsequently exited with SIGSEGV
+(return code -11) at 04:49:58 UTC, after the two recorded prompts. The fatal
+stack includes the XRT register-write path during device code upload; the
+periodic stack dump overlapped the fatal dump, so the root cause is not
+established. The [preserved run](vl_traced_sigsegv.tgz) contains the partial
+quality result, raw stacks and experiment failure. The board remained bound
+to `xocl` with the candidate UUID, and the separately registered device-feedback
+VL retry started at 04:50:00 UTC.

@@ -15,8 +15,9 @@ import auto
 
 pid = int(sys.argv[1]) if len(sys.argv) > 1 else 1150557
 marker = sys.argv[2] if len(sys.argv) > 2 else 'runtime_prepared/tools/models/chat.py'
-output = work/'chat_priority_20261031/chat-q35'
-log_path = work/'chat_priority_20261031'/f'q35-liveness-watch-{pid}.jsonl'
+model = sys.argv[3] if len(sys.argv) > 3 else 'q35'
+output = work/(sys.argv[4] if len(sys.argv) > 4 else 'chat_priority_20261031/chat-q35')
+log_path = work/(sys.argv[5] if len(sys.argv) > 5 else f'chat_priority_20261031/q35-liveness-watch-{pid}.jsonl')
 idle_start = None
 prior = None
 last_notice = 0.0
@@ -31,7 +32,7 @@ with log_path.open('x', buffering=1) as log:
         except (FileNotFoundError, ProcessLookupError):
             record('process-exited')
             break
-        if marker not in cmd or '--model q35' not in cmd:
+        if marker not in cmd or f'--model {model}' not in cmd:
             record('identity-changed')
             break
         fields = raw[raw.rfind(')')+2:].split()
@@ -64,7 +65,7 @@ with log_path.open('x', buffering=1) as log:
         if quiet and idle_seconds >= 600:
             # Revalidate identity immediately before signalling the specific process.
             cmd2 = (proc/'cmdline').read_bytes().replace(b'\0', b' ').decode()
-            if marker not in cmd2 or '--model q35' not in cmd2:
+            if marker not in cmd2 or f'--model {model}' not in cmd2:
                 record('identity-changed-before-signal')
                 break
             record('terminate-stalled-process', cpu_ticks=ticks, idle_seconds=idle_seconds,

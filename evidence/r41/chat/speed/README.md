@@ -160,8 +160,7 @@ patch subsequently [failed](hoist_precise_nan_20261031.tgz) 16/256 negative
 NaN sign checks; an intermediate fix failed 8/256 mixed signalling/quiet NaN
 payload checks. A [new experimental patch](precise_div_nanfix_experiment_20261031.patch)
 passed those 256 payload combinations, 65536 finite random pairs and two
-256-value special/tile tests. Its fresh suite, audit and performance runs are
-in progress. A further [cross-architecture CPU comparison](nan_reference_cross_arch_20261031.json)
+256-value special/tile tests. Its fresh suite and audit later completed 16/16 and 113/113 unchanged. A further [cross-architecture CPU comparison](nan_reference_cross_arch_20261031.json)
 of the same 256 NaN/infinity/zero pairs found 16 bit-pattern differences
 between the board host x86 CPU and the GB10 CPU. The latest experimental
 TLM division matched the GB10 patterns, so it cannot be claimed bitwise equal
@@ -185,8 +184,13 @@ and 0/98304 mismatches. The latter control used one launch, 25209537 cycles
 and 0/98304 mismatches. Both routes passed their compiled-graph checks. The
 latest precise-division candidate also passed 1,048,576 additional random
 finite comparisons and the recorded NaN-payload cases. The [model-route patch](hoist_route_experiment_20261031.patch)
-is experimental: its model TLM comparisons, full suite and 113-point audit
-are still running, and it is neither integrated nor queued for board test.
+is experimental. The [final protected wrapper and gate records](hoist_final_gate_20261031.tgz)
+show its full FP8 suite passed 16/16 and its 113-point default-code audit
+compared 113 unchanged; the corresponding [final wrapper source](fp8_hoist_final_experiment_20261031.py)
+adds device and shape guards. Direct and compiled-graph tests matched the
+reference at M=1 and M=16. Qwen3.5 model TLM remains in progress. The
+board-host NaN bit mismatch above prevents accepting the general division
+candidate; this route is neither integrated nor queued for board test.
 
 The [one-layer VL model TLM comparison](hoist_model_tlm_20261031.tgz) used
 the initial prototype before its final device/shape guard and the completed-

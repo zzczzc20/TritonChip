@@ -59,6 +59,16 @@ wrappers had no numerical CPU fallback. Output tokens matched. These are
 single observations; physical code reloads were not recorded. The separate
 registered Qwen3.5 multi-turn quality failure is unchanged.
 
+The later [pipelined-weight board session](../evidence/r41/chat/speed/pipeline_board_20261031.json)
+passed its teacher and persistent-session checks with identical first-call
+tokens, nine decode steps with zero host reads, all model parameters and
+buffers on TNCA and no captured numerical CPU fallback. First prefill and
+decode were 0.0351260051 input tokens/s and 0.0180497837 executed steps/s,
+versus 0.0350916254 and 0.0179191362 with equal-row; the three decode steps
+used 8997855984 versus 10052258385 device cycles. Each step used 725 launches.
+These are single observations and physical code reload counts were not
+recorded. The separate multi-turn quality failure remains unchanged.
+
 Qwen3.5's original registered quality run timed out and its segmented multi-turn
 continuation failed the registered first-turn comparison. The acceleration
 A/B board sessions have begun; CPU/TLM diagnosis is in progress. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md)

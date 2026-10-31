@@ -1039,3 +1039,8 @@ The next report update records the equal-row board session; prior reports remain
 
 - `doc/r41_report.md`: `d37075cb1fc0b894c31213b663c9b737599b22d07876cd9f706de7ce46a88793` → `a3366c560a693b53ef7e1d12b741b11973dc90725e41314ace7a7878af053364`
 - `doc/r41_stage2_report.md`: `f2e57c7cc8f2834a33f129361ae5a0b97b1a12be5bd9c90723a93807bd9c560b` → `a61e4497ce4491d77cd561a3defff85cb8b1858dfd1ca95cba801eb0d7a7b82e`
+
+The next report update records the pipelined-weight board session; prior reports remain in git at `16080e83`. Only the two living report hashes were refreshed.
+
+- `doc/r41_report.md`: `a3366c560a693b53ef7e1d12b741b11973dc90725e41314ace7a7878af053364` → `f272624ac1c8d2d5240db4ef2d840e6b8b20f0247492402dd0eed0e833431c20`
+- `doc/r41_stage2_report.md`: `a61e4497ce4491d77cd561a3defff85cb8b1858dfd1ca95cba801eb0d7a7b82e` → `efa1fdea92965438cf089a6400e878bae5ade94ae7b096843f87ab602711bba5`

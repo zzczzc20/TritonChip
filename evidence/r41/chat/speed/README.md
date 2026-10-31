@@ -44,8 +44,23 @@ prefill was 0.0344526656 → 0.0350916254 input tokens/s and decode was
 561/559/559 evictions. Board physical code reloads were not recorded.
 Non-device wall residual was 0.4059515709 → 0.3995740425 and includes waits
 and transfers. These are single observations, not repeated controlled runs.
-The pipeline comparison started after this result; the separate Qwen3.5
+The pipeline comparison completed after this result; the separate Qwen3.5
 multi-turn quality failure remains unchanged.
+
+The [pipelined-weight board session](pipeline_board_20261031.tgz) completed at
+20:55 UTC; its [summary](pipeline_board_20261031.json) records a full-checkpoint
+Qwen3.5 session. Teacher and persistent-session checks passed. All nine decode
+steps had zero host reads, all 924 parameters and four buffers were on TNCA,
+and captured wrappers had no CPU numerical fallback. First-call output and
+all four token IDs matched equal-row. Equal-row → pipeline prefill was
+0.0350916254 → 0.0351260051 input tokens/s, decode was 0.0179191362 →
+0.0180497837 executed steps/s, and three-step device cycles were
+10052258385 → 8997855984. Each decode step used 725 launches and
+561/559/559 evictions; physical board code reload counts were not recorded.
+Non-device wall residual was 0.3995740425 → 0.4586354852 and includes waits
+and transfers. These are single board observations, not repeated runs. The
+activation-staging comparison started next; the separate multi-turn failure
+remains unchanged.
 
 ## Equal-row lowering
 

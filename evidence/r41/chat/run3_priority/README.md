@@ -732,3 +732,13 @@ grouped logits, their relative L2 differences were 0.0612189882 and
 0.0636935830; both had the same argmax. These are CPU prototypes, not a
 bit-exact model of the board attention, and do not establish the board's
 cause of the first-token difference.
+
+The [full-checkpoint CPU layer comparison](q35_multiturn_cpu_layers_20261031.tgz)
+compared whole prefill against the board-style 8+8+8+3 grouping for the same
+27-token prompt. Decoder layers 0–3 were bitwise identical across all 69,120
+values per layer. Layer 4 first differed at token position 13 (zero based),
+with 2/69,120 mismatches and maximum absolute difference 0.00048828125; its
+last token remained identical. At layer 7, the last-token relative L2 was
+0.0427951515; at layer 31 it was 0.0615154132. This isolates a CPU
+segmentation effect but does not determine the source of the board's
+first-token difference. Matching-source full-model DP TLM remains pending.

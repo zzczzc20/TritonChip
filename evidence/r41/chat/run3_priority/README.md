@@ -460,3 +460,8 @@ CPU flash reference by relative L2 0.04327630251646042. With CPU flash SDPA,
 the grouped approximation selected `Bob` with logits 41.0 versus `We` 37.5.
 This is an approximate CPU diagnostic, not the full TLM or board logits;
 it illustrates sensitivity of the leading tokens and does not change any gate.
+
+A third DP TLM attempt is running the same 30-token reason prompt as one
+whole prefill, to compare its first logits directly with the whole-prompt CPU
+reference. Its prefill segmentation differs from the board's chunked path and
+will be reported separately; it has not produced logits yet.

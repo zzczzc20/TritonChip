@@ -78,7 +78,7 @@ def main():
     p.add_argument('--tree', required=True)
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--cpu-reference', type=Path)
-    p.add_argument('--tlm-path', choices=['legacy_chunk8','grouped_chunk8'], default='legacy_chunk8')
+    p.add_argument('--tlm-path', choices=['whole','legacy_chunk8','grouped_chunk8'], default='legacy_chunk8')
     p.add_argument('--cpu-sdpa', choices=['default','math','flash-approx','flash-sve-prototype'], default='default')
     p.add_argument('--cpu-fused-norm', action='store_true')
     a=p.parse_args()
@@ -111,7 +111,8 @@ def main():
     else:
         if not a.cpu_reference: raise ValueError('TLM mode requires --cpu-reference')
         chat.L.install_fp8_route('official',dot='exact',scale_div='ieee')
-        modes=[(a.tlm_path,old.Session if a.tlm_path=='legacy_chunk8' else chat.Session,8)]
+        cls=chat.Session if a.tlm_path=='grouped_chunk8' else old.Session
+        modes=[(a.tlm_path,cls,0 if a.tlm_path=='whole' else 8)]
     for name, cls, chunk in modes:
         start=time.monotonic()
         session=cls(app.model,app.spec,'cpu' if a.mode=='cpu' else 'tnca',256,chunk)

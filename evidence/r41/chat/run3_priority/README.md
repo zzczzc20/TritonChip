@@ -643,3 +643,13 @@ teacher test's two relative L2 values were 0.06922020028616507 and
 0.05113672787073658; they passed the pre-registered CPU-floor-adjusted rule
 and matched both reference argmax tokens. The quality stage is still running;
 this session alone is not complete Qwen3.5 acceptance.
+
+The [Qwen3.5 quality checkpoint](q35_nohost_v6_partial.json) records the
+first of five prompts passing: `Paris`, with all four returned token IDs
+equal to the CPU reference. All eleven executed decode steps had zero host
+reads and zero new graphs; 924 parameters and four buffers were on TNCA,
+and the captured wrappers reported no CPU numerical fallback. The first
+prefill ran at 0.03310412431217009 tokens/s and the eleven decode steps at
+0.01292878839389162 steps/s, including any work after EOS. Compilation
+warmup and post-generation output retrieval are recorded separately. The
+other four prompts were not yet recorded at this checkpoint.

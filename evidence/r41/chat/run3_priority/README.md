@@ -710,3 +710,16 @@ whole relative L2 was 0.0589486696, maximum absolute difference 0.578125,
 and both chose `Hello`. The board selected `I`, but its full logits were not
 captured: the close CPU gap alone does not establish the reason for the board
 flip. Matching-source DP TLM is running. No quality judgment is revised.
+
+The [CPU-only attention-backend diagnostic](q35_multiturn_cpu_sdpa_20261031.tgz)
+replayed the same full-checkpoint prompt using the PyTorch mathematical SDPA
+backend. Its grouped 8+8+8+3 path selected `Hello` (22.0) over `I` (21.875),
+a gap of 0.125; whole prefill selected `Hello` (22.125) over `I` (21.875),
+a gap of 0.25. Compared to the corresponding default CPU attention path, the
+grouped and whole logits had relative L2 differences 0.0642956123 and
+0.0664141327, with the same argmax in both cases. This isolates a CPU backend
+effect but neither identifies the board's selected-token cause nor captures its
+logits. An auxiliary CPU norm override in the same archive failed with an
+attribute error (`Qwen3_5RMSNorm` uses `eps`, not `variance_epsilon`); it did
+not produce a comparison and is not a pass. The full-model grouped and whole
+DP TLM runs remain separate and pending.

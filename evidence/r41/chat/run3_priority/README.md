@@ -875,3 +875,11 @@ model; it does not show board intermediates or prove the precise cause.
 A [one-layer component probe](q35_first_components_pending_20261031.tgz)
 was started to compare normalization, attention projections and MLP outputs.
 Its graph hooks and truncation may change compilation; results are pending.
+
+The [isolated first RMSNorm DP TLM probe](q35_first_norm_tlm_20261031.tgz)
+used the CPU-captured embedding for all 27 tokens and matched the CPU output
+bitwise in 69,120/69,120 elements. It is a standalone graph rather than the
+full model; the instrumented full-layer comparison remains necessary. Two
+[one-token projection probes](q35_first_projection_tlm_pending_20261031.tgz)
+for QKV and MLP gate were started on the CPU-captured activations; results
+are pending and will not establish full-prefill behavior by themselves.

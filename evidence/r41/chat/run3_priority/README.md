@@ -661,3 +661,9 @@ prefill ran at 0.02921525881795749 input tokens/s and decode at
 three prompts have not yet been scored. The three-hour experiment limit may
 expire before all turns finish at the observed rate; this is a risk, not a
 recorded timeout.
+
+The [16:13 UTC quality checkpoint](q35_nohost_v6_three_prompts.json) records
+three of five prompts passing, adding the reasoning answer `Bob`. Its prefill
+rate was 0.02334469452375064 input tokens/s and decode rate was
+0.008263454449353351 executed steps/s, including work after EOS. The quality
+run continues; the remaining two prompts are not yet scored.

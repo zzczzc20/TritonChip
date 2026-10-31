@@ -844,3 +844,10 @@ differed in one gate value (max 3.8146973e-6) and one up value (max
 4.7683716e-7). This CPU arithmetic probe rules out a grouped-vs-reference
 difference only for these sampled inputs; it is not TLM, board, or a proof
 about other positions and layers.
+
+The [full-model CPU scale/FMA experiments](q35_cpu_scale_fma_pending_20261031.tgz)
+compare multiplying the activation maximum by rounded 1/448, FP32 multiply-add
+contraction, and their combination, against the registered IEEE-division,
+non-contracted reference. These variants are CPU approximations and are not
+claimed to reproduce every TNCA reciprocal or board operation. Results are
+pending.

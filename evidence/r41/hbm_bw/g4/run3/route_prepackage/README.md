@@ -97,3 +97,14 @@ programmed the candidate. The loaded UUID was verified as
 `ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3`; board identity testing started at
 17:27 UTC. This records the load and start, not a test pass. The original
 link exit 3 and HBM setup violations remain as stated above.
+
+On 2026-10-31 a read-only x86 inspection of the same routed checkpoint began
+at `~/r41run3/hbm_clock_inspect_20261031` using
+[`inspect_hbm_clock.tcl`](../../../../../../tools/r41/run2_postlink/inspect_hbm_clock.tcl).
+It found that `hbm_aclk` is a generated clock derived from the 100 MHz free
+running clock; the original routed timing analysis uses a 2.222 ns period.
+An exploratory 450 MHz recreation and 433.4 MHz sensitivity analysis is
+queued after that inspection, under `~/r41run3/hbm_clock_sensitivity_20261031`.
+It must reproduce the original constraints and timing before its changed-clock
+report can be interpreted. Neither job changes the image or establishes timing
+closure; no new timing result is claimed while the jobs are running.

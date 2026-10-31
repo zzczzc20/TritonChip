@@ -59,8 +59,23 @@ all four token IDs matched equal-row. Equal-row → pipeline prefill was
 561/559/559 evictions; physical board code reload counts were not recorded.
 Non-device wall residual was 0.3995740425 → 0.4586354852 and includes waits
 and transfers. These are single board observations, not repeated runs. The
-activation-staging comparison started next; the separate multi-turn failure
+activation-staging comparison completed next; the separate multi-turn failure
 remains unchanged.
+
+The [activation-staging board session](activation_equal_board_20261031.tgz)
+completed at 21:29 UTC; its [summary](activation_equal_board_20261031.json)
+records a full-checkpoint Qwen3.5 session. Teacher and persistent-session
+checks passed, with nine decode steps recording zero host reads, 924 parameters
+and four buffers on TNCA and no captured CPU numerical fallback. First-call
+output and all four token IDs matched the pipeline session. Pipeline →
+activation-staging prefill was 0.0351260051 → 0.0354596612 input tokens/s,
+decode was 0.0180497837 → 0.0221340569 executed steps/s, and three-step device
+cycles were 8997855984 → 7402895275. Each decode step used 725 launches;
+evictions were 561/559/559 → 560/559/559 and physical code reloads were not
+recorded. Non-device wall residual was 0.4586354852 → 0.4538129830, including
+waits and transfers. These are single board observations, not repeated runs.
+The opt-in quantisation-hoist comparison started next; the separate multi-turn
+quality failure remains unchanged.
 
 ## Equal-row lowering
 

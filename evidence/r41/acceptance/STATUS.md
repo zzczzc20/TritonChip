@@ -1044,3 +1044,8 @@ The next report update records the pipelined-weight board session; prior reports
 
 - `doc/r41_report.md`: `a3366c560a693b53ef7e1d12b741b11973dc90725e41314ace7a7878af053364` → `f272624ac1c8d2d5240db4ef2d840e6b8b20f0247492402dd0eed0e833431c20`
 - `doc/r41_stage2_report.md`: `a61e4497ce4491d77cd561a3defff85cb8b1858dfd1ca95cba801eb0d7a7b82e` → `efa1fdea92965438cf089a6400e878bae5ade94ae7b096843f87ab602711bba5`
+
+The next report update records the activation-staging board session; prior reports remain in git at `cf7660f9`. Only the two living report hashes were refreshed.
+
+- `doc/r41_report.md`: `f272624ac1c8d2d5240db4ef2d840e6b8b20f0247492402dd0eed0e833431c20` → `1e4eef0829e4b986404a226ac63ad103c7d125a4c1734fc04da9a9c2fd4c5750`
+- `doc/r41_stage2_report.md`: `efa1fdea92965438cf089a6400e878bae5ade94ae7b096843f87ab602711bba5` → `160b334c68e5baa78be67ee46e11e2fb79653a3fe36f3abbc32a0cf5d9785989`

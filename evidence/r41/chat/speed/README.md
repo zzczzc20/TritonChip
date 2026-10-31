@@ -215,7 +215,7 @@ is experimental. The [final protected wrapper and gate records](hoist_final_gate
 show its full FP8 suite passed 16/16 and its 113-point default-code audit
 compared 113 unchanged; the corresponding [final wrapper source](fp8_hoist_final_experiment_20261031.py)
 adds device and shape guards. Direct and compiled-graph tests matched the
-reference at M=1 and M=16. Qwen3.5 model TLM remains in progress. The
+reference at M=1 and M=16. The reduced-depth Qwen3.5 model TLM comparison completed below. The
 cross-platform NaN bit mismatch above remains a limitation; the board test
 is queued with the registered GB10 ARM reference and the non-default route
 explicitly identified. The opt-in is `TNCA_FP8_HOIST_V1_PATH`, pointing to
@@ -235,6 +235,18 @@ instructions/MAC; full-step cycles were 489017348 → 494381647 and evictions
 15 → 13. Both 151936-element logits tensors matched the control bitwise, with
 no captured CPU numerical fallback and zero prefill/decode host reads. This is
 reduced-depth TLM evidence, not independent CPU quality or board throughput.
+
+The [four-layer Qwen3.5 model TLM comparison](hoist_q35_model_tlm_20261031.tgz)
+used that same initial prototype and the activation-staging control. Prefill
+had 239 → 254 launches, 2206641939 → 2010384815 cycles, 141 → 157 physical
+loads, 1881792 → 2404032 uploaded code bytes, and 139 → 157 evictions; FP8
+matmuls plus quantisers used 0.0342451794 → 0.0245982475 instructions/MAC
+and 854682364 → 637574561 cycles. Decode stayed at 95 launches, 77 loads,
+716224 bytes and 0.2536279297 FP8 instructions/MAC, with full-step cycles
+1344816549 → 1364022828 and evictions 77 → 75. Both 248320-element logits
+tensors matched bitwise; no captured CPU numerical fallback and zero decode
+host reads were recorded. Each prefill recorded 33 compilation-time host reads.
+This is reduced-depth TLM, not board throughput or independent CPU quality.
 
 ## Experimental frequency-aware code eviction (not merged)
 

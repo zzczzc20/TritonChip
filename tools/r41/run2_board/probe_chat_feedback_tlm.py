@@ -45,7 +45,9 @@ with mock.patch.object(chat.L, 'generation_eos', lambda model: set()), \
     r = chat.run_generation(s, processor, spec, {'input_ids': torch.tensor([[1,2]])}, 'probe', new_tokens=4)
 print('status',r['status'],'tokens',r['generated_tokens'], 'covered', r['compiled_wrapper_roles_covered'],
       'decode_reads',[row['transfers_inside_step']['host_read_calls'] for row in r['steps'][1:]],
-      'retrieval_reads',r['output_retrieval']['host_read_calls'],flush=True)
+      'retrieval_reads',r['output_retrieval']['host_read_calls'],
+      'new_graphs',[row['new_graphs'] for row in r['steps']],flush=True)
 assert r['status']=='pass' and r['generated_tokens']==[15,15,15,15]
 assert all(row['transfers_inside_step']['host_read_calls']==0 for row in r['steps'][1:])
 assert r['output_retrieval']['host_read_calls'] > 0
+assert all(row['new_graphs'] == 0 for row in r['steps'][2:])

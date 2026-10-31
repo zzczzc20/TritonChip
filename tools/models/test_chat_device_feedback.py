@@ -73,7 +73,7 @@ class DeviceFeedbackTests(unittest.TestCase):
             cached_decode = prefill_compiles_decode and capture_count == 3
             return fn(), ([] if cached_decode else ['test wrapper'])
         with mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind}), \
-             mock.patch('torch._inductor.utils.run_and_get_code', capture), \
+             mock.patch.object(chat, 'run_with_code_capture', capture), \
              mock.patch.object(chat, 'transfer_meter', lambda enabled: Meter()), \
              mock.patch.object(chat, 'code_store_counters', lambda: None), \
              mock.patch.object(chat.L, 'generation_eos', lambda model: {3}), \
@@ -102,6 +102,20 @@ class DeviceFeedbackTests(unittest.TestCase):
         _, report = self.run_case([1, 2], prefill_compiles_decode=True)
         self.assertTrue(report['compiled_wrapper_roles_covered'])
         self.assertEqual(report['status'], 'pass')
+
+
+class CodeCaptureTests(unittest.TestCase):
+    def test_capture_reuses_the_compiled_graph(self):
+        compiled = []
+        def backend(graph, example_inputs):
+            compiled.append(graph)
+            return graph.forward
+        f = torch.compile(lambda x: x + 1, backend=backend, fullgraph=True)
+        for _ in range(3):
+            with mock.patch('torch._dynamo.reset', side_effect=AssertionError('cache reset')):
+                result, _ = chat.run_with_code_capture(lambda: f(torch.ones(4)))
+            self.assertTrue(torch.equal(result, torch.full((4,), 2.0)))
+        self.assertEqual(len(compiled), 1)
 
 if __name__ == '__main__':
     unittest.main()

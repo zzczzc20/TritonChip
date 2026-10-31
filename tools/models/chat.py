@@ -113,6 +113,19 @@ def transfer_meter(enabled):
     return TransferMeter()
 
 
+def run_with_code_capture(fn):
+    """Capture newly generated Inductor wrappers without resetting compiled graphs."""
+    from unittest.mock import patch
+    from torch._inductor.graph import GraphLowering
+    code = []
+    def save_output_code(source):
+        if source not in code:
+            code.append(source)
+    with patch.object(GraphLowering, "save_output_code", save_output_code):
+        result = fn()
+    return result, code
+
+
 def code_store_counters():
     """Modules the runtime has unloaded to make room in the device code store, and modules loaded now.
     A working set above the code store is served by least-recently-used reloads (a cost, not a fallback)."""
@@ -190,9 +203,8 @@ class Session:
             started = time.perf_counter()
             with torch.no_grad(), transfer_meter(self.device == "tnca") as meter:
                 if self.device == "tnca":
-                    from torch._inductor.utils import run_and_get_code
                     from tnca.inductor import host_fallbacks
-                    result, code = run_and_get_code(lambda: self.vision(*[t.to(self.dev) for t in args]))
+                    result, code = run_with_code_capture(lambda: self.vision(*[t.to(self.dev) for t in args]))
                     self._vision_code = getattr(self, "_vision_code", []) + code
                     meter.mem.synchronize()
                     out = tuple(result)
@@ -295,7 +307,6 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     if sample:
         raise ValueError("TNCA device-side sampling is not implemented; use greedy decoding")
     from torch._dynamo.utils import counters
-    from torch._inductor.utils import run_and_get_code
     from tnca.inductor import host_fallbacks
 
     model = session.model
@@ -320,7 +331,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     code_by_role = getattr(session, "_generation_code", {})
     session._generation_code = code_by_role
     def capture(role, fn):
-        result, code = run_and_get_code(fn)
+        result, code = run_with_code_capture(fn)
         code_by_role.setdefault(role, []).extend(code)
         return result
 

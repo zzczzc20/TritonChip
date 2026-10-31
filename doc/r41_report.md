@@ -32,16 +32,17 @@ The [Qwen3.5 populated-cache session](../evidence/r41/chat/run3_priority/q35_noh
 passed its teacher and persistent-session checks: first prefill 0.0331967168
 tokens/s and decode 0.0142360176 executed steps/s. All nine decode steps had
 zero host reads, captured wrappers had no numerical CPU fallback, and 924
-parameters and four buffers were TNCA. Its [quality checkpoint](../evidence/r41/chat/run3_priority/q35_nohost_v6_three_prompts.json)
-records three of five prompts passing, including the reasoning answer `Bob`;
-the rest remain pending. Decode
+parameters and four buffers were TNCA. Its [quality attempt](../evidence/r41/chat/run3_priority/q35_nohost_v6_four_prompts_timeout.json)
+recorded four of five prompts passing, including `Bob` and `OK`, before the
+registered three-hour timeout. A separate reduced proof for the remaining
+multi-turn prompt is running. Decode
 rates count executed steps, including work after EOS. The first VL script and
 Qwen3.5 session decode wall-time residuals after subtracting device cycles at
 100 MHz were 0.5211 and 0.4607 respectively; this includes waits, transfers
 and possible counter overlap and is not a host-only measurement.
 
-Qwen3.5's complete registered quality run and the queued acceleration A/B
-board measurements remain pending. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md)
+Qwen3.5's original registered quality run timed out; its segmented continuation
+and the queued acceleration A/B board measurements remain pending. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md)
 and [speed evidence](../evidence/r41/chat/speed/README.md). The older gate
 judgments below are historical and do not override this decision.
 

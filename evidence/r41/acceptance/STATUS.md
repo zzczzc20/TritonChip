@@ -1019,3 +1019,8 @@ The following report update records the third Qwen3.5 quality checkpoint; prior 
 
 - `doc/r41_report.md`: `0b961332a1fb04d656b98d0691714146ff12d79f639d45ad76aa18c6cdc78337` → `e9e32adb7ac41fc1195db0ccda7339d5e79e49dc8e7e4d84c53168e0d153a055`
 - `doc/r41_stage2_report.md`: `d4162d8444f6a4a7221558e8c1aa599fe0e74bd981df84631baed4941f15c232` → `c5ff6bce52740573f63eeeb375363735e462cfb53b5375213fb69306fae66c39`
+
+The next report update preserves the Qwen3.5 quality timeout and records four passing prompts; previous reports are at `91a3cec8`. Only the two living report hashes were refreshed.
+
+- `doc/r41_report.md`: `e9e32adb7ac41fc1195db0ccda7339d5e79e49dc8e7e4d84c53168e0d153a055` → `08e3b2bbf1771ce19958c56227dcc01cb486a7904c556875dcc5a6f6d35668e6`
+- `doc/r41_stage2_report.md`: `c5ff6bce52740573f63eeeb375363735e462cfb53b5375213fb69306fae66c39` → `c7400b824382f731756f75ab8a8325c87c78dc20fe2edb0adbf74397587bc201`

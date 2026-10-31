@@ -1,0 +1,7 @@
+Started /home/zzhouch/tc_env/torchenv/bin/python -u /home/zzhouch/r41run3/speed_failure_queue_20261031/queue_after_quality_failure.py.
+Traceback (most recent call last):
+  File "/home/zzhouch/r41run3/speed_failure_queue_20261031/queue_after_quality_failure.py", line 13, in <module>
+    import q35_timeout_recovery as recovery
+ModuleNotFoundError: No module named 'q35_timeout_recovery'
+r41-speed-after-quality-failure-20261031.service: Main process exited, code=exited, status=1/FAILURE
+r41-speed-after-quality-failure-20261031.service: Failed with result 'exit-code'.

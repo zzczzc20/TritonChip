@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare explicit Triton div_rn against CPU IEEE float32 on DP TLM."""
+"""Compare explicit div_rn NaN bits against the locked GB10 ARM reference."""
 import json, sys, struct, tempfile
 from pathlib import Path
 root = Path(__file__).resolve().parents[3]
@@ -23,7 +23,11 @@ def main():
     bits=torch.tensor(nums,dtype=torch.int32)
     aa=bits.repeat_interleave(16).view(torch.float32)
     bb=bits.repeat(16).view(torch.float32)
-    want=(aa/bb).view(torch.int32).tolist()
+    fixture = root/'evidence/r41/chat/speed/nan_reference_gb10_20261031.txt'
+    words = [int(x, 16) for x in fixture.read_text().split()]
+    if len(words) != 256:
+        raise ValueError('locked NaN reference must contain 256 words')
+    want = [x if x < 2**31 else x - 2**32 for x in words]
     result=aot.compile_aot(divide,signature={'A':'*fp32','B':'*fp32','C':'*fp32','BLOCK':'constexpr'},constexprs={'BLOCK':256},profile='core-vrf-sync-v5-x8-g2c4-dp',options={'index_opt':1},output=str(Path(tempfile.mkdtemp(prefix='r41-div-nan-'))/'divide.tnca'))
     with Session(profile='core-vrf-sync-v5-x8-g2c4-dp',backend='systemc-tlm-grid',host_timeout=180) as sess:
         module=sess.load(result.path); x,y,z=[sess.allocate(1024) for _ in range(3)]

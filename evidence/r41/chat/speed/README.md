@@ -189,8 +189,10 @@ of the same 256 NaN/infinity/zero pairs found 16 bit-pattern differences
 between the board host x86 CPU and the GB10 CPU. The registered Qwen3.5 and
 VL CPU references were generated on GB10 ARM; the latest experimental TLM
 division matched that GB10 sample but not an x86 CPU reference for these
-pairs. This is a cross-platform NaN-bit limitation, not an observed model
-failure. The guarded route is integrated and queued with this limitation explicitly retained.
+pairs. The [reusable NaN TLM check](../../../../tools/r41/chat_speed/test_precise_div_nanpayload_tlm.py)
+uses the locked GB10 ARM bit-pattern fixture, independent of the test host's
+CPU; its [rerun](hoist_locked_nan_tlm_20261031.log) matched all 256 values.
+This is a cross-platform NaN-bit limitation, not an observed model failure. The guarded route is integrated and queued with this limitation explicitly retained.
 
 [Boundary comparisons](hoist_precise_boundary_20261031.tgz), fused → hoisted,
 all matched the independent reference bitwise and had zero steady code

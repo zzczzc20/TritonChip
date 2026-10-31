@@ -52,6 +52,11 @@ r41-stage1-acceptance:
 r41-harness-tests:
 	cd tools/performance_harness && $(PYTHON) test_experiment.py && $(PYTHON) test_board_tools.py && $(PYTHON) test_stage1_acceptance.py && $(PYTHON) test_stage_contract.py
 	cd tools/performance_harness/systemc && $(PYTHON) test_run_graphs.py
+# Coverage of the tool catalog in tools/performance_harness/README.md (no torch, no tools are run).
+.PHONY: harness-catalog
+harness-catalog:
+	$(PYTHON) tools/performance_harness/catalog_check.py
+	$(PYTHON) tools/performance_harness/test_catalog_check.py
 # NOTE ON PIPELINES IN RECIPES
 #
 # `python ... | tail -4` reports tail's status, so a failing interpreter, a

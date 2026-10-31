@@ -377,3 +377,20 @@ measured because compilation emitted unsupported `vf.cvt.e4m3.f64`; the other
 recorded floors are present in the artifact. This is a two-layer TLM result,
 not a full-model logit or board failure. A targeted TLM replay of the layer-2
 value projection is running to investigate it.
+
+The [standalone V-projection TLM replay](vl_reason_vproj_dp_tlm.tgz) with
+CPU-captured full-prompt activations matched the CPU W8A8 and DP-order
+references bitwise in both 30-token prefill and one-token modes. This replay
+used a no-cache CPU capture; the separate two-layer experiment used a static
+cache, so the input identities are not assumed identical.
+
+A [static-cache layer-2 normalization diagnostic](vl_reason_norm_amplification.tgz)
+replayed the CPU-captured 30-token input through the standalone norm on DP
+TLM: 15,990/61,440 BF16 values differed from eager CPU, relative L2
+0.0029610961209982634 (max 0.03125), with no compiled-wrapper fallback.
+Feeding the TLM and CPU norm outputs into the same CPU W8A8 V projection gave
+relative L2 0.010808045975863934, closely matching the two-layer TLM value
+cache's 0.010808053152941194. This supports normalization error amplified by
+FP8 quantization as an explanation of that particular TLM cache discrepancy;
+it does not prove the board's full-model numerics or change its passing reason
+result.

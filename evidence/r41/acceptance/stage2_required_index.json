@@ -1550,7 +1550,9 @@
     "evidence/r41/chat/run3_priority/vl_reason_fp8_untimed_tlm.tgz": "82af1fd7e214e50513ac59638d6bf9eaf1f88d0322f1cec0ce40838eea73a95d",
     "evidence/r41/chat/run3_priority/vl_reason_fp8_all_cpu.tgz": "31eae45e22793dce42c940b480324d3bc54bc185c56a89f3844ec472906df21c",
     "evidence/r41/chat/run3_priority/vl_nohost_v5_three_prompts.json": "bdc045684709f00e29efa3863db506b84961711cf7774e6c527b62d84a744734",
-    "evidence/r41/chat/run3_priority/vl_reason_layer23_dp_tlm.tgz": "719ff62e55158e7a8c35a5883824a91fe490a6c87a5dc8a1bceed2168000b0a8"
+    "evidence/r41/chat/run3_priority/vl_reason_layer23_dp_tlm.tgz": "719ff62e55158e7a8c35a5883824a91fe490a6c87a5dc8a1bceed2168000b0a8",
+    "evidence/r41/chat/run3_priority/vl_reason_vproj_dp_tlm.tgz": "4a67546968f4ceb72736c18f9b5caa5edbd12aa14a342c2e6cbf3b1b96e2b455",
+    "evidence/r41/chat/run3_priority/vl_reason_norm_amplification.tgz": "9c8dde628d9ba03fef3d25005a795ebd529b88189f822b807645eb9a4a3fe18b"
   },
   "followups": [
     {

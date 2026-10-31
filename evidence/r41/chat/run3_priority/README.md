@@ -329,3 +329,11 @@ block: one of 16,384 values differed, with maximum absolute difference
 0.0001220703125. The candidate's final first token remained `We`. This
 localizes a numerical discrepancy in the candidate; it does not establish that
 the single mismatch alone caused the final token change.
+
+An [untimed functional TLM check](vl_reason_fp8_untimed_tlm.tgz) tried the same
+DP Q projection with `memory_model=1` and `TNCA_TLM_UNTIMED_COLD=1`; its 2,048
+outputs also matched the CPU reference bitwise. Its recorded call wall time was
+21.97075816616416 seconds (the separately run timed TLM call recorded
+25.601286967284977 seconds). These are individual diagnostic wall times, not
+board performance, and the settings differ; no speedup is claimed. The
+original full-model timed TLM attempt continues without modification.

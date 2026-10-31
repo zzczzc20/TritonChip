@@ -754,3 +754,12 @@ segmentation comparisons and do not establish the board failure's cause. The
 first input-probe setup failed locally before sending its source; the resulting
 empty remote program exited without testing anything and is not a pass. The
 separate v2 input-probe result is the one reported here.
+
+The [CPU layer-4 convolution and gated-delta probes](q35_multiturn_cpu_conv_delta_20261031.tgz)
+found bitwise identical causal-convolution outputs and Q, K, V, g and beta
+inputs for whole versus grouped prefill. The chunked gated-delta output first
+differed at token position 8, with 22/110592 bit mismatches and maximum
+absolute difference 1.1920928955e-7. The whole and grouped calls have different
+chunk boundaries and state inputs by construction. This localizes the earliest
+observed CPU segmentation difference to that computation; it is not a board or
+DP TLM measurement and does not establish the cause of the board's first token.

@@ -297,14 +297,15 @@ class Session:
         self.last_position = position
         return logits
 
-    def warmup_decode(self, inputs):
-        """Compile decode using a dummy token, then clear its cache before real input."""
+    def warmup_decode(self, inputs, per_image=None, capture=None):
+        """Compile against a populated prompt cache, then clear all dummy state."""
         if self.cached or self.last_position is not None:
             raise RuntimeError("decode warmup requires a fresh cache")
-        self.last_position = L.prefill_position_ids(self.model, inputs)[..., -1:]
+        capture = capture or (lambda role, fn: fn())
         try:
+            capture("prefill", lambda: self.prefill_prompt(inputs, per_image))
             token = torch.zeros((1, 1), dtype=torch.long).to(self.dev)
-            return self.step_device(token)
+            return capture("decode", lambda: self.step_device(token))
         finally:
             self.reset()
 
@@ -348,14 +349,14 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         return result
 
     # Compilation can read its own constant-folding scalars. Do that once on
-    # a dummy token and a fresh cache; record all transfers separately and
-    # clear the cache before the actual prompt. Real decode remains subject
-    # to the unchanged zero-read rule on every step.
+    # a dummy token after populating the prompt cache; record all transfers
+    # separately and clear the cache before the actual prompt. Real decode
+    # remains subject to the unchanged zero-read rule on every step.
     warmup = None
     if not code_by_role.get("decode") and session.prompts == 0:
         started = time.perf_counter()
         with transfer_meter(True) as warmup_meter:
-            warmup_logits = capture("decode", lambda: session.warmup_decode(inputs))
+            warmup_logits = session.warmup_decode(inputs, per_image, capture)
             warmup_meter.mem.synchronize()
         if warmup_logits.device.type != "tnca":
             raise RuntimeError("decode warmup returned a host tensor")

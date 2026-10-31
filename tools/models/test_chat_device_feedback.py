@@ -46,8 +46,9 @@ class Session:
         self.cached = inputs['input_ids'][0].tolist()
         calls = ([{'kind': 'token', 'new_graphs': 1}] if self.prefill_compiles_decode else [])
         return self.next_logits(), calls, 0
-    def warmup_decode(self, inputs):
-        return Tensor([0, 1, 0, 0])
+    def warmup_decode(self, inputs, per_image=None, capture=None):
+        capture('prefill', lambda: None)
+        return capture('decode', lambda: Tensor([0, 1, 0, 0]))
     def next_logits(self):
         token = next(self.choices)
         return Tensor([int(i == token) for i in range(4)])
@@ -127,11 +128,11 @@ class PrefillSegmentationTests(unittest.TestCase):
         session = object.__new__(chat.Session)
         session.model, session.dev = object(), torch.device('cpu')
         session.cached, session.last_position = [], None
+        session.prefill_prompt = mock.Mock()
         session.step_device = mock.Mock(return_value='dummy logits')
         session.reset = mock.Mock()
-        positions = torch.arange(4).reshape(1, 1, 4)
-        with mock.patch.object(chat.L, 'prefill_position_ids', return_value=positions):
-            self.assertEqual(session.warmup_decode({'input_ids': torch.ones((1, 4))}), 'dummy logits')
+        self.assertEqual(session.warmup_decode({'input_ids': torch.ones((1, 4))}), 'dummy logits')
+        session.prefill_prompt.assert_called_once()
         self.assertEqual(session.step_device.call_args.args[0].tolist(), [[0]])
         session.reset.assert_called_once()
 

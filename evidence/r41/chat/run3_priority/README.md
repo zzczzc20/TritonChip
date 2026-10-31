@@ -581,3 +581,24 @@ adds the follow-up answer `Rome`; the script then reset the session and began
 executed decode steps ran at 0.014760389863401634 steps/s; this includes any
 work after EOS. This remains a partial transcript; per-step transfer evidence
 is pending completion.
+
+The [completed VL script transcript](vl_nohost_v5_script.json) records three
+passing turns, `Paris`, `Rome` and `Hello! How can I help you today? 😊`.
+All 93 executed decode steps had zero host reads and zero new graphs; all
+822 parameters and four buffers were on TNCA, and the captured prefill,
+decode and selection wrappers reported no numerical host fallback. The three
+prefill rates were 0.04189738331661979, 0.07679391846722787 and
+0.06509714113399628 input tokens/s. The 31 executed decode steps in each turn
+ran at 0.020542654856751778, 0.014760389863401634 and
+0.011694609412099382 steps/s respectively. Decode may continue after EOS.
+Together with the previously recorded quality and session checks this
+completes the registered VL stage; it does not establish Qwen3.5 success.
+
+The [Qwen3.5 v5 failed attempt](q35_nohost_v5_failed.tgz) began at 12:50 UTC
+and stopped at 13:00 UTC while compiling the dummy decode against an empty
+cache. Inductor produced a three-dimensional reduction that the TNCA compiler
+could not lower (`ValueError: too many values to unpack`); the quality stage
+did not run. The retry prepopulates the real prompt cache, separately records
+prefill and decode warmup, clears the cache, and then executes the unchanged
+zero-host-read checks. The source and output are separate from the v5 archive;
+the retry's result is pending.

@@ -1525,7 +1525,8 @@
     "evidence/r41/chat/run3_priority/vl_quality_partial_20261031.json": "eea274c655f3b8290b35892506d087ebe640c15e4211e52df1966b9c435113a7",
     "evidence/r41/chat/run3_priority/vl_traced_sigsegv.tgz": "646951abe6385a52fe596917e4e5435205779517ff332688ae38c64cc85a54d8",
     "evidence/r41/chat/run3_priority/vl_graph_reset_interrupted.tgz": "1049c50c985193f2a4ea7f63d67181c811b2958fec2d9897457b5a83d58ec9af",
-    "evidence/r41/chat/run3_priority/vl_nohost_partial_20261031.json": "62e6b8c6475e320c8537346a19d1a54ce43378bf9067ec23c37af9fc3b672376"
+    "evidence/r41/chat/run3_priority/vl_nohost_partial_20261031.json": "62e6b8c6475e320c8537346a19d1a54ce43378bf9067ec23c37af9fc3b672376",
+    "evidence/r41/chat/run3_priority/vl_nohost_partial_two_20261031.json": "e0765f9c67ce334627fc561751a0060c0d16216b355f5d74f34ce9c56c74a927"
   },
   "followups": [
     {
@@ -1614,7 +1615,8 @@
           "evidence/r41/chat/run3_priority/vl_quality_partial_20261031.json",
           "evidence/r41/chat/run3_priority/vl_traced_sigsegv.tgz",
           "evidence/r41/chat/run3_priority/vl_graph_reset_interrupted.tgz",
-          "evidence/r41/chat/run3_priority/vl_nohost_partial_20261031.json"
+          "evidence/r41/chat/run3_priority/vl_nohost_partial_20261031.json",
+          "evidence/r41/chat/run3_priority/vl_nohost_partial_two_20261031.json"
         ],
         "failure_reason": "The initial VL attempt stalled and was interrupted; the traced retry answered two prompts but exited with SIGSEGV during a register-write path. Its old host-selected token path also violates no-host criteria; the root cause of the crash is not established."
       },

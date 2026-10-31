@@ -83,3 +83,11 @@ The recorded 0.023328746064501065 decode steps/s describes those executed steps,
 not user-visible tokens/s. Prefill includes compilation. This is one text
 prompt only: the image, remaining quality prompts, full session and scripted
 chat, and the Qwen3.5 device-feedback run remain outstanding.
+
+The [05:59 UTC snapshot](vl_nohost_partial_two_20261031.json) adds the `arith`
+prompt, answered `42` and passed against its reference. For each of the first
+two text prompts, every recorded decode step has zero host reads, zero staging
+downloads and zero new graphs; compiled-wrapper checks report no host
+numerical fallback. Both fixed-length device loops executed 12 steps, so their
+step rates must not be presented as user-visible token rates. The complete VL
+quality run, image prompt and session checks remain unfinished.

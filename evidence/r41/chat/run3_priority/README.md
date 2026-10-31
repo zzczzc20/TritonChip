@@ -811,3 +811,10 @@ tokens/s; decode was 0.0142777756 and 0.0127684518 executed steps/s. These
 include work after EOS. Prefill and warmup did record host transfers: the zero
 read claim is only for the 22 steady decode steps. This reduced diagnostic
 does not replace the grouped failure or original quality timeout.
+
+A separate [two-layer diagnostic](q35_multiturn_first_layers_pending_20261031.tgz)
+was started to obtain early embedding/first-layer comparisons before the full
+32-layer TLM probe. It truncates the checkpoint and requests hidden outputs, so
+it is not a full-model or board acceptance result. The comparison checks the
+partial CPU embedding and first-layer output against the full CPU capture. Its
+CPU and DP TLM results are pending.

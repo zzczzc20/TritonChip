@@ -611,3 +611,12 @@ separate registered retry with 24 GiB passed on the same loaded 100 MHz image
 without programming: optimization levels 0, 1 and 2 each matched 256/256 FP16
 outputs and used one launch, with 2322, 2239 and 2235 measured device cycles.
 This is a small regression, not a full chat quality result.
+
+## Experimental 64-lookup cache aging (not merged)
+
+The [experiment and complete TLM records](cache_age64_pending_20261031.md)
+include 16/16 FP8 exact cases and the 113/113 unchanged default-code audit.
+The matched Qwen3.5 four-layer TLM reduced decode code loads 77 to 52, but
+device cycles increased 1344816549 to 1378763635, with unchanged launch count
+and exact logits. The candidate remains opt-in, unmerged and not queued for
+board testing; these are uncalibrated reduced-model observations.

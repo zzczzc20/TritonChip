@@ -6,6 +6,8 @@ Status is a manual evidence judgment, protected by the integrity checker. Passed
 
 Each non-pass names a bounded plan in [closure_plan.md](closure_plan.md). Identity boundaries are in [identity.md](identity.md).
 
+Under the author’s chat closure, the [VL quality, session and scripted chat](../chat/run3_priority/README.md) have completed with zero captured CPU numerical fallback and zero steady decode host reads. The Qwen3.5 session has passed; its quality run has recorded two of five prompts passing and is still running. These observations do not change the historical judgments below. Acceleration board A/B measurements remain queued.
+
 | Item | Type | Requirement | Judgment | Evidence and reason | Closure |
 |---|---|---|---|---|---|
 | S2-00.1 | Required | Final model revision, weights and tokenizer | passed | `spec/r41/stage2/plan.json`; `spec/r41/stage2/lock.json`; `spec/r41/stage2/model_lock.json`; `spec/r41/stage2/xl_core.json`; `evidence/r41/acceptance/p0/cross-validation.json`; `evidence/r41/acceptance/p0/freeze-check.json` — Prospective remaining scope is locked with authentic weight/tokenizer hashes, core/tail inputs, eight XL points, independently CPU-cross-validated tolerances, hardware scope, candidates, budgets and baseline boundaries. This does not erase the historical pre-implementation sequencing failure. | Closed for stated scope |

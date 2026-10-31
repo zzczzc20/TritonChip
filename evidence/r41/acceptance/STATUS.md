@@ -1002,3 +1002,10 @@ TLM confirmation of 51f31e8 (appended): `tlm-vl-quality-v3` (Qwen3-VL, 1 layer, 
 different lengths with chunked prefill) passes. The session compiled 2 graphs for the first prompt and none afterwards,
 and every device answer equals the 1-layer CPU reference token for token (`chat/p3/tlm-vl-quality-v3.tgz`; a
 reduced-depth mechanism proof, not a quality result). The 51f31e8 commands above stand.
+
+### Report evidence hash refresh, 2026-10-31
+
+The living reports were updated with recorded board chat results; their previous versions remain in git at `a699ed27`. Only these two current-file hashes were refreshed in the required index; prior measurement results and judgments are unchanged.
+
+- `doc/r41_report.md`: `b30b346403204e0984ff8404f48dad233d028c41c41b391d0876c0a7af800b4f` → `59d9c42876f113a9c0609b72ba459847a76a06c76e5b132e1413f7ebac3655d1`
+- `doc/r41_stage2_report.md`: `9ea6bcad2a0d35451746df0e364c7fd920a76c1485900908f331a565567e4e4f` → `417313d330dcc96c0ed84fa9528db64a939a5c6f453d1d432d7104001e99bc57`

@@ -112,6 +112,26 @@ runner log](k32_torch_shape_initial_20261031.log.gz) also preserves its path
 collision mistakes and the explicit rejection of a forced K64 tile without
 window reuse.
 
+## Explicit precise-division hoist experiment (not merged)
+
+An isolated [compiler patch](precise_div_experiment_20261031.patch) adds
+explicit `tl.div_rn` lowering, used by the [diagnostic hoist](bench_precise_hoist_diagnostic_20261031.py)
+without globally changing the division setting. The [records](hoist_precise_experiment_20261031.tgz)
+include both successes and failures. On M=16, N=2048, K=2048 the default
+fused → experimental hoisted path used 0.0328402519 → 0.0204660892
+instructions/MAC, 8595658 → 5120824 cycles, 1 → 2 launches and 0 → 0 steady
+code loads/evictions. Each produced 0/32768 bit mismatches against the IEEE
+DP reference. This is TLM, not board throughput.
+
+A positive-zero sign fix passed 256/256 carefully selected values, including
+zero divisors and infinity, in both vector and 16×16 tile tests. However,
+a random full-range float32 test still failed 3/256 bits: two very large
+denominators yielded zero and one small quotient was off by one bit. The
+candidate does not satisfy precise division and is not integrated or queued.
+An earlier audit was invalidated by changing its source during execution;
+the fixed-source audit and suite were stopped after the random test failed.
+Neither is counted as a pass.
+
 ## Experimental frequency-aware code eviction (not merged)
 
 A generic [experimental runtime patch](code_cache_lfu_experiment.patch) ranks

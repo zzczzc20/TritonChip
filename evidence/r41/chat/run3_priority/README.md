@@ -818,3 +818,10 @@ was started to obtain early embedding/first-layer comparisons before the full
 it is not a full-model or board acceptance result. The comparison checks the
 partial CPU embedding and first-layer output against the full CPU capture. Its
 CPU and DP TLM results are pending.
+
+The [two-layer headless diagnostic](q35_multiturn_first_headless_pending_20261031.tgz)
+was also started to avoid simulating the large vocabulary projection while
+localizing the first-layer output. It truncates the model, replaces `lm_head`
+with identity, and requests hidden outputs, so it is diagnostic only. The
+comparator checks the CPU embedding and first layer against the full CPU
+capture; results are pending.

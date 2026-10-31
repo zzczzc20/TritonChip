@@ -603,4 +603,4 @@ board speedup.
 The later [tail and two-role experiments](k32_descriptor_tail_roles_20261031.md)
 include exact tested outputs and preserve the failed first two-role harness.
 All measured cold two-role K32 comparisons increased visible TLM cycles; the
-final audit and broader model coverage remain pending, and it remains unmerged.
+final [113-point audit](k32_descriptor_v6_audit_20261031.tgz) passed with all code unchanged. Broader model coverage remains pending, and it remains unmerged.

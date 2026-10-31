@@ -562,3 +562,15 @@ This partial output is not a completed transcript. Its prefill call took
 477.3567802280013 s and the 31 executed decode steps averaged
 0.020542654856751778 steps/s; these steps can include work after EOS. The
 per-step transfer evidence for the script is pending its final transcript.
+
+The [complete-model grouped-prefill DP TLM replay](vl_reason_grouped_dp_tlm.tgz)
+used the same reason prompt and 8+8+8+6 segmentation as the corrected board
+path. Its top five were Bob 38.5, We 37.75, Let 37.5, To 36.5 and From
+33.75 (top-two gap 0.75). The same-segmentation CPU reference gave Bob 38.25,
+We 38.0, To 37.25, Let 36.75 and From 34.0 (gap 0.25). TLM versus that CPU
+reference had relative L2 0.04239596053957939, maximum absolute difference
+1.5 and the same argmax. All 151,936 first-step TLM logits were bitwise equal
+to the independently run whole-prefill DP TLM logits. This is uncalibrated
+model evidence, not a board logit measurement. The older single-token-tail
+full-model DP TLM replay is still pending and the prior board failure remains
+recorded.

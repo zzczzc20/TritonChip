@@ -40,6 +40,14 @@ slower; these require recheck. Tiled memory, FP8, endurance and full-model chat 
 progress or pending; R41 is not accepted. See the [board evidence](../evidence/r41/hbm_bw/g4/run3/board/README.md)
 and [routed review](../evidence/r41/hbm_bw/g4/run3/route_prepackage/README.md).
 
+On 2026-10-31 the first tiled batch passed 99/99; the sum of its matched
+cycle medians was 1.742× faster than the same-image default batch. This is a
+subset, not a statistical or complete-suite gate. An exploratory 433.4 MHz
+constraint substitution still reports one HBM setup endpoint at −0.001 ns;
+its recreated 450 MHz baseline differs by 1 ps, so it is not image signoff.
+Clean-archive reproduction and registered performance rechecks are queued;
+their board results remain pending.
+
 ## Delivery update: P8 FPGA-host FP8
 
 P8 is closed from the completed runs at `86a3d929cf3d_fp8`, retrieved

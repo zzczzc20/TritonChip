@@ -1,0 +1,31 @@
+diff --git a/tools/models/qwen_fp8_lib.py b/tools/models/qwen_fp8_lib.py
+index 22b69c77..2746da5f 100644
+--- a/tools/models/qwen_fp8_lib.py
++++ b/tools/models/qwen_fp8_lib.py
+@@ -357,6 +357,17 @@ def install_fp8_route(kind, *, dot="exact", scale_div="ieee", fma=False):
+         return kernel.describe()
+     if kind == "official":
+         tf_fp8._FINEGRAINED_FP8 = None          # transformers loads the Hub kernel itself on the first FP8 call
++        hoist_path = os.environ.get("TNCA_FP8_HOIST_V1_PATH")
++        if hoist_path:
++            from pathlib import Path
++            import kernels
++            from tnca.fp8_hoist import make_matmul
++            original = tf_fp8.load_finegrained_fp8_kernel()
++            prequantized = kernels.get_local_kernel(Path(hoist_path), trust_remote_code=True)
++            tf_fp8._FINEGRAINED_FP8 = tf_fp8.FineGrainedFP8(
++                matmul=make_matmul(original.matmul, prequantized.w8a8_block_fp8_matmul),
++                batched_matmul=original.batched_matmul, grouped_matmul=original.grouped_matmul)
++            return dict(kind="experimental-tnca-hoist", repo="kernels-community/finegrained-fp8")
+         return dict(kind="official", loader="transformers.integrations.finegrained_fp8.load_finegrained_fp8_kernel",
+                     repo="kernels-community/finegrained-fp8")
+     raise ValueError(kind)
+@@ -368,6 +379,8 @@ def fp8_route_in_use():
+     if b is None:
+         return None
+     owner = getattr(b.matmul, "__self__", None)
++    if getattr(b.matmul, "_tnca_hoist_experiment", False):
++        return dict(kind="experimental-tnca-hoist")
+     if isinstance(owner, ref.ReferenceKernel):
+         return owner.describe()
+     return dict(kind="official", matmul=f"{getattr(b.matmul, '__module__', '?')}.{getattr(b.matmul, '__name__', '?')}")

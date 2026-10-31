@@ -160,6 +160,18 @@ at 1×250×384 they were 0.475490 → 0.469250 and 162680 → 150132; at
 16×250×384 they were 0.047169 → 0.050641 and 274449 → 183816. The N=7
 regression means the route must not be applied unconditionally.
 
+A [shape-gated prototype](fp8_hoist_experiment_20261031.py) selects the
+hoist only for contiguous dynamic block-FP8 matrices with M≥8, N≥4096 and
+K≥2048; other shapes retain the original route. Its [TLM records](hoist_wrapper_tlm_20261031.tgz)
+show M=1 at 1×6144×2048 stays on one launch, 14643490 cycles and 0/6144
+mismatches, while M=16 at 16×6144×2048 uses two launches, 15390134 cycles
+and 0/98304 mismatches. The latter control used one launch, 25209537 cycles
+and 0/98304 mismatches. Both routes passed their compiled-graph checks. The
+latest precise-division candidate also passed 1,048,576 additional random
+finite comparisons and the recorded NaN-payload cases. The [model-route patch](hoist_route_experiment_20261031.patch)
+is experimental: its model TLM comparisons, full suite and 113-point audit
+are still running, and it is neither integrated nor queued for board test.
+
 ## Experimental frequency-aware code eviction (not merged)
 
 A generic [experimental runtime patch](code_cache_lfu_experiment.patch) ranks

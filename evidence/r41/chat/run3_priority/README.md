@@ -261,3 +261,22 @@ DP-order rederivation bitwise. The TLM identity records `mtx_dp=1`; its three
 cores counted 2,560, 3,072 and 2,560 DP commands. This is a single FP8
 projection on the SystemC/TLM model, not board evidence or a full-model logits
 comparison. The full-model attempt continues.
+
+## Warmup retry: first board prompt
+
+The [partial warmup-retry board record](vl_nohost_v5_first_prompt.json) reports
+`fact` passed with `Paris`; the full quality suite is still running. All 822
+parameters and four buffers are on TNCA, the captured decode, prefill and
+selection wrappers report no host fallback, and all eleven decode steps report
+zero host reads and no new graphs. The separately reported decode warmup
+recorded 84 compiler constant-folding host reads (224 bytes); prefill recorded
+168, and post-generation output retrieval is also reported separately. These
+are not hidden by the steady-decode counter.
+
+For this board prompt, prefill was 0.04390292815386181 tokens/s and decode
+0.023130249739335265 executed steps/s; the fixed loop executed 12 generation
+steps but returned two token IDs including EOS, so the decode-step rate is not
+user-visible token throughput. The returned-ID rate was
+0.0021479550200169235/s over generation wall time, excluding output retrieval.
+The measured non-device decode wall residual was 0.46064795638806766, including
+transfers, waits and possible overlap, not a direct host-only measurement.

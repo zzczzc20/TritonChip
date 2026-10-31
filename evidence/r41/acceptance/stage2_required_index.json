@@ -1540,7 +1540,8 @@
     "evidence/r41/chat/run3_priority/vl_reason_cpu_logits.tgz": "ae873b2d2fb539dc20e3224e67fddc09a24663910bf019c5dd736fc661bfd109",
     "evidence/r41/chat/run3_priority/vl_reason_cpu_layer_attention_dp.tgz": "2a18214434740e4e510f48d3117519dbd5a8fd94e7402519b787aed31379222f",
     "evidence/r41/chat/run3_priority/vl_reason_sdpa_replay.tgz": "c8cec695f0fd1636aa487beff4e8f40152c941149ab5f0d7b40cdd0b1b1bf45e",
-    "evidence/r41/chat/run3_priority/vl_reason_fp8_dp_tlm.tgz": "fce299e229efbb0124cf9dfce6196cf96c7579f2c3fcafc7192a6e1dbf9dab94"
+    "evidence/r41/chat/run3_priority/vl_reason_fp8_dp_tlm.tgz": "fce299e229efbb0124cf9dfce6196cf96c7579f2c3fcafc7192a6e1dbf9dab94",
+    "evidence/r41/chat/run3_priority/vl_nohost_v5_first_prompt.json": "4468a46ff96f121abf31d8cb7eef708bfaf1fd7e14bdce2c96083b7f3b6a9e5a"
   },
   "followups": [
     {
@@ -1637,9 +1638,10 @@
           "evidence/r41/chat/run3_priority/vl_grouped_tail_cpu_diagnostic.tgz",
           "evidence/r41/chat/run3_priority/vl_nohost_partial_four_20261031.json",
           "evidence/r41/chat/run3_priority/vl_nohost_v3_timeout.tgz",
-          "evidence/r41/chat/run3_priority/vl_nohost_v4_failed.tgz"
+          "evidence/r41/chat/run3_priority/vl_nohost_v4_failed.tgz",
+          "evidence/r41/chat/run3_priority/vl_nohost_v5_first_prompt.json"
         ],
-        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and a CPU diagnostic localized divergence to the single-token prefill tail; grouped-tail CPU checks passed, but do not establish board acceptance. The graph-reuse quality attempt subsequently timed out after four completed prompts; the grouped-tail retry failed the strict decode-read check because the first decode compiled constants and recorded 84 host reads; all later decode steps recorded zero reads. The separate warmup VL retry is running; Qwen3.5 is queued."
+        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and a CPU diagnostic localized divergence to the single-token prefill tail; grouped-tail CPU checks passed, but do not establish board acceptance. The graph-reuse quality attempt subsequently timed out after four completed prompts; the grouped-tail retry failed the strict decode-read check because the first decode compiled constants and recorded 84 host reads; all later decode steps recorded zero reads. The separate warmup VL retry is running; Qwen3.5 is queued. The warmup retry has passed its first quality prompt with zero decode host reads; the remaining prompts, image and session are still running or pending."
       },
       {
         "model": "Qwen3.5-4B-FP8",

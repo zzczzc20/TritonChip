@@ -406,3 +406,10 @@ Inductor versus TLM differed in just 1/61,440 values (relative L2
 0.00002958305412903428). This supports a compiled-versus-eager numerical-path
 explanation of most of the isolated norm discrepancy; it is not a board
 measurement or a full-model acceptance result.
+
+A [non-default precision-cast experiment](vl_reason_norm_precision_experiment.tgz)
+set Inductor `emulate_precision_casts=True` for this diagnostic only. Both
+CPU Inductor and standalone DP TLM then matched the eager CPU norm bitwise
+for all 61,440 values. The setting was not applied to the board or product;
+two-layer and 113-point validation are required before considering any change.
+A two-layer TLM experiment using the same non-default setting is in progress.

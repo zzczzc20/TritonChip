@@ -1,0 +1,22 @@
+# Author directive to the lead (Codex terminal 10), 2026-10-31
+
+Source: the author, in the lead's chat, 2026-10-31. This is the author's written decision under `doc/engineering_discipline.md` section 2 (only the author can change gates), and it takes precedence over earlier plans and handoffs. The discipline itself still applies: record every number from a run, label domains, preserve failures, no quote without a source.
+
+## What the author wants
+**R41 closes when the run-2 image on the board holds a normal chat with Qwen3-VL-2B-FP8 and Qwen3.5-4B-FP8 from plain PyTorch, with no fallback to the CPU, and the board results are reported honestly.** Work must be meaningful: no time on process-only checks whose outcome changes nothing about whether the image works.
+
+## Stop now (procedural, no value for closing R41)
+- The exploratory HBM-clock sensitivity analyses (433.4 MHz substitution, the -0.001 ns endpoint, clock recreation). The 441 MHz `hbm_aclk` exception is already accepted by the author; it needs no further proof. Cancel queued items that only serve that.
+- Any further "qualification" re-analysis of the link, and re-checking of the original reports for the accepted exception.
+- The one-hour Q41 pilots, the XL pilots (GEMV, stream, matrix, gather, attention, recurrence), the XL-core gates, the clean-archive independent reproduction, the specification-gap resolution, and the registered performance rechecks that only exist to satisfy the old gate list. Do not delete their registration; cancel them from the board queue and mark each in the ledger as **"descoped by the author on 2026-10-31"** with the reason (not "passed", not "failed").
+- Do not modify anything retroactively: results already recorded stay as recorded, including the 81 slower points, the 39 over 5 % and the 8 over 10 %; failed items stay failed under the rules they were measured by. The change is to which items R41's closure depends on, decided in advance and written down.
+
+## Do now, in this order (board time is the scarce resource)
+1. **Chat first.** Put the registered chat queues at the front of the board queue, ahead of every other pending stage: Qwen3-VL-2B-FP8 (prompts including the image prompt, session check, scripted chat) and Qwen3.5-4B-FP8, with the v3 rule (`spec/r41/chat/s2-qwen-chat-v3-*.json`, staged at `~/r41_chat_51f31e8` on the FPGA host; rebuild the manifests for the run-2 image and the dp profile if the hash binding requires it). The environment is the author-approved board interpreter. The author's criterion: the model holds a normal conversation and shows normal intelligence; the registered quality prompts score it against the CPU reference answers.
+2. **No CPU fallback must be proven, not assumed.** For each chat run record from counters and logs: all weights and activations on the `tnca` device, zero host numerical fallback ops, zero host reads of tensors in steady decode (the harness already reports host reads), number of device launches, and device cycles. If anything falls back to the CPU, report it as a failure and fix the cause generically.
+3. **Speed that the author can see.** Record prefill and decode tokens/s on the board for both models at the run-2 image (and the same prompts on the run-1 image if it can be loaded when the card is idle), labelled board. Include the host-time share. If host overhead dominates (Kimi's launch-overhead work is on `origin/r41`: batched native launches and deduplicated resident code), apply those changes if they are gated and verified, and say what they bought.
+4. **Fix what blocks chat first, generically** (compiler, runtime, driver), with the 113-point audit staying 113/113 unchanged. No special-casing and no non-default knobs without declaring them.
+5. **Close R41.** When chat works on the board for both models, finalise: `doc/r41_report.md`, `doc/r41_stage2_report.md`, the acceptance ledger (with the descoped items marked as above and each descoping linked to this file), and PRs #11 and #12 (keep them honest: recorded numbers only, deviations listed, then mark them ready for the author's review; do not merge). The R41 verdict wording is the author's call; report the evidence and what was descoped.
+
+## Reporting
+Reply to the author in Chinese, short, with: overall progress percent to "R41 closed with chat on the board", percent remaining, what ran on the board since the last report, the next steps and ETA. Anything that needs root, a new image, or the author's decision: ask once, clearly.

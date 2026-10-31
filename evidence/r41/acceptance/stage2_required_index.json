@@ -1443,8 +1443,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "ded2bc6d342679cb151929ad6b34c8fd16b1c391402f15270e1f353ff0d4f4e0",
-    "doc/r41_stage2_report.md": "026f9f4a42c340629ef75050fd5cfc6045d8448c23086ea95d955abfd4a33556",
+    "doc/r41_report.md": "b0446259b3cccf4150d4b624a953eeee0cb5ba64798b04acf511e9a7f70dcab1",
+    "doc/r41_stage2_report.md": "01004e3751dee6df8150cc7e42017758d040cb68403ffe7b89a71c0f22e33022",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "086995eaffc8cf03784787f6a72d0e1031a6783bdfbe02bd16ccae7dbf2645c0",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1526,7 +1526,8 @@
     "evidence/r41/chat/run3_priority/vl_traced_sigsegv.tgz": "646951abe6385a52fe596917e4e5435205779517ff332688ae38c64cc85a54d8",
     "evidence/r41/chat/run3_priority/vl_graph_reset_interrupted.tgz": "1049c50c985193f2a4ea7f63d67181c811b2958fec2d9897457b5a83d58ec9af",
     "evidence/r41/chat/run3_priority/vl_nohost_partial_20261031.json": "62e6b8c6475e320c8537346a19d1a54ce43378bf9067ec23c37af9fc3b672376",
-    "evidence/r41/chat/run3_priority/vl_nohost_partial_two_20261031.json": "e0765f9c67ce334627fc561751a0060c0d16216b355f5d74f34ce9c56c74a927"
+    "evidence/r41/chat/run3_priority/vl_nohost_partial_two_20261031.json": "e0765f9c67ce334627fc561751a0060c0d16216b355f5d74f34ce9c56c74a927",
+    "evidence/r41/chat/run3_priority/vl_nohost_partial_three_20261031.json": "82645f64cb26415e8da38fe273d09edd0d13ee919afd6695df7a7060f76b5039"
   },
   "followups": [
     {
@@ -1616,9 +1617,10 @@
           "evidence/r41/chat/run3_priority/vl_traced_sigsegv.tgz",
           "evidence/r41/chat/run3_priority/vl_graph_reset_interrupted.tgz",
           "evidence/r41/chat/run3_priority/vl_nohost_partial_20261031.json",
-          "evidence/r41/chat/run3_priority/vl_nohost_partial_two_20261031.json"
+          "evidence/r41/chat/run3_priority/vl_nohost_partial_two_20261031.json",
+          "evidence/r41/chat/run3_priority/vl_nohost_partial_three_20261031.json"
         ],
-        "failure_reason": "The initial VL attempt stalled and was interrupted; the traced retry answered two prompts but exited with SIGSEGV during a register-write path. Its old host-selected token path also violates no-host criteria; the root cause of the crash is not established."
+        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; the numerical divergence is under investigation."
       },
       {
         "model": "Qwen3.5-4B-FP8",

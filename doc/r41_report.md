@@ -10,8 +10,9 @@ answered two prompts before SIGSEGV during a register-write path. A Qwen3.5 boar
 session generated text and passed its teacher and session checks, but selected
 tokens on the CPU and downloaded logits during decode. Its original quality
 run was interrupted before a result; the same workload is queued with device
-feedback. A graph-preserving device-feedback VL retry is running. Neither chat
-has passed the author scope. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
+feedback. The graph-preserving VL retry passed two quality prompts but failed
+the third against the registered CPU reference; the cause is under investigation.
+Neither chat has passed the author scope. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
 The older gate judgments below are historical and do not override this decision.
 
 Date: 2026-10-26 UTC. Overall verdict: **not accepted**.

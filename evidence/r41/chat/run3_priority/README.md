@@ -91,3 +91,14 @@ downloads and zero new graphs; compiled-wrapper checks report no host
 numerical fallback. Both fixed-length device loops executed 12 steps, so their
 step rates must not be presented as user-visible token rates. The complete VL
 quality run, image prompt and session checks remain unfinished.
+
+The [06:18 UTC snapshot](vl_nohost_partial_three_20261031.json) records the
+third (`reason`) prompt as **failed** under the registered reference rule: the
+board output began `We are given the following statements:` and did not contain
+`Bob` within 12 tokens; the CPU reference begins `Bob is the shortest.` The
+board and reference token sequences differ from the first token. Its recorded
+11 decode steps still have zero host reads, zero staging downloads and zero
+new graphs, and the wrapper check reports no host numerical fallback. The
+quality run continues; the numerical or session cause of the divergence is
+not yet established. A separate CPU chunked-prefill diagnostic was started
+without changing the registered scoring rule.

@@ -1309,7 +1309,7 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
         prov.record('opt_unobserved_load_other', dlo['sites'])
         sr = strength_reduce(kernel)
         info = pure_scalar_cse(kernel)
-        dead = drop_dead_pure(kernel, flat_control=getattr(imp, 'tiled_pointwise_plan', None) is not None)
+        dead = drop_dead_pure(kernel)
         if dict(target.capabilities).get('matrix_dp'):
             # R41 run-2 issue-stream work, gated by the capability until the audit decides
             # whether it becomes the default: dominator-scoped value numbering.

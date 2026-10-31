@@ -184,6 +184,18 @@ finite comparisons and the recorded NaN-payload cases. The [model-route patch](h
 is experimental: its model TLM comparisons, full suite and 113-point audit
 are still running, and it is neither integrated nor queued for board test.
 
+The [one-layer VL model TLM comparison](hoist_model_tlm_20261031.tgz) used
+the initial prototype before its final device/shape guard and the completed-
+event profiler. Against the activation-staging control, prefill had 28 → 30
+launches, 529853540 → 512925718 cycles, 23 → 26 physical loads, 328000 →
+481728 uploaded code bytes and 26 → 31 evictions. Its FP8 matmuls plus
+quantisers used 0.0472591285 → 0.0375922810 instructions/MAC and 100938341 →
+80957691 cycles. Decode stayed at 25 launches, 19 loads and 0.2593053182 FP8
+instructions/MAC; full-step cycles were 489017348 → 494381647 and evictions
+15 → 13. Both 151936-element logits tensors matched the control bitwise, with
+no captured CPU numerical fallback and zero prefill/decode host reads. This is
+reduced-depth TLM evidence, not independent CPU quality or board throughput.
+
 ## Experimental frequency-aware code eviction (not merged)
 
 A generic [experimental runtime patch](code_cache_lfu_experiment.patch) ranks

@@ -14,8 +14,10 @@ feedback. The graph-preserving VL retry timed out after four text prompts,
 three passed and the registered reason prompt failed. A full-checkpoint CPU
 diagnostic reproduced the failure with a one-token prefill tail; grouping that
 tail passed all six VL and five Qwen3.5 CPU quality prompts. These are CPU
-diagnostics, not board acceptance. The grouped-tail VL board retry is running,
-with Qwen3.5 queued. Neither chat has passed the author scope. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
+diagnostics, not board acceptance. The grouped-tail VL board retry returned
+Paris but failed the strict zero-read check: its first decode compiled and
+recorded 84 scalar reads during constant folding; all ten later decode steps recorded zero reads.
+Qwen3.5 is running. Neither chat has passed the author scope. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
 The older gate judgments below are historical and do not override this decision.
 
 Date: 2026-10-26 UTC. Overall verdict: **not accepted**.

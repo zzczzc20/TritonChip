@@ -155,3 +155,25 @@ process was killed. The [raw timeout record](vl_nohost_v3_timeout.tgz) retains
 the report, logs, counters and partial output. The grouped-tail VL board quality
 stage started at 07:07:01 UTC under the separately registered longer budget;
 its results and the queued Qwen3.5 run remain unverified.
+
+## Grouped-tail board attempt, first prompt
+
+The grouped-tail VL quality attempt returned `Paris` on its first prompt but
+was marked `failed-no-host-fallback` before quality scoring: its first decode
+step recorded 84 host reads (224 bytes). The preserved
+[`vl_nohost_v4_failed.tgz`](vl_nohost_v4_failed.tgz) contains the failure and
+all per-step counters. The reads were attributed to PyTorch Inductor's
+`joint_graph.py:add_node_replacement` constant folding during compilation;
+the other ten decode steps recorded zero reads. The model's 822 parameters and
+four buffers were on TNCA, and the captured wrappers reported no host
+fallback. Compile-time reads and steady execution remain separate observations;
+this failed result is not changed. A decode warmup that records compilation
+transfers separately and clears its dummy cache is being tested before a new
+board attempt. Qwen3.5 started on the board at 07:26 UTC.
+
+The candidate decode warmup passed six local behavior tests on GB10 and a
+separate [small TNCA SystemC/TLM model](warmup_tlm_evidence.tgz): generated IDs `[15,15,15,15]`, decode
+host-read counts `[0,0,0]`, graph counts `[2,0,0,0]` for the measured steps,
+and eight separately recorded post-generation output reads. This simulation
+is not a full-checkpoint or board result. The original strict per-step
+zero-read gate is unchanged; warmup transfers are recorded separately.

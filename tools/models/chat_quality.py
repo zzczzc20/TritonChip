@@ -90,6 +90,7 @@ def main():
                                   device_evidence={k: report.get(k) for k in
                                                    ("model_tensor_placements", "cpu_numerical_fallback",
                                                     "compiled_wrapper_fallbacks", "compiled_wrapper_roles_covered",
+                                                    "decode_warmup",
                                                     "vision_calls", "output_retrieval",
                                                     "output_retrieval_seconds", "executed_generation_steps")},
                                   steps=[{k: s.get(k) for k in ("kind", "input_tokens", "seconds", "new_graphs", "code_store",

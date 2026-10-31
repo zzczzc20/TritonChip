@@ -46,6 +46,8 @@ class Session:
         self.cached = inputs['input_ids'][0].tolist()
         calls = ([{'kind': 'token', 'new_graphs': 1}] if self.prefill_compiles_decode else [])
         return self.next_logits(), calls, 0
+    def warmup_decode(self, inputs):
+        return Tensor([0, 1, 0, 0])
     def next_logits(self):
         token = next(self.choices)
         return Tensor([int(i == token) for i in range(4)])
@@ -70,7 +72,7 @@ class DeviceFeedbackTests(unittest.TestCase):
             nonlocal capture_count
             capture_count += 1
             # The decode graph compiled inside prefill is reused in generation.
-            cached_decode = prefill_compiles_decode and capture_count == 3
+            cached_decode = prefill_compiles_decode and capture_count == 4
             return fn(), ([] if cached_decode else ['test wrapper'])
         with mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind}), \
              mock.patch.object(chat, 'run_with_code_capture', capture), \
@@ -121,6 +123,18 @@ class CodeCaptureTests(unittest.TestCase):
 
 
 class PrefillSegmentationTests(unittest.TestCase):
+    def test_decode_warmup_resets_dummy_state(self):
+        session = object.__new__(chat.Session)
+        session.model, session.dev = object(), torch.device('cpu')
+        session.cached, session.last_position = [], None
+        session.step_device = mock.Mock(return_value='dummy logits')
+        session.reset = mock.Mock()
+        positions = torch.arange(4).reshape(1, 1, 4)
+        with mock.patch.object(chat.L, 'prefill_position_ids', return_value=positions):
+            self.assertEqual(session.warmup_decode({'input_ids': torch.ones((1, 4))}), 'dummy logits')
+        self.assertEqual(session.step_device.call_args.args[0].tolist(), [[0]])
+        session.reset.assert_called_once()
+
     def test_short_tail_is_prefilled_as_a_block(self):
         session = object.__new__(chat.Session)
         session.model, session.bucket, session.chunk, session.cached = object(), 64, 8, []

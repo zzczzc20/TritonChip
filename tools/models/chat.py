@@ -297,6 +297,17 @@ class Session:
         self.last_position = position
         return logits
 
+    def warmup_decode(self, inputs):
+        """Compile decode using a dummy token, then clear its cache before real input."""
+        if self.cached or self.last_position is not None:
+            raise RuntimeError("decode warmup requires a fresh cache")
+        self.last_position = L.prefill_position_ids(self.model, inputs)[..., -1:]
+        try:
+            token = torch.zeros((1, 1), dtype=torch.long).to(self.dev)
+            return self.step_device(token)
+        finally:
+            self.reset()
+
 
 def _vision_to(vision, dev):
     return tuple(tuple(t.to(dev) for t in group) for group in vision)
@@ -335,6 +346,20 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         result, code = run_with_code_capture(fn)
         code_by_role.setdefault(role, []).extend(code)
         return result
+
+    # Compilation can read its own constant-folding scalars. Do that once on
+    # a dummy token and a fresh cache; record all transfers separately and
+    # clear the cache before the actual prompt. Real decode remains subject
+    # to the unchanged zero-read rule on every step.
+    warmup = None
+    if not code_by_role.get("decode") and session.prompts == 0:
+        started = time.perf_counter()
+        with transfer_meter(True) as warmup_meter:
+            warmup_logits = capture("decode", lambda: session.warmup_decode(inputs))
+            warmup_meter.mem.synchronize()
+        if warmup_logits.device.type != "tnca":
+            raise RuntimeError("decode warmup returned a host tensor")
+        warmup = dict(seconds=time.perf_counter() - started, transfers=warmup_meter.summary())
 
     old_recompile = torch._dynamo.config.error_on_recompile
     session.prompts += 1
@@ -450,6 +475,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   device_memory=L.device_memory(session.dev), cache_bytes=L.cache_bytes(session.cache),
                   standard_torch_fullgraph=True, cpu_numerical_fallback=fallback,
                   compiled_wrapper_fallbacks=fallbacks, compiled_wrapper_roles_covered=covered,
+                  decode_warmup=warmup,
                   steady_decode_host_reads_detected=bool(read_during_decode),
                   model_tensor_placements=placements, output_retrieval=retrieval.summary(),
                   output_retrieval_seconds=time.perf_counter() - retrieval_start,

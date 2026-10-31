@@ -216,6 +216,7 @@ In the separate [synthetic DP TLM pressure replay](code_cache_sqrt_tlm_20261031.
 All 2,816 dot output elements per route matched the independent reference;
 instructions/MAC stayed 0.1002197265625, cycles stayed 7271, and probe launch
 count stayed one per repetition. The candidate passed 4/4 cache lifecycle
-checks and 16/16 fixed-revision FP8/compiled-graph checks. A default-code
-audit and real reduced-depth model TLM comparison are running. This policy is
-not accepted, integrated or queued for board retest.
+checks and 16/16 fixed-revision FP8/compiled-graph checks. Its
+[default-code audit](code_cache_sqrt_audit_20261031.tgz) compared 113/113
+points unchanged. Real reduced-depth VL and Qwen3.5 TLM comparisons are
+running. This policy is not accepted, integrated or queued for board retest.

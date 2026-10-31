@@ -1,0 +1,41 @@
+{
+  "schema": "tnca-r41-xl41-matrix-queue/1",
+  "scope": "three bounded XL pilots, not full XL-core or acceptance",
+  "stages": [
+    {
+      "id": "transpose",
+      "point": "XL41-transpose",
+      "point_sha256": "e09eb6a3c4419687f172a7c582476b20cd425791536ce00b9d277c95b2e7eb41"
+    },
+    {
+      "id": "gemm",
+      "point": "XL41-gemm",
+      "point_sha256": "bfbea158bb1e5318c7d48fd1ed410276dd6bce51295e336ef30d1077799cf6ec"
+    },
+    {
+      "id": "projection",
+      "point": "XL41-projection",
+      "point_sha256": "f399ffcb957670cde6a4624991a4143396073386a95a31e13db57926fab33799"
+    }
+  ],
+  "timeout_seconds": 3600,
+  "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "image_uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+  "clock_hz": 100000000,
+  "pilot_script_sha256": "8ca27959f8337917de6023109ac253d9d780e31906106dfe1d7bd642a0f63caa",
+  "board_guard_sha256": "fb6c519b678f0b6f7bab0cfc005676e2cc0b60c15c1902ef01f717c906d098cb",
+  "q41_full_registration_sha256": "bbb6481f81b0c783b7e31d2701b7703655aceb1b18a2419e241d594c63e5914d",
+  "cpu_preflight_sha256": "81ab3c843cb0c572826b3957adf1c994f7eb52342251a3929d63fd8729a12c2d",
+  "waiter_dependency_sha256": "26d1b2a68dbf4c068ed8f615e2eed36bf9230956e43ff8248758f259d5372a7b",
+  "inputs": {
+    "spec/r41/stage2/xl_core.json": "0b5d7d477bfd781bfef214c9256aeef7b319ce2571addcd91afdac8cf08bcbe6",
+    "tools/models/qwen35_reference.py": "4064f57006365b7b22ffae53a9d0d1b6382e71cb15c91a705b37c6a0ccf27159",
+    "tools/models/qwen_fp8_lib.py": "4983c12942cb9281aae50564749e9a45fb935c7523c7af150fe88cf2207d232d",
+    "tools/models/flux2_klein_run.py": "ca2ad6a7d97d845af49c91d166d4404e1e8b01caa8775cf7ea6f0830b817b0b8",
+    "tools/models/fp8_blockwise_ref.py": "db72d8422719cea806f3e34b75c635cd9198fb6426dd52e542edc2a7d734a5be",
+    "tools/models/fp8_checkpoint.py": "98f5d4d4b2404523935e125ce98909ef7eac9134d85aa7f73b90636c6135ba89",
+    "tools/r41/run2_board/auto.py": "1cfb1a461b1b559a83cb3a797e34d275f824bb8262be137ae92ee683a1ad5d12"
+  },
+  "predecessor": "verified successful Q41 core, tail and second core processes",
+  "load_policy": "never program an image; require matching loaded image and idle card"
+}

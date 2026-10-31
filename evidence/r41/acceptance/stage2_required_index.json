@@ -1558,7 +1558,8 @@
     "evidence/r41/chat/run3_priority/vl_reason_norm_precision_experiment.tgz": "9908d992ac1f1e6cbfac1dfa566380a2f750dca71cb3d867b091203b8248ae01",
     "evidence/r41/chat/run3_priority/q35_warmup_reset_cpu.json": "6af1de339a9893ba82d741d534d37b2e43699c11fbd55b01cdb6fa7d06627dd4",
     "evidence/r41/chat/run3_priority/vl_reason_pair_precision_tlm.tgz": "4f39ee06ff4a94db9316fec706c0137672aa8e31f48f80ff68a40263e1814687",
-    "evidence/r41/chat/run3_priority/vl_warmup_multiturn_cpu.json": "921876dcdd734f3e8aff2922ea464f96d975a18935f3baf74686588bff52e94c"
+    "evidence/r41/chat/run3_priority/vl_warmup_multiturn_cpu.json": "921876dcdd734f3e8aff2922ea464f96d975a18935f3baf74686588bff52e94c",
+    "evidence/r41/chat/run3_priority/vl_warmup_image_cpu.json": "1c95ff4ca66d5d7c8c14607e4a7e5a7afd510a5043728300aed95b3828c025e2"
   },
   "followups": [
     {

@@ -436,3 +436,8 @@ A [full-checkpoint VL CPU multi-turn diagnostic](vl_warmup_multiturn_cpu.json)
 compared the registered Alice conversation before and after dummy decode
 warmup and reset. Both turns' generated text and token IDs were identical
 between the two CPU runs. This does not establish a board multi-turn result.
+
+A [full-checkpoint VL CPU image diagnostic](vl_warmup_image_cpu.json) ran the
+registered shapes image after a factual prompt, with and without the earlier
+dummy decode warmup. Both CPU runs generated identical token IDs and answered
+`circle, square, triangle`. This is not a board image result.

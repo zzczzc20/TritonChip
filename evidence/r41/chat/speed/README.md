@@ -1,8 +1,8 @@
 # R41 chat speed work
 
 The active-event runtime change and this candidate were developed outside the
-fixed board archive. All numbers here are uncalibrated DP SystemC/TLM; no
-board speedup is claimed.
+fixed board archive. Results below explicitly identify board measurements and
+uncalibrated DP SystemC/TLM comparisons.
 
 ## Board queue after Qwen3.5 quality failure
 
@@ -30,7 +30,22 @@ device cycles over three steps. Each decode step had 725 launches and
 recorded on the board. Decode non-device wall residual was 0.4606881353 →
 0.4059515709; this includes waits and transfers, not just host execution.
 These are single board sessions, not a repeated controlled benchmark. The
-quality failure above remains unchanged; equal-row board testing has started.
+quality failure above remains unchanged.
+
+The [equal-row board session](equalrow_board_20261031.tgz) completed at
+20:19 UTC; its [summary](equalrow_board_20261031.json) records a full-checkpoint
+Qwen3.5 session. Teacher and persistent-session checks passed. All nine decode
+steps had zero host reads, all 924 parameters and four buffers were on TNCA,
+and captured wrappers had no CPU numerical fallback. First-call output and
+all four token IDs matched the event-index session. Event-index → equal-row
+prefill was 0.0344526656 → 0.0350916254 input tokens/s and decode was
+0.0157428920 → 0.0179191362 executed steps/s. Three decode steps used
+11320317067 → 10052258385 device cycles; each had 725 launches and
+561/559/559 evictions. Board physical code reloads were not recorded.
+Non-device wall residual was 0.4059515709 → 0.3995740425 and includes waits
+and transfers. These are single observations, not repeated controlled runs.
+The pipeline comparison started after this result; the separate Qwen3.5
+multi-turn quality failure remains unchanged.
 
 ## Equal-row lowering
 
@@ -65,8 +80,7 @@ retry imports it locally. Two [integration audit attempts](equalrow_integration_
 had 0/113 passing because the copied tree lacked the ISA file and then the
 `tools/r38` files, respectively. These are not passing audits. The corrected
 [actual integration-tree audit](equalrow_integration_audit_20261031.tgz)
-compared 113/113 unchanged, with zero changed or uncompared. Board comparison
-is pending.
+compared 113/113 unchanged, with zero changed or uncompared. The board comparison is recorded above.
 
 ## Pipelined weight transfers
 

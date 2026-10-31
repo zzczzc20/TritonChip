@@ -49,6 +49,16 @@ and no captured CPU numerical fallback. Its first decode ran at 0.0157428920
 executed steps/s, compared with 0.0142360176 in the earlier session; these are
 single observations, with physical code reload counts unmeasured.
 
+The [equal-row board session](../evidence/r41/chat/speed/equalrow_board_20261031.json)
+passed its teacher and persistent-session checks. Its first prefill and decode
+were 0.0350916254 input tokens/s and 0.0179191362 executed steps/s, against
+0.0344526656 and 0.0157428920 in the event-index session; three decode steps
+used 10052258385 versus 11320317067 device cycles. All nine decode steps had
+zero host reads, 924 parameters and four buffers were on TNCA, and captured
+wrappers had no numerical CPU fallback. Output tokens matched. These are
+single observations; physical code reloads were not recorded. The separate
+registered Qwen3.5 multi-turn quality failure is unchanged.
+
 Qwen3.5's original registered quality run timed out and its segmented multi-turn
 continuation failed the registered first-turn comparison. The acceleration
 A/B board sessions have begun; CPU/TLM diagnosis is in progress. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md)

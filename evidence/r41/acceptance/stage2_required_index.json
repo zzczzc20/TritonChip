@@ -1443,8 +1443,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "d37075cb1fc0b894c31213b663c9b737599b22d07876cd9f706de7ce46a88793",
-    "doc/r41_stage2_report.md": "f2e57c7cc8f2834a33f129361ae5a0b97b1a12be5bd9c90723a93807bd9c560b",
+    "doc/r41_report.md": "a3366c560a693b53ef7e1d12b741b11973dc90725e41314ace7a7878af053364",
+    "doc/r41_stage2_report.md": "a61e4497ce4491d77cd561a3defff85cb8b1858dfd1ca95cba801eb0d7a7b82e",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "086995eaffc8cf03784787f6a72d0e1031a6783bdfbe02bd16ccae7dbf2645c0",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1695,6 +1695,15 @@
           "persistent_session": "passed",
           "decode_host_read_calls": 0,
           "note": "Prior failures retain their historical judgments; scripted chat remains incomplete."
+        },
+        "later_script_retry": {
+          "status": "passed",
+          "evidence": "evidence/r41/chat/run3_priority/vl_nohost_v5_script.json",
+          "turns": 3,
+          "decode_steps": 93,
+          "decode_host_read_calls": 0,
+          "cpu_numerical_fallback": false,
+          "note": "Later than the preserved historical quality and session notes; earlier failures remain unchanged."
         }
       },
       {
@@ -1720,7 +1729,17 @@
           "evidence/r41/chat/run3_priority/q35_cpu_tail_compare.tgz",
           "evidence/r41/chat/run3_priority/q35_nohost_v4_failed.tgz"
         ],
-        "failure_reason": "Run-2 full-checkpoint session and teacher/session checks passed under the old harness, but per-step logits were downloaded and argmax ran on the CPU; the author no-host criterion fails. The old quality attempt was interrupted before producing a prompt result; the same workload is queued with device feedback. A later device-feedback board session generated text and passed its teacher check, but failed the strict zero-read check: its first decode recorded 48 scalar reads during compilation; later decode steps read zero. The repeated prompts matched bitwise, but the persistent-session check remained false because the first generation failed. Quality did not run; warmup retries are queued."
+        "failure_reason": "Run-2 full-checkpoint session and teacher/session checks passed under the old harness, but per-step logits were downloaded and argmax ran on the CPU; the author no-host criterion fails. The old quality attempt was interrupted before producing a prompt result; the same workload is queued with device feedback. A later device-feedback board session generated text and passed its teacher check, but failed the strict zero-read check: its first decode recorded 48 scalar reads during compilation; later decode steps read zero. The repeated prompts matched bitwise, but the persistent-session check remained false because the first generation failed. Quality did not run; warmup retries are queued.",
+        "later_chat_evidence": {
+          "session_status": "passed",
+          "session_evidence": "evidence/r41/chat/run3_priority/q35_nohost_v6_session.json",
+          "quality_attempt": "timeout after 4/5 prompts passed",
+          "quality_evidence": "evidence/r41/chat/run3_priority/q35_nohost_v6_four_prompts_timeout.json",
+          "separate_multiturn_status": "failed registered first-turn containment",
+          "multiturn_evidence": "evidence/r41/chat/run3_priority/q35_multiturn_segment_failed_20261031.json",
+          "latest_speed_session": "evidence/r41/chat/speed/equalrow_board_20261031.json",
+          "note": "Prior attempts retain their recorded judgments; the separate multi-turn failure is not a quality pass."
+        }
       }
     ]
   }

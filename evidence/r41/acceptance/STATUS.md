@@ -1034,3 +1034,8 @@ The next report update records the completed event-index board session; prior re
 
 - `doc/r41_report.md`: `d6d7bb73ab27846689230b362c4242eb3a42d005ce9c421bb01bc90b839d2be3` → `d37075cb1fc0b894c31213b663c9b737599b22d07876cd9f706de7ce46a88793`
 - `doc/r41_stage2_report.md`: `5d666c6bd6f6657c44c8949f9a81ba4aa56c8a6902305ced7763ad8e3d41f6ca` → `f2e57c7cc8f2834a33f129361ae5a0b97b1a12be5bd9c90723a93807bd9c560b`
+
+The next report update records the equal-row board session; prior reports remain in git at `0d7abe76`. Only the two living report hashes were refreshed.
+
+- `doc/r41_report.md`: `d37075cb1fc0b894c31213b663c9b737599b22d07876cd9f706de7ce46a88793` → `a3366c560a693b53ef7e1d12b741b11973dc90725e41314ace7a7878af053364`
+- `doc/r41_stage2_report.md`: `f2e57c7cc8f2834a33f129361ae5a0b97b1a12be5bd9c90723a93807bd9c560b` → `a61e4497ce4491d77cd561a3defff85cb8b1858dfd1ca95cba801eb0d7a7b82e`

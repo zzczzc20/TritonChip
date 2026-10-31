@@ -183,11 +183,12 @@ class Tile:
     """
 
     __slots__ = ('kind', 'handle', 'rows', 'cols', 'dtype', 'desc',
-                 'store', 'vector', 'replicated')
+                 'store', 'vector', 'replicated', 'equal_rows')
 
     def __init__(self, kind, handle, rows, cols, dtype, desc=None,
-                 store=None, vector=None, replicated=False):
+                 store=None, vector=None, replicated=False, equal_rows=False):
         self.kind = kind
+        self.equal_rows = equal_rows
         # True only when it is proven that every lane of each row register
         # holds that row's value (a value computed from row indices, splats
         # or such rows lane by lane). A loaded [R, 1] has its data in lane 0

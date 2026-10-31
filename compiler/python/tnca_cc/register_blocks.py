@@ -370,13 +370,18 @@ def _reduce(imp, op, width):
         vlen = imp.target.vlen
         getters = [imp._row_getter(_OpView(op, c, vlen).get_operand(0), shape[0], elem)
                    for c in range(width // vlen)]
+        equal = (imp._equal_rows_enabled() and
+                 all(imp._equal_rows(_OpView(op, c, vlen).get_operand(0))
+                     for c in range(width // vlen)))
         out_rows = []
-        for r in range(shape[0]):
+        for r in range(1 if equal else shape[0]):
             acc = getters[0](r)
             for g in getters[1:]:
                 acc = imp.b.vbin(kind, acc, g(r), dtype=elem, fmm='ieee')
             out_rows.append(imp._reduce_vec(kind, acc, dtype=elem, mask=None, broadcast=True))
-        imp._tiles[rid] = Tile('col', tuple(out_rows), shape[0], 1, elem)
+        if equal:
+            out_rows *= shape[0]
+        imp._tiles[rid] = Tile('col', tuple(out_rows), shape[0], 1, elem, equal_rows=equal)
         imp._v.pop(rid, None)
         return True
     partials = []

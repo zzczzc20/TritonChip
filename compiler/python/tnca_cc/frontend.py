@@ -2822,6 +2822,13 @@ class TTIRImporter:
             if lanes is None:
                 return self.b.load(at, mask=mask, other=other, dtype=elem, size=size)
             return self.b.gather(at, lanes, mask=mask, other=other, dtype=elem, size=size)
+        if (self._equal_rows_enabled()
+                and not any(t[0] in ('row', 'rowvec') for t in sep.row_terms())
+                and (op.get_num_operands() < 2 or self._equal_rows(op.get_operand(1)))):
+            # Addresses and masks are identical, so one immutable TTIR load
+            # result represents every row.  No model or kernel name is used.
+            one = row(0)
+            return self._equal_row_tile(one, rows, cols, elem)
         if self._deferrable(op):
             return Tile('lazy', row, rows, cols, elem)
         return self._materialise(row, rows, cols, elem)
@@ -4685,6 +4692,40 @@ class TTIRImporter:
         # A dense constant: one `v.movi` serves every row.
         return pending is not None and pending[0] == 'tile'
 
+    def _equal_rows(self, value):
+        """Conservative proof that all rows of this tile contain equal lanes."""
+        shape, _ = _parse_type(str(value.get_type()))
+        tile = self._tiles.get(value.id())
+        if tile is not None and (tile.rows == 1 or tile.equal_rows):
+            return True
+        if not isinstance(shape, tuple) or shape[0] == 1:
+            return tile is None or tile.rows == 1
+        if self._pending_const.get(value.id(), (None,))[0] == 'tile':
+            return True
+        original = getattr(value, 'value', value)
+        defining = self._ttir_def(original)
+        if defining is not None and defining.get_name() == 'tt.broadcast':
+            s, _ = _parse_type(str(defining.get_operand(0).get_type()))
+            return isinstance(s, tuple) and s[0] == 1
+        return False
+
+    def _equal_rows_enabled(self):
+        import os
+        return (self.target.has('matrix_dp') and
+                os.environ.get('TNCA_EQUAL_ROWS', '1') != '0')
+
+    def _equal_row_tile(self, value, rows, cols, elem):
+        """Hold one equal row in scratch to avoid a long-lived vector."""
+        if value.kind == PRED:
+            return Tile('lazy', lambda r: value, rows, cols, elem, equal_rows=True)
+        off = self._take_scratch(self.target.vlen * 4)
+        at = self.b.sbini('add', self._scratch_base(), off)
+        self.b.store(at, value, size='w')
+        self.b.fence()
+        return Tile('lazy', lambda r: self.b.load(self.b.sbini('add', self._scratch_base(), off),
+                                                  dtype=elem, size='w'),
+                    rows, cols, elem, equal_rows=True)
+
     def _shape_mask(self, width, mask=None):
         if width >= self.target.vlen:
             return mask
@@ -4861,6 +4902,11 @@ class TTIRImporter:
         rows, cols = math.prod(shape[:-1]), shape[-1]
         getters = [self._row_getter(op.get_operand(i), rows, elem)
                    for i in range(op.get_num_operands())]
+        if (self._equal_rows_enabled()
+                and all(self._equal_rows(op.get_operand(i)) for i in range(op.get_num_operands()))):
+            value = build([g(0) for g in getters], elem)
+            self._tiles[op.get_result(0).id()] = self._equal_row_tile(value, rows, cols, elem)
+            return
         # Every `build` is lane-wise, so replicated operand rows give a
         # replicated result row.
         replicated = all(self._rows_replicated(op.get_operand(i))
@@ -5200,6 +5246,11 @@ class TTIRImporter:
                     y = self.b.vcvt(tile.store, rtype, x)
                     return self._fp8_nan_fix(rule, y, tile.store, x,
                                              x if root_get is None else root_get(r), rtype)
+            if (self._equal_rows_enabled() and tile.equal_rows
+                    and (rule is None or rule[1] is src or self._equal_rows(rule[1]))):
+                value = convert(0)
+                self._tiles[res.id()] = self._equal_row_tile(value, tile.rows, tile.cols, rtype)
+                return
             users = self._value_users.get(res.id(), [])
             if (self.index_opt and tile.kind == 'accumulator' and len(users) == 1
                     and users[0][0].get_name() == 'tt.store') or self._deferrable(op):

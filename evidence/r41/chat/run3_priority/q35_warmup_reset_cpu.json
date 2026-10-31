@@ -1,0 +1,293 @@
+{
+  "schema": "r41-q35-cpu-warmup-reset/1",
+  "domain": "full-checkpoint CPU diagnostic, not board or TLM",
+  "prompt": "Say hi.",
+  "prompt_text": "<|im_start|>user\nSay hi.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "logits_equal": true,
+  "logits_max_abs": 0.0,
+  "argmax": [
+    12675,
+    12675
+  ],
+  "states_equal": true,
+  "state": {
+    "0.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "0.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "1.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "1.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "10.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "10.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "11.keys": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "11.values": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "12.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "12.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "13.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "13.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "14.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "14.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "15.keys": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "15.values": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "16.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "16.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "17.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "17.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "18.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "18.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "19.keys": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "19.values": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "2.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "2.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "20.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "20.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "21.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "21.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "22.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "22.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "23.keys": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "23.values": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "24.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "24.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "25.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "25.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "26.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "26.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "27.keys": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "27.values": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "28.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "28.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "29.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "29.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "3.keys": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "3.values": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "30.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "30.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "31.keys": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "31.values": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "4.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "4.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "5.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "5.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "6.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "6.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "7.keys": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "7.values": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "8.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "8.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "9.conv_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    },
+    "9.recurrent_states.0": {
+      "equal": true,
+      "max_abs": 0.0
+    }
+  },
+  "cache_metadata": [
+    {
+      "3.length": 15,
+      "7.length": 15,
+      "11.length": 15,
+      "15.length": 15,
+      "19.length": 15,
+      "23.length": 15,
+      "27.length": 15,
+      "31.length": 15
+    },
+    {
+      "3.length": 15,
+      "7.length": 15,
+      "11.length": 15,
+      "15.length": 15,
+      "19.length": 15,
+      "23.length": 15,
+      "27.length": 15,
+      "31.length": 15
+    }
+  ]
+}

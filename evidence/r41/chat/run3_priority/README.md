@@ -413,3 +413,10 @@ CPU Inductor and standalone DP TLM then matched the eager CPU norm bitwise
 for all 61,440 values. The setting was not applied to the board or product;
 two-layer and 113-point validation are required before considering any change.
 A two-layer TLM experiment using the same non-default setting is in progress.
+
+A [full-checkpoint Qwen3.5 CPU diagnostic](q35_warmup_reset_cpu.json) compared
+`Say hi.` prefill with and without a dummy decode warmup followed by cache
+reset. The resulting logits, all 64 captured attention/linear-attention cache
+tensors, and recorded cache metadata were bitwise equal; both first token IDs
+were 12675. This validates the reset on the CPU path only, not the queued
+board implementation.

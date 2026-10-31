@@ -502,3 +502,14 @@ work, transfers, waits and possible counter overlap, so it is not host-only
 time. Decode executed all 11 steps even when EOS was reached earlier.
 The vision setup recorded host reads during compilation; these are not
 decode reads.
+
+A [CPU-only synthetic session diagnostic](event_scan_cpu.json), reproducible
+with `tools/models/diagnose_event_scans.py`, measured existing runtime event
+history scans; it did not access a board or model. The current session keeps
+terminal events and scans that history at submission, drain and module unload.
+With 1,000 and 60,000 terminal events respectively, `unfinished` took
+0.00009780552238225937 and 0.00646544074639678 seconds per scan on this CPU.
+The board quality record also shows decode wall time growing while device
+cycles remain similar, so these scans are a plausible contributor, not a
+measured board causal attribution or an advertised speedup. No runtime change
+was applied to the live board or running TLM attempts.

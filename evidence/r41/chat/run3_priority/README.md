@@ -763,3 +763,13 @@ absolute difference 1.1920928955e-7. The whole and grouped calls have different
 chunk boundaries and state inputs by construction. This localizes the earliest
 observed CPU segmentation difference to that computation; it is not a board or
 DP TLM measurement and does not establish the cause of the board's first token.
+
+A separate [preregistered whole-prefill multi-turn board diagnostic](q35_whole_board_queue_20261031.tgz)
+waits behind the existing speed and hoist queue without programming an image.
+It keeps the original prompt and CPU scoring rules but uses `--prefill-chunk 0`
+instead of 8, so it is a distinct reduced proof, not a revision of the failed
+registered grouped-prefill result or original timeout. Its first queue setup
+failed before touching the card because the recovery-helper path was wrong;
+the corrected v2 queue is waiting. Before executing it checks the source and
+manifest hashes, takes the existing queue lock, and verifies the loaded UUID,
+clock, image-file hash and card idle state. Its result is pending.

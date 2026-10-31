@@ -37,6 +37,6 @@
   ],
   "host_share_caveat": "Residual wall time after subtracting summed launch cycles at 100 MHz; includes host, transfer, wait and any counter/overlap effects, and is not a directly measured host-only fraction.",
   "no_fallback_evidence": "The original host token selection executes argmax on the CPU and downloads each step logits outside the meter; the hardcoded cpu_numerical_fallback field is not proof.",
-  "quality_status": "running at 2026-10-31 04:15 UTC",
+  "quality_status": "interrupted at 2026-10-31 04:22:46 UTC before producing a prompt result; same quality workload queued on device-feedback implementation",
   "steady_decode_estimated_non_device_wall_fraction": 0.42385451969839194
 }

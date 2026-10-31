@@ -7,9 +7,9 @@ requirements are descoped, not passed or failed; prior results and failures
 remain recorded in the [ledger](../evidence/r41/acceptance/stage2_index.md).
 The run-2 VL chat attempt stalled and was interrupted. A Qwen3.5 board
 session generated text and passed its teacher and session checks, but selected
-tokens on the CPU and downloaded logits during decode; its quality run is in
-progress. Neither chat has passed the author scope. A device-feedback retry
-is queued. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
+tokens on the CPU and downloaded logits during decode. Its original quality
+run was interrupted before a result; the same workload is queued with device
+feedback. Neither chat has passed the author scope. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md).
 The older gate judgments below are historical and do not override this decision.
 
 Date: 2026-10-26 UTC. Overall verdict: **not accepted**.

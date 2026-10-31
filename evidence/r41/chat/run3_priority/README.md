@@ -781,3 +781,13 @@ I have noted your name.`; the first turn therefore cannot satisfy the registered
 containment rule. This is a live stdout checkpoint, not the final structured
 quality report: the second turn and its counters were not yet recorded at the
 checkpoint. The original grouped failure and timeout remain unchanged.
+
+The [whole-prefill full-checkpoint DP TLM logits](q35_multiturn_tlm_whole_20261031.tgz)
+use the same 27 input tokens and model revision as the CPU comparison. TLM
+chose `I` (22.25) over `Hello` (22.0), gap 0.25. CPU whole-prefill chose
+`Hello` (22.25) over `I` (21.75), gap 0.5. Across 248,320 logits, relative
+L2 was 0.0774650127, maximum absolute difference 1.0, and 242,662 bit patterns
+differed. This is a genuine logits difference rather than evidence only of an
+exact tie. The board emitted the same first token, but board logits were not
+captured, so this does not prove the complete device-side cause. The grouped
+DP TLM run remains pending.

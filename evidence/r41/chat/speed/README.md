@@ -599,3 +599,8 @@ measured shapes. The original source failed to compile; the K16 control first
 needed the compiler fixes. Generic tails, partitioned variants, model execution
 and board tests are unverified, so this does not establish universal K32 or a
 board speedup.
+
+The later [tail and two-role experiments](k32_descriptor_tail_roles_20261031.md)
+include exact tested outputs and preserve the failed first two-role harness.
+All measured cold two-role K32 comparisons increased visible TLM cycles; the
+final audit and broader model coverage remain pending, and it remains unmerged.

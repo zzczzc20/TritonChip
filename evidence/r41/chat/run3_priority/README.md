@@ -618,3 +618,15 @@ and 2.8428647201508284 s after. Both were bitwise equal to the reference
 This change does not reduce launch or reload counts. Its separate 113/113
 default-code audit and TLM/RTL checks are in `event_active_candidate.tgz`;
 board A/B remains pending and the fixed board source is unchanged.
+
+The subsequently completed [legacy single-token-tail DP TLM replay](vl_reason_legacy_dp_tlm.tgz)
+reproduced the old wrong first token: its top five were We 38.5, Let 37.0,
+Bob 37.0, To 36.75 and From 33.75, with gap 1.5. The CPU run with the
+same 8+8+8+1+1+1+1+1+1 segmentation also chose We (38.25; Let 37.0,
+To 36.5, Bob 36.5, From 34.0; gap 1.25). TLM versus that matching CPU
+segmentation had relative L2 0.04330403357744217, max absolute difference
+1.40625 and equal argmax. Against the grouped CPU reference it had relative
+L2 0.053693052381277084 and a different argmax. This localises the old
+failure to a segmentation-dependent path, with a separate measured CPU/TLM
+numeric difference; it does not identify the precise internal operation.
+The corrected grouped board quality result remains separate.

@@ -1,4 +1,4 @@
-# Board campaign progress, 2026-10-31 01:06 UTC
+# Board campaign progress, 2026-10-31 01:28 UTC
 
 The author explicitly authorized final-image loading without further approval,
 including the 433 MHz exception. The 15-minute idle rule and protection of
@@ -16,7 +16,7 @@ comparison are linked from `README.md`. The queue has started the default
 513-point memory-bound stage; at the time above both large batches passed
 171/171, both medium batches passed 171/171, and both small batches passed
 171/171. The default 513-point suite completed 513/513 and the tiled2 suite
-had covered 35 configurations with no failures. The queue will run later
+had covered 61 configurations with no failures. The queue will run later
 registered stages in order, stopping on failure. The
 previous identity and HBM clamp failures and fixes are preserved in `README.md`.
 
@@ -71,6 +71,12 @@ Board-host PID 1138206 waits for those sessions, then queues registered XL
 transpose, GEMM and projection pilots; its log is
 `/home/zzhouch/r41run3/xl41_matrix_queue/queue.jsonl`, with CPU preflight in
 [`../../../../acceptance/xl41_matrix_pilots/README.md`](../../../../acceptance/xl41_matrix_pilots/README.md).
+Board-host PID 1139463 waits for those matrix pilots, then queues gather,
+attention and exploratory recurrence pilots; its log is
+`/home/zzhouch/r41run3/xl41_extra_queue/queue.jsonl`. The gather formula does
+not include three required boundary rows, so the pilot tests those separately;
+the recurrence update equation is unspecified, so that pilot is explicitly
+exploratory. Details and CPU records are in
+[`../../../../acceptance/xl41_extra_pilots/README.md`](../../../../acceptance/xl41_extra_pilots/README.md).
 Full Q41-core, XL-core and clean-archive independent reproduction remain
-unmeasured and are not passes. Gather, attention and recurrence still need
-their own registered runners and board results.
+unmeasured and are not passes. The two specification gaps remain unresolved.

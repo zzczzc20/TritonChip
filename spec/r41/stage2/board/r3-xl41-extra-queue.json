@@ -1,0 +1,49 @@
+{
+  "schema": "tnca-r41-xl41-extra-queue/1",
+  "scope": "bounded XL pilots; gather single-vector requirements and recurrence update rule remain unresolved; not full XL-core or acceptance",
+  "stages": [
+    {
+      "id": "gather",
+      "point": "XL41-gather",
+      "point_sha256": "2ba3f7430464280044813353d099bc1fe3f840310ea2df5ce9c0d76ac4d0adbe",
+      "pilot_script_sha256": "547cb54dcf50122f411ed5b5242b27ee31e35b296281a41264dfc4997cb7d4aa",
+      "cpu_preflight_sha256": "413161d75bd92c691a70d84fd4a674af9acb069f7a1eceef809738fee1b1ab33"
+    },
+    {
+      "id": "attention",
+      "point": "XL41-attention",
+      "point_sha256": "750f069b5f2a36eaa715164d16e05416a5f877c5991778bab03d0cb89b649c3b",
+      "pilot_script_sha256": "df1e75d7c2c09070d0957b27302c0999a238d77de305f5a2575753dd39253aa0",
+      "cpu_preflight_sha256": "b1549ac6cd3672dd365a47d1edca6bbc7593976b9dd2027f1457906a80b336b7"
+    },
+    {
+      "id": "recurrence",
+      "point": "XL41-recurrence",
+      "point_sha256": "dbbf36b4b43b8f503a0fed13c3c3e2be2ed50e15657762f4c63eb4344e3fda00",
+      "pilot_script_sha256": "196990ac5a9ce8b50ec72eedbffaaef23291a897a0fd639015f6e56e17a59780",
+      "cpu_preflight_sha256": "0281e37872daf0023b3d7a99a0480f770b252a07b7665615d34594f0744ebc3c"
+    }
+  ],
+  "timeout_seconds": 3600,
+  "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "image_uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+  "clock_hz": 100000000,
+  "board_guard_sha256": "fb6c519b678f0b6f7bab0cfc005676e2cc0b60c15c1902ef01f717c906d098cb",
+  "matrix_helper_sha256": "8ca27959f8337917de6023109ac253d9d780e31906106dfe1d7bd642a0f63caa",
+  "matrix_registration_sha256": "c284b0f6c3bf3bb62fde7864156d7ce62bcf4b64b6500902c6334b4780abd208",
+  "waiter_dependency_sha256": "26d1b2a68dbf4c068ed8f615e2eed36bf9230956e43ff8248758f259d5372a7b",
+  "inputs": {
+    "spec/r41/stage2/xl_core.json": "0b5d7d477bfd781bfef214c9256aeef7b319ce2571addcd91afdac8cf08bcbe6",
+    "tools/models/qwen35_reference.py": "4064f57006365b7b22ffae53a9d0d1b6382e71cb15c91a705b37c6a0ccf27159",
+    "tools/models/qwen_fp8_lib.py": "4983c12942cb9281aae50564749e9a45fb935c7523c7af150fe88cf2207d232d",
+    "tools/models/flux2_klein_run.py": "ca2ad6a7d97d845af49c91d166d4404e1e8b01caa8775cf7ea6f0830b817b0b8",
+    "tools/models/fp8_blockwise_ref.py": "db72d8422719cea806f3e34b75c635cd9198fb6426dd52e542edc2a7d734a5be",
+    "tools/models/fp8_checkpoint.py": "98f5d4d4b2404523935e125ce98909ef7eac9134d85aa7f73b90636c6135ba89",
+    "tools/r41/run2_board/auto.py": "1cfb1a461b1b559a83cb3a797e34d275f824bb8262be137ae92ee683a1ad5d12"
+  },
+  "gather_policy": "exact formula vector plus separate four-row boundary probe; single-vector requirement remains unresolved",
+  "attention_masked_query_policy": "zero output",
+  "recurrence_policy": "exploratory state * exp(-softplus(gate)) + sigmoid(gate) * input; frozen update rule unspecified",
+  "predecessor": "verified successful XL transpose, GEMM and projection pilots",
+  "load_policy": "never program an image; require matching loaded image and idle card"
+}

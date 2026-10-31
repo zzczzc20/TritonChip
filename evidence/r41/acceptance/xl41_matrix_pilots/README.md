@@ -1,5 +1,7 @@
 # XL41 matrix pilot preparation
 
+**Descoped by the author on 2026-10-31.** The board queue was cancelled; historical results and registrations below remain unchanged. See [the author directive](../../AUTHOR_DIRECTIVE_20261031.md).
+
 The frozen BF16 transpose, GEMM and output-projection points use the registered
 shapes, deterministic inputs and tolerances. Standard-Torch pilots check every
 output element against an independent CPU reference; the transpose must be

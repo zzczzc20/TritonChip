@@ -55,5 +55,16 @@ class AcceptanceTests(unittest.TestCase):
         index['evidence_review_only'][name].pop('note')
         self.assertEqual(self.check(index)['integrity'], 'failed')
 
+    def test_descoping_cannot_erase_a_historical_failure(self):
+        index = copy.deepcopy(self.index)
+        row = next(row for row in index['items'] if row['status'] == 'descoped')
+        row['prior_status'] = 'failed'
+        self.assertEqual(self.check(index)['integrity'], 'failed')
+
+    def test_chat_cannot_pass_without_checks_and_hashed_evidence(self):
+        index = copy.deepcopy(self.index)
+        index['author_scope']['models'][0]['status'] = 'passed'
+        self.assertEqual(self.check(index)['integrity'], 'failed')
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,19 @@
 # Board campaign progress, 2026-10-31 01:28 UTC
 
+## Author priority change, 2026-10-31 03:08 UTC
+
+The [author directive](../../../../AUTHOR_DIRECTIVE_20261031.md) descopes the
+Q41/XL pilots, clean-archive reproduction and old-gate rechecks and puts both
+FP8 chats first. Their waiting processes and the in-progress tiled campaign
+were stopped; the interrupted third batch had 30 configurations with at least
+one completed run, and is not a completed batch. Its original records and the
+cancellation are preserved in [`author_interrupt_20261031.tgz`](author_interrupt_20261031.tgz),
+SHA-256 `4c742cb38c67a7549c17c682d091c68cd6cb0f38846de67d5620fdaf49d67a9a`.
+The previously completed 171/171 tiled large points and all older results remain
+unchanged. Board-host PID 1149434 started the registered VL v3 chat stage at
+03:08:59 UTC; the Qwen3.5 v3 chat stage follows. No new chat result exists yet.
+The older queue descriptions below are historical and no longer active.
+
 The author explicitly authorized final-image loading without further approval,
 including the 433 MHz exception. The 15-minute idle rule and protection of
 other users remain in force. The corrected image is loaded; its identity,

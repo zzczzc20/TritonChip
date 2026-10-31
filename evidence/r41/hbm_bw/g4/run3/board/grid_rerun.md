@@ -1,5 +1,7 @@
 # Restored grid-admission test (pending)
 
+**Descoped by the author on 2026-10-31.** The board queue was cancelled; historical results and registrations below remain unchanged. See [the author directive](../../../../AUTHOR_DIRECTIVE_20261031.md).
+
 The R9 audit requires rerunning the original opt-in check; the earlier board
 result tested the capacity refusal twice and cannot close S2-04.D.4. The
 [registered rerun](../../../../../../spec/r41/perf_recheck/grid_admission_rerun.json)

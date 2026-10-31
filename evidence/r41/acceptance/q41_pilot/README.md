@@ -1,5 +1,7 @@
 # Q41 full-model pilot preparation
 
+**Descoped by the author on 2026-10-31.** The board queue was cancelled; historical results and registrations below remain unchanged. See [the author directive](../../AUTHOR_DIRECTIVE_20261031.md).
+
 The existing run-3 queue does not cover the required BF16 Qwen3.5-2B Q41
 workloads. A bounded prefill-plus-one-decode pilot is being prepared; it is
 not a full Q41-core result or Stage 2 acceptance. The frozen 24-layer model,

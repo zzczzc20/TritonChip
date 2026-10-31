@@ -1,5 +1,7 @@
 # XL gather, attention and recurrence pilot preparation
 
+**Descoped by the author on 2026-10-31.** The board queue was cancelled; historical results and registrations below remain unchanged. See [the author directive](../../AUTHOR_DIRECTIVE_20261031.md).
+
 These are bounded standard-Torch pilots, not full XL-core acceptance. Their
 inputs, tolerances and scope were registered before any candidate-board result
 in [`r3-xl41-extra-queue.json`](../../../../spec/r41/stage2/board/r3-xl41-extra-queue.json),

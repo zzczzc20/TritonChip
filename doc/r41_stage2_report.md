@@ -1,5 +1,13 @@
 # R41 Stage 2 acceptance report
 
+**Author scope, 2026-10-31:** [the directive](../evidence/r41/AUTHOR_DIRECTIVE_20261031.md)
+makes the two full FP8 board chats and proof of no CPU numerical fallback and
+no steady-decode host tensor reads the closure focus. Q41/XL and other old-gate
+requirements are descoped, not passed or failed; prior results and failures
+remain recorded in the [ledger](../evidence/r41/acceptance/stage2_index.md).
+Both requested run-2 chats are pending. The older gate judgments below are
+historical and do not silently override this decision.
+
 Date: 2026-10-26 UTC. Sign-off: `R41_S2_100MHZ_AND_FULL_MODEL`.
 Verdict: **not accepted**. The acceptance audit is complete; product acceptance
 is not. Required work remains unimplemented or unmeasured, and the

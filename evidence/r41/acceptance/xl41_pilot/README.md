@@ -1,5 +1,7 @@
 # XL41 GEMV pilot preparation
 
+**Descoped by the author on 2026-10-31.** The board queue was cancelled; historical results and registrations below remain unchanged. See [the author directive](../../AUTHOR_DIRECTIVE_20261031.md).
+
 The frozen `XL41-gemv` point is BF16 matmul M=1, K=2048, N=6144 with the
 registered deterministic inputs and tolerances. A bounded standard-Torch
 pilot compares all 6,144 output elements against independent CPU FP32

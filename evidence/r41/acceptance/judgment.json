@@ -1,12 +1,13 @@
 {
-  "scope": "Rectified 2026-10-28 against doc/engineering_discipline.md and the discipline audit (evidence/r41/hbm_bw/AUDIT.md, R1-R18): unsourced attributions corrected, post-hoc tolerance and check changes withdrawn, locality-control results quarantined, domains labelled; historical failures and persistent full-model gaps remain.",
+  "scope": "Rectified 2026-10-28 against doc/engineering_discipline.md and the discipline audit (evidence/r41/hbm_bw/AUDIT.md, R1-R18): unsourced attributions corrected, post-hoc tolerance and check changes withdrawn, locality-control results quarantined, domains labelled; historical failures and persistent full-model gaps remain. The author directive of 2026-10-31 defines a separate chat closure; descoped rows retain their previous judgments and historical evidence.",
   "integrity": "passed",
   "status": "not accepted",
   "counts": {
     "passed": 38,
     "failed": 2,
-    "not measured": 47,
-    "blocked": 7
+    "descoped": 51,
+    "blocked": 2,
+    "not measured": 1
   },
   "errors": [],
   "review_only_evidence": [
@@ -347,15 +348,19 @@
     {
       "id": "S2-02.D.sensitivity",
       "requirement": "Each candidate: SystemC sensitivity",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Study",
       "evidence": [
         "evidence/r41/acceptance/p1/candidate-sensitivity/README.md",
         "evidence/r41/acceptance/p1/candidate-sensitivity/metrics.json",
-        "evidence/r41/acceptance/p1/candidate-sensitivity/index.json"
+        "evidence/r41/acceptance/p1/candidate-sensitivity/index.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Not measured (rectification, AUDIT.md R7). d7314d5 recorded this row as not measured; baadef3 then marked it passed on one-factor SystemC latency probes that its own README calls inconclusive for physical retiming effects, which redefined the gate after the result. The 12 configurations / 48 bitwise standard Torch rows remain valid SystemC/TLM functional evidence, but uncalibrated proxies are not per-candidate RTL counterfactuals, so no candidate has a measured sensitivity.",
-      "closure_plan": "P1"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Not measured (rectification, AUDIT.md R7). d7314d5 recorded this row as not measured; baadef3 then marked it passed on one-factor SystemC latency probes that its own README calls inconclusive for physical retiming effects, which redefined the gate after the result. The 12 configurations / 48 bitwise standard Torch rows remain valid SystemC/TLM functional evidence, but uncalibrated proxies are not per-candidate RTL counterfactuals, so no candidate has a measured sensitivity.",
+      "prior_closure_plan": "P1"
     },
     {
       "id": "S2-02.D.semantics",
@@ -396,72 +401,92 @@
     {
       "id": "S2-02.D.board",
       "requirement": "Integrated candidates: standard Torch board comparisons",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage2/integration/audit/README.md",
         "evidence/r41/acceptance/p1/README.md",
         "evidence/r41/acceptance/p1/metrics.json",
-        "evidence/r41/acceptance/p1/index.json"
+        "evidence/r41/acceptance/p1/index.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Original-suite migration is measured, but candidate-isolated or grouped causal board comparisons do not cover all integrated mechanisms. P1 corrective preflight now has real model/RTL observations and prepared matched board manifests. Uncalibrated grouped parameter perturbations do not close every-candidate sensitivity; new board measurements have not been launched.",
-      "closure_plan": "P1"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Original-suite migration is measured, but candidate-isolated or grouped causal board comparisons do not cover all integrated mechanisms. P1 corrective preflight now has real model/RTL observations and prepared matched board manifests. Uncalibrated grouped parameter perturbations do not close every-candidate sensitivity; new board measurements have not been launched.",
+      "prior_closure_plan": "P1"
     },
     {
       "id": "S2-03.A.1",
       "requirement": "Two model-agnostic standard Torch locality/DCO graphs",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/p2/rtl-v4/report.json",
-        "evidence/r41/acceptance/p2/summary.json"
+        "evidence/r41/acceptance/p2/summary.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Residual and projection standard Torch graphs execute their captured native Inductor artifacts with locality off/on/off on the board-top MMIO RTL binding. Identical artifact and output hashes pass the closeout validator. This is functional delivery, not a physical-board performance claim.",
-      "closure_plan": "P2"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Residual and projection standard Torch graphs execute their captured native Inductor artifacts with locality off/on/off on the board-top MMIO RTL binding. Identical artifact and output hashes pass the closeout validator. This is functional delivery, not a physical-board performance claim.",
+      "prior_closure_plan": "P2"
     },
     {
       "id": "S2-03.A.2",
       "requirement": "Policies traceable to storage, aliasing and lifetimes",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/p2/rtl-v4/report.json",
-        "evidence/r41/acceptance/p2/summary.json"
+        "evidence/r41/acceptance/p2/summary.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Each executed plan records Session-owned storage identities, addresses, sizes, aliasing and captured first/last command uses. The applied policy is conservative LRU only; no aggressive hint is inferred from incomplete global access knowledge.",
-      "closure_plan": "P2"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Each executed plan records Session-owned storage identities, addresses, sizes, aliasing and captured first/last command uses. The applied policy is conservative LRU only; no aggressive hint is inferred from incomplete global access knowledge.",
+      "prior_closure_plan": "P2"
     },
     {
       "id": "S2-03.A.3",
       "requirement": "Safe handling of aliases and incomplete readers/writers",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/p2/rtl-v4/metadata-tests.log",
         "evidence/r41/acceptance/p2/rtl-v4/report.json",
-        "evidence/r41/acceptance/p2/summary.json"
+        "evidence/r41/acceptance/p2/summary.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Seven real-Session tests cover coalesced views, declared aliases, undeclared overlap, descriptors, forged/freed/stale handles, unsupported backends and whole-plan capacity refusal. Every executed range retains incomplete reader/writer flags with dead/bypass disabled.",
-      "closure_plan": "P2"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Seven real-Session tests cover coalesced views, declared aliases, undeclared overlap, descriptors, forged/freed/stale handles, unsupported backends and whole-plan capacity refusal. Every executed range retains incomplete reader/writer flags with dead/bypass disabled.",
+      "prior_closure_plan": "P2"
     },
     {
       "id": "S2-03.A.4",
       "requirement": "Off/on numerical, ownership and fault checks",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/p2/rtl-v4/metadata-tests.log",
         "evidence/r41/acceptance/p2/rtl-v4/report.json",
-        "evidence/r41/acceptance/p2/summary.json"
+        "evidence/r41/acceptance/p2/summary.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Both graphs pass numerical off/on/off replay with unchanged outputs and no host retransmission. Injected numerical admission faults after real control registration propagate, restore policy zero and poison the captured graph against later off replay; ownership tests pass.",
-      "closure_plan": "P2"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Both graphs pass numerical off/on/off replay with unchanged outputs and no host retransmission. Injected numerical admission faults after real control registration propagate, restore policy zero and poison the captured graph against later off replay; ownership tests pass.",
+      "prior_closure_plan": "P2"
     },
     {
       "id": "S2-03.A.5",
       "requirement": "Board traffic and latency comparisons",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
@@ -469,15 +494,19 @@
         "evidence/r41/acceptance/board-p2p4-index.json",
         "spec/r41/stage2/acceptance/s2-p2-locality.json",
         "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
-        "evidence/r41/acceptance/launch_records/README.md"
+        "evidence/r41/acceptance/launch_records/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Physical U280 residual and projection graphs pass off/on/off numerical replay with identical artifacts and outputs. Actual device cycles, host-scope latency and per-port line-counter deltas are archived and validated. Locality control overhead is visible; no speedup or default-on decision is claimed. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
-      "closure_plan": "P2"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Not measured (rectification, AUDIT.md R15/Q2). The evidence was produced with Graph.replay(locality=True), whose controls issue hand-built TNCA-IR kernels that write the TMU registers; device code not produced by the compiler violates discipline 2.2.5. The controls are quarantined (python/tnca/locality.py) and count for no item until compiler-generated code replaces them and the item is re-measured. Superseded judgment: Physical U280 residual and projection graphs pass off/on/off numerical replay with identical artifacts and outputs. Actual device cycles, host-scope latency and per-port line-counter deltas are archived and validated. Locality control overhead is visible; no speedup or default-on decision is claimed. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
+      "prior_closure_plan": "P2"
     },
     {
       "id": "S2-03.B",
       "requirement": "Compare Mode B, single-role and Mode A two-stage under fixed budgets",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Study",
       "evidence": [
         "evidence/r41/stage1/board/metrics.json",
@@ -486,10 +515,14 @@
         "evidence/r41/acceptance/p2/pipeline-preflight-summary.json",
         "evidence/r41/acceptance/p2/pipeline-preflight-index.json",
         "evidence/r41/acceptance/p2/pipeline-three-sample-model.json",
-        "spec/r41/stage2/acceptance/s2-p2-pipeline.json"
+        "spec/r41/stage2/acceptance/s2-p2-pipeline.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Three matched fixed-budget standard Torch policies have 54 timed bitwise model samples, six real RTL rows including BF16 and actual DMA/MMA overlap, and unchanged default artifacts across all 113 points. Model timing is uncalibrated and grid-one does not establish scaling. The approved-image, three-sample lead-only board manifest is prepared; the final-image board comparison remains not measured. Every arm of the s2-p2-pipeline manifest, the baseline included, forces TNCA_SCHEDULE=0, TNCA_WINDOW_REUSE=0 and TNCA_IEEE_DIV=1, so its results are a non-default configuration study and do not count as default standard-path results; the staged manifest is unchanged (AUDIT.md R10). The earlier report line \"make compiler passed with 53 Python tests\" is wrong: 157 tests ran with 53 skipped, and the IR suite was skipped.",
-      "closure_plan": "P2"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Three matched fixed-budget standard Torch policies have 54 timed bitwise model samples, six real RTL rows including BF16 and actual DMA/MMA overlap, and unchanged default artifacts across all 113 points. Model timing is uncalibrated and grid-one does not establish scaling. The approved-image, three-sample lead-only board manifest is prepared; the final-image board comparison remains not measured. Every arm of the s2-p2-pipeline manifest, the baseline included, forces TNCA_SCHEDULE=0, TNCA_WINDOW_REUSE=0 and TNCA_IEEE_DIV=1, so its results are a non-default configuration study and do not count as default standard-path results; the staged manifest is unchanged (AUDIT.md R10). The earlier report line \"make compiler passed with 53 Python tests\" is wrong: 157 tests ran with 53 skipped, and the IR suite was skipped.",
+      "prior_closure_plan": "P2"
     },
     {
       "id": "S2-03.C",
@@ -509,116 +542,152 @@
     {
       "id": "S2-04.A",
       "requirement": "Official Qwen3.5-2B full language branch, authentic 24 layers/vocabulary, BF16 and mandated FP32 states, standard path",
-      "status": "blocked",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
         "evidence/r41/stage1/model_estimates.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Authentic complete 24-layer BF16/FP32 CPU references now pass core/tail cross-validation. The required standard TNCA full-model board execution is still absent; FP8 layers of other checkpoints cannot substitute.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "blocked",
+      "prior_reason": "Authentic complete 24-layer BF16/FP32 CPU references now pass core/tail cross-validation. The required standard TNCA full-model board execution is still absent; FP8 layers of other checkpoints cannot substitute.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.B.core",
       "requirement": "Q41-core: batch 1, prefill 128, continuous decode 16",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
-        "evidence/r41/stage1/model_estimates.md"
+        "evidence/r41/stage1/model_estimates.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "No completed full-model board record for this workload. Board tokens/s from spec/r41/chat/s2-qwen-chat.json would not count as a default standard-path result: the manifest sets TNCA_IEEE_DIV=1 and TNCA_TORCH_DEVICE=native (AUDIT.md R13): it selects the portable core-vrf-sync-v5 profile on the X8 image and runs under the r41s2_fp8env interpreter, whose .pth sets torch.version.cuda (the P8 deviation); the staged manifest is unchanged.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "No completed full-model board record for this workload. Board tokens/s from spec/r41/chat/s2-qwen-chat.json would not count as a default standard-path result: the manifest sets TNCA_IEEE_DIV=1 and TNCA_TORCH_DEVICE=native (AUDIT.md R13): it selects the portable core-vrf-sync-v5 profile on the X8 image and runs under the r41s2_fp8env interpreter, whose .pth sets torch.version.cuda (the P8 deviation); the staged manifest is unchanged.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.B.tail",
       "requirement": "Q41-tail: batch 1, prefill 129, continuous decode 4",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
-        "evidence/r41/stage1/model_estimates.md"
+        "evidence/r41/stage1/model_estimates.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "No completed full-model board record for this workload.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "No completed full-model board record for this workload.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.C.1",
       "requirement": "FP32 recurrent states retain precision",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
         "evidence/r41/stage1/model_estimates.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Primitives and selected FP8 layer/cache runs do not prove this property for the required full BF16 Qwen model.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Primitives and selected FP8 layer/cache runs do not prove this property for the required full BF16 Qwen model.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.C.2",
       "requirement": "Avoid forcing slower fused SDPA",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
         "evidence/r41/stage1/model_estimates.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Primitives and selected FP8 layer/cache runs do not prove this property for the required full BF16 Qwen model.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Primitives and selected FP8 layer/cache runs do not prove this property for the required full BF16 Qwen model.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.C.3",
       "requirement": "Prove allocation and traffic for any tiled/linear-memory claim",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
         "evidence/r41/stage1/model_estimates.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Primitives and selected FP8 layer/cache runs do not prove this property for the required full BF16 Qwen model.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Primitives and selected FP8 layer/cache runs do not prove this property for the required full BF16 Qwen model.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.C.4",
       "requirement": "Bound recurrent-state history",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
         "evidence/r41/stage1/model_estimates.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Primitives and selected FP8 layer/cache runs do not prove this property for the required full BF16 Qwen model.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Primitives and selected FP8 layer/cache runs do not prove this property for the required full BF16 Qwen model.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.C.5",
       "requirement": "No per-token recompilation within decode bucket",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
         "evidence/r41/stage1/model_estimates.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Primitives and selected FP8 layer/cache runs do not prove this property for the required full BF16 Qwen model.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Primitives and selected FP8 layer/cache runs do not prove this property for the required full BF16 Qwen model.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.D.margin",
       "requirement": "Usable capacity >= 1.25 times actual peak including all storage and overhead",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/model_estimates.md"
+        "evidence/r41/stage1/model_estimates.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "8 GiB window is functional; the 3.558 GiB estimate is not measured full-model high-water usage.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "8 GiB window is functional; the 3.558 GiB estimate is not measured full-model high-water usage.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.D.1",
@@ -662,17 +731,21 @@
     {
       "id": "S2-04.D.4",
       "requirement": "Bounded grid admission",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
         "evidence/r41/acceptance/board-p2p4-index.json",
         "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
-        "evidence/r41/acceptance/launch_records/README.md"
+        "evidence/r41/acceptance/launch_records/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Not measured (rectification, AUDIT.md R9). After grid-preflight-v2 failed, 7b10e7b changed the \"opt-in-required\" check to request max(programs, base_limit+1); on the board the base limit equals the advertised capacity (16,777,216), so it issued the same request as the capacity refusal and did not test opt-in. The original check is restored in tools/r40/grid_admission_case.py; D.4 stays not measured until it is rerun. The board run (lead-launched, launch_records/) still shows a bounded eight-task queue, 65,537 exact program IDs, 65,544 completion atomics and the capacity refusal. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; launch records archived.",
-      "closure_plan": "P4"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Not measured (rectification, AUDIT.md R9). After grid-preflight-v2 failed, 7b10e7b changed the \"opt-in-required\" check to request max(programs, base_limit+1); on the board the base limit equals the advertised capacity (16,777,216), so it issued the same request as the capacity refusal and did not test opt-in. The original check is restored in tools/r40/grid_admission_case.py; D.4 stays not measured until it is rerun. The board run (lead-launched, launch_records/) still shows a bounded eight-task queue, 65,537 exact program IDs, 65,544 completion atomics and the capacity refusal. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; launch records archived.",
+      "prior_closure_plan": "P4"
     },
     {
       "id": "S2-04.D.5",
@@ -704,29 +777,37 @@
     {
       "id": "S2-04.D.7",
       "requirement": "Code eviction, allocator reuse and zero state corruption across calls",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
         "evidence/r41/acceptance/board-p2p4-summary.json",
         "evidence/r41/acceptance/board-p2p4-index.json",
         "evidence/r41/acceptance/launch_records/fpga_host_launch_records.tgz",
-        "evidence/r41/acceptance/launch_records/README.md"
+        "evidence/r41/acceptance/launch_records/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "The targeted physical eviction case passes 117 distinct graphs, unloads one module and preserves the resident tensor. This is real lifecycle evidence, but it does not establish the required persistent full-model code-eviction, allocator-reuse and zero-state-corruption session, so the item remains not measured. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
-      "closure_plan": "P4"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "The targeted physical eviction case passes 117 distinct graphs, unloads one module and preserves the resident tensor. This is real lifecycle evidence, but it does not establish the required persistent full-model code-eviction, allocator-reuse and zero-state-corruption session, so the item remains not measured. Launched by the lead (Claude) through ~/r41_p2p4_launch2.sh; source: the lead's rectification brief of 2026-10-28 and the archived launch records.",
+      "prior_closure_plan": "P4"
     },
     {
       "id": "S2-04.D.8",
       "requirement": "No steady-state implicit host retransmission of weights or states",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/acceptance/board_index.json"
+        "evidence/r41/acceptance/board_index.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Layer and resident legacy evidence does not measure full-model steady-state traffic.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Layer and resident legacy evidence does not measure full-model steady-state traffic.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.E.freeze",
@@ -745,166 +826,218 @@
     {
       "id": "S2-04.E.1",
       "requirement": "Logits",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "No required full Qwen3.5-2B board numerical comparison. FP8 layerwise/model references have different scope.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "No required full Qwen3.5-2B board numerical comparison. FP8 layerwise/model references have different scope.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.E.2",
       "requirement": "All relevant state tensors",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "No required full Qwen3.5-2B board numerical comparison. FP8 layerwise/model references have different scope.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "No required full Qwen3.5-2B board numerical comparison. FP8 layerwise/model references have different scope.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.E.3",
       "requirement": "Teacher-forced continuous evolution with independently maintained states",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "No required full Qwen3.5-2B board numerical comparison. FP8 layerwise/model references have different scope.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "No required full Qwen3.5-2B board numerical comparison. FP8 layerwise/model references have different scope.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.E.4",
       "requirement": "Reset and reinvocation",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "No required full Qwen3.5-2B board numerical comparison. FP8 layerwise/model references have different scope.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "No required full Qwen3.5-2B board numerical comparison. FP8 layerwise/model references have different scope.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-04.E.5",
       "requirement": "Tails, masks and extreme gating values",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/stage2_readiness.md",
-        "evidence/r41/fp8/models_tnca/README.md"
+        "evidence/r41/fp8/models_tnca/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "No required full Qwen3.5-2B board numerical comparison. FP8 layerwise/model references have different scope.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "No required full Qwen3.5-2B board numerical comparison. FP8 layerwise/model references have different scope.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-05.A.1",
       "requirement": "Single storage >2 GiB streaming",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage1/stage2_readiness.md",
-        "spec/r41/stage2/xl_core.json"
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.A.2",
       "requirement": "16384x16384 BF16 materialized transpose",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage1/stage2_readiness.md",
-        "spec/r41/stage2/xl_core.json"
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.A.3",
       "requirement": "BF16 GEMM M512 K2048 N6144",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage1/stage2_readiness.md",
-        "spec/r41/stage2/xl_core.json"
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.A.4",
       "requirement": "BF16 GEMV M1 K2048 N6144",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage1/stage2_readiness.md",
-        "spec/r41/stage2/xl_core.json"
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.A.5",
       "requirement": "BF16 output projection M1 K2048 N248320",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage1/stage2_readiness.md",
-        "spec/r41/stage2/xl_core.json"
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.A.6",
       "requirement": "Large int64 gather with duplicates and region crossings",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage1/stage2_readiness.md",
-        "spec/r41/stage2/xl_core.json"
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.A.7",
       "requirement": "D256 GQA causal ragged attention",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage1/stage2_readiness.md",
-        "spec/r41/stage2/xl_core.json"
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.A.8",
       "requirement": "FP32 gated recurrence across chunks and updates",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage1/stage2_readiness.md",
-        "spec/r41/stage2/xl_core.json"
+        "spec/r41/stage2/xl_core.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "P0 now freezes exact XL definitions, inputs, tolerances and hashes in spec/r41/stage2/xl_core.json. Complete standard-path execution on the final image is still not measured.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.B",
@@ -933,14 +1066,18 @@
     {
       "id": "S2-05.C.2",
       "requirement": "Flag points used in strategy development",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "spec/r41/holdout.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Stage 1 seals four R41 points and preserves R40 provenance; no final Stage 2 holdout runner/selector campaign establishes execution, contamination audit or regret.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Stage 1 seals four R41 points and preserves R40 provenance; no final Stage 2 holdout runner/selector campaign establishes execution, contamination audit or regret.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.C.3",
@@ -957,167 +1094,223 @@
     {
       "id": "S2-05.C.4",
       "requirement": "Compare conservative configurations and final selector outputs",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "spec/r41/holdout.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Stage 1 seals four R41 points and preserves R40 provenance; no final Stage 2 holdout runner/selector campaign establishes execution, contamination audit or regret.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Stage 1 seals four R41 points and preserves R40 provenance; no final Stage 2 holdout runner/selector campaign establishes execution, contamination audit or regret.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.C.5",
       "requirement": "Measure regret only against evaluated legal candidates",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "spec/r41/holdout.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Stage 1 seals four R41 points and preserves R40 provenance; no final Stage 2 holdout runner/selector campaign establishes execution, contamination audit or regret.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Stage 1 seals four R41 points and preserves R40 provenance; no final Stage 2 holdout runner/selector campaign establishes execution, contamination audit or regret.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.C.6",
       "requirement": "Correct selection, budget adherence and complete execution",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "spec/r41/holdout.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Stage 1 seals four R41 points and preserves R40 provenance; no final Stage 2 holdout runner/selector campaign establishes execution, contamination audit or regret.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Stage 1 seals four R41 points and preserves R40 provenance; no final Stage 2 holdout runner/selector campaign establishes execution, contamination audit or regret.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.D.1",
       "requirement": "Active cores 1, 2, 3 on same final image",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage2/integration/README.md"
+        "evidence/r41/stage2/integration/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Three-core candidate and parameterized RTL evidence exist; no final-image 1/2/3-core campaign including required full-model point.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Three-core candidate and parameterized RTL evidence exist; no final-image 1/2/3-core campaign including required full-model point.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.D.2",
       "requirement": "Primary comparisons on preregistered graphs and a core model point",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage2/integration/README.md"
+        "evidence/r41/stage2/integration/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Three-core candidate and parameterized RTL evidence exist; no final-image 1/2/3-core campaign including required full-model point.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Three-core candidate and parameterized RTL evidence exist; no final-image 1/2/3-core campaign including required full-model point.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-05.D.3",
       "requirement": "Maintain parameterized regressions",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage2/integration/README.md"
+        "evidence/r41/stage2/integration/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Three-core candidate and parameterized RTL evidence exist; no final-image 1/2/3-core campaign including required full-model point.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Three-core candidate and parameterized RTL evidence exist; no final-image 1/2/3-core campaign including required full-model point.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-06.1",
       "requirement": "100 MHz final image physical qualification",
-      "status": "blocked",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/physical-audit.tgz",
-        "evidence/r41/acceptance/board_metrics.json"
+        "evidence/r41/acceptance/board_metrics.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Run-1 candidate physical checks pass; no final B41-F identity selected.",
-      "closure_plan": "P6"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "blocked",
+      "prior_reason": "Run-1 candidate physical checks pass; no final B41-F identity selected.",
+      "prior_closure_plan": "P6"
     },
     {
       "id": "S2-06.2",
       "requirement": "All Required functional and numerical checks pass",
-      "status": "blocked",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
-        "doc/r41_tasks_and_acceptance.md"
+        "doc/r41_tasks_and_acceptance.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Unmet locality, model, capacity and selector requirements prevent this aggregate pass.",
-      "closure_plan": "P6"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "blocked",
+      "prior_reason": "Unmet locality, model, capacity and selector requirements prevent this aggregate pass.",
+      "prior_closure_plan": "P6"
     },
     {
       "id": "S2-06.3",
       "requirement": "Full original suite and XL-core completed",
-      "status": "blocked",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/stage2_readiness.md"
+        "evidence/r41/stage1/stage2_readiness.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Original suite passes on candidate; XL-core absent.",
-      "closure_plan": "P5"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "blocked",
+      "prior_reason": "Original suite passes on candidate; XL-core absent.",
+      "prior_closure_plan": "P5"
     },
     {
       "id": "S2-06.4",
       "requirement": "Full Q41-core and Q41-tail completed",
-      "status": "blocked",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage1/model_estimates.md"
+        "evidence/r41/stage1/model_estimates.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Neither full-model board workload is measured.",
-      "closure_plan": "P3"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "blocked",
+      "prior_reason": "Neither full-model board workload is measured.",
+      "prior_closure_plan": "P3"
     },
     {
       "id": "S2-06.5",
       "requirement": "Enabled performance mechanisms have board measurements and default rationale",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage2/integration/audit/README.md",
-        "evidence/r41/acceptance/board_metrics.json"
+        "evidence/r41/acceptance/board_metrics.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "X8 scheduling-model fallback changes all 113 compiled texts; migration results do not supply complete default A/B and LOO attribution.",
-      "closure_plan": "P1"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "X8 scheduling-model fallback changes all 113 compiled texts; migration results do not supply complete default A/B and LOO attribution.",
+      "prior_closure_plan": "P1"
     },
     {
       "id": "S2-06.6",
       "requirement": "Final-image SystemC profiles, validity domains and errors",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/fp8/models_tnca/README.md",
-        "evidence/r41/stage2/roofline/README.md"
+        "evidence/r41/stage2/roofline/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "X8 model semantics exist; final-image calibrated residual/domain report is absent. Global timing remains uncalibrated.",
-      "closure_plan": "P6"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "X8 model semantics exist; final-image calibrated residual/domain report is absent. Global timing remains uncalibrated.",
+      "prior_closure_plan": "P6"
     },
     {
       "id": "S2-06.7",
       "requirement": "Clean archive software/model rebuild with fresh caches",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
-        "evidence/r41/stage2/integration/audit/README.md"
+        "evidence/r41/stage2/integration/audit/README.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Earlier clean/cold compilation is not final B41-F software plus model reproduction.",
-      "closure_plan": "P6"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Earlier clean/cold compilation is not final B41-F software plus model reproduction.",
+      "prior_closure_plan": "P6"
     },
     {
       "id": "S2-06.8",
       "requirement": "Independent session: legacy, high address and full Q41-core",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
-        "evidence/r41/stage1/model_estimates.md"
+        "evidence/r41/stage1/model_estimates.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "No independent full Q41-core session. Endurance is not this reproduction.",
-      "closure_plan": "P6"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "No independent full Q41-core session. Endurance is not this reproduction.",
+      "prior_closure_plan": "P6"
     },
     {
       "id": "S2-06.9",
@@ -1164,10 +1357,12 @@
       "classification": "Required",
       "evidence": [
         "doc/r41_tasks_and_acceptance.md",
-        "evidence/r41/acceptance/board_metrics.json"
+        "evidence/r41/acceptance/board_metrics.json",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "100 MHz candidate and original correctness pass; full Qwen, XL, locality, selector and final reproduction do not.",
-      "closure_plan": "P6"
+      "reason": "100 MHz candidate and original correctness pass; full Qwen, XL, locality, selector and final reproduction do not. Under the author directive, the two FP8 chat models and their no-fallback evidence are pending.",
+      "closure_plan": "P6",
+      "prior_reason": "100 MHz candidate and original correctness pass; full Qwen, XL, locality, selector and final reproduction do not."
     },
     {
       "id": "DoD.R41",
@@ -1176,10 +1371,12 @@
       "classification": "Required",
       "evidence": [
         "evidence/r41/stage1/board/acceptance.json",
-        "doc/r41_tasks_and_acceptance.md"
+        "doc/r41_tasks_and_acceptance.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Both stages retain unmet Required items. R41 is not accepted.",
-      "closure_plan": "P6"
+      "reason": "Both stages retain unmet Required items. R41 is not accepted. Under the author directive, the two FP8 chat models and their no-fallback evidence are pending.",
+      "closure_plan": "P6",
+      "prior_reason": "Both stages retain unmet Required items. R41 is not accepted."
     },
     {
       "id": "Common.2",
@@ -1189,49 +1386,63 @@
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage2/integration/audit/README.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "doc/r41_tasks_and_acceptance.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Legacy/FP8 paths are evidenced; full required Qwen path audit and numerical states are unmeasured.",
-      "closure_plan": "P3"
+      "reason": "Legacy/FP8 paths are evidenced; full required Qwen path audit and numerical states are unmeasured. Under the author directive, the two FP8 chat models and their no-fallback evidence are pending.",
+      "closure_plan": "P3",
+      "prior_reason": "Legacy/FP8 paths are evidenced; full required Qwen path audit and numerical states are unmeasured."
     },
     {
       "id": "Common.6.4",
       "requirement": "Two independent full-model sessions; honest timing and sampling",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage2/integration/audit/README.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "doc/r41_tasks_and_acceptance.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "No full-model session exists; device/host boundaries are preserved for available legacy evidence.",
-      "closure_plan": "P6"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "No full-model session exists; device/host boundaries are preserved for available legacy evidence.",
+      "prior_closure_plan": "P6"
     },
     {
       "id": "Common.6.5",
       "requirement": "Final default nonregression budget and every >5% regression; >10% default veto",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage2/integration/audit/README.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "doc/r41_tasks_and_acceptance.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "Migration comparison is not identical-image default A/B. Stage 1 wide-tile negative result remains; final mechanisms need scoped policy evidence.",
-      "closure_plan": "P1"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "Migration comparison is not identical-image default A/B. Stage 1 wide-tile negative result remains; final mechanisms need scoped policy evidence.",
+      "prior_closure_plan": "P1"
     },
     {
       "id": "Common.7",
       "requirement": "Matched major-default A/B, primary-group LOO and relevant interaction matrices",
-      "status": "not measured",
+      "status": "descoped",
       "classification": "Required",
       "evidence": [
         "evidence/r41/acceptance/board_metrics.json",
         "evidence/r41/stage2/integration/audit/README.md",
-        "doc/r41_tasks_and_acceptance.md"
+        "doc/r41_tasks_and_acceptance.md",
+        "evidence/r41/AUTHOR_DIRECTIVE_20261031.md"
       ],
-      "reason": "No complete final-system board ablation bundle. X8 scheduling fallback is a documented confounder.",
-      "closure_plan": "P1"
+      "reason": "Descoped by the author on 2026-10-31 as a historical gate outside the chat closure; prior judgment and results remain recorded.",
+      "closure_plan": "Descoped by the author on 2026-10-31",
+      "prior_status": "not measured",
+      "prior_reason": "No complete final-system board ablation bundle. X8 scheduling fallback is a documented confounder.",
+      "prior_closure_plan": "P1"
     }
   ],
   "followups": [
@@ -1285,6 +1496,48 @@
       "closure_plan": "P3"
     }
   ],
+  "author_scope": {
+    "directive": "evidence/r41/AUTHOR_DIRECTIVE_20261031.md",
+    "status": "pending",
+    "rule": "R41 closure evidence is normal board chat for both named FP8 models, with the registered quality prompts, full TNCA model execution, no CPU numerical fallback, zero steady-decode host tensor reads, and recorded board prefill/decode rates and host/device timing. The author determines the final verdict.",
+    "models": [
+      {
+        "model": "Qwen3-VL-2B-FP8",
+        "status": "not measured",
+        "checks": {
+          "full_checkpoint": "not measured",
+          "registered_quality": "not measured",
+          "persistent_session": "not measured",
+          "scripted_chat": "not measured",
+          "weights_activations_on_tnca": "not measured",
+          "zero_cpu_numerical_fallback": "not measured",
+          "zero_steady_host_tensor_reads": "not measured",
+          "board_prefill_decode_rates": "not measured",
+          "device_launch_cycles_host_share": "not measured",
+          "image_prompt": "not measured"
+        },
+        "evidence_required": "full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing",
+        "evidence": []
+      },
+      {
+        "model": "Qwen3.5-4B-FP8",
+        "status": "not measured",
+        "checks": {
+          "full_checkpoint": "not measured",
+          "registered_quality": "not measured",
+          "persistent_session": "not measured",
+          "scripted_chat": "not measured",
+          "weights_activations_on_tnca": "not measured",
+          "zero_cpu_numerical_fallback": "not measured",
+          "zero_steady_host_tensor_reads": "not measured",
+          "board_prefill_decode_rates": "not measured",
+          "device_launch_cycles_host_share": "not measured"
+        },
+        "evidence_required": "full checkpoint; quality, session and scripted chat; device placement, fallback and transfer counters; board throughput and host/device timing",
+        "evidence": []
+      }
+    ]
+  },
   "stage1_frozen_snapshot_counts": {
     "pass": 61
   }

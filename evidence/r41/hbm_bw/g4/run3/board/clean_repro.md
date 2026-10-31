@@ -1,5 +1,7 @@
 # Clean-archive independent reproduction (pending)
 
+**Descoped by the author on 2026-10-31.** The board queue was cancelled; historical results and registrations below remain unchanged. See [the author directive](../../../../AUTHOR_DIRECTIVE_20261031.md).
+
 A cache-free archive of the board's frozen runtime source is staged at
 `/home/zzhouch/r41run3/clean_repro_source_20261031/source.tar`, SHA-256
 `5525f3509ac86a8be5d07b0b08c6c82f921129e5682065e11ed69b62971e41cf`.

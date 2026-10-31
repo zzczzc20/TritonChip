@@ -1,5 +1,7 @@
 # XL41 >2 GiB stream pilot preparation
 
+**Descoped by the author on 2026-10-31.** The board queue was cancelled; historical results and registrations below remain unchanged. See [the author directive](../../AUTHOR_DIRECTIVE_20261031.md).
+
 The frozen `XL41-stream` point uses one 2,147,483,776-byte BF16 storage and
 a materialized standard-Torch copy. Host input construction is chunked to
 bound memory; the device operation remains one full-storage clone. The pilot

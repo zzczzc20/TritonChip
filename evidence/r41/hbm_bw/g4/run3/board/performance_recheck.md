@@ -1,5 +1,7 @@
 # Registered performance recheck (pending)
 
+**Descoped by the author on 2026-10-31.** The board queue was cancelled; historical results and registrations below remain unchanged. See [the author directive](../../../../AUTHOR_DIRECTIVE_20261031.md).
+
 The published preliminary comparisons selected all 39 memory-bound and two
 original-suite points whose candidate median cycle count was over 5% higher.
 The [registration](../../../../../../spec/r41/perf_recheck/registration.json)

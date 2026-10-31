@@ -117,7 +117,7 @@ window reuse.
 A generic [experimental runtime patch](code_cache_lfu_experiment.patch) ranks
 resident code by recent artifact use, aging counts every 256 lookups. The
 control is the existing least-recently-used eviction. The
-[diagnostic runner](../../../tools/r41/chat_speed/bench_code_cache_dp.py)
+[diagnostic runner](../../../../tools/r41/chat_speed/bench_code_cache_dp.py)
 replays the recorded legacy VL one-layer decode load-request order, mapping
 its kernels to unique existing DP artifacts by name or closest size. It
 loads those artifacts but does **not** execute them; after each sequence it

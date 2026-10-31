@@ -143,9 +143,14 @@ mismatches, 0.0210611820 instructions/MAC, 5130958 cycles, two launches,
 and zero steady loads/evictions. Its control has 0/32768 mismatches,
 0.0328402519 instructions/MAC, 8595658 cycles, one launch and zero steady
 loads/evictions. The extra launch can offset this device-cycle saving on the
-board. These are samples, not a proof over all float32 inputs. The current
-patch and diagnostic route remain unmerged while their fresh suite and
-113-point default-code audit run; no board test is queued for them.
+board. These are samples, not a proof over all float32 inputs. The scaled
+patch subsequently [failed](hoist_precise_nan_20261031.tgz) 16/256 negative
+NaN sign checks; an intermediate fix failed 8/256 mixed signalling/quiet NaN
+payload checks. A [new experimental patch](precise_div_nanfix_experiment_20261031.patch)
+passed those 256 payload combinations, 65536 finite random pairs and two
+256-value special/tile tests. Its fresh suite, audit and performance runs are
+in progress. The patches and diagnostic route remain unmerged, and no board
+test is queued for them.
 
 [Boundary comparisons](hoist_precise_boundary_20261031.tgz), fused → hoisted,
 all matched the independent reference bitwise and had zero steady code

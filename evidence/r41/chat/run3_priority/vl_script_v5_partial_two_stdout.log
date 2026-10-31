@@ -1,0 +1,9 @@
+Qwen TNCA chat. /help lists commands; /quit exits.
+you> What is the capital of France? Answer in one word.
+assistant> Paris
+{"prefill_seconds": 477.3567802280013, "decode_steps": 31, "mean_decode_seconds_per_token": 48.67919979054357, "decode_tokens_per_second": 0.020542654856751778, "reused_cached_tokens": 0, "new_graphs": 3}
+you> And of Italy?
+assistant> Rome
+{"prefill_seconds": 455.7652571790095, "decode_steps": 31, "mean_decode_seconds_per_token": 67.74888802087122, "decode_tokens_per_second": 0.014760389863401634, "reused_cached_tokens": 0, "new_graphs": 1}
+you> /reset
+you> Say hi.

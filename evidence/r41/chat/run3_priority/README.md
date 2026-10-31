@@ -574,3 +574,10 @@ to the independently run whole-prefill DP TLM logits. This is uncalibrated
 model evidence, not a board logit measurement. The older single-token-tail
 full-model DP TLM replay is still pending and the prior board failure remains
 recorded.
+
+The [two-turn VL scripted-chat stdout](vl_script_v5_partial_two_stdout.log)
+adds the follow-up answer `Rome`; the script then reset the session and began
+`Say hi.`. The follow-up prefill call took 455.7652571790095 s, and its 31
+executed decode steps ran at 0.014760389863401634 steps/s; this includes any
+work after EOS. This remains a partial transcript; per-step transfer evidence
+is pending completion.

@@ -243,3 +243,13 @@ reference path produced identical BF16 outputs for all 2,048 values. Both
 differed from BF16-rounded float64 W8A8 exact output at one value (max absolute
 0.00390625). This is one projection, not proof for all matrices or a device
 result. The full-model DP-profile TLM comparison remains in progress.
+
+A [controlled CPU replay](vl_reason_sdpa_replay.tgz) holds the grouped K/V
+cache fixed and compares one versus six query positions with the same mask and
+scale. CPU flash SDPA reproduces the position-24 difference (max 0.0009765625,
+relative L2 0.0004917397163808346); switching to CPU math SDPA makes the two
+outputs identical. The fixed-cache single-query replay also matches the old
+cache's result, so these captures isolate query-shape-dependent CPU flash
+numerics. No attention backend or acceptance rule was changed. A separate
+DP-profile TLM run of the same real position-24 FP8 Q projection is running
+alongside the full-model TLM attempt.

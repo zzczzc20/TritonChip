@@ -13,7 +13,7 @@ def cmp(x,y):
  return dict(equal=bool(torch.equal(x,y)),different=int((x!=y).sum()),elements=x.numel(),max_abs=float(d.max()),rel_l2=float((a-b).norm()/b.norm().clamp_min(1e-30)))
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--old-chat',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--old-chat',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--tensors',type=Path);a=p.parse_args()
  spec=importlib.util.spec_from_file_location('legacy_reason_chat',a.old_chat);old=importlib.util.module_from_spec(spec);spec.loader.exec_module(old)
  args=chat.parser().parse_args(['--model','vl','--device','cpu','--threads','4','--bucket','256','--new-tokens','1']);app=chat.ChatApplication(args)
  chat.L.install_fp8_route('reference',dot='exact',scale_div='ieee'); inputs,text=chat.make_inputs(app.spec,app.processor,[chat.user_message(PROMPT)])
@@ -33,5 +33,9 @@ def main():
              activation_division='IEEE in both paths, isolates grouped dot order',seconds=time.monotonic()-start,
              hook_vs_reference=cmp(y,exact_ref),dp_vs_reference=cmp(dp,exact_ref),
              dp_vs_bf16_exact=cmp(dp,exact.to(torch.bfloat16)),reference_vs_bf16_exact=cmp(exact_ref,exact.to(torch.bfloat16)))
+ if a.tensors:
+  from safetensors.torch import save_file
+  a.tensors.parent.mkdir(parents=True,exist_ok=True)
+  save_file(dict(input=x.contiguous(),reference=exact_ref.contiguous(),dp=dp.contiguous()),str(a.tensors))
  a.out.parent.mkdir(parents=True,exist_ok=True);a.out.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result),flush=True)
 if __name__=='__main__':main()

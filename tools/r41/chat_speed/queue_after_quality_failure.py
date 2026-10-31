@@ -6,7 +6,7 @@ from pathlib import Path
 
 WORK = Path.home() / 'r41run3'
 ROOT = WORK / 'runtime_nohost_v6_resume_20261031'
-OUT = WORK / 'chat_speed_after_quality_failure_20261031'
+OUT = WORK / 'chat_speed_after_quality_failure_retry_20261031'
 QUALITY = (WORK / 'chat_nohost_v6_resume_20261031/multiturn/'
            'r41-q35-segment-multiturn-20261031/q35-quality/quality.json')
 sys.path.insert(0, str(WORK / 'runtime_activation_equal_20261031/tools/r41/run2_board'))

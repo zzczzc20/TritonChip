@@ -4,6 +4,17 @@ The active-event runtime change and this candidate were developed outside the
 fixed board archive. All numbers here are uncalibrated DP SystemC/TLM; no
 board speedup is claimed.
 
+## Board queue after Qwen3.5 quality failure
+
+The separate Qwen3.5 multi-turn result failed its registered first-turn
+comparison; [its evidence](../run3_priority/q35_multiturn_segment_failed_20261031.json)
+remains unchanged. The gated speed queue began on the loaded image at 18:49
+UTC, but the first event-index session was [killed by its 8 GiB systemd memory
+limit](board_event_oom_20261031.tgz); it produced no accepted session result.
+The same queue was restarted in a new output directory at 19:01 UTC with a
+24 GiB limit after verifying the image, 100 MHz clock and idle card. This is
+an operational retry, not a passed measurement.
+
 ## Equal-row lowering
 
 On a DP target the compiler now proves equal row addresses and masks before

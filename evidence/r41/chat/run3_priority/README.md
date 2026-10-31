@@ -146,3 +146,12 @@ records `instruct` as passed (`OK`), alongside the preserved `reason` failure.
 All four completed text prompts report zero host reads and no new graphs in
 all decode steps. The next grouped-tail run is already queued; this partial
 run is not final acceptance.
+
+The graph-reuse VL quality attempt reached its registered 6,000-second timeout
+on 2026-10-31 at about 07:07 UTC. It had recorded four completed prompts: three
+passed and `reason` failed. The harness preserved the timeout and SIGKILL as a
+failed experiment; its partial `quality.json` still says `running` because the
+process was killed. The [raw timeout record](vl_nohost_v3_timeout.tgz) retains
+the report, logs, counters and partial output. The grouped-tail VL board quality
+stage started at 07:07:01 UTC under the separately registered longer budget;
+its results and the queued Qwen3.5 run remain unverified.

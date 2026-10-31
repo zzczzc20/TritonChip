@@ -178,7 +178,7 @@
     },
     {
       "id": "S2-01.2",
-      "requirement": "M1\u2013M4 and selected timing fixes incorporated",
+      "requirement": "M1–M4 and selected timing fixes incorporated",
       "status": "passed",
       "classification": "Required",
       "evidence": [
@@ -186,7 +186,7 @@
         "evidence/r41/stage2/integration/image.json",
         "evidence/r41/stage2/integration/README.md"
       ],
-      "reason": "Run-1 source c9f25787494a incorporates merged boundaries, F01\u2013F10, X8 and T2 fixes.",
+      "reason": "Run-1 source c9f25787494a incorporates merged boundaries, F01–F10, X8 and T2 fixes.",
       "closure_plan": null
     },
     {
@@ -1443,8 +1443,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "b0446259b3cccf4150d4b624a953eeee0cb5ba64798b04acf511e9a7f70dcab1",
-    "doc/r41_stage2_report.md": "01004e3751dee6df8150cc7e42017758d040cb68403ffe7b89a71c0f22e33022",
+    "doc/r41_report.md": "0ca27dbe8669f41be60f7916532ed648fa335de6c9210fc6b4c6ba45edb47985",
+    "doc/r41_stage2_report.md": "560185f3ddffd36e5600121603ec42ee68a468dd2278769e6c2fc0b702438e18",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "086995eaffc8cf03784787f6a72d0e1031a6783bdfbe02bd16ccae7dbf2645c0",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1532,7 +1532,8 @@
     "evidence/r41/chat/run3_priority/vl_prefill_cpu_states.json": "8858b00c21ef671ce59ef38025fe2d882a4bbc09490f3669086fb8237eea54c0",
     "evidence/r41/chat/run3_priority/vl_grouped_tail_cpu_diagnostic.tgz": "9cfb5443e23382916b149410fefc69609b63bfe2d9c4f387c6384e70d9a23b33",
     "evidence/r41/chat/run3_priority/q35_cpu_tail_compare.tgz": "5b069d0c04d99fa7b4abeccb07bc3221a896cb7b919bc73d0e9802b2e13d89a7",
-    "evidence/r41/chat/run3_priority/vl_nohost_partial_four_20261031.json": "39dbe53ffa74182088c409acf7e91629408dcc5a6cb60b24f05de519fa3f373b"
+    "evidence/r41/chat/run3_priority/vl_nohost_partial_four_20261031.json": "39dbe53ffa74182088c409acf7e91629408dcc5a6cb60b24f05de519fa3f373b",
+    "evidence/r41/chat/run3_priority/vl_nohost_v3_timeout.tgz": "4af5ad50445793d08b7c3abda30d4f35ec620449105ec54c0c6faaef3fca37fe"
   },
   "followups": [
     {
@@ -1627,9 +1628,10 @@
           "evidence/r41/chat/run3_priority/vl_reason_cpu_prefill_compare.tgz",
           "evidence/r41/chat/run3_priority/vl_prefill_cpu_states.json",
           "evidence/r41/chat/run3_priority/vl_grouped_tail_cpu_diagnostic.tgz",
-          "evidence/r41/chat/run3_priority/vl_nohost_partial_four_20261031.json"
+          "evidence/r41/chat/run3_priority/vl_nohost_partial_four_20261031.json",
+          "evidence/r41/chat/run3_priority/vl_nohost_v3_timeout.tgz"
         ],
-        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and the mechanism remains under investigation."
+        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and a CPU diagnostic localized divergence to the single-token prefill tail; grouped-tail CPU checks passed, but do not establish board acceptance. The graph-reuse quality attempt subsequently timed out after four completed prompts; the grouped-tail board retry is running."
       },
       {
         "model": "Qwen3.5-4B-FP8",

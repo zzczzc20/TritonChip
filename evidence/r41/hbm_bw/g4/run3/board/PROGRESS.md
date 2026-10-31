@@ -36,6 +36,9 @@ board README and likewise requires registered rechecks.
 Across all 513 default points, 39 are over 5% slower and eight over 10% slower
 in the descriptive matched comparison; the registered rechecks remain
 necessary.
+The 39 memory-bound and two original-suite points over 5% slower now have a
+registered recheck queued after the existing candidate tests; see
+[`performance_recheck.md`](performance_recheck.md). No recheck result exists yet.
 
 The merged-source strict compiler gate passed 170 unit tests and six IR cases
 ([`../merge_gate/README.md`](../merge_gate/README.md)); the merged harness

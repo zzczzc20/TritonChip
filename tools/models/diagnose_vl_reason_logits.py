@@ -12,6 +12,7 @@ import json
 import math
 from pathlib import Path
 import time
+import types
 import torch
 from safetensors.torch import load_file, save_file
 import chat
@@ -79,6 +80,7 @@ def main():
     p.add_argument('--cpu-reference', type=Path)
     p.add_argument('--tlm-path', choices=['legacy_chunk8','grouped_chunk8'], default='legacy_chunk8')
     p.add_argument('--cpu-sdpa', choices=['default','math','flash-approx','flash-sve-prototype'], default='default')
+    p.add_argument('--cpu-fused-norm', action='store_true')
     a=p.parse_args()
     if a.mode=='tlm':
         chat.L.use_tnca(a.tree)
@@ -86,11 +88,19 @@ def main():
     old=importlib.util.module_from_spec(spec); spec.loader.exec_module(old)
     args=chat.parser().parse_args(['--model','vl','--device','cpu','--threads','4','--bucket','256','--new-tokens','1'])
     t0=time.monotonic(); app=chat.ChatApplication(args)
+    if a.cpu_fused_norm:
+        if a.mode!='cpu': raise ValueError('fused-norm approximation is a CPU diagnostic only')
+        norm_type=type(app.model.model.language_model.layers[0].input_layernorm)
+        def fused_norm(module,x):
+            val=x.float(); scale=torch.rsqrt(val.pow(2).mean(-1,keepdim=True)+module.variance_epsilon)
+            return (module.weight.float()*(val*scale)).to(x.dtype)
+        for module in app.model.modules():
+            if isinstance(module,norm_type):module.forward=types.MethodType(fused_norm,module)
     inputs,text=chat.make_inputs(app.spec, app.processor, [chat.user_message(PROMPT)])
     tok=app.processor.tokenizer
     if a.mode=='tlm' and a.cpu_sdpa!='default':
         raise ValueError('CPU SDPA override is only a CPU diagnostic')
-    result=dict(schema='r41-vl-reason-logits-diagnostic/1',mode=a.mode,cpu_sdpa=a.cpu_sdpa,prompt=PROMPT,prompt_text=text,
+    result=dict(schema='r41-vl-reason-logits-diagnostic/1',mode=a.mode,cpu_sdpa=a.cpu_sdpa,cpu_fused_norm=a.cpu_fused_norm,prompt=PROMPT,prompt_text=text,
                 input_ids=inputs['input_ids'].tolist(),model=app.spec.name,revision=app.spec.revision,
                 legacy_chat_sha256=hashlib.sha256(a.old_chat.read_bytes()).hexdigest(),
                 load=app.load_report,versions=chat.L.versions(), paths={})

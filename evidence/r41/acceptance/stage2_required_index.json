@@ -1560,7 +1560,8 @@
     "evidence/r41/chat/run3_priority/vl_reason_pair_precision_tlm.tgz": "4f39ee06ff4a94db9316fec706c0137672aa8e31f48f80ff68a40263e1814687",
     "evidence/r41/chat/run3_priority/vl_warmup_multiturn_cpu.json": "921876dcdd734f3e8aff2922ea464f96d975a18935f3baf74686588bff52e94c",
     "evidence/r41/chat/run3_priority/vl_warmup_image_cpu.json": "1c95ff4ca66d5d7c8c14607e4a7e5a7afd510a5043728300aed95b3828c025e2",
-    "evidence/r41/chat/run3_priority/q35_warmup_quality_cpu.tgz": "1560dc719412529410baa699a014fd4eabd59868fd52ff00a6b4c11b2ed3327b"
+    "evidence/r41/chat/run3_priority/q35_warmup_quality_cpu.tgz": "1560dc719412529410baa699a014fd4eabd59868fd52ff00a6b4c11b2ed3327b",
+    "evidence/r41/chat/run3_priority/vl_reason_cpu_fusednorm_prototype.tgz": "32d36969a85be8bb4eaeca5921b208a696f49cc6fdb4daf8ba099f58cb7bc7c8"
   },
   "followups": [
     {

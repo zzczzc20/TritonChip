@@ -451,3 +451,12 @@ The [full-checkpoint Qwen3.5 CPU quality run after warmup](q35_warmup_quality_cp
 passed all five registered applicable prompts, including multi-turn, against
 the archived CPU reference with the existing scoring rule. This is a CPU
 result; Qwen3.5 board quality and no-host evidence remain pending.
+
+A [full-model CPU fused-normalization approximation](vl_reason_cpu_fusednorm_prototype.tgz)
+tested the interaction of normalization and attention numerics. With math
+SDPA, whole, legacy and grouped paths all gave `We` and `Bob` equal logits of
+38.0; the argmax selected `We`. Grouped-path logits differed from the original
+CPU flash reference by relative L2 0.04327630251646042. With CPU flash SDPA,
+the grouped approximation selected `Bob` with logits 41.0 versus `We` 37.5.
+This is an approximate CPU diagnostic, not the full TLM or board logits;
+it illustrates sensitivity of the leading tokens and does not change any gate.

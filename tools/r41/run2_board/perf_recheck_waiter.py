@@ -25,14 +25,18 @@ def verify_predecessor(queue, auto):
     if not events or events[-1].get('kind') != 'completed':
         return False
     ends = [x for x in events if x.get('kind') == 'stage-end']
-    if [x.get('stage') for x in ends] != ['gather', 'attention', 'recurrence']:
-        raise ValueError('upstream XL stage inventory differs')
+    if [x.get('stage') for x in ends] != ['legacy', 'hbm8', 'q41']:
+        raise ValueError('clean reproduction stage inventory differs')
     for event in ends:
         if event.get('returncode') != 0 or event.get('status') != 'pass':
-            raise ValueError('upstream XL stage failed')
-        path = queue/f"{event['stage']}-attempt-{event['attempt']:03d}"/'report.json'
-        if auto.sha(path) != event.get('report_sha256') or json.loads(path.read_text()).get('status') != 'pass':
-            raise ValueError('upstream XL report changed or failed')
+            raise ValueError('clean reproduction stage failed')
+        path = queue/event['stage']/('report.json' if event['stage'] == 'q41' else 'stage.json')
+        value = json.loads(path.read_text())
+        if auto.sha(path) != event.get('report_sha256') or value.get('status') != 'pass':
+            raise ValueError('clean reproduction report changed or failed')
+        if event['stage'] == 'q41' and (value.get('device') != 'tnca' or value.get('point') != 'Q41-core'
+                or len(value.get('steps', [])) != 17 or not all(x.get('passed') is True for x in value['steps'])):
+            raise ValueError('full independent Q41 result incomplete')
     return True
 
 
@@ -41,7 +45,7 @@ def alive(pid, queue):
         cmd = Path(f'/proc/{pid}/cmdline').read_bytes().replace(b'\0', b' ').decode()
     except (FileNotFoundError, ProcessLookupError):
         return False
-    return 'xl41_extra_waiter.py' in cmd and str(queue) in cmd
+    return 'clean_repro_waiter.py' in cmd and str(queue) in cmd
 
 
 def main():

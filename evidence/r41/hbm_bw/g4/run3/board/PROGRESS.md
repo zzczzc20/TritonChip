@@ -86,5 +86,8 @@ not include three required boundary rows, so the pilot tests those separately;
 the recurrence update equation is unspecified, so that pilot is explicitly
 exploratory. Details and CPU records are in
 [`../../../../acceptance/xl41_extra_pilots/README.md`](../../../../acceptance/xl41_extra_pilots/README.md).
-Full Q41-core, XL-core and clean-archive independent reproduction remain
-unmeasured and are not passes. The two specification gaps remain unresolved.
+An independent legacy, high-address and full Q41-core session from a fresh
+source archive is queued before the performance recheck; see
+[`clean_repro.md`](clean_repro.md). Full Q41-core, XL-core and clean-archive
+independent reproduction remain unmeasured and are not passes. The two
+specification gaps remain unresolved.

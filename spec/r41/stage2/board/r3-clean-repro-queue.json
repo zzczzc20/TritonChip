@@ -1,0 +1,42 @@
+{
+  "schema": "tnca-r41-clean-repro-queue/1",
+  "scope": "freshly extracted cache-free runtime source archive; representative legacy identity, high-address HBM checks and full Q41-core in a separate session; review required before acceptance",
+  "source_archive_sha256": "5525f3509ac86a8be5d07b0b08c6c82f921129e5682065e11ed69b62971e41cf",
+  "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+  "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "image_uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+  "clock_hz": 100000000,
+  "stage_registrations": {
+    "identity": "797b8e21d6ce73d63fe24d0de454306e48a7f276a0d6f2d1fd1bab743def66b3",
+    "hbm8": "7636e7136265ba20e9a3c04c52bf6ac16a549ccc5ea7a20ccf0d0adbce5a2448"
+  },
+  "pilot_script_sha256": "fb6c519b678f0b6f7bab0cfc005676e2cc0b60c15c1902ef01f717c906d098cb",
+  "q41_registration_sha256": "84288a95be50f4f9b725062281cdde248dda7c850baa5412cbbc7418b9199d02",
+  "inputs": {
+    "spec/r41/stage2/model_lock.json": "3b4330efde6f6ea261e3939ce14e22c7e4e241ac12abbe77bb5fb3b2f3caaccf",
+    "spec/r41/stage2/model_points.json": "d9d6aca9fc72c716183314c54b8524c0ff71a2ff06a311ae851a953c15da8b03",
+    "evidence/r41/stage1/kickoff/qwen-storage/inventory.json": "e3ed497b69aba722451d3fdb27608c762a0992a1bfab79acf329f659201bfe3a",
+    "evidence/r41/stage1/kickoff/transformers-reference/sources.json": "bb18dfd4c8d1538a56ed18c563f4a834a1396b2ff6448cca61f135c90bbd927d",
+    "evidence/r41/acceptance/p0/cross-validation.json": "a8ad536a59c8e4b128b3266046f7fddb383207009b9890e8490fb77a49178c51",
+    "tools/models/qwen35_reference.py": "4064f57006365b7b22ffae53a9d0d1b6382e71cb15c91a705b37c6a0ccf27159",
+    "tools/models/qwen_fp8_lib.py": "4983c12942cb9281aae50564749e9a45fb935c7523c7af150fe88cf2207d232d",
+    "tools/models/flux2_klein_run.py": "ca2ad6a7d97d845af49c91d166d4404e1e8b01caa8775cf7ea6f0830b817b0b8",
+    "tools/models/fp8_blockwise_ref.py": "db72d8422719cea806f3e34b75c635cd9198fb6426dd52e542edc2a7d734a5be",
+    "tools/models/fp8_checkpoint.py": "98f5d4d4b2404523935e125ce98909ef7eac9134d85aa7f73b90636c6135ba89",
+    "tools/r41/run2_board/auto.py": "1cfb1a461b1b559a83cb3a797e34d275f824bb8262be137ae92ee683a1ad5d12"
+  },
+  "q41_point": "Q41-core",
+  "q41_steps": 17,
+  "budget_rule": {
+    "prefill_multiplier": 2,
+    "decode_multiplier": 2,
+    "fixed_seconds": 1200,
+    "minimum_seconds": 1800,
+    "source": "successful board pilot step wall times including state comparisons; bound calculated before each stage"
+  },
+  "predecessor": "successful XL41 extra queue, plus hash-verified Q41 board pilot",
+  "load_policy": "no image load; require candidate UUID, 100 MHz and idle card before each stage",
+  "caches": "new experiment-local Triton, Inductor, extensions, XDG caches; rebuild model in fresh process from verified pinned checkpoint and clean copied official model source",
+  "bounded_stage_seconds": 3600,
+  "waiter_sha256": "3b8d1d0bcd155eec1e250748d668878cde3b98ef158bb534ebc022b57a6bb8c9"
+}

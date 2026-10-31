@@ -8,11 +8,12 @@ tree on the restored 100 MHz run-1 image. This tests that specific stack, not
 the corrected candidate image or a full-model lifecycle. Its hand-built AOT
 kernel is a functional grid-admission diagnostic, not a performance result.
 
-Board-host PID 1143624 waits for all four recheck stages and the hashed run-1
+Board-host PID 1146076 waits for all four recheck stages and the hashed run-1
 clock verification, then waits for an idle matching card. It does not load an
 image. A failure is preserved and stops the waiter; nothing is counted as
 passing before the actual board result. The log and output are under
-`/home/zzhouch/r41run3/grid_rerun_queue`.
+`/home/zzhouch/r41run3/grid_rerun_queue_v2`. The earlier unstarted waiter log
+is retained in `grid_rerun_queue`.
 
 The current physical-grid code takes its base limit from the device. Earlier
 run-1 evidence reported a base limit equal to its full advertised capacity,

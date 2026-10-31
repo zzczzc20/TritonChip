@@ -228,7 +228,7 @@
     "oldoriginal_original113"
   ],
   "remaining_block_policy": "A second block is not authorized by this registration; a separate judgment must pre-register it if needed.",
-  "image_switch_policy": "After all existing candidate queues complete, wait for 900 consecutive seconds of verified candidate UUID and no contexts, outstanding executions or clients; recheck identity and idle immediately before each program.sh check/go; refuse a different image, competing loader or failed safety gate.",
+  "image_switch_policy": "After the clean-archive independent session and candidate rechecks, wait for 900 consecutive seconds of verified candidate UUID and no contexts, outstanding executions or clients; recheck identity and idle immediately before each program.sh check/go; refuse a different image, competing loader or failed safety gate.",
   "interpretation": "Different software trees and image profiles; comparison tests full-stack behavior and does not isolate an RTL cause. Three correlated samples may not establish a statistical gate.",
   "manifests": {
     "candidate_membound_default.json": {
@@ -252,5 +252,6 @@
       "source_template_sha256": "aae3c4de48fad32ae497a58309af9160a178f865fd2e59600a0c1a8ad9b0a8e1"
     }
   },
-  "waiter_sha256": "152eefe26e59cd7c6f18cf0b46859d0a2d033d0ae2f3448fb4532f16b29ded3e"
+  "waiter_sha256": "547037f5fc6020675ddc738f2d96d92100c479e94a873550ab5362af365721d6",
+  "predecessor": "hash-verified clean archive independent legacy, HBM8 and full Q41-core session"
 }

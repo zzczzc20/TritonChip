@@ -110,10 +110,17 @@ The first exploratory clock-sensitivity attempt failed because Vivado requires
 `-add` when `-master_clock` is specified. Its original script and log are in
 [`hbm_clock_sensitivity_first_failure.tgz`](hbm_clock_sensitivity_first_failure.tgz),
 SHA-256 `af4710169b7b4e1c2613cef65ad60bb80175d7023c6ae7dc91c41b36bb006f12`.
-A retry lets Vivado infer the master and checks its identity explicitly; it is
-running under `~/r41run3/hbm_clock_sensitivity_retry_20261031`. The retry's
-launcher has a malformed exit-status trap, so its actual process exit code
-will not be available and the log and reports must be examined directly.
-The recreated 450 MHz timing must match the original report before the
-433.4 MHz sensitivity can be interpreted. Neither job changes the image or
-establishes timing closure; no changed-clock result is claimed yet.
+A retry let Vivado infer the master and checked its identity explicitly. Its
+log and reports are in [`hbm_clock_sensitivity_retry.tgz`](hbm_clock_sensitivity_retry.tgz),
+SHA-256 `8352d08270effb124a1dd03b49bfc19e8bf50c1832d3d49c8b17e869112b2bf7`.
+The log records both completed reports and no Vivado errors, but a malformed
+launcher trap lost the actual process exit code.
+
+The recreated 450 MHz report has WNS −0.086 ns and 22 failing endpoints,
+versus −0.085 ns and 22 in the original. Under the exploratory 433.4 MHz
+constraint, it reports WNS −0.001 ns with one failing HBM endpoint; kernel
+WNS is +0.111 ns with zero failing endpoints. Counts and check summaries are in
+[`hbm_clock_sensitivity_summary.json`](hbm_clock_sensitivity_summary.json).
+The 450 MHz recreation differs by 1 ps, and this constraint substitution is
+not verification of the packaged image's actual clock or timing closure. It
+does not change the original routed result or the remaining CDC limitations.

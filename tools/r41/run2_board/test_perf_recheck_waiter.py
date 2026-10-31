@@ -19,11 +19,14 @@ class PredecessorTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.addCleanup(self.temp.cleanup)
         self.events = []
-        for name in ('gather', 'attention', 'recurrence'):
-            report = self.root/(name+'-attempt-001')/'report.json'
+        for name in ('legacy', 'hbm8', 'q41'):
+            report = self.root/name/('report.json' if name == 'q41' else 'stage.json')
             report.parent.mkdir()
-            report.write_text('{"status":"pass"}\n')
-            self.events.append(dict(kind='stage-end', stage=name, attempt=1, returncode=0,
+            data = dict(status='pass')
+            if name == 'q41':
+                data.update(device='tnca', point='Q41-core', steps=[dict(passed=True) for _ in range(17)])
+            report.write_text(json.dumps(data))
+            self.events.append(dict(kind='stage-end', stage=name, returncode=0,
                                     status='pass', report_sha256=Auto.sha(report)))
 
     def write(self, events):
@@ -36,7 +39,7 @@ class PredecessorTests(unittest.TestCase):
     def test_complete_requires_all_passing_hashed_reports(self):
         self.write(self.events+[dict(kind='completed')])
         self.assertTrue(waiter.verify_predecessor(self.root, Auto))
-        (self.root/'attention-attempt-001/report.json').write_text('{"status":"fail"}')
+        (self.root/'hbm8/stage.json').write_text('{"status":"fail"}')
         with self.assertRaises(ValueError):
             waiter.verify_predecessor(self.root, Auto)
 

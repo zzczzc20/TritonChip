@@ -908,3 +908,14 @@ was started to capture convolution output, gated-delta inputs and output, and
 the two gated-normalization inputs. Its extra hooks may affect the compiled
 graph, so it also checks the instrumented whole first-layer output against the
 previous TLM result.
+
+The [standalone gated RMSNorm DP TLM probe](q35_gate_norm_tlm_20261031.tgz)
+used the same CPU-captured attention-core and gate operands on both routes. It
+differed in 38067/110592 output bits, relative L2 0.0027909812, max absolute
+difference 0.015625. Unlike the end-to-end comparison, this demonstrates a
+difference within the isolated gated-norm operation on identical inputs. It
+is still not a board measurement or proof that the operation is the only
+source of the quality failure. An [instrumented decomposition](q35_gate_parts_tlm_pending_20261031.tgz)
+is running to compare variance, rsqrt, normalized and weighted values, SiLU,
+and final product; it checks its CPU reconstruction and compares its final
+TLM output with the uninstrumented standalone operation.

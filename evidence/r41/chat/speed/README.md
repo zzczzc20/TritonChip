@@ -218,8 +218,8 @@ instructions/MAC stayed 0.1002197265625, cycles stayed 7271, and probe launch
 count stayed one per repetition. The candidate passed 4/4 cache lifecycle
 checks and 16/16 fixed-revision FP8/compiled-graph checks. Its
 [default-code audit](code_cache_sqrt_audit_20261031.tgz) compared 113/113
-points unchanged. The reduced-depth VL comparison below completed; the
-Qwen3.5 comparison is running. This policy is not accepted, integrated or
+points unchanged. The reduced-depth VL and Qwen3.5 comparisons below completed; a corrected
+Qwen3.5 counter run is in progress. This policy is not accepted, integrated or
 queued for board retest.
 
 The [one-layer VL DP TLM comparison](code_cache_sqrt_model_20261031.tgz)
@@ -256,8 +256,28 @@ exact FP32 matmul reference. Its two 16×16×16 matmuls each had
 0.265869140625 instructions/MAC and took 4916 and 4656 cycles; all 28 events
 included three code loads and 13632 code bytes. This is a correctness check,
 not a performance comparison. The profile report's scope and legacy-format
-checks passed 3/3. Fresh reduced-depth VL A/B runs using the corrected
-profiler are in progress.
+checks passed 3/3. Fresh [reduced-depth VL A/B runs](model_profile_and_mask_20261031.tgz)
+using the corrected profiler counted actual loads as well as completed events.
+For prefill, LRU → size-aware was 28 → 28 launches, 23 → 14 loads,
+328000 → 321600 uploaded bytes, 24 → 18 evictions, and 543716965 →
+545865198 device cycles. For decode, it was 25 → 25 launches, 19 → 18 loads,
+186176 → 185920 uploaded bytes, 17 → 13 evictions, and 499900292 →
+505083551 cycles. In the seven FP8 matmuls, prefill was 0.0472591285
+instructions/MAC on both routes and 100600246 → 100875903 cycles; decode
+was 0.4194615682 instructions/MAC on both routes and 69476943 → 69620129
+cycles. MACs are computed from logical activation and FP8 weight shapes.
+Both output logits were bit-identical to the LRU route (0/151936 each),
+which is not an independent exact CPU reference. The policy remains unmerged.
+
+The same archive preserves the earlier four-layer Qwen3.5 A/B reports and
+[comparison script](compare_cache_q35_20261031.py). Both logits have 0/248320
+bit mismatches per step against the LRU route, both have zero reported CPU
+numerical fallback, and steady decode has zero host reads. Prefill reported
+239 launches, 2224324414 → 2206818089 cycles, 141 → 146 load marks and
+139 → 149 evictions. Decode reported 95 launches, 1473757373 → 1476651962
+cycles, 77 → 54 load marks and 78 → 48 evictions. The marks in this older
+profile are not independently counted physical loads. Actual-load and
+instruction/MAC profiling is now running with the corrected profiler.
 
 ## Experimental equal-row activation staging
 

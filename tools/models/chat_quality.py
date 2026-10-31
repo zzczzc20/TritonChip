@@ -81,10 +81,19 @@ def main():
             turns = []
             for i, text in enumerate(prompt["turns"]):
                 report = app.generate(text, images if i == 0 else (), keep_history=True)
+                if report["status"] != "pass":
+                    result["failed_generation"] = chat.public_report(report)
+                    raise RuntimeError(f"generation failed or lacks device evidence: {report['status']}")
                 turns.append(dict(user=text, text=report["generated_text"], tokens=report["generated_tokens"],
                                   statistics=report["statistics"], session=report["session"],
+                                  device_evidence={k: report.get(k) for k in
+                                                   ("model_tensor_placements", "cpu_numerical_fallback",
+                                                    "compiled_wrapper_fallbacks", "compiled_wrapper_roles_covered",
+                                                    "vision_calls", "output_retrieval",
+                                                    "output_retrieval_seconds", "executed_generation_steps")},
                                   steps=[{k: s.get(k) for k in ("kind", "seconds", "new_graphs", "code_store",
-                                                                 "reused_cached_tokens")} for s in report["steps"]]))
+                                                                 "reused_cached_tokens", "transfers_inside_step",
+                                                                 "logits_download_bytes")} for s in report["steps"]]))
                 print(json.dumps(dict(prompt=prompt["id"], turn=i, user=text, assistant=report["generated_text"])),
                       flush=True)
             row = dict(id=prompt["id"], kind=prompt["kind"], keywords=prompt["keywords"], turns=turns)

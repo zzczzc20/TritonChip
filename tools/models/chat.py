@@ -149,7 +149,8 @@ class Session:
         if prefill_chunk < 0:
             raise ValueError("prefill chunk must be nonnegative")
         self.dev = L.use_tnca() if device == "tnca" else torch.device(device)
-        skip = L.vision_tower(model)
+        # A device session keeps the vision weights resident as well as the text weights.
+        skip = None if device == "tnca" else L.vision_tower(model)
         self.prefill, pdev = L.place(L.PrefillStage(model, all_logits=False, hidden_states=False), device, "eager",
                                      skip=skip)
         self.decode, ddev = L.place(L.DecodeStage(model), device, "eager", skip=skip)
@@ -161,6 +162,8 @@ class Session:
         self.last_position = None
         self.resets = 0
         self.prompts = 0
+        self.greedy = (torch.compile(lambda x: x.float().argmax().reshape(1, 1),
+                                     fullgraph=True, dynamic=False) if device == "tnca" else None)
 
     def reset(self):
         self.cache.reset()
@@ -185,9 +188,23 @@ class Session:
                     pre["position_ids"], pre["cu_seqlens"]]
             start += count
             started = time.perf_counter()
-            with torch.no_grad():
-                out = tuple(t.cpu() for t in self.vision(*[t.to(self.dev) for t in args]))
-            calls.append(dict(image=index, grid_thw=g.tolist()[0], seconds=time.perf_counter() - started))
+            with torch.no_grad(), transfer_meter(self.device == "tnca") as meter:
+                if self.device == "tnca":
+                    from torch._inductor.utils import run_and_get_code
+                    from tnca.inductor import host_fallbacks
+                    result, code = run_and_get_code(lambda: self.vision(*[t.to(self.dev) for t in args]))
+                    self._vision_code = getattr(self, "_vision_code", []) + code
+                    meter.mem.synchronize()
+                    out = tuple(result)
+                    fallback = host_fallbacks(self._vision_code) if self._vision_code else None
+                    if any(t.device.type != "tnca" for t in out):
+                        raise RuntimeError("vision returned a host activation")
+                else:
+                    out = tuple(self.vision(*[t.to(self.dev) for t in args]))
+                    fallback = None
+            calls.append(dict(image=index, grid_thw=g.tolist()[0], seconds=time.perf_counter() - started,
+                              transfers=meter.summary() if meter is not None else None,
+                              compiled_wrapper_fallbacks=fallback))
             per_image.append(out)
         if start != inputs["pixel_values"].shape[0]:
             raise ValueError("pixel rows do not match image_grid_thw")
@@ -259,9 +276,152 @@ class Session:
         self.last_position = position
         return logits
 
+    def step_device(self, token):
+        """Feed a device token without converting its value to a host scalar."""
+        position = self.last_position + 1
+        with torch.no_grad():
+            logits = self._call_decode(token, position)
+        self.last_position = position
+        return logits
+
 
 def _vision_to(vision, dev):
     return tuple(tuple(t.to(dev) for t in group) for group in vision)
+
+
+def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_tokens, per_image,
+                          vision_calls, sample, temperature, top_k, top_p, seed, forced_tokens):
+    """Run greedy feedback on the device; copy outputs only after the decode loop."""
+    if sample:
+        raise ValueError("TNCA device-side sampling is not implemented; use greedy decoding")
+    from torch._dynamo.utils import counters
+    from torch._inductor.utils import run_and_get_code
+    from tnca.inductor import host_fallbacks
+
+    model = session.model
+    eos = L.generation_eos(model)
+    prompt_tokens = int(inputs["input_ids"].shape[1])
+    if prompt_tokens + new_tokens > session.bucket:
+        raise ValueError(f"static bucket {session.bucket} is smaller than prompt {prompt_tokens} plus {new_tokens} tokens")
+    placements = {"parameters": {}, "buffers": {}}
+    misplaced = []
+    for kind, entries in (("parameters", model.named_parameters()), ("buffers", model.named_buffers())):
+        for name, value in entries:
+            device = str(value.device)
+            placements[kind][device] = placements[kind].get(device, 0) + 1
+            if value.device.type != "tnca":
+                misplaced.append(f"{kind}:{name}:{device}")
+    if misplaced:
+        raise RuntimeError("model tensors are not on TNCA: " + ", ".join(misplaced))
+
+    # Teacher tokens are transferred before the measured loop, never read back in it.
+    teacher = [torch.tensor([[t]], dtype=torch.long).to(session.dev) for t in (forced_tokens or [])]
+    rows, device_logits, device_candidates = [], [], []
+    code_by_role = getattr(session, "_generation_code", {})
+    session._generation_code = code_by_role
+    def capture(role, fn):
+        result, code = run_and_get_code(fn)
+        code_by_role.setdefault(role, []).extend(code)
+        return result
+
+    old_recompile = torch._dynamo.config.error_on_recompile
+    session.prompts += 1
+    graphs_at_start = counters["stats"]["unique_graphs"]
+    try:
+        current = None
+        for index in range(new_tokens):
+            graph_start = counters["stats"]["unique_graphs"]
+            code = code_store_counters()
+            started = time.perf_counter()
+            with transfer_meter(True) as meter:
+                if index == 0:
+                    logits, calls, reused = capture("prefill", lambda: session.prefill_prompt(inputs, per_image))
+                else:
+                    # A forced token is a test input; otherwise feedback remains on TNCA.
+                    feed = teacher[index - 1] if index - 1 < len(teacher) else current
+                    logits = capture("decode", lambda: session.step_device(feed))
+                current = capture("selection", lambda: session.greedy(logits.reshape(-1)))
+                meter.mem.synchronize()
+            if logits.device.type != "tnca" or current.device.type != "tnca":
+                raise RuntimeError("device model or token selection returned a host tensor")
+            elapsed = time.perf_counter() - started
+            device_logits.append(logits)
+            device_candidates.append(current)
+            row = dict(step=index, kind="prefill" if index == 0 else "decode",
+                       input_tokens=prompt_tokens - reused if index == 0 else 1,
+                       seconds=elapsed, new_graphs=counters["stats"]["unique_graphs"] - graph_start,
+                       code_store=_counter_delta(code, code_store_counters()), logits_download_bytes=0,
+                       transfers_inside_step=meter.summary())
+            if index == 0:
+                row.update(calls=calls, reused_cached_tokens=reused)
+            rows.append(row)
+    finally:
+        torch._dynamo.config.error_on_recompile = old_recompile
+
+    # This is output retrieval after generation, reported separately and not hidden in the step counters.
+    retrieval_start = time.perf_counter()
+    with transfer_meter(True) as retrieval:
+        candidates = [int(t.cpu().item()) for t in device_candidates]
+        logits_rows = [t.cpu() for t in device_logits]
+        retrieval.mem.synchronize()
+    tokens = [forced_tokens[i] if forced_tokens and i < len(forced_tokens) else t
+              for i, t in enumerate(candidates)]
+    if not forced_tokens:
+        stop = next((i + 1 for i, t in enumerate(tokens) if t in eos), len(tokens))
+        tokens, candidates, logits_rows = tokens[:stop], candidates[:stop], logits_rows[:stop]
+    for i, row in enumerate(rows):
+        row.update(token=(tokens[i] if i < len(tokens) else None),
+                   candidate_token=(candidates[i] if i < len(candidates) else None),
+                   greedy_token=(candidates[i] if i < len(candidates) else None))
+    if len(tokens) != new_tokens:
+        # The fixed-length device loop ran beyond EOS: discard that cache before another turn.
+        session.reset()
+    else:
+        session.cached += tokens[:-1]
+    fallbacks = {role: host_fallbacks(source) for role, source in code_by_role.items()}
+    covered = all(code_by_role.get(role) for role in ("prefill", "decode", "selection"))
+    fallback = any(fallbacks.values()) if covered else None
+    vision_unknown = any(c.get("compiled_wrapper_fallbacks") is None for c in (vision_calls or []))
+    vision_fallback = any(c.get("compiled_wrapper_fallbacks") for c in (vision_calls or []))
+    read_during_decode = any((row["transfers_inside_step"]["host_read_calls"] or
+                              row["transfers_inside_step"]["staging_download_bytes"])
+                             for row in rows if row["kind"] == "decode")
+    if fallback or vision_fallback or read_during_decode:
+        status = "failed-no-host-fallback"
+    elif fallback is None or vision_unknown:
+        status = "unverified-no-host-fallback"
+    else:
+        status = "pass"
+    weight_bytes = L.module_bytes(model, lambda name: not name.startswith("model.visual."))
+    report = dict(schema="tnca-qwen-chat-generation/2", status=status, model=spec.name,
+                  repo=spec.repo, revision=spec.revision, device="tnca",
+                  decoder_layers=model.config.get_text_config().num_hidden_layers,
+                  prompt_text=prompt_text, prompt_tokens=prompt_tokens, bucket=session.bucket,
+                  prefill_chunk=session.chunk, requested_new_tokens=new_tokens,
+                  sampling=dict(sample=sample, temperature=temperature, top_k=top_k, top_p=top_p, seed=seed),
+                  forced_tokens=forced_tokens, generated_tokens=tokens, candidate_tokens=candidates,
+                  generated_text=processor.batch_decode(torch.tensor(tokens)[None], skip_special_tokens=True)[0],
+                  stopped_at_eos=bool(tokens and tokens[-1] in eos), eos_token_ids=sorted(eos),
+                  images=len(per_image or []), vision_calls=vision_calls or [],
+                  vision_seconds=sum(c["seconds"] for c in vision_calls or []), steps=rows,
+                  statistics=generation_stats(rows), logits=logits_rows, fp8_route_in_use=L.fp8_route_in_use(),
+                  decode_weight_bytes=weight_bytes,
+                  session=dict(prompt_index=session.prompts, cache_resets=session.resets,
+                               new_graphs_this_prompt=counters["stats"]["unique_graphs"] - graphs_at_start,
+                               unique_graphs_total=counters["stats"]["unique_graphs"]),
+                  device_memory=L.device_memory(session.dev), cache_bytes=L.cache_bytes(session.cache),
+                  standard_torch_fullgraph=True, cpu_numerical_fallback=fallback,
+                  compiled_wrapper_fallbacks=fallbacks, compiled_wrapper_roles_covered=covered,
+                  steady_decode_host_reads_detected=bool(read_during_decode),
+                  model_tensor_placements=placements, output_retrieval=retrieval.summary(),
+                  output_retrieval_seconds=time.perf_counter() - retrieval_start,
+                  executed_generation_steps=len(rows), returned_tokens=len(tokens), device_target=device_target())
+    report["theoretical_core_port_bound"] = dict(
+        bytes_per_second=CORE_PORT_BYTES_PER_SECOND, source=CORE_PORT_SOURCE,
+        decode_weight_bytes=weight_bytes,
+        weight_stream_ceiling_tokens_per_second=CORE_PORT_BYTES_PER_SECOND / weight_bytes,
+        interpretation="Theoretical interface ceiling only, not a measured bandwidth or performance prediction")
+    return report
 
 
 def run_generation(session, processor, spec, inputs, prompt_text, *, new_tokens, per_image=None,
@@ -272,6 +432,11 @@ def run_generation(session, processor, spec, inputs, prompt_text, *, new_tokens,
         raise ValueError("new-tokens must be positive")
     if forced_tokens is not None and not 0 < len(forced_tokens) <= new_tokens:
         raise ValueError("forced tokens must be nonempty and no longer than new-tokens")
+    if session.device == "tnca":
+        return run_device_generation(session, processor, spec, inputs, prompt_text, new_tokens=new_tokens,
+                                     per_image=per_image, vision_calls=vision_calls, sample=sample,
+                                     temperature=temperature, top_k=top_k, top_p=top_p, seed=seed,
+                                     forced_tokens=forced_tokens)
     import torch._dynamo as dynamo
     from torch._dynamo.utils import counters
 
@@ -513,7 +678,8 @@ class ChatApplication:
         mismatched = [i for i, (x, y) in enumerate(zip(first["logits"], again["logits"], strict=True))
                       if not torch.equal(x.view(torch.int16) if x.dtype == torch.bfloat16 else x,
                                          y.view(torch.int16) if y.dtype == torch.bfloat16 else y)]
-        passed = not mismatched and again["candidate_tokens"] == first["candidate_tokens"]
+        passed = (not mismatched and again["candidate_tokens"] == first["candidate_tokens"] and
+                  all(r["status"] == "pass" for r in (first, other, again)))
         return dict(passed=passed, other_prompt=prompt, other=public_report(other), repeat=public_report(again),
                     bitwise_logit_mismatch_steps=mismatched,
                     repeat_new_graphs=again["session"]["new_graphs_this_prompt"],
@@ -576,6 +742,9 @@ class ChatApplication:
             images = []
             if transcript is not None:
                 transcript.append(dict(user=line, assistant=report["generated_text"], report=public_report(report)))
+            if report["status"] != "pass":
+                print("error> generation failed or lacks device evidence:", report["status"], flush=True)
+                return False
             print("assistant>", report["generated_text"], flush=True)
             stats = report["statistics"]
             print(json.dumps({k: stats[k] for k in ("prefill_seconds", "decode_steps",

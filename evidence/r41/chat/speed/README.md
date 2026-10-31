@@ -279,20 +279,35 @@ cycles, 77 → 54 load marks and 78 → 48 evictions. The marks in this older
 profile are not independently counted physical loads. Actual-load and
 instruction/MAC profiling is now running with the corrected profiler.
 
-## Experimental equal-row activation staging
+## Equal-row activation staging
 
-The compiler's existing equal-row proof can be retained through a uniform
-row reduction, scalar division, expansion and broadcast, then used to stage
-one packed activation register for repeated rows. The generic
-[experimental patch](activation_equal_stage_experiment.patch) is guarded by
-`TNCA_X8_EQUAL_A_STAGE=1` and does not assume a model name. The
-[initial TLM records](activation_equal_stage_initial_20261031.tgz) include an
-unchanged first attempt where the proof did not propagate and the later
-successful proof diagnostic.
+The compiler retains its existing equal-row proof through a uniform row
+reduction, scalar division, expansion and broadcast, then stages one packed
+activation register for repeated rows. The generic implementation is active
+for DP and can be disabled with `TNCA_X8_EQUAL_A_STAGE=0` for comparison; it
+does not assume a model name. The [initial opt-in experiment](activation_equal_stage_experiment.patch)
+and [initial TLM records](activation_equal_stage_initial_20261031.tgz) are
+preserved. The integrated source SHA-256 is
+`a8ff866ea37cd70551d137b59261424a7a4b7df2f0b929cc11c123f79e993bfb`.
 
-For the official fused FP8 kernel at 1×256×256, control → candidate steady
-instructions/MAC were 0.64068603515625 → 0.48052978515625, device cycles
-113675 → 91280, one launch for each and zero steady code loads/evictions.
-Both outputs had 0/256 bit mismatches against the independent DP reference.
-Broader shape, boundary and default-code gates are running; this candidate is
-not yet integrated or queued for board retest.
+The [gates](activation_equal_stage_gates_20261031.tgz) used the official fused
+FP8 kernel, DP TLM and default division. Every shape matched an independent DP
+reference bit-for-bit. In each pair there was one steady launch and zero
+steady code loads/evictions. The 16/16 FP8/compiled graph checks passed and
+113/113 points of the default-code audit were unchanged.
+
+| M × N × K | Instructions/MAC control → candidate | Device cycles control → candidate | Bit mismatches |
+| --- | ---: | ---: | ---: |
+| 1 × 256 × 256 | 0.640686 → 0.480530 | 113675 → 91280 | 0/256 |
+| 1 × 250 × 384 | 0.639490 → 0.475490 | 190395 → 162680 | 0/250 |
+| 1 × 1024 × 256 | 0.640686 → 0.480530 | 396516 → 330816 | 0/1024 |
+| 1 × 7 × 256 | 31.175223 → 28.245536 | 213645 → 189841 | 0/7 |
+| 16 × 256 × 256 | 0.0475235 → 0.0475235 | 182082 → 182082 | 0/4096 |
+
+The zero-input M=1 case also matched all 256 values and had the same recorded
+instruction/cycle counts. Five additional [boundary controls](model_profile_and_mask_20261031.tgz)
+cover equal and different addresses, partial row masks, differing row scales
+and zero inputs, each 0/256 against the DP reference with the option off/on.
+Those five custom kernels compiled identically off/on, so they are negative
+controls, not proof that the packed path fired. Board A/B testing is queued;
+these TLM results are not board throughput claims.

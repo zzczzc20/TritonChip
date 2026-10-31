@@ -641,6 +641,7 @@ No-board TLM A/B scripts for chat launch overhead.
 | `tools/r41/chat_speed/bench_hoisted_fp8.py` | Compare official fused FP8 with exact separately quantised FP8 on DP TLM. | none found | one-off |
 | `tools/r41/chat_speed/bench_runtime_events.py` | Runtime-history A/B: standard Torch matmul on DP TLM, no board. | none found | one-off |
 | `tools/r41/chat_speed/queue_event_board.py` | Run the event-index board comparison after the priority chat stage passes. | none found | one-off |
+| `tools/r41/chat_speed/queue_activation_board.py` | Queue the gated activation-staging board session after prior tests pass. | none found | care |
 
 ### Model drivers and diagnostics (`tools/models/`)
 

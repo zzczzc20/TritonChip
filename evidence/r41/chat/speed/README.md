@@ -473,3 +473,24 @@ those two measurements must not be equated. The new run's 25 FP8 decode
 matmuls had 0.2536279297 instructions/MAC and 494071298 cycles. A control
 using the corrected profiler is still running. These are reduced-depth TLM
 observations, not board throughput or full-model CPU-quality results.
+
+
+The subsequent [corrected-profiler four-layer Qwen3.5 comparison](q35_corrected_model_tlm_20261031.tgz)
+replaces the preceding old-profiler control for paired interpretation. LRU →
+activation staging prefill: 239 → 239 launches, 2227778949 → 2206641939
+cycles, 141 → 141 physical loads, 1881792 → 1881792 code bytes, 139 → 139
+evictions; FP8 was 0.0342451794 instructions/MAC on both. Decode: 95 → 95
+launches, 1436880921 → 1344816549 cycles, 77 → 77 loads, 905152 → 716224
+code bytes and 78 → 77 evictions; FP8 was 0.4137841797 → 0.2536279297
+instructions/MAC and 602935166 → 494071298 cycles. Both 248320-element
+logits tensors matched bitwise; no captured CPU numerical fallback and zero
+decode host reads were recorded. Each prefill recorded 33 host reads during
+compilation. This is reduced-depth TLM, not board throughput.
+
+In the same corrected comparison, size-aware cache LRU → candidate prefill
+loads were 141 → 146, bytes 1881792 → 2050880 and cycles 2227778949 →
+2209153992; decode loads were 77 → 54, bytes 905152 → 885568 and cycles
+1436880921 → 1463227902. Launches stayed 239 prefill and 95 decode, FP8
+instructions/MAC stayed 0.0342451794 prefill and 0.4137841797 decode,
+and both output logits matched bitwise. Decode cycles rose despite fewer
+loads, so this policy remains unmerged and is not queued for board testing.

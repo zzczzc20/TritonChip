@@ -240,3 +240,21 @@ profiler's per-launch counters were null, so per-step instructions/MAC is
 unavailable. Both measured device-cycle totals increased, despite fewer load
 marks and evictions. No end-to-end gain is established; the policy remains
 unmerged while the Qwen3.5 comparison runs.
+
+## Asynchronous profiling correction
+
+The previous profile hook read per-launch counters before batched events had
+finished, so the model comparisons above correctly left those counters null.
+The [updated profiler](../../../../tools/models/decode_profile.py) resolves
+completed events after the measured scopes and counts successful code loads
+and uploaded bytes directly; compile-only calls are labelled separately.
+The report reader excludes skipped calls and identifies warmup separately.
+
+A [DP TLM check](profile_async_check_20261031.tgz) compared all 28 recorded
+events to the runtime launch log and verified 0/256 bit mismatches against an
+exact FP32 matmul reference. Its two 16×16×16 matmuls each had
+0.265869140625 instructions/MAC and took 4916 and 4656 cycles; all 28 events
+included three code loads and 13632 code bytes. This is a correctness check,
+not a performance comparison. The profile report's scope and legacy-format
+checks passed 3/3. Fresh reduced-depth VL A/B runs using the corrected
+profiler are in progress.

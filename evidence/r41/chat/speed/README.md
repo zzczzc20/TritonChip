@@ -169,3 +169,9 @@ The candidate's [cache lifecycle unit checks](code_cache_unit_20261031.tgz)
 passed 3/3, covering eviction choice, duplicate artifact aliases and adaptation
 after a workload phase change. These checks do not replace device or board
 validation.
+
+The candidate also passed [16/16 FP8 and compiled-graph DP TLM cases](code_cache_fp8_20261031.tgz),
+all bitwise equal to the independent references. The first suite attempt
+failed because the offline version mapping was unavailable; the retry pins
+the already-recorded Hub revision `0e5764aa5c27d0f005117a92645156481540950a`.
+Both attempts and the pinning wrapper are retained.

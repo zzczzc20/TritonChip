@@ -446,3 +446,8 @@ In addition to the original single-token-tail DP TLM replay, a separate
 full-checkpoint DP TLM replay of the grouped-tail path is running. Both use
 the same registered reason prompt and compare first-step logits against the
 saved CPU paths; neither has produced full-model logits yet.
+
+The [full-checkpoint Qwen3.5 CPU quality run after warmup](q35_warmup_quality_cpu.tgz)
+passed all five registered applicable prompts, including multi-turn, against
+the archived CPU reference with the existing scoring rule. This is a CPU
+result; Qwen3.5 board quality and no-host evidence remain pending.

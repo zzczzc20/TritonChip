@@ -420,3 +420,14 @@ reset. The resulting logits, all 64 captured attention/linear-attention cache
 tensors, and recorded cache metadata were bitwise equal; both first token IDs
 were 12675. This validates the reset on the CPU path only, not the queued
 board implementation.
+
+The [two-layer precision-cast experiment](vl_reason_pair_precision_tlm.tgz)
+repeated the reason-prompt DP TLM pair with non-default
+`emulate_precision_casts=True`. Its diagnostic reported pass against available
+floors; layer-2 value-cache relative L2 was 0.0 in both prefill and decode,
+versus 0.010808053152941194 and 0.010873686087227104 in the default run. The
+CPU-Inductor floor again failed to compile due to `vf.cvt.e4m3.f64` and is
+missing. Layer-3 value-cache relative L2 remained 0.025762162718081426 in
+prefill and 0.025658220925427053 in decode, within the recorded available
+floor rule. This experimental setting was not applied to the board or product;
+no complete-model or original-audit pass is claimed.

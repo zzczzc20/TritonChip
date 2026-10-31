@@ -1,0 +1,5 @@
+HAS_TENSOR_XPOSE=2 differs from the RTL default 1 and has no bench parameter
+
+real	0m0.047s
+user	0m0.036s
+sys	0m0.010s

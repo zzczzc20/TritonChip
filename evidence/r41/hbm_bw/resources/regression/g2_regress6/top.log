@@ -1,0 +1,10 @@
+python3 tools/asm/tnca_asm.py tb/core/progs/t10_mesh.s -o sim/build/t10_mesh.hex --lst sim/build/t10_mesh.lst --size 16384
+python3 tools/asm/tnca_asm.py tb/core/progs/t24_amo_mesh.s -o sim/build/t24_amo_mesh.hex --lst sim/build/t24_amo_mesh.lst --size 16384
+  BASE-TOP-t10_mesh-single-role PASS   cycles=18591
+  BASE-TOP-t10_mesh-all-roles PASS   cycles=29075
+  BASE-TOP-t24_amo_mesh-single-role PASS   cycles=1488
+  BASE-TOP-t24_amo_mesh-all-roles PASS   cycles=2829
+
+real	3m52.629s
+user	3m52.005s
+sys	0m0.619s

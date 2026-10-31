@@ -1,0 +1,8 @@
+test_partial_success_record_cannot_hide_a_failed_worker (__main__.GraphWorkerTests.test_partial_success_record_cannot_hide_a_failed_worker) ... ok
+test_success_keeps_stdout (__main__.GraphWorkerTests.test_success_keeps_stdout) ... ok
+test_timeout_kills_worker_and_descendant (__main__.GraphWorkerTests.test_timeout_kills_worker_and_descendant) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.531s
+
+OK

@@ -183,11 +183,18 @@ class Tile:
     """
 
     __slots__ = ('kind', 'handle', 'rows', 'cols', 'dtype', 'desc',
-                 'store', 'vector')
+                 'store', 'vector', 'replicated', 'equal_rows')
 
     def __init__(self, kind, handle, rows, cols, dtype, desc=None,
-                 store=None, vector=None):
+                 store=None, vector=None, replicated=False, equal_rows=False):
         self.kind = kind
+        self.equal_rows = equal_rows
+        # True only when it is proven that every lane of each row register
+        # holds that row's value (a value computed from row indices, splats
+        # or such rows lane by lane). A loaded [R, 1] has its data in lane 0
+        # alone, and anything unproven stays False: broadcasting such a
+        # column across the row must then copy lane 0 to every lane.
+        self.replicated = replicated
         # One value per row taken from the lanes of one register: that
         # register, so turning the rows back into lanes costs nothing.
         self.vector = vector

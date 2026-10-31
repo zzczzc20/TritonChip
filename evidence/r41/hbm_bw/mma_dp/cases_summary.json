@@ -1,0 +1,619 @@
+{
+ "schema": "tnca-mma-dp-cases-summary/1",
+ "domain": "SystemC/TLM model (uncalibrated)",
+ "inputs": {
+  "base": {
+   "path": "f-base/out/report.json",
+   "sha256": "62aaa93fe31baed500446492bc6f697445dae436b53214bdd441507f7d15a133"
+  },
+  "dp": {
+   "path": "f-dp/out/report.json",
+   "sha256": "484dd74fbf9f3b29feb79664240f8ca30422c64ed9c070b1533dc85cc8d77034"
+  },
+  "neg": {
+   "path": "f-neg/out/report.json",
+   "sha256": "06c7b7ae5f06c368e3f1c6950cc9f84ce5cfc4359dfe44a36cd5e0914c5ba460"
+  }
+ },
+ "reference_dot_mode": {
+  "base": "mma",
+  "dp": "mma.dp",
+  "neg": "mma"
+ },
+ "status": {
+  "base": {
+   "pass": 100,
+   "fail": 0,
+   "error": 0,
+   "refused": 0
+  },
+  "dp": {
+   "pass": 100,
+   "fail": 0,
+   "error": 0,
+   "refused": 0
+  }
+ },
+ "opcodes": {
+  "base": {
+   "m.mma.async": 59
+  },
+  "dp": {
+   "m.mma.dp.async": 59
+  }
+ },
+ "cases": [
+  {
+   "group": "linear",
+   "case": "static W8A8 x(16, 64) w(32, 64)",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 7207,
+   "dp_device_cycles": 6481,
+   "ratio": 1.112
+  },
+  {
+   "group": "linear",
+   "case": "static W8A8 x(2, 13, 96) w(80, 96)",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 42392,
+   "dp_device_cycles": 40985,
+   "ratio": 1.0343
+  },
+  {
+   "group": "linear",
+   "case": "static W8A8 x(33, 72) w(40, 72)",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 58664,
+   "dp_device_cycles": 56718,
+   "ratio": 1.0343
+  },
+  {
+   "group": "linear",
+   "case": "static W8A8 x(64, 256) w(192, 256)",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 150289,
+   "dp_device_cycles": 137034,
+   "ratio": 1.0967
+  },
+  {
+   "group": "linear",
+   "case": "static W8A8 x(7, 40) w(24, 40)",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 17180,
+   "dp_device_cycles": 16403,
+   "ratio": 1.0474
+  },
+  {
+   "group": "linear",
+   "case": "weight-only FP8 x(16, 64) w(32, 64)",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 8321,
+   "dp_device_cycles": 8179,
+   "ratio": 1.0174
+  },
+  {
+   "group": "linear",
+   "case": "weight-only FP8 x(2, 13, 96) w(80, 96)",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 77679,
+   "dp_device_cycles": 75586,
+   "ratio": 1.0277
+  },
+  {
+   "group": "linear",
+   "case": "weight-only FP8 x(33, 72) w(40, 72)",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 102287,
+   "dp_device_cycles": 102035,
+   "ratio": 1.0025
+  },
+  {
+   "group": "linear",
+   "case": "weight-only FP8 x(64, 256) w(192, 256)",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 257808,
+   "dp_device_cycles": 254460,
+   "ratio": 1.0132
+  },
+  {
+   "group": "linear",
+   "case": "weight-only FP8 x(7, 40) w(24, 40)",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 29031,
+   "dp_device_cycles": 28259,
+   "ratio": 1.0273
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 128x192x384 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 315981,
+   "dp_device_cycles": 277108,
+   "ratio": 1.1403
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 16x16x16 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 3811,
+   "dp_device_cycles": 3608,
+   "ratio": 1.0563
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 16x32x8 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 4497,
+   "dp_device_cycles": 4091,
+   "ratio": 1.0992
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 17x24x40 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 19459,
+   "dp_device_cycles": 18844,
+   "ratio": 1.0326
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 1x64x64 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 5774,
+   "dp_device_cycles": 4803,
+   "ratio": 1.2022
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 32x48x64 -> bf16",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6004,
+   "dp_device_cycles": 5343,
+   "ratio": 1.1237
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 32x48x64 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6380,
+   "dp_device_cycles": 5661,
+   "ratio": 1.127
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 32x48x64 -> f16",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6004,
+   "dp_device_cycles": 5343,
+   "ratio": 1.1237
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 32x48x64 -> f16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6380,
+   "dp_device_cycles": 5661,
+   "ratio": 1.127
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 32x48x64 -> f32",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6341,
+   "dp_device_cycles": 5680,
+   "ratio": 1.1164
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 32x48x64 -> f32 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 7107,
+   "dp_device_cycles": 6497,
+   "ratio": 1.0939
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 33x40x48 -> e5m2 scale_result=4.0",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 40940,
+   "dp_device_cycles": 40143,
+   "ratio": 1.0199
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 33x48x80 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 32122,
+   "dp_device_cycles": 30427,
+   "ratio": 1.0557
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 40x72x200 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 215094,
+   "dp_device_cycles": 208784,
+   "ratio": 1.0302
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 5x16x16 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 4849,
+   "dp_device_cycles": 4646,
+   "ratio": 1.0437
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 rowwise 64x96x128 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 36677,
+   "dp_device_cycles": 32258,
+   "ratio": 1.137
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 128x192x384 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 298358,
+   "dp_device_cycles": 261731,
+   "ratio": 1.1399
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 16x16x16 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 3007,
+   "dp_device_cycles": 2804,
+   "ratio": 1.0724
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 16x32x8 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 3461,
+   "dp_device_cycles": 3055,
+   "ratio": 1.1329
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 17x24x40 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 18744,
+   "dp_device_cycles": 18023,
+   "ratio": 1.04
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 1x64x64 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 5584,
+   "dp_device_cycles": 4622,
+   "ratio": 1.2081
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 32x48x64 -> bf16",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 4954,
+   "dp_device_cycles": 4295,
+   "ratio": 1.1534
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 32x48x64 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 5405,
+   "dp_device_cycles": 4799,
+   "ratio": 1.1263
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 32x48x64 -> bf16 + bias use_fast_accum=True",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 7565,
+   "dp_device_cycles": 5833,
+   "ratio": 1.2969
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 32x48x64 -> e4m3",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 4950,
+   "dp_device_cycles": 4265,
+   "ratio": 1.1606
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 32x48x64 -> e4m3 scale_result=0.37",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6351,
+   "dp_device_cycles": 5673,
+   "ratio": 1.1195
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 32x48x64 -> f16",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 4954,
+   "dp_device_cycles": 4295,
+   "ratio": 1.1534
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 32x48x64 -> f16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 5405,
+   "dp_device_cycles": 4799,
+   "ratio": 1.1263
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 32x48x64 -> f32",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 5130,
+   "dp_device_cycles": 4558,
+   "ratio": 1.1255
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 32x48x64 -> f32 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 5913,
+   "dp_device_cycles": 5368,
+   "ratio": 1.1015
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 33x48x80 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 30875,
+   "dp_device_cycles": 28987,
+   "ratio": 1.0651
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 40x72x200 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 212739,
+   "dp_device_cycles": 206497,
+   "ratio": 1.0302
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 5x16x16 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 4375,
+   "dp_device_cycles": 4172,
+   "ratio": 1.0487
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 tensorwise 64x96x128 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 33117,
+   "dp_device_cycles": 28650,
+   "ratio": 1.1559
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e4m3 x e5m2 tensorwise 16x16x32 -> bf16",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 10215,
+   "dp_device_cycles": 9945,
+   "ratio": 1.0271
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 rowwise 32x48x64 -> bf16",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6004,
+   "dp_device_cycles": 5421,
+   "ratio": 1.1075
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 rowwise 32x48x64 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6380,
+   "dp_device_cycles": 5771,
+   "ratio": 1.1055
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 rowwise 32x48x64 -> f16",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6004,
+   "dp_device_cycles": 5421,
+   "ratio": 1.1075
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 rowwise 32x48x64 -> f16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6380,
+   "dp_device_cycles": 5771,
+   "ratio": 1.1055
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 rowwise 32x48x64 -> f32",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 6341,
+   "dp_device_cycles": 5690,
+   "ratio": 1.1144
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 rowwise 32x48x64 -> f32 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 7107,
+   "dp_device_cycles": 6595,
+   "ratio": 1.0776
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 rowwise 33x40x48 -> f16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 38824,
+   "dp_device_cycles": 38237,
+   "ratio": 1.0154
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 tensorwise 17x24x40 -> e5m2 scale_result=0.125",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 19583,
+   "dp_device_cycles": 19075,
+   "ratio": 1.0266
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 tensorwise 32x48x64 -> bf16",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 4954,
+   "dp_device_cycles": 4421,
+   "ratio": 1.1206
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 tensorwise 32x48x64 -> bf16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 5405,
+   "dp_device_cycles": 4858,
+   "ratio": 1.1126
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 tensorwise 32x48x64 -> f16",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 4954,
+   "dp_device_cycles": 4421,
+   "ratio": 1.1206
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 tensorwise 32x48x64 -> f16 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 5405,
+   "dp_device_cycles": 4858,
+   "ratio": 1.1126
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 tensorwise 32x48x64 -> f32",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 5130,
+   "dp_device_cycles": 4655,
+   "ratio": 1.102
+  },
+  {
+   "group": "scaled_mm",
+   "case": "e5m2 tensorwise 32x48x64 -> f32 + bias",
+   "base_status": "pass",
+   "dp_status": "pass",
+   "base_device_cycles": 5913,
+   "dp_device_cycles": 5530,
+   "ratio": 1.0693
+  }
+ ],
+ "geomean_cycle_ratio_base_over_dp_scaled_mm_and_linear": 1.0922,
+ "cases_with_ratio": 59,
+ "negative_control": {
+  "note": "the dp-compiled kernels judged against the m.mma (sec 9C.1) reference: the cases must be able to tell the two reductions apart",
+  "status": {
+   "pass": 52,
+   "fail": 7,
+   "error": 0,
+   "refused": 0
+  },
+  "failing": [
+   {
+    "group": "scaled_mm",
+    "case": "e4m3 tensorwise 32x48x64 -> f32"
+   },
+   {
+    "group": "scaled_mm",
+    "case": "e4m3 rowwise 32x48x64 -> f32"
+   },
+   {
+    "group": "scaled_mm",
+    "case": "e4m3 rowwise 32x48x64 -> f32 + bias"
+   },
+   {
+    "group": "scaled_mm",
+    "case": "e5m2 tensorwise 32x48x64 -> f32"
+   },
+   {
+    "group": "scaled_mm",
+    "case": "e5m2 rowwise 32x48x64 -> f32"
+   },
+   {
+    "group": "scaled_mm",
+    "case": "e5m2 rowwise 32x48x64 -> f32 + bias"
+   },
+   {
+    "group": "scaled_mm",
+    "case": "e4m3 rowwise 128x192x384 -> bf16 + bias"
+   }
+  ]
+ }
+}

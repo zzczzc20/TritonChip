@@ -54,6 +54,14 @@ module tnca_nuca_slice #(
     parameter LINE_BYTES = 64,
     parameter LINE_BITS  = 512,
     parameter WORD_BITS  = 64,
+    parameter HIT_CHAIN = 0,
+    parameter FAST_FILL_READ = 0,
+    parameter BACKGROUND_READ_REQUESTS = 0,
+    // R41 G4: a store that writes every byte of a line (only possible when a
+    // request word is the whole line, WORD_BYTES == LINE_BYTES) allocates its
+    // line without reading it from memory: the store's data is the fill. A
+    // general write-allocate policy; partial stores and atomics still fill.
+    parameter LINE_WRITE_NOFILL = 0,
     parameter WORD_BYTES = 8,
     parameter SETS       = 64,
     parameter SET_W      = 6,        // $clog2(SETS)
@@ -81,6 +89,17 @@ module tnca_nuca_slice #(
     parameter SYNC_TAG_BANK = 1,
     parameter REGISTER_VICTIM_OWNER = 0,
     parameter CACHE_DATA_PIPELINE = 0,
+    // R41 G2 (resources): fewer LUTRAM read ports on the line array. The
+    // engine reads the array in exactly one state per cycle (E_LOOK, E_HIT,
+    // E_MREAD, E_WBRD, E_WAKE), so sharing a read address between states
+    // returns the same values; only the number of read ports changes.
+    //   0  one address per read site (the default; the module as before)
+    //   1  one address for every state. Smallest, but the lookup's tag
+    //      compare then reaches the atomic merge's write data through the
+    //      shared port (a structural path; screened 0.55 ns worse).
+    //   2  the lookup keeps its own port; every other read (registered
+    //      addresses only) shares the second one.
+    parameter SHARED_DATA_READ = 0,
     parameter REGISTER_VICTIM_SELECT = 0,
     parameter REGISTER_VICTIM_RANK = 0,
     parameter BALANCED_VICTIM = 1,
@@ -182,7 +201,8 @@ module tnca_nuca_slice #(
 
     localparam OFF_W     = 6;                       // log2(LINE_BYTES)
     localparam WORDS_PER_LINE = LINE_BYTES / WORD_BYTES;
-    localparam WSEL_W   = 3;                        // log2(WORDS_PER_LINE)
+    localparam WSEL_W = WORDS_PER_LINE>1 ? $clog2(WORDS_PER_LINE) : 1;
+    localparam WORD_SHIFT = $clog2(WORD_BYTES);
     // The set index skips the home bits: they are the same for every line
     // that reaches this slice, so indexing with them -- as this slice did
     // until R38 -- left only SETS/4 of its sets reachable and three quarters
@@ -206,12 +226,31 @@ module tnca_nuca_slice #(
     //==========================================================================
 `include "tnca_amo.vh"
 
+    // A wide cache word still executes one original scalar atomic, selected
+    // by its positioned byte enables. Compare remains a scalar operand.
+    function [WORD_BITS-1:0] cache_amo_new;
+        input [3:0] op;
+        input [WORD_BYTES-1:0] be;
+        input [WORD_BITS-1:0] old_word,write_word,compare_word;
+        integer group;
+        begin
+            if(WORD_BITS<=64) cache_amo_new=amo_new(op,be,old_word,write_word,compare_word);
+            else begin
+                cache_amo_new=0;
+                for(group=0;group<WORD_BYTES/8;group=group+1)
+                    if(be[group*8+:8]!=0)
+                        cache_amo_new[group*64+:64]=amo_new(op,be[group*8+:8],old_word[group*64+:64],write_word[group*64+:64],compare_word[63:0]);
+            end
+        end
+    endfunction
+
+
     //==========================================================================
     // Address decomposition
     //==========================================================================
     `define SLICE_SET(ad)  (ad[OFF_W + HOME_SKIP +: SET_W])
     `define SLICE_TAG(ad)  (ad[ADDR_W-1 -: TAGB])
-    `define SLICE_WSEL(ad) (ad[WORD_BYTES==8 ? 3 : 2 +: WSEL_W])
+    `define SLICE_WSEL(ad) ((WORDS_PER_LINE==1) ? {WSEL_W{1'b0}} : ad[WORD_SHIFT +: WSEL_W])
 
     // A cached line's byte address from its tag and set: the home bits are
     // line[1:0] = SLICE_ID ^ line[3:2], and line[3:2] are the set's low bits.
@@ -412,7 +451,8 @@ module tnca_nuca_slice #(
                 if ((j != i) && rq_v[j] && older[j][i] &&
                     (rq_addr[j][ADDR_W-1:OFF_W] == rq_addr[i][ADDR_W-1:OFF_W]))
                     shadowed = 1'b1;
-            elig[i] = rq_v[i] && !rq_blocked[i] && !shadowed;
+            elig[i] = rq_v[i] && !rq_blocked[i] && !shadowed
+                      && !(HIT_CHAIN && est==E_HIT && i==cur_rq);
         end
 
         // Among the eligible, take the oldest.
@@ -460,6 +500,7 @@ module tnca_nuca_slice #(
     // A bypassed miss (DCO): the line is fetched for its targets and never
     // allocated, so the MSHR claims no way and the fill writes no array.
     reg [MSHR_N-1:0]    ms_byp;
+    reg [MSHR_N-1:0]    ms_nofill;   // LINE_WRITE_NOFILL: the fill is the store's own data
     reg [LINE_BITS-1:0] ms_line  [0:MSHR_N-1];   // filled data, before wake
     reg [ADDR_W-1:0]    ms_wbadr [0:MSHR_N-1];
 
@@ -558,6 +599,25 @@ module tnca_nuca_slice #(
     reg [SRC_W-1:0]      cur_src;
     reg [TAG_W-1:0]      cur_tag;
     reg [MSHR_W-1:0]     cur_ms;
+    // The fill may answer its sole ordinary-read target directly from the
+    // returned line. Multi-target, write and atomic misses retain E_WAKE.
+    wire full_line_store = LINE_WRITE_NOFILL && WORD_BYTES == LINE_BYTES && cur_we && !cur_amo &&
+                           (&cur_be);
+    wire fill_fast_take = FAST_FILL_READ && est==E_FILL && !rsq_full &&
+        ms_hasT[cur_ms] && ms_head[cur_ms]==ms_tail[cur_ms] &&
+        tg_v[ms_head[cur_ms]] && !tg_we[ms_head[cur_ms]] && !tg_amo[ms_head[cur_ms]];
+    // Capture immutable service descriptors on the existing arbitration edge.
+    // RAM control then depends on these small flops, without a second MSHR mux.
+    // Request/coalescing state and returned line data retain their live paths.
+    reg [SET_W-1:0] service_set_q;
+    reg [WAY_W-1:0] service_way_q;
+    reg service_bypass_q;
+    reg [TAGB-1:0] service_tag_q;
+    wire [SET_W-1:0] service_set = CACHE_DATA_PIPELINE ? service_set_q : ms_set[cur_ms];
+    wire [WAY_W-1:0] service_way = CACHE_DATA_PIPELINE ? service_way_q : ms_way[cur_ms];
+    wire service_bypass = CACHE_DATA_PIPELINE ? service_bypass_q : ms_byp[cur_ms];
+    wire [TAGB-1:0] service_tag = CACHE_DATA_PIPELINE ? service_tag_q :
+                                ms_addr[cur_ms][ADDR_W-1 -: TAGB];
     reg [LINE_BITS-1:0]  wb_buf;
     reg [LINE_W-1:0] maint_index;
     reg [ADDR_W-1:0] maint_first, maint_line;
@@ -579,7 +639,7 @@ module tnca_nuca_slice #(
 
     wire [SET_W-1:0]  cur_set  = `SLICE_SET(cur_addr);
     wire [TAGB-1:0]   cur_tagb = `SLICE_TAG(cur_addr);
-    wire [WSEL_W-1:0] cur_wsel = cur_addr[3 +: WSEL_W];
+    wire [WSEL_W-1:0] cur_wsel = `SLICE_WSEL(cur_addr);
 
     // One independent bank per way. E_SEL reads the SELECTED request's
     // set (not cur_set, which is updated on that same edge); E_LOOK consumes
@@ -587,7 +647,11 @@ module tnca_nuca_slice #(
     // Shallow 32/64-entry banks use LUTRAM with an explicit output register.
     // No fill can coincide with lookup/maintenance reads in this single engine,
     // so same-set read-after-fill sees the completed write on the next E_SEL.
-    wire tag_read_en = (est == E_SEL && !(maint_requested && maint_ready) && !ms_pick &&
+    // Reserve room for both the retiring hit and the following response.
+    // Conflicting requests remain shadowed until the prior hit retires.
+    wire hit_chain_take = HIT_CHAIN && est==E_HIT && !maint_requested &&
+                          !ms_pick && sel_valid && rsq_cnt<RSPQ_N-1;
+    wire tag_read_en = hit_chain_take || (est == E_SEL && !(maint_requested && maint_ready) && !ms_pick &&
                         sel_valid && !rsq_full) || est == E_MTAG;
     wire [SET_W-1:0] tag_read_set = (est == E_MTAG) ? maint_set :
                                    `SLICE_SET(rq_addr[sel_idx]);
@@ -598,9 +662,9 @@ module tnca_nuca_slice #(
                 (* ram_style = "distributed" *) reg [TAGB-1:0] bank [0:SETS-1];
                 reg [TAGB-1:0] read_tag;
                 always @(posedge clk) begin
-                    if (rst_n && est == E_FILL && !ms_byp[cur_ms] &&
-                        ms_way[cur_ms] == tag_way)
-                        bank[ms_set[cur_ms]] <= ms_addr[cur_ms][ADDR_W-1 -: TAGB];
+                    if (rst_n && est == E_FILL && !service_bypass &&
+                        service_way == tag_way)
+                        bank[service_set] <= service_tag;
                     if (tag_read_en) read_tag <= bank[tag_read_set];
                 end
                 assign lookup_tag[tag_way] = read_tag;
@@ -610,9 +674,9 @@ module tnca_nuca_slice #(
             // Retained solely for matched-geometry A/B screening.
             reg [TAGB-1:0] tag_mem [0:LINES-1];
             always @(posedge clk)
-                if (rst_n && est == E_FILL && !ms_byp[cur_ms])
-                    tag_mem[ms_set[cur_ms]*WAYS+ms_way[cur_ms]] <=
-                        ms_addr[cur_ms][ADDR_W-1 -: TAGB];
+                if (rst_n && est == E_FILL && !service_bypass)
+                    tag_mem[service_set*WAYS+service_way] <=
+                        service_tag;
             for (tag_way=0; tag_way<WAYS; tag_way=tag_way+1) begin : g_way
                 assign lookup_tag[tag_way] = tag_mem[cur_set*WAYS+tag_way];
             end
@@ -861,7 +925,9 @@ module tnca_nuca_slice #(
     wire        cur_mmio  = (cur_addr[ADDR_W-1:12] == TMU_BASE[ADDR_W-1:12]);
     assign tmu_wr_valid = (est == E_MMIO) && cur_we && !cur_amo;
     assign tmu_wr_off   = cur_addr[11:0];
-    assign tmu_wr_data  = cur_wdata;
+    wire [8:0] tmu_word_shift = WORD_BITS<=64 ? 0 : ((cur_addr & (WORD_BYTES-1))>>3)*64;
+    wire [WORD_BITS-1:0] tmu_word = tmu_rd_data;
+    assign tmu_wr_data  = cur_wdata >> tmu_word_shift;
     assign tmu_wr_src   = cur_src;
     assign tmu_rd_off   = cur_addr[11:0];
 
@@ -909,22 +975,38 @@ module tnca_nuca_slice #(
                 if (ms_state[i] == MS_WB) begin
                     ms_pick = 1'b1; ms_pick_id = i[MSHR_W-1:0]; ms_pick_st = MS_WB;
                 end
-        if (!ms_pick)
+        if (!ms_pick && !BACKGROUND_READ_REQUESTS)
             for (i = MSHR_N-1; i >= 0; i = i - 1)
                 if (ms_state[i] == MS_REQ) begin
                     ms_pick = 1'b1; ms_pick_id = i[MSHR_W-1:0]; ms_pick_st = MS_REQ;
                 end
     end
 
-    // ---- memory request, straight off the engine state ----------------------
-    assign mem_req_valid = (est == E_MREQ) || (est == E_WBSND) || (est == E_MSEND);
-    assign mem_req_we    = (est == E_WBSND) || (est == E_MSEND);
-    assign mem_req_addr  = (est == E_MSEND) ? maint_line :
+    // Independent read issue lets the home engine process requests and fills
+    // while allocated MSHRs send their memory reads. A stalled selection is
+    // locked until accepted, including when a writeback becomes ready.
+    reg bg_locked;
+    reg [MSHR_W-1:0] bg_locked_id;
+    reg bg_found;
+    reg [MSHR_W-1:0] bg_pick;
+    integer bg_i;
+    always @* begin
+        bg_found=0;bg_pick=0;
+        for(bg_i=MSHR_N-1;bg_i>=0;bg_i=bg_i-1)
+            if(ms_state[bg_i]==MS_REQ)begin bg_found=1;bg_pick=bg_i;end
+        if(bg_locked)begin bg_found=1;bg_pick=bg_locked_id;end
+    end
+    wire engine_write=(est==E_WBSND)||(est==E_MSEND);
+    wire use_background=BACKGROUND_READ_REQUESTS && bg_found && (bg_locked || !engine_write);
+    assign mem_req_valid = use_background || engine_write || (!BACKGROUND_READ_REQUESTS && est==E_MREQ);
+    assign mem_req_we = !use_background && engine_write;
+    assign mem_req_addr = use_background ? ms_addr[bg_pick] :
+                          (est == E_MSEND) ? maint_line :
                           (est == E_WBSND) ? ms_wbadr[cur_ms] : ms_addr[cur_ms];
-    assign mem_req_wdata = wb_buf;
-    assign mem_req_tag   = cur_ms;
-
+    assign mem_req_wdata = use_background ? {LINE_BITS{1'b0}} : wb_buf;
+    assign mem_req_tag = use_background ? bg_pick : cur_ms;
     wire mem_req_fire = mem_req_valid && mem_req_ready;
+
 
     // ---- byte merge helper ---------------------------------------------------
     reg [LINE_BITS-1:0] merged;
@@ -971,11 +1053,30 @@ module tnca_nuca_slice #(
     wire [WAY_W-1:0] data_hit_way = CACHE_DATA_PIPELINE ? hit_way_q : hit_way;
     reg data_write_enable;
     integer data_write_index, data_write_byte;
+    // SHARED_DATA_READ: the single read address and the line it reads.
+    wire [LINE_BITS-1:0] shared_rd_line;
+    generate if (SHARED_DATA_READ == 1) begin : g_shared_read
+        wire [LINE_W-1:0] shared_rd_index =
+            (est == E_LOOK)  ? cur_set*WAYS + hit_way :
+            (est == E_HIT)   ? cur_set*WAYS + data_hit_way :
+            (est == E_MREAD) ? maint_index :
+                               service_set*WAYS + service_way;   // E_WBRD, E_WAKE
+        assign shared_rd_line = data_mem[shared_rd_index];
+    end else if (SHARED_DATA_READ == 2) begin : g_shared_aux_read
+        wire [LINE_W-1:0] shared_rd_index =
+            (est == E_HIT)   ? cur_set*WAYS + data_hit_way :
+            (est == E_MREAD) ? maint_index :
+                               service_set*WAYS + service_way;   // E_WBRD, E_WAKE
+        assign shared_rd_line = data_mem[shared_rd_index];
+    end else begin : g_site_reads
+        assign shared_rd_line = {LINE_BITS{1'b0}};          // unused
+    end endgenerate
     reg [LINE_BITS-1:0] data_write_line;
     reg [LINE_BYTES-1:0] data_write_mask;
     always @(posedge clk) begin
         if (!rst_n) begin
             hit_way_q<=0;hit_word_q<=0;
+            bg_locked<=0;bg_locked_id<=0;
             est           <= E_SEL;
             maint_done <= 0; maint_index <= 0; maint_first <= 0; maint_end <= 0; maint_line <= 0;
             rq_v          <= {RQ_N{1'b0}};
@@ -995,14 +1096,18 @@ module tnca_nuca_slice #(
             for (i = 0; i < SETS; i = i + 1)   victim_ptr[i] <= {WAY_W{1'b0}};
             for (i = 0; i < LINES; i = i + 1)  age[i] <= i % WAYS;
             ms_byp <= {MSHR_N{1'b0}};
+            ms_nofill <= {MSHR_N{1'b0}};
             perf_bypass <= 0; perf_evict <= 0; perf_dead_evict <= 0;
             tl_v <= 1'b0; tl_a <= 64'd0; tmu_tl_drop <= 1'b0;
+            service_set_q<=0;service_way_q<=0;service_bypass_q<=0;service_tag_q<=0;
             selected_way_q <= 0; selected_ok_q <= 0; selected_dead_q <= 0;
             selected_bypass_q <= 0; selected_epoch_q <= 0;
             rank_epoch_q<=0;rank_bypass_q<=0;
             gear <= 4'd0; gear_seed <= 1'b1; ev_cnt <= 16'd0; win_cnt <= 16'd0;
         end else begin
             data_write_enable=0;data_write_index=0;data_write_line=0;data_write_mask=0;
+            if(use_background && !mem_req_ready)begin bg_locked<=1;bg_locked_id<=bg_pick;end
+            else if(use_background && mem_req_fire)begin bg_locked<=0;ms_state[bg_pick]<=MS_WAIT;end
             maint_done <= 0;
             push_rsp = 1'b0;
             tl_load  = 1'b0;
@@ -1060,6 +1165,10 @@ module tnca_nuca_slice #(
                     else est <= SYNC_TAG_BANK ? E_MTAG : E_MSCAN;
                 end else if (ms_pick) begin
                     cur_ms <= ms_pick_id;
+                    service_set_q <= ms_set[ms_pick_id];
+                    service_way_q <= ms_way[ms_pick_id];
+                    service_bypass_q <= ms_byp[ms_pick_id];
+                    service_tag_q <= ms_addr[ms_pick_id][ADDR_W-1 -: TAGB];
                     case (ms_pick_st)
                     MS_WAKE: est <= E_WAKE;
                     MS_FILL: est <= E_FILL;
@@ -1101,11 +1210,11 @@ module tnca_nuca_slice #(
                 end
             end
             E_MREAD: begin
-                wb_buf <= data_mem[maint_index];
+                wb_buf <= SHARED_DATA_READ ? shared_rd_line : data_mem[maint_index];
                 est <= E_MSEND;
             end
             E_MSEND: begin
-                if (mem_req_fire) begin
+                if (mem_req_fire && mem_req_we) begin
                     perf_wb <= perf_wb+1'b1;
                     v_bits[maint_index] <= 0;
                     d_bits[maint_index] <= 0;
@@ -1123,7 +1232,7 @@ module tnca_nuca_slice #(
                 else if (hit && !ms_match) begin
                     if(CACHE_DATA_PIPELINE) begin
                         hit_way_q<=hit_way;
-                        hit_word_q<=data_mem[cur_set*WAYS+hit_way][cur_wsel*WORD_BITS+:WORD_BITS];
+                        hit_word_q<=(SHARED_DATA_READ == 1) ? shared_rd_line[cur_wsel*WORD_BITS+:WORD_BITS] : data_mem[cur_set*WAYS+hit_way][cur_wsel*WORD_BITS+:WORD_BITS];
                     end
                     est <= E_HIT;
                 end
@@ -1138,7 +1247,7 @@ module tnca_nuca_slice #(
                     push_rsp  = 1'b1;
                     push_src  = cur_src;
                     push_tag  = cur_tag;
-                    push_data = cur_we ? {WORD_BITS{1'b0}} : tmu_rd_data;
+                    push_data = cur_we ? {WORD_BITS{1'b0}} : (tmu_word << tmu_word_shift);
                     rq_v[cur_rq] <= 1'b0;
                     est <= E_SEL;
                 end
@@ -1154,10 +1263,10 @@ module tnca_nuca_slice #(
                     // in flight, which is the serialisation sec 14.1 asks for.
                     if(CACHE_DATA_PIPELINE) amo_word=hit_word_q;
                     else begin
-                        merged=data_mem[cur_set*WAYS + data_hit_way];
+                        merged=SHARED_DATA_READ ? shared_rd_line : data_mem[cur_set*WAYS + data_hit_way];
                         amo_word=merged[cur_wsel*WORD_BITS+:WORD_BITS];
                     end
-                    amo_res  = amo_new(cur_aop, cur_be, amo_word, cur_wdata, cur_cmp);
+                    amo_res  = cache_amo_new(cur_aop, cur_be, amo_word, cur_wdata, cur_cmp);
                     if (cur_aop != `TNCA_AOP_LD) begin
                         if(CACHE_DATA_PIPELINE) begin
                             data_write_enable=1;data_write_index=cur_set*WAYS+data_hit_way;
@@ -1186,7 +1295,7 @@ module tnca_nuca_slice #(
                         data_write_line={(LINE_BITS/WORD_BITS){cur_wdata}};
                         data_write_mask={{(LINE_BYTES-WORD_BYTES){1'b0}},cur_be} << (cur_wsel*WORD_BYTES);
                     end else begin
-                    merged = data_mem[cur_set*WAYS + data_hit_way];
+                    merged = SHARED_DATA_READ ? shared_rd_line : data_mem[cur_set*WAYS + data_hit_way];
                     for (i = 0; i < WORD_BYTES; i = i + 1)
                         if (cur_be[i])
                             merged[(cur_wsel*WORD_BYTES + i)*8 +: 8] =
@@ -1202,8 +1311,9 @@ module tnca_nuca_slice #(
                     push_rsp  = 1'b1;
                     push_src  = cur_src;
                     push_tag  = cur_tag;
-                    push_data = CACHE_DATA_PIPELINE ? hit_word_q : data_mem[cur_set*WAYS + data_hit_way]
-                                [cur_wsel*WORD_BITS +: WORD_BITS];
+                    push_data = CACHE_DATA_PIPELINE ? hit_word_q :
+                                SHARED_DATA_READ ? shared_rd_line[cur_wsel*WORD_BITS +: WORD_BITS] :
+                                data_mem[cur_set*WAYS + data_hit_way][cur_wsel*WORD_BITS +: WORD_BITS];
                 end
                 touch(cur_set, data_hit_way);
                 // Reuse E_LOOK's owner classification on hits too. A metadata
@@ -1215,6 +1325,15 @@ module tnca_nuca_slice #(
                     tl_note(cur_addr);
                 rq_v[cur_rq] <= 1'b0;
                 est <= E_SEL;
+                if(hit_chain_take)begin
+                    cur_rq<=sel_idx;cur_addr<=rq_addr[sel_idx];
+                    cur_we<=rq_we[sel_idx];cur_amo<=rq_amo[sel_idx];
+                    cur_aop<=rq_aop[sel_idx];cur_cmp<=rq_cmp[sel_idx];
+                    cur_be<=rq_be[sel_idx];cur_wdata<=rq_wdata[sel_idx];
+                    cur_src<=rq_src[sel_idx];cur_tag<=rq_tag[sel_idx];
+                    if(any_blocked)perf_hit_past_block<=perf_hit_past_block+1;
+                    est<=E_LOOK;
+                end
             end
 
             //---------------------------------------------------------------
@@ -1328,13 +1447,15 @@ module tnca_nuca_slice #(
                     ms_head[ms_free_idx] <= tg_free_idx;
                     ms_tail[ms_free_idx] <= tg_free_idx;
                     ms_hasT[ms_free_idx] <= 1'b1;
+                    ms_nofill[ms_free_idx] <= full_line_store;
+                    if (full_line_store) ms_line[ms_free_idx] <= cur_wdata;
                     // A dirty victim must leave before the fill overwrites it.
                     if (v_bits[cur_set*WAYS + allocation_way] && d_bits[cur_set*WAYS + allocation_way]) begin
                         ms_state[ms_free_idx] <= MS_WB;
                         ms_wbadr[ms_free_idx] <= line_addr(lookup_tag[allocation_way],
                                                            cur_set);
                     end else begin
-                        ms_state[ms_free_idx] <= MS_REQ;
+                        ms_state[ms_free_idx] <= full_line_store ? MS_FILL : MS_REQ;
                     end
                     // the way now belongs to this miss
                     v_bits[cur_set*WAYS + allocation_way] <= 1'b0;
@@ -1366,15 +1487,15 @@ module tnca_nuca_slice #(
 
             //---------------------------------------------------------------
             E_WBRD: begin
-                wb_buf <= data_mem[ms_set[cur_ms]*WAYS + ms_way[cur_ms]];
+                wb_buf <= SHARED_DATA_READ ? shared_rd_line : data_mem[service_set*WAYS + service_way];
                 est <= E_WBSND;
             end
 
             E_WBSND: begin
-                if (mem_req_fire) begin
+                if (mem_req_fire && mem_req_we) begin
                     perf_wb  <= perf_wb + 1;
-                    d_bits[ms_set[cur_ms]*WAYS + ms_way[cur_ms]] <= 1'b0;
-                    ms_state[cur_ms] <= MS_REQ;
+                    d_bits[service_set*WAYS + service_way] <= 1'b0;
+                    ms_state[cur_ms] <= ms_nofill[cur_ms] ? MS_FILL : MS_REQ;
                     est <= E_SEL;
                 end
             end
@@ -1389,9 +1510,9 @@ module tnca_nuca_slice #(
 
             //---------------------------------------------------------------
             E_FILL: begin
-                fill_set = ms_set[cur_ms];
-                fill_way = ms_way[cur_ms];
-                if (!ms_byp[cur_ms]) begin
+                fill_set = service_set;
+                fill_way = service_way;
+                if (!service_bypass) begin
                     if(CACHE_DATA_PIPELINE) begin
                         data_write_enable=1;data_write_index=fill_set*WAYS+fill_way;
                         data_write_line=ms_line[cur_ms];data_write_mask={LINE_BYTES{1'b1}};
@@ -1401,6 +1522,17 @@ module tnca_nuca_slice #(
                     touch(fill_set, fill_way);
                 end
                 ms_state[cur_ms] <= MS_WAKE;
+                if(fill_fast_take)begin
+                    t_cur=ms_head[cur_ms];
+                    push_rsp=1'b1;
+                    push_src=tg_src[t_cur];push_tag=tg_tag[t_cur];
+                    push_data=ms_line[cur_ms][tg_wsel[t_cur]*WORD_BITS+:WORD_BITS];
+                    tg_v[t_cur]<=1'b0;
+                    ms_state[cur_ms]<=MS_FREE;
+                    ms_hasT[cur_ms]<=1'b0;
+                    ms_byp[cur_ms]<=1'b0;
+                    rq_blocked<={RQ_N{1'b0}};
+                end
                 est <= E_SEL;
             end
 
@@ -1410,12 +1542,12 @@ module tnca_nuca_slice #(
             E_WAKE: begin
                 if (!rsq_full) begin
                     t_cur    = ms_head[cur_ms];
-                    fill_set = ms_set[cur_ms];
-                    fill_way = ms_way[cur_ms];
+                    fill_set = service_set;
+                    fill_way = service_way;
                     if (tg_amo[t_cur]) begin
-                        merged   = data_mem[fill_set*WAYS + fill_way];
+                        merged   = SHARED_DATA_READ ? shared_rd_line : data_mem[fill_set*WAYS + fill_way];
                         amo_word = merged[tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
-                        amo_res  = amo_new(tg_aop[t_cur], tg_be[t_cur], amo_word,
+                        amo_res  = cache_amo_new(tg_aop[t_cur], tg_be[t_cur], amo_word,
                                            tg_wdata[t_cur], tg_cmp[t_cur]);
                         if (tg_aop[t_cur] != `TNCA_AOP_LD) begin
                             if(CACHE_DATA_PIPELINE) begin
@@ -1438,7 +1570,7 @@ module tnca_nuca_slice #(
                             data_write_line={(LINE_BITS/WORD_BITS){tg_wdata[t_cur]}};
                             data_write_mask={{(LINE_BYTES-WORD_BYTES){1'b0}},tg_be[t_cur]} << (tg_wsel[t_cur]*WORD_BYTES);
                         end else begin
-                        merged = data_mem[fill_set*WAYS + fill_way];
+                        merged = SHARED_DATA_READ ? shared_rd_line : data_mem[fill_set*WAYS + fill_way];
                         for (i = 0; i < WORD_BYTES; i = i + 1)
                             if (tg_be[t_cur][i])
                                 merged[(tg_wsel[t_cur]*WORD_BYTES + i)*8 +: 8] =
@@ -1447,11 +1579,11 @@ module tnca_nuca_slice #(
                         end
                         d_bits[fill_set*WAYS + fill_way]   <= 1'b1;
                         push_data = {WORD_BITS{1'b0}};
-                    end else if (ms_byp[cur_ms]) begin
+                    end else if (service_bypass) begin
                         push_data = ms_line[cur_ms][tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
                     end else begin
-                        push_data = data_mem[fill_set*WAYS + fill_way]
-                                    [tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
+                        push_data = SHARED_DATA_READ ? shared_rd_line[tg_wsel[t_cur]*WORD_BITS +: WORD_BITS] :
+                                    data_mem[fill_set*WAYS + fill_way][tg_wsel[t_cur]*WORD_BITS +: WORD_BITS];
                     end
                     push_rsp = 1'b1;
                     push_src = tg_src[t_cur];
@@ -1525,5 +1657,16 @@ module tnca_nuca_slice #(
                         data_mem[data_write_index][data_write_byte*8+:8] <= data_write_line[data_write_byte*8+:8];
         end
     end
+
+`ifndef SYNTHESIS
+    // The engine cannot reallocate its selected MSHR while servicing it.
+    // Memory completion only changes line/state, not these descriptor fields.
+    always @(posedge clk) if(rst_n && CACHE_DATA_PIPELINE &&
+        (est==E_WBRD || est==E_WBSND || est==E_FILL || est==E_WAKE)) begin
+        if ({service_set,service_way,service_bypass,service_tag} !==
+            {ms_set[cur_ms],ms_way[cur_ms],ms_byp[cur_ms],ms_addr[cur_ms][ADDR_W-1 -: TAGB]})
+            $fatal(1,"MSHR service descriptor changed after arbitration");
+    end
+`endif
 
 endmodule

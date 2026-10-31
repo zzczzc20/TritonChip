@@ -1,0 +1,96 @@
+W1028 13:11:34.584000 1913936 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+Fetching 12 files:   0%|          | 0/12 [00:00<?, ?it/s]Fetching 12 files: 100%|██████████| 12/12 [00:00<00:00, 2790.31it/s]
+Traceback (most recent call last):
+  File "/home/zhongchun/r41bw_aud/t_g2v1-ctx2-acc8/python/tnca/adapters/r1.py", line 172, in emit
+    cg.assign_shared()
+  File "/home/zhongchun/r41bw_aud/t_g2v1-ctx2-acc8/compiler/python/tnca_cc/codegen.py", line 146, in assign_shared
+    used = color(k, kind, limits[cls])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/r41bw_aud/t_g2v1-ctx2-acc8/compiler/python/tnca_cc/resource_lifetime.py", line 146, in color
+    raise ResourceError(f"{len(slots)} {kind}s live at once, target has {limit}",
+tnca_cc.diagnostics.ResourceError: 16 accumulators live at once, target has 8
+  remedy:  a smaller tile
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/zhongchun/r41bw_aud/fp8_hub_compile_only.py", line 82, in <module>
+    main()
+  File "/home/zhongchun/r41bw_aud/fp8_hub_compile_only.py", line 71, in main
+    k.matmul_2d(A.to('tnca'), W.to('tnca'), Ws.to('tnca'), [128, 128], torch.bfloat16)
+  File "/home/zhongchun/flux-hf/hub/kernels--kernels-community--finegrained-fp8/snapshots/0e5764aa5c27d0f005117a92645156481540950a/build/torch-cuda/matmul.py", line 820, in matmul_2d
+    return w8a8_block_dynamic_fp8_matmul(A, B, Bs, block_size, output_dtype)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/flux-hf/hub/kernels--kernels-community--finegrained-fp8/snapshots/0e5764aa5c27d0f005117a92645156481540950a/build/torch-cuda/matmul.py", line 713, in w8a8_block_dynamic_fp8_matmul
+    return ops.w8a8_block_dynamic_fp8_matmul(A, B, Bs, block_size, output_dtype)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_ops.py", line 1350, in __call__
+    return self._op(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_library/autograd.py", line 147, in autograd_impl
+    result = redispatch_no_grad(keyset, args, keyword_only_args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_library/autograd.py", line 43, in redispatch_no_grad
+    result = op.redispatch(keyset & _C._after_autograd_keyset, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_ops.py", line 925, in redispatch
+    return pyobj_dispatcher.redispatch(keyset, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_library/custom_ops.py", line 442, in backend_impl
+    result = self._backend_fns[device_type](*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_compile.py", line 54, in inner
+    return disable_fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1548, in _fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_library/custom_ops.py", line 503, in wrapped_fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_library/triton.py", line 399, in backend_fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/flux-hf/hub/kernels--kernels-community--finegrained-fp8/snapshots/0e5764aa5c27d0f005117a92645156481540950a/build/torch-cuda/matmul.py", line 450, in _w8a8_block_dynamic_fp8_matmul
+    wrap_triton(w8a8_block_dynamic_fp8_matmul_kernel)[grid](
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/runtime/jit.py", line 374, in <lambda>
+    return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 276, in run
+    ret = self.fn.run(
+          ^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/runtime/jit.py", line 757, in run
+    kernel = self._do_compile(key, signature, device, constexprs, options, attrs, warmup)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/runtime/jit.py", line 902, in _do_compile
+    kernel = self.compile(src, target=target, options=options.__dict__)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/compiler.py", line 327, in compile
+    next_module = compile_ir(module, metadata)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/r41bw_aud/t_g2v1-ctx2-acc8/python/tnca/triton_backend/compiler.py", line 321, in <lambda>
+    stages['tnca'] = lambda src, metadata: self.make_tnca(src, metadata, options)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/r41bw_aud/t_g2v1-ctx2-acc8/python/tnca/triton_backend/compiler.py", line 366, in make_tnca
+    _stages) = aot._lower_ttir(module, ctx, kernel_name, params, target, prov,
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/r41bw_aud/t_g2v1-ctx2-acc8/python/tnca/aot.py", line 776, in _lower_ttir
+    result = _lower_imported(
+             ^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/r41bw_aud/t_g2v1-ctx2-acc8/python/tnca/aot.py", line 956, in _lower_imported
+    asm_text, cg = _emit(kernel, target, prov, opt_level, emit_options, stages)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/r41bw_aud/t_g2v1-ctx2-acc8/python/tnca/aot.py", line 1145, in _emit
+    return _emit_once(original, target, prov, opt_level, dict(options, window_reuse=1), stages)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/r41bw_aud/t_g2v1-ctx2-acc8/python/tnca/aot.py", line 1201, in _emit_once
+    return adapter.emit(original, target, prov=prov, opt_level=opt_level,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/r41bw_aud/t_g2v1-ctx2-acc8/python/tnca/adapters/r1.py", line 180, in emit
+    raise CompileError(str(d).splitlines()[0],
+tnca.errors.CompileError: [COMPILE_FAILED] 16 accumulators live at once, target has 8
+  at: code generation
+  diagnostic: 16 accumulators live at once, target has 8
+  remedy:  a smaller tile
+  kind: ResourceError
+exit 1

@@ -1,0 +1,45 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Mon Oct 26 20:15:42 2026
+| Host         : acf3019 running 64-bit Ubuntu 22.04.5 LTS
+| Command      : report_drc -file /home/zzhouch/r41_hbmbw_line_lsu_v1/out/routed_drc.rpt
+| Design       : tnca_lsu_line
+| Device       : xcu280-fsvh2892-2L-e
+| Speed File   : -2L
+| Design State : Fully Routed
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Report DRC
+
+Table of Contents
+-----------------
+1. REPORT SUMMARY
+2. REPORT DETAILS
+
+1. REPORT SUMMARY
+-----------------
+            Netlist: tnca_lsu_line
+          Floorplan: design_1
+      Design limits: <entire design considered>
+           Ruledeck: default
+             Max violations: <unlimited>
+             Violations found: 1
++-----------+----------+-------------------+------------+
+| Rule      | Severity | Description       | Violations |
++-----------+----------+-------------------+------------+
+| RTSTAT-10 | Warning  | No routable loads | 1          |
++-----------+----------+-------------------+------------+
+
+2. REPORT DETAILS
+-----------------
+RTSTAT-10#1 Warning
+No routable loads  
+1168 net(s) have no routable loads. The problem bus(es) and/or net(s) are cpl_dst_class[2:0], cpl_valid, cpl_vdata[511:0], mem_req_addr[63:6],
+mem_req_be[63:0], offset_reg_0_7_0_5/DOD0, offset_reg_0_7_0_5/DOD1,
+offset_reg_0_7_0_5/DOE0, offset_reg_0_7_0_5/DOE1, offset_reg_0_7_0_5/DOF0,
+offset_reg_0_7_0_5/DOF1, offset_reg_0_7_0_5/DOG0, offset_reg_0_7_0_5/DOG1,
+rctx_reg_0_7_0_0/DPO, rctx_reg_0_7_1_1/DPO (the first 15 of 21 listed).
+Related violations: <none>
+
+

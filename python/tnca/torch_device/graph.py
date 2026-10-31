@@ -55,7 +55,18 @@ class Graph:
         self.ready = False
         self.invalid_reason = None
 
-    def replay(self):
+    def locality_plan(self):
+        """Inspect conservative storage/alias/lifetime policy without device work."""
+        from tnca.locality import plan_commands
+        if not self.ready or self.invalid_reason:
+            raise RuntimeError('locality requires a valid captured graph')
+        # Tensor guards are checked independently of runtime handle guards.
+        for session,module,bound,grid,values,signatures,epoch,template in self.commands:
+            if tuple(_signature(v) for v in values)!=signatures:
+                raise RuntimeError('locality graph shape, stride or storage changed')
+        return plan_commands(self.commands)
+
+    def replay(self, *, locality=False):
         from tnca.runtime import MAX_UNFINISHED
         from tnca.triton_backend.driver import _active_logs, TNCALaunchError
         from . import _DeviceModule
@@ -75,6 +86,9 @@ class Graph:
         except Exception as exc:
             self.invalid_reason = str(exc)
             raise RuntimeError(f'tnca graph guard failed: {exc}') from exc
+        if locality:
+            from tnca.locality import replay_with_locality
+            return replay_with_locality(self, lambda: self.replay())
         last = None
         for session, module, bound, grid, values, signatures, epoch, template in self.commands:
             while len(session.unfinished) >= MAX_UNFINISHED:

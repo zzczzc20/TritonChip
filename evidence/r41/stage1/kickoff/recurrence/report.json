@@ -1,0 +1,178 @@
+{
+  "schema": "tnca-primitive-feasibility/1",
+  "status": "functional-pass",
+  "cases": [
+    {
+      "name": "recurrence",
+      "shapes": [
+        [
+          1,
+          1,
+          128,
+          128
+        ],
+        [
+          1,
+          1,
+          128
+        ],
+        [
+          1,
+          1,
+          128
+        ],
+        [
+          1,
+          1,
+          128
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "dtype": "torch.float32",
+      "rtol": 0.0002,
+      "atol": 0.0002,
+      "status": "pass",
+      "cold_compile_and_execute_seconds": 1.3908664071932435,
+      "output_sha256": [
+        "31c7e6c4dc76ab70b19f8e0e71d2396de5e8c01441900a7d46e2ca7f9f38551a",
+        "6f37a2e4b6ca26821a018226040efdfa784d07f63c9930fac8f91ec0ff7a2ee6"
+      ],
+      "launches": [
+        {
+          "kernel": "triton_poi_fused_exp_0",
+          "grid": [
+            1,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "9a2e3b21c90c8d7161ba28351079067d7f59ee7c457e73a291c9650d9b42066d",
+          "artifact_path": "/tmp/tnca-triton-4p7aobtz/triton_poi_fused_exp_0-76c30dbb00835b.tnca",
+          "device_cycles": 226,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 3.4e-05,
+            "run": 0.00133,
+            "download": 0.0001
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 8
+        },
+        {
+          "kernel": "triton_red_fused_bmm_exp_mul_unsqueeze_view_1",
+          "grid": [
+            128,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "3fc0cdff6d81185e50dd8fa15e4c7052465bd7a4c38d10d15878bb47fe16337e",
+          "artifact_path": "/tmp/tnca-triton-o_7mqg2e/triton_red_fused_bmm_exp_mul_unsqueeze_view_1-15f4fc0cf61ff4.tnca",
+          "device_cycles": 42897,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 5.7e-05,
+            "run": 0.015338,
+            "download": 0.000107
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 66564
+        },
+        {
+          "kernel": "triton_poi_fused_add_exp_mul_squeeze_sub_unsqueeze_view_2",
+          "grid": [
+            1024,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "fc62063137e8f979af9dd8666c2db20a292ed779235b81ca1cfd843e9a8c50f4",
+          "artifact_path": "/tmp/tnca-triton-hp2r6vl_/triton_poi_fused_add_exp_mul_squeeze_sub_unsqueeze_view_2-50ba1ae95eedb5a0.tnca",
+          "device_cycles": 85166,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 7.9e-05,
+            "run": 0.025662,
+            "download": 0.0001
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 132616
+        },
+        {
+          "kernel": "triton_red_fused_bmm_unsqueeze_view_3",
+          "grid": [
+            128,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "565f38fc5ac35fc7fc6aa9c66c2fd9e27b8b31fc2e37e0eb844825fd6488278c",
+          "artifact_path": "/tmp/tnca-triton-ex66eaec/triton_red_fused_bmm_unsqueeze_view_3-52e2c8c4aa920a28.tnca",
+          "device_cycles": 42995,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 5.9e-05,
+            "run": 0.015152,
+            "download": 0.000102
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 66560
+        }
+      ],
+      "device_cycles": 171284,
+      "code_bytes": [
+        216,
+        472,
+        472,
+        440
+      ],
+      "host_max_rss_kib_cumulative": 774604
+    }
+  ],
+  "scope": "representative primitives; not complete model execution",
+  "execution": "torch.compile(backend=inductor,fullgraph=True) on tnca",
+  "software_tree": "files:95b8d8bbb56e035c1659948cfaa3f2bc32b93df9b82a772cbce6bcd7366efed4",
+  "toolchain": {
+    "torch": "2.14.0+cu130",
+    "triton": "3.8.0"
+  },
+  "knobs": {
+    "TNCA_BACKEND": "systemc-tlm-grid",
+    "TNCA_DEADLINE": "200000000",
+    "TNCA_HOST_TIMEOUT": "600",
+    "TNCA_PROFILE": "core-vrf-sync-v5",
+    "TNCA_TENSOR_DESCRIPTORS": "1",
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41-stage1/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41-stage1/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MEMORY_BYTES": "33554432",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41-stage1/runs/recurrence-model",
+    "TNCA_TORCH_DEVICE": "native"
+  }
+}

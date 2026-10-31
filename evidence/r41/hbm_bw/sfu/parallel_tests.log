@@ -1,0 +1,9 @@
+SFU PARALLEL PASS PAR=2 cases=160 exact bits slow_cycles=23 fast_cycles=15 reset
+tb/core/tb_sfu_parallel.v:53: $finish called at 41980000 (1ps)
+SFU PARALLEL PASS PAR=3 cases=160 exact bits slow_cycles=23 fast_cycles=13 reset
+tb/core/tb_sfu_parallel.v:53: $finish called at 41980000 (1ps)
+SFU PARALLEL PASS PAR=4 cases=160 exact bits slow_cycles=23 fast_cycles=11 reset
+tb/core/tb_sfu_parallel.v:53: $finish called at 41980000 (1ps)
+SFU PARALLEL PASS PAR=8 cases=160 exact bits slow_cycles=23 fast_cycles=9 reset
+tb/core/tb_sfu_parallel.v:53: $finish called at 41980000 (1ps)
+SFU PARALLEL ALL CONFIGURATIONS PASS

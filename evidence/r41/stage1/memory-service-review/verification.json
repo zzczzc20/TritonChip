@@ -1,0 +1,89 @@
+{
+  "schema": "r41-memory-service-archive-review/1",
+  "scope": "offline revalidation of historical reports; no new execution measurement",
+  "archive_sha256": "55275a6f401856f4c1f495cd238da99221245d69ac35c4d608e66fff2b820a28",
+  "comparator_sha256": "e2de835b1043dcfe9b5efc3b6ec83c782425c34d717b5f45fe367708b653efc8",
+  "case_sha256": "d0da006503702d2a995eb04f29dec97d18463d5f8a0d8745eb3dcc62db1c9c11",
+  "successful_reports": 13,
+  "archived_input_hashes": "verified for every successful report",
+  "preserved_failures": {
+    "memory-service-rtl-p1-d1-v1": "failed-preserved",
+    "memory-service-rtl-p1-d1-v2": "failed-preserved"
+  },
+  "checks": [
+    {
+      "name": "coherent",
+      "expected": "accept",
+      "returncode": 0,
+      "result": "{\n  \"status\": \"screening-and-RTL-diagnostic-complete\",\n  \"rows\": 6,\n  \"board_closure\": \"not-measured\"\n}"
+    },
+    {
+      "name": "maintenance",
+      "expected": "accept",
+      "returncode": 0,
+      "result": "{\n  \"status\": \"screening-and-RTL-diagnostic-complete\",\n  \"rows\": 6,\n  \"board_closure\": \"not-measured\"\n}"
+    },
+    {
+      "name": "small-cache",
+      "expected": "accept",
+      "returncode": 0,
+      "result": "{\n  \"status\": \"screening-and-RTL-diagnostic-complete\",\n  \"rows\": 6,\n  \"board_closure\": \"not-measured\"\n}"
+    },
+    {
+      "name": "missing-case",
+      "expected": "reject",
+      "returncode": 1,
+      "result": "ValueError: complete unique declared outlet/depth cohort required"
+    },
+    {
+      "name": "failed-numerics",
+      "expected": "reject",
+      "returncode": 1,
+      "result": "ValueError: service case did not pass numerically"
+    },
+    {
+      "name": "mixed-source",
+      "expected": "reject",
+      "returncode": 1,
+      "result": "ValueError: service cohort mixes product source identities"
+    },
+    {
+      "name": "zero-cycles",
+      "expected": "reject",
+      "returncode": 1,
+      "result": "ValueError: positive completed device cycles required"
+    },
+    {
+      "name": "wrong-backend",
+      "expected": "reject",
+      "returncode": 1,
+      "result": "ValueError: RTL service cohort must use the actual MMIO stand-in"
+    },
+    {
+      "name": "changed-input",
+      "expected": "reject",
+      "returncode": 1,
+      "result": "ValueError: service candidate changed workload or actual inputs"
+    },
+    {
+      "name": "changed-shader",
+      "expected": "reject",
+      "returncode": 1,
+      "result": "ValueError: controls unexpectedly changed emitted shader"
+    },
+    {
+      "name": "mixed-host-policy",
+      "expected": "reject",
+      "returncode": 1,
+      "result": "ValueError: candidate cohort mixes model host-ownership policies"
+    },
+    {
+      "name": "invalid-domain",
+      "expected": "reject",
+      "returncode": 1,
+      "result": "ValueError: domains are a unique subset of model, rtl, board"
+    }
+  ],
+  "board_status": "not-measured; lead owns the board queue",
+  "final_identity_status": "historical cohorts do not bind the frozen Stage 1 product"
+}

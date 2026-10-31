@@ -71,13 +71,26 @@ class Model:
     def for_target(cls, target):
         with open(find('spec', 'r39_sched_model.json')) as fh:
             spec = json.load(fh)
-        name = spec['by_target'].get(getattr(target, 'name', None), spec['default'])
+        name = cls.model_name(spec, getattr(target, 'name', None))
         return cls(name, spec['models'][name])
+
+    @staticmethod
+    def model_name(spec, target_name):
+        """The target's model, else the model of the longest listed target its
+        name extends (a resized profile, e.g. tnca-sim-vrf-v5-x8-g2c4, keeps its
+        base's pipeline and register file, so it keeps its base's latencies),
+        else the default. Before this, a resized profile fell to the default
+        model and was scheduled for a different register file."""
+        by = spec['by_target']
+        if target_name in by:
+            return by[target_name]
+        base = max((k for k in by if target_name and target_name.startswith(k + '-')), key=len, default=None)
+        return by[base] if base else spec['default']
 
     def klass(self, op):
         k = op.kind
         if k in ('sbin', 'sbini'):
-            return 'smul' if op.attrs.get('op') == 'mul' else 'salu'
+            return 'smul' if op.attrs.get('op') in ('mul', 'mulhu') else 'salu'
         if k in ('const', 'program_id', 'num_programs', 'special', 'scmp', 'assign'):
             return 'salu'
         if k == 'sload':

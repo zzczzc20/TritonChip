@@ -1,0 +1,41 @@
+tnca.kernel @triton_poi_fused_div_slice_0 {
+  // no shared resources, no bound arguments
+
+  role 0 @role0 {
+    %rctx_chunk_lane:scalar = tnca.special()  {name='role_id'}
+    %rctx_chunk_start:scalar = tnca.program_id()  {dim=0}
+    %rctx_programs:scalar = tnca.num_programs()  {dim=0}
+    %pid6:scalar = tnca.sbin(%rctx_chunk_start:scalar, %rctx_chunk_lane:scalar)  {op='add'}
+    %rctx_chunk_outside:scalar = tnca.scmp(%pid6:scalar, %rctx_programs:scalar)  {cc='ge'}
+    tnca.branch_nz(%rctx_chunk_outside:scalar)  {target='__rctx_next'}
+  ^__rctx_program:
+    %sp1:scalar = tnca.special()  {name='arg_base'}
+    %s8:scalar = tnca.sbini(%pid6:scalar)  {imm=4 op='shl'}   // x16 as a shift
+    %m3:scalar = tnca.sload(%sp1:scalar)  {offset=8 size='d'}   // in_ptr1: device_ptr64 at arg_base+8
+    %ar9:vector = tnca.arange()
+    %sp10:vector = tnca.splat(%s8:scalar)
+    %k13:vector = tnca.vmovi()  {imm=2}
+    %k20:vector = tnca.vmovi()  {imm=1065353216}
+    %v11:vector = tnca.vbin(%sp10:vector, %ar9:vector)  {fmm=None op='add'}
+    %s28:scalar = tnca.sbini(%s8:scalar)  {imm=1 op='shl'}   // element offset -> bytes (x2)
+    %v14:vector = tnca.vbin(%v11:vector, %k13:vector)  {fmm=None op='mul'}
+    %g17:vector = tnca.gather(%m3:scalar, %v14:vector)  {mask=None other=0 size='h'}
+    %c18:vector = tnca.vcvt(%g17:vector)  {dst='f32' src='bf16'}
+    %m2:scalar = tnca.sload(%sp1:scalar)  {offset=0 size='d'}   // in_ptr0: device_ptr64 at arg_base+0
+    %v19:vector = tnca.vun(%c18:vector)  {op='rcp'}   // ISA 8.8: <= 2**-22 relative
+    %g15:vector = tnca.gather(%m2:scalar, %v14:vector)  {mask=None other=0 size='h'}
+    %c16:vector = tnca.vcvt(%g15:vector)  {dst='f32' src='bf16'}
+    %m4:scalar = tnca.sload(%sp1:scalar)  {offset=16 size='d'}   // out_ptr0: device_ptr64 at arg_base+16
+    %v21:vector = tnca.vfms(%c18:vector, %v19:vector, %k20:vector)
+    %v22:vector = tnca.vfms(%v19:vector, %v21:vector, %v19:vector)
+    %s29:scalar = tnca.sbin(%m4:scalar, %s28:scalar)  {op='add'}   // &out_ptr0[...]
+    %v23:vector = tnca.vun(%v22:vector)  {op='neg'}   // Newton step: r0*(2 - x*r0)
+    %m24:pred = tnca.vcmp(%v23:vector, %v23:vector)  {cc='o'}
+    %v25:vector = tnca.vselect(%m24:pred, %v23:vector, %v19:vector)
+    %v26:vector = tnca.vbin(%c16:vector, %v25:vector)  {fmm=None op='mul'}   // a/y as a refined reciprocal (ISA has no divide)
+    %c27:vector = tnca.vcvt(%v26:vector)  {dst='bf16' src='f32'}
+    tnca.store(%s29:scalar, %c27:vector)  {mask=None size='h'}
+  ^__rctx_next:
+    tnca.exit()
+  }
+}

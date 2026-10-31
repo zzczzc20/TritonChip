@@ -45,9 +45,15 @@ ABI_VERSION = list(abi.ABI_VERSION)
 # something and been told nothing, and the artifact they get back is not the
 # one they asked for (CMP-02).
 KNOWN_OPTIONS = {
+    'single_role_pipeline': 'int, 0 or 1; opt-in two-slot single-role transfer/MMA overlap with guarded drain',
+    'rctx_role_pairs': 'int, 0..2; cap paired programs for fixed-context comparisons (0 uses the target maximum)',
     'bank_alloc': 'int, 0 or 1; use the target bank-aware vector allocator',
     'packed_window_unpack': 'int, 0 or 1; software lane unpack of packed FP16/BF16 DMA windows',
+    'tiled_pointwise': 'int, 0..3; 1-D element-wise programs as a loop over register tiles, '
+                       '1 with tensor-engine transfers where legal, 2 with vector loads/stores only '
+                       '(tnca_cc/pointwise_tiles.py; default 0)',
     'window_reuse': 'int, 0 or 1; reuse disjoint awaited single-role window lifetimes',
+    'ieee_div': 'int, 0 or 1; arith.divf correctly rounded (the extended lowering always is)',
     'no_ll': 'bool; at opt_level 2, switch the layout algebra off and use a legal plan instead. The ablation of phase 3.5 section 4.3, not a fallback: O2 without it never silently stops using LinearLayout',
     'opt_level': 'int, 0..2. 0 is the frozen baseline and emits what this driver has always emitted. 1 runs the pinned upstream canonicalizer and CSE over the kernel and lowers a constant to its narrowest correct form. 2 adds the layout and allocation work (phase 3.5 section 4.3)',
     'debug': 'bool; adds a compile report, never changes the code',
@@ -297,8 +303,11 @@ def check_options(options):
                    'produce a different artifact')
     # Resolve allocation/lowering switches before either cache lookup or
     # compilation. Default off stays absent for the frozen B39 contract.
-    for name, env in (('physical_chunks', 'TNCA_PHYSICAL_CHUNKS'),
+    for name, env in (('rctx_role_pairs', 'TNCA_RCTX_ROLE_PAIRS'),
+                      ('single_role_pipeline', 'TNCA_SINGLE_ROLE_PIPELINE'),
+                      ('physical_chunks', 'TNCA_PHYSICAL_CHUNKS'),
                       ('packed_window_unpack', 'TNCA_PACKED_WINDOW_UNPACK'),
+                      ('tiled_pointwise', 'TNCA_TILED_POINTWISE'),
                       ('window_reuse', 'TNCA_WINDOW_REUSE'),
                       ('bank_alloc', 'TNCA_BANK_ALLOC'),
                       ('index_opt', 'TNCA_INDEX_OPT'),
@@ -312,9 +321,13 @@ def check_options(options):
             options.pop(name, None)
             if value:
                 options[name] = value
-        allowed = (0, 1, 2) if name == 'rctx_roles' else (0, 1)
+        allowed = (0, 1, 2, 3) if name == 'tiled_pointwise' else (0, 1, 2) if name in ('rctx_roles', 'rctx_role_pairs') else (0, 1)
         if value not in allowed:
             raise ValueError(f'{name} must be one of {allowed}')
+    if options.get('rctx_role_pairs') and not options.get('rctx_roles'):
+        raise ValueError('rctx_role_pairs requires rctx_roles')
+    if options.get('single_role_pipeline') and options.get('rctx_roles'):
+        raise ValueError('single_role_pipeline and rctx_roles are mutually exclusive')
     stages = options.get('rctx_stages')
     if stages is None:
         stages = _pipeline_stages_default()
@@ -531,15 +544,38 @@ def compile_aot(source, *, kernel_name=None, signature=None, constexprs=None,
                          asm=dict(stages.stages), dumped=written)
 
 
-def _seal(output, kernel_name, params, asm_text, code, report, target, pinfo,
-          constexprs, options, prov, source_kind):
-    """Manifest and container for compiled code: shared by every entry point."""
+def execution_plan(prov, asm_text, code, report, target, *, code_limit=None):
+    """Measure the assembled code once and finalize the execution resource
+    plan (the sidecar `execution_resources`). Returns (measured, plan).
+
+    Bookkeeping only: the plan describes the code; it never changes it.
+    Admission and tuning decisions read their numbers from the plan.
+    """
     measured = measure_resources(asm_text, target, code=code,
                                  include_windows='window_lifetime' in prov.entries)
     # The emitter cannot see this one: it is a requirement the frontend
     # recorded, not a count of something in the assembly.
     if 'scratch_bytes' in report:
         measured['scratch_bytes'] = report['scratch_bytes']
+    plan = prov.entries.get('execution_resources')
+    if plan is not None:
+        from tnca_cc.execution_resources import finalize
+        finalize(plan, measured=measured, entries=prov.entries, code_limit=code_limit)
+    return measured, plan
+
+
+def plan_of(manifest):
+    """The execution resource plan sealed in an artifact manifest, or None."""
+    plan = ((manifest or {}).get('optional_metadata', {}).get('provenance', {})
+            .get('execution_resources'))
+    return plan if isinstance(plan, dict) and 'resources' in plan else None
+
+
+def _seal(output, kernel_name, params, asm_text, code, report, target, pinfo,
+          constexprs, options, prov, source_kind, *, measured=None):
+    """Manifest and container for compiled code: shared by every entry point."""
+    if measured is None:
+        measured, _plan = execution_plan(prov, asm_text, code, report, target)
     report['resources'] = measured
     man = _manifest(kernel_name, params, target, pinfo, constexprs, options,
                     prov, source_kind, report, measured=measured)
@@ -726,11 +762,91 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         packed_unpack = int(os.environ.get('TNCA_PACKED_WINDOW_UNPACK', '0'))
     if packed_unpack not in (0, 1):
         raise ValueError('packed_window_unpack must be 0 or 1')
+    tiled = (options or {}).get('tiled_pointwise')
+    if tiled is None:
+        tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
+    if tiled not in (0, 1, 2, 3):
+        raise ValueError('tiled_pointwise must be 0, 1, 2 or 3')
+    # The extended lowering (large tiles): a kernel the default lowering
+    # refuses, or whose code the code store cannot hold, is imported once
+    # more with the importer's `large_tiles` set -- separable indices, wide
+    # K steps, a loop over row chunks. A kernel that compiles by default
+    # never reaches it, so its code is exactly what it was.
+    saved_prov, saved_stages = dict(prov.entries), dict(stages.stages)
+    first = None
+    for large_tiles in (False, True):
+        if large_tiles:
+            prov.entries.clear()
+            prov.entries.update(saved_prov)
+            stages.stages.clear()
+            stages.stages.update(saved_stages)
+            prov.record('extended_lowering', first)
+        try:
+            def _once():
+                return _lower_imported(
+                    module, kernel_name, params, target, prov, options, stages, opt_level,
+                    index_opt=index_opt, sparse=sparse, window_reuse=window_reuse,
+                    packed_unpack=packed_unpack, large_tiles=large_tiles, tiled=tiled,
+                    # the retry also keeps one tiled lane group (register pressure)
+                    tiled_groups_cap=1 if large_tiles else 0)
+            try:
+                result = _once()
+            except CompileError as pe:
+                # The software-pipelined weight transfers hold a second B window
+                # live; a kernel whose vector registers cannot take it is lowered
+                # again with the serial order (same results, no overlap).
+                if (os.environ.get('TNCA_X8_PIPELINE', '1') == '0'
+                        or 'out of vector registers' not in str(pe)):
+                    raise
+                os.environ['TNCA_X8_PIPELINE'] = '0'
+                try:
+                    prov.record('x8_pipeline_fallback', 'out of vector registers')
+                    result = _once()
+                finally:
+                    os.environ.pop('TNCA_X8_PIPELINE', None)
+        except (UnsupportedError, CompileError) as e:
+            if large_tiles:
+                if first and first not in str(e):
+                    e.args = (f'{e.args[0] if e.args else e} (the default lowering: {first})',) \
+                        + tuple(e.args[1:])
+                raise
+            first = str(e).splitlines()[0][:300]
+            continue
+        code_bytes = result[5]['code_bytes']
+        if large_tiles or code_bytes <= _CODE_STORE_BYTES:
+            return result
+        first = f'{code_bytes} code bytes exceed the {_CODE_STORE_BYTES}-byte code store'
+    raise AssertionError('unreachable')
+
+
+def _ieee_div(options):
+    value = (options or {}).get('ieee_div')
+    if value is None:
+        value = int(os.environ.get('TNCA_IEEE_DIV', '0'))
+    if value not in (0, 1):
+        raise ValueError('ieee_div must be 0 or 1')
+    return value
+
+
+# The device's code store (tnca.inductor.CODE_STORE_BYTES, without importing
+# torch here): a kernel larger than this cannot be loaded.
+_CODE_STORE_BYTES = 0x20000
+
+
+def _lower_imported(module, kernel_name, params, target, prov, options, stages, opt_level, *,
+                    index_opt, sparse, window_reuse, packed_unpack, large_tiles, tiled=0,
+                    tiled_groups_cap=0):
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
         dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse),
-        window_reuse=bool(window_reuse), packed_window_unpack=bool(packed_unpack))
+        window_reuse=bool(window_reuse), packed_window_unpack=bool(packed_unpack),
+        large_tiles=large_tiles, ieee_div=bool(_ieee_div(options)), tiled_pointwise=tiled,
+        tiled_groups_cap=tiled_groups_cap)
+    if getattr(imp, 'tiled_pointwise_plan', None) is not None:
+        prov.record('tiled_pointwise', imp.tiled_pointwise_plan)
+    if imp.large_tiles or imp.ieee_div:
+        prov.record('division', 'ieee')
     if getattr(imp, '_packed_unpack_rows', 0):
         prov.record('packed_window_unpack_rows', imp._packed_unpack_rows)
     if getattr(imp, '_mma_retiles', None):
@@ -803,7 +919,15 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         prov.record('opt_unobserved_load_other', dlo['sites'])
         sr = strength_reduce(kernel)
         cse = pure_scalar_cse(kernel)
-        dead = drop_dead_pure(kernel)
+        dead = drop_dead_pure(kernel, flat_control=getattr(imp, 'tiled_pointwise_plan', None) is not None)
+        if dict(target.capabilities).get('matrix_dp'):
+            # R41 run-2 issue-stream work, gated by the capability until the audit decides
+            # whether it becomes the default: dominator-scoped value numbering.
+            from tnca_cc.optimization import dominating_value_numbering
+            import os as _os
+            vn = dominating_value_numbering(kernel, scalar_window=int(_os.environ.get('TNCA_VN_SWIN', 64)),
+                                            vector_window=int(_os.environ.get('TNCA_VN_VWIN', 8)))
+            prov.record('opt_value_numbering_merged', vn['merged'])
         prov.record('opt_strength_reduced', sr['sites'])
         prov.record('opt_pure_scalar_merged', cse['merged'])
         prov.record('opt_dead_pure_removed', dead['removed'])
@@ -815,7 +939,7 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
     # fit is tried again computing nothing once, then without the loop.
     import copy as _copy
     plain = (_copy.deepcopy(kernel)
-             if _rctx_spmd_wanted(options) or _rctx_roles_wanted(options) else None)
+             if _rctx_spmd_wanted(options) or _rctx_roles_wanted(options) or (options or {}).get('single_role_pipeline') else None)
     # R39-12: a GEMM loop as a producer and a consumer on a Role Context pair
     # (Mode A), with the pairs running a grid row (Mode B) -- or, where that
     # does not apply or does not fit, Mode B alone.
@@ -836,6 +960,31 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
                 prov.entries.pop(key, None)
             stages.stages.pop('tnir_roles', None)
             programs_per_launch = None
+    single_role_applied = False
+    emit_options = options
+    if not programs_per_launch and (options or {}).get('single_role_pipeline'):
+        from tnca_cc.single_role_pipeline import pipeline_loop, NotPipelined
+        trial = _copy.deepcopy(kernel)
+        try:
+            info = pipeline_loop(trial)
+            # The odd-trip drain uses explicit forward branches; fixed windows
+            # keep slots distinct without relying on straight-line coloring.
+            emit_options = dict(options or {}, window_reuse=0)
+            _emit(_copy.deepcopy(trial), target, adapter.Provenance(), opt_level,
+                  emit_options, _dump.Dump(kernel_name + '_single_role_preflight'))
+        except NotPipelined as error:
+            prov.record('single_role_pipeline_refused', str(error))
+            emit_options = options
+        except CompileError as error:
+            if error.detail.get('kind') != 'ResourceError':
+                raise
+            prov.record('single_role_pipeline_refused', str(error)[:200])
+            emit_options = options
+        else:
+            kernel = trial
+            single_role_applied = True
+            prov.record('single_role_pipeline', info)
+            stages.record('tnir_single_role_pipeline', str(kernel))
     if not programs_per_launch:
         programs_per_launch = _rctx_spmd(kernel, target, prov, options, stages,
                                          scratch_bytes, 8 * len(params))
@@ -843,9 +992,19 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         if roles_per_program == 2:
             break
         try:
-            asm_text, cg = _emit(kernel, target, prov, opt_level, options, stages)
+            asm_text, cg = _emit(kernel, target, prov, opt_level, emit_options, stages)
             break
         except CompileError as e:
+            if single_role_applied and e.detail.get('kind') == 'ResourceError':
+                prov.record('single_role_pipeline_fallback', str(e)[:200])
+                prov.entries.pop('single_role_pipeline', None)
+                stages.stages.pop('tnir_single_role_pipeline', None)
+                kernel = _copy.deepcopy(plain)
+                single_role_applied = False
+                emit_options = options
+                programs_per_launch = _rctx_spmd(kernel, target, prov, options, stages,
+                                                 scratch_bytes, 8 * len(params))
+                continue
             if retry == 'fail' or programs_per_launch == 1 or e.detail.get('kind') != 'ResourceError':
                 raise
             prov.record('rctx_spmd_fallback', f'{retry}: {str(e)[:160]}')
@@ -901,7 +1060,11 @@ def _rctx_roles(kernel, target, prov, options, stages, scratch_bytes, scratch_sl
     except partition.NotSpecialised as e:
         prov.record('rctx_roles_refused', str(e))
         return None
-    pairs = max(1, int(getattr(target, 'num_rctx', 1) or 1) // 2)
+    maximum_pairs = max(1, int(getattr(target, 'num_rctx', 1) or 1) // 2)
+    requested_pairs = (options or {}).get('rctx_role_pairs', 0)
+    if requested_pairs > maximum_pairs:
+        raise ValueError('requested paired programs exceed target role contexts')
+    pairs = requested_pairs or maximum_pairs
     while True:
         trial = copy.deepcopy(kernel)
         sizes = rctx_spmd.slices(target, pairs) if pairs > 1 else None
@@ -992,6 +1155,42 @@ def _rctx_spmd(kernel, target, prov, options, stages, scratch_bytes, scratch_slo
 
 
 def _emit(kernel, target, prov, opt_level, options, stages):
+    """`_emit_once`, and once more with window lifetime reuse when the fixed
+    layout cannot hold the kernel's windows or accumulators.
+
+    The fixed layout gives every window its own vector registers for the
+    whole kernel. A kernel whose windows fit that way is compiled exactly
+    as before; one whose windows do not -- a dot over a K-deep or N-wide
+    tile issues a fragment per K step and column -- is colored by awaited
+    lifetime (tnca_cc.window_lifetime), which is what the capacity allows,
+    instead of being refused. The provenance records the retry.
+    """
+    options = options or {}
+    from tnca_cc import rctx_spmd as _rs
+    # R41 G4: only for targets whose images have the line-wide transfer
+    # engine (target.snapshot_fence); every other target compiles as before.
+    published = _rs.publish_scratch_maps(kernel) if getattr(target, 'snapshot_fence', False) else 0
+    if published:
+        prov.record('published_maps', published)
+    reuse = options.get('window_reuse')
+    if reuse is None:
+        reuse = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))
+    if reuse:
+        return _emit_once(kernel, target, prov, opt_level, options, stages)
+    import copy
+    original = copy.deepcopy(kernel)
+    try:
+        return _emit_once(kernel, target, prov, opt_level, options, stages)
+    except CompileError as e:
+        text = str(e)
+        if e.detail.get('kind') != 'ResourceError' or not (
+                'windows need more than' in text or 'accumulators' in text):
+            raise
+        prov.record('window_reuse_fallback', text[:200])
+    return _emit_once(original, target, prov, opt_level, dict(options, window_reuse=1), stages)
+
+
+def _emit_once(kernel, target, prov, opt_level, options, stages):
     """adapter.emit, after the R39-01 scheduler when `schedule` asks for it.
 
     The allocator has no spill, so a schedule that needs more registers than
@@ -1110,7 +1309,15 @@ def _compile_tnca_ir(build, kernel_name, signature, constexprs, target, prov,
         prov.record('opt_unobserved_load_other', dlo['sites'])
         sr = strength_reduce(kernel)
         info = pure_scalar_cse(kernel)
-        dead = drop_dead_pure(kernel)
+        dead = drop_dead_pure(kernel, flat_control=getattr(imp, 'tiled_pointwise_plan', None) is not None)
+        if dict(target.capabilities).get('matrix_dp'):
+            # R41 run-2 issue-stream work, gated by the capability until the audit decides
+            # whether it becomes the default: dominator-scoped value numbering.
+            from tnca_cc.optimization import dominating_value_numbering
+            import os as _os
+            vn = dominating_value_numbering(kernel, scalar_window=int(_os.environ.get('TNCA_VN_SWIN', 64)),
+                                            vector_window=int(_os.environ.get('TNCA_VN_VWIN', 8)))
+            prov.record('opt_value_numbering_merged', vn['merged'])
         prov.record('opt_strength_reduced', sr['sites'])
         prov.record('opt_pure_scalar_merged', info['merged'])
         prov.record('opt_dead_pure_removed', dead['removed'])

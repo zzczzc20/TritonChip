@@ -1,0 +1,12 @@
+clock_utc=2026-10-29T02:27:32Z
+source_commit=8f19b1131c8f8b4b454831b6317d772774f93383
+command=structural manifest comparison
+membound-large-1.json: 99 matched points, only tiled knob differs
+membound-large-2.json: 72 matched points, only tiled knob differs
+membound-medium-1.json: 132 matched points, only tiled knob differs
+membound-medium-2.json: 39 matched points, only tiled knob differs
+membound-small-1.json: 142 matched points, only tiled knob differs
+membound-small-2.json: 29 matched points, only tiled knob differs
+membound slices: 513 matched points
+s2-original-suite: 113 registered points, only tiled knob differs
+STRUCTURAL MANIFEST CHECK PASS

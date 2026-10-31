@@ -1,0 +1,1496 @@
+{
+ "domain": "model-prediction-uncalibrated",
+ "clock_hz_configured": 100000000,
+ "cores": 3,
+ "suite": "archbench/suites/r41_membound.json",
+ "suite_sha256": "775984cb248354f77add3ec4b3097314907923a9853d44ecd5d43ee7aa94845d",
+ "size": "small",
+ "binary": "/home/zhongchun/r41-g4-mb/tnca-chip",
+ "variants": {
+  "onelane": {
+   "returncode": 0,
+   "config": {
+    "nx": "3",
+    "ny": "1",
+    "sets": "32",
+    "ways": "8",
+    "full_line_tag": "1",
+    "mshrs": "32",
+    "targets": "64",
+    "outlets": "3",
+    "active_outlets": "3",
+    "outstanding": "32",
+    "core_window": "32",
+    "clock_hz": "100000000",
+    "memory_base": "0",
+    "memory_bytes": "1073741824",
+    "pc_bytes": "268435456",
+    "pc_count": "32",
+    "pc_first": "0",
+    "lookup_cycles": "3",
+    "service_cycles": "1",
+    "noc_stages": "3",
+    "noc_bytes_per_cycle": "16",
+    "hbm_latency_cycles": "23",
+    "hbm_bytes_per_cycle": "32",
+    "outlet_issue_cycles": "1",
+    "trace_events": "100000",
+    "dma_queue": "1",
+    "dma_unit_slots": "8",
+    "dma_outstanding": "16",
+    "dma_setup_cycles": "2",
+    "dma_rf_cycles": "1",
+    "issue_cycles": "1",
+    "scalar_latency": "1",
+    "scalar_mul_latency": "5",
+    "vector_int_latency": "3",
+    "vector_fp_latency": "5",
+    "convert_latency": "5",
+    "compare_latency": "1",
+    "predicate_latency": "2",
+    "shuffle_latency": "3",
+    "reduction_latency": "1",
+    "fp_reduction_latency": "16",
+    "sfu_occupancy": "22",
+    "sfu_latency": "23",
+    "load_latency": "5",
+    "lsu_slots": "32",
+    "lsu_beat_slots": "8",
+    "barrier_latency": "2",
+    "acc_read_latency": "3",
+    "mtx_abuf": "1",
+    "mtx_rf_read_cycles": "2",
+    "mtx_mac_cycles": "1",
+    "mtx_mac_unbuffered_cycles": "2",
+    "mtx_pipe_cycles": "4",
+    "mtx_complete_cycles": "1",
+    "mtx_zero_cycles": "16",
+    "mtx_row_cycles": "1",
+    "launch_cycles": "5",
+    "dispatch_cycles": "6",
+    "host_launch_cycles": "0",
+    "host_transfer_cycles": "0",
+    "host_transfer_cycles_per_kib": "0",
+    "memory_model": "1",
+    "tl_noc_inject_cycles": "1",
+    "tl_noc_eject_cycles": "2",
+    "tl_slice_hit_occupancy": "1",
+    "tl_slice_hit_latency": "4",
+    "tl_slice_miss_occupancy": "1",
+    "tl_slice_mreq_occupancy": "1",
+    "tl_slice_fill_occupancy": "1",
+    "tl_slice_wake_occupancy": "1",
+    "tl_slice_writeback_occupancy": "1",
+    "tl_slice_to_outlet_cycles": "4",
+    "tl_outlet_to_slice_cycles": "13",
+    "tl_outlet_read_issue_cycles": "1",
+    "tl_outlet_write_issue_cycles": "1",
+    "tl_outlet_beat_cycles": "1",
+    "tl_hbm_write_latency_cycles": "23",
+    "core_pipeline": "1",
+    "branch_taken_cycles": "4",
+    "park_refetch_cycles": "5",
+    "vrf_banks": "4",
+    "vrf_bank_conflict_cycles": "1",
+    "lsu_setup_cycles": "1",
+    "lsu_vector_load_extra": "1",
+    "lsu_complete_cycles": "3",
+    "lsu_writeback_cycles": "1",
+    "fp_compare_latency": "4",
+    "shuffle_scalar_latency": "1",
+    "reduction_vector_extra": "2",
+    "dma_store_register_cycles": "3",
+    "dma_drain_cycles": "2",
+    "vrf_prefetch": "1",
+    "fp_reduction_vector_extra": "1",
+    "time_quantum": "1000",
+    "dram_path": "0",
+    "dram_fixed_cycles": "20",
+    "dram_clock_ratio": "10",
+    "dram_max_passes": "3",
+    "dram_tolerance_ppm": "5000",
+    "tl_core_beat_bytes": "64",
+    "tl_noc_payload_bytes": "64",
+    "tl_memory_lanes": "1",
+    "tl_lsu_units": "8",
+    "tl_lsu_shared_issue": "0",
+    "tl_pc_stripe_bytes": "4096"
+   },
+   "points": {
+    "op.add/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 19529,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 3.3558297915919915,
+     "gb_per_s_at_100mhz": 1.0067489374775975,
+     "max_rel_err": 0.002583979328165375
+    },
+    "op.add/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 26575,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 1.6697397303229853,
+     "gb_per_s_at_100mhz": 0.5009219190968957,
+     "max_rel_err": 0.0027624309392265192
+    },
+    "op.add/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 23443,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.7955466450539608,
+     "gb_per_s_at_100mhz": 0.8386639935161884,
+     "max_rel_err": 0.002717391304347826
+    },
+    "op.add/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 26575,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 1.6697397303229853,
+     "gb_per_s_at_100mhz": 0.5009219190968957,
+     "max_rel_err": 0.0003455425017277125
+    },
+    "op.add/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 19529,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 3.3558297915919915,
+     "gb_per_s_at_100mhz": 1.0067489374775975,
+     "max_rel_err": 0.0003225806451612903
+    },
+    "op.add/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 23443,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.7955466450539608,
+     "gb_per_s_at_100mhz": 0.8386639935161884,
+     "max_rel_err": 0.0003399048266485384
+    },
+    "op.add/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 56526,
+     "demand_bytes": 135168,
+     "b_per_cycle_per_core": 0.7970845274740826,
+     "gb_per_s_at_100mhz": 0.2391253582422248,
+     "max_rel_err": 0.0
+    },
+    "op.add/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 85866,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 0.7632357394079147,
+     "gb_per_s_at_100mhz": 0.2289707218223744,
+     "max_rel_err": 0.0
+    },
+    "op.add/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 31352,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.09032916560347,
+     "gb_per_s_at_100mhz": 0.6270987496810411,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/bf16-to-fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 19090,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 1.1800942902042955,
+     "gb_per_s_at_100mhz": 0.35402828706128864,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/bf16-to-fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 12100,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 3.6107988980716255,
+     "gb_per_s_at_100mhz": 1.0832396694214876,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/bf16-to-fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 15901,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 2.7476678615600694,
+     "gb_per_s_at_100mhz": 0.8243003584680209,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/bf16-to-fp32-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 60765,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 0.7302449326640884,
+     "gb_per_s_at_100mhz": 0.21907347979922653,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/bf16-to-fp32-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 52809,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 1.2410005870211516,
+     "gb_per_s_at_100mhz": 0.3723001761063455,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/bf16-to-fp32-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 56085,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 1.1685120798787556,
+     "gb_per_s_at_100mhz": 0.35055362396362666,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp16-to-bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 19090,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 1.1800942902042955,
+     "gb_per_s_at_100mhz": 0.35402828706128864,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp16-to-bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 12100,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 3.6107988980716255,
+     "gb_per_s_at_100mhz": 1.0832396694214876,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp16-to-bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 15901,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 2.7476678615600694,
+     "gb_per_s_at_100mhz": 0.8243003584680209,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp16-to-fp32-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 60765,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 0.7302449326640884,
+     "gb_per_s_at_100mhz": 0.21907347979922653,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp16-to-fp32-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 52809,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 1.2410005870211516,
+     "gb_per_s_at_100mhz": 0.3723001761063455,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp16-to-fp32-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 56085,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 1.1685120798787556,
+     "gb_per_s_at_100mhz": 0.35055362396362666,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp32-to-bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 18773,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 1.2363855892327633,
+     "gb_per_s_at_100mhz": 0.370915676769829,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp32-to-bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 65133,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 1.006187339750971,
+     "gb_per_s_at_100mhz": 0.30185620192529133,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp32-to-bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 15790,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 4.150474984167194,
+     "gb_per_s_at_100mhz": 1.2451424952501584,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp32-to-fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 18773,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 1.2363855892327633,
+     "gb_per_s_at_100mhz": 0.370915676769829,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp32-to-fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 65133,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 1.006187339750971,
+     "gb_per_s_at_100mhz": 0.30185620192529133,
+     "max_rel_err": 0.0
+    },
+    "op.cast/membound/fp32-to-fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 15790,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 4.150474984167194,
+     "gb_per_s_at_100mhz": 1.2451424952501584,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 16532,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 1.362690539559642,
+     "gb_per_s_at_100mhz": 0.4088071618678926,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 7430,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 5.880305069537909,
+     "gb_per_s_at_100mhz": 1.7640915208613728,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 11010,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 3.9682712685437482,
+     "gb_per_s_at_100mhz": 1.1904813805631245,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 16532,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 1.362690539559642,
+     "gb_per_s_at_100mhz": 0.4088071618678926,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 7430,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 5.880305069537909,
+     "gb_per_s_at_100mhz": 1.7640915208613728,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 11010,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 3.9682712685437482,
+     "gb_per_s_at_100mhz": 1.1904813805631245,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 29193,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 0.7950764452665594,
+     "gb_per_s_at_100mhz": 0.23852293357996782,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 54424,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.8027830858934784,
+     "gb_per_s_at_100mhz": 0.24083492576804352,
+     "max_rel_err": 0.0
+    },
+    "op.clone/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 27098,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.6123207124757055,
+     "gb_per_s_at_100mhz": 0.48369621374271166,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 16532,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 1.362690539559642,
+     "gb_per_s_at_100mhz": 0.4088071618678926,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 7551,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 5.786076899306935,
+     "gb_per_s_at_100mhz": 1.7358230697920807,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 10931,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 3.9969505687189337,
+     "gb_per_s_at_100mhz": 1.1990851706156802,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 16532,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 1.362690539559642,
+     "gb_per_s_at_100mhz": 0.4088071618678926,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 7551,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 5.786076899306935,
+     "gb_per_s_at_100mhz": 1.7358230697920807,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 10931,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 3.9969505687189337,
+     "gb_per_s_at_100mhz": 1.1990851706156802,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 29323,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 0.7915515693028227,
+     "gb_per_s_at_100mhz": 0.2374654707908468,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 54387,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.8033292269598741,
+     "gb_per_s_at_100mhz": 0.24099876808796222,
+     "max_rel_err": 0.0
+    },
+    "op.copy/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 27041,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.6157193397680067,
+     "gb_per_s_at_100mhz": 0.48471580193040203,
+     "max_rel_err": 0.0
+    },
+    "op.div/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 31787,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 1.3959585155357013,
+     "gb_per_s_at_100mhz": 0.4187875546607104,
+     "max_rel_err": 0.002086041399269168
+    },
+    "op.div/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 25585,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.561500879421536,
+     "gb_per_s_at_100mhz": 0.7684502638264609,
+     "max_rel_err": 0.0022255491456587713
+    },
+    "op.div/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 29227,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.2423101926301023,
+     "gb_per_s_at_100mhz": 0.6726930577890307,
+     "max_rel_err": 0.0019776709560967564
+    },
+    "op.div/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 31787,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 1.3959585155357013,
+     "gb_per_s_at_100mhz": 0.4187875546607104,
+     "max_rel_err": 0.0002592407582032759
+    },
+    "op.div/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 25585,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.561500879421536,
+     "gb_per_s_at_100mhz": 0.7684502638264609,
+     "max_rel_err": 0.0002752200195246321
+    },
+    "op.div/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 29227,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.2423101926301023,
+     "gb_per_s_at_100mhz": 0.6726930577890307,
+     "max_rel_err": 0.00025508997707818264
+    },
+    "op.div/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 56946,
+     "demand_bytes": 135168,
+     "b_per_cycle_per_core": 0.7912057036490711,
+     "gb_per_s_at_100mhz": 0.23736171109472132,
+     "max_rel_err": 6.59150592180892e-08
+    },
+    "op.div/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 87222,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 0.7513700671848845,
+     "gb_per_s_at_100mhz": 0.22541102015546538,
+     "max_rel_err": 7.809225616102999e-08
+    },
+    "op.div/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 35774,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 1.831944987980097,
+     "gb_per_s_at_100mhz": 0.5495834963940291,
+     "max_rel_err": 6.951433048350068e-08
+    },
+    "op.exp/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 29322,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 0.768296841961667,
+     "gb_per_s_at_100mhz": 0.23048905258850014,
+     "max_rel_err": 0.0009922521314733597
+    },
+    "op.exp/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 19583,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 2.2310507412892133,
+     "gb_per_s_at_100mhz": 0.6693152223867641,
+     "max_rel_err": 0.001865351306238939
+    },
+    "op.exp/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 22783,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.9176871644062095,
+     "gb_per_s_at_100mhz": 0.5753061493218629,
+     "max_rel_err": 0.0026176054434746666
+    },
+    "op.exp/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 29322,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 0.768296841961667,
+     "gb_per_s_at_100mhz": 0.23048905258850014,
+     "max_rel_err": 0.0002511586023967436
+    },
+    "op.exp/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 19583,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 2.2310507412892133,
+     "gb_per_s_at_100mhz": 0.6693152223867641,
+     "max_rel_err": 0.0002511586023967436
+    },
+    "op.exp/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 22783,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.9176871644062095,
+     "gb_per_s_at_100mhz": 0.5753061493218629,
+     "max_rel_err": 0.00035289819862316504
+    },
+    "op.exp/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 39400,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 0.5891032148900169,
+     "gb_per_s_at_100mhz": 0.1767309644670051,
+     "max_rel_err": 6.312539911033587e-08
+    },
+    "op.exp/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 54127,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.8071880330826883,
+     "gb_per_s_at_100mhz": 0.2421564099248065,
+     "max_rel_err": 6.312539911033587e-08
+    },
+    "op.exp/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 31399,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.3914668195377773,
+     "gb_per_s_at_100mhz": 0.4174400458613332,
+     "max_rel_err": 9.197498059787784e-08
+    },
+    "op.gelu/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 90025,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 0.250241599555679,
+     "gb_per_s_at_100mhz": 0.07507247986670369,
+     "max_rel_err": 0.0018821125227925714
+    },
+    "op.gelu/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 83699,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.5219974750793518,
+     "gb_per_s_at_100mhz": 0.15659924252380555,
+     "max_rel_err": 0.002063210320813248
+    },
+    "op.gelu/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 80248,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.5444455521217558,
+     "gb_per_s_at_100mhz": 0.16333366563652676,
+     "max_rel_err": 0.0018977210806619986
+    },
+    "op.gelu/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 90025,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 0.250241599555679,
+     "gb_per_s_at_100mhz": 0.07507247986670369,
+     "max_rel_err": 0.00023560052382024186
+    },
+    "op.gelu/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 80248,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.5444455521217558,
+     "gb_per_s_at_100mhz": 0.16333366563652676,
+     "max_rel_err": 0.00023804200770035378
+    },
+    "op.gelu/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 83699,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.5219974750793518,
+     "gb_per_s_at_100mhz": 0.15659924252380555,
+     "max_rel_err": 0.00025956393259324333
+    },
+    "op.gelu/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 99659,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 0.23290085859447382,
+     "gb_per_s_at_100mhz": 0.06987025757834214,
+     "max_rel_err": 1.1626177920748763e-07
+    },
+    "op.gelu/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 99073,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.4409946874190412,
+     "gb_per_s_at_100mhz": 0.13229840622571237,
+     "max_rel_err": 1.162617927242905e-07
+    },
+    "op.gelu/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 99625,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.4385512337933919,
+     "gb_per_s_at_100mhz": 0.13156537013801758,
+     "max_rel_err": 6.400951642282562e-08
+    },
+    "op.layernorm/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 103105,
+     "demand_bytes": 71680,
+     "b_per_cycle_per_core": 0.2317378723954545,
+     "gb_per_s_at_100mhz": 0.06952136171863635,
+     "max_rel_err": 0.0027404403350873266
+    },
+    "op.layernorm/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 112425,
+     "demand_bytes": 135168,
+     "b_per_cycle_per_core": 0.40076495441405385,
+     "gb_per_s_at_100mhz": 0.12022948632421615,
+     "max_rel_err": 0.003010229203849058
+    },
+    "op.layernorm/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 121476,
+     "demand_bytes": 135168,
+     "b_per_cycle_per_core": 0.3709045408146465,
+     "gb_per_s_at_100mhz": 0.11127136224439396,
+     "max_rel_err": 0.003122877204058127
+    },
+    "op.layernorm/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 103105,
+     "demand_bytes": 71680,
+     "b_per_cycle_per_core": 0.2317378723954545,
+     "gb_per_s_at_100mhz": 0.06952136171863635,
+     "max_rel_err": 0.00020033170395519025
+    },
+    "op.layernorm/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 112425,
+     "demand_bytes": 135168,
+     "b_per_cycle_per_core": 0.40076495441405385,
+     "gb_per_s_at_100mhz": 0.12022948632421615,
+     "max_rel_err": 0.0003526847912182818
+    },
+    "op.layernorm/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 121476,
+     "demand_bytes": 135168,
+     "b_per_cycle_per_core": 0.3709045408146465,
+     "gb_per_s_at_100mhz": 0.11127136224439396,
+     "max_rel_err": 0.00041020003571920786
+    },
+    "op.layernorm/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 65719,
+     "demand_bytes": 77824,
+     "b_per_cycle_per_core": 0.39473110262379724,
+     "gb_per_s_at_100mhz": 0.11841933078713918,
+     "max_rel_err": 1.0209017380035368e-07
+    },
+    "op.layernorm/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 72447,
+     "demand_bytes": 139264,
+     "b_per_cycle_per_core": 0.6407626724824124,
+     "gb_per_s_at_100mhz": 0.19222880174472373,
+     "max_rel_err": 1.4578007501259539e-07
+    },
+    "op.max/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 18889,
+     "demand_bytes": 2112,
+     "b_per_cycle_per_core": 0.03727036899782942,
+     "gb_per_s_at_100mhz": 0.011181110699348828,
+     "max_rel_err": 0.0
+    },
+    "op.layernorm/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 92524,
+     "demand_bytes": 139264,
+     "b_per_cycle_per_core": 0.5017220757136888,
+     "gb_per_s_at_100mhz": 0.15051662271410662,
+     "max_rel_err": 2.175482464904301e-07
+    },
+    "op.max/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 24828,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.8807260619730412,
+     "gb_per_s_at_100mhz": 0.26421781859191235,
+     "max_rel_err": 0.0
+    },
+    "op.max/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 28979,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.7545694008304865,
+     "gb_per_s_at_100mhz": 0.22637082024914595,
+     "max_rel_err": 0.0
+    },
+    "op.max/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 18889,
+     "demand_bytes": 2112,
+     "b_per_cycle_per_core": 0.03727036899782942,
+     "gb_per_s_at_100mhz": 0.011181110699348828,
+     "max_rel_err": 0.0
+    },
+    "op.max/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 24828,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.8807260619730412,
+     "gb_per_s_at_100mhz": 0.26421781859191235,
+     "max_rel_err": 0.0
+    },
+    "op.max/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 28979,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.7545694008304865,
+     "gb_per_s_at_100mhz": 0.22637082024914595,
+     "max_rel_err": 0.0
+    },
+    "op.max/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 11289,
+     "demand_bytes": 4160,
+     "b_per_cycle_per_core": 0.12283343667877285,
+     "gb_per_s_at_100mhz": 0.03685003100363186,
+     "max_rel_err": 0.0
+    },
+    "op.max/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 16981,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 1.2877137192548533,
+     "gb_per_s_at_100mhz": 0.386314115776456,
+     "max_rel_err": 0.0
+    },
+    "op.max/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 19821,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 1.1032070363082924,
+     "gb_per_s_at_100mhz": 0.3309621108924878,
+     "max_rel_err": 0.0
+    },
+    "op.mean/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 18993,
+     "demand_bytes": 2112,
+     "b_per_cycle_per_core": 0.0370662875796346,
+     "gb_per_s_at_100mhz": 0.011119886273890382,
+     "max_rel_err": 5.7153403759002686e-05
+    },
+    "op.mean/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 24834,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.8805132748114145,
+     "gb_per_s_at_100mhz": 0.26415398244342436,
+     "max_rel_err": 0.00011695176362991333
+    },
+    "op.mean/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 29200,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.7488584474885845,
+     "gb_per_s_at_100mhz": 0.22465753424657536,
+     "max_rel_err": 0.00011612474918365479
+    },
+    "op.mean/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 18993,
+     "demand_bytes": 2112,
+     "b_per_cycle_per_core": 0.0370662875796346,
+     "gb_per_s_at_100mhz": 0.011119886273890382,
+     "max_rel_err": 1.1671334505081177e-05
+    },
+    "op.mean/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 24834,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.8805132748114145,
+     "gb_per_s_at_100mhz": 0.26415398244342436,
+     "max_rel_err": 2.041459083557129e-05
+    },
+    "op.mean/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 29200,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.7488584474885845,
+     "gb_per_s_at_100mhz": 0.22465753424657536,
+     "max_rel_err": 1.4506280422210693e-05
+    },
+    "op.mean/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 11360,
+     "demand_bytes": 4160,
+     "b_per_cycle_per_core": 0.12206572769953052,
+     "gb_per_s_at_100mhz": 0.036619718309859155,
+     "max_rel_err": 3.725290298461914e-09
+    },
+    "op.mean/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 17095,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 1.2791264502291118,
+     "gb_per_s_at_100mhz": 0.38373793506873355,
+     "max_rel_err": 9.313225746154785e-09
+    },
+    "op.mean/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 19446,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 1.1244814700538244,
+     "gb_per_s_at_100mhz": 0.3373444410161473,
+     "max_rel_err": 1.1175870895385742e-08
+    },
+    "op.mul/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 26575,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 1.6697397303229853,
+     "gb_per_s_at_100mhz": 0.5009219190968957,
+     "max_rel_err": 0.0017598856074355167
+    },
+    "op.mul/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 19529,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 3.3558297915919915,
+     "gb_per_s_at_100mhz": 1.0067489374775975,
+     "max_rel_err": 0.0027250868287469945
+    },
+    "op.mul/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 23443,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.7955466450539608,
+     "gb_per_s_at_100mhz": 0.8386639935161884,
+     "max_rel_err": 0.0018948926720947447
+    },
+    "op.mul/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 26575,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 1.6697397303229853,
+     "gb_per_s_at_100mhz": 0.5009219190968957,
+     "max_rel_err": 0.00030595455457614764
+    },
+    "op.mul/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 19529,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 3.3558297915919915,
+     "gb_per_s_at_100mhz": 1.0067489374775975,
+     "max_rel_err": 0.00028479637059502453
+    },
+    "op.mul/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 23443,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.7955466450539608,
+     "gb_per_s_at_100mhz": 0.8386639935161884,
+     "max_rel_err": 0.00023721659682213156
+    },
+    "op.mul/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 85866,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 0.7632357394079147,
+     "gb_per_s_at_100mhz": 0.2289707218223744,
+     "max_rel_err": 0.0
+    },
+    "op.mul/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 56526,
+     "demand_bytes": 135168,
+     "b_per_cycle_per_core": 0.7970845274740826,
+     "gb_per_s_at_100mhz": 0.2391253582422248,
+     "max_rel_err": 0.0
+    },
+    "op.mul/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 31352,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.09032916560347,
+     "gb_per_s_at_100mhz": 0.6270987496810411,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 20491,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 1.0994094968522765,
+     "gb_per_s_at_100mhz": 0.329822849055683,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 16720,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 2.613078149920255,
+     "gb_per_s_at_100mhz": 0.7839234449760766,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 12959,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 3.3714535586593617,
+     "gb_per_s_at_100mhz": 1.0114360675978087,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 20491,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 1.0994094968522765,
+     "gb_per_s_at_100mhz": 0.329822849055683,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 12959,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 3.3714535586593617,
+     "gb_per_s_at_100mhz": 1.0114360675978087,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 29905,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 0.7761466867302013,
+     "gb_per_s_at_100mhz": 0.23284400601906038,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 16720,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 2.613078149920255,
+     "gb_per_s_at_100mhz": 0.7839234449760766,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 28944,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.5094895890915792,
+     "gb_per_s_at_100mhz": 0.45284687672747376,
+     "max_rel_err": 0.0
+    },
+    "op.relu/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 54099,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.8076058091030641,
+     "gb_per_s_at_100mhz": 0.24228174273091924,
+     "max_rel_err": 0.0
+    },
+    "op.rmsnorm/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 83969,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 0.27641947226555835,
+     "gb_per_s_at_100mhz": 0.0829258416796675,
+     "max_rel_err": 0.002664602720491049
+    },
+    "op.rmsnorm/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 89747,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 0.49442692606252386,
+     "gb_per_s_at_100mhz": 0.14832807781875718,
+     "max_rel_err": 0.0022111815533171716
+    },
+    "op.rmsnorm/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 97390,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 0.4556251497415888,
+     "gb_per_s_at_100mhz": 0.13668754492247664,
+     "max_rel_err": 0.0033259191425158694
+    },
+    "op.rmsnorm/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 83969,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 0.27641947226555835,
+     "gb_per_s_at_100mhz": 0.0829258416796675,
+     "max_rel_err": 0.00027867194258273975
+    },
+    "op.rmsnorm/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 89747,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 0.49442692606252386,
+     "gb_per_s_at_100mhz": 0.14832807781875718,
+     "max_rel_err": 0.00035844070392295033
+    },
+    "op.rmsnorm/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 97390,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 0.4556251497415888,
+     "gb_per_s_at_100mhz": 0.13668754492247664,
+     "max_rel_err": 0.0003003464904439793
+    },
+    "op.rmsnorm/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 54458,
+     "demand_bytes": 73728,
+     "b_per_cycle_per_core": 0.4512835579712806,
+     "gb_per_s_at_100mhz": 0.1353850673913842,
+     "max_rel_err": 0.0
+    },
+    "op.rmsnorm/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 58265,
+     "demand_bytes": 135168,
+     "b_per_cycle_per_core": 0.7732944306187247,
+     "gb_per_s_at_100mhz": 0.23198832918561743,
+     "max_rel_err": 1.4700897019334325e-07
+    },
+    "op.sigmoid/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 45835,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 0.4915021271953747,
+     "gb_per_s_at_100mhz": 0.14745063815861242,
+     "max_rel_err": 0.0019187331199645996
+    },
+    "op.rmsnorm/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 65766,
+     "demand_bytes": 135168,
+     "b_per_cycle_per_core": 0.6850956421251103,
+     "gb_per_s_at_100mhz": 0.2055286926375331,
+     "max_rel_err": 1.0761629581911767e-07
+    },
+    "op.sigmoid/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 36410,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.199963380023803,
+     "gb_per_s_at_100mhz": 0.3599890140071409,
+     "max_rel_err": 0.0019530653953552246
+    },
+    "op.sigmoid/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 40604,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.0760187830427215,
+     "gb_per_s_at_100mhz": 0.3228056349128165,
+     "max_rel_err": 0.0019530653953552246
+    },
+    "op.sigmoid/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 45835,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 0.4915021271953747,
+     "gb_per_s_at_100mhz": 0.14745063815861242,
+     "max_rel_err": 0.00024330615997314453
+    },
+    "op.sigmoid/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 36410,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.199963380023803,
+     "gb_per_s_at_100mhz": 0.3599890140071409,
+     "max_rel_err": 0.0002440810203552246
+    },
+    "op.sigmoid/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 40604,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.0760187830427215,
+     "gb_per_s_at_100mhz": 0.3228056349128165,
+     "max_rel_err": 0.0002440810203552246
+    },
+    "op.sigmoid/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 55240,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 0.42017861453053346,
+     "gb_per_s_at_100mhz": 0.12605358435916003,
+     "max_rel_err": 1.1920928955078125e-07
+    },
+    "op.sigmoid/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 67161,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.650536273531762,
+     "gb_per_s_at_100mhz": 0.1951608820595286,
+     "max_rel_err": 1.1920928955078125e-07
+    },
+    "op.sigmoid/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 40029,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.0914753470400627,
+     "gb_per_s_at_100mhz": 0.3274426041120188,
+     "max_rel_err": 1.1920928955078125e-07
+    },
+    "op.silu/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 45577,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 0.49428439783223993,
+     "gb_per_s_at_100mhz": 0.14828531934967198,
+     "max_rel_err": 0.001933531516119631
+    },
+    "op.silu/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 36363,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.2015143598346305,
+     "gb_per_s_at_100mhz": 0.3604543079503892,
+     "max_rel_err": 0.001933531516119631
+    },
+    "op.silu/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 39824,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.0970938797375116,
+     "gb_per_s_at_100mhz": 0.32912816392125355,
+     "max_rel_err": 0.0021154042239158125
+    },
+    "op.silu/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 45577,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 0.49428439783223993,
+     "gb_per_s_at_100mhz": 0.14828531934967198,
+     "max_rel_err": 0.00022525325331997415
+    },
+    "op.silu/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 36363,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.2015143598346305,
+     "gb_per_s_at_100mhz": 0.3604543079503892,
+     "max_rel_err": 0.00024085316383321473
+    },
+    "op.silu/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 39824,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.0970938797375116,
+     "gb_per_s_at_100mhz": 0.32912816392125355,
+     "max_rel_err": 0.00026434254487548694
+    },
+    "op.silu/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 38737,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 0.5991859634630112,
+     "gb_per_s_at_100mhz": 0.17975578903890338,
+     "max_rel_err": 5.9091624636763784e-08
+    },
+    "op.silu/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 66950,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.6525865073437889,
+     "gb_per_s_at_100mhz": 0.19577595220313668,
+     "max_rel_err": 1.1818324927352757e-07
+    },
+    "op.silu/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 40085,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 1.0899505218078251,
+     "gb_per_s_at_100mhz": 0.32698515654234755,
+     "max_rel_err": 9.831964516308967e-08
+    },
+    "op.softmax/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 165929,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 0.13576891320986686,
+     "gb_per_s_at_100mhz": 0.04073067396296007,
+     "max_rel_err": 9.5367431640625e-05
+    },
+    "op.softmax/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 168643,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.25907192511202165,
+     "gb_per_s_at_100mhz": 0.07772157753360649,
+     "max_rel_err": 9.5367431640625e-05
+    },
+    "op.softmax/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 184865,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.23633822879759103,
+     "gb_per_s_at_100mhz": 0.0709014686392773,
+     "max_rel_err": 5.530007183551788e-05
+    },
+    "op.softmax/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 168643,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.25907192511202165,
+     "gb_per_s_at_100mhz": 0.07772157753360649,
+     "max_rel_err": 7.497146725654602e-06
+    },
+    "op.softmax/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 165929,
+     "demand_bytes": 67584,
+     "b_per_cycle_per_core": 0.13576891320986686,
+     "gb_per_s_at_100mhz": 0.04073067396296007,
+     "max_rel_err": 6.036832928657532e-06
+    },
+    "op.softmax/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 74659,
+     "demand_bytes": 69632,
+     "b_per_cycle_per_core": 0.3108890645021587,
+     "gb_per_s_at_100mhz": 0.09326671935064762,
+     "max_rel_err": 9.313225746154785e-10
+    },
+    "op.softmax/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 184865,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.23633822879759103,
+     "gb_per_s_at_100mhz": 0.0709014686392773,
+     "max_rel_err": 7.625669240951538e-06
+    },
+    "op.softmax/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 82768,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.527869063728333,
+     "gb_per_s_at_100mhz": 0.15836071911849992,
+     "max_rel_err": 7.450580596923828e-09
+    },
+    "op.softmax/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 90789,
+     "demand_bytes": 131072,
+     "b_per_cycle_per_core": 0.4812330421820558,
+     "gb_per_s_at_100mhz": 0.14436991265461674,
+     "max_rel_err": 5.587935447692871e-09
+    },
+    "op.sub/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 26575,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 1.6697397303229853,
+     "gb_per_s_at_100mhz": 0.5009219190968957,
+     "max_rel_err": 0.0026109660574412533
+    },
+    "op.sub/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 19529,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 3.3558297915919915,
+     "gb_per_s_at_100mhz": 1.0067489374775975,
+     "max_rel_err": 0.002628120893561104
+    },
+    "op.sub/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 23443,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.7955466450539608,
+     "gb_per_s_at_100mhz": 0.8386639935161884,
+     "max_rel_err": 0.0027739251040221915
+    },
+    "op.sub/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 26575,
+     "demand_bytes": 133120,
+     "b_per_cycle_per_core": 1.6697397303229853,
+     "gb_per_s_at_100mhz": 0.5009219190968957,
+     "max_rel_err": 0.00032637075718015666
+    },
+    "op.sub/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 19529,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 3.3558297915919915,
+     "gb_per_s_at_100mhz": 1.0067489374775975,
+     "max_rel_err": 0.000328515111695138
+    },
+    "op.sub/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 23443,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.7955466450539608,
+     "gb_per_s_at_100mhz": 0.8386639935161884,
+     "max_rel_err": 0.0003469210754553339
+    },
+    "op.sub/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 85866,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 0.7632357394079147,
+     "gb_per_s_at_100mhz": 0.2289707218223744,
+     "max_rel_err": 0.0
+    },
+    "op.sub/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 56526,
+     "demand_bytes": 135168,
+     "b_per_cycle_per_core": 0.7970845274740826,
+     "gb_per_s_at_100mhz": 0.2391253582422248,
+     "max_rel_err": 0.0
+    },
+    "op.sub/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 31352,
+     "demand_bytes": 196608,
+     "b_per_cycle_per_core": 2.09032916560347,
+     "gb_per_s_at_100mhz": 0.6270987496810411,
+     "max_rel_err": 0.0
+    },
+    "op.sum/membound/bf16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 18833,
+     "demand_bytes": 2112,
+     "b_per_cycle_per_core": 0.03738119258747943,
+     "gb_per_s_at_100mhz": 0.011214357776243827,
+     "max_rel_err": 0.0017703477483627572
+    },
+    "op.sum/membound/bf16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 24517,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.8918981387064758,
+     "gb_per_s_at_100mhz": 0.26756944161194274,
+     "max_rel_err": 0.0015469450569897043
+    },
+    "op.sum/membound/bf16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 28744,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.7607384729566751,
+     "gb_per_s_at_100mhz": 0.22822154188700253,
+     "max_rel_err": 0.0021133404582529157
+    },
+    "op.sum/membound/fp16-small-broadcast-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 18833,
+     "demand_bytes": 2112,
+     "b_per_cycle_per_core": 0.03738119258747943,
+     "gb_per_s_at_100mhz": 0.011214357776243827,
+     "max_rel_err": 0.0003629839762212476
+    },
+    "op.sum/membound/fp16-small-contig-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 24517,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.8918981387064758,
+     "gb_per_s_at_100mhz": 0.26756944161194274,
+     "max_rel_err": 0.00026988086237376177
+    },
+    "op.sum/membound/fp16-small-strided-r32-c1024": {
+     "status": "pass",
+     "device_cycles": 28744,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 0.7607384729566751,
+     "gb_per_s_at_100mhz": 0.22822154188700253,
+     "max_rel_err": 0.0002644905358032158
+    },
+    "op.sum/membound/fp32-small-broadcast-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 11236,
+     "demand_bytes": 4160,
+     "b_per_cycle_per_core": 0.1234128396819746,
+     "gb_per_s_at_100mhz": 0.037023851904592384,
+     "max_rel_err": 1.1581316418125825e-07
+    },
+    "op.sum/membound/fp32-small-contig-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 17131,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 1.2764384254665033,
+     "gb_per_s_at_100mhz": 0.382931527639951,
+     "max_rel_err": 1.2312976961632073e-07
+    },
+    "op.sum/membound/fp32-small-strided-r16-c1024": {
+     "status": "pass",
+     "device_cycles": 19308,
+     "demand_bytes": 65600,
+     "b_per_cycle_per_core": 1.132518472481182,
+     "gb_per_s_at_100mhz": 0.3397555417443547,
+     "max_rel_err": 2.037594017134943e-07
+    }
+   },
+   "missing": []
+  }
+ },
+ "non_default_settings": [
+  "TNCA_TILED_POINTWISE=1"
+ ],
+ "counts_for_target": false
+}

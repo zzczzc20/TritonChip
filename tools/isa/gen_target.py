@@ -102,6 +102,17 @@ def build_target(core, top, isa, name, description, profile=None):
         # untransposed). So the capability is this instance's parameter,
         # and on a profile without it asking remains a compile error.
         'tensor_transpose': bool(core.get('HAS_TENSOR_XPOSE', 0)),
+        # R41 X8: HAS_TENSOR_XPOSE=2 also executes the transposed write for
+        # 1-byte elements (e4m3, e5m2, int8). Emitted only where it is true,
+        # so every older target file is unchanged; TargetInfo.has() reads an
+        # absent key of this optional capability as False, which keeps the
+        # gather path on every image built before it.
+        **({'tensor_transpose_8bit': True}
+           if int(core.get('HAS_TENSOR_XPOSE', 0)) >= 2 else {}),
+        # ISA sec 9C.4 (approved 2026-10-29): m.mma.dp.async, CAPABILITY0 bit 12.
+        # Emitted only where true, so every older target file is unchanged;
+        # TargetInfo.has() reads an absent key as False.
+        **({'matrix_dp': True} if int(core.get('MAC_DP', 0)) else {}),
         'mbarrier': True,
         'packed_f16': False,
         'cache_hints': False,
@@ -267,6 +278,9 @@ def main():
         t['num_cores'] = spec['num_cores']
         t['topology'] = spec['topology']
         t['elaboration'] = spec['elaboration']
+        # R41 G4: compiler conventions a profile's images need (absent: none)
+        if 'compiler' in spec:
+            t['compiler'] = spec['compiler']
         # The bench is deliberately NOT copied here. Phase 3.6 section
         # 3.1: a compile target describes the ISA, the ABI, the
         # capabilities and the resources, and may not be equated with a

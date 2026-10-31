@@ -1,0 +1,29 @@
+# Handoff: Stage 2 acceptance and the overall R41 acceptance
+
+> **Binding:** [`doc/engineering_discipline.md`](../../../doc/engineering_discipline.md) (evidence integrity, the standard path, no special-casing, no constructive exceptions, no test poisoning) applies to all work and takes precedence over this file.
+
+
+You take over the acceptance work for R41 (`doc/r41_tasks_and_acceptance.md`): Stage 2 sign-off (S2-00 to S2-06) and the final R41 sign-off. This is a long task. It ends when every required item has been judged against its evidence, the reports are written, and what is not accepted is stated plainly. Push your work as soon as it exists.
+
+Read first: `evidence/r41/SERVERS.md` (the three servers, how to connect, and the rules for the shared card; it is part of this handoff).
+
+## Where things stand (2026-10-26)
+- **Stage 1** (90 MHz, software): all seven board manifests have run. The only gap was the original suite: it is now complete (113 of 113 points), and another Codex session is ingesting it and finishing `doc/r41_stage1_report.md`. Do not duplicate that. The Stage 1 GEMM no-slower hypothesis fails on 8 of 9 points; that stands as a failure.
+- **Stage 2 image:** run 1 of five full runs produced the 100 MHz image (`30e79769…`, UUID `49964b17-…`): routed kernel WNS +0.042 ns, TNS 0, WHS +0.003 ns (`evidence/r41/stage2/run1/README.md`). The platform critical CDC findings are the same 56 as in attempt 3.
+- **Stage 2 board results** (`evidence/r41/stage2/board/results.md`): clock 100 MHz in every probe; original suite 113 of 113 points, device time 1.096× faster than 90 MHz on the 96 comparable points; FP8 cases 100/100 and blockwise 16/16 bitwise on the board; 8 GiB window cases 7/7 and 2/2; the 2 h endurance run passed 250/250 sessions on its second attempt (the first failed because of a harness bug, fixed in `r41-board-fix`, merged). **Not run on the board:** `s2-fp8-hub` and `s2-qwen-fp8` (the FP8 Python environment failed to build on the FPGA host).
+- **FP8 software** is complete on the SystemC model: casts, per-tensor, rowwise and blockwise `_scaled_mm`, the Hub kernels, `FP8Linear`, both Qwen models' layers, KV-cache decode and the vision tower (`evidence/r41/fp8/`).
+- **Roofline** (`evidence/r41/stage2/roofline/`): TNCA sits about 29× below the roofline of its own three-core hardware; the bottleneck is the core-side memory path. A separate Codex session works on this in branch `r41-hbm-bw` (`evidence/r41/hbm_bw/HANDOFF.md`) and will deliver a next image. Do not duplicate it.
+
+## What to do
+1. Go through S2-00 to S2-06 and section 10 (Definition of Done) of `doc/r41_tasks_and_acceptance.md`. For every Required item, find its evidence in the repository and judge it: **passed**, **failed**, **not measured** or **blocked**, with the evidence path. A negative report never closes a required item, and a model prediction never stands in for a board measurement. Write the result in `evidence/r41/acceptance/stage2_index.md` (and a machine-readable index like `evidence/r41/stage1/required_index.json` if that fits), and make a checker target if Stage 1's `make r41-stage1-acceptance` pattern applies.
+2. Close what can be closed without new work: ingest and index board results already collected, and reconcile identities (image hash, software tree, parameters, clock) as S2-01 item 6 requires.
+3. For every item that is not accepted, say exactly why and what would close it. Examples already known: Qwen text inference end to end (S2-04), the S2-05 XL set and final selector, S2-03 locality, the FP8 Hub and Qwen board runs, and the final independent reproduction (S2-06). Propose a bounded work plan with a time estimate for each, and tell the lead which ones need board time, a new image, or a user decision. Execute the ones that are code, analysis or documentation only.
+4. Write `doc/r41_stage2_report.md` and the final `doc/r41_report.md` (professional English; claim only what has evidence; failures shown; each miss gets its bottleneck, like `doc/r40_report.md`). Update the documents' entries in `doc/docmap.toml`; `python -m tools.docmaint check` must pass.
+5. Report to the lead at each milestone with a short status in `evidence/r41/acceptance/STATUS.md`.
+
+## Rules
+- **Worktree and branches:** work in `/home/ubuntu/TritonChip-accept`: create it with `git -C /home/ubuntu/TritonChip-main worktree add -b r41-accept /home/ubuntu/TritonChip-accept origin/r41` (a local branch only). Do not create other remote branches: the number of active R41 branches is at most two (`r41` and `r41-hbm-bw`). Push your commits to `r41`: `git fetch origin && git merge origin/r41`, then `git push origin HEAD:r41` (fast-forward only). Never force-push, amend or rewrite history. Do not work in `/home/ubuntu/TritonChip` (another Codex session) or in `/home/ubuntu/TritonChip-hbmbw`.
+- Commit and push at every milestone; the local machine has no swap and unpushed work can be lost. Commit as `git -c user.name=zzczzc20 -c user.email=zhouzc2000@foxmail.com commit`, with a message ending in a blank line and `Co-Authored-By: Codex <noreply@openai.com>`. Stage files by explicit path.
+- Documents are professional English.
+- The frozen Stage 1 product tree is commit `25094197f6e6` (software tree `files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a`); Stage 1 acceptance binds to it.
+- Never write credentials into a file. For the card, follow `evidence/r41/SERVERS.md`; do not start board runs without telling the lead, and never start a full image run.

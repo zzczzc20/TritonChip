@@ -1,0 +1,147 @@
+{
+  "evidence": "synthetic-memory-coupled-RTL-comparison",
+  "board_speedup_measured": false,
+  "acceptance_gate_satisfied": false,
+  "scope": "five matched operators, small-cache RTL; compiler block caps may differ; no board qualification",
+  "sources": {
+    "evidence/r41/hbm_bw/hybrid_lsu/coupled/torch_fp16_16384_legacy128.log": "d921e685b52eb4042d784e37d36ecd6854566dd7f6c0245137ba6fee0d13b27a",
+    "evidence/r41/hbm_bw/hybrid_lsu/coupled/torch_fp16_16384_hybrid128.log": "834ee303f956dcf77686e45f33a249fa8ce14365c23b034383caa9c762401f28"
+  },
+  "rows": [
+    {
+      "operator": "add",
+      "shape": [
+        16384
+      ],
+      "dtype": "float16",
+      "baseline_rtl_cycles": 49991,
+      "candidate_rtl_cycles": 20556,
+      "rtl_cycle_speedup": 2.431942012064604,
+      "numerics": "pass",
+      "baseline_max_block": 128,
+      "candidate_max_block": 128,
+      "baseline_grids": [
+        [
+          128,
+          1,
+          1
+        ]
+      ],
+      "candidate_grids": [
+        [
+          128,
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "operator": "mul",
+      "shape": [
+        16384
+      ],
+      "dtype": "float16",
+      "baseline_rtl_cycles": 50195,
+      "candidate_rtl_cycles": 20046,
+      "rtl_cycle_speedup": 2.5039908211114437,
+      "numerics": "pass",
+      "baseline_max_block": 128,
+      "candidate_max_block": 128,
+      "baseline_grids": [
+        [
+          128,
+          1,
+          1
+        ]
+      ],
+      "candidate_grids": [
+        [
+          128,
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "operator": "silu",
+      "shape": [
+        16384
+      ],
+      "dtype": "float16",
+      "baseline_rtl_cycles": 56336,
+      "candidate_rtl_cycles": 27509,
+      "rtl_cycle_speedup": 2.0479115925697045,
+      "numerics": "pass",
+      "baseline_max_block": 128,
+      "candidate_max_block": 128,
+      "baseline_grids": [
+        [
+          128,
+          1,
+          1
+        ]
+      ],
+      "candidate_grids": [
+        [
+          128,
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "operator": "gelu",
+      "shape": [
+        16384
+      ],
+      "dtype": "float16",
+      "baseline_rtl_cycles": 85212,
+      "candidate_rtl_cycles": 71917,
+      "rtl_cycle_speedup": 1.1848658870642546,
+      "numerics": "pass",
+      "baseline_max_block": 128,
+      "candidate_max_block": 128,
+      "baseline_grids": [
+        [
+          128,
+          1,
+          1
+        ]
+      ],
+      "candidate_grids": [
+        [
+          128,
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "operator": "copy",
+      "shape": [
+        16384
+      ],
+      "dtype": "float16",
+      "baseline_rtl_cycles": 33658,
+      "candidate_rtl_cycles": 12215,
+      "rtl_cycle_speedup": 2.7554645927138766,
+      "numerics": "pass",
+      "baseline_max_block": 128,
+      "candidate_max_block": 128,
+      "baseline_grids": [
+        [
+          128,
+          1,
+          1
+        ]
+      ],
+      "candidate_grids": [
+        [
+          128,
+          1,
+          1
+        ]
+      ]
+    }
+  ]
+}

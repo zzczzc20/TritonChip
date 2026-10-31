@@ -1,0 +1,30 @@
+diff --git a/rtl/core/tnca_lsu_hybrid.v b/rtl/core/tnca_lsu_hybrid.v
+index 2d0f5d06..66bf5f4f 100644
+--- a/rtl/core/tnca_lsu_hybrid.v
++++ b/rtl/core/tnca_lsu_hybrid.v
+@@ -170,7 +170,7 @@ module tnca_lsu_hybrid #(
+         end
+     end
+ `ifndef SYNTHESIS
+-    initial if(VLEN!=16 || ELEN!=32 || MEM_DW!=512 || MEM_BYTES!=64 || MEM_SHIFT!=6 || BEAT_W<4 || BEAT_W>7 || NUM_BEATS>4)
++    initial if(VLEN!=16 || ELEN!=32 || MEM_DW!=512 || MEM_BYTES!=64 || MEM_SHIFT!=6 || BEAT_W<4 || BEAT_W>7 || NUM_BEATS<1 || NUM_BEATS>(1<<(BEAT_W-2)))
+         $fatal(1,"invalid hybrid LSU geometry");
+     always @(posedge clk) if(rst_n) begin
+         if(fmv && smv) $fatal(1,"hybrid LSU paths issue concurrently");
+diff --git a/rtl/tile/tnca_tile.v b/rtl/tile/tnca_tile.v
+index 54aeae05..9cf58ce4 100644
+--- a/rtl/tile/tnca_tile.v
++++ b/rtl/tile/tnca_tile.v
+@@ -234,7 +234,11 @@ module tnca_tile #(
+         .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
+         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
+         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
+-        .LSU_BEATS(HYBRID_LSU ? 4 : LSU_BEATS), .LSU_TAG_W(LSU_TAG_W)
++        // The hybrid path adds a path bit ahead of the pair's unit bit.
++        // Use every beat tag representable in the remaining port bits, up to
++        // the configured LSU limit; the default five-bit port still fits four.
++        .LSU_BEATS(HYBRID_LSU && LSU_BEATS > (1 << (LSU_TAG_W-3)) ?
++                   (1 << (LSU_TAG_W-3)) : LSU_BEATS), .LSU_TAG_W(LSU_TAG_W)
+     ) u_core (
+         .clk(clk), .rst_n(rst_n),
+         .launch_valid(launch_valid), .launch_pc(launch_pc),

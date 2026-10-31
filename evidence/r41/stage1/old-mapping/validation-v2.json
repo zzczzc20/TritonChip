@@ -1,0 +1,226 @@
+{
+  "schema": "tnca-old-mapping-control-validation/1",
+  "status": "old-mapping-control-validated",
+  "preparation_sha256": "5a8111bc8ca2395d72f405d6ef5282220fbaf30a6050a0a7763b932095722436",
+  "input_report_sha256": {
+    "cases/old-16/report.json": "fb355a09faa4a368bee28a3b1b0ccd6e6cad0db2d148139cc1d89b83dd0e2728",
+    "cases/old-32/report.json": "37d94f033a9b2b51a1fc64b53490d0c60616bcb151cea41c18b9aa6c8633b2e0",
+    "cases/old-32-k33/report.json": "08a829b126674e8e072fc630b3d8a5a444fb9ea879640eb6063875efd87f3ae5",
+    "cases/fixed-16/report.json": "0679bdee86d4576c3d4c9c6a0ed9ff2038fffe7d05060640a614f4dada5ec0bc",
+    "cases/fixed-32/report.json": "c86afbf37350cb9aea79ad1ce96be65867eb6ddcab4e30ed0cda25baa8d934cd",
+    "cases/fixed-32-k33/report.json": "eb7ccf272f12abafdfc5a9c7111229e9a46604298d8f36ff590bfc9cf467c98a"
+  },
+  "validator_sha256": "20aaed12e9646e1fc6fd39a4f27f20b41c7bfc484010800197e46019436f71ba",
+  "rows": [
+    {
+      "label": "16",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "inputs_equal": true,
+      "executable_equal": true,
+      "old_code_sha256": [
+        "a461c46ee697d766359daa93b787f6c67aec8d134211b54682b14d66874ebf65"
+      ],
+      "fixed_code_sha256": [
+        "a461c46ee697d766359daa93b787f6c67aec8d134211b54682b14d66874ebf65"
+      ],
+      "old_k_loop_acc_operations": {
+        "k_loop_reads": 0,
+        "k_loop_writes": 0,
+        "k_loop_zeros": 0
+      },
+      "fixed_k_loop_acc_operations": {
+        "k_loop_reads": 0,
+        "k_loop_writes": 0,
+        "k_loop_zeros": 0
+      },
+      "old_row_commands": 0,
+      "fixed_row_commands": 0,
+      "old_instructions": 19748,
+      "fixed_instructions": 19748,
+      "old_cycles": 107438,
+      "fixed_cycles": 107438,
+      "bindings_equal": true
+    },
+    {
+      "label": "16",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "inputs_equal": true,
+      "executable_equal": true,
+      "old_code_sha256": [
+        "cd430136252d1ebf9d487f71d4056e00b24ee378925bbd44631dfc81b152156f"
+      ],
+      "fixed_code_sha256": [
+        "cd430136252d1ebf9d487f71d4056e00b24ee378925bbd44631dfc81b152156f"
+      ],
+      "old_k_loop_acc_operations": {
+        "k_loop_reads": 0,
+        "k_loop_writes": 0,
+        "k_loop_zeros": 0
+      },
+      "fixed_k_loop_acc_operations": {
+        "k_loop_reads": 0,
+        "k_loop_writes": 0,
+        "k_loop_zeros": 0
+      },
+      "old_row_commands": 0,
+      "fixed_row_commands": 0,
+      "old_instructions": 20268,
+      "fixed_instructions": 20268,
+      "old_cycles": 103507,
+      "fixed_cycles": 103507,
+      "bindings_equal": true
+    },
+    {
+      "label": "32",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "inputs_equal": true,
+      "executable_equal": false,
+      "old_code_sha256": [
+        "2713742483a4203dbe268fc51a14390c67b2367c6ee07fb4e69c8e87acf77314"
+      ],
+      "fixed_code_sha256": [
+        "6af0f6caddb4ee344c1d43b551e7071a3f144de27488f33aadcf966c1d85acc6"
+      ],
+      "old_k_loop_acc_operations": {
+        "k_loop_reads": 128,
+        "k_loop_writes": 96,
+        "k_loop_zeros": 2
+      },
+      "fixed_k_loop_acc_operations": {
+        "k_loop_reads": 0,
+        "k_loop_writes": 0,
+        "k_loop_zeros": 0
+      },
+      "old_row_commands": 960,
+      "fixed_row_commands": 0,
+      "old_instructions": 22356,
+      "fixed_instructions": 17536,
+      "old_cycles": 122114,
+      "fixed_cycles": 113804,
+      "bindings_equal": true
+    },
+    {
+      "label": "32",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "inputs_equal": true,
+      "executable_equal": false,
+      "old_code_sha256": [
+        "450836e06df7cc05d73c6e830d107f1214b135292e7c414f3aef6af6f0cccef6"
+      ],
+      "fixed_code_sha256": [
+        "fc0ca8a3026de210e1dbf9e8c46f64a74a9926b919c8bb0b050031a8ecb17be9"
+      ],
+      "old_k_loop_acc_operations": {
+        "k_loop_reads": 128,
+        "k_loop_writes": 96,
+        "k_loop_zeros": 2
+      },
+      "fixed_k_loop_acc_operations": {
+        "k_loop_reads": 0,
+        "k_loop_writes": 0,
+        "k_loop_zeros": 0
+      },
+      "old_row_commands": 960,
+      "fixed_row_commands": 128,
+      "old_instructions": 23654,
+      "fixed_instructions": 18826,
+      "old_cycles": 137359,
+      "fixed_cycles": 117458,
+      "bindings_equal": true
+    },
+    {
+      "label": "32-k33",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        33
+      ],
+      "inputs_equal": true,
+      "executable_equal": false,
+      "old_code_sha256": [
+        "744e8c143188ac9f16fd1da750f1028ab9dd56696100b568b09754688862d259"
+      ],
+      "fixed_code_sha256": [
+        "ff9d9ea70238fc5c526a32f8c952f91904de516f9a4c5f2b3ee0b6d3ebba31eb"
+      ],
+      "old_k_loop_acc_operations": {
+        "k_loop_reads": 128,
+        "k_loop_writes": 96,
+        "k_loop_zeros": 2
+      },
+      "fixed_k_loop_acc_operations": {
+        "k_loop_reads": 0,
+        "k_loop_writes": 0,
+        "k_loop_zeros": 0
+      },
+      "old_row_commands": 576,
+      "fixed_row_commands": 0,
+      "old_instructions": 15412,
+      "fixed_instructions": 12520,
+      "old_cycles": 76248,
+      "fixed_cycles": 71099,
+      "bindings_equal": true
+    },
+    {
+      "label": "32-k33",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        33
+      ],
+      "inputs_equal": true,
+      "executable_equal": false,
+      "old_code_sha256": [
+        "e2779aa644677132086c7a72d4d4cd8f493050ec18c566528a535094c70faf23"
+      ],
+      "fixed_code_sha256": [
+        "0249b05bd6e1b424c697865b838c0abdfe7c7876184886c7fbc65a2db6d86cd3"
+      ],
+      "old_k_loop_acc_operations": {
+        "k_loop_reads": 128,
+        "k_loop_writes": 96,
+        "k_loop_zeros": 2
+      },
+      "fixed_k_loop_acc_operations": {
+        "k_loop_reads": 0,
+        "k_loop_writes": 0,
+        "k_loop_zeros": 0
+      },
+      "old_row_commands": 576,
+      "fixed_row_commands": 128,
+      "old_instructions": 16710,
+      "fixed_instructions": 13810,
+      "old_cycles": 86786,
+      "fixed_cycles": 75301,
+      "bindings_equal": true
+    }
+  ],
+  "model_identity": {
+    "binary_sha256": "8aa953fde5168a8dc47e31f04cc21364b4fddbe310808f388b9baedd86ec8c5d",
+    "config_sha256": "749f0c09e0a036976677f9584f0985e1ac92c083f28a9a39f860daa94aa6c0f3",
+    "dram_path": "fast"
+  },
+  "scope": "native model numerical and structural validation; no board performance or Stage 1 acceptance claim"
+}

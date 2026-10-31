@@ -89,11 +89,30 @@ def make_backend_class():
             self.memory_bytes = None
             self.core_count = None
             self.host_seconds = dict(upload=0.0, download=0.0, launch=0.0)
+            self.host_handoffs = 0
+            self.host_handoff_policy = os.environ.get('TNCA_TLM_HOST_HANDOFF', 'coherent-direct')
+            if self.host_handoff_policy not in ('coherent-direct', 'dma-maintenance'):
+                raise ValueError('TNCA_TLM_HOST_HANDOFF must be coherent-direct or dma-maintenance')
+            self.handoff_local_limit = None
             SystemCModelBackend.instances.append(self)
 
         # ---- lifetime --------------------------------------------------
         def _write_config(self):
             values = _config_values(self.base_config)
+            if self.host_handoff_policy == 'dma-maintenance':
+                # Existing fitted host costs can already contain maintenance.
+                # Structural handoff experiments must remove that opaque fit.
+                if any(int(values.get(k, '0')) for k in
+                       ('host_launch_cycles','host_transfer_cycles','host_transfer_cycles_per_kib')):
+                    raise ValueError('dma-maintenance requires zero fitted host costs; use a device-service-only profile')
+                mapping = os.environ.get('TNCA_DRAM_MAP')
+                if not mapping:
+                    raise ValueError('dma-maintenance requires an explicit TNCA_DRAM_MAP with local/AXI boundary')
+                lines = Path(mapping).read_text().splitlines()
+                windows = [line.split() for line in lines[1:] if line.split()[:1] == ['window']]
+                if not lines or lines[0] != 'TNCA_DRAM_MAP_V1' or len(windows) != 1 or len(windows[0]) != 4:
+                    raise ValueError('invalid host-handoff map header/window')
+                self.handoff_local_limit = int(windows[0][1], 0)
             if os.environ.get('TNCA_TLM_MEMORY_BYTES'):
                 values['memory_bytes'] = str(int(os.environ['TNCA_TLM_MEMORY_BYTES'], 0))
             if os.environ.get('TNCA_TLM_MONITOR'):
@@ -109,6 +128,7 @@ def make_backend_class():
             return path, values
 
         def start(self):
+            from tnca._child_exec import child_argv
             if self.proc is not None:
                 raise TncaError('this model backend already has a process', code='SESSION_BUSY')
             config, values = self._write_config()
@@ -118,8 +138,8 @@ def make_backend_class():
                        TNCA_TLM_MONITOR=os.environ.get('TNCA_TLM_MONITOR', 'aggregate'))
             self.stdout = (self.dir/'stdout.log').open('w')
             self.stderr = (self.dir/'stderr.log').open('w')
-            self.proc = subprocess.Popen([str(self.binary), '--serve', str(config), str(self.dir),
-                                          str(to_model_r), str(from_model_w)],
+            self.proc = subprocess.Popen(child_argv([str(self.binary), '--serve', str(config), str(self.dir),
+                                          str(to_model_r), str(from_model_w)]),
                                          pass_fds=(to_model_r, from_model_w), env=env,
                                          stdout=self.stdout, stderr=self.stderr, cwd=self.dir)
             os.close(to_model_r)
@@ -137,7 +157,15 @@ def make_backend_class():
                 self._lost('the runtime addresses device memory from 0; model memory_base must be 0')
             self.identity = dict(backend=self.name, binary=str(self.binary.resolve()), binary_sha256=_sha(self.binary),
                                  config=values, config_sha256=_sha(config), model_dir=str(self.dir),
-                                 calibration='not-measured', execution='native SystemC/TLM-2.0 model, no RTL')
+                                 calibration='not-measured', execution='native SystemC/TLM-2.0 model, no RTL',
+                                 dram_path=os.environ.get('TNCA_DRAM_PATH') or ('slow' if values.get('dram_path') == '1' else 'fast'))
+            mapping=os.environ.get('TNCA_DRAM_MAP')
+            self.identity['address_map']=(dict(domain='axi-bo-physical-pc',path=str(Path(mapping).resolve()),sha256=_sha(mapping))
+                                          if mapping else dict(domain='synthetic-logical'))
+            self.identity['bank_row_mapping']='unverified'
+            self.identity['host_handoff_policy'] = self.host_handoff_policy
+            self.identity['host_handoff_scope'] = ('explicit whole-cache maintenance before each AXI host transfer; device-service-only'
+                if self.handoff_local_limit is not None else 'zero-time coherent host access; no cache maintenance')
             self.timed = True
             if os.environ.get('TNCA_TLM_UNTIMED_COLD') == '1':
                 # The cold call runs untimed (its cycles are not a measurement);
@@ -173,6 +201,7 @@ def make_backend_class():
                 self.proc.wait(timeout=60)
             except Exception:                                # noqa: BLE001
                 self.proc.kill()
+                self.proc.wait(timeout=10)
             finally:
                 (self.dir/'launches.json').write_text(json.dumps(dict(
                     launches=self.launches, host_seconds=self.host_seconds,
@@ -205,17 +234,40 @@ def make_backend_class():
                 self._lost(text[4:])
             return text
 
+        def _send(self, payload):
+            # Caller holds _io. An unbuffered pipe write is one write(2), which
+            # Linux caps at 0x7ffff000 bytes and FileIO reports as a short
+            # count: a single >2 GiB upload would otherwise lose its tail and
+            # leave the model waiting for payload. Write until all of it is sent.
+            view = memoryview(payload).cast('B')
+            while view:
+                sent = self.wfile.write(view)
+                if not sent:
+                    self._lost('host channel accepted no payload bytes')
+                view = view[sent:]
+
         def _reply(self, status, r0=0, r1=0):
             self.seq += 1
             return T.Reply(self.seq, status, r0, r1)
 
         # ---- operations ------------------------------------------------
+        def _host_handoff(self, addr, nbytes):
+            # Caller holds _io. Match the MMIO DMA split: local/register-only
+            # transfers do not hand off; any AXI portion does. The native F
+            # command waits for dirty writeback and accepted outlet completion.
+            if self.handoff_local_limit is not None and int(addr)+int(nbytes)>self.handoff_local_limit:
+                self.wfile.write(b'F\n')
+                if self._line() != 'OK':
+                    self._lost('host ownership maintenance not acknowledged')
+                self.host_handoffs += 1
+
         def upload(self, addr, data):
             _backend.check_transfer(addr, len(data), what='upload')
             t = time.perf_counter()
             with self._io:
+                self._host_handoff(addr, len(data))
                 self.wfile.write(f'W {int(addr)} {len(data)}\n'.encode())
-                self.wfile.write(bytes(data))
+                self._send(data)
                 if self._line() != 'OK':
                     self._lost('upload not acknowledged')
             self.host_seconds['upload'] += time.perf_counter() - t
@@ -225,6 +277,7 @@ def make_backend_class():
             _backend.check_transfer(addr, nbytes, what='download')
             t = time.perf_counter()
             with self._io:
+                self._host_handoff(addr, nbytes)
                 self.wfile.write(f'R {int(addr)} {int(nbytes)}\n'.encode())
                 head = self._line().split()
                 if head != ['OK', str(nbytes)]:
@@ -311,7 +364,9 @@ def make_backend_class():
                 head = self._line().split()
                 if len(head) != 2 or head[0] != 'OK':
                     self._lost(f'malformed counter reply {head}')
-                return json.loads(self.rfile.read(int(head[1])))
+                counters = json.loads(self.rfile.read(int(head[1])))
+                counters['host_dma_handoffs'] = self.host_handoffs
+                return counters
 
         def capabilities(self):
             out = super().capabilities()

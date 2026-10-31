@@ -45,6 +45,9 @@ jobs:
         with:
           fetch-depth: 0  # the shipped agent task pins an ancestor commit
 
+      - name: Frozen R40 contracts retain their original bytes
+        run: python3 tools/r40/contract_v3.py
+
       - name: Toolchain
         run: |
           set -euo pipefail
@@ -78,6 +81,11 @@ jobs:
           make r40-grid-dispatch
           make r40-coherent-host
           make r40-multicore-shell
+
+      # R41 F10: the LSU pair's registered request boundary against the R40
+      # combinational port, as a miter under back-pressure and reordering.
+      - name: R41 LSU registered request boundary
+        run: make lsu-reqreg
 
       - name: R40 registered tensor ranges and complete requester identity
         run: |

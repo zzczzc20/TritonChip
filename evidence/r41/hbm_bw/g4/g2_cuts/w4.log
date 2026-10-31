@@ -1,0 +1,15 @@
+op.silu/membound/fp16-small-contig-r32-c1024 pass [132836] [132841]
+job base op.silu/membound/fp16-small-contig-r32-c1024 rc=0
+op.silu/membound/fp16-small-contig-r32-c1024 pass [163925] [163930]
+job ctx2 op.silu/membound/fp16-small-contig-r32-c1024 rc=0
+op.silu/membound/fp16-small-contig-r32-c1024 pass [132932] [132937]
+job addr35 op.silu/membound/fp16-small-contig-r32-c1024 rc=0
+op.silu/membound/fp16-small-contig-r32-c1024 pass [132918] [132923]
+job bar8e38 op.silu/membound/fp16-small-contig-r32-c1024 rc=0
+op.silu/membound/fp16-small-contig-r32-c1024 pass [132644] [132649]
+job epoch38 op.silu/membound/fp16-small-contig-r32-c1024 rc=0
+op.silu/membound/fp16-small-contig-r32-c1024 pass [132877] [132882]
+job shread2 op.silu/membound/fp16-small-contig-r32-c1024 rc=0
+op.silu/membound/fp16-small-contig-r32-c1024 pass [133037] [133042]
+job lutram op.silu/membound/fp16-small-contig-r32-c1024 rc=0
+done

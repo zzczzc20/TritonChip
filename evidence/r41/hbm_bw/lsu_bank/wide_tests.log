@@ -1,0 +1,2 @@
+LSU WIDE PASS cases=112 scalar/vector/gather/masks/sign/straddles/partial stores
+tb/core/tb_lsu_wide.v:84: $finish called at 9650000 (1ps)

@@ -77,6 +77,7 @@ module tnca_shell #(
     parameter PHYS_W         = `TNCA_UARCH_PHYS_W,
     parameter LSU_TAG_W      = `TNCA_IF_LSU_TAG_W,
     parameter HAS_SFU        = `TNCA_UARCH_HAS_SFU,
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = `TNCA_UARCH_BAR_N, BAR_W = `TNCA_UARCH_BAR_W, BAR_EPOCH_W = `TNCA_UARCH_BAR_EPOCH_W, FMA_IMPL = `TNCA_UARCH_FMA_IMPL, MAC_DP = `TNCA_UARCH_MAC_DP, MAC_CUTS = `TNCA_UARCH_MAC_CUTS,
     // Forwarded to the core, not because this shell uses them, but
     // because spec/r1_profiles.json names them in its elaboration and a
     // platform that cannot set them cannot reproduce the profile. They
@@ -298,7 +299,7 @@ module tnca_shell #(
 
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
-        .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS),
+        .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .PHYS_VREGS(PHYS_VREGS),
         .PHYS_W(PHYS_W), .CORE_ID(CORE_ID), .NUM_CORES(NUM_CORES),
         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
         .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),

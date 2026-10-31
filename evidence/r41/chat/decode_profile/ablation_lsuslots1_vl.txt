@@ -1,0 +1,27 @@
+step 0 (prefill): 53 launches, total 582976965 -> 596291207 cycles, ratio 1.0228
+  #  28 w8a8 grid [1, 16, 1] weights 4195328: 10066481 -> 10072888 ratio 1.0006
+  #  29 w8a8 grid [1, 8, 1] weights 2097664: 5292444 -> 5312728 ratio 1.0038
+  #  30 w8a8 grid [1, 8, 1] weights 2097664: 5297164 -> 5289113 ratio 0.9985
+  #  44 w8a8 grid [1, 16, 1] weights 4195328: 10085734 -> 10090128 ratio 1.0004
+  #  46 w8a8 grid [1, 48, 1] weights 12585984: 29611814 -> 29697234 ratio 1.0029
+  #  47 w8a8 grid [1, 48, 1] weights 12585984: 29703287 -> 29764622 ratio 1.0021
+  #  49 w8a8 grid [1, 16, 1] weights 12585984: 30415651 -> 30415651 ratio 1.0000
+  all FP8 launches: 120472575 -> 120642364 ratio 1.0014; non-FP8: 462504390 -> 475648843 ratio 1.0284
+step 3 (decode): 23 launches, total 540586727 -> 558243818 cycles, ratio 1.0327
+  # 101 w8a8 grid [1, 16, 1] weights 4195328: 9396737 -> 9401950 ratio 1.0006
+  # 102 w8a8 grid [1, 8, 1] weights 2097664: 4900293 -> 4929564 ratio 1.0060
+  # 103 w8a8 grid [1, 8, 1] weights 2097664: 4837147 -> 4871181 ratio 1.0070
+  # 113 w8a8 grid [1, 16, 1] weights 4195328: 9393048 -> 9356413 ratio 0.9961
+  # 115 w8a8 grid [1, 48, 1] weights 12585984: 27878350 -> 27849825 ratio 0.9990
+  # 116 w8a8 grid [1, 48, 1] weights 12585984: 27765311 -> 27622793 ratio 0.9949
+  # 118 w8a8 grid [1, 16, 1] weights 12585984: 28041496 -> 28044814 ratio 1.0001
+  all FP8 launches: 112212382 -> 112076540 ratio 0.9988; non-FP8: 428374345 -> 446167278 ratio 1.0415
+0 37 triton_poi_fused__scaled_dot_product_flash_attention_for_cpu 549036 600553 1.0938
+0 38 triton_tem_fused__scaled_dot_product_flash_attention_for_cpu 1698356 2042754 1.2028
+0 41 triton_poi_fused__scaled_dot_product_flash_attention_for_cpu 466508 519784 1.1142
+0 42 triton_tem_fused__scaled_dot_product_flash_attention_for_cpu 1838926 2200587 1.1967
+0 48 triton_poi_fused_mul_silu_16 248678 271857 1.0932
+0 51 triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqr 452059063 464295381 1.0271
+3 109 triton_red_fused__scaled_dot_product_flash_attention_for_cpu 6042470 6076845 1.0057
+3 112 triton_red_fused__scaled_dot_product_flash_attention_for_cpu 712158 740881 1.0403
+3 120 triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqr 420623160 438349194 1.0421

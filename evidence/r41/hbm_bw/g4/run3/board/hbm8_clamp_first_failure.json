@@ -1,0 +1,38 @@
+{
+ "schema": "tnca-r41-hbm8-case/1",
+ "case": "clamp",
+ "mode": "board",
+ "status": "failed-preserved",
+ "requested_hbm_bytes": 17179869184,
+ "performance_gate": "not-measured",
+ "backend_args": {
+  "xclbin": "/home/zzhouch/r41run3/tnca_u280.xclbin",
+  "image_profile": "core-vrf-sync-v5-x8-g2c4-dp",
+  "core_count": 3,
+  "memory_ports": 3,
+  "hbm_dma": true,
+  "hbm_bytes": 17179869184,
+  "device_clock": true
+ },
+ "backend": "fpga-u280-multicore",
+ "software_tree": "files:e0cf42484b4135992d7a90b106ededcdecf0c370a3763f5da104df8944f19e90",
+ "torch": "2.14.0+cpu",
+ "triton": "3.8.0",
+ "knobs": {
+  "TNCA_ACTIVE_CORES": "3",
+  "TNCA_BACKEND": "fpga-u280-multicore",
+  "TNCA_BACKEND_ARGS": "{\"xclbin\":\"/home/zzhouch/r41run3/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8-g2c4-dp\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":17179869184,\"device_clock\":true}",
+  "TNCA_DEADLINE": "200000000000",
+  "TNCA_HOST_TIMEOUT": "28800",
+  "TNCA_MAX_BLOCK": "16",
+  "TNCA_OPERATING_CLOCK_EVIDENCE": "/home/zzhouch/r41run3/qualified_clock.json",
+  "TNCA_PROFILE": "core-vrf-sync-v5-x8-g2c4-dp",
+  "TNCA_RCTX_SPMD": "1",
+  "TNCA_TENSOR_DESCRIPTORS": "1",
+  "TNCA_TORCH_DEVICE": "native",
+  "TNCA_TRITON": "1",
+  "TNCA_TUNE": "0"
+ },
+ "error": "Traceback (most recent call last):\n  File \"/home/zzhouch/r41run3/runtime_prepared/tools/performance_harness/hbm8_case.py\", line 681, in main\n    c = Ctx(mode, out)\n  File \"/home/zzhouch/r41run3/runtime_prepared/tools/performance_harness/hbm8_case.py\", line 186, in __init__\n    self.session = D.MEMORY.session()\n  File \"/home/zzhouch/r41run3/runtime_prepared/python/tnca/torch_device/__init__.py\", line 76, in session\n    return _Sessions.get(profile)\n  File \"/home/zzhouch/r41run3/runtime_prepared/python/tnca/triton_backend/driver.py\", line 90, in get\n    s = Session(profile=profile, counters=os.environ.get('TNCA_COUNTERS') == '1',\n  File \"/home/zzhouch/r41run3/runtime_prepared/python/tnca/runtime.py\", line 435, in __init__\n    self.dev.start()\n  File \"/home/zzhouch/r41run3/runtime_prepared/python/tnca/backends/multicore_mmio.py\", line 93, in start\n    super().start()\n  File \"/home/zzhouch/r41run3/runtime_prepared/python/tnca/backends/u50.py\", line 374, in start\n    self._open_window(stat)\n  File \"/home/zzhouch/r41run3/runtime_prepared/python/tnca/backends/multicore_mmio.py\", line 48, in _open_window\n    result = super()._open_window(stat)\n  File \"/home/zzhouch/r41run3/runtime_prepared/python/tnca/backends/u50.py\", line 394, in _open_window\n    got = self.link.hbm_open(self.hbm_bytes)\n  File \"/home/zzhouch/r41run3/runtime_prepared/python/tnca/backends/multicore_mmio.py\", line 213, in hbm_open\n    raise ArgumentError('striped HBM requires an explicit 8 GiB allocation')\ntnca.errors.ArgumentError: [ARGUMENT_INVALID] striped HBM requires an explicit 8 GiB allocation\n",
+ "wall_seconds": 5.1
+}

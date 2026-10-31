@@ -49,7 +49,10 @@ static u64 integer(const std::string& s) {
 }
 struct Config {
     std::map<std::string,u64> v;
-    explicit Config(const char* path) {
+    // physical_map: an explicit AXI BO/PC map (TNCA_DRAM_MAP, tnca_dram_map.hpp)
+    // translates every DRAM line, so the window is checked against that map's
+    // BO (Model::select_dram_path) instead of the contiguous logical PC map.
+    explicit Config(const char* path,bool physical_map=false) {
         std::ifstream f(path); require(bool(f),"cannot open configuration");
         std::string s;
         while (std::getline(f,s)) {
@@ -81,9 +84,43 @@ struct Config {
             "core_pipeline","branch_taken_cycles","park_refetch_cycles","vrf_banks","vrf_bank_conflict_cycles",
             "lsu_setup_cycles","lsu_vector_load_extra","lsu_complete_cycles","lsu_writeback_cycles",
             "fp_compare_latency","shuffle_scalar_latency","reduction_vector_extra","dma_store_register_cycles","dma_drain_cycles",
-            "vrf_prefetch","fp_reduction_vector_extra","time_quantum"};
-        require(v.size()==keys.size(),"configuration key count mismatch (unknown or missing key)");
+            "vrf_prefetch","fp_reduction_vector_extra","time_quantum",
+            // M3: DRAM path (include/tnca_dram.hpp)
+            "dram_path","dram_fixed_cycles","dram_clock_ratio","dram_max_passes","dram_tolerance_ppm"};
+        // Optional what-if keys, absent from every shipped configuration; an
+        // absent key takes its default and leaves the model unchanged.
+        //   mtx_dp_group_16 / mtx_dp_group_8 (default 1): a hypothetical packed
+        //     MMA (m.mma.dp, not built) sweeping G consecutive k per lane per
+        //     step for 16-bit (G<=2) / FP8 (G<=4) fragments; timing only.
+        //   mtx_dp_b_prefetch (default 0): the per-step B register read is
+        //     hidden behind the previous step's sweep after the first.
+        std::size_t optional=0;
+        for(auto& k:optional_keys())if(v.count(k))++optional;
+        require(v.size()-optional==keys.size(),"configuration key count mismatch (unknown or missing key)");
         for(auto& k:keys)require(v.count(k),"missing configuration: "+k);
+        {u64 g16=get_or("mtx_dp_group_16",1),g8=get_or("mtx_dp_group_8",1);
+         require((g16==1 || g16==2) && (g8==1 || g8==2 || g8==4) && get_or("mtx_dp_b_prefetch",0)<=1,
+                 "mtx_dp_group_16 is 1|2, mtx_dp_group_8 1|2|4 (one 64-byte B register per group), mtx_dp_b_prefetch 0|1");}
+        require(get_or("mtx_dp",0)<=1 && get_or("mtx_dp_prefetch",0)<=1 && get_or("mtx_dp_extra_latency",1)<=8,
+                "mtx_dp 0|1 (CAPABILITY0.MATRIX_DP, m.mma.dp.async), mtx_dp_prefetch 0|1, mtx_dp_extra_latency 0..8 cycles");
+        {auto b=get_or("tl_core_beat_bytes",8),n=get_or("tl_noc_payload_bytes",8);
+         require((b==8 || b==16 || b==32 || b==64) && (n==8 || n==16 || n==32 || n==64),
+                 "exploratory core/NoC payload bytes must be 8|16|32|64");
+         require(b==8 || get("memory_model")==1,"wide core hypothesis requires timeline memory");}
+        {auto n=get_or("tl_lsu_units",2);
+         require(n==2 || n==4 || n==8 || n==16 || n==32 || n==64,"exploratory LSU units must be 2|4|8|16|32|64");
+         require(n==2 || (get("memory_model")==1 && get("core_pipeline")==1),"LSU unit hypothesis needs timeline core pipeline");}
+        {auto n=get_or("tl_memory_lanes",1);
+         require(n==1 || n==2 || n==4 || n==8,"exploratory NoC/home lanes must be 1|2|4|8");
+         require(n==1 || get("memory_model")==1,"parallel memory lanes require timeline memory");}
+        require(get_or("tl_lsu_shared_issue",1)<=1,"tl_lsu_shared_issue must be 0|1");
+        {auto n=get_or("tl_pc_stripe_bytes",0);require(n==0 || (n>=64 && n%64==0),"PC stripe must be zero or whole lines");}
+        require(get_or("tl_prefetch_lines",0)<=256,"prefetch degree must be 0..256");
+        require(get_or("tl_full_line_nofill",0)<=1 && get_or("dma_line_combine",0)<=1,"tl_full_line_nofill and dma_line_combine are 0|1");
+        require(get_or("dma_line_engine",0)<=1,"dma_line_engine must be 0|1");
+        require(get_or("dma_line_engine",0)==0 || (get("memory_model")==1 && get_or("tl_core_beat_bytes",8)==64),
+                "the line engine needs timeline memory and a 64-byte core beat");
+        {auto n=get_or("dma_line_buffers",64);require(n>=1 && n<=256,"dma_line_buffers must be 1..256");}
         cache_hot();
         for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag"
                             && k!="mtx_abuf" && k!="launch_cycles" && k!="dispatch_cycles" && k!="load_latency"
@@ -91,7 +128,8 @@ struct Config {
                             && k.rfind("tl_",0)!=0 && k!="core_pipeline" && k!="branch_taken_cycles" && k!="park_refetch_cycles"
                             && k!="vrf_bank_conflict_cycles" && k!="lsu_setup_cycles" && k!="lsu_vector_load_extra"
                             && k!="lsu_complete_cycles" && k!="lsu_writeback_cycles" && k!="reduction_vector_extra"
-                            && k!="dma_store_register_cycles" && k!="dma_drain_cycles" && k!="vrf_prefetch" && k!="fp_reduction_vector_extra" && k!="time_quantum")
+                            && k!="dma_store_register_cycles" && k!="dma_drain_cycles" && k!="vrf_prefetch" && k!="fp_reduction_vector_extra" && k!="time_quantum"
+                            && k!="dram_path" && k!="dram_fixed_cycles")
             require(v.at(k)>0,"zero configuration: "+k);
         require(get("mtx_abuf")<=1 && get("lsu_slots")<=64 && get("lsu_beat_slots")<=64,"invalid core engine configuration");
         require(get("memory_model")<=1,"memory_model is 0 (detailed TLM) or 1 (timeline)");
@@ -99,7 +137,7 @@ struct Config {
         require(get("nx")*get("ny")<=16,"at most 16 homes");
         require(get("sets")<=65536 && (get("sets")&(get("sets")-1))==0,"sets must be power of two <=65536");
         require(get("ways")<=32 && get("mshrs")<=256 && get("targets")<=4096,"unreasonable cache geometry");
-        require(get("outlets")<=cores(),"outlets exceed homes");
+        require(get("outlets")<=get("pc_count"),"outlets exceed pseudo channels");
         require(get("full_line_tag")<=1 && (get("full_line_tag") || (get("nx")==2 && get("ny")==2)),"compressed tags require frozen 2x2 topology");
         require(get("active_outlets")==1 || get("active_outlets")==get("outlets"),"RTL supports one/all outlets");
         require(get("outstanding")<=256 && get("core_window")<=256,"unreasonable outstanding window");
@@ -108,9 +146,15 @@ struct Config {
         require(get("memory_bytes")<=UINT64_MAX-get("memory_base"),"memory window overflow");
         require(get("memory_base")%64==0 && get("memory_bytes")%64==0,"line-aligned memory window required");
         require(get("pc_bytes")%64==0 && get("pc_first")<get("pc_count"),"invalid PC map");
-        require((get("memory_bytes")-1)/get("pc_bytes")<get("pc_count")-get("pc_first"),"window exceeds PC map");
+        require(physical_map || (get("memory_bytes")-1)/get("pc_bytes")<get("pc_count")-get("pc_first"),"window exceeds PC map");
     }
     u64 get(const std::string& k)const{return v.at(k);}
+    static const std::vector<std::string>& optional_keys(){
+        static const std::vector<std::string> k={"mtx_dp","mtx_dp_extra_latency","mtx_dp_prefetch","mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units","tl_memory_lanes","tl_lsu_shared_issue","tl_pc_stripe_bytes","tl_prefetch_lines",
+            // R41 G4 what-ifs (default off): full-line writes allocate without a memory read
+            // (HOME_LINE_WRITE_NOFILL); the line-wide multi-command tensor engine.
+            "tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine"};return k;}
+    u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;
     void cache_hot(){nx_=get("nx");ny_=get("ny");sets_=get("sets");full_line_=get("full_line_tag");

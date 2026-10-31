@@ -1,0 +1,56 @@
+tnca.kernel @triton_poi_fused_add_mul_2 {
+  // no shared resources, no bound arguments
+
+  role 0 @role0 {
+    %rctx_chunk_lane:scalar = tnca.special()  {name='role_id'}
+    %rctx_chunk_start:scalar = tnca.program_id()  {dim=0}
+    %rctx_programs:scalar = tnca.num_programs()  {dim=0}
+    %pid8:scalar = tnca.sbin(%rctx_chunk_start:scalar, %rctx_chunk_lane:scalar)  {op='add'}
+    %rctx_chunk_outside:scalar = tnca.scmp(%pid8:scalar, %rctx_programs:scalar)  {cc='ge'}
+    tnca.branch_nz(%rctx_chunk_outside:scalar)  {target='__rctx_next'}
+  ^__rctx_program:
+    %s10:scalar = tnca.sbini(%pid8:scalar)  {imm=4 op='shl'}   // x16 as a shift
+    %ar11:vector = tnca.arange()
+    %sp12:vector = tnca.splat(%s10:scalar)
+    %k17:vector = tnca.vmovi()  {imm=0}
+    %v13:vector = tnca.vbin(%sp12:vector, %ar11:vector)  {fmm=None op='add'}
+    %k25:vector = tnca.vmovi()  {imm=255}
+    %v21:vector = tnca.vbin(%k17:vector, %v13:vector)  {fmm=None op='sub'}
+    %m19:pred = tnca.vcmp(%v13:vector, %k17:vector)  {cc='lt'}
+    %v22:vector = tnca.vselect(%m19:pred, %v21:vector, %v13:vector)
+    %sp1:scalar = tnca.special()  {name='arg_base'}
+    %v26:vector = tnca.vbin(%v22:vector, %k25:vector)  {fmm=None op='and'}
+    %m2:scalar = tnca.sload(%sp1:scalar)  {offset=0 size='d'}   // in_ptr0: device_ptr64 at arg_base+0
+    %v27:vector = tnca.vbin(%k17:vector, %v26:vector)  {fmm=None op='sub'}
+    %s29:scalar = tnca.sbini(%s10:scalar)  {imm=1 op='shl'}   // element offset -> bytes (x2)
+    %m4:scalar = tnca.sload(%sp1:scalar)  {offset=16 size='d'}   // in_ptr2: device_ptr64 at arg_base+16
+    %k14:vector = tnca.vmovi()  {imm=512}
+    %v28:vector = tnca.vselect(%m19:pred, %v27:vector, %v26:vector)
+    %m3:scalar = tnca.sload(%sp1:scalar)  {offset=8 size='d'}   // in_ptr1: device_ptr64 at arg_base+8
+    %s30:scalar = tnca.sbin(%m2:scalar, %s29:scalar)  {op='add'}   // &in_ptr0[...]
+    %s35:scalar = tnca.sbin(%m4:scalar, %s29:scalar)  {op='add'}   // &in_ptr2[...]
+    %m5:scalar = tnca.sload(%sp1:scalar)  {offset=24 size='d'}   // in_ptr3: device_ptr64 at arg_base+24
+    %m15:pred = tnca.vcmp(%v13:vector, %k14:vector)  {cc='lt'}
+    %k16:vector = tnca.vmovi()  {imm=256}
+    %ld31:vector = tnca.load(%s30:scalar)  {mask=%m15:pred no_other=True other=0 size='h'}
+    %v23:vector = tnca.vbin(%k17:vector, %k16:vector)  {fmm=None op='sub'}
+    %m20:pred = tnca.vcmp(%k16:vector, %k17:vector)  {cc='lt'}
+    %v24:vector = tnca.vselect(%m20:pred, %v23:vector, %k16:vector)
+    %g33:vector = tnca.gather(%m3:scalar, %v28:vector)  {mask=%m15:pred other=0 size='h'}
+    %c32:vector = tnca.vcvt(%ld31:vector)  {dst='f32' src='f16'}
+    %ld36:vector = tnca.load(%s35:scalar)  {mask=%m15:pred no_other=True other=0 size='h'}
+    %c34:vector = tnca.vcvt(%g33:vector)  {dst='f32' src='f16'}
+    %v40:vector = tnca.vbin(%c32:vector, %c34:vector)  {fmm=None op='mul'}
+    %g38:vector = tnca.gather(%m5:scalar, %v28:vector)  {mask=%m15:pred other=0 size='h'}
+    %c37:vector = tnca.vcvt(%ld36:vector)  {dst='f32' src='f16'}
+    %c39:vector = tnca.vcvt(%g38:vector)  {dst='f32' src='f16'}
+    %m6:scalar = tnca.sload(%sp1:scalar)  {offset=32 size='d'}   // out_ptr0: device_ptr64 at arg_base+32
+    %v41:vector = tnca.vbin(%c37:vector, %c39:vector)  {fmm=None op='mul'}
+    %s44:scalar = tnca.sbin(%m6:scalar, %s29:scalar)  {op='add'}   // &out_ptr0[...]
+    %v42:vector = tnca.vbin(%v40:vector, %v41:vector)  {fmm=None op='add'}
+    %c43:vector = tnca.vcvt(%v42:vector)  {dst='f16' src='f32'}
+    tnca.store(%s44:scalar, %c43:vector)  {mask=%m15:pred size='h'}
+  ^__rctx_next:
+    tnca.exit()
+  }
+}

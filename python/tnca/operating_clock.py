@@ -2,16 +2,144 @@
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
+
+
+# A qualification name is a reviewed operating path, bound to its image where
+# the review was of one image. R40 v2: the user-authorized <=91 MHz path on
+# any reviewed image. R41 Stage 2 run 1: the 100 MHz routed image 30e79769...
+# (evidence/r41/stage2/run1), its raw reports and a counter capture after load
+# (tools/performance_harness/clock_qualify.py assembles and re-checks them).
+QUALIFICATIONS={
+    'conditional-r40v2-20261018':dict(image_sha256=None,max_hz=91_000_000),
+    'r41s2-run1-100mhz':dict(image_sha256='30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de',
+                             max_hz=100_000_000,exact_hz=100_000_000),
+    'r41-run2-100mhz-hbm441':dict(image_sha256='1bf769fdbfbeb93586be86561664d43e785af3a01a739d19a3882647132d2d13',
+                                  max_hz=100_000_000,exact_hz=100_000_000),
+    'r41-corrected-candidate-100mhz':dict(image_sha256=None,max_hz=100_000_000,exact_hz=100_000_000),
+}
+
+RUN2_RAW={
+    'timing':'cd4c6254c960f5f368ea38f4a9e86b606747fba5d467fc4ac07c00f17971f577',
+    'route':'a9f8adc3cd14885894ad79341aa1ba3673432cd5fac136d778c8e2fd141c4980',
+    'cdc':'35617dbb86a0ddb86718ea622492634bf91ff3c51effe52e19b7a299841785c5',
+    'placement':'eb5a884a26b7d2cab5fed2b26121aa044a257bcdb3551aaa94e5f29e02fd657f',
+}
+
+
+def validate_run2_cdc(review_path,cdc_path,image_sha256):
+    if image_sha256!=QUALIFICATIONS['r41-run2-100mhz-hbm441']['image_sha256']:
+        raise ValueError('CDC review belongs to another image')
+    cdc_path=Path(cdc_path)
+    if hashlib.sha256(cdc_path.read_bytes()).hexdigest()!=RUN2_RAW['cdc']:
+        raise ValueError('run-2 CDC report is not the original report')
+    review=json.loads(Path(review_path).read_text())
+    if review.get('status')!='pass' or review.get('kind')!='cdc-review' or review.get('image_sha256')!=image_sha256:
+        raise ValueError('run-2 CDC review is incomplete')
+    if (review.get('cdc_report_sha256')!=RUN2_RAW['cdc'] or
+            review.get('trace_sha256')!='ed2ec1ced819e81a3df0248ec3d4ba80bd462ef06e142fe3d4d4433ad7a65859' or
+            review.get('logic_sha256')!='c2018fea38f9eac440dbf444192db5eb3828fc326fd9c3ea4e39d8f0deacf682'):
+        raise ValueError('run-2 CDC review lacks the original circuit evidence')
+    rows=review.get('reviewed_critical',[])
+    if not isinstance(rows,list) or len(rows)!=56 or any(r.get('disposition')!='accepted-platform-scoped' for r in rows):
+        raise ValueError('run-2 CDC critical findings need individual dispositions')
+    reviewed={(r['rule'],r['source'],r['destination']) for r in rows}
+    actual=[]
+    for line in cdc_path.read_text().splitlines():
+        match=re.match(r'\s*\d+\s+(CDC-\d+)\s+Critical\s',line)
+        if match:
+            fields=line.split();actual.append((match.group(1),fields[-2],fields[-1]))
+    if len(actual)!=56 or len(reviewed)!=56 or set(actual)!=reviewed:
+        raise ValueError('run-2 CDC review does not match the reported endpoints')
+    return review
+
+
+def validate_candidate_cdc(review_path,cdc_path,image_sha256):
+    review=json.loads(Path(review_path).read_text());cdc_path=Path(cdc_path)
+    if (review.get('schema')!='tnca-candidate-cdc-review/1' or review.get('status')!='pass'
+            or review.get('kind')!='cdc-review' or review.get('image_sha256')!=image_sha256
+            or review.get('cdc_report_sha256')!=hashlib.sha256(cdc_path.read_bytes()).hexdigest()):
+        raise ValueError('candidate CDC review is missing or belongs to another image/report')
+    rows=review.get('reviewed_critical',[])
+    if not isinstance(rows,list) or not rows or any(r.get('disposition')!='accepted-platform-scoped' or not r.get('review') for r in rows):
+        raise ValueError('each candidate critical CDC finding requires an individual review')
+    reviewed={(r['rule'],r['source'],r['destination']) for r in rows}
+    actual=[]
+    for line in cdc_path.read_text().splitlines():
+        match=re.match(r'\s*\d+\s+(CDC-\d+)\s+Critical\s',line)
+        if match:
+            fields=line.split();actual.append((match.group(1),fields[-2],fields[-1]))
+    if len(actual)!=len(rows) or len(reviewed)!=len(rows) or set(actual)!=reviewed:
+        raise ValueError('candidate CDC review does not cover the exact critical endpoints')
+    return review
+
+
+def validate_candidate_clock(data,path,image_sha256,files):
+    def file(name):
+        f=Path(files[name]['path']);return f if f.is_absolute() else path.parent/f
+    review=json.loads(file('clock_review').read_text())
+    if (review.get('schema')!='tnca-candidate-clock-review/1' or review.get('kind')!='clock-review'
+            or review.get('status')!='pass' or review.get('image_sha256')!=image_sha256):
+        raise ValueError('candidate static clock review is incomplete')
+    for name,raw in (('timing','timing.rpt'),('route','route_status.rpt'),
+                     ('bus_skew','bus_skew.rpt'),('failing_setup','failing_setup_all_groups.tsv')):
+        if review.get('report_sha256',{}).get(raw)!=files[name]['sha256']:
+            raise ValueError('candidate clock review refers to different raw reports')
+    clocks=review['clocks_mhz'];design=review['original_design_timing'];kernel=review['kernel_timing']
+    route=review['route'];pulse=review['pulse_width_timing']
+    if (clocks['DATA_CLK']!=100 or kernel['wns']<0 or kernel['whs']<0 or kernel['setup_failing']
+            or kernel['hold_failing'] or design['whs']<0 or design['hold_failing']
+            or pulse['wpws']<0 or pulse['tpws_failing'] or not route['routable']
+            or route['fully_routed']!=route['routable'] or route['errors']!=0 or route['unrouted']):
+        raise ValueError('candidate clock timing is not qualified')
+    exception=design['wns']<0 or design['setup_failing'] or clocks['hbm_aclk']!=450
+    if exception:
+        waiver=review.get('author_exception') or {}
+        if (waiver.get('status')!='accepted' or waiver.get('image_sha256')!=image_sha256
+                or waiver.get('hbm_clock_mhz')!=clocks['hbm_aclk'] or not waiver.get('author_decision')
+                or data.get('setup_scope')!='kernel-clock' or data.get('setup_wns_ns')!=kernel['wns']):
+            raise ValueError('candidate image-specific timing exception missing')
+        failures=review['setup_failures']
+        if len(failures)!=design['setup_failing'] or any(r['group']!='hbm_aclk' or '/hmss_0/' not in r['startpoint'] or '/hmss_0/' not in r['endpoint'] for r in failures):
+            raise ValueError('candidate exception includes an unreviewed setup path')
+    elif data.get('setup_scope')!='full-design' or data.get('setup_wns_ns')!=design['wns']:
+        raise ValueError('candidate full-design setup evidence differs')
+    if data.get('hold_whs_ns')!=design['whs'] or data.get('pulse_width_wpws_ns')!=review['pulse_width_timing']['wpws']:
+        raise ValueError('candidate hold or pulse-width evidence differs')
+    validate_candidate_cdc(file('cdc_review'),file('cdc'),image_sha256)
+    slrs={}
+    text=file('placement').read_text()
+    if 'failing_cores {}' not in text:
+        raise ValueError('candidate placement audit has failing cores')
+    for line in text.splitlines():
+        m=re.match(r'core (\d+) .*actual_slrs \{SLR(\d)\} expected SLR\2 pass 1$',line.strip())
+        if m:slrs[m.group(1)]=int(m.group(2))
+    if slrs!={'0':0,'1':1,'2':2}:
+        raise ValueError('candidate placement audit does not show three matching SLRs')
+    capture=json.loads(file('board_clock').read_text());samples=capture.get('counter_samples',[])
+    if (capture.get('image_sha256')!=image_sha256 or capture.get('loaded_xclbin_uuid')!=review['image_uuid']
+            or capture.get('clock_hz')!=100_000_000 or len(samples)!=3
+            or any(not x.get('frequencies_mhz') or x['frequencies_mhz'][0]!=100 for x in samples)):
+        raise ValueError('candidate board counter capture differs')
 
 
 def qualified_clock(path,image_sha256):
     path=Path(path).resolve();data=json.loads(path.read_text())
     if data.get('schema')!='tnca-qualified-operating-clock/1':raise ValueError('unknown clock evidence schema')
     if data.get('image_sha256')!=image_sha256:raise ValueError('clock evidence belongs to another image')
-    if data.get('qualification')!='conditional-r40v2-20261018':raise ValueError('explicit conditional clock review required')
+    rule=QUALIFICATIONS.get(data.get('qualification'))
+    if rule is None:raise ValueError('explicit conditional clock review required')
+    if rule['image_sha256'] not in (None,image_sha256):raise ValueError('this clock review is registered for another image')
     hz=data.get('clock_hz')
-    if type(hz) is not int or not 0<hz<=91_000_000:raise ValueError('conditional clock must be positive and <=91 MHz')
+    if type(hz) is not int or not 0<hz<=rule['max_hz']:raise ValueError(f"conditional clock must be positive and <={rule['max_hz']//1_000_000} MHz")
+    if rule.get('exact_hz') not in (None,hz):raise ValueError(f"this review qualifies exactly {rule['exact_hz']} Hz")
+    run2=data.get('qualification')=='r41-run2-100mhz-hbm441'
+    candidate=data.get('qualification')=='r41-corrected-candidate-100mhz'
+    if run2 and (data.get('setup_scope')!='kernel-clock' or data.get('original_design_setup_wns_ns')!=-0.045
+                 or data.get('hbm_metadata_mhz')!=441 or data.get('setup_wns_ns')!=0.038
+                 or data.get('hold_whs_ns')!=0.001 or data.get('pulse_width_wpws_ns')!=0.0):
+        raise ValueError('run-2 requires the explicit kernel-only setup and original HBM clock exception')
     for field in ('setup_wns_ns','hold_whs_ns'):
         v=data.get(field)
         if type(v) not in (int,float) or not math.isfinite(v) or v<0:raise ValueError('negative or absent '+field)
@@ -20,11 +148,25 @@ def qualified_clock(path,image_sha256):
     if data.get('clock_source')!='measured-board-counter':raise ValueError('actual board clock measurement required')
     # These must include the reviewed route/timing/CDC and actual clock capture.
     files=data.get('evidence_files',{})
-    required={'timing','route','cdc','board_clock','placement'}
+    required={'timing','route','cdc','board_clock','placement'} | ({'cdc_review'} if run2 else set())
+    if candidate:required|={'cdc_review','clock_review','bus_skew','failing_setup'}
     if set(files)!=required:raise ValueError('missing reviewed raw evidence files')
     for item in files.values():
         f=Path(item['path']);f=f if f.is_absolute() else path.parent/f
         if hashlib.sha256(f.read_bytes()).hexdigest()!=item['sha256']:raise ValueError('raw clock evidence changed')
+    if run2:
+        if any(files[k]['sha256']!=v for k,v in RUN2_RAW.items()):raise ValueError('run-2 raw reports are not the original reviewed reports')
+        f=Path(files['cdc_review']['path']);f=f if f.is_absolute() else path.parent/f
+        c=Path(files['cdc']['path']);c=c if c.is_absolute() else path.parent/c
+        validate_run2_cdc(f,c,image_sha256)
+        f=Path(files['board_clock']['path']);f=f if f.is_absolute() else path.parent/f
+        capture=json.loads(f.read_text())
+        samples=capture.get('counter_samples',[])
+        if (capture.get('image_sha256')!=image_sha256 or capture.get('loaded_xclbin_uuid')!='01490bbd-d831-23bf-d783-56ec51bd71ce'
+                or capture.get('clock_hz')!=100_000_000 or len(samples)!=3
+                or any(not x.get('frequencies_mhz') or x['frequencies_mhz'][0]!=100 for x in samples)):
+            raise ValueError('run-2 board clock capture is incomplete or mismatched')
+    if candidate:validate_candidate_clock(data,path,image_sha256,files)
     return dict(clock_hz=hz,clock_policy=f'{hz}Hz-undivided-conditional',
                 clock_qualification=data['qualification'],
                 operating_clock_evidence_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),

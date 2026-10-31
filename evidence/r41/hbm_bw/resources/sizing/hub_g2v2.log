@@ -1,0 +1,7 @@
+W1028 13:02:10.458000 1898747 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+Fetching 12 files:   0%|          | 0/12 [00:00<?, ?it/s]Fetching 12 files: 100%|██████████| 12/12 [00:00<00:00, 2028.28it/s]
+compiled 1x256x256: 41 launches
+compiled 16x256x256: 5 launches
+compiled 33x256x384: 41 launches
+compiled 7x6144x2048: 41 launches
+exit 0

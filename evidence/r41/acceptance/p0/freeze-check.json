@@ -1,0 +1,41 @@
+{
+  "schema": "tnca-r41-freeze-check/2",
+  "stage": 2,
+  "status": "frozen-inputs-verified",
+  "freeze_kind": "prospective",
+  "historical_failure_preserved": true,
+  "lock_sha256": "5d9e4f6d41094c3492672229d0af5425425b5d9688aee276687a9be62c943f96",
+  "registry_checked": false,
+  "original_unique_points": 113,
+  "required_packages": [
+    "S2-00",
+    "S2-01",
+    "S2-02",
+    "S2-03",
+    "S2-04",
+    "S2-05",
+    "S2-06"
+  ],
+  "delivery_acceptance": "not-measured",
+  "command": [
+    "/usr/bin/python3",
+    "tools/performance_harness/stage_contract.py",
+    "--stage",
+    "2",
+    "--no-registry",
+    "--out",
+    "evidence/r41/acceptance/p0/freeze-check.json"
+  ],
+  "software_tree": "files:72842a92d27497289169f0b2e2861f584f425afc2529165a6efe4ddfdb4b0978",
+  "git": {
+    "commit": "a313244caa928eb209568c29de26a71feb3c7d47",
+    "dirty": true
+  },
+  "plan_sha256": "d32cd805baf16e32e8b511db3a4a9aa2f4d8686f5c2fdabe9911f9e03fa937ab",
+  "contract_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
+  "lock_files": 14,
+  "host": "ip-172-31-27-25",
+  "python": "/usr/bin/python3",
+  "python_version": "3.14.4",
+  "checked_utc": "2026-10-26T16:33:26.912482+00:00"
+}

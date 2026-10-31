@@ -93,5 +93,10 @@
  "dma_drain_cycles": "derived: S_TDRAIN/S_SDRAIN then S_DONE",
  "vrf_prefetch": "image: VRF_PREFETCH 1",
  "fp_reduction_vector_extra": "derived: FP reduction broadcast c+17",
- "time_quantum": "model: conservative lookahead cap (simulation speed; exact up to same-time ordering)"
+ "time_quantum": "model: conservative lookahead cap (simulation speed; exact up to same-time ordering)",
+ "dram_path": "model: DRAM path, 0 = fast (hbm_latency_cycles latency model), 1 = slow (Ramulator2); TNCA_DRAM_PATH=fast|slow overrides",
+ "dram_fixed_cycles": "slow path only (dram_path=1); unused by this fast-path configuration",
+ "dram_clock_ratio": "slow path: HBM clock / core clock = 900 MHz / 90 MHz (U280 HBM at 1.8 Gb/s, the qualified 90 MHz core clock)",
+ "dram_max_passes": "slow path: at most 3 child passes per command (M3 design)",
+ "dram_tolerance_ppm": "slow path: fixed point converged when two child makespans differ by < 0.5 % (M3 design)"
 }

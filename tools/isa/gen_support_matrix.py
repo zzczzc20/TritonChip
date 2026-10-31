@@ -63,6 +63,7 @@ CAPABILITY_BY_MAJOR = {
 }
 
 CAPABILITY_BY_MNEMONIC = {
+    'm.mma.dp.async': 'matrix_dp',
     'v.ld.gather': 'gather_scatter',
     'v.st.scatter': 'gather_scatter',
     # The engine stores since the rank-5 descriptor work (tb/core/progs/
@@ -403,6 +404,11 @@ def render():
       'capability `tensor_transpose`): 16-bit elements, 4/8/16 source rows '
       '(ISA sec 9E; tb/core/progs/t30_xpose.s). Without it the encoding '
       'raises ILLEGAL_INSTRUCTION (t31_xpose_illegal.s) |')
+    a('| 1-byte transposed transfer (`t.ld.async.b.t`) | PROFILE-GATED | '
+      'R41 X8: HAS_TENSOR_XPOSE=2 (profile core-vrf-sync-v5-x8, capability '
+      '`tensor_transpose_8bit`): int8/e4m3/e5m2, 4/8/16 source rows '
+      '(tb/core/progs/t33_xpose8.s). A 16-bit-only engine raises '
+      'DESCRIPTOR_FAULT (t34_xpose8_old.s) |')
     a('| general CFG in the MLIR verifier | FROZEN BOUNDARY | refused by '
       'name (IR-02), not accepted unchecked |')
     a('| `tnca_vector_fpu` synthesis | NOT COMPLETED | see '

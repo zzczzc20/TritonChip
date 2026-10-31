@@ -1,0 +1,2 @@
+AXI_ID_W=5 differs from the RTL default 3 and has no bench parameter
+rc=1

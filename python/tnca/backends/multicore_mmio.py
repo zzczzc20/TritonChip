@@ -3,6 +3,8 @@ import operator
 import os
 
 from ..errors import ArgumentError, DeviceLost, DependencyFailed
+from ..hbm_layout import (StripedHBMLayout, STRIPED_CAP, STRIPED_REGISTER,
+                          STRIPED_SIGNATURE, STRIPED_BYTES)
 from .u50 import U50Backend, XDMALink, IP_NAME, DEFAULT_WORDS, _xclbin_bank
 
 OP_CACHE_HANDOFF = 18
@@ -30,11 +32,29 @@ class MulticoreMMIOBackend(U50Backend):
         kwargs.setdefault('device_clock', True)
         super().__init__(link, hbm_dma=hbm_dma, **kwargs)
 
+    def _chunk_lanes(self):
+        from ..adapters.r1 import target_for
+        from ..device import base_profile
+        target, _ = target_for(base_profile(self.image_profile))
+        return min(4, int(target.num_rctx))
+
     def _open_window(self, stat):
+        striped = bool(stat & STRIPED_CAP)
+        if striped and self.link.read_reg(STRIPED_REGISTER) != STRIPED_SIGNATURE:
+            raise DeviceLost('striped HBM image has an invalid layout signature')
         self._ownership_cap = bool(stat & CACHE_HANDOFF_CAP)
         if self.hbm_dma and not self._ownership_cap:
             raise ArgumentError('multicore DMA requires the image ownership-handoff capability')
-        return super()._open_window(stat)
+        result = super()._open_window(stat)
+        if striped:
+            try:
+                StripedHBMLayout(self.axi_window['base'], self.axi_window['size'])
+            except ValueError as error:
+                raise DependencyFailed(str(error)) from error
+            if self.hbm_dma and not isinstance(getattr(self.link, 'hbm_layout', None), StripedHBMLayout):
+                raise DependencyFailed('striped HBM DMA requires a layout-aware link')
+            self.axi_window['layout'] = StripedHBMLayout.name
+        return result
 
     def _handoff(self, addr, nbytes):
         if not nbytes:
@@ -52,6 +72,14 @@ class MulticoreMMIOBackend(U50Backend):
             self._handoff(addr + register_words * 8, (len(words)-register_words)*8)
         return super()._put_payload(addr, words)
 
+    def _put_payload_bytes(self, addr, data):
+        nwords = len(data) // 8
+        self._check_window(addr, nwords, 'upload')
+        register_words = self._dma_split(addr, nwords)
+        if register_words < nwords:
+            self._handoff(addr + register_words * 8, (nwords - register_words) * 8)
+        return super()._put_payload_bytes(addr, data)
+
     def _get_payload(self, addr, nwords):
         self._check_window(addr, nwords, 'download')
         register_words = self._dma_split(addr, nwords)
@@ -68,8 +96,11 @@ class MulticoreMMIOBackend(U50Backend):
             capability = self.physical_grid_capability()
             if capability is None or capability[0] != self.core_count:
                 raise DeviceLost('v2 register image has a different physical core count')
-            if self.physical_chunk_capability() != 4:
-                raise DeviceLost('v2 register image has no four-lane physical chunk contract')
+            # One physical chunk lane per Role Context, up to four: four on the
+            # four-context profiles, two on core-vrf-sync-v5-x8-g2 (R41 G2).
+            if self.physical_chunk_capability() != self._chunk_lanes():
+                raise DeviceLost(f'v2 register image has no {self._chunk_lanes()}-lane physical '
+                                 f'chunk contract (profile {self.image_profile})')
             if self.memory_port_capability() != self.memory_ports:
                 raise DeviceLost('v2 register image has a different memory outlet contract')
             config = self.memory_configuration()
@@ -87,7 +118,7 @@ class MulticoreMMIOBackend(U50Backend):
 
     def capabilities(self):
         out = super().capabilities()
-        out.update(physical_grid=True, memory_ports=self.memory_ports,
+        out.update(physical_grid=True, tmu_locality=True, tmu_ranges=8, memory_ports=self.memory_ports,
                    memory_bytes=self.memory_bytes, memory_configuration=(dict(self._memory_config) if self._memory_config is not None else None),
                    completion_counters='global-makespan-u64', fault_detail=False,
                    reaches='rtl/fpga/tnca_multicore_fpga.v',
@@ -168,11 +199,49 @@ class MulticoreXDMALink(XDMALink):
     def hbm_open(self, nbytes):
         if self._accessor is None or not hasattr(self._accessor, 'bo_open'):
             return None
+        self.hbm_layout = None
         banks = [_xclbin_bank(self.xclbin, self.ip_name, arg_index=i) for i in range(3)]
         if any(not bank['used'] for bank in banks) or len({bank['index'] for bank in banks}) != 1:
             raise DependencyFailed('multicore AXI masters must share the same XRT allocation group',
                                    detail={'banks': banks})
-        return super().hbm_open(nbytes)
+        striped = bool(self.read_reg(0xb8) & STRIPED_CAP)
+        self._striped_required = striped
+        if striped:
+            if self.read_reg(STRIPED_REGISTER) != STRIPED_SIGNATURE:
+                raise DeviceLost('invalid striped HBM layout signature')
+            if min(operator.index(nbytes), banks[0]['size']) != STRIPED_BYTES:
+                raise ArgumentError('striped HBM requires an exposed 8 GiB allocation')
+        allocation = super().hbm_open(nbytes)
+        if striped:
+            banks = self.hbm_allocation.get('physical_banks', [])
+            expected = [(pc, pc << 28, 1 << 28) for pc in range(32)]
+            actual = [(b.get('pc'), b.get('allocated_base'), b.get('allocated_size')) for b in banks]
+            if (self.hbm_allocation.get('mapping_error') or actual != expected or
+                    any(not b.get('used') or b.get('base') != b.get('allocated_base') or
+                        b.get('size') != 1 << 28 for b in banks)):
+                raise DependencyFailed('striped HBM requires verified PC0..31 physical topology')
+            try:
+                self.hbm_layout = StripedHBMLayout(*allocation)
+            except ValueError as error:
+                raise DependencyFailed(str(error)) from error
+            self.hbm_allocation['layout'] = self.hbm_layout.name
+        return allocation
+
+    def hbm_write(self, offset, data):
+        layout = getattr(self, 'hbm_layout', None)
+        if getattr(self, '_striped_required', False) and layout is None:
+            raise DependencyFailed('striped HBM allocation has not been verified')
+        if layout is not None:
+            return layout.write(self._accessor, offset, data)
+        return super().hbm_write(offset, data)
+
+    def hbm_read(self, offset, nbytes):
+        layout = getattr(self, 'hbm_layout', None)
+        if getattr(self, '_striped_required', False) and layout is None:
+            raise DependencyFailed('striped HBM allocation has not been verified')
+        if layout is not None:
+            return layout.read(self._accessor, offset, nbytes)
+        return super().hbm_read(offset, nbytes)
 
 
 def board(**kwargs):

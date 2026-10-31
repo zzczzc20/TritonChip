@@ -1,22 +1,17 @@
-# R2 状态：逐工作包的实际进度
+# R2 Status: Actual Progress by Work Package
 
-合同：[phase2_tasks_and_acceptance.md](phase2_tasks_and_acceptance.md)。
-接口冻结：[r2_interfaces.md](r2_interfaces.md)。
-前置：[R1 合同](phase1_tasks_and_acceptance.md)、[R1 状态](r1_status.md)、
-[R1 签收](r1_signoff.md)（**R1 已 ACCEPTED**）。
+Contract: [phase2_tasks_and_acceptance.md](phase2_tasks_and_acceptance.md).
+Interface freeze: [r2_interfaces.md](r2_interfaces.md).
+Prerequisites: [R1 contract](phase1_tasks_and_acceptance.md), [R1 status](r1_status.md),
+[R1 sign-off](r1_signoff.md) (**R1 is ACCEPTED**).
 
-本文件只记录**已经跑过并留下证据**的部分。状态只有 DELIVERED、PARTIAL、
-NOT STARTED 三种；没有完成度百分比。
+This document records only components that have **already been executed with verified evidence archived**. Statuses are strictly classified into three categories: **DELIVERED**, **PARTIAL**, or **NOT STARTED**; there are no completion percentages.
 
-**R2 未签收。** 下表记录七个 DELIVERED、五个 PARTIAL、两个 NOT STARTED；
-最终判决还要求：在 R2
-候选 commit 上重跑 R1 全套（DEP-02）、grid/多批（R2-09）、host transport 的
-完成边界（R2-10）、MLIR 主路径（R2-04）、剩余 ABI 边界（R2-06）、E2E 与 mutation（R2-13）、双环境发布
-（R2-14）。
+**R2 is NOT signed off.** The table below records seven DELIVERED, five PARTIAL, and two NOT STARTED packages. The final verdict further requires: re-running the full R1 suite on the R2 candidate commit (DEP-02), grid/multi-batch scheduling (R2-09), host transport completion boundaries (R2-10), MLIR main path lowering (R2-04), remaining ABI boundaries (R2-06), end-to-end matrix and mutations (R2-13), and dual-environment release (R2-14).
 
-## 这一阶段已经成立的核心性质
+## Core Properties Established in This Phase
 
-一次编译、一个 artifact、多次不同参数的执行，中间结果留在设备内存里：
+One compilation, one artifact, repeated executions across different parameters, with intermediate results remaining in device memory:
 
 ```text
     compiler invocations: 1 for the first compile, 0 for four more
@@ -28,7 +23,7 @@ NOT STARTED 三种；没有完成度百分比。
     A->B->C with no host download in between: SUCCEEDED/SUCCEEDED, correct=True
 ```
 
-安装后、仓库移出 `sys.path`、没有 Triton 也没有编译器：
+Post-installation, repository removed from `sys.path`, without Triton or compiler:
 
 ```text
     $ tnca-sim prepare
@@ -38,38 +33,37 @@ NOT STARTED 三种；没有完成度百分比。
       o_ptr: [6.0, 6.0, 6.0, ...]
 ```
 
-## 逐包状态
+## Work Package Status
 
-| 工作包 | 状态 | 实际交付 | 未满足的验收条件 |
+| Work Package | Status | Actual Deliverables | Unmet Acceptance Criteria |
 |---|---|---|---|
-| R2-01 R1 衔接/合同 | **PARTIAL** | 84 条语义用例展开为 170 个执行 ID；`tools/r2/baseline.py` 实现 DEP-01（缺失/伪造/不完整/PARTIAL 的 R1 全部拒绝，复用 R1 自己的验证器）；`doc/r2_interfaces.md` 冻结依赖方向与 adapter 边界 | DEP-02 需要在 R2 候选上重跑 R1 全套；DEP-03 的支持矩阵待补 |
-| R2-02 安装/API | **DELIVERED** | PKG-01/02/04/05/06 在 Linux 上全通过。两个全新 venv 非 editable 安装后 compile→run→download；探针先断言仓库不在 `sys.path` 且 `tnca` 不是从 checkout 导入的，再做别的；含空格路径、任意 cwd；四类失败各有稳定码且 CLI 与 API 一致；许可证/版本/7 项运行资产齐全，`--no-index --no-cache-dir` 重装可用。**PKG-06 是新增的**：把 wheel 里 95 个文件逐字节与源码比对——`build/` 目录曾被提交进 git，setuptools 只在源文件**更新**时才重拷，于是 wheel 里 9 个文件是几个月前的快照，发出去的 host 写 6 个信箱字段而设备读 8 个 | 无 |
-| R2-03 编译 driver | **DELIVERED** | CMP-01…05 全通过：真实 Triton add/mul-add/动态 alpha AXPY 经产品入口编译并在 RTL 执行；六种畸形输入各按自己的错误码拒绝；R1 的负例经产品路径在 `-O2 --debug` 下仍被拒绝 | 无 |
-| R2-04 MLIR 主路径 | **NOT STARTED** | — | MLIR-01…05 |
-| R2-05 artifact/loader | **DELIVERED** | ART-01…06 全通过：一字节改动、截断、段重叠、重复 JSON key、未知版本、另一个 artifact 的段各被拒绝；profile/ABI/format 不匹配**在零次设备请求内**拒绝；容器无路径可遍历 | 无 |
-| R2-06 动态 ABI | **PARTIAL** | ABI-01（独立 byte-level oracle，六类型 22 个值）、ABI-02（三组地址与标量，code hash 不变）、ABI-03（九种坏参数，无一启动任务）、ABI-04（提交后修改 dict 无效） | ABI-06 gather/scatter 越界 fault（ABI-05 已通过：声明过的 in-place alias 正确执行，未声明的重叠在**零次设备请求**内被拒） |
-| R2-07 缓存/确定性 | **DELIVERED** | CACHE-01…04：七个维度改变 key，运行期输入无处可传；两个干净环境同 hash；损坏与截断各拒绝；**编译器被计数而非计时**，四次复用调用编译器 0 次 | 无 |
-| R2-08 runtime 生命周期 | **DELIVERED** | RT-01…07：完整生命周期、32 次不重启、八个占位第九个 QUEUE_FULL、wait 幂等且超时不是判决、租约阻塞、两 session 互不干扰、依赖链与跨 session 依赖拒绝 | 无 |
-| R2-09 grid/admission | **PARTIAL** | GRID-01/02（九种 grid，每个 PID 恰好出现一次，NPID 是逻辑 grid 大小，与独立 oracle 比对）、GRID-06（映射是双射，边界被拒绝）。`t.program_id(0)` 曾返回线性 id，transport 现在传全部六个 grid 值 | GRID-03/04/05/07 需要四 tile 持久设备 |
-| R2-10 host transport/完成 | **PARTIAL** | MEM-03（A→B→C 全程留在设备内存）、MEM-05（静态：`python/tnca` 15 个模块无任何层级引用；动态：杀掉设备后 download 变成 DEVICE_LOST 而不是一个数）、MEM-06（每个请求都记录方向/地址/长度/状态；越界被拒；canary 完好）。设备的越界检查曾因 `integer` 是 32 位有符号而对 0xFFFFFFF0 失效 | MEM-01/02/04 需要四 tile profile 的脏 cache 行与延迟注入钩子 |
-| R2-11 故障/恢复 | **DELIVERED** | ERR-01…07 全通过：trap 归因到 code/PC、可排空故障后 session 仍可用、设备 deadline 毒化并使排队任务 FAILED、recover 建立新 epoch、旧 epoch 的迟到回复被丢弃、设备被杀后 DEVICE_LOST 且无孤儿进程 | 无 |
-| R2-12 报告/诊断/示例 | **DELIVERED** | OBS-01（资源从发射出的代码实测：AXPY 用 4/64 向量寄存器，未测量的成本标 `unknown` 而不是 0；机器指令数与 code segment 交叉核对）、OBS-02（五类用户错误各有稳定码、位置与补救，无裸 traceback）、OBS-03（`Session.capture_failure` 写出可重放 bundle，`tnca-sim replay` 重放出同一语义错误；对照组换成正常 kernel 必须**不**复现）、OBS-04（三个安装后可直接运行的示例） | 无 |
-| R2-13 E2E/mutation | **PARTIAL** | E2E-01（216 个用例：3 kernel × 8 个 N × 3 值 seed × 3 内存 seed，参考值全部在 Python 侧独立算出，尾块 sentinel 与两侧 canary 每次核验）、E2E-02（九种 grid + 真实数值 kernel，空 grid 不计算，三个 3D grid 真执行）、E2E-05（三个 seed 下各 16 次发射加一条链）、R2M-01/02/05/05b/06/08 六个变异全部被指定测试抓住 | E2E-03/04/06 与 R2M-03/04/07 的检测器尚不存在 |
-| R2-14 双环境/发布 | **NOT STARTED** | — | REL-01…05 |
+| R2-01 R1 transition / contract | **PARTIAL** | 84 semantic cases expanded to 170 execution IDs; `tools/r2/baseline.py` implements DEP-01 (rejects missing, forged, incomplete, or PARTIAL R1, reusing R1's own verifier); `doc/r2_interfaces.md` freezes dependency directions and adapter boundaries | DEP-02 requires re-running the full R1 suite on the R2 candidate commit; DEP-03 support matrix remains to be completed |
+| R2-02 Installation / API | **DELIVERED** | PKG-01/02/04/05/06 all pass on Linux. Non-editable installation in two clean venvs followed by compile→run→download; probe asserts repository is not on `sys.path` and `tnca` is not imported from checkout before proceeding; handles paths containing spaces and arbitrary cwd; four failure classes each produce stable codes consistent between CLI and API; license, version, and 7 runtime assets complete, reinstallable with `--no-index --no-cache-dir`. **PKG-06 is newly added**: byte-for-byte comparison of 95 files in the wheel against tree sources — a `build/` directory had previously been committed to git, and setuptools only recopies sources that are newer, causing the wheel to package months-old snapshots where the host wrote 6 mailbox fields while the device expected 8 | None |
+| R2-03 Compiler driver | **DELIVERED** | CMP-01…05 all pass: real Triton add, mul-add, and dynamic alpha AXPY compiled via production entry points and executed on RTL; six malformed inputs each rejected with corresponding error codes; R1 negative cases remain rejected through production paths under `-O2 --debug` | None |
+| R2-04 MLIR main path | **NOT STARTED** | — | MLIR-01…05 |
+| R2-05 Artifact / loader | **DELIVERED** | ART-01…06 all pass: single-byte modifications, truncation, section overlaps, duplicate JSON keys, unknown versions, and mixed sections from another artifact are each rejected; profile, ABI, or format mismatches rejected **in zero device requests**; container allows no path traversal | None |
+| R2-06 Dynamic ABI | **PARTIAL** | ABI-01 (independent byte-level oracle covering 6 types and 22 values), ABI-02 (three sets of addresses and scalars with unchanged code hash), ABI-03 (nine bad parameter types, none launching a task), ABI-04 (post-submission container mutation has no effect) | ABI-06 runtime non-contiguous gather/scatter out-of-bounds fault (ABI-05 passes: declared in-place aliasing executes correctly, undeclared overlaps rejected in **zero device requests**) |
+| R2-07 Cache / determinism | **DELIVERED** | CACHE-01…04: seven dimensions alter cache key, runtime parameters cannot enter the key; identical hashes across two clean environments; corrupted and truncated caches rejected; **compiler invocations counted rather than timed**, 0 compiler invocations across four reuses | None |
+| R2-08 Runtime lifecycle | **DELIVERED** | RT-01…07: complete lifecycle, 32 consecutive launches without restarts, eight queued tasks with the 9th returning QUEUE_FULL, wait is idempotent with host timeout not being a verdict, buffer leases block conflicting access, two sessions remain isolated, dependency chains execute while cross-session dependencies are rejected | None |
+| R2-09 Grid / admission | **PARTIAL** | GRID-01/02 (nine grid shapes, each PID executed exactly once, NPID reflects logical grid size, verified against independent oracle), GRID-06 (bijective mapping, out-of-bounds rejected). `t.program_id(0)` previously returned linear ID; transport now passes all six grid values | GRID-03/04/05/07 require four-tile persistent device |
+| R2-10 Host transport / completion | **PARTIAL** | MEM-03 (A→B→C intermediate values remain in device memory throughout), MEM-05 (static: modules under `python/tnca` contain zero hierarchical references; dynamic: killing device causes download to fail with DEVICE_LOST rather than returning a value), MEM-06 (every request records direction, address, length, status; out-of-bounds rejected; canaries intact). Device bounds checking previously failed for 0xFFFFFFF0 due to 32-bit signed integer | MEM-01/02/04 require dirty cache lines and latency injection hooks on the four-tile profile |
+| R2-11 Faults / recovery | **DELIVERED** | ERR-01…07 all pass: traps attributed to code/PC, session reusable after drainable faults, device deadline poisons session and fails queued tasks, recover establishes new epoch, late responses from old epochs discarded, killing device yields DEVICE_LOST with no orphan processes | None |
+| R2-12 Reports / diagnostics / examples | **DELIVERED** | OBS-01 (resources measured from emitted code: AXPY uses 4/64 vector registers, unmeasured costs marked `unknown` rather than 0; machine instruction count cross-checked against code segment), OBS-02 (five user error classes each provide stable codes, locations, remedies, and no bare tracebacks), OBS-03 (`Session.capture_failure` emits replayable bundle, `tnca-sim replay` reproduces identical semantic error; control group with normal kernel must not reproduce), OBS-04 (three runnable post-installation examples) | None |
+| R2-13 E2E / mutation | **PARTIAL** | E2E-01 (216 cases: 3 kernels × 8 values of N × 3 value seeds × 3 memory seeds, references computed independently in Python, sentinel tail and bounding canaries verified each run), E2E-02 (nine grids + real numerical kernels, empty grid performs no compute, three 3D grids execute), E2E-05 (16 launches plus dependency chain under each of three seeds), R2M-01/02/05/05b/06/08 six mutations all caught by designated tests | Detectors for E2E-03/04/06 and R2M-03/04/07 do not yet exist |
+| R2-14 Dual-environment / release | **NOT STARTED** | — | REL-01…05 |
 
-## 已冻结的合同
+## Frozen Contracts
 
-| 合同 | 文件 | 关键规则 |
+| Contract | File | Key Rules |
 |---|---|---|
-| manifest v1 | `spec/r2_manifest_v1.schema.json` | 未知/更高 major **或 minor** 拒绝；未知字段拒绝；重复 JSON key 拒绝；`optional_metadata` 是唯一可忽略扩展位 |
-| 容器 v1 | `spec/r2_container_v1.json` | 单文件、无路径、每个长度都是"声明"并按实际文件大小核验；原子写入 |
-| ABI v1 | `spec/r2_abi_v1.json` | 六种类型、8 字节 slot、`offset = 8×index`、32 位高半必须为零、f32 按 bit pattern |
-| transport v1 | `spec/r2_transport_v1.json` | 单调序号的请求/响应信箱；迟到回复按序号丢弃；重启设备是显式的 epoch 事件 |
-| 错误码 | `python/tnca/errors.py` | 码是公开接口：不改名、不复用 |
+| Manifest v1 | `spec/r2_manifest_v1.schema.json` | Reject unknown or higher major **or minor**; reject unknown fields; reject duplicate JSON keys; `optional_metadata` is the only ignorable extension point |
+| Container v1 | `spec/r2_container_v1.json` | Single file, no paths, every length is a claim checked against actual file size; atomic writes |
+| ABI v1 | `spec/r2_abi_v1.json` | Six types, 8-byte slots, `offset = 8×index`, upper 32 bits must be zero, f32 encoded as bit pattern |
+| Transport v1 | `spec/r2_transport_v1.json` | Monotonic sequence request/response mailboxes; late responses discarded by sequence number; device restart is an explicit epoch event |
+| Error codes | `python/tnca/errors.py` | Codes are part of public interface: never renamed, never reused |
 
-## 一条必须继续说清楚的边界
+## A Boundary That Must Remain Documented
 
-合同 1.1 禁止把未迁移到真实 Triton 前端的能力写成"已经支持 Triton GEMM"。
-R1 的专用 GEMM、多角色和 rolled pipeline 经 **`tnca-ir` 输入**进入产品路径，
-manifest 的 `identity.source_kind` 记录这一点，CMP-05 验证它写的是
-`tnca-ir` 而不是 `triton`。
+Contract §1.1 forbids misrepresenting capabilities not yet migrated to the real Triton frontend as "already supporting Triton GEMM".
+R1's dedicated GEMM, multi-role, and rolled pipeline paths enter the production path via **`tnca-ir` inputs**; the manifest's `identity.source_kind` records this distinction, and CMP-05 verifies that it specifies `tnca-ir` rather than `triton`.
+

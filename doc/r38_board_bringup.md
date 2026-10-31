@@ -1,340 +1,328 @@
-# R38：上板实验准备与执行清单（U50）
+# R38: Board Bring-Up Preparation and Execution Checklist (U50 / U280)
 
-版本 0.4，2026-10-08。状态：**U280 已加载并完成验收阶梯 B1–B6**（acf3019，见 §4、§5）。
-上位：[Stage 1](r38_stage1_tasks_and_acceptance.md) §5“进入 Stage 2 的交接物”；板卡流程与既有实测：[flow/fpga/README.md](../flow/fpga/README.md)；测量协议：[archbench/PROTOCOL.md](../archbench/PROTOCOL.md)。
+Version 0.5, 2026-10-09. State: **U280 loaded and passed acceptance ladder B1–B6** (acf3019; see §4, §5; 75 MHz and 100 MHz verified, see §6.10, §6.13).
+Parent documents: [Stage 1](r38_stage1_tasks_and_acceptance.md) §5 "Hand-off Artifacts Entering Stage 2"; board flow and existing physical measurements: [flow/fpga/README.md](../flow/fpga/README.md); measurement protocol: [archbench/PROTOCOL.md](../archbench/PROTOCOL.md).
 
-## 0. 现状：板上镜像落后于 r38 RTL
+## 0. Context: Board Image Lagged Behind r38 RTL
 
-`flow/fpga/README.md` 记录的镜像（2026-09-26 加载，uuid `ccbbcf8b-…`，150 MHz 总线 / 37.5 MHz 设备）由 **fpga-u50 分支**的 RTL 构建。合并进 r38 之后，设备侧 RTL 有以下变化，旧镜像**不包含**：
+The image recorded in `flow/fpga/README.md` (loaded 2026-09-26, uuid `ccbbcf8b-…`, 150 MHz bus / 37.5 MHz device) was built from the **fpga-u50 branch** RTL. After merging into r38, the device-side RTL had the following changes that the old image **did not contain**:
 
-| 变化 | 文件 | 对上板的影响 |
+| Change | Files | Impact on Board Bring-Up |
 |---|---|---|
-| counter 读口 `perf_sel/perf_rdata`、两个数据口 beat counter、`done_retired` 修正（只报本命令的指令数） | `rtl/tnca_shell.v` | 旧镜像上 grid 的第二个 program 起 `retired` 偏大；counter 不可读 |
-| 邮箱 op 7 `PERF_READ`（与仿真 bench 同一契约：r0/r1 为低/高 32 位，越界 REFUSED） | `rtl/fpga/tnca_mmio.v`、`rtl/fpga/tnca_fpga_top.v` | 旧镜像对 op 7 回 REFUSED，runtime 报 `counters: unavailable`（不是 0） |
-| 转置写回引擎（`HAS_TENSOR_XPOSE`，默认 0）及未实现 mod 位改为 ILLEGAL_INSTRUCTION | `rtl/core/tnca_tensor.v` | 板上 profile `core-vrf-sync-v1` 不声明该能力，编译器不会发出；关闭时引擎与父提交一致 |
-| R3.7 编译器/ISA 覆盖 | 编译器 | fpga-u50 已含 R3.7（squash），无差异 |
+| Counter read port `perf_sel/perf_rdata`, two data-port beat counters, `done_retired` fix (reporting only this command's instruction count) | `rtl/tnca_shell.v` | On the old image, starting from the second program in a grid, `retired` is inflated; counters are unreadable |
+| Mailbox op 7 `PERF_READ` (same contract as simulation bench: r0/r1 low/high 32 bits, out-of-bounds `REFUSED`) | `rtl/fpga/tnca_mmio.v`, `rtl/fpga/tnca_fpga_top.v` | Old image returns `REFUSED` for op 7, runtime reports `counters: unavailable` (not 0) |
+| Transposed writeback engine (`HAS_TENSOR_XPOSE`, default 0) and unimplemented mod bits changed to `ILLEGAL_INSTRUCTION` | `rtl/core/tnca_tensor.v` | The board profile `core-vrf-sync-v1` does not declare this capability; compiler does not emit it; when disabled, engine matches parent commit |
+| R3.7 compiler / ISA coverage | Compiler | `fpga-u50` already included R3.7 (squash), no difference |
 
-因此上板分两条并行线：**A** 用已加载的旧镜像先做功能测试（无 counter）；**B** 用当前 RTL 重建 `.xclbin`（约 2 小时），得到带 counter 的镜像后做正式测量。
+Therefore board bring-up was divided into two parallel tracks: **A** use the loaded old image for initial functional validation (no counters); **B** rebuild `.xclbin` with current RTL (~2.5 hours) to obtain an image with counters for formal measurements.
 
-## 1. 上板前已完成的准备（本仓库内可验证）
+## 1. Preparations Completed Before Board Bring-Up (Verifiable within Repository)
 
-| 项 | 证据 |
+| Item | Evidence |
 |---|---|
-| fpga-u50 合并进 r38，板卡 RTL 门禁全过 | `make r36-fpga-tests`：R36-FPGA-01…08（08 为新增的寄存器协议 bench，含 PERF_READ） |
-| PERF_READ 经完整板卡软件栈可用 | `tools/r38/profiler_tests.py --quick --backend fpga-u50-sim --profiles core-vrf-sync-v1`：守恒/身份/单调/数值全部 PASS |
-| PyTorch → Inductor → Triton → tnca → 板卡协议 全流程 | `python -m archbench.run --platform tnca --backend fpga-u50-sim --profile core-vrf-sync-v1 …`（与板卡同一个 `U50Backend`，同一个 `tnca_fpga_top`，只把 XRT 换成仿真） |
-| 后端可由环境切换，不改代码 | `TNCA_BACKEND=fpga-u50`、`TNCA_BACKEND_ARGS='{"xclbin": "<path>"}'`（`python/tnca/triton_backend/driver.py`） |
-| 每个 kernel launch 的周期、程序数、传输字节都有记录 | `tnca.triton_backend.driver.launch_log()`，ArchBench 记录的 `time.per_launch`、`host` |
-| “期望板卡周期”：板卡设计的 RTL 仿真结果 | `archbench` 在 `fpga-u50-sim` 上的 tiny/small 记录（见 §4 B4） |
-| GPU 侧基线 | GB10 上 ArchBench tiny/small/large 记录（`archbench/PROTOCOL.md` §3.2） |
+| fpga-u50 merged into r38, board RTL gates all pass | `make r36-fpga-tests`: R36-FPGA-01…08 (08 is the register protocol bench, including `PERF_READ`) |
+| `PERF_READ` usable through full board software stack | `tools/r38/profiler_tests.py --quick --backend fpga-u50-sim --profiles core-vrf-sync-v1`: conservation / identity / monotonic / numerical all PASS |
+| PyTorch → Inductor → Triton → tnca → board protocol full flow | `python -m archbench.run --platform tnca --backend fpga-u50-sim --profile core-vrf-sync-v1 …` (same `U50Backend` as board, same `tnca_fpga_top`, swapping only XRT for simulation) |
+| Backend switchable via environment without code changes | `TNCA_BACKEND=fpga-u50` (or `fpga-u280`), `TNCA_BACKEND_ARGS='{"xclbin": "<path>"}'` (`python/tnca/triton_backend/driver.py`) |
+| Cycles, program count, transferred bytes recorded per kernel launch | `tnca.triton_backend.driver.launch_log()`, ArchBench-recorded `time.per_launch`, `host` |
+| "Expected board cycles": board design RTL simulation results | ArchBench tiny/small records on `fpga-u50-sim` (see §4 B4) |
+| GPU baseline | ArchBench tiny/small/large records on GB10 (`archbench/PROTOCOL.md` §3.2) |
 
-## 2. 拿到 FPGA 服务器后的步骤
+## 2. Steps Upon Receiving FPGA Server Access
 
-所有命令在仓库根目录执行；Vivado/v++/XRT 环境按服务器既有方式加载。
+All commands are executed from the repository root; Vivado/v++/XRT environments are loaded per server configuration.
 
-### A. 旧镜像（若仍加载）：功能先行，约 30 分钟
+### A. Old Image (if Still Loaded): Functional Bring-Up First, ~30 Minutes
 
 ```sh
-flow/fpga/program.sh --status                       # 现在加载的是什么、温度
+flow/fpga/program.sh --status                       # currently loaded image, thermals
 python tools/r36/conformance.py --xclbin <loaded.xclbin> --require-measured
 python -m archbench.run --platform tnca --backend fpga-u50 --profile core-vrf-sync-v1 \
     --backend-args '{"xclbin": "<loaded.xclbin>"}' --tier tiny --jobs 1 --out results/u50_old_tiny.jsonl
 ```
 
-预期：conformance 中 `fpga-u50` 从 N/A 变为 measured；tiny 档数值全部通过；counter 为 unavailable。**板卡只能串行使用：`--jobs 1`。**
+Expected: in conformance, `fpga-u50` changes from N/A to measured; tiny tier numerical checks all pass; counters report unavailable. **The board can only be used serially: `--jobs 1`.**
 
-### B. 用 r38 RTL 重建镜像，约 2.5 小时（与 A 并行）
+### B. Rebuild Image with r38 RTL, ~2.5 Hours (in Parallel with A)
 
 ```sh
 vivado -mode batch -source flow/fpga/package_xo.tcl -tclargs $PWD <build>/pkg
-flow/fpga/link.sh <build>/pkg                       # 150 MHz，设备 /4 = 37.5 MHz；link.sh 自己回读并核对频率
+flow/fpga/link.sh <build>/pkg                       # 150 MHz, device /4 = 37.5 MHz; link.sh reads back and verifies frequency
 flow/fpga/program.sh --check <build>/pkg/tnca_u50.xclbin
-flow/fpga/program.sh --go    <build>/pkg/tnca_u50.xclbin   # 唯一改变硬件状态的一步；温度门槛照旧
+flow/fpga/program.sh --go    <build>/pkg/tnca_u50.xclbin   # only step that changes hardware state; thermal thresholds apply as usual
 ```
 
-记录：link 报告的 WNS/WHS、资源（LUT/FF/BRAM/DSP）、`.xclbin` sha256 与 uuid，写入 `flow/fpga/README.md` 的新小节。时序不收敛时按该文件“If the link fails on timing again”处理，**不**单方面降频。
+Record: WNS/WHS from link report, resources (LUT/FF/BRAM/DSP), `.xclbin` sha256 and uuid, written into `flow/fpga/README.md`. If timing fails to close, follow "If the link fails on timing again" in that file; do **not** unilaterally reduce frequency.
 
-### C. 新镜像上的验收阶梯
+### C. Acceptance Ladder on New Image
 
-| 步 | 命令 | 通过条件 |
+| Step | Command | Passing Condition |
 |---|---|---|
 | B1 | `python tools/r36/conformance.py --xclbin X --require-measured` | 5/5 backend measured |
-| B2 | `python tools/r38/profiler_tests.py --quick --backend fpga-u50 --backend-args '{"xclbin":"X"}' --profiles core-vrf-sync-v1` | 守恒、身份、单调全部成立（与 `fpga-u50-sim` 同一检查） |
-| B3 | `python -m archbench.run --platform tnca --backend fpga-u50 --profile core-vrf-sync-v1 --backend-args '{"xclbin":"X"}' --tier tiny small --counters --jobs 1 --out results/u50.jsonl` | 数值全部通过；无 host 回退 |
-| B4 | `python -m archbench.report results/u50.jsonl results/u50sim.jsonl` 与逐 launch 周期对比 | **板卡周期 = `fpga-u50-sim` 周期，逐 launch 完全相同**（同一 RTL、同一固定延迟内存；任何差异都是板卡与仿真模型不一致，必须解释） |
-| B5 | `python -m archbench.report results/u50.jsonl results/gpu.jsonl --tier tiny small` | 板卡记录带 `time.device_seconds`（37.5 MHz），首次可算与 GPU 的时间比 S |
-| B6 | LLM 演示：`model.llama_decode/small` 连续多步、`model.llama_prefill/small`；截图含 bitstream hash、命令、tokens/s | roadmap §12.4 P2–P3 的板卡证据（P4/P5 需要更大内存，见 §3） |
+| B2 | `python tools/r38/profiler_tests.py --quick --backend fpga-u50 --backend-args '{"xclbin":"X"}' --profiles core-vrf-sync-v1` | Conservation, identity, monotonicity all hold (same checks as `fpga-u50-sim`) |
+| B3 | `python -m archbench.run --platform tnca --backend fpga-u50 --profile core-vrf-sync-v1 --backend-args '{"xclbin":"X"}' --tier tiny small --counters --jobs 1 --out results/u50.jsonl` | Numerical checks all pass; no host fallback |
+| B4 | `python -m archbench.report results/u50.jsonl results/u50sim.jsonl` and per-launch cycle comparison | **Board cycles = `fpga-u50-sim` cycles, identical launch-by-launch** (same RTL, same fixed-latency memory; any discrepancy indicates a mismatch between board and simulation model and must be explained) |
+| B5 | `python -m archbench.report results/u50.jsonl results/gpu.jsonl --tier tiny small` | Board records include `time.device_seconds` (37.5 MHz), first enabling speedup ratio S against GPU |
+| B6 | LLM demonstration: `model.llama_decode/small` multi-step, `model.llama_prefill/small`; screenshot includes bitstream hash, command, tokens/s | Board evidence for roadmap §12.4 P2–P3 (P4/P5 require larger memory, see §3) |
 
-每次运行保存：JSONL 记录、`program.sh --status` 输出（uuid、温度、时钟）、`xbutil examine` 的时钟计数。
+Save per run: JSONL records, `program.sh --status` output (uuid, thermals, clock), `xbutil examine` clock counter.
 
-## 3. 已知限制与下一步决策点
+## 3. Known Limitations and Next Decision Points
 
-- **内存容量**：设备内存是 512 KiB 片上 BRAM（`WORDS=65536`），堆 384 KiB；每次 launch 的参数存储必须放得下，所以 small 档按此设计，large 档（1B 模型）在板上记 `capacity-exceeded`。扩大有两条路：URAM（U50 约 22.5 MB，改 `WORDS/ADDR_W` 与 `tnca_fpga_mem` 的推断，需要重新做时序）或 HBM（新增 AXI 主口与 DMA，工作量大）。需要你决定优先级。
-- **传输开销**：Stage 1 每次 launch 经寄存器窗口逐字上传/下载参数存储；板卡上这是 host 时间（单独记录，不计设备时间），会让端到端时延远大于设备时间。张量常驻设备是 roadmap P2（PrivateUse1）的工作。
-- **单核串行 grid**：设备时间是各 program 周期之和（`serial-grid`），不是多核并发的 makespan。
-- **温度**：上次记录 FPGA 91–95 °C、HBM 86–89 °C，超过 90/85 °C 的停测门槛后经明确指示才继续；这次仍按该门槛执行，超限即停并报告。
+- **Memory capacity**: Device memory is 512 KiB on-chip BRAM (`WORDS=65536`), heap is 384 KiB; argument storages per launch must fit within it. Hence small tier is designed accordingly, while large tier (1B models) records `capacity-exceeded` on board. Two expansion paths: URAM (~22.5 MB on U50, modify `WORDS/ADDR_W` and `tnca_fpga_mem` inference, requires re-timing) or HBM (add AXI master and DMA, high engineering effort). Needs prioritization decision.
+- **Transfer overhead**: In Stage 1, each launch uploads/downloads argument storages word-by-word through the register window; on board this is host time (recorded separately, excluded from device time), causing end-to-end latency to greatly exceed device time. Keeping tensors resident on device is roadmap P2 (PrivateUse1) work.
+- **Single-core serial grid**: Device time is the sum of program cycles (`serial-grid`), not concurrent multi-core makespan.
+- **Thermals**: Previous run logged FPGA 91–95 °C, HBM 86–89 °C, exceeding the 90/85 °C abort threshold and proceeding only under explicit instructions; this threshold remains active: abort and report if exceeded.
 
-## 4. 实际板卡：acf3019 上的 Alveo U280（2026-10-07）
+## 4. Actual Board: Alveo U280 on acf3019 (2026-10-07)
 
-提供的 FPGA 主机是 U280 而不是 U50。设备 RTL、kernel（`tnca_u50`）与寄存器协议不变，只换卡相关的值，集中在 `flow/fpga/boards.sh`，由 `TNCA_BOARD` 选择：
+The provided FPGA host contains an Alveo U280 rather than a U50. Device RTL, kernel (`tnca_u50`), and register protocol remain unchanged; only card-specific values change, centralized in `flow/fpga/boards.sh` and selected by `TNCA_BOARD`:
 
-| 项 | 值（在主机上读出） |
+| Item | Value (Read on Host) |
 |---|---|
-| 访问 | 经 GB10 主机跳板：`ssh zhongchun@143.89.78.224`，再 `ssh zzhouch@acf3019.ece.ust.hk`（跳板机上的密钥） |
-| 主机 | Ubuntu 22.04，24 核，62 GB，XRT 2.16（2023.2），Vivado/Vitis 2021.1 与 2023.2；多人共用 |
-| 卡 | `xilinx_u280_gen3x16_xdma_base_1`，BDF `0000:04:00.1`，接口 UUID `fb2b2c5a19ed63593fea95f51fbc8eb9` |
-| 平台 / 器件 | `xilinx_u280_gen3x16_xdma_1_202211_1`，`xcu280-fsvh2892-2L-e` |
-| 时钟 | 平台 kernel clock 0 默认 300 MHz；本设计同样请求 150 MHz、器件 /4 = 37.5 MHz |
-| 后端名 | `fpga-u280`（与 `fpga-u50` 同一个 `U50Backend`） |
+| Access | Via GB10 host jumpbox: `ssh zhongchun@143.89.78.224`, then `ssh zzhouch@acf3019.ece.ust.hk` (keys on jumpbox) |
+| Host | Ubuntu 22.04, 24 cores, 62 GB RAM, XRT 2.16 (2023.2), Vivado/Vitis 2021.1 and 2023.2; multi-user shared |
+| Card | `xilinx_u280_gen3x16_xdma_base_1`, BDF `0000:04:00.1`, interface UUID `fb2b2c5a19ed63593fea95f51fbc8eb9` |
+| Platform / Device | `xilinx_u280_gen3x16_xdma_1_202211_1`, `xcu280-fsvh2892-2L-e` |
+| Clock | Platform kernel clock 0 defaults to 300 MHz; this design originally requested 150 MHz, device /4 = 37.5 MHz |
+| Backend name | `fpga-u280` (uses same `U50Backend` as `fpga-u50`) |
 
-命令（在 acf3019 的仓库根目录）：
+Commands (at repository root on acf3019):
 
 ```sh
 vivado -mode batch -source flow/fpga/package_xo.tcl -tclargs $PWD <build> xcu280-fsvh2892-2L-e
 TNCA_BOARD=u280 XILINX_VITIS=/tools/Xilinx/Vitis/2023.2 VPP_JOBS=8 flow/fpga/link.sh <build>
 TNCA_BOARD=u280 flow/fpga/program.sh --check <build>/tnca_u280.xclbin
-TNCA_BOARD=u280 flow/fpga/program.sh --go    <build>/tnca_u280.xclbin      # 见下面的共用规则
+TNCA_BOARD=u280 flow/fpga/program.sh --go    <build>/tnca_u280.xclbin      # see sharing rules below
 python -m archbench.run --platform tnca --backend fpga-u280 --profile core-vrf-sync-v1 \
     --backend-args '{"xclbin": "<build>/tnca_u280.xclbin"}' --tier tiny small --counters --out results/u280.jsonl
 ```
 
-**构建记录**（`<build>` = `~/tnca_build/u280`，RTL 与本分支 HEAD 相同）：
+**Build records** (`<build>` = `~/tnca_build/u280`, RTL identical to HEAD of branch):
 
-| 次 | 放置 | 结果 |
+| Attempt | Placement | Outcome |
 |---|---|---|
-| 1 | 交给布局器 | kernel 跨 SLR0/SLR1；ap_clk WNS −1.919 ns，32 个端点，全是 AXI-Lite 适配器里的一条路径（`w_have` → `shadow_lo[*]/CE`：一级 LUT、8.2 ns 走线、一次 SLR0→SLR1 跨越）。失败 |
-| 2 | `--connectivity.slr tnca_u50_1:SLR1`（`boards.sh`） | synth 44 分钟，impl 3 小时 13 分钟。routed 全设计 WNS +0.016 ns、0 个失败端点；kernel clock 域 WNS +4.229 ns。`.xclbin` 读回 DATA_CLK = 150 MHz，器件时钟 37.5 MHz。`tnca_u280.xclbin` sha256 `f8717adc…a77a52bec` |
+| 1 | Left to placer | kernel spans SLR0/SLR1; ap_clk WNS −1.919 ns, 32 endpoints, all one path in AXI-Lite adapter (`w_have` → `shadow_lo[*]/CE`: 1 LUT level, 8.2 ns routing, one SLR0→SLR1 crossing). Failed |
+| 2 | `--connectivity.slr tnca_u50_1:SLR1` (`boards.sh`) | synth 44 min, impl 3 h 13 min. Routed full-design WNS +0.016 ns, 0 failing endpoints; kernel clock domain WNS +4.229 ns. `.xclbin` reads back DATA_CLK = 150 MHz, device clock 37.5 MHz. `tnca_u280.xclbin` sha256 `f8717adc…a77a52bec` |
 
-第 2 次 v++ 退出 0，但 `link.sh` 当时报失败（退出 3）：它的检查 1 匹配任何 `AUTO-FREQ-SCALING` 规则，而这次打印的是 `AUTO-FREQ-SCALING-08`。这条 advisory 的意思是时序有余量、频率保持原值（“will select the original specified frequency of 150.0 MHz”）。检查 1 现在只放过 08，其余规则 ID（包括以后版本新增的）仍判失败。`LINK_RECHECK=1` 可以对已完成的链接重跑检查而不重跑 v++；该构建复检结果为 `link.sh: OK`。
+Attempt 2 exited v++ with 0, but `link.sh` initially reported failure (exit code 3): its check 1 matched any `AUTO-FREQ-SCALING` rule, whereas v++ printed `AUTO-FREQ-SCALING-08`. That advisory indicates timing closed with slack and the original frequency was maintained ("will select the original specified frequency of 150.0 MHz"). Check 1 now passes 08 while failing other rule IDs (including new ones in future versions). `LINK_RECHECK=1` re-runs checks on an existing link without re-running v++; re-check yielded `link.sh: OK`.
 
-**共用规则**：这块卡上加载着别人的镜像（2026-10-07 为一个 HBM 带宽测试，CU 空闲），主机上也有其他人的 Vivado 任务。`program.sh --go` 会替换别人的镜像，所以每次加载前确认没有进程占用该设备，并经负责人同意；构建（package/link）不碰卡，`VPP_JOBS` 限制并行度。
+**Sharing rules**: The card had another user's image loaded (an HBM bandwidth test on 2026-10-07, CU idle), and other users ran Vivado tasks on the host. `program.sh --go` replaces the loaded image, so confirm no process is using the device and obtain owner consent before loading; packaging/linking does not touch the board, and `VPP_JOBS` restricts parallelism.
 
-期望值：板卡周期应与 `core-vrf-sync-v1` 的仿真 bench 逐 launch 相同（`fpga-u50-sim` 已在 RTL 上证明板卡顶层与该 bench 周期一致）；tiny 档的期望记录由 `python -m archbench.run --platform tnca --profile core-vrf-sync-v1 --tier tiny` 产生。
+Expected values: Board cycles should match the `core-vrf-sync-v1` simulation bench launch-by-launch (`fpga-u50-sim` already proved top-level cycle equivalence to that bench on RTL); tiny tier expected records are generated by `python -m archbench.run --platform tnca --profile core-vrf-sync-v1 --tier tiny`.
 
-## 5. U280 上板结果（2026-10-08）
+## 5. U280 Board Results (2026-10-08)
 
-经负责人同意，2026-10-08 09:38 用 `program.sh --go` 加载 `tnca_u280.xclbin`（sha256 `f8717adc…a77a52bec`，xclbin uuid `083faace-4e12-8434-c841-947e12a47ba8`），替换原镜像 `483a6e3f…`。加载前所有门检查通过：设备空闲、无其他加载进程、FPGA 32 °C、HBM 27 °C。加载后 HBM 传感器 2 s 内出现读数，为 26 °C。管理功能上的时钟频率计数器（`clock_counter_freqs`）读出 kernel clock 为 150 MHz，器件时钟因此是 37.5 MHz。
+With lead approval, loaded `tnca_u280.xclbin` at 2026-10-08 09:38 using `program.sh --go` (sha256 `f8717adc…a77a52bec`, xclbin uuid `083faace-4e12-8434-c841-947e12a47ba8`), replacing prior image `483a6e3f…`. Pre-load gate checks all passed: device idle, no other loading process, FPGA 32 °C, HBM 27 °C. After loading, the HBM sensor reported readings within 2 s (26 °C). Management clock frequency counters (`clock_counter_freqs`) reported kernel clock 150 MHz, giving a 37.5 MHz device clock.
 
-结果记录在 acf3019 的 `~/tnca_build/u280/results/`。
+Results recorded in `~/tnca_build/u280/results/` on acf3019.
 
-| 步 | 命令要点 | 结果 |
+| Step | Command Highlights | Result |
 |---|---|---|
-| B1 | `tools/r36/conformance.py --backends fpga-u280 --xclbin X --require-measured` | **5/5 PASS**，1 of 1 backend measured。成功 launch 23 周期，oracle 值正确。故障 launch 报 code 0x40 及其 PC，之后 session 仍可用。 |
-| B2 | `tools/r38/profiler_tests.py --backend fpga-u280 …`（先 `--quick`，后完整验收） | **PASS**：守恒、单调、无扰动三项均成立，经 PERF_READ 读出；快速版和完整版都通过 |
-| B3 tiny | `archbench.run … --backend fpga-u280 --tier tiny --counters` | **27/27 pass**，用时 6.3 分钟，27 个点全部带 counters |
-| B3 small | 同上，`--tier small` | **25/25 pass**，用时 7.7 分钟。LLaMA prefill（S = 64）155.6 M 周期 = 4.15 s；decode（P = 128）43.9 M 周期 = 1.17 s |
-| B4 | 板卡记录与 `core-vrf-sync-v1` 仿真记录逐 launch 对比 | tiny 27/27 点、132 次 launch，**周期逐 launch 完全相同**。small 档没有 RTL 参照，RTL 仿真太慢。 |
-| B5 | `archbench.report u280_tiny u280_small gpu_gb10 --tier tiny small` | 52/52 对 52/52。TNCA U280：E = 0.0072，A = 0.021；GB10：E = 0.0051，A = 0.041。秒级时间比 T_GPU/T_TNCA 在 2×10⁻⁵ 到 6×10⁻³ 之间 |
-| B6 | `python -m archbench.generate --tier small --new 8 …` | 64-token prefill 加 7 步 decode，每步都用设备自己产生的 KV cache。8 步全部在容差内，token 序列与纯 FP32 生成完全一致。设备时间：prefill 15.4 tokens/s，decode 1.01 tokens/s。host 墙钟 327 s，其中 194 s 在 launch 内（传输和等待），其余是逐步编译。 |
+| B1 | `tools/r36/conformance.py --backends fpga-u280 --xclbin X --require-measured` | **5/5 PASS**, 1 of 1 backend measured. Successful launch: 23 cycles, oracle values correct. Fault launch reports code 0x40 and its PC; session remains usable afterwards. |
+| B2 | `tools/r38/profiler_tests.py --backend fpga-u280 …` (first `--quick`, then full acceptance) | **PASS**: conservation, monotonicity, non-perturbation all hold, read via PERF_READ; both quick and full passed |
+| B3 tiny | `archbench.run … --backend fpga-u280 --tier tiny --counters` | **27/27 pass**, duration 6.3 min, all 27 points include counters |
+| B3 small | Same, `--tier small` | **25/25 pass**, duration 7.7 min. LLaMA prefill (S = 64) 155.6 M cycles = 4.15 s; decode (P = 128) 43.9 M cycles = 1.17 s |
+| B4 | Board records compared launch-by-launch against `core-vrf-sync-v1` simulation | tiny 27/27 points, 132 launches: **cycles identical launch-by-launch**. (small tier lacks RTL reference as RTL simulation is too slow). |
+| B5 | `archbench.report u280_tiny u280_small gpu_gb10 --tier tiny small` | 52/52 vs 52/52. TNCA U280: E = 0.0072, A = 0.021; GB10: E = 0.0051, A = 0.041. Second-scale time ratio T_GPU/T_TNCA between 2×10⁻⁵ and 6×10⁻³ |
+| B6 | `python -m archbench.generate --tier small --new 8 …` | 64-token prefill plus 7-step decode, each step consuming device-generated KV cache. All 8 steps within tolerance, token sequence identical to pure FP32 generation. Device time: prefill 15.4 tokens/s, decode 1.01 tokens/s. Host wall clock 327 s, including 194 s inside launch (transfers and waiting), remainder in step-by-step compilation. |
 
-为跑通 small 档，上板时修了三处，均已提交：
+Three bug fixes made and committed during board bring-up:
+- **`link.sh` false rejection of `AUTO-FREQ-SCALING-08`**: see §4.
+- **`program.sh` failed to read U280 thermals**: XRT 2.16 thermal report uses tabular format, whereas regex expected `FPGA : 45 C`. Both formats now supported.
+- **Runtime heap allocator fragmentation**: Freed blocks were not coalesced; LLaMA small ran out of device memory midway ("out of device memory: 131072 bytes needs 131072 and 98304 remain"). After coalescing, heap returns to empty after each launch; tiny cycles identical to pre-fix.
 
-- **`link.sh` 误判 `AUTO-FREQ-SCALING-08`**：见 §4。
-- **`program.sh` 读不出 U280 的温度**：XRT 2.16 的 thermal 报告是表格格式，原解析只认 `FPGA : 45 C` 这种格式。现在两种格式都能读。
-- **运行时堆分配器碎片化**：释放的块不合并，LLaMA small 跑到图的后半段时报 “out of device memory: 131072 bytes needs 131072 and 98304 remain”。合并后，每次 launch 结束堆都回到空，tiny 档周期与修复前完全相同。
+Additionally, conformance tests previously built simulators for every backend, failing on board hosts lacking iverilog; it now builds only for backends requiring a simulator.
 
-另外，conformance 套件此前对每个后端都先构建仿真器，所以在没有 iverilog 的板卡主机上跑不起来。现在只为需要仿真器的后端构建。
+**Next steps** (detailed in [architecture_overview.md](architecture_overview.md) §13 and [compiler_overview.md](compiler_overview.md) §15):
+1. Extract kernel-only resource utilization from U280 link report.
+2. Measure board power (`xbutil examine -r electrical`).
+3. Register board evidence into evidence registry (Stage 2 level).
+4. Memory capacity roadmap (URAM vs HBM) pending decision.
 
-**下一步**（详见 [architecture_overview.md](architecture_overview.md) §13 与 [compiler_overview.md](compiler_overview.md) §15）：
+## 6. Device Clock: 37.5 MHz Bottleneck and Timing Optimizations (2026-10-08 – 2026-10-09)
 
-1. 从 U280 链接报告提取 kernel 单独的资源占用。
-2. 板卡功耗（`xbutil examine -r electrical`）。
-3. 把板卡证据登记进 evidence registry（Stage 2 等级）。
-4. 内存容量路线（URAM 或 HBM）待负责人决定。
+### 6.1 Where Was the Bottleneck
 
-## 6. 器件时钟：37.5 MHz 的瓶颈与第一轮优化（2026-10-08）
+In the U280 routed link report (`hw_bb_locked_timing_summary_routed.rpt`), the clk_dev (26.668 ns) worst path slack was only 2.689 ns:
+- **Endpoints**: `u_mtx/g_mac[12].u_mac/u_fma` `p1_mag_reg → p0_exp_common_reg`.
+- **Scale**: 60 logic levels (19 CARRY8, 1 DSP), data path 23.931 ns, routing accounting for 73%.
+- **Semantics**: FMA stage 2 (leading-one search, normalization, rounding) result fed via accumulator file write-to-read bypass into next multiply-add stage 0. In stage 0, it passed 24×24 multiplication (DSP) and zero-check before deciding shift direction and common exponent. All completed within one cycle.
 
-### 6.1 瓶颈在哪里
+### 6.2 Methodology: Minutes-Long OOC Synthesis Instead of 4-Hour Links
 
-U280 链接的 routed 报告（`hw_bb_locked_timing_summary_routed.rpt`）里，clk_dev（26.668 ns）最差路径的余量只有 2.689 ns：
+- **Tool**: `flow/synth/vivado_ooc.sh` (`make fpga-timing`). Out-of-context synthesis plus timing estimation on individual units or whole device (`tnca_fpga_top`). Unit-level takes 3–5 min, whole device ~25 min.
+- **Note**: Reports pre-routing estimates. The matrix path was estimated at 14.7 ns post-synthesis and measured 23.9 ns post-routing (ratio ~1.6, applied below for conversions).
+- **Yosys**: Mapping to UltraScale+ primitives was evaluated and unusable: does not infer CARRY8, and `ltp` does not treat FDRE as register boundaries. Yosys remains a structural proxy for `make synth`.
 
-- **起止点**：`u_mtx/g_mac[12].u_mac/u_fma` 中 `p1_mag_reg → p0_exp_common_reg`。
-- **规模**：60 级逻辑（19 个 CARRY8、一个 DSP），数据路径 23.931 ns，其中走线占 73 %。
-- **含义**：FMA 第 2 级（前导 1 搜索、规格化、舍入）的结果经累加器文件的写→读直通，进入下一次乘加的第 0 级。在第 0 级里，它经过 24×24 乘法（DSP）和「乘积是否为 0」的判断，最后决定移位方向和公共指数。整个过程在一个周期内完成。
+### 6.3 Modifications (All Cycle-Neutral)
 
-### 6.2 方法：几分钟一次的 OOC 综合，而不是四小时的链接
-
-- **工具**：`flow/synth/vivado_ooc.sh`（`make fpga-timing`）。对单个单元或整个器件（`tnca_fpga_top`）做 out-of-context 综合加时序估计。单元级 3–5 分钟，整器件约 25 分钟。
-- **注意**：报告的是布线前的估计。矩阵这条路径综合后估计为 14.7 ns，链接后实测为 23.9 ns，比值约 1.6，下文都按这个比值折算。
-- **yosys**：用 yosys 映射 UltraScale+ 原语后再数级数的办法试过了，不可用。它不推断 CARRY8，`ltp` 也不把 FDRE 当作寄存器边界。yosys 仍用于 `make synth` 的通用门结构代理。
-
-### 6.3 改动（都不改变任何周期数）
-
-| 改动 | 文件 | 综合后估计 |
+| Modification | Files | Post-Synth Estimate |
 |---|---|---|
-| 去掉累加器文件的写→读直通。矩阵引擎读第 m 行后 FMA_LAT 拍才写回，同一行下一次被读是 ROWS+1 拍以后；行操作和 `a.vread` 都在上一条命令写回之后才开始，所以这条直通从未传过被使用的值。`tnca_matrix` 在仿真里检查这一点（`acc_collide`），违反时测试直接失败。 | `rtl/core/tnca_acc_rf.v`、`rtl/core/tnca_matrix.v` | 矩阵单元 14.7 → 8.6 ns |
-| FMA 改由 XLS 生成（见 [`xls.md`](xls.md)）。`xls/tnca_fma.x` 不使用会把次正规数清零的 `apfloat`，算法与原手写版逐步对应，流水级由 XLS 排定。`LAT=2` 的实例与手写版的级数和延迟相同。 | `xls/tnca_fma.x`、`rtl/gen/tnca_fma_xls.v`、`rtl/core/tnca_fp32_fma.v` | 向量 FPU 9.2 → 6.8 ns |
-| tensor 引擎的窗口检查原来是五个块维度连乘再比较，现在在 `td.load` 读入描述符尾部时每字一次乘法，预先算出 box 元素数（饱和到 2^20），传输时只做移位和比较。 | `rtl/core/tnca_tensor.v` | 整器件最差路径原为 10.1 ns |
+| Removed accumulator file write-to-read bypass. Matrix engine reads row m, writes back FMA_LAT cycles later; same row next read is ROWS+1 cycles later. Row operations and `a.vread` start only after prior command writeback, so bypass never carried used values. `tnca_matrix` asserts this in simulation (`acc_collide`), failing immediately on violation. | `rtl/core/tnca_acc_rf.v`, `rtl/core/tnca_matrix.v` | Matrix unit 14.7 → 8.6 ns |
+| FMA generated via XLS (see [`xls.md`](xls.md)). `xls/tnca_fma.x` avoids subnormal-flushing `apfloat`, matching hand-written algorithm step-by-step; pipeline scheduled by XLS. `LAT=2` instance matches hand-written stage count and latency. | `xls/tnca_fma.x`, `rtl/gen/tnca_fma_xls.v`, `rtl/core/tnca_fp32_fma.v` | Vector FPU 9.2 → 6.8 ns |
+| Tensor engine window check originally multiplied five block dimensions in series and compared; now multiplies one word per cycle when `td.load` reads descriptor tail, precomputing box element count (saturating to 2^20); transfer only shifts and compares. | `rtl/core/tnca_tensor.v` | Whole-device worst path was 10.1 ns |
 
-验证：
+Verification:
+- `unit`: XLS FMA 41,240 vectors per latency.
+- `fma-deep`: 516,240 vectors per latency, 0 difference against exact Fraction oracle.
+- `core`, `core-vrf`: 31/31 each, including tensor descriptors t12/t17/t33–t35.
+- Other: `r38-xpose-rtl`, `top`, `e2e` all pass with identical cycles (e.g. t10_mesh 18,591).
 
-- `unit`：XLS FMA 两个延迟各 41 240 条向量。
-- `fma-deep`：两个延迟各 516 240 条向量，与精确 Fraction oracle 0 差异。
-- `core`、`core-vrf`：各 31/31，包括 tensor 描述符 t12/t17/t33–t35。
-- 其余：`r38-xpose-rtl`、`top`、`e2e` 全部通过，周期数与改动前逐一相同（例如 t10_mesh 18 591）。
+### 6.4 Frequency
 
-### 6.4 频率
+- **Whole-device post-synth**: With all three modifications, whole device (`tnca_fpga_top`, 13.333 ns target, U280) post-synthesis worst path was **10.19 ns, 40 levels**, WNS +3.08 ns, all 525,817 endpoints passing. Path runs from VRF bank BRAM read port through matrix unit A select / format widen into FMA stage 0. Former 60-level 14.7 ns matrix loop and 10.1 ns tensor window check removed from worst path. Resources: LUT 242,474 (18.6%), FF 181,133 (7.0%), BRAM 167.5.
+- **New builds initially defaulted to /3**: `rtl/board/tnca_u50_xo.v` `DEV_DIV` parameter changed to default 3 (150 MHz / 3 = 50 MHz, 20 ns period). At 1.6× routing ratio, routed estimate was ~16.3 ns (~61 MHz), ~3.7 ns slack. (Changed to /2 on 2026-10-09, and /1 undivided 100 MHz, see §6.10, §6.13.)
+- **Clock domain crossing unaffected**: Adapter uses toggle + synchronizers across domains, independent of divide ratio; divided clock edges align with ap_clk, so CDC constraint remains one ap_clk period.
+- **Governed by link results**: `link.sh` fails on unmet timing rather than silently downscaling.
+- **Loaded image at the time (uuid `083faace…`) remained /4, 37.5 MHz**: `archbench/platforms/tnca.py` `BOARD_CLOCK_HZ` describes loaded image, updated when a new image is loaded.
 
-- **整器件结果**：三项都做完后，整器件（`tnca_fpga_top`，以 13.333 ns 为目标，U280 器件）综合后最差路径为 **10.19 ns，40 级**，WNS +3.08 ns，525 817 个端点全部满足。这条路径从 VRF bank 的 BRAM 读口出发，经矩阵单元选出 A 元素、做格式扩展，进入 FMA 第 0 级。原来 60 级、14.7 ns 的矩阵回路和 10.1 ns 的 tensor 窗口检查都已不在最差路径中。资源：LUT 242 474（18.6 %），寄存器 181 133（7.0 %），BRAM 167.5。
-- **新构建默认 /3**：`rtl/board/tnca_u50_xo.v` 的 `DEV_DIV` 参数默认改为 3，即 150 MHz / 3 = 50 MHz，周期 20 ns。按 1.6 倍折算，布线后约 16.3 ns（约 61 MHz），余量约 3.7 ns。（2026-10-09 起默认改为 /2，见 §6.10。）
-- **跨时钟域不受影响**：适配器用 toggle 加同步器跨域，与分频比无关；分频后时钟的边沿都与 ap_clk 对齐，跨域约束仍是一个 ap_clk 周期。
-- **以链接结果为准**：`link.sh` 在时序不满足时会报失败，不会自行降频。
-- **当前加载的镜像（uuid `083faace…`）仍是 /4、37.5 MHz**。`archbench/platforms/tnca.py` 的 `BOARD_CLOCK_HZ` 描述的是已加载的镜像，要等新镜像加载时一起改。
+### 6.5 Moving Higher: 75 MHz (150 / 2, 13.3 ns)
 
-### 6.5 再往上：75 MHz（150 / 2，13.3 ns）
+At 1.6× routing ratio, 75 MHz requires post-synthesis <= ~8.3 ns. Remaining two paths:
+- **Matrix unit, 10.2 ns (whole-device worst)**: VRF BRAM read, A select, format widen into FMA stage 0; matrix unit alone accumulates to 8.6 ns. Can register A operand before FMA (MAC scan only adds 1 drain cycle, accumulate loop unaffected), or use `LAT=3` XLS FMA (7.8 ns at unit level).
+- **Vector FPU**: 5.8 ns with `LAT=3`.
 
-按 1.6 倍折算，75 MHz 需要综合后不超过约 8.3 ns。现在剩下的两处：
+`LAT=3` requires only changing core `FP_LAT`; FMA itself selects another generated instance. Cost is 1 cycle later floating-point result, requiring refreezing cycle baseline (`spec/r38/baseline_cycles.json`) and updating `fp_result_cycles` in target descriptor. This belongs to next steps and should be recorded as a design change in `spec/r38/design_changes/`.
 
-- **矩阵单元，10.2 ns（整器件最差）**：VRF 的 BRAM 读出后，经 A 元素选择和格式扩展直接进入 FMA 第 0 级；单独综合矩阵单元时，累加器读口进入第 0 级为 8.6 ns。可以在 A 操作数进入 FMA 前加一级寄存器（MAC 扫描只多 1 拍排空，累加回路不受影响），或者用 `LAT=3` 的 XLS FMA（单元级 7.8 ns）。
-- **向量 FPU**：`LAT=3` 时为 5.8 ns。
+### 6.6 Second Round: Toward 75 MHz (Night of 2026-10-08)
 
-`LAT=3` 只需改核心的 `FP_LAT`，FMA 本身只是换一个生成实例。代价是浮点结果晚一拍，需要重新冻结周期基线（`spec/r38/baseline_cycles.json`），并更新目标描述里的 `fp_result_cycles`。这属于下一步，应该作为一条 design change 记录在 `spec/r38/design_changes/`。
+- **Matrix operand register (`timing-002`)**: Added register stage (`IN_REG`) between `tnca_fpu_multi` format widen and FMA; matrix unit `OPND_REG` enabled by default; result tag and drain extended by 1 cycle. Whole-device post-synth estimate (75 MHz target) dropped from 10.19 ns to **9.30 ns**, WNS +4.02 ns. The 2,672-endpoint VRF→MAC group dropped below 8.9 ns.
+- **Cycle cost**: 1 extra cycle per `m.mma`. 14 of 149 R37 O2 cases changed (+1 to +4 cycles), all numerically correct.
+- **Frozen baseline amendment**: Refreezing revealed r38-tdesc had changed 17 cases and profile config hash (added `tensor_store`), previously only amending 4 streamk cases because R2 log was truncated. All recorded in `spec/r38/baseline_cycles.json`.
+- **Re-stage RTL before re-measuring cycles**: Running `tools/r38/baseline.py --run` directly does not re-stage `python/tnca/data/rtl`; `make r38-baseline-check` stages first.
+- **Remaining worst group**: VALU single-cycle masked integer reduction (`x_pm_idx → w_sdata`, 9.30 ns, 37 levels). It sits within a single unit with small fanout, so routing ratio may be lower than matrix path's 1.6×.
+- **75 MHz link**: First `DEV_DIV = 2` link launched 2026-10-08 23:58 HKT on acf3019 with this state.
+- **Integer reduction and FPU operand select (`timing-003`)**: Reduction split into three trees (add, bitwise, min/max) selected only at end; min/max unified using order-preserving key transform (invert sign bit for signed, invert all for min, identity maps to key 0); vector FPU reduction operand select no longer waits on core issue `start`. Both cycle-neutral. Added `t36_reduce`: 8 integer reductions × 8 vector sets × 8 masks (including empty) + broadcast forms = 544 checks, passing on both old and new VALU. Whole-device post-synth dropped from 9.30 ns to **7.76 ns** (WNS +5.56 ns). Second 75 MHz link started 2026-10-09 00:45 HKT in parallel.
 
-### 6.6 第二轮：向 75 MHz（2026-10-08 夜）
+### 6.7 Requirements for 100 MHz and 150 MHz
 
-- **矩阵操作数寄存器（timing-002）。** 在 `tnca_fpu_multi` 的格式扩展与 FMA 之间加一级寄存器（`IN_REG`）；矩阵单元的 `OPND_REG` 默认打开，结果标签流水与排空相应延长一拍。整器件（75 MHz 目标）综合后估计从 10.19 ns 降到 **9.30 ns**，WNS +4.02 ns。原来 2 672 个端点的 VRF→MAC 一组已低于 8.9 ns。
-- **周期代价。** 每条 `m.mma` 多 1 拍。R37 O2 的 149 个用例中有 14 个变化，各 +1 到 +4 拍，全部数值正确。
-- **冻结基线修订。** 重新冻结时发现：r38-tdesc 改变了 17 个用例的周期，并改变了 profile 配置哈希（能力表新增 `tensor_store`），而当时只修订了 streamk 的 4 项。漏掉的原因是 R2 检查的输出被截到了最后几行。现在全部补齐，并在 `spec/r38/baseline_cycles.json` 中按来源分条记录。配置哈希的变化也解释了 `r38-identity` 的 0/447。
-- **重新测量周期时要先重新暂存 RTL。** 直接运行 `tools/r38/baseline.py --run` 不会重新暂存 `python/tnca/data/rtl`，设备仿真器会沿用旧 RTL。`make r38-baseline-check` 会先暂存，不受影响。
-- **剩下的最差一组**：VALU 的单周期带掩码整数归约（`x_pm_idx → w_sdata`，9.30 ns，37 级）。它在一个单元内部，扇出小，布线比例可能低于矩阵那条路径的 1.6。
-- **75 MHz 链接。** 第一次以 `DEV_DIV = 2` 的链接已于 2026-10-08 23:58（HKT）在 acf3019 上启动，源码为本节的状态。布线后的结果决定归约是否也要拆成两拍。
-- **整数归约与 FPU 操作数选择（timing-003）。** 归约改成三棵树，只在末端选一次：加法、按位运算、最大/最小各一棵。最大/最小统一为对「保序变换后的键」取无符号最大值，有符号时翻转符号位，取最小时整体取反，各运算的单位元都映射到键 0。向量 FPU 的归约操作数选择不再等待核心的发射判断 `start`。两项都不改变周期。新增 t36_reduce：8 种整数归约 × 8 组向量 × 8 种掩码（含空掩码），加上广播形式，共 544 项检查。它在旧版和新版 VALU 上都通过。整器件综合后估计从 9.30 ns 降到 **7.76 ns**（WNS +5.56 ns），最差路径变为写回选择。第二次 75 MHz 链接于 2026-10-09 00:45（HKT）用这个版本启动，与第一次并行。
+Whole-device post-synthesis estimates at 150 MHz (6.667 ns) target (RTL after timing-002, before timing-003), grouped by start → end module:
 
-### 6.7 再往上：100 MHz 与 150 MHz 需要什么
-
-以 150 MHz（6.667 ns）为目标对整器件做综合后估计（timing-002 之后、timing-003 之前的 RTL），按「起点模块 → 终点模块」分组，得到每组的最差延迟：
-
-| 延迟 (ns) | 端点 | 组 | 性质 |
+| Delay (ns) | Endpoints | Group | Nature |
 |---:|---:|---|---|
-| 9.30 | 544 | VALU 整数归约 → 标量写回 | timing-003 已降到 7.76，起点变为 W 阶段写谓词时的写后直通 |
-| 8.25 | 3 184 | 发射译码 → 向量 FMA 第 0 级 | timing-003 已去掉 `start` 依赖 |
-| 7.47 | 467 | X 阶段 → VRF bank 控制（停顿链） | 29 级，走线占 79 % |
-| 7.18 | 1 917 | tensor 引擎 → 片上存储 | 访存地址与请求 |
-| 7.00 | 1 062 | LSU → 片上存储 | 同上 |
-| 6.64 | 4 | 核心 → VRF | |
-| 6.35 | 1 488 | tensor 引擎内部 | 地址累加、窗口 |
-| 6.17 | 1 136 | MAC 内 FMA 级 | `LAT=3` 的 XLS 实例可降 |
-| 6.06 | 112 | 向量 FMA 级 | 同上 |
-| 5.74 | 9 659 | MAC → 累加器写入 | |
+| 9.30 | 544 | VALU integer reduction → scalar writeback | timing-003 reduced to 7.76 ns; start became W-stage predicate bypass |
+| 8.25 | 3,184 | Issue decode → vector FMA stage 0 | timing-003 removed `start` dependency |
+| 7.47 | 467 | X stage → VRF bank control (stall chain) | 29 levels, 79% routing |
+| 7.18 | 1,917 | Tensor engine → on-chip memory | Memory address and request |
+| 7.00 | 1,062 | LSU → on-chip memory | Same |
+| 6.64 | 4 | Core → VRF | |
+| 6.35 | 1,488 | Tensor engine internal | Address accumulator, window |
+| 6.17 | 1,136 | FMA stages within MAC | Reducible with `LAT=3` XLS instance |
+| 6.06 | 112 | Vector FMA stages | Same |
+| 5.74 | 9,659 | MAC → accumulator write | |
 
-按 1.6 倍布线比例换算：
+At 1.6× routing ratio:
+- **100 MHz (10 ns)**: Requires post-synthesis <= ~6.25 ns. Demands addressing top 7 groups, including splitting reduction across two stages, and registering stall chains and memory requests.
+- **150 MHz (6.67 ns)**: Requires post-synthesis <= ~4.2 ns. Every group above exceeds this threshold; FMA requires 4–5 pipeline stages (`FP_LAT` 4–5), with memory, VRF, and issue logic deeply re-pipelined.
+(Note: this assessment was overly pessimistic; the third round in §6.8 reduced all non-FMA groups below 6.2 ns without moving a single cycle.)
 
-- **100 MHz（10 ns）**：综合后需在约 6.25 ns 以内。还需要处理前 7 组，其中归约必须拆成两拍，停顿链和访存请求要加寄存器。这些都会改变周期，各自需要一条 design change，每组还要重新验证。
-- **150 MHz（6.67 ns）**：综合后需在约 4.2 ns 以内。上表每一组都超出，FMA 需要 4–5 级流水（`FP_LAT` 4–5），存储、VRF、发射逻辑都要重新分级。这是全核心的重新流水化，不是一个夜里能完成的工作。
+### 6.8 Third Round: Cycle-Neutral Reduction to 6.84 ns (Early Morning 2026-10-09)
 
-因此本轮以 /2（75 MHz）为目标在 U280 上验证。100 MHz 可以作为下一步，按上表逐组推进。
+Evaluated at 150 MHz (6.667 ns) target; five modifications, none moving any cycles:
 
-（这个判断过于悲观：§6.8 的第三轮没有改变任何周期，就把上表除 FMA 以外的各组都降到了 6.2 ns 以内。）
-
-### 6.8 第三轮：不改周期，整器件到 6.84 ns（2026-10-09 凌晨）
-
-仍以 150 MHz（6.667 ns）为目标做整器件综合后估计，五项改动都不改变周期，结果如下：
-
-| 改动 | 处理的组 | 之前 (ns) | 之后 (ns) |
+| Modification | Group Addressed | Before (ns) | After (ns) |
 |---|---|---:|---:|
-| timing-004：整数 min/max 归约改为所有车道两两并行比较，再用独热选择取出胜者 | VALU 归约 → 标量写回 | 7.76 | 6.71 |
-| timing-005：FMA 阵列的控制（操作数形式、取负、只乘、归约覆盖）在 R 级译码，随操作码一起寄存进 X | 发射译码 → 向量 FMA 第 0 级 | 7.17–7.42 | 6.83 |
-| timing-006：LSU 每个车道的字地址、字节使能和移位后的写数据在 S_SETUP 一次算好；规划器只选字、做或 | LSU → 片上存储 | 5.6–11.0 | < 5.9 |
-| timing-007：VALU 的立即数选择在 R 级译码；有符号高半部的修正项与乘法并行形成，乘法后只剩一次减法 | VALU 乘法 → 向量写回 | 6.71 | 6.07 |
-| timing-008：tensor 引擎的越界判断改为一个 36 位偏移与按传输寄存的常量比较；请求的地址、标签、使能按状态而不是按「哪个请求有效」选择 | tensor 引擎 → 片上存储 | 7.20 | 5.73 |
+| timing-004: Integer min/max reduction changed to pairwise parallel comparison across all lanes, with one-hot winner selection | VALU reduction → scalar writeback | 7.76 | 6.71 |
+| timing-005: FMA array control (operand form, negate, mul-only, reduction override) decoded in R stage, registered into X with opcode | Issue decode → vector FMA stage 0 | 7.17–7.42 | 6.83 |
+| timing-006: LSU per-lane word address, byte enables, shifted write data computed in S_SETUP; planner only selects word and ORs | LSU → on-chip memory | 5.6–11.0 | < 5.9 |
+| timing-007: VALU immediate select decoded in R; signed high-half correction formed in parallel with multiplier, leaving one subtraction | VALU multiply → vector writeback | 6.71 | 6.07 |
+| timing-008: Tensor engine boundary checks evaluate 36-bit offset against registered constants; request fields steered by state rather than late valid | Tensor engine → on-chip memory | 7.20 | 5.73 |
 
-几点说明：
+Notes:
+- **LSU 11.0 ns was not caused by RTL regression**: In the synthesis run incorporating timing-004, the LSU planner's conditional accumulation over 16 lanes synthesized into a 25-level ripple chain; identical LSU code measured 5.6 ns in other runs. timing-006 eliminated this synthesis sensitivity.
+- **Equivalence**: timing-008 moves terms across inequalities assuming no operand approaches 2^63 (addresses/offsets are orders of magnitude smaller). Bounds depend only on t_CB, t_E, t_row_bytes set in S_TCHK, separated from transfer by at least one S_TMUL cycle. t33 (672 items), t34 (400 items), t35, and transpose paths all passed.
+- **Verification**: core, core-vrf, top, nuca, mesh, r38-xpose-rtl under all three memory models passed; R2 cycle check passed 149/149 on two consecutive runs.
 
-- **LSU 那一组的 11.0 ns 不是 RTL 变化造成的。** 加入 timing-004 的那次综合里，LSU 规划器在 16 个车道上带条件的累加被综合成了 25 级的串行链；同一份 LSU 代码在另外几次综合中只有 5.6 ns。这说明原结构依赖综合器的选择，timing-006 去掉了这种依赖。
-- **等价性。** timing-008 的每个边界判断都是把原不等式两边移项，前提是没有操作数接近 2^63，地址和偏移远达不到这个范围。边界只依赖 S_TCHK 设置的 t_CB、t_E、t_row_bytes，S_TCHK 和数据搬运之间至少隔一个 S_TMUL 周期，所以每拍更新的寄存副本在搬运开始时已是最新值。t33（672 项）、t34（400 项）、t35 和转置路径都通过。
-- **验证。** 三种内存模型下的 core、core-vrf、top、nuca、mesh、r38-xpose-rtl 都通过；R2 周期检查对 149 个用例两次运行都通过，周期不变。
+Additional improvements:
+- **timing-009**: Vector FPU format converter inputs registered beside stage 0, entering FP_LAT delay line at stage 1 (previously 6.44 ns combinational logic, 71% routing). Cycle-neutral: t21_cvt unchanged at 1,942 cycles, R2 cycle check 149/149.
+- **timing-010**: Banked VRF operand fetch gates only on vector source hazards rather than full `stall_other` (previously 6.17 ns, 77% routing). Older in-flight writers are tracked in the scoreboard, so fetch safely overlaps other stalls. Cycle-neutral on core-sim; 5 core programs faster by 1–14 cycles on banked VRF. (Requires regenerated B4 simulation reference for images with this change).
 
-之后又加了一项：**timing-009**。向量 FPU 的格式转换器原来是组合逻辑，接在 FP_LAT 延迟线第 0 级前面（6.44 ns，71 % 是走线）。现在它的输入在第 0 级旁寄存，结果从第 1 级进入延迟线。转换结果本来就要等 FP_LAT 拍，所以周期不变：t21_cvt 前后都是 1942 拍，R2 周期检查 149/149。
+With timing-009 and timing-010, neither VRF nor converter appears above 5.4 ns. Whole-device post-synthesis reached **6.84 ns** (WNS −0.19 ns at 150 MHz, only 80 failing endpoints out of 538,791). Paths above 6 ns concentrated in/around generated FMA: vector FMA stage 0 (6.84 ns), MAC FMA stages (6.17 ns), FMA writeback (6.15 ns), FMA internal (6.06 ns).
 
-**timing-010** 处理 banked VRF。操作数读取原来要等整条停顿判断（`stall_other`）结束才向各 bank 发请求，这条路径在 bank 仲裁器之前，6.17 ns，77 % 是走线，而走线为主的路径在布线后增长最多。会让读到的值过期的只有一种情况：某个向量源的生产者还在流水线中，而所有更早的写者都在 scoreboard 里。所以读取现在只等向量源冒险。
-- **周期。** core-sim 配置不变（R2 冻结基线所用，行为级寄存器文件）。banked 配置（板上用的）有 5 个 core 程序快 1–14 拍，没有变慢的。
-- **板上与仿真对比。** 包含这项改动的镜像需要重新生成 B4 的仿真参考。
-- **时序。** 加上 timing-009，VRF 和转换器两组都不再出现在 5.4 ns 以上的列表中。
+### 6.9 Undivided Attempt: 100 MHz (2026-10-09)
 
-现在整器件综合后最差为 **6.84 ns**（150 MHz 目标下 WNS −0.19 ns，538 791 个端点中 80 个失败）。6 ns 以上的组全部在生成的 FMA 内部或紧邻它：向量 FMA 第 0 级 6.84，MAC 的 FMA 级 6.17，FMA 输出到写回 6.15，FMA 内部 6.06。再往下就要加深 FMA 流水（`FP_LAT = 3`，MAC 的 `LAT = 3`），这会改变周期。按 1.6 倍布线比例，6.84 ns 约等于布线后 11 ns，即不分频约 90 MHz。实际比例由两次 75 MHz 链接的布线结果给出。
+- **Configuration**: Using 5baba1e (third round) RTL, `DEV_DIV = 1`, kernel clock 100 MHz: `package_xo.tcl` `AP_CLK_HZ`, `ooc.xdc` period, and `link.sh` `EXPECT_MHZ` all set to 100 in build tree `~/tnca_srcND` on acf3019. Began linking 2026-10-09 02:57 HKT in parallel with two 75 MHz links (`VPP_JOBS=4`).
+- **Safety of undivided clock**: `tnca_axi_lite` crosses domains via toggle and synchronizers; each clk_dev edge is an ap_clk edge, preserving CDC requirements.
+- **Fallback behavior**: If 100 MHz does not close, v++ auto-scales frequency and writes `.xclbin`; `link.sh` flags this as failure because it differs from requested design. With `DEV_DIV = 1`, device clock equals kernel clock, so resulting image remains usable at downscaled frequency if `BOARD_CLOCK_HZ` matches.
+- **Routed WNS in progress**: Both 75 MHz links showed −0.05 ns post-placement and +0.015 ns initial routing estimate (platform path).
+- **Negative slack during routing iterations**: Rip-up-and-reroute produced negative WNS (first link −1.087 to −0.757 ns across three iterations; second link −1.124 ns initially).
+- **Backup /2 link**: At 04:50 HKT, cancelled first link (timing-002), launched `u280_75c` (commit d72731d, third round + timing-009, 6.84 ns post-synth, ~0.9 ns faster than second link): build dir `~/tnca_build/u280_75c`, source `~/tnca_srcR3`.
 
-### 6.9 不分频的尝试：100 MHz（2026-10-09）
+### 6.10 75 MHz Verified on U280 (2026-10-09)
 
-- **配置。** 用 5baba1e（第三轮）的 RTL，`DEV_DIV = 1`，kernel clock 设为 100 MHz：`package_xo.tcl` 的 `AP_CLK_HZ`、`ooc.xdc` 的周期、`link.sh` 的 `EXPECT_MHZ` 都改为 100。这些修改只在 acf3019 的构建副本 `~/tnca_srcND` 里，仓库里的流程仍是 150 MHz kernel clock 加分频。2026-10-09 02:57（HKT）开始链接，与两次 75 MHz 链接并行（`VPP_JOBS=4`，避免三个链接同时综合时内存不够）。
-- **为什么不分频是安全的。** `tnca_axi_lite` 用 toggle 加同步器跨时钟域，clk_dev 的每个沿都是 ap_clk 的沿，所以分频比为 1 时跨域要求不变。
-- **如果 100 MHz 没有收敛。** v++ 会自动把 kernel clock 降到能收敛的频率，仍然写出 `.xclbin`；`link.sh` 把这种情况判为失败，因为它不是所请求的设计。分频比为 1 时器件时钟就是 kernel clock，这样得到的镜像在降频后的频率上仍然可用，只要把 `BOARD_CLOCK_HZ` 设为读回的频率即可。
-- **整器件布线后的 WNS。** 两次 75 MHz 链接在布局后都是 −0.05 ns，布线初始化估计都是 +0.015 ns。它们的器件 RTL 综合后相差 1.5 ns，这两个数却相同，说明这是平台自己的路径，与 37.5 MHz 那次链接的 +0.016 ns 是同一类。决定成败的是 clk_dev 域。
-- **布线迭代中的负余量。** 进入 rip-up-and-reroute 后两次链接都出现负 WNS：第一次（timing-002）三轮迭代从 −1.087 降到 −0.757 ns，第二次（timing-003）首轮为 −1.124 ns。在最终报告出来前还不知道是哪个时钟。如果是 clk_dev，这两版 RTL 都可能被自动降频到 75 MHz 以下。
-- **备用 /2 链接。** 04:50（HKT）停掉第一次链接，它的 RTL 最旧也最慢，另外两版都严格更好。腾出的内存用来启动 d72731d（第三轮加 timing-009，综合后 6.84 ns，比第二次链接的 RTL 快约 0.9 ns）的 /2 链接：构建目录 `~/tnca_build/u280_75c`，源码 `~/tnca_srcR3`。
+- **Image**: Second /2 link (timing-003 RTL, commit `f307eef`) completed at 05:41 HKT, `LINK_EXIT=0`, reporting only AUTO-FREQ-SCALING-08 (timing closed with slack, requested frequencies kept). `.xclbin` reads back DATA_CLK = 150 MHz, sha256 `16813fa9075f9192f9e3b19f97d9a68185fc13dca395885e8efcaa8c98cc3cee`.
+- **Routing results**:
+  - Full-design WNS +0.016 ns (platform path).
+  - **clk_dev WNS +0.471 ns** (13.333 ns period), 498,254 endpoints, 0 failing.
+  - Worst path: `x_pm_idx → w_vdata` (12.68 ns, 28 levels, 80% routing; ~7.8 ns post-synth, matching 1.6× ratio).
+- **On-board testing**: Pre-load gates passed (device idle, no other loads, FPGA 31 °C, HBM 26 °C).
+  - B1 conformance PASS: oracle, second launch in same session, fault and recovery.
+  - B2 profiler PASS.
+  - B3 ArchBench tiny 27/27 pass.
+  - B4: 27/27 points matched RTL simulation (`fpga-u50-sim`) **identical launch-by-launch** (from op.add at 1,776 cycles to llama_prefill at 5,323,042 cycles) via `tools/r38/board_vs_sim.py`.
+- **Clock measurement**:
+  - Management frequency counter read 150 MHz kernel clock.
+  - `flow/fpga/measure_clock.py` timed two spin kernels on host: **74.965 MHz and 75.017 MHz** (loop ran exactly 6 cycles/iteration both times).
+- **Default updated**: `DEV_DIV` defaulted to 2, ArchBench `fpga-u280` clock set to 75e6. `link.sh` reads `DEV_DIV` from wrapper rather than hardcoding /4.
+- **Records**: Located in `evidence/r38/u280_75mhz/`.
+- Subsequent RTL (third round + timing-009) was 6.84 ns post-synth (~0.9 ns faster, ~2.4 ns slack at /2).
 
-### 6.10 75 MHz 在 U280 上跑通（2026-10-09）
+### 6.11 Cycle Cost of Deepening FMA: `FP_LAT = 3`
 
-- **镜像。** 第二次 /2 链接（timing-003 的 RTL）于 05:41 完成，`LINK_EXIT=0`，v++ 只报告 AUTO-FREQ-SCALING-08（时序有余量，保持请求的频率）。`.xclbin` 读回 DATA_CLK = 150 MHz，sha256 `16813fa9…8cc3cee`。
-- **布线结果。**
-  - 全设计 WNS +0.016 ns，即平台路径。
-  - **clk_dev WNS +0.471 ns**（13.333 ns 周期），498 254 个端点无失败。
-  - 最差路径是 `x_pm_idx → w_vdata`：12.68 ns，28 级，走线占 80 %。这条路径综合后约 7.8 ns，布线比例约 1.6，与此前的估计一致。
-- **上板。** `program.sh --go` 的门检查全部通过：设备空闲、无其他加载、FPGA 31 °C、HBM 26 °C。
-  - B1 conformance PASS：oracle、同一会话第二次启动、故障与恢复。
-  - B2 profiler PASS。
-  - B3 ArchBench tiny 27/27 通过。
-  - B4：27 个点的器件周期数与 RTL 仿真（`fpga-u50-sim`）**逐点完全相同**，从 op.add 的 1 776 拍到 llama_prefill 的 5 323 042 拍。工具为 `tools/r38/board_vs_sim.py`。
-- **时钟实测。**
-  - 管理功能上的频率计数器读出 kernel clock 为 150 MHz。
-  - `flow/fpga/measure_clock.py` 用两个长度不同的自旋 kernel，由器件自己的周期数除以主机计时，得到 **74.965 MHz 和 75.017 MHz**。循环每次迭代恰好 6 拍。
-- **默认改为 /2。** `DEV_DIV` 默认 2，ArchBench 的 `fpga-u280` 时钟改为 75e6。`link.sh` 结束时的「device clock」原来固定按 /4 计算，现在从封装的包装层读出 `DEV_DIV`。
-- **记录。** 所有文件、镜像哈希和布线路径都在 `evidence/r38/u280_75mhz/`。
-- **之后的 RTL 更快。** 当前 RTL（第三轮加 timing-009）综合后为 6.84 ns，比上板的这一版快约 0.9 ns，周期完全相同。按同样的 1.6 倍，布线后约 10.9 ns，/2 的余量约 2.4 ns。不分频（100 MHz）和这版 RTL 的 /2 链接（`u280_75c`）仍在运行。
+After timing-010, paths above 6 ns post-synthesis were in the generated FMA:
 
-### 6.11 再往上要付周期：FMA 加深一级（`FP_LAT = 3`）的代价
-
-timing-010 之后，综合后 6 ns 以上的组全部是生成的 FMA 本身：
-
-| 组 | 延迟 (ns) |
+| Group | Delay (ns) |
 |---|---:|
-| 向量 FMA 第 0 级 | 6.84 |
-| MAC 的 FMA 级 | 6.17 |
-| FMA 输出到写回 | 6.13 |
-| FMA 内部 | 6.06 |
+| Vector FMA stage 0 | 6.84 |
+| MAC FMA stage | 6.17 |
+| FMA output to writeback | 6.13 |
+| FMA internal | 6.06 |
 
-FMA 的三级已经大致平衡（各约 6.1–6.8 ns），不改周期就压不下去。`FP_LAT` 同时决定向量 FPU 和矩阵单元的 FMA 延迟（`FMA_LAT(FP_LAT)`），XLS 生成的 4 级实例（`tnca_fma_l3_xls`）已经存在。下面在一个临时副本里把 `FP_LAT` 改为 3 测周期代价：
+The three FMA stages are balanced (~6.1–6.8 ns); reducing further requires deeper pipelining. `FP_LAT` determines both vector FPU and matrix unit FMA latency (`FMA_LAT(FP_LAT)`). XLS 4-stage generated instance (`tnca_fma_l3_xls`) already exists. Tested `FP_LAT = 3` in a temporary branch:
+- **Correctness**: All core programs pass.
+- **R2 149 cases**: 59 slower (+0.91% total, median +1.8%, max +9.0%: moe_topk_gating; softmax/n37 +7.7%; linear_self_attention/out +7.3%), 90 unchanged, 0 faster. Cost concentrated in small kernels with long FP dependency chains.
+- **Post-synthesis timing at 150 MHz target**: **WNS +0.274 ns, 543,528 endpoints, 0 failing** (meeting 150 MHz post-synth). Worst path was 6.22 ns in tensor engine S_TMUL descriptor multiply, followed by core → core (6.09 ns) and vector FPU internal (6.00 ns). FMA groups dropped below 5.8 ns (~10% faster post-synth vs. `FP_LAT = 2` 6.84 ns, trading 1–2% cycles).
+- **Costs**: 59 baseline cases require refreezing, config hash updates, B4 reference regeneration.
 
-- **正确性。** 全部 core 程序通过。
-- **R2 的 149 个用例。** 59 个变慢，90 个不变，没有变快的。变化的用例合计 +0.91 %，中位数 +1.8 %，最大 +9.0 %（moe_topk_gating；softmax/n37 为 +7.7 %，linear_self_attention/out 为 +7.3 %）。代价集中在 FP 依赖链较长的小 kernel 上。
-- **收益（实测，综合后）。** 同一副本（含 timing-009/010）以 150 MHz 为目标做整器件综合后估计：**WNS +0.274 ns，543 528 个端点无失败**，即综合后已满足 150 MHz。最差为 6.22 ns，是 tensor 引擎在 S_TMUL 中的描述符乘法；其次是 core → core 6.09 ns 和向量 FPU 内部 6.00 ns。FMA 各组都降到 5.8 ns 以下。和 `FP_LAT = 2` 的 6.84 ns 相比约快 10 %，换来 1–2 % 的周期。
-- **改它的成本。** 周期变化意味着冻结基线要修订 59 项，目标文件的 `fp_result_cycles` 和配置哈希都会变，B4 的仿真参考也要重新生成。
+At 1.6× routing ratio, 6.22 ns yields ~10 ns routed (~100 MHz undivided). Launched trial link `u280_fl3` at 06:51 HKT (`FP_LAT = 3`, `DEV_DIV = 1`, 125 MHz request; build `~/tnca_build/u280_fl3`, source `~/tnca_srcFL3`). Repository default kept at `FP_LAT = 2`.
 
-按 1.6 倍布线比例，6.22 ns 布线后约 10 ns，不分频约 100 MHz。为了把实测数据摆在决策前面，用这个配置（`FP_LAT = 3`、`DEV_DIV = 1`，kernel clock 请求 125 MHz）于 06:51 启动了一次链接（`~/tnca_build/u280_fl3`，源码 `~/tnca_srcFL3`）。同时在 GB10 上生成相应的 B4 仿真参考。仓库默认仍是 `FP_LAT = 2`：是否用周期换频率，由负责人决定。
+### 6.12 100 MHz Undivided: Routing Congestion Bottleneck Solved by LUT-RAM Accumulator (timing-011)
 
-150 MHz 不分频按 1.6 倍布线比例要求综合后约 4.2 ns。上面每一组都超出，包括片上存储自身的 BRAM 级联（`u_mem → u_mem` 5.37 ns，需要输出寄存器，访存延迟 +1）。这需要整核心的重新分级，不在本轮范围内。
+- **Symptom**: 100 MHz undivided link (`u280_nd100`, FP_LAT = 2) rip-up-and-reroute began with 513,246 overlap nodes, still had 2,828 after ~2 hours (vs. 75 MHz clearing 357k in under 1 hour).
+- **Cause**: Kernel pinned to SLR1 (CLB utilization 97.71%, LUT 70.49%; critical paths 70–80% routing).
+- **Largest block**: Matrix unit had 84,354 LUTs and 139,751 FFs; accumulator file alone accounted for 41,869 LUTs and 131,072 FFs due to a whole-array reset loop preventing RAM inference (synthesized as flip-flops with 256:1 read muxes).
+- **Fix**: Distributed RAM per lane (256×32) without reset; valid bit per (row, lane) handles reset and clearing (cleared by reset and `z_en`, set on write, returns 0 if unwritten). Functionally identical to original.
+- **Outcome**: Matrix unit alone dropped to **49,516 LUTs (2,560 as RAM), 12,758 FFs**, saving ~35k LUTs and 127k FFs in SLR1. Unit WNS +0.573 ns at 150 MHz. Cycle-neutral: lint, unit, core, core-vrf, core-slowmem, top, nuca (122 tests) passed; t11_matrix and t25_mmasf cycles unchanged.
+- Launched `u280_nd100c` at 08:19 HKT with timing-011 (replacing `u280_nd100b`).
+- **Scalar register file similarly transformed (`timing-012`)**: 128×64 bits, 7 async read ports, previously 8,192 FFs and seven 128:1 muxes (24,669 LUTs) due to reset loop; distributed RAM replicated per read port with valid bit; dropped to **2,115 LUTs (1,036 as RAM), 128 FFs**.
+- Total savings across both RFs: ~57k LUTs (~24% of core) and 135k FFs in SLR1.
+- Regression passed: 155 tests passed (including core-ooo, nuca).
+- Launched `u280_nd100d` at 08:57 HKT (timing-011 + timing-012); terminated original congested `u280_nd100`.
 
-### 6.12 100 MHz 不分频：瓶颈在布线拥塞，累加器文件改为 LUT-RAM（timing-011）
+### 6.13 100 MHz Undivided Verified on U280 (2026-10-09)
 
-- **现象。** 100 MHz 不分频链接（`u280_nd100`，FP_LAT = 2）的 rip-up-and-reroute 第一轮从 513 246 个重叠节点开始，约两小时后还剩 2 828 个。75 MHz 的链接从 357 677 个开始，一小时内就清完了。
-- **原因。** kernel 固定在 SLR1。不固定时链接跨 SLR0/SLR1，150 MHz kernel clock 下没有收敛，所以才加了这个约束。布局后 SLR1 的 **CLB 使用率 97.71 %**，LUT 70.49 %，关键路径 70–80 % 是走线。
-- **最大的一块。** 整器件按层次统计：矩阵单元 84 354 个 LUT、139 751 个触发器，其中累加器文件独占 41 869 个 LUT 和 131 072 个触发器。原因是整个阵列有一个复位循环，Vivado 无法把它推断为 RAM，只能用触发器加 256 选 1 的读多路器。
-- **改法。** 每个 lane 一块 256 × 32 的分布式 RAM，不复位。另用每个（行, lane）一个有效位代替原来的复位和整行清零：复位和 `z_en` 清零有效位，写入时置位对应 lane，读出时有效位为 0 的 lane 返回 0。行为与原来完全一样：未写过或已清零的位置读出 0，读旧值，清零口直通，同周期清零优先于写。
-- **效果。** 矩阵单元单独综合：**49 516 个 LUT（其中 2 560 个作 RAM）、12 758 个触发器**，原来是 84 354 / 139 751，即 SLR1 少了约 3.5 万个 LUT、12.7 万个触发器。单元自身在 150 MHz 下 WNS +0.573 ns。
-- **验证。** lint、unit、core、core-vrf、core-slowmem、top、nuca 共 122 项通过。t11_matrix 和 t25_mmasf 的周期数与改动前相同。
-- **新的链接。** 用这一版 RTL 不分频 100 MHz 的链接（`u280_nd100c`）于 08:19 启动，替换了刚开始综合的 `u280_nd100b`（第三轮 RTL，无此项）。
-- **标量寄存器文件同样处理（timing-012）。** 128 × 64 位，7 个异步读口，也是因为复位循环才成了 8 192 个触发器加 7 个 128 选 1 多路器（24 669 个 LUT）。去掉复位后由工具按读口复制为分布式 RAM，另用每个寄存器一个有效位代替复位。写优先直通和 s0 恒为 0 都保持不变。单独综合：**2 115 个 LUT（1 036 个作 RAM）、128 个触发器**。
-- **两项合计。** SLR1 少约 5.7 万个 LUT（约占 core 的 24 %）和 13.5 万个触发器。
-- **验证。** 回归 155 项通过（含 core-ooo、nuca）。
-- **链接调整。** 用 timing-011 + 012 的 RTL 不分频 100 MHz 链接（`u280_nd100d`）于 08:57 启动。最早那次 `u280_nd100` 在拥塞中布线约 5 小时后停掉：它的 RTL 面积最大，被 nd100c/d 严格超越。
-
-### 6.13 100 MHz 不分频在 U280 上跑通（2026-10-09）
-
-- **镜像。** `u280_nd100c`：RTL 为 8d8e4e9（timing-001…011，`FP_LAT = 2`），`DEV_DIV = 1`，kernel clock 100 MHz。08:19 开始链接，12:05 完成，`LINK_EXIT=0`。v++ 只报告 AUTO-FREQ-SCALING-08，`.xclbin` 读回 DATA_CLK = 100 MHz。
-- **布线。**
-  - SLR1 的 CLB 使用率 85.41 %（之前 97.71 %）。rip-up-and-reroute 约 20 分钟就清掉了重叠节点，三轮迭代后 WNS 由 −0.541 收敛到 +0.016。
-  - 最终全设计 WNS +0.016 ns，566 734 个端点无失败。器件所在的 kernel clock 域 **WNS +0.127 ns**（10 ns 周期）。
-  - 最差路径是 LSU `pending → u_mem` BRAM 数据输入：9.47 ns，87 % 是走线。
-- **上板。** 门检查全部通过：FPGA 31 °C、HBM 26 °C。
-  - B1 conformance PASS。
-  - B2 profiler PASS。
-  - B3 ArchBench tiny 27/27 通过。
-  - B4：27 个点与同一 RTL 的仿真**逐点周期完全相同**。参考是 1eb6b94 的 `fpga-u50-sim` 结果；timing-011 不改周期。
-- **时钟实测。**
-  - 频率计数器读出 100 MHz。
-  - `measure_clock.py` 测得 **100.067 / 100.009 MHz**。
-- **默认配置。** 流程的四处时钟设置（`package_xo.tcl`、`ooc.xdc`、`link.sh`、包装层的 `DEV_DIV`）改为 100 MHz、不分频。ArchBench 的 `fpga-u280` 时钟改为 100e6，与板上当前加载的镜像一致。/2（150 MHz kernel clock，器件 75 MHz）作为备选。
-- **记录。** 都在 `evidence/r38/u280_100mhz/`。
-- **仍在运行。**
-  - `u280_nd100d`：再加 timing-012（标量寄存器文件），SLR1 的 CLB 降到 76.6 %，用来看余量还能多出多少。
-  - `u280_fl3`：`FP_LAT = 3`，请求 125 MHz；RTL 不含 timing-011/012。
-
+- **Image**: `u280_nd100c`: RTL `8d8e4e9` (timing-001…011, `FP_LAT = 2`), `DEV_DIV = 1`, kernel clock 100 MHz. Link 08:19–12:05 HKT, `LINK_EXIT=0`, AUTO-FREQ-SCALING-08, DATA_CLK = 100 MHz.
+  - sha256: `09cbd3d4992a07330b6f0567cb7f091682311adc3bf212479b4695d1a98323fb`.
+  - xclbin UUID: `a446256a-e3be-6912-0701-117f82c9a70a`.
+- **Routing results**:
+  - SLR1 CLB utilization 85.41% (down from 97.71%). Overlap nodes resolved in ~20 min; converged to +0.016 after three iterations (from −0.541 ns).
+  - Full-design WNS +0.016 ns (platform path), 566,734 endpoints, 0 failing.
+  - Device domain (kernel clock domain) **WNS +0.127 ns** (10 ns period, 149,372 endpoints, 0 failing).
+  - Worst path: LSU `pending → u_mem` BRAM data input (9.469 ns, 14 levels, 87% routing).
+- **On-board testing**: Passed all pre-load gates (FPGA 31 °C, HBM 26 °C).
+  - B1 conformance PASS.
+  - B2 profiler PASS.
+  - B3 ArchBench tiny 27/27 pass.
+  - B4: 27/27 points matched simulation (`fpga-u50-sim` on commit `1eb6b94`, with timing-010 reference) **point-by-point identical cycles** via `tools/r38/board_vs_sim.py`.
+- **Clock measurement**:
+  - Sysfs frequency counter reads 100 MHz.
+  - `flow/fpga/measure_clock.py` measured **100.067 MHz and 100.009 MHz** (`clock.txt`).
+- **Default configuration**:
+  - Flow's four clock settings set to 100 MHz undivided (`package_xo.tcl`, `ooc.xdc`, `link.sh`, and `DEV_DIV = 1` in `rtl/board/tnca_u50_xo.v`).
+  - ArchBench `fpga-u280` clock set to 100e6 in `archbench/platforms/tnca.py`, matching current loaded image.
+  - /2 (150 MHz kernel clock, 75 MHz device) retained as fallback.
+- **Records**: Located in `evidence/r38/u280_100mhz/`.
+- **Still running** (at time of record):
+  - `u280_nd100d`: adding timing-012 (scalar RF), SLR1 CLBs to 76.6%, to check additional margin.
+  - `u280_fl3`: `FP_LAT = 3`, 125 MHz request; RTL without timing-011/012.

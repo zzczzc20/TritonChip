@@ -1,0 +1,81 @@
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common -o sim/build/tb_core.vvp tb/core/tb_tnca_core.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 \
+   -P tb_tnca_core.VREGS_PER_RCTX=32 \
+   -o sim/build/tb_core4.vvp tb/core/tb_tnca_core.v
+iverilog -g2012 -g2005 -I rtl/common -y rtl/common -y rtl/core -y rtl/gen -y rtl/nuca -y rtl/noc -y rtl/tile -y rtl/fpga -y rtl -I rtl/noc -o sim/build/tb_top.vvp tb/top/tb_tnca_top.v rtl/tnca_top.v \
+   tb/common/tnca_dram_model.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.USE_BANKED_VRF=1 \
+   -o sim/build/tb_core_vrf.vvp tb/core/tb_tnca_core.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.HAS_TENSOR_XPOSE=1 \
+   -o sim/build/tb_core_xpose.vvp tb/core/tb_tnca_core.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -o sim/build/tb_core_r39hw.vvp tb/core/tb_tnca_core.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -P tb_tnca_core.RCTX_SWITCH=1 -P tb_tnca_core.LSU_INFLIGHT=2 -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 -o sim/build/tb_core_r39sw.vvp tb/core/tb_tnca_core.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -P tb_tnca_core.RCTX_SWITCH=1 -P tb_tnca_core.LSU_INFLIGHT=2 -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 -P tb_tnca_core.PHYS_W=8 -o sim/build/tb_core_r39sw4.vvp tb/core/tb_tnca_core.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -P tb_tnca_core.RCTX_SWITCH=2 -P tb_tnca_core.LSU_INFLIGHT=2 -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 -P tb_tnca_core.PHYS_W=8 -P tb_tnca_core.HAS_TENSOR_XPOSE=1 -P tb_tnca_core.RPAIR=1 -P tb_tnca_core.MTX_ABUF=1 -o sim/build/tb_core_r39sw5.vvp tb/core/tb_tnca_core.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.USE_BANKED_VRF=1 -P tb_tnca_core.VRF_BYPASS=1 -P tb_tnca_core.FE_NOBUBBLE=1 -P tb_tnca_core.VRF_PREFETCH=1 -P tb_tnca_core.RCTX_SWITCH=2 -P tb_tnca_core.LSU_INFLIGHT=2 -P tb_tnca_core.FPU_OVERLAP=1 -P tb_tnca_core.RSLICE=1 -P tb_tnca_core.NUM_RCTX=4 -P tb_tnca_core.RCTX_W=2 -P tb_tnca_core.PHYS_W=8 -P tb_tnca_core.HAS_TENSOR_XPOSE=2 -P tb_tnca_core.RPAIR=1 -P tb_tnca_core.MTX_ABUF=1 -o sim/build/tb_core_r39sw5x8.vvp tb/core/tb_tnca_core.v
+R1-04 profile and capability: six checks against the real instances
+  CFG-01  PASS  capabilities and resources read back from the hardware
+    core-sim: 10 facts on sim/build/tb_core.vvp -> PASS
+    core-4r: 10 facts on sim/build/tb_core4.vvp -> PASS
+    system-2x2: 10 facts on sim/build/tb_top.vvp -> PASS
+    core-vrf-sync-v1: 10 facts on sim/build/tb_core_vrf.vvp -> PASS
+    core-vrf-sync-v2: 10 facts on sim/build/tb_core_r39hw.vvp -> PASS
+    core-vrf-sync-v3: 10 facts on sim/build/tb_core_r39sw.vvp -> PASS
+    core-vrf-sync-v4: 10 facts on sim/build/tb_core_r39sw4.vvp -> PASS
+    core-vrf-sync-v5: 10 facts on sim/build/tb_core_r39sw5.vvp -> PASS
+    core-vrf-sync-v5-x8: 10 facts on sim/build/tb_core_r39sw5x8.vvp -> PASS
+    core-xpose-v1: 10 facts on sim/build/tb_core_xpose.vvp -> PASS
+    core-vrf-sync-v5-x8-g2: 10 facts on sim/build/tb_core_g2.vvp -> PASS
+  CFG-02  PASS  target fields vs elaboration parameters
+    core-sim: 6 elaboration fields checked
+    core-4r: 6 elaboration fields checked
+    system-2x2: 6 elaboration fields checked
+    core-vrf-sync-v1: 6 elaboration fields checked
+    core-vrf-sync-v2: 6 elaboration fields checked
+    core-vrf-sync-v3: 6 elaboration fields checked
+    core-vrf-sync-v4: 6 elaboration fields checked
+    core-vrf-sync-v5: 6 elaboration fields checked
+    core-vrf-sync-v5-x8: 6 elaboration fields checked
+    core-xpose-v1: 6 elaboration fields checked
+    core-vrf-sync-v5-x8-g2: 6 elaboration fields checked
+  CFG-03  PASS  SFU positive and negative
+    core-sim executes v.rsqrt.approx: True
+    compiler refuses sfu for system-2x2: True
+    system-2x2 refuses it in hardware: True
+  CFG-04  PASS  manifest checked before the first instruction
+    matching       -> 0 problem(s)
+    other profile  -> 3 problem(s): binary was compiled for profile 'core-sim', this machine is 'system-2x2'
+    stale config   -> 1 problem(s): configuration hash 000000000000 does not match this machine's b8fb71a90255 -- the profile 
+    other ISA      -> 1 problem(s): binary targets ISA 'v0.0', this machine implements '0.1'
+    needs sfu      -> 1 problem(s): binary requires capability 'sfu', which this profile does not have
+  CFG-05  PASS  illegal configurations refused
+    unknown topology       -> 1 problem(s): topology 'mesh-4x4' is not supported; rtl/noc/tnca_core_ni.v computes a 2-bit ho
+    rctx width too small   -> 1 problem(s): RCTX_W=1 cannot index NUM_RCTX=4: the index would wrap and two contexts would sh
+    rf base past the file  -> 1 problem(s): 4 contexts x 64 logical vregs exceeds 128 physical: the last context's base is p
+    core-sim               -> 0 problem(s)
+    core-4r                -> 0 problem(s)
+    system-2x2             -> 0 problem(s)
+    core-vrf-sync-v1       -> 0 problem(s)
+    core-vrf-sync-v2       -> 0 problem(s)
+    core-vrf-sync-v3       -> 0 problem(s)
+    core-vrf-sync-v4       -> 0 problem(s)
+    core-vrf-sync-v5       -> 0 problem(s)
+    core-vrf-sync-v5-x8    -> 0 problem(s)
+    core-xpose-v1          -> 0 problem(s)
+    core-vrf-sync-v5-x8-g2 -> 0 problem(s)
+  CFG-06  PASS  four Role Contexts read back from the hardware
+    3 facts on sim/build/tb_core4.vvp -> PASS
+
+  r1-profile-tests       PASS   6 check(s)
+
+real	0m27.238s
+user	0m24.341s
+sys	0m2.929s

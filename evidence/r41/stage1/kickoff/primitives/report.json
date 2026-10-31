@@ -1,0 +1,316 @@
+{
+  "schema": "tnca-primitive-feasibility/1",
+  "status": "failed-preserved",
+  "cases": [
+    {
+      "name": "attention",
+      "shapes": [
+        [
+          1,
+          8,
+          5,
+          256
+        ],
+        [
+          1,
+          2,
+          5,
+          256
+        ],
+        [
+          1,
+          2,
+          5,
+          256
+        ]
+      ],
+      "dtype": "torch.bfloat16",
+      "rtol": 0.002,
+      "atol": 0.002,
+      "status": "pass",
+      "cold_compile_and_execute_seconds": 5.245181055739522,
+      "output_sha256": [
+        "7f694740a3252a12d05bcb37c3e5acf56e1986a3209605aca8f186669380223c"
+      ],
+      "launches": [
+        {
+          "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0",
+          "grid": [
+            640,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "262439c43dd349c3d663ba7b604cff64ca9206005d8191f09034bfb050c2a524",
+          "artifact_path": "/tmp/tnca-triton-h44p1yrf/triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0-2b9e4f9c443252d4.tnca",
+          "device_cycles": 23446,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 4e-05,
+            "run": 0.007332,
+            "download": 0.000124
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 61440
+        },
+        {
+          "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_1",
+          "grid": [
+            640,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "9a51829b37b9091a6b42f5543a099af5f52671554662362a63947a8395ebaefa",
+          "artifact_path": "/tmp/tnca-triton-x089cumx/triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_1-bf2c81ad12437e5.tnca",
+          "device_cycles": 451561,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 5.2e-05,
+            "run": 0.209326,
+            "download": 0.000125
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 46080
+        },
+        {
+          "kernel": "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_2",
+          "grid": [
+            1,
+            8,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "22be9cdae5f25c0a11e2a062a280ffd0aa91ee0a1450a776bd57e3ea381fec3e",
+          "artifact_path": "/tmp/tnca-triton-x089cumx/triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_2-70ca387273e414a.tnca",
+          "device_cycles": 558771,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 6.6e-05,
+            "run": 0.086593,
+            "download": 6.2e-05
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 82720
+        },
+        {
+          "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_3",
+          "grid": [
+            3,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "73385e2f8e48e34b9ac5f9d6f280a905b0d600d4a7c3b6f3ced0f0e3a2e1a354",
+          "artifact_path": "/tmp/tnca-triton-nreuoztz/triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_3-5657000cc7abafbe.tnca",
+          "device_cycles": 9361,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 3e-05,
+            "run": 0.003465,
+            "download": 4.2e-05
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 840
+        },
+        {
+          "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_4",
+          "grid": [
+            13,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "7acaed9894c1d7e254b87e1b1ba53840836bd76633b81d5ef1023477ec62b2a6",
+          "artifact_path": "/tmp/tnca-triton-pn0j7a7e/triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_4-75626a4c0b30a8b4.tnca",
+          "device_cycles": 18467,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 2.3e-05,
+            "run": 0.008227,
+            "download": 3.5e-05
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 1600
+        },
+        {
+          "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_5",
+          "grid": [
+            13,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "6cf6a287ec47d5b7c0563a60a0bc6ddb3f9112d34df397a50258e011cc5a883d",
+          "artifact_path": "/tmp/tnca-triton-iri2dv2d/triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_5-35e903d462c8bfad.tnca",
+          "device_cycles": 4618,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 2.6e-05,
+            "run": 0.003994,
+            "download": 2.7e-05
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 1640
+        },
+        {
+          "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6",
+          "grid": [
+            640,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "0e493fddacf6cf9a44bb0b8efe52142847bf136048febb1cf0cf1ca2d64bb7be",
+          "artifact_path": "/tmp/tnca-triton-upzxqcod/triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6-206fcd5431ba006c.tnca",
+          "device_cycles": 301823,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 1.9e-05,
+            "run": 0.140186,
+            "download": 0.000106
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 46080
+        },
+        {
+          "kernel": "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_7",
+          "grid": [
+            16,
+            8,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "a1799ab6b239db28bfe9a86aa91c41039c3506002193e34e2b247f0b82da75b9",
+          "artifact_path": "/tmp/tnca-triton-upzxqcod/triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_7-4b04f1773c2d2281.tnca",
+          "device_cycles": 284057,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 6.1e-05,
+            "run": 0.093635,
+            "download": 0.00011
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 82720
+        },
+        {
+          "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_8",
+          "grid": [
+            640,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "787192f87ccaaaa62553ea9a57edfd112351440d87144d06d1e47b626645981b",
+          "artifact_path": "/tmp/tnca-triton-nz0j6l59/triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_8-2d514f4e1d9a64bb.tnca",
+          "device_cycles": 32552,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 4.8e-05,
+            "run": 0.013014,
+            "download": 8.7e-05
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 61440
+        }
+      ],
+      "device_cycles": 1684656,
+      "code_bytes": [
+        232,
+        1312,
+        22880,
+        18776,
+        11816,
+        880,
+        760,
+        21904,
+        592
+      ],
+      "host_max_rss_kib_cumulative": 792692
+    },
+    {
+      "name": "depthwise",
+      "shapes": [
+        [
+          1,
+          8,
+          7
+        ],
+        [
+          8,
+          1,
+          4
+        ]
+      ],
+      "dtype": "torch.bfloat16",
+      "rtol": 0.002,
+      "atol": 0.002,
+      "status": "running"
+    }
+  ],
+  "scope": "representative primitives; not complete model execution",
+  "execution": "torch.compile(backend=inductor,fullgraph=True) on tnca",
+  "software_tree": "files:95b8d8bbb56e035c1659948cfaa3f2bc32b93df9b82a772cbce6bcd7366efed4",
+  "toolchain": {
+    "torch": "2.14.0+cu130",
+    "triton": "3.8.0"
+  },
+  "knobs": {
+    "TNCA_BACKEND": "systemc-tlm-grid",
+    "TNCA_DEADLINE": "200000000",
+    "TNCA_HOST_TIMEOUT": "600",
+    "TNCA_PROFILE": "core-vrf-sync-v5",
+    "TNCA_TENSOR_DESCRIPTORS": "1",
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41-stage1/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41-stage1/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MEMORY_BYTES": "33554432",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41-stage1/runs/primitives-model",
+    "TNCA_TORCH_DEVICE": "native"
+  },
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r41-stage1/src/tools/performance_harness/primitive_cases.py\", line 81, in main\n    cold, wrappers = run_and_get_code(compiled, *dev)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/utils.py\", line 2743, in run_and_get_code\n    result = fn(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py\", line 1278, in compile_wrapper\n    raise e.remove_dynamo_frames() from None  # see TORCHDYNAMO_VERBOSE=1\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py\", line 1154, in _compile_fx_inner\n    raise InductorError(e, currentframe()).with_traceback(\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py\", line 1146, in _compile_fx_inner\n    mb_compiled_graph = fx_codegen_and_compile(\n                        ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py\", line 2001, in fx_codegen_and_compile\n    return scheme.codegen_and_compile(gm, example_inputs, inputs_to_check, graph_kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/compile_fx.py\", line 1660, in codegen_and_compile\n    graph.run(*example_inputs)\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/graph.py\", line 1135, in run\n    return super().run(*args)\n           ^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/fx/interpreter.py\", line 197, in run\n    self.env[node] = self.run_node(node)\n                     ^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/graph.py\", line 2062, in run_node\n    result = super().run_node(n)\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/fx/interpreter.py\", line 294, in run_node\n    return getattr(self, n.op)(n.target, args, kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/graph.py\", line 1567, in call_function\n    raise LoweringException(\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/graph.py\", line 1544, in call_function\n    out = lowerings[target](*args, **kwargs)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/lowering.py\", line 525, in wrapped\n    out = decomp_fn(*args, **kwargs)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/kernel/conv.py\", line 777, in convolution\n    node, _ = autotune_select_algorithm(\"convolution\", choices, args, layout)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/select_algorithm.py\", line 6105, in autotune_select_algorithm\n    return cache(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/select_algorithm.py\", line 4211, in __call__\n    timings = self.do_autotuning(\n              ^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_inductor/select_algorithm.py\", line 4476, in do_autotuning\n    raise self.create_no_valid_choices(\ntorch._inductor.exc.InductorError: LoweringException: NoValidChoicesError: No choices to select. Provided reason: All choices failed to compile for backend. please consider adding ATEN into max_autotune_conv_backends config (defined in torch/_inductor/config.py) to allow at least one choice. \n  target: aten.convolution.default\n  args[0]: TensorBox(StorageBox(\n    InputBuffer(name='arg0_1', layout=FixedLayout('tnca:0', torch.bfloat16, size=[1, 8, 7], stride=[56, 7, 1]))\n  ))\n  args[1]: TensorBox(StorageBox(\n    InputBuffer(name='arg1_1', layout=FixedLayout('tnca:0', torch.bfloat16, size=[8, 1, 4], stride=[4, 4, 1]))\n  ))\n  args[2]: None\n  args[3]: [1]\n  args[4]: [3]\n  args[5]: [1]\n  args[6]: False\n  args[7]: [0]\n  args[8]: 8NoValidChoicesError: No choices to select. Provided reason: All choices failed to compile for backend. please consider adding ATEN into max_autotune_conv_backends config (defined in torch/_inductor/config.py) to allow at least one choice. \n  target: aten.convolution.default\n  args[0]: TensorBox(StorageBox(\n    InputBuffer(name='arg0_1', layout=FixedLayout('tnca:0', torch.bfloat16, size=[1, 8, 7], stride=[56, 7, 1]))\n  ))\n  args[1]: TensorBox(StorageBox(\n    InputBuffer(name='arg1_1', layout=FixedLayout('tnca:0', torch.bfloat16, size=[8, 1, 4], stride=[4, 4, 1]))\n  ))\n  args[2]: None\n  args[3]: [1]\n  args[4]: [3]\n  args[5]: [1]\n  args[6]: False\n  args[7]: [0]\n  args[8]: 8\nFound from : \n   File \"/home/zhongchun/r41-stage1/src/tools/performance_harness/primitive_cases.py\", line 55, in depthwise\n    return F.conv1d(x, w, padding=3, groups=x.shape[1])[..., :x.shape[-1]]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n\nSet TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS=\"+dynamo\"\n\n"
+}

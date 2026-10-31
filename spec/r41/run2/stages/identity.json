@@ -1,0 +1,41 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "identity",
+ "experiments": [
+  {
+   "id": "r2-s2-identity",
+   "manifest": "spec/r41/run2/board/r2-s2-identity.json",
+   "sha256": "b4317d45522b48bae0d8c1c5a149820d22c4d0bc78040b2f4a458fbdc097ed0e",
+   "checks": [
+    {
+     "path": "source.json",
+     "field": [
+      "status"
+     ],
+     "equals": "pass"
+    },
+    {
+     "path": "clock.json",
+     "field": [
+      "status"
+     ],
+     "equals": "pass"
+    },
+    {
+     "path": "identity/batch.json",
+     "field": [
+      "status"
+     ],
+     "equals": "complete"
+    },
+    {
+     "path": "identity/batch.json",
+     "field": [
+      "configurations"
+     ],
+     "equals": 3
+    }
+   ]
+  }
+ ]
+}

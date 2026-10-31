@@ -1,0 +1,190 @@
+{
+ "schema": "tnca-r41-hbm8-summary/1",
+ "group": "board-hbm8",
+ "cases": {
+  "window": {
+   "status": "functional-pass",
+   "mode": "board",
+   "backend": "fpga-u280-multicore",
+   "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+   "window": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000",
+    "dma": true
+   },
+   "checks_passed": 11,
+   "checks_failed": [],
+   "launches": 0,
+   "cores_all_three": null,
+   "outlet_lines": null,
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "error": null
+  },
+  "negatives": {
+   "status": "functional-pass",
+   "mode": "board",
+   "backend": "fpga-u280-multicore",
+   "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+   "window": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000"
+   },
+   "checks_passed": 10,
+   "checks_failed": [],
+   "launches": 0,
+   "cores_all_three": null,
+   "outlet_lines": null,
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "error": null
+  },
+  "samples": {
+   "status": "functional-pass",
+   "mode": "board",
+   "backend": "fpga-u280-multicore",
+   "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+   "window": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000"
+   },
+   "checks_passed": 76,
+   "checks_failed": [],
+   "launches": 34,
+   "cores_all_three": true,
+   "outlet_lines": [
+    221,
+    174,
+    131
+   ],
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "error": null
+  },
+  "alias": {
+   "status": "functional-pass",
+   "mode": "board",
+   "backend": "fpga-u280-multicore",
+   "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+   "window": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000"
+   },
+   "checks_passed": 36,
+   "checks_failed": [],
+   "launches": 22,
+   "cores_all_three": true,
+   "outlet_lines": [
+    137,
+    107,
+    81
+   ],
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "error": null
+  },
+  "crossing": {
+   "status": "functional-pass",
+   "mode": "board",
+   "backend": "fpga-u280-multicore",
+   "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+   "window": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000"
+   },
+   "checks_passed": 17,
+   "checks_failed": [],
+   "launches": 9,
+   "cores_all_three": true,
+   "outlet_lines": [
+    5469,
+    5403,
+    5400
+   ],
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "error": null
+  },
+  "dma": {
+   "status": "functional-pass",
+   "mode": "board",
+   "backend": "fpga-u280-multicore",
+   "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+   "window": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000"
+   },
+   "checks_passed": 6,
+   "checks_failed": [],
+   "launches": 1,
+   "cores_all_three": true,
+   "outlet_lines": [
+    2839847,
+    2785174,
+    2795975
+   ],
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "error": null
+  },
+  "clamp": {
+   "status": "functional-pass",
+   "mode": "board",
+   "backend": "fpga-u280-multicore",
+   "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+   "window": {
+    "base": "0x0",
+    "size": 8589934592
+   },
+   "checks_passed": 3,
+   "checks_failed": [],
+   "launches": 0,
+   "cores_all_three": null,
+   "outlet_lines": null,
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "error": null
+  }
+ },
+ "passed": [
+  "window",
+  "negatives",
+  "samples",
+  "alias",
+  "crossing",
+  "dma",
+  "clamp"
+ ],
+ "not_passed": [],
+ "software_trees": [
+  "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f"
+ ],
+ "mode": "board",
+ "qualified": true,
+ "qualification_problems": [],
+ "result": "7/7 cases functional-pass",
+ "residual": "none",
+ "conclusion": "board-hbm8: every registered case passed in board on one software tree",
+ "next_step": "record the board result in evidence/r41/hbm8/README.md",
+ "performance_gate": "not-measured"
+}

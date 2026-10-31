@@ -1,0 +1,11 @@
+HYBRID CORE fast=0 slow=1 retired=0 switches=0 wb_stall=0 peak=0
+---- tnca core run ----
+cycles=1000000 issued=21 hazard=999974 lsu=0 wb=0 squash=0
+vrf req=0 accept=0 conflict=0 stall=0 serial=0 parallel=0 mtx_req=0 mtx_wait=0 wb_retry=0
+stall_total=999974 x_hazard=999974 x_lsu=0 x_fpu=0 x_mtx=0 x_txf=0 x_fence=0 x_arrive=0 x_rsv=0 x_wb=0 x_vrf=0 x_vrfwb=0 x_sum=999974
+frontend=7 partition=21+999974+7 of 1000002
+rctx_switch=0
+memtrace=0000000000000000 memstall=500230 memreorder=0 memmulti=0
+barcollide=0
+FAIL: timeout after 1000000 cycles
+tb/core/tb_core_hybrid.v:305: $finish called at 10000095000 (1ps)

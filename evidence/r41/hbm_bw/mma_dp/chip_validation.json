@@ -1,0 +1,266 @@
+{
+  "schema": "tnca-matrix-dp-chip-validation/1",
+  "domain": "SystemC/TLM model",
+  "status": "passed",
+  "mtx_dp_extra_latency": 1,
+  "results": {
+    "pairs": {
+      "dp-f16-f16-k16": {
+        "cycles": 3618,
+        "matrix_engine_busy_cycles": 182
+      },
+      "dp-f16-f16-k32": {
+        "cycles": 4938,
+        "matrix_engine_busy_cycles": 566
+      },
+      "dp-f16-bf16-k16": {
+        "cycles": 3618,
+        "matrix_engine_busy_cycles": 182
+      },
+      "dp-f16-bf16-k32": {
+        "cycles": 4938,
+        "matrix_engine_busy_cycles": 566
+      },
+      "dp-f16-e5m2-k16": {
+        "cycles": 3370,
+        "matrix_engine_busy_cycles": 182
+      },
+      "dp-f16-e5m2-k32": {
+        "cycles": 4470,
+        "matrix_engine_busy_cycles": 566
+      },
+      "dp-f16-e5m2-k64": {
+        "cycles": 6409,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-f16-e4m3-k16": {
+        "cycles": 3370,
+        "matrix_engine_busy_cycles": 182
+      },
+      "dp-f16-e4m3-k32": {
+        "cycles": 4470,
+        "matrix_engine_busy_cycles": 566
+      },
+      "dp-f16-e4m3-k64": {
+        "cycles": 6409,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-bf16-f16-k16": {
+        "cycles": 3618,
+        "matrix_engine_busy_cycles": 182
+      },
+      "dp-bf16-f16-k32": {
+        "cycles": 4938,
+        "matrix_engine_busy_cycles": 566
+      },
+      "dp-bf16-bf16-k16": {
+        "cycles": 3618,
+        "matrix_engine_busy_cycles": 182
+      },
+      "dp-bf16-bf16-k32": {
+        "cycles": 4938,
+        "matrix_engine_busy_cycles": 566
+      },
+      "dp-bf16-e5m2-k16": {
+        "cycles": 3370,
+        "matrix_engine_busy_cycles": 182
+      },
+      "dp-bf16-e5m2-k32": {
+        "cycles": 4470,
+        "matrix_engine_busy_cycles": 566
+      },
+      "dp-bf16-e5m2-k64": {
+        "cycles": 6409,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-bf16-e4m3-k16": {
+        "cycles": 3370,
+        "matrix_engine_busy_cycles": 182
+      },
+      "dp-bf16-e4m3-k32": {
+        "cycles": 4470,
+        "matrix_engine_busy_cycles": 566
+      },
+      "dp-bf16-e4m3-k64": {
+        "cycles": 6409,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-e5m2-f16-k16": {
+        "cycles": 3366,
+        "matrix_engine_busy_cycles": 178
+      },
+      "dp-e5m2-f16-k32": {
+        "cycles": 4222,
+        "matrix_engine_busy_cycles": 318
+      },
+      "dp-e5m2-f16-k64": {
+        "cycles": 6409,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-e5m2-bf16-k16": {
+        "cycles": 3366,
+        "matrix_engine_busy_cycles": 178
+      },
+      "dp-e5m2-bf16-k32": {
+        "cycles": 4222,
+        "matrix_engine_busy_cycles": 318
+      },
+      "dp-e5m2-bf16-k64": {
+        "cycles": 6409,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-e5m2-e5m2-k16": {
+        "cycles": 3118,
+        "matrix_engine_busy_cycles": 178
+      },
+      "dp-e5m2-e5m2-k32": {
+        "cycles": 3754,
+        "matrix_engine_busy_cycles": 318
+      },
+      "dp-e5m2-e5m2-k64": {
+        "cycles": 5466,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-e5m2-e4m3-k16": {
+        "cycles": 3118,
+        "matrix_engine_busy_cycles": 178
+      },
+      "dp-e5m2-e4m3-k32": {
+        "cycles": 3754,
+        "matrix_engine_busy_cycles": 318
+      },
+      "dp-e5m2-e4m3-k64": {
+        "cycles": 5466,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-e4m3-f16-k16": {
+        "cycles": 3366,
+        "matrix_engine_busy_cycles": 178
+      },
+      "dp-e4m3-f16-k32": {
+        "cycles": 4222,
+        "matrix_engine_busy_cycles": 318
+      },
+      "dp-e4m3-f16-k64": {
+        "cycles": 6409,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-e4m3-bf16-k16": {
+        "cycles": 3366,
+        "matrix_engine_busy_cycles": 178
+      },
+      "dp-e4m3-bf16-k32": {
+        "cycles": 4222,
+        "matrix_engine_busy_cycles": 318
+      },
+      "dp-e4m3-bf16-k64": {
+        "cycles": 6409,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-e4m3-e5m2-k16": {
+        "cycles": 3118,
+        "matrix_engine_busy_cycles": 178
+      },
+      "dp-e4m3-e5m2-k32": {
+        "cycles": 3754,
+        "matrix_engine_busy_cycles": 318
+      },
+      "dp-e4m3-e5m2-k64": {
+        "cycles": 5466,
+        "matrix_engine_busy_cycles": 1094
+      },
+      "dp-e4m3-e4m3-k16": {
+        "cycles": 3050,
+        "matrix_engine_busy_cycles": 110
+      },
+      "dp-e4m3-e4m3-k32": {
+        "cycles": 3618,
+        "matrix_engine_busy_cycles": 182
+      },
+      "dp-e4m3-e4m3-k64": {
+        "cycles": 4938,
+        "matrix_engine_busy_cycles": 566
+      }
+    },
+    "fma_compare": {
+      "f16-k16": {
+        "fma_cycles": 3753,
+        "fma_matrix_engine_busy_cycles": 317,
+        "dp_cycles": 3618,
+        "dp_matrix_engine_busy_cycles": 182,
+        "busy_ratio": 1.742
+      },
+      "f16-k32": {
+        "fma_cycles": 5465,
+        "fma_matrix_engine_busy_cycles": 1093,
+        "dp_cycles": 4938,
+        "dp_matrix_engine_busy_cycles": 566,
+        "busy_ratio": 1.931
+      },
+      "bf16-k16": {
+        "fma_cycles": 3753,
+        "fma_matrix_engine_busy_cycles": 317,
+        "dp_cycles": 3618,
+        "dp_matrix_engine_busy_cycles": 182,
+        "busy_ratio": 1.742
+      },
+      "bf16-k32": {
+        "fma_cycles": 5465,
+        "fma_matrix_engine_busy_cycles": 1093,
+        "dp_cycles": 4938,
+        "dp_matrix_engine_busy_cycles": 566,
+        "busy_ratio": 1.931
+      },
+      "e5m2-k16": {
+        "fma_cycles": 3253,
+        "fma_matrix_engine_busy_cycles": 313,
+        "dp_cycles": 3118,
+        "dp_matrix_engine_busy_cycles": 178,
+        "busy_ratio": 1.758
+      },
+      "e5m2-k32": {
+        "fma_cycles": 4025,
+        "fma_matrix_engine_busy_cycles": 589,
+        "dp_cycles": 3754,
+        "dp_matrix_engine_busy_cycles": 318,
+        "busy_ratio": 1.852
+      },
+      "e5m2-k64": {
+        "fma_cycles": 6521,
+        "fma_matrix_engine_busy_cycles": 2149,
+        "dp_cycles": 5466,
+        "dp_matrix_engine_busy_cycles": 1094,
+        "busy_ratio": 1.964
+      },
+      "e4m3-k16": {
+        "fma_cycles": 3253,
+        "fma_matrix_engine_busy_cycles": 313,
+        "dp_cycles": 3050,
+        "dp_matrix_engine_busy_cycles": 110,
+        "busy_ratio": 2.845
+      },
+      "e4m3-k32": {
+        "fma_cycles": 4025,
+        "fma_matrix_engine_busy_cycles": 589,
+        "dp_cycles": 3618,
+        "dp_matrix_engine_busy_cycles": 182,
+        "busy_ratio": 3.236
+      },
+      "e4m3-k64": {
+        "fma_cycles": 6521,
+        "fma_matrix_engine_busy_cycles": 2149,
+        "dp_cycles": 4938,
+        "dp_matrix_engine_busy_cycles": 566,
+        "busy_ratio": 3.797
+      }
+    },
+    "negative_control": "corrupted expected word rejected",
+    "capability_off": "ILLEGAL_INSTRUCTION: m.mma.dp.async without CAPABILITY0.MATRIX_DP",
+    "reserved_modifier": "ILLEGAL_INSTRUCTION"
+  },
+  "oracle": "tools/model/fdp.py (exact Fractions, RO_48)",
+  "oracle_sha256": "a34f110c604422787a86b98d7c1a7d3e5392e47b430ade45596101898f814e6b",
+  "binary_sha256": "bd703381da85c7431082bd19328af09d8abd18bd2d92b1499f0f1ef7ac9e48c4",
+  "performance_gate": "not-measured",
+  "timing": "uncalibrated model"
+}

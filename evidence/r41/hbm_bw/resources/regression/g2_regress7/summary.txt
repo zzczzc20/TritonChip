@@ -1,0 +1,16 @@
+commit 18d045c53b8bbf248aeb8a550e724fa0158225b4 start 2026-10-28T14:05:21Z host gx10-6646
+== geometry_image: python3 tools/r40/image_geometry_tests.py --image-tcl images/image.tcl
+geometry_image exit 0
+== geometry_image_g2_ctx2: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_g2_ctx2.tcl --image-profile core-vrf-sync-v5-x8-g2
+geometry_image_g2_ctx2 exit 0
+== geometry_image_g2_all: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_g2_all.tcl --image-profile core-vrf-sync-v5-x8-g2
+geometry_image_g2_all exit 0
+== mmio_checks: make r40-multicore-mmio-checks
+mmio_checks exit 2
+== tnca_opt_cmake: cmake -S compiler -B compiler/build -G Ninja -DMLIR_DIR=/home/zhongchun/tc_env/root/usr/lib/llvm-20/lib/cmake/mlir -DLLVM_DIR=/home/zhongchun/tc_env/root/usr/lib/llvm-20/lib/cmake/llvm -DCMAKE_BUILD_TYPE=Release
+tnca_opt_cmake exit 0
+== tnca_opt_build: ninja -j6 -C compiler/build
+tnca_opt_build exit 0
+== compiler: make compiler
+compiler exit 2
+end 2026-10-28T14:25:29Z

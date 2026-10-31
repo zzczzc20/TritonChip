@@ -1,0 +1,9 @@
+HOME SERVICE mode=1 word_bytes=64 accepted=4096 responses=4096 span_cycles=8385 hit=4079 miss=16
+---- nuca slice ----
+seed=20260918 trace_hash=b706daab14db6325 writes=0
+issued=4096 reads_checked=4096 inflight_left=0
+hit=4079 miss=16 merge=1 wb=0 mshr_full=21 target_full=0 hit_past_block=18
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=0 dead_evict=0 gear=0
+PASS
+tb/nuca/tb_nuca_wide.v:446: $finish called at 83896000 (1ps)

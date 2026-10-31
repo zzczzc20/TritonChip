@@ -1,0 +1,7 @@
+{"key": "op.add/membound/fp32-small-contig-r16-c1024", "status": "pass", "launches": 1, "device_cycles": 16666, "max_rel_err": 0.0, "process_wall_s": 4.87, "model_launch_host_s": 0.05001}
+{"key": "op.clone/membound/fp32-small-contig-r16-c1024", "status": "pass", "launches": 1, "device_cycles": 13985, "max_rel_err": 0.0, "process_wall_s": 6.37, "model_launch_host_s": 0.037755}
+{"key": "op.copy/membound/fp16-small-contig-r32-c1024", "status": "pass", "launches": 1, "device_cycles": 34902, "max_rel_err": 0.0, "process_wall_s": 6.28, "model_launch_host_s": 0.060535}
+{"key": "op.copy/membound/fp32-small-contig-r16-c1024", "status": "pass", "launches": 1, "device_cycles": 13985, "max_rel_err": 0.0, "process_wall_s": 6.28, "model_launch_host_s": 0.037205}
+{"key": "op.relu/membound/fp32-small-contig-r16-c1024", "status": "pass", "launches": 1, "device_cycles": 15235, "max_rel_err": 0.0, "process_wall_s": 6.38, "model_launch_host_s": 0.0387}
+{"key": "op.sum/membound/fp16-small-contig-r32-c1024", "status": "pass", "launches": 1, "device_cycles": 24878, "max_rel_err": 0.00026988086237376177, "process_wall_s": 6.1, "model_launch_host_s": 0.048233}
+DONE 6 / 6

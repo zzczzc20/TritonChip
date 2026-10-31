@@ -1,0 +1,52 @@
+tnca.kernel @triton_poi_fused_neg_split_0 {
+  // no shared resources, no bound arguments
+
+  role 0 @role0 {
+    %sp1:scalar = tnca.special()  {name='arg_base'}
+    %m2:scalar = tnca.sload(%sp1:scalar)  {offset=0 size='d'}   // in_ptr0: device_ptr64 at arg_base+0
+    %m3:scalar = tnca.sload(%sp1:scalar)  {offset=8 size='d'}   // out_ptr0: device_ptr64 at arg_base+8
+    %m4:scalar = tnca.sload(%sp1:scalar)  {offset=16 size='sw'}   // xnumel: i32 at arg_base+16
+    %pid5:scalar = tnca.program_id()  {dim=0}
+    %s7:scalar = tnca.sbini(%pid5:scalar)  {imm=4 op='shl'}   // x16 as a shift
+    %ar8:vector = tnca.arange()
+    %sp9:vector = tnca.splat(%s7:scalar)
+    %v10:vector = tnca.vbin(%sp9:vector, %ar8:vector)  {fmm=None op='add'}
+    %k11:vector = tnca.vmovi()  {imm=256}
+    %m12:pred = tnca.vcmp(%v10:vector, %k11:vector)  {cc='lt'}
+    %k13:vector = tnca.vmovi()  {imm=8}
+    %k14:vector = tnca.vmovi()  {imm=0}
+    %m16:pred = tnca.vcmp(%v10:vector, %k14:vector)  {cc='lt'}
+    %m17:pred = tnca.vcmp(%k13:vector, %k14:vector)  {cc='lt'}
+    %v18:vector = tnca.vbin(%k14:vector, %v10:vector)  {fmm=None op='sub'}
+    %v19:vector = tnca.vselect(%m16:pred, %v18:vector, %v10:vector)
+    %v20:vector = tnca.vbin(%k14:vector, %k13:vector)  {fmm=None op='sub'}
+    %v21:vector = tnca.vselect(%m17:pred, %v20:vector, %k13:vector)
+    %k22:vector = tnca.vmovi()  {imm=7}
+    %v23:vector = tnca.vbin(%v19:vector, %k22:vector)  {fmm=None op='and'}
+    %v24:vector = tnca.vbin(%k14:vector, %v23:vector)  {fmm=None op='sub'}
+    %v25:vector = tnca.vselect(%m16:pred, %v24:vector, %v23:vector)
+    %k26:vector = tnca.vmovi()  {imm=0}
+    %m28:pred = tnca.vcmp(%v10:vector, %k26:vector)  {cc='lt'}
+    %m29:pred = tnca.vcmp(%k13:vector, %k26:vector)  {cc='lt'}
+    %v30:vector = tnca.vbin(%k26:vector, %v10:vector)  {fmm=None op='sub'}
+    %v31:vector = tnca.vselect(%m28:pred, %v30:vector, %v10:vector)
+    %v32:vector = tnca.vbin(%k26:vector, %k13:vector)  {fmm=None op='sub'}
+    %v33:vector = tnca.vselect(%m29:pred, %v32:vector, %k13:vector)
+    %k34:vector = tnca.vmovi()  {imm=3}
+    %v35:vector = tnca.vbin(%v31:vector, %k34:vector)  {fmm=None op='lshr'}
+    %v36:vector = tnca.vbin(%k26:vector, %v35:vector)  {fmm=None op='sub'}
+    %v37:vector = tnca.vselect(%m28:pred, %v36:vector, %v35:vector)
+    %v39:vector = tnca.vbin(%v25:vector, %k13:vector)  {fmm=None op='add'}
+    %k40:vector = tnca.vmovi()  {imm=16}
+    %v41:vector = tnca.vbin(%v37:vector, %k40:vector)  {fmm=None op='mul'}
+    %v42:vector = tnca.vbin(%v39:vector, %v41:vector)  {fmm=None op='add'}
+    %g43:vector = tnca.gather(%m2:scalar, %v42:vector)  {mask=%m12:pred other=0 size='h'}
+    %c44:vector = tnca.vcvt(%g43:vector)  {dst='f32' src='f16'}
+    %v45:vector = tnca.vun(%c44:vector)  {op='neg'}
+    %v46:vector = tnca.vbin(%v25:vector, %v41:vector)  {fmm=None op='add'}
+    %c47:vector = tnca.vcvt(%v45:vector)  {dst='f16' src='f32'}
+    tnca.scatter(%m3:scalar, %v46:vector, %c47:vector)  {mask=%m12:pred size='h'}
+    tnca.exit()
+    tnca.exit()
+  }
+}

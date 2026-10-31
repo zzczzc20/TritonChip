@@ -1,0 +1,1029 @@
+{
+  "source": "evidence/r41/stage2/roofline/points.json",
+  "source_sha256": "a3c6482d7af046a10e6690d795e4ee79be3d59535a386f995050b4de7254e8c6",
+  "clock_hz": 100000000,
+  "status": "baseline-only; no candidate board measurements",
+  "coverage_note": "102 roofline points; original suite has 113. Zero-FLOP and omitted operators must be recovered from board records before acceptance. mem_bytes is historical roofline classification, not proof of the current bottleneck.",
+  "points": [
+    {
+      "id": "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+      "family": "gpt2_block",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.04079672,
+      "bytes": 659520,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+      "family": "gpt2_block",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.02817031,
+      "bytes": 429312,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+      "family": "gpt2_block",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00169283,
+      "bytes": 104064,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.llama_decode/medium/fp16-b1-p256",
+      "family": "llama_decode",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.14546186,
+      "bytes": 3659784,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.llama_decode/small/fp16-b1-p128",
+      "family": "llama_decode",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.03613053,
+      "bytes": 1741320,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.llama_decode/tiny/fp16-b1-p16",
+      "family": "llama_decode",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00426901,
+      "bytes": 185864,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.llama_prefill/medium/fp16-b1-s64",
+      "family": "llama_prefill",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.24131346,
+      "bytes": 3421312,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.llama_prefill/small/fp16-b1-s64",
+      "family": "llama_prefill",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.13240795,
+      "bytes": 1625856,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.llama_prefill/tiny/fp16-b1-s16",
+      "family": "llama_prefill",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00564935,
+      "bytes": 183552,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.mlp/medium/fp16-t128-d128",
+      "family": "mlp",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.01309849,
+      "bytes": 328960,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.mlp/small/fp16-t64-d128",
+      "family": "mlp",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00673147,
+      "bytes": 296192,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.mlp/tiny/fp16-t16-d64",
+      "family": "mlp",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.0005942,
+      "bytes": 70272,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.resnet_block/medium/fp32-n1-c24-hw16",
+      "family": "resnet_block",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.03473178,
+      "bytes": 91392,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.resnet_block/small/fp32-n1-c16-hw16",
+      "family": "resnet_block",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00810124,
+      "bytes": 51712,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.resnet_block/tiny/fp32-n1-c8-hw8",
+      "family": "resnet_block",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00234271,
+      "bytes": 8960,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.add/medium/fp16-n49152",
+      "family": "add",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00187502,
+      "bytes": 294912,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.add/small/fp16-n16384",
+      "family": "add",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00060396,
+      "bytes": 98304,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.add/tiny/fp16-n1000",
+      "family": "add",
+      "binding": "mem_bytes",
+      "baseline_seconds": 2.355e-05,
+      "bytes": 6000,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.add/tiny/fp32-n256",
+      "family": "add",
+      "binding": "mem_bytes",
+      "baseline_seconds": 1.009e-05,
+      "bytes": 3072,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.argmax/medium/fp16-r32-v4096",
+      "family": "argmax",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00184125,
+      "bytes": 262400,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.argmax/small/fp16-r8-v2048",
+      "family": "argmax",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00030606,
+      "bytes": 32832,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.argmax/tiny/fp16-r2-v256",
+      "family": "argmax",
+      "binding": "mem_bytes",
+      "baseline_seconds": 3.303e-05,
+      "bytes": 1040,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.attention_decode/medium/fp16-b1-h8-l256-d32",
+      "family": "attention_decode",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00446058,
+      "bytes": 263168,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.attention_decode/small/fp16-b1-h4-l256-d32",
+      "family": "attention_decode",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00223526,
+      "bytes": 131584,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+      "family": "attention_decode",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00010608,
+      "bytes": 2176,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.attention_prefill/medium/fp16-b1-h4-s96-d32",
+      "family": "attention_prefill",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.03730172,
+      "bytes": 98304,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.attention_prefill/small/fp16-b1-h4-s64-d32",
+      "family": "attention_prefill",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.01710837,
+      "bytes": 65536,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+      "family": "attention_prefill",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00031694,
+      "bytes": 4096,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.bmm/medium/fp16-b16-m64-k32-n64",
+      "family": "bmm",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.03465009,
+      "bytes": 262144,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.bmm/small/fp16-b8-m64-k32-n64",
+      "family": "bmm",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.01741922,
+      "bytes": 131072,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.bmm/tiny/fp16-b2-m16-k16-n16",
+      "family": "bmm",
+      "binding": "mem_bytes",
+      "baseline_seconds": 2.416e-05,
+      "bytes": 3072,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24",
+      "family": "conv2d",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.01673317,
+      "bytes": 69888,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16",
+      "family": "conv2d",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00385965,
+      "bytes": 41984,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8",
+      "family": "conv2d",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00105133,
+      "bytes": 4224,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.cumsum/medium/fp32-r128-c256",
+      "family": "cumsum",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.0011368,
+      "bytes": 262144,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.cumsum/small/fp32-r64-c256",
+      "family": "cumsum",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.0006103,
+      "bytes": 131072,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.cumsum/tiny/fp32-r4-c64",
+      "family": "cumsum",
+      "binding": "mem_bytes",
+      "baseline_seconds": 2.642e-05,
+      "bytes": 2048,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.gelu_tanh/medium/fp16-n65536",
+      "family": "gelu_tanh",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00294828,
+      "bytes": 262144,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.gelu_tanh/small/fp16-n16384",
+      "family": "gelu_tanh",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.0007257,
+      "bytes": 65536,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.gelu_tanh/tiny/fp16-n256",
+      "family": "gelu_tanh",
+      "binding": "mem_bytes",
+      "baseline_seconds": 1.486e-05,
+      "bytes": 1024,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.gemv/medium/fp16-k320-n448",
+      "family": "gemv",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00279206,
+      "bytes": 288256,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.gemv/small/fp16-k256-n512",
+      "family": "gemv",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00244604,
+      "bytes": 263680,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.gemv/tiny/fp16-k64-n64",
+      "family": "gemv",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00011885,
+      "bytes": 8448,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.layernorm/medium/fp16-r128-d512",
+      "family": "layernorm",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00296683,
+      "bytes": 264192,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.layernorm/small/fp16-r64-d256",
+      "family": "layernorm",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00080606,
+      "bytes": 66560,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.layernorm/tiny/fp16-r4-d64",
+      "family": "layernorm",
+      "binding": "mem_bytes",
+      "baseline_seconds": 3.683e-05,
+      "bytes": 1280,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.linear/medium/fp16-m128-k320-n256",
+      "family": "linear",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00663427,
+      "bytes": 311808,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.linear/small/fp16-m64-k256-n256",
+      "family": "linear",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.002728,
+      "bytes": 197120,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.linear/tiny/fp16-m16-k64-n64",
+      "family": "linear",
+      "binding": "fp_lane",
+      "baseline_seconds": 7.669e-05,
+      "bytes": 12416,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.matmul/medium/fp16-m128-k192-n128",
+      "family": "matmul",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00236392,
+      "bytes": 131072,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.matmul/medium/fp32-m128-k192-n128",
+      "family": "matmul",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00636876,
+      "bytes": 262144,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.matmul/small/fp16-m64-k128-n128",
+      "family": "matmul",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00074142,
+      "bytes": 65536,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.matmul/small/fp32-m64-k128-n128",
+      "family": "matmul",
+      "binding": "fp_lane",
+      "baseline_seconds": 0.00245734,
+      "bytes": 131072,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.matmul/tiny/fp16-m16-k32-n16",
+      "family": "matmul",
+      "binding": "mem_bytes",
+      "baseline_seconds": 3.046e-05,
+      "bytes": 2560,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.matmul/tiny/fp32-m16-k32-n16",
+      "family": "matmul",
+      "binding": "mem_bytes",
+      "baseline_seconds": 6.808e-05,
+      "bytes": 5120,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.rmsnorm/medium/fp16-r128-d512",
+      "family": "rmsnorm",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00238186,
+      "bytes": 263168,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.rmsnorm/small/fp16-r64-d256",
+      "family": "rmsnorm",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.0006448,
+      "bytes": 66048,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.rmsnorm/tiny/fp16-r4-d64",
+      "family": "rmsnorm",
+      "binding": "mem_bytes",
+      "baseline_seconds": 2.86e-05,
+      "bytes": 1152,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.rope/medium/fp16-b1-h8-s128-d32",
+      "family": "rope",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00281005,
+      "bytes": 147456,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.rope/small/fp16-b1-h4-s64-d32",
+      "family": "rope",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00052749,
+      "bytes": 40960,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.rope/tiny/fp16-b1-h2-s16-d16",
+      "family": "rope",
+      "binding": "mem_bytes",
+      "baseline_seconds": 3.554e-05,
+      "bytes": 3072,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.silu/medium/fp16-n65536",
+      "family": "silu",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00240432,
+      "bytes": 262144,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.silu/small/fp16-n16384",
+      "family": "silu",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00059242,
+      "bytes": 65536,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.silu/tiny/fp16-n256",
+      "family": "silu",
+      "binding": "mem_bytes",
+      "baseline_seconds": 1.181e-05,
+      "bytes": 1024,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.softmax/medium/fp16-r80-c512",
+      "family": "softmax",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.0025839,
+      "bytes": 163840,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.softmax/small/fp16-r64-c512",
+      "family": "softmax",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00203285,
+      "bytes": 131072,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.softmax/tiny/fp16-r4-c64",
+      "family": "softmax",
+      "binding": "mem_bytes",
+      "baseline_seconds": 3.02e-05,
+      "bytes": 1024,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.softmax/tiny/fp32-r3-c37",
+      "family": "softmax",
+      "binding": "mem_bytes",
+      "baseline_seconds": 1.964e-05,
+      "bytes": 888,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.swiglu/medium/fp16-n49152",
+      "family": "swiglu",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00219574,
+      "bytes": 294912,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.swiglu/small/fp16-n16384",
+      "family": "swiglu",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.00073239,
+      "bytes": 98304,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.swiglu/tiny/fp16-n256",
+      "family": "swiglu",
+      "binding": "mem_bytes",
+      "baseline_seconds": 1.325e-05,
+      "bytes": 1536,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.llama_decode/hbm/fp16-b1-p512",
+      "family": "llama_decode",
+      "binding": "mem_bytes",
+      "baseline_seconds": 1.71561722,
+      "bytes": 157899272,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.llama_prefill/hbm/fp16-b1-s512",
+      "family": "llama_prefill",
+      "binding": "fp_lane",
+      "baseline_seconds": 44.70492447,
+      "bytes": 156848640,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.add/hbm/fp16-n67108864",
+      "family": "add",
+      "binding": "mem_bytes",
+      "baseline_seconds": 2.50390765,
+      "bytes": 402653184,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.gemv/hbm/fp16-k4096-n11008",
+      "family": "gemv",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.79163256,
+      "bytes": 90207744,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.linear/hbm/fp16-m512-k4096-n11008",
+      "family": "linear",
+      "binding": "fp_lane",
+      "baseline_seconds": 18.01118792,
+      "bytes": 105666048,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "family": "matmul",
+      "binding": "fp_lane",
+      "baseline_seconds": 43.14206139,
+      "bytes": 100663296,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.rmsnorm/hbm/fp16-r8192-d4096",
+      "family": "rmsnorm",
+      "binding": "mem_bytes",
+      "baseline_seconds": 1.24712433,
+      "bytes": 134225920,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.silu/hbm/fp16-n67108864",
+      "family": "silu",
+      "binding": "mem_bytes",
+      "baseline_seconds": 2.46308568,
+      "bytes": 268435456,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.softmax/hbm/fp16-r4096-c8192",
+      "family": "softmax",
+      "binding": "mem_bytes",
+      "baseline_seconds": 2.22835897,
+      "bytes": 134217728,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+      "family": "gpt2_block",
+      "binding": "fp_lane",
+      "baseline_seconds": 11.17811702,
+      "bytes": 27289600,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.llama_decode/large/fp16-b1-p512",
+      "family": "llama_decode",
+      "binding": "mem_bytes",
+      "baseline_seconds": 24.51027382,
+      "bytes": 2488699400,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.llama_prefill/large/fp16-b1-s512",
+      "family": "llama_prefill",
+      "binding": "fp_lane",
+      "baseline_seconds": 582.59770373,
+      "bytes": 2473986560,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.mlp/large/fp16-t512-d2048",
+      "family": "mlp",
+      "binding": "fp_lane",
+      "baseline_seconds": 12.10192241,
+      "bytes": 71323648,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "model.resnet_block/large/fp32-n8-c64-hw56",
+      "family": "resnet_block",
+      "binding": "fp_lane",
+      "baseline_seconds": 10.72694888,
+      "bytes": 13142016,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.add/large/fp16-n16777216",
+      "family": "add",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.62613458,
+      "bytes": 100663296,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.argmax/large/fp16-r64-v128256",
+      "family": "argmax",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.1176878,
+      "bytes": 16417280,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.attention_decode/large/fp16-b1-h32-l2048-d64",
+      "family": "attention_decode",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.31024109,
+      "bytes": 16785408,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.attention_prefill/large/fp16-b1-h32-s512-d64",
+      "family": "attention_prefill",
+      "binding": "fp_lane",
+      "baseline_seconds": 12.96499164,
+      "bytes": 8388608,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.bmm/large/fp16-b32-m512-k64-n512",
+      "family": "bmm",
+      "binding": "fp_lane",
+      "baseline_seconds": 8.42330061,
+      "bytes": 20971520,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64",
+      "family": "conv2d",
+      "binding": "fp_lane",
+      "baseline_seconds": 5.06503143,
+      "bytes": 12992512,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.gelu_tanh/large/fp16-n16777216",
+      "family": "gelu_tanh",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.75333733,
+      "bytes": 67108864,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.gemv/large/fp16-k2048-n8192",
+      "family": "gemv",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.29864954,
+      "bytes": 33574912,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.layernorm/large/fp16-r512-d2048",
+      "family": "layernorm",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.05258189,
+      "bytes": 4202496,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.linear/large/fp16-m512-k2048-n8192",
+      "family": "linear",
+      "binding": "fp_lane",
+      "baseline_seconds": 5.91574749,
+      "bytes": 44056576,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.matmul/large/fp16-m2048-k2048-n2048",
+      "family": "matmul",
+      "binding": "fp_lane",
+      "baseline_seconds": 5.41702246,
+      "bytes": 25165824,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.matmul/large/fp32-m2048-k2048-n2048",
+      "family": "matmul",
+      "binding": "fp_lane",
+      "baseline_seconds": 15.11840382,
+      "bytes": 50331648,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.rmsnorm/large/fp16-r512-d2048",
+      "family": "rmsnorm",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.03884163,
+      "bytes": 4198400,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.rope/large/fp16-b1-h32-s512-d64",
+      "family": "rope",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.09722898,
+      "bytes": 4325376,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.silu/large/fp16-n16777216",
+      "family": "silu",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.61521457,
+      "bytes": 67108864,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.softmax/large/fp16-r4096-c4096",
+      "family": "softmax",
+      "binding": "mem_bytes",
+      "baseline_seconds": 1.11307636,
+      "bytes": 67108864,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    },
+    {
+      "id": "op.swiglu/large/fp16-n16777216",
+      "family": "swiglu",
+      "binding": "mem_bytes",
+      "baseline_seconds": 0.74526398,
+      "bytes": 100663296,
+      "candidate_seconds": null,
+      "speedup": null,
+      "numerics": null
+    }
+  ]
+}

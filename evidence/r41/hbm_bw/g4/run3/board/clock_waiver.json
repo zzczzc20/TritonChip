@@ -1,0 +1,6 @@
+{
+  "status": "accepted",
+  "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "hbm_clock_mhz": 433,
+  "author_decision": "2026-10-30 author: 最终镜像上板不要等我批准浪费服务器时间（目前FPGA服务器非常紧俏，千万不要因为我批准耽误）更不用说是433这种事情"
+}

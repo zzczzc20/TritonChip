@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/home/zhongchun/r41-accept-p2-v1/tools/performance_harness/locality_case.py", line 76, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/zhongchun/r41-accept-p2-v1/tools/performance_harness/locality_case.py", line 40, in main
+    native=[x.to('tnca') for x in host]
+            ^^^^^^^^^^^^
+torch.OutOfMemoryError: tnca: TypeError: tnca.runtime.Session() got multiple values for keyword argument 'host_timeout'
+
+At:
+  /home/zhongchun/r41-accept-p2-v1/python/tnca/triton_backend/driver.py(85): get
+  /home/zhongchun/r41-accept-p2-v1/python/tnca/torch_device/__init__.py(76): session
+  /home/zhongchun/r41-accept-p2-v1/python/tnca/torch_device/__init__.py(79): alloc
+  /home/zhongchun/r41-accept-p2-v1/tools/performance_harness/locality_case.py(40): main
+  /home/zhongchun/r41-accept-p2-v1/tools/performance_harness/locality_case.py(76): <module>
+

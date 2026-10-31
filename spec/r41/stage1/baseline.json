@@ -1,0 +1,17 @@
+{
+  "name": "B40-OBS",
+  "history_status": "closed-with-failures",
+  "r40_acceptance": "fail",
+  "close_commit": "9235f5d",
+  "software_tree": "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75",
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "clock_hz": 90000000,
+  "physical_cores": 3,
+  "memory_ports": 3,
+  "memory_bytes": 4294967296,
+  "evidence": {
+    "doc/r40_report.md": "a1bacb1b599015aba1389fce8de5f15ce0f2ac6f84049ac9b0d1bd929f9c8de4",
+    "doc/r40_v3/identity_amendment.json": "97686070f1b352bdc519e900e3fb6ef27853bf6a596f73950d638dbd77e730cb",
+    "evidence/r40/v3/gates/v3/R40-10.json": "2e4aaea26355ed8ffda11f058c574b311e463b469ae6b3f78c85b091d1d72c4a"
+  }
+}

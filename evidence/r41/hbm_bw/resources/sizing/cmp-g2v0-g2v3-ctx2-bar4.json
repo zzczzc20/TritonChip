@@ -1,0 +1,4462 @@
+{
+ "schema": "tnca-r41-default-change-audit/1",
+ "control": {
+  "label": "g2v0-ctx2",
+  "software_tree": "files:c056b441627db3cc6f269fc4f5c9d0c9aad7145fc4f85d89b61523e8c6efff70"
+ },
+ "candidate": {
+  "label": "g2v3-ctx2-bar4",
+  "software_tree": "files:e9d7457f4e9340fb0678ac758facbdb53f83b9ce63632a06b57d681f54c11c38"
+ },
+ "suite": {
+  "path": "spec/r40/suites/hbm.json",
+  "sha256": "22dbb1603d3d5031ba08097729bf4040365bbbea42a0c36c72ee4a71a35fae5b",
+  "file_sha256": "7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd",
+  "points": 113
+ },
+ "knobs": {
+  "TNCA_MAX_BLOCK": "16",
+  "TNCA_GEMM_TILE": "16,16,16",
+  "TNCA_REDUCTION_ROWS": "1",
+  "TNCA_BANK_ALLOC": "0",
+  "TNCA_WINDOW_REUSE": "0",
+  "TNCA_SDPA": "decomposed",
+  "TNCA_PIPELINE": "1",
+  "TNCA_TUNE": "0"
+ },
+ "harness_env": {
+  "CUDA_VISIBLE_DEVICES": "",
+  "TNCA_LAUNCH": "skip",
+  "TNCA_PROFILE": "core-vrf-sync-g2v0-ctx2",
+  "TNCA_OPT_LEVEL": "2",
+  "TNCA_TRITON": "1",
+  "TNCA_KERNEL_DUMP": "1",
+  "TNCA_BACKEND": "fpga-u280-multicore",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "TNCA_TORCH_DEVICE": "native",
+  "TNCA_TRANSFER_POLICY": "per-kernel",
+  "TNCA_ACTIVE_CORES": "1",
+  "TNCA_RTL_MEM_PORTS": "1",
+  "TNCA_RTL_OUTSTANDING": "1",
+  "TNCA_SUBMIT": "single",
+  "OMP_NUM_THREADS": "1",
+  "MKL_NUM_THREADS": "1",
+  "OPENBLAS_NUM_THREADS": "1"
+ },
+ "method": "compile-only; fresh process and private caches per point; tnca tensors over a host-memory stand-in session; every launch skipped; device sessions forbidden",
+ "summary": {
+  "points": 113,
+  "unchanged": 76,
+  "changed": 37,
+  "not_compared": 0
+ },
+ "changed_points": [
+  "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+  "model.gpt2_block/medium/fp16-d160-h5-b1-s64",
+  "model.gpt2_block/small/fp16-d128-h4-b1-s64",
+  "model.gpt2_block/tiny/fp16-d64-h4-b1-s16",
+  "model.llama_decode/hbm/fp16-b1-p512",
+  "model.llama_decode/large/fp16-b1-p512",
+  "model.llama_decode/medium/fp16-b1-p256",
+  "model.llama_decode/small/fp16-b1-p128",
+  "model.llama_decode/tiny/fp16-b1-p16",
+  "model.llama_prefill/hbm/fp16-b1-s512",
+  "model.llama_prefill/large/fp16-b1-s512",
+  "model.llama_prefill/medium/fp16-b1-s64",
+  "model.llama_prefill/small/fp16-b1-s64",
+  "model.llama_prefill/tiny/fp16-b1-s16",
+  "model.mlp/large/fp16-t512-d2048",
+  "model.mlp/medium/fp16-t128-d128",
+  "model.mlp/small/fp16-t64-d128",
+  "model.mlp/tiny/fp16-t16-d64",
+  "op.bmm/large/fp16-b32-m512-k64-n512",
+  "op.bmm/medium/fp16-b16-m64-k32-n64",
+  "op.bmm/small/fp16-b8-m64-k32-n64",
+  "op.bmm/tiny/fp16-b2-m16-k16-n16",
+  "op.gemv/hbm/fp16-k4096-n11008",
+  "op.gemv/large/fp16-k2048-n8192",
+  "op.gemv/medium/fp16-k320-n448",
+  "op.gemv/small/fp16-k256-n512",
+  "op.gemv/tiny/fp16-k64-n64",
+  "op.linear/hbm/fp16-m512-k4096-n11008",
+  "op.linear/large/fp16-m512-k2048-n8192",
+  "op.linear/medium/fp16-m128-k320-n256",
+  "op.linear/small/fp16-m64-k256-n256",
+  "op.linear/tiny/fp16-m16-k64-n64",
+  "op.matmul/hbm/fp16-m4096-k4096-n4096",
+  "op.matmul/large/fp16-m2048-k2048-n2048",
+  "op.matmul/medium/fp16-m128-k192-n128",
+  "op.matmul/small/fp16-m64-k128-n128",
+  "op.matmul/tiny/fp16-m16-k32-n16"
+ ],
+ "ablations": {},
+ "same_code_as": {},
+ "points": {
+  "model.gpt2_block/large/fp16-d1024-h16-b1-s512": {
+   "status": "changed",
+   "kernels": 13,
+   "steady_launches": 13,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_addmm_t_transpose_view_9",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4400,
+     "candidate_text_bytes": 4288,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 456
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 442
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_add_addmm_gelu_native_layer_norm_t_view_11",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 12912,
+     "candidate_text_bytes": 12800,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1448
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1434
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_add_addmm_gelu_t_view_12",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 7016,
+     "candidate_text_bytes": 6904,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 783
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 769
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_addmm_native_layer_norm_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4840,
+     "candidate_text_bytes": 4728,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 479
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 465
+     }
+    }
+   ],
+   "text_sha256": [
+    "3084ea3923141f9bf41919b95fd7abd0deb99b3b1cecd0b1929a1ba61a992d4c",
+    "3633a47e61cc4242feb67ca62564770c71ad6dcd4a2fba51ca4b7b1120b061ec",
+    "3ec380288ad8fc09124af4114ca187c2a5857e841a786a1bad4d51f0da81486b",
+    "59337ac3feac76b9c30d244ae4e96940694f835d1f1c1729af38862bf62a8804",
+    "6b010e5f7bef06256fce61d2b18169b2edb10c4f1b7432365f53fc0bf636e43a",
+    "6f60a25faafbee531fbe475c26173cde35fd24089cbefbdf123f60a2372926df",
+    "7ada238171060d910dec331f8eebc0dd3597a157db702f3d4079322f28cba318",
+    "95704b5554a8e3ec9653b7b9499dbdd760a88c108ec89acfa1d5696c24d1c8f5",
+    "c5c04783c5c9166de2bd9da2186937436aed5b2bd32515de85ac4113a04f4ced",
+    "cbe873df4e1d4a21d445506dc9fb6ee267f185ee4b58153d22a57e5b2cdf9fa2",
+    "e70cbd0a1d6728d35b6a3a388578d506498544f9fdff116fcd5498a7d56e4b6b",
+    "eb70768152b04a5aaf0581cec5848ccce1afd4b30eb565358a3d25509be67544",
+    "fc8f822877648c0058df03bd991643a414243aea13ddf0fa0a1f8a354e48b57a"
+   ]
+  },
+  "model.gpt2_block/medium/fp16-d160-h5-b1-s64": {
+   "status": "changed",
+   "kernels": 13,
+   "steady_launches": 13,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_addmm_t_transpose_view_9",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4632,
+     "candidate_text_bytes": 4520,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 473
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 459
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_add_addmm_gelu_native_layer_norm_t_view_11",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 12856,
+     "candidate_text_bytes": 12744,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1461
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1447
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_add_addmm_gelu_t_view_12",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 7248,
+     "candidate_text_bytes": 7136,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 800
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 786
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_addmm_native_layer_norm_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4640,
+     "candidate_text_bytes": 4528,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 474
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 460
+     }
+    }
+   ],
+   "text_sha256": [
+    "09a1e8065a5e4c90e34742d784bce1da3ac627fccabf8446c652e225cd45458d",
+    "129745579c0ab3f0baa4042b5583e55f817c8af953efc9b5f75c6c0eb6ac36f7",
+    "3181d04d0ec2211c5892756546fdf5115a6f0f1a50e22312f2a1620228884cd2",
+    "485297b566e93ea7f7549f2c12cdb39d173d5d4769f9dcbe45622af45c60e06e",
+    "5aa9ec6c707473fa08641bfdd911712a33ffa78f805399b4bf5bff34c06232f5",
+    "5b9015f7452d3e5bdc46c8d695cd673db5fe849a35b79b4ce30f1354bd0efda7",
+    "859e6b43776a1b3f10624361d5a4d83130dc06035940282acc569e9cf32e232b",
+    "8f6ac76d62190b2bff17cdc10bef90ed3c61fb8b4ed6e11743bf7885c6b4f9c6",
+    "9aeb2a1d168a10295d3420d541c45255b89f950b579ce81807c15d59b9d4730d",
+    "aab668acb60d62c178450a66fdb8aa7697317910e1caa64d162cd6ec637dfbb4",
+    "c78fc397dd336e5e55a0f325fd72d29e9a1005749c4aa4eeb9eca1afe03acfc6",
+    "eab3e0cb3793cd94987755f454bca65bec4fc956930951cc1966e719b180d5f0",
+    "f9c8ef150fddedc0787f0c291697e12f85db284962b550df4c7cbb8234793cba"
+   ]
+  },
+  "model.gpt2_block/small/fp16-d128-h4-b1-s64": {
+   "status": "changed",
+   "kernels": 13,
+   "steady_launches": 13,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_addmm_t_transpose_view_9",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4400,
+     "candidate_text_bytes": 4288,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 456
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 442
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_add_addmm_gelu_native_layer_norm_t_view_11",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 12624,
+     "candidate_text_bytes": 12512,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1444
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1430
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_add_addmm_gelu_t_view_12",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 7016,
+     "candidate_text_bytes": 6904,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 783
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 769
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_addmm_native_layer_norm_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4640,
+     "candidate_text_bytes": 4528,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 474
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 460
+     }
+    }
+   ],
+   "text_sha256": [
+    "02a1fab63551e7d2e77a3fe7c819c74f354898387710ee969bbfbf018c31a193",
+    "0f979eabe3c21bcee35c1297f6e87a19b7e7c3aed81a00a23bcbd4622437848c",
+    "34afe5483c4bde4c609637f8ea3829cca7677db50174cc5ccba02d22402b2953",
+    "463cc6b3c9694e31e1987b183c633174358e7397f0cbfca47caca913b7b50b2c",
+    "626c75ad94badddf64976f2b7bb6c15fbc510be16160e5a76031f906ed16ff30",
+    "68156faede80cda88a1356dc5029a75c1635e0864d709a6ce69cfaabfd60e652",
+    "7aa5f0461e5998c8212b9bca8493f89bfb6821d119d4eed403ba31ad3df1393e",
+    "88b44ed86c7b502f51efde7ec2ec2019108e7457224367540328453e68f91221",
+    "ab7e2fd2c1a20256036c9a2d8dd0f2cf4bc68708376d72828b64ca924bef1c34",
+    "b6871bcc9549c840600794190fe04ee258c4f3a407a0c89b76a4d9b5ffbabe5b",
+    "be759310ec5d15c5903266889bb8e2a8035ebbce06ac52ed0b5c3ec32413e302",
+    "c25e19bb0c30f8d4fb358b07e2763ef9e225d2772f96da43db73ecbead663ed7",
+    "d4b4be4a3bfba5e5d4dc04a86de01591043615ab029b6f426ebcc87b8f89797a"
+   ]
+  },
+  "model.gpt2_block/tiny/fp16-d64-h4-b1-s16": {
+   "status": "changed",
+   "kernels": 12,
+   "steady_launches": 13,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu_addmm_t_transpose_view_8",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4384,
+     "candidate_text_bytes": 4272,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 454
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 440
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_add_addmm_gelu_native_layer_norm_t_view_10",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 12600,
+     "candidate_text_bytes": 12488,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1441
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1427
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_add_addmm_gelu_t_view_11",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 6992,
+     "candidate_text_bytes": 6880,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 780
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 766
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_addmm_native_layer_norm_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4624,
+     "candidate_text_bytes": 4512,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 472
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 458
+     }
+    }
+   ],
+   "text_sha256": [
+    "0250959b2a0c164950d29bb86ff942fe7b877d3308e7c94da7864b0ce59e6c0e",
+    "109b0d05028a7c0389dc113d535259f4b6122aacadf4a1d1233f7bae16f6b940",
+    "2459de3bdbb6a5568f5cbf81c5773ddb7063761f18e480f873e51de658b9299a",
+    "2c3ec45fa2470069767e31d9cebdd5915bd27ca25e8dac92607e7aa86dd69d45",
+    "3c21b424828ff82216acad26eb966a8ee364e6ed1041993da593fc9d6c4260ef",
+    "434cc508a55806ca3f9b7d9d97bf38d2e1310fe18592f8e4914e8c4be072e3ac",
+    "4f40ee80d01a6f69d0570df2b1b973a5b0b4054caa0afc27cfa403d5ddafb214",
+    "61446e2d7ad30d7a7169cf01196e4cf1d5cb7b775ed09283b7284a22836f14ec",
+    "6c7c971aacf8cdbd88879f3a844dc4c56e207a7b1759af911f71294ff4b764a2",
+    "757b5335cddeb50e28c5786a5221d41c50a6f5d2fdd492539b9166a2240bbded",
+    "d5423a8243190af349c6aa224e063cc52863827b3b108f89328cd7276bc3b08a",
+    "dba1dcf745e558c16b9e44cfc88733e47af36e2c7c95dacd5272e21cd3b1e10c"
+   ]
+  },
+  "model.llama_decode/hbm/fp16-b1-p512": {
+   "status": "changed",
+   "kernels": 32,
+   "steady_launches": 84,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_t_view_30",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_21",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 8552,
+     "candidate_text_bytes": 8440,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 866
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 857
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_14",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_18",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_2",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    }
+   ],
+   "text_sha256": [
+    "131498bfeb502f6fdfa26e6241872aad6f4baf4b69b8c0f3f532b1cf7cef3f0d",
+    "13ed8e2a837ed2a35f841349902f35b104a6429a2949602a68ee6757b5e4b91f",
+    "179be370e7e282b3f0b36c850cb30d8a06347cb736c3f171d5d420e7ee2bb85d",
+    "2029080b516aec43e212a02d99a86c27e2f77735c4b16d1f6f78249060a0db6a",
+    "2709f720c49e93b6214c600ddfd6318bb0f1501a4a5f791a6d17e9e388143c8a",
+    "32e64bbe3073ece0f0274433134131753db6e1d9563561a55afc168b3c60ce70",
+    "36aa3d00996e2307b03c380a673a09a897acab64c2c10305bcd9d72407d333dd",
+    "4261caf0f9522504ee2cce393bea964905c1a981eacd676bb8a55796dd5d643b",
+    "4dd9c3d4e139114fb083ad1c7b82e9ef4f4e2d2fd5b09d51e2ce8f75ee095694",
+    "591b6465afbe3843f9b916f6e08c823b6d079bc277ae80d8e0a0489aecfd4444",
+    "5cf1b85632b09e781151c235da862dbe29986962f55c361850581df5cb2b9cc3",
+    "604ea236c6cb6c8fa5a2a9d9a5e152f663e30612cb84a4433790d726eae9439e",
+    "612d942c8e645dad39e162c581a34062fd59e6cdf43d0f6fbcf30ec2935bb3c0",
+    "6bb646dfbf6209e369ab819f038cf7dc2c2fa33e9a8d93343a254cbb41078f1c",
+    "714af1d6c0aa289f7c1aa70ebc2326802c436cddea90a713f5b85a6bb04e6ee9",
+    "7855c25b63d0fb9226a936a1e58d3abb2c1a78044a284fa60d148a4edfcad1a5",
+    "7af1b2769eb91226f7370d862eaace0dbf9c6348ab39a4dcd56b2a195aad0853",
+    "7ef6a44e6db142ae1625f50f3beeb8040b9947d709be1e07011e4d036a64de65",
+    "7fc97f18dcc06b25a481bbede1da84afceea28dabf37c5f7e4e49e2537f95bf0",
+    "9b0e39f8f669706396c2dd09ba8385a083f756cd7320bd64de0f49c0a97f57a1",
+    "9ee978b3167c974e7b527cef4942356cc8f5ed0d03e09ce61c24a557db88c250",
+    "a47f1870022baa5c316dd027766f412bd06786c719477d59be84f39ef47126a9",
+    "b292f08c1d050e1c9061632c3d3633ab74cfe0aa49d1223c2ac8b8608b93bb63",
+    "bf9838da82a48a2e670ac59437eb6be0943075f84f504b82d57ca45c3998862c",
+    "c66536f5210940161d7ac80a41149c79cb6826de7d239d27d4c2642f7395e440",
+    "ca57a08117392ee5110df49eab516575342acb6292ce85cb9d562c0b09135bcf",
+    "dd74ebe23b37d8d9c46ab3cebd363c1b8152c4890bef272557963f1327959271",
+    "e7e45f257189503478d2fa90bf5fbdd824dd8068a09c5bd289924f7b7cc71c02",
+    "f5b8a2f0d00b2e5ba9cb433765eb27aefe25f6c461d0abbc3b3b0397852b114f",
+    "fb5f2e6af969e990dfeb12f6e1bf78c972062c3ee3a499d654c78b3033dd0246"
+   ]
+  },
+  "model.llama_decode/large/fp16-b1-p512": {
+   "status": "changed",
+   "kernels": 44,
+   "steady_launches": 337,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_t_view_42",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3712,
+     "candidate_text_bytes": 3600,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 301
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 292
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_21",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 8768,
+     "candidate_text_bytes": 8656,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 841
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 832
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_14",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_18",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_2",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    }
+   ],
+   "text_sha256": [
+    "0c049e4b18446509e6f725ee3f18c369124fabc798cc48ae4b1177340f891f50",
+    "0c58d9e90513b8469eac1887c4d09fb2ff4c651efae372ce7f3cfdf000e1dc13",
+    "12f6ea1440cb2ec33e87f7f51a52e418703ad6f8b750913f49889f0e368dd4f7",
+    "14e77dbc7fde05574dabba2f58b51e7379932dbe275579fc87917875b7ea0b4c",
+    "179a384c4c1f8bf4454967d37a5030ca6f7b942a13874043451bc7e9ee8667cb",
+    "2a6e51a708ee1bd99167dd62e462ef5e5ac9417dff806ea2a4f1958ce39d52dc",
+    "2d155fd30b886b597ed9244ad210ed15e3afe648fa456cd1673063f8b64f1396",
+    "36276de4d1c2423472875d42dfe954e4df0d657811545980be5f4a8c132a5eda",
+    "4261caf0f9522504ee2cce393bea964905c1a981eacd676bb8a55796dd5d643b",
+    "4e3b4186a07076843d7f72e5eee27042e7893171cf958bddab33d3064db32f91",
+    "576dbd1e5492eb0d2a35b25530d56e74eb3aaeadbaecc7cd4098bec03a732c9c",
+    "5b295ab004d15bb82f1631406729bb15c1fabbaa33033f5354c9039509f6c0bc",
+    "6172e5b0f8a45145898b5242628956e3fa8ceb7cfaec547d943f223357241b14",
+    "64ef2552f50090964798e641276653e99ad39ed344bdb6be04b1243be8830d8d",
+    "6a34438d0299ac24c108eb56763ea90f43abc2c36cf32779ffebaea0cf93b917",
+    "6bb646dfbf6209e369ab819f038cf7dc2c2fa33e9a8d93343a254cbb41078f1c",
+    "6e5f70c0361f054ba13915f912e5f4ce033253db010a55408cfebe678f8a7f34",
+    "743b263dc40be5b7516f82b5f36476fee06580c670ca4d74c6360935f1d52c02",
+    "75c50a99367f0f07bf25c03b30b313c33547da51d5afe9fb8bc37f532f7b9e4b",
+    "76d662300c48382e121ad971b41ae0bf75d8895ab1cbee9d3f6465d72c2cbd14",
+    "7855c25b63d0fb9226a936a1e58d3abb2c1a78044a284fa60d148a4edfcad1a5",
+    "7fc97f18dcc06b25a481bbede1da84afceea28dabf37c5f7e4e49e2537f95bf0",
+    "85015a53b6eeea59d621657fe5e865cc1c764c79996ab13ddbddc6c74319cd28",
+    "8f5ad2e333c186229e82a34c6081a9dc92505ab379a9b5e829a33c76096d644a",
+    "9bb86e31f1cdc07cd7eccca41ea0f86216caac3c0698f40f6edbf3620834020e",
+    "9de631ecb81c09a663c6bed787daf48ce30b8a09840a1af6d410261ae7410e28",
+    "9e8b3984085f3446b2fbcb6e00a6dfff5d7df133c4ee1e039a45ef17d8ea6e49",
+    "a7897331c3c0dd8e76afafcb52108ec248c482efe389475dd5aa0660375636f6",
+    "a89d335abba73bcd5b3a65ee0abcdd24f8acc54ce4a0a310545f5b4f4ac2b300",
+    "b341492acb1f22d1cee7b332e2cb38ce1810b12a7d7a5c1d1bf2be27cae45038",
+    "b6aea0fa9f91f685bfcdefb87df6cc9d977e35ce000530ebd4f835231265f550",
+    "c132804f9fe8264d4f805f148c6d46f6360e39322211a5271d02233df6adba51",
+    "c5bdf343d55863fea0942d14aab0102d7889a8e67a2a1b83a3df2b26bee14fab",
+    "cd165a310aaca727e0a04ce492df5ba7b2691daeca293a24ee5860323185e205",
+    "cf0447cb01f4afc0969be377903cc10bb31f698db0e3f5d81dea23e99e1a72a8",
+    "dcbe7842a8d3d94b1dffd9692cb32eb810dd872cb69d7d8bb430d86bd5cbfe66",
+    "e51be02c005f767ccc20a589e62c815c8d1d2b36facb2ff52472859fe586ddde",
+    "f22d4aa768e9acee9226ebe385844a0f208569460ce1b45189d43e2adb9454eb",
+    "f663a03808a7db1f8c95cf373c1d1eed8e5bc68fc1766e69b1bb4cd812903d4d",
+    "f99dff1dc00eecdd2d7e302bd5c0c96402e5e3dbc5a7ba586e79783b37e25b41",
+    "fac6a58f0f25c300c99512268a2334bf75597c790dec54cf9eb635aa7ce153f7",
+    "fb5f2e6af969e990dfeb12f6e1bf78c972062c3ee3a499d654c78b3033dd0246"
+   ]
+  },
+  "model.llama_decode/medium/fp16-b1-p256": {
+   "status": "changed",
+   "kernels": 32,
+   "steady_launches": 84,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_t_view_30",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3648,
+     "candidate_text_bytes": 3536,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 301
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 292
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_21",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 7968,
+     "candidate_text_bytes": 7856,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 837
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 828
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_14",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_18",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3648,
+     "candidate_text_bytes": 3536,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 301
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 292
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_2",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    }
+   ],
+   "text_sha256": [
+    "022a4d24cdd3d73aba4d4831eecd187341acee2ed7b0edf0a81dbc55d68fdde5",
+    "04751c9182cb8df94ae7a31687d5a956544c9a57941c30873d242433ed8c3b66",
+    "06a775729757fee951daf0b8e2ceaf0807ac026c9ef1f587b89ec8119b04b126",
+    "12c9baca83a24cfc4456eac657a21ae62cb0c79e1f8aedca2c99c270058ac513",
+    "2875250fac235b97465a4b16d9224841ee8b2432dc3aed03c31464c99132ee38",
+    "2c02d143851e5a69f548fad2cde2d543fa0b136de3db11b36bb6c4fb87da3229",
+    "3a67c1a784265d12e3baaeafbddfba9d0710182cb06cc57f4d780b71afbd5a92",
+    "4f25d55f8e5d7054b8366d53b1b694ef4d9adbf69a3ca1ce3bc102f8208f1dd4",
+    "52856cacbee011e537e172ad71adfbbbfaf7bd29302ac204c13da34924605084",
+    "5c284d16c5a6a0a8a462219b638bf9ef7343ef94a8c960913f7e9778c6c2a45f",
+    "5d32c05eb607841e66f6c24db3510d5a2972a3ea4c7b3c0ea6973fb5c3ef4f87",
+    "698fc37220ca860a408e7d42edb8b2ca11f050f0bcca4e003b53bd49c97a1c77",
+    "6a0a00baf9b02b653e255c2c1a1add7672bd2be6f2559b5f5ceddda31fef8bff",
+    "7256651d8c1815831e4a2c5f25808d07f759905ca805e2b489c7681d20505c74",
+    "7662ac7fe4152752ed3cae815682d2b9b4428d3fa5bf7e2aef83f8d62065f6ff",
+    "8a17396ea9b030e194382e4dad84274fa9bac46182c9e98fd30b762f19c9127e",
+    "8e14298b8b4c3b67dc1a5ca99d65925344eafb721f9630c0e2d61287628d7dfc",
+    "923c1d7386d271d3779a3be62a7f99227108d0dff07658f34a79d72e3b5cc358",
+    "a370346fee5e551b699f64f6cfdb233789b08f8d5f15109040199919795142cd",
+    "a4d403b4d0b9524de3996e43a10b274ad1657fb8008ac867a37de6fbb4b81bfe",
+    "b3f68e35d762fc639f2b687dbded7b2953ac78a9aab5d5fa49d1c6d2000fc026",
+    "b53528ca6120a1a5a0595ee56cc2f82ec3431c63a4948bb33fe2596e29191608",
+    "c4956fb695cc7f3724a9b1e874ba91821020317c248092ea60676c11a700854e",
+    "cc40bdcc78c18ed80c7c2d867b5c48a2767337445af8d927274f4d16f3ac8402",
+    "d5a2ade86ab2c27a3f483b79f14b263f29f47df7bbdf72dc08da82a59dda67bb",
+    "ed64a6a66de869599135525ce45923c8f58090dee5d6e870b340380df349fe0b",
+    "ef823a7255ba948269551db2ee10e75c10cbd5323e0508776ae1a24798418308",
+    "f0d34de1c564ee38c0c52c0e664747639ad304c6d37c506406fde966c8fdbbbd",
+    "f5e5f2a968a806e1074fdd6d1c51c3c8ec505768f7f86807d2b1dce076597614",
+    "fe4a9f220e5a22aa9f6ab3c5524eaaafc4fb77c66b4f3712d750f4e08508fc7e"
+   ]
+  },
+  "model.llama_decode/small/fp16-b1-p128": {
+   "status": "changed",
+   "kernels": 32,
+   "steady_launches": 84,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_t_view_30",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_21",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 8200,
+     "candidate_text_bytes": 8088,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 854
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 845
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_14",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_18",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_2",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    }
+   ],
+   "text_sha256": [
+    "022a4d24cdd3d73aba4d4831eecd187341acee2ed7b0edf0a81dbc55d68fdde5",
+    "0276b3bee26119efa791c4a258ce84ee4de18475dd6ece7c576b6094875a2146",
+    "06d075d85c3a9520aa0458837f8ffd22b3330351c0e1005ee099b022cc706a35",
+    "0c61080338299de473d81bfe1257aa2977c111ec00548a9aa3152a8a06add39d",
+    "19ee25e1caf38766afc77b7ea31e8d5b61f4b01a7829238a7ab3b01a8bad501c",
+    "45c58b67ba4ae33ae8b913a68d11e250707a0c00513804a0ef0de5a7ea7ab2d2",
+    "4afeee5de138a61cc10e12e1e324c2eab8e4938631a2644271d16d5040c97c7e",
+    "6bd8075eb334b02be7ea805affe915e9d7fe43697f643e0b3bad13a08de4a364",
+    "6f7b3283edfa6603174fcea34564f2e652fc588a6f79d3c996ad2ebc112a27c1",
+    "78af71102938e4b193b341583a4c2565aeb168c61e91e450ccdadc60eeb5d32d",
+    "90e454c29a551abedfb85211afca2a1b3799ebbe9f87b7cd8aa4befa2ecb4eb7",
+    "923c1d7386d271d3779a3be62a7f99227108d0dff07658f34a79d72e3b5cc358",
+    "924fac59dc651342845b8cbc3a6a1a7f65c6d1617069e41037fb25e6a075a685",
+    "99d48737f24c21e733c90d40379f260b933397d23e671eb78b43cc32e224e6a7",
+    "9a8a39f2e0bb207a297a392d4061b7b8f5ce2fe6f8e0219e357a1f33547ab6e1",
+    "9e7cec22eb21f107760f3e2ecd86394ee72492750fd10422ea04bf884d2b8930",
+    "a7f4973c345ff80c7f40612ed0ae46d16e4fae7d6590c2059c550e18f87b2430",
+    "a90e46267b50263767b2ba04740a8fd4d4b588e55e953732cd355af7a3d70fe9",
+    "ac7e185583cabb53d1a96b6033d1b659dfc7c78c5169be271e99d515ef364440",
+    "be43f37be42a1f221838618b7169a1f27b0869f25b41eac7b331a104406751ff",
+    "c398633fbbcc614fa77402f88acd811725096b03bcc76d9830f7de1c54059027",
+    "c4956fb695cc7f3724a9b1e874ba91821020317c248092ea60676c11a700854e",
+    "cc88e6c23bc4c10220a91aa913db00c478133285bc7e612f5a6ed112d28a45a5",
+    "cdc345ab0e9e1bf2cf2f9a03a5551e32799073d1174ece3db98cd40ed8564d8c",
+    "cf3e9c699258920434090b392807864b04ce474baff504534decae8d35625187",
+    "e89b207ff950f937c0e2c54899688ca55b1186b6b308ea115a4ca232327aa4e9",
+    "ed6766b3aee3c8a550ef5fa54882e30a31a1f93def01b5376ced70876d876877",
+    "ee871a562ccd51dde76409b203a6db1ee4663be26721489c1cd0d156d2b22e6f",
+    "f5d2749d6cddd082ff988874f0bd9fdaa54cb9f92d712e90f8a3bb2b6293e9bf",
+    "f8afaa7aeccec3aa3da1c5ebdb0d3e2ec134d22b71571065ffbc80f78ce9a059"
+   ]
+  },
+  "model.llama_decode/tiny/fp16-b1-p16": {
+   "status": "changed",
+   "kernels": 24,
+   "steady_launches": 42,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_t_view_23",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_21",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 7968,
+     "candidate_text_bytes": 7856,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 837
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 828
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_14",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_18",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_2",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    }
+   ],
+   "text_sha256": [
+    "0ce9d818789213b8583bf5b80f91a09509126107c4093d8b7214424ad392d7fe",
+    "2f98a2b74c8d85a46bce5e88e1297372ee9b1453eb0f51733e495b0759c94f72",
+    "34fcec5bc7e919ab4fb3030d256a06c63b866b6d80f5dd8bfbe72a283a81ebaa",
+    "4a4050f7508e3f1bd9d1304e8d37f279caf5f5eea7ac2a574672de16dd9201e9",
+    "528bf4c38a7189372e99f2f70c26e90e7a620d2c27d89ed5a45483e8678ccdee",
+    "66a4868ca9deba3ea47f9b7cfca6d341752acbea141d6997f5f49759eccdf364",
+    "74db43719da6364ab5c928469086818a17ec177e1d1072388f5fc0a69279c600",
+    "8cf724fc831187297fbba7e6c037040c20bd6f4adcfc05fa529d97f982d0c30d",
+    "b5d831db0dded8c33554aad5462021cde36686b2f10fe44a9a6dd8d918d9e350",
+    "c27ed08446c025bb2d4c26bd2162bb9cf6412af3953d0b55a7a36c16c0667ca1",
+    "c47ca21bef5615f172450f7484d4a7d66f4bd2fce3b581a91237db991015de9e",
+    "c65e9078809b62c85208d6050648cc35daac8001449d00c354e6afc7cfab8c58",
+    "c96b618dfee5b69360cbd1123dde38339608548876b830db28ced80288088f8c",
+    "cb167d6fa66274d71d945154c87f557e689b6a89f06091bb4dfb2d65b858cde9",
+    "cdd9754fb70c1a83a1b30942953b123cc5dfbb46d858baf9e95d3614bdc85da4",
+    "cf3e9c699258920434090b392807864b04ce474baff504534decae8d35625187",
+    "d6747286c0422bd5d8b464a297a863fb36b8a04a497bdd77c9dfc854cfa92e8c",
+    "df62491af7fc0218a30bddee7d20e08c951f033816810a18b4d58ce4c9b2d5d8",
+    "e5af0c93f3bc04ef3b42d438f897d91facd6f92b5d9966d2315356b19364bbb9",
+    "f9d6bfef7debf35dac91cbd35bdb2e628a63dd4cbfbba4c5461bdf8b299c3bb2",
+    "f9f423e24533bc9658db947bffe983fcf94d5d3d5d0ca910a8bc973945cefac7",
+    "fa97ce65eab4c272084fc6841526cbb7ed0cc32cd102243e80cc78702c31f1a4"
+   ]
+  },
+  "model.llama_prefill/hbm/fp16-b1-s512": {
+   "status": "changed",
+   "kernels": 25,
+   "steady_launches": 78,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_24",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3360,
+     "candidate_text_bytes": 3248,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 326
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 312
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 8360,
+     "candidate_text_bytes": 8248,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 891
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 877
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3368,
+     "candidate_text_bytes": 3256,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 327
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 313
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_14",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3776,
+     "candidate_text_bytes": 3664,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 350
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 336
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_2",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3360,
+     "candidate_text_bytes": 3248,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 326
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 312
+     }
+    }
+   ],
+   "text_sha256": [
+    "131498bfeb502f6fdfa26e6241872aad6f4baf4b69b8c0f3f532b1cf7cef3f0d",
+    "152b81eb875330b57919dc9350fed11ee676804eeb7b2c524d7622d29201576e",
+    "160e70e4cd0a7f5e0eb7fabd50e0a862e6c1998a9cf32297f5d10894e762933b",
+    "1a16aff07ff4748f0322fd41cec7e78a00a9d9c247911e6a544302b7574ab1de",
+    "1ad57c80c9cab8714424162644ea31be806fe7d334255dd1e7aae3336df16ba0",
+    "24f0592d02abc50673f9e16718c555541f67f468af7d87fdc960d30ffc0d789d",
+    "2d5075dec1f8f747b940089f405e675a69ecf1d108962456cf2c2e8483c11082",
+    "385f58383c4d8f86d1dec9185895a4d703d643b24dd5816e0f6231958b287553",
+    "3ec380288ad8fc09124af4114ca187c2a5857e841a786a1bad4d51f0da81486b",
+    "4842725290075822411f0809bc6d9a459e708d22c617564e3190a8d287a5187c",
+    "55002ba8b363f42925fbce78a448ee68089d6aab963568c85a6e44c5978e15bd",
+    "588625b63b8dda96ac73e10c7bef744a86decb1816c7dc4e2ca0ece2d648d88d",
+    "58df992df6942df1a292e2574e77e4315df32f452e70d79fd952c81583e4fc9a",
+    "59337ac3feac76b9c30d244ae4e96940694f835d1f1c1729af38862bf62a8804",
+    "69e8973046d66b637f51d2197d21c9f462d16c815c625a57b24c31eb1665c9e6",
+    "6b010e5f7bef06256fce61d2b18169b2edb10c4f1b7432365f53fc0bf636e43a",
+    "7597c3cf4c774dd50dbda7e076bb5f773420a397b4a7656528e1814c9637a6a2",
+    "7d2849c6f9de8786047f394c4f829f415a739c57526c262b22513705b3b68a70",
+    "89b9174740ccafcecd2115781a55e716f8a5117213247a1919facdaaba88d366",
+    "9813e857f7e967032c45af76365fa337dcb47a143909aa4b67c4becf6dd6d0e2",
+    "9c6c89cf0102433d4885bb2a2fdfe418ebb9e29421436979479d45e87c081a33",
+    "9eedfb47d976727cacbb0e77e2929c50264591946329cff917133caae267d7cf",
+    "c5c04783c5c9166de2bd9da2186937436aed5b2bd32515de85ac4113a04f4ced",
+    "e6db7f46699c29a3657b6e480707b23e39d9052a2f7b02c23989f2b69684f592",
+    "f1b916df1081ea1c35ff880439942a25c6d416f5e087d610ba24071126df8b27"
+   ]
+  },
+  "model.llama_prefill/large/fp16-b1-s512": {
+   "status": "changed",
+   "kernels": 25,
+   "steady_launches": 306,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_24",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3712,
+     "candidate_text_bytes": 3600,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 301
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 292
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 334
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 320
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 8568,
+     "candidate_text_bytes": 8456,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 865
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 851
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 334
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 320
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_14",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3760,
+     "candidate_text_bytes": 3648,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 328
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 314
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_2",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3352,
+     "candidate_text_bytes": 3240,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 325
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 311
+     }
+    }
+   ],
+   "text_sha256": [
+    "118b33ab0d2c98e0bfc7ba55684e1092aac862b8998004bde0f539a593229343",
+    "17651b7353eb224d6554ca797bc13ee1c968cc8895fb41270fd955d7943782c1",
+    "1cd416b5c89434eb75f6c1d8656b01d849fbcd57382c03de96486e674558383f",
+    "1f56263d279b86283dfc3a3bbb4b3903acf60bbfd748de9138edf1cd8ee915c2",
+    "1f58d7ab97cddb8f048837aa7be21d586763ac437571c3e8602b6c8d51e2ad94",
+    "2ce15cf021f1c0f70185b784fcab3abfb5a54ca05bf1c3585359bd773a842c3a",
+    "304d225245625fbcd512a9c06b4a9c6751c1cf1b55f8caf68a04b8448347714a",
+    "327a3a8afadc6182fc1db6498f913db54e7801c79a1e1333ee25454f5a557c0f",
+    "3948d2a4ec73592b6bfaa2013829b3f32d72ef2e2b1c0ee1a39d514b6861b63b",
+    "5a1bacadb70aa95fc253b5e27e53a9d712e8922361ac7a7fc5ea3ae338092d2c",
+    "6c700a270deb31a3bac9f84eca3185417713f2ed9a8d413851625a50e5f4601c",
+    "77760c926f3351c3240e48f338c3707208784fed98da5c9ac54f448d64332168",
+    "7a73d6006ceb86b449dd2ebba2794f4d2d6ae69f9df3ff9288b1655a056f860e",
+    "85015a53b6eeea59d621657fe5e865cc1c764c79996ab13ddbddc6c74319cd28",
+    "8527bb19efab1df1ded31d46094058ac6d671a8d61a35d2904b65cd47aec937b",
+    "89d11fd1797eaec90d7d78bff86fcf334aef61a34027d8b274107c5658e686b6",
+    "9444125ee318f84c1d9323092f7b8526aa0b36f8724c623d8528278328cea674",
+    "b50a2846c040b1a17a960c1094567a8c3a45350a3489a41433f11bfd7f718548",
+    "c26154e7fbae68409f272ac1d4eaf6f56ff12111a6b7bf3a056a8b6181810020",
+    "c6c717b5c76767380676bd462be6a2493d0bf5e3178253ff6cc900c12aca1634",
+    "e035ec627264f8734639a091340c8633f517661e332c9cc38779206776c27399",
+    "e1cdbab0adb9b23a2262e017f10c5e2e8bc868a9c9730fff37c504109556af37",
+    "e78bfaac64154c10656c2da4866153d25d8e27ed247f74de38b05264df49f497",
+    "e8a838d97ad1747a02a391d7a78f1539a3643a26aa99424eeacc564a14c374dc",
+    "f0915597c9f5f850c4f2378191c553512249b00905a985014b678bc9d0027db6"
+   ]
+  },
+  "model.llama_prefill/medium/fp16-b1-s64": {
+   "status": "changed",
+   "kernels": 25,
+   "steady_launches": 78,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_24",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3592,
+     "candidate_text_bytes": 3480,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 343
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 329
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 7776,
+     "candidate_text_bytes": 7664,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 862
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 848
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3600,
+     "candidate_text_bytes": 3488,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 344
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 330
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_14",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3368,
+     "candidate_text_bytes": 3256,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 327
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 313
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_2",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3352,
+     "candidate_text_bytes": 3240,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 325
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 311
+     }
+    }
+   ],
+   "text_sha256": [
+    "06231e793e7602fde8bb0ce37ecd453368d3606cbfbb758ea278280e3a7bd599",
+    "2a0a4193792ea518d13665f0624a9cf353ca135a8bef5227c8c95a12ab7396cb",
+    "455796dd7d3c000e52c9ff7f8c4f7127674fde14b619e21611e7a20c0292eca3",
+    "548d6994e67c3e04f74693dc71b1d6cc22d3482facede7b461a198ea0c0fff01",
+    "5adce4e32647a7cab06b799a575471666c1883d2f6d1f316cd365e884ada6605",
+    "5bf80611aae9e484c8c52f472065ae9d3191e58add37a1553e3020e89d2838c4",
+    "5c284d16c5a6a0a8a462219b638bf9ef7343ef94a8c960913f7e9778c6c2a45f",
+    "5cab0e78a50dfa13811f26a6c0f3335108c663a0f938330252dbb8e2ed0112d7",
+    "5e6df492703dedfedfddf74fb41b9cbf3208f3b6f19800975f483ba31bfbebd8",
+    "604599bd1839df7a2d56a8f2ec8241468c9c80880edec907e568565659aa5890",
+    "6351863d90bdfe5198561651adc4181228b6b0b6f4fc5ca92e565dd22dc69caa",
+    "65726c496062cabc348e2b817371ccbb418f2342a95bb0d7e349c3fb4adb4439",
+    "779f89fe2c493631c18291d81ca491724559d2602899f7b6827cde4ff1ad78c2",
+    "79070b4ad2ad505f1b9eefb1cde36a20c29d92081ba2acfb57f9cf4d3d4aba76",
+    "7aee6da6801037f7cd8a467b5729de9aa0ee9816bd4866e35dae86febf42b09c",
+    "81198b3b9a4f03f2bac34c3bf830be54fe498f79234eac9129c8d5b7ff790c2f",
+    "8ef9a6287de8bf6badc4efb6a204af19fbc575ab433d93f37397a5fe76507b31",
+    "91bcc46e0a275df62c876ac5d3d2e83f6cbbaf1a88af23cc960204a44510cebe",
+    "98608ca5189bcf048bb4acdf1ea8bb695942f65b5c518d56694422b78e08a457",
+    "b346091331438f39dd49b1367a441cc08dca452fc99bf87ade9f8c50eba524d1",
+    "be7ca07ab57c22152e72a1832309321cc13fb247f756127b85b0c6975f3b71e6",
+    "c670ac40317fbf30ae6ed15e5b39172bd1f2721e565ec5e1aec9e4174c2d0950",
+    "d23fe2809b8c7cdf563e150a69f776adc24169e54c751633b1f838b8fbff2baa",
+    "fba6f5b32604316de427239b89d8647c6fd73e0567a4829e91a40c8432c4fa23",
+    "fe8afc119af8ab3fe859dcde85d1ad0b031298548d13d04c2dd606df7169ec23"
+   ]
+  },
+  "model.llama_prefill/small/fp16-b1-s64": {
+   "status": "changed",
+   "kernels": 25,
+   "steady_launches": 78,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_24",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3360,
+     "candidate_text_bytes": 3248,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 326
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 312
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 8008,
+     "candidate_text_bytes": 7896,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 879
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 865
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3368,
+     "candidate_text_bytes": 3256,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 327
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 313
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_14",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3600,
+     "candidate_text_bytes": 3488,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 344
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 330
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_2",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3352,
+     "candidate_text_bytes": 3240,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 325
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 311
+     }
+    }
+   ],
+   "text_sha256": [
+    "0f979eabe3c21bcee35c1297f6e87a19b7e7c3aed81a00a23bcbd4622437848c",
+    "155fa32db40f7ca6b647211f9e03d2d7cc5ffa86566ebd1f684ffb9ae8385cf0",
+    "250d16224bb4d3da721a8d417690d9983f739b2cf4879c534cdb2ac3d4fa188c",
+    "2bc042d387fef1c7e861c6cd8e579c9b58d39c9277da27cab7c66734439ca636",
+    "2c2f133c515d469cec622e2cd94596a7c6664ac9e3ed42dc4d02f8f95c39feb7",
+    "34afe5483c4bde4c609637f8ea3829cca7677db50174cc5ccba02d22402b2953",
+    "51a3fe4c26ccedfcd67091c663fc933318e96c7bb0cef488e1104866ce812dbf",
+    "59f805f43d42d7b5dceceaacabfbfd026faad6812b54eb17dc9d4f4bcbeacb4d",
+    "5bf80611aae9e484c8c52f472065ae9d3191e58add37a1553e3020e89d2838c4",
+    "6220c1db963524299eea9ab059b9d56ea6bb4437fa8fbaf227d1d91dfa2be03b",
+    "626c75ad94badddf64976f2b7bb6c15fbc510be16160e5a76031f906ed16ff30",
+    "6351863d90bdfe5198561651adc4181228b6b0b6f4fc5ca92e565dd22dc69caa",
+    "6ce40acccacef76a2836e6442aefb75a65fcff0bdeb1607051f3ed08d9a8645b",
+    "7e1955878551932975ecdf100ce802c0d6017f26355f8db4d756a08353c281e3",
+    "816778056dbf290f78f3bde07a7d6cb114397479f87697fd936b33db7b499972",
+    "8cb4417f1d223a673675bcb58031704722d12a706a8aa7c650b750fbec188a9c",
+    "8fd5fd94861d086e0bea09615993163011b4693bfdc4b27d7b1e8f6da889b704",
+    "9db99eed683532780b47fefcc49000cf5663036de83a1ef89a5ffd3addac16f8",
+    "c25e19bb0c30f8d4fb358b07e2763ef9e225d2772f96da43db73ecbead663ed7",
+    "cdc345ab0e9e1bf2cf2f9a03a5551e32799073d1174ece3db98cd40ed8564d8c",
+    "dbe6e540688ac2595b0399ad5df2679cdd7b8f4e30cc38ecddfdb90a909659c9",
+    "e0d9473307819e7d363f80be96507b72e7e0d15a9af4963eaf32f41430faca87",
+    "f04f6d787b891d46609ab9482921d5f80d15523eba179990d329146efc5541f9",
+    "f3bcbcdf4d5c6d5e8485dbfddbf611c64756a5f1640aa28e9e47720d6db3fe8d",
+    "f90dca9c359aa5edd990a66a5b75552c4505d5d20a8476809d83602208b19c68"
+   ]
+  },
+  "model.llama_prefill/tiny/fp16-b1-s16": {
+   "status": "changed",
+   "kernels": 20,
+   "steady_launches": 40,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_rsqrt_slice_t_view_19",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqrt_t_view_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3344,
+     "candidate_text_bytes": 3232,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 324
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 310
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_14",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 7760,
+     "candidate_text_bytes": 7648,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 860
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 846
+     }
+    },
+    {
+     "kernel": "triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3352,
+     "candidate_text_bytes": 3240,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 325
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 311
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_13",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3352,
+     "candidate_text_bytes": 3240,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 325
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 311
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_mm_t_view_2",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3352,
+     "candidate_text_bytes": 3240,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 325
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 311
+     }
+    }
+   ],
+   "text_sha256": [
+    "0b6a8c947609d82e4b8434e69915b2d511ed37dfefc5e4f6a862e0b3e0f67c4a",
+    "0e90a85426f21021be4bd5d85b1698e19b73fc2374f150b35072e2aae988f7e6",
+    "232c5ec5ed1b1247968851ec02dec89c4c9b38a944cf51110ea6215e565bc3b3",
+    "289c548b22978e3f892d3855fc39670142a116d49bdbcea5a9c2ca3350727d68",
+    "2c3ec45fa2470069767e31d9cebdd5915bd27ca25e8dac92607e7aa86dd69d45",
+    "34fcec5bc7e919ab4fb3030d256a06c63b866b6d80f5dd8bfbe72a283a81ebaa",
+    "3f12a7a9c37eb0aea83129e5c7117b23b92fa9d7e2aa35a024426ca2ecedce38",
+    "409926ff18b787eda901de7108b27fe3165f945f3d7de60762f88c898d1db81e",
+    "434cc508a55806ca3f9b7d9d97bf38d2e1310fe18592f8e4914e8c4be072e3ac",
+    "459f5d4b83f3413c62be9374a2e0f21838632b887d90a669e65c1358735e8c11",
+    "4c2f922bed49dfdb0c8036f25294eb799f6f02717fc277258500bc35f602d1d1",
+    "6f9f1260bd5d64b22487841f93104d5356320ef399384396f6f17aa75c90fddd",
+    "756786d3c3ab662335ebc7d9718488b90d3299705d05d76fbcaf8830ac771be1",
+    "8b31678615684a07b01c59a630a34bfffc7764c865d142a436eca872b767039d",
+    "9b2bfb7f79936810347b75ae9d370ff53189fd35d66badbe4d5d85205da866c5",
+    "a2b274f98160d765e1457cd4b827d9b2501f7404a603a0e3cf6527e551962012",
+    "d25340bbcf4d4c5401865bed6f6a11fb85df36c557b8a6a0719b650c9f43d944",
+    "d5423a8243190af349c6aa224e063cc52863827b3b108f89328cd7276bc3b08a",
+    "e25631192922cafdfd2985f88dfac3c867b44c4a0ba93020205c3dafeab32cd6",
+    "f572a9fccdb1ed3b32d5c643485a488319d46c94a2dc75fa04b659e8107482f3"
+   ]
+  },
+  "model.mlp/large/fp16-t512-d2048": {
+   "status": "changed",
+   "kernels": 2,
+   "steady_launches": 2,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_addmm_gelu_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 13016,
+     "candidate_text_bytes": 12904,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1445
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1431
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_addmm_gelu_t_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4464,
+     "candidate_text_bytes": 4352,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 464
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 450
+     }
+    }
+   ],
+   "text_sha256": [
+    "45075bbfebb4c91a850aca6c3ea26803755a13ac70cd37e46b49907a379e2ccc",
+    "d59f0637311ef874e0f943a9f171b8947c9b45a57b07ad8593befec55c8653bd"
+   ]
+  },
+  "model.mlp/medium/fp16-t128-d128": {
+   "status": "changed",
+   "kernels": 2,
+   "steady_launches": 2,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_addmm_gelu_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 12616,
+     "candidate_text_bytes": 12504,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1443
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1429
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_addmm_gelu_t_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4392,
+     "candidate_text_bytes": 4280,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 455
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 441
+     }
+    }
+   ],
+   "text_sha256": [
+    "23dfaffd9164207be8000403d16f479ce02f5b40a557fb58ae537b580d12134b",
+    "ec4c9daf3e7c2ffc703edb5b1838c53cffa17c66a549202cd13c9454a39be746"
+   ]
+  },
+  "model.mlp/small/fp16-t64-d128": {
+   "status": "changed",
+   "kernels": 2,
+   "steady_launches": 2,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_addmm_gelu_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 12624,
+     "candidate_text_bytes": 12512,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1444
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1430
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_addmm_gelu_t_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4408,
+     "candidate_text_bytes": 4296,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 457
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 443
+     }
+    }
+   ],
+   "text_sha256": [
+    "02a1fab63551e7d2e77a3fe7c819c74f354898387710ee969bbfbf018c31a193",
+    "bfae1fe5c0790a4842e8abb87c6037c09eaf73633188fe7825defef6c388efdb"
+   ]
+  },
+  "model.mlp/tiny/fp16-t16-d64": {
+   "status": "changed",
+   "kernels": 2,
+   "steady_launches": 2,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_addmm_gelu_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 12600,
+     "candidate_text_bytes": 12488,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1441
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 1427
+     }
+    },
+    {
+     "kernel": "triton_tem_fused_addmm_gelu_t_1",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4384,
+     "candidate_text_bytes": 4272,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 454
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 440
+     }
+    }
+   ],
+   "text_sha256": [
+    "757b5335cddeb50e28c5786a5221d41c50a6f5d2fdd492539b9166a2240bbded",
+    "aed2f1e26d4d3af1f1e9b1da2f318b4c4e27e3fff123dc7d52011e0458805b50"
+   ]
+  },
+  "model.resnet_block/large/fp32-n8-c64-hw56": {
+   "status": "unchanged",
+   "kernels": 4,
+   "steady_launches": 5,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "5838e422506c4ae28caf1072ae8287037b27e0be385d9edb743f5137d1bc5fad",
+    "7b3a7374e883323bcc428dadc02a3dc4a5513a24abb63f4b65219e8d533ca7ff",
+    "8a95a810c97a150fd6f5def4d81315cca2143d7535c6a112dcac9d3649e25a0d",
+    "ea4c71b0ecde8af9594cd93b0d41727a0e4ca2e1353a0ef926814263e0cf299f"
+   ]
+  },
+  "model.resnet_block/medium/fp32-n1-c24-hw16": {
+   "status": "unchanged",
+   "kernels": 4,
+   "steady_launches": 5,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "0616283997ba6ddd38d64a78c2b83202d6f09fc8a9947a00c88548aa7b0f68e3",
+    "18b1d032a5a509d8c1b678d8b8ead6cbb93031242970d26fdf388179f0918701",
+    "40e5179c7d9e8b9462819d6c69dc0f29bd6fd0d18056f383d662c0b424080dc7",
+    "73733961c286160d5e087ea184f0e7606dec9fae180f8038c8fd485b51dec032"
+   ]
+  },
+  "model.resnet_block/small/fp32-n1-c16-hw16": {
+   "status": "unchanged",
+   "kernels": 4,
+   "steady_launches": 5,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "2002eeecfec2f2da6c46c94774da06d3ba8925af074d6206af4b758f44d9c1eb",
+    "8a7570ea336648b4a73a1a426b5516f21b131f534c9cae1bb6d89ce13beef043",
+    "90aa81478f5bd293c9dd77d6fe44b1ec3ec3438df993dca58766cf89ac5e1bf1",
+    "b28cf9aa6e067c4b35400560532711f46097ace199017a3f7ab2c30969247774"
+   ]
+  },
+  "model.resnet_block/tiny/fp32-n1-c8-hw8": {
+   "status": "unchanged",
+   "kernels": 4,
+   "steady_launches": 5,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "3eb521ebc1b7336610d880227553df5854025126b01207bcf70b1e9ebcde3050",
+    "629931bfa15d0a4e1e22945b3fcf119fa175b038ccf1161f5e4d0a81e5eca920",
+    "bb3b834c1308923f32e469caeb445de06378250e3c49d1d729bfaabeba4eac63",
+    "fb54de5b6dfea6663b520a6bb2d7d8c9b0c97719cdae466de4dfe1dfec3fa507"
+   ]
+  },
+  "op.add/hbm/fp16-n67108864": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "73e2e25a9fdfb271124bdd6847845f9735be6e3dfbcfd05eaa68937290e03e9c"
+   ]
+  },
+  "op.add/large/fp16-n16777216": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "73e2e25a9fdfb271124bdd6847845f9735be6e3dfbcfd05eaa68937290e03e9c"
+   ]
+  },
+  "op.add/medium/fp16-n49152": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "73e2e25a9fdfb271124bdd6847845f9735be6e3dfbcfd05eaa68937290e03e9c"
+   ]
+  },
+  "op.add/small/fp16-n16384": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "73e2e25a9fdfb271124bdd6847845f9735be6e3dfbcfd05eaa68937290e03e9c"
+   ]
+  },
+  "op.add/tiny/fp16-n1000": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "b96070592090b200d85d79f1c99c3b53400af896e607324dfdded7e6a4599e55"
+   ]
+  },
+  "op.add/tiny/fp32-n256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "17d4dd0852a4651f2b5ef2e7ff0dafdf15e0dac09820c366718d7c71a6dcf050"
+   ]
+  },
+  "op.argmax/large/fp16-r64-v128256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "0c42179ac857aba9f836cf49aae8944fef3722168313fddce26ec79e2da9d9e3"
+   ]
+  },
+  "op.argmax/medium/fp16-r32-v4096": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "0739812148d6a7660f6cd928cd183d11c40e6a5e092354dfdb59ebceb05b125e"
+   ]
+  },
+  "op.argmax/small/fp16-r8-v2048": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "e937e93e0413f2020f8a4876c3a9bc4b780abd4524095bdce54d48d80c3f4818"
+   ]
+  },
+  "op.argmax/tiny/fp16-r2-v256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "527e2fff930069e028d94c0feb160e33659214dd1d07439e00891e162d3a0dd0"
+   ]
+  },
+  "op.attention_decode/large/fp16-b1-h32-l2048-d64": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "0a3cf8f8cf6ba8285a6cee2eb28b84679428c9a01de419fe5d5f7c7d478f4ae2",
+    "220bcddef7d658f4520123f8e058f9efbb68a995f42aa9b1f2e7b188bc112239",
+    "b892df1c1ae8535da31c918e324f4869889118e0849cbcc955a31f49c295a8fd"
+   ]
+  },
+  "op.attention_decode/medium/fp16-b1-h8-l256-d32": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "6849148dcbac86a8878e88ccfe80fe00efd2b639e408bd9da6eded9e01b9607a",
+    "88735ccf54dec00ff22dac49c0a2d56c092fdf056644b24e8bf0b6d7d1f300cc",
+    "95289e240c7019afcb9c87d1879dce51bc516f6039eb7eeb92cf2a1365757533"
+   ]
+  },
+  "op.attention_decode/small/fp16-b1-h4-l256-d32": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "5b852ce18bd6c24c6a2f66decfceb1454640018017ffce5167ff5ccad53c4c80",
+    "6849148dcbac86a8878e88ccfe80fe00efd2b639e408bd9da6eded9e01b9607a",
+    "77ac373428560ac8f6cd167ed5daa2c6f8791160d45b2b95f847013a4295477b"
+   ]
+  },
+  "op.attention_decode/tiny/fp16-b1-h2-l16-d16": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "4a86118d635fd38f13e95aea58dea3723d024142d423ce57256849d2b31c3504",
+    "63395c54bee658a73f0cf54b3e4c6f92e40d69e4c65795130eac7c369e7c2aef",
+    "de4806d9de8e2c27f81824389c8b60c76b74a5b4c0d6012bd5bce74445f58b3e"
+   ]
+  },
+  "op.attention_prefill/large/fp16-b1-h32-s512-d64": {
+   "status": "unchanged",
+   "kernels": 7,
+   "steady_launches": 7,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "17651b7353eb224d6554ca797bc13ee1c968cc8895fb41270fd955d7943782c1",
+    "1f58d7ab97cddb8f048837aa7be21d586763ac437571c3e8602b6c8d51e2ad94",
+    "3948d2a4ec73592b6bfaa2013829b3f32d72ef2e2b1c0ee1a39d514b6861b63b",
+    "c26154e7fbae68409f272ac1d4eaf6f56ff12111a6b7bf3a056a8b6181810020",
+    "d72e626347fc3cb7f29c59e56088ff8ea50bc182011e02990518d39bef67c9ab",
+    "ee27af846695ef4f476f5f34f5a6b261ae1627e5e569a45b0231652145fe0d16",
+    "fb6b28a2acf257e076f3f825b128c1c91ad1b7385c0d514baffc7005e02fa879"
+   ]
+  },
+  "op.attention_prefill/medium/fp16-b1-h4-s96-d32": {
+   "status": "unchanged",
+   "kernels": 7,
+   "steady_launches": 7,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "7654f79d668d51f8c08ab570260b19668822dc817af69390261debb1e82402e7",
+    "9ec32d71b83b68b370d688c9b5decea81d84261356a329df2b5c468f32bad1ee",
+    "c3b4584f2d017ae10cc9cdc36f7087d5f88d54bec99e2c344b11e90a96423c81",
+    "edf1ec6ea76d08459b72f30269232268001950dc87ef54ba6a6ef2ff9efb6c89",
+    "f43fe1696ba9288800753abc88a071950aedfcdb1825de32e562b1825d3334ba",
+    "f584affb8483dafe917336326e473b95c7c65f86b5643db74cfe935168101016",
+    "fb6b28a2acf257e076f3f825b128c1c91ad1b7385c0d514baffc7005e02fa879"
+   ]
+  },
+  "op.attention_prefill/small/fp16-b1-h4-s64-d32": {
+   "status": "unchanged",
+   "kernels": 7,
+   "steady_launches": 7,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "07fbc484472384c1075f928eb9b4d0101645b9c1a61f1138df9deccc3962bc81",
+    "0f979eabe3c21bcee35c1297f6e87a19b7e7c3aed81a00a23bcbd4622437848c",
+    "34afe5483c4bde4c609637f8ea3829cca7677db50174cc5ccba02d22402b2953",
+    "626c75ad94badddf64976f2b7bb6c15fbc510be16160e5a76031f906ed16ff30",
+    "7654f79d668d51f8c08ab570260b19668822dc817af69390261debb1e82402e7",
+    "c25e19bb0c30f8d4fb358b07e2763ef9e225d2772f96da43db73ecbead663ed7",
+    "fb6b28a2acf257e076f3f825b128c1c91ad1b7385c0d514baffc7005e02fa879"
+   ]
+  },
+  "op.attention_prefill/tiny/fp16-b1-h2-s16-d16": {
+   "status": "unchanged",
+   "kernels": 6,
+   "steady_launches": 7,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "48bfe5bad062c6ba7d1ae70e83e5de15d7781a2f48be92e51e6be52f6ca3ad5b",
+    "7ef6b13fac805d8890373539849d128b1b73060ee11cffff2f501c7fe9e8001d",
+    "8763e094b017dc317bf51e2f31661ce41b854bd470124c31216107471bc5f349",
+    "9fdfff5d69df13ef17e5e16782598848a42a049468347fe1cc175cef2911254c",
+    "e43765c332d398bb7108963d382e4b11d08cc5dd5e82d554ec859e2b2980aad7",
+    "f24de72e36c2a4b7de8a084b17d60fbd8f0162b56a4b72a522eca5db43f9392c"
+   ]
+  },
+  "op.bmm/large/fp16-b32-m512-k64-n512": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_bmm_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -80,
+     "triton_source_same": true,
+     "control_text_bytes": 10552,
+     "candidate_text_bytes": 10472,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 808,
+      "outside_loops": 491
+     },
+     "candidate_static_instructions": {
+      "in_loops": 806,
+      "outside_loops": 483
+     }
+    }
+   ],
+   "text_sha256": [
+    "3732880e44520e00876219d6f035c996a130f33e9809f3361f71b7b88b4f7b2b"
+   ]
+  },
+  "op.bmm/medium/fp16-b16-m64-k32-n64": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_bmm_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -80,
+     "triton_source_same": true,
+     "control_text_bytes": 10528,
+     "candidate_text_bytes": 10448,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 808,
+      "outside_loops": 492
+     },
+     "candidate_static_instructions": {
+      "in_loops": 806,
+      "outside_loops": 484
+     }
+    }
+   ],
+   "text_sha256": [
+    "7b211172e28ba834f1878bb870a23f0c4013c04735552af28c0ef194d5355fcf"
+   ]
+  },
+  "op.bmm/small/fp16-b8-m64-k32-n64": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_bmm_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -80,
+     "triton_source_same": true,
+     "control_text_bytes": 10536,
+     "candidate_text_bytes": 10456,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 808,
+      "outside_loops": 493
+     },
+     "candidate_static_instructions": {
+      "in_loops": 806,
+      "outside_loops": 485
+     }
+    }
+   ],
+   "text_sha256": [
+    "77fdca18da2f3160849aa6e68aa4f44998f83277bc5b2d1bbceec420d5f582ba"
+   ]
+  },
+  "op.bmm/tiny/fp16-b2-m16-k16-n16": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_bmm_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3384,
+     "candidate_text_bytes": 3272,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 40,
+      "outside_loops": 351
+     },
+     "candidate_static_instructions": {
+      "in_loops": 40,
+      "outside_loops": 337
+     }
+    }
+   ],
+   "text_sha256": [
+    "58a3db18730f32c946fde8c78936bce0d1e6ae3901bcdc7cf316cdd28e7a941d"
+   ]
+  },
+  "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "8a95a810c97a150fd6f5def4d81315cca2143d7535c6a112dcac9d3649e25a0d",
+    "bfb0184f74c4d66cb6f2ce9bf38beda60944da2cfc7701785017ee7d0395f89e",
+    "ea4c71b0ecde8af9594cd93b0d41727a0e4ca2e1353a0ef926814263e0cf299f"
+   ]
+  },
+  "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "324e2ed75546391f461ec1d184d9ce4ad8ed64d450bd23241c2b9cc46bfc0a94",
+    "40e5179c7d9e8b9462819d6c69dc0f29bd6fd0d18056f383d662c0b424080dc7",
+    "73733961c286160d5e087ea184f0e7606dec9fae180f8038c8fd485b51dec032"
+   ]
+  },
+  "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "8a7570ea336648b4a73a1a426b5516f21b131f534c9cae1bb6d89ce13beef043",
+    "90aa81478f5bd293c9dd77d6fe44b1ec3ec3438df993dca58766cf89ac5e1bf1",
+    "aa7b16f561e018fccb2e8ff7753be500f2271e5efc1e5ec0bb2245757100097d"
+   ]
+  },
+  "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "23410cfe1d351661fb6fd7e448b84f58fe3addd00360bf6b55dd0875bc0b8e6a",
+    "9f415e632db5658ff2a2b89229288745535fda5302fb08f5fbcae7752520b3f7",
+    "bc4445727f9801f1f870cdeee1441e6007c26a35e9f5d0ae277531567d5947d8"
+   ]
+  },
+  "op.copy/hbm/fp16-n67108864": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "bb0034b4d3d1f7e88ab1ac2fb9bcd4f891e5af256e253b4c2a497adbd775ddf1"
+   ]
+  },
+  "op.cumsum/medium/fp32-r128-c256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "9de6a4fb9f8f6aebf8d40ea13d21d9e136341c744ac9f559aab5c5fe7da21477"
+   ]
+  },
+  "op.cumsum/small/fp32-r64-c256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "9de6a4fb9f8f6aebf8d40ea13d21d9e136341c744ac9f559aab5c5fe7da21477"
+   ]
+  },
+  "op.cumsum/tiny/fp32-r4-c64": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "517313c2e4533387c23d713e571fd1908cbc8c76dfe64f1bf71bd98fe0115f72"
+   ]
+  },
+  "op.embedding/hbm/fp16-v65536-d2048-t8192": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "d07be63b8bca01522e05018b63aefa0d9cbe0646f509dc56597e782a45c2be52"
+   ]
+  },
+  "op.embedding/large/fp16-v128256-d2048-t512": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "9ab4e82772ac9c2b54cc9c7fa78f2a785aa9d9b86d49e0fdcdbeefa75f323c73"
+   ]
+  },
+  "op.embedding/medium/fp16-v1024-d128-t256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "7b9add7467d9f033edf7156b1185925e634b3130e81d329f34c8f844bc757ff6"
+   ]
+  },
+  "op.embedding/small/fp16-v1024-d128-t64": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "7b9add7467d9f033edf7156b1185925e634b3130e81d329f34c8f844bc757ff6"
+   ]
+  },
+  "op.embedding/tiny/fp16-v256-d64-t16": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "f4c694e859897e7990ec38168cc8467a9ff2b8ef7068c942a2b2b08654b5f0bd"
+   ]
+  },
+  "op.gelu_tanh/large/fp16-n16777216": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "9ca494b851a9e4ab8edaef05f0ab5bbc6891ff695c410396eafa7e2249725006"
+   ]
+  },
+  "op.gelu_tanh/medium/fp16-n65536": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "9ca494b851a9e4ab8edaef05f0ab5bbc6891ff695c410396eafa7e2249725006"
+   ]
+  },
+  "op.gelu_tanh/small/fp16-n16384": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "9ca494b851a9e4ab8edaef05f0ab5bbc6891ff695c410396eafa7e2249725006"
+   ]
+  },
+  "op.gelu_tanh/tiny/fp16-n256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "b6d79135d8794f742257279cf971c5c34fdb1ea7c1158023080a7ace939cc02e"
+   ]
+  },
+  "op.gemv/hbm/fp16-k4096-n11008": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_mm_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    }
+   ],
+   "text_sha256": [
+    "eba150a177b8bfe68a09cfc1a7114056dab53400f40af616c5781244df5cd1a1"
+   ]
+  },
+  "op.gemv/large/fp16-k2048-n8192": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_mm_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3424,
+     "candidate_text_bytes": 3312,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 285
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 276
+     }
+    }
+   ],
+   "text_sha256": [
+    "b341492acb1f22d1cee7b332e2cb38ce1810b12a7d7a5c1d1bf2be27cae45038"
+   ]
+  },
+  "op.gemv/medium/fp16-k320-n448": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_mm_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3656,
+     "candidate_text_bytes": 3544,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 302
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 293
+     }
+    }
+   ],
+   "text_sha256": [
+    "f9d2e576f2cf4b2b8ed53201a47040efb290e3f52678b4daa22f2355b6ede2ee"
+   ]
+  },
+  "op.gemv/small/fp16-k256-n512": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_mm_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    }
+   ],
+   "text_sha256": [
+    "1579326b1e2c397350931ddcdba61a350b5580edbf8a6e52f9bbc5a1fea92cc7"
+   ]
+  },
+  "op.gemv/tiny/fp16-k64-n64": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_mm_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3416,
+     "candidate_text_bytes": 3304,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 119,
+      "outside_loops": 284
+     },
+     "candidate_static_instructions": {
+      "in_loops": 114,
+      "outside_loops": 275
+     }
+    }
+   ],
+   "text_sha256": [
+    "b5d831db0dded8c33554aad5462021cde36686b2f10fe44a9a6dd8d918d9e350"
+   ]
+  },
+  "op.layernorm/large/fp16-r512-d2048": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "82d82f692334d9c37cb4e59c81cbab7bb210c3fc06ef37a0784434151885e3ee"
+   ]
+  },
+  "op.layernorm/medium/fp16-r128-d512": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "8e1c8349d964d7a2c2e651c35e732a3afea2b8cc703ef87ff273b29f6d4cc584"
+   ]
+  },
+  "op.layernorm/small/fp16-r64-d256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "12f5adb9459af0e754339e00da09105cc9f82c468a32d78b1c7b4c5b625c8a8b"
+   ]
+  },
+  "op.layernorm/tiny/fp16-r4-d64": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "6c7c971aacf8cdbd88879f3a844dc4c56e207a7b1759af911f71294ff4b764a2"
+   ]
+  },
+  "op.linear/hbm/fp16-m512-k4096-n11008": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_addmm_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 5064,
+     "candidate_text_bytes": 4952,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 475
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 461
+     }
+    }
+   ],
+   "text_sha256": [
+    "c50c441deca72451745936e55b10092225ffdad190fe6d7a387217c774588556"
+   ]
+  },
+  "op.linear/large/fp16-m512-k2048-n8192": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_addmm_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4800,
+     "candidate_text_bytes": 4688,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 458
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 444
+     }
+    }
+   ],
+   "text_sha256": [
+    "a0aa4b3511bcdae8c6379b08e9fb2ea5940ef5c2a17e7fe9d35589cdb605605b"
+   ]
+  },
+  "op.linear/medium/fp16-m128-k320-n256": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_addmm_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4400,
+     "candidate_text_bytes": 4288,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 456
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 442
+     }
+    }
+   ],
+   "text_sha256": [
+    "80731e4ff41ff36bb20ae50a65c67f7f466c71842ed35e45a9f768cb21d7e17a"
+   ]
+  },
+  "op.linear/small/fp16-m64-k256-n256": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_addmm_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4392,
+     "candidate_text_bytes": 4280,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 455
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 441
+     }
+    }
+   ],
+   "text_sha256": [
+    "27474c18a2fe283b4caff8ac8d0334618a1a28a8cc4b5ad85488ea512ff322e9"
+   ]
+  },
+  "op.linear/tiny/fp16-m16-k64-n64": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_addmm_t_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 4384,
+     "candidate_text_bytes": 4272,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 454
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 440
+     }
+    }
+   ],
+   "text_sha256": [
+    "dba1dcf745e558c16b9e44cfc88733e47af36e2c7c95dacd5272e21cd3b1e10c"
+   ]
+  },
+  "op.matmul/hbm/fp16-m4096-k4096-n4096": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_mm_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3632,
+     "candidate_text_bytes": 3520,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 328
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 314
+     }
+    }
+   ],
+   "text_sha256": [
+    "1456c067fb1059e74fe3f7184c78edc5aec4d64b10fdd3a71da9d4264099d907"
+   ]
+  },
+  "op.matmul/large/fp16-m2048-k2048-n2048": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_mm_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3408,
+     "candidate_text_bytes": 3296,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 332
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 318
+     }
+    }
+   ],
+   "text_sha256": [
+    "1dda4a28ec07206c9c8e0147ad70d3fe89b9c1fae8744e34b35f9cc82e49aa99"
+   ]
+  },
+  "op.matmul/large/fp32-m2048-k2048-n2048": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "6ed1a6dc61d4d8f0e176ad198712191b597e58c346c4920fb037821a1bbb0aa3"
+   ]
+  },
+  "op.matmul/medium/fp16-m128-k192-n128": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_mm_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3352,
+     "candidate_text_bytes": 3240,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 325
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 311
+     }
+    }
+   ],
+   "text_sha256": [
+    "11baa2d8ac10e824d52284bef25bdd3095d2954a41adf10b72961615df739a9e"
+   ]
+  },
+  "op.matmul/medium/fp32-m128-k192-n128": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "16f85d92a192071919994a5868a8e81b3557687034fdf44309e7234324e8d0ff"
+   ]
+  },
+  "op.matmul/small/fp16-m64-k128-n128": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_mm_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3360,
+     "candidate_text_bytes": 3248,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 326
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 312
+     }
+    }
+   ],
+   "text_sha256": [
+    "2670c1d94e52dcce29d36752a26e6ca51480cffad28e468e4956af11c1c6d6c3"
+   ]
+  },
+  "op.matmul/small/fp32-m64-k128-n128": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "d6350eddba31f0d4a474e8eb76f70db8ea672d20f4269ebcd9b034b87e432ea8"
+   ]
+  },
+  "op.matmul/tiny/fp16-m16-k32-n16": {
+   "status": "changed",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [
+    {
+     "kernel": "triton_tem_fused_mm_0",
+     "change": "code text; launch structure: execution, entry_points, resources",
+     "inductor_kind": "template",
+     "text_delta_bytes": -112,
+     "triton_source_same": true,
+     "control_text_bytes": 3056,
+     "candidate_text_bytes": 2944,
+     "candidate_decisions": {
+      "column_broadcasts": {
+       "lane0": 0,
+       "replicated": 1
+      },
+      "rctx_spmd_refused": "the kernel uses 3 barriers, more than a slice of 2",
+      "schedule_slack": "default"
+     },
+     "control_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 288
+     },
+     "candidate_static_instructions": {
+      "in_loops": 62,
+      "outside_loops": 274
+     }
+    }
+   ],
+   "text_sha256": [
+    "48193e6b036a051f4170eb9d6ccf92204da0b1b35dd2ec94691340699d4ee41c"
+   ]
+  },
+  "op.matmul/tiny/fp32-m16-k32-n16": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "bfaeb2734298bd54ad2731d170169760eba8407e5c3a6baa3748fba714bb99f7"
+   ]
+  },
+  "op.rmsnorm/hbm/fp16-r8192-d4096": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "741975fc7d4e6a85798ef6e319d15aa0f3dd30edeb96eecfac333bdd4a39f26b"
+   ]
+  },
+  "op.rmsnorm/large/fp16-r512-d2048": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "0014ff9bd1acae6fd4452303142dd953dfdc9c757e4a65e1c3bc53fa6a73efb4"
+   ]
+  },
+  "op.rmsnorm/medium/fp16-r128-d512": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "4dda1c48922e35b52dd624345460a14ef576309f6cf7eec019f721da7378006c"
+   ]
+  },
+  "op.rmsnorm/small/fp16-r64-d256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "5bac474e5c28341c93d603754acffd7bdf190b49790e9c1c58e3a62b0d7a6373"
+   ]
+  },
+  "op.rmsnorm/tiny/fp16-r4-d64": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "f66e46d726b2fedb318937d1106290b4ace8a8cec07f26f298d23058b64f8622"
+   ]
+  },
+  "op.rope/large/fp16-b1-h32-s512-d64": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "74ce57a5e78e4ef35b716533c45d5ea391c4558b16f1e1bb9ca9d34fd5324530",
+    "c47721592b668ac8441bce8070a24ee0f4fc8071d344095839daac2e3b9dacf3",
+    "e17811b2acba3329e5cda4d0a89caa57b0e679c8c0fc39ad702878fceb627ade"
+   ]
+  },
+  "op.rope/medium/fp16-b1-h8-s128-d32": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "5f840a243c8715798768b1b1518e30e843b3dc0d6f55bf8022da22369f3d67ba",
+    "7dad00a26c895ed8e507f5b0fc4209a20c313796851710dfc8d9176ff83706a8",
+    "86f1f0a5eea8508bf61673df1a81c44bb746647be452d85d5fe1a242e4ce414c"
+   ]
+  },
+  "op.rope/small/fp16-b1-h4-s64-d32": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "46f2585eb1b612749ae7660883bbdbb7e4d5985c510e680555c756f1ef34a692",
+    "5f840a243c8715798768b1b1518e30e843b3dc0d6f55bf8022da22369f3d67ba",
+    "86f1f0a5eea8508bf61673df1a81c44bb746647be452d85d5fe1a242e4ce414c"
+   ]
+  },
+  "op.rope/tiny/fp16-b1-h2-s16-d16": {
+   "status": "unchanged",
+   "kernels": 3,
+   "steady_launches": 3,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "194869785aef55b82c293cc332cdbe8a665ebd82422a9204537a57973b226e06",
+    "8613001543e93c26148b2ace893d0d2bf8902aebcab66cda9428b24f5ff7fe64",
+    "fcda3e1d3b56b2adcf629268a594445707bf6d474543b245202087d27b162713"
+   ]
+  },
+  "op.silu/hbm/fp16-n67108864": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "f2abd31b5f95feb0993ab74a9aa18283f1b28d642ead14c5837b30b54231608f"
+   ]
+  },
+  "op.silu/large/fp16-n16777216": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "f2abd31b5f95feb0993ab74a9aa18283f1b28d642ead14c5837b30b54231608f"
+   ]
+  },
+  "op.silu/medium/fp16-n65536": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "f2abd31b5f95feb0993ab74a9aa18283f1b28d642ead14c5837b30b54231608f"
+   ]
+  },
+  "op.silu/small/fp16-n16384": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "f2abd31b5f95feb0993ab74a9aa18283f1b28d642ead14c5837b30b54231608f"
+   ]
+  },
+  "op.silu/tiny/fp16-n256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "6c26fbeb984e4e34cffbfaed5ee1746c7b24ba38d69a1f7dc6a0ed6c5949de91"
+   ]
+  },
+  "op.softmax/hbm/fp16-r4096-c8192": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "2258ed721d97beb24b23615fb0f6d2c9e24f7bcf8df3baa27075990f01ca1f77"
+   ]
+  },
+  "op.softmax/large/fp16-r4096-c4096": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "4a725821c3619322313c5933962bc1ed4e5c16120b816f82b7f622dcac9737ef"
+   ]
+  },
+  "op.softmax/medium/fp16-r80-c512": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "00dd1d9ff8800fd22f529e7e413e08e7e66b86c83da145744a42af0137e9c440"
+   ]
+  },
+  "op.softmax/small/fp16-r64-c512": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "b887ee555c930d8f2ff8179f1127d3badf56c96af36ecd76967d79036c340e20"
+   ]
+  },
+  "op.softmax/tiny/fp16-r4-c64": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "31d74419e2e7f6c9235cecfbe3c84b0474ead5f6c09b8344369438f067f0d431"
+   ]
+  },
+  "op.softmax/tiny/fp32-r3-c37": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "3f77b11dd0189074befe278d4710aa06c3d64d193b3d72559128d156c9a10aa4"
+   ]
+  },
+  "op.swiglu/large/fp16-n16777216": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "be695aa86765e10d7a99b3fc8f2931ba531fa3391f5158de364d367cc2b86299"
+   ]
+  },
+  "op.swiglu/medium/fp16-n49152": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "be695aa86765e10d7a99b3fc8f2931ba531fa3391f5158de364d367cc2b86299"
+   ]
+  },
+  "op.swiglu/small/fp16-n16384": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "be695aa86765e10d7a99b3fc8f2931ba531fa3391f5158de364d367cc2b86299"
+   ]
+  },
+  "op.swiglu/tiny/fp16-n256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "29aee4e906ed7ea71e9c9162ce2342718da0c326cf61302794236002aeaa5fbc"
+   ]
+  },
+  "op.transpose/hbm/fp32-r8192-c8192": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "31263fad4641643a66dac88bae48d0ce1b826ad553ad11998184429d25fc637c"
+   ]
+  },
+  "op.transpose/large/fp32-r4096-c4096": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "a0c934c60a485c2d3279a89a61ba0315819187195852824839065bbc65e49de4"
+   ]
+  },
+  "op.transpose/medium/fp32-r160-c256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "48afc5aaca41001432e10899fca9fd177f5b29e8ed6cc9c52c6311bba69e5d18"
+   ]
+  },
+  "op.transpose/small/fp32-r128-c256": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "bb564e813c739e5600ee3ddabc246557fec28da457c063082b77e08f59a9968a"
+   ]
+  },
+  "op.transpose/tiny/fp32-r32-c32": {
+   "status": "unchanged",
+   "kernels": 1,
+   "steady_launches": 1,
+   "launch_sequence_same": true,
+   "changed_kernels": [],
+   "text_sha256": [
+    "ce9a907b47e28cef647e782bf92a4bbc6ea0c9c79f2bc30e6864175d6d7404a1"
+   ]
+  }
+ }
+}

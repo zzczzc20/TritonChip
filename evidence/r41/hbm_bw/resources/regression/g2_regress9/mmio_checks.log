@@ -1,0 +1,132 @@
+PASS: isolated inventory child imports snapshot compiler and scheduler before stale installation
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.029s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.007s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.000s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.016s
+
+OK
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.190s
+
+OK
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.008s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.014s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 2.326s
+
+OK
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.005s
+
+OK
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
+.................
+----------------------------------------------------------------------
+Ran 17 tests in 0.273s
+
+OK
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.374s
+
+OK
+  already built: /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v2-d8ab4dc2ea14be49-79a804746247/tnca_device_vrf2.vvp
+CODE CACHE EPOCH PASS 6 RTL launches, one-module region, live buffer preserved
+...
+----------------------------------------------------------------------
+Ran 3 tests in 1.585s
+
+OK
+MULTICORE CODE LINKS PASS cores=1 stages=0 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 430000 (1ps)
+MULTICORE CODE LINKS PASS cores=3 stages=0 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 430000 (1ps)
+MULTICORE CODE LINKS PASS cores=3 stages=1 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 580000 (1ps)
+MULTICORE CODE LINKS PASS cores=3 stages=2 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 680000 (1ps)
+MULTICORE CODE LINKS PASS cores=3 stages=4 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 880000 (1ps)
+MULTICORE CODE LINKS PASS cores=8 stages=2 snapshot/byte-masks/private-RAM/drain
+tb/fpga/tb_multicore_code_links.v:61: $finish called at 680000 (1ps)
+CODE LINK MATRIX PASS 6 configurations
+LINK_STAGES=1
+---- mesh 2x2, 2 VNs ----
+seed=40 trace_hash=41f0721587d8644a
+sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6078
+PASS
+tb/noc/tb_mesh.v:256: $finish called at 37276000 (1ps)
+LINK_STAGES=2
+---- mesh 2x2, 2 VNs ----
+seed=40 trace_hash=25630c120deb1df9
+sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6198
+PASS
+tb/noc/tb_mesh.v:256: $finish called at 36456000 (1ps)
+LINK_STAGES=2
+---- mesh 2x2, 2 VNs ----
+seed=41 trace_hash=281cee56fc8de209
+sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6167
+PASS
+tb/noc/tb_mesh.v:256: $finish called at 37046000 (1ps)
+LINK_STAGES=4
+---- mesh 2x2, 2 VNs ----
+seed=41 trace_hash=94dc13046b515d9f
+sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6331
+PASS
+tb/noc/tb_mesh.v:256: $finish called at 35946000 (1ps)
+MESH PIPELINE PASS 4 randomized configurations
+SYNTHESIS PASS tnca_elastic_link
+SYNTHESIS PASS tnca_line_axi
+SYNTHESIS PASS tnca_line_link
+SYNTHESIS PASS tnca_multicore_mmio
+SYNTHESIS PASS tnca_mem_ports
+MULTICORE CONTROL SYNTHESIS PASS 5 modules and 9 rejected geometries
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.038s
+
+OK
+MULTICORE MMIO OPTIONS PASS 13 boundaries
+
+real	2m41.524s
+user	2m38.569s
+sys	0m4.563s

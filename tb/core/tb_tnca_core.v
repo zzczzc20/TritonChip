@@ -39,6 +39,10 @@ module tb_tnca_core;
     parameter RSLICE         = 0;
     parameter RPAIR          = 0;
     parameter MTX_ABUF       = 0;
+    parameter MTX_VRF_REG    = 0;
+    parameter FMA_IMPL       = 0;   // R41 G2 FMA rebuild
+    parameter MAC_DP         = 0;   // R41 G2 shared MAC lane + m.mma.dp.async
+    parameter MAC_CUTS       = 29;
     parameter HAS_TENSOR_XPOSE = 0;
 
     parameter NUM_RCTX       = 2;
@@ -46,6 +50,7 @@ module tb_tnca_core;
     parameter VLEN           = 16;
     parameter ELEN           = 32;
     parameter VREGS_PER_RCTX = 64;
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48;  // R41 G2 resource sizing (defaults: the delivered machine)
     parameter PHYS_VREGS     = NUM_RCTX * VREGS_PER_RCTX;
     parameter PHYS_W         = 7;
     parameter WORDS          = 65536;
@@ -98,13 +103,14 @@ module tb_tnca_core;
 
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
-        .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
+        .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
         .CORE_ID(0), .NUM_CORES(1), .HAS_SFU(1),
         .USE_BANKED_VRF(USE_BANKED_VRF),
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_VRF_REG(MTX_VRF_REG),
+        .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),
@@ -156,6 +162,11 @@ module tb_tnca_core;
     integer cyc;
     integer expectfault;
     reg do_trace, do_dump, want_fault;
+    integer mtx_vrf_reads = 0;
+    always @(posedge clk) begin
+        if (!rst_n || launch_valid) mtx_vrf_reads <= 0;
+        else if (dut.vrf_req_accept[3]) mtx_vrf_reads <= mtx_vrf_reads + 1;
+    end
 
     initial begin
         if (!$value$plusargs("hex=%s", hexfile)) begin
@@ -228,6 +239,7 @@ module tb_tnca_core;
         if (do_dump) u_mem.dump_hex(dumpfile, dumpfirst, dumpcount);
 
         $display("---- tnca core run ----");
+        $display("mtx_vrf_reads=%0d", mtx_vrf_reads);
         $display("cycles=%0d issued=%0d hazard=%0d lsu=%0d wb=%0d squash=%0d",
                  cyc, perf_issued, perf_stall_hazard, perf_stall_lsu,
                  perf_stall_wb, perf_squash);
@@ -256,6 +268,14 @@ module tb_tnca_core;
         // R39-05: cycles in which an instruction held in R gave way to
         // another context's (RCTX_SWITCH; always 0 without it).
         $display("rctx_switch=%0d", dut.perf_rctx_switch);
+        // R41 Stage 2: how often the core's new register boundaries met
+        // their corner cases (tnca_core cov_*), on request.
+        if ($test$plusargs("r41cov"))
+            $display("r41cov sw_inhibit=%0d sw_redir=%0d hold_ops=%0d pf_drop=%0d mem_claim=%0d fwd_s=%0d fwd_p=%0d dsb_clm=%0d dsb_rel=%0d rsb_clm=%0d rsb_rel=%0d hold_rel=%0d",
+                     dut.cov_sw_inhibit, dut.cov_sw_redir, dut.cov_hold_ops,
+                     dut.cov_pf_drop, dut.cov_mem_claim, dut.cov_fwd_s, dut.cov_fwd_p,
+                     dut.cov_dsb_clm, dut.cov_dsb_rel, dut.cov_rsb_clm,
+                     dut.cov_rsb_rel, dut.cov_hold_rel);
         if (perf_issued + perf_stall_total + perf_x_frontend != perf_cycles)
             $display("FAIL: cycle partition: issued %0d + stalled %0d + frontend %0d != cycles %0d",
                      perf_issued, perf_stall_total, perf_x_frontend, perf_cycles);
@@ -310,6 +330,17 @@ module tb_tnca_core;
             $display("[%0t] rctx=%0d pc=%08h maj=%02h fn=%02h dst=%0d/%0d",
                      $time, dut.x_rctx, dut.x_pc, dut.x_major, dut.x_func,
                      dut.x_dstc, dut.x_dsti);
+        if (rst_n && $test$plusargs("mtxtrace")) begin
+            if (dut.u_mtx.acc_w_en)
+                $display("[mtx] cyc=%0d acc slot=%0d row=%0d lanes=%04h data=%0128h",
+                         cyc, dut.u_mtx.acc_w_slot, dut.u_mtx.acc_w_row,
+                         dut.u_mtx.acc_w_lane, dut.u_mtx.acc_w_data);
+            if (dut.mtx_free)
+                $display("[mtx] cyc=%0d src_free bar=%0d", cyc, dut.mtx_free_bar);
+            if (dut.mtx_done)
+                $display("[mtx] cyc=%0d done slot=%0d bar_en=%0d bar=%0d",
+                         cyc, dut.mtx_done_slot, dut.mtx_done_bar_en, dut.mtx_done_bar);
+        end
     end
 
 endmodule

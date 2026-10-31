@@ -2,10 +2,32 @@
 `timescale 1ns/1ps
 `default_nettype none
 module tnca_multicore_board_regs;
- parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0;
- // The AXI ID width of the outlets: the wrapper derives it from AXI_OUT_N, and a
- // device description (python/tnca/devices.py) passes the same derived value.
- parameter AXI_ID_W=3;
+ parameter N=3,PORTS=3,MEMORY_BYTES=1048576,STAGES=2,NOC_PIPE=0,DISPATCH_PIPE=0,HOME_PIPE=0,CODE_PIPE=0,MAINTENANCE=0,MEMORY_CONTROLS=0,HYBRID_LSU=0,SFU_LANES=1,HOME_BACKGROUND_READS=0;
+ // Stand-in BO address and optional sparse backing (tb/common/tnca_sparse_map.vh):
+ // SPARSE=1 backs only SPARSE_MAP's ranges (SPARSE_LINES lines) of a window of
+ // MEMORY_BYTES, so an 8 GiB window can be simulated. Defaults keep the dense
+ // bench at 0x1_0000_0000 unchanged.
+ parameter [63:0] WIN_BASE=64'h100000000;
+ parameter SPARSE=0,SPARSE_LINES=0,SPARSE_MAP="none";
+ // Cache geometry and convergence options; defaults keep the small, fast
+ // bench. tools/r40/image_geometry_tests.py sets them from an image.tcl.
+ parameter SETS=4,SET_W=2,WAYS=2,WAY_W=1,DCO_REGISTERED_RANGES=0,NUCA_REGISTER_VICTIM_SELECT=0,
+  NUCA_CACHE_DATA_PIPELINE=0,NUCA_REGISTER_VICTIM_RANK=0,DCO_TLW_PIPE_STAGES=0,
+  DCO_REGISTER_WRITES=0,DCO_LOCAL_REPLICAS=0,NUCA_SHARED_DATA_READ=0,AXI_LINE_LUTRAM=0,
+  AXI_OUT_N=8,AXI_PIPELINED_ISSUE=0;
+ // The image's tensor-transpose option (core-vrf-sync-v5-x8 images build 2).
+ parameter HAS_TENSOR_XPOSE=1,MTX_VRF_REG=0;
+ // R41 G2 vector FMA implementation and shared matrix MAC lane (the image's values).
+ parameter FMA_IMPL=0,MAC_DP=0,MAC_CUTS=29;
+ // R41 G4: load/store units (with HYBRID_LSU, of its word path); 2 is the multicore default.
+ parameter LSU_INFLIGHT=2;
+ // R41 G2 resource sizing (tools/r40/image_geometry_tests.py sets them from an image.tcl).
+ parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,ACC_N=16,ACC_W=4,BAR_N=32,BAR_W=5,BAR_EPOCH_W=48,PHYS_ADDR_W=64;
+ // R41 G4 one-lane path options (defaults: the delivered machine).
+ parameter HOME_LINE_WRITE_NOFILL=0,HOME_LINE_PIPE=0,HOME_MSHR_N=8,LINE_SLOTS=8,TENSOR_LINE=0;
+ // R41 G4: outlet data width (the image's AXI_DATA_W; 256 delivered, 512 one beat a line).
+ parameter AXI_DATA_W=256;
+ parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1);
  localparam NX=N>4?4:N,ADDR_BITS=9,WORDS=(131072+MEMORY_BYTES)/8;
  reg clk=0,rst_n_async=0;always #5 clk=~clk;
  reg [8:0] reg_addr;reg [63:0] reg_wdata;reg reg_we,reg_re;
@@ -19,8 +41,8 @@ module tnca_multicore_board_regs;
  wire [3*2-1:0] m_awburst;
  wire [3-1:0] m_wvalid;
  wire [3-1:0] m_wready;
- wire [3*256-1:0] m_wdata;
- wire [3*256/8-1:0] m_wstrb;
+ wire [3*AXI_DATA_W-1:0] m_wdata;
+ wire [3*AXI_DATA_W/8-1:0] m_wstrb;
  wire [3-1:0] m_wlast;
  wire [3-1:0] m_bvalid;
  wire [3-1:0] m_bready;
@@ -35,21 +57,24 @@ module tnca_multicore_board_regs;
  wire [3*2-1:0] m_arburst;
  wire [3-1:0] m_rvalid;
  wire [3-1:0] m_rready;
- wire [3*256-1:0] m_rdata;
+ wire [3*AXI_DATA_W-1:0] m_rdata;
  wire [3*AXI_ID_W-1:0] m_rid;
  wire [3*2-1:0] m_rresp;
  wire [3-1:0] m_rlast;
  reg awvalid=0,wvalid=0,bready=0,arvalid=0,rready=0;
  reg [11:0] awaddr=0,araddr=0;reg [31:0] wdata=0;reg [3:0] wstrb=15;
  wire awready,wready,bvalid,arready,rvalid;wire [31:0] rdata;wire [1:0] bresp,rresp;
- // With a device description, the wrapper takes every parameter its image is
- // packaged with: TNCA_IMAGE_PARAMS is generated from the description
- // (python/tnca/backends/multicore_mmio_sim.py) and compiled before this file.
- // Without one, the small stand-in machine below.
 `ifdef TNCA_IMAGE_PARAMS
  tnca_multicore_hbm_xo #(`TNCA_IMAGE_PARAMS) dut(
 `else
- tnca_multicore_hbm_xo #(.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
+ tnca_multicore_hbm_xo #(.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.HOME_LINE_PIPE(HOME_LINE_PIPE),.TENSOR_LINE(TENSOR_LINE),.HOME_MSHR_N(HOME_MSHR_N),.LINE_SLOTS(LINE_SLOTS),.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.MEMORY_CONTROLS(MEMORY_CONTROLS),.CACHE_MAINTENANCE(MAINTENANCE),.MEM_PORTS(PORTS),.LINK_STAGES(STAGES),.CODE_LINK_STAGES(CODE_PIPE),.NOC_LINK_STAGES(NOC_PIPE),.DISPATCH_STAGES(DISPATCH_PIPE),.MEM_HOME_STAGES(HOME_PIPE),.SETS(SETS),.SET_W(SET_W),.WAYS(WAYS),.WAY_W(WAY_W),
+  .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES),.NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT),
+  .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE),.NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
+  .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES),.DCO_REGISTER_WRITES(DCO_REGISTER_WRITES),
+  .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),.NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ),.AXI_LINE_LUTRAM(AXI_LINE_LUTRAM),
+  .AXI_OUT_N(AXI_OUT_N),.AXI_PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.AXI_DATA_W(AXI_DATA_W),
+  .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),.MTX_VRF_REG(MTX_VRF_REG),.FMA_IMPL(FMA_IMPL),.MAC_DP(MAC_DP),.MAC_CUTS(MAC_CUTS),.LSU_INFLIGHT(LSU_INFLIGHT),.NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
+  .ACC_N(ACC_N),.ACC_W(ACC_W),.BAR_N(BAR_N),.BAR_W(BAR_W),.BAR_EPOCH_W(BAR_EPOCH_W),.PHYS_ADDR_W(PHYS_ADDR_W)) dut(
 `endif
  .ap_clk(clk),.ap_rst_n(rst_n_async),
  .s_axi_tnca_awvalid(awvalid),
@@ -72,59 +97,59 @@ module tnca_multicore_board_regs;
  .m_axi_hbm0_awvalid(m_awvalid[0+:1]),
  .m_axi_hbm0_awready(m_awready[0+:1]),
  .m_axi_hbm0_awaddr(m_awaddr[0+:64]),
- .m_axi_hbm0_awid(m_awid[0*AXI_ID_W+:AXI_ID_W]),
+ .m_axi_hbm0_awid(m_awid[0+:AXI_ID_W]),
  .m_axi_hbm0_awlen(m_awlen[0+:8]),
  .m_axi_hbm0_awsize(m_awsize[0+:3]),
  .m_axi_hbm0_awburst(m_awburst[0+:2]),
  .m_axi_hbm0_wvalid(m_wvalid[0+:1]),
  .m_axi_hbm0_wready(m_wready[0+:1]),
- .m_axi_hbm0_wdata(m_wdata[0+:256]),
- .m_axi_hbm0_wstrb(m_wstrb[0+:32]),
+ .m_axi_hbm0_wdata(m_wdata[0*AXI_DATA_W+:AXI_DATA_W]),
+ .m_axi_hbm0_wstrb(m_wstrb[0*(AXI_DATA_W/8)+:(AXI_DATA_W/8)]),
  .m_axi_hbm0_wlast(m_wlast[0+:1]),
  .m_axi_hbm0_bvalid(m_bvalid[0+:1]),
  .m_axi_hbm0_bready(m_bready[0+:1]),
- .m_axi_hbm0_bid(m_bid[0*AXI_ID_W+:AXI_ID_W]),
+ .m_axi_hbm0_bid(m_bid[0+:AXI_ID_W]),
  .m_axi_hbm0_bresp(m_bresp[0+:2]),
  .m_axi_hbm0_arvalid(m_arvalid[0+:1]),
  .m_axi_hbm0_arready(m_arready[0+:1]),
  .m_axi_hbm0_araddr(m_araddr[0+:64]),
- .m_axi_hbm0_arid(m_arid[0*AXI_ID_W+:AXI_ID_W]),
+ .m_axi_hbm0_arid(m_arid[0+:AXI_ID_W]),
  .m_axi_hbm0_arlen(m_arlen[0+:8]),
  .m_axi_hbm0_arsize(m_arsize[0+:3]),
  .m_axi_hbm0_arburst(m_arburst[0+:2]),
  .m_axi_hbm0_rvalid(m_rvalid[0+:1]),
  .m_axi_hbm0_rready(m_rready[0+:1]),
- .m_axi_hbm0_rdata(m_rdata[0+:256]),
- .m_axi_hbm0_rid(m_rid[0*AXI_ID_W+:AXI_ID_W]),
+ .m_axi_hbm0_rdata(m_rdata[0*AXI_DATA_W+:AXI_DATA_W]),
+ .m_axi_hbm0_rid(m_rid[0+:AXI_ID_W]),
  .m_axi_hbm0_rresp(m_rresp[0+:2]),
  .m_axi_hbm0_rlast(m_rlast[0+:1]),
  .m_axi_hbm1_awvalid(m_awvalid[1+:1]),
  .m_axi_hbm1_awready(m_awready[1+:1]),
  .m_axi_hbm1_awaddr(m_awaddr[64+:64]),
- .m_axi_hbm1_awid(m_awid[1*AXI_ID_W+:AXI_ID_W]),
+ .m_axi_hbm1_awid(m_awid[AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm1_awlen(m_awlen[8+:8]),
  .m_axi_hbm1_awsize(m_awsize[3+:3]),
  .m_axi_hbm1_awburst(m_awburst[2+:2]),
  .m_axi_hbm1_wvalid(m_wvalid[1+:1]),
  .m_axi_hbm1_wready(m_wready[1+:1]),
- .m_axi_hbm1_wdata(m_wdata[256+:256]),
- .m_axi_hbm1_wstrb(m_wstrb[32+:32]),
+ .m_axi_hbm1_wdata(m_wdata[1*AXI_DATA_W+:AXI_DATA_W]),
+ .m_axi_hbm1_wstrb(m_wstrb[1*(AXI_DATA_W/8)+:(AXI_DATA_W/8)]),
  .m_axi_hbm1_wlast(m_wlast[1+:1]),
  .m_axi_hbm1_bvalid(m_bvalid[1+:1]),
  .m_axi_hbm1_bready(m_bready[1+:1]),
- .m_axi_hbm1_bid(m_bid[1*AXI_ID_W+:AXI_ID_W]),
+ .m_axi_hbm1_bid(m_bid[AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm1_bresp(m_bresp[2+:2]),
  .m_axi_hbm1_arvalid(m_arvalid[1+:1]),
  .m_axi_hbm1_arready(m_arready[1+:1]),
  .m_axi_hbm1_araddr(m_araddr[64+:64]),
- .m_axi_hbm1_arid(m_arid[1*AXI_ID_W+:AXI_ID_W]),
+ .m_axi_hbm1_arid(m_arid[AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm1_arlen(m_arlen[8+:8]),
  .m_axi_hbm1_arsize(m_arsize[3+:3]),
  .m_axi_hbm1_arburst(m_arburst[2+:2]),
  .m_axi_hbm1_rvalid(m_rvalid[1+:1]),
  .m_axi_hbm1_rready(m_rready[1+:1]),
- .m_axi_hbm1_rdata(m_rdata[256+:256]),
- .m_axi_hbm1_rid(m_rid[1*AXI_ID_W+:AXI_ID_W]),
+ .m_axi_hbm1_rdata(m_rdata[1*AXI_DATA_W+:AXI_DATA_W]),
+ .m_axi_hbm1_rid(m_rid[AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm1_rresp(m_rresp[2+:2]),
  .m_axi_hbm1_rlast(m_rlast[1+:1]),
  .m_axi_hbm2_awvalid(m_awvalid[2+:1]),
@@ -136,8 +161,8 @@ module tnca_multicore_board_regs;
  .m_axi_hbm2_awburst(m_awburst[4+:2]),
  .m_axi_hbm2_wvalid(m_wvalid[2+:1]),
  .m_axi_hbm2_wready(m_wready[2+:1]),
- .m_axi_hbm2_wdata(m_wdata[512+:256]),
- .m_axi_hbm2_wstrb(m_wstrb[64+:32]),
+ .m_axi_hbm2_wdata(m_wdata[2*AXI_DATA_W+:AXI_DATA_W]),
+ .m_axi_hbm2_wstrb(m_wstrb[2*(AXI_DATA_W/8)+:(AXI_DATA_W/8)]),
  .m_axi_hbm2_wlast(m_wlast[2+:1]),
  .m_axi_hbm2_bvalid(m_bvalid[2+:1]),
  .m_axi_hbm2_bready(m_bready[2+:1]),
@@ -152,12 +177,13 @@ module tnca_multicore_board_regs;
  .m_axi_hbm2_arburst(m_arburst[4+:2]),
  .m_axi_hbm2_rvalid(m_rvalid[2+:1]),
  .m_axi_hbm2_rready(m_rready[2+:1]),
- .m_axi_hbm2_rdata(m_rdata[512+:256]),
+ .m_axi_hbm2_rdata(m_rdata[2*AXI_DATA_W+:AXI_DATA_W]),
  .m_axi_hbm2_rid(m_rid[2*AXI_ID_W+:AXI_ID_W]),
  .m_axi_hbm2_rresp(m_rresp[4+:2]),
  .m_axi_hbm2_rlast(m_rlast[2+:1]));
  generate for(genvar p=0;p<PORTS;p=p+1)begin:g_ram
-  tnca_axi_line_model #(.DATA_W(256),.OUT_N(1<<AXI_ID_W),.LINES((131072+MEMORY_BYTES)/64),.LATENCY(25+p*19)) ram(
+  tnca_axi_line_model #(.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.ID_W(AXI_ID_W),.LINES(SPARSE ? SPARSE_LINES : (131072+MEMORY_BYTES)/64),.LATENCY(25+p*19),
+   .WIN_BASE(WIN_BASE),.SPARSE(SPARSE),.SPARSE_MAP(SPARSE_MAP)) ram(
   .clk(clk),.rst_n(rst_n_async),
  .m_awvalid(m_awvalid[p*(1)+:(1)]),
  .m_awready(m_awready[p*(1)+:(1)]),
@@ -168,8 +194,8 @@ module tnca_multicore_board_regs;
  .m_awburst(m_awburst[p*(2)+:(2)]),
  .m_wvalid(m_wvalid[p*(1)+:(1)]),
  .m_wready(m_wready[p*(1)+:(1)]),
- .m_wdata(m_wdata[p*(256)+:(256)]),
- .m_wstrb(m_wstrb[p*(256/8)+:(256/8)]),
+ .m_wdata(m_wdata[p*(AXI_DATA_W)+:(AXI_DATA_W)]),
+ .m_wstrb(m_wstrb[p*(AXI_DATA_W/8)+:(AXI_DATA_W/8)]),
  .m_wlast(m_wlast[p*(1)+:(1)]),
  .m_bvalid(m_bvalid[p*(1)+:(1)]),
  .m_bready(m_bready[p*(1)+:(1)]),
@@ -184,7 +210,7 @@ module tnca_multicore_board_regs;
  .m_arburst(m_arburst[p*(2)+:(2)]),
  .m_rvalid(m_rvalid[p*(1)+:(1)]),
  .m_rready(m_rready[p*(1)+:(1)]),
- .m_rdata(m_rdata[p*(256)+:(256)]),
+ .m_rdata(m_rdata[p*(AXI_DATA_W)+:(AXI_DATA_W)]),
  .m_rid(m_rid[p*(AXI_ID_W)+:(AXI_ID_W)]),
  .m_rresp(m_rresp[p*(2)+:(2)]),
  .m_rlast(m_rlast[p*(1)+:(1)]));
@@ -352,6 +378,7 @@ module tnca_multicore_board_regs;
                             dma_wide=(kind=="B" || kind=="D");
                             if(dma_wide && (arg_off[2:0]!=0 || arg_off>MEMORY_BYTES-8))$fatal(1,"unaligned/past-end BO word");
                             dma_offset=arg_off;dma_word=arg_val;#1;
+                            if(dma_line<0)$fatal(1,"DMA at BO offset %h has no sparse backing",arg_off);
                             if(kind=="b" || kind=="B")begin
                                 dma_byte=arg_val[7:0];dma_write=1;
                                 #1;dma_write=0;
@@ -459,6 +486,42 @@ module tnca_multicore_board_regs;
         $finish;
     end
 
+`define TNCA_PROBE_TOP dut.device.system.shell.u_system
+`define TNCA_PROBE_START dut.device.cmd_valid && dut.device.cmd_ready
+`define TNCA_PROBE_DONE dut.device.done_valid && dut.device.done_ready
+`include "tb/fpga/tnca_stage_probes.vh"
+// Observe hybrid LSU drain/selection counters at the same launch boundaries as
+// the stage probes. This does not drive the DUT or alter the register protocol.
+generate if (HYBRID_LSU) begin:g_stage_hybrid
+ for (genvar hc=0; hc<N; hc=hc+1) begin:g_tile
+  reg [63:0] pending_wait=0, mode_wait=0;
+  always @(posedge clk) if (stage_probe_on && rst_n_async) begin
+   if (`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.pending &&
+       !`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.consume) begin
+    pending_wait<=pending_wait+1;
+    if (`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.fast_eligible ?
+        !`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.fast_mode :
+        !`TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.slow_mode)
+     mode_wait<=mode_wait+1;
+   end
+  end
+  always @(posedge clk) if (stage_begin || stage_end)
+   $display("STAGE HYBRID at=%0s c=%0d t=%0d fast=%0d slow=%0d retired=%0d fast_retired=%0d switch_stall=%0d wb_stall=%0d request_stall=%0d slot_stall=%0d pending_wait=%0d mode_wait=%0d",
+    stage_end?"END":"BEGIN",stage_cycle,hc,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_accepted,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_slow_accepted,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_retired,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_retired,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_switch_stall,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_writeback_stall,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_request_stall,
+    `TNCA_PROBE_TOP.g_tile[hc].u_tile.u_core.g_lsu_hybrid.u_lsu.perf_fast_slot_stall,
+    pending_wait,mode_wait);
+ end
+end endgenerate
+`undef TNCA_PROBE_TOP
+`undef TNCA_PROBE_START
+`undef TNCA_PROBE_DONE
 endmodule
 
 `default_nettype wire

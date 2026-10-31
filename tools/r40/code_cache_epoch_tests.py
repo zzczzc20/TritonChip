@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Execute alternating modules under code pressure without replacing the device."""
 from pathlib import Path
+import shutil
 import struct
 import sys
 import tempfile
@@ -36,5 +37,13 @@ def main():
                 assert result.ok
                 assert struct.unpack('<Q',session.download(out))[0]==(17,29,43)[index]
             assert len(session._modules)==1
-        print('CODE CACHE EPOCH PASS 6 RTL launches, one-module region, live buffer preserved',flush=True)
+            duplicate=str(Path(tmp)/'duplicate.tnca')
+            shutil.copyfile(paths[1],duplicate)
+            _,first=_load(session,paths[1])
+            _,second=_load(session,duplicate)
+            assert first is second and len(session._modules)==1
+            result=session.wait(session.submit(second,{'out':out}))
+            assert result.ok
+            assert struct.unpack('<Q',session.download(out))[0]==29
+        print('CODE CACHE EPOCH PASS 7 RTL launches, one-module region, live buffer and identical artifact dedup',flush=True)
 if __name__=='__main__':main()

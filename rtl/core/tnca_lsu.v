@@ -37,6 +37,24 @@
 // An inactive lane performs no memory access at all -- not a suppressed one.
 // Its destination lane keeps its previous value, which the core expresses by
 // clearing that lane's write enable (ISA sec 2.2).
+//
+// REGISTERED REQUEST BOUNDARY (REQ_REG = 1, R41 F10)
+// --------------------------------------------------
+// The planner (`pending` -> lowest lane -> word compare -> lanes) no longer
+// drives the memory port. A planned beat is pushed into a two-entry queue
+// whose space is a local credit, so issuing never waits on the port's ready:
+// the beat table slot and `pending` update exactly as before, at the push.
+// The port's valid, address and tag are queue registers; byte enables and
+// write data are formed from the head's registered lane selection and the
+// S_SETUP lane geometry (which is constant until the access completes).
+// The queue is first-in first-out, so beats leave in issue order, and the
+// unit leaves S_RUN only on the edge its queue empties: o_draining still
+// means every request of this access has reached the port, which is what
+// tnca_lsu_pair's ordering and single-issuer rules rest on. A response can only follow its
+// request out of the queue, and its slot was reserved at the push, so
+// response ownership and the always-ready response path are unchanged.
+// Cost: one cycle on each access's request path (and so one later before
+// the unit reports draining); throughput stays one beat per cycle.
 //==============================================================================
 `include "tnca_defs.vh"
 
@@ -48,7 +66,8 @@ module tnca_lsu #(
     parameter MEM_BYTES = 8,
     parameter MEM_SHIFT = 3,
     parameter NUM_BEATS = 8,          // outstanding beats
-    parameter BEAT_W    = 3           // $clog2(NUM_BEATS)
+    parameter BEAT_W    = 3,          // $clog2(NUM_BEATS)
+    parameter REQ_REG   = 0           // 1: registered request boundary (header)
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -309,20 +328,73 @@ module tnca_lsu #(
             end
     end
 
-    wire issue_ok = (state == S_RUN) && plan_valid && have_slot;
+    //--------------------------------------------------------------------------
+    // Request boundary (REQ_REG): a two-entry queue of planned beats. Each
+    // entry keeps the word, the tag and which lanes the beat serves by their
+    // low or high half; a free tail entry is the issue credit.
+    //--------------------------------------------------------------------------
+    reg                 q_hv, q_tv;                 // head / tail occupied
+    reg [63:0]          q_hword, q_tword;
+    reg [VLEN-1:0]      q_hlo, q_hhi, q_tlo, q_thi;
+    reg [BEAT_W-1:0]    q_htag, q_ttag;
+    wire                q_credit = !REQ_REG || !q_tv;
 
-    assign mem_req_valid = issue_ok;
-    assign mem_req_addr  = plan_word;
+    wire issue_ok = (state == S_RUN) && plan_valid && have_slot && q_credit;
+    wire q_pop    = REQ_REG && q_hv && mem_req_ready;
+
+    integer qi;
+    reg [MEM_BYTES-1:0] q_be;
+    reg [MEM_DW-1:0]    q_wdata;
+    always @(*) begin
+        q_be    = {MEM_BYTES{1'b0}};
+        q_wdata = {MEM_DW{1'b0}};
+        for (qi = 0; qi < VLEN; qi = qi + 1) begin
+            q_be    = q_be    | ({MEM_BYTES{q_hlo[qi]}} & ln_lo_be[qi])
+                              | ({MEM_BYTES{q_hhi[qi]}} & ln_hi_be[qi]);
+            q_wdata = q_wdata | ({MEM_DW{q_hlo[qi]}} & ln_lo_wd[qi])
+                              | ({MEM_DW{q_hhi[qi]}} & ln_hi_wd[qi]);
+        end
+    end
+
+    assign mem_req_valid = REQ_REG ? q_hv : issue_ok;
+    assign mem_req_addr  = REQ_REG ? q_hword : plan_word;
     assign mem_req_we    = r_store;
-    assign mem_req_be    = wr_bytes ? plan_be : {MEM_BYTES{1'b0}};
-    assign mem_req_wdata = plan_wdata;
-    assign mem_req_tag   = free_tag;
+    assign mem_req_be    = wr_bytes ? (REQ_REG ? q_be : plan_be) : {MEM_BYTES{1'b0}};
+    assign mem_req_wdata = REQ_REG ? q_wdata : plan_wdata;
+    assign mem_req_tag   = REQ_REG ? q_htag : free_tag;
     assign mem_req_hint  = r_hint;
     assign mem_req_amo   = r_amo;
     assign mem_req_aop   = r_aop;
     assign mem_req_cmp   = r_cmp;
 
-    wire issue_fire = mem_req_valid && mem_req_ready;
+    // A beat is issued -- its slot reserved and its lanes retired -- when
+    // the port takes it, or with REQ_REG when the queue takes it.
+    wire issue_fire = REQ_REG ? issue_ok : (mem_req_valid && mem_req_ready);
+    // Empty after this edge: S_RUN may end as the last queued beat leaves,
+    // as it ended on the last beat's port transfer before.
+    wire q_empty    = !REQ_REG || (!q_tv && (!q_hv || q_pop));
+
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            q_hv <= 1'b0;
+            q_tv <= 1'b0;
+        end else if (REQ_REG) begin
+            if (q_pop && q_tv) begin            // tail moves up; no push (no credit)
+                q_hword <= q_tword; q_hlo <= q_tlo; q_hhi <= q_thi; q_htag <= q_ttag;
+                q_tv    <= 1'b0;
+            end else if (issue_fire && (!q_hv || q_pop)) begin
+                q_hv    <= 1'b1;
+                q_hword <= plan_word; q_hlo <= plan_lanes & ~plan_high;
+                q_hhi   <= plan_high; q_htag <= free_tag;
+            end else if (issue_fire) begin      // head held: behind it
+                q_tv    <= 1'b1;
+                q_tword <= plan_word; q_tlo <= plan_lanes & ~plan_high;
+                q_thi   <= plan_high; q_ttag <= free_tag;
+            end else if (q_pop) begin
+                q_hv    <= 1'b0;
+            end
+        end
+    end
 
     //--------------------------------------------------------------------------
     // Sequencer
@@ -359,14 +431,14 @@ module tnca_lsu #(
                             cboff = lane_addr[i][MEM_SHIFT-1:0];
                             if (rsp_high[i]) begin
                                 chi = {1'd0, nbytes} - (MEM_BYTES - {1'd0, cboff});
-                                for (b = 0; b < MEM_BYTES; b = b + 1)
+                                for (b = 0; b < ((MEM_BYTES < 8) ? MEM_BYTES : 8); b = b + 1)
                                     if (b < chi)
                                         lane_rdata[i][(MEM_BYTES - cboff + b)*8 +: 8]
                                             <= mem_rsp_rdata[b*8 +: 8];
                             end else begin
                                 clo = rsp_low[i] ? (MEM_BYTES - {1'd0, cboff})
                                                  : {1'd0, nbytes};
-                                for (b = 0; b < MEM_BYTES; b = b + 1)
+                                for (b = 0; b < ((MEM_BYTES < 8) ? MEM_BYTES : 8); b = b + 1)
                                     if (b < clo)
                                         lane_rdata[i][b*8 +: 8]
                                             <= mem_rsp_rdata[(cboff + b)*8 +: 8];
@@ -451,7 +523,7 @@ module tnca_lsu #(
                         end
                     end
                 end
-                if (!plan_valid && !issue_fire)
+                if (!plan_valid && !issue_fire && q_empty)
                     state <= S_DRAIN;
             end
 

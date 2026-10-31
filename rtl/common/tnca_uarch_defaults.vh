@@ -86,3 +86,22 @@
 `ifndef TNCA_UARCH_HAS_TENSOR_XPOSE
 `define TNCA_UARCH_HAS_TENSOR_XPOSE 0
 `endif
+
+`ifndef TNCA_UARCH_BAR_N
+`define TNCA_UARCH_BAR_N 32
+`endif
+`ifndef TNCA_UARCH_BAR_W
+`define TNCA_UARCH_BAR_W 5
+`endif
+`ifndef TNCA_UARCH_BAR_EPOCH_W
+`define TNCA_UARCH_BAR_EPOCH_W 48
+`endif
+`ifndef TNCA_UARCH_FMA_IMPL
+`define TNCA_UARCH_FMA_IMPL 0
+`endif
+`ifndef TNCA_UARCH_MAC_DP
+`define TNCA_UARCH_MAC_DP 0
+`endif
+`ifndef TNCA_UARCH_MAC_CUTS
+`define TNCA_UARCH_MAC_CUTS 29
+`endif

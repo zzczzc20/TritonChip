@@ -1,0 +1,1207 @@
+{
+  "schema": "r41-board-tiled2-batch-comparison/1",
+  "batch": "membound_large_2",
+  "scope": "same image, software tree and 100 MHz; tiled pointwise knob 2 versus default; descriptive medians, not statistical or complete-suite acceptance",
+  "default_archive_sha256": "ea26dee6a0851be0e2eb96bac42d3dbee022db82488473239df978877482096e",
+  "tiled2_archive_sha256": "33109a18c4ea8d46dab85c6bba26314809537428c160010181c670255933a0ec",
+  "points": 72,
+  "sum_cycles_speedup": 1.4048108535514476,
+  "geometric_mean_speedup": 1.5859369233046154,
+  "slower_points": 16,
+  "slower_over_5_percent": 0,
+  "slower_over_10_percent": 0,
+  "rows": [
+    {
+      "point": "op.mul/membound/bf16-large-broadcast-r32768-c1024",
+      "point_sha256": "5d8d205457635365e8045349c5d8b84bd7ce241f6f072dd33ef8983c2070b4ec",
+      "logical_bytes": 134219776,
+      "default_cycles": 103352101,
+      "tiled2_cycles": 43062646,
+      "default_samples": [
+        103352101
+      ],
+      "tiled2_samples": [
+        43041313,
+        43062646,
+        43070610
+      ],
+      "tiled2_over_default": 0.4166596090775165
+    },
+    {
+      "point": "op.mul/membound/bf16-large-contig-r32768-c1024",
+      "point_sha256": "af552d948167d1d68496a52aca5665705ad576dc537b72ce6ded0bb7126e929d",
+      "logical_bytes": 201326592,
+      "default_cycles": 85942421,
+      "tiled2_cycles": 20991790,
+      "default_samples": [
+        85938282,
+        85942421,
+        85944953
+      ],
+      "tiled2_samples": [
+        20991790,
+        20975539,
+        20992282
+      ],
+      "tiled2_over_default": 0.2442541152058074
+    },
+    {
+      "point": "op.mul/membound/bf16-large-strided-r32768-c1024",
+      "point_sha256": "5d660cf86aebe2dd17f506a7a5431951ae2e4d62605f24a4267768391ecad40d",
+      "logical_bytes": 201326592,
+      "default_cycles": 154301907,
+      "tiled2_cycles": 103679819,
+      "default_samples": [
+        154301907
+      ],
+      "tiled2_samples": [
+        103679819
+      ],
+      "tiled2_over_default": 0.6719283061096581
+    },
+    {
+      "point": "op.mul/membound/fp16-large-broadcast-r32768-c1024",
+      "point_sha256": "ba337b9052368aa4bd99b3fbc281eb5a33fc5df4b44a84afbb3d0bb74c819bcf",
+      "logical_bytes": 134219776,
+      "default_cycles": 103359228,
+      "tiled2_cycles": 43081943,
+      "default_samples": [
+        103359228
+      ],
+      "tiled2_samples": [
+        43064126,
+        43100287,
+        43081943
+      ],
+      "tiled2_over_default": 0.4168175772365482
+    },
+    {
+      "point": "op.mul/membound/fp16-large-contig-r32768-c1024",
+      "point_sha256": "fc15550bf63f55436dd652f8b2410828766953ccbb5d6d78382a3d8d1d93a966",
+      "logical_bytes": 201326592,
+      "default_cycles": 85942012,
+      "tiled2_cycles": 20973663,
+      "default_samples": [
+        85942012,
+        85945650,
+        85939017
+      ],
+      "tiled2_samples": [
+        20973313,
+        20990906,
+        20973663
+      ],
+      "tiled2_over_default": 0.24404435632714766
+    },
+    {
+      "point": "op.mul/membound/fp16-large-strided-r32768-c1024",
+      "point_sha256": "a33f0b5e43afaa73c36879cdc8279842ebba5b92c506712eeaa976ef9c5c3766",
+      "logical_bytes": 201326592,
+      "default_cycles": 154305894,
+      "tiled2_cycles": 103683079,
+      "default_samples": [
+        154305894
+      ],
+      "tiled2_samples": [
+        103683079
+      ],
+      "tiled2_over_default": 0.6719320714994853
+    },
+    {
+      "point": "op.mul/membound/fp32-large-broadcast-r16384-c1024",
+      "point_sha256": "d0f81f7cb60dc357b80a097dd6f295493581843fb56525015ceccabe96ad6801",
+      "logical_bytes": 134221824,
+      "default_cycles": 53190842,
+      "tiled2_cycles": 27176522,
+      "default_samples": [
+        53188656,
+        53190842,
+        53192118
+      ],
+      "tiled2_samples": [
+        27174419,
+        27176995,
+        27176522
+      ],
+      "tiled2_over_default": 0.5109248317595725
+    },
+    {
+      "point": "op.mul/membound/fp32-large-contig-r16384-c1024",
+      "point_sha256": "a393b2ce64a253e6cb7f99cd81412fb0bdb25255f3aa9abc146222b6af733045",
+      "logical_bytes": 201326592,
+      "default_cycles": 44840874,
+      "tiled2_cycles": 10567130,
+      "default_samples": [
+        44842133,
+        44839737,
+        44840874
+      ],
+      "tiled2_samples": [
+        10573813,
+        10552231,
+        10567130
+      ],
+      "tiled2_over_default": 0.23565843074334367
+    },
+    {
+      "point": "op.mul/membound/fp32-large-strided-r16384-c1024",
+      "point_sha256": "d909d4319681e022d9222b45e481dc50f42eb0a3680d25a65c85152daa2e33cc",
+      "logical_bytes": 201326592,
+      "default_cycles": 113927594,
+      "tiled2_cycles": 91396896,
+      "default_samples": [
+        113927594
+      ],
+      "tiled2_samples": [
+        91396155,
+        91396896,
+        91397456
+      ],
+      "tiled2_over_default": 0.8022366907880105
+    },
+    {
+      "point": "op.relu/membound/bf16-large-broadcast-r32768-c1024",
+      "point_sha256": "3ab9ab725ec9bb71f3d9f53bdeaacb1d01e62028ed9f544d02eb717b86b70f61",
+      "logical_bytes": 67110912,
+      "default_cycles": 78133695,
+      "tiled2_cycles": 32676605,
+      "default_samples": [
+        78133695,
+        78134581,
+        78132424
+      ],
+      "tiled2_samples": [
+        32650527,
+        32676605,
+        32679104
+      ],
+      "tiled2_over_default": 0.418213998454828
+    },
+    {
+      "point": "op.relu/membound/bf16-large-contig-r32768-c1024",
+      "point_sha256": "8389f7c5ebaacc97a5712904948b12e9f7a14ed7ba9ac1848d9460823d70ce35",
+      "logical_bytes": 134217728,
+      "default_cycles": 60078832,
+      "tiled2_cycles": 13462466,
+      "default_samples": [
+        60079771,
+        60078832,
+        60075984
+      ],
+      "tiled2_samples": [
+        13462466,
+        13437257,
+        13462914
+      ],
+      "tiled2_over_default": 0.22408002206168057
+    },
+    {
+      "point": "op.relu/membound/bf16-large-strided-r32768-c1024",
+      "point_sha256": "a28522345055604b9a13f8f0e3595ed4ff3e37c3e2611751bd0a58ac9a0f3467",
+      "logical_bytes": 134217728,
+      "default_cycles": 100834420,
+      "tiled2_cycles": 55570558,
+      "default_samples": [
+        100834420
+      ],
+      "tiled2_samples": [
+        55569030,
+        55570827,
+        55570558
+      ],
+      "tiled2_over_default": 0.5511070326977633
+    },
+    {
+      "point": "op.relu/membound/fp16-large-broadcast-r32768-c1024",
+      "point_sha256": "64b83e030751041041f29af3fcb663166cb57aa004647629551e82838f7d9d2e",
+      "logical_bytes": 67110912,
+      "default_cycles": 78132245,
+      "tiled2_cycles": 32639886,
+      "default_samples": [
+        78132245,
+        78135827,
+        78132126
+      ],
+      "tiled2_samples": [
+        32639886,
+        32601576,
+        32746953
+      ],
+      "tiled2_over_default": 0.4177518001690595
+    },
+    {
+      "point": "op.relu/membound/fp16-large-contig-r32768-c1024",
+      "point_sha256": "1f05715b5eb2b13c27c560c596700bb8a5858cebdf8b0f47d7058dfbd4f00752",
+      "logical_bytes": 134217728,
+      "default_cycles": 60074890,
+      "tiled2_cycles": 13474707,
+      "default_samples": [
+        60075346,
+        60074890,
+        60074358
+      ],
+      "tiled2_samples": [
+        13438456,
+        13492778,
+        13474707
+      ],
+      "tiled2_over_default": 0.22429848810376515
+    },
+    {
+      "point": "op.relu/membound/fp16-large-strided-r32768-c1024",
+      "point_sha256": "793e9eedbe1fb38610a76c0b8b087dd72ee8483f3b7eb20b82212c6910b3354d",
+      "logical_bytes": 134217728,
+      "default_cycles": 100837504,
+      "tiled2_cycles": 55567874,
+      "default_samples": [
+        100837504
+      ],
+      "tiled2_samples": [
+        55567874,
+        55564016,
+        55572034
+      ],
+      "tiled2_over_default": 0.5510635606371217
+    },
+    {
+      "point": "op.relu/membound/fp32-large-broadcast-r16384-c1024",
+      "point_sha256": "6a87fb69491448e5d5c691beac3c56942523fe7a802d5309c6d3b2b8d0b725d8",
+      "logical_bytes": 67112960,
+      "default_cycles": 34726352,
+      "tiled2_cycles": 23530967,
+      "default_samples": [
+        34725745,
+        34726352,
+        34730092
+      ],
+      "tiled2_samples": [
+        23526210,
+        23530967,
+        23572004
+      ],
+      "tiled2_over_default": 0.6776112561434613
+    },
+    {
+      "point": "op.relu/membound/fp32-large-contig-r16384-c1024",
+      "point_sha256": "6ad14000028f18216b008851371c6530729d8fcc2ee7ab35d0f3d0378d06da96",
+      "logical_bytes": 134217728,
+      "default_cycles": 25460136,
+      "tiled2_cycles": 6180919,
+      "default_samples": [
+        25460339,
+        25458488,
+        25460136
+      ],
+      "tiled2_samples": [
+        6186082,
+        6180919,
+        6180569
+      ],
+      "tiled2_over_default": 0.24276849895852873
+    },
+    {
+      "point": "op.relu/membound/fp32-large-strided-r16384-c1024",
+      "point_sha256": "8bae5b6f66498c7e215b4fb14f46b9ebf3d3a7399c726cd884329ffbb38ab921",
+      "logical_bytes": 134217728,
+      "default_cycles": 66415567,
+      "tiled2_cycles": 47349574,
+      "default_samples": [
+        66415567,
+        66416370,
+        66415223
+      ],
+      "tiled2_samples": [
+        47343085,
+        47350073,
+        47349574
+      ],
+      "tiled2_over_default": 0.7129288529600297
+    },
+    {
+      "point": "op.rmsnorm/membound/bf16-large-broadcast-r32768-c1024",
+      "point_sha256": "f95212afd34f775a789bdf5a285e0a6c9a31d04a41d981df06d08e1e7f023b17",
+      "logical_bytes": 67112960,
+      "default_cycles": 95475264,
+      "tiled2_cycles": 95477239,
+      "default_samples": [
+        95471934,
+        95475264,
+        95480293
+      ],
+      "tiled2_samples": [
+        95480148,
+        95476718,
+        95477239
+      ],
+      "tiled2_over_default": 1.0000206859862677
+    },
+    {
+      "point": "op.rmsnorm/membound/bf16-large-contig-r32768-c1024",
+      "point_sha256": "1a554bebc832594e567edf81afdec17c433032fa63bf183f70840f9ea7ced4e5",
+      "logical_bytes": 134219776,
+      "default_cycles": 103505796,
+      "tiled2_cycles": 103499876,
+      "default_samples": [
+        103505796
+      ],
+      "tiled2_samples": [
+        103499876
+      ],
+      "tiled2_over_default": 0.9999428051352796
+    },
+    {
+      "point": "op.rmsnorm/membound/bf16-large-strided-r32768-c1024",
+      "point_sha256": "bad41eed84c0df4ce9fbdd86ef0d7087c6deb81d7a273ad4030fed9e3051eacf",
+      "logical_bytes": 134219776,
+      "default_cycles": 136575702,
+      "tiled2_cycles": 136590668,
+      "default_samples": [
+        136575702
+      ],
+      "tiled2_samples": [
+        136590668
+      ],
+      "tiled2_over_default": 1.0001095802531552
+    },
+    {
+      "point": "op.rmsnorm/membound/fp16-large-broadcast-r32768-c1024",
+      "point_sha256": "1b06749291fe7ea381b4edffce0d6c5587972d02dfca3ad9e13e0661d0edaef9",
+      "logical_bytes": 67112960,
+      "default_cycles": 95483526,
+      "tiled2_cycles": 95489812,
+      "default_samples": [
+        95486600,
+        95479042,
+        95483526
+      ],
+      "tiled2_samples": [
+        95470708,
+        95489812,
+        95497903
+      ],
+      "tiled2_over_default": 1.0000658333459533
+    },
+    {
+      "point": "op.rmsnorm/membound/fp16-large-contig-r32768-c1024",
+      "point_sha256": "8067d247b13165ec5e508035467baf42b5aa2fd4c1d38e574c3ce35e0fe1e6a2",
+      "logical_bytes": 134219776,
+      "default_cycles": 103496580,
+      "tiled2_cycles": 103520348,
+      "default_samples": [
+        103496580
+      ],
+      "tiled2_samples": [
+        103520348
+      ],
+      "tiled2_over_default": 1.0002296501005155
+    },
+    {
+      "point": "op.rmsnorm/membound/fp16-large-strided-r32768-c1024",
+      "point_sha256": "b582c728088bf887ed18436995c5b23689e0c9b573c2ffb69f329acf77ac0576",
+      "logical_bytes": 134219776,
+      "default_cycles": 136646592,
+      "tiled2_cycles": 136620827,
+      "default_samples": [
+        136646592
+      ],
+      "tiled2_samples": [
+        136620827
+      ],
+      "tiled2_over_default": 0.9998114479137541
+    },
+    {
+      "point": "op.rmsnorm/membound/fp32-large-broadcast-r16384-c1024",
+      "point_sha256": "beda9ece395ca0d12ecfc65ce0704814426e4593b400eb5ecca932c57a9dcbb2",
+      "logical_bytes": 67117056,
+      "default_cycles": 46665588,
+      "tiled2_cycles": 46693641,
+      "default_samples": [
+        46695523,
+        46665588,
+        46658552
+      ],
+      "tiled2_samples": [
+        46693641,
+        46717031,
+        46666346
+      ],
+      "tiled2_over_default": 1.0006011496094296
+    },
+    {
+      "point": "op.rmsnorm/membound/fp32-large-contig-r16384-c1024",
+      "point_sha256": "33d4ea03b8a517d13fd1b58aba0c47e20caa471b808a644a08137168df865ff6",
+      "logical_bytes": 134221824,
+      "default_cycles": 50457631,
+      "tiled2_cycles": 50436128,
+      "default_samples": [
+        50459209,
+        50457631,
+        50444483
+      ],
+      "tiled2_samples": [
+        50436044,
+        50446037,
+        50436128
+      ],
+      "tiled2_over_default": 0.9995738404761809
+    },
+    {
+      "point": "op.rmsnorm/membound/fp32-large-strided-r16384-c1024",
+      "point_sha256": "f25db1aad70f182e3131b7bb00c673642c65ca52672fada6efbf2be7e60cc19c",
+      "logical_bytes": 134221824,
+      "default_cycles": 107170346,
+      "tiled2_cycles": 107241377,
+      "default_samples": [
+        107170346
+      ],
+      "tiled2_samples": [
+        107241377
+      ],
+      "tiled2_over_default": 1.0006627859538682
+    },
+    {
+      "point": "op.sigmoid/membound/bf16-large-broadcast-r32768-c1024",
+      "point_sha256": "82815adbb2dd01aa674b7f55a4b288ec6eced3e236e07b72c160522bd87885f7",
+      "logical_bytes": 67110912,
+      "default_cycles": 121092513,
+      "tiled2_cycles": 76018599,
+      "default_samples": [
+        121092513
+      ],
+      "tiled2_samples": [
+        76006866,
+        76023159,
+        76018599
+      ],
+      "tiled2_over_default": 0.6277729078097504
+    },
+    {
+      "point": "op.sigmoid/membound/bf16-large-contig-r32768-c1024",
+      "point_sha256": "75f675868077d14c0a7550ce79ac5347613ea5faa796ee82d9ca4c290fa763a9",
+      "logical_bytes": 134217728,
+      "default_cycles": 112164876,
+      "tiled2_cycles": 53916841,
+      "default_samples": [
+        112164876
+      ],
+      "tiled2_samples": [
+        53908215,
+        53953808,
+        53916841
+      ],
+      "tiled2_over_default": 0.48069273486291736
+    },
+    {
+      "point": "op.sigmoid/membound/bf16-large-strided-r32768-c1024",
+      "point_sha256": "14e23131c0f92b556637ddc91643bbb4d3e271f50408defc3e5db36f285878bb",
+      "logical_bytes": 134217728,
+      "default_cycles": 141997496,
+      "tiled2_cycles": 88062004,
+      "default_samples": [
+        141997496
+      ],
+      "tiled2_samples": [
+        88056094,
+        88070284,
+        88062004
+      ],
+      "tiled2_over_default": 0.6201658936295609
+    },
+    {
+      "point": "op.sigmoid/membound/fp16-large-broadcast-r32768-c1024",
+      "point_sha256": "e294d00fb7b0acd05857320876c5c7dea701eb986e17860f2e2853048657b47d",
+      "logical_bytes": 67110912,
+      "default_cycles": 121100724,
+      "tiled2_cycles": 76021691,
+      "default_samples": [
+        121100724
+      ],
+      "tiled2_samples": [
+        76011428,
+        76021691,
+        76022666
+      ],
+      "tiled2_over_default": 0.6277558753488542
+    },
+    {
+      "point": "op.sigmoid/membound/fp16-large-contig-r32768-c1024",
+      "point_sha256": "fd4921c709a7b4082e9b0bc00aedf94c95f70b37e8c43b087d9c8a4789993ffb",
+      "logical_bytes": 134217728,
+      "default_cycles": 112163255,
+      "tiled2_cycles": 53907227,
+      "default_samples": [
+        112163255
+      ],
+      "tiled2_samples": [
+        53907227,
+        53880669,
+        53945021
+      ],
+      "tiled2_over_default": 0.4806139675600534
+    },
+    {
+      "point": "op.sigmoid/membound/fp16-large-strided-r32768-c1024",
+      "point_sha256": "7e6b99ab5c52127a9848e95baa47b6a82449320eca1547883a7c460654935f70",
+      "logical_bytes": 134217728,
+      "default_cycles": 141996950,
+      "tiled2_cycles": 88035918,
+      "default_samples": [
+        141996950
+      ],
+      "tiled2_samples": [
+        88033860,
+        88056718,
+        88035918
+      ],
+      "tiled2_over_default": 0.6199845700911182
+    },
+    {
+      "point": "op.sigmoid/membound/fp32-large-broadcast-r16384-c1024",
+      "point_sha256": "e622f9df922de765efcea2350761ecab9b8f92ed8d364f27b7cf1a201a9bdb4a",
+      "logical_bytes": 67112960,
+      "default_cycles": 56174723,
+      "tiled2_cycles": 41609805,
+      "default_samples": [
+        56174723,
+        56174438,
+        56175852
+      ],
+      "tiled2_samples": [
+        41609805,
+        41609487,
+        41610017
+      ],
+      "tiled2_over_default": 0.7407211424967775
+    },
+    {
+      "point": "op.sigmoid/membound/fp32-large-contig-r16384-c1024",
+      "point_sha256": "c8fb36ae15c3f9e46c26725deb1a481e74a461916a7b2fe0e68141f42bb929da",
+      "logical_bytes": 134217728,
+      "default_cycles": 53612296,
+      "tiled2_cycles": 24280458,
+      "default_samples": [
+        53611055,
+        53612296,
+        53613055
+      ],
+      "tiled2_samples": [
+        24280458,
+        24273320,
+        24282917
+      ],
+      "tiled2_over_default": 0.4528897251481265
+    },
+    {
+      "point": "op.sigmoid/membound/fp32-large-strided-r16384-c1024",
+      "point_sha256": "37c373353c224e0802920eb4d7230b1f277a9db2c3dba92a9ce0d8d222611ee5",
+      "logical_bytes": 134217728,
+      "default_cycles": 84083396,
+      "tiled2_cycles": 53856738,
+      "default_samples": [
+        84084134,
+        84081942,
+        84083396
+      ],
+      "tiled2_samples": [
+        53856738,
+        53859490,
+        53855532
+      ],
+      "tiled2_over_default": 0.6405157327375312
+    },
+    {
+      "point": "op.silu/membound/bf16-large-broadcast-r32768-c1024",
+      "point_sha256": "34c4ae40faf9bc7e0d4685b52e1c6954e89a678b43be14d981c447d1d47570c0",
+      "logical_bytes": 67110912,
+      "default_cycles": 121327499,
+      "tiled2_cycles": 76776763,
+      "default_samples": [
+        121327499
+      ],
+      "tiled2_samples": [
+        76776763,
+        76769906,
+        76777417
+      ],
+      "tiled2_over_default": 0.6328059478090783
+    },
+    {
+      "point": "op.silu/membound/bf16-large-contig-r32768-c1024",
+      "point_sha256": "f629e1025a73e3fb942551f018e17c905678ffc65a6b389481bde32edbd76e6b",
+      "logical_bytes": 134217728,
+      "default_cycles": 109770685,
+      "tiled2_cycles": 54018012,
+      "default_samples": [
+        109770685
+      ],
+      "tiled2_samples": [
+        54028404,
+        53994705,
+        54018012
+      ],
+      "tiled2_over_default": 0.49209870558792634
+    },
+    {
+      "point": "op.silu/membound/bf16-large-strided-r32768-c1024",
+      "point_sha256": "c9bee6cfe6bfa43858b0d9722ad99bed77b3135bc5c10b01a11c59256f08723e",
+      "logical_bytes": 134217728,
+      "default_cycles": 143112686,
+      "tiled2_cycles": 87251682,
+      "default_samples": [
+        143112686
+      ],
+      "tiled2_samples": [
+        87251682,
+        87250793,
+        87252697
+      ],
+      "tiled2_over_default": 0.6096711929507074
+    },
+    {
+      "point": "op.silu/membound/fp16-large-broadcast-r32768-c1024",
+      "point_sha256": "b0c251add2c2c6a980f70d5b57dabca0e373f02ea9c1eaae4a35cd763d48ffa2",
+      "logical_bytes": 67110912,
+      "default_cycles": 121328601,
+      "tiled2_cycles": 76780952,
+      "default_samples": [
+        121328601
+      ],
+      "tiled2_samples": [
+        76777875,
+        76780952,
+        76787237
+      ],
+      "tiled2_over_default": 0.6328347262489246
+    },
+    {
+      "point": "op.silu/membound/fp16-large-contig-r32768-c1024",
+      "point_sha256": "68d3a38e853cee05d538ba495aca0945d728e1796d84770f4169376ac44f2044",
+      "logical_bytes": 134217728,
+      "default_cycles": 109774477,
+      "tiled2_cycles": 54018232,
+      "default_samples": [
+        109774477
+      ],
+      "tiled2_samples": [
+        54036301,
+        54010457,
+        54018232
+      ],
+      "tiled2_over_default": 0.4920837108611321
+    },
+    {
+      "point": "op.silu/membound/fp16-large-strided-r32768-c1024",
+      "point_sha256": "e3cc7f55848e8ab8836fbd4c5586329017e3019b8413c15fba37bf76daac4747",
+      "logical_bytes": 134217728,
+      "default_cycles": 143111883,
+      "tiled2_cycles": 87259422,
+      "default_samples": [
+        143111883
+      ],
+      "tiled2_samples": [
+        87244368,
+        87293946,
+        87259422
+      ],
+      "tiled2_over_default": 0.609728697371692
+    },
+    {
+      "point": "op.silu/membound/fp32-large-broadcast-r16384-c1024",
+      "point_sha256": "4c599c4de12ec0478d0557755b5215d6b94a3d91c497c2adaf1ba541650f0d5f",
+      "logical_bytes": 67112960,
+      "default_cycles": 56175269,
+      "tiled2_cycles": 41343194,
+      "default_samples": [
+        56173108,
+        56175269,
+        56176493
+      ],
+      "tiled2_samples": [
+        41343194,
+        41344328,
+        41343101
+      ],
+      "tiled2_over_default": 0.7359678865089191
+    },
+    {
+      "point": "op.silu/membound/fp32-large-contig-r16384-c1024",
+      "point_sha256": "d798d85ce86af7bf15a377a7a1bfbab38c2b7613bfabc11466b8efd78985660b",
+      "logical_bytes": 134217728,
+      "default_cycles": 53471329,
+      "tiled2_cycles": 24755975,
+      "default_samples": [
+        53471329,
+        53472685,
+        53470822
+      ],
+      "tiled2_samples": [
+        24755975,
+        24745288,
+        24780356
+      ],
+      "tiled2_over_default": 0.4629766168706972
+    },
+    {
+      "point": "op.silu/membound/fp32-large-strided-r16384-c1024",
+      "point_sha256": "3f15ee26bd34b035009df2ee6ac681ead0b3a048540140f9eb8f8b9ed98269b8",
+      "logical_bytes": 134217728,
+      "default_cycles": 84085341,
+      "tiled2_cycles": 54006066,
+      "default_samples": [
+        84082171,
+        84085341,
+        84087181
+      ],
+      "tiled2_samples": [
+        54006066,
+        54020046,
+        53998982
+      ],
+      "tiled2_over_default": 0.6422768268252608
+    },
+    {
+      "point": "op.softmax/membound/bf16-large-broadcast-r32768-c1024",
+      "point_sha256": "28d824e440195a422ead74d95546fccb722aba8283087921d48cec624823a8d5",
+      "logical_bytes": 67110912,
+      "default_cycles": 159409101,
+      "tiled2_cycles": 159456413,
+      "default_samples": [
+        159409101
+      ],
+      "tiled2_samples": [
+        159456413
+      ],
+      "tiled2_over_default": 1.0002967961032538
+    },
+    {
+      "point": "op.softmax/membound/bf16-large-contig-r32768-c1024",
+      "point_sha256": "c4ac465e0208f069f11f0791c532e8d5bf03b20942c8144ae179f56e5988e4bd",
+      "logical_bytes": 134217728,
+      "default_cycles": 171990421,
+      "tiled2_cycles": 171976600,
+      "default_samples": [
+        171990421
+      ],
+      "tiled2_samples": [
+        171976600
+      ],
+      "tiled2_over_default": 0.999919640873488
+    },
+    {
+      "point": "op.softmax/membound/bf16-large-strided-r32768-c1024",
+      "point_sha256": "955eeff293abfe6c4fab917ad41596fa6a986205ca6c915d59e5b13050bbe3b5",
+      "logical_bytes": 134217728,
+      "default_cycles": 224106730,
+      "tiled2_cycles": 224105611,
+      "default_samples": [
+        224106730
+      ],
+      "tiled2_samples": [
+        224105611
+      ],
+      "tiled2_over_default": 0.999995006843391
+    },
+    {
+      "point": "op.softmax/membound/fp16-large-broadcast-r32768-c1024",
+      "point_sha256": "a85e1f42926a982554ee9a437b70213c93dfb721dd170d97da4e5cd361e782db",
+      "logical_bytes": 67110912,
+      "default_cycles": 159407590,
+      "tiled2_cycles": 159480556,
+      "default_samples": [
+        159407590
+      ],
+      "tiled2_samples": [
+        159480556
+      ],
+      "tiled2_over_default": 1.0004577322823838
+    },
+    {
+      "point": "op.softmax/membound/fp16-large-contig-r32768-c1024",
+      "point_sha256": "ce7d6773b165d591e00f182ec4dc7333e3947432dbc8d5765f543dcd3152513b",
+      "logical_bytes": 134217728,
+      "default_cycles": 171884868,
+      "tiled2_cycles": 171985993,
+      "default_samples": [
+        171884868
+      ],
+      "tiled2_samples": [
+        171985993
+      ],
+      "tiled2_over_default": 1.0005883298581002
+    },
+    {
+      "point": "op.softmax/membound/fp16-large-strided-r32768-c1024",
+      "point_sha256": "022a4d6fe6ca4f8f821934ceccee1c3b26b7c5691759ad9d78ef1a327d348b69",
+      "logical_bytes": 134217728,
+      "default_cycles": 224057360,
+      "tiled2_cycles": 224092793,
+      "default_samples": [
+        224057360
+      ],
+      "tiled2_samples": [
+        224092793
+      ],
+      "tiled2_over_default": 1.0001581425399282
+    },
+    {
+      "point": "op.softmax/membound/fp32-large-broadcast-r16384-c1024",
+      "point_sha256": "07d7c1b5052deded3c4047f9e9ff5a6084c4b5b2bd46ef5ca651e942e6ed6f31",
+      "logical_bytes": 67112960,
+      "default_cycles": 74938464,
+      "tiled2_cycles": 74993538,
+      "default_samples": [
+        74933680,
+        74938464,
+        74998350
+      ],
+      "tiled2_samples": [
+        75004760,
+        74947022,
+        74993538
+      ],
+      "tiled2_over_default": 1.0007349229896145
+    },
+    {
+      "point": "op.softmax/membound/fp32-large-contig-r16384-c1024",
+      "point_sha256": "0b32ab987d0a5c12bb631d0ab330b3056c40a7dd2081b0c58e1455590c099b79",
+      "logical_bytes": 134217728,
+      "default_cycles": 82979099,
+      "tiled2_cycles": 83023623,
+      "default_samples": [
+        82979099,
+        83003600,
+        82954608
+      ],
+      "tiled2_samples": [
+        83016256,
+        83023623,
+        83052859
+      ],
+      "tiled2_over_default": 1.0005365688533205
+    },
+    {
+      "point": "op.softmax/membound/fp32-large-strided-r16384-c1024",
+      "point_sha256": "a83582ac9e5d46208ad7d1045c55aae058e8c2e5a0073c81fe3e69042c7ebb16",
+      "logical_bytes": 134217728,
+      "default_cycles": 130137097,
+      "tiled2_cycles": 130290437,
+      "default_samples": [
+        130137097
+      ],
+      "tiled2_samples": [
+        130290437
+      ],
+      "tiled2_over_default": 1.0011782958398097
+    },
+    {
+      "point": "op.sub/membound/bf16-large-broadcast-r32768-c1024",
+      "point_sha256": "98d074725f45f99044ca3f6d840817241e2f292925f2b011f017120e83ec97b2",
+      "logical_bytes": 134219776,
+      "default_cycles": 103354854,
+      "tiled2_cycles": 43060543,
+      "default_samples": [
+        103354854
+      ],
+      "tiled2_samples": [
+        43053821,
+        43076923,
+        43060543
+      ],
+      "tiled2_over_default": 0.4166281633952093
+    },
+    {
+      "point": "op.sub/membound/bf16-large-contig-r32768-c1024",
+      "point_sha256": "ca5019afed146792f305443f7ad8b128c18d7fcaa23fc1a2682b023acacf2ec8",
+      "logical_bytes": 201326592,
+      "default_cycles": 85942785,
+      "tiled2_cycles": 20971510,
+      "default_samples": [
+        85938660,
+        85948630,
+        85942785
+      ],
+      "tiled2_samples": [
+        20971510,
+        20957023,
+        20990104
+      ],
+      "tiled2_over_default": 0.2440171097550539
+    },
+    {
+      "point": "op.sub/membound/bf16-large-strided-r32768-c1024",
+      "point_sha256": "edf46daf95333c5ccdda2a331cf209f11246511156aeae365dc4cfa74709b0b5",
+      "logical_bytes": 201326592,
+      "default_cycles": 154301961,
+      "tiled2_cycles": 103683247,
+      "default_samples": [
+        154301961
+      ],
+      "tiled2_samples": [
+        103683247
+      ],
+      "tiled2_over_default": 0.671950287138606
+    },
+    {
+      "point": "op.sub/membound/fp16-large-broadcast-r32768-c1024",
+      "point_sha256": "5ab54f420b30ac2a327c8fcba6a964fdf7f707160c6f8e8566b001567d17585f",
+      "logical_bytes": 134219776,
+      "default_cycles": 103354000,
+      "tiled2_cycles": 43088934,
+      "default_samples": [
+        103354000
+      ],
+      "tiled2_samples": [
+        43088934,
+        43122046,
+        43061616
+      ],
+      "tiled2_over_default": 0.41690630261044564
+    },
+    {
+      "point": "op.sub/membound/fp16-large-contig-r32768-c1024",
+      "point_sha256": "864fd3397873431dd2a7aeb3be09d7333a8484c15940128a731a12953a56fcec",
+      "logical_bytes": 201326592,
+      "default_cycles": 85943630,
+      "tiled2_cycles": 20981085,
+      "default_samples": [
+        85943630,
+        85942131,
+        85945424
+      ],
+      "tiled2_samples": [
+        20976991,
+        20984665,
+        20981085
+      ],
+      "tiled2_over_default": 0.24412612080732451
+    },
+    {
+      "point": "op.sub/membound/fp16-large-strided-r32768-c1024",
+      "point_sha256": "b59a3fd19d08b373989a77c2e173972f67604d1fbd3921a4cc8693777fafb341",
+      "logical_bytes": 201326592,
+      "default_cycles": 154293867,
+      "tiled2_cycles": 103690212,
+      "default_samples": [
+        154293867
+      ],
+      "tiled2_samples": [
+        103690212
+      ],
+      "tiled2_over_default": 0.6720306776678298
+    },
+    {
+      "point": "op.sub/membound/fp32-large-broadcast-r16384-c1024",
+      "point_sha256": "ef07c4da840914cfa19a89b05afad062ec318b17e69f326bd2b15587d1a805dd",
+      "logical_bytes": 134221824,
+      "default_cycles": 53190370,
+      "tiled2_cycles": 27181782,
+      "default_samples": [
+        53190370,
+        53190869,
+        53189912
+      ],
+      "tiled2_samples": [
+        27181782,
+        27180954,
+        27187948
+      ],
+      "tiled2_over_default": 0.5110282556786125
+    },
+    {
+      "point": "op.sub/membound/fp32-large-contig-r16384-c1024",
+      "point_sha256": "d6f58aee7f393a65f0e25cbc6014e751f73c37021e81d0b94313a5c57abd5c73",
+      "logical_bytes": 201326592,
+      "default_cycles": 44841588,
+      "tiled2_cycles": 10560560,
+      "default_samples": [
+        44841588,
+        44841888,
+        44840256
+      ],
+      "tiled2_samples": [
+        10560560,
+        10598408,
+        10544904
+      ],
+      "tiled2_over_default": 0.23550816264580104
+    },
+    {
+      "point": "op.sub/membound/fp32-large-strided-r16384-c1024",
+      "point_sha256": "61ccbf35c19020c06ab9af5181ff908670603be6b0124d8b7b8fba5f9bb44213",
+      "logical_bytes": 201326592,
+      "default_cycles": 113928604,
+      "tiled2_cycles": 91403929,
+      "default_samples": [
+        113928604
+      ],
+      "tiled2_samples": [
+        91403929,
+        91408784,
+        91394391
+      ],
+      "tiled2_over_default": 0.8022913104421081
+    },
+    {
+      "point": "op.sum/membound/bf16-large-broadcast-r32768-c1024",
+      "point_sha256": "80e6369c02a3b811bb4b4d7a5a66330d711993cb2c06e72b5054c2380d4de4e7",
+      "logical_bytes": 67584,
+      "default_cycles": 19436527,
+      "tiled2_cycles": 19435581,
+      "default_samples": [
+        19435041,
+        19437615,
+        19436527
+      ],
+      "tiled2_samples": [
+        19435416,
+        19437570,
+        19435581
+      ],
+      "tiled2_over_default": 0.9999513287533313
+    },
+    {
+      "point": "op.sum/membound/bf16-large-contig-r32768-c1024",
+      "point_sha256": "f2d3d42707661deea5af07a42ef034d6e87923f20b2df93d5177f775a9ed9298",
+      "logical_bytes": 67174400,
+      "default_cycles": 27438701,
+      "tiled2_cycles": 27439934,
+      "default_samples": [
+        27439496,
+        27438701,
+        27437682
+      ],
+      "tiled2_samples": [
+        27439934,
+        27436728,
+        27441978
+      ],
+      "tiled2_over_default": 1.000044936529612
+    },
+    {
+      "point": "op.sum/membound/bf16-large-strided-r32768-c1024",
+      "point_sha256": "ac2fa153a73262d2e0b11cb5dfb81b35adaffbad526bd0ee9d1325c29399eb6c",
+      "logical_bytes": 67174400,
+      "default_cycles": 50268667,
+      "tiled2_cycles": 50252815,
+      "default_samples": [
+        50250799,
+        50268667,
+        50269327
+      ],
+      "tiled2_samples": [
+        50270452,
+        50245223,
+        50252815
+      ],
+      "tiled2_over_default": 0.9996846544588103
+    },
+    {
+      "point": "op.sum/membound/fp16-large-broadcast-r32768-c1024",
+      "point_sha256": "490fa696332b870bdc3118e1a298562aaa6a876f91094723e342958a0780971b",
+      "logical_bytes": 67584,
+      "default_cycles": 19434779,
+      "tiled2_cycles": 19436965,
+      "default_samples": [
+        19435382,
+        19434548,
+        19434779
+      ],
+      "tiled2_samples": [
+        19439178,
+        19435604,
+        19436965
+      ],
+      "tiled2_over_default": 1.0001124787680888
+    },
+    {
+      "point": "op.sum/membound/fp16-large-contig-r32768-c1024",
+      "point_sha256": "cdd1304a05216ac4ed45584144c511fb17a16c7c754667b63482b7bef8642889",
+      "logical_bytes": 67174400,
+      "default_cycles": 27441859,
+      "tiled2_cycles": 27437127,
+      "default_samples": [
+        27443268,
+        27436934,
+        27441859
+      ],
+      "tiled2_samples": [
+        27437127,
+        27441109,
+        27436589
+      ],
+      "tiled2_over_default": 0.999827562702658
+    },
+    {
+      "point": "op.sum/membound/fp16-large-strided-r32768-c1024",
+      "point_sha256": "065d96ce8fad397c5fd0d221c3499d5d2e889e58bb02bcba2d39e1ecbd956fd2",
+      "logical_bytes": 67174400,
+      "default_cycles": 50255964,
+      "tiled2_cycles": 50255913,
+      "default_samples": [
+        50252645,
+        50255964,
+        50256832
+      ],
+      "tiled2_samples": [
+        50255913,
+        50256513,
+        50253417
+      ],
+      "tiled2_over_default": 0.9999989851950706
+    },
+    {
+      "point": "op.sum/membound/fp32-large-broadcast-r16384-c1024",
+      "point_sha256": "6f66a009509c7e35c9f73f8406cc5178ebb5b9ce67b719757c85a6fb812cbe3c",
+      "logical_bytes": 69632,
+      "default_cycles": 9089492,
+      "tiled2_cycles": 9089082,
+      "default_samples": [
+        9089492,
+        9090331,
+        9088925
+      ],
+      "tiled2_samples": [
+        9088657,
+        9089082,
+        9090512
+      ],
+      "tiled2_over_default": 0.999954892968716
+    },
+    {
+      "point": "op.sum/membound/fp32-large-contig-r16384-c1024",
+      "point_sha256": "5867d18e5d37193c7b25d975e25385ebba8e0301d975347d70e4572977f1b979",
+      "logical_bytes": 67174400,
+      "default_cycles": 15366576,
+      "tiled2_cycles": 15363376,
+      "default_samples": [
+        15366576,
+        15364157,
+        15370451
+      ],
+      "tiled2_samples": [
+        15363376,
+        15360881,
+        15365350
+      ],
+      "tiled2_over_default": 0.9997917558212057
+    },
+    {
+      "point": "op.sum/membound/fp32-large-strided-r16384-c1024",
+      "point_sha256": "5131a240dc1ec78cb0f2551012c7fb304c11a62e08a4eb7e0e11edd30f21299b",
+      "logical_bytes": 67174400,
+      "default_cycles": 44676877,
+      "tiled2_cycles": 44682965,
+      "default_samples": [
+        44676877,
+        44669800,
+        44682889
+      ],
+      "tiled2_samples": [
+        44682285,
+        44682965,
+        44683111
+      ],
+      "tiled2_over_default": 1.0001362673581684
+    }
+  ]
+}

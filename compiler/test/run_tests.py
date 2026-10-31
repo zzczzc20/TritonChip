@@ -29,7 +29,7 @@ RTL_SUITES = ['test_rtl_closure', 'test_gemm', 'test_pipeline',
 # forbids the disappearance, so they leave this discovery and gain IDs of
 # their own rather than being skipped under an interpreter that was never
 # going to have Triton.
-TRITON_SUITES = ['test_triton_e2e', 'test_e2e_system']
+TRITON_SUITES = ['test_triton_e2e', 'test_e2e_system', 'test_pointwise_tiles']
 
 
 def main():

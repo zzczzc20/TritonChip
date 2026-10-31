@@ -1,0 +1,5 @@
+op.exp/membound/fp16-small-contig-r32-c1024 pass [117434] [117439]
+job g2c4 op.exp/membound/fp16-small-contig-r32-c1024 rc=0
+op.clone/membound/fp16-small-strided-r32-c1024 pass [100747] [100752]
+job s4c4 op.clone/membound/fp16-small-strided-r32-c1024 rc=0
+done

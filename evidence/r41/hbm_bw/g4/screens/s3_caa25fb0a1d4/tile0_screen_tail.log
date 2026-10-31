@@ -1,0 +1,40 @@
+INFO: [Common 17-83] Releasing license: Implementation
+5 Infos, 3 Warnings, 0 Critical Warnings and 0 Errors encountered.
+phys_opt_design completed successfully
+phys_opt_design: Time (s): cpu = 00:01:39 ; elapsed = 00:00:44 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21545 ; free virtual = 56596
+# write_checkpoint -force $out/routed.dcp
+INFO: [Timing 38-480] Writing timing data to binary archive.
+Write ShapeDB Complete: Time (s): cpu = 00:00:02 ; elapsed = 00:00:00.36 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21457 ; free virtual = 56562
+Wrote PlaceDB: Time (s): cpu = 00:00:22 ; elapsed = 00:00:09 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21129 ; free virtual = 56542
+Wrote PulsedLatchDB: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21129 ; free virtual = 56542
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Wrote RouteStorage: Time (s): cpu = 00:00:03 ; elapsed = 00:00:03 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21060 ; free virtual = 56550
+Wrote Netlist Cache: Time (s): cpu = 00:00:00.17 ; elapsed = 00:00:00.2 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21029 ; free virtual = 56544
+Wrote Device Cache: Time (s): cpu = 00:00:00.01 ; elapsed = 00:00:00 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21029 ; free virtual = 56546
+Write Physdb Complete: Time (s): cpu = 00:00:24 ; elapsed = 00:00:12 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21029 ; free virtual = 56546
+INFO: [Common 17-1381] The checkpoint '/home/vivado/r41res/tile0_g4s3_caa25fb0a1d4/out/routed.dcp' has been generated.
+write_checkpoint: Time (s): cpu = 00:00:32 ; elapsed = 00:00:20 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21389 ; free virtual = 56567
+# report_utilization -file $out/utilization_routed.rpt
+report_utilization: Time (s): cpu = 00:00:08 ; elapsed = 00:00:08 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21374 ; free virtual = 56552
+# report_timing_summary -max_paths 50 -file $out/timing_routed.rpt
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2L, Temperature grade: E, Delay Type: min_max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 4 CPUs
+report_timing_summary: Time (s): cpu = 00:00:17 ; elapsed = 00:00:09 . Memory (MB): peak = 8574.773 ; gain = 0.000 ; free physical = 21404 ; free virtual = 56583
+# report_timing -max_paths 2000 -nworst 1 -unique_pins -file $out/top_paths_routed.rpt
+INFO: [Timing 38-91] UpdateTimingParams: Speed grade: -2L, Temperature grade: E, Delay Type: max.
+INFO: [Timing 38-191] Multithreading enabled for timing update using a maximum of 4 CPUs
+INFO: [Timing 38-78] ReportTimingParams: -max_paths 2000 -nworst 1 -delay_type max -sort_by slack.
+# report_design_analysis -timing -setup -max_paths 2000 -file $out/design_analysis_routed.rpt
+WARNING: [Vivado 12-975] No timing paths matched 'get_timing_paths -max_paths 100000 -nworst 1 -unique_pins -slack_lesser_than 0 -setup'.
+# set paths [get_timing_paths -max_paths 100000 -nworst 1 -unique_pins -slack_lesser_than 0 -setup]
+# set f [open $out/failing_endpoints.tsv w]
+# puts $f "slack_ns\tstartpoint\tendpoint\tlogic_levels\tdatapath_ns"
+# foreach p $paths {
+#     puts $f "[get_property SLACK $p]\t[get_property STARTPOINT_PIN $p]\t[get_property ENDPOINT_PIN $p]\t[get_property LOGIC_LEVELS $p]\t[get_property DATAPATH_DELAY $p]"
+# }
+# close $f
+# puts "R41_TILE_SCREEN_DONE=$out failing=[llength $paths]"
+R41_TILE_SCREEN_DONE=/home/vivado/r41res/tile0_g4s3_caa25fb0a1d4/out failing=0
+INFO: [Common 17-206] Exiting Vivado at Thu Oct 29 00:14:34 2026...

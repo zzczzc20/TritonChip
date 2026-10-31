@@ -1,0 +1,11 @@
+op.copy/membound/fp16-small-contig-r32-c1024 pass [8938] [8943]
+op.add/membound/fp16-small-contig-r32-c1024 pass [43756] [43761]
+op.add/membound/fp16-small-strided-r32-c1024 pass [129562] [129567]
+op.div/membound/fp16-small-contig-r32-c1024 pass [43666] [43671]
+op.silu/membound/fp16-small-contig-r32-c1024 pass [73529] [73534]
+op.cast/membound/fp16-to-fp32-small-contig-r32-c1024 pass [22359] [22448]
+op.relu/membound/fp16-small-contig-r32-c1024 pass [22186] [22192]
+op.add/membound/fp16-small-broadcast-r32-c1024 pass [42791] [42796]
+op.add/membound/bf16-small-contig-r32-c1024 pass [43895] [43900]
+op.relu/membound/fp32-small-contig-r16-c1024 pass [12282] [12370]
+done

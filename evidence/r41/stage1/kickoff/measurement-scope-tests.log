@@ -1,0 +1,9 @@
+test_busy_and_unsupported_sessions_are_refused (__main__.MeasurementScopeTests.test_busy_and_unsupported_sessions_are_refused) ... ok
+test_host_wait_expiry_is_followed_by_real_completion_drain (__main__.MeasurementScopeTests.test_host_wait_expiry_is_followed_by_real_completion_drain) ... ok
+test_limits_restore_even_when_candidate_raises (__main__.MeasurementScopeTests.test_limits_restore_even_when_candidate_raises) ... ok
+test_undrainable_work_poisoned_without_fabricating_a_verdict (__main__.MeasurementScopeTests.test_undrainable_work_poisoned_without_fabricating_a_verdict) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.032s
+
+OK

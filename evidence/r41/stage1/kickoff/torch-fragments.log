@@ -1,0 +1,18 @@
+/home/zhongchun/r41-stage1/src/python/tnca/device.py:472: RuntimeWarning: the staged copy under /home/zhongchun/r41-stage1/src/python/tnca/data differs from the working tree in ['rtl', 'rtl/core', 'rtl/common', 'tb/common', 'tb/device']. The runtime reads the staged copy, so it is about to build a device from sources that are not the ones you edited. Run `make r2-stage-data`.
+  warn_if_staged_copy_is_stale()
+  building core-vrf-sync-v5 -> /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v5-a8f9e2a0291d254a-b9e735fbbc62/tnca_device_vrf5.vvp
+  pruned 1 older build(s) of core-vrf-sync-v5
+  built 17673434 bytes
+AUDIT logical K=16, physical MMA K=16, retiles=[]: {'accumulators': 2, 'barriers': 5, 'commands_outstanding': 'unknown', 'descriptors': 3, 'rf_private_per_role': {'role0': 15, 'role1': 15}, 'scratch_bytes': 14592, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 32, 16]], 'mma_fragment_reuses': 1, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [32]}]
+PASS mm, logical 16x32x16, shape 17x65x33
+AUDIT logical K=16, physical MMA K=16, retiles=[]: {'accumulators': 2, 'barriers': 5, 'commands_outstanding': 'unknown', 'descriptors': 3, 'rf_private_per_role': {'role0': 15, 'role1': 15}, 'scratch_bytes': 14592, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 32, 16]], 'mma_fragment_reuses': 1, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [32]}]
+PASS mm, logical 16x32x16, shape 33x31x65
+AUDIT logical K=16, physical MMA K=16, retiles=[]: {'accumulators': 6, 'barriers': 5, 'commands_outstanding': 'unknown', 'descriptors': 3, 'rf_private_per_role': {'role0': 15, 'role1': 15}, 'scratch_bytes': 16640, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 32, 16]], 'mma_fragment_reuses': 1, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [32]}]
+PASS addmm, logical 16x32x16, shape 17x65x33
+AUDIT logical K=16, physical MMA K=16, retiles=[]: {'accumulators': 6, 'barriers': 5, 'commands_outstanding': 'unknown', 'descriptors': 3, 'rf_private_per_role': {'role0': 15, 'role1': 15}, 'scratch_bytes': 16640, 'shared_windows': []}
+AUDIT logical GEMM tiles: [{'external_spill_bytes': 0, 'gemm_tiles': [[16, 32, 16]], 'mma_fragment_reuses': 1, 'predicate_rematerializations': 0, 'reductions': [], 'vlen': 16, 'widths': [32]}]
+PASS addmm, logical 16x32x16, shape 33x31x65
+r40-gemm-tiles-tests PASS (4/4)

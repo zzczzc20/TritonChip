@@ -1,0 +1,136 @@
+{
+  "schema": "tnca-r41-harness-smoke/1",
+  "status": "completed-experiment",
+  "host": "gx10-6646",
+  "manifest_sha256": "f4844f61a1ad8ae39f36bd2483a92b437042b61639fe84b89051763617fc154d",
+  "steps": [
+    {
+      "id": "frozen-inputs",
+      "kind": "compile",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 0.9280395749956369
+    },
+    {
+      "id": "runner-integrity",
+      "kind": "compile",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 0.27506525442004204
+    },
+    {
+      "id": "graph-worker-lifecycle",
+      "kind": "compile",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 0.6271365182474256
+    },
+    {
+      "id": "configure-model",
+      "kind": "compile",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 0.37525370344519615
+    },
+    {
+      "id": "build-model",
+      "kind": "compile",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 10.864317043684423
+    },
+    {
+      "id": "ramulator-mechanisms",
+      "kind": "systemc",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 1.5336909145116806
+    },
+    {
+      "id": "native-artifact-smoke",
+      "kind": "systemc",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 0.3829148970544338
+    },
+    {
+      "id": "monitor-memory-invariance",
+      "kind": "systemc",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 0.4834160329774022
+    },
+    {
+      "id": "native-monitor-off",
+      "kind": "systemc",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 20.458711847662926
+    },
+    {
+      "id": "native-monitor-aggregate",
+      "kind": "systemc",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 6.960203219205141
+    },
+    {
+      "id": "native-monitor-trace",
+      "kind": "systemc",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 7.111345850862563
+    },
+    {
+      "id": "native-slow-path",
+      "kind": "systemc",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 8.057015967555344
+    },
+    {
+      "id": "native-monitor-audit",
+      "kind": "compare",
+      "status": "completed",
+      "returncode": 0,
+      "host_wall_seconds": 0.18458197358995676
+    }
+  ],
+  "native_monitor_audit": {
+    "schema": "tnca-native-monitor-audit/1",
+    "status": "passed",
+    "modes": [
+      "off",
+      "aggregate",
+      "trace"
+    ],
+    "cases": 4,
+    "identical_output_bits": true,
+    "identical_device_cycles": true,
+    "identical_native_counters": true,
+    "traces": [
+      {
+        "mode": "off",
+        "emitted": 0,
+        "dropped": 0,
+        "limit": 100000
+      },
+      {
+        "mode": "aggregate",
+        "emitted": 0,
+        "dropped": 0,
+        "limit": 100000
+      },
+      {
+        "mode": "trace",
+        "emitted": 100000,
+        "dropped": 176886,
+        "limit": 100000
+      }
+    ],
+    "performance_acceptance": "not-measured"
+  },
+  "delivery_acceptance": "not-measured",
+  "calibration": "uncalibrated",
+  "archive_sha256": "5da3092b9d76eb21ef9dcb385d2f4651a2b5786f82b4de53a0c488c199086a4b"
+}

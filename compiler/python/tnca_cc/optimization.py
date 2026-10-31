@@ -87,7 +87,16 @@ def _opaque(op):
     return False
 
 
-def drop_dead_pure(kernel):
+def _int_vector_pure(op):
+    """An integer vector add/sub/mul/logic/shift: no memory, no fault, and
+    no floating-point exception state (only used with flat_control)."""
+    if op.kind != 'vbin' or op.attrs.get('op') not in (
+            'add', 'sub', 'mul', 'and', 'or', 'xor', 'shl', 'lshr', 'ashr', 'min', 'max'):
+        return False
+    return all(not str(getattr(r, 'dtype', 'f')).startswith(('f', 'bf')) for r in op.results)
+
+
+def drop_dead_pure(kernel, flat_control=False):
     """Remove pure scalar definitions that nothing names.
 
     Its own pass rather than a tail of the CSE, because the two have
@@ -100,7 +109,13 @@ def drop_dead_pure(kernel):
     """
     out = {'removed': 0, 'roles': []}
     for role in kernel.roles:
-        if any(_opaque(o) for o in role.region.ops):
+        # `flat_control`: labels, branches and register assignments in one
+        # flat list do not hide a use -- an `assign` names both its registers
+        # -- so a definition nothing names anywhere is dead there too. Only a
+        # nested region stays opaque. (Used for the tiled element-wise loop.)
+        opaque = ((lambda o: _opaque(o) and o.kind not in ('label', 'branch_nz', 'assign'))
+                  if flat_control else _opaque)
+        if any(opaque(o) for o in role.region.ops):
             out['roles'].append({'role': role.name,
                                  'why': 'control flow or mutable assignments'})
             continue
@@ -113,7 +128,7 @@ def drop_dead_pure(kernel):
                 for v in _values_in(o):
                     live.add(id(v))
             keep = [o for o in role.region.ops
-                    if not _no_effect(o)
+                    if not (_no_effect(o) or (flat_control and _int_vector_pure(o)))
                     or any(id(r) in live for r in o.results)]
             if len(keep) == len(role.region.ops):
                 break
@@ -374,7 +389,7 @@ def narrow_lane0_store(kernel):
                     continue
                 op.kind = 'sstore'
                 op.operands = [base, src]
-                op.attrs = dict(op.attrs, mask=None, offset=0,
+                op.attrs = dict(op.attrs, mask=None, offset=op.attrs.get('offset', 0),
                                 comment='lane 0 of a broadcast is one word')
                 n += 1
         out['sites'] += n
@@ -489,5 +504,194 @@ def pure_scalar_cse(kernel):
                     protocol=info['protocol'])
         out['merged'] += info['merged']
         out['removed_ops'] += note['removed_ops']
+        out['roles'].append(note)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Dominator-scoped value numbering
+# ---------------------------------------------------------------------------
+# Pure values: no memory, no ownership, no barrier, nothing that can fault, and
+# a result that is a function of the operands alone. Floating-point operations
+# are included: ISA sec 8.2 defines every result as a function of the operands
+# (no flags, no traps, canonical NaN), so two equal operations give equal bits.
+_VN_KINDS = frozenset({
+    'sbin', 'sbini', 'scmp', 'const', 'arange', 'splat', 'vmovi', 'vbin', 'vun',
+    'vfma', 'vfms', 'vcvt', 'vextract', 'vcmp', 'vselect', 'pbin', 'reduce'})
+# Operations that write one of their operands in place: the operand is one
+# object that changes, so two reads of it are not reads of the same value.
+_VN_INPLACE = {'vinsert': (0,), 'assign': (0, 1), 'window_put': (1, 2)}
+
+
+def _vn_blocks(ops):
+    """Basic blocks of a flat op list: (start, end) index pairs, successor lists."""
+    starts = {0}
+    labels = {}
+    for i, o in enumerate(ops):
+        if o.kind == 'label':
+            starts.add(i)
+            labels[o.attrs['name']] = i
+        if o.kind in ('branch_nz', 'exit') and i + 1 < len(ops):
+            starts.add(i + 1)
+    order = sorted(starts)
+    block_of = {s: n for n, s in enumerate(order)}
+    ends = order[1:] + [len(ops)]
+    succ = []
+    for n, (s, e) in enumerate(zip(order, ends)):
+        last = ops[e - 1]
+        nxt = []
+        if last.kind == 'branch_nz':
+            tgt = last.attrs['target']
+            if tgt not in labels:
+                return None
+            nxt.append(block_of[labels[tgt]])
+        if last.kind != 'exit' and n + 1 < len(order):
+            nxt.append(n + 1)
+        succ.append(nxt)
+    return order, ends, succ
+
+
+def _vn_idoms(succ):
+    n = len(succ)
+    pred = [[] for _ in range(n)]
+    for a, ss in enumerate(succ):
+        for b in ss:
+            pred[b].append(a)
+    # reverse postorder from block 0
+    seen, post = set(), []
+    stack = [(0, iter(succ[0]))]
+    seen.add(0)
+    while stack:
+        node, it = stack[-1]
+        for nx in it:
+            if nx not in seen:
+                seen.add(nx)
+                stack.append((nx, iter(succ[nx])))
+                break
+        else:
+            post.append(node)
+            stack.pop()
+    rpo = post[::-1]
+    index = {b: i for i, b in enumerate(rpo)}
+    idom = {0: 0}
+
+    def intersect(a, b):
+        while a != b:
+            while index[a] > index[b]:
+                a = idom[a]
+            while index[b] > index[a]:
+                b = idom[b]
+        return a
+    changed = True
+    while changed:
+        changed = False
+        for b in rpo[1:]:
+            ps = [p for p in pred[b] if p in idom]
+            if not ps:
+                continue
+            new = ps[0]
+            for p in ps[1:]:
+                new = intersect(p, new)
+            if idom.get(b) != new:
+                idom[b] = new
+                changed = True
+    return idom
+
+
+def dominating_value_numbering(kernel, *, scalar_window=400, vector_window=80):
+    """Merge equal pure values where the first dominates the second.
+
+    Straight-line CSE inside the loop body and across it: a pure operation
+    whose operands are (representatives of) the same values as an earlier
+    operation that dominates it takes that operation's result. The control-flow
+    graph is the flat list's labels and `branch_nz` edges; blocks are visited
+    in dominator-tree order with a scoped table, so a value computed on one
+    arm of a branch is never used on another.
+
+    Never merged: a value some operation writes in place (`vinsert`, `assign`,
+    `window_put`) and anything computed from nothing but such a value is
+    treated as an ordinary value of its own; an effectful operation is never
+    touched. Merging extends a live range, and the allocator cannot spill, so
+    a merge is only made when the two definitions are at most `scalar_window`
+    (scalar and predicate values) or `vector_window` (vector values)
+    operations apart. Returns what happened, per role.
+    """
+    out = {'roles': [], 'merged': 0}
+    for role in kernel.roles:
+        ops = role.region.ops
+        note = {'role': role.name, 'merged': 0}
+        blocks = _vn_blocks(ops)
+        if blocks is None or not ops:
+            note['why'] = 'branch target not found'
+            out['roles'].append(note)
+            continue
+        order, ends, succ = blocks
+        idom = _vn_idoms(succ)
+        children = {}
+        for b, d in idom.items():
+            if b != d:
+                children.setdefault(d, []).append(b)
+
+        mutable = set()
+        for o in ops:
+            for idx in _VN_INPLACE.get(o.kind, ()):
+                if idx < len(o.operands) and isinstance(o.operands[idx], Value):
+                    mutable.add(id(o.operands[idx]))
+        position = {id(r): i for i, o in enumerate(ops) for r in o.results}
+        rep = {}
+        table = {}
+
+        def key_of(o):
+            if o.kind not in _VN_KINDS or len(o.results) != 1:
+                return None
+            r = o.results[0]
+            if id(r) in mutable:
+                return None
+            names = []
+            for v in o.operands:
+                if not isinstance(v, Value) or id(v) in mutable:
+                    return None
+                names.append(id(rep.get(id(v), v)))
+            attrs = tuple(sorted((k, repr(a)) for k, a in o.attrs.items() if k != 'comment'))
+            return (o.kind, r.kind, r.dtype, tuple(names), attrs)
+
+        def visit(b):
+            added = []
+            for i in range(order[b], ends[b]):
+                o = ops[i]
+                k = key_of(o)
+                if k is None:
+                    continue
+                r = o.results[0]
+                hit = table.get(k)
+                if hit is not None:
+                    limit = scalar_window if r.kind == 'scalar' else vector_window
+                    if i - position[id(hit)] <= limit:
+                        rep[id(r)] = hit
+                        note['merged'] += 1
+                        continue
+                added.append((k, table.get(k)))
+                table[k] = r
+            for c in sorted(children.get(b, ())):
+                visit(c)
+            for k, prev in reversed(added):
+                if prev is None:
+                    del table[k]
+                else:
+                    table[k] = prev
+
+        import sys
+        old = sys.getrecursionlimit()
+        sys.setrecursionlimit(max(old, 10000))
+        try:
+            visit(0)
+        finally:
+            sys.setrecursionlimit(old)
+        if rep:
+            eq = {k: v for k, v in rep.items()}
+            for o in ops:
+                _rewrite(o, eq)
+            role.region.ops = [o for o in ops if not (len(o.results) == 1 and id(o.results[0]) in rep)]
+        out['merged'] += note['merged']
         out['roles'].append(note)
     return out

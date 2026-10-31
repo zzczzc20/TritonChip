@@ -1,0 +1,12 @@
+clock_utc=2026-10-29T02:35:46Z
+source_commit=1241d5ce5d4be73f9e409e82690c171617d21111
+command=summarize FPGA dry-run JSON
+membound-large-1: configurations=99 expected_board_hours=1.1
+membound-large-2: configurations=72 expected_board_hours=0.8
+membound-medium-1: configurations=132 expected_board_hours=1.467
+membound-medium-2: configurations=39 expected_board_hours=0.433
+membound-small-1: configurations=142 expected_board_hours=1.578
+membound-small-2: configurations=29 expected_board_hours=0.322
+s2-original-suite: configurations=113 expected_board_hours=2.048
+manifests=7 configurations=626 total_expected_board_hours=7.748
+FPGA DRY-RUN SUMMARY PASS

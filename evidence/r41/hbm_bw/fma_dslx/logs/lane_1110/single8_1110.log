@@ -1,0 +1,6 @@
+single8 DP4 E4M3xE4M3: 4 slots x 65536 pairs, 262144 checked, 0 mismatches
+single8 DP2 codes 2 x 2: 2 slots x 65536 pairs, 131072 checked, 0 mismatches
+single8 DP2 codes 2 x 3: 2 slots x 65536 pairs, 131072 checked, 0 mismatches
+single8 DP2 codes 3 x 2: 2 slots x 65536 pairs, 131072 checked, 0 mismatches
+single8 DP2 codes 3 x 3: 2 slots x 65536 pairs, 131072 checked, 0 mismatches
+single8: 786432 checked, 0 mismatches: PASS

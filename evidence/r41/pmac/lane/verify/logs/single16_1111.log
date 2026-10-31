@@ -1,0 +1,5 @@
+single16 alt_a 0 alt_b 0: 2 slots x 5000000 pairs, 10000000 lane results checked (x2 V2L/V2D), 0 mismatches
+single16 alt_a 1 alt_b 0: 2 slots x 5000000 pairs, 10000000 lane results checked (x2 V2L/V2D), 0 mismatches
+single16 alt_a 0 alt_b 1: 2 slots x 5000000 pairs, 10000000 lane results checked (x2 V2L/V2D), 0 mismatches
+single16 alt_a 1 alt_b 1: 2 slots x 5000000 pairs, 10000000 lane results checked (x2 V2L/V2D), 0 mismatches
+single16: checked V2L 40000000 V2D 40000000, 0 mismatches: PASS

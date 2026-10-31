@@ -1,0 +1,81 @@
+wrote isa/tnca-isa-v0.1.json: 169 instructions, 20 majors, 25 special registers
+  note: described but unused operand kinds: ['wa']
+wrote compiler/targets/tnca-sim-v0.1.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-4rctx.json: 4 RCTX, 32 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-2x2.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v2.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v3.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v4.json: 4 RCTX, 64 logical vregs each, 256 physical
+wrote compiler/targets/tnca-sim-vrf-v5.json: 4 RCTX, 64 logical vregs each, 256 physical
+wrote compiler/targets/tnca-sim-vrf-v5-x8.json: 4 RCTX, 64 logical vregs each, 256 physical
+wrote compiler/targets/tnca-sim-xpose-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v5-x8-g2.json: 2 RCTX, 64 logical vregs each, 128 physical
+PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+  up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+  up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+  up to date: doc/isa/opcode-map.md
+PASS: all generated ISA files match the schema
+  up to date: doc/support_matrix.md
+PASS: target descriptions match the RTL parameters
+checked 218 shared constants against /home/zhongchun/r41bw_res_18d045c53b8b/rtl/common/tnca_defs.vh
+PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+  SKIP test_affine64_tile_with_i64_elements (test_addr64.Addr64Tests.test_affine64_tile_with_i64_elements): Triton is required
+  SKIP test_index64_division_by_constants_is_exact (test_addr64.Addr64Tests.test_index64_division_by_constants_is_exact): Triton is required
+  SKIP test_index64_gather_forms_each_lane_address_in_64_bits (test_addr64.Addr64Tests.test_index64_gather_forms_each_lane_address_in_64_bits): Triton is required
+  SKIP test_index64_slice_past_2g_is_one_contiguous_access (test_addr64.Addr64Tests.test_index64_slice_past_2g_is_one_contiguous_access): Triton is required
+  SKIP test_index64_tile_is_rebased_on_its_first_element (test_addr64.Addr64Tests.test_index64_tile_is_rebased_on_its_first_element): Triton is required
+  SKIP test_row_pointer_broadcast_gives_every_lane_its_row (test_addr64.Addr64Tests.test_row_pointer_broadcast_gives_every_lane_its_row): Triton is required
+  SKIP test_scalar64_grid_division (test_addr64.Addr64Tests.test_scalar64_grid_division): Triton is required
+  SKIP test_scalar64_runtime_grid_division (test_addr64.Addr64Tests.test_scalar64_runtime_grid_division): Triton is required
+  SKIP test_sliced_gemm_operand_hoists_from_its_argument (test_addr64.Addr64Tests.test_sliced_gemm_operand_hoists_from_its_argument): Triton is required
+  SKIP test_small_descriptor_box_keeps_absolute_offsets_in_64_bits (test_addr64.Addr64Tests.test_small_descriptor_box_keeps_absolute_offsets_in_64_bits): Triton is required
+  SKIP test_loaded_column_keeps_lane0_broadcast (test_column_broadcast.ColumnBroadcastTests.test_loaded_column_keeps_lane0_broadcast): Triton is required
+  SKIP test_loaded_column_without_the_copy_is_wrong_on_rtl (test_column_broadcast.ColumnBroadcastTests.test_loaded_column_without_the_copy_is_wrong_on_rtl): Triton is required
+  SKIP test_replicated_rows_are_renamed (test_column_broadcast.ColumnBroadcastTests.test_replicated_rows_are_renamed): Triton is required
+  SKIP test_attention_reuses_kv_once_per_query_block (test_dco.TestDCOPlan.test_attention_reuses_kv_once_per_query_block): triton not importable
+  SKIP test_gemm_split_program_id (test_dco.TestDCOPlan.test_gemm_split_program_id): triton not importable
+  SKIP test_refuses_what_it_cannot_count (test_dco.TestDCOPlan.test_refuses_what_it_cannot_count): triton not importable
+  SKIP test_registration_precedes_every_load (test_dco.TestDCOPlan.test_registration_precedes_every_load): triton not importable
+  SKIP test_stream_through_a_weight (test_dco.TestDCOPlan.test_stream_through_a_weight): triton not importable
+  SKIP test_binary32_dot_is_not_counted_as_mma (test_execution_resources.ExecutionResourcePlanTests.test_binary32_dot_is_not_counted_as_mma): Triton is required
+  SKIP test_descriptor_and_pointer_transfers (test_execution_resources.ExecutionResourcePlanTests.test_descriptor_and_pointer_transfers): Triton is required
+  SKIP test_fragments_and_macs_for_full_wide_tail_and_masked_shapes (test_execution_resources.ExecutionResourcePlanTests.test_fragments_and_macs_for_full_wide_tail_and_masked_shapes): Triton is required
+  SKIP test_live_old_accumulator_round_trips_are_counted (test_execution_resources.ExecutionResourcePlanTests.test_live_old_accumulator_round_trips_are_counted): Triton is required
+  SKIP test_refusals_carry_their_reason (test_execution_resources.ExecutionResourcePlanTests.test_refusals_carry_their_reason): Triton is required
+  SKIP test_resident_k_loop_has_no_accumulator_round_trips (test_execution_resources.ExecutionResourcePlanTests.test_resident_k_loop_has_no_accumulator_round_trips): Triton is required
+  SKIP test_resources_admission_and_tuning_read_the_plan (test_execution_resources.ExecutionResourcePlanTests.test_resources_admission_and_tuning_read_the_plan): Triton is required
+  SKIP test_unstated_extents_stay_unknown (test_execution_resources.ExecutionResourcePlanTests.test_unstated_extents_stay_unknown): Triton is required
+  SKIP test_narrowing_keeps_the_nan_sign (test_fp8_convert.FP8ConversionTests.test_narrowing_keeps_the_nan_sign): Triton is required
+  SKIP test_narrowing_looks_through_the_widened_load (test_fp8_convert.FP8ConversionTests.test_narrowing_looks_through_the_widened_load): Triton is required
+  SKIP test_no_rule_where_no_nan_can_be_read (test_fp8_convert.FP8ConversionTests.test_no_rule_where_no_nan_can_be_read): Triton is required
+  SKIP test_no_rule_without_an_fp8_end (test_fp8_convert.FP8ConversionTests.test_no_rule_without_an_fp8_end): Triton is required
+  SKIP test_the_instruction_alone_drops_the_sign_on_rtl (test_fp8_convert.FP8ConversionTests.test_the_instruction_alone_drops_the_sign_on_rtl): Triton is required
+  SKIP test_tile_widening (test_fp8_convert.FP8ConversionTests.test_tile_widening): Triton is required
+  SKIP test_widening_keeps_sign_and_payload (test_fp8_convert.FP8ConversionTests.test_widening_keeps_sign_and_payload): Triton is required
+  SKIP test_column_major_b_is_gathered_into_the_repack (test_fp8_mma.FP8DotTests.test_column_major_b_is_gathered_into_the_repack): Triton is required
+  SKIP test_deep_k_is_one_mma (test_fp8_mma.FP8DotTests.test_deep_k_is_one_mma): Triton is required
+  SKIP test_deep_k_split_as_elementwise_is_wrong_on_rtl (test_fp8_mma.FP8DotTests.test_deep_k_split_as_elementwise_is_wrong_on_rtl): Triton is required
+  SKIP test_mixed_encodings_are_an_exact_fp16_mma (test_fp8_mma.FP8DotTests.test_mixed_encodings_are_an_exact_fp16_mma): Triton is required
+  SKIP test_mixed_encodings_deeper_than_one_block_are_refused (test_fp8_mma.FP8DotTests.test_mixed_encodings_deeper_than_one_block_are_refused): Triton is required
+  SKIP test_operands_take_the_transfer_engine (test_fp8_mma.FP8DotTests.test_operands_take_the_transfer_engine): Triton is required
+  SKIP test_insufficient_accumulators_are_rejected_before_execution (test_fragment_residency.FragmentResidencyTests.test_insufficient_accumulators_are_rejected_before_execution): Triton is required
+  SKIP test_live_old_accumulator_is_not_overwritten (test_fragment_residency.FragmentResidencyTests.test_live_old_accumulator_is_not_overwritten): Triton is required
+  SKIP test_two_fragments_remain_resident_across_k (test_fragment_residency.FragmentResidencyTests.test_two_fragments_remain_resident_across_k): Triton is required
+  SKIP test_pressure_is_relieved_and_every_lane_is_correct_on_rtl (test_predicate_spill.PredicateSpillTests.test_pressure_is_relieved_and_every_lane_is_correct_on_rtl): /home/zhongchun/r41bw_res_18d045c53b8b/sim/build/tb_core.vvp not built; run `make core` first
+  SKIP test_multiple_mma_refuses_without_mutation (test_single_role_pipeline.SingleRolePipeline.test_multiple_mma_refuses_without_mutation): Triton is required
+  SKIP test_non_two_stage_refuses_without_mutation (test_single_role_pipeline.SingleRolePipeline.test_non_two_stage_refuses_without_mutation): Triton is required
+  SKIP test_old_accumulator_reader_refuses_without_mutation (test_single_role_pipeline.SingleRolePipeline.test_old_accumulator_reader_refuses_without_mutation): Triton is required
+  SKIP test_two_slots_overlap_and_drain_odd_trip_before_epilogue (test_single_role_pipeline.SingleRolePipeline.test_two_slots_overlap_and_drain_odd_trip_before_epilogue): Triton is required
+  SKIP test_erf (test_std_math.StdMathTests.test_erf): Triton is required
+  SKIP test_int64_divmod (test_std_math.StdMathTests.test_int64_divmod): Triton is required
+  SKIP test_int64_to_f32 (test_std_math.StdMathTests.test_int64_to_f32): Triton is required
+  SKIP test_log1p (test_std_math.StdMathTests.test_log1p): Triton is required
+  SKIP test_sin_cos (test_std_math.StdMathTests.test_sin_cos): Triton is required
+  SKIP test_sin_cos_tile (test_std_math.StdMathTests.test_sin_cos_tile): Triton is required
+  compiler-unit          FAIL   53 skipped, 0 xfail, 0 xpass (R1_STRICT=1: none of these is a pass)
+make: *** [Makefile:974: compiler] Error 1
+
+real	0m0.407s
+user	0m0.314s
+sys	0m0.078s

@@ -1,0 +1,14 @@
+iverilog -g2012 -g2005 -I rtl/common -y rtl/common -y rtl/core -y rtl/gen -y rtl/nuca -y rtl/noc -y rtl/tile -y rtl/fpga -y rtl -I rtl/noc -o sim/build/tb_mesh.vvp tb/noc/tb_mesh.v rtl/noc/tnca_mesh.v
+  BASE-MESH-2x2-seed1    PASS   
+      seed=1 trace_hash=233c128a6897cc3d
+      sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6426
+  BASE-MESH-2x2-seed7    PASS   
+      seed=7 trace_hash=46c76ae6e1dffeb1
+      sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6242
+  BASE-MESH-2x2-seed42   PASS   
+      seed=42 trace_hash=21d446c1263fbd9c
+      sent=20000 received=20000 pairs_covered=32/32 backpressure_cycles=6255
+
+real	1m24.190s
+user	1m24.110s
+sys	0m0.076s

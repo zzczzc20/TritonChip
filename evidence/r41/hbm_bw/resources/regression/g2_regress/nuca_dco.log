@@ -1,0 +1,44 @@
+  DCO-NUCA-policy1-seed1 PASS   
+      seed=1 trace_hash=177f11965447aacd writes=467
+      issued=2000 reads_checked=1533 inflight_left=0
+      hit=1036 miss=948 merge=16 wb=232 mshr_full=523 target_full=1 hit_past_block=383
+  DCO-NUCA-policy1-seed7 PASS   
+      seed=7 trace_hash=e1243d7dee31195d writes=533
+      issued=2000 reads_checked=1467 inflight_left=0
+      hit=1015 miss=968 merge=17 wb=232 mshr_full=572 target_full=2 hit_past_block=397
+  DCO-NUCA-policy2-seed1 PASS   
+      seed=1 trace_hash=177f11965447aacd writes=467
+      issued=2000 reads_checked=1533 inflight_left=0
+      hit=1013 miss=964 merge=23 wb=235 mshr_full=536 target_full=1 hit_past_block=408
+  DCO-NUCA-policy2-seed7 PASS   
+      seed=7 trace_hash=e1243d7dee31195d writes=533
+      issued=2000 reads_checked=1467 inflight_left=0
+      hit=963 miss=999 merge=38 wb=247 mshr_full=640 target_full=2 hit_past_block=469
+  DCO-NUCA-policy46-seed1 PASS   
+      seed=1 trace_hash=177f11965447aacd writes=467
+      issued=2000 reads_checked=1533 inflight_left=0
+      hit=1010 miss=966 merge=24 wb=226 mshr_full=602 target_full=2 hit_past_block=472
+  DCO-NUCA-policy46-seed7 PASS   
+      seed=7 trace_hash=e1243d7dee31195d writes=533
+      issued=2000 reads_checked=1467 inflight_left=0
+      hit=974 miss=989 merge=37 wb=231 mshr_full=645 target_full=2 hit_past_block=489
+  DCO-NUCA-policy62-seed1 PASS   
+      seed=1 trace_hash=177f11965447aacd writes=467
+      issued=2000 reads_checked=1533 inflight_left=0
+      hit=1013 miss=964 merge=23 wb=226 mshr_full=578 target_full=1 hit_past_block=448
+  DCO-NUCA-policy62-seed7 PASS   
+      seed=7 trace_hash=e1243d7dee31195d writes=533
+      issued=2000 reads_checked=1467 inflight_left=0
+      hit=981 miss=986 merge=33 wb=231 mshr_full=608 target_full=2 hit_past_block=459
+  DCO-NUCA-policy74-seed1 PASS   
+      seed=1 trace_hash=177f11965447aacd writes=467
+      issued=2000 reads_checked=1533 inflight_left=0
+      hit=315 miss=1437 merge=248 wb=229 mshr_full=1142 target_full=10 hit_past_block=787
+  DCO-NUCA-policy74-seed7 PASS   
+      seed=7 trace_hash=e1243d7dee31195d writes=533
+      issued=2000 reads_checked=1467 inflight_left=0
+      hit=445 miss=1357 merge=198 wb=241 mshr_full=1007 target_full=5 hit_past_block=680
+
+real	0m15.988s
+user	0m15.854s
+sys	0m0.176s

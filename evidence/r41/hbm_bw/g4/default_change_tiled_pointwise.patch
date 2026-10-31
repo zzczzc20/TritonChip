@@ -1,0 +1,26 @@
+diff --git a/python/tnca/inductor.py b/python/tnca/inductor.py
+index 83b1802..87d92ae 100644
+--- a/python/tnca/inductor.py
++++ b/python/tnca/inductor.py
+@@ -617,7 +617,7 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
+     _NO_X_DIM[0] = bool(no_x_dim)
+     _install_no_x_dim()
+     _BLOCK_CAP[0] = max_block
+-    tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
++    tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '2'))
+     if tiled not in (0, 1, 2):
+         raise ValueError('TNCA_TILED_POINTWISE must be 0, 1 or 2')
+     _POINTWISE_CAP[0] = max(max_block, TILED_POINTWISE_BLOCK) if tiled else 0
+diff --git a/python/tnca/triton_backend/compiler.py b/python/tnca/triton_backend/compiler.py
+index ff46667..4e962b9 100644
+--- a/python/tnca/triton_backend/compiler.py
++++ b/python/tnca/triton_backend/compiler.py
+@@ -116,7 +116,7 @@ def _packed_window_unpack():
+ 
+ 
+ def _tiled_pointwise():
+-    value = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
++    value = int(os.environ.get('TNCA_TILED_POINTWISE', '2'))
+     if value not in (0, 1, 2):
+         raise ValueError('TNCA_TILED_POINTWISE must be 0, 1 or 2')
+     return value

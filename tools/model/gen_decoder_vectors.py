@@ -157,6 +157,10 @@ m.zero a0
 m.mma.async a1, v8, v16, s2
 m.mma.async.k32 a1, v8, v16, s2
 m.mma.async.k64.bf16 a1, v8, v16, s2
+m.mma.dp.async a1, v8, v16, s2
+m.mma.dp.async.k32.e4m3 a1, v8, v16, s2
+m.mma.dp.async.k64.f16.e4m3.sf a1, v8, v16, s2
+m.mma.dp.async.bf16.e5m2 a1, v8, v16, s2
 td.load d0, [s9]
 td.release d15
 w.def w1, #8, #8
@@ -288,6 +292,12 @@ def main():
     emit(encode(MAJ['MATRIX'], 0x01, d=1, a=2, b=3, c=4, mod=0x8), False, "mma_e5m2")
     emit(encode(MAJ['MATRIX'], 0x01, d=1, a=2, b=3, c=4, mod=0xc), False, "mma_e4m3")
     emit(encode(MAJ['TXFER'], 0x00, d=1, a=2, b=3, c=4, mod=0x08), True, "txf_layout1")
+    # m.mma.dp.async (sec 9C.4): mod[6:5] is the B format, mod[9:7] reserved
+    emit(encode(MAJ['MATRIX'], 0x02, d=1, a=2, b=3, c=4, mod=0x6c), False, "mmadp_e4m3_e4m3")
+    emit(encode(MAJ['MATRIX'], 0x02, d=1, a=2, b=3, c=4, mod=0x74), False, "mmadp_sf_bf16")
+    emit(encode(MAJ['MATRIX'], 0x02, d=1, a=2, b=3, c=4, mod=0x03), True, "mmadp_k3")
+    emit(encode(MAJ['MATRIX'], 0x02, d=1, a=2, b=3, c=4, mod=0x080), True, "mmadp_mod7")
+    emit(encode(MAJ['MATRIX'], 0x02, d=1, a=2, b=3, c=4, mod=0x200), True, "mmadp_mod9")
 
     # ---- illegal modifiers ----------------------------------------------
     emit(encode(MAJ['SALU'], 0x18, d=1, a=2, b=3, mod=0x0a), True, "cc_o_on_int")

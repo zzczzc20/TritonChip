@@ -1,0 +1,106 @@
+diff --git a/tb/core/tb_lsu_hybrid.v b/tb/core/tb_lsu_hybrid.v
+index a0ee3c2a..285060a8 100644
+--- a/tb/core/tb_lsu_hybrid.v
++++ b/tb/core/tb_lsu_hybrid.v
+@@ -7,6 +7,7 @@
+ module tb_lsu_hybrid;
+ parameter BURST=0;
+ parameter BEAT_W=4;
++parameter CAND_BEATS=4;
+ parameter BURST_PERIOD=32;
+ parameter BURST_DEPTH=24;
+ parameter BURST_BASE=2048;
+@@ -14,6 +15,7 @@ parameter BURST_LINES=16;
+ parameter MEM_WORDS=512;       // memory words (4 KiB window by default)
+ parameter CHAIN_PERIOD=64;      // accesses between the known store/CAS chains (>= 37)
+ parameter FORCE_LOADS=0;
++parameter FORCE_INDEXED=0;
+ parameter SEED = 1;
+ parameter ACCESSES = 1500;
+ parameter STALL_PCT = 30;       // % of cycles the port is not ready
+@@ -86,6 +88,11 @@ initial begin
+   a_amo[n]=0; a_store[n]=0; a_vector[n]=0; a_indexed[n]=0;
+   a_mask[n]=16'h1; a_size[n]=`TNCA_SZ_D; a_base[n]=1024+(n%128)*8; a_offset[n]=0;
+  end
++ if(FORCE_INDEXED) for(n=0;n<NACC;n=n+1) begin
++  a_amo[n]=0; a_store[n]=0; a_vector[n]=1; a_indexed[n]=1;
++  a_mask[n]=16'hffff; a_size[n]=`TNCA_SZ_W; a_base[n]=2048; a_offset[n]=0;
++  for(l=0;l<VLEN;l=l+1) a_index[n][l*ELEN+:ELEN]=l*8;
++ end
+ 
+  if(DIRECTED)begin
+   // 0 scalar load; 1 aligned 16x32 vector load (8 beats); 2 the same store;
+@@ -144,7 +151,7 @@ generate for(g=0;g<2;g=g+1)begin:g_dut
+   .mem_rsp_valid(rspv[g]),.mem_rsp_tag(rspt[g]),.mem_rsp_rdata(rspd[g][63:0]));
+  end else begin:g_candidate
+  tnca_lsu_hybrid #(.VLEN(VLEN),.ELEN(ELEN),.RCTX_W(RCTX_W),.MEM_DW(512),.MEM_BYTES(64),.MEM_SHIFT(6),
+-                 .NUM_BEATS(4),.BEAT_W(BW),.REQ_REG(g)) dut(
++                 .NUM_BEATS(CAND_BEATS),.BEAT_W(BW),.REQ_REG(g)) dut(
+   .clk(clk),.rst_n(rst_n),.req_ready(rdy[g]),.req_ready_load(rdy_load[g]),.req_valid(rv[g]),
+   .req_store(a_store[p]),.req_vector(a_vector[p]),.req_indexed(a_indexed[p]),.req_size(a_size[p]),
+   .req_signed(a_signed[p]),.req_hint(a_hint[p]),.req_base(a_base[p]),.req_offset(a_offset[p]),
+@@ -220,7 +227,7 @@ always @(posedge clk) if(rst_n) begin
+    cand=-1;for(j=TAGS-1;j>=0;j=j-1)if(!pv[k][j])cand=j;
+    if(cand<0)$fatal(1,"dut%0d: more than %0d beats in flight",k,TAGS);
+    pv[k][cand]=1;pt[k][cand]=mtag[k];pd[k][cand]=old;
+-   pdue[k][cand]=cycle+1+(DIRECTED ? 3 : $unsigned(rk(k))%MAXLAT);
++   pdue[k][cand]=cycle+1+(FORCE_INDEXED ? MAXLAT : DIRECTED ? 3 : $unsigned(rk(k))%MAXLAT);
+   end
+   if(rspv[k])out_tags[k][rspt[k]]=1'b0;
+   if(cplv[k] && ack[k])begin
+@@ -286,6 +293,12 @@ end
+ 
+ // ---- run and compare -----------------------------------------------------------
+ integer done_cycle[0:1];
++integer narrow_peak=0, narrow_count, q;
++always @(negedge clk) if(rst_n) begin
++ narrow_count=0;
++ for(q=0;q<(1<<(BW-1));q=q+1) if(out_tags[1][q]) narrow_count=narrow_count+1;
++ if(narrow_count>narrow_peak) narrow_peak=narrow_count;
++end
+ initial begin
+  done_cycle[0]=-1;done_cycle[1]=-1;
+  repeat(4)@(negedge clk);rst_n=1;
+@@ -304,7 +317,9 @@ initial begin
+     g_dut[1].g_candidate.dut.perf_fast_retired!=g_dut[1].g_candidate.dut.perf_fast_accepted)
+   $fatal(1,"hybrid counter mismatch");
+  if(out_tags[0]!=0 || out_tags[1]!=0)$fatal(1,"undrained memory transactions");
+- if(!FORCE_LOADS && (fast_commands==0 || slow_requests==0))$fatal(1,"both paths not covered");
++ if(!FORCE_LOADS && !FORCE_INDEXED && (fast_commands==0 || slow_requests==0))$fatal(1,"both paths not covered");
++ if(FORCE_INDEXED && narrow_peak<2*CAND_BEATS)$fatal(1,"narrow slots not filled peak=%0d expected=%0d",narrow_peak,2*CAND_BEATS);
++ if(FORCE_INDEXED)$display("HYBRID NARROW PEAK %0d",narrow_peak);
+  $display("HYBRID COVERAGE fast=%0d slow_beats=%0d",fast_commands,slow_requests);
+  if(BURST && MAXLAT>=32 && peak!=(1<<(BW-1)))$fatal(1,"fast slots not fully exercised peak=%0d expected=%0d",peak,1<<(BW-1));
+  $display("HYBRID FAST PEAK %0d",peak);
+diff --git a/tools/r41/lsu_hybrid_tests.py b/tools/r41/lsu_hybrid_tests.py
+index b57f025b..e0aa8a54 100644
+--- a/tools/r41/lsu_hybrid_tests.py
++++ b/tools/r41/lsu_hybrid_tests.py
+@@ -34,6 +34,27 @@ def main():
+                         except (subprocess.CalledProcessError,subprocess.TimeoutExpired):
+                             failures.append((beat_w,seed,stall,burst))
+                             print(f'HYBRID LSU FAIL beat_w={beat_w} seed={seed} stall={stall} burst={burst}',flush=True)
++        # Indexed loads use the narrow pair. Fill all eight beat tags in each
++        # unit while comparing completion data and memory to the original pair.
++        for beat_w in (5, 6, 7):
++            binary=str(Path(tmp)/'indexed-eight.vvp')
++            subprocess.run(['iverilog','-g2012','-Irtl/common','-y','rtl/core','-s','tb_lsu_hybrid',
++                f'-Ptb_lsu_hybrid.BEAT_W={beat_w}', '-Ptb_lsu_hybrid.CAND_BEATS=8',
++                '-Ptb_lsu_hybrid.FORCE_INDEXED=1', '-Ptb_lsu_hybrid.ACCESSES=32',
++                '-Ptb_lsu_hybrid.MAXLAT=64', '-Ptb_lsu_hybrid.STALL_PCT=0',
++                '-Ptb_lsu_hybrid.HOLD_PCT=0', '-o',binary,'tb/core/tb_lsu_hybrid.v'],
++                cwd=ROOT,check=True,timeout=60)
++            subprocess.run(['vvp',binary],cwd=ROOT,check=True,timeout=600)
++        # Exercise eight-beat slow units in the same mixed, backpressured miter.
++        for beat_w in (5, 6, 7):
++            binary=str(Path(tmp)/'mixed-eight.vvp')
++            subprocess.run(['iverilog','-g2012','-Irtl/common','-y','rtl/core','-s','tb_lsu_hybrid',
++                f'-Ptb_lsu_hybrid.BEAT_W={beat_w}', '-Ptb_lsu_hybrid.CAND_BEATS=8',
++                '-Ptb_lsu_hybrid.SEED=7', '-Ptb_lsu_hybrid.STALL_PCT=30',
++                '-Ptb_lsu_hybrid.HOLD_PCT=5', '-Ptb_lsu_hybrid.MAXLAT=64',
++                '-Ptb_lsu_hybrid.ACCESSES=600', '-o',binary,'tb/core/tb_lsu_hybrid.v'],
++                cwd=ROOT,check=True,timeout=60)
++            subprocess.run(['vvp',binary],cwd=ROOT,check=True,timeout=600)
+         reset_binary=str(Path(tmp)/'reset.vvp')
+         subprocess.run(['iverilog','-g2012','-Irtl/common','-y','rtl/core','-s','tb_lsu_hybrid_reset',
+             '-o',reset_binary,'tb/core/tb_lsu_hybrid_reset.v'],cwd=ROOT,check=True,timeout=60)

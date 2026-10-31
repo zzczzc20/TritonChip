@@ -1,0 +1,48 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Wed Oct 28 10:11:37 2026
+| Host         : ee4e138 running 64-bit Ubuntu 24.04.5 LTS
+| Command      : report_drc -file /home/vivado/r41_hbmbw_home_bg_v1/out/routed_drc.rpt
+| Design       : tnca_nuca_slice
+| Device       : xcu280-fsvh2892-2L-e
+| Speed File   : -2L
+| Design State : Fully Routed
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Report DRC
+
+Table of Contents
+-----------------
+1. REPORT SUMMARY
+2. REPORT DETAILS
+
+1. REPORT SUMMARY
+-----------------
+            Netlist: tnca_nuca_slice
+          Floorplan: design_1
+      Design limits: <entire design considered>
+           Ruledeck: default
+             Max violations: <unlimited>
+             Violations found: 1
++-----------+----------+-------------------+------------+
+| Rule      | Severity | Description       | Violations |
++-----------+----------+-------------------+------------+
+| RTSTAT-10 | Warning  | No routable loads | 1          |
++-----------+----------+-------------------+------------+
+
+2. REPORT DETAILS
+-----------------
+RTSTAT-10#1 Warning
+No routable loads  
+1232 net(s) have no routable loads. The problem bus(es) and/or net(s) are rsq_data_reg_0_3_140_153/DOA0, rsq_data_reg_0_3_168_181/DOA0,
+rsq_data_reg_0_3_182_195/DOA0, rsq_data_reg_0_3_252_265/DOA0,
+rsq_data_reg_0_3_266_279/DOA0, rsq_data_reg_0_3_280_293/DOA0,
+rsq_data_reg_0_3_322_335/DOA0, rsq_data_reg_0_3_350_363/DOA0,
+rsq_data_reg_0_3_364_377/DOA0, rsq_data_reg_0_3_378_391/DOA0,
+rsq_data_reg_0_3_392_405/DOA0, rsq_data_reg_0_3_406_419/DOA0,
+rsq_data_reg_0_3_462_475/DOA0, rsq_data_reg_0_3_476_489/DOA0,
+rsq_data_reg_0_3_56_69/DOA0 (the first 15 of 533 listed nets/buses).
+Related violations: <none>
+
+

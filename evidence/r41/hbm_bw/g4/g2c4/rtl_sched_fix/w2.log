@@ -1,0 +1,11 @@
+op.sum/membound/fp16-small-contig-r32-c1024 pass [34299] [34304]
+job g2c4 op.sum/membound/fp16-small-contig-r32-c1024 rc=0
+op.add/membound/fp16-small-strided-r32-c1024 pass [152816] [152821]
+job g2c4 op.add/membound/fp16-small-strided-r32-c1024 rc=0
+op.clone/membound/fp16-small-strided-r32-c1024 pass [104314] [104319]
+job g2c4 op.clone/membound/fp16-small-strided-r32-c1024 rc=0
+op.exp/membound/fp16-small-contig-r32-c1024 pass [104880] [104885]
+job g2c4 op.exp/membound/fp16-small-contig-r32-c1024 rc=0
+op.silu/membound/fp16-small-contig-r32-c1024 pass [132622] [132627]
+job g2c4 op.silu/membound/fp16-small-contig-r32-c1024 rc=0
+done

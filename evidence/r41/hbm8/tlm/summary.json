@@ -1,0 +1,2166 @@
+{
+  "scope": "functional model execution; measured host resources; planned BO; no board or calibrated timing claim",
+  "native": {
+    "native-exact": {
+      "status": "pass",
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "map_status": "planned-allocation-not-measured",
+      "window": {
+        "local_limit": 131072,
+        "bo_size": 8589934592,
+        "bo_top": 8590065664,
+        "model_memory_bytes": 8589934592
+      },
+      "logical_loads": [
+        131072,
+        4294967232,
+        4294967296,
+        2147418048,
+        2147422208,
+        4295102464,
+        4563537920,
+        4831973376,
+        5100408832,
+        5368844288,
+        5637279744,
+        5905715200,
+        6174150656,
+        6442586112,
+        6711021568,
+        6979457024,
+        7247892480,
+        7516327936,
+        7784763392,
+        8053198848,
+        8321634304,
+        8589934464
+      ],
+      "scalar_load": 8589934584,
+      "region1": [
+        4295097664,
+        4295097728,
+        4295097792,
+        4295097856,
+        4295097920,
+        4295097984,
+        4295098048,
+        4295098112,
+        4295098176,
+        4295098240,
+        4295098304,
+        4295098368,
+        4295098432,
+        4295098496,
+        4295098560,
+        4295098624,
+        4295098688,
+        4295098752,
+        4295098816,
+        4295098880,
+        4295098944,
+        4295099008
+      ],
+      "region2": [
+        8589932672,
+        8589932736,
+        8589932800,
+        8589932864,
+        8589932928,
+        8589932992,
+        8589933056,
+        8589933120,
+        8589933184,
+        8589933248,
+        8589933312,
+        8589933376,
+        8589933440,
+        8589933504,
+        8589933568,
+        8589933632,
+        8589933696,
+        8589933760,
+        8589933824,
+        8589933888,
+        8589933952,
+        8589934016
+      ],
+      "expected_pc_bytes": {
+        "pc_0_bytes": 64,
+        "pc_15_bytes": 2240,
+        "pc_7_bytes": 128,
+        "pc_16_bytes": 2368,
+        "pc_17_bytes": 64,
+        "pc_18_bytes": 64,
+        "pc_19_bytes": 64,
+        "pc_20_bytes": 64,
+        "pc_21_bytes": 64,
+        "pc_22_bytes": 64,
+        "pc_23_bytes": 64,
+        "pc_24_bytes": 64,
+        "pc_25_bytes": 64,
+        "pc_26_bytes": 64,
+        "pc_27_bytes": 64,
+        "pc_28_bytes": 64,
+        "pc_29_bytes": 64,
+        "pc_30_bytes": 64,
+        "pc_31_bytes": 3136
+      },
+      "positives": [
+        {
+          "path": "fast",
+          "returncode": 0,
+          "checked_bytes": 2832,
+          "address_map_domain": "axi-bo-physical-pc",
+          "address_map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+          "model_timing_status": "uncalibrated",
+          "visible_cycles": 4953,
+          "pc_bytes": {
+            "pc_0_bytes": 64,
+            "pc_15_bytes": 2240,
+            "pc_16_bytes": 2368,
+            "pc_17_bytes": 64,
+            "pc_18_bytes": 64,
+            "pc_19_bytes": 64,
+            "pc_20_bytes": 64,
+            "pc_21_bytes": 64,
+            "pc_22_bytes": 64,
+            "pc_23_bytes": 64,
+            "pc_24_bytes": 64,
+            "pc_25_bytes": 64,
+            "pc_26_bytes": 64,
+            "pc_27_bytes": 64,
+            "pc_28_bytes": 64,
+            "pc_29_bytes": 64,
+            "pc_30_bytes": 64,
+            "pc_31_bytes": 3136,
+            "pc_7_bytes": 128
+          },
+          "host_elapsed_seconds": 0.08928000368177891,
+          "status": "pass"
+        },
+        {
+          "path": "slow",
+          "returncode": 0,
+          "checked_bytes": 2832,
+          "address_map_domain": "axi-bo-physical-pc",
+          "address_map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+          "model_timing_status": "uncalibrated-fixed-point-checked",
+          "visible_cycles": 4998,
+          "pc_bytes": {
+            "pc_0_bytes": 64,
+            "pc_15_bytes": 2240,
+            "pc_16_bytes": 2368,
+            "pc_17_bytes": 64,
+            "pc_18_bytes": 64,
+            "pc_19_bytes": 64,
+            "pc_20_bytes": 64,
+            "pc_21_bytes": 64,
+            "pc_22_bytes": 64,
+            "pc_23_bytes": 64,
+            "pc_24_bytes": 64,
+            "pc_25_bytes": 64,
+            "pc_26_bytes": 64,
+            "pc_27_bytes": 64,
+            "pc_28_bytes": 64,
+            "pc_29_bytes": 64,
+            "pc_30_bytes": 64,
+            "pc_31_bytes": 3136,
+            "pc_7_bytes": 128
+          },
+          "host_elapsed_seconds": 0.3267995910719037,
+          "status": "pass"
+        }
+      ],
+      "negatives": [
+        {
+          "case": "device-load-at-window-top",
+          "path": "fast",
+          "expected_message": "address outside model memory window",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: address outside model memory window"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-byte-one-past-bo-top",
+          "path": "fast",
+          "expected_message": "address outside model memory window",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: address outside model memory window"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-word-crossing-bo-top",
+          "path": "fast",
+          "expected_message": "address outside model memory window",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: address outside model memory window"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "host-byte-one-past-bo-top",
+          "path": "fast",
+          "expected_message": "host access outside model memory window",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: host access outside model memory window"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-load-tmu-page",
+          "path": "fast",
+          "expected_message": "TMU MMIO is not ordinary model memory",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: TMU MMIO is not ordinary model memory"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-byte-tmu-page-last",
+          "path": "fast",
+          "expected_message": "TMU MMIO is not ordinary model memory",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: TMU MMIO is not ordinary model memory"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "host-write-tmu-page",
+          "path": "fast",
+          "expected_message": "TMU MMIO is not ordinary model memory",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: TMU MMIO is not ordinary model memory"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-load-sram-below-local-limit",
+          "path": "fast",
+          "expected_message": "DRAM address map: SRAM or address outside AXI BO",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: DRAM address map: SRAM or address outside AXI BO"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "window-one-line-past-bo",
+          "path": "fast",
+          "expected_message": "model window exceeds the mapped AXI BO",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: DRAM address map: model window exceeds the mapped AXI BO"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065728"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-load-at-window-top",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-byte-one-past-bo-top",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-word-crossing-bo-top",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "host-byte-one-past-bo-top",
+          "path": "slow",
+          "expected_message": "host access outside model memory window",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: host access outside model memory window"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-load-tmu-page",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-byte-tmu-page-last",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "host-write-tmu-page",
+          "path": "slow",
+          "expected_message": "TMU MMIO is not ordinary model memory",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: TMU MMIO is not ordinary model memory"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-load-sram-below-local-limit",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "window-one-line-past-bo",
+          "path": "slow",
+          "expected_message": "model window exceeds the mapped AXI BO",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: DRAM address map: model window exceeds the mapped AXI BO"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065728"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "unmapped-legacy-logical-window",
+          "path": "fast",
+          "expected_message": "window exceeds PC map",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: window exceeds PC map"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": false,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "baseline-binary-mapped-8gib-window",
+          "path": "fast",
+          "expected_message": "window exceeds PC map",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: window exceeds PC map"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/base/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        }
+      ],
+      "scope": "native model execution on a mapped window; the map is planned-allocation-not-measured; bank/row mapping and timing are not calibrated; no board evidence"
+    },
+    "native-full-bo": {
+      "status": "pass",
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "map_status": "planned-allocation-not-measured",
+      "window": {
+        "local_limit": 131072,
+        "bo_size": 8589934592,
+        "bo_top": 8590065664,
+        "model_memory_bytes": 8590065664
+      },
+      "logical_loads": [
+        131072,
+        4294967232,
+        4294967296,
+        2147418048,
+        2147422208,
+        4295102464,
+        4563537920,
+        4831973376,
+        5100408832,
+        5368844288,
+        5637279744,
+        5905715200,
+        6174150656,
+        6442586112,
+        6711021568,
+        6979457024,
+        7247892480,
+        7516327936,
+        7784763392,
+        8053198848,
+        8321634304,
+        8590065536
+      ],
+      "scalar_load": 8590065656,
+      "region1": [
+        4295097664,
+        4295097728,
+        4295097792,
+        4295097856,
+        4295097920,
+        4295097984,
+        4295098048,
+        4295098112,
+        4295098176,
+        4295098240,
+        4295098304,
+        4295098368,
+        4295098432,
+        4295098496,
+        4295098560,
+        4295098624,
+        4295098688,
+        4295098752,
+        4295098816,
+        4295098880,
+        4295098944,
+        4295099008
+      ],
+      "region2": [
+        8590063744,
+        8590063808,
+        8590063872,
+        8590063936,
+        8590064000,
+        8590064064,
+        8590064128,
+        8590064192,
+        8590064256,
+        8590064320,
+        8590064384,
+        8590064448,
+        8590064512,
+        8590064576,
+        8590064640,
+        8590064704,
+        8590064768,
+        8590064832,
+        8590064896,
+        8590064960,
+        8590065024,
+        8590065088
+      ],
+      "expected_pc_bytes": {
+        "pc_0_bytes": 64,
+        "pc_15_bytes": 2240,
+        "pc_7_bytes": 128,
+        "pc_16_bytes": 2368,
+        "pc_17_bytes": 64,
+        "pc_18_bytes": 64,
+        "pc_19_bytes": 64,
+        "pc_20_bytes": 64,
+        "pc_21_bytes": 64,
+        "pc_22_bytes": 64,
+        "pc_23_bytes": 64,
+        "pc_24_bytes": 64,
+        "pc_25_bytes": 64,
+        "pc_26_bytes": 64,
+        "pc_27_bytes": 64,
+        "pc_28_bytes": 64,
+        "pc_29_bytes": 64,
+        "pc_30_bytes": 64,
+        "pc_31_bytes": 3136
+      },
+      "positives": [
+        {
+          "path": "fast",
+          "returncode": 0,
+          "checked_bytes": 2832,
+          "address_map_domain": "axi-bo-physical-pc",
+          "address_map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+          "model_timing_status": "uncalibrated",
+          "visible_cycles": 4978,
+          "pc_bytes": {
+            "pc_0_bytes": 64,
+            "pc_15_bytes": 2240,
+            "pc_16_bytes": 2368,
+            "pc_17_bytes": 64,
+            "pc_18_bytes": 64,
+            "pc_19_bytes": 64,
+            "pc_20_bytes": 64,
+            "pc_21_bytes": 64,
+            "pc_22_bytes": 64,
+            "pc_23_bytes": 64,
+            "pc_24_bytes": 64,
+            "pc_25_bytes": 64,
+            "pc_26_bytes": 64,
+            "pc_27_bytes": 64,
+            "pc_28_bytes": 64,
+            "pc_29_bytes": 64,
+            "pc_30_bytes": 64,
+            "pc_31_bytes": 3136,
+            "pc_7_bytes": 128
+          },
+          "host_elapsed_seconds": 0.09300101641565561,
+          "status": "pass"
+        },
+        {
+          "path": "slow",
+          "returncode": 0,
+          "checked_bytes": 2832,
+          "address_map_domain": "axi-bo-physical-pc",
+          "address_map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+          "model_timing_status": "uncalibrated-fixed-point-checked",
+          "visible_cycles": 5006,
+          "pc_bytes": {
+            "pc_0_bytes": 64,
+            "pc_15_bytes": 2240,
+            "pc_16_bytes": 2368,
+            "pc_17_bytes": 64,
+            "pc_18_bytes": 64,
+            "pc_19_bytes": 64,
+            "pc_20_bytes": 64,
+            "pc_21_bytes": 64,
+            "pc_22_bytes": 64,
+            "pc_23_bytes": 64,
+            "pc_24_bytes": 64,
+            "pc_25_bytes": 64,
+            "pc_26_bytes": 64,
+            "pc_27_bytes": 64,
+            "pc_28_bytes": 64,
+            "pc_29_bytes": 64,
+            "pc_30_bytes": 64,
+            "pc_31_bytes": 3136,
+            "pc_7_bytes": 128
+          },
+          "host_elapsed_seconds": 0.3657053504139185,
+          "status": "pass"
+        }
+      ],
+      "negatives": [
+        {
+          "case": "device-load-at-window-top",
+          "path": "fast",
+          "expected_message": "address outside model memory window",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: address outside model memory window"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-byte-one-past-bo-top",
+          "path": "fast",
+          "expected_message": "address outside model memory window",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: address outside model memory window"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-word-crossing-bo-top",
+          "path": "fast",
+          "expected_message": "address outside model memory window",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: address outside model memory window"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "host-byte-one-past-bo-top",
+          "path": "fast",
+          "expected_message": "host access outside model memory window",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: host access outside model memory window"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-load-tmu-page",
+          "path": "fast",
+          "expected_message": "TMU MMIO is not ordinary model memory",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: TMU MMIO is not ordinary model memory"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-byte-tmu-page-last",
+          "path": "fast",
+          "expected_message": "TMU MMIO is not ordinary model memory",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: TMU MMIO is not ordinary model memory"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "host-write-tmu-page",
+          "path": "fast",
+          "expected_message": "TMU MMIO is not ordinary model memory",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: TMU MMIO is not ordinary model memory"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-load-sram-below-local-limit",
+          "path": "fast",
+          "expected_message": "DRAM address map: SRAM or address outside AXI BO",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: Error: (E549) uncaught exception: DRAM address map: SRAM or address outside AXI BO"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "window-one-line-past-bo",
+          "path": "fast",
+          "expected_message": "model window exceeds the mapped AXI BO",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: DRAM address map: model window exceeds the mapped AXI BO"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065728"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-load-at-window-top",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-byte-one-past-bo-top",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-word-crossing-bo-top",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "host-byte-one-past-bo-top",
+          "path": "slow",
+          "expected_message": "host access outside model memory window",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: host access outside model memory window"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-load-tmu-page",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-byte-tmu-page-last",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "host-write-tmu-page",
+          "path": "slow",
+          "expected_message": "TMU MMIO is not ordinary model memory",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: TMU MMIO is not ordinary model memory"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "device-load-sram-below-local-limit",
+          "path": "slow",
+          "expected_message": "slow DRAM path: child pass failed",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: slow DRAM path: child pass failed; prediction unavailable"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {},
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "window-one-line-past-bo",
+          "path": "slow",
+          "expected_message": "model window exceeds the mapped AXI BO",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: DRAM address map: model window exceeds the mapped AXI BO"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065728"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "unmapped-legacy-logical-window",
+          "path": "fast",
+          "expected_message": "window exceeds PC map",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: window exceeds PC map"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/mod/tnca-chip",
+          "mapped": false,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        },
+        {
+          "case": "baseline-binary-mapped-8gib-window",
+          "path": "fast",
+          "expected_message": "window exceeds PC map",
+          "returncode": 2,
+          "refusal_lines": [
+            "MODEL_REFUSED: window exceeds PC map"
+          ],
+          "binary": "/home/zhongchun/r41-tlm8-build/base/tnca-chip",
+          "mapped": true,
+          "config_updates": {
+            "memory_bytes": "8590065664"
+          },
+          "status": "refused-as-expected"
+        }
+      ],
+      "scope": "native model execution on a mapped window; the map is planned-allocation-not-measured; bank/row mapping and timing are not calibrated; no board evidence"
+    }
+  },
+  "torch": {
+    "placement-fast": {
+      "status": "functional-pass",
+      "checks": 4,
+      "graphs": 2,
+      "window_bytes": 8589934592,
+      "placements": {
+        "a": {
+          "logical_first": 4296151040,
+          "logical_end": 4297199616,
+          "bytes": 1048576,
+          "physical_first": 4296019968,
+          "first_pc": 16,
+          "last_pc": 16,
+          "end_below_top_bytes": 4292734976
+        },
+        "b": {
+          "logical_first": 8581545984,
+          "logical_end": 8582594560,
+          "bytes": 1048576,
+          "physical_first": 8581414912,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 7340032
+        },
+        "out": {
+          "logical_first": 8582594560,
+          "logical_end": 8583643136,
+          "bytes": 1048576,
+          "physical_first": 8582463488,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 6291456
+        }
+      },
+      "numerical_checks": [
+        {
+          "name": "a above 4 GiB (logical and physical)",
+          "status": "pass"
+        },
+        {
+          "name": "b and output in the window top 8 MiB (PC31)",
+          "status": "pass"
+        },
+        {
+          "name": "a*2+b equals the CPU reference bitwise",
+          "status": "pass"
+        },
+        {
+          "name": "amax/amin exact, sum within 1e-4 of float64",
+          "status": "pass",
+          "sum": -1348.14599609375,
+          "reference": -1348.1455402362626
+        }
+      ],
+      "binary_sha256": "f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02",
+      "pc_bytes": {
+        "pc_16_bytes": 1048576,
+        "pc_31_bytes": 4211456
+      },
+      "host": {
+        "model_rss_kib": 14644,
+        "child_rss_kib": 0,
+        "model_plus_children_pss_kib": 10863,
+        "host_available_min_kib": 103154840,
+        "samples": 2,
+        "python_rss_kib": 737480,
+        "total_pss_kib": 498764,
+        "python_maxrss_kib": 767084,
+        "case_wall_seconds": 3.905
+      },
+      "model_vmhwm_kib": 14644,
+      "model_timing_status": "uncalibrated",
+      "timing_exceptions": {
+        "dram_slow_unconverged": 0,
+        "dram_slow_unmatched": 0,
+        "dram_child_failures": 0
+      },
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a"
+    },
+    "crossing-fast": {
+      "status": "functional-pass",
+      "checks": 5,
+      "graphs": 2,
+      "window_bytes": 8589934592,
+      "placements": {
+        "x": {
+          "logical_first": 3221229568,
+          "logical_end": 3238006784,
+          "bytes": 16777216,
+          "physical_first": 3221098496,
+          "first_pc": 11,
+          "last_pc": 12,
+          "end_below_top_bytes": 5351927808
+        },
+        "y": {
+          "logical_first": 4286578688,
+          "logical_end": 4303355904,
+          "bytes": 16777216,
+          "physical_first": 4286447616,
+          "first_pc": 15,
+          "last_pc": 16,
+          "end_below_top_bytes": 4286578688
+        },
+        "z": {
+          "logical_first": 4303355904,
+          "logical_end": 4320133120,
+          "bytes": 16777216,
+          "physical_first": 4303224832,
+          "first_pc": 16,
+          "last_pc": 16,
+          "end_below_top_bytes": 4269801472
+        }
+      },
+      "numerical_checks": [
+        {
+          "name": "y crosses the 32-bit logical boundary and physical PC15/PC16",
+          "status": "pass"
+        },
+        {
+          "name": "stored y equals 3x+1 bitwise",
+          "status": "pass"
+        },
+        {
+          "name": "loaded z=(y-1)/3 equals x bitwise",
+          "status": "pass"
+        },
+        {
+          "name": "amax/amin of y exact",
+          "status": "pass"
+        },
+        {
+          "name": "store graph wrote PC15 and PC16",
+          "status": "pass",
+          "pc_bytes": {
+            "pc_11_bytes": 126976,
+            "pc_12_bytes": 16650240,
+            "pc_15_bytes": 17039360,
+            "pc_16_bytes": 16619648
+          }
+        }
+      ],
+      "binary_sha256": "f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02",
+      "pc_bytes": {
+        "pc_11_bytes": 126976,
+        "pc_12_bytes": 16650240,
+        "pc_15_bytes": 25559040,
+        "pc_16_bytes": 58511424
+      },
+      "host": {
+        "model_rss_kib": 76148,
+        "child_rss_kib": 0,
+        "model_plus_children_pss_kib": 72403,
+        "host_available_min_kib": 102849348,
+        "samples": 10,
+        "python_rss_kib": 831968,
+        "total_pss_kib": 654421,
+        "python_maxrss_kib": 864056,
+        "case_wall_seconds": 11.438
+      },
+      "model_vmhwm_kib": 76148,
+      "model_timing_status": "uncalibrated",
+      "timing_exceptions": {
+        "dram_slow_unconverged": 0,
+        "dram_slow_unmatched": 0,
+        "dram_child_failures": 0
+      },
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a"
+    },
+    "gemm-fast": {
+      "status": "functional-pass",
+      "checks": 4,
+      "graphs": 2,
+      "window_bytes": 8589934592,
+      "placements": {
+        "mm.A": {
+          "logical_first": 5368844288,
+          "logical_end": 5368875008,
+          "bytes": 30720,
+          "physical_first": 5368713216,
+          "first_pc": 20,
+          "last_pc": 20,
+          "end_below_top_bytes": 3221059584
+        },
+        "mm.B": {
+          "logical_first": 8522825728,
+          "logical_end": 8522851328,
+          "bytes": 25600,
+          "physical_first": 8522694656,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 67083264
+        },
+        "mm.bias": {
+          "logical_first": 8522851328,
+          "logical_end": 8522851488,
+          "bytes": 160,
+          "physical_first": 8522720256,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 67083104
+        },
+        "mm.out": {
+          "logical_first": 8522851520,
+          "logical_end": 8522866880,
+          "bytes": 15360,
+          "physical_first": 8522720448,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 67067712
+        },
+        "addmm.A": {
+          "logical_first": 8523915456,
+          "logical_end": 8523919746,
+          "bytes": 4290,
+          "physical_first": 8523784384,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 66014846
+        },
+        "addmm.B": {
+          "logical_first": 5368844288,
+          "logical_end": 5368848318,
+          "bytes": 4030,
+          "physical_first": 5368713216,
+          "first_pc": 20,
+          "last_pc": 20,
+          "end_below_top_bytes": 3221086274
+        },
+        "addmm.bias": {
+          "logical_first": 5368848320,
+          "logical_end": 5368848382,
+          "bytes": 62,
+          "physical_first": 5368717248,
+          "first_pc": 20,
+          "last_pc": 20,
+          "end_below_top_bytes": 3221086210
+        },
+        "addmm.out": {
+          "logical_first": 5368848384,
+          "logical_end": 5368850430,
+          "bytes": 2046,
+          "physical_first": 5368717312,
+          "first_pc": 20,
+          "last_pc": 20,
+          "end_below_top_bytes": 3221084162
+        }
+      },
+      "numerical_checks": [
+        {
+          "name": "mm operands and output in the upper 4 GiB",
+          "status": "pass"
+        },
+        {
+          "name": "mm within rtol/atol 2e-3 of the CPU FP32 reference",
+          "status": "pass",
+          "max_abs_error": 0.0009735524654388428
+        },
+        {
+          "name": "addmm operands and output in the upper 4 GiB",
+          "status": "pass"
+        },
+        {
+          "name": "addmm within rtol/atol 2e-3 of the CPU FP32 reference",
+          "status": "pass",
+          "max_abs_error": 0.00012168288230895996
+        }
+      ],
+      "binary_sha256": "f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02",
+      "pc_bytes": {
+        "pc_20_bytes": 36992,
+        "pc_31_bytes": 132608
+      },
+      "host": {
+        "model_rss_kib": 11216,
+        "child_rss_kib": 0,
+        "model_plus_children_pss_kib": 7994,
+        "host_available_min_kib": 102401020,
+        "samples": 3,
+        "python_rss_kib": 735760,
+        "total_pss_kib": 491254,
+        "python_maxrss_kib": 768988,
+        "case_wall_seconds": 4.063
+      },
+      "model_vmhwm_kib": 11216,
+      "model_timing_status": "uncalibrated",
+      "timing_exceptions": {
+        "dram_slow_unconverged": 0,
+        "dram_slow_unmatched": 0,
+        "dram_child_failures": 0
+      },
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a"
+    },
+    "refusal-fast": {
+      "status": "functional-pass",
+      "checks": 7,
+      "graphs": 1,
+      "window_bytes": 8589934592,
+      "placements": {
+        "straddling-request": {
+          "logical_first": 2147422208,
+          "logical_end": 2149519360,
+          "bytes": 2097152,
+          "physical_first": 2147291136,
+          "first_pc": 7,
+          "last_pc": 8,
+          "end_below_top_bytes": 6440415232
+        }
+      },
+      "numerical_checks": [
+        {
+          "name": "allocation past the window refused",
+          "status": "pass",
+          "error": "tnca: BufferError: [BUFFER_INVALID] out of device memory: a 8590852096-byte storage would leave -1048576 of the heap's free bytes, less than the 32768 kept for launches\n\nAt:\n  /home/zhongchun/r41-tlm8/python/tnca/torch_device/__init__.py(93): alloc\n  /home/zhongchun/r41-tlm8/tools/performance_harnes"
+        },
+        {
+          "name": "Session heap keeps the TMU page reserved in the 8 GiB window",
+          "status": "pass",
+          "reserved": [
+            [
+              2147418112,
+              2147422208
+            ]
+          ]
+        },
+        {
+          "name": "a storage that would straddle the TMU page is placed above it",
+          "status": "pass",
+          "address": 2147422208
+        },
+        {
+          "name": "t*2 equals the CPU reference bitwise",
+          "status": "pass"
+        },
+        {
+          "name": "no free block overlaps the TMU page",
+          "status": "pass",
+          "block": [
+            2146369536,
+            1048576
+          ]
+        },
+        {
+          "name": "the last 8 bytes below the model window top transfer both ways",
+          "status": "pass"
+        },
+        {
+          "name": "upload past the window refused by the model",
+          "status": "pass",
+          "error": "[DEVICE_LOST] SystemC model: host access outside model memory window\n  model_dir: /home/zhongchun/r41-tlm8-work/final/service-refusal-fast/model/model-1079942-bqw74bik\n  stderr: \n  try: the model refused or failed; see its stderr. Nothing is substituted."
+        }
+      ],
+      "binary_sha256": "f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02",
+      "pc_bytes": {
+        "pc_7_bytes": 210816,
+        "pc_8_bytes": 6075520
+      },
+      "host": {
+        "model_rss_kib": 12184,
+        "child_rss_kib": 0,
+        "model_plus_children_pss_kib": 8718,
+        "host_available_min_kib": 102288000,
+        "samples": 1,
+        "python_rss_kib": 720428,
+        "total_pss_kib": 481702,
+        "python_maxrss_kib": 760240,
+        "case_wall_seconds": 4.785
+      },
+      "model_vmhwm_kib": null,
+      "model_timing_status": "uncalibrated",
+      "timing_exceptions": {
+        "dram_slow_unconverged": 0,
+        "dram_slow_unmatched": 0,
+        "dram_child_failures": 0
+      },
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a"
+    },
+    "stream-fast": {
+      "status": "functional-pass",
+      "checks": 6,
+      "graphs": 67,
+      "window_bytes": 8589934592,
+      "placements": {
+        "resident_extra": {
+          "logical_first": 131072,
+          "logical_end": 1476526080,
+          "bytes": 1476395008,
+          "physical_first": 0,
+          "first_pc": 0,
+          "last_pc": 5,
+          "end_below_top_bytes": 7113408512
+        },
+        "x": {
+          "logical_first": 6373249024,
+          "logical_end": 8587841536,
+          "bytes": 2214592512,
+          "physical_first": 6373117952,
+          "first_pc": 23,
+          "last_pc": 31,
+          "end_below_top_bytes": 2093056
+        },
+        "y": {
+          "logical_first": 4154463168,
+          "logical_end": 6369055680,
+          "bytes": 2214592512,
+          "physical_first": 4154332096,
+          "first_pc": 15,
+          "last_pc": 23,
+          "end_below_top_bytes": 2220878912
+        }
+      },
+      "numerical_checks": [
+        {
+          "name": "x is one storage ending in the window top 4 MiB",
+          "status": "pass"
+        },
+        {
+          "name": "x is over 2 GiB (byte offsets beyond 2^31)",
+          "status": "pass",
+          "bytes": 2214592512
+        },
+        {
+          "name": "amax/amin exact; sum within 1e-4 of float64",
+          "status": "pass",
+          "sum": 276814208.0,
+          "reference": 276814234.7298834
+        },
+        {
+          "name": "copy output crosses physical 4 GiB",
+          "status": "pass"
+        },
+        {
+          "name": "copy equals independently regenerated CPU input bitwise",
+          "status": "pass",
+          "compared_bytes": 2214592512,
+          "mismatched_chunks": 0
+        },
+        {
+          "name": "the stream touched every PC16-PC31",
+          "status": "pass",
+          "pc_bytes": {
+            "pc_15_bytes": 293910912,
+            "pc_23_bytes": 545819712,
+            "pc_24_bytes": 536870912,
+            "pc_25_bytes": 536870912,
+            "pc_26_bytes": 536870912,
+            "pc_27_bytes": 536870912,
+            "pc_28_bytes": 536870912,
+            "pc_29_bytes": 536870912,
+            "pc_30_bytes": 536870912,
+            "pc_31_bytes": 532422656,
+            "pc_16_bytes": 536870912,
+            "pc_17_bytes": 536870912,
+            "pc_18_bytes": 536870912,
+            "pc_19_bytes": 536870912,
+            "pc_20_bytes": 536870912,
+            "pc_21_bytes": 536870912,
+            "pc_22_bytes": 536870912
+          }
+        }
+      ],
+      "binary_sha256": "f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02",
+      "pc_bytes": {
+        "pc_15_bytes": 293910912,
+        "pc_23_bytes": 545819712,
+        "pc_24_bytes": 536870912,
+        "pc_25_bytes": 536870912,
+        "pc_26_bytes": 536870912,
+        "pc_27_bytes": 536870912,
+        "pc_28_bytes": 536870912,
+        "pc_29_bytes": 536870912,
+        "pc_30_bytes": 536870912,
+        "pc_31_bytes": 532422656,
+        "pc_16_bytes": 536870912,
+        "pc_17_bytes": 536870912,
+        "pc_18_bytes": 536870912,
+        "pc_19_bytes": 536870912,
+        "pc_20_bytes": 536870912,
+        "pc_21_bytes": 536870912,
+        "pc_22_bytes": 536870912
+      },
+      "host": {
+        "model_rss_kib": 5794884,
+        "child_rss_kib": 0,
+        "model_plus_children_pss_kib": 5791416,
+        "host_available_min_kib": 96964484,
+        "samples": 930,
+        "python_rss_kib": 853868,
+        "total_pss_kib": 6394948,
+        "python_maxrss_kib": 854080,
+        "case_wall_seconds": 1035.971
+      },
+      "model_vmhwm_kib": 5794884,
+      "model_timing_status": "uncalibrated",
+      "timing_exceptions": {
+        "dram_slow_unconverged": 0,
+        "dram_slow_unmatched": 0,
+        "dram_child_failures": 0
+      },
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a",
+      "touched_tensor_bytes": 5905580032,
+      "graph_tensor_bytes": 4429185024,
+      "resident_extra_bytes": 1476395008,
+      "stream_chunk_bytes": 67108864,
+      "cpu_copy_compared_bytes": 2214592512,
+      "resources": {
+        "command": [
+          "bash",
+          "/home/zhongchun/r41-tlm8-work/case-service.sh",
+          "stream",
+          "fast",
+          "/home/zhongchun/r41-tlm8-work/final/service-stream-2112mib-fast",
+          "--resident-extra-bytes",
+          "1476395008"
+        ],
+        "cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "initial_available_kib": 101609568,
+        "peak_summed_rss_kib": 6619832,
+        "peak_summed_pss_kib": 6404126,
+        "wall_seconds": 1038.246,
+        "returncode": 0,
+        "guard_refusal": null
+      }
+    },
+    "placement-slow": {
+      "status": "functional-pass",
+      "checks": 4,
+      "graphs": 2,
+      "window_bytes": 8589934592,
+      "placements": {
+        "a": {
+          "logical_first": 4296151040,
+          "logical_end": 4297199616,
+          "bytes": 1048576,
+          "physical_first": 4296019968,
+          "first_pc": 16,
+          "last_pc": 16,
+          "end_below_top_bytes": 4292734976
+        },
+        "b": {
+          "logical_first": 8581545984,
+          "logical_end": 8582594560,
+          "bytes": 1048576,
+          "physical_first": 8581414912,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 7340032
+        },
+        "out": {
+          "logical_first": 8582594560,
+          "logical_end": 8583643136,
+          "bytes": 1048576,
+          "physical_first": 8582463488,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 6291456
+        }
+      },
+      "numerical_checks": [
+        {
+          "name": "a above 4 GiB (logical and physical)",
+          "status": "pass"
+        },
+        {
+          "name": "b and output in the window top 8 MiB (PC31)",
+          "status": "pass"
+        },
+        {
+          "name": "a*2+b equals the CPU reference bitwise",
+          "status": "pass"
+        },
+        {
+          "name": "amax/amin exact, sum within 1e-4 of float64",
+          "status": "pass",
+          "sum": -1348.14599609375,
+          "reference": -1348.1455402362626
+        }
+      ],
+      "binary_sha256": "f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02",
+      "pc_bytes": {
+        "pc_16_bytes": 1048576,
+        "pc_31_bytes": 4211392
+      },
+      "host": {
+        "model_rss_kib": 19776,
+        "child_rss_kib": 16416,
+        "model_plus_children_pss_kib": 19961,
+        "host_available_min_kib": 102172480,
+        "samples": 5,
+        "python_rss_kib": 736836,
+        "total_pss_kib": 500936,
+        "python_maxrss_kib": 766312,
+        "case_wall_seconds": 6.424
+      },
+      "model_vmhwm_kib": 19776,
+      "model_timing_status": "inconclusive-fixed-point",
+      "timing_exceptions": {
+        "dram_slow_unconverged": 2,
+        "dram_slow_unmatched": 1,
+        "dram_child_failures": 0
+      },
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a"
+    },
+    "crossing-slow": {
+      "status": "functional-pass",
+      "checks": 5,
+      "graphs": 2,
+      "window_bytes": 8589934592,
+      "placements": {
+        "x": {
+          "logical_first": 3221229568,
+          "logical_end": 3238006784,
+          "bytes": 16777216,
+          "physical_first": 3221098496,
+          "first_pc": 11,
+          "last_pc": 12,
+          "end_below_top_bytes": 5351927808
+        },
+        "y": {
+          "logical_first": 4286578688,
+          "logical_end": 4303355904,
+          "bytes": 16777216,
+          "physical_first": 4286447616,
+          "first_pc": 15,
+          "last_pc": 16,
+          "end_below_top_bytes": 4286578688
+        },
+        "z": {
+          "logical_first": 4303355904,
+          "logical_end": 4320133120,
+          "bytes": 16777216,
+          "physical_first": 4303224832,
+          "first_pc": 16,
+          "last_pc": 16,
+          "end_below_top_bytes": 4269801472
+        }
+      },
+      "numerical_checks": [
+        {
+          "name": "y crosses the 32-bit logical boundary and physical PC15/PC16",
+          "status": "pass"
+        },
+        {
+          "name": "stored y equals 3x+1 bitwise",
+          "status": "pass"
+        },
+        {
+          "name": "loaded z=(y-1)/3 equals x bitwise",
+          "status": "pass"
+        },
+        {
+          "name": "amax/amin of y exact",
+          "status": "pass"
+        },
+        {
+          "name": "store graph wrote PC15 and PC16",
+          "status": "pass",
+          "pc_bytes": {
+            "pc_11_bytes": 126976,
+            "pc_12_bytes": 16650240,
+            "pc_15_bytes": 17039360,
+            "pc_16_bytes": 16619648
+          }
+        }
+      ],
+      "binary_sha256": "f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02",
+      "pc_bytes": {
+        "pc_11_bytes": 126976,
+        "pc_12_bytes": 16650240,
+        "pc_15_bytes": 25559040,
+        "pc_16_bytes": 58507712
+      },
+      "host": {
+        "model_rss_kib": 136052,
+        "child_rss_kib": 114520,
+        "model_plus_children_pss_kib": 161451,
+        "host_available_min_kib": 101847788,
+        "samples": 34,
+        "python_rss_kib": 832196,
+        "total_pss_kib": 712627,
+        "python_maxrss_kib": 864140,
+        "case_wall_seconds": 36.022
+      },
+      "model_vmhwm_kib": 136052,
+      "model_timing_status": "inconclusive-fixed-point",
+      "timing_exceptions": {
+        "dram_slow_unconverged": 4,
+        "dram_slow_unmatched": 48,
+        "dram_child_failures": 0
+      },
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a"
+    },
+    "gemm-slow": {
+      "status": "functional-pass",
+      "checks": 4,
+      "graphs": 2,
+      "window_bytes": 8589934592,
+      "placements": {
+        "mm.A": {
+          "logical_first": 5368844288,
+          "logical_end": 5368875008,
+          "bytes": 30720,
+          "physical_first": 5368713216,
+          "first_pc": 20,
+          "last_pc": 20,
+          "end_below_top_bytes": 3221059584
+        },
+        "mm.B": {
+          "logical_first": 8522825728,
+          "logical_end": 8522851328,
+          "bytes": 25600,
+          "physical_first": 8522694656,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 67083264
+        },
+        "mm.bias": {
+          "logical_first": 8522851328,
+          "logical_end": 8522851488,
+          "bytes": 160,
+          "physical_first": 8522720256,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 67083104
+        },
+        "mm.out": {
+          "logical_first": 8522851520,
+          "logical_end": 8522866880,
+          "bytes": 15360,
+          "physical_first": 8522720448,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 67067712
+        },
+        "addmm.A": {
+          "logical_first": 8523915456,
+          "logical_end": 8523919746,
+          "bytes": 4290,
+          "physical_first": 8523784384,
+          "first_pc": 31,
+          "last_pc": 31,
+          "end_below_top_bytes": 66014846
+        },
+        "addmm.B": {
+          "logical_first": 5368844288,
+          "logical_end": 5368848318,
+          "bytes": 4030,
+          "physical_first": 5368713216,
+          "first_pc": 20,
+          "last_pc": 20,
+          "end_below_top_bytes": 3221086274
+        },
+        "addmm.bias": {
+          "logical_first": 5368848320,
+          "logical_end": 5368848382,
+          "bytes": 62,
+          "physical_first": 5368717248,
+          "first_pc": 20,
+          "last_pc": 20,
+          "end_below_top_bytes": 3221086210
+        },
+        "addmm.out": {
+          "logical_first": 5368848384,
+          "logical_end": 5368850430,
+          "bytes": 2046,
+          "physical_first": 5368717312,
+          "first_pc": 20,
+          "last_pc": 20,
+          "end_below_top_bytes": 3221084162
+        }
+      },
+      "numerical_checks": [
+        {
+          "name": "mm operands and output in the upper 4 GiB",
+          "status": "pass"
+        },
+        {
+          "name": "mm within rtol/atol 2e-3 of the CPU FP32 reference",
+          "status": "pass",
+          "max_abs_error": 0.0009735524654388428
+        },
+        {
+          "name": "addmm operands and output in the upper 4 GiB",
+          "status": "pass"
+        },
+        {
+          "name": "addmm within rtol/atol 2e-3 of the CPU FP32 reference",
+          "status": "pass",
+          "max_abs_error": 0.00012168288230895996
+        }
+      ],
+      "binary_sha256": "f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02",
+      "pc_bytes": {
+        "pc_20_bytes": 36928,
+        "pc_31_bytes": 132544
+      },
+      "host": {
+        "model_rss_kib": 13916,
+        "child_rss_kib": 0,
+        "model_plus_children_pss_kib": 10041,
+        "host_available_min_kib": 101459664,
+        "samples": 4,
+        "python_rss_kib": 735668,
+        "total_pss_kib": 493438,
+        "python_maxrss_kib": 768428,
+        "case_wall_seconds": 5.106
+      },
+      "model_vmhwm_kib": 13916,
+      "model_timing_status": "inconclusive-fixed-point",
+      "timing_exceptions": {
+        "dram_slow_unconverged": 2,
+        "dram_slow_unmatched": 3,
+        "dram_child_failures": 0
+      },
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a"
+    },
+    "refusal-slow": {
+      "status": "functional-pass",
+      "checks": 7,
+      "graphs": 1,
+      "window_bytes": 8589934592,
+      "placements": {
+        "straddling-request": {
+          "logical_first": 2147422208,
+          "logical_end": 2149519360,
+          "bytes": 2097152,
+          "physical_first": 2147291136,
+          "first_pc": 7,
+          "last_pc": 8,
+          "end_below_top_bytes": 6440415232
+        }
+      },
+      "numerical_checks": [
+        {
+          "name": "allocation past the window refused",
+          "status": "pass",
+          "error": "tnca: BufferError: [BUFFER_INVALID] out of device memory: a 8590852096-byte storage would leave -1048576 of the heap's free bytes, less than the 32768 kept for launches\n\nAt:\n  /home/zhongchun/r41-tlm8/python/tnca/torch_device/__init__.py(93): alloc\n  /home/zhongchun/r41-tlm8/tools/performance_harnes"
+        },
+        {
+          "name": "Session heap keeps the TMU page reserved in the 8 GiB window",
+          "status": "pass",
+          "reserved": [
+            [
+              2147418112,
+              2147422208
+            ]
+          ]
+        },
+        {
+          "name": "a storage that would straddle the TMU page is placed above it",
+          "status": "pass",
+          "address": 2147422208
+        },
+        {
+          "name": "t*2 equals the CPU reference bitwise",
+          "status": "pass"
+        },
+        {
+          "name": "no free block overlaps the TMU page",
+          "status": "pass",
+          "block": [
+            2146369536,
+            1048576
+          ]
+        },
+        {
+          "name": "the last 8 bytes below the model window top transfer both ways",
+          "status": "pass"
+        },
+        {
+          "name": "upload past the window refused by the model",
+          "status": "pass",
+          "error": "[DEVICE_LOST] SystemC model: host access outside model memory window\n  model_dir: /home/zhongchun/r41-tlm8-work/final/service-refusal-slow/model/model-1082647-su_ganx4\n  stderr: \n  try: the model refused or failed; see its stderr. Nothing is substituted."
+        }
+      ],
+      "binary_sha256": "f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02",
+      "pc_bytes": {
+        "pc_7_bytes": 210816,
+        "pc_8_bytes": 6075520
+      },
+      "host": {
+        "model_rss_kib": 21596,
+        "child_rss_kib": 16036,
+        "model_plus_children_pss_kib": 17753,
+        "host_available_min_kib": 101217552,
+        "samples": 4,
+        "python_rss_kib": 728516,
+        "total_pss_kib": 493564,
+        "python_maxrss_kib": 761228,
+        "case_wall_seconds": 6.286
+      },
+      "model_vmhwm_kib": null,
+      "model_timing_status": "inconclusive-fixed-point",
+      "timing_exceptions": {
+        "dram_slow_unconverged": 1,
+        "dram_slow_unmatched": 0,
+        "dram_child_failures": 0
+      },
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a"
+    },
+    "stream-slow": {
+      "status": "functional-pass",
+      "checks": 6,
+      "graphs": 67,
+      "window_bytes": 8589934592,
+      "placements": {
+        "resident_extra": {
+          "logical_first": 131072,
+          "logical_end": 1476526080,
+          "bytes": 1476395008,
+          "physical_first": 0,
+          "first_pc": 0,
+          "last_pc": 5,
+          "end_below_top_bytes": 7113408512
+        },
+        "x": {
+          "logical_first": 6373249024,
+          "logical_end": 8587841536,
+          "bytes": 2214592512,
+          "physical_first": 6373117952,
+          "first_pc": 23,
+          "last_pc": 31,
+          "end_below_top_bytes": 2093056
+        },
+        "y": {
+          "logical_first": 4154463168,
+          "logical_end": 6369055680,
+          "bytes": 2214592512,
+          "physical_first": 4154332096,
+          "first_pc": 15,
+          "last_pc": 23,
+          "end_below_top_bytes": 2220878912
+        }
+      },
+      "numerical_checks": [
+        {
+          "name": "x is one storage ending in the window top 4 MiB",
+          "status": "pass"
+        },
+        {
+          "name": "x is over 2 GiB (byte offsets beyond 2^31)",
+          "status": "pass",
+          "bytes": 2214592512
+        },
+        {
+          "name": "amax/amin exact; sum within 1e-4 of float64",
+          "status": "pass",
+          "sum": 276814208.0,
+          "reference": 276814234.7298834
+        },
+        {
+          "name": "copy output crosses physical 4 GiB",
+          "status": "pass"
+        },
+        {
+          "name": "copy equals independently regenerated CPU input bitwise",
+          "status": "pass",
+          "compared_bytes": 2214592512,
+          "mismatched_chunks": 0
+        },
+        {
+          "name": "the stream touched every PC16-PC31",
+          "status": "pass",
+          "pc_bytes": {
+            "pc_15_bytes": 294054528,
+            "pc_23_bytes": 545819328,
+            "pc_24_bytes": 536870912,
+            "pc_25_bytes": 536870912,
+            "pc_26_bytes": 536870912,
+            "pc_27_bytes": 536870912,
+            "pc_28_bytes": 536870912,
+            "pc_29_bytes": 536870912,
+            "pc_30_bytes": 536870912,
+            "pc_31_bytes": 532422656,
+            "pc_16_bytes": 536870912,
+            "pc_17_bytes": 536870912,
+            "pc_18_bytes": 536870912,
+            "pc_19_bytes": 536870912,
+            "pc_20_bytes": 536870912,
+            "pc_21_bytes": 536870912,
+            "pc_22_bytes": 536870912
+          }
+        }
+      ],
+      "binary_sha256": "f2da72a2a9b3d0d89c5a2a28f1c555ae85c40c8cb6ec8ee7b1cb2d0880826d02",
+      "pc_bytes": {
+        "pc_15_bytes": 294054528,
+        "pc_23_bytes": 545819328,
+        "pc_24_bytes": 536870912,
+        "pc_25_bytes": 536870912,
+        "pc_26_bytes": 536870912,
+        "pc_27_bytes": 536870912,
+        "pc_28_bytes": 536870912,
+        "pc_29_bytes": 536870912,
+        "pc_30_bytes": 536870912,
+        "pc_31_bytes": 532422656,
+        "pc_16_bytes": 536870912,
+        "pc_17_bytes": 536870912,
+        "pc_18_bytes": 536870912,
+        "pc_19_bytes": 536870912,
+        "pc_20_bytes": 536870912,
+        "pc_21_bytes": 536870912,
+        "pc_22_bytes": 536870912
+      },
+      "host": {
+        "model_rss_kib": 6021444,
+        "child_rss_kib": 5987008,
+        "model_plus_children_pss_kib": 6168283,
+        "host_available_min_kib": 91474964,
+        "samples": 4254,
+        "python_rss_kib": 855120,
+        "total_pss_kib": 6738480,
+        "python_maxrss_kib": 855528,
+        "case_wall_seconds": 5057.069
+      },
+      "model_vmhwm_kib": 6021444,
+      "model_timing_status": "inconclusive-fixed-point",
+      "timing_exceptions": {
+        "dram_slow_unconverged": 165,
+        "dram_slow_unmatched": 12221,
+        "dram_child_failures": 0
+      },
+      "map_sha256": "d8b8f31de63937643e13002912d4a4d7dbbc528d787445bea325fbcd83c50180",
+      "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a",
+      "touched_tensor_bytes": 5905580032,
+      "graph_tensor_bytes": 4429185024,
+      "resident_extra_bytes": 1476395008,
+      "stream_chunk_bytes": 67108864,
+      "cpu_copy_compared_bytes": 2214592512,
+      "resources": {
+        "command": [
+          "bash",
+          "/home/zhongchun/r41-tlm8-work/case-service.sh",
+          "stream",
+          "slow",
+          "/home/zhongchun/r41-tlm8-work/final/service-stream-2112mib-slow",
+          "--resident-extra-bytes",
+          "1476395008"
+        ],
+        "cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "initial_available_kib": 112188600,
+        "peak_summed_rss_kib": 12745056,
+        "peak_summed_pss_kib": 6746263,
+        "wall_seconds": 5059.366,
+        "returncode": 0,
+        "guard_refusal": null
+      }
+    }
+  },
+  "prior_scale": [
+    {
+      "case": "dev-stream64-fast",
+      "status": "functional-pass",
+      "window": {
+        "model_memory_bytes": 8590065664,
+        "local_limit": 131072,
+        "bo_top": 8590065664,
+        "heap": [
+          131072,
+          8590065664
+        ],
+        "heap_reserved": [
+          [
+            2147418112,
+            2147422208
+          ]
+        ]
+      },
+      "tensor_bytes": 134217728,
+      "host": {
+        "model_rss_kib": 142084,
+        "child_rss_kib": 0,
+        "model_plus_children_pss_kib": 138242,
+        "host_available_min_kib": 105254004,
+        "samples": 19,
+        "python_maxrss_kib": 1012692,
+        "case_wall_seconds": 20.983
+      }
+    },
+    {
+      "case": "dev-stream64-slow",
+      "status": "functional-pass",
+      "window": {
+        "model_memory_bytes": 8590065664,
+        "local_limit": 131072,
+        "bo_top": 8590065664,
+        "heap": [
+          131072,
+          8590065664
+        ],
+        "heap_reserved": [
+          [
+            2147418112,
+            2147422208
+          ]
+        ]
+      },
+      "tensor_bytes": 134217728,
+      "host": {
+        "model_rss_kib": 393084,
+        "child_rss_kib": 358804,
+        "model_plus_children_pss_kib": 436146,
+        "host_available_min_kib": 104539416,
+        "samples": 114,
+        "python_maxrss_kib": 1002244,
+        "case_wall_seconds": 117.03
+      }
+    },
+    {
+      "case": "scale-1024-fast",
+      "status": "functional-pass",
+      "window": {
+        "model_memory_bytes": 8590065664,
+        "local_limit": 131072,
+        "bo_top": 8590065664,
+        "heap": [
+          131072,
+          8590065664
+        ],
+        "heap_reserved": [
+          [
+            2147418112,
+            2147422208
+          ]
+        ]
+      },
+      "tensor_bytes": 2147483648,
+      "host": {
+        "model_rss_kib": 3164044,
+        "child_rss_kib": 0,
+        "model_plus_children_pss_kib": 3159671,
+        "host_available_min_kib": 92971644,
+        "samples": 271,
+        "python_maxrss_kib": 3885848,
+        "case_wall_seconds": 282.924
+      }
+    },
+    {
+      "case": "scale-1024-slow",
+      "status": "functional-pass",
+      "window": {
+        "model_memory_bytes": 8590065664,
+        "local_limit": 131072,
+        "bo_top": 8590065664,
+        "heap": [
+          131072,
+          8590065664
+        ],
+        "heap_reserved": [
+          [
+            2147418112,
+            2147422208
+          ]
+        ]
+      },
+      "tensor_bytes": 2147483648,
+      "host": {
+        "model_rss_kib": 6640856,
+        "child_rss_kib": 5862340,
+        "model_plus_children_pss_kib": 6637493,
+        "host_available_min_kib": 85817048,
+        "samples": 2079,
+        "python_maxrss_kib": 3885888,
+        "case_wall_seconds": 2271.041
+      }
+    },
+    {
+      "case": "scale-256-fast",
+      "status": "functional-pass",
+      "window": {
+        "model_memory_bytes": 8590065664,
+        "local_limit": 131072,
+        "bo_top": 8590065664,
+        "heap": [
+          131072,
+          8590065664
+        ],
+        "heap_reserved": [
+          [
+            2147418112,
+            2147422208
+          ]
+        ]
+      },
+      "tensor_bytes": 536870912,
+      "host": {
+        "model_rss_kib": 536632,
+        "child_rss_kib": 0,
+        "model_plus_children_pss_kib": 532480,
+        "host_available_min_kib": 102326624,
+        "samples": 69,
+        "python_maxrss_kib": 1783864,
+        "case_wall_seconds": 72.722
+      }
+    },
+    {
+      "case": "scale-256-slow",
+      "status": "functional-pass",
+      "window": {
+        "model_memory_bytes": 8590065664,
+        "local_limit": 131072,
+        "bo_top": 8590065664,
+        "heap": [
+          131072,
+          8590065664
+        ],
+        "heap_reserved": [
+          [
+            2147418112,
+            2147422208
+          ]
+        ]
+      },
+      "tensor_bytes": 536870912,
+      "host": {
+        "model_rss_kib": 1663052,
+        "child_rss_kib": 1442516,
+        "model_plus_children_pss_kib": 1659210,
+        "host_available_min_kib": 99077968,
+        "samples": 457,
+        "python_maxrss_kib": 1787088,
+        "case_wall_seconds": 472.435
+      }
+    }
+  ],
+  "source_manifest": {
+    "software_tree": "files:e2f4aa660aa627523e7119037498ddc021a0e3a88f573fea7203654453d34a1a",
+    "source_dir": "/home/zhongchun/r41-tlm8",
+    "note": "rsync of branch r41-tlm8 (non-evidence content identical to dca6775) used for every service-* run"
+  }
+}

@@ -1,0 +1,25 @@
+STREAM BANK COMMAND PASS lanes=2 mode=1 mask=00000003 bad=0 cycles=311
+STREAM BANK COMMAND PASS lanes=2 mode=0 mask=00000002 bad=0 cycles=328
+STREAM BANK COMMAND PASS lanes=2 mode=2 mask=00000003 bad=0 cycles=214
+STREAM BANK COMMAND PASS lanes=2 mode=1 mask=00000000 bad=0 cycles=5
+STREAM BANK COMMAND PASS lanes=2 mode=0 mask=00000003 bad=1 cycles=0
+STREAM BANK COMMAND PASS lanes=2 mode=1 mask=00000003 bad=0 cycles=315
+STREAM BANK AXI PASS lanes=2 tests=6
+tb/fpga/tb_stream_bank.v:135: $finish called at 13920000 (1ps)
+STREAM BANK COMMAND PASS lanes=8 mode=1 mask=000000ff bad=0 cycles=401
+STREAM BANK COMMAND PASS lanes=8 mode=0 mask=000000aa bad=0 cycles=430
+STREAM BANK COMMAND PASS lanes=8 mode=2 mask=000000ff bad=0 cycles=294
+STREAM BANK COMMAND PASS lanes=8 mode=1 mask=00000000 bad=0 cycles=11
+STREAM BANK COMMAND PASS lanes=8 mode=0 mask=000000ff bad=1 cycles=0
+STREAM BANK COMMAND PASS lanes=8 mode=1 mask=000000ff bad=0 cycles=400
+STREAM BANK AXI PASS lanes=8 tests=6
+tb/fpga/tb_stream_bank.v:135: $finish called at 20430000 (1ps)
+STREAM BANK COMMAND PASS lanes=32 mode=1 mask=ffffffff bad=0 cycles=743
+STREAM BANK COMMAND PASS lanes=32 mode=0 mask=aaaaaaaa bad=0 cycles=820
+STREAM BANK COMMAND PASS lanes=32 mode=2 mask=ffffffff bad=0 cycles=620
+STREAM BANK COMMAND PASS lanes=32 mode=1 mask=00000000 bad=0 cycles=35
+STREAM BANK COMMAND PASS lanes=32 mode=0 mask=ffffffff bad=1 cycles=0
+STREAM BANK COMMAND PASS lanes=32 mode=1 mask=ffffffff bad=0 cycles=746
+STREAM BANK AXI PASS lanes=32 tests=6
+tb/fpga/tb_stream_bank.v:135: $finish called at 46230000 (1ps)
+HBM STREAM BANK FUNCTIONAL PASS 2/8/32 real lanes

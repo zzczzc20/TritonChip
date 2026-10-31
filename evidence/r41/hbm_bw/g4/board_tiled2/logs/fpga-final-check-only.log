@@ -1,0 +1,11 @@
+clock_utc=2026-10-29T02:46:00Z
+archive_commit=f5cc79e01145ccf2e1130bf4a095f56745254c5b
+host=acf3019
+card_access=false
+command=tiled2 generator check and acceptance_queue.py --check-only for every manifest
+differs: spec/r41/hbm_bw/membound_tiled2/membound-small-1.json
+differs: spec/r41/hbm_bw/membound_tiled2/membound-small-2.json
+differs: spec/r41/hbm_bw/membound_tiled2/membound-medium-1.json
+differs: spec/r41/hbm_bw/membound_tiled2/membound-medium-2.json
+differs: spec/r41/hbm_bw/membound_tiled2/membound-large-1.json
+differs: spec/r41/hbm_bw/membound_tiled2/membound-large-2.json

@@ -1,0 +1,100 @@
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+INFO: [Physopt 32-846] No candidate cells for URAM register optimization found in the design
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+INFO: [Physopt 32-949] No candidate nets found for dynamic/static region interface net replication
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00.09 ; elapsed = 00:00:00.09 . Memory (MB): peak = 15671.926 ; gain = 0.000 ; free physical = 14927 ; free virtual = 49681
+INFO: [Physopt 32-699] Instance must be a LUT/FLOP for Replication to be feasible. As, instance core/device/system/shell/u_system/g_tile[1].u_tile/u_slice/cur_addr_reg[6]_i_1 is neither, it cannot be replicated.
+INFO: [Physopt 32-699] Instance must be a LUT/FLOP for Replication to be feasible. As, instance core/device/system/shell/u_system/g_tile[1].u_tile/u_slice/cur_addr_reg[8]_i_1 is neither, it cannot be replicated.
+INFO: [Physopt 32-699] Instance must be a LUT/FLOP for Replication to be feasible. As, instance core/device/system/shell/u_system/g_tile[1].u_tile/u_slice/cur_addr_reg[7]_i_1 is neither, it cannot be replicated.
+INFO: [Physopt 32-76] Pass 1. Identified 2 candidate nets for fanout optimization.
+INFO: [Physopt 32-232] Optimized 2 nets. Created 18 new instances.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 2 nets or cells. Created 18 new cells, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00.31 ; elapsed = 00:00:00.31 . Memory (MB): peak = 15671.926 ; gain = 0.000 ; free physical = 14927 ; free virtual = 49681
+INFO: [Physopt 32-68] No nets found for critical-cell optimization.
+INFO: [Physopt 32-232] Optimized 0 net. Created 0 new instance.
+INFO: [Physopt 32-775] End 1 Pass. Optimized 0 net or cell. Created 0 new cell, deleted 0 existing cell and moved 0 existing cell
+Netlist sorting complete. Time (s): cpu = 00:00:00.09 ; elapsed = 00:00:00.1 . Memory (MB): peak = 15671.926 ; gain = 0.000 ; free physical = 14927 ; free virtual = 49681
+
+Summary of Physical Synthesis Optimizations
+============================================
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+|  Optimization                                     |  Added Cells  |  Removed Cells  |  Optimized Cells/Nets  |  Dont Touch  |  Iterations  |  Elapsed   |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+|  LUT Combining                                    |         1000  |           7399  |                  8399  |           0  |           1  |  00:00:14  |
+|  Retime                                           |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Equivalent Driver Rewiring                       |            0  |             13  |                   106  |           0  |           1  |  00:00:32  |
+|  Very High Fanout                                 |         1524  |              0  |                   100  |           0  |           1  |  00:01:13  |
+|  DSP Register                                     |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Shift Register to Pipeline                       |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Shift Register                                   |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  BRAM Register                                    |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  URAM Register                                    |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Dynamic/Static Region Interface Net Replication  |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Fanout                                           |           18  |              0  |                     2  |           0  |           1  |  00:00:01  |
+|  Critical Cell                                    |            0  |              0  |                     0  |           0  |           1  |  00:00:00  |
+|  Total                                            |         2542  |           7412  |                  8607  |           0  |          12  |  00:02:02  |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Phase 2.5.2 Physical Synthesis In Placer | Checksum: 1bf822027
+
+Time (s): cpu = 00:58:59 ; elapsed = 00:27:10 . Memory (MB): peak = 15671.926 ; gain = 3876.227 ; free physical = 14934 ; free virtual = 49689
+Phase 2.5 Global Placement Core | Checksum: 183334d68
+
+Time (s): cpu = 01:02:54 ; elapsed = 00:28:29 . Memory (MB): peak = 15671.926 ; gain = 3876.227 ; free physical = 14934 ; free virtual = 49689
+Phase 2 Global Placement | Checksum: 183334d68
+
+Time (s): cpu = 01:02:55 ; elapsed = 00:28:29 . Memory (MB): peak = 15671.926 ; gain = 3876.227 ; free physical = 14934 ; free virtual = 49689
+
+Phase 3 Detail Placement
+
+Phase 3.1 Commit Multi Column Macros
+Phase 3.1 Commit Multi Column Macros | Checksum: 1cbe5bd69
+
+Time (s): cpu = 01:05:23 ; elapsed = 00:29:20 . Memory (MB): peak = 15671.926 ; gain = 3876.227 ; free physical = 14924 ; free virtual = 49679
+
+Phase 3.2 Commit Most Macros & LUTRAMs
+Phase 3.2 Commit Most Macros & LUTRAMs | Checksum: 241ff9941
+
+Time (s): cpu = 01:08:05 ; elapsed = 00:30:52 . Memory (MB): peak = 15671.926 ; gain = 3876.227 ; free physical = 14925 ; free virtual = 49680
+
+Phase 3.3 Small Shape DP
+
+Phase 3.3.1 Small Shape Clustering
+Phase 3.3.1 Small Shape Clustering | Checksum: 1f85e2b9a
+
+Time (s): cpu = 01:20:41 ; elapsed = 00:40:25 . Memory (MB): peak = 15975.930 ; gain = 4180.230 ; free physical = 14611 ; free virtual = 49366
+Phase 3.3 Small Shape DP | Checksum: 1f85e2b9a
+
+Time (s): cpu = 01:20:44 ; elapsed = 00:40:27 . Memory (MB): peak = 15975.930 ; gain = 4180.230 ; free physical = 14611 ; free virtual = 49366
+Phase 3 Detail Placement | Checksum: 1f85e2b9a
+
+Time (s): cpu = 01:20:46 ; elapsed = 00:40:30 . Memory (MB): peak = 15975.930 ; gain = 4180.230 ; free physical = 14611 ; free virtual = 49366
+ERROR: [Place 30-487] The packing of instances into a set of CLBs defined by a pblock constraint could not be obeyed. There are a total of 54000 CLBs in the pblock, of which 2776 CLBs are available, however, the unplaced instances require 18918 CLBs. The unavailable CLBs are either taken by placed instances or are blocked due to exclude placement constraints. Please analyze your design to determine if the pblock can be resized or the number of LUTs, FFs, and/or control sets can be reduced.
+
+Number of control sets and instances constrained to the pBlock
+	Control sets: 1607
+	Luts: 208550 (combined) 236772 (total), available capacity: 432000
+	Flip flops: 64234, available capacity: 864000
+	NOTE: each CLB can only accommodate up to 4 unique control sets so FFs cannot be packed to fully fill every CLB
+
+To attempt placement at higher effort levels at the expense of runtime, please use the following tcl command, setting the value of limit to 2000 or more.
+	Names of cells:
+		tnca_tile__parameterized0  core/device/system/shell/u_system/g_tile[1].u_tile
+
+Pblock name: "tile1_pb"
+Pblock range: CLOCKREGION_X0Y4:CLOCKREGION_X7Y7
+
+
+ERROR: [Place 30-99] Placer failed with error: 'Detail Placement failed please check previous errors for details.'
+Please review all ERROR, CRITICAL WARNING, and WARNING messages during placement to understand the cause for failure.
+Ending Placer Task | Checksum: b86a1e4f
+
+Time (s): cpu = 01:20:55 ; elapsed = 00:40:38 . Memory (MB): peak = 15975.930 ; gain = 4180.230 ; free physical = 14613 ; free virtual = 49368
+248 Infos, 1 Warnings, 0 Critical Warnings and 3 Errors encountered.
+place_design failed
+ERROR: [Common 17-69] Command failed: Placer could not place all instances
+INFO: [Common 17-206] Exiting Vivado at Wed Oct 28 13:54:51 2026...

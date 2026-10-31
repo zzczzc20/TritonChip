@@ -1,0 +1,363 @@
+#!/usr/bin/env python3
+"""Standard Torch GEMM residency case, with artifacts and native model counters.
+
+Run in a fresh process per configuration. CPU is an independent reference;
+the tested graphs always execute on tnca through Inductor and the Session.
+This produces development evidence, never a board acceptance record.
+"""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import sys
+import time
+import traceback
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path[:0] = [str(ROOT), str(ROOT/'python'), str(ROOT/'compiler/python'),
+               str(ROOT/'tools/asm'), str(ROOT/'tools/performance_harness/systemc')]
+
+
+def per_k_fma_reference(a, b, bias=None):
+    """Independent CPU reference with the MMA's rounding (ISA sec 9C.1).
+
+    acc starts at +0.0 and takes one binary32 FMA per K index in ascending
+    order. FP16/BF16 inputs widen exactly and their products are exact in
+    binary32 (checked here, per K), so a binary32 add of the product rounds
+    exactly as a fused multiply-add does. The addmm bias is added once in
+    binary32 after the K loop; the result rounds to the input dtype.
+    """
+    import torch
+    A, B = a.float(), b.float()
+    A64, B64 = A.double(), B.double()
+    acc = torch.zeros(A.shape[0], B.shape[1], dtype=torch.float32)
+    for k in range(A.shape[1]):
+        product = A[:, k:k+1] * B[k:k+1, :]
+        if not torch.equal(product.double(), A64[:, k:k+1] * B64[k:k+1, :]):
+            raise ValueError(f'binary32 product at k={k} is not exact; the reference would not be an FMA')
+        acc = acc + product
+    if bias is not None:
+        acc = acc + bias.float()
+    return acc.to(a.dtype)
+
+
+def order_sensitivity(a, b, bias, exact):
+    """How many output elements other K orders would change, for these inputs.
+
+    `blocked16` sums each 16-wide K block from zero and then adds the blocks
+    (an accumulator round trip per block); `reversed` runs K backwards. A
+    bitwise match is evidence of the per-K order only where these differ.
+    """
+    import torch
+    A, B = a.float(), b.float()
+    K = A.shape[1]
+    def finish(acc):
+        return (acc + bias.float() if bias is not None else acc).to(a.dtype)
+    acc = torch.zeros(A.shape[0], B.shape[1], dtype=torch.float32)
+    for start in range(0, K, 16):
+        block = torch.zeros_like(acc)
+        for k in range(start, min(K, start + 16)):
+            block = block + A[:, k:k+1] * B[k:k+1, :]
+        acc = acc + block
+    blocked = finish(acc)
+    acc = torch.zeros_like(acc)
+    for k in reversed(range(K)):
+        acc = acc + A[:, k:k+1] * B[k:k+1, :]
+    backwards = finish(acc)
+    view = lambda t: t.contiguous().view(torch.int16)
+    return dict(blocked16_mismatches=int((view(blocked) != view(exact)).sum()),
+                reversed_mismatches=int((view(backwards) != view(exact)).sum()))
+
+
+def bit_compare(got, ref):
+    """Elementwise comparison of the raw output bits."""
+    import torch
+    width = {torch.float16: torch.int16, torch.bfloat16: torch.int16, torch.float32: torch.int32}[ref.dtype]
+    g, r = got.contiguous().view(width), ref.contiguous().view(width)
+    differ = (g != r).nonzero().tolist()
+    return dict(equal=not differ, mismatches=len(differ), elements=ref.numel(),
+                examples=[dict(index=i, got=float(got[tuple(i)]), reference=float(ref[tuple(i)]),
+                               got_bits=hex(int(g[tuple(i)]) & 0xffff), reference_bits=hex(int(r[tuple(i)]) & 0xffff))
+                          for i in differ[:8]])
+
+
+def require_matching_bits(row):
+    """Refuse a measured row if either independent or repeat check differs."""
+    if not row['bitwise_reference']['equal'] or not row['cold_bitwise_same']:
+        raise ValueError('bitwise reference or cold/steady comparison failed')
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--out', type=Path, required=True)
+    ap.add_argument('--columns', type=int, choices=(16, 32), default=32)
+    ap.add_argument('--dtype', choices=('float16', 'bfloat16'), default='float16')
+    ap.add_argument('--strided', action='store_true')
+    ap.add_argument('--samples',type=int,default=1,help='timed resident calls after qualification (frozen board points use three)')
+    ap.add_argument('--require-resident', action='store_true')
+    ap.add_argument('--shapes', default='17x65x33,33x31x65', help='M x N x K list; input/reference semantics stay unchanged')
+    ap.add_argument('--require-single-role-pipeline',action='store_true', help='require an executed single-role pipeline in every registered point')
+    ap.add_argument('--ring-stages', type=int, choices=(1,2,3), help='force the existing two-role ring and audit its actual artifact')
+    ap.add_argument('--rtl-engine-trace',action='store_true',help='retain actual single-core RTL DMA/MMA intervals')
+    ap.add_argument('--cancel', action='store_true',
+                    help='inputs with an exactly cancelling large product pair, so K order shows in the output')
+    ap.add_argument('--bitwise', action='store_true',
+                    help='also compare raw output bits with the per-K FP32 FMA reference and keep them')
+    args = ap.parse_args()
+    if not 1 <= args.samples <= 30:ap.error('samples must be between 1 and 30')
+    try:
+        shapes=[tuple(int(v) for v in item.split('x')) for item in args.shapes.split(',')]
+        if not shapes or any(len(s)!=3 or min(s)<=0 for s in shapes):
+            raise ValueError('positive MxNxK shapes required')
+    except ValueError as error:
+        ap.error(str(error))
+    if args.rtl_engine_trace:
+        if os.environ.get('TNCA_BACKEND','sim-file')!='sim-file':
+            ap.error('RTL engine intervals require the single-core sim-file binding')
+        os.environ['TNCA_DEVICE_PLUSARGS']=os.environ.get('TNCA_DEVICE_PLUSARGS','')+' +engtrace +trace'
+    out = args.out.resolve()
+    out.mkdir(parents=True, exist_ok=False)
+    (out/'artifacts').mkdir()
+    os.environ.update(TNCA_GEMM_TILE=f'16,{args.columns},16', TNCA_TORCH_DEVICE='native',
+                      TNCA_TENSOR_DESCRIPTORS='1', TNCA_INDEX_OPT='1',
+                      TRITON_CACHE_DIR=str(out/'triton-cache'),
+                      TORCHINDUCTOR_CACHE_DIR=str(out/'inductor-cache'))
+    os.environ.setdefault('TNCA_PROFILE', 'core-vrf-sync-v5')
+    if args.ring_stages is not None:
+        os.environ.update(TNCA_RCTX_ROLES='2',TNCA_RCTX_STAGES=str(args.ring_stages))
+    report = dict(schema='tnca-fragment-case/1', status='running',
+                  execution='torch.compile(backend=inductor,fullgraph=True) on tnca',
+                  evidence='development-only', columns=args.columns, dtype=args.dtype,
+                  strided=args.strided, bitwise=args.bitwise, cancel=args.cancel, timed_samples=args.samples, rows=[])
+    def save():
+        (out/'report.json').write_text(json.dumps(report, indent=2)+'\n')
+    save()
+    try:
+        import torch
+        import triton
+        import tnca
+        from tnca import artifact
+        from tnca.triton_backend.driver import launch_log
+        from archbench.provenance import software_tree
+        import tnca.torch_device as device
+        for module in (tnca,):
+            if not Path(module.__file__).resolve().is_relative_to(ROOT):
+                raise ValueError('module imported outside the requested source tree')
+        backend = os.environ.get('TNCA_BACKEND', 'sim-file')
+        if backend.startswith('systemc-tlm'):
+            import tlm_backend
+            model_class = tlm_backend.register()
+        else:
+            model_class = None
+        report.update(software_tree=software_tree(ROOT, refresh=True), backend=backend,
+                      toolchain=dict(torch=str(torch.__version__), triton=str(triton.__version__)),
+                      knobs={k: v for k, v in sorted(os.environ.items()) if k.startswith('TNCA_')})
+        device.register()
+        torch.manual_seed(47)
+        dtype = getattr(torch, args.dtype)
+        for name, fn in [('mm', lambda a, b, c: a @ b),
+                         ('addmm', lambda a, b, c: torch.addmm(c, a, b))]:
+            compiled = torch.compile(fn, backend='inductor', fullgraph=True, dynamic=False)
+            for m, n, k in shapes:
+                if args.strided:
+                    a = (torch.randn(k, m).to(dtype) * .1).t()
+                    b = (torch.randn(n, k).to(dtype) * .1).t()
+                else:
+                    a = torch.randn(m, k).to(dtype) * .1
+                    b = torch.randn(k, n).to(dtype) * .1
+                c = torch.randn(n).to(dtype) * .1
+                if args.cancel and k >= 4:
+                    # +128*128 at K index 1 and -128*128 at K-2 cancel exactly;
+                    # the small products between them are absorbed differently
+                    # by every summation order, so the output exposes K order.
+                    a[:, 1], a[:, k - 2] = 128., -128.
+                    b[1, :], b[k - 2, :] = 128., 128.
+                inputs=[]
+                for label,tensor in zip(('a','b','c'),(a,b,c)):
+                    data=tensor.contiguous().view(torch.uint8).numpy().tobytes()
+                    path=out/'artifacts'/f'{name}-{m}-{n}-{k}-{label}.bin';path.write_bytes(data)
+                    inputs.append(dict(argument=label,shape=list(tensor.shape),stride=list(tensor.stride()),
+                        dtype=str(tensor.dtype),logical_contiguous_bytes=str(path.relative_to(out)),
+                        sha256=hashlib.sha256(data).hexdigest()))
+                # Copy the complete bases before making device views, retaining
+                # the input strides instead of silently making them contiguous.
+                if args.strided:
+                    da, db = a.t().to('tnca').t(), b.t().to('tnca').t()
+                else:
+                    da, db = a.to('tnca'), b.to('tnca')
+                dc = c.to('tnca')
+                assert da.stride() == a.stride() and db.stride() == b.stride()
+                reference = fn(a.float(), b.float(), c.float())
+                if args.cancel:
+                    # Cancellation makes any other summation order (CPU mm
+                    # included) differ by more than the tolerance; the
+                    # tolerance check then uses the per-K FMA order itself.
+                    reference = per_k_fma_reference(a, b, c if name == 'addmm' else None).float()
+                cold = compiled(da, db, dc)
+                torch.testing.assert_close(cold.cpu().float(), reference, rtol=2e-3, atol=2e-3)
+                session=device.MEMORY.session()
+                port_probe=getattr(session.dev,'memory_port_metrics',None) if session.physical_grid else None
+                port_before=port_probe() if callable(port_probe) else None
+                snapshots = ({str(i): model.counters_snapshot()
+                              for i, model in enumerate(model_class.instances) if model.proc is not None}
+                             if model_class else {})
+                start = time.monotonic()
+                history_start=len(session.dev.history) if args.rtl_engine_trace else None
+                with launch_log(isolated=True) as launches:
+                    result = compiled(da, db, dc)
+                sequences=([e['seq'] for e in session.dev.history[history_start:] if e['op'] in (3,9)]
+                           if args.rtl_engine_trace else [])
+                wall = time.monotonic() - start
+                port_after=port_probe() if callable(port_probe) else None
+                after = ({str(i): model.counters_snapshot()
+                          for i, model in enumerate(model_class.instances) if model.proc is not None}
+                         if model_class else {})
+                # Keep every timed output resident until the full sample block
+                # finishes: CPU checks and ownership handoffs are outside it.
+                timed_results=[result]
+                samples=[dict(device_cycles=sum(e['device_cycles'] for e in launches),host_seconds=wall,
+                              output_bits_sha256=None,counters_before=port_before,counters_after=port_after)]
+                for _ in range(1,args.samples):
+                    before_extra=port_probe() if callable(port_probe) else None
+                    seq_start=len(session.dev.history) if args.rtl_engine_trace else None
+                    t0=time.monotonic()
+                    with launch_log(isolated=True) as more_launches:
+                        more=compiled(da,db,dc)
+                    elapsed=time.monotonic()-t0
+                    after_extra=port_probe() if callable(port_probe) else None
+                    if args.rtl_engine_trace:
+                        sequences += [e['seq'] for e in session.dev.history[seq_start:] if e['op'] in (3,9)]
+                    assert [e['artifact'] for e in more_launches]==[e['artifact'] for e in launches]
+                    assert all(e['upload_bytes']==e['download_bytes']==0 for e in more_launches)
+                    timed_results.append(more)
+                    samples.append(dict(device_cycles=sum(e['device_cycles'] for e in more_launches),
+                                        host_seconds=elapsed,output_bits_sha256=None,
+                                        counters_before=before_extra,counters_after=after_extra))
+                got = result.cpu().float()
+                torch.testing.assert_close(got, reference, rtol=2e-3, atol=2e-3)
+                assert launches and all(e['upload_bytes'] == e['download_bytes'] == 0 for e in launches)
+                resources = [];rings=[];single_role_plans=[]
+                for entry in launches:
+                    manifest, segments = artifact.load(entry['artifact_path'])
+                    prov = manifest['optional_metadata']['provenance']
+                    plan = prov.get('execution_resources', {})
+                    ring=prov.get('rctx_roles_ring')
+                    single=prov.get('single_role_pipeline')
+                    if single:
+                        assert single['roles']==1 and single['stages']==2,single
+                        assert len(manifest['execution']['program_to_role']['0'])==1,manifest['execution']
+                        single_role_plans.append(single)
+                    if ring:
+                        rings.append(ring)
+                        if args.ring_stages is not None:
+                            assert ring['stages']==args.ring_stages and ring['ring_windows']>=args.ring_stages,ring
+                            assert len(manifest['execution']['program_to_role']['0'])==2,manifest['execution']
+                    if args.require_resident and any(site.get('enclosing_loops')
+                                                     for site in plan.get('gemm', {}).get('sites', [])):
+                        # A K loop exists (K > 16): its accumulators stay resident.
+                        loops = [loop for role in plan.get('roles', []) for loop in role['loops']
+                                 if loop['static_mma_commands'] == (args.columns // 16)*(single['stages'] if single else ring['stages'] if ring else 1)]
+                        assert any(loop['static_acc_reads'] == loop['static_acc_writes'] ==
+                                   loop['static_acc_zeros'] == 0 for loop in loops), plan
+                        trips = plan['accumulator_round_trips']
+                        assert trips['k_loop_reads'] == trips['k_loop_writes'] == trips['k_loop_zeros'] == 0, trips
+                    digest = hashlib.sha256(segments['text']).hexdigest()
+                    shutil.copyfile(entry['artifact_path'], out/'artifacts'/f'{digest}.tnca')
+                    resources.append(dict(code_sha256=digest, code_bytes=len(segments['text']),
+                                          manifest_resources=manifest['resources'], plan=plan,
+                                          execution=manifest['execution'],
+                                          scheduling={k:prov[k] for k in ('rctx_spmd','rctx_slice','rctx_roles',
+                                              'rctx_roles_pairs','rctx_roles_ring','single_role_pipeline',
+                                              'single_role_pipeline_refused','single_role_pipeline_fallback') if k in prov}))
+                if args.ring_stages is not None:
+                    assert rings,'forced ring did not execute through the standard Torch graph'
+                if args.require_single_role_pipeline:
+                    assert single_role_plans,'single-role pipeline did not execute through the standard Torch graph'
+                deltas = {i: {key: value - snapshots.get(i, {}).get(key, 0)
+                              for key, value in values.items()}
+                          for i, values in after.items()}
+                row = dict(graph=name, shape=[m, n, k], strides=[list(a.stride()), list(b.stride())],
+                           status='pass', max_abs_error=float((got-reference).abs().max()),
+                           output_f32_sha256=hashlib.sha256(got.contiguous().numpy().tobytes()).hexdigest(),
+                           rtol=2e-3, atol=2e-3, resident_host_wall_seconds=wall,
+                           device_cycles=sum(e['device_cycles'] for e in launches),
+                           launches=launches, artifacts=resources, model_counter_deltas=deltas)
+                if args.bitwise:
+                    # Graph identity: the MMA template ran (not a decomposition).
+                    assert any('tem_fused' in e['kernel'] for e in launches), [e['kernel'] for e in launches]
+                    exact = per_k_fma_reference(a, b, c if name == 'addmm' else None)
+                    raw = result.cpu()
+                    bits = raw.contiguous().view(torch.uint8).numpy().tobytes()
+                    (out/'artifacts'/f'{name}-{m}-{n}-{k}-out.bin').write_bytes(bits)
+                    row.update(output_bits_sha256=hashlib.sha256(bits).hexdigest(),
+                               reference_bits_sha256=hashlib.sha256(
+                                   exact.contiguous().view(torch.uint8).numpy().tobytes()).hexdigest(),
+                               bitwise_reference=dict(reference='independent per-K FP32 FMA (CPU)',
+                                                      **bit_compare(raw, exact)),
+                               order_sensitivity=order_sensitivity(a, b, c if name == 'addmm' else None, exact),
+                               cold_bitwise_same=torch.equal(cold.cpu().view(torch.int16), raw.view(torch.int16)),
+                               logical_tiles=sorted({tuple(s['logical_tile']) for x in resources
+                                                     for s in x['plan'].get('gemm', {}).get('sites', [])
+                                                     if 'logical_tile' in s}))
+                row.update(inputs=inputs,timed_samples=samples)
+                for sample,tensor in zip(samples,timed_results):
+                    sample_cpu=tensor.cpu()
+                    torch.testing.assert_close(sample_cpu.float(),reference,rtol=2e-3,atol=2e-3)
+                    sample_bits=hashlib.sha256(sample_cpu.contiguous().view(torch.uint8).numpy().tobytes()).hexdigest()
+                    sample['output_bits_sha256']=sample_bits
+                    if args.bitwise and sample_bits != row['reference_bits_sha256']:
+                        row.update(status='fail',failed_sample=samples.index(sample)+1,
+                                   failed_sample_output_bits_sha256=sample_bits)
+                        report['rows'].append(row);save()
+                        raise ValueError('timed sample differs from the independent bitwise reference')
+                row['timed_samples']=samples
+                row.update(inputs=inputs,ring_plans=rings,ring_stages=args.ring_stages,
+                           single_role_plans=single_role_plans,
+                           model_counters_before=snapshots,model_counters_after=after,rtl_sequences=sequences,
+                           input_placements=[dict(base=t.untyped_storage().data_ptr(),offset=t.storage_offset(),
+                                                  shape=list(t.shape),stride=list(t.stride())) for t in (da,db,dc)],
+                           output_placement=dict(base=result.untyped_storage().data_ptr(),offset=result.storage_offset()))
+                if args.bitwise:
+                    try:
+                        require_matching_bits(row)
+                    except ValueError:
+                        row['status'] = 'fail'
+                        report['rows'].append(row)
+                        save()
+                        raise
+                if model_class:
+                    from prediction_domain import timing_status, VALID_STATUSES
+                    qualifications = [timing_status(after[str(i)], slow=model.identity['dram_path']=='slow')
+                                      for i, model in enumerate(model_class.instances) if str(i) in after]
+                    row['model_timing_status'] = ('inconclusive-fixed-point' if not qualifications or
+                        any(q not in VALID_STATUSES for q in qualifications) else
+                        'uncalibrated-fixed-point-checked' if 'uncalibrated-fixed-point-checked' in qualifications
+                        else 'uncalibrated')
+                report['rows'].append(row)
+                save()
+        if args.rtl_engine_trace:
+            sys.path.insert(0,str(ROOT/'tools/r40'))
+            from engine_overlap import selected
+            trace_path=Path(session.dev.log)
+            session.close()
+            trace=trace_path.read_text();(out/'rtl-engine.log').write_text(trace)
+            sequences=[s for row in report['rows'] for s in row['rtl_sequences']]
+            assert sequences,'no actual measured RTL sequences'
+            report['rtl_engine_audit']=selected(trace,sequences)
+        if model_class:
+            report['model_identities']=[m.identity for m in model_class.instances]
+        if software_tree(ROOT, refresh=True) != report['software_tree']:
+            raise ValueError('source changed during the experiment')
+        report['status'] = 'functional-pass'
+    except Exception:
+        report.update(status='fail', error=traceback.format_exc())
+        raise
+    finally:
+        save()
+    print(f'fragment case: {report["status"]} ({len(report["rows"])} graphs/shapes)', flush=True)
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,5066 @@
+{
+ "schema": "tnca-chat-quality-result/1",
+ "spec": "quality-v1",
+ "spec_path": "/home/zzhouch/r41run3/runtime_nohost_v3_20261031/spec/r41/chat/quality-v1.json",
+ "model": "qwen3vl-2b-fp8",
+ "device": "tnca",
+ "model_scope": "full-checkpoint",
+ "reference": "/home/zzhouch/r41run3/runtime_nohost_v3_20261031/evidence/r41/chat/quality-ref/vl.json",
+ "prompts": [
+  {
+   "id": "fact",
+   "kind": "factual QA",
+   "keywords": [
+    "paris"
+   ],
+   "turns": [
+    {
+     "user": "What is the capital of France? Answer with one word.",
+     "text": "Paris",
+     "tokens": [
+      59604,
+      151645
+     ],
+     "statistics": {
+      "generated_tokens": 12,
+      "decode_steps": 11,
+      "prefill_seconds": 620.0525281799783,
+      "decode_seconds": 471.5212712070497,
+      "mean_decode_seconds_per_token": 42.86557010973179,
+      "decode_tokens_per_second": 0.023328746064501065,
+      "generation_seconds": 1091.573799387028
+     },
+     "session": {
+      "prompt_index": 1,
+      "cache_resets": 1,
+      "new_graphs_this_prompt": 3,
+      "unique_graphs_total": 3
+     },
+     "device_evidence": {
+      "model_tensor_placements": {
+       "parameters": {
+        "tnca:0": 822
+       },
+       "buffers": {
+        "tnca:0": 4
+       }
+      },
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_fallbacks": {
+       "prefill": [],
+       "decode": [],
+       "selection": []
+      },
+      "compiled_wrapper_roles_covered": true,
+      "vision_calls": [],
+      "output_retrieval": {
+       "host_read_calls": 24,
+       "host_read_bytes": 3646560,
+       "host_write_calls": 0,
+       "host_write_bytes": 0,
+       "host_sites": {
+        "read <- chat.py:381:<listcomp> < chat.py:381:run_device_generation < chat.py:453:run_generation < chat.py:649:generate": 96,
+        "read <- chat.py:382:<listcomp> < chat.py:382:run_device_generation < chat.py:453:run_generation < chat.py:649:generate": 3646464
+       },
+       "launches": 0,
+       "by_kernel": {},
+       "staging_upload_bytes": 0,
+       "staging_download_bytes": 0,
+       "resident_bytes": 0,
+       "skipped_launches": 0,
+       "device_cycles": 0
+      },
+      "output_retrieval_seconds": 0.9036216950044036,
+      "executed_generation_steps": 12
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 620.0525281799783,
+       "new_graphs": 3,
+       "code_store": {
+        "evicted": 2426,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": 0,
+       "transfers_inside_step": {
+        "host_read_calls": 168,
+        "host_read_bytes": 448,
+        "host_write_calls": 206,
+        "host_write_bytes": 2352,
+        "host_sites": {
+         "write <- chat.py:232:_call_prefill < chat.py:273:prefill_prompt < chat.py:350:<lambda> < chat.py:125:run_with_code_capture": 640,
+         "write <- fuse_attention.py:1138:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1145:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1152:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1159:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1208:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1215:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1229:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1236:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1243:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1250:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1257:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1383:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 16,
+         "write <- fuse_attention.py:1423:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 8,
+         "write <- fuse_attention.py:1434:_get_sfdp_patterns < fuse_attention.py:1512:_sfdp_init < joint_graph.py:88:lazy_init < pattern_matcher.py:3019:lazy_init": 8,
+         "write <- _ops.py:916:__call__ < joint_graph.py:476:_deduce_value < constant_folding.py:253:run_node < interpreter.py:197:run": 896,
+         "read <- joint_graph.py:387:add_node_replacement < constant_folding.py:284:run_node < interpreter.py:197:run < constant_folding.py:309:run": 448,
+         "write <- _ops.py:916:__call__ < joint_graph.py:433:_deduce_value < constant_folding.py:253:run_node < interpreter.py:197:run": 448,
+         "write <- chat.py:239:_call_decode < chat.py:275:prefill_prompt < chat.py:350:<lambda> < chat.py:125:run_with_code_capture": 160
+        },
+        "launches": 3629,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 26,
+          "device_cycles": 13136
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 6,
+          "device_cycles": 286215
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 6,
+          "device_cycles": 1952877
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 1176,
+          "device_cycles": 7827965379
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 168,
+          "device_cycles": 2553440
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 168,
+          "device_cycles": 4998244
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 168,
+          "device_cycles": 1389938
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 168,
+          "device_cycles": 2539186
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 168,
+          "device_cycles": 53399577
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__to_copy_add_cat_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 56,
+          "device_cycles": 48366509
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_8": {
+          "launches": 56,
+          "device_cycles": 151834343
+         },
+         "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_9": {
+          "launches": 56,
+          "device_cycles": 231054769
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_10": {
+          "launches": 56,
+          "device_cycles": 64164198
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_11": {
+          "launches": 56,
+          "device_cycles": 18696565
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_12": {
+          "launches": 56,
+          "device_cycles": 80410792
+         },
+         "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_13": {
+          "launches": 56,
+          "device_cycles": 229070927
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_14": {
+          "launches": 56,
+          "device_cycles": 3552382
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_15": {
+          "launches": 2,
+          "device_cycles": 1244732
+         },
+         "triton_poi_fused_mul_silu_16": {
+          "launches": 56,
+          "device_cycles": 9969629
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_17": {
+          "launches": 2,
+          "device_cycles": 1326257
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_18": {
+          "launches": 2,
+          "device_cycles": 853559
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 30,
+          "device_cycles": 4251239
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_20": {
+          "launches": 26,
+          "device_cycles": 5192987
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_21": {
+          "launches": 26,
+          "device_cycles": 5662041
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_22": {
+          "launches": 26,
+          "device_cycles": 5005329
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_23": {
+          "launches": 2,
+          "device_cycles": 316028
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_24": {
+          "launches": 2,
+          "device_cycles": 431930678
+         },
+         "triton_poi_fused_add_copy__25": {
+          "launches": 56,
+          "device_cycles": 11855
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 112,
+          "device_cycles": 3157687630
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 112,
+          "device_cycles": 9703710
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 112,
+          "device_cycles": 4339813
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 112,
+          "device_cycles": 282113854
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 4,
+          "device_cycles": 888348
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 112,
+          "device_cycles": 2481624
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 4,
+          "device_cycles": 919708
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 4,
+          "device_cycles": 582103
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 52,
+          "device_cycles": 2195601
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 52,
+          "device_cycles": 2726579
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 52,
+          "device_cycles": 3282986
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 52,
+          "device_cycles": 3177381
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 4,
+          "device_cycles": 861095819
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 112,
+          "device_cycles": 24758
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964368
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 28126187232,
+        "skipped_launches": 0,
+        "device_cycles": 13520197093
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 40.72664949801401,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 499
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15358
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216701
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1240594016
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 139647
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 268110
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94174
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141414
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2687860
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 792401061
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2424842
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1085425
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70561902
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 221967
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 596151
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229836
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145327
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 548397
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681920
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821339
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793373
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41086
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215781600
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6001
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 963799
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2331461805
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 41.84320715800277,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 495
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15346
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 217009
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1239070599
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 141530
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 264278
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 93655
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141165
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2690263
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 794764409
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426220
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1086996
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70537194
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222072
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 601134
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229870
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145495
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 548880
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681970
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820997
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 792958
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41019
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215791366
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5965
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964569
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2332295454
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 42.17888743500225,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 488
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15341
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216333
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1242730560
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 144258
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 269164
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 93957
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 142602
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2690278
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 792104769
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425684
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1087328
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70456479
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 221992
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 613508
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 230001
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145463
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549665
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 683704
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 819925
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793204
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41162
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215764287
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5955
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964720
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2333210827
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 43.83495681500062,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 497
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15341
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216818
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1239652891
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 142755
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 264683
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 95436
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 142252
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2684298
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791703380
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425490
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084428
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70585183
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222165
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 624018
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229957
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145434
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 550390
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682714
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 822262
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 794552
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41239
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215814983
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5926
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964069
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2329911161
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 42.00582480902085,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 501
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15333
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216812
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1241855043
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 140969
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 267334
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94087
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 142841
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2688525
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 792090595
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426424
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1085063
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70617488
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222029
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 593994
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229929
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145408
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549477
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681892
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821460
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 792852
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41233
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216641085
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5767
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 963820
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2333329961
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 42.17271186999278,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 489
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15329
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216641
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1240509600
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 143845
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 260918
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94128
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 140426
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2684671
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791253379
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425707
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084618
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70514594
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222039
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 623123
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229915
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145436
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549577
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682246
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 819888
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793315
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41056
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216693906
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5750
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964567
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2331115163
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 42.804454803990666,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 497
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15310
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216653
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1240056729
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 142409
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 264409
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94679
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 140243
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2684150
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 789957223
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425791
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084554
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70544999
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222138
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 624825
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229954
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145606
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549812
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681697
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 819862
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 792713
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41167
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216713321
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5772
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964598
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2329419111
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 43.09856128602405,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 501
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15370
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216715
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1240752291
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 144571
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 264852
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94819
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 142042
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2683470
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 792179329
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425121
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084638
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70570733
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 221951
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 623979
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 230016
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145389
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549913
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682205
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820051
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793502
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41148
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216635556
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5785
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 963824
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2332287771
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 43.50859487301204,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 489
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15344
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216632
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1238526826
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 143123
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 275817
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94312
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141900
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2701184
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 789736451
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425919
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1090121
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70614433
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222045
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 641978
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229992
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145312
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 550366
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682682
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 822541
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 794583
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41202
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216750724
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6044
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964656
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2327834676
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 44.78967776498757,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 481
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15388
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 217013
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1239717422
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 146015
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 269671
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94054
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141840
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2686151
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 790642694
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426104
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1086980
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70478706
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 221913
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 612047
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229797
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145315
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 548740
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682949
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820691
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 794010
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41022
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216749277
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6154
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964644
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2329739078
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 44.5577448940021,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 497
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15345
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216900
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1242407539
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 144612
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 270036
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94444
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 142953
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2688517
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791967607
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426074
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1086715
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70416929
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222051
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 611767
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 230008
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145415
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549154
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 683765
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820605
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793849
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41154
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216701442
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6165
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 963832
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2333647375
+       },
+       "logits_download_bytes": 0
+      }
+     ]
+    }
+   ],
+   "scores": [
+    {
+     "passed": true,
+     "required_keywords": [
+      "paris"
+     ],
+     "keywords_missing_in_reference": [],
+     "keywords_ok": true,
+     "containment": true,
+     "tokens_equal": true,
+     "common_prefix_tokens": 2,
+     "device_tokens": 2,
+     "reference_tokens": 2
+    }
+   ],
+   "passed": true
+  },
+  {
+   "id": "arith",
+   "kind": "arithmetic",
+   "keywords": [
+    "42"
+   ],
+   "turns": [
+    {
+     "user": "What is 17 + 25? Answer with the number only.",
+     "text": "42",
+     "tokens": [
+      19,
+      17,
+      151645
+     ],
+     "statistics": {
+      "generated_tokens": 12,
+      "decode_steps": 11,
+      "prefill_seconds": 151.90027473200462,
+      "decode_seconds": 536.3031046020042,
+      "mean_decode_seconds_per_token": 48.754827691091286,
+      "decode_tokens_per_second": 0.02051078933835971,
+      "generation_seconds": 688.2033793340088
+     },
+     "session": {
+      "prompt_index": 2,
+      "cache_resets": 2,
+      "new_graphs_this_prompt": 0,
+      "unique_graphs_total": 3
+     },
+     "device_evidence": {
+      "model_tensor_placements": {
+       "parameters": {
+        "tnca:0": 822
+       },
+       "buffers": {
+        "tnca:0": 4
+       }
+      },
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_fallbacks": {
+       "prefill": [],
+       "decode": [],
+       "selection": []
+      },
+      "compiled_wrapper_roles_covered": true,
+      "vision_calls": [],
+      "output_retrieval": {
+       "host_read_calls": 24,
+       "host_read_bytes": 3646560,
+       "host_write_calls": 0,
+       "host_write_bytes": 0,
+       "host_sites": {
+        "read <- chat.py:381:<listcomp> < chat.py:381:run_device_generation < chat.py:453:run_generation < chat.py:649:generate": 96,
+        "read <- chat.py:382:<listcomp> < chat.py:382:run_device_generation < chat.py:453:run_generation < chat.py:649:generate": 3646464
+       },
+       "launches": 0,
+       "by_kernel": {},
+       "staging_upload_bytes": 0,
+       "staging_download_bytes": 0,
+       "resident_bytes": 0,
+       "skipped_launches": 0,
+       "device_cycles": 0
+      },
+      "output_retrieval_seconds": 1.3479463350086007,
+      "executed_generation_steps": 12
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 151.90027473200462,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 1446,
+        "loaded_modules": 7
+       },
+       "reused_cached_tokens": 0,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 6,
+        "host_write_bytes": 960,
+        "host_sites": {
+         "write <- chat.py:232:_call_prefill < chat.py:273:prefill_prompt < chat.py:350:<lambda> < chat.py:125:run_with_code_capture": 960
+        },
+        "launches": 2026,
+        "by_kernel": {
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 3,
+          "device_cycles": 337481
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 3,
+          "device_cycles": 1625968
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 588,
+          "device_cycles": 4300208040
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 84,
+          "device_cycles": 2977634
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 84,
+          "device_cycles": 5933346
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 84,
+          "device_cycles": 1516132
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 84,
+          "device_cycles": 2965695
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 84,
+          "device_cycles": 64004916
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__to_copy_add_cat_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 84,
+          "device_cycles": 72657190
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_8": {
+          "launches": 84,
+          "device_cycles": 228145787
+         },
+         "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_9": {
+          "launches": 84,
+          "device_cycles": 348175177
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_10": {
+          "launches": 84,
+          "device_cycles": 96224838
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_11": {
+          "launches": 84,
+          "device_cycles": 28029775
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_12": {
+          "launches": 84,
+          "device_cycles": 120607700
+         },
+         "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_13": {
+          "launches": 84,
+          "device_cycles": 346288146
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_14": {
+          "launches": 84,
+          "device_cycles": 5320181
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_15": {
+          "launches": 3,
+          "device_cycles": 1870024
+         },
+         "triton_poi_fused_mul_silu_16": {
+          "launches": 84,
+          "device_cycles": 14881268
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_17": {
+          "launches": 3,
+          "device_cycles": 1978550
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_18": {
+          "launches": 3,
+          "device_cycles": 1270705
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 39,
+          "device_cycles": 6145247
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_20": {
+          "launches": 39,
+          "device_cycles": 7828392
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_21": {
+          "launches": 39,
+          "device_cycles": 8494324
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_22": {
+          "launches": 39,
+          "device_cycles": 7500932
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_23": {
+          "launches": 3,
+          "device_cycles": 476271
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_24": {
+          "launches": 3,
+          "device_cycles": 651423956
+         },
+         "triton_poi_fused_add_copy__25": {
+          "launches": 84,
+          "device_cycles": 17937
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964170
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 14660494888,
+        "skipped_launches": 0,
+        "device_cycles": 6327869782
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 45.82482438799343,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 369,
+        "loaded_modules": 9
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 502
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15334
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216966
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1241725981
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 140463
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 268309
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 95367
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 144753
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2688209
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 794317297
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426584
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1085257
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70694089
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 221989
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 597704
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229766
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145547
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549457
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681153
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821922
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793304
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41209
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215748738
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6046
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964918
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2334620864
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 46.84896845399635,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 368,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 495
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15355
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216809
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1241396182
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 141018
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 263892
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 93740
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 140696
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2681672
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 794156653
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426204
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084573
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70523468
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222057
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 624159
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229903
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145388
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 548545
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682037
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821510
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793370
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41089
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215742659
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5928
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964236
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2333961638
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 47.78809513800661,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 489
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15345
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216812
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1241203245
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 140283
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 269878
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 95103
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141100
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2689998
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791736586
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425984
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1087515
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70561502
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222115
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 596733
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229889
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145449
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549461
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682043
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821949
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793500
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41111
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215762593
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5936
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 963969
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2331398588
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 46.97415267600445,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 497
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15314
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216490
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1241223545
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 139851
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 264153
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94060
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141716
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2684106
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791867073
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425317
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084355
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70582946
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222061
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 624112
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229954
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145421
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 548228
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682297
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 822022
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793461
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41152
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215773005
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5957
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964910
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2331592003
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 46.69527378299972,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 501
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15333
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216746
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1241193457
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 140082
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 267062
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 93283
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 142199
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2688242
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 792010590
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426070
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1085320
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70613900
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222065
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 593728
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229914
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145350
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 548040
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681572
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821011
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 792300
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 40948
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216610205
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5783
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964190
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2332547891
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 49.3005912330118,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 489
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15329
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216883
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1240864362
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 139893
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 260063
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 93506
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 140130
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2684717
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791337881
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426143
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084476
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70544572
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222030
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 624405
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229829
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145394
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 547880
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681557
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821447
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 792510
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 40964
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216630327
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5730
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 963763
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2331514280
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 50.09707368799718,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 498
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15309
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216963
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1241503474
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 139595
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 267747
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94671
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 140917
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2690782
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 789857039
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425569
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1086932
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70567782
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222035
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 595180
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229919
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145424
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 548245
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681535
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821387
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 792040
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41001
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216747822
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5865
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964938
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2330802669
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 52.67281971400371,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 501
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15352
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216371
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1241155182
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 139488
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 265118
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94011
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 142455
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2683297
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 792145886
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425678
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084526
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70583528
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222037
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 623895
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229938
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145416
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 547918
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681799
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821319
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 792359
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 40937
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216605200
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5787
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964280
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2332632278
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 50.79960649498389,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 489
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15346
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216718
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1240493797
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 142227
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 275350
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94789
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141544
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2702890
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 789654368
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2424989
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1090158
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70645264
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222027
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 644797
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229875
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145491
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549616
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682067
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 819856
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793333
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41167
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216705452
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6058
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 963895
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2329701563
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 50.622225608007284,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 483
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15398
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216526
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1240551065
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 142627
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 258634
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 95414
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141689
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2683870
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 790368729
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425575
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084859
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70628680
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222029
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 627630
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229999
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145276
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549576
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681895
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820139
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793255
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41172
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216738480
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6120
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964629
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2330433749
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 48.67947342499974,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 497
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15343
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 217067
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1239338311
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 142877
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 266889
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94253
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 143228
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2684305
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791947522
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426057
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084932
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70175796
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222074
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 627944
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229951
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145335
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549014
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682630
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821252
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793627
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41208
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216728321
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6136
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964637
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2330349206
+       },
+       "logits_download_bytes": 0
+      }
+     ]
+    }
+   ],
+   "scores": [
+    {
+     "passed": true,
+     "required_keywords": [
+      "42"
+     ],
+     "keywords_missing_in_reference": [],
+     "keywords_ok": true,
+     "containment": true,
+     "tokens_equal": true,
+     "common_prefix_tokens": 3,
+     "device_tokens": 3,
+     "reference_tokens": 3
+    }
+   ],
+   "passed": true
+  },
+  {
+   "id": "reason",
+   "kind": "reasoning",
+   "keywords": [
+    "bob"
+   ],
+   "turns": [
+    {
+     "user": "Tom is taller than Ann. Ann is taller than Bob. Who is the shortest? Answer with one name.",
+     "text": "We are given the following statements:\n\n1. Tom is taller",
+     "tokens": [
+      1654,
+      525,
+      2661,
+      279,
+      2701,
+      12239,
+      1447,
+      16,
+      13,
+      8364,
+      374,
+      49909
+     ],
+     "statistics": {
+      "generated_tokens": 12,
+      "decode_steps": 11,
+      "prefill_seconds": 505.69048982299864,
+      "decode_seconds": 690.9876310560794,
+      "mean_decode_seconds_per_token": 62.81705736873449,
+      "decode_tokens_per_second": 0.015919242987299232,
+      "generation_seconds": 1196.678120879078
+     },
+     "session": {
+      "prompt_index": 3,
+      "cache_resets": 2,
+      "new_graphs_this_prompt": 0,
+      "unique_graphs_total": 3
+     },
+     "device_evidence": {
+      "model_tensor_placements": {
+       "parameters": {
+        "tnca:0": 822
+       },
+       "buffers": {
+        "tnca:0": 4
+       }
+      },
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_fallbacks": {
+       "prefill": [],
+       "decode": [],
+       "selection": []
+      },
+      "compiled_wrapper_roles_covered": true,
+      "vision_calls": [],
+      "output_retrieval": {
+       "host_read_calls": 24,
+       "host_read_bytes": 3646560,
+       "host_write_calls": 0,
+       "host_write_bytes": 0,
+       "host_sites": {
+        "read <- chat.py:381:<listcomp> < chat.py:381:run_device_generation < chat.py:453:run_generation < chat.py:649:generate": 96,
+        "read <- chat.py:382:<listcomp> < chat.py:382:run_device_generation < chat.py:453:run_generation < chat.py:649:generate": 3646464
+       },
+       "launches": 0,
+       "by_kernel": {},
+       "staging_upload_bytes": 0,
+       "staging_download_bytes": 0,
+       "resident_bytes": 0,
+       "skipped_launches": 0,
+       "device_cycles": 0
+      },
+      "output_retrieval_seconds": 0.997183400002541,
+      "executed_generation_steps": 12
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 505.69048982299864,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 3651,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": 0,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 18,
+        "host_write_bytes": 1200,
+        "host_sites": {
+         "write <- chat.py:232:_call_prefill < chat.py:273:prefill_prompt < chat.py:350:<lambda> < chat.py:125:run_with_code_capture": 960,
+         "write <- chat.py:239:_call_decode < chat.py:275:prefill_prompt < chat.py:350:<lambda> < chat.py:125:run_with_code_capture": 240
+        },
+        "launches": 5404,
+        "by_kernel": {
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 9,
+          "device_cycles": 429332
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 9,
+          "device_cycles": 2926966
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 1764,
+          "device_cycles": 11733201418
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 252,
+          "device_cycles": 3823107
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 252,
+          "device_cycles": 7531999
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 252,
+          "device_cycles": 2083611
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 252,
+          "device_cycles": 3812531
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 252,
+          "device_cycles": 80126976
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__to_copy_add_cat_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 84,
+          "device_cycles": 72730799
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_8": {
+          "launches": 84,
+          "device_cycles": 228533664
+         },
+         "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_9": {
+          "launches": 84,
+          "device_cycles": 346944924
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_10": {
+          "launches": 84,
+          "device_cycles": 96222377
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_11": {
+          "launches": 84,
+          "device_cycles": 28024682
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_12": {
+          "launches": 84,
+          "device_cycles": 120371884
+         },
+         "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_13": {
+          "launches": 84,
+          "device_cycles": 345303521
+         },
+         "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_14": {
+          "launches": 84,
+          "device_cycles": 5298036
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_15": {
+          "launches": 3,
+          "device_cycles": 1871519
+         },
+         "triton_poi_fused_mul_silu_16": {
+          "launches": 84,
+          "device_cycles": 14826220
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_17": {
+          "launches": 3,
+          "device_cycles": 1981107
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_18": {
+          "launches": 3,
+          "device_cycles": 1276031
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 45,
+          "device_cycles": 6379368
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_20": {
+          "launches": 39,
+          "device_cycles": 7814836
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_21": {
+          "launches": 39,
+          "device_cycles": 8496404
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_22": {
+          "launches": 39,
+          "device_cycles": 7492274
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_23": {
+          "launches": 3,
+          "device_cycles": 472987
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_24": {
+          "launches": 3,
+          "device_cycles": 650971188
+         },
+         "triton_poi_fused_add_copy__25": {
+          "launches": 84,
+          "device_cycles": 17866
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 168,
+          "device_cycles": 4734589751
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 168,
+          "device_cycles": 14556508
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 168,
+          "device_cycles": 6516552
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 168,
+          "device_cycles": 423214394
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 6,
+          "device_cycles": 1332366
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 168,
+          "device_cycles": 3656497
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 6,
+          "device_cycles": 1379781
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 6,
+          "device_cycles": 873388
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 78,
+          "device_cycles": 3293173
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 78,
+          "device_cycles": 4090937
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 78,
+          "device_cycles": 4926937
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 78,
+          "device_cycles": 4769028
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 6,
+          "device_cycles": 1291730706
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 168,
+          "device_cycles": 37169
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964464
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 42189128680,
+        "skipped_launches": 0,
+        "device_cycles": 20274897278
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 59.2240970430139,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 502
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15355
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216407
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1239306492
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 141371
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 266559
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94279
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 140636
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2688054
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 792605864
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2427882
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1085056
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70057195
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 221965
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 596147
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229977
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145393
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549048
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681761
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820554
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793207
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41092
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215774128
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6009
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964815
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2329869748
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 63.33287074000691,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 495
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15347
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216860
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1240903964
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 140110
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 273608
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 93579
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141299
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2686145
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 794559905
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426940
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1085316
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70053104
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222021
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 595404
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229787
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145460
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549300
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682382
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 822226
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 794020
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41025
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215773739
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5983
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 963726
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2333421745
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 66.6918746829906,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 507
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15329
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216805
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1241813844
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 138526
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 259925
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94423
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 142554
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2703417
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791775316
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2421871
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1090242
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70414201
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222139
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 643902
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 230036
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145467
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549552
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681582
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820539
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793211
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41088
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215777251
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5927
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964657
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2331962311
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 65.25602775602601,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 497
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15315
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216912
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1239950043
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 141671
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 274784
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94539
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 143052
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2685338
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791766829
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2427214
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1085209
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70197446
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222013
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 593841
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229822
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145409
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549382
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681717
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820763
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 792812
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41143
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 215743396
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5998
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964621
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2329789766
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 59.77265064700623,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 501
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15334
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216764
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1240250062
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 139992
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 267157
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94913
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141600
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2688170
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 792175460
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2421168
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1085418
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70356416
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222089
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 594929
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229969
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145355
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549693
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682183
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820237
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 792530
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41039
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216596786
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5734
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 963699
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2331497198
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 58.82338971600984,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 489
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15339
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216794
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1239569235
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 139289
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 260205
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94735
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 143500
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2706705
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791272872
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2421788
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1089936
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70363051
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222088
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 643729
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 230039
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145472
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549503
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681279
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820011
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 792780
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41109
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216621683
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5790
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964342
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2330011763
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 59.57776542700594,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 495
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15309
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216855
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1243744199
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 140148
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 264392
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94188
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 142396
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2705274
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 789914528
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2422751
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1090148
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70283146
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222284
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 643321
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 230069
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145547
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549305
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 681463
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820095
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793471
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41210
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216665756
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5827
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964828
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2332797005
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 60.91684453099151,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 501
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15361
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 217016
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1240131074
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 140268
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 264862
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94889
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 141875
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2706727
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 792069147
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2423290
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1089916
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70387231
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222136
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 644773
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 230016
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145412
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549581
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682642
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820396
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793001
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41118
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216661583
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 5761
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 963699
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2331442275
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 62.76430446401355,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 487
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15345
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216713
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1241528723
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 142241
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 275666
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 94860
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 143203
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2704028
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791140260
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425085
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1090063
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70627368
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222069
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 644529
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229876
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145474
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 550178
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682298
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 821142
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 794137
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41238
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216722697
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6064
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964642
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2332228386
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 66.29786918201717,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 482
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15403
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 217031
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1239400795
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 142537
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 258955
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 95103
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 143002
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2683785
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 790445969
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2425436
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084793
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70638502
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 221974
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 626483
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229935
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145368
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549472
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682648
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820669
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 793466
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41230
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216739504
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6157
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964949
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2329373648
+       },
+       "logits_download_bytes": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 68.32993686699774,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 370,
+        "loaded_modules": 11
+       },
+       "reused_cached_tokens": null,
+       "transfers_inside_step": {
+        "host_read_calls": 0,
+        "host_read_bytes": 0,
+        "host_write_calls": 1,
+        "host_write_bytes": 32,
+        "host_sites": {
+         "write <- chat.py:239:_call_decode < chat.py:295:step_device < chat.py:359:<lambda> < chat.py:125:run_with_code_capture": 32
+        },
+        "launches": 565,
+        "by_kernel": {
+         "_copy_kernel": {
+          "launches": 1,
+          "device_cycles": 497
+         },
+         "triton_poi_fused__to_copy_expand_mul_select_slice_unsqueeze_0": {
+          "launches": 1,
+          "device_cycles": 15360
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_1": {
+          "launches": 1,
+          "device_cycles": 216363
+         },
+         "w8a8_block_dynamic_fp8_matmul_kernel": {
+          "launches": 196,
+          "device_cycles": 1237615010
+         },
+         "triton_red_fused__to_copy_mean_pow_view_2": {
+          "launches": 28,
+          "device_cycles": 139816
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_3": {
+          "launches": 28,
+          "device_cycles": 275273
+         },
+         "triton_red_fused__to_copy_mean_pow_view_4": {
+          "launches": 28,
+          "device_cycles": 95586
+         },
+         "triton_poi_fused__to_copy_add_cat_mean_mul_neg_pow_rsqrt_slice_transpose_view_5": {
+          "launches": 28,
+          "device_cycles": 144821
+         },
+         "triton_poi_fused__to_copy_add_arange_cat_index_copy_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_6": {
+          "launches": 28,
+          "device_cycles": 2684771
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__to_copy__unsafe_view_add_cat_clone_expand_mean_mul_pow_rsqrt_select_slice_transpose_unsqueeze_view_7": {
+          "launches": 28,
+          "device_cycles": 791831230
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_add_arange_expand_le_scalar_tensor_unsqueeze_where_8": {
+          "launches": 28,
+          "device_cycles": 2426334
+         },
+         "triton_poi_fused_add_arange_index_copy_transpose_view_9": {
+          "launches": 28,
+          "device_cycles": 1084906
+         },
+         "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": {
+          "launches": 28,
+          "device_cycles": 70700678
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": {
+          "launches": 1,
+          "device_cycles": 222012
+         },
+         "triton_poi_fused_mul_silu_12": {
+          "launches": 28,
+          "device_cycles": 626430
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": {
+          "launches": 1,
+          "device_cycles": 229879
+         },
+         "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": {
+          "launches": 1,
+          "device_cycles": 145402
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": {
+          "launches": 13,
+          "device_cycles": 549695
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": {
+          "launches": 13,
+          "device_cycles": 682387
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": {
+          "launches": 13,
+          "device_cycles": 820412
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": {
+          "launches": 13,
+          "device_cycles": 794596
+         },
+         "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": {
+          "launches": 1,
+          "device_cycles": 41195
+         },
+         "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": {
+          "launches": 1,
+          "device_cycles": 216778686
+         },
+         "triton_poi_fused_add_copy__21": {
+          "launches": 28,
+          "device_cycles": 6142
+         },
+         "triton_red_fused__to_copy_argmax_0": {
+          "launches": 1,
+          "device_cycles": 964126
+         }
+        },
+        "staging_upload_bytes": 0,
+        "staging_download_bytes": 0,
+        "resident_bytes": 4588409528,
+        "skipped_launches": 0,
+        "device_cycles": 2329091607
+       },
+       "logits_download_bytes": 0
+      }
+     ]
+    }
+   ],
+   "scores": [
+    {
+     "passed": false,
+     "required_keywords": [
+      "bob"
+     ],
+     "keywords_missing_in_reference": [],
+     "keywords_ok": false,
+     "containment": false,
+     "tokens_equal": false,
+     "common_prefix_tokens": 0,
+     "device_tokens": 12,
+     "reference_tokens": 12
+    }
+   ],
+   "passed": false
+  }
+ ],
+ "status": "running",
+ "prefill_chunk": 8,
+ "new_tokens": 12,
+ "reduced_proof": false
+}

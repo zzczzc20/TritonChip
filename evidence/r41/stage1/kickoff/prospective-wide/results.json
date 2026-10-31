@@ -1,0 +1,56 @@
+{
+ "schema": "tnca-systemc-graph-runs/1",
+ "backend": "systemc-tlm-grid",
+ "binary": "/home/zhongchun/r41-stage1/model-build/tnca-chip",
+ "source_root": "/home/zhongchun/r41-stage1/src",
+ "points": [
+  {
+   "point": "op.matmul/medium/fp16-m128-k192-n128",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 911645,
+   "first_call_device_cycles": 917070,
+   "steady_request_s": 0.162188,
+   "timing": "serial-grid",
+   "max_rel_err": 0.00030617475637429787,
+   "tol": 0.02,
+   "first_call_wall_s": 1.44,
+   "child_wall_s": 3.001,
+   "process_wall_s": 4.42,
+   "model_launch_host_s": 0.332188,
+   "model_transfer_host_s": 0.002921,
+   "model_retired": 335564,
+   "model_dirs": [
+    "/home/zhongchun/r41-stage1/runs/prospective-wide/runs/op.matmul__medium__fp16-m128-k192-n128/model/model-3878709-vzbks9k6"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 911645,
+    "device_cycles": 911645,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "triton_tem_fused_mm_0",
+      "cycles": 911645
+     }
+    ]
+   },
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "key": "op.matmul/medium/fp16-m128-k192-n128",
+   "knobs": {
+    "TNCA_MAX_BLOCK": "16",
+    "TNCA_GEMM_TILE": "16,16,16",
+    "TNCA_REDUCTION_ROWS": "1",
+    "TNCA_BANK_ALLOC": "0",
+    "TNCA_WINDOW_REUSE": "0",
+    "TNCA_SDPA": "decomposed",
+    "TNCA_PIPELINE": "2",
+    "TNCA_TUNE": "0"
+   }
+  }
+ ]
+}

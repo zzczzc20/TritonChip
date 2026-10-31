@@ -1,0 +1,52 @@
+  NUCA-SHARED-READ-mode1-pipe1-policy0-seed1 PASS   
+      seed=1 mode=1 pipeline=1 policy=0 cycles=200000 issued=16256 responses=16256 stores=6155 atomics=1964 maint=49
+  NUCA-SHARED-READ-mode1-pipe1-policy0-seed7 PASS   
+      seed=7 mode=1 pipeline=1 policy=0 cycles=200000 issued=16535 responses=16525 stores=6205 atomics=2046 maint=43
+  NUCA-SHARED-READ-mode1-pipe1-policy0-seed42 PASS   
+      seed=42 mode=1 pipeline=1 policy=0 cycles=200000 issued=16378 responses=16366 stores=6171 atomics=2037 maint=45
+  NUCA-SHARED-READ-mode1-pipe1-policy46-seed1 PASS   
+      seed=1 mode=1 pipeline=1 policy=46 cycles=200000 issued=15384 responses=15373 stores=5812 atomics=1891 maint=47
+  NUCA-SHARED-READ-mode1-pipe1-policy46-seed7 PASS   
+      seed=7 mode=1 pipeline=1 policy=46 cycles=200000 issued=15309 responses=15298 stores=5736 atomics=1901 maint=48
+  NUCA-SHARED-READ-mode1-pipe1-policy46-seed42 PASS   
+      seed=42 mode=1 pipeline=1 policy=46 cycles=200000 issued=15308 responses=15295 stores=5689 atomics=1898 maint=49
+  NUCA-SHARED-READ-mode1-pipe0-policy0-seed1 PASS   
+      seed=1 mode=1 pipeline=0 policy=0 cycles=200000 issued=16256 responses=16256 stores=6155 atomics=1964 maint=49
+  NUCA-SHARED-READ-mode1-pipe0-policy0-seed7 PASS   
+      seed=7 mode=1 pipeline=0 policy=0 cycles=200000 issued=16535 responses=16525 stores=6205 atomics=2046 maint=43
+  NUCA-SHARED-READ-mode1-pipe0-policy0-seed42 PASS   
+      seed=42 mode=1 pipeline=0 policy=0 cycles=200000 issued=16378 responses=16366 stores=6171 atomics=2037 maint=45
+  NUCA-SHARED-READ-mode1-pipe0-policy46-seed1 PASS   
+      seed=1 mode=1 pipeline=0 policy=46 cycles=200000 issued=15384 responses=15373 stores=5812 atomics=1891 maint=47
+  NUCA-SHARED-READ-mode1-pipe0-policy46-seed7 PASS   
+      seed=7 mode=1 pipeline=0 policy=46 cycles=200000 issued=15309 responses=15298 stores=5736 atomics=1901 maint=48
+  NUCA-SHARED-READ-mode1-pipe0-policy46-seed42 PASS   
+      seed=42 mode=1 pipeline=0 policy=46 cycles=200000 issued=15308 responses=15295 stores=5689 atomics=1898 maint=49
+  NUCA-SHARED-READ-mode2-pipe1-policy0-seed1 PASS   
+      seed=1 mode=2 pipeline=1 policy=0 cycles=200000 issued=16256 responses=16256 stores=6155 atomics=1964 maint=49
+  NUCA-SHARED-READ-mode2-pipe1-policy0-seed7 PASS   
+      seed=7 mode=2 pipeline=1 policy=0 cycles=200000 issued=16535 responses=16525 stores=6205 atomics=2046 maint=43
+  NUCA-SHARED-READ-mode2-pipe1-policy0-seed42 PASS   
+      seed=42 mode=2 pipeline=1 policy=0 cycles=200000 issued=16378 responses=16366 stores=6171 atomics=2037 maint=45
+  NUCA-SHARED-READ-mode2-pipe1-policy46-seed1 PASS   
+      seed=1 mode=2 pipeline=1 policy=46 cycles=200000 issued=15384 responses=15373 stores=5812 atomics=1891 maint=47
+  NUCA-SHARED-READ-mode2-pipe1-policy46-seed7 PASS   
+      seed=7 mode=2 pipeline=1 policy=46 cycles=200000 issued=15309 responses=15298 stores=5736 atomics=1901 maint=48
+  NUCA-SHARED-READ-mode2-pipe1-policy46-seed42 PASS   
+      seed=42 mode=2 pipeline=1 policy=46 cycles=200000 issued=15308 responses=15295 stores=5689 atomics=1898 maint=49
+  NUCA-SHARED-READ-mode2-pipe0-policy0-seed1 PASS   
+      seed=1 mode=2 pipeline=0 policy=0 cycles=200000 issued=16256 responses=16256 stores=6155 atomics=1964 maint=49
+  NUCA-SHARED-READ-mode2-pipe0-policy0-seed7 PASS   
+      seed=7 mode=2 pipeline=0 policy=0 cycles=200000 issued=16535 responses=16525 stores=6205 atomics=2046 maint=43
+  NUCA-SHARED-READ-mode2-pipe0-policy0-seed42 PASS   
+      seed=42 mode=2 pipeline=0 policy=0 cycles=200000 issued=16378 responses=16366 stores=6171 atomics=2037 maint=45
+  NUCA-SHARED-READ-mode2-pipe0-policy46-seed1 PASS   
+      seed=1 mode=2 pipeline=0 policy=46 cycles=200000 issued=15384 responses=15373 stores=5812 atomics=1891 maint=47
+  NUCA-SHARED-READ-mode2-pipe0-policy46-seed7 PASS   
+      seed=7 mode=2 pipeline=0 policy=46 cycles=200000 issued=15309 responses=15298 stores=5736 atomics=1901 maint=48
+  NUCA-SHARED-READ-mode2-pipe0-policy46-seed42 PASS   
+      seed=42 mode=2 pipeline=0 policy=46 cycles=200000 issued=15308 responses=15295 stores=5689 atomics=1898 maint=49
+
+real	8m17.175s
+user	8m16.698s
+sys	0m0.479s

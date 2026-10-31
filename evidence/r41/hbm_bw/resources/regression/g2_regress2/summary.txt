@@ -1,0 +1,12 @@
+commit 1f6bfcb1f0a16e7b2b522d1cff45b999c461e51f start 2026-10-28T08:39:32Z host gx10-6646
+== line_axi_default: python3 tools/r40/line_axi_tests.py
+line_axi_default exit 0
+== line_axi_lutram: python3 tools/r40/line_axi_tests.py --line-lutram
+line_axi_lutram exit 0
+== multicore_axi: python3 tools/r40/multicore_axi_tests.py
+multicore_axi exit 0
+== multicore_axi_3core: python3 tools/r40/multicore_axi_tests.py --cores 3 --write-delay 300
+multicore_axi_3core exit 0
+== image_geometry_c1_c2: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_c1_c2.tcl
+image_geometry_c1_c2 exit 1
+end 2026-10-28T09:04:41Z

@@ -1,0 +1,108 @@
+{
+  "schema": "tnca-board-batch/1",
+  "batch": "identity",
+  "sampling": "fixed",
+  "measurement": {
+    "long_device_tasks": {
+      "qualification_samples": 1,
+      "short_threshold_seconds": 1,
+      "short_timed_samples": 3,
+      "long_timed_samples": 1,
+      "anchor_stability_samples": 3
+    },
+    "host_latency": {
+      "warmup": 5,
+      "timed": 30,
+      "blocks": 3,
+      "order": "interleaved seeded A/B"
+    },
+    "borderline_device_recheck": {
+      "additional_samples_per_arm": 3,
+      "max_recheck_blocks": 2
+    },
+    "bootstrap": {
+      "resamples": 2000,
+      "seed": 20261020,
+      "alpha": 0.05
+    },
+    "overall_nonregression_budget": 0.05,
+    "report_point_regression_above": 0.05,
+    "confirmed_new_default_regression_block": 0.1
+  },
+  "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+  "board": {
+    "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+    "clock_hz": 100000000,
+    "clock_evidence_sha256": "df451e804cc03203c2b7ac5f26d644bd932c7898933d53c0523f2d0f873f4b01",
+    "backend": "fpga-u280-multicore",
+    "backend_args": {
+      "xclbin": "/home/zzhouch/r41run3/tnca_u280.xclbin",
+      "image_profile": "core-vrf-sync-v5-x8-g2c4-dp",
+      "core_count": 3,
+      "memory_ports": 3,
+      "hbm_dma": true,
+      "hbm_bytes": 8589934592,
+      "device_clock": true
+    },
+    "memory_map": {
+      "window_base": 0,
+      "window_bytes": 8589934592,
+      "local_limit": 131072,
+      "bank": "MBG[0:31]",
+      "physical_pcs": "PC0-PC31",
+      "source": "spec/r41/run3/xclbin_hbm_map.json",
+      "source_sha256": "8afe58d986d58d462b177ecca99cf9dfbf0dc514183ac0121a203ce47cd86cce"
+    }
+  },
+  "software_tree": "files:e0cf42484b4135992d7a90b106ededcdecf0c370a3763f5da104df8944f19e90",
+  "configurations": 3,
+  "formal": {
+    "op.add/tiny/fp16-n1000": [
+      "/home/zzhouch/r41run3/queue_resume_1/results/identity/r3-s2-identity/identity/runs/op.add__tiny__fp16-n1000-fixed.jsonl"
+    ],
+    "op.matmul/tiny/fp16-m16-k32-n16": [
+      "/home/zzhouch/r41run3/queue_resume_1/results/identity/r3-s2-identity/identity/runs/op.matmul__tiny__fp16-m16-k32-n16-fixed.jsonl"
+    ],
+    "model.llama_decode/tiny/fp16-b1-p16": [
+      "/home/zzhouch/r41run3/queue_resume_1/results/identity/r3-s2-identity/identity/runs/model.llama_decode__tiny__fp16-b1-p16-fixed.jsonl"
+    ]
+  },
+  "samples": {
+    "op.add/tiny/fp16-n1000": {
+      "graph_makespan_samples": [
+        2401
+      ],
+      "serial_grid_samples": [
+        2395
+      ],
+      "processes": 1,
+      "graph_makespan_relative_spread": 0.0
+    },
+    "op.matmul/tiny/fp16-m16-k32-n16": {
+      "graph_makespan_samples": [
+        2020
+      ],
+      "serial_grid_samples": [
+        2014
+      ],
+      "processes": 1,
+      "graph_makespan_relative_spread": 0.0
+    },
+    "model.llama_decode/tiny/fp16-b1-p16": {
+      "graph_makespan_samples": [
+        13815107
+      ],
+      "serial_grid_samples": [
+        275807
+      ],
+      "processes": 1,
+      "graph_makespan_relative_spread": 0.0
+    }
+  },
+  "failed_configurations": [],
+  "missing_formal": [],
+  "board_wall_seconds": 127.2,
+  "formal_records": "/home/zzhouch/r41run3/queue_resume_1/results/identity/r3-s2-identity/identity/formal.jsonl",
+  "status": "complete",
+  "performance_judgement": "not-measured"
+}

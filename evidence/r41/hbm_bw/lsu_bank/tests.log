@@ -1,0 +1,64 @@
+LSU BANK CAPACITY units=2 peak=2
+LSU BANK MITER PASS seed=1 accesses=600 requests=1606 stall=30% cycles REQ_REG=0 15444 REQ_REG=1 15679
+tb/core/tb_lsu_bank.v:291: $finish called at 156790000 (1ps)
+LSU BANK CAPACITY units=2 peak=2
+LSU BANK MITER PASS seed=1 accesses=600 requests=600 stall=30% cycles REQ_REG=0 34609 REQ_REG=1 34597
+tb/core/tb_lsu_bank.v:291: $finish called at 346090000 (1ps)
+LSU BANK CAPACITY units=2 peak=2
+LSU BANK MITER PASS seed=7 accesses=600 requests=1515 stall=30% cycles REQ_REG=0 14645 REQ_REG=1 15236
+tb/core/tb_lsu_bank.v:291: $finish called at 152360000 (1ps)
+LSU BANK CAPACITY units=2 peak=2
+LSU BANK MITER PASS seed=7 accesses=600 requests=600 stall=30% cycles REQ_REG=0 34398 REQ_REG=1 36637
+tb/core/tb_lsu_bank.v:291: $finish called at 366370000 (1ps)
+LSU BANK CAPACITY units=2 peak=2
+LSU BANK MITER PASS seed=39 accesses=600 requests=1673 stall=30% cycles REQ_REG=0 15662 REQ_REG=1 16220
+tb/core/tb_lsu_bank.v:291: $finish called at 162200000 (1ps)
+LSU BANK CAPACITY units=2 peak=2
+LSU BANK MITER PASS seed=39 accesses=600 requests=600 stall=30% cycles REQ_REG=0 35589 REQ_REG=1 34715
+tb/core/tb_lsu_bank.v:291: $finish called at 355890000 (1ps)
+LSU BANK CAPACITY units=4 peak=4
+LSU BANK MITER PASS seed=1 accesses=600 requests=1606 stall=30% cycles REQ_REG=0 15444 REQ_REG=1 15348
+tb/core/tb_lsu_bank.v:291: $finish called at 154440000 (1ps)
+LSU BANK CAPACITY units=4 peak=4
+LSU BANK MITER PASS seed=1 accesses=600 requests=600 stall=30% cycles REQ_REG=0 34609 REQ_REG=1 17425
+tb/core/tb_lsu_bank.v:291: $finish called at 346090000 (1ps)
+LSU BANK CAPACITY units=4 peak=4
+LSU BANK MITER PASS seed=7 accesses=600 requests=1515 stall=30% cycles REQ_REG=0 14645 REQ_REG=1 14210
+tb/core/tb_lsu_bank.v:291: $finish called at 146450000 (1ps)
+LSU BANK CAPACITY units=4 peak=4
+LSU BANK MITER PASS seed=7 accesses=600 requests=600 stall=30% cycles REQ_REG=0 34398 REQ_REG=1 17845
+tb/core/tb_lsu_bank.v:291: $finish called at 343980000 (1ps)
+LSU BANK CAPACITY units=4 peak=4
+LSU BANK MITER PASS seed=39 accesses=600 requests=1673 stall=30% cycles REQ_REG=0 15662 REQ_REG=1 14549
+tb/core/tb_lsu_bank.v:291: $finish called at 156620000 (1ps)
+LSU BANK CAPACITY units=4 peak=4
+LSU BANK MITER PASS seed=39 accesses=600 requests=600 stall=30% cycles REQ_REG=0 35589 REQ_REG=1 18108
+tb/core/tb_lsu_bank.v:291: $finish called at 355890000 (1ps)
+LSU BANK CAPACITY units=8 peak=6
+LSU BANK MITER PASS seed=1 accesses=600 requests=1606 stall=30% cycles REQ_REG=0 15444 REQ_REG=1 20837
+tb/core/tb_lsu_bank.v:291: $finish called at 208370000 (1ps)
+LSU BANK CAPACITY units=8 peak=8
+LSU BANK MITER PASS seed=1 accesses=600 requests=600 stall=30% cycles REQ_REG=0 34609 REQ_REG=1 9421
+tb/core/tb_lsu_bank.v:291: $finish called at 346090000 (1ps)
+LSU BANK CAPACITY units=8 peak=6
+LSU BANK MITER PASS seed=7 accesses=600 requests=1515 stall=30% cycles REQ_REG=0 14645 REQ_REG=1 18527
+tb/core/tb_lsu_bank.v:291: $finish called at 185270000 (1ps)
+LSU BANK CAPACITY units=8 peak=8
+LSU BANK MITER PASS seed=7 accesses=600 requests=600 stall=30% cycles REQ_REG=0 34398 REQ_REG=1 9386
+tb/core/tb_lsu_bank.v:291: $finish called at 343980000 (1ps)
+LSU BANK CAPACITY units=8 peak=7
+LSU BANK MITER PASS seed=39 accesses=600 requests=1673 stall=30% cycles REQ_REG=0 15662 REQ_REG=1 20527
+tb/core/tb_lsu_bank.v:291: $finish called at 205270000 (1ps)
+LSU BANK CAPACITY units=8 peak=8
+LSU BANK MITER PASS seed=39 accesses=600 requests=600 stall=30% cycles REQ_REG=0 35589 REQ_REG=1 9451
+tb/core/tb_lsu_bank.v:291: $finish called at 355890000 (1ps)
+LSU BANK RESET PASS units=2 full-bank abort and recovery
+tb/core/tb_lsu_bank_reset.v:40: $finish called at 330000 (1ps)
+LSU BANK RESET PASS units=4 full-bank abort and recovery
+tb/core/tb_lsu_bank_reset.v:40: $finish called at 410000 (1ps)
+LSU BANK RESET PASS units=8 full-bank abort and recovery
+tb/core/tb_lsu_bank_reset.v:40: $finish called at 570000 (1ps)
+LSU WIDE PASS cases=112 scalar/vector/gather/masks/sign/straddles/partial stores
+tb/core/tb_lsu_wide.v:84: $finish called at 9650000 (1ps)
+LSU BANK EXCESS TAG CAPACITY REFUSAL PASS
+LSU BANK ALL 18 CONFIGURATIONS PASS

@@ -11,9 +11,13 @@ exec >"$R40_ATTEMPT_ROOT/build/runner.log" 2>&1
 trap 'rc=$?; printf "%s\n" "$rc" > "$R40_ATTEMPT_ROOT/build/attempt.exit"' EXIT
 cd "$R40_SOURCE_ROOT"
 set +u
-source /tools/Xilinx/Vivado/2023.2/settings64.sh >/dev/null 2>&1
-source /tools/Xilinx/Vitis/2023.2/settings64.sh >/dev/null 2>&1
-source /opt/xilinx/xrt/setup.sh >/dev/null 2>&1
+# On the x86 host the tools are installed under the user's home and its
+# environment is sourced before this runner. Under set -e a missing FPGA-host
+# setup script would otherwise abort before packaging.
+for setup in /tools/Xilinx/Vivado/2023.2/settings64.sh \
+             /tools/Xilinx/Vitis/2023.2/settings64.sh /opt/xilinx/xrt/setup.sh; do
+    if [ -f "$setup" ]; then source "$setup" >/dev/null 2>&1; fi
+done
 set -u
 export TNCA_IMAGE_CONFIG="$R40_IMAGE_CONFIG"
 export TNCA_BOARD=u280 VPP_JOBS=2

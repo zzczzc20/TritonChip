@@ -1,0 +1,11 @@
+hub_m1
+kernels 1; using barriers 1; largest immediate 0; distinct barriers per kernel max 1; narrowest slice 2 (BAR_N 8 / 4 contexts)
+kernels by number of distinct barriers: {1: 1}
+hub_m16
+kernels 1; using barriers 1; largest immediate 0; distinct barriers per kernel max 1; narrowest slice 2 (BAR_N 8 / 4 contexts)
+kernels by number of distinct barriers: {1: 1}
+[pass] ops-rtl rmsnorm 16x256 bf16: 4096 el, 0 mismatches
+[pass] ops-rtl softmax 16x256 bf16: 4096 el, 0 mismatches
+[pass] ops-rtl op.matmul tiny fp16 m16 k32 n16: 256 el, 0 mismatches
+{"pass": 3, "fail": 0, "error": 0}
+[{"kernel": "_copy_kernel", "width": 4, "roles_per_program": 1, "slice_flag": true, "slice_log2": 2, "pair": false, "barriers_allowed": 2, "barrier_immediates": [], "manifest_barriers": 0}, {"kernel":

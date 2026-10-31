@@ -557,5 +557,35 @@
   "Accept M4 (FPU conversion fix) in the final image or keep as erratum?",
   "Pre-authorize C1 if census shows slice RAM families failing",
   "Keep A3 tool flow exactly, or add post-route phys_opt_design?"
- ]
+ ],
+ "implementation_status": {
+  "branch": "r40-final-image",
+  "base": "d3c215d",
+  "implemented": [
+   "M1",
+   "M2",
+   "M3",
+   "M4"
+  ],
+  "evidence": "evidence/r40/v3/final_image_candidate/README.md",
+  "owner_decisions_2026_10_19": {
+   "M4": "include",
+   "tool_flow": "keep attempt-3 flow exactly",
+   "C1": "by launch rule from census",
+   "census": "coordinator schedules when >=30 GB free and no host-latency experiment"
+  },
+  "pending": [
+   "unit OOC (final_image_ooc.sh units)",
+   "kernel synth (final_image_ooc.sh kernel)",
+   "cross-SLR audit before/after (final_image_ooc.sh audit)",
+   "census of A3 routed DCP"
+  ]
+ },
+ "decision": {
+  "recorded_utc": "2026-10-20T00:00:00Z",
+  "outcome": "deferred-to-r41",
+  "basis": "evidence/r40/v3/final_image_candidate/census/README.md: residual 12,799 endpoints, WNS -0.919 ns, 753 families; launch rule sec 2.5 not met; expected link result ~91 MHz",
+  "user_choice": "Defer to R41 (Recommended)",
+  "effect": "No R40 link is run. R40 v3 closes on image a88ebdf5 at 90 MHz. M1-M4 (branch r40-final-image) and the census frontier are the starting inputs of R41's new image, built together with the frequency work."
+ }
 }

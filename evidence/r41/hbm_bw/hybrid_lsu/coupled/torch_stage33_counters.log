@@ -1,0 +1,266 @@
+MMIO DOORBELL cycle=213 seq=1 op=6 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=553 seq=2 op=10 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=788 seq=3 op=14 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=1023 seq=4 op=16 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=2906 seq=5 op=1 a0=0000000000020000 a1=0000000000000011
+MMIO DOORBELL cycle=4760 seq=6 op=1 a0=00000000000200c0 a1=0000000000000011
+MMIO DOORBELL cycle=5227 seq=7 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=22474 seq=8 op=1 a0=0000000000000000 a1=0000000000000129
+MMIO DOORBELL cycle=31536 seq=9 op=1 a0=0000000000020200 a1=0000000000000060
+MMIO DOORBELL cycle=31771 seq=10 op=11 a0=0000000000000000 a1=0000000000020200
+CORE COUNTERS cycle=32310 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=35 home_miss=7 home_mshr_full=0
+CORE COUNTERS cycle=32310 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=28 home_miss=6 home_mshr_full=0
+CORE COUNTERS cycle=32310 core=0 cycles=491 issued=318 stall=163 hazard=88 lsu=26 fpu=0 vrf=42 vrfwb=0 frontend=10 home_hit=51 home_miss=8 home_mshr_full=0
+MMIO DOORBELL cycle=32731 seq=11 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=33051 seq=12 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=41678 seq=13 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=41913 seq=14 op=11 a0=0000000000000000 a1=0000000000020300
+CORE COUNTERS cycle=42345 core=0 cycles=904 issued=636 stall=248 hazard=106 lsu=42 fpu=0 vrf=84 vrfwb=0 frontend=20 home_hit=83 home_miss=9 home_mshr_full=0
+CORE COUNTERS cycle=42345 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=68 home_miss=8 home_mshr_full=0
+CORE COUNTERS cycle=42345 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=60 home_miss=8 home_mshr_full=0
+MMIO DOORBELL cycle=42757 seq=15 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=43077 seq=16 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=51472 seq=17 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=51707 seq=18 op=11 a0=0000000000000000 a1=0000000000020300
+CORE COUNTERS cycle=52142 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=86 home_miss=8 home_mshr_full=0
+CORE COUNTERS cycle=52142 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=111 home_miss=8 home_mshr_full=0
+CORE COUNTERS cycle=52142 core=0 cycles=1320 issued=954 stall=336 hazard=124 lsu=61 fpu=0 vrf=126 vrfwb=0 frontend=30 home_hit=115 home_miss=9 home_mshr_full=0
+MMIO DOORBELL cycle=52551 seq=19 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=52871 seq=20 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=61266 seq=21 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=61501 seq=22 op=11 a0=0000000000000000 a1=0000000000020300
+CORE COUNTERS cycle=62023 core=0 cycles=1744 issued=1272 stall=432 hazard=142 lsu=88 fpu=0 vrf=168 vrfwb=0 frontend=40 home_hit=147 home_miss=9 home_mshr_full=0
+CORE COUNTERS cycle=62023 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=153 home_miss=8 home_mshr_full=0
+CORE COUNTERS cycle=62023 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=112 home_miss=9 home_mshr_full=0
+MMIO DOORBELL cycle=62432 seq=23 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=62752 seq=24 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=71234 seq=25 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=71469 seq=26 op=11 a0=0000000000000000 a1=0000000000020300
+CORE COUNTERS cycle=72013 core=0 cycles=2236 issued=1590 stall=596 hazard=230 lsu=114 fpu=0 vrf=211 vrfwb=0 frontend=50 home_hit=179 home_miss=10 home_mshr_full=0
+CORE COUNTERS cycle=72013 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=195 home_miss=8 home_mshr_full=0
+CORE COUNTERS cycle=72013 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=136 home_miss=11 home_mshr_full=0
+MMIO DOORBELL cycle=72429 seq=27 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=72749 seq=28 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=81463 seq=29 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=81698 seq=30 op=11 a0=0000000000000000 a1=0000000000020400
+CORE COUNTERS cycle=82197 core=0 cycles=2659 issued=1908 stall=691 hazard=248 lsu=141 fpu=0 vrf=252 vrfwb=0 frontend=60 home_hit=211 home_miss=12 home_mshr_full=0
+CORE COUNTERS cycle=82197 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=233 home_miss=11 home_mshr_full=0
+CORE COUNTERS cycle=82197 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=161 home_miss=12 home_mshr_full=0
+MMIO DOORBELL cycle=82600 seq=31 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=82920 seq=32 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=91460 seq=33 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=91695 seq=34 op=11 a0=0000000000000000 a1=0000000000020400
+CORE COUNTERS cycle=92217 core=0 cycles=3082 issued=2226 stall=786 hazard=266 lsu=168 fpu=0 vrf=293 vrfwb=0 frontend=70 home_hit=245 home_miss=12 home_mshr_full=0
+CORE COUNTERS cycle=92217 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=271 home_miss=13 home_mshr_full=0
+CORE COUNTERS cycle=92217 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=187 home_miss=13 home_mshr_full=0
+MMIO DOORBELL cycle=92626 seq=35 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=92946 seq=36 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=101515 seq=37 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=101750 seq=38 op=11 a0=0000000000000000 a1=0000000000020400
+CORE COUNTERS cycle=102221 core=0 cycles=3505 issued=2544 stall=881 hazard=284 lsu=195 fpu=0 vrf=334 vrfwb=0 frontend=80 home_hit=279 home_miss=13 home_mshr_full=0
+CORE COUNTERS cycle=102221 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=311 home_miss=13 home_mshr_full=0
+CORE COUNTERS cycle=102221 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=211 home_miss=15 home_mshr_full=0
+MMIO DOORBELL cycle=102623 seq=39 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=102943 seq=40 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=111454 seq=41 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=111689 seq=42 op=11 a0=0000000000000000 a1=0000000000020400
+CORE COUNTERS cycle=112186 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=237 home_miss=15 home_mshr_full=0
+CORE COUNTERS cycle=112186 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=351 home_miss=14 home_mshr_full=0
+CORE COUNTERS cycle=112186 core=0 cycles=3928 issued=2862 stall=976 hazard=302 lsu=222 fpu=0 vrf=375 vrfwb=0 frontend=90 home_hit=311 home_miss=15 home_mshr_full=0
+MMIO DOORBELL cycle=112591 seq=43 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=112911 seq=44 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=121683 seq=45 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=121918 seq=46 op=11 a0=0000000000000000 a1=0000000000020500
+CORE COUNTERS cycle=122350 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=269 home_miss=17 home_mshr_full=0
+CORE COUNTERS cycle=122350 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=390 home_miss=17 home_mshr_full=0
+CORE COUNTERS cycle=122350 core=0 cycles=4341 issued=3180 stall=1061 hazard=320 lsu=238 fpu=0 vrf=417 vrfwb=0 frontend=100 home_hit=335 home_miss=16 home_mshr_full=0
+MMIO DOORBELL cycle=122762 seq=47 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=123082 seq=48 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=131477 seq=49 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=131712 seq=50 op=11 a0=0000000000000000 a1=0000000000020500
+CORE COUNTERS cycle=132147 core=0 cycles=4757 issued=3498 stall=1149 hazard=338 lsu=257 fpu=0 vrf=459 vrfwb=0 frontend=110 home_hit=359 home_miss=16 home_mshr_full=0
+CORE COUNTERS cycle=132147 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=433 home_miss=17 home_mshr_full=0
+CORE COUNTERS cycle=132147 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=303 home_miss=17 home_mshr_full=0
+MMIO DOORBELL cycle=132556 seq=51 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=132876 seq=52 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=141271 seq=53 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=141506 seq=54 op=11 a0=0000000000000000 a1=0000000000020500
+CORE COUNTERS cycle=141944 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=338 home_miss=17 home_mshr_full=0
+CORE COUNTERS cycle=141944 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=475 home_miss=17 home_mshr_full=0
+CORE COUNTERS cycle=141944 core=0 cycles=5176 issued=3816 stall=1240 hazard=356 lsu=279 fpu=0 vrf=501 vrfwb=0 frontend=120 home_hit=383 home_miss=16 home_mshr_full=0
+MMIO DOORBELL cycle=142350 seq=55 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=142710 seq=56 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=159577 seq=57 op=1 a0=0000000000000980 a1=0000000000000129
+MMIO DOORBELL cycle=168407 seq=58 op=1 a0=0000000000020200 a1=0000000000000060
+MMIO DOORBELL cycle=168642 seq=59 op=11 a0=0000000000000980 a1=0000000000020200
+CORE COUNTERS cycle=169183 core=0 cycles=5668 issued=4134 stall=1404 hazard=445 lsu=305 fpu=0 vrf=543 vrfwb=0 frontend=130 home_hit=424 home_miss=18 home_mshr_full=0
+CORE COUNTERS cycle=169183 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=505 home_miss=19 home_mshr_full=0
+CORE COUNTERS cycle=169183 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=360 home_miss=21 home_mshr_full=0
+MMIO DOORBELL cycle=169602 seq=60 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=169922 seq=61 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=178578 seq=62 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=178813 seq=63 op=11 a0=0000000000000980 a1=0000000000020300
+CORE COUNTERS cycle=179245 core=0 cycles=6081 issued=4452 stall=1489 hazard=463 lsu=321 fpu=0 vrf=585 vrfwb=0 frontend=140 home_hit=456 home_miss=19 home_mshr_full=0
+CORE COUNTERS cycle=179245 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=545 home_miss=21 home_mshr_full=0
+CORE COUNTERS cycle=179245 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=385 home_miss=22 home_mshr_full=0
+MMIO DOORBELL cycle=179657 seq=64 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=179977 seq=65 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=188372 seq=66 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=188607 seq=67 op=11 a0=0000000000000980 a1=0000000000020300
+CORE COUNTERS cycle=189042 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=411 home_miss=22 home_mshr_full=0
+CORE COUNTERS cycle=189042 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=588 home_miss=21 home_mshr_full=0
+CORE COUNTERS cycle=189042 core=0 cycles=6497 issued=4770 stall=1577 hazard=481 lsu=340 fpu=0 vrf=627 vrfwb=0 frontend=150 home_hit=488 home_miss=19 home_mshr_full=0
+MMIO DOORBELL cycle=189451 seq=68 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=189771 seq=69 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=198166 seq=70 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=198401 seq=71 op=11 a0=0000000000000980 a1=0000000000020300
+CORE COUNTERS cycle=198923 core=0 cycles=6921 issued=5088 stall=1673 hazard=499 lsu=367 fpu=0 vrf=669 vrfwb=0 frontend=160 home_hit=520 home_miss=19 home_mshr_full=0
+CORE COUNTERS cycle=198923 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=630 home_miss=21 home_mshr_full=0
+CORE COUNTERS cycle=198923 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=437 home_miss=23 home_mshr_full=0
+MMIO DOORBELL cycle=199332 seq=72 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=199652 seq=73 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=208134 seq=74 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=208369 seq=75 op=11 a0=0000000000000980 a1=0000000000020300
+CORE COUNTERS cycle=208909 core=0 cycles=7412 issued=5406 stall=1836 hazard=586 lsu=393 fpu=0 vrf=712 vrfwb=0 frontend=170 home_hit=552 home_miss=20 home_mshr_full=0
+CORE COUNTERS cycle=208909 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=672 home_miss=21 home_mshr_full=0
+CORE COUNTERS cycle=208909 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=461 home_miss=25 home_mshr_full=0
+MMIO DOORBELL cycle=209329 seq=76 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=209649 seq=77 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=218392 seq=78 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=218627 seq=79 op=11 a0=0000000000000980 a1=0000000000020400
+CORE COUNTERS cycle=219125 core=0 cycles=7835 issued=5724 stall=1931 hazard=604 lsu=420 fpu=0 vrf=753 vrfwb=0 frontend=180 home_hit=584 home_miss=22 home_mshr_full=0
+CORE COUNTERS cycle=219125 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=710 home_miss=24 home_mshr_full=0
+CORE COUNTERS cycle=219125 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=486 home_miss=26 home_mshr_full=0
+MMIO DOORBELL cycle=219529 seq=80 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=219849 seq=81 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=228360 seq=82 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=228595 seq=83 op=11 a0=0000000000000980 a1=0000000000020400
+CORE COUNTERS cycle=229120 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=512 home_miss=27 home_mshr_full=0
+CORE COUNTERS cycle=229120 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=748 home_miss=26 home_mshr_full=0
+CORE COUNTERS cycle=229120 core=0 cycles=8258 issued=6042 stall=2026 hazard=622 lsu=447 fpu=0 vrf=794 vrfwb=0 frontend=190 home_hit=618 home_miss=22 home_mshr_full=0
+MMIO DOORBELL cycle=229526 seq=84 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=229846 seq=85 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=238415 seq=86 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=238650 seq=87 op=11 a0=0000000000000980 a1=0000000000020400
+CORE COUNTERS cycle=239122 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=536 home_miss=29 home_mshr_full=0
+CORE COUNTERS cycle=239122 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=788 home_miss=26 home_mshr_full=0
+CORE COUNTERS cycle=239122 core=0 cycles=8681 issued=6360 stall=2121 hazard=640 lsu=474 fpu=0 vrf=835 vrfwb=0 frontend=200 home_hit=652 home_miss=23 home_mshr_full=0
+MMIO DOORBELL cycle=239523 seq=88 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=239843 seq=89 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=248394 seq=90 op=1 a0=0000000000020400 a1=0000000000000060
+MMIO DOORBELL cycle=248629 seq=91 op=11 a0=0000000000000980 a1=0000000000020400
+CORE COUNTERS cycle=249126 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=562 home_miss=29 home_mshr_full=0
+CORE COUNTERS cycle=249126 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=828 home_miss=27 home_mshr_full=0
+CORE COUNTERS cycle=249126 core=0 cycles=9104 issued=6678 stall=2216 hazard=658 lsu=501 fpu=0 vrf=876 vrfwb=0 frontend=210 home_hit=684 home_miss=25 home_mshr_full=0
+MMIO DOORBELL cycle=249531 seq=92 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=249851 seq=93 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=258411 seq=94 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=258646 seq=95 op=11 a0=0000000000000980 a1=0000000000020500
+CORE COUNTERS cycle=259078 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=596 home_miss=29 home_mshr_full=0
+CORE COUNTERS cycle=259078 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=868 home_miss=29 home_mshr_full=0
+CORE COUNTERS cycle=259078 core=0 cycles=9517 issued=6996 stall=2301 hazard=676 lsu=517 fpu=0 vrf=918 vrfwb=0 frontend=220 home_hit=709 home_miss=25 home_mshr_full=0
+MMIO DOORBELL cycle=259490 seq=96 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=259810 seq=97 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=268205 seq=98 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=268440 seq=99 op=11 a0=0000000000000980 a1=0000000000020500
+CORE COUNTERS cycle=268875 core=0 cycles=9933 issued=7314 stall=2389 hazard=694 lsu=536 fpu=0 vrf=960 vrfwb=0 frontend=230 home_hit=733 home_miss=25 home_mshr_full=0
+CORE COUNTERS cycle=268875 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=911 home_miss=29 home_mshr_full=0
+CORE COUNTERS cycle=268875 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=630 home_miss=29 home_mshr_full=0
+MMIO DOORBELL cycle=269284 seq=100 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=269604 seq=101 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=277999 seq=102 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=278234 seq=103 op=11 a0=0000000000000980 a1=0000000000020500
+CORE COUNTERS cycle=278672 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=665 home_miss=29 home_mshr_full=0
+CORE COUNTERS cycle=278672 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=953 home_miss=29 home_mshr_full=0
+CORE COUNTERS cycle=278672 core=0 cycles=10352 issued=7632 stall=2480 hazard=712 lsu=558 fpu=0 vrf=1002 vrfwb=0 frontend=240 home_hit=757 home_miss=25 home_mshr_full=0
+MMIO DOORBELL cycle=279078 seq=104 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=279398 seq=105 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=287793 seq=106 op=1 a0=0000000000020500 a1=0000000000000060
+MMIO DOORBELL cycle=288028 seq=107 op=11 a0=0000000000000980 a1=0000000000020500
+CORE COUNTERS cycle=288460 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=699 home_miss=29 home_mshr_full=0
+CORE COUNTERS cycle=288460 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=995 home_miss=29 home_mshr_full=0
+CORE COUNTERS cycle=288460 core=0 cycles=10765 issued=7950 stall=2565 hazard=730 lsu=574 fpu=0 vrf=1044 vrfwb=0 frontend=250 home_hit=782 home_miss=25 home_mshr_full=0
+MMIO DOORBELL cycle=288872 seq=108 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=289192 seq=109 op=1 a0=0000000000020180 a1=0000000000000001
+MMIO DOORBELL cycle=297848 seq=110 op=1 a0=0000000000020600 a1=0000000000000060
+MMIO DOORBELL cycle=298083 seq=111 op=11 a0=0000000000000980 a1=0000000000020600
+CORE COUNTERS cycle=298584 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=732 home_miss=30 home_mshr_full=0
+CORE COUNTERS cycle=298584 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1035 home_miss=32 home_mshr_full=0
+CORE COUNTERS cycle=298584 core=0 cycles=11189 issued=8268 stall=2661 hazard=748 lsu=601 fpu=0 vrf=1086 vrfwb=0 frontend=260 home_hit=805 home_miss=26 home_mshr_full=0
+MMIO DOORBELL cycle=298985 seq=112 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=300800 seq=113 op=1 a0=0000000000001300 a1=0000000000000019
+MMIO DOORBELL cycle=309688 seq=114 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=309923 seq=115 op=11 a0=0000000000001300 a1=0000000000020300
+CORE COUNTERS cycle=310340 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=757 home_miss=32 home_mshr_full=0
+CORE COUNTERS cycle=310340 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1082 home_miss=36 home_mshr_full=0
+CORE COUNTERS cycle=310340 core=0 cycles=11526 issued=8350 stall=2905 hazard=787 lsu=804 fpu=0 vrf=1086 vrfwb=0 frontend=271 home_hit=836 home_miss=31 home_mshr_full=0
+MMIO DOORBELL cycle=310767 seq=116 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=311002 seq=117 op=2 a0=0000000000020180 a1=0000000000000011
+MMIO DOORBELL cycle=321211 seq=118 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=321446 seq=119 op=11 a0=0000000000001300 a1=0000000000020300
+CORE COUNTERS cycle=321788 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=792 home_miss=32 home_mshr_full=0
+CORE COUNTERS cycle=321788 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1133 home_miss=36 home_mshr_full=0
+CORE COUNTERS cycle=321788 core=0 cycles=11794 issued=8432 stall=3080 hazard=826 lsu=938 fpu=0 vrf=1086 vrfwb=0 frontend=282 home_hit=878 home_miss=34 home_mshr_full=0
+MMIO DOORBELL cycle=322203 seq=120 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=322438 seq=121 op=2 a0=0000000000020180 a1=0000000000000011
+MMIO DOORBELL cycle=325918 seq=122 op=1 a0=0000000000001400 a1=0000000000000019
+MMIO DOORBELL cycle=334342 seq=123 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=334577 seq=124 op=11 a0=0000000000001400 a1=0000000000020300
+CORE COUNTERS cycle=334975 core=0 cycles=12064 issued=8514 stall=3257 hazard=865 lsu=1074 fpu=0 vrf=1086 vrfwb=0 frontend=293 home_hit=919 home_miss=37 home_mshr_full=0
+CORE COUNTERS cycle=334975 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1184 home_miss=37 home_mshr_full=0
+CORE COUNTERS cycle=334975 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=826 home_miss=33 home_mshr_full=0
+MMIO DOORBELL cycle=335392 seq=125 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=335627 seq=126 op=2 a0=0000000000020240 a1=0000000000000011
+MMIO DOORBELL cycle=346010 seq=127 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=346245 seq=128 op=11 a0=0000000000001400 a1=0000000000020300
+CORE COUNTERS cycle=346639 core=0 cycles=12350 issued=8596 stall=3450 hazard=904 lsu=1226 fpu=0 vrf=1086 vrfwb=0 frontend=304 home_hit=954 home_miss=38 home_mshr_full=0
+CORE COUNTERS cycle=346639 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1241 home_miss=40 home_mshr_full=0
+CORE COUNTERS cycle=346639 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=860 home_miss=34 home_mshr_full=0
+MMIO DOORBELL cycle=347060 seq=129 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=347295 seq=130 op=2 a0=0000000000020240 a1=0000000000000011
+MMIO DOORBELL cycle=352647 seq=131 op=1 a0=0000000000001500 a1=0000000000000039
+MMIO DOORBELL cycle=361100 seq=132 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=361335 seq=133 op=11 a0=0000000000001500 a1=0000000000020300
+CORE COUNTERS cycle=361848 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=893 home_miss=35 home_mshr_full=0
+CORE COUNTERS cycle=361848 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1295 home_miss=41 home_mshr_full=0
+CORE COUNTERS cycle=361848 core=0 cycles=12730 issued=8774 stall=3635 hazard=956 lsu=1273 fpu=47 vrf=1119 vrfwb=0 frontend=321 home_hit=988 home_miss=40 home_mshr_full=0
+MMIO DOORBELL cycle=362266 seq=134 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=362501 seq=135 op=2 a0=0000000000020180 a1=0000000000000011
+MMIO DOORBELL cycle=372710 seq=136 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=372945 seq=137 op=11 a0=0000000000001500 a1=0000000000020300
+CORE COUNTERS cycle=373360 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=927 home_miss=35 home_mshr_full=0
+CORE COUNTERS cycle=373360 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1342 home_miss=41 home_mshr_full=0
+CORE COUNTERS cycle=373360 core=0 cycles=13110 issued=8952 stall=3820 hazard=1008 lsu=1320 fpu=94 vrf=1151 vrfwb=0 frontend=338 home_hit=1031 home_miss=41 home_mshr_full=0
+MMIO DOORBELL cycle=373789 seq=138 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=374024 seq=139 op=2 a0=0000000000020180 a1=0000000000000011
+MMIO DOORBELL cycle=390220 seq=140 op=1 a0=0000000000001700 a1=00000000000000fb
+MMIO DOORBELL cycle=398615 seq=141 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=398850 seq=142 op=11 a0=0000000000001700 a1=0000000000020300
+CORE COUNTERS cycle=399952 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=960 home_miss=36 home_mshr_full=0
+CORE COUNTERS cycle=399952 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1390 home_miss=41 home_mshr_full=0
+CORE COUNTERS cycle=399952 core=0 cycles=14088 issued=9712 stall=4031 hazard=1009 lsu=1363 fpu=94 vrf=1221 vrfwb=0 frontend=345 home_hit=1073 home_miss=42 home_mshr_full=0
+MMIO DOORBELL cycle=400361 seq=143 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=400596 seq=144 op=2 a0=0000000000020240 a1=0000000000000011
+MMIO DOORBELL cycle=410921 seq=145 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=411156 seq=146 op=11 a0=0000000000001700 a1=0000000000020300
+CORE COUNTERS cycle=412161 core=0 cycles=15066 issued=10472 stall=4242 hazard=1010 lsu=1406 fpu=94 vrf=1291 vrfwb=0 frontend=352 home_hit=1107 home_miss=43 home_mshr_full=0
+CORE COUNTERS cycle=412161 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1446 home_miss=41 home_mshr_full=0
+CORE COUNTERS cycle=412161 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=993 home_miss=37 home_mshr_full=0
+MMIO DOORBELL cycle=412580 seq=147 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=412815 seq=148 op=2 a0=0000000000020240 a1=0000000000000011
+MMIO DOORBELL cycle=416071 seq=149 op=1 a0=0000000000001f00 a1=0000000000000015
+MMIO DOORBELL cycle=424466 seq=150 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=424701 seq=151 op=11 a0=0000000000001f00 a1=0000000000020300
+CORE COUNTERS cycle=424980 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1026 home_miss=38 home_mshr_full=0
+CORE COUNTERS cycle=424980 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1501 home_miss=41 home_mshr_full=0
+CORE COUNTERS cycle=424980 core=0 cycles=15230 issued=10542 stall=4327 hazard=1041 lsu=1456 fpu=94 vrf=1293 vrfwb=0 frontend=361 home_hit=1142 home_miss=44 home_mshr_full=0
+MMIO DOORBELL cycle=425400 seq=152 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=425635 seq=153 op=2 a0=0000000000020180 a1=0000000000000011
+MMIO DOORBELL cycle=435815 seq=154 op=1 a0=0000000000020300 a1=0000000000000060
+MMIO DOORBELL cycle=436050 seq=155 op=11 a0=0000000000001f00 a1=0000000000020300
+CORE COUNTERS cycle=436236 core=2 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1060 home_miss=38 home_mshr_full=0
+CORE COUNTERS cycle=436236 core=1 cycles=0 issued=0 stall=0 hazard=0 lsu=0 fpu=0 vrf=0 vrfwb=0 frontend=0 home_hit=1548 home_miss=41 home_mshr_full=0
+CORE COUNTERS cycle=436236 core=0 cycles=15394 issued=10612 stall=4412 hazard=1072 lsu=1506 fpu=94 vrf=1295 vrfwb=0 frontend=370 home_hit=1186 home_miss=44 home_mshr_full=0
+MMIO DOORBELL cycle=436662 seq=156 op=4 a0=0000000000000000 a1=0000000000000000
+MMIO DOORBELL cycle=436897 seq=157 op=2 a0=0000000000020180 a1=0000000000000011
+MMIO DOORBELL cycle=438917 seq=158 op=5 a0=0000000000000000 a1=0000000000000000

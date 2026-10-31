@@ -26,6 +26,7 @@ TARGET_DIR = find('compiler', 'targets')
 _CAPABILITY_USE = {
     'sfu': 'emit v.*.approx for a transcendental',
     'tensor_transpose': "ask the transfer engine for a transposed write",
+    'tensor_transpose_8bit': "ask the transfer engine for a transposed write of 1-byte elements",
     'atomics_device': 'emit a device-scope atomic',
     'atomics_system': 'emit a system-scope atomic',
     'fence': 'emit a memory fence',
@@ -34,6 +35,7 @@ _CAPABILITY_USE = {
     'matrix_f16': 'emit m.mma.async with FP16 inputs',
     'matrix_bf16': 'emit m.mma.async with BF16 inputs',
     'matrix_fp8': 'emit m.mma.async with OCP FP8 (E5M2 or E4M3) inputs',
+    'matrix_dp': 'emit m.mma.dp.async (grouped dot-product accumulation, ISA sec 9C.4)',
     'tensor_dma': 'emit t.ld.async / t.st.async',
     'tensor_store': 'emit t.st.async (window -> global)',
     'mbarrier': 'emit mbarrier operations',
@@ -52,6 +54,8 @@ _CAPABILITY_FALLBACK = {
     'tensor_transpose': ('read the source down its columns with '
                          'v.ld.gather, which is what the compiler does '
                          'for tl.trans'),
+    'tensor_transpose_8bit': ('gather the 1-byte tile down its columns, as '
+                              'every image before R41 X8 does'),
     'atomics_device': None,
     'atomics_system': None,
     'fence': None,
@@ -250,7 +254,15 @@ class TargetInfo:
         return bool(self._d['memory']['addressable_scratchpad'])
 
     # ---- capability gate (sec 12) -----------------------------------------
+    # Capabilities a target file names only where they are true (R41 X8,
+    # tools/isa/gen_target.py): absent is False, so the files of every image
+    # built before them stay byte-identical and keep the old lowering.
+    _OPTIONAL_CAPABILITIES = frozenset({'tensor_transpose_8bit', 'matrix_dp'})
+
     def has(self, capability):
+        if (capability in self._OPTIONAL_CAPABILITIES
+                and capability not in self._d['capabilities']):
+            return False
         if capability not in self._d['capabilities']:
             raise KeyError(
                 f"unknown capability {capability!r}; target describes "
@@ -284,6 +296,15 @@ class TargetInfo:
     @property
     def capabilities(self):
         return dict(self._d['capabilities'])
+
+    @property
+    def snapshot_fence(self):
+        """R41 G4: fence the context's map stores before every TensorMap
+        snapshot (rctx_spmd.publish_scratch_maps). Set by the profiles whose
+        images build the line-wide transfer engine (TENSOR_LINE), whose
+        one-request snapshot can overtake the LSU's map stores; absent, the
+        compiled code is what it was before R41 G4."""
+        return bool(self._d.get('compiler', {}).get('snapshot_fence', False))
 
     # ---- resource budgeting (sec 10.1, 10.3) ------------------------------
     def check_budget(self, *, barriers=0, accumulators=0, windows=0,

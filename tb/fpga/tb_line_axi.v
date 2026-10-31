@@ -1,6 +1,11 @@
 `timescale 1ns/1ps
 module tb_line_axi;
- parameter DATA_W=256,OUT_N=8,MODE=0,STAGES=0,WRITE_ACK=1,RUNTIME_LIMIT=0;
+ parameter DATA_W=256,OUT_N=8,MODE=0,STAGES=0,WRITE_ACK=1,RUNTIME_LIMIT=0,PIPELINED_ISSUE=0;
+ // R41 G2: 1 = the DUT keeps its slot lines in distributed RAM, and a second
+ // instance with registers (the delivered build) runs in lockstep on the same
+ // inputs; every output must match on every cycle (WDATA while WVALID).
+ parameter LINE_LUTRAM=0;
+ reg tb_done=0;
  localparam ID_W=(OUT_N>1?$clog2(OUT_N):1),BEATS=512/DATA_W;
  reg clk=0,rst_n=0;always #5 clk=~clk;
  reg req_valid=0,req_we=0;wire req_ready;
@@ -25,7 +30,7 @@ module tb_line_axi;
  .s_rsp_valid(rsp_valid),.s_rsp_rdata(rsp_rdata),.s_rsp_src(rsp_src),.s_rsp_tag(rsp_tag),
  .m_req_valid(qv),.m_req_ready(qr),.m_req_addr(qa),.m_req_we(qwe),.m_req_wdata(qd),.m_req_src(qs),.m_req_tag(qt),
  .m_rsp_valid(rv),.m_rsp_rdata(rd),.m_rsp_src(rs),.m_rsp_tag(rt));
- tnca_line_axi #(.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W),.DYNAMIC_LIMIT(RUNTIME_LIMIT!=0)) dut(
+ tnca_line_axi #(.LINE_LUTRAM(LINE_LUTRAM),.PIPELINED_ISSUE(PIPELINED_ISSUE),.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W),.DYNAMIC_LIMIT(RUNTIME_LIMIT!=0)) dut(
   .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(qr),
   .req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
   .rsp_valid(rv),.rsp_rdata(rd),.rsp_src(rs),.rsp_tag(rt),
@@ -38,6 +43,43 @@ module tb_line_axi;
   .m_arvalid(m_arvalid),.m_arready(m_arready),.m_araddr(m_araddr),.m_arid(m_arid),
   .m_arlen(m_arlen),.m_arsize(m_arsize),.m_arburst(m_arburst),
   .m_rvalid(m_rvalid),.m_rready(m_rready),.m_rdata(m_rdata),.m_rid(m_rid),.m_rresp(m_rresp),.m_rlast(m_rlast));
+ generate if(LINE_LUTRAM)begin:g_lockstep
+  wire r_rsp_valid,r_fault,r_idle,r_req_ready;wire [511:0] r_rsp_rdata;wire [4:0] r_rsp_tag;wire [2:0] r_rsp_src;
+  wire [63:0] r_rl,r_wl,r_rb,r_wb;
+  wire r_awvalid,r_wvalid,r_arvalid,r_wlast,r_rready,r_bready;
+  wire [63:0] r_awaddr,r_araddr;wire [ID_W-1:0] r_awid,r_arid;
+  wire [7:0] r_awlen,r_arlen;wire [2:0] r_awsize,r_arsize;wire [1:0] r_awburst,r_arburst;
+  wire [DATA_W-1:0] r_wdata;wire [DATA_W/8-1:0] r_wstrb;
+  tnca_line_axi #(.LINE_LUTRAM(0),.PIPELINED_ISSUE(PIPELINED_ISSUE),.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W),.DYNAMIC_LIMIT(RUNTIME_LIMIT!=0)) twin(
+   .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(r_req_ready),
+   .req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
+   .rsp_valid(r_rsp_valid),.rsp_rdata(r_rsp_rdata),.rsp_src(r_rsp_src),.rsp_tag(r_rsp_tag),
+   .admission_limit(8'(RUNTIME_LIMIT)),.axi_base(64'h100000000),.axi_size(64'd1024),.fault(r_fault),.idle(r_idle),
+   .read_lines(r_rl),.write_lines(r_wl),.read_beats(r_rb),.write_beats(r_wb),
+   .m_awvalid(r_awvalid),.m_awready(m_awready),.m_awaddr(r_awaddr),.m_awid(r_awid),
+   .m_awlen(r_awlen),.m_awsize(r_awsize),.m_awburst(r_awburst),
+   .m_wvalid(r_wvalid),.m_wready(m_wready),.m_wdata(r_wdata),.m_wstrb(r_wstrb),.m_wlast(r_wlast),
+   .m_bvalid(m_bvalid),.m_bready(r_bready),.m_bid(m_bid),.m_bresp(m_bresp),
+   .m_arvalid(r_arvalid),.m_arready(m_arready),.m_araddr(r_araddr),.m_arid(r_arid),
+   .m_arlen(r_arlen),.m_arsize(r_arsize),.m_arburst(r_arburst),
+   .m_rvalid(m_rvalid),.m_rready(r_rready),.m_rdata(m_rdata),.m_rid(m_rid),.m_rresp(m_rresp),.m_rlast(m_rlast));
+  integer lockstep_cycles=0,w_compared=0;
+  always @(negedge clk)if(rst_n)begin
+   lockstep_cycles=lockstep_cycles+1;
+   if({r_req_ready,r_rsp_valid,r_rsp_rdata,r_rsp_src,r_rsp_tag,r_fault,r_idle,r_rl,r_wl,r_rb,r_wb,
+       r_awvalid,r_awaddr,r_awid,r_awlen,r_awsize,r_awburst,r_wvalid,r_wstrb,r_wlast,r_rready,r_bready,
+       r_arvalid,r_araddr,r_arid,r_arlen,r_arsize,r_arburst}
+     !=={qr,rv,rd,rs,rt,fault,idle,read_lines,write_lines,read_beats,write_beats,
+       m_awvalid,m_awaddr,m_awid,m_awlen,m_awsize,m_awburst,m_wvalid,m_wstrb,m_wlast,m_rready,m_bready,
+       m_arvalid,m_araddr,m_arid,m_arlen,m_arsize,m_arburst})
+    $fatal(1,"LINE_LUTRAM lockstep: outputs differ at cycle %0d",lockstep_cycles);
+   if(m_wvalid)begin
+    w_compared=w_compared+1;
+    if(r_wdata!==m_wdata)$fatal(1,"LINE_LUTRAM lockstep: WDATA differs at cycle %0d",lockstep_cycles);
+   end
+  end
+  always @(posedge tb_done)$display("LINE_LUTRAM lockstep cycles=%0d wdata_beats_compared=%0d",lockstep_cycles,w_compared);
+ end endgenerate
  integer slot_count,slot_index,peak_slots=0;
  always @(negedge clk)if(rst_n)begin
   slot_count=0;
@@ -175,6 +217,7 @@ module tb_line_axi;
   if(RUNTIME_LIMIT>1 && peak_slots<2)$fatal(1,"runtime multi-slot case did not overlap");
   if(RUNTIME_LIMIT && !peak_slots)$fatal(1,"runtime slot check saw no work");
   $display("RUNTIME LIMIT limit=%0d peak_slots=%0d",RUNTIME_LIMIT,peak_slots);
+  tb_done=1;#1;
   $display("LINE AXI PASS width=%0d slots=%0d mode=%0d stages=%0d write_ack=%0d completed=%0d peak=%0d collisions=%0d reads=%0d writes=%0d",DATA_W,OUT_N,MODE,STAGES,WRITE_ACK,completed,peak,collisions,read_lines,write_lines);$finish;
  end
 endmodule

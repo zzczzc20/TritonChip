@@ -10,8 +10,10 @@ import re
 import signal
 import shlex
 import subprocess
+import sys
 import threading
 import time
+from prediction_domain import timing_status
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -45,6 +47,8 @@ def systemc_library(binary):
 
 
 def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='memory', monitor='aggregate'):
+    sys.path.insert(0, str(ROOT/'python'))
+    from tnca._child_exec import child_argv
     if monitor not in ('off', 'aggregate', 'trace'):
         raise ValueError('unknown socket monitor mode')
     binary, config, trace, out = (Path(p).resolve() for p in (binary, config, trace, out))
@@ -71,19 +75,26 @@ def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='me
                 dependencies[str(path)] = sha(path)
     elif mode != 'memory':
         raise ValueError('unknown model mode')
+    model_environment={k:os.environ[k] for k in ('TNCA_DRAM_PATH','TNCA_DRAM_MAP','TNCA_RAMULATOR2_CONFIG')
+                       if k in os.environ}
+    for key in ('TNCA_DRAM_MAP','TNCA_RAMULATOR2_CONFIG'):
+        if key in model_environment:
+            path=Path(model_environment[key]).resolve()
+            dependencies[str(path)]=sha(path)
     identity = dict(monitor=monitor, schema='tnca-systemc-experiment/1', backend='systemc-tlm-prediction', mode=mode,
                     binary_sha256=sha(binary), config_sha256=sha(config), trace_sha256=sha(trace),
                     sources=sources(), host=dict(machine=platform.machine(), node=platform.node()),
                     image_sha256=None, measured_clock_hz=None, calibration='not-measured',
                     contract_sha256=CONTRACT_LOCK_SHA256, contract_document_sha256=sha(CONTRACT), source_identity=source_identity,
-                    systemc_library=systemc_library(binary), dependencies_sha256=dependencies)
+                    systemc_library=systemc_library(binary), dependencies_sha256=dependencies,
+                    model_environment=model_environment)
     out.mkdir(parents=True, exist_ok=False)
     (out/'identity.json').write_text(json.dumps(identity, indent=2)+'\n')
     command = [str(binary), str(config), str(trace), str(out)]
     start = time.monotonic()
     code, timeout_hit = None, False
     with (out/'stdout.log').open('x') as stdout, (out/'stderr.log').open('x') as stderr:
-        process = subprocess.Popen(command, stdout=stdout, stderr=stderr, start_new_session=True,
+        process = subprocess.Popen(child_argv(command), stdout=stdout, stderr=stderr, start_new_session=True,
                                    env=dict(os.environ, TNCA_TLM_MONITOR=monitor))
         def expire():
             nonlocal timeout_hit
@@ -115,7 +126,11 @@ def run(binary, config, trace, out, timeout=1800, source_identity=None, mode='me
         except (ValueError, OSError) as e:
             summary_error = str(e)
     passed = code == 0 and unchanged and summary is not None and summary['status'] == 'completed'
-    report = dict(schema='tnca-systemc-run/1', status='completed-prediction' if passed else 'failed',
+    qualification = (timing_status(summary.get('counters', {}), slow=summary.get('dram_path')=='slow')
+                     if summary else 'inconclusive-execution')
+    report = dict(schema='tnca-systemc-run/1', status=('completed-prediction' if qualification.startswith('uncalibrated')
+                      else 'completed-execution-inconclusive-timing') if passed else 'failed',
+                  model_timing_status=qualification,
                   command=command, identity=identity, returncode=code, timeout=timeout_hit,
                   inputs_unchanged=unchanged, summary=summary, summary_error=summary_error, host_elapsed_seconds=elapsed,
                   host_clock_resolution_seconds=time.get_clock_info('monotonic').resolution,

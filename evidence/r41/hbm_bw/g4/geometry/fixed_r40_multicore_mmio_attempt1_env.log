@@ -1,0 +1,81 @@
+PASS: isolated inventory child imports snapshot compiler and scheduler before stale installation
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.048s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.007s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.000s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.017s
+
+OK
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.158s
+
+OK
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.009s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.016s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 2.436s
+
+OK
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.006s
+
+OK
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
+.................
+----------------------------------------------------------------------
+Ran 17 tests in 0.268s
+
+OK
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.473s
+
+OK
+  building core-vrf-sync-v2 -> /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v2-d8ab4dc2ea14be49-f7aaade736c9/tnca_device_vrf2.vvp
+  pruned 1 older build(s) of core-vrf-sync-v2
+  built 20407640 bytes
+CODE CACHE EPOCH PASS 6 RTL launches, one-module region, live buffer preserved
+Traceback (most recent call last):
+  File "/home/zhongchun/r41g4_geo/tools/r40/bucket_decode_tests.py", line 10, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+make: *** [Makefile:2350: r40-multicore-mmio-checks] Error 1
+rc=2

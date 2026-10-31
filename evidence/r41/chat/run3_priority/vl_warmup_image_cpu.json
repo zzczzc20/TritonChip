@@ -1,0 +1,35 @@
+{
+  "schema": "r41-vl-cpu-warmup-image/1",
+  "domain": "full-checkpoint CPU diagnostic, not board/TLM",
+  "image": "/home/zhongchun/r41_vl_reason_dp/src/spec/r41/chat/shapes.png",
+  "prompt": "Which shapes are in this image? Answer with a short list.",
+  "paths": {
+    "baseline": {
+      "text": " circle, square, triangle",
+      "tokens": [
+        12671,
+        11,
+        9334,
+        11,
+        21495,
+        151645
+      ],
+      "status": "pass",
+      "image_count": 1
+    },
+    "warmup": {
+      "text": " circle, square, triangle",
+      "tokens": [
+        12671,
+        11,
+        9334,
+        11,
+        21495,
+        151645
+      ],
+      "status": "pass",
+      "image_count": 1
+    }
+  },
+  "equal": true
+}

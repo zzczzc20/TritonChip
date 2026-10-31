@@ -26,6 +26,31 @@
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
     },
+    "core-sim-dp": {
+      "target_file": "tnca-sim-dp.json",
+      "description": "core-sim (one core, two Role Contexts) with the shared MAC lane: tnca_core MAC_DP=1, MAC_CUTS=29, so m.mma.dp.async (ISA sec 9C.4, CAPABILITY0.MATRIX_DP bit 12) executes. What the compiler's RTL tests of the packed matrix opcode target (tb_tnca_core with -P MAC_DP=1; built by `make core-mmadp`). Every other instruction, format and capability is core-sim's.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 2,
+        "RCTX_W": 1,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "MAC_DP": 1,
+        "MAC_CUTS": 29
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_dp14.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
     "core-4r": {
       "target_file": "tnca-sim-4rctx.json",
       "description": "One core, four Role Contexts, half the logical vector registers each so the physical file is the same size. compiler_overview.md sec 15 C4's P+M0+M1+E profile.",
@@ -288,6 +313,57 @@
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
       }
     },
+    "core-vrf-sync-v5-x8": {
+      "target_file": "tnca-sim-vrf-v5-x8.json",
+      "executes_artifacts_of": [
+        "core-vrf-sync-v1",
+        "core-vrf-sync-v2",
+        "core-vrf-sync-v3",
+        "core-vrf-sync-v4",
+        "core-vrf-sync-v5"
+      ],
+      "description": "core-vrf-sync-v5 with the transfer engine's transposed write extended to 1-byte elements (HAS_TENSOR_XPOSE=2, R41 Stage 2 X8; capability tensor_transpose_8bit): an FP8 MMA B operand read from a K-contiguous weight (torch._scaled_mm's column-major B, a linear layer's W.t()) arrives by one transposed transfer instead of a gather per K row. Everything else is core-vrf-sync-v5, so v1-v5 artifacts run unchanged.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 256,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1,
+        "HAS_TENSOR_XPOSE": 2,
+        "RPAIR": 1
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 2,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1,
+          "MTX_ABUF": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_r39sw5x8.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
     "core-xpose-v1": {
       "target_file": "tnca-sim-xpose-v1.json",
       "executes_artifacts_of": [
@@ -313,6 +389,156 @@
           "+allroles"
         ],
         "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
+    "core-vrf-sync-v5-x8-g2": {
+      "target_file": "tnca-sim-vrf-v5-x8-g2.json",
+      "executes_artifacts_of": [],
+      "description": "core-vrf-sync-v5-x8 resized for R41 G2 (evidence/r41/hbm_bw/RESOURCES.md; the author's decisions of 2026-10-28): two Role Contexts instead of four (128 physical vector registers), eight mbarriers instead of 32 and 38-bit barrier epochs instead of 48. The accumulator file keeps its 16 slots. Every instruction, format and capability of v5-x8 is unchanged; artifacts compiled for four contexts or 32 barriers do not run here.",
+      "num_cores": 1,
+      "topology": "single",
+      "elaboration": {
+        "NUM_RCTX": 2,
+        "RCTX_W": 1,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 128,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1,
+        "HAS_TENSOR_XPOSE": 2,
+        "RPAIR": 1,
+        "BAR_N": 8,
+        "BAR_W": 3,
+        "BAR_EPOCH_W": 38
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 2,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1,
+          "MTX_ABUF": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_g2.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
+    "core-vrf-sync-v5-x8-g2c4": {
+      "target_file": "tnca-sim-vrf-v5-x8-g2c4.json",
+      "executes_artifacts_of": [],
+      "description": "core-vrf-sync-v5-x8 with R41 G2's approved cuts except the contexts cut: eight mbarriers instead of 32 and 38-bit barrier epochs instead of 48, with four Role Contexts (256 physical vector registers) as in v5-x8. The author withdrew the 4->2 contexts cut on 2026-10-29 because of its measured slowdown (evidence/r41/hbm_bw/g4/g2_cuts/README.md). The accumulator file keeps its 16 slots. Every instruction, format and capability of v5-x8 is unchanged; artifacts compiled for 32 barriers do not run here.",
+      "num_cores": 1,
+      "topology": "single",
+      "compiler": {
+        "snapshot_fence": true,
+        "why": "The run-2 images of this profile build the line-wide transfer engine (TENSOR_LINE): its TensorMap snapshot is one line request beside the LSU, so the context's map stores must be fenced before td.load (R41 G4, evidence/r41/hbm_bw/G4_DESIGN.md sec 9.6)."
+      },
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 256,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1,
+        "HAS_TENSOR_XPOSE": 2,
+        "RPAIR": 1,
+        "BAR_N": 8,
+        "BAR_W": 3,
+        "BAR_EPOCH_W": 38
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 2,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1,
+          "MTX_ABUF": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_g2c4.vvp",
+        "bench_args": [
+          "+allroles"
+        ],
+        "what": "the testbench that reads this profile's capabilities back out of the hardware"
+      }
+    },
+    "core-vrf-sync-v5-x8-g2c4-dp": {
+      "target_file": "tnca-sim-vrf-v5-x8-g2c4-dp.json",
+      "executes_artifacts_of": [],
+      "description": "core-vrf-sync-v5-x8-g2c4 with the grouped dot-product matrix opcode m.mma.dp.async (ISA sec 9C.4, approved by the author 2026-10-29; capability matrix_dp, CAPABILITY0 bit 12): tnca_core MAC_DP=1 with the shared MAC lane at MAC_CUTS=29 (result latency 5 against 3 for m.mma.async). The compiler lowers every FP8/FP16/BF16 matrix command to it, and the SystemC/TLM model executes it (profile key mtx_dp). The core-level RTL regression is `make core-mmadp` (t41_mmadp); no complete-image bench is bound to this profile yet, and no image has been built from it. Every other instruction, format and capability is unchanged; artifacts using m.mma.dp.async do not run on any image built before one is.",
+      "num_cores": 1,
+      "topology": "single",
+      "compiler": {
+        "snapshot_fence": true,
+        "why": "The run-2 images of this profile build the line-wide transfer engine (TENSOR_LINE): its TensorMap snapshot is one line request beside the LSU, so the context's map stores must be fenced before td.load (R41 G4, evidence/r41/hbm_bw/G4_DESIGN.md sec 9.6)."
+      },
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 256,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1,
+        "HAS_TENSOR_XPOSE": 2,
+        "RPAIR": 1,
+        "BAR_N": 8,
+        "BAR_W": 3,
+        "BAR_EPOCH_W": 38,
+        "MAC_DP": 1,
+        "MAC_CUTS": 29
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 2,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1,
+          "MTX_ABUF": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "none",
+        "what": "no image and no bench bound yet; the core-level RTL regression is make core-mmadp (MAC_DP=1)"
       }
     }
   },

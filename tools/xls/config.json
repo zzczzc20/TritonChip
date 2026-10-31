@@ -92,14 +92,25 @@
       "delay_model": "asap7"
     },
     {
-      "module": "tnca_fma_xls",
+      "module": "tnca_fma_align_xls",
       "source": "tnca_fma.x",
-      "top": "fma32",
-      "pipeline_stages": 3,
-      "clock_period_ps": null,
-      "delay_model": "asap7",
-      "why": "The binary32 FMA every FP result goes through, with subnormals (apfloat's flush is why it used to be hand-written; see xls/tnca_fma.x). Three stages, two registers, the result combinational from the last stage: latency 2, exactly the hand-written module's shape, so it is a drop-in: same FP_LAT, same cycles. No clock period: XLS finds the shortest period three stages allow, which is what balances them.",
-      "flop_outputs": false
+      "top": "fma32_align",
+      "pipeline_stages": 0,
+      "why": "First stage of the latency-2 binary32 FMA (FP_LAT = 2, the image's): unpack, classify, the 24x24 product, the exponent difference and the alignment shift with its sticky bit. Combinational: rtl/core/tnca_fp32_fma.v registers its FmaAligned result. R41 Stage 2 (F03/F08/F09) places the two cuts of this instance by hand, at the points the U280 measures as balanced -- after the alignment shift and after the leading-zero count -- because asap7, which the XLS schedule balances against, prices the 24x24 multiplier that the FPGA maps to two DSP48E2 slices at several times its FPGA cost and so moved the alignment shifter into the middle stage. The arithmetic of each stage is still generated from the one DSLX function, xls/tnca_fma.x, and fma32 is the three stages composed."
+    },
+    {
+      "module": "tnca_fma_norm_xls",
+      "source": "tnca_fma.x",
+      "top": "fma32_normalise",
+      "pipeline_stages": 0,
+      "why": "Second stage of the latency-2 FMA: add or subtract the aligned operands (the sticky borrow carry-selected), count leading zeros, and every quantity that follows the count. Combinational; registered by rtl/core/tnca_fp32_fma.v."
+    },
+    {
+      "module": "tnca_fma_round_xls",
+      "source": "tnca_fma.x",
+      "top": "fma32_round",
+      "pipeline_stages": 0,
+      "why": "Third stage of the latency-2 FMA: the normalising shift, round to nearest even (carry-select) and assembly. Combinational into the consumer's register (the vector writeback, the accumulator file), as the generated three-stage instance's last stage was: latency 2, a result every cycle, the same FP_LAT and the same cycles."
     },
     {
       "module": "tnca_fma_l3_xls",
@@ -108,8 +119,109 @@
       "pipeline_stages": 4,
       "clock_period_ps": null,
       "delay_model": "asap7",
-      "why": "The same FMA one stage deeper (four stages, three registers: latency 3), for a faster clock: selected by FP_LAT=3 through tnca_fp32_fma. The matrix unit's accumulate interleave (16 rows) and the vector FPU's reduction sequencer both take any FP_LAT up to 15.",
+      "why": "The same FMA one stage deeper (four stages, three registers: latency 3), for a faster clock: selected by FP_LAT=3 through tnca_fp32_fma. Scheduled by XLS from fma32, the three stage functions composed. The matrix unit's accumulate interleave (16 rows) and the vector FPU's reduction sequencer both take any FP_LAT up to 15.",
       "flop_outputs": false
+    },
+    {
+      "module": "tnca_fma_alignp_xls",
+      "source": "tnca_fma.x",
+      "top": "fma32_align_p",
+      "pipeline_stages": 0,
+      "why": "R41 packed dot-product lane, FEASIBILITY PROTOTYPE (evidence/r41/pmac/lane): not instantiated by the core. The binary32 FMA's first stage from its multiplier's output on: the addend, the exponent difference and the alignment shift with its sticky bit, for any product (FmaProduct). fma32_align is fma32_mul composed with it. Combinational; rtl/core/tnca_pmac_lane.v uses it so a register can sit between a product front end and the alignment."
+    },
+    {
+      "module": "tnca_fdp_v1_f1_xls",
+      "source": "tnca_fdp.x",
+      "top": "fdp_v1_f1",
+      "pipeline_stages": 0,
+      "why": "R41 packed dot-product lane, FEASIBILITY PROTOTYPE (evidence/r41/pmac/lane): not instantiated by the core. V1 front end, first half: binary32 product (fma32_mul) and the DP4 group sum of four exact FP8 products (all four E4M3/E5M2 pairs) in a 66-bit fixed-point field. Combinational."
+    },
+    {
+      "module": "tnca_fdp_v2l_f1_xls",
+      "source": "tnca_fdp.x",
+      "top": "fdp_v2l_f1",
+      "pipeline_stages": 0,
+      "why": "R41 packed dot-product lane, FEASIBILITY PROTOTYPE (evidence/r41/pmac/lane): not instantiated by the core. V2 front end, first half, products in LUTs: binary32 product, the DP4 sum, and the DP2 sum (two exact 11x11 products, aligned with a sticky bit). Combinational."
+    },
+    {
+      "module": "tnca_fdp_v2d_f1_xls",
+      "source": "tnca_fdp.x",
+      "top": "fdp_v2d_f1",
+      "pipeline_stages": 0,
+      "why": "R41 packed dot-product lane, FEASIBILITY PROTOTYPE (evidence/r41/pmac/lane): not instantiated by the core. V2 front end, first half, DSPs shared: the binary32 24x24 product as two 24x12 products (P + Q<<12, the second DSP's post-adder), each DSP taking one 11x11 product in DP2 mode; the DP4 sum in LUTs. Combinational."
+    },
+    {
+      "module": "tnca_fdp_f2_xls",
+      "source": "tnca_fdp.x",
+      "top": "fdp_f2",
+      "pipeline_stages": 0,
+      "why": "R41 packed dot-product lane, FEASIBILITY PROTOTYPE (evidence/r41/pmac/lane): not instantiated by the core. V1/V2 front end, second half: |sum|, RO_48 (18-bit leading-zero count, right shift 0..18, OR into the last bit) and the mode's product select. Combinational."
+    },
+    {
+      "module": "tnca_fdp_v3_f1_xls",
+      "source": "tnca_fdp.x",
+      "top": "fdp_v3_f1",
+      "pipeline_stages": 0,
+      "why": "R41 packed dot-product lane, FEASIBILITY PROTOTYPE (evidence/r41/pmac/lane): not instantiated by the core. V3 front end, first half: binary32 product and the E4M3-only DP4 sum in a 38-bit field (exact, at most 38 significant bits). Combinational."
+    },
+    {
+      "module": "tnca_fdp_v3_f2_xls",
+      "source": "tnca_fdp.x",
+      "top": "fdp_v3_f2",
+      "pipeline_stages": 0,
+      "why": "R41 packed dot-product lane, FEASIBILITY PROTOTYPE (evidence/r41/pmac/lane): not instantiated by the core. V3 front end, second half: |sum| as an unnormalised 48-bit product (RO_48 is the identity for E4M3) and the mode's select. Combinational."
+    },
+    {
+      "module": "tnca_fmad_norm_xls",
+      "source": "tnca_fmad.x",
+      "top": "fma32d_normalise",
+      "pipeline_stages": 0,
+      "why": "R41 G2 FMA rebuild (evidence/r41/hbm_bw/fma_dslx): the binary32 FMA's second stage with the 89-bit leading-zero count as a balanced tree (xls/tnca_lzc.x) instead of the stdlib clz, proved equal to tnca_fma::fma32_normalise for every input (prove_quickcheck normalise_equiv). Used by tnca_fp32_fma IMPL=1 (default 0) and by tnca_mac_lane. Combinational."
+    },
+    {
+      "module": "tnca_fmad_l3_xls",
+      "source": "tnca_fmad.x",
+      "top": "fma32d",
+      "pipeline_stages": 4,
+      "clock_period_ps": null,
+      "delay_model": "asap7",
+      "why": "R41 G2 FMA rebuild: tnca_fma_l3_xls's function (fma32d = fma32 with the tree leading-zero count, its normalise proved equal) scheduled the same way, four stages, for tnca_fp32_fma IMPL=1 at LAT 3 (default IMPL 0).",
+      "flop_outputs": false
+    },
+    {
+      "module": "tnca_mac_s1_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_s1",
+      "pipeline_stages": 0,
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off (tnca_matrix MAC_DP). S1: decode, the binary32 product (fma32_mul), the E4M3 DP4 group sum as a fixed-point DSP cascade, the two DP2 products and the choice of the reference product. Combinational."
+    },
+    {
+      "module": "tnca_mac_s2_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_s2",
+      "pipeline_stages": 0,
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off (tnca_matrix MAC_DP). S2: DP2's shift of the smaller product and the one addition; the other modes' results pass. Combinational."
+    },
+    {
+      "module": "tnca_mac_f1_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_f1",
+      "pipeline_stages": 0,
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off (tnca_matrix MAC_DP). F1 = S1 then S2 unregistered (the whole front end; used by the unit screens and the formal proofs). Combinational."
+    },
+    {
+      "module": "tnca_mac_f2_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_f2",
+      "pipeline_stages": 0,
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off, not instantiated by the core until the gate passes. F2: |sum|, RO_48 (tree leading-zero count) and the mode's product as an FmaProduct. Combinational."
+    },
+    {
+      "module": "tnca_mac_b0_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_b0",
+      "pipeline_stages": 0,
+      "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off, not instantiated by the core until the gate passes. B0: the binary32 FMA's alignment with C (fma32_align_p), mul_only and ftz forced off in the packed modes. Combinational."
     }
   ]
 }

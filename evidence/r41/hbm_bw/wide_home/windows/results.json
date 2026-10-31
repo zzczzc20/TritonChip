@@ -1,0 +1,108 @@
+{
+  "evidence": "standalone-RTL-synthetic-memory-window-sweep",
+  "board_measured": false,
+  "larger_window_integrated": false,
+  "scope": "8/16 is the current image home capacity; 16/32 needs a wider memory tag and new integration",
+  "rows": [
+    {
+      "configuration": {
+        "WORD_BITS": 512,
+        "MSHR_N": 4,
+        "TARGET_N": 8,
+        "HIT_CHAIN": 1,
+        "SERVICE_MODE": 2,
+        "SETS": 32,
+        "SET_W": 5,
+        "WAYS": 8,
+        "WAY_W": 3,
+        "REGISTER_VICTIM_OWNER": 1,
+        "DCO_REGISTERED_RANGES": 1,
+        "FULL_LINE_TAG": 1,
+        "REGISTER_VICTIM_SELECT": 1,
+        "REGISTER_VICTIM_RANK": 1
+      },
+      "accepted": 4096,
+      "responses": 4096,
+      "cycles": 58410,
+      "hit": 0,
+      "miss": 4096,
+      "gb_per_s_at_100mhz": 0.4487998630371512,
+      "actual_image_window": false
+    },
+    {
+      "configuration": {
+        "WORD_BITS": 512,
+        "MSHR_N": 8,
+        "TARGET_N": 8,
+        "HIT_CHAIN": 1,
+        "SERVICE_MODE": 2,
+        "SETS": 32,
+        "SET_W": 5,
+        "WAYS": 8,
+        "WAY_W": 3,
+        "REGISTER_VICTIM_OWNER": 1,
+        "DCO_REGISTERED_RANGES": 1,
+        "FULL_LINE_TAG": 1,
+        "REGISTER_VICTIM_SELECT": 1,
+        "REGISTER_VICTIM_RANK": 1
+      },
+      "accepted": 4096,
+      "responses": 4096,
+      "cycles": 45212,
+      "hit": 0,
+      "miss": 4096,
+      "gb_per_s_at_100mhz": 0.5798106697336991,
+      "actual_image_window": false
+    },
+    {
+      "configuration": {
+        "WORD_BITS": 512,
+        "MSHR_N": 8,
+        "TARGET_N": 16,
+        "HIT_CHAIN": 1,
+        "SERVICE_MODE": 2,
+        "SETS": 32,
+        "SET_W": 5,
+        "WAYS": 8,
+        "WAY_W": 3,
+        "REGISTER_VICTIM_OWNER": 1,
+        "DCO_REGISTERED_RANGES": 1,
+        "FULL_LINE_TAG": 1,
+        "REGISTER_VICTIM_SELECT": 1,
+        "REGISTER_VICTIM_RANK": 1
+      },
+      "accepted": 4096,
+      "responses": 4096,
+      "cycles": 45212,
+      "hit": 0,
+      "miss": 4096,
+      "gb_per_s_at_100mhz": 0.5798106697336991,
+      "actual_image_window": true
+    },
+    {
+      "configuration": {
+        "WORD_BITS": 512,
+        "MSHR_N": 16,
+        "TARGET_N": 32,
+        "HIT_CHAIN": 1,
+        "SERVICE_MODE": 2,
+        "SETS": 32,
+        "SET_W": 5,
+        "WAYS": 8,
+        "WAY_W": 3,
+        "REGISTER_VICTIM_OWNER": 1,
+        "DCO_REGISTERED_RANGES": 1,
+        "FULL_LINE_TAG": 1,
+        "REGISTER_VICTIM_SELECT": 1,
+        "REGISTER_VICTIM_RANK": 1
+      },
+      "accepted": 4096,
+      "responses": 4096,
+      "cycles": 45212,
+      "hit": 0,
+      "miss": 4096,
+      "gb_per_s_at_100mhz": 0.5798106697336991,
+      "actual_image_window": false
+    }
+  ]
+}

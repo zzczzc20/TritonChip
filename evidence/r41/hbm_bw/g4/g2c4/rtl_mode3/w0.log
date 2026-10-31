@@ -1,0 +1,5 @@
+op.copy/membound/fp32-small-contig-r16-c1024 pass [51627] [51632]
+op.relu/membound/fp32-small-contig-r16-c1024 pass [51706] [51711]
+op.copy/membound/fp32-small-contig-r16-c1024 pass [3583] [3588]
+op.relu/membound/fp32-small-contig-r16-c1024 pass [8169] [8174]
+done

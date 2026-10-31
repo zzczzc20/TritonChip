@@ -1,0 +1,101 @@
+{
+  "schema": "tnca-r41-stage-plan/2",
+  "stage": 2,
+  "freeze_kind": "prospective",
+  "historical_freeze_failure_preserved": true,
+  "frozen_utc": "2026-10-26",
+  "contract": "doc/r41_tasks_and_acceptance.md",
+  "contract_sha256": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
+  "model": {
+    "repository": "Qwen/Qwen3.5-2B",
+    "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "inventory": "evidence/r41/stage1/kickoff/qwen-storage/inventory.json",
+    "points": "spec/r41/stage2/model_points.json",
+    "lock": "spec/r41/stage2/model_lock.json"
+  },
+  "xl_core": "spec/r41/stage2/xl_core.json",
+  "holdout": "spec/r41/holdout.json",
+  "original_suites": [
+    {
+      "path": "spec/r40/suites/existing.json",
+      "sha256": "f3e4ba5f3a346d45d3289b4b58f380d0103f4a5edfe6c88abd6b136868154a0f",
+      "points": 77
+    },
+    {
+      "path": "spec/r40/suites/large.json",
+      "sha256": "9279cf341d9c631f103a15abdbff1d6d932329fbc0a0336352bbac8b22b223bf",
+      "points": 24
+    },
+    {
+      "path": "spec/r40/suites/hbm-tier.json",
+      "sha256": "a36483591c755273db172d11455301e8a9a164932340a5827fccd0f5703d5d6f",
+      "points": 12
+    },
+    {
+      "path": "spec/r40/suites/hbm.json",
+      "sha256": "7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd",
+      "points": 113
+    }
+  ],
+  "mandatory_hardware": "Existing run-1 M1\u2013M4, F01\u2013F10, X8 and T2; no new hardware capability assumed",
+  "candidate_studies": [
+    "scheduler model banked2 mapping",
+    "bounded selector versus conservative GEMM",
+    "graph locality off/on",
+    "Mode B/single-role/two-stage ring",
+    "static lifetime/resource allocation; dynamic registers not required",
+    "existing separate r41-hbm-bw study; no duplication"
+  ],
+  "baselines": {
+    "B40_OBS": "spec/r41/stage1/baseline.json",
+    "B41_S1": "25094197f6e6",
+    "B41_C": "conservative legal generic path; preserve existing effective optimizations",
+    "B41_F": "selected only after required measurements; not yet a qualified release"
+  },
+  "budgets": {
+    "shared_host_max_cores": 6,
+    "shared_host_max_gib": 16,
+    "gb10_min_available_gib": 40,
+    "compiler_worker_seconds": 1800,
+    "model_worker_seconds": 7200,
+    "rtl_worker_seconds": 7200,
+    "tuning_seconds_per_graph": 600,
+    "tuning_max_candidates_per_kernel": 16,
+    "board_pilot_seconds": 3600,
+    "board_point_seconds": 28800,
+    "full_campaign_seconds": 259200,
+    "full_image_runs_total": 5,
+    "full_image_runs_used": 1,
+    "full_image_runs_remaining": 4,
+    "image_builds_started_by_acceptance": 0
+  },
+  "board_launch_authority": "lead only; prepare/test waiting scripts, do not start; 15 consecutive idle minutes; approved images only",
+  "numerical_policy": "Independent references only before seeing TNCA outputs; never relax locked thresholds after measurement",
+  "measurement": {
+    "long_device_tasks": {
+      "qualification_samples": 1,
+      "short_threshold_seconds": 1,
+      "short_timed_samples": 3,
+      "long_timed_samples": 1,
+      "anchor_stability_samples": 3
+    },
+    "host_latency": {
+      "warmup": 5,
+      "timed": 30,
+      "blocks": 3,
+      "order": "interleaved seeded A/B"
+    },
+    "borderline_device_recheck": {
+      "additional_samples_per_arm": 3,
+      "max_recheck_blocks": 2
+    },
+    "bootstrap": {
+      "resamples": 2000,
+      "seed": 20261020,
+      "alpha": 0.05
+    },
+    "overall_nonregression_budget": 0.05,
+    "report_point_regression_above": 0.05,
+    "confirmed_new_default_regression_block": 0.1
+  }
+}

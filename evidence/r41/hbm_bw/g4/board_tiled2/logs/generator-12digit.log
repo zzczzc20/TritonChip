@@ -1,0 +1,11 @@
+clock_utc=2026-10-29T02:47:33Z
+source_commit=09ae45a07a4c8ad572ad45ad62ae9de3d4b7ba0a
+host=GB10
+command=baseline check and regenerate tiled2 with 12-digit estimate metadata
+spec/r41/hbm_bw/membound_tiled2/membound-small-1.json: 142 points, estimated 1.499 h
+spec/r41/hbm_bw/membound_tiled2/membound-small-2.json: 29 points, estimated 0.306 h
+spec/r41/hbm_bw/membound_tiled2/membound-medium-1.json: 132 points, estimated 1.49 h
+spec/r41/hbm_bw/membound_tiled2/membound-medium-2.json: 39 points, estimated 0.439 h
+spec/r41/hbm_bw/membound_tiled2/membound-large-1.json: 99 points, estimated 1.48 h
+spec/r41/hbm_bw/membound_tiled2/membound-large-2.json: 72 points, estimated 1.019 h
+spec/r41/hbm_bw/membound_tiled2/s2-original-suite.json: 113 points, estimated 2.0 h

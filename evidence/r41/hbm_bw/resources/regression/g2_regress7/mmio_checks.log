@@ -1,0 +1,41 @@
+PASS: isolated inventory child imports snapshot compiler and scheduler before stale installation
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.040s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.007s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.000s
+
+OK
+E...
+======================================================================
+ERROR: test_original_large_model_layout_and_mutation (__main__.ReservedMemoryTests.test_original_large_model_layout_and_mutation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/zhongchun/r41bw_res_18d045c53b8b/tools/r40/reserved_memory_tests.py", line 18, in test_original_large_model_layout_and_mutation
+    'large_native_mmio_collision_6bd07b7.json').read_text())
+                                                ^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1029, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/zhongchun/r41bw_res_18d045c53b8b/evidence/r40/v2/convergence/attempt03/large_native_mmio_collision_6bd07b7.json'
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.017s
+
+FAILED (errors=1)
+make: *** [Makefile:2338: r40-multicore-mmio-checks] Error 1
+
+real	0m0.351s
+user	0m0.243s
+sys	0m0.093s

@@ -1,0 +1,69 @@
+{
+ "domain": "rtl-simulation",
+ "module": "rtl/nuca/tnca_home_pipe.v",
+ "fill_chain": 0,
+ "mshr_n": 32,
+ "image_sets": true,
+ "rows": [
+  {
+   "mode": 2,
+   "dram_latency": 10,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 4112,
+   "cycles_per_request": 2.008,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 2,
+   "dram_latency": 40,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 4142,
+   "cycles_per_request": 2.022,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 2,
+   "dram_latency": 80,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 5694,
+   "cycles_per_request": 2.78,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 4,
+   "dram_latency": 10,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 2576,
+   "cycles_per_request": 1.258,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 4,
+   "dram_latency": 40,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 2606,
+   "cycles_per_request": 1.272,
+   "hits": 0,
+   "misses": 2048
+  },
+  {
+   "mode": 4,
+   "dram_latency": 80,
+   "ok": true,
+   "requests": 2048,
+   "span_cycles": 3124,
+   "cycles_per_request": 1.525,
+   "hits": 0,
+   "misses": 2048
+  }
+ ]
+}

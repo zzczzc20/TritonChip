@@ -16,6 +16,17 @@ addresses are far below 2**31 elements, so the offset becomes the 32-bit
 gather index ISA sec 9.1 takes, and a lane whose high word is not the sign
 of its low word traps (TRAP_USER, NARROW_TRAP_CODE) rather than wrapping
 into an address that happens to exist.
+
+That premise holds wherever Inductor indexes in 32 bits, which it does
+exactly when every numel and storage fits int32. A kernel it indexes in 64
+bits (`index64`: a storage over 2**31 - 1 elements, e.g. a uint8 or FP8
+storage over 2 GiB) addresses past it, so there a 1-D pointer's 64-bit
+offset is not narrowed. When the offset is a lane-invariant 64-bit value
+plus a 32-bit lane term (`xoffset + arange`, plus constants: the affine
+`_form` tracked through the index arithmetic), the invariant part joins the
+scalar address and the lane term stays the access's lane offset. Otherwise
+every lane's address is formed in 64-bit scalar registers and the access
+is made one lane at a time (`_lane64`).
 """
 
 #: TRAP_USER code for a 64-bit offset that does not fit a 32-bit gather index.
@@ -69,6 +80,8 @@ def _publish(imp, dst, value, shape, elem):
 
 
 def lower(imp, op):
+    if not getattr(imp, '_in_wide_row', False) and _affine_tile64(imp, op):
+        return True
     if _lower_rows(imp, op):
         return True
     from .frontend import _parse_type, Unsupported
@@ -76,13 +89,37 @@ def lower(imp, op):
     vlen = imp.target.vlen
     name = op.get_name()
     operands = [op.get_operand(i) for i in range(op.get_num_operands())]
+    for v in operands:
+        if v.id() in getattr(imp, '_affine64', {}):
+            dims, _ = _parse_type(str(v.get_type()))
+            if isinstance(dims, tuple) and dims[0] == 1:
+                imp._wide[v.id()] = _affine64_row(imp, imp._affine64[v.id()], 0, dims[1])
+    lane64 = getattr(imp, '_lane64', None)
+    if lane64 and operands and operands[0].id() in lane64:
+        if name == 'tt.addptr':
+            # Another offset onto per-lane 64-bit offsets: summed per lane.
+            base, lo, hi, n = lane64[operands[0].id()]
+            plo, phi = b.vmovi(0), b.vmovi(0)
+            for i in range(n):
+                old = b.sbin('or', b.vextract(lo, i), b.sbini('shl', b.vextract(hi, i), 32))
+                value = b.sbin('add', old, _lane_value(imp, operands[1], i))
+                b.vinsert(plo, i, value)
+                b.vinsert(phi, i, b.sbini('lshr', value, 32))
+            lane64[op.get_result(0).id()] = (base, plo, phi, n)
+            return True
+        if name not in ('tt.load', 'tt.store'):
+            raise Unsupported(f'{name} through a pointer with per-lane 64-bit offsets')
+        _lane64_access(imp, op, operands)
+        return True
     if name == 'tt.store':
         shape, elem = _parse_type(str(operands[1].get_type()))
         if elem == 'i64' and _count(shape, vlen) is not None:
             _store(imp, operands)
             return True
         return False
-    if not op.get_num_results():
+    if not op.get_num_results() or name == 'scf.for':
+        # scf.for carries its 64-bit blocks itself (frontend._op_scf_for,
+        # carried_pair); its body's operations come back here one by one.
         return False
     dst = op.get_result(0)
     shape, elem = _parse_type(str(dst.get_type()))
@@ -93,6 +130,8 @@ def lower(imp, op):
         return False
     if name == 'arith.constant':
         return False  # constants remain lazy until read by lane()
+    if wide_result:
+        _track_form(imp, name, operands, dst, shape, count)
 
     def lane(src, i, signed=False):
         dims, typ = _parse_type(str(src.get_type()))
@@ -124,6 +163,8 @@ def lower(imp, op):
         offs = operands[1]
         if offs.id() in imp._wide:
             oshape, _ = _parse_type(str(offs.get_type()))
+            if index64(imp) and _rebase(imp, dst, operands[0], offs, oshape):
+                return True
             lo, hi = imp._wide[offs.id()]
             _check_narrow(imp, lo, hi, _count(oshape, vlen))
             _publish(imp, offs, lo, oshape, 'i32')
@@ -137,6 +178,14 @@ def lower(imp, op):
         for i in range(count):
             b.vinsert(flags, i, b.scmp(cc, lane(operands[0], i, True), lane(operands[1], i, True)))
         _publish(imp, dst, b.vcmp('ne', flags, b.vmovi(0)), shape, 'i1')
+        return True
+    if name in ('arith.sitofp', 'arith.uitofp') and has_wide:
+        if elem != 'f32':
+            raise Unsupported(f'a 64-bit integer converted to {elem}: only binary32 is exact here')
+        if count is None:
+            raise Unsupported(f'a 64-bit conversion over a {shape} block')
+        lo, hi = imp._wide[operands[0].id()]
+        _publish(imp, dst, to_f32(b, lo, hi, signed=name == 'arith.sitofp'), shape, 'f32')
         return True
     if name == 'arith.select' and wide_result:
         dims, _ = _parse_type(str(operands[0].get_type()))
@@ -193,14 +242,534 @@ def lower(imp, op):
             output(lambda i: accum, count)
         else:
             imp._v[dst.id()] = accum
+    elif name in _DIVISION and wide_result:
+        signed, remainder = _DIVISION[name]
+        d = _positive_constant(imp, operands[1])
+        if d is None:
+            output(lambda i: _divide_dynamic(imp, lane(operands[0], i), lane(operands[1], i), signed, remainder),
+                   count)
+        else:
+            output(lambda i: _divide(b, lane(operands[0], i), d, signed, remainder), count)
     else:
         kinds={'arith.addi':'add','arith.subi':'sub','arith.muli':'mul',
                'arith.andi':'and','arith.ori':'or','arith.xori':'xor',
-               'arith.shli':'shl','arith.shrui':'lshr','arith.shrsi':'ashr'}
+               'arith.shli':'shl','arith.shrui':'lshr','arith.shrsi':'ashr',
+               'arith.maxsi':'max','arith.minsi':'min'}
         if name not in kinds or not wide_result:
             raise Unsupported(f'64-bit tensor operation {name}')
         output(lambda i: b.sbin(kinds[name], lane(operands[0],i), lane(operands[1],i)), count)
     return True
+
+
+# ---------------------------------------------------------------------------
+# Exact 64-bit division by a constant
+# ---------------------------------------------------------------------------
+
+# arith op -> (signed, remainder). Triton's division truncates toward zero
+# and its remainder takes the dividend's sign, as arith.divsi/remsi do.
+_DIVISION = {'arith.divsi': (True, False), 'arith.divui': (False, False),
+             'arith.remsi': (True, True), 'arith.remui': (False, True)}
+
+
+def _positive_constant(imp, value):
+    k = imp._scalar_const(value.id())
+    if k is None:
+        pending = imp._pending_const.get(value.id())
+        k = int(pending[1]) if pending and pending[0] in ('scalar', 'vector') else None
+    return k if k is not None and 0 < k < (1 << 63) else None
+
+
+def _udiv_const(b, n, d):
+    """floor(n / d) for an unsigned 64-bit scalar n and a constant
+    1 <= d < 2**63, exact for every n: a shift for a power of two, else
+    Granlund and Montgomery's multiply by a 64-bit reciprocal (s.mulh.u)."""
+    if d & (d - 1) == 0:
+        return n if d == 1 else b.sbini('lshr', n, d.bit_length() - 1)
+    l = (d - 1).bit_length()                          # 2**(l-1) < d < 2**l
+    m = ((1 << 64) * ((1 << l) - d)) // d + 1         # 1 <= m < 2**64
+    t1 = b.sbin('mulhu', n, b.const(m))
+    t = b.sbin('add', t1, b.sbini('lshr', b.sbin('sub', n, t1), 1))
+    return b.sbini('lshr', t, l - 1)
+
+
+def _divide(b, n, d, signed, remainder):
+    if not signed:
+        q = _udiv_const(b, n, d)
+        return b.sbin('sub', n, b.sbini('mul', q, d)) if remainder else q
+    sign = b.sbini('ashr', n, 63)                     # all ones when n < 0
+    magnitude = b.sbin('sub', b.sbin('xor', n, sign), sign)
+    q = _udiv_const(b, magnitude, d)
+    q = b.sbin('sub', b.sbin('xor', q, sign), sign)   # truncated toward zero
+    return b.sbin('sub', n, b.sbini('mul', q, d)) if remainder else q
+
+
+def _divide_dynamic(imp, n, divisor, signed, remainder):
+    """Exact scalar restoring division, including unsigned bit-63 divisors."""
+    b = imp.b
+    if signed:
+        ns, ds = b.sbini('ashr', n, 63), b.sbini('ashr', divisor, 63)
+        n = b.sbin('sub', b.sbin('xor', n, ns), ns)
+        divisor = b.sbin('sub', b.sbin('xor', divisor, ds), ds)
+    q, r, bit = (imp._copy_value(b.const(v)) for v in (0, 0, 63))
+    loop, done = imp._control_label('div64'), imp._control_label('div64_done')
+    # Grid divisors of one are frequent; avoid walking 64 bits for them.
+    b._emit('assign', [], [q, n])
+    b.branch_nz(b.scmp('eq', divisor, b.const(1)), done)
+    b._emit('assign', [], [q, b.const(0)])
+    b.label(loop)
+    digit = b.sbini('and', b.sbin('lshr', n, bit), 1)
+    carry = b.sbini('lshr', r, 63)
+    shifted = b.sbin('or', b.sbini('shl', r, 1), digit)
+    take = b.sbin('or', carry, b.scmp('geu', shifted, divisor))
+    mask = b.sbin('sub', b.const(0), take)
+    b._emit('assign', [], [r, b.sbin('sub', shifted, b.sbin('and', divisor, mask))])
+    b._emit('assign', [], [q, b.sbin('or', q, b.sbin('shl', take, bit))])
+    b._emit('assign', [], [bit, b.sbini('sub', bit, 1)])
+    b.branch_nz(b.scmp('ge', bit, b.const(0)), loop)
+    b.label(done)
+    if not signed:
+        return r if remainder else q
+    sign = ns if remainder else b.sbin('xor', ns, ds)
+    result = r if remainder else q
+    return b.sbin('sub', b.sbin('xor', result, sign), sign)
+
+
+def _affine64_row(imp, aff, row, cols):
+    """Materialize only the row a data consumer needs, in exact scalar bits."""
+    b = imp.b
+    base = imp._add_dynamic(b.const(aff.const + row * aff.row_stride), aff, 1)
+    lo, hi = b.vmovi(0), b.vmovi(0)
+    for col in range(cols):
+        v = base if col * aff.col_stride == 0 else b.sbini('add', base, col * aff.col_stride)
+        b.vinsert(lo, col, v)
+        b.vinsert(hi, col, b.sbini('lshr', v, 32))
+    return lo, hi
+
+
+def _affine_tile64(imp, op):
+    """Keep affine i64 tile indices symbolic until an address/data consumer.
+
+    Eager low/high pairs for every intermediate row exhaust the VRF in
+    INDEX_DTYPE=int64 GEMMs. A symbolic index retains scalar 64-bit origins
+    and bounded local row/column strides; data consumers materialize one row.
+    """
+    from .frontend import _parse_type, Unsupported, _DTYPE_BYTES
+    from .tiles import Affine2D
+    if not index64(imp) or not op.get_num_results():
+        return False
+    name, dst = op.get_name(), op.get_result(0)
+    dims, elem = _parse_type(str(dst.get_type()))
+    forms = getattr(imp, '_affine64', {})
+
+    def form(v):
+        if v.id() in forms:
+            return forms[v.id()]
+        pending = imp._pending_const.get(v.id())
+        if pending and pending[0] in ('scalar', 'vector', 'tile') and isinstance(pending[1], int):
+            return Affine2D(const=pending[1])
+        shape, typ = _parse_type(str(v.get_type()))
+        if shape is None and typ == 'i64':
+            return Affine2D(dynamic=[(imp._value(v), 1)])
+        return None
+
+    if name == 'tt.addptr' and op.get_operand(1).id() in forms:
+        base, offs = op.get_operand(0), forms[op.get_operand(1).id()]
+        spec = imp._ptr2d.get(base.id())
+        if spec is None or not isinstance(spec[2], Affine2D):
+            return False
+        label, typ, old = spec
+        aff = old.plus(offs)
+        # The scalar origin is unbounded; only the local tile must fit the
+        # ISA's signed i32 gather index. No unchecked vector wrap is allowed.
+        span = abs(aff.row_stride) * (dims[0] - 1) + abs(aff.col_stride) * (dims[1] - 1)
+        if span >= (1 << 31):
+            raise Unsupported('64-bit affine tile spans more than signed i32 local offsets')
+        if aff.const or aff.dynamic:
+            es = _DTYPE_BYTES.get(typ)
+            if es is None:
+                return False
+            at = imp._add_dynamic(imp.b.const(aff.const * es), aff, es)
+            at = imp.b.sbin('add', imp._arg_value(label), at, comment='a 64-bit tile origin')
+            label = imp._control_label('ptr_affine64')
+            imp._args[len(imp._args)] = (label, at)
+        imp._ptr2d[dst.id()] = (label, typ, Affine2D(aff.row_stride, aff.col_stride))
+        return True
+    if not isinstance(dims, tuple) or len(dims) != 2 or elem != 'i64':
+        return False
+    aff = None
+    if name == 'tt.splat':
+        aff = form(op.get_operand(0))
+    elif name in ('tt.broadcast', 'tt.expand_dims'):
+        src = op.get_operand(0)
+        aff = forms.get(src.id())
+        if aff is None and name == 'tt.expand_dims':
+            f = getattr(imp, '_wide_form', {}).get(src.id())
+            if f is not None and f[1] is not None and imp._offsets.get(f[1].id(), (None,))[0] == 'arange':
+                invariant, _ = f
+                aff = (Affine2D(const=invariant) if isinstance(invariant, int) else
+                       Affine2D(dynamic=[(invariant, 1)]))
+                if op.get_int_attr('axis') == 1:
+                    aff.row_stride = 1
+                else:
+                    aff.col_stride = 1
+    elif name in ('arith.addi', 'arith.subi', 'arith.muli'):
+        a, c = form(op.get_operand(0)), form(op.get_operand(1))
+        if a is not None and c is not None:
+            if name != 'arith.muli':
+                aff = a.plus(c if name == 'arith.addi' else c.scaled(-1))
+            else:
+                for x, y in ((a, c), (c, a)):
+                    if not (y.row_stride or y.col_stride or y.dynamic):
+                        aff = x.scaled(y.const)
+                        break
+    if aff is None:
+        return False
+    forms[dst.id()] = aff
+    imp._affine64 = forms
+    return True
+
+
+# ---------------------------------------------------------------------------
+# 64-bit indexing
+# ---------------------------------------------------------------------------
+
+def index64(imp):
+    """Whether Inductor indexes this kernel in 64 bits.
+
+    Its int64 index code converts the program id, `tl.program_id(0).
+    to(tl.int64)` (pointwise and reduction kernels' xoffset, the templates'
+    INDEX_DTYPE), and Inductor emits it only when a numel or a storage size
+    exceeds 2**31 - 1 elements (SIMDScheduling.can_use_32bit_indexing).
+    """
+    cached = getattr(imp, '_index64', None)
+    if cached is None:
+        from .frontend import _parse_type
+        pids = {o.get_result(0).id() for o in imp._all_ops
+                if o.get_name() == 'tt.get_program_id'}
+        cached = any(o.get_name() == 'arith.extsi' and o.get_operand(0).id() in pids
+                     and _parse_type(str(o.get_result(0).get_type()))[1] == 'i64'
+                     for o in imp._all_ops)
+        imp._index64 = cached
+    return cached
+
+
+class _Term:
+    """A synthetic element offset on a pointer's chain (frontend._address)."""
+    _count = 0
+
+    def __init__(self):
+        _Term._count += 1
+        self._id = ('addr64-term', _Term._count)
+
+    def id(self):
+        return self._id
+
+
+def _form(imp, v):
+    """(lane-invariant part, lane term) of a 1-D 64-bit integer value, or None.
+
+    The value is `invariant + sext(lane term)` exactly. The invariant part
+    is an int or a 64-bit scalar register; the lane term is None or a 32-bit
+    TTIR vector value the frontend already holds (a make_range, or any i32
+    vector, which a gather index sign-extends as extsi does)."""
+    from .frontend import _parse_type
+    forms = getattr(imp, '_wide_form', {})
+    if v.id() in forms:
+        return forms[v.id()]
+    pending = imp._pending_const.get(v.id())
+    if pending is not None and pending[0] in ('scalar', 'vector') and \
+            isinstance(pending[1], int):
+        return int(pending[1]), None
+    dims, elem = _parse_type(str(v.get_type()))
+    if dims is None and elem == 'i64':
+        return imp._value(v), None
+    return None
+
+
+def _uop(imp, op, a, c):
+    b = imp.b
+    if isinstance(a, int) and isinstance(c, int):
+        return {'add': a + c, 'sub': a - c, 'mul': a * c}[op]
+    if op == 'mul':
+        if isinstance(a, int):
+            a, c = c, a
+        return a if c == 1 else b.sbini('mul', a, c)
+    if isinstance(c, int):
+        if c == 0:
+            return a
+        return b.sbini('add', a, c if op == 'add' else -c)
+    if isinstance(a, int):
+        a = b.const(a)
+    return b.sbin(op, a, c)
+
+
+def _track_form(imp, name, operands, dst, shape, count):
+    """Record `_form` of a 1-D 64-bit result in an index64 kernel."""
+    from .frontend import _parse_type
+    if not isinstance(shape, int) or not index64(imp):
+        return
+    f = None
+    if name in ('arith.extsi', 'arith.extui'):
+        src = operands[0]
+        sdims, selem = _parse_type(str(src.get_type()))
+        kind = imp._offsets.get(src.id(), (None, None))[0]
+        if sdims == shape and selem == 'i32' and (name == 'arith.extsi' or kind == 'arange'):
+            f = (0, src)
+    elif name == 'tt.splat':
+        src = operands[0]
+        if _parse_type(str(src.get_type()))[0] is None:
+            f = _form(imp, src)
+            f = f if f is not None and f[1] is None else None
+    elif name in ('arith.addi', 'arith.subi', 'arith.muli'):
+        fa, fb = _form(imp, operands[0]), _form(imp, operands[1])
+        if fa is not None and fb is not None:
+            if name == 'arith.addi' and (fa[1] is None or fb[1] is None):
+                f = (_uop(imp, 'add', fa[0], fb[0]), fa[1] if fa[1] is not None else fb[1])
+            elif name == 'arith.subi' and fb[1] is None:
+                f = (_uop(imp, 'sub', fa[0], fb[0]), fa[1])
+            elif name == 'arith.muli':
+                for x, y in ((fa, fb), (fb, fa)):
+                    if isinstance(y[0], int) and y[1] is None:
+                        if x[1] is None:
+                            f = (_uop(imp, 'mul', x[0], y[0]), None)
+                        elif y[0] == 1:
+                            f = x
+                        break
+    elif name in ('tt.broadcast', 'tt.expand_dims', 'tt.reshape'):
+        sdims, _ = _parse_type(str(operands[0].get_type()))
+        if sdims == shape:
+            f = _form(imp, operands[0])
+    if f is not None:
+        if not hasattr(imp, '_wide_form'):
+            imp._wide_form = {}
+        imp._wide_form[dst.id()] = f
+
+
+def _rebase(imp, dst, base, offs, oshape):
+    """`base + offs` for a 64-bit offset in an index64 kernel, without
+    narrowing it to 32 bits. True if handled."""
+    if isinstance(oshape, tuple):
+        return len(oshape) == 2 and oshape[0] == 1 and \
+            _rebase_tile(imp, dst, base, [imp._wide[offs.id()]], oshape[1])
+    if not isinstance(oshape, int) or base.id() in imp._ptr2d or base.id() not in imp._ptr_base:
+        return False
+    f = getattr(imp, '_wide_form', {}).get(offs.id())
+    if f is not None:
+        invariant, lane = f
+        chain = list(imp._ptr_chain.get(base.id(), []))
+        if not (isinstance(invariant, int) and invariant == 0):
+            term = _Term()
+            if isinstance(invariant, int):
+                imp._pending_const[term.id()] = ('scalar', invariant, 'i64')
+            else:
+                imp._v[term.id()] = invariant
+            chain.append(term)
+        if lane is not None:
+            chain.append(lane)
+        imp._ptr_base[dst.id()] = imp._ptr_base[base.id()]
+        imp._ptr_chain[dst.id()] = chain
+        imp._offsets[dst.id()] = ('ptr', None)
+        return True
+    lo, hi = imp._wide[offs.id()]
+    if not hasattr(imp, '_lane64'):
+        imp._lane64 = {}
+    imp._lane64[dst.id()] = (base, lo, hi, oshape)
+    return True
+
+
+def _column_row(b, row, cols):
+    """One row of an offset tile. A one-column row holds its value in lane
+    zero; the importer keeps every [R, 1] row lane-uniform (as
+    `_vector_to_col` does), so a broadcast of the pointer reaches every
+    column of the row with that row's offset."""
+    return b.splat(b.vextract(row, 0), dtype='i32') if cols == 1 else row
+
+
+def _rebase_tile(imp, dst, base, pairs, cols):
+    """A 2-D pointer plus a tile of 64-bit offsets (one (lo, hi) pair per
+    row) in an index64 kernel. The offset of element [0, 0] joins the base
+    address in 64 bits; each element's offset from it is the 32-bit gather
+    index the tile is addressed by, checked to fit (a tile spanning 2**31
+    elements traps, NARROW_TRAP_CODE). True if handled."""
+    from .frontend import _DTYPE_BYTES
+    from .tiles import Affine2D, Tile
+    spec = imp._ptr2d.get(base.id())
+    if spec is None:
+        return False
+    name, elem, acc = spec
+    esize = _DTYPE_BYTES.get(elem)
+    if esize is None:
+        return False
+    b = imp.b
+    l0, h0 = b.vextract(pairs[0][0], 0), b.vextract(pairs[0][1], 0)
+    anchor = b.sbin('or', l0, b.sbini('shl', h0, 32))
+    first_lo, first_hi = b.splat(l0), b.splat(h0)
+    rows = []
+    for lo, hi in pairs:
+        dlo = b.vbin('sub', lo, first_lo, dtype='i32')
+        borrow = b.vselect(b.vcmp('ltu', lo, first_lo), b.vmovi(1), b.vmovi(0))
+        dhi = b.vbin('sub', b.vbin('sub', hi, first_hi, dtype='i32'), borrow, dtype='i32')
+        _check_narrow(imp, dlo, dhi, cols)
+        rows.append(_column_row(b, dlo, cols))
+    if esize > 1:
+        anchor = b.sbini('shl', anchor, esize.bit_length() - 1)
+    at = b.sbin('add', imp._arg_value(name), anchor, comment='a 64-bit tile origin')
+    label = imp._control_label('ptr_rebased')
+    imp._args[len(imp._args)] = (label, at)
+    residual = Tile('rows', tuple(rows), len(rows), cols, 'i32')
+    if isinstance(acc, Affine2D) and not (acc.row_stride or acc.col_stride or acc.const
+                                          or acc.dynamic):
+        combined = residual
+    else:
+        left, right = imp._offset_row(acc), imp._offset_row(residual)
+        combined = imp._materialise(lambda r: b.vbin('add', left(r), right(r), dtype='i32'),
+                                    len(rows), cols, 'i32')
+    imp._ptr2d[dst.id()] = (label, elem, combined)
+    return True
+
+
+def _lane_value(imp, src, i):
+    """Lane i of a 1-D integer value as an exact 64-bit scalar (sign-extended
+    when the value is narrower)."""
+    from .frontend import _parse_type
+    b = imp.b
+    dims, typ = _parse_type(str(src.get_type()))
+    if dims is None:
+        v = imp._value(src)
+        return v if typ == 'i64' else b.sbini('ashr', b.sbini('shl', v, 32), 32)
+    if src.id() in imp._wide:
+        lo, hi = imp._wide[src.id()]
+        return b.sbin('or', b.vextract(lo, i), b.sbini('shl', b.vextract(hi, i), 32))
+    pending = imp._pending_const.get(src.id())
+    if pending:
+        return b.const(int(pending[1]))
+    v = b.vextract(_vector(imp, src, typ), i)
+    return b.sbini('ashr', b.sbini('shl', v, 32), 32)
+
+
+def _lane64_access(imp, op, operands):
+    """A load or store through a pointer whose lanes carry independent 64-bit
+    offsets: each lane's address is base + offset * size in scalar
+    registers, and the access is one single-lane gather or scatter per lane,
+    under the access's own mask."""
+    from .frontend import _parse_type, _DTYPE_BYTES, _SIZE_SUFFIX, _load_suffix, Unsupported
+    b = imp.b
+    base, lo, hi, count = imp._lane64[operands[0].id()]
+    addr, _size, elem, kind, _index = imp._address(base)
+    if kind != 'broadcast':
+        raise Unsupported('per-lane 64-bit offsets on a pointer that already varies by lane')
+    esize = _DTYPE_BYTES.get(elem)
+    if esize is None:
+        raise Unsupported(f'a per-lane 64-bit access of {elem}')
+    load = op.get_name() == 'tt.load'
+    mask_value = (operands[1] if len(operands) > 1 else None) if load else \
+        (operands[2] if len(operands) > 2 else None)
+    mask = imp._shape_mask(count, imp._value(mask_value) if mask_value is not None else None)
+    wide = (_parse_type(str(op.get_result(0).get_type()))[1] if load else
+            _parse_type(str(operands[1].get_type()))[1]) == 'i64'
+    if wide:
+        sizes = [('w', 0), ('w', 4)]
+    else:
+        sizes = [(_load_suffix(_SIZE_SUFFIX[esize], elem) if load else _SIZE_SUFFIX[esize], 0)]
+    if load:
+        other = imp._const.get(operands[2].id(), 0) if len(operands) > 2 else 0
+        others = [other & 0xFFFFFFFF, (other >> 32) & 0xFFFFFFFF] if wide else [other]
+        dtype = 'i32' if wide else elem
+        acc = [None] * len(sizes)
+    else:
+        value = operands[1]
+        if wide:
+            if value.id() in imp._wide:
+                parts = list(imp._wide[value.id()])
+            else:
+                pending = imp._pending_const.get(value.id())
+                if not pending:
+                    raise Unsupported('a per-lane 64-bit store of a value this does not hold')
+                c = int(pending[1])
+                parts = [b.vmovi(c & 0xFFFFFFFF), b.vmovi((c >> 32) & 0xFFFFFFFF)]
+        else:
+            parts = [imp._value(value)]
+    zero = b.vmovi(0)
+    for i in range(count):
+        off = b.sbin('or', b.vextract(lo, i), b.sbini('shl', b.vextract(hi, i), 32))
+        if esize > 1:
+            off = b.sbini('shl', off, esize.bit_length() - 1)
+        at = b.sbin('add', addr, off, comment=f'lane {i}: a 64-bit address')
+        sel = b.vcmp('eq', b.arange(), b.splat(b.const(i)))
+        active = sel if mask is None else b.pbin('and', mask, sel)
+        for k, (size, disp) in enumerate(sizes):
+            where = at if not disp else b.sbini('add', at, disp)
+            if load:
+                g = b.gather(where, zero, mask=active, other=others[k], dtype=dtype, size=size)
+                acc[k] = g if acc[k] is None else b.vselect(sel, g, acc[k])
+            else:
+                b.scatter(where, zero, parts[k], mask=active, size=size)
+    if load:
+        rid = op.get_result(0).id()
+        if wide:
+            imp._wide[rid] = (acc[0], acc[1])
+        else:
+            imp._v[rid] = acc[0]
+
+
+def carried_pair(imp, src):
+    """The (low, high) word vectors of a 64-bit block entering or leaving a
+    loop carry: held wide, or a constant still pending (`tl.full(.., 0,
+    tl.int64)`, Inductor's scan and sum accumulators)."""
+    from .frontend import _parse_type, Unsupported
+    b = imp.b
+    shape, _ = _parse_type(str(src.get_type()))
+    if _count(shape, imp.target.vlen) is None:
+        raise Unsupported(f'a loop-carried 64-bit {shape} block (one row of at most VLEN lanes is held)')
+    if src.id() in imp._wide:
+        return imp._wide[src.id()]
+    pending = imp._pending_const.get(src.id())
+    if pending:
+        c = int(pending[1])
+        return b.vmovi(c & 0xFFFFFFFF), b.vmovi((c >> 32) & 0xFFFFFFFF)
+    raise Unsupported(f'no 64-bit value for a loop carry of {src.get_type()}')
+
+
+def to_f32(b, lo, hi, signed=True):
+    """The 64-bit integers (hi:lo) per lane, rounded once to binary32 (RNE).
+
+    Branch-free over 32-bit lanes; exact for every input, which is what
+    `arith.sitofp`/`arith.uitofp` mean (an int64 position id, an index
+    converted to a float). The magnitude is H*2**32 + L. With H = 0 the
+    answer is the u32 conversion of L, which rounds once. Otherwise the
+    value has 32 + n significant bits, n = bitlength(H): its top 32 bits,
+    with every bit below them OR-ed into the lowest (a sticky bit, below
+    the guard bit of a 24-bit rounding), round exactly as the whole value
+    does; the result is that u32 conversion times 2**n, which is exact.
+    """
+    def v(c):
+        return b.vmovi(c)
+
+    def ibin(op, x, y):
+        return b.vbin(op, x, y, dtype='i32')
+
+    if signed:
+        s = ibin('ashr', hi, v(31))                   # 0 or -1 per lane
+        mag_lo = ibin('sub', ibin('xor', lo, s), s)   # two's complement magnitude
+        carry = ibin('and', s, b.vselect(b.vcmp('eq', mag_lo, v(0)), v(1), v(0)))
+        mag_hi = ibin('add', ibin('xor', hi, s), carry)
+    else:
+        mag_lo, mag_hi = lo, hi
+    small = b.vcvt('u32', 'f32', mag_lo, comment='|x| < 2**32: one rounding')
+    lz = b.vun('clz', mag_hi, dtype='i32')
+    n = ibin('sub', v(32), lz)                        # bitlength(H), 1..32 where H != 0
+    top = ibin('or', ibin('shl', mag_hi, lz),
+               ibin('lshr', ibin('lshr', mag_lo, ibin('sub', n, v(1))), v(1)))
+    below = ibin('and', mag_lo, ibin('lshr', v(-1), lz))
+    sticky = b.vselect(b.vcmp('ne', below, v(0)), v(1), v(0))
+    rounded = b.vcvt('u32', 'f32', ibin('or', top, sticky),
+                     comment='top 32 bits + sticky: one rounding')
+    scale = ibin('shl', ibin('add', n, v(127)), v(23))   # 2**n as a binary32 pattern
+    large = b.vbin('mul', rounded, scale, dtype='f32', comment='* 2**n, exact')
+    out = b.vselect(b.vcmp('eq', mag_hi, v(0)), small, large)
+    if signed:
+        out = b.vselect(b.vcmp('lt', hi, v(0)), b.vun('neg', out, dtype='f32'), out)
+    return out
 
 
 def _check_narrow(imp, lo, hi, count):
@@ -346,10 +915,13 @@ def _lower_rows(imp, op):
         shape, _ = _parse_type(str(offs.get_type()))
         if offs.id() not in wide_tiles:
             return False
+        if index64(imp) and _rebase_tile(imp, op.get_result(0), op.get_operand(0),
+                                         wide_tiles[offs.id()], shape[1]):
+            return True
         lows = []
         for lo, hi in wide_tiles[offs.id()]:
             _check_narrow(imp, lo, hi, shape[1])
-            lows.append(lo)
+            lows.append(_column_row(imp.b, lo, shape[1]))
         imp._tiles[offs.id()] = Tile('rows', tuple(lows), rows, shape[1], 'i32')
         return False
     outputs = [[] for _ in range(op.get_num_results())]
@@ -373,6 +945,8 @@ def _lower_rows(imp, op):
                     imp._ptr_base[view.id()] = imp._ptr_base[v.id()]
                 if v.id() in wide_tiles:
                     imp._wide[view.id()] = wide_tiles[v.id()][use_row]
+                elif v.id() in getattr(imp, '_affine64', {}):
+                    imp._wide[view.id()] = _affine64_row(imp, imp._affine64[v.id()], use_row, shape[1])
                 elif v.id() in imp._wide:
                     imp._wide[view.id()] = imp._wide[v.id()]
                 elif v.id() in imp._pending_const:

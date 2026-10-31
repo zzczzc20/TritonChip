@@ -1,0 +1,128 @@
+commit dd01c1b8c50c94ce38480276da826c9ab7a1c00a
+Author:     zzczzc20 <zhouzc2000@foxmail.com>
+AuthorDate: Sat Oct 31 11:06:12 2026 +0000
+Commit:     zzczzc20 <zhouzc2000@foxmail.com>
+CommitDate: Sat Oct 31 11:06:12 2026 +0000
+
+    Avoid scanning completed runtime events on hot paths
+    
+    Co-Authored-By: Codex <noreply@openai.com>
+
+diff --git a/python/tnca/runtime.py b/python/tnca/runtime.py
+index b1e9f2ba..50b493e9 100644
+--- a/python/tnca/runtime.py
++++ b/python/tnca/runtime.py
+@@ -415,6 +415,9 @@ class Session:
+         self._modules = []
+         self._queue = []
+         self._events = OrderedDict()
++        # Keep historical events for dependency identity and post-run inspection;
++        # hot-path admission and code eviction only need unfinished events.
++        self._active_events = OrderedDict()
+         self._next_buffer = 0
+         self._next_job = 0
+         explicit_limit = heap_limit is not None
+@@ -495,7 +498,7 @@ class Session:
+     @property
+     def unfinished(self):
+         with self._lock:
+-            return [e for e in self._events.values() if not e.terminal]
++            return [e for e in self._active_events.values() if not e.terminal]
+ 
+     @property
+     def memory_stats(self):
+@@ -687,7 +690,7 @@ class Session:
+         with self._lock:
+             if module.epoch != self.epoch or not module.alive:
+                 return False
+-            if any(not e.terminal for e in self._events.values()):
++            if self.unfinished:
+                 # Conservative: a task records its kernel by name, not by
+                 # module, so any unfinished task keeps every module loaded.
+                 raise BufferBusy(f'{module.name}: tasks are unfinished; unload waits for none')
+@@ -843,6 +846,7 @@ class Session:
+             for buf in leased:
+                 buf.leases += 1
+             self._events[ev.job_id] = ev
++            self._active_events[ev.job_id] = ev
+             self._queue.append(task)
+             ev._to(QUEUED)
+             return ev
+@@ -1115,6 +1119,8 @@ class Session:
+         ev = task['event']
+         if not ev.terminal:
+             ev._to(state, error)
++        if self._active_events.get(ev.job_id) is ev:
++            del self._active_events[ev.job_id]
+         allocation = task.pop('allocation', None)
+         if allocation is not None:
+             self._heap.release(*allocation)
+@@ -1157,7 +1163,7 @@ class Session:
+                    'wait again, or let the device deadline decide')
+ 
+     def drain(self, timeout=None):
+-        for ev in list(self._events.values()):
++        for ev in self.unfinished:
+             if not ev.terminal:
+                 self.wait(ev, timeout)
+         return True
+@@ -1228,6 +1234,7 @@ class Session:
+                         'the session was recovered before this task ran'))
+             self.epoch += 1
+             self._events.clear()
++            self._active_events.clear()
+             self._queue.clear()
+             self._buffers.clear()
+             self._modules.clear()
+diff --git a/tools/performance_harness/test_measurement_scope.py b/tools/performance_harness/test_measurement_scope.py
+index 78a0ca32..e84da905 100644
+--- a/tools/performance_harness/test_measurement_scope.py
++++ b/tools/performance_harness/test_measurement_scope.py
+@@ -18,6 +18,7 @@ def session():
+     s._measurement_owner = None
+     s._lock = threading.RLock()
+     s._events = OrderedDict()
++    s._active_events = OrderedDict()
+     s._deadline, s._host_timeout = 2000000, 30
+     s.dev = SimpleNamespace(deadline_cycles=2000000, host_timeout=30, bounded_launch_limits=True)
+     return s
+@@ -41,6 +42,7 @@ class MeasurementScopeTests(unittest.TestCase):
+         e = Event(1, s.epoch, 'delayed')
+         with s.measurement_scope(wall_seconds=.2, clock_hz=1000000):
+             s._events[1] = e
++            s._active_events[1] = e
+             with self.assertRaises(Timeout):
+                 s.wait(e, timeout=.001)
+             self.assertFalse(e.terminal)
+@@ -58,6 +60,7 @@ class MeasurementScopeTests(unittest.TestCase):
+         with self.assertRaises(DeviceLost):
+             with s.measurement_scope(wall_seconds=.02, clock_hz=1000000):
+                 s._events[1] = e
++                s._active_events[1] = e
+         self.assertTrue(s.poisoned)
+         self.assertFalse(e.terminal)
+         self.assertEqual(s.epoch, 7)
+@@ -66,9 +69,11 @@ class MeasurementScopeTests(unittest.TestCase):
+     def test_busy_and_unsupported_sessions_are_refused(self):
+         s = session()
+         s._events[1] = Event(1, s.epoch, 'existing')
++        s._active_events[1] = s._events[1]
+         with self.assertRaises(SessionBusy), s.measurement_scope(wall_seconds=1, clock_hz=1):
+             self.fail('an existing task entered measurement scope')
+         s._events.clear()
++        s._active_events.clear()
+         s.dev.bounded_launch_limits = False
+         with self.assertRaises(CapabilityError), s.measurement_scope(wall_seconds=1, clock_hz=1):
+             self.fail('an unsupported backend entered measurement scope')
+diff --git a/tools/r40/large_grid_tests.py b/tools/r40/large_grid_tests.py
+index e38464f4..2c9bfdc0 100644
+--- a/tools/r40/large_grid_tests.py
++++ b/tools/r40/large_grid_tests.py
+@@ -60,6 +60,7 @@ class GridTests(unittest.TestCase):
+         s._check_usable = lambda: None
+         s._lock = threading.RLock()
+         s._events, s.epoch = {}, 0
++        s._active_events = {}
+         # Session.__init__ sets this (f5ff452); the hand-built fixture must too.
+         s._measurement_owner = None
+         s.dev = SimpleNamespace(large_grid_limit=Mock(return_value=1 << 24))

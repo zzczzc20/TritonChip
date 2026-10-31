@@ -1,0 +1,20 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "fp8-blockwise",
+ "experiments": [
+  {
+   "id": "r2-s2-fp8-blockwise",
+   "manifest": "spec/r41/run2/board/r2-s2-fp8-blockwise.json",
+   "sha256": "baeb62883340c39da89b9eb18127b9d4421cf2d8a3ca691684c1dc709e2b5116",
+   "checks": [
+    {
+     "path": "summary.json",
+     "field": [
+      "result"
+     ],
+     "equals": "pass"
+    }
+   ]
+  }
+ ]
+}

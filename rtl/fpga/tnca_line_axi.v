@@ -8,11 +8,29 @@
 // Reset MUST reset the attached AXI fabric too (including pending AW/W).
 // Fault stops admission and drains well-formed accepted responses. Malformed
 // or missing replies require platform recovery; no completion is fabricated.
+// The aperture (axi_base/axi_size) and admission_limit are quasi-static MMIO
+// registers in another SLR. This adapter uses registered local copies, with
+// the aperture bound precomputed, so the request-ready path starts at local
+// flops. The MMIO changes them only while idle and then holds admissions
+// longer than this copy takes (tnca_multicore_mmio SETTLE).
 `default_nettype none
 module tnca_line_axi #(
  parameter SRC_W=2,TAG_W=3,OUT_N=8,DATA_W=256,DYNAMIC_LIMIT=0,
  parameter ID_W=(OUT_N>1?$clog2(OUT_N):1),
- parameter MEM_BASE=64'h20000,WRITE_RESPONSES=0
+ parameter MEM_BASE=64'h20000,WRITE_RESPONSES=0,PIPELINED_ISSUE=0,HBM_STRIPED=0,
+ // R41 G2 (resources): 1 = the slot line buffers are distributed RAM instead
+ // of registers: a write slot's line (written once, on admission, read by the
+ // W channel) and a read slot's beats (written by R, read once, on the last
+ // beat) are kept in separate arrays, each with one write port. The bytes on
+ // every handshake and every response are the same as with 0 (the default,
+ // which builds the module that existed before); WDATA differs only while
+ // WVALID is low.
+ parameter LINE_LUTRAM=0,
+ // R41 G2: bits of a slot's line address kept for the same-line hazard check.
+ // Below 64, addresses that differ only above this width are treated as the
+ // same line (a conservative wait, never a missed hazard); the homes of an
+ // image with PHYS_ADDR_W send no higher bits at all.
+ parameter HAZARD_ADDR_W=64
 )(
  input wire clk,rst_n,
  input wire [7:0] admission_limit,
@@ -41,13 +59,19 @@ module tnca_line_axi #(
  localparam BEATS=512/DATA_W;
  localparam BEAT_W=(BEATS>1?$clog2(BEATS):1);
  reg [OUT_N-1:0] active,writing,sent;
- reg [63:0] address[0:OUT_N-1],bus_address[0:OUT_N-1];
+ reg [HAZARD_ADDR_W-1:0] address[0:OUT_N-1];
+ reg [63:0] bus_address[0:OUT_N-1];
  reg [511:0] line[0:OUT_N-1];
  reg [SRC_W-1:0] source[0:OUT_N-1];
  reg [TAG_W-1:0] tag[0:OUT_N-1];
  reg [BEAT_W-1:0] rbeat[0:OUT_N-1];
  reg issue_valid,aw_done,w_done;
  reg [ID_W-1:0] issue_slot;
+ // Optional one-entry skid queue keeps request-ready independent of AXI
+ // ready. The current issue can retire and be replaced on the same edge.
+ // Slots are reserved on home acceptance, including this queued issue.
+ reg pending_valid;
+ reg [ID_W-1:0] pending_slot;
  reg [BEAT_W-1:0] wbeat;
  integer i,free_slot;
  reg hazard;
@@ -58,22 +82,47 @@ module tnca_line_axi #(
   active_count=0;
   for(count_i=0;count_i<OUT_N;count_i=count_i+1)active_count=active_count+active[count_i];
  end
- wire admission_ok=!DYNAMIC_LIMIT ||
-   (admission_limit>=1 && admission_limit<=OUT_N && active_count<admission_limit);
- wire legal_address=req_addr>=MEM_BASE && req_addr[5:0]==0 &&
-   axi_base[5:0]==0 && axi_size>=64 && req_addr-MEM_BASE<=axi_size-64 &&
-   axi_base<=64'hffffffffffffffc0-(req_addr-MEM_BASE);
+ // Original aperture check, for an aligned base (so base <= 2^64-64) and
+ // size >= 64 (so offset <= size-64 < 2^64-64, no wrap):
+ //   off <= size-64 && base <= 2^64-64-off  <=>  off <= min(size-64, 2^64-64-base)
+ reg [63:0] base_q,bound_q;
+ reg window_ok_q,limit_ok_q;
+ reg [7:0] limit_q;
+ wire [63:0] size_bound=axi_size-64,base_bound=64'hffffffffffffffc0-axi_base;
+ always @(posedge clk)begin
+  base_q<=axi_base;
+  window_ok_q<=axi_base[5:0]==0 && axi_size>=64 &&
+    (!HBM_STRIPED || (axi_base==0 && axi_size==64'h200000000));
+  bound_q<=size_bound<base_bound ? size_bound : base_bound;
+  limit_q<=admission_limit;
+  limit_ok_q<=admission_limit>=1 && admission_limit<=OUT_N;
+ end
+ wire admission_ok=!DYNAMIC_LIMIT || (limit_ok_q && active_count<limit_q);
+ wire [63:0] offset=req_addr-MEM_BASE;
+ // Page striping is a bijection of the full 8 GiB allocation. Logical
+ // addresses remain the ownership/hazard key; only the AXI address changes.
+ wire [63:0] bus_offset=HBM_STRIPED ? {31'd0,offset[16:12],offset[32:17],offset[11:0]} : offset;
+ wire legal_address=req_addr>=MEM_BASE && req_addr[5:0]==0 && window_ok_q && offset<=bound_q;
+`ifndef SYNTHESIS
+ reg [63:0] size_shadow;
+ always @(posedge clk)begin
+  size_shadow<=axi_size;
+  if(rst_n && (req_valid || !idle) &&
+     (base_q!==axi_base || size_shadow!==axi_size || (DYNAMIC_LIMIT && limit_q!==admission_limit)))
+   $fatal(1,"tnca_line_axi: traffic while an aperture/limit copy differs from its control");
+ end
+`endif
  always @* begin
   free_slot=-1;hazard=0;
   for(integer k=OUT_N-1;k>=0;k=k-1)begin
    if(!active[k])free_slot=k;
-   if(active[k] && address[k]==req_addr && (writing[k] || req_we))hazard=1;
+   if(active[k] && address[k]==req_addr[HAZARD_ADDR_W-1:0] && (writing[k] || req_we))hazard=1;
   end
  end
  // Invalid addresses are refused and latched as faults, never translated into
  // zero-valued successful memory responses.
- assign req_ready=rst_n && !fault && !issue_valid && free_slot>=0 && !hazard && legal_address && admission_ok;
- assign idle=!(|active) && !issue_valid;
+ assign req_ready=rst_n && !fault && (PIPELINED_ISSUE ? !pending_valid : !issue_valid) && free_slot>=0 && !hazard && legal_address && admission_ok;
+ assign idle=!(|active) && !issue_valid && !pending_valid;
  assign m_arvalid=issue_valid && !writing[issue_slot];
  assign m_araddr=bus_address[issue_slot];
  assign m_arid=issue_slot;assign m_arlen=BEATS-1;
@@ -82,8 +131,12 @@ module tnca_line_axi #(
  assign m_awaddr=m_araddr;assign m_awid=issue_slot;
  assign m_awlen=BEATS-1;assign m_awsize=m_arsize;assign m_awburst=2'b01;
  assign m_wvalid=issue_valid && writing[issue_slot] && !w_done;
- assign m_wdata=line[issue_slot][wbeat*DATA_W+:DATA_W];
+ wire [511:0] w_line;
+ wire [511:0] r_line;   // LINE_LUTRAM: the read slot m_rid's beats so far
+ assign m_wdata=w_line[wbeat*DATA_W+:DATA_W];
  assign m_wstrb={DATA_W/8{1'b1}};assign m_wlast=wbeat==BEATS-1;
+ wire issue_done=issue_valid && (writing[issue_slot] ?
+   ((aw_done || m_awready) && (w_done || (m_wready && m_wlast))) : m_arready);
  wire read_match=m_rid<OUT_N && active[m_rid] && !writing[m_rid] && sent[m_rid];
  wire read_final=m_rvalid && read_match && rbeat[m_rid]==BEATS-1 && m_rlast;
  wire write_match=m_bid<OUT_N && active[m_bid] && writing[m_bid] && sent[m_bid];
@@ -101,22 +154,31 @@ module tnca_line_axi #(
    tnca_invalid_axi_base_alignment invalid_configuration();
   end
  endgenerate
+ wire r_write=m_rvalid && m_rready && read_match;
+ generate if(LINE_LUTRAM)begin:g_lutram_lines
+  // No reset: a slot's data is read only after this tenure wrote it.
+  (* ram_style="distributed" *) reg [511:0] wbuf[0:OUT_N-1];
+  always @(posedge clk) if(rst_n && req_valid && req_ready) wbuf[free_slot]<=req_wdata;
+  assign w_line=wbuf[issue_slot];
+  for(genvar b=0;b<BEATS;b=b+1)begin:g_rbeat
+   (* ram_style="distributed" *) reg [DATA_W-1:0] rbuf[0:OUT_N-1];
+   always @(posedge clk) if(rst_n && r_write && rbeat[m_rid]==b) rbuf[m_rid]<=m_rdata;
+   assign r_line[b*DATA_W+:DATA_W]=rbuf[m_rid];
+  end
+ end else begin:g_register_lines
+  assign w_line=line[issue_slot];
+  assign r_line=line[m_rid];
+ end endgenerate
  always @(posedge clk)begin
   if(!rst_n)begin
-   active<=0;writing<=0;sent<=0;issue_valid<=0;issue_slot<=0;
+   active<=0;writing<=0;sent<=0;issue_valid<=0;issue_slot<=0;pending_valid<=0;pending_slot<=0;
    aw_done<=0;w_done<=0;wbeat<=0;fault<=0;rsp_valid<=0;
    rsp_src<=0;rsp_tag<=0;rsp_rdata<=0;
    read_lines<=0;write_lines<=0;read_beats<=0;write_beats<=0;
-   for(i=0;i<OUT_N;i=i+1)begin address[i]<=0;bus_address[i]<=0;line[i]<=0;source[i]<=0;tag[i]<=0;rbeat[i]<=0;end
+   for(i=0;i<OUT_N;i=i+1)begin address[i]<=0;bus_address[i]<=0;if(!LINE_LUTRAM)line[i]<=0;source[i]<=0;tag[i]<=0;rbeat[i]<=0;end
   end else begin
    rsp_valid<=0;
    if(req_valid && !fault && !legal_address)fault<=1;
-   if(req_valid && req_ready)begin
-    active[free_slot]<=1;writing[free_slot]<=req_we;sent[free_slot]<=0;
-    address[free_slot]<=req_addr;bus_address[free_slot]<=axi_base+(req_addr-MEM_BASE);line[free_slot]<=req_wdata;
-    source[free_slot]<=req_src;tag[free_slot]<=req_tag;rbeat[free_slot]<=0;
-    issue_slot<=free_slot;issue_valid<=1;aw_done<=0;w_done<=0;wbeat<=0;
-   end
    if(m_arvalid && m_arready)begin
     issue_valid<=0;sent[issue_slot]<=1;read_lines<=read_lines+1;
    end
@@ -130,15 +192,31 @@ module tnca_line_axi #(
      (w_done || (m_wvalid && m_wready && m_wlast)))begin
     issue_valid<=0;sent[issue_slot]<=1;
    end
+   if(PIPELINED_ISSUE && pending_valid && (!issue_valid || issue_done))begin
+    issue_slot<=pending_slot;issue_valid<=1;pending_valid<=0;
+    aw_done<=0;w_done<=0;wbeat<=0;
+   end
+   // New issue state must win over the prior issue's completion/AW/W flags.
+   // A full pending queue refuses admission, even if it drains this cycle.
+   if(req_valid && req_ready)begin
+    active[free_slot]<=1;writing[free_slot]<=req_we;sent[free_slot]<=0;
+    address[free_slot]<=req_addr[HAZARD_ADDR_W-1:0];bus_address[free_slot]<=base_q+bus_offset;if(!LINE_LUTRAM)line[free_slot]<=req_wdata;
+    source[free_slot]<=req_src;tag[free_slot]<=req_tag;rbeat[free_slot]<=0;
+    if(!issue_valid || (PIPELINED_ISSUE && issue_done && !pending_valid))begin
+     issue_slot<=free_slot;issue_valid<=1;aw_done<=0;w_done<=0;wbeat<=0;
+    end else begin
+     pending_valid<=1;pending_slot<=free_slot;
+    end
+   end
    if(m_rvalid && m_rready)begin
     if(!read_match)fault<=1;
     else begin
      read_beats<=read_beats+1;
      if(m_rresp!=0 || m_rlast!=(rbeat[m_rid]==BEATS-1))fault<=1;
-     line[m_rid][rbeat[m_rid]*DATA_W+:DATA_W]<=m_rdata;
+     if(!LINE_LUTRAM)line[m_rid][rbeat[m_rid]*DATA_W+:DATA_W]<=m_rdata;
      if(read_final)begin
       active[m_rid]<=0;rsp_valid<=1;rsp_src<=source[m_rid];rsp_tag<=tag[m_rid];
-      rsp_rdata<=line[m_rid];rsp_rdata[rbeat[m_rid]*DATA_W+:DATA_W]<=m_rdata;
+      rsp_rdata<=r_line;rsp_rdata[rbeat[m_rid]*DATA_W+:DATA_W]<=m_rdata;
      end else if(rbeat[m_rid]<BEATS-1)rbeat[m_rid]<=rbeat[m_rid]+1;
     end
    end

@@ -1,0 +1,40 @@
+  BASE-NUCA-ooo-seed1    PASS   
+      seed=1 trace_hash=177f11965447aacd writes=467
+      issued=2000 reads_checked=1533 inflight_left=0
+      hit=912 miss=1038 merge=50 wb=251 mshr_full=651 target_full=1 hit_past_block=475
+  BASE-NUCA-ooo-seed7    PASS   
+      seed=7 trace_hash=e1243d7dee31195d writes=533
+      issued=2000 reads_checked=1467 inflight_left=0
+      hit=892 miss=1047 merge=61 wb=255 mshr_full=702 target_full=2 hit_past_block=515
+  BASE-NUCA-ooo-seed42   PASS   
+      seed=42 trace_hash=a4af42d73a6ede95 writes=504
+      issued=2000 reads_checked=1496 inflight_left=0
+      hit=933 miss=1024 merge=43 wb=262 mshr_full=636 target_full=0 hit_past_block=418
+  BASE-NUCA-fast-seed1   PASS   
+      seed=1 trace_hash=177f11965447aacd writes=467
+      issued=2000 reads_checked=1533 inflight_left=0
+      hit=953 miss=1038 merge=9 wb=251 mshr_full=0 target_full=0 hit_past_block=0
+  BASE-NUCA-fast-seed7   PASS   
+      seed=7 trace_hash=e1243d7dee31195d writes=533
+      issued=2000 reads_checked=1467 inflight_left=0
+      hit=945 miss=1047 merge=8 wb=255 mshr_full=0 target_full=0 hit_past_block=0
+  BASE-NUCA-fast-seed42  PASS   
+      seed=42 trace_hash=a4af42d73a6ede95 writes=504
+      issued=2000 reads_checked=1496 inflight_left=0
+      hit=968 miss=1024 merge=8 wb=262 mshr_full=0 target_full=0 hit_past_block=0
+  BASE-NUCA-slow-seed1   PASS   
+      seed=1 trace_hash=177f11965447aacd writes=467
+      issued=2000 reads_checked=1533 inflight_left=0
+      hit=882 miss=1035 merge=83 wb=251 mshr_full=2102 target_full=9 hit_past_block=2123
+  BASE-NUCA-slow-seed7   PASS   
+      seed=7 trace_hash=e1243d7dee31195d writes=533
+      issued=2000 reads_checked=1467 inflight_left=0
+      hit=867 miss=1043 merge=90 wb=254 mshr_full=2118 target_full=17 hit_past_block=2056
+  BASE-NUCA-slow-seed42  PASS   
+      seed=42 trace_hash=a4af42d73a6ede95 writes=504
+      issued=2000 reads_checked=1496 inflight_left=0
+      hit=906 miss=1020 merge=74 wb=262 mshr_full=2030 target_full=8 hit_past_block=1882
+
+real	0m17.910s
+user	0m17.777s
+sys	0m0.177s

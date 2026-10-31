@@ -23,7 +23,8 @@ PyTorch model ─► torch.compile ─► Inductor ─► Triton ─► TNCA bac
 | PyTorch | `tnca` is a native PyTorch device (real device storage, views, copies, streams/events); graphs compile with `fullgraph=True` and zero host fallback |
 | Workloads | ArchBench: 77 tiny/small/medium points, 24 large points at Llama-3.2-1B shapes, 14 HBM-tier points, and a 4-layer decoder (prefill 512, 64 decode steps) |
 | Last signed-off milestone | R39: the standard Torch path at **5.5×** S_geo over its frozen baseline on the board, 77 points ([report](doc/r39_report.md)) |
-| In progress | R40: native device, residency, HBM, multicore and NUCA, judged under the [v3 contract](doc/r40_tasks_and_acceptance_v3.md); results in [the R40 report](doc/r40_report.md) |
+| Closed milestone | R40: native device, residency, HBM, multicore and NUCA; closed with failures shown under the [v3 contract](doc/r40_tasks_and_acceptance_v3.md) ([report](doc/r40_report.md)) |
+| In progress | R41: 100 MHz timing closure, dual memory paths, and compiler-hardware co-iteration ([tasks](doc/r41_execution_tasks.md), [draft contract](doc/r41_tasks_and_acceptance.md)) |
 
 This is a research prototype: an FPGA implementation and RTL, without silicon
 or ASIC physical-design sign-off. Every reported number comes from the board or
@@ -114,7 +115,8 @@ in it is produced by the script beside it.
 | R37 | All 45 original TileBench Triton operators through AOT at O0/O1/O2 |
 | R38 | ArchBench; PyTorch through Inductor; rank-5 tensor descriptors; DCO; U50 and U280 bring-up |
 | R39 | Standard-path performance on the board: scheduling, code shape, four Role Contexts, v5 core |
-| R40 | Native PyTorch device, residency, HBM, three physical cores, NUCA with several outlets (in progress) |
+| R40 | Native PyTorch device, residency, HBM, three physical cores, NUCA with three outlets; closed with failures shown ([report](doc/r40_report.md)) |
+| R41 | 100 MHz timing closure, dual memory paths, and compiler-hardware co-iteration (in progress) |
 
 Each milestone is specified by a tasks-and-acceptance document in [`doc/`](doc/);
 a specification defines acceptance criteria, not completed features.

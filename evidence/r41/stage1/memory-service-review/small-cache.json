@@ -1,0 +1,431 @@
+{
+  "schema": "tnca-memory-service-study/1",
+  "domains": [
+    "model",
+    "rtl"
+  ],
+  "status": "screening-and-RTL-diagnostic-complete",
+  "rows": [
+    {
+      "label": "rtl-p1-d1",
+      "ports": 1,
+      "outstanding": 1,
+      "model_minus_board_over_board": null,
+      "device_cycles": 37429,
+      "cycle_ratio_to_domain_baseline": 1.0,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 862,
+          "write_lines": 257
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {},
+      "model_timing_status": null,
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "rtl-p1-d8",
+      "ports": 1,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 19132,
+      "cycle_ratio_to_domain_baseline": 0.511154452429934,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 863,
+          "write_lines": 258
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {},
+      "model_timing_status": null,
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "rtl-p3-d8",
+      "ports": 3,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 21623,
+      "cycle_ratio_to_domain_baseline": 0.5777071254909295,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 291,
+          "write_lines": 87
+        },
+        {
+          "port": 1,
+          "read_lines": 285,
+          "write_lines": 84
+        },
+        {
+          "port": 2,
+          "read_lines": 284,
+          "write_lines": 86
+        }
+      ],
+      "model_accumulated_service_ledger": {},
+      "model_timing_status": null,
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "model-p1-d1",
+      "ports": 1,
+      "outstanding": 1,
+      "model_minus_board_over_board": null,
+      "device_cycles": 29646,
+      "cycle_ratio_to_domain_baseline": 1.0,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 856,
+          "write_lines": 256
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {
+        "core_0_lsu_wait_cycles": 43259,
+        "core_1_lsu_wait_cycles": 38967,
+        "core_2_lsu_wait_cycles": 40526,
+        "home_0_engine_queue_cycles": 84392,
+        "home_0_engine_service_cycles": 14661,
+        "home_0_evictions": 279,
+        "home_0_hits": 173,
+        "home_0_maintenance_completed": 1,
+        "home_0_merges": 1850,
+        "home_0_misses": 287,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 536249,
+        "home_0_set_busy_events": 17,
+        "home_0_writebacks": 86,
+        "home_1_engine_queue_cycles": 88759,
+        "home_1_engine_service_cycles": 14657,
+        "home_1_evictions": 276,
+        "home_1_hits": 173,
+        "home_1_maintenance_completed": 1,
+        "home_1_merges": 1855,
+        "home_1_misses": 284,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 550882,
+        "home_1_set_busy_events": 20,
+        "home_1_writebacks": 84,
+        "home_2_engine_queue_cycles": 101504,
+        "home_2_engine_service_cycles": 14566,
+        "home_2_evictions": 277,
+        "home_2_hits": 174,
+        "home_2_maintenance_completed": 1,
+        "home_2_merges": 1837,
+        "home_2_misses": 285,
+        "home_2_peak_mshrs": 1,
+        "home_2_resolution_cycles": 519280,
+        "home_2_set_busy_events": 17,
+        "home_2_writebacks": 86,
+        "link_0_1_bytes": 79296,
+        "link_0_1_queue_cycles": 0,
+        "link_0_1_service_cycles": 3316,
+        "link_1_0_bytes": 79872,
+        "link_1_0_queue_cycles": 135,
+        "link_1_0_service_cycles": 3316,
+        "link_1_2_bytes": 80576,
+        "link_1_2_queue_cycles": 376,
+        "link_1_2_service_cycles": 3348,
+        "link_2_1_bytes": 80128,
+        "link_2_1_queue_cycles": 0,
+        "link_2_1_service_cycles": 3348,
+        "outlet_0_peak_outstanding": 0,
+        "outlet_0_queue_cycles": 0,
+        "outlet_0_reads": 856,
+        "outlet_0_service_cycles": 2480,
+        "outlet_0_wait_cycles": 182484,
+        "outlet_0_writes": 256,
+        "outlet_1_peak_outstanding": 0,
+        "outlet_1_queue_cycles": 0,
+        "outlet_1_reads": 0,
+        "outlet_1_service_cycles": 0,
+        "outlet_1_wait_cycles": 0,
+        "outlet_1_writes": 0,
+        "outlet_2_peak_outstanding": 0,
+        "outlet_2_queue_cycles": 0,
+        "outlet_2_reads": 0,
+        "outlet_2_service_cycles": 0,
+        "outlet_2_wait_cycles": 0,
+        "outlet_2_writes": 0,
+        "host_dma_handoffs": 1
+      },
+      "model_timing_status": "uncalibrated",
+      "host_dma_handoffs": 1,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "model-p1-d8",
+      "ports": 1,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 18933,
+      "cycle_ratio_to_domain_baseline": 0.6386359036632261,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 859,
+          "write_lines": 258
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {
+        "core_0_lsu_wait_cycles": 23412,
+        "core_1_lsu_wait_cycles": 23271,
+        "core_2_lsu_wait_cycles": 23200,
+        "home_0_engine_queue_cycles": 177736,
+        "home_0_engine_service_cycles": 14674,
+        "home_0_evictions": 280,
+        "home_0_hits": 176,
+        "home_0_maintenance_completed": 1,
+        "home_0_merges": 1849,
+        "home_0_misses": 288,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 244661,
+        "home_0_set_busy_events": 8,
+        "home_0_writebacks": 86,
+        "home_1_engine_queue_cycles": 193990,
+        "home_1_engine_service_cycles": 14665,
+        "home_1_evictions": 279,
+        "home_1_hits": 175,
+        "home_1_maintenance_completed": 1,
+        "home_1_merges": 1850,
+        "home_1_misses": 287,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 256937,
+        "home_1_set_busy_events": 8,
+        "home_1_writebacks": 85,
+        "home_2_engine_queue_cycles": 185787,
+        "home_2_engine_service_cycles": 14567,
+        "home_2_evictions": 276,
+        "home_2_hits": 167,
+        "home_2_maintenance_completed": 1,
+        "home_2_merges": 1842,
+        "home_2_misses": 284,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 250322,
+        "home_2_set_busy_events": 10,
+        "home_2_writebacks": 87,
+        "link_0_1_bytes": 76560,
+        "link_0_1_queue_cycles": 0,
+        "link_0_1_service_cycles": 3205,
+        "link_1_0_bytes": 77280,
+        "link_1_0_queue_cycles": 223,
+        "link_1_0_service_cycles": 3205,
+        "link_1_2_bytes": 75152,
+        "link_1_2_queue_cycles": 296,
+        "link_1_2_service_cycles": 3125,
+        "link_2_1_bytes": 74848,
+        "link_2_1_queue_cycles": 0,
+        "link_2_1_service_cycles": 3125,
+        "outlet_0_peak_outstanding": 1,
+        "outlet_0_queue_cycles": 551,
+        "outlet_0_reads": 859,
+        "outlet_0_service_cycles": 2492,
+        "outlet_0_wait_cycles": 20,
+        "outlet_0_writes": 258,
+        "outlet_1_peak_outstanding": 0,
+        "outlet_1_queue_cycles": 0,
+        "outlet_1_reads": 0,
+        "outlet_1_service_cycles": 0,
+        "outlet_1_wait_cycles": 0,
+        "outlet_1_writes": 0,
+        "outlet_2_peak_outstanding": 0,
+        "outlet_2_queue_cycles": 0,
+        "outlet_2_reads": 0,
+        "outlet_2_service_cycles": 0,
+        "outlet_2_wait_cycles": 0,
+        "outlet_2_writes": 0,
+        "host_dma_handoffs": 1
+      },
+      "model_timing_status": "uncalibrated",
+      "host_dma_handoffs": 1,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "model-p3-d8",
+      "ports": 3,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 19519,
+      "cycle_ratio_to_domain_baseline": 0.6584024826283479,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 288,
+          "write_lines": 85
+        },
+        {
+          "port": 1,
+          "read_lines": 283,
+          "write_lines": 85
+        },
+        {
+          "port": 2,
+          "read_lines": 283,
+          "write_lines": 86
+        }
+      ],
+      "model_accumulated_service_ledger": {
+        "core_0_lsu_wait_cycles": 23518,
+        "core_1_lsu_wait_cycles": 23127,
+        "core_2_lsu_wait_cycles": 24144,
+        "home_0_engine_queue_cycles": 179850,
+        "home_0_engine_service_cycles": 14723,
+        "home_0_evictions": 280,
+        "home_0_hits": 177,
+        "home_0_maintenance_completed": 1,
+        "home_0_merges": 1857,
+        "home_0_misses": 288,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 245789,
+        "home_0_set_busy_events": 6,
+        "home_0_writebacks": 85,
+        "home_1_engine_queue_cycles": 186295,
+        "home_1_engine_service_cycles": 14610,
+        "home_1_evictions": 275,
+        "home_1_hits": 170,
+        "home_1_maintenance_completed": 1,
+        "home_1_merges": 1850,
+        "home_1_misses": 283,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 251765,
+        "home_1_set_busy_events": 12,
+        "home_1_writebacks": 85,
+        "home_2_engine_queue_cycles": 191848,
+        "home_2_engine_service_cycles": 14573,
+        "home_2_evictions": 275,
+        "home_2_hits": 163,
+        "home_2_maintenance_completed": 1,
+        "home_2_merges": 1847,
+        "home_2_misses": 283,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 258229,
+        "home_2_set_busy_events": 9,
+        "home_2_writebacks": 86,
+        "link_0_1_bytes": 79008,
+        "link_0_1_queue_cycles": 0,
+        "link_0_1_service_cycles": 3310,
+        "link_1_0_bytes": 79872,
+        "link_1_0_queue_cycles": 268,
+        "link_1_0_service_cycles": 3310,
+        "link_1_2_bytes": 77600,
+        "link_1_2_queue_cycles": 317,
+        "link_1_2_service_cycles": 3261,
+        "link_2_1_bytes": 78928,
+        "link_2_1_queue_cycles": 0,
+        "link_2_1_service_cycles": 3261,
+        "outlet_0_peak_outstanding": 0,
+        "outlet_0_queue_cycles": 80,
+        "outlet_0_reads": 288,
+        "outlet_0_service_cycles": 831,
+        "outlet_0_wait_cycles": 0,
+        "outlet_0_writes": 85,
+        "outlet_1_peak_outstanding": 0,
+        "outlet_1_queue_cycles": 80,
+        "outlet_1_reads": 283,
+        "outlet_1_service_cycles": 821,
+        "outlet_1_wait_cycles": 0,
+        "outlet_1_writes": 85,
+        "outlet_2_peak_outstanding": 1,
+        "outlet_2_queue_cycles": 86,
+        "outlet_2_reads": 283,
+        "outlet_2_service_cycles": 824,
+        "outlet_2_wait_cycles": 0,
+        "outlet_2_writes": 86,
+        "host_dma_handoffs": 1
+      },
+      "model_timing_status": "uncalibrated",
+      "host_dma_handoffs": 1,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    }
+  ],
+  "scope": "resident standard Torch graph after warm call; no explicit inter-call CPU download; native ABI maintenance remains included",
+  "cycle_metric": "completed launch cycles only; prelaunch maintenance outside launch windows; raw service deltas surround the full native call",
+  "model_host_handoff_policy": "dma-maintenance",
+  "cache_boundary": "explicit native DMA maintenance is included; physical cache/controller timing equivalence is unproven",
+  "model_scope": "uncalibrated; accumulated resource service/queue cycles may exceed elapsed makespan",
+  "board_closure": "not-measured",
+  "decision": "retain existing product defaults; diagnostic outlet/depth baselines do not select a physical policy"
+}

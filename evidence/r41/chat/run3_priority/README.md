@@ -630,3 +630,16 @@ L2 0.053693052381277084 and a different argmax. This localises the old
 failure to a segmentation-dependent path, with a separate measured CPU/TLM
 numeric difference; it does not identify the precise internal operation.
 The corrected grouped board quality result remains separate.
+
+The [Qwen3.5 populated-cache warmup board session](q35_nohost_v6_session.json)
+passed its two-token teacher check and persistent-session repeat. The three
+calls returned `Hi there! How`, `Understood. I`, and `Hi there! How`; all
+nine executed decode steps recorded zero host reads and zero new graphs.
+All 924 parameters and four buffers were on TNCA and the captured prefill,
+decode and selection wrappers reported no CPU numerical fallback. The first
+call measured 0.03319671684739197 prefill tokens/s and 0.01423601763386857
+executed decode steps/s, with 11,365,085,627 decode device cycles. The
+teacher test's two relative L2 values were 0.06922020028616507 and
+0.05113672787073658; they passed the pre-registered CPU-floor-adjusted rule
+and matched both reference argmax tokens. The quality stage is still running;
+this session alone is not complete Qwen3.5 acceptance.

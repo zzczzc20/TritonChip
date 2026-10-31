@@ -883,3 +883,10 @@ full model; the instrumented full-layer comparison remains necessary. Two
 [one-token projection probes](q35_first_projection_tlm_pending_20261031.tgz)
 for QKV and MLP gate were started on the CPU-captured activations; results
 are pending and will not establish full-prefill behavior by themselves.
+
+The separate [two-layer probe retaining the vocabulary head](q35_first_layers_20261031.tgz)
+completed with the same first-layer CPU/TLM mismatch count and relative L2 as
+the headless probe. A direct TLM tensor comparison between the two probes found
+0/69120 bit mismatches each for the embedding, first-layer output and second
+layer final-norm output. Both remain truncated diagnostic graphs, not board
+intermediates or full-checkpoint acceptance.

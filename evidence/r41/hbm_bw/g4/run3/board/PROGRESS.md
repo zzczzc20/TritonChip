@@ -1,4 +1,4 @@
-# Board campaign progress, 2026-10-31 00:41 UTC
+# Board campaign progress, 2026-10-31 01:06 UTC
 
 The author explicitly authorized final-image loading without further approval,
 including the 433 MHz exception. The 15-minute idle rule and protection of
@@ -16,7 +16,7 @@ comparison are linked from `README.md`. The queue has started the default
 513-point memory-bound stage; at the time above both large batches passed
 171/171, both medium batches passed 171/171, and both small batches passed
 171/171. The default 513-point suite completed 513/513 and the tiled2 suite
-had covered eight configurations with no failures. The queue will run later
+had covered 35 configurations with no failures. The queue will run later
 registered stages in order, stopping on failure. The
 previous identity and HBM clamp failures and fixes are preserved in `README.md`.
 
@@ -67,5 +67,10 @@ preflight is in [`../../../../acceptance/xl41_stream_pilot/README.md`](../../../
 Board-host PID 1136414 waits for the stream and Q41 pilots, then queues full
 Q41-core, Q41-tail and a second core process with bounds derived from the
 measured pilot; its log is `/home/zzhouch/r41run3/q41_full_queue/queue.jsonl`.
+Board-host PID 1138206 waits for those sessions, then queues registered XL
+transpose, GEMM and projection pilots; its log is
+`/home/zzhouch/r41run3/xl41_matrix_queue/queue.jsonl`, with CPU preflight in
+[`../../../../acceptance/xl41_matrix_pilots/README.md`](../../../../acceptance/xl41_matrix_pilots/README.md).
 Full Q41-core, XL-core and clean-archive independent reproduction remain
-unmeasured and are not passes.
+unmeasured and are not passes. Gather, attention and recurrence still need
+their own registered runners and board results.

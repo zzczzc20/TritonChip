@@ -364,3 +364,16 @@ were returned; the generation-wall returned-ID rate was
 0.011494638196582864/s, excluding output retrieval. The estimated non-device
 decode wall residual was 0.6144657015731809, including transfers, waits and
 possible overlap; it is not direct host-only time.
+
+A [two-layer DP TLM replay](vl_reason_layer23_dp_tlm.tgz) used the same full
+30-token prompt, real checkpoint, CPU-captured layer-2 input, and one
+teacher-forced decode step. The CPU pair reproduced the full-model reference.
+On TLM, prefill layer-2 and layer-3 output relative L2 values were
+0.00016276411589986764 and 0.00025421574570036655. The layer-2 value cache
+relative L2 was 0.010808053152941194 at prefill and 0.010873686087227104 at
+decode; both exceeded this diagnostic's available 0.01 criterion. The overall
+pair diagnostic was marked failed. Its CPU-Inductor floor could not be
+measured because compilation emitted unsupported `vf.cvt.e4m3.f64`; the other
+recorded floors are present in the artifact. This is a two-layer TLM result,
+not a full-model logit or board failure. A targeted TLM replay of the layer-2
+value projection is running to investigate it.

@@ -473,3 +473,9 @@ rows (`To`, `We`, `From`, `Let`, `Bob`). All five TLM output logits matched
 the corresponding CPU logits bitwise for each of the three hidden states.
 These are selected output rows with CPU-captured hidden states, not a
 full-model TLM or board logit measurement.
+
+The [five-prompt board snapshot](vl_nohost_v5_five_prompts.json) adds the
+registered multi-turn test as passed: the first response acknowledged Alice
+and the follow-up answered `Alice.`. Both turns and the previous four prompts
+recorded zero host reads in every decode step. The image prompt, persistent
+session and scripted chat are still pending. This is not full VL acceptance.

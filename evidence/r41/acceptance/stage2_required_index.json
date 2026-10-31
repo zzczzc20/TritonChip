@@ -1443,8 +1443,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "4efe8bec72e32283126a3ef7fd8a84ef84c24cc4a798386ab40a41ae4ea978b7",
-    "doc/r41_stage2_report.md": "e95bf1ca95eadbf93f8121e0e72216f5c070105f60293482e8cb3669f1a32b3d",
+    "doc/r41_report.md": "e4a6bce276e0d740b995548c8ec01df8b158e04dc48fc391d7cc252cb437029a",
+    "doc/r41_stage2_report.md": "77048e209edcaa522a69e68699e733c1d9418c4b91203976e891c90c364264b7",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "086995eaffc8cf03784787f6a72d0e1031a6783bdfbe02bd16ccae7dbf2645c0",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1562,7 +1562,8 @@
     "evidence/r41/chat/run3_priority/vl_warmup_image_cpu.json": "1c95ff4ca66d5d7c8c14607e4a7e5a7afd510a5043728300aed95b3828c025e2",
     "evidence/r41/chat/run3_priority/q35_warmup_quality_cpu.tgz": "1560dc719412529410baa699a014fd4eabd59868fd52ff00a6b4c11b2ed3327b",
     "evidence/r41/chat/run3_priority/vl_reason_cpu_fusednorm_prototype.tgz": "32d36969a85be8bb4eaeca5921b208a696f49cc6fdb4daf8ba099f58cb7bc7c8",
-    "evidence/r41/chat/run3_priority/vl_reason_lmhead_dp_tlm.tgz": "3255f5a5493c600f56707d0b6e783ad496154341682cded0c6bc764c5df02b9e"
+    "evidence/r41/chat/run3_priority/vl_reason_lmhead_dp_tlm.tgz": "3255f5a5493c600f56707d0b6e783ad496154341682cded0c6bc764c5df02b9e",
+    "evidence/r41/chat/run3_priority/vl_nohost_v5_five_prompts.json": "e79777582d0741925397a6305faa50b69a7430d260cd9ec179ed92378a5e3006"
   },
   "followups": [
     {
@@ -1662,9 +1663,10 @@
           "evidence/r41/chat/run3_priority/vl_nohost_v4_failed.tgz",
           "evidence/r41/chat/run3_priority/vl_nohost_v5_first_prompt.json",
           "evidence/r41/chat/run3_priority/vl_nohost_v5_three_prompts.json",
-          "evidence/r41/chat/run3_priority/vl_nohost_v5_four_prompts.json"
+          "evidence/r41/chat/run3_priority/vl_nohost_v5_four_prompts.json",
+          "evidence/r41/chat/run3_priority/vl_nohost_v5_five_prompts.json"
         ],
-        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and a CPU diagnostic localized divergence to the single-token prefill tail; grouped-tail CPU checks passed, but do not establish board acceptance. The graph-reuse quality attempt subsequently timed out after four completed prompts; the grouped-tail retry failed the strict decode-read check because the first decode compiled constants and recorded 84 host reads; all later decode steps recorded zero reads. The separate warmup VL retry is running; Qwen3.5 is queued. The warmup retry has passed fact, arith, reason, and instruct with zero decode host reads and reason tokens equal to the registered reference; remaining prompts, image and session are still running or pending."
+        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and a CPU diagnostic localized divergence to the single-token prefill tail; grouped-tail CPU checks passed, but do not establish board acceptance. The graph-reuse quality attempt subsequently timed out after four completed prompts; the grouped-tail retry failed the strict decode-read check because the first decode compiled constants and recorded 84 host reads; all later decode steps recorded zero reads. The separate warmup VL retry is running; Qwen3.5 is queued. The warmup retry has passed fact, arith, reason, instruct, and multi-turn with zero decode host reads and reason tokens equal to the registered reference; remaining prompts, image and session are still running or pending."
       },
       {
         "model": "Qwen3.5-4B-FP8",

@@ -74,8 +74,25 @@ cycles were 8997855984 → 7402895275. Each decode step used 725 launches;
 evictions were 561/559/559 → 560/559/559 and physical code reloads were not
 recorded. Non-device wall residual was 0.4586354852 → 0.4538129830, including
 waits and transfers. These are single board observations, not repeated runs.
-The opt-in quantisation-hoist comparison started next; the separate multi-turn
+The opt-in quantisation-hoist comparison completed next; the separate multi-turn
 quality failure remains unchanged.
+
+The [opt-in quantisation-hoist board session](hoist_board_20261031.tgz)
+completed at 22:05 UTC; its [summary](hoist_board_20261031.json) records a
+full-checkpoint Qwen3.5 session. Teacher, persistent-session and independent
+placement checks passed; the hoisted quantiser launched 120 times in first
+prefill. All nine decode steps had zero host reads, all 924 parameters and
+four buffers were on TNCA and captured wrappers had no CPU numerical fallback.
+First-call output and all four token IDs matched activation staging.
+Activation staging → hoist first prefill was 0.0354596612 → 0.0336052103
+input tokens/s and decode was 0.0221340569 → 0.0220064829 executed steps/s;
+three-step device cycles were 7402895275 → 7413054385. Each decode step used
+725 launches, with evictions 560/559/559 → 558/559/559. Physical board code
+reloads were not recorded. Non-device wall residual was 0.4538129830 →
+0.4562158185 and includes waits and transfers. These are single observations;
+they do not show a hoist speedup. The opt-in setting and cross-platform NaN
+bit limitation below remain explicit. The separate grouped multi-turn failure
+is unchanged; a whole-prefill diagnostic started next.
 
 ## Equal-row lowering
 
@@ -236,7 +253,7 @@ division matched that GB10 sample but not an x86 CPU reference for these
 pairs. The [reusable NaN TLM check](../../../../tools/r41/chat_speed/test_precise_div_nanpayload_tlm.py)
 uses the locked GB10 ARM bit-pattern fixture, independent of the test host's
 CPU; its [rerun](hoist_locked_nan_tlm_20261031.log) matched all 256 values.
-This is a cross-platform NaN-bit limitation, not an observed model failure. The guarded route is integrated and queued with this limitation explicitly retained.
+This is a cross-platform NaN-bit limitation, not an observed model failure. The guarded route is integrated and its completed board session above retains this limitation.
 
 [Boundary comparisons](hoist_precise_boundary_20261031.tgz), fused → hoisted,
 all matched the independent reference bitwise and had zero steady code
@@ -261,12 +278,12 @@ compared 113 unchanged; the corresponding [final wrapper source](fp8_hoist_final
 adds device and shape guards. Direct and compiled-graph tests matched the
 reference at M=1 and M=16. The reduced-depth Qwen3.5 model TLM comparison completed below. The
 cross-platform NaN bit mismatch above remains a limitation; the board test
-is queued with the registered GB10 ARM reference and the non-default route
+completed with the registered GB10 ARM reference and the non-default route
 explicitly identified. The opt-in is `TNCA_FP8_HOIST_V1_PATH`, pointing to
 pinned finegrained-FP8 revision `48f42b23bb4e0122d4775c6d16753dd2efc7f580`;
 the default official route remains selected when it is unset. The [queue registration](hoist_board_queue_20261031.tgz)
 SHA-256 is `57f088dd9251bc5402ae87a4eaa63f4f707076d8b0548bf3ddeee100a9a686b9`
-and it waits for the four earlier gated speed sessions.
+and it ran after the four earlier gated speed sessions.
 
 The [one-layer VL model TLM comparison](hoist_model_tlm_20261031.tgz) used
 the initial prototype before its final device/shape guard and the completed-

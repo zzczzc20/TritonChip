@@ -79,6 +79,16 @@ used 7402895275 versus 8997855984 device cycles. Each step used 725 launches.
 These are single observations and physical board code reloads were not
 recorded. The separate multi-turn quality failure remains unchanged.
 
+The [opt-in activation-quantisation hoist board session](../evidence/r41/chat/speed/hoist_board_20261031.json)
+passed teacher, persistent-session and strict placement/no-fallback checks.
+Nine decode steps had zero host reads and first-call tokens were identical to
+the activation-staging session. First prefill and decode were 0.0336052103
+input tokens/s and 0.0220064829 executed steps/s, versus 0.0354596612 and
+0.0221340569 without the hoist; three-step device cycles were 7413054385
+versus 7402895275. This single observation does not show a speedup. The
+hoist is non-default; its cross-architecture NaN-bit limitation remains
+recorded. The separate multi-turn quality failure is unchanged.
+
 Qwen3.5's original registered quality run timed out and its segmented multi-turn
 continuation failed the registered first-turn comparison. The acceleration
 A/B board sessions have begun; CPU/TLM diagnosis is in progress. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md)

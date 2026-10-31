@@ -791,3 +791,12 @@ differed. This is a genuine logits difference rather than evidence only of an
 exact tie. The board emitted the same first token, but board logits were not
 captured, so this does not prove the complete device-side cause. The grouped
 DP TLM run remains pending.
+
+The [instrumented hidden-state probe](q35_multiturn_layers_pending_20261031.tgz)
+is running separately on CPU and DP TLM with the same whole-prefill prompt,
+model and source snapshot. It requests hidden states as outputs, which can
+change the compiled graph, and its CPU/TLM comparison is diagnostic only.
+The CPU run completed and its first logits matched the original CPU reference
+bitwise (0/248,320 mismatches). The DP TLM run and automated comparison remain
+pending; the comparison also checks whether instrumented TLM logits match the
+uninstrumented TLM result.

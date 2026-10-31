@@ -6,10 +6,10 @@ kernel launch made inside a metered prefill or decode step:
   - the kernel name, grid, artifact path and the device cycles the runtime reports;
   - every tensor argument (dtype, shape, view bytes) and what it is: a model parameter or buffer (by name), a
     static-cache tensor (layer and kind), or an activation (anything else);
-  - whether the launch had to place its code in the code store (a load or reload) and how many modules it evicted;
+  - the actual number and bytes of code loads and the number of evicted modules;
   - on the SystemC/TLM backend, the difference of every model counter across the launch. The counters are read
-    with the model's read-only `C` command while the device is idle, between launches, so they add host time and
-    no device cycles.
+    with the model's read-only `C` command on the runtime worker between launches. Batched events are resolved
+    after completion; these counter reads add host time and no device cycles.
 
 Nothing here changes what the device executes: the hooks wrap the runtime's launcher, the session's grid dispatch
 and chat.py's step meter, and only read. The output is OUT/profile/launches.json (one row per launch) beside
@@ -22,13 +22,16 @@ import contextlib
 import json
 from pathlib import Path
 import sys
+import threading
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import chat  # noqa: E402
 
 ROWS = []
-STATE = dict(step=-1, session=None, ptrs={})
+PENDING = []
+LOADS = threading.local()
+STATE = dict(step=-1, scope_count=0, scopes=[], session=None, ptrs={})
 
 
 def _tensor_map(session):
@@ -78,9 +81,9 @@ def install():
     from tnca import runtime
     from tnca.triton_backend import driver
 
-    # The session runs tasks on its worker thread and the launcher returns once the task's event is terminal, so
-    # the counters are read on that thread: before the task runs, and in _finish before the event turns terminal.
-    # The difference rides on the event, which the launcher keeps as last_event.
+    # Counter snapshots belong to the worker thread. With batched native
+    # launches the event can finish after the launcher returns; retain it and
+    # resolve its counters when the metered run has completed.
     original_run = runtime.Session._run_one
     original_finish = runtime.Session._finish
 
@@ -100,6 +103,15 @@ def install():
     runtime.Session._finish = finish
 
     original_call = driver.TNCALauncher.__call__
+    original_load = runtime.Session.load
+
+    def load(self, path):
+        module = original_load(self, path)
+        LOADS.count = getattr(LOADS, 'count', 0) + 1
+        LOADS.bytes = getattr(LOADS, 'bytes', 0) + module.code_size
+        return module
+
+    runtime.Session.load = load
 
     def call(self, gridX, gridY, gridZ, stream, function, packed_metadata, launch_metadata, enter, leave, *args):
         if STATE["step"] < 0:
@@ -107,15 +119,23 @@ def install():
                                  enter, leave, *args)
         resident = any(key[2] == function for key in driver._loaded)
         evicted = driver.evicted
+        before_count, before_bytes = getattr(LOADS, 'count', 0), getattr(LOADS, 'bytes', 0)
+        previous_event = self.last_event
         original_call(self, gridX, gridY, gridZ, stream, function, packed_metadata, launch_metadata, enter, leave,
                       *args)
-        counters = getattr(self.last_event, "_prof_counters", None)
-        ROWS.append(dict(step=STATE["step"], index=len(ROWS), kernel=self.metadata.name,
-                         grid=[max(gridX, 1), max(gridY, 1), max(gridZ, 1)], artifact=function,
-                         device_cycles=self.last_cycles, code_load=not resident,
-                         code_bytes=next((m.code_size for k, m in driver._loaded.items() if k[2] == function), None),
-                         evicted=driver.evicted - evicted, args=_args(args),
-                         counters=counters))
+        event = self.last_event if self.last_event is not previous_event else None
+        row = dict(step=STATE["step"], index=len(ROWS), kernel=self.metadata.name,
+                   grid=[max(gridX, 1), max(gridY, 1), max(gridZ, 1)], artifact=function,
+                   device_cycles=None, code_resident_miss=not resident,
+                   code_load=getattr(LOADS, 'count', 0) > before_count,
+                   code_load_count=getattr(LOADS, 'count', 0) - before_count,
+                   code_upload_bytes=getattr(LOADS, 'bytes', 0) - before_bytes,
+                   code_bytes=next((m.code_size for k, m in driver._loaded.items() if k[2] == function), None),
+                   evicted=driver.evicted - evicted, args=_args(args), counters=None,
+                   skipped=event is None)
+        ROWS.append(row)
+        if event is not None:
+            PENDING.append((row, event))
 
     driver.TNCALauncher.__call__ = call
 
@@ -128,24 +148,54 @@ def install():
 
     chat.Session.__init__ = session_init
 
+    for name, kind in (('warmup_decode', 'warmup'), ('prefill_prompt', 'prefill'),
+                       ('step_device', 'decode'), ('vision_features', 'vision')):
+        original_method = getattr(chat.Session, name)
+        def marked(self, *args, _original=original_method, _kind=kind, **kwargs):
+            if STATE['scopes'] and STATE['scopes'][-1]['kind'] is None:
+                STATE['scopes'][-1]['kind'] = _kind
+            return _original(self, *args, **kwargs)
+        setattr(chat.Session, name, marked)
+
     original_meter = chat.transfer_meter
 
     @contextlib.contextmanager
     def meter(enabled):
+        scope = None
         if enabled:
-            STATE["step"] += 1
+            scope = dict(step=STATE['scope_count'], kind=None, first=len(ROWS))
+            STATE['scope_count'] += 1
+            STATE['scopes'].append(scope)
+            STATE['step'] = scope['step']
             STATE["ptrs"] = _tensor_map(STATE["session"])
         try:
             with original_meter(enabled) as m:
                 yield m
         finally:
-            if enabled:
-                STATE["ptrs"] = _tensor_map(STATE["session"])   # linear-attention states appear on first use
+            if scope is not None:
+                for row in ROWS[scope['first']:]:
+                    if row['step'] == scope['step']:
+                        row['scope_kind'] = scope['kind'] or 'other'
+                STATE['scopes'].pop()
+                STATE['step'] = STATE['scopes'][-1]['step'] if STATE['scopes'] else -1
+                STATE["ptrs"] = _tensor_map(STATE["session"])
 
     chat.transfer_meter = meter
 
 
+def finalize():
+    """Resolve completed asynchronous events without issuing more work."""
+    for row, event in PENDING:
+        row['event_state'] = event.state
+        if event.terminal:
+            row['device_cycles'] = event.device_cycles
+            row['counters'] = getattr(event, '_prof_counters', None)
+
+
 def main(argv=None):
+    ROWS.clear()
+    PENDING.clear()
+    STATE.update(step=-1, scope_count=0, scopes=[], session=None, ptrs={})
     args = chat.parser().parse_args(argv)
     if args.device != "tnca" or args.interactive or args.script or args.session_check:
         raise SystemExit("decode_profile profiles one-shot tnca generation only")
@@ -156,11 +206,12 @@ def main(argv=None):
         code = chat.main(argv)
     finally:
         if args.out:
+            finalize()
             out = args.out / "profile"
             out.mkdir(parents=True, exist_ok=True)
             (out / "launches.json").write_text(json.dumps(dict(
-                schema="tnca-decode-profile/1", argv=list(argv or sys.argv[1:]), exit=code,
-                step_kinds="step 0 is the prefill call; steps 1.. are decode calls in order",
+                schema="tnca-decode-profile/2", argv=list(argv or sys.argv[1:]), exit=code,
+                step_kinds="transfer-meter scopes in execution order; warmup may precede actual prefill",
                 launches=ROWS), indent=1) + "\n")
     return code
 

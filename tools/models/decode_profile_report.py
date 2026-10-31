@@ -130,10 +130,13 @@ def analyse(run, full_layers, step=None):
     prof = json.loads((run / "out/profile/launches.json").read_text())
     report = json.loads((run / "out/report.json").read_text())
     steps = [s for s in report["steps"] if s["kind"] == "decode"]
-    decode_steps = sorted({r["step"] for r in prof["launches"] if r["step"] >= 1})
-    # Steady decode: the last decode step (no compilation; chat.py refuses recompilation from the second decode).
+    launches = [r for r in prof["launches"] if not r.get('skipped', False)]
+    has_scope_kind = any('scope_kind' in r for r in launches)
+    decode_steps = sorted({r['step'] for r in launches
+                           if r.get('scope_kind') == 'decode' or (not has_scope_kind and r['step'] >= 1)})
+    # Steady decode: the last actual decode scope, excluding compile-only launches.
     step = step if step is not None else decode_steps[-1]
-    rows = [r for r in prof["launches"] if r["step"] == step]
+    rows = [r for r in launches if r['step'] == step]
     profiled_layers = report["decoder_layers"]
     current = None
     out = []
@@ -161,7 +164,16 @@ def analyse(run, full_layers, step=None):
                         nuca_B_per_cycle=(cs["nuca_requests"] * WORD / cyc) if cyc and cs["nuca_requests"] is not None else None,
                         code_load=r["code_load"], code_bytes=r["code_bytes"], evicted=r["evicted"]))
     scale = full_layers / profiled_layers
-    step_report = next(s for s in report["steps"] if s["step"] == step)
+    if has_scope_kind:
+        kind = rows[0].get('scope_kind') if rows else None
+        if kind == 'decode':
+            step_report = steps[decode_steps.index(step)]
+        elif kind == 'prefill':
+            step_report = next(s for s in report['steps'] if s['kind'] == 'prefill')
+        else:
+            raise SystemExit(f'profile scope {step} ({kind}) is not a measured prefill/decode step')
+    else:
+        step_report = next(s for s in report["steps"] if s["step"] == step)
     return dict(run=str(run), model=report["model"], profiled_layers=profiled_layers, full_layers=full_layers,
                 scale=scale, step=step, decode_steps=decode_steps, rows=out, report_step=step_report,
                 all_decode_cycles=[s["transfers_inside_step"]["device_cycles"] for s in steps],

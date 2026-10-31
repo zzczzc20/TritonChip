@@ -890,3 +890,21 @@ the headless probe. A direct TLM tensor comparison between the two probes found
 0/69120 bit mismatches each for the embedding, first-layer output and second
 layer final-norm output. Both remain truncated diagnostic graphs, not board
 intermediates or full-checkpoint acceptance.
+
+The [single-layer component comparison](q35_first_components_20261031.tgz)
+found CPU and DP TLM bitwise identical at embedding, input RMSNorm and all
+QKV, Z, A and B input projections across 27 tokens. The gated-normalization
+output differed in 67,305/110,592 values (relative L2 0.0029556095); the
+linear-attention output differed in 60,841/69,120 (relative L2 0.0054668272).
+The CPU instrumented first-layer output was bitwise equal to the full CPU
+capture, and the instrumented TLM first-layer output was bitwise equal to the
+separate two-layer TLM. The probe does not yet distinguish gated-delta output
+from gated normalization. The standalone [one-token QKV and gate DP TLM](q35_first_projection_tlm_20261031.tgz)
+matched their CPU-captured outputs 8192/8192 and 9216/9216 bitwise; their
+shape and graph differ from the 27-token prefill.
+
+A [deeper convolution/delta probe](q35_first_delta_pending_20261031.tgz)
+was started to capture convolution output, gated-delta inputs and output, and
+the two gated-normalization inputs. Its extra hooks may affect the compiled
+graph, so it also checks the instrumented whole first-layer output against the
+previous TLM result.

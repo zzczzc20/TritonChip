@@ -1,0 +1,97 @@
+{
+  "scope": "separate reduced whole-prefill proof, does not replace original grouped attempt or timeout",
+  "status": "failed-chat-quality",
+  "passed": false,
+  "prompt_id": "multiturn",
+  "scores": [
+    {
+      "passed": false,
+      "required_keywords": [],
+      "keywords_missing_in_reference": [],
+      "keywords_ok": true,
+      "containment": false,
+      "tokens_equal": false,
+      "common_prefix_tokens": 0,
+      "device_tokens": 11,
+      "reference_tokens": 12
+    },
+    {
+      "passed": true,
+      "required_keywords": [
+        "alice"
+      ],
+      "keywords_missing_in_reference": [],
+      "keywords_ok": true,
+      "containment": true,
+      "tokens_equal": true,
+      "common_prefix_tokens": 4,
+      "device_tokens": 4,
+      "reference_tokens": 4
+    }
+  ],
+  "turns": [
+    {
+      "text": "I have remembered your name, Alice.\n",
+      "tokens": [
+        40,
+        599,
+        25624,
+        678,
+        803,
+        11,
+        28445,
+        13,
+        248046,
+        198,
+        248044
+      ],
+      "prefill_tokens_per_second": 0.05672542750934671,
+      "decode_executed_steps_per_second": 0.014277775620421014,
+      "decode_steps": 11,
+      "decode_host_read_calls": 0,
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_fallbacks": {
+        "prefill": [],
+        "decode": [],
+        "selection": []
+      },
+      "model_tensor_placements": {
+        "parameters": {
+          "tnca:0": 924
+        },
+        "buffers": {
+          "tnca:0": 4
+        }
+      }
+    },
+    {
+      "text": "Alice\n",
+      "tokens": [
+        59605,
+        248046,
+        198,
+        248044
+      ],
+      "prefill_tokens_per_second": 0.08225051490695755,
+      "decode_executed_steps_per_second": 0.012768451816348449,
+      "decode_steps": 11,
+      "decode_host_read_calls": 0,
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_fallbacks": {
+        "prefill": [],
+        "decode": [],
+        "selection": []
+      },
+      "model_tensor_placements": {
+        "parameters": {
+          "tnca:0": 924
+        },
+        "buffers": {
+          "tnca:0": 4
+        }
+      }
+    }
+  ],
+  "quality_sha256": "f0dc4d50a54d9e59cb158c107ff9122eb05d35a9d940d22378e1c10003f6ce3c",
+  "archive_sha256": "1f679de84d159bd2fd7bc631f740a9c2bac31cecfc87f563d51b994686a2a88f"
+}

@@ -800,3 +800,14 @@ The CPU run completed and its first logits matched the original CPU reference
 bitwise (0/248,320 mismatches). The DP TLM run and automated comparison remain
 pending; the comparison also checks whether instrumented TLM logits match the
 uninstrumented TLM result.
+
+The [completed whole-prefill board diagnostic](q35_whole_board_complete_20261031.json)
+and [raw archive](q35_whole_board_complete_20261031.tgz) report failed chat
+quality: first-turn containment failed and the second `Alice` turn matched all
+four reference tokens. Across both turns the 22 steady decode steps had zero
+host reads, all 924 parameters and four buffers were TNCA, and no captured
+CPU numerical fallback. Prefill was 0.0567254275 and 0.0822505149 input
+tokens/s; decode was 0.0142777756 and 0.0127684518 executed steps/s. These
+include work after EOS. Prefill and warmup did record host transfers: the zero
+read claim is only for the 22 steady decode steps. This reduced diagnostic
+does not replace the grouped failure or original quality timeout.

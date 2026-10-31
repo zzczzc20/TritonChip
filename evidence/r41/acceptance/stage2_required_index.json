@@ -1443,8 +1443,8 @@
     }
   ],
   "evidence_sha256": {
-    "doc/r41_report.md": "ace2294ad83379872db4d3a8d629909e3ef40b4577f6d7c1e1ad5d725cc7abc7",
-    "doc/r41_stage2_report.md": "312aa69fbfeeb305eda62b7b260231db400ad78453eadd2272391d0dec0d1381",
+    "doc/r41_report.md": "a41e158107ef46cba8baeef2f9dc6aecd86d8b0eb780b8b6968076b9a80117b0",
+    "doc/r41_stage2_report.md": "163eb1e86f8e6b03a68afbddb06fe339537c6041b9cf149a792a17db0e113cd9",
     "doc/r41_tasks_and_acceptance.md": "eaefbe86b0a136709a0dd57680ccc02914bc172bc123d12585b09fba5defba4f",
     "evidence/r41/SERVERS.md": "086995eaffc8cf03784787f6a72d0e1031a6783bdfbe02bd16ccae7dbf2645c0",
     "evidence/r41/acceptance/board-records.tgz": "fda7873551903dc2cc1b6e489ab111f93d51757bd20c8127a632946f479a31a1",
@@ -1738,7 +1738,10 @@
           "separate_multiturn_status": "failed registered first-turn containment",
           "multiturn_evidence": "evidence/r41/chat/run3_priority/q35_multiturn_segment_failed_20261031.json",
           "latest_speed_session": "evidence/r41/chat/speed/hoist_board_20261031.json",
-          "note": "Prior attempts retain their recorded judgments; the separate multi-turn failure is not a quality pass."
+          "note": "Prior attempts retain their recorded judgments; the separate multi-turn failure is not a quality pass.",
+          "whole_prefill_multiturn_status": "failed registered first-turn containment; second turn token-equal",
+          "whole_prefill_multiturn_evidence": "evidence/r41/chat/run3_priority/q35_whole_board_complete_20261031.json",
+          "whole_prefill_tlm_logits_evidence": "evidence/r41/chat/run3_priority/q35_multiturn_tlm_whole_20261031.tgz"
         }
       }
     ]

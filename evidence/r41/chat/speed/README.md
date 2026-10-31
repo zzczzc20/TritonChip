@@ -585,7 +585,7 @@ registered after the whole-prefill Qwen3.5 diagnostic. It checks the same
 three optimization levels and exact FP16 outputs on the already-loaded image;
 source and manifest hashes, the queue lock, image identity, clock and card
 idle state are checked before launch. It does not program a new image. Its
-result is pending.
+result was pending at registration.
 
 ## Experimental descriptor E4M3 K32 (not merged)
 
@@ -604,3 +604,10 @@ The later [tail and two-role experiments](k32_descriptor_tail_roles_20261031.md)
 include exact tested outputs and preserve the failed first two-role harness.
 All measured cold two-role K32 comparisons increased visible TLM cycles; the
 final [113-point audit](k32_descriptor_v6_audit_20261031.tgz) passed with all code unchanged. Broader model coverage remains pending, and it remains unmerged.
+
+The [TNCA-IR board regression results](ir_aot_board_complete_20261031.tgz)
+retain the first attempt, which was killed at an 8 GiB cgroup limit. A
+separate registered retry with 24 GiB passed on the same loaded 100 MHz image
+without programming: optimization levels 0, 1 and 2 each matched 256/256 FP16
+outputs and used one launch, with 2322, 2239 and 2235 measured device cycles.
+This is a small regression, not a full chat quality result.

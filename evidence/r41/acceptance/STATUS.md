@@ -1054,3 +1054,8 @@ The next report update records the opt-in hoist board session; prior reports rem
 
 - `doc/r41_report.md`: `1e4eef0829e4b986404a226ac63ad103c7d125a4c1734fc04da9a9c2fd4c5750` → `ace2294ad83379872db4d3a8d629909e3ef40b4577f6d7c1e1ad5d725cc7abc7`
 - `doc/r41_stage2_report.md`: `160b334c68e5baa78be67ee46e11e2fb79653a3fe36f3abbc32a0cf5d9785989` → `312aa69fbfeeb305eda62b7b260231db400ad78453eadd2272391d0dec0d1381`
+
+The next report update records the separate failed whole-prefill Qwen3.5 proof and the TNCA-IR board regression; prior reports remain in git at `c70cdbfc`. Only the two living report hashes were refreshed.
+
+- `doc/r41_report.md`: `ace2294ad83379872db4d3a8d629909e3ef40b4577f6d7c1e1ad5d725cc7abc7` → `a41e158107ef46cba8baeef2f9dc6aecd86d8b0eb780b8b6968076b9a80117b0`
+- `doc/r41_stage2_report.md`: `312aa69fbfeeb305eda62b7b260231db400ad78453eadd2272391d0dec0d1381` → `163eb1e86f8e6b03a68afbddb06fe339537c6041b9cf149a792a17db0e113cd9`

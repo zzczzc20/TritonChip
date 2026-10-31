@@ -89,6 +89,23 @@ versus 7402895275. This single observation does not show a speedup. The
 hoist is non-default; its cross-architecture NaN-bit limitation remains
 recorded. The separate multi-turn quality failure is unchanged.
 
+The separate [whole-prefill Qwen3.5 board diagnostic](../evidence/r41/chat/run3_priority/q35_whole_board_complete_20261031.json)
+failed its unchanged first-turn containment check; the second `Alice` turn
+matched all four reference tokens. Its 22 steady decode steps had zero host
+reads, all 924 parameters and four buffers were TNCA, and no captured CPU
+numerical fallback. Its prefill rates were 0.0567254275 and 0.0822505149 input
+tokens/s; decode rates were 0.0142777756 and 0.0127684518 executed steps/s,
+including post-EOS work. Warmup/prefill transfers are not included in the
+steady-decode zero-read claim. The earlier grouped failure and timeout remain.
+Whole-prefill DP TLM selected the same first token as the board but differed
+from the CPU logits by relative L2 0.0774650127; board logits were not
+captured.
+
+The [TNCA-IR AOT board regression](../evidence/r41/chat/speed/ir_aot_board_complete_20261031.tgz)
+passed three optimization levels, each 256/256 exact, on a separate 24 GiB
+retry after the original 8 GiB attempt was OOM-killed. The failed attempt is
+retained. This small regression is not a chat-quality acceptance result.
+
 Qwen3.5's original registered quality run timed out and its segmented multi-turn
 continuation failed the registered first-turn comparison. The acceleration
 A/B board sessions have begun; CPU/TLM diagnosis is in progress. See the [chat evidence](../evidence/r41/chat/run3_priority/README.md)

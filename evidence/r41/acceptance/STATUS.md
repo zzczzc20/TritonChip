@@ -1009,3 +1009,8 @@ The living reports were updated with recorded board chat results; their previous
 
 - `doc/r41_report.md`: `b30b346403204e0984ff8404f48dad233d028c41c41b391d0876c0a7af800b4f` → `59d9c42876f113a9c0609b72ba459847a76a06c76e5b132e1413f7ebac3655d1`
 - `doc/r41_stage2_report.md`: `9ea6bcad2a0d35451746df0e364c7fd920a76c1485900908f331a565567e4e4f` → `417313d330dcc96c0ed84fa9528db64a939a5c6f453d1d432d7104001e99bc57`
+
+The next report update records the second Qwen3.5 quality checkpoint; the prior report versions are at `0adca8a4`. Only the two current report hashes were refreshed.
+
+- `doc/r41_report.md`: `59d9c42876f113a9c0609b72ba459847a76a06c76e5b132e1413f7ebac3655d1` → `0b961332a1fb04d656b98d0691714146ff12d79f639d45ad76aa18c6cdc78337`
+- `doc/r41_stage2_report.md`: `417313d330dcc96c0ed84fa9528db64a939a5c6f453d1d432d7104001e99bc57` → `d4162d8444f6a4a7221558e8c1aa599fe0e74bd981df84631baed4941f15c232`

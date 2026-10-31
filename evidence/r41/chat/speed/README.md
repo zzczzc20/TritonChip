@@ -133,8 +133,9 @@ instructions/MAC and 7,271 device cycles per launch for both. The candidate
 used non-default `TNCA_CODE_CACHE_POLICY=lfu`; it is not integrated. Raw
 results, artifact mapping and [earlier failed setup attempts](code_cache_synthetic_20261031.tgz)
 are preserved. The [default-code audit](code_cache_audit_20261031.tgz)
-compared 113/113 points unchanged. Reduced-depth model profiling remains in
-progress; no full-model speedup or board acceptance is claimed.
+compared 113/113 points unchanged. Subsequent reduced-depth model profiling
+found the decode regression recorded below; no full-model speedup or board
+acceptance is claimed.
 
 ## Unmerged activation and accumulator experiments
 
@@ -175,3 +176,25 @@ all bitwise equal to the independent references. The first suite attempt
 failed because the offline version mapping was unavailable; the retry pins
 the already-recorded Hub revision `0e5764aa5c27d0f005117a92645156481540950a`.
 Both attempts and the pinning wrapper are retained.
+
+A [real one-layer Qwen3-VL DP TLM comparison](code_cache_model_tlm_20261031.tgz)
+used the same prompt and two generated tokens (`--check-tokens 0`); it is a
+reduced-depth performance experiment, not a quality or board result. The
+prefill and decode logits each had 0/151936 bit mismatches against the LRU
+control, and all 130 launched code texts and launch metadata matched. Both
+runs reported no CPU numerical fallback and zero host reads in the measured
+prefill and decode steps.
+
+| Step | Device cycles LRU → LFU | Launches | Load marks | Evictions |
+| --- | ---: | ---: | ---: | ---: |
+| Prefill | 530227895 → 512143370 | 28 → 28 | 23 → 22 | 24 → 22 |
+| Decode | 487191706 → 498123453 | 25 → 25 | 19 → 19 | 17 → 20 |
+
+Load marks indicate whether an artifact path was resident, not independently
+instrumented physical loads. The profiler's per-launch instruction/cycle
+counters were null; the report supplies aggregate step cycles and the
+whole-process counter recorded 599723788 instructions for each route. MAC
+normalisation and a per-step instruction count are therefore not claimed. The
+decode regression and increased evictions mean this candidate is **not
+accepted or queued for board retest**. The 16 exact-reference FP8 checks and
+113-point default audit above remain distinct from this model comparison.

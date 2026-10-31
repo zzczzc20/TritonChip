@@ -1525,9 +1525,13 @@
           "evidence/r41/chat/run3_priority/vl_graph_reset_interrupted.tgz",
           "evidence/r41/chat/run3_priority/vl_nohost_partial_20261031.json",
           "evidence/r41/chat/run3_priority/vl_nohost_partial_two_20261031.json",
-          "evidence/r41/chat/run3_priority/vl_nohost_partial_three_20261031.json"
+          "evidence/r41/chat/run3_priority/vl_nohost_partial_three_20261031.json",
+          "evidence/r41/chat/run3_priority/vl_reason_cpu_prefill_compare.tgz",
+          "evidence/r41/chat/run3_priority/vl_prefill_cpu_states.json",
+          "evidence/r41/chat/run3_priority/vl_grouped_tail_cpu_diagnostic.tgz",
+          "evidence/r41/chat/run3_priority/vl_nohost_partial_four_20261031.json"
         ],
-        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; the numerical divergence is under investigation."
+        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and the mechanism remains under investigation."
       },
       {
         "model": "Qwen3.5-4B-FP8",
@@ -1548,7 +1552,8 @@
         "evidence": [
           "evidence/r41/chat/run3_priority/q35_session_board.tgz",
           "evidence/r41/chat/run3_priority/q35_session_summary.json",
-          "evidence/r41/chat/run3_priority/q35_quality_preempted.tgz"
+          "evidence/r41/chat/run3_priority/q35_quality_preempted.tgz",
+          "evidence/r41/chat/run3_priority/q35_cpu_tail_compare.tgz"
         ],
         "failure_reason": "Run-2 full-checkpoint session and teacher/session checks passed under the old harness, but per-step logits were downloaded and argmax ran on the CPU; the author no-host criterion fails. The old quality attempt was interrupted before producing a prompt result; the same workload is queued with device feedback."
       }

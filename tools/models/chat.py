@@ -154,7 +154,7 @@ class Session:
     a REPL conversation keeps its compiled graphs, its device allocations and, when the new conversation text
     extends what is already cached, the cached state itself. A prompt that does not extend the cache resets the
     cache in place (same tensors, zeroed). With prefill_chunk > 0, text is prefilled in fixed-size chunks with
-    the remainder through the decode graph, so the number of compiled graphs does not depend on prompt length.
+    the final short block through prefill, so no token in the prompt is silently treated as a decode step.
     Prompts that carry images are prefilled whole (their image tokens must stay in one call)."""
 
     def __init__(self, model, spec, device, bucket, prefill_chunk=0):
@@ -264,7 +264,8 @@ class Session:
             while len(full) - at >= self.chunk:
                 segments.append(("prefill", at, at + self.chunk))
                 at += self.chunk
-            segments += [("token", i, i + 1) for i in range(at, len(full))]
+            if at < len(full):
+                segments.append(("prefill", at, len(full)))
         for kind, a, b in segments:
             graphs = counters["stats"]["unique_graphs"]
             started = time.perf_counter()
@@ -410,6 +411,26 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     else:
         status = "pass"
     weight_bytes = L.module_bytes(model, lambda name: not name.startswith("model.visual."))
+    stats = generation_stats(rows)
+    stats.update(generated_tokens=len(tokens), executed_generation_steps=len(rows),
+                 prefill_tokens_per_second=(rows[0]['input_tokens'] / rows[0]['seconds']
+                                            if rows[0]['seconds'] > 0 else None),
+                 returned_token_ids_per_generation_second=(len(tokens) / stats['generation_seconds']
+                                                         if stats['generation_seconds'] > 0 else None),
+                 decode_rate_scope='executed decode steps, including any work after EOS',
+                 returned_rate_scope='returned token IDs including EOS; generation wall only, excludes output retrieval')
+    clock_path = os.environ.get('TNCA_OPERATING_CLOCK_EVIDENCE')
+    try:
+        clock_hz = int(json.loads(Path(clock_path).read_text())['clock_hz']) if clock_path else None
+    except (OSError, ValueError, KeyError, TypeError):
+        clock_hz = None
+    decode_rows = [row for row in rows if row['kind'] == 'decode']
+    cycles = [row['transfers_inside_step']['device_cycles'] for row in decode_rows]
+    if clock_hz and clock_hz > 0 and cycles and all(c is not None for c in cycles) and stats['decode_seconds'] > 0:
+        stats['decode_device_cycles'] = sum(cycles)
+        stats['decode_estimated_non_device_wall_fraction'] = 1 - sum(cycles) / clock_hz / stats['decode_seconds']
+        stats['host_share_caveat'] = ('Wall residual after summed device cycles at the qualified clock; includes '
+                                      'host work, transfers, waits and possible counter overlap, not host-only time')
     report = dict(schema="tnca-qwen-chat-generation/2", status=status, model=spec.name,
                   repo=spec.repo, revision=spec.revision, device="tnca",
                   decoder_layers=model.config.get_text_config().num_hidden_layers,
@@ -421,7 +442,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   stopped_at_eos=bool(tokens and tokens[-1] in eos), eos_token_ids=sorted(eos),
                   images=len(per_image or []), vision_calls=vision_calls or [],
                   vision_seconds=sum(c["seconds"] for c in vision_calls or []), steps=rows,
-                  statistics=generation_stats(rows), logits=logits_rows, fp8_route_in_use=L.fp8_route_in_use(),
+                  statistics=stats, logits=logits_rows, fp8_route_in_use=L.fp8_route_in_use(),
                   decode_weight_bytes=weight_bytes,
                   session=dict(prompt_index=session.prompts, cache_resets=session.resets,
                                new_graphs_this_prompt=counters["stats"]["unique_graphs"] - graphs_at_start,
@@ -815,8 +836,8 @@ def parser():
     ap.add_argument("--require-argmax", action="store_true",
                     help="also require the device argmax to equal the reference argmax at every checked step")
     ap.add_argument("--prefill-chunk", type=int, default=0,
-                    help="prefill text in chunks of this many tokens (remainder through the decode graph), so the "
-                         "compiled graphs do not depend on prompt length; 0 prefills each prompt whole")
+                    help="prefill text in blocks of up to this many tokens; the last block may be shorter. "
+                         "0 prefills each prompt whole")
     ap.add_argument("--session-check", metavar="PROMPT",
                     help="after the one-shot prompt, run PROMPT and then the first prompt again in the same "
                          "session and require bitwise-identical logits and tokens")

@@ -1527,7 +1527,12 @@
     "evidence/r41/chat/run3_priority/vl_graph_reset_interrupted.tgz": "1049c50c985193f2a4ea7f63d67181c811b2958fec2d9897457b5a83d58ec9af",
     "evidence/r41/chat/run3_priority/vl_nohost_partial_20261031.json": "62e6b8c6475e320c8537346a19d1a54ce43378bf9067ec23c37af9fc3b672376",
     "evidence/r41/chat/run3_priority/vl_nohost_partial_two_20261031.json": "e0765f9c67ce334627fc561751a0060c0d16216b355f5d74f34ce9c56c74a927",
-    "evidence/r41/chat/run3_priority/vl_nohost_partial_three_20261031.json": "82645f64cb26415e8da38fe273d09edd0d13ee919afd6695df7a7060f76b5039"
+    "evidence/r41/chat/run3_priority/vl_nohost_partial_three_20261031.json": "82645f64cb26415e8da38fe273d09edd0d13ee919afd6695df7a7060f76b5039",
+    "evidence/r41/chat/run3_priority/vl_reason_cpu_prefill_compare.tgz": "0bde55c066eba89dfa4d74601b2f74e3fe3f76e3f9bad466a8b691deccf9f508",
+    "evidence/r41/chat/run3_priority/vl_prefill_cpu_states.json": "8858b00c21ef671ce59ef38025fe2d882a4bbc09490f3669086fb8237eea54c0",
+    "evidence/r41/chat/run3_priority/vl_grouped_tail_cpu_diagnostic.tgz": "9cfb5443e23382916b149410fefc69609b63bfe2d9c4f387c6384e70d9a23b33",
+    "evidence/r41/chat/run3_priority/q35_cpu_tail_compare.tgz": "5b069d0c04d99fa7b4abeccb07bc3221a896cb7b919bc73d0e9802b2e13d89a7",
+    "evidence/r41/chat/run3_priority/vl_nohost_partial_four_20261031.json": "39dbe53ffa74182088c409acf7e91629408dcc5a6cb60b24f05de519fa3f373b"
   },
   "followups": [
     {
@@ -1618,9 +1623,13 @@
           "evidence/r41/chat/run3_priority/vl_graph_reset_interrupted.tgz",
           "evidence/r41/chat/run3_priority/vl_nohost_partial_20261031.json",
           "evidence/r41/chat/run3_priority/vl_nohost_partial_two_20261031.json",
-          "evidence/r41/chat/run3_priority/vl_nohost_partial_three_20261031.json"
+          "evidence/r41/chat/run3_priority/vl_nohost_partial_three_20261031.json",
+          "evidence/r41/chat/run3_priority/vl_reason_cpu_prefill_compare.tgz",
+          "evidence/r41/chat/run3_priority/vl_prefill_cpu_states.json",
+          "evidence/r41/chat/run3_priority/vl_grouped_tail_cpu_diagnostic.tgz",
+          "evidence/r41/chat/run3_priority/vl_nohost_partial_four_20261031.json"
         ],
-        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; the numerical divergence is under investigation."
+        "failure_reason": "The original VL attempt stalled; the traced retry answered two prompts before SIGSEGV. A later device-feedback retry passed two prompts but failed the registered third quality prompt against CPU reference. Zero decode reads are recorded for those prompts; a matched CPU diagnostic reproduces the divergence with chunked prefill, and the mechanism remains under investigation."
       },
       {
         "model": "Qwen3.5-4B-FP8",
@@ -1641,7 +1650,8 @@
         "evidence": [
           "evidence/r41/chat/run3_priority/q35_session_board.tgz",
           "evidence/r41/chat/run3_priority/q35_session_summary.json",
-          "evidence/r41/chat/run3_priority/q35_quality_preempted.tgz"
+          "evidence/r41/chat/run3_priority/q35_quality_preempted.tgz",
+          "evidence/r41/chat/run3_priority/q35_cpu_tail_compare.tgz"
         ],
         "failure_reason": "Run-2 full-checkpoint session and teacher/session checks passed under the old harness, but per-step logits were downloaded and argmax ran on the CPU; the author no-host criterion fails. The old quality attempt was interrupted before producing a prompt result; the same workload is queued with device feedback."
       }

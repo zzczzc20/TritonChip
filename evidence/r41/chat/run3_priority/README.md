@@ -102,3 +102,47 @@ new graphs, and the wrapper check reports no host numerical fallback. The
 quality run continues; the numerical or session cause of the divergence is
 not yet established. A separate CPU chunked-prefill diagnostic was started
 without changing the registered scoring rule.
+
+A matched full-checkpoint **CPU diagnostic** on GB10 reran only the `reason`
+prompt with the same model and 12-token limit. Whole-prompt prefill produced
+`Bob is the shortest.`, matching the archived CPU reference; eight-token
+chunked prefill produced `We are given the following statements:`, matching
+the board response, including all 12 token IDs. The two recorded CPU reports are in
+[`vl_reason_cpu_prefill_compare.tgz`](vl_reason_cpu_prefill_compare.tgz).
+This identifies a reproducible CPU-side chunking difference; it does not by
+itself establish the mechanism or change the failed board quality judgment.
+
+A second full-checkpoint CPU diagnostic compared whole and chunked prefill
+using identical 30-token inputs and a 256-token cache. The full and chunked
+first-token argmax IDs were 32388 and 1654, respectively; their logits had
+relative L2 difference 0.052061811089515686. Cache entries before position 24
+matched exactly; differences appeared at or after position 24, where the
+chunked path switches from three eight-token prefill calls to one-token decode
+calls. The [layer-wise CPU record](vl_prefill_cpu_states.json) supports this
+localization, but does not by itself prove why the values differ.
+
+## Grouped short-prefill tail candidate
+
+A generic change keeps the final short prompt block together in a prefill call
+instead of treating its tokens as decode steps. The pre-registered prompts,
+references, 12-token limit and scoring rule are unchanged. On GB10 CPU, the
+VL full-checkpoint diagnostic passed all six quality prompts, including image
+and multi-turn; its reason-prompt first-token argmax matched whole prefill,
+although logits were not bit-identical (relative L2 0.0329294428229332).
+See [`vl_grouped_tail_cpu_diagnostic.tgz`](vl_grouped_tail_cpu_diagnostic.tgz).
+
+For Qwen3.5 on GB10 CPU, the original eight-token chunked path failed the
+multi-turn quality check; grouped short tails passed all five quality prompts.
+Both full-checkpoint CPU reports are in
+[`q35_cpu_tail_compare.tgz`](q35_cpu_tail_compare.tgz). These are CPU
+results, not board acceptance. A newly registered run separates quality,
+session and VL scripted chat into independently budgeted experiments and
+keeps the original scoring rules. The previous board attempt continues until
+its current stage ends; the old-code Qwen3.5 follow-up is superseded so the
+grouped-tail queue can use the card next.
+
+The [06:56 UTC board snapshot](vl_nohost_partial_four_20261031.json) also
+records `instruct` as passed (`OK`), alongside the preserved `reason` failure.
+All four completed text prompts report zero host reads and no new graphs in
+all decode steps. The next grouped-tail run is already queued; this partial
+run is not final acceptance.

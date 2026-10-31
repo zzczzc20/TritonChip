@@ -23,7 +23,7 @@ class Meter:
     def __exit__(self, *args):
         return False
     def summary(self):
-        return {'host_read_calls': 0, 'staging_download_bytes': 0}
+        return {'host_read_calls': 0, 'staging_download_bytes': 0, 'device_cycles': None}
 
 class Session:
     def __init__(self, choices, prefill_compiles_decode=False):
@@ -98,6 +98,8 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(session.cached, [])
         self.assertEqual(session.resets, 1)
         self.assertEqual(report['executed_generation_steps'], 3)
+        self.assertEqual(report['statistics']['generated_tokens'], 2)
+        self.assertEqual(report['statistics']['executed_generation_steps'], 3)
     def test_decode_compiled_during_prefill_is_accounted_for(self):
         _, report = self.run_case([1, 2], prefill_compiles_decode=True)
         self.assertTrue(report['compiled_wrapper_roles_covered'])
@@ -116,6 +118,24 @@ class CodeCaptureTests(unittest.TestCase):
                 result, _ = chat.run_with_code_capture(lambda: f(torch.ones(4)))
             self.assertTrue(torch.equal(result, torch.full((4,), 2.0)))
         self.assertEqual(len(compiled), 1)
+
+
+class PrefillSegmentationTests(unittest.TestCase):
+    def test_short_tail_is_prefilled_as_a_block(self):
+        session = object.__new__(chat.Session)
+        session.model, session.bucket, session.chunk, session.cached = object(), 64, 8, []
+        session.reset = mock.Mock()
+        blocks = []
+        session._call_prefill = lambda ids, positions, vision: blocks.append(ids[0].tolist()) or torch.zeros(4)
+        session._call_decode = mock.Mock(side_effect=AssertionError('prompt tail used decode'))
+        ids = torch.arange(30).reshape(1, 30)
+        positions = torch.arange(30).reshape(1, 1, 30)
+        with mock.patch.object(chat.L, 'prefill_position_ids', return_value=positions):
+            _, rows, reused = session.prefill_prompt({'input_ids': ids}, None)
+        self.assertEqual([len(block) for block in blocks], [8, 8, 8, 6])
+        self.assertEqual([x for block in blocks for x in block], list(range(30)))
+        self.assertEqual([row['kind'] for row in rows], ['prefill'] * 4)
+        self.assertEqual(reused, 0)
 
 if __name__ == '__main__':
     unittest.main()

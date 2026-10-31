@@ -1539,7 +1539,8 @@
     "evidence/r41/chat/run3_priority/q35_nohost_v4_failed.tgz": "f13a6d2fd0ae677975a55a920fd841fddffa0276e5fdfabfdc895b556febffa5",
     "evidence/r41/chat/run3_priority/vl_reason_cpu_logits.tgz": "ae873b2d2fb539dc20e3224e67fddc09a24663910bf019c5dd736fc661bfd109",
     "evidence/r41/chat/run3_priority/vl_reason_cpu_layer_attention_dp.tgz": "2a18214434740e4e510f48d3117519dbd5a8fd94e7402519b787aed31379222f",
-    "evidence/r41/chat/run3_priority/vl_reason_sdpa_replay.tgz": "c8cec695f0fd1636aa487beff4e8f40152c941149ab5f0d7b40cdd0b1b1bf45e"
+    "evidence/r41/chat/run3_priority/vl_reason_sdpa_replay.tgz": "c8cec695f0fd1636aa487beff4e8f40152c941149ab5f0d7b40cdd0b1b1bf45e",
+    "evidence/r41/chat/run3_priority/vl_reason_fp8_dp_tlm.tgz": "fce299e229efbb0124cf9dfce6196cf96c7579f2c3fcafc7192a6e1dbf9dab94"
   },
   "followups": [
     {

@@ -253,3 +253,11 @@ cache's result, so these captures isolate query-shape-dependent CPU flash
 numerics. No attention backend or acceptance rule was changed. A separate
 DP-profile TLM run of the same real position-24 FP8 Q projection is running
 alongside the full-model TLM attempt.
+
+The [DP-profile TLM projection run](vl_reason_fp8_dp_tlm.tgz) used the actual
+reason-prompt position-24 activation and full checkpoint layer-2 Q-projection
+weights. All 2,048 output values matched both CPU W8A8 reference and the CPU
+DP-order rederivation bitwise. The TLM identity records `mtx_dp=1`; its three
+cores counted 2,560, 3,072 and 2,560 DP commands. This is a single FP8
+projection on the SystemC/TLM model, not board evidence or a full-model logits
+comparison. The full-model attempt continues.

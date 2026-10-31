@@ -20,7 +20,7 @@ PROMPT = 'Tom is taller than Ann. Ann is taller than Bob. Who is the shortest? A
 
 
 @contextlib.contextmanager
-def flash_approximation():
+def flash_approximation(sve_exp=False):
     """CPU experiment: round unnormalized attention weights before V matmul."""
     import torch.nn.functional as functional
     original=functional.scaled_dot_product_attention
@@ -35,7 +35,20 @@ def flash_approximation():
         if attn_mask is not None:
             score=score.masked_fill(~attn_mask,float('-inf')) if attn_mask.dtype==torch.bool else score+attn_mask.float()
         maximum=score.amax(-1,keepdim=True); finite=torch.isfinite(maximum)
-        prob=torch.exp(score-torch.where(finite,maximum,torch.zeros_like(maximum)))
+        exponent=score-torch.where(finite,maximum,torch.zeros_like(maximum))
+        if sve_exp:
+            # CPU-only SVE fexp_u20 rederivation; float64 expressions emulate
+            # the single-rounding FMA used by the native implementation.
+            lower=-float.fromhex('0x1.5d619ap+6'); shift=float.fromhex('0x1.803f8p17')
+            inv=float.fromhex('0x1.715476p+0'); ln2=float.fromhex('0x1.62e43p-1')
+            bounded=exponent.clamp(min=lower,max=0)
+            rounded=(bounded.double()*inv+shift).float()-shift
+            remainder=(bounded.double()-rounded.double()*ln2).float()
+            factor=torch.exp2(rounded.double()).float()
+            prob=(factor.double()+factor.double()*remainder.double()).float()
+            prob=torch.where(exponent<lower,0,prob)
+        else:
+            prob=torch.exp(exponent)
         denominator=prob.sum(-1,keepdim=True)
         numerator=torch.matmul(prob.to(q.dtype).float(),v.float())
         return torch.where(denominator>0,numerator/denominator.clamp_min(1e-30),0).to(q.dtype)
@@ -64,7 +77,7 @@ def main():
     p.add_argument('--tree', required=True)
     p.add_argument('--out', type=Path, required=True)
     p.add_argument('--cpu-reference', type=Path)
-    p.add_argument('--cpu-sdpa', choices=['default','math','flash-approx'], default='default')
+    p.add_argument('--cpu-sdpa', choices=['default','math','flash-approx','flash-sve-prototype'], default='default')
     a=p.parse_args()
     if a.mode=='tlm':
         chat.L.use_tnca(a.tree)
@@ -96,6 +109,8 @@ def main():
             attention_context=sdpa_kernel(SDPBackend.MATH)
         elif a.cpu_sdpa=='flash-approx':
             attention_context=flash_approximation()
+        elif a.cpu_sdpa=='flash-sve-prototype':
+            attention_context=flash_approximation(sve_exp=True)
         else:
             attention_context=contextlib.nullcontext()
         with torch.no_grad(), attention_context: logits,calls,reused=session.prefill_prompt(inputs,None)

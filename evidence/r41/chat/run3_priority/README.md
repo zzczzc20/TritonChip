@@ -313,3 +313,11 @@ This brought grouped-tail logits closer to the flash reference (relative L2
 `We` rather than `Bob`; it did not fix the registered reason prompt. It was a
 CPU diagnostic only, is not a product change, and did not alter the reference,
 quality rule, board run, or existing failures.
+
+A second [CPU-only attention candidate](vl_reason_cpu_flashsve_failed.tgz)
+re-derived the SVE flash exponential and the BF16 unnormalized weight cast;
+it matched the captured six-query layer-2 attention sample bitwise. It still
+failed to reproduce the full-model reference: grouped-tail relative L2 was
+0.05127841234207153 and its first token was `We`, while the original CPU flash
+reference selected `Bob`. This candidate was not integrated or sent to the
+board; its failed result and unchanged registered reference are preserved.

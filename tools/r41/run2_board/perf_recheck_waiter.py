@@ -112,7 +112,11 @@ def main():
                             continue
                         if row['uuid'] != CANDIDATE:
                             raise RuntimeError('loaded image changed before run-1 restoration')
-                        if tracker.observe(time.monotonic(), row):
+                        now = time.monotonic()
+                        ready = tracker.observe(now, row)
+                        record('idle-probe', board=row, monotonic=now,
+                               idle_seconds=now-tracker.start if tracker.start is not None else 0)
+                        if ready:
                             break
                         time.sleep(a.poll)
                     for mode in ('--check', '--go'):
@@ -122,7 +126,7 @@ def main():
                                 or (row['uuid'], row['total execs']) != tracker.identity):
                             raise RuntimeError('board changed or became busy before load')
                         tracker.last = time.monotonic()
-                        record('program', mode=mode, previous=row['uuid'])
+                        record('program', mode=mode, board=row, idle_seconds=tracker.last-tracker.start)
                         with (out/'program.log').open('a') as stream:
                             subprocess.run(['bash',str(root/'flow/fpga/program.sh'),mode,str(image)],
                                            env=env, stdout=stream, stderr=subprocess.STDOUT, check=True)
@@ -131,6 +135,7 @@ def main():
                             'verify','--image',str(image),'--uuid',OLD,'--evidence',str(Path.home()/'tnca_build/r41s2_run1_c9f25787494a/r41s2-board/qualified_clock.json'),
                             '--out',str(out/'run1_clock_verify.json')], env=env, stdout=stream,
                             stderr=subprocess.STDOUT, check=True)
+                    record('run1-clock-verified', report_sha256=auto.sha(out/'run1_clock_verify.json'))
                 row = auto.probe(Path('/sys/bus/pci/devices'))
                 expected = CANDIDATE if i < 2 else OLD
                 if not auto.idle(row) or row['uuid'] != expected or auto.clock_mhz(Path('/sys/bus/pci/devices')) != 100:

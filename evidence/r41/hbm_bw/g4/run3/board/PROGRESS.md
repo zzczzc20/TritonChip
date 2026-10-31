@@ -39,6 +39,9 @@ necessary.
 The 39 memory-bound and two original-suite points over 5% slower now have a
 registered recheck queued after the existing candidate tests; see
 [`performance_recheck.md`](performance_recheck.md). No recheck result exists yet.
+The first tiled large batch passed 99/99. Its same-image, same-source paired
+comparison with default is in [`membound_tiled2_large1_comparison.json`](membound_tiled2_large1_comparison.json);
+the remaining tiled batches are in progress or pending.
 
 The merged-source strict compiler gate passed 170 unit tests and six IR cases
 ([`../merge_gate/README.md`](../merge_gate/README.md)); the merged harness

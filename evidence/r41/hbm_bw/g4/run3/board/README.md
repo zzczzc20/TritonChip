@@ -42,6 +42,12 @@ All point hashes, demand, samples and medians are in
 [`membound_default_comparison.json`](membound_default_comparison.json).
 This descriptive comparison covers different complete stacks, so it does not
 isolate an optimization or replace the registered performance rechecks.
+The first tiled batch completed 99/99 with no failed or missing configurations:
+[`membound_tiled2_large1.tgz`](membound_tiled2_large1.tgz). Against the same
+99 default configurations on the same image and software tree, the sum of
+serial-grid cycle medians is 1.742× faster; 15 points are slower, none by more
+than 5% ([comparison and samples](membound_tiled2_large1_comparison.json)).
+This is a descriptive subset, not a full-suite or statistical acceptance.
 Both large
 batches completed, 171/171 with zero missing or failed configurations; raw
 records are in [`membound_default_large1.tgz`](membound_default_large1.tgz)

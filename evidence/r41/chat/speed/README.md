@@ -194,8 +194,8 @@ cross-platform NaN bit mismatch above remains a limitation; the board test
 is queued with the registered GB10 ARM reference and the non-default route
 explicitly identified. The opt-in is `TNCA_FP8_HOIST_V1_PATH`, pointing to
 pinned finegrained-FP8 revision `48f42b23bb4e0122d4775c6d16753dd2efc7f580`;
-the default official route remains selected when it is unset. The queue
-registration SHA-256 is `57f088dd9251bc5402ae87a4eaa63f4f707076d8b0548bf3ddeee100a9a686b9`
+the default official route remains selected when it is unset. The [queue registration](hoist_board_queue_20261031.tgz)
+SHA-256 is `57f088dd9251bc5402ae87a4eaa63f4f707076d8b0548bf3ddeee100a9a686b9`
 and it waits for the four earlier gated speed sessions.
 
 The [one-layer VL model TLM comparison](hoist_model_tlm_20261031.tgz) used

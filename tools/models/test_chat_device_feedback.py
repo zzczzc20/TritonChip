@@ -2,6 +2,7 @@
 """Exercise device-feedback ordering and EOS cache semantics without claiming board evidence."""
 import types
 import unittest
+from contextlib import nullcontext
 from unittest import mock
 import torch
 import torch._inductor.utils
@@ -68,6 +69,8 @@ class DeviceFeedbackTests(unittest.TestCase):
         tnca.__path__ = []
         ind = types.ModuleType('tnca.inductor')
         ind.host_fallbacks = fallback_hook or (lambda code: [])
+        residency = types.ModuleType('tnca.code_residency')
+        residency.RepeatedCodeTrace = lambda: types.SimpleNamespace(step=nullcontext)
         capture_count = 0
         def capture(fn):
             nonlocal capture_count
@@ -75,7 +78,8 @@ class DeviceFeedbackTests(unittest.TestCase):
             # The decode graph compiled inside prefill is reused in generation.
             cached_decode = prefill_compiles_decode and capture_count == 4
             return fn(), ([] if cached_decode else ['test wrapper'])
-        with mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind}), \
+        with mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind,
+                                            'tnca.code_residency': residency}), \
              mock.patch.object(chat, 'run_with_code_capture', capture), \
              mock.patch.object(chat, 'transfer_meter', lambda enabled: Meter()), \
              mock.patch.object(chat, 'code_store_counters', lambda: None), \

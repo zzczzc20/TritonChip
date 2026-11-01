@@ -908,6 +908,8 @@ def user_message(prompt, images=()):
 
 
 def open_images(paths):
+    if not paths:
+        return []
     from PIL import Image
     loaded = []
     for path in paths:

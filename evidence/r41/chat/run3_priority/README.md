@@ -1092,3 +1092,9 @@ image UUID/hash, clock and source-hash checks. Its registration SHA-256 is
 `7d5edef5c6d94734970835b552db7c7abff85f82759f4126808081606fa2b0bb`.
 The [queue](queue_q35_precision_b32_retry_20261101.py) uses a 600-second
 poll interval and never programs an image. No result is yet available.
+
+The completed [untimed precision-cast/b32 whole-prefill diagnostic](q35_untimed_precise_tlm_20261101.tgz)
+matched all 248320 logits bitwise against the earlier timed TLM run of the
+same candidate. This confirms equivalence for that one recorded input and
+setting; it does not establish numerical equality to CPU, timing, or board
+quality. The untimed baseline and IEEE variants remain pending.

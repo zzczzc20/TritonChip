@@ -679,3 +679,7 @@ one launch and no steady code loads. Two additional proof-harness revisions
 failed to compile on both routes: the first had an FP8 constant typing error;
 the second exhausted vector registers. Neither is an exactness pass. The
 113-point and paired model comparisons are still pending.
+
+The [completed two-step lookahead default audit](x8_depth2_audit_20261101.tgz)
+compared 113/113 points unchanged; the candidate remains rejected for the
+decode cycle regressions recorded above.

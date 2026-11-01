@@ -986,3 +986,15 @@ probe for block 32, spanning four scales, had 1/65536 mismatch (max absolute
 0.0009765625). The candidate therefore does not pass a bitwise exactness gate.
 The [two-layer and full-model b32 TLM runs](q35_precise_b32_model_pending_20261101.tgz)
 are running with automatic comparisons; they are diagnostics, not board runs.
+
+The [random gated-norm follow-up](q35_gate_random_ieee_20261101.tgz) found
+that its only b32 precision-cast mismatch had bitwise-identical CPU/TLM
+variance, rsqrt, normalized and BF16-weighted values at the failing element.
+SiLU differed by one FP32 ULP (0.5392377377 versus 0.5392376781), causing
+the final BF16 tie to round differently. Both ordinary and compensated
+standalone means retained this one mismatch. Adding declared non-default
+`TNCA_IEEE_DIV=1` to precision casts and block 32 gave 0/65536 mismatches on
+this same random case. This is still finite single-shape evidence, not a
+general exactness or board pass. [Two-layer, full-model, component and
+convolution TLM comparisons](q35_precise_b32_ieee_model_pending_20261101.tgz)
+with those knobs are pending.

@@ -431,6 +431,56 @@ class PrefillSegmentationTests(unittest.TestCase):
         self.assertEqual(session.step_device.call_args.args[0].tolist(), [[0]])
         session.reset.assert_called_once()
 
+    def test_static_warmup_retains_exact_prompt_and_consumes_it_once(self):
+        session = object.__new__(chat.Session)
+        session.device, session.dev, session.cache = 'tnca', torch.device('cpu'), object()
+        session.cached, session._cache_tokens, session.last_position = [], 0, None
+        session._warm_prefill = None
+        inputs = {'input_ids': torch.tensor([[2, 4, 8]])}
+        saved_logits = object()
+        calls = [dict(kind='prefill', seconds=1.5, new_graphs=1)]
+        def prefill(data, images):
+            session.cached = data['input_ids'][0].tolist()
+            session._cache_tokens = len(session.cached)
+            session.last_position = torch.tensor([2])
+            return saved_logits, calls, 0
+        def decode(_token):
+            session._cache_tokens += 1
+            session.last_position = session.last_position + 1
+            return 'dummy'
+        session.prefill_prompt, session.step_device = prefill, decode
+        session.reset = mock.Mock()
+        with mock.patch.dict(os.environ, {'TNCA_REUSE_WARM_PREFILL': '1'}), \
+             mock.patch.object(chat, 'rewind_attention_cache', return_value=True) as rewind:
+            self.assertEqual(session.warmup_decode(inputs), 'dummy')
+        rewind.assert_called_once_with(session.cache, 3)
+        session.reset.assert_not_called()
+        self.assertEqual(session._cache_tokens, 3)
+        self.assertEqual(int(session.last_position.item()), 2)
+        self.assertEqual(session.consume_warm_prefill(inputs, None), (saved_logits, calls, 0))
+        self.assertIsNone(session.consume_warm_prefill(inputs, None))
+
+    def test_hybrid_warmup_keeps_the_existing_reset_path(self):
+        session = object.__new__(chat.Session)
+        session.device, session.dev, session.cache = 'tnca', torch.device('cpu'), object()
+        session.cached, session._cache_tokens, session.last_position = [], 0, None
+        session._warm_prefill = None
+        inputs = {'input_ids': torch.tensor([[2, 4]])}
+        def prefill(_data, _images):
+            session.cached, session._cache_tokens = [2, 4], 2
+            session.last_position = torch.tensor([1])
+            return object(), [], 0
+        def decode(_token):
+            session._cache_tokens += 1
+            return 'dummy'
+        session.prefill_prompt, session.step_device = prefill, decode
+        session.reset = mock.Mock()
+        with mock.patch.dict(os.environ, {'TNCA_REUSE_WARM_PREFILL': '1'}), \
+             mock.patch.object(chat, 'rewind_attention_cache', return_value=False):
+            self.assertEqual(session.warmup_decode(inputs), 'dummy')
+        session.reset.assert_called_once()
+        self.assertIsNone(session._warm_prefill)
+
     def test_short_tail_is_prefilled_as_a_block(self):
         session = object.__new__(chat.Session)
         session.model, session.bucket, session.chunk, session.cached = object(), 64, 8, []

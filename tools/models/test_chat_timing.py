@@ -29,6 +29,19 @@ class TimingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             user_visible_metrics({}, -1)
 
+    def test_retained_prefill_is_attributed_without_double_counting_warmup(self):
+        report = {'generated_tokens': [1], 'decode_warmup': {'seconds': 5.0},
+                  'statistics': {'prefill_seconds': 2.0, 'prefill_seconds_already_in_warmup': 1.5,
+                                 'decode_seconds': 3.0}}
+        timing = user_visible_metrics(report, 10.0)
+        self.assertEqual(timing['other_wall_seconds'], 1.5)
+        self.assertFalse(timing['accounted_span_exceeds_wall'])
+        finalize_user_visible_metrics(timing, 11.0, 'through stdout')
+        self.assertEqual(timing['other_wall_seconds'], 2.5)
+        report['statistics']['prefill_seconds_already_in_warmup'] = 6.0
+        with self.assertRaises(ValueError):
+            user_visible_metrics(report, 10.0)
+
     def test_compilation_subtotal_and_cache_hits_do_not_double_count_wall_time(self):
         metrics = {'_compile.compile_inner': [10.0]}
         counters = {'inductor': {'fxgraph_cache_hit': 2, 'fxgraph_cache_miss': 1}}

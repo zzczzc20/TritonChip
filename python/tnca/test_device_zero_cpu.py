@@ -61,7 +61,7 @@ class DeviceZeroTests(unittest.TestCase):
     def test_triton_interpreter_clears_exactly_the_selected_bytes(self):
         source = '''
 import torch
-from tnca.torch_device.copy import _zero_storage_kernel
+from tnca.torch_device.copy import _zero_storage_kernel, _zero_view_kernel
 for count in (8, 128, 1032, 65536, 65544):
     data = torch.arange(count + 16, dtype=torch.int64).to(torch.uint8)
     original = data.clone()
@@ -69,6 +69,12 @@ for count in (8, 128, 1032, 65536, 65544):
     assert torch.equal(data[:8], original[:8])
     assert torch.equal(data[-8:], original[-8:])
     assert torch.equal(data[8:-8], torch.zeros(count, dtype=torch.uint8))
+base = torch.arange(1 * 2 * 16 * 8, dtype=torch.int64).to(torch.uint8).reshape(1, 2, 16, 8)
+expected = base.clone()
+expected[:, :, 3:6, :] = 0
+view = base[:, :, 3:6, :]
+_zero_view_kernel[(8,)](view, view.numel(), tuple(view.shape), tuple(view.stride()), 1, 16, 8, num_warps=1)
+assert torch.equal(base, expected)
 '''
         env = dict(os.environ, TRITON_INTERPRET='1')
         subprocess.run([sys.executable, '-c', source], env=env, check=True, timeout=45)

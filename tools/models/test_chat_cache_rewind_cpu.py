@@ -60,7 +60,11 @@ class StaticAttentionContinuationTests(unittest.TestCase):
             valid = len(prefix) + len(emitted)
             for index, token in enumerate(speculative):
                 self.call(rewound, [token], valid + index)
-            self.assertTrue(chat.rewind_attention_cache(rewound, valid))
+            for layer in rewound.layers:
+                layer.keys[:, :, valid:valid + len(speculative)].fill_(float('nan'))
+                layer.values[:, :, valid:valid + len(speculative)].fill_(float('nan'))
+            self.assertTrue(chat.rewind_attention_cache(rewound, valid,
+                                                        dirty_length=valid + len(speculative)))
             expected = self.call(clean, suffix, valid)
             actual = self.call(rewound, suffix, valid)
         self.assertTrue(torch.equal(expected, actual))

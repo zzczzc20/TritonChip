@@ -47,6 +47,56 @@ def zero_full_storage(tensor):
 
 
 @triton.jit
+def _zero_view_kernel(DST, COUNT: tl.constexpr, SHAPE: tl.constexpr, STRIDES: tl.constexpr,
+                      BYTES: tl.constexpr, BLOCK: tl.constexpr, PROGRAMS: tl.constexpr):
+    """Clear the exact bytes of a strided cache tail on the device."""
+    destination = DST.to(tl.pointer_type(tl.uint8))
+    pid = tl.program_id(0)
+    for block in range(tl.cdiv(COUNT, BLOCK * PROGRAMS)):
+        index = (block * PROGRAMS + pid) * BLOCK + tl.arange(0, BLOCK)
+        element = index // BYTES
+        byte = index % BYTES
+        remaining = element
+        offset = tl.full((BLOCK,), 0, tl.int32)
+        for axis in tl.static_range(len(SHAPE) - 1, -1, -1):
+            coordinate = remaining % SHAPE[axis]
+            remaining = remaining // SHAPE[axis]
+            offset += coordinate * STRIDES[axis]
+        tl.store(destination + offset * BYTES + byte, tl.full((BLOCK,), 0, tl.uint8), index < COUNT)
+
+
+def zero_view_tensor(tensor):
+    """Queue an exact device-side clear of an aligned, non-overlapping view."""
+    from tnca.triton_backend.driver import TNCADriver
+    item = tensor.element_size()
+    shape, strides = tuple(tensor.shape), tuple(tensor.stride())
+    count = tensor.numel() * item
+    if not count:
+        return tensor
+    if (len(shape) != 4 or strides[-1] != 1 or shape[-1] * item % 8
+            or tensor.storage_offset() * item % 8
+            or any(stride * item % 8 for stride in strides[:-1])):
+        raise ValueError('tnca zero: view rows must be word aligned')
+    extent = 1
+    for stride, size in sorted((stride, size) for stride, size in zip(strides, shape) if size > 1):
+        if stride < extent:
+            raise ValueError('tnca zero: view elements overlap')
+        extent += (size - 1) * stride
+    if count > MAX_SPAN or extent * item > MAX_SPAN:
+        raise ValueError('tnca zero: view exceeds one launch')
+    block = 16  # Strided byte indices need more registers than a contiguous clear.
+    programs = min(triton.cdiv(count, block), 1024)
+    with _lock:
+        previous = triton.runtime.driver.active
+        try:
+            triton.runtime.driver.set_active(TNCADriver())
+            _zero_view_kernel[(programs,)](tensor, count, shape, strides, item, block, programs, num_warps=1)
+        finally:
+            triton.runtime.driver.set_active(previous)
+    return tensor
+
+
+@triton.jit
 def _copy_storage_kernel(SRC, DST, N, BLOCK: tl.constexpr):
     stride = tl.num_programs(0) * BLOCK
     for block in range(tl.cdiv(N, stride)):

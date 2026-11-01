@@ -146,6 +146,16 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(len(standard.synchronizations) - len(queued.synchronizations), 2)
         self.assertTrue(all(s['transfers_inside_step']['host_read_calls'] == 0 for s in result['steps']))
         self.assertIn('successive device completion', result['statistics']['decode_time_scope'])
+
+    def test_queue_rejects_synchronous_staging_and_skipped_launches(self):
+        safe = {'TNCA_SUBMIT': 'batched', 'TNCA_TRANSFER_POLICY': 'resident',
+                'TNCA_LAUNCH': 'run', 'TNCA_GUARD_CHECK': '0', 'TNCA_GUARD_BYTES': '0'}
+        with mock.patch.dict(os.environ, safe):
+            chat.validate_queued_decode()
+            for key, value in (('TNCA_SUBMIT', 'single'), ('TNCA_TRANSFER_POLICY', 'per-kernel'),
+                               ('TNCA_LAUNCH', 'skip'), ('TNCA_GUARD_CHECK', '1'), ('TNCA_GUARD_BYTES', '8')):
+                with mock.patch.dict(os.environ, {key: value}), self.assertRaises(ValueError):
+                    chat.validate_queued_decode()
     def test_eos_discards_overrun_cache(self):
         session, report = self.run_case([1, 3, 2])
         self.assertEqual(session.fed, [1, 3])
@@ -182,14 +192,14 @@ class DeviceFeedbackTests(unittest.TestCase):
 
     def test_eos_rewind_retains_only_the_actual_prefix(self):
         calls = []
-        def rewind(cache, valid_length):
-            calls.append((cache, valid_length))
+        def rewind(cache, valid_length, *, dirty_length):
+            calls.append((cache, valid_length, dirty_length))
             return True
         session, report = self.run_case([1, 3, 2], rewind_hook=rewind)
         self.assertEqual(report['generated_tokens'], [1, 3])
         self.assertEqual(session.cached, [8, 9, 1])
         self.assertEqual(int(session.last_position.item()), 2)
-        self.assertEqual(calls, [(session.cache, 3)])
+        self.assertEqual(calls, [(session.cache, 3, 4)])
         self.assertEqual(session.resets, 0)
         self.assertEqual(session._cache_tokens, 3)
         self.assertEqual(report['session']['cache_rewind'], 'static-attention-prefix-retained')
@@ -218,7 +228,7 @@ class AttentionRewindTests(unittest.TestCase):
                 self.cumulative_length = torch.tensor(length, dtype=torch.int64)
                 self.max_cache_len = capacity
                 self.is_initialized = True
-                self.keys = torch.arange(capacity, dtype=torch.float32).reshape(1, 1, capacity, 1)
+                self.keys = torch.arange(capacity * 2, dtype=torch.float32).reshape(1, 1, capacity, 2)
                 self.values = -self.keys.clone()
         self.static_layer = StaticLayer
         self.cache_module.StaticLayer = StaticLayer
@@ -232,26 +242,31 @@ class AttentionRewindTests(unittest.TestCase):
         lengths = [layer.cumulative_length for layer in layers]
         keys = [layer.keys.clone() for layer in layers]
         values = [layer.values.clone() for layer in layers]
-        self.assertTrue(chat.rewind_attention_cache(types.SimpleNamespace(layers=layers), 3))
+        self.assertTrue(chat.rewind_attention_cache(types.SimpleNamespace(layers=layers), 3, dirty_length=7))
         self.assertEqual([int(length) for length in lengths], [3, 3])
         self.assertTrue(all(layer.cumulative_length is length for layer, length in zip(layers, lengths)))
-        self.assertTrue(all(torch.equal(layer.keys, original) for layer, original in zip(layers, keys)))
-        self.assertTrue(all(torch.equal(layer.values, original) for layer, original in zip(layers, values)))
+        for layer, original_keys, original_values in zip(layers, keys, values):
+            self.assertTrue(torch.equal(layer.keys[:, :, :3], original_keys[:, :, :3]))
+            self.assertTrue(torch.equal(layer.values[:, :, :3], original_values[:, :, :3]))
+            self.assertEqual(torch.count_nonzero(layer.keys[:, :, 3:7]).item(), 0)
+            self.assertEqual(torch.count_nonzero(layer.values[:, :, 3:7]).item(), 0)
+            self.assertTrue(torch.equal(layer.keys[:, :, 7:], original_keys[:, :, 7:]))
+            self.assertTrue(torch.equal(layer.values[:, :, 7:], original_values[:, :, 7:]))
 
     def test_mixed_or_unsupported_cache_does_not_mutate_any_layer(self):
         first = self.static_layer()
         cache = types.SimpleNamespace(layers=[first, object()])
-        self.assertFalse(chat.rewind_attention_cache(cache, 3))
+        self.assertFalse(chat.rewind_attention_cache(cache, 3, dirty_length=7))
         self.assertEqual(int(first.cumulative_length), 7)
-        self.assertFalse(chat.rewind_attention_cache(types.SimpleNamespace(layers=[]), 3))
+        self.assertFalse(chat.rewind_attention_cache(types.SimpleNamespace(layers=[]), 3, dirty_length=7))
 
     def test_out_of_range_and_uninitialized_layers_are_rejected(self):
         first, second = self.static_layer(), self.static_layer(capacity=4)
         cache = types.SimpleNamespace(layers=[first, second])
-        self.assertFalse(chat.rewind_attention_cache(cache, 5))
+        self.assertFalse(chat.rewind_attention_cache(cache, 5, dirty_length=7))
         self.assertEqual(int(first.cumulative_length), 7)
         second.is_initialized = False
-        self.assertFalse(chat.rewind_attention_cache(cache, 3))
+        self.assertFalse(chat.rewind_attention_cache(cache, 3, dirty_length=7))
         self.assertEqual(int(first.cumulative_length), 7)
 
     def test_length_views_and_nonstandard_dtypes_do_not_trigger_rewind(self):
@@ -259,20 +274,20 @@ class AttentionRewindTests(unittest.TestCase):
         backing = torch.tensor([7, 99], dtype=torch.int64)
         first.cumulative_length = backing[:1]
         cache = types.SimpleNamespace(layers=[first])
-        self.assertFalse(chat.rewind_attention_cache(cache, 3))
+        self.assertFalse(chat.rewind_attention_cache(cache, 3, dirty_length=7))
         self.assertEqual(backing.tolist(), [7, 99])
         first.cumulative_length = torch.tensor(7, dtype=torch.int32)
-        self.assertFalse(chat.rewind_attention_cache(cache, 3))
+        self.assertFalse(chat.rewind_attention_cache(cache, 3, dirty_length=7))
         self.assertEqual(int(first.cumulative_length), 7)
 
     def test_different_device_or_custom_layer_cannot_be_rewound(self):
         first = self.static_layer()
         first.keys = torch.empty((1, 1, first.max_cache_len, 1), device='meta')
-        self.assertFalse(chat.rewind_attention_cache(types.SimpleNamespace(layers=[first]), 3))
+        self.assertFalse(chat.rewind_attention_cache(types.SimpleNamespace(layers=[first]), 3, dirty_length=7))
         class DerivedLayer(self.static_layer):
             pass
         custom = DerivedLayer()
-        self.assertFalse(chat.rewind_attention_cache(types.SimpleNamespace(layers=[custom]), 3))
+        self.assertFalse(chat.rewind_attention_cache(types.SimpleNamespace(layers=[custom]), 3, dirty_length=7))
         self.assertEqual(int(custom.cumulative_length), 7)
 
 
@@ -453,7 +468,7 @@ class PrefillSegmentationTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {'TNCA_REUSE_WARM_PREFILL': '1'}), \
              mock.patch.object(chat, 'rewind_attention_cache', return_value=True) as rewind:
             self.assertEqual(session.warmup_decode(inputs), 'dummy')
-        rewind.assert_called_once_with(session.cache, 3)
+        rewind.assert_called_once_with(session.cache, 3, dirty_length=4)
         session.reset.assert_not_called()
         self.assertEqual(session._warm_prefill_mode, 'static-rewound')
         self.assertEqual(session._cache_tokens, 3)

@@ -403,7 +403,7 @@ class Session:
                     and self._cache_tokens == length + 1
                     and inputs['input_ids'].device.type == 'cpu'
                     and (restore_hybrid_prefill(hybrid) if hybrid is not None
-                         else rewind_attention_cache(self.cache, length))):
+                         else rewind_attention_cache(self.cache, length, dirty_length=length + 1))):
                 # Prompt logits and cache state retain the same device bits;
                 # do not recompute the whole prompt after the dummy decode.
                 self.last_position, self._cache_tokens = position, length
@@ -434,11 +434,25 @@ def _vision_to(vision, dev):
 
 def stage_decode_positions(last_position, count, device):
     """Upload known position metadata once, before the queued decode steps."""
-    if last_position.device.type != 'cpu' or count < 2:
+    if (not torch.is_tensor(last_position) or last_position.device.type != 'cpu'
+            or last_position.dtype not in (torch.int32, torch.int64)
+            or last_position.numel() == 0 or type(count) is not int or count < 2):
         raise ValueError('queued decode requires a CPU position and at least two tokens')
     shape = (count - 1,) + (1,) * last_position.ndim
     increments = torch.arange(1, count, dtype=last_position.dtype).reshape(shape)
     return (last_position.unsqueeze(0) + increments).contiguous().to(device)
+
+
+def validate_queued_decode():
+    """Reject controls that would silently turn the queued path synchronous."""
+    if os.environ.get('TNCA_SUBMIT', 'batched') != 'batched':
+        raise ValueError('queued decode requires TNCA_SUBMIT=batched')
+    if os.environ.get('TNCA_TRANSFER_POLICY', 'resident') != 'resident':
+        raise ValueError('queued decode requires resident device tensors')
+    if os.environ.get('TNCA_LAUNCH') == 'skip':
+        raise ValueError('queued decode cannot use compile-only skipped launches')
+    if os.environ.get('TNCA_GUARD_CHECK') == '1' or int(os.environ.get('TNCA_GUARD_BYTES', '0')):
+        raise ValueError('queued decode does not support host staging guards')
 
 
 def clear_static_attention_cache(cache):
@@ -516,13 +530,58 @@ def _write_static_lengths(lengths, valid_length):
         length.copy_(value)
 
 
-def rewind_attention_cache(cache, valid_length):
-    """Restore only standard static KV lengths, with no host tensor reads."""
-    lengths = _static_attention_lengths(getattr(cache, 'layers', None), valid_length)
+def _static_tail_views(layers, start, end):
+    """Validate complete cache tensors before clearing speculative slots."""
+    if end is None:
+        return []
+    if type(end) is not int or end < start:
+        return None
+    if end == start:
+        return []
+    views = []
+    for layer in layers:
+        if end > layer.max_cache_len:
+            return None
+        for tensor in (layer.keys, layer.values):
+            item = tensor.element_size()
+            if (not tensor.is_contiguous() or tensor.storage_offset() != 0
+                    or tensor.stride(-1) != 1 or tensor.shape[-1] * item % 8
+                    or any(tensor.stride(axis) * item % 8 for axis in (0, 1, 2))
+                    or tensor.untyped_storage().nbytes() != tensor.numel() * item):
+                return None
+            view = tensor[:, :, start:end, :]
+            span = (1 + sum((n - 1) * stride for n, stride in zip(view.shape, view.stride()) if n)) * item
+            if view.numel() * item > (1 << 31) - (1 << 20) or span > (1 << 31) - (1 << 20):
+                return None
+            views.append(view)
+    return views
+
+
+def _clear_static_tail(views):
+    for view in views:
+        if view.numel() == 0:
+            continue
+        if view.device.type == 'tnca':
+            from tnca.torch_device.copy import zero_view_tensor
+            zero_view_tensor(view)
+        else:
+            view.zero_()
+
+
+def rewind_attention_cache(cache, valid_length, *, dirty_length=None):
+    """Restore static KV and clear discarded slots without host tensor reads."""
+    if dirty_length is None:
+        return False  # Without the high-water mark, stale values cannot be cleared safely.
+    layers = getattr(cache, 'layers', None)
+    lengths = _static_attention_lengths(layers, valid_length)
     if lengths is None:
+        return False
+    tails = _static_tail_views(layers, valid_length, dirty_length)
+    if tails is None:
         return False
     # Validate every layer before mutating any. Keep the marked static device
     # addresses; replacing the tensors would invalidate compiled graphs.
+    _clear_static_tail(tails)
     _write_static_lengths(lengths, valid_length)
     return True
 
@@ -617,6 +676,9 @@ def restore_hybrid_prefill(snapshot):
     lengths = _static_attention_lengths(snapshot['statics'], snapshot['valid_length'])
     if lengths is None or any(a is not b for a, b in zip(lengths, snapshot['lengths'], strict=True)):
         return False
+    tails = _static_tail_views(snapshot['statics'], snapshot['valid_length'], snapshot['valid_length'] + 1)
+    if tails is None:
+        return False
     for layer, before in zip(snapshot['linear'], snapshot['signatures'], strict=True):
         after = _linear_prefill_signature(layer)
         if after is None or before[:2] != after[:2] or len(before[2]) != len(after[2]):
@@ -626,6 +688,7 @@ def restore_hybrid_prefill(snapshot):
                 return False
     for tensor, saved in zip(snapshot['tensors'], snapshot['copies'], strict=True):
         tensor.copy_(saved)
+    _clear_static_tail(tails)
     _write_static_lengths(lengths, snapshot['valid_length'])
     return True
 
@@ -658,6 +721,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     teacher = [torch.tensor([[t]], dtype=torch.long).to(session.dev) for t in (forced_tokens or [])]
     rows, device_logits, device_candidates, position_history = [], [], [], []
     queue_steps = os.environ.get('TNCA_QUEUE_STEPS') == '1' and new_tokens > 1
+    if queue_steps:
+        validate_queued_decode()
     position_batch, queued_meters, queue_anchor = None, [], None
     code_by_role = getattr(session, "_generation_code", {})
     session._generation_code = code_by_role
@@ -797,7 +862,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         expected_length = len(session.cached) + max(0, len(rows) - 1)
         if (position is not None and not forced_tokens and tokens and tokens[-1] in eos
                 and getattr(session, '_cache_tokens', None) == expected_length
-                and rewind_attention_cache(session.cache, valid_length)):
+                and rewind_attention_cache(session.cache, valid_length, dirty_length=expected_length)):
             session.cached += tokens[:-1]
             session.last_position = position
             session._cache_tokens = valid_length
@@ -834,6 +899,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                  returned_rate_scope='returned token IDs including EOS; generation wall only, excludes output retrieval')
     if queue_steps:
         stats['decode_time_scope'] = 'successive device completion times after one queued submission span'
+        stats['decode_submission'] = 'queued-resident-device-feedback'
     if rows[0].get('prefill_from_warmup'):
         stats['returned_rate_scope'] = ('generation loop after prefill retained from warmup; '
                                         'excludes warmup and output retrieval')

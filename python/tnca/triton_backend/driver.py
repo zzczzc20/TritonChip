@@ -187,8 +187,10 @@ def launch_log(*, isolated=False):
     """Collect one dict per launch made while open (nested logs all see it)."""
     log = []
     previous = _active_logs() if isolated else None
+    previous_summaries = _active_summaries() if isolated else None
     if isolated:
         _log_local.logs = []
+        _log_local.summaries = []
     _active_logs().append(log)
     try:
         yield log
@@ -198,6 +200,7 @@ def launch_log(*, isolated=False):
         assert _active_logs().pop() is log
         if previous is not None:
             _log_local.logs = previous
+            _log_local.summaries = previous_summaries
         # An asynchronous launch log is measured through completion, never
         # just submission. Nested contexts share each entry's final values.
         for entry in log:

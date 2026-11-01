@@ -72,6 +72,20 @@ class LaunchSummaryTests(unittest.TestCase):
         compact.finish()
         session.wait.assert_called_once_with(event)
 
+    def test_isolated_autotune_log_does_not_leak_into_chat_counters(self):
+        launcher = self.launcher()
+        with mock.patch.dict(os.environ, {'TNCA_LAUNCH': 'skip'}):
+            with driver.launch_summary() as outer:
+                launcher(1, 1, 1, None, None, None, None, None, None)
+                with driver.launch_log(isolated=True) as tuning:
+                    launcher(1, 1, 1, None, None, None, None, None, None)
+                    with driver.launch_summary() as inner:
+                        launcher(1, 1, 1, None, None, None, None, None, None)
+                launcher(1, 1, 1, None, None, None, None, None, None)
+        self.assertEqual(len(tuning), 2)
+        self.assertEqual(inner.result['launches'], 1)
+        self.assertEqual(outer.result['launches'], 2)
+
 
 if __name__ == '__main__':
     unittest.main()

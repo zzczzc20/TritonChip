@@ -348,7 +348,8 @@ def main():
             prompt, images, tokens, logits = first_capture
             app.reset_conversation()
             started = time.perf_counter()
-            warm = app.generate(prompt, images, keep_history=True, prompt_started=started)
+            warm = app.generate(prompt, images, keep_history=True, prompt_started=started,
+                                retain_logits=True)
             print(json.dumps(dict(prompt='warm-repeat', user=prompt, assistant=warm['generated_text'])), flush=True)
             from chat_timing import finalize_user_visible_metrics
             finalize_user_visible_metrics(warm['user_visible_timing'], time.perf_counter() - started,

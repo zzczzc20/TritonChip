@@ -158,6 +158,27 @@ class DeviceFeedbackTests(unittest.TestCase):
 
 
 class CodeCaptureTests(unittest.TestCase):
+    def test_steady_roles_reuse_inspected_code_and_reject_recompile(self):
+        roles = {'decode': ['inspected decode wrapper']}
+        previous = torch._dynamo.config.error_on_recompile
+        def invoke():
+            self.assertTrue(torch._dynamo.config.error_on_recompile)
+            return 17
+        with mock.patch.object(chat, 'run_with_code_capture', side_effect=AssertionError('unexpected capture')):
+            self.assertEqual(chat.capture_generation_role('decode', invoke, roles), 17)
+        self.assertEqual(torch._dynamo.config.error_on_recompile, previous)
+
+    def test_prefill_is_recaptured_and_configuration_is_restored_on_failure(self):
+        roles = {'prefill': ['previous wrapper'], 'selection': ['inspected selection wrapper']}
+        with mock.patch.object(chat, 'run_with_code_capture', return_value=(3, ['new wrapper'])) as capture:
+            self.assertEqual(chat.capture_generation_role('prefill', lambda: None, roles), 3)
+        self.assertEqual(roles['prefill'], ['previous wrapper', 'new wrapper'])
+        capture.assert_called_once()
+        previous = torch._dynamo.config.error_on_recompile
+        with self.assertRaisesRegex(RuntimeError, 'failure'):
+            chat.capture_generation_role('selection', lambda: (_ for _ in ()).throw(RuntimeError('failure')), roles)
+        self.assertEqual(torch._dynamo.config.error_on_recompile, previous)
+
     def test_capture_reuses_the_compiled_graph(self):
         compiled = []
         def backend(graph, example_inputs):
@@ -189,6 +210,21 @@ class CodeCaptureTests(unittest.TestCase):
 
 
 class UserReportTests(unittest.TestCase):
+    def test_session_check_skips_unused_intervening_logits(self):
+        import copy
+        logits = [torch.tensor([1.0, -1.0])]
+        first = dict(status='pass', generated_tokens=[1], candidate_tokens=[1],
+                     logits=logits, steps=[], session=dict(new_graphs_this_prompt=0))
+        other = dict(status='pass', generated_tokens=[2], candidate_tokens=[2],
+                     logits=[], steps=[], session=dict(new_graphs_this_prompt=0))
+        repeated = copy.deepcopy(first)
+        app = object.__new__(chat.ChatApplication)
+        app.generate = mock.Mock(side_effect=[other, repeated])
+        result = app.session_check(first, 'first', (), 'other')
+        self.assertTrue(result['passed'])
+        self.assertIs(app.generate.call_args_list[0].kwargs['retain_logits'], False)
+        self.assertEqual(app.generate.call_args_list[1].kwargs['forced'], [1])
+
     def test_json_flushes_text_before_finalizing_visible_time(self):
         import io
         import json

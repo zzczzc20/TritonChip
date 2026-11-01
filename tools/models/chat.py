@@ -89,6 +89,8 @@ def compare_logits(reference, candidate):
     rows = []
     for index, (want, got) in enumerate(zip(reference, candidate)):
         x, y = want.double().flatten(), got.double().flatten()
+        if x.numel() == 0 or x.numel() != y.numel():
+            raise ValueError(f'logit comparison step {index} has incompatible vocabulary sizes')
         rows.append(dict(step=index,
                          rel_l2=float((y - x).norm() / x.norm().clamp_min(1e-300)),
                          reference_argmax=int(want.float().argmax()),
@@ -147,6 +149,29 @@ def run_with_code_capture(fn):
             patch.object(PyCodeCache, "load_by_key_path", classmethod(load_and_capture)):
         result = fn()
     return result, code
+
+
+def capture_generation_role(role, fn, code_by_role):
+    """Capture new wrappers once; reject later recompiles on stable roles.
+
+    Decode and token selection have fixed shapes within a session. Their
+    already-inspected wrappers need not be patched and copied on every
+    token, but a new wrapper must never escape the no-fallback inspection.
+    Prefill can legitimately change with prompt length, so it is always
+    captured. An attempted steady-role recompile fails rather than running
+    an uninspected graph.
+    """
+    if role in ('decode', 'selection') and code_by_role.get(role):
+        config = torch._dynamo.config
+        previous = config.error_on_recompile
+        try:
+            config.error_on_recompile = True
+            return fn()
+        finally:
+            config.error_on_recompile = previous
+    result, code = run_with_code_capture(fn)
+    code_by_role.setdefault(role, []).extend(code)
+    return result
 
 
 def code_store_counters():
@@ -377,9 +402,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     if not hasattr(session, '_decode_code_trace'):
         session._decode_code_trace = RepeatedCodeTrace()
     def capture(role, fn):
-        result, code = run_with_code_capture(fn)
-        code_by_role.setdefault(role, []).extend(code)
-        return result
+        return capture_generation_role(role, fn, code_by_role)
 
     # Compilation can read its own constant-folding scalars. Do that once on
     # a dummy token after populating the prompt cache; record all transfers
@@ -828,7 +851,10 @@ class ChatApplication:
         then the first prompt again with the first run's tokens forced. The repeat must reproduce the first run's
         tokens and every logit bit for bit (code-store reloads, allocator reuse and cache reset are exercised
         in between), and must compile nothing new."""
-        other = self.generate(prompt, check=False)
+        # The intervening prompt exercises cache eviction, but its logits
+        # are not compared. Keep the bitwise check on the first/repeated
+        # prompt while avoiding an unnecessary vocabulary download here.
+        other = self.generate(prompt, check=False, retain_logits=False)
         again = self.generate(first_prompt, first_images, forced=first["generated_tokens"])
         mismatched = [i for i, (x, y) in enumerate(zip(first["logits"], again["logits"], strict=True))
                       if not torch.equal(x.view(torch.int16) if x.dtype == torch.bfloat16 else x,

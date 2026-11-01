@@ -14,6 +14,8 @@ class ConversationEvidenceTests(unittest.TestCase):
             compare_logits([], [])
         with self.assertRaises(ValueError):
             compare_logits([torch.tensor([1.0])], [])
+        with self.assertRaises(ValueError):
+            compare_logits([torch.tensor([1.0])], [torch.tensor([1.0, 2.0])])
 
     def test_previous_answers_must_be_present_and_equal(self):
         self.assertTrue(prior_assistant_text_matches([], [], 0))

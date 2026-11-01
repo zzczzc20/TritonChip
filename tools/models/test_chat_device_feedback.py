@@ -406,6 +406,21 @@ class UserReportTests(unittest.TestCase):
 
 
 class PrefillSegmentationTests(unittest.TestCase):
+    def test_shared_model_is_placed_once_for_prefill_and_decode(self):
+        model = object()
+        prefill = types.SimpleNamespace(model=model)
+        decode = types.SimpleNamespace(model=model)
+        with mock.patch.object(chat.L, 'PrefillStage', return_value=prefill), \
+             mock.patch.object(chat.L, 'DecodeStage', return_value=decode), \
+             mock.patch.object(chat.L, 'vision_tower', return_value=None), \
+             mock.patch.object(chat.L, 'make_cache', return_value=object()), \
+             mock.patch.object(chat.L, 'place', side_effect=lambda stage, *_args, **_kw: (stage, torch.device('cpu'))) as place:
+            session = chat.Session(model, object(), 'cpu', 64)
+        self.assertIs(session.prefill, prefill)
+        self.assertIs(session.decode, decode)
+        self.assertFalse(place.call_args_list[0].kwargs.get('already_placed', False))
+        self.assertTrue(place.call_args_list[1].kwargs['already_placed'])
+
     def test_one_token_decode_reuses_storage_with_canonical_stride(self):
         session = object.__new__(chat.Session)
         session.dev, session.cache = torch.device('cpu'), object()

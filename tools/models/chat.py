@@ -221,9 +221,14 @@ class Session:
         self.dev = L.use_tnca() if device == "tnca" else torch.device(device)
         # A device session keeps the vision weights resident as well as the text weights.
         skip = None if device == "tnca" else L.vision_tower(model)
-        self.prefill, pdev = L.place(L.PrefillStage(model, all_logits=False, hidden_states=False), device, "eager",
-                                     skip=skip)
-        self.decode, ddev = L.place(L.DecodeStage(model), device, "eager", skip=skip)
+        prefill_stage = L.PrefillStage(model, all_logits=False, hidden_states=False)
+        decode_stage = L.DecodeStage(model)
+        self.prefill, pdev = L.place(prefill_stage, device, "eager", skip=skip)
+        # Both stages wrap the identical model. Its parameters and buffers
+        # were placed above; traversing the entire checkpoint again adds to
+        # first-prompt latency without moving any additional tensor.
+        self.decode, ddev = L.place(decode_stage, device, "eager", skip=skip,
+                                    already_placed=decode_stage.model is prefill_stage.model)
         if ddev != pdev:
             raise ValueError("prefill and decode must use the same device")
         self.cache = L.make_cache(model, bucket, pdev)

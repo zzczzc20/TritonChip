@@ -683,3 +683,7 @@ the second exhausted vector registers. Neither is an exactness pass. The
 The [completed two-step lookahead default audit](x8_depth2_audit_20261101.tgz)
 compared 113/113 points unchanged; the candidate remains rejected for the
 decode cycle regressions recorded above.
+
+The [smaller proof-harness retry](x8_equal_output_proof_v4_failed_20261101.tgz)
+also ran out of vector registers in both control and candidate compilation;
+it is not a passing targeted test.

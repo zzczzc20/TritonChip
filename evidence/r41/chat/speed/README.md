@@ -661,3 +661,12 @@ These are small uncalibrated TLM measurements, not board or full-model
 throughput. Larger shapes, the 16-case exact suite, 113-point default audit,
 and paired four-layer Qwen3.5 TLM profile are running. The candidate is not
 yet merged or board-qualified.
+
+The [larger-shape and first proof-attempt records](x8_equal_output_larger_failedproof_20261101.tgz)
+show 0/1024 mismatches at 1×1024×256, with steady cycles 330816 → 250578
+and instructions/MAC 0.4805297852 → 0.41796875; at 1×2048×2048 they show
+0/2048 mismatches, cycles 4735036 → 3359074 and instructions/MAC
+0.2644500732 → 0.2018890381. Each uses one launch and no steady code loads.
+The first separate masked-row proof harness failed to compile on both paths
+because its shape did not enter the X8 lowering; this is recorded as a failed
+harness attempt, not a passed correctness case. The gates above remain pending.

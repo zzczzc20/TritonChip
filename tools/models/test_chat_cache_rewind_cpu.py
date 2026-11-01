@@ -5,6 +5,7 @@ quality claim. Recurrent and sliding caches are exercised by the separate
 fail-closed checks; only standard static attention is eligible for rewind.
 """
 import unittest
+from unittest import mock
 
 import torch
 
@@ -167,6 +168,16 @@ class HybridPrefillContinuationTests(unittest.TestCase):
             self.assertFalse(chat.restore_hybrid_prefill(snapshot))
             self.assertTrue(all(torch.equal(a, b) for a, b in zip(states, snapshot['tensors'], strict=True)))
             self.assertTrue(all(torch.equal(a, b) for a, b in zip(lengths, snapshot['lengths'], strict=True)))
+
+    def test_snapshot_allocation_failure_leaves_prefill_state_intact(self):
+        cache = self.make_cache()
+        with torch.inference_mode():
+            self.call(cache, [7, 4, 1])
+            linear = next(layer for layer in cache.layers if hasattr(layer, 'recurrent_states'))
+            before = linear.recurrent_states[0].clone()
+            with mock.patch.object(torch.Tensor, 'clone', side_effect=MemoryError):
+                self.assertIsNone(chat.snapshot_hybrid_prefill(cache, 3))
+            self.assertTrue(torch.equal(before, linear.recurrent_states[0]))
 
 
 if __name__ == '__main__':

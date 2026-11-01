@@ -578,11 +578,30 @@ def snapshot_hybrid_prefill(cache, valid_length):
     if any(signature is None for signature in signatures):
         return None
     tensors = [record[2] for _, _, records in signatures for record in records]
-    if (sum(t.numel() * t.element_size() for t in tensors) > 64 * 1024 * 1024
+    required = sum(t.numel() * t.element_size() for t in tensors)
+    if (required > 64 * 1024 * 1024
             or len({t.untyped_storage().data_ptr() for t in tensors}) != len(tensors)
             or any(t.device != lengths[0].device for t in tensors)):
         return None
-    copies = [tensor.clone(memory_format=torch.contiguous_format) for tensor in tensors]
+    if tensors[0].device.type == 'tnca':
+        # Never exhaust the shared device heap for an optional speed path.
+        # The allocator metadata is host-side; this does not read tensor data.
+        from tnca.torch_device import LAUNCH_RESERVE, MEMORY
+        session = MEMORY.session()
+        with session._lock:
+            free = session._heap.capacity - session._heap.used
+        if free - required < max(LAUNCH_RESERVE, 16 * 1024 * 1024):
+            return None
+    from tnca.errors import BufferError as TncaBufferError
+    copies = []
+    try:
+        for tensor in tensors:
+            copies.append(tensor.clone(memory_format=torch.contiguous_format))
+    except (TncaBufferError, torch.OutOfMemoryError, MemoryError):
+        copies.clear()
+        if tensors[0].device.type == 'tnca':
+            MEMORY.synchronize()
+        return None
     return dict(cache=cache, layers=tuple(layers), statics=statics, lengths=tuple(lengths),
                 linear=linear, signatures=signatures, tensors=tensors, copies=copies, valid_length=valid_length)
 

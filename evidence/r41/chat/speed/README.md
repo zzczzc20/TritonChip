@@ -697,3 +697,7 @@ The [completed default-code audit](x8_equal_output_audit_20261101.tgz)
 compared 113/113 points unchanged, with zero changed or uncompared. The paired
 four-layer Qwen3.5 TLM comparison is still running; this candidate remains
 unmerged and not board-qualified.
+
+A [broadcast-row follow-up](x8_equal_output_proof_v6_20261101.tgz) also
+matched the exact reference in four cases, but generated identical control and
+candidate assembly throughout; it does not prove the optimized path.

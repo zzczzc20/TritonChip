@@ -56,6 +56,22 @@ class LaunchSummaryTests(unittest.TestCase):
                 compact.record('broken', session, event, {})
         session.wait.assert_called_once_with(event)
 
+    def test_deferred_summary_waits_only_when_finished(self):
+        event = SimpleNamespace(ok=False, error=None, device_cycles=7,
+                                history=[('RUNNING', 2.), ('SUCCEEDED', 3.)])
+        def complete(ev):
+            ev.ok = True
+        session = SimpleNamespace(wait=mock.Mock(side_effect=complete))
+        with driver.launch_summary(deferred=True) as compact:
+            compact.record('queued', session, event, {'resident_bytes': 8})
+        session.wait.assert_not_called()
+        self.assertIsNone(compact.result)
+        self.assertEqual(compact.finish()['device_cycles'], 7)
+        self.assertEqual(compact.completion_time, 3.)
+        session.wait.assert_called_once_with(event)
+        compact.finish()
+        session.wait.assert_called_once_with(event)
+
 
 if __name__ == '__main__':
     unittest.main()

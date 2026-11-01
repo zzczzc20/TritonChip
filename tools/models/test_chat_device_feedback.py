@@ -2,6 +2,8 @@
 """Exercise device-feedback ordering and EOS cache semantics without claiming board evidence."""
 import types
 import unittest
+import os
+import time
 from contextlib import nullcontext
 from unittest import mock
 import torch
@@ -20,12 +22,18 @@ class Tensor:
         return self.value
 
 class Meter:
+    def __init__(self, *, deferred=False, synchronizations=None):
+        self.deferred = deferred
+        self.synchronizations = synchronizations if synchronizations is not None else []
+        self.log = types.SimpleNamespace(completion_time=None)
     def __enter__(self):
-        self.mem = types.SimpleNamespace(synchronize=lambda: None)
+        self.mem = types.SimpleNamespace(synchronize=lambda: self.synchronizations.append(1))
         return self
     def __exit__(self, *args):
         return False
     def summary(self):
+        if self.deferred:
+            self.log.completion_time = time.time()
         return {'host_read_calls': 0, 'staging_download_bytes': 0, 'device_cycles': None}
 
 class Session:
@@ -41,6 +49,7 @@ class Session:
         self.last_position = None
         self.choices = iter(choices)
         self.fed = []
+        self.fed_positions = []
         self.produced_logits = []
         self.produced_candidates = []
         self.prefill_compiles_decode = prefill_compiles_decode
@@ -67,8 +76,10 @@ class Session:
         logits = Tensor([int(i == token) for i in range(4)])
         self.produced_logits.append(logits)
         return logits
-    def step_device(self, token):
+    def step_device(self, token, position_device=None):
         self.fed.append(int(token.cpu().item()))
+        if position_device is not None:
+            self.fed_positions.append(position_device.clone())
         self.last_position = self.last_position + 1
         self._cache_tokens += 1
         return self.next_logits()
@@ -80,8 +91,9 @@ class Session:
 
 class DeviceFeedbackTests(unittest.TestCase):
     def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None,
-                 retain_logits=True, logit_limit=None, rewind_hook=None):
+                 retain_logits=True, logit_limit=None, rewind_hook=None, queue=False):
         session = Session(choices, prefill_compiles_decode)
+        session.synchronizations = []
         processor = types.SimpleNamespace(batch_decode=lambda ids, **kw: [str(ids.tolist())])
         spec = types.SimpleNamespace(name='test', repo='test', revision='test')
         tnca = types.ModuleType('tnca')
@@ -99,10 +111,12 @@ class DeviceFeedbackTests(unittest.TestCase):
             return fn(), ([] if cached_decode else ['test wrapper'])
         rewind_patch = (mock.patch.object(chat, 'rewind_attention_cache', side_effect=rewind_hook)
                         if rewind_hook is not None else nullcontext())
-        with rewind_patch, mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind,
+        with rewind_patch, mock.patch.dict(os.environ, {'TNCA_QUEUE_STEPS': '1' if queue else '0'}), \
+             mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind,
                                             'tnca.code_residency': residency}), \
              mock.patch.object(chat, 'run_with_code_capture', capture), \
-             mock.patch.object(chat, 'transfer_meter', lambda enabled: Meter()), \
+             mock.patch.object(chat, 'transfer_meter',
+                               lambda enabled, **kwargs: Meter(synchronizations=session.synchronizations, **kwargs)), \
              mock.patch.object(chat, 'code_store_counters', lambda: None), \
              mock.patch.object(chat.L, 'generation_eos', lambda model: {3}), \
              mock.patch.object(chat.L, 'module_bytes', lambda *args: 1), \
@@ -122,6 +136,16 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertTrue(report['compiled_wrapper_roles_covered'])
         self.assertEqual([x.cpu_reads for x in session.produced_logits], [1, 1, 1])
         self.assertEqual([x.cpu_reads for x in session.produced_candidates], [1, 1, 1])
+
+    def test_queued_steps_use_one_position_upload_and_one_final_wait(self):
+        standard, reference = self.run_case([1, 2, 1, 3])
+        queued, result = self.run_case([1, 2, 1, 3], queue=True)
+        self.assertEqual(result['generated_tokens'], reference['generated_tokens'])
+        self.assertEqual(queued.fed, standard.fed)
+        self.assertEqual([int(x.item()) for x in queued.fed_positions], [2, 3, 4])
+        self.assertEqual(len(standard.synchronizations) - len(queued.synchronizations), 2)
+        self.assertTrue(all(s['transfers_inside_step']['host_read_calls'] == 0 for s in result['steps']))
+        self.assertIn('successive device completion', result['statistics']['decode_time_scope'])
     def test_eos_discards_overrun_cache(self):
         session, report = self.run_case([1, 3, 2])
         self.assertEqual(session.fed, [1, 3])

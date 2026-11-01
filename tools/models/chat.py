@@ -118,12 +118,12 @@ def make_inputs(spec, processor, messages):
     return dict(inputs), text
 
 
-def transfer_meter(enabled):
+def transfer_meter(enabled, *, deferred=False):
     from contextlib import nullcontext
     if not enabled:
         return nullcontext(None)
     from qwen_tnca_layers import TransferMeter
-    return TransferMeter(compact=True)
+    return TransferMeter(compact=True, deferred=deferred)
 
 
 def run_with_code_capture(fn):
@@ -301,7 +301,14 @@ class Session:
             ids = ids.as_strided((1, 1), (1, 1))
         else:
             ids = ids.clone(memory_format=torch.contiguous_format)
-        positions = positions.clone(memory_format=torch.contiguous_format)
+        if positions.device.type == 'tnca' and positions.is_contiguous():
+            stride, strides = 1, []
+            for size in reversed(positions.shape):
+                strides.append(stride)
+                stride *= size
+            positions = positions.as_strided(positions.shape, tuple(reversed(strides)))
+        else:
+            positions = positions.clone(memory_format=torch.contiguous_format)
         return self.decode(ids.to(self.dev), positions.to(self.dev), self.cache)[0]
 
     def prefill_prompt(self, inputs, per_image):
@@ -358,11 +365,11 @@ class Session:
         self.last_position = position
         return logits
 
-    def step_device(self, token):
+    def step_device(self, token, position_device=None):
         """Feed a device token without converting its value to a host scalar."""
         position = self.last_position + 1
         with torch.no_grad():
-            logits = self._call_decode(token, position)
+            logits = self._call_decode(token, position if position_device is None else position_device)
         self.last_position = position
         self._cache_tokens += 1
         return logits
@@ -382,6 +389,15 @@ class Session:
 
 def _vision_to(vision, dev):
     return tuple(tuple(t.to(dev) for t in group) for group in vision)
+
+
+def stage_decode_positions(last_position, count, device):
+    """Upload known position metadata once, before the queued decode steps."""
+    if last_position.device.type != 'cpu' or count < 2:
+        raise ValueError('queued decode requires a CPU position and at least two tokens')
+    shape = (count - 1,) + (1,) * last_position.ndim
+    increments = torch.arange(1, count, dtype=last_position.dtype).reshape(shape)
+    return (last_position.unsqueeze(0) + increments).contiguous().to(device)
 
 
 def clear_static_attention_cache(cache):
@@ -497,6 +513,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     # Teacher tokens are transferred before the measured loop, never read back in it.
     teacher = [torch.tensor([[t]], dtype=torch.long).to(session.dev) for t in (forced_tokens or [])]
     rows, device_logits, device_candidates, position_history = [], [], [], []
+    queue_steps = os.environ.get('TNCA_QUEUE_STEPS') == '1' and new_tokens > 1
+    position_batch, queued_meters, queue_anchor = None, [], None
     code_by_role = getattr(session, "_generation_code", {})
     session._generation_code = code_by_role
     from tnca.code_residency import RepeatedCodeTrace
@@ -528,7 +546,9 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
             graph_start = counters["stats"]["unique_graphs"]
             code = code_store_counters()
             started = time.perf_counter()
-            with transfer_meter(True) as meter:
+            meter_context = (transfer_meter(True, deferred=True) if queue_steps and index
+                             else transfer_meter(True))
+            with meter_context as meter:
                 if index == 0:
                     prior_prefill_code = len(code_by_role.get("prefill", []))
                     logits, calls, reused = capture("prefill", lambda: session.prefill_prompt(inputs, per_image))
@@ -541,9 +561,15 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                     # A forced token is a test input; otherwise feedback remains on TNCA.
                     feed = teacher[index - 1] if index - 1 < len(teacher) else current
                     with session._decode_code_trace.step():
-                        logits = capture("decode", lambda: session.step_device(feed))
+                        logits = capture("decode", lambda: session.step_device(
+                            feed, position_batch[index - 1]) if queue_steps else session.step_device(feed))
                 current = capture("selection", lambda: session.greedy(logits.reshape(-1)))
-                meter.mem.synchronize()
+                if queue_steps and index == 0:
+                    position_batch = stage_decode_positions(session.last_position, new_tokens, session.dev)
+                if not queue_steps or index == 0:
+                    meter.mem.synchronize()
+            if queue_steps and index == 0:
+                queue_anchor = time.time()
             if logits.device.type != "tnca" or current.device.type != "tnca":
                 raise RuntimeError("device model or token selection returned a host tensor")
             position_history.append(getattr(session, 'last_position', None))
@@ -555,10 +581,31 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                        input_tokens=prompt_tokens - reused if index == 0 else 1,
                        seconds=elapsed, new_graphs=counters["stats"]["unique_graphs"] - graph_start,
                        code_store=_counter_delta(code, code_store_counters()), logits_download_bytes=0,
-                       transfers_inside_step=meter.summary())
+                       transfers_inside_step=None if queue_steps and index else meter.summary())
             if index == 0:
                 row.update(calls=calls, reused_cached_tokens=reused)
             rows.append(row)
+            if queue_steps and index:
+                queued_meters.append((row, meter))
+        if queued_meters:
+            # All input positions and token feedback are already resident.
+            # One final synchronization replaces a host wait after each step.
+            queued_meters[-1][1].mem.synchronize()
+            previous = queue_anchor
+            for row, meter in queued_meters:
+                row['transfers_inside_step'] = meter.summary()
+                complete = meter.log.completion_time
+                if complete is None or complete < previous:
+                    raise RuntimeError('queued decode lacks ordered completion timestamps')
+                row['seconds'] = complete - previous
+                previous = complete
+    except BaseException:
+        if queue_steps and position_batch is not None:
+            try:
+                meter.mem.synchronize()
+            except Exception:
+                pass
+        raise
     finally:
         torch._dynamo.config.error_on_recompile = old_recompile
 
@@ -631,6 +678,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                                                          if stats['generation_seconds'] > 0 else None),
                  decode_rate_scope='executed decode steps, including any work after EOS',
                  returned_rate_scope='returned token IDs including EOS; generation wall only, excludes output retrieval')
+    if queue_steps:
+        stats['decode_time_scope'] = 'successive device completion times after one queued submission span'
     clock_path = os.environ.get('TNCA_OPERATING_CLOCK_EVIDENCE')
     try:
         clock_hz = int(json.loads(Path(clock_path).read_text())['clock_hz']) if clock_path else None

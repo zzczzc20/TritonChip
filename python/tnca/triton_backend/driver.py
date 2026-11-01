@@ -131,11 +131,14 @@ class LaunchSummary:
     def __init__(self):
         self.entries = []
         self.result = None
+        self.completion_time = None
 
     def record(self, kernel, session, event, moved, *, skipped=False):
         self.entries.append((str(kernel), session, event, moved, skipped))
 
     def finish(self):
+        if self.result is not None:
+            return self.result
         by_kernel = {}
         upload = download = resident = skipped_count = cycles = 0
         complete_cycles = True
@@ -144,6 +147,8 @@ class LaunchSummary:
                 session.wait(event)
                 if not event.ok:
                     raise TNCALaunchError(f'{name}: {event.error}')
+            if event is not None:
+                self.completion_time = dict(event.history).get('SUCCEEDED')
             value = None if event is None else event.device_cycles
             row = by_kernel.setdefault(name, dict(launches=0, device_cycles=0))
             row['launches'] += 1
@@ -165,7 +170,7 @@ class LaunchSummary:
 
 
 @contextlib.contextmanager
-def launch_summary():
+def launch_summary(*, deferred=False):
     """Collect aggregate transfer and cycle counts without per-launch detail."""
     summary = LaunchSummary()
     _active_summaries().append(summary)
@@ -173,7 +178,8 @@ def launch_summary():
         yield summary
     finally:
         assert _active_summaries().pop() is summary
-        summary.finish()
+        if not deferred:
+            summary.finish()
 
 
 @contextlib.contextmanager

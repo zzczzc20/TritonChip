@@ -327,10 +327,11 @@ class TransferMeter:
     """Bytes the host moves to or from tnca memory (tnca.torch_device.MEMORY: to_host, from_host, fill_, .item())
     plus the runtime launch log (per-launch staging uploads/downloads) while open."""
 
-    def __init__(self, *, compact=False):
+    def __init__(self, *, compact=False, deferred=False):
         import tnca.torch_device as td
         self.mem = td.MEMORY
         self.compact = compact
+        self.deferred = deferred
         self.stats = dict(host_read_calls=0, host_read_bytes=0, host_write_calls=0, host_write_bytes=0)
         self._r, self._w = self.mem.read, self.mem.write
 
@@ -357,7 +358,9 @@ class TransferMeter:
 
     def __enter__(self):
         from tnca.triton_backend.driver import launch_log, launch_summary
-        self._ctx = launch_summary() if self.compact else launch_log()
+        if self.deferred and not self.compact:
+            raise ValueError('deferred transfer accounting requires compact mode')
+        self._ctx = launch_summary(deferred=self.deferred) if self.compact else launch_log()
         self.log = self._ctx.__enter__()
         return self
 
@@ -371,7 +374,7 @@ class TransferMeter:
     def summary(self):
         if self.compact:
             if self.log.result is None:
-                raise RuntimeError('transfer summary is unavailable until the meter exits')
+                self.log.finish()
             return dict(self.stats, host_sites=self.sites, **self.log.result)
         lg = self.log
         cyc = [e.get("device_cycles") for e in lg]

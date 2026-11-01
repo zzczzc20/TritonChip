@@ -707,3 +707,7 @@ failed on both routes during cache/mask setup because that reduced model has
 no full-attention layer; its comparison also failed after both processes exited.
 It provides no model performance result. The four-layer comparison remains
 running, and a separate one-layer VL comparison was started.
+
+A [modulo-row follow-up](x8_equal_output_proof_v7_20261101.tgz) likewise
+matched four exact cases on both routes but produced identical assembly and
+does not exercise the changed path.

@@ -738,3 +738,15 @@ control and candidate. The separately dumped standalone activation-quantizer
 assembly also has the same SHA-256 in both routes. This supports the conclusion
 that these failures predate the equal-output change; they remain failures of the
 default-division exact-reference suite.
+
+The completed [four-layer Qwen3.5 TLM comparison](x8_equal_output_q35_tlm_20261101.tgz)
+used identical prompt and settings. Both 248320-element logits tensors matched
+bitwise, both recorded no captured CPU numerical fallback, and decode recorded
+zero host reads. Control → candidate: prefill 2211256917 → 2205715676 cycles,
+239 → 239 launches, 141 → 141 code loads, 0.0342451794 → 0.0342451794 FP8
+instructions/MAC; decode 1353813837 → 1214231109 cycles, 95 → 95 launches,
+77 → 77 actual loads, 716224 → 642496 uploaded code bytes and 0.2536279297 →
+0.1910668945 FP8 instructions/MAC. Each prefill recorded 33 compilation-time
+host reads. These are uncalibrated reduced-depth TLM results, not board
+throughput or independent full-model quality. The default standalone
+activation-quantizer failures above remain unchanged.

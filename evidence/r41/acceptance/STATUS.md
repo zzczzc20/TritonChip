@@ -1059,3 +1059,29 @@ The next report update records the separate failed whole-prefill Qwen3.5 proof a
 
 - `doc/r41_report.md`: `ace2294ad83379872db4d3a8d629909e3ef40b4577f6d7c1e1ad5d725cc7abc7` → `a41e158107ef46cba8baeef2f9dc6aecd86d8b0eb780b8b6968076b9a80117b0`
 - `doc/r41_stage2_report.md`: `312aa69fbfeeb305eda62b7b260231db400ad78453eadd2272391d0dec0d1381` → `163eb1e86f8e6b03a68afbddb06fe339537c6041b9cf149a792a17db0e113cd9`
+
+### Author decision, 2026-11-01: near-tie rescore and consolidated campaign
+
+The [author directive](../AUTHOR_DIRECTIVE_20261031.md) registers the new
+content and CPU-top-five/near-tie rule. The [separate Qwen3.5 rescore](../chat/run3_priority/q35_author_neartie_rescore_20261101.json)
+passes the four previously recorded prompts and both turns of the separately
+recorded multi-turn prompt. The original four-prompt timeout and old-rule
+multi-turn failure remain unchanged. The board did not record first-step
+logits: the first multi-turn token is accepted by membership in the CPU
+reference's recorded top five, not by asserting a board logit gap. These are
+separate sessions, not a replacement single-session result.
+
+The precision/b32 diagnostic, the equal-output single-hypothesis board queue,
+and the standalone Q35 script baseline were stopped/cancelled under the
+[batch directive](../AUTHOR_DIRECTIVE_20261031.md): **descoped by the author
+on 2026-11-01**, not passed. Their [interruption logs and partial records](../chat/run3_priority/author_batch_cancelled_final_20261101.tgz)
+are preserved. No image was programmed. The whole speed package and one
+consolidated board campaign remain pending.
+
+The [recorded user-visible baseline](../chat/run3_priority/user_visible_baseline_20261101.json)
+sums logged warmup, generation and output retrieval spans. The first VL
+script turn returned two token IDs in 2196.5684509 s (0.0009105111 IDs/s);
+the first Q35 quality prompt returned four in 3011.9881694 s (0.0013280265
+IDs/s). Counts include end markers. These sums exclude input preparation,
+model load and unmeasured gaps, so they are not exact prompt-to-last-token
+wall times; warmup is not a pure compilation timer.

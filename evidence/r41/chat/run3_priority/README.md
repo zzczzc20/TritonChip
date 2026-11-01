@@ -978,3 +978,11 @@ case also matched 16384/16384 in both paths (110177 and 380483 cycles). These
 are standalone kernels with a different reduction schedule than the original
 Inductor graph, not proof of general exactness, no board claim, and not a
 merged compiler fix.
+
+The [precision-cast block-size comparison](q35_gate_blocks_precision_20261101.tgz)
+used the same real gated-norm inputs with non-default `TNCA_MAX_BLOCK` 32, 64
+and 128: each matched 110592/110592 outputs. A separate random finite-input
+probe for block 32, spanning four scales, had 1/65536 mismatch (max absolute
+0.0009765625). The candidate therefore does not pass a bitwise exactness gate.
+The [two-layer and full-model b32 TLM runs](q35_precise_b32_model_pending_20261101.tgz)
+are running with automatic comparisons; they are diagnostics, not board runs.

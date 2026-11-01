@@ -291,6 +291,17 @@ def _register_ops(lib):
         return self
 
     def zero_(self):
+        # Large static attention caches are cleared between chat turns. The
+        # original host-staged path writes tens of MB through XRT each time.
+        # Restrict this experimental device path to complete aligned storage;
+        # a view or partial last word still takes the established exact path.
+        nbytes = self.numel() * self.element_size()
+        if (os.environ.get('TNCA_DEVICE_ZERO') == '1' and nbytes >= 65536
+                and nbytes % WORD == 0 and nbytes <= (1 << 31) - (1 << 20)
+                and self.is_contiguous() and self.storage_offset() == 0
+                and self.untyped_storage().nbytes() == nbytes):
+            from .copy import zero_full_storage
+            return zero_full_storage(self)
         return fill_scalar(self, 0)
 
     def local_scalar_dense(self):

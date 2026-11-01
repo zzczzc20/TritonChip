@@ -11,6 +11,41 @@ _lock = threading.RLock()
 _storage_modules = weakref.WeakKeyDictionary()
 
 
+@triton.jit(do_not_specialize=['N'])
+def _zero_storage_kernel(DST, N, BLOCK: tl.constexpr):
+    """Clear device bytes without staging an equally large host tensor."""
+    stride = tl.num_programs(0) * BLOCK
+    destination = DST.to(tl.pointer_type(tl.uint8))
+    for block in range(tl.cdiv(N, stride)):
+        index = (block * tl.num_programs(0) + tl.program_id(0)) * BLOCK + tl.arange(0, BLOCK)
+        tl.store(destination + index, tl.full((BLOCK,), 0, tl.uint8), index < N)
+
+
+def zero_full_storage(tensor):
+    """Queue an all-zero write for an aligned, contiguous whole storage.
+
+    The caller has checked eligibility. The normal native launcher owns
+    code residency and retains the storage until completion, just as for
+    a same-device copy. Numerical data never travels through the host.
+    """
+    from tnca.triton_backend.driver import TNCADriver
+    count = tensor.numel() * tensor.element_size()
+    if not count:
+        return tensor
+    if count > MAX_SPAN:
+        raise ValueError('tnca zero: storage exceeds one launch')
+    block = 128
+    programs = min(triton.cdiv(count, block), 1024)
+    with _lock:
+        previous = triton.runtime.driver.active
+        try:
+            triton.runtime.driver.set_active(TNCADriver())
+            _zero_storage_kernel[(programs,)](tensor, count, block, num_warps=1)
+        finally:
+            triton.runtime.driver.set_active(previous)
+    return tensor
+
+
 @triton.jit
 def _copy_storage_kernel(SRC, DST, N, BLOCK: tl.constexpr):
     stride = tl.num_programs(0) * BLOCK

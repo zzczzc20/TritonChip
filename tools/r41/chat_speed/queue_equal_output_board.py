@@ -37,6 +37,11 @@ def validate_gates(gate):
                                                   and 'GEMM' not in row.get('case', '') else 'pass')
                                for row in cases):
         raise ValueError('default-suite failures are not the recorded standalone quantizers')
+    failure_compare = load(gate / 'default_failures.json')
+    failures = failure_compare.get('failed_cases', [])
+    if (failure_compare.get('assembly_equal') is not True or len(failures) != 4
+            or any(x.get('identical_compare_records') is not True for x in failures)):
+        raise ValueError('default quantizer failures differ from the control')
     model = load(gate / 'model.json')
     routes = model.get('routes', [])
     if (len(routes) != 2 or [r.get('route') for r in routes] !=

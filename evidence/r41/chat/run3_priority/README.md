@@ -949,3 +949,13 @@ order, declares non-default `emulate_precision_casts=True`, and is running
 further checks. Its standalone gated-norm result has 1/110592 bit mismatch
 (relative L2 1.3869843e-6, max 3.0517578e-5), down from 38067; it is not
 bitwise exact, so this is not a passed exact gate or a board result.
+
+The [precision-cast gated-norm TLM and decomposition](q35_gate_precise_v2_20261101.tgz)
+reduced the standalone output mismatch from 38067 to 1/110592, max absolute
+difference 3.0517578e-5. The instrumented precision-cast final TLM output
+matched its uninstrumented counterpart bitwise. The remaining mismatch was
+at flattened head row 755, element 43: CPU versus TLM variance was
+3.1553292501484975e-5 versus 3.155328886350617e-5; their rsqrt values were
+175.26795959472656 versus 175.26797485351562. The normalized value crossed a
+BF16 rounding boundary; SiLU was identical at that coordinate. This is one
+recorded case, not a general exactness or board pass.

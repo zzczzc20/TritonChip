@@ -1060,3 +1060,11 @@ comparison service first compares untimed baseline against timed baseline,
 then reports each route's logits versus CPU. This experiment measures no
 cycles, has not completed, and cannot establish board quality or an accepted
 fix; the timing/memory-model change must be checked for numerical equivalence.
+
+The completed [full-checkpoint precision-cast, b32 and IEEE-division TLM
+comparison](q35_full_precise_b32_ieee_tlm_20261101.tgz) selects `I` (22.125)
+over `Hello` (21.875), while the same whole-prefill CPU reference selects
+`Hello`. Relative L2 to CPU is 0.0729162544, versus 0.0774650127 for the
+ordinary whole-prefill TLM; 242712/248320 candidate logits differ bitwise.
+The candidate therefore does not resolve this first-token quality failure and
+is not a board pass. The other precision and untimed diagnostics remain pending.

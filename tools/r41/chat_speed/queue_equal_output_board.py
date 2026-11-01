@@ -74,6 +74,8 @@ def main():
         raise ValueError('candidate source checksum does not match the TLM candidate')
     original = load(root / 'spec/r41/run3/stages/chat-q35-nohost-v5-20261031.json')
     row = original['experiments'][0]
+    if row.get('id') != 'r3-s2-qwen-chat-v3-q35-nohost-v5-session-20261031':
+        raise ValueError('the first registration is not the intended Q35 session')
     source = root / row['manifest']
     if recovery.digest(source) != row['sha256']:
         raise ValueError('original session registration changed')
@@ -87,23 +89,27 @@ def main():
     out.mkdir(parents=True, exist_ok=False)
     recovery.OUT = out
     recovery.ROOT = root
-    with manifest.open('x') as f:
-        json.dump(spec, f, indent=2); f.write('\n')
-    row['id'], row['manifest'], row['sha256'] = name, str(manifest.relative_to(root)), recovery.digest(manifest)
-    row['checks'].extend([
-        dict(path='q35-session/report.json', field=['cpu_numerical_fallback'], equals=False),
-        dict(path='q35-session/report.json', field=['compiled_wrapper_roles_covered'], equals=True),
-        dict(path='q35-session/report.json', field=['steady_decode_host_reads_detected'], equals=False),
-    ])
-    original['id'], original['experiments'] = name, [row]
-    registration = out / 'registration.json'
-    registration.write_text(json.dumps(original, indent=2) + '\n')
-    recovery.record('registered', registration_sha256=recovery.digest(registration),
-                    gate_sha256={p.name: recovery.digest(p) for p in sorted(a.gate_dir.glob('*.json'))})
-    if recovery.digest(root / 'compiler/python/tnca_cc/frontend.py') != EXPECTED_FRONTEND:
-        raise ValueError('candidate source changed after registration')
-    recovery.stage(root, out / 'session', registration, out / 'stage.log')
-    recovery.record('finished')
+    try:
+        with manifest.open('x') as f:
+            json.dump(spec, f, indent=2); f.write('\n')
+        row['id'], row['manifest'], row['sha256'] = name, str(manifest.relative_to(root)), recovery.digest(manifest)
+        row['checks'].extend([
+            dict(path='q35-session/report.json', field=['cpu_numerical_fallback'], equals=False),
+            dict(path='q35-session/report.json', field=['compiled_wrapper_roles_covered'], equals=True),
+            dict(path='q35-session/report.json', field=['steady_decode_host_reads_detected'], equals=False),
+        ])
+        original['id'], original['experiments'] = name, [row]
+        registration = out / 'registration.json'
+        registration.write_text(json.dumps(original, indent=2) + '\n')
+        recovery.record('registered', registration_sha256=recovery.digest(registration),
+                        gate_sha256={p.name: recovery.digest(p) for p in sorted(a.gate_dir.glob('*.json'))})
+        if recovery.digest(root / 'compiler/python/tnca_cc/frontend.py') != EXPECTED_FRONTEND:
+            raise ValueError('candidate source changed after registration')
+        recovery.stage(root, out / 'session', registration, out / 'stage.log')
+        recovery.record('finished')
+    except BaseException as exc:
+        recovery.record('stopped', error=f'{type(exc).__name__}: {exc}')
+        raise
 
 
 if __name__ == '__main__':

@@ -1,0 +1,18 @@
+# Raw evidence archive
+
+- `acf3019:/home/zzhouch/r41_raw_archive/guard_15bded2f_20261101/raw.tar` — SHA-256 `93f347cb2e37217b6d00af203bb0344034319c81f3ab198c3c579333171ff153`; 302 diagnostic logs, reports and model raw results; original paths and per-file hashes in `SHA256SUMS` (SHA-256 `f0a60a00eb7dee0286528b0834ff02b95c7f67c21e7fb76e51e1eb13f45ec4f5`) beside the archive.
+
+- `acf3019:/home/zzhouch/r41_raw_archive/guard_15bded2f_batch2/raw.tar` — SHA-256 `d926bf7576fd0496b08945a4966019a5b6e45d930469dc9c79d2a1f6bf9eac30`; SystemC/TLM uncalibrated per-point raw results. `SHA256SUMS` SHA-256 `ebd1eec9caa1dd7030dde1d82ae77577345c5ba7af18c627bd61c3205c7c5928`.
+  - `evidence/r41/hbm_bw/g4/model_medium/g4/results.json` — SHA-256 `d5c3d08db78cbc658f0d3aa8c595a97124041790ba085b6797fcd63e0d5a5cc2`; 171 model points reported pass, 6 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_medium/ideal/results.json` — SHA-256 `c1c56ef794d424ae07cf4a7176de474b3e44391896b2ac45af6d2f318adfbf36`; 171 model points reported pass, 25 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_onelane_medium_m0/onelane/results.json` — SHA-256 `c1d7c98cfbbaa6233c717c8ad3b59014cd337139a4d6c213fc15fec90202c9d3`; 171 model points reported pass, 6 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_onelane_medium_m2/onelane/results.json` — SHA-256 `a70d35b683a832434e45e343fcb0a1597e9bab19d7ce9a81aec0493e7f1305ac`; 171 model points reported pass, 61 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_onelane_small_m0/onelane/results.json` — SHA-256 `d250a1dd6d88c172f3afa8306757fe6af240809c301682b837e01ce085c7894b`; 171 model points reported pass, 6 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_onelane_small_m1/onelane/results.json` — SHA-256 `a1ee4a9a731d84c6c458a50c9e8712b0aca2445d4c48ca4fc6f35e723d0751a3`; 171 model points reported pass, 28 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_onelane_small_m2/onelane/results.json` — SHA-256 `d7f76ffdfd562e7dc4377b58b683ae690c2ad2437ec920a5d559e740153ab366`; 171 model points reported pass, 53 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_small/g4/results.json` — SHA-256 `cb332b325bf4285a91bfa73447b7b83274a0c6d66fcb699396271349305c0ba9`; 171 model points reported pass, 6 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_small/ideal/results.json` — SHA-256 `1e41be203e3d80eaccb51b5822534352aae6106572b935ea7772bc659787cb61`; 171 model points reported pass, 25 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_small_block128/g4/results.json` — SHA-256 `a4c97b7a87f78d3ffb6ab883f39fe741a967f842a74968fbbade60dc0868d38c`; 171 model points reported pass, 43 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_small_block128/ideal/results.json` — SHA-256 `63e90676c55194c7db077186c8d56fded7a8b4d85c2ed3b585a4eea15f1474db`; 171 model points reported pass, 56 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_small_tiled1/g4/results.json` — SHA-256 `1429b1edb830bbaf3ff048f57f83f84f4ed94e47a33f2aeffbb11985167d376a`; 171 model points reported pass, 28 strict-bound audit warnings preserved in raw output.
+  - `evidence/r41/hbm_bw/g4/model_small_tiled2/g4/results.json` — SHA-256 `8fab84cf0ad772f6f31d4f085f2f1afeee98a0a26edb9b009351a65dda95bc41`; 171 model points reported pass, 53 strict-bound audit warnings preserved in raw output.

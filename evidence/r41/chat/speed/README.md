@@ -731,3 +731,10 @@ uploaded code bytes and 0.2593053182 → 0.1967442830 FP8 instructions/MAC.
 These are uncalibrated, reduced-depth TLM observations, not board throughput
 or an independent full-model quality result. Qwen3.5 four-layer comparison
 continues. The candidate remains unmerged.
+
+The [default-suite failure comparison](x8_default_failures_compare_20261101.tgz)
+found identical recorded value comparisons for all four failed cases between
+control and candidate. The separately dumped standalone activation-quantizer
+assembly also has the same SHA-256 in both routes. This supports the conclusion
+that these failures predate the equal-output change; they remain failures of the
+default-division exact-reference suite.

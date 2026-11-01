@@ -640,3 +640,24 @@ The two representative decode shapes regressed in device cycles, so this
 candidate is not accepted, merged, or queued for board testing. These are
 small uncalibrated TLM measurements, not end-to-end throughput. A 113-point
 default-code audit was started separately and was pending at this record.
+
+## Experimental equal-row X8 accumulator output (pending gates)
+
+An [isolated opt-in candidate](x8_equal_output_probe_20261101.patch.gz)
+uses a single accumulator output row only when all activation rows are proven
+equal at every K step; otherwise the original path is retained. The
+[paired DP TLM probe](x8_equal_output_probe_20261101.tgz) compares the same
+source with the option disabled and enabled against independent exact FP8
+references. Each steady case uses one launch and has no code loads/evictions.
+
+| M×N×K | Instructions/MAC control → candidate | Cycles control → candidate | Output mismatches each |
+| --- | ---: | ---: | ---: |
+| 1×256×256 | 0.4805297852 → 0.41796875 | 91280 → 77837 | 0/256 |
+| 1×250×384 | 0.4754895833 → 0.4114270833 | 162680 → 135251 | 0/250 |
+| 1×7×256 | 28.2455357143 → 27.1015625 | 189841 → 182169 | 0/7 |
+| 16×256×256 | 0.0475234985 → 0.0475234985 | 182082 → 182082 | 0/4096 |
+
+These are small uncalibrated TLM measurements, not board or full-model
+throughput. Larger shapes, the 16-case exact suite, 113-point default audit,
+and paired four-layer Qwen3.5 TLM profile are running. The candidate is not
+yet merged or board-qualified.

@@ -227,6 +227,7 @@ class Session:
         self.cache = L.make_cache(model, bucket, pdev)
         self.vision = None
         self.cached = []          # token ids whose state the cache holds, in order
+        self._cache_tokens = 0    # host metadata; never read a device tensor
         self.last_position = None
         self.resets = 0
         self.prompts = 0
@@ -236,6 +237,7 @@ class Session:
     def reset(self):
         self.cache.reset()
         self.cached, self.last_position = [], None
+        self._cache_tokens = 0
         self.resets += 1
 
     def vision_features(self, inputs):
@@ -300,8 +302,9 @@ class Session:
         positions = L.prefill_position_ids(self.model, inputs)
         full = ids[0].tolist()
         reused = len(self.cached)
-        if per_image or full[:reused] != self.cached or reused >= len(full):
-            if self.cached:
+        if (per_image or full[:reused] != self.cached or reused >= len(full)
+                or getattr(self, '_cache_tokens', 0) != reused):
+            if self.cached or getattr(self, '_cache_tokens', 0):
                 self.reset()
             reused = 0
         if len(full) > self.bucket:
@@ -333,6 +336,7 @@ class Session:
                              new_graphs=counters["stats"]["unique_graphs"] - graphs))
             logits = out
         self.cached = full
+        self._cache_tokens = len(full)
         self.last_position = positions[..., -1:]
         return logits, rows, reused
 
@@ -341,6 +345,7 @@ class Session:
         with torch.no_grad():
             logits = self._call_decode(torch.tensor([[token]], dtype=torch.long), position)
         self.cached = self.cached + [token]
+        self._cache_tokens += 1
         self.last_position = position
         return logits
 
@@ -350,6 +355,7 @@ class Session:
         with torch.no_grad():
             logits = self._call_decode(token, position)
         self.last_position = position
+        self._cache_tokens += 1
         return logits
 
     def warmup_decode(self, inputs, per_image=None, capture=None):
@@ -392,7 +398,15 @@ def rewind_attention_cache(cache, valid_length):
         if type(layer) is not StaticLayer or not getattr(layer, 'is_initialized', False):
             return False
         length = getattr(layer, 'cumulative_length', None)
-        if not torch.is_tensor(length) or length.numel() != 1 or valid_length > layer.max_cache_len:
+        keys, values = getattr(layer, 'keys', None), getattr(layer, 'values', None)
+        if (not torch.is_tensor(length) or length.numel() != 1 or not length.is_contiguous()
+                or length.dtype != torch.int64 or length.storage_offset() != 0
+                or length.untyped_storage().nbytes() != length.element_size()
+                or not torch.is_tensor(keys) or not torch.is_tensor(values)
+                or keys.ndim != 4 or values.ndim != 4
+                or keys.device != length.device or values.device != length.device
+                or keys.shape[-2] != layer.max_cache_len or values.shape[-2] != layer.max_cache_len
+                or valid_length > layer.max_cache_len):
             return False
         lengths.append(length)
     # Validate every layer before mutating any. Keep the marked static device
@@ -521,17 +535,22 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                    candidate_token=(candidates[i] if i < len(candidates) else None),
                    greedy_token=(candidates[i] if i < len(candidates) else None))
     cache_rewind = 'not-needed'
+    retained_prefix_tokens = 0
     cache_maintenance_start = time.perf_counter()
     if len(tokens) != new_tokens:
         # Rewind only caches whose full state is the standard static KV cache.
         # Hybrid/recurrent caches retain the original conservative reset.
         position = position_history[len(tokens) - 1] if tokens else None
         valid_length = len(session.cached) + max(0, len(tokens) - 1)
+        expected_length = len(session.cached) + max(0, len(rows) - 1)
         if (position is not None and not forced_tokens and tokens and tokens[-1] in eos
+                and getattr(session, '_cache_tokens', None) == expected_length
                 and rewind_attention_cache(session.cache, valid_length)):
             session.cached += tokens[:-1]
             session.last_position = position
+            session._cache_tokens = valid_length
             cache_rewind = 'static-attention-prefix-retained'
+            retained_prefix_tokens = len(session.cached)
         else:
             session.reset()
             cache_rewind = 'full-reset'
@@ -589,7 +608,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   fp8_route_in_use=L.fp8_route_in_use(),
                   decode_weight_bytes=weight_bytes,
                   session=dict(prompt_index=session.prompts, cache_resets=session.resets,
-                               cache_rewind=cache_rewind, cache_maintenance_seconds=cache_maintenance_seconds,
+                               cache_rewind=cache_rewind, retained_prefix_tokens=retained_prefix_tokens,
+                               cache_maintenance_seconds=cache_maintenance_seconds,
                                new_graphs_this_prompt=counters["stats"]["unique_graphs"] - graphs_at_start,
                                unique_graphs_total=counters["stats"]["unique_graphs"]),
                   device_memory=L.device_memory(session.dev), cache_bytes=L.cache_bytes(session.cache),

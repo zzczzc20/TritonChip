@@ -37,6 +37,7 @@ class Session:
         self.prompts = 0
         self.resets = 0
         self.cached = []
+        self._cache_tokens = 0
         self.last_position = None
         self.choices = iter(choices)
         self.fed = []
@@ -54,6 +55,7 @@ class Session:
         self.cache = object()
     def prefill_prompt(self, inputs, images):
         self.cached = inputs['input_ids'][0].tolist()
+        self._cache_tokens = len(self.cached)
         self.last_position = torch.tensor([len(self.cached) - 1])
         calls = ([{'kind': 'token', 'new_graphs': 1}] if self.prefill_compiles_decode else [])
         return self.next_logits(), calls, 0
@@ -68,9 +70,11 @@ class Session:
     def step_device(self, token):
         self.fed.append(int(token.cpu().item()))
         self.last_position = self.last_position + 1
+        self._cache_tokens += 1
         return self.next_logits()
     def reset(self):
         self.cached = []
+        self._cache_tokens = 0
         self.last_position = None
         self.resets += 1
 
@@ -163,7 +167,9 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(int(session.last_position.item()), 2)
         self.assertEqual(calls, [(session.cache, 3)])
         self.assertEqual(session.resets, 0)
+        self.assertEqual(session._cache_tokens, 3)
         self.assertEqual(report['session']['cache_rewind'], 'static-attention-prefix-retained')
+        self.assertEqual(report['session']['retained_prefix_tokens'], 3)
         self.assertGreaterEqual(report['session']['cache_maintenance_seconds'], 0)
 
     def test_retrieval_timing_excludes_post_retrieval_fallback_inspection(self):
@@ -188,7 +194,7 @@ class AttentionRewindTests(unittest.TestCase):
                 self.cumulative_length = torch.tensor(length, dtype=torch.int64)
                 self.max_cache_len = capacity
                 self.is_initialized = True
-                self.keys = torch.arange(capacity, dtype=torch.float32)
+                self.keys = torch.arange(capacity, dtype=torch.float32).reshape(1, 1, capacity, 1)
                 self.values = -self.keys.clone()
         self.static_layer = StaticLayer
         self.cache_module.StaticLayer = StaticLayer
@@ -223,6 +229,27 @@ class AttentionRewindTests(unittest.TestCase):
         second.is_initialized = False
         self.assertFalse(chat.rewind_attention_cache(cache, 3))
         self.assertEqual(int(first.cumulative_length), 7)
+
+    def test_length_views_and_nonstandard_dtypes_do_not_trigger_rewind(self):
+        first = self.static_layer()
+        backing = torch.tensor([7, 99], dtype=torch.int64)
+        first.cumulative_length = backing[:1]
+        cache = types.SimpleNamespace(layers=[first])
+        self.assertFalse(chat.rewind_attention_cache(cache, 3))
+        self.assertEqual(backing.tolist(), [7, 99])
+        first.cumulative_length = torch.tensor(7, dtype=torch.int32)
+        self.assertFalse(chat.rewind_attention_cache(cache, 3))
+        self.assertEqual(int(first.cumulative_length), 7)
+
+    def test_different_device_or_custom_layer_cannot_be_rewound(self):
+        first = self.static_layer()
+        first.keys = torch.empty((1, 1, first.max_cache_len, 1), device='meta')
+        self.assertFalse(chat.rewind_attention_cache(types.SimpleNamespace(layers=[first]), 3))
+        class DerivedLayer(self.static_layer):
+            pass
+        custom = DerivedLayer()
+        self.assertFalse(chat.rewind_attention_cache(types.SimpleNamespace(layers=[custom]), 3))
+        self.assertEqual(int(custom.cumulative_length), 7)
 
 
 class CodeCaptureTests(unittest.TestCase):
@@ -339,6 +366,23 @@ class UserReportTests(unittest.TestCase):
 
 
 class PrefillSegmentationTests(unittest.TestCase):
+    def test_mismatched_cache_length_discards_the_prefix_before_prefill(self):
+        session = object.__new__(chat.Session)
+        session.model, session.bucket, session.chunk = object(), 64, 0
+        session.cached, session._cache_tokens = [1, 2], 7
+        session.reset = mock.Mock()
+        blocks = []
+        session._call_prefill = lambda ids, positions, vision: blocks.append(ids[0].tolist()) or torch.zeros(4)
+        ids = torch.tensor([[1, 2, 3]])
+        positions = torch.arange(3).reshape(1, 1, 3)
+        with mock.patch.object(chat.L, 'prefill_position_ids', return_value=positions):
+            _, rows, reused = session.prefill_prompt({'input_ids': ids}, None)
+        session.reset.assert_called_once()
+        self.assertEqual(reused, 0)
+        self.assertEqual(blocks, [[1, 2, 3]])
+        self.assertEqual(session._cache_tokens, 3)
+        self.assertEqual(rows[0]['tokens'], 3)
+
     def test_decode_warmup_resets_dummy_state(self):
         session = object.__new__(chat.Session)
         session.model, session.dev = object(), torch.device('cpu')

@@ -640,6 +640,8 @@ No-board TLM A/B scripts for chat launch overhead.
 | `tools/r41/chat_speed/bench_code_cache_dp.py` | Synthetic code-cache pressure replay plus exact DP compute, no board. | `evidence/r41/chat/speed/README.md` | one-off |
 | `tools/r41/chat_speed/bench_hoisted_fp8.py` | Compare official fused FP8 with exact separately quantised FP8 on DP TLM. | none found | one-off |
 | `tools/r41/chat_speed/bench_runtime_events.py` | Runtime-history A/B: standard Torch matmul on DP TLM, no board. | none found | one-off |
+| `tools/r41/chat_speed/compare_argument_upload_tlm.py` | Compare argument-upload reuse and exact results from paired DP TLM runs. | `evidence/r41/chat/speed/README.md` | one-off |
+| `tools/r41/chat_speed/compare_model_cache_tlm.py` | Compare profiled model logits, code, transfers and launch metrics between DP TLM runs. | `evidence/r41/chat/speed/README.md` | one-off |
 | `tools/r41/chat_speed/queue_event_board.py` | Run the event-index board comparison after the priority chat stage passes. | none found | one-off |
 | `tools/r41/chat_speed/queue_activation_board.py` | Queue the gated activation-staging board session after prior tests pass. | none found | care |
 | `tools/r41/chat_speed/queue_after_quality_failure.py` | Preserve the completed quality failure and queue gated board speed sessions. | none found | care |
@@ -653,6 +655,7 @@ Chat, decode profile, quality checks, checkpoint loaders and the diagnostics of 
 | Tool | Purpose (from its docstring) | Referenced by | Class |
 |---|---|---|---|
 | `tools/models/chat.py` | Chat with the staged Qwen FP8 checkpoints through the standard Torch path. | `doc/r41_chat.md`, `evidence/r41/acceptance/STATUS.md` | core |
+| `tools/models/chat_timing.py` | Account for prompt-to-output wall time and returned-token rates. | `tools/models/chat.py` | core |
 | `tools/models/chat_numerical_floor.py` | Measure a reduced-depth chat model's CPU W8A8 scale-rounding floor. | none found | care |
 | `tools/models/chat_quality.py` | Registered chat-quality check (spec/r41/chat/quality-v1.json): CPU reference answers, then device scoring. | `doc/r41_chat.md`, `evidence/r41/chat/quality-ref/README.md` | core |
 | `tools/models/compare_vl_reason_logits.py` | Compare saved CPU or TLM reason-prompt logits without modifying them. | none found | one-off |

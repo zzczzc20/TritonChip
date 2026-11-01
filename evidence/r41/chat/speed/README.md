@@ -799,3 +799,15 @@ EOS still executes excess decode steps; the final full-model quality,
 no-fallback and user-visible throughput campaign has not run with this package.
 The pre-existing Stage 1/2 validation failures remain failures, and this
 milestone does not declare the PRs ready or alter their recorded outcomes.
+
+A DP TLM `torch.while_loop` probe returned the correct scalar on both calls,
+but its steady call made five host reads, seven launches and 440 device
+cycles. It therefore fails the zero-host-read requirement and is not an EOS
+solution. The run and diagnostic source are in [RAW_INDEX](../../RAW_INDEX.md).
+
+The reduced-depth model TLM comparator checks matching prompt, model, profile,
+launch structure and device code, complete bitwise logits, TNCA tensor
+placement, wrapper coverage and actual steady decode transfer counters. Four
+negative tests and both recorded baseline self-comparisons passed; these are
+validation of the comparator, not new model-speed measurements. The two
+argument-cache model comparisons remain pending.

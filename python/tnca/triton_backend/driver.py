@@ -479,6 +479,10 @@ loaded = 0                   # successful physical code loads (process-wide)
 evicted = 0                  # modules unloaded to make code room (resident sessions)
 
 
+def _file_stamp(stat):
+    return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
+
+
 def _artifact_sha256(path):
     """The sha256 of the .tnca a launch ran, for the record's provenance
     (archbench/PROTOCOL.md, protocol 2): what was measured, named by content."""
@@ -488,41 +492,23 @@ def _artifact_sha256(path):
         stat = os.stat(path)
     except OSError:
         return None
-    stamp = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
+    stamp = _file_stamp(stat)
     h = _artifact_hashes.get(path)
     if h is None or _artifact_stats.get(path) != stamp:
         import hashlib
         with open(path, 'rb') as fh:
+            before = _file_stamp(os.fstat(fh.fileno()))
             h = hashlib.sha256(fh.read()).hexdigest()
+            after = _file_stamp(os.fstat(fh.fileno()))
+        if before != stamp or after != stamp:
+            raise TNCALaunchError('compiled artifact changed while being read')
         _artifact_hashes[path] = h
         _artifact_stats[path] = stamp
     return h
 
 
-def _executable_info(path, *, manifest_required=False):
-    """Verified execution identity, excluding only source provenance.
-
-    Two independently compiled artifacts may have identical instructions,
-    ABI, target, execution contract and resources while their source hashes
-    and compiler provenance differ. They can share code RAM. Every segment
-    is verified before sharing, and all other manifest fields remain part of
-    the identity. A view retains the requested artifact's own manifest.
-    """
-    if not isinstance(path, str) or not os.path.isfile(path):
-        return None, None
-    stat = os.stat(path)
-    stamp = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
-    cached = _executable_hashes.get(path)
-    if cached is not None and cached[0] == stamp and not manifest_required:
-        return cached[1], None
-    from tnca import artifact
-    from tnca.errors import TncaError
-    try:
-        manifest, _segments = artifact.load(path)
-    except (TncaError, OSError, ValueError, KeyError):
-        # Session.load still performs its normal validation and reports the
-        # actual error; an unreadable artifact is never shared by this route.
-        return None, None
+def _execution_fingerprint(manifest):
+    """Identity of executable code and its complete runtime contract."""
     contract = dict(manifest)
     contract.pop('manifest_hash', None)
     identity = dict(contract.get('identity') or {})
@@ -532,10 +518,55 @@ def _executable_info(path, *, manifest_required=False):
     metadata.pop('provenance', None)
     contract['optional_metadata'] = metadata
     import hashlib
-    fingerprint = hashlib.sha256(json.dumps(contract, sort_keys=True, separators=(',', ':'),
-                                            ensure_ascii=False, allow_nan=False).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(contract, sort_keys=True, separators=(',', ':'),
+                                     ensure_ascii=False, allow_nan=False).encode()).hexdigest()
+
+
+def _executable_info(path):
+    """Find an execution identity, excluding only source provenance.
+
+    Two independently compiled artifacts may have identical instructions,
+    ABI, target, execution contract and resources while their source hashes
+    and compiler provenance differ. They can share code RAM. Every segment
+    is verified before sharing, and all other manifest fields remain part of
+    the identity. A candidate alias is separately verified before it can
+    share code, and a view retains its own manifest.
+    """
+    if not isinstance(path, str) or not os.path.isfile(path):
+        return None, None
+    stat = os.stat(path)
+    stamp = _file_stamp(stat)
+    cached = _executable_hashes.get(path)
+    if cached is not None and cached[0] == stamp:
+        return cached[1], None
+    from tnca import artifact
+    from tnca.errors import TncaError
+    try:
+        # The usual cache miss proceeds to Session.load, which verifies the
+        # complete artifact. Reading just the header here avoids a second
+        # full code read for every newly compiled kernel.
+        manifest, _payload_at = artifact.read_header(path)
+    except (TncaError, OSError, ValueError, KeyError):
+        # Session.load still performs its normal validation and reports the
+        # actual error; an unreadable artifact is never shared by this route.
+        return None, None
+    if _file_stamp(os.stat(path)) != stamp:
+        raise TNCALaunchError('compiled artifact changed while its header was read')
+    fingerprint = _execution_fingerprint(manifest)
     _executable_hashes[path] = (stamp, fingerprint)
     return fingerprint, manifest
+
+
+def _verified_alias_manifest(path, expected):
+    """Validate every byte before binding a second artifact to resident code."""
+    from tnca import artifact
+    before = _executable_hashes[path][0]
+    manifest, _segments = artifact.load(path)
+    stat = os.stat(path)
+    after = _file_stamp(stat)
+    if before != after or _execution_fingerprint(manifest) != expected:
+        raise TNCALaunchError('compiled artifact changed during code-residency lookup')
+    return manifest
 
 
 def _executable_digest(path):
@@ -582,6 +613,8 @@ def _load(session, path):
     key = (session.id, session.epoch, path, digest)
     artifact_key = (session.id, session.epoch, digest)
     executable, manifest = _executable_info(path)
+    if executable is not None and _artifact_stats.get(path) != _executable_hashes[path][0]:
+        raise TNCALaunchError('compiled artifact changed between hash and contract checks')
     executable_key = (session.id, session.epoch, executable) if executable is not None else None
     from tnca.code_residency import active as active_code_trace
     trace = active_code_trace()
@@ -600,16 +633,9 @@ def _load(session, path):
         resident_key = _loaded_by_executable.get(executable_key)
         m = _loaded.get(resident_key)
         if m is not None:
-            if manifest is None:
-                checked, manifest = _executable_info(path, manifest_required=True)
-                if checked != executable:
-                    raise TNCALaunchError('compiled artifact changed during code-residency lookup')
-            if manifest is None:
-                # The artifact changed or became unreadable during the lookup.
-                m = None
-            else:
-                _loaded[key] = m
-                _module_views[key] = _ModuleView(m, path, manifest)
+            manifest = _verified_alias_manifest(path, executable)
+            _loaded[key] = m
+            _module_views[key] = _ModuleView(m, path, manifest)
     if m is not None:
         for alias, module in list(_loaded.items()):
             if module is m:

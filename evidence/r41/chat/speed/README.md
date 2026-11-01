@@ -757,3 +757,12 @@ candidate was integrated as an opt-in `TNCA_X8_EQUAL_OUTPUT=1` route. The
 unrelated four default-division activation-quantizer failures remain recorded;
 no full-suite pass is claimed. A separate board session is being prepared
 behind the ongoing Qwen3.5 quality diagnostic. No board speedup is yet claimed.
+
+The opt-in Qwen3.5 board performance session was registered at 2026-11-01
+04:08:04 UTC after its real Q35 TLM gate and source hash were checked. It uses
+an independent runtime copy and waits for `candidate_queue.lock` and the
+existing image's idle/identity checks; it does not program an image. Its
+registration SHA-256 is
+`5062ddc4cec987ee0764c89c4ddec6ef562a1863183d3e0b331f91e7c36b1abe`.
+The queue is waiting behind the separate precision quality diagnostic; no
+board performance result is yet available.

@@ -46,3 +46,5 @@ are rejected. It has not been integrated, deployed, or run on the board. The
 four pre-existing default quantizer failures remain explicit in its gate,
 which requires their comparison records and standalone assembly to match the
 control.
+
+The Q35 model comparison completed and is archived as `x8_equal_output_q35_tlm_20261101.tgz`. The opt-in change and queue were subsequently integrated on R41, and the independently registered board performance session is waiting under `r41-equal-output-board-20261101.service`; the quality diagnostic ahead of it uses `r41-q35-precision-b32-whole-v3-20261101.service`. Check board status no more often than every 10 minutes. Neither session has a final result yet.

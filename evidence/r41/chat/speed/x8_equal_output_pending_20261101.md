@@ -36,11 +36,13 @@ idle/identity checks. Do not program an image, modify a live board archive,
 mark quality passed, or merge PRs on the strength of this pending work.
 
 The candidate and a board-queue draft are committed only in the isolated
-branch `r41-x8-equal-output-20261101` through `a24df097`. The queue checks the
+branch `r41-x8-equal-output-20261101` through `14592dfa`. The queue checks the
 recorded exact-reference and default-audit evidence, requires the completed
 Qwen3.5 comparison (VL-only evidence is rejected), bitwise model logits, zero
 steady decode host reads and improved TLM decode cycles, and checks the source
 hash before using the existing locked/idle verified-image stage. A small local
 gate check confirmed that VL-only evidence and a synthetic host-read violation
 are rejected. It has not been integrated, deployed, or run on the board. The
-four pre-existing default quantizer failures remain explicit in its gate.
+four pre-existing default quantizer failures remain explicit in its gate,
+which requires their comparison records and standalone assembly to match the
+control.

@@ -57,6 +57,10 @@ r41-harness-tests:
 harness-catalog:
 	$(PYTHON) tools/performance_harness/catalog_check.py
 	$(PYTHON) tools/performance_harness/test_catalog_check.py
+
+.PHONY: guard-test
+guard-test:
+	$(PYTHON) -m unittest -v tools.guard.test_guard tools.guard.test_watchdog tools.guard.test_live
 # NOTE ON PIPELINES IN RECIPES
 #
 # `python ... | tail -4` reports tail's status, so a failing interpreter, a

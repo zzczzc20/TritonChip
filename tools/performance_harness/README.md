@@ -746,6 +746,9 @@ Tests are listed by glob. Whether a test needs torch or a built model is not sta
 | `tools/r41/test_*.py` | `test_barrier_slice_check.py`: missing evidence must not become a passing verdict | core |
 | `tools/r41/chat_speed/test_*.py` | `test_equal_rows_tlm.py`: equal-address and unequal-mask cases on the DP TLM | one-off |
 | `tools/models/test_*.py` | Chat driver, device feedback, FP8 checkpoint loader, Q35 pilot | care |
+| `tools/r41/chat_delivery/record_visible_baseline.py` | Derive labelled lower-bound user-visible wall rates from recorded board results | care |
+| `tools/r41/chat_delivery/rescore_q35_near_tie.py` | Rescore recorded Q35 answers under the registered near-tie rule | care |
+| `tools/r41/chat_speed/queue_equal_output_board.py` | Gate and queue an opt-in equal-output board session | care |
 <!-- END catalog -->
 
 ### Needs a decision

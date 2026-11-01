@@ -6,6 +6,11 @@ language = "en"
 backend = "agy"
 
 [[doc]]
+path = "tools/guard/README.md"
+depends_on = ["doc/engineering_discipline.md"]
+sources = ["tools/guard/", "Makefile"]
+
+[[doc]]
 path = "Readme.md"
 depends_on = ["doc/architecture_overview.md", "doc/compiler_overview.md", "doc/isa/TNCA-ISA-v0.1.md", "doc/r39_report.md", "doc/r40_report.md", "doc/r40_tasks_and_acceptance_v3.md", "doc/support_matrix.md", "tutorial/README.md"]
 sources = ["LICENSE", "NOTICE", "archbench/", "compiler/", "doc/", "evidence/", "fpga/", "isa/", "python/tnca/", "rtl/", "rtl/gen/", "spec/", "spec/r1_toolchain.lock.json", "spec/r40/api_lock.json", "tb/", "tools/", "tutorial/", "xls/"]

@@ -21,6 +21,11 @@ SOURCE_FILES = ('compiler/CMakeLists.txt',)
 # they have their own hashes in the plan and must not change the source hash.
 OVERLAY_MANIFESTS = frozenset(f'spec/r41/run3/board/r41-final-{model}-campaign-20261101.json'
                               for model in MODELS)
+# These original run-3 registrations live in the board archive, not r41.
+# Bind them separately, just like the generated campaign manifests.
+EXTERNAL_INPUTS = ('spec/r41/run3/xclbin_hbm_map.json',
+                   'spec/r41/run3/board/r3-s2-qwen-chat-v3-vl.json',
+                   'spec/r41/run3/board/r3-s2-qwen-chat-v3-q35.json')
 
 
 def sha(path):
@@ -37,7 +42,7 @@ def tree_digest(root):
             raise FileNotFoundError(f'campaign source directory is missing: {name}')
         for path in sorted(directory.rglob('*')):
             relative = path.relative_to(root).as_posix()
-            if path.is_file() and relative not in OVERLAY_MANIFESTS and '__pycache__' not in path.parts \
+            if path.is_file() and relative not in OVERLAY_MANIFESTS and relative not in EXTERNAL_INPUTS and '__pycache__' not in path.parts \
                     and not path.name.endswith(('.pyc', '.pyo')):
                 digest.update(relative.encode() + b'\0')
                 digest.update(bytes.fromhex(sha(path)))
@@ -97,6 +102,16 @@ def prepare(root, templates, references, out, frozen_commit=None):
                 source_tree_sha256=tree_digest(root),
                 source_sha256={name: sha(root / name) for name in source_files},
                 warm_scope='same-session repeat; fresh-process persistent-cache gain is not established')
+    plan['external_source_sha256'] = {}
+    for name in EXTERNAL_INPUTS:
+        source = templates / name
+        if not source.is_file():
+            raise FileNotFoundError(f'registered board input missing: {source}')
+        target = out / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open('xb') as stream:
+            stream.write(source.read_bytes())
+        plan['external_source_sha256'][name] = sha(target)
     for model, (model_name, count) in MODELS.items():
         reg0_path = templates / f'spec/r41/run3/stages/chat-{model}-nohost-v5-20261031.json'
         reg0 = json.loads(reg0_path.read_text())
@@ -123,6 +138,10 @@ def prepare(root, templates, references, out, frozen_commit=None):
                     raise ValueError(f'{model}: missing CPU first-token evidence')
         manifest = copy.deepcopy(json.loads(source.read_text()))
         board = manifest.get('board') or {}
+        memory_map = board.get('memory_map') or {}
+        if memory_map.get('source') == EXTERNAL_INPUTS[0] and \
+                memory_map.get('source_sha256') != plan['external_source_sha256'][EXTERNAL_INPUTS[0]]:
+            raise ValueError(f'{model}: board memory map differs from the registered image')
         if (board.get('image_sha256'), board.get('image_uuid'), board.get('clock_hz')) != \
                 (IMAGE_SHA, IMAGE_UUID, 100000000) or len(manifest.get('steps', [])) != 1:
             raise ValueError(f'{model}: unexpected board identity or extra steps')

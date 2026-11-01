@@ -23,6 +23,10 @@ class RunnerTests(unittest.TestCase):
         overlay = self.base / 'overlay'
         data = plan.prepare(self.root, self.templates, self.refs, overlay)
         data.update(status='frozen', frozen_commit='a' * 40)
+        for name in data['external_source_sha256']:
+            source, target = overlay / name, self.root / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
         for item in data['models']:
             for key in ('manifest', 'reference'):
                 source, target = overlay / item[key], self.root / item[key]
@@ -149,6 +153,10 @@ class RunnerTests(unittest.TestCase):
         exported = self.base / 'exported'
         exported.mkdir()
         subprocess.run(['tar', '-xf', str(archive)], cwd=exported, check=True)
+        for name in data['external_source_sha256']:
+            destination = exported / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(overlay / name, destination)
         for item in data['models']:
             for key in ('manifest', 'reference'):
                 destination = exported / item[key]

@@ -35,6 +35,8 @@ class PlanTests(unittest.TestCase):
         prompts.append(dict(id='image', turns=['image'], models=['vl']))
         self.write_json(self.root / 'spec/r41/chat/quality-author-20261101.json',
                         dict(scoring_rule='author-20261101', prompts=prompts))
+        for path in plan.EXTERNAL_INPUTS:
+            self.write(self.templates / path, 'registered board input')
         for model, (name, _) in plan.MODELS.items():
             selected = [p for p in prompts if model in p.get('models', ['vl', 'q35'])]
             reference = dict(status='reference-recorded', device='cpu', model=name, model_scope='full-checkpoint',

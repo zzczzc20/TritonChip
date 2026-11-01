@@ -11,7 +11,7 @@ import subprocess
 import sys
 import time
 
-from consolidated_plan import IMAGE_SHA, IMAGE_UUID, MODEL_BUDGET_SECONDS, tree_digest
+from consolidated_plan import EXTERNAL_INPUTS, IMAGE_SHA, IMAGE_UUID, MODEL_BUDGET_SECONDS, tree_digest
 
 
 def sha(path):
@@ -41,6 +41,12 @@ def verify_inputs(root, overlay, plan):
         raise ValueError('campaign image, clock or time window differs from the directive')
     if tree_digest(root) != plan.get('source_tree_sha256'):
         raise ValueError('frozen compiler, runtime or harness source changed')
+    external = plan.get('external_source_sha256') or {}
+    if set(external) != set(EXTERNAL_INPUTS):
+        raise ValueError('registered board inputs are incomplete')
+    for path, expected in external.items():
+        if sha(member(root, path)) != expected or sha(member(overlay, path)) != expected:
+            raise ValueError(f'registered board input changed: {path}')
     for path, expected in plan['source_sha256'].items():
         if sha(member(root, path)) != expected:
             raise ValueError(f'frozen source changed: {path}')
@@ -50,6 +56,13 @@ def verify_inputs(root, overlay, plan):
                 raise ValueError(f"{item['model']}: changed {key}")
         manifest = json.loads(member(root, item['manifest']).read_text())
         steps, board = manifest.get('steps') or [], manifest.get('board') or {}
+        for name in manifest.get('sources', []):
+            expanded = str(name).replace('{root}', str(root)).replace('{home}', str(Path.home()))
+            source = Path(expanded)
+            if not source.is_absolute():
+                source = root / source
+            if not source.exists():
+                raise ValueError(f"{item['model']}: registered input missing: {source}")
         if len(steps) != 1 or steps[0].get('kind') != 'fpga' or \
                 manifest.get('budget_seconds') != MODEL_BUDGET_SECONDS[item['model']] or \
                 steps[0].get('timeout_seconds') != MODEL_BUDGET_SECONDS[item['model']] or \

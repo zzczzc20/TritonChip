@@ -1030,3 +1030,15 @@ a finite maximum result became infinity. The random run used 741451 device
 cycles and 479232 instructions, with one launch and no code loads during it.
 The candidate fails the exactness gate and is not merged or board-qualified;
 no 113-point audit or model speed claim is inferred from this failed probe.
+
+The completed [full-depth instrumented CPU/TLM comparison](q35_all_layers_tlm_compare_20261101.tgz)
+shows matching embedding bits, then 63732/69120 mismatches (relative L2
+0.0119732721) after layer 1 and 67141/69120 (relative L2 0.0888381749)
+after layer 32. Instrumented TLM logits differ from instrumented CPU logits
+by relative L2 0.0765310973. Critically, the instrumented TLM logits also
+differ from the original uninstrumented whole-prefill TLM logits by relative
+L2 0.0701584443 (242415/248320 differing bits), whereas instrumented and
+original CPU logits match bitwise. Instrumentation therefore changes the TLM
+graph substantially; these layer comparisons suggest where to investigate
+but do not establish where the original board path first diverges. No board
+logits or correctness pass are inferred.

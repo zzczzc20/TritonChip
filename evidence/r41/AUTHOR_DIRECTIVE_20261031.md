@@ -20,3 +20,11 @@ Source: the author, in the lead's chat, 2026-10-31. This is the author's written
 
 ## Reporting
 Reply to the author in Chinese, short, with: overall progress percent to "R41 closed with chat on the board", percent remaining, what ran on the board since the last report, the next steps and ETA. Anything that needs root, a new image, or the author's decision: ask once, clearly.
+# Author decision (lead's chat, 2026-11-01): Qwen3.5 near-tie quality rule and stop the precision chase
+Source: the author approved this in the lead's chat on 2026-11-01 (answer "批准：内容检查 + 首 token 在 0.5 logit 内"). Copy this text into `evidence/r41/AUTHOR_DIRECTIVE_20261031.md` as an addendum on `origin/r41` (and register the doc in `doc/docmap.toml` if it is not yet), and commit it before the next run.
+
+The Qwen3.5 multi-turn failure is a first-token near tie (device `I` against CPU `Hello`, logit gaps 0.125 to 0.25 around 22). The author's criterion is a normal conversation with normal intelligence, not token equality with the CPU on open-ended turns.
+- STOP the precision-variant chase (precision casts, b32, IEEE-division variants, equal-row X8 output experiments). Do not merge non-default numerics for this, unless a variant is a general default-on improvement that also speeds things up.
+- Revised scoring for open-ended turns, dated 2026-11-01, registered before the next run and not applied to past runs: a turn passes if the response meets the prompt's intent by objective content checks (turn 1 acknowledges the stated name; turn 2 gives the name; factual/arithmetic/instruction prompts contain the expected answer) AND the device's first token is within 0.5 logit of the CPU reference's top token (near tie) or is in the CPU reference's top five. A larger gap or a failed content check is a real failure to diagnose. Token-by-token agreement stays reported as a diagnostic.
+- Past failures stay recorded as failures under the rules they were measured by. Re-score the already recorded Qwen3.5 multi-turn board output under the new rule and record both verdicts side by side. The new rule only decides what closes R41.
+- Then finish what R41 needs: the remaining Qwen3.5 prompts, session and scripted chat, no-CPU-fallback counters, board prefill and decode rates, reports and PRs #11 (draft) .

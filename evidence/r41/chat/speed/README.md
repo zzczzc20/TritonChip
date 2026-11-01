@@ -719,3 +719,15 @@ same three standalone activation-quantization cases and its compiled-graph
 case failed on both paths. These existing default-division failures are not
 a pass and are not erased by the separate 16/16 `TNCA_IEEE_DIV=1` run. The
 single-kernel default-division comparisons above remain separate evidence.
+
+The completed [one-layer Qwen3-VL TLM comparison](x8_equal_output_vl_l1_tlm_20261101.tgz)
+used identical prompts, two generated tokens, and default division. Both
+151936-element logits tensors matched bitwise; no captured CPU numerical
+fallback or host reads occurred in either measured step. Control → candidate:
+prefill cycles 547696824 → 542872877, 28 → 28 launches, 23 → 23 actual code
+loads, 0.0472591285 → 0.0472591285 FP8 instructions/MAC; decode cycles
+475254661 → 472477101, 25 → 25 launches, 19 → 19 code loads, 165184 → 156992
+uploaded code bytes and 0.2593053182 → 0.1967442830 FP8 instructions/MAC.
+These are uncalibrated, reduced-depth TLM observations, not board throughput
+or an independent full-model quality result. Qwen3.5 four-layer comparison
+continues. The candidate remains unmerged.

@@ -1042,3 +1042,12 @@ original CPU logits match bitwise. Instrumentation therefore changes the TLM
 graph substantially; these layer comparisons suggest where to investigate
 but do not establish where the original board path first diverges. No board
 logits or correctness pass are inferred.
+
+The completed [full-checkpoint grouped-prefill TLM comparison](q35_multiturn_tlm_grouped_20261101.tgz)
+uses the exact Qwen3.5 multi-turn prompt and input tokens. On grouped chunk 8,
+TLM chose `I` (22.125) over `Hello` (22.0), a 0.125 gap; the matching CPU
+chunked route chose `Hello` (22.0) over `I` (21.875), also a 0.125 gap. Their
+248320 logits have relative L2 0.0752601773, maximum absolute difference
+1.25 and 242648 differing bits. The first-token flip occurs near a tie but is
+accompanied by broad numerical differences. Board logits were not captured,
+so this does not establish the complete cause of the board failure.

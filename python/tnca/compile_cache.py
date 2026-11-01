@@ -16,13 +16,20 @@ import platform
 _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_DIR',
                            'TNCA_SUBMIT',
                            'TNCA_DEADLINE', 'TNCA_HOST_TIMEOUT'})
+# These select a runtime device or its measured clock. The ordinary compiler
+# does not use them, but autotuning observes the device and therefore must
+# retain both in its cache identity.
+_UNTUNED_RUNTIME_ONLY = frozenset({'TNCA_BACKEND_ARGS', 'TNCA_OPERATING_CLOCK_EVIDENCE', 'TNCA_COUNTERS'})
 _SOURCE_SUFFIXES = frozenset({'.py', '.c', '.cpp', '.cc', '.h', '.hpp', '.td',
                               '.def', '.inc', '.cmake', '.json', '.toml', '.yaml', '.yml'})
 
 
 def semantic_environment(environ):
+    runtime_only = _RUNTIME_ONLY
+    if environ.get('TNCA_TUNE', '0') != '1':
+        runtime_only = runtime_only | _UNTUNED_RUNTIME_ONLY
     return {key: value for key, value in sorted(environ.items())
-            if key.startswith('TNCA_') and key not in _RUNTIME_ONLY}
+            if key.startswith('TNCA_') and key not in runtime_only}
 
 
 def source_fingerprint(trees, files=None):

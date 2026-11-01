@@ -37,6 +37,28 @@ class CacheNamespaceTests(unittest.TestCase):
         self.assertNotEqual(first, key({'TNCA_PROFILE': 'dp'}, {'torch': '2'}))
         self.assertNotEqual(first, key({'TNCA_PROFILE': 'dp'}, options={'tile': 32}))
 
+    def test_untuned_cache_survives_a_runtime_image_path_change(self):
+        def key(env):
+            return cache.namespace('source', env, {'torch': '1'}, {'tile': 16})
+        before = {'TNCA_PROFILE': 'dp', 'TNCA_BACKEND': 'fpga-u280-multicore',
+                  'TNCA_BACKEND_ARGS': '{"xclbin":"/old/image"}',
+                  'TNCA_OPERATING_CLOCK_EVIDENCE': '/old/clock', 'TNCA_COUNTERS': '1'}
+        after = dict(before, TNCA_BACKEND_ARGS='{"xclbin":"/new/image"}',
+                     TNCA_OPERATING_CLOCK_EVIDENCE='/new/clock', TNCA_COUNTERS='0')
+        self.assertEqual(key(before), key(after))
+        # Backend selection itself determines physical-grid lowering.
+        self.assertNotEqual(key(before), key(dict(after, TNCA_BACKEND='sim-file')))
+
+    def test_tuned_cache_remains_bound_to_runtime_hardware(self):
+        def key(env):
+            return cache.namespace('source', env, {'torch': '1'}, {'tile': 16})
+        before = {'TNCA_PROFILE': 'dp', 'TNCA_TUNE': '1',
+                  'TNCA_BACKEND_ARGS': '{"xclbin":"/old/image"}',
+                  'TNCA_OPERATING_CLOCK_EVIDENCE': '/old/clock'}
+        self.assertNotEqual(key(before), key(dict(before, TNCA_BACKEND_ARGS='{"xclbin":"/new/image"}')))
+        self.assertNotEqual(key(before), key(dict(before, TNCA_OPERATING_CLOCK_EVIDENCE='/new/clock')))
+        self.assertNotEqual(key(before), key(dict(before, TNCA_COUNTERS='1')))
+
     def test_missing_compiler_sources_fail_closed(self):
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaises(FileNotFoundError):

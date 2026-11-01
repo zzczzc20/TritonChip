@@ -620,3 +620,23 @@ The matched Qwen3.5 four-layer TLM reduced decode code loads 77 to 52, but
 device cycles increased 1344816549 to 1378763635, with unchanged launch count
 and exact logits. The candidate remains opt-in, unmerged and not queued for
 board testing; these are uncalibrated reduced-model observations.
+
+## Experimental two-step X8 weight lookahead (not merged)
+
+An [isolated candidate patch](x8_depth2_probe_20261101.patch.gz) keeps two
+future weight transfers pending, with three separate fallback scratch slots;
+the control uses the same source with the new opt-in disabled. The
+[DP TLM records](x8_depth2_probe_20261101.tgz) use exact independent FP8
+references. Each steady call has one launch and zero code loads or evictions.
+
+| M×N×K | Instructions/MAC control → candidate | Cycles control → candidate | Output mismatches each |
+| --- | ---: | ---: | ---: |
+| 1×256×256 | 0.4805297852 → 0.4800415039 | 91280 → 98871 | 0/256 |
+| 1×250×384 | 0.4754895833 → 0.4759895833 | 162680 → 170498 | 0/250 |
+| 1×7×256 | 28.2455357143 → 28.2008928571 | 189841 → 188119 | 0/7 |
+| 16×256×256 | 0.0475234985 → 0.0474929810 | 182082 → 180079 | 0/4096 |
+
+The two representative decode shapes regressed in device cycles, so this
+candidate is not accepted, merged, or queued for board testing. These are
+small uncalibrated TLM measurements, not end-to-end throughput. A 113-point
+default-code audit was started separately and was pending at this record.

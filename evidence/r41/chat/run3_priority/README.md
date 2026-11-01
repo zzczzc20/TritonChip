@@ -959,3 +959,22 @@ at flattened head row 755, element 43: CPU versus TLM variance was
 175.26795959472656 versus 175.26797485351562. The normalized value crossed a
 BF16 rounding boundary; SiLU was identical at that coordinate. This is one
 recorded case, not a general exactness or board pass.
+
+The [precision-cast two-layer TLM](q35_first_headless_precise_v2_20261101.tgz)
+reduced first-layer mismatches from 63732 to 1887/69120 and relative L2 from
+0.0119732721 to 0.0004243143; after the second layer final norm, mismatches
+were 51894/69120 and relative L2 0.0156156691. Neither is bitwise exact.
+
+The [compensated-reduction research](q35_compensated_research_20261101.tgz)
+retains a failed first full-kernel attempt at a two-million-cycle TLM deadline
+and the separately registered higher-deadline retry. On 864 real activation
+rows, compensated FP32 reduction matched high-precision variance 864/864,
+versus 427/864 for the ordinary reduction; cycles were 1497554 versus 179093,
+with one launch each and no loads during launch. On real gated-norm inputs,
+an explicit-BF16-cast standalone Triton kernel matched 110592/110592 CPU
+outputs both with ordinary reduction (749101 cycles, 438912 instructions) and
+compensation (2568426 cycles, 1856736 instructions). A random finite-input
+case also matched 16384/16384 in both paths (110177 and 380483 cycles). These
+are standalone kernels with a different reduction schedule than the original
+Inductor graph, not proof of general exactness, no board claim, and not a
+merged compiler fix.

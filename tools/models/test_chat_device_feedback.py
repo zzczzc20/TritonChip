@@ -366,6 +366,17 @@ class UserReportTests(unittest.TestCase):
 
 
 class PrefillSegmentationTests(unittest.TestCase):
+    def test_one_token_decode_reuses_storage_with_canonical_stride(self):
+        session = object.__new__(chat.Session)
+        session.dev, session.cache = torch.device('cpu'), object()
+        observed = []
+        session.decode = lambda ids, positions, cache: observed.append(ids) or (torch.zeros(4),)
+        token = torch.tensor([9, 4, 8]).as_strided((1, 1), (7, 3), storage_offset=1)
+        session._call_decode(token, torch.zeros((1, 1, 1), dtype=torch.long))
+        self.assertEqual(observed[0].data_ptr(), token.data_ptr())
+        self.assertEqual(observed[0].stride(), (1, 1))
+        self.assertEqual(observed[0].tolist(), [[4]])
+
     def test_mismatched_cache_length_discards_the_prefix_before_prefill(self):
         session = object.__new__(chat.Session)
         session.model, session.bucket, session.chunk = object(), 64, 0

@@ -293,7 +293,14 @@ class Session:
         return result[0][0, -1]
 
     def _call_decode(self, ids, positions):
-        ids = ids.clone(memory_format=torch.contiguous_format)
+        # Greedy feedback is already a device tensor. Cloning its single
+        # token launched a separate device copy on every decode step. A
+        # one-element view has a canonical stride without copying bytes;
+        # other input shapes retain the previous contiguous-copy behavior.
+        if tuple(ids.shape) == (1, 1):
+            ids = ids.as_strided((1, 1), (1, 1))
+        else:
+            ids = ids.clone(memory_format=torch.contiguous_format)
         positions = positions.clone(memory_format=torch.contiguous_format)
         return self.decode(ids.to(self.dev), positions.to(self.dev), self.cache)[0]
 

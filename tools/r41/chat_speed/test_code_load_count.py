@@ -34,6 +34,34 @@ class FakeSession:
 
 
 class CodeLoadTests(unittest.TestCase):
+    def test_replaced_artifact_at_same_path_does_not_reuse_old_code(self):
+        from contextlib import ExitStack
+        from tnca import artifact
+
+        def load_manifest(path):
+            content = Path(path).read_text()
+            return (dict(identity=dict(kernel_name='replace', source_hash=content),
+                         code=dict(segments=[dict(name='text', sha256=content)]),
+                         parameters=dict(signature=['x']), resources={}, execution={}),
+                    {'text': content.encode()})
+
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable',
+                         '_module_views', '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                stack.enter_context(mock.patch.object(driver, name, {}))
+            stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+            stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+            stack.enter_context(mock.patch.object(artifact, 'load', side_effect=load_manifest))
+            path = Path(directory) / 'kernel.tnca'
+            path.write_text('old')
+            session = FakeSession()
+            old = driver._load(session, str(path))[1]
+            path.write_text('new, different code')
+            new = driver._load(session, str(path))[1]
+            self.assertIsNot(old, new)
+            self.assertFalse(old.alive)
+            self.assertEqual(driver.loaded, 2)
+
     def test_verified_equivalent_code_shares_allocation_and_keeps_provenance(self):
         from contextlib import ExitStack
         from tnca import artifact
@@ -48,7 +76,7 @@ class CodeLoadTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
             for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable',
-                         '_module_views', '_artifact_hashes', '_executable_hashes'):
+                         '_module_views', '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
                 stack.enter_context(mock.patch.object(driver, name, {}))
             stack.enter_context(mock.patch.object(driver, 'loaded', 0))
             stack.enter_context(mock.patch.object(driver, 'evicted', 0))

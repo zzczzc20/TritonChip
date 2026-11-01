@@ -473,6 +473,7 @@ _loaded_by_artifact = {}
 _loaded_by_executable = {}
 _module_views = {}
 _artifact_hashes = {}
+_artifact_stats = {}
 _executable_hashes = {}
 loaded = 0                   # successful physical code loads (process-wide)
 evicted = 0                  # modules unloaded to make code room (resident sessions)
@@ -481,12 +482,20 @@ evicted = 0                  # modules unloaded to make code room (resident sess
 def _artifact_sha256(path):
     """The sha256 of the .tnca a launch ran, for the record's provenance
     (archbench/PROTOCOL.md, protocol 2): what was measured, named by content."""
+    if not isinstance(path, str):
+        return None
+    try:
+        stat = os.stat(path)
+    except OSError:
+        return None
+    stamp = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
     h = _artifact_hashes.get(path)
-    if h is None and isinstance(path, str) and os.path.exists(path):
+    if h is None or _artifact_stats.get(path) != stamp:
         import hashlib
         with open(path, 'rb') as fh:
             h = hashlib.sha256(fh.read()).hexdigest()
         _artifact_hashes[path] = h
+        _artifact_stats[path] = stamp
     return h
 
 
@@ -567,8 +576,10 @@ def _load(session, path):
     """
     from tnca.errors import BufferError as _BE
     global loaded
-    key = (session.id, session.epoch, path)
     digest = _artifact_sha256(path)
+    # A compiler may atomically replace an artifact at the same pathname.
+    # The old code must not become the new path's resident cache hit.
+    key = (session.id, session.epoch, path, digest)
     artifact_key = (session.id, session.epoch, digest)
     executable, manifest = _executable_info(path)
     executable_key = (session.id, session.epoch, executable) if executable is not None else None

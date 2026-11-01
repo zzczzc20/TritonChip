@@ -711,3 +711,11 @@ running, and a separate one-layer VL comparison was started.
 A [modulo-row follow-up](x8_equal_output_proof_v7_20261101.tgz) likewise
 matched four exact cases on both routes but produced identical assembly and
 does not exercise the changed path.
+
+The [default-division suite](x8_equal_output_default_suite_20261101.tgz)
+finished 12/16 pass and 4/16 fail for both control and candidate. All 12
+matmul and related compiled-graph cases matched their exact references; the
+same three standalone activation-quantization cases and its compiled-graph
+case failed on both paths. These existing default-division failures are not
+a pass and are not erased by the separate 16/16 `TNCA_IEEE_DIV=1` run. The
+single-kernel default-division comparisons above remain separate evidence.

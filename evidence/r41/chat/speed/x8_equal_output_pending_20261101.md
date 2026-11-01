@@ -9,11 +9,11 @@ The immutable runtime code snapshot on the GB10 is
 `~/r41_current_x8_equal_output_20261101`. The Qwen3.5 four-layer TLM control
 and candidate use `r41-x8-equal-output-q35-{0,1}-20261101.service`; their
 automatic comparator is `r41-x8-equal-output-q35-compare-20261101.service`
-and writes `~/r41_x8_equal_output_q35_compare_20261101.json`. The Qwen3-VL
-one-layer control and candidate use
+and writes `~/r41_x8_equal_output_q35_compare_20261101.json`. The completed Qwen3-VL
+one-layer control and candidate used
 `r41-x8-equal-output-vl-l1-{0,1}-20261101.service`; their comparator is
 `r41-x8-equal-output-vl-l1-compare-20261101.service` and writes
-`~/r41_x8_equal_output_vl_l1_compare_20261101.json`. The profiles and logits
+`~/r41_x8_equal_output_vl_l1_compare_20261101.json`. Its exact logits and TLM counters are archived in `x8_equal_output_vl_l1_tlm_20261101.tgz`. The profiles and logits
 are in the matching `~/r41_x8_equal_output_{q35,vl_l1}_{0,1}_20261101`
 directories. The comparison reads actual completed launch counters and code
 loads. Check the JSON and service logs, and preserve failures if either run or

@@ -470,7 +470,10 @@ class TNCALauncher:
 
 _loaded = {}
 _loaded_by_artifact = {}
+_loaded_by_executable = {}
+_module_views = {}
 _artifact_hashes = {}
+_executable_hashes = {}
 loaded = 0                   # successful physical code loads (process-wide)
 evicted = 0                  # modules unloaded to make code room (resident sessions)
 
@@ -487,6 +490,74 @@ def _artifact_sha256(path):
     return h
 
 
+def _executable_info(path, *, manifest_required=False):
+    """Verified execution identity, excluding only source provenance.
+
+    Two independently compiled artifacts may have identical instructions,
+    ABI, target, execution contract and resources while their source hashes
+    and compiler provenance differ. They can share code RAM. Every segment
+    is verified before sharing, and all other manifest fields remain part of
+    the identity. A view retains the requested artifact's own manifest.
+    """
+    if not isinstance(path, str) or not os.path.isfile(path):
+        return None, None
+    stat = os.stat(path)
+    stamp = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
+    cached = _executable_hashes.get(path)
+    if cached is not None and cached[0] == stamp and not manifest_required:
+        return cached[1], None
+    from tnca import artifact
+    from tnca.errors import TncaError
+    try:
+        manifest, _segments = artifact.load(path)
+    except (TncaError, OSError, ValueError, KeyError):
+        # Session.load still performs its normal validation and reports the
+        # actual error; an unreadable artifact is never shared by this route.
+        return None, None
+    contract = dict(manifest)
+    contract.pop('manifest_hash', None)
+    identity = dict(contract.get('identity') or {})
+    identity.pop('source_hash', None)
+    contract['identity'] = identity
+    metadata = dict(contract.get('optional_metadata') or {})
+    metadata.pop('provenance', None)
+    contract['optional_metadata'] = metadata
+    import hashlib
+    fingerprint = hashlib.sha256(json.dumps(contract, sort_keys=True, separators=(',', ':'),
+                                            ensure_ascii=False, allow_nan=False).encode()).hexdigest()
+    _executable_hashes[path] = (stamp, fingerprint)
+    return fingerprint, manifest
+
+
+def _executable_digest(path):
+    return _executable_info(path)[0] or _artifact_sha256(path) or path
+
+
+class _ModuleView:
+    """Per-artifact provenance and manifest over one physical code allocation."""
+    def __init__(self, resident, path, manifest):
+        self._resident = resident
+        self.path, self.manifest = path, manifest
+        self.params = resident.params
+        self.name = manifest['identity']['kernel_name']
+
+    @property
+    def alive(self):
+        return self._resident.alive
+
+    @property
+    def epoch(self):
+        return self._resident.epoch
+
+    @property
+    def code_addr(self):
+        return self._resident.code_addr
+
+    @property
+    def code_size(self):
+        return self._resident.code_size
+
+
 def _load(session, path):
     """The module for `path` in this session, loading it if needed.
 
@@ -499,32 +570,52 @@ def _load(session, path):
     key = (session.id, session.epoch, path)
     digest = _artifact_sha256(path)
     artifact_key = (session.id, session.epoch, digest)
+    executable, manifest = _executable_info(path)
+    executable_key = (session.id, session.epoch, executable) if executable is not None else None
     from tnca.code_residency import active as active_code_trace
     trace = active_code_trace()
-    trace_key = (session.id, session.epoch, digest or path)
+    trace_key = (session.id, session.epoch, executable or digest or path)
     if trace is not None:
-        trace.request(session, trace_key, _loaded, _artifact_sha256)
+        trace.request(session, trace_key, _loaded, _executable_digest)
     m = _loaded.get(key)
     if m is None:
         resident_key = _loaded_by_artifact.get(artifact_key)
         m = _loaded.get(resident_key)
         if m is not None:
             _loaded[key] = m
+            if resident_key in _module_views:
+                _module_views[key] = _module_views[resident_key]
+    if m is None and executable_key is not None:
+        resident_key = _loaded_by_executable.get(executable_key)
+        m = _loaded.get(resident_key)
+        if m is not None:
+            if manifest is None:
+                checked, manifest = _executable_info(path, manifest_required=True)
+                if checked != executable:
+                    raise TNCALaunchError('compiled artifact changed during code-residency lookup')
+            if manifest is None:
+                # The artifact changed or became unreadable during the lookup.
+                m = None
+            else:
+                _loaded[key] = m
+                _module_views[key] = _ModuleView(m, path, manifest)
     if m is not None:
         for alias, module in list(_loaded.items()):
             if module is m:
                 _loaded[alias] = _loaded.pop(alias)
         _loaded_by_artifact[artifact_key] = key
+        if executable_key is not None:
+            _loaded_by_executable[executable_key] = key
         if trace is not None:
             trace.record(trace_key, m)
-        return session, m
+        return session, _module_views.get(key, m)
     try:
         m = session.load(path)
     except _BE as e:
         if 'overlaps the device heap' not in str(e):
             raise
         session.drain()
-        old_keys = (trace.victims(session, _loaded, _artifact_sha256)
+        old_keys = (trace.victims(session, _loaded, _executable_digest)
                     if trace is not None else list(_loaded))
         for old_key in old_keys:
             if old_key[0] != session.id or old_key[1] != session.epoch:
@@ -537,9 +628,13 @@ def _load(session, path):
             for alias, module in list(_loaded.items()):
                 if module is old:
                     del _loaded[alias]
+                    _module_views.pop(alias, None)
             for alias, resident_key in list(_loaded_by_artifact.items()):
                 if resident_key not in _loaded:
                     del _loaded_by_artifact[alias]
+            for alias, resident_key in list(_loaded_by_executable.items()):
+                if resident_key not in _loaded:
+                    del _loaded_by_executable[alias]
             global evicted
             evicted += 1
             try:
@@ -555,6 +650,8 @@ def _load(session, path):
     loaded += 1
     _loaded[key] = m
     _loaded_by_artifact[artifact_key] = key
+    if executable_key is not None:
+        _loaded_by_executable[executable_key] = key
     if trace is not None:
         trace.record(trace_key, m)
     return session, m

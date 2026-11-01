@@ -16,6 +16,7 @@ import platform
 _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_DIR',
                            'TNCA_SUBMIT', 'TNCA_DEVICE_ZERO', 'TNCA_QUEUE_STEPS',
                            'TNCA_REUSE_WARM_PREFILL',
+                           'TNCA_REUSE_HYBRID_PREFILL',
                            'TNCA_DEADLINE', 'TNCA_HOST_TIMEOUT'})
 # These select a runtime device or its measured clock. The ordinary compiler
 # does not use them, but autotuning observes the device and therefore must

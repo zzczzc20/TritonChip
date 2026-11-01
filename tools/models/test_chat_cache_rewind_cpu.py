@@ -17,6 +17,12 @@ try:
 except ImportError:
     StaticCache = Qwen3VLTextConfig = Qwen3VLTextModel = None
 
+try:
+    from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5TextConfig
+    from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5TextModel
+except ImportError:
+    Qwen3_5TextConfig = Qwen3_5TextModel = None
+
 
 @unittest.skipIf(Qwen3VLTextModel is None, 'Qwen3-VL transformers implementation is unavailable')
 class StaticAttentionContinuationTests(unittest.TestCase):
@@ -97,6 +103,70 @@ class StaticAttentionContinuationTests(unittest.TestCase):
         self.assertFalse(chat.clear_static_attention_cache(small))
         uninitialized = StaticCache(config=self.config, max_cache_len=1024)
         self.assertFalse(chat.clear_static_attention_cache(uninitialized))
+
+
+@unittest.skipIf(Qwen3_5TextModel is None, 'Qwen3.5 transformers implementation is unavailable')
+class HybridPrefillContinuationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        torch.manual_seed(77)
+        cls.config = Qwen3_5TextConfig(
+            vocab_size=64, hidden_size=32, intermediate_size=64, num_hidden_layers=2,
+            num_attention_heads=4, num_key_value_heads=2, head_dim=8,
+            linear_conv_kernel_dim=4, linear_key_head_dim=8, linear_value_head_dim=8,
+            linear_num_key_heads=2, linear_num_value_heads=4,
+            layer_types=['linear_attention', 'full_attention'], max_position_embeddings=64,
+            rope_parameters={'rope_type': 'default', 'rope_theta': 10000.0,
+                             'partial_rotary_factor': 0.5, 'mrope_section': [1, 1, 0]})
+        cls.config._attn_implementation = 'eager'
+        cls.model = Qwen3_5TextModel(cls.config).eval()
+
+    def make_cache(self):
+        cache = StaticCache(config=self.config, max_cache_len=32)
+        cache.early_initialization(batch_size=1, num_heads=2, head_dim=8,
+                                   dtype=torch.float32, device=torch.device('cpu'))
+        return cache
+
+    def call(self, cache, tokens):
+        return self.model(input_ids=torch.tensor([tokens]), past_key_values=cache,
+                          use_cache=True).last_hidden_state
+
+    def test_dummy_decode_restore_matches_clean_hybrid_continuation_bitwise(self):
+        clean, warmed = self.make_cache(), self.make_cache()
+        prompt = [7, 4, 1, 9, 5]
+        with torch.inference_mode():
+            expected_prefill = self.call(clean, prompt)
+            actual_prefill = self.call(warmed, prompt)
+            self.assertTrue(torch.equal(expected_prefill, actual_prefill))
+            snapshot = chat.snapshot_hybrid_prefill(warmed, len(prompt))
+            self.assertIsNotNone(snapshot)
+            self.call(warmed, [0])
+            self.assertTrue(chat.restore_hybrid_prefill(snapshot))
+            for token in (8, 2, 3):
+                self.assertTrue(torch.equal(self.call(clean, [token]), self.call(warmed, [token])))
+        for first, second in zip(clean.layers, warmed.layers, strict=True):
+            for name in ('conv_states', 'recurrent_states'):
+                if hasattr(first, name):
+                    for key, state in getattr(first, name).items():
+                        self.assertTrue(torch.equal(state, getattr(second, name)[key]))
+            if hasattr(first, 'keys'):
+                self.assertTrue(torch.equal(first.keys[:, :, :8], second.keys[:, :, :8]))
+                self.assertTrue(torch.equal(first.values[:, :, :8], second.values[:, :, :8]))
+
+    def test_changed_hybrid_metadata_refuses_restore_without_mutation(self):
+        cache = self.make_cache()
+        with torch.inference_mode():
+            self.call(cache, [7, 4, 1])
+            snapshot = chat.snapshot_hybrid_prefill(cache, 3)
+            self.assertIsNotNone(snapshot)
+            self.call(cache, [0])
+            linear = snapshot['linear'][0]
+            linear.has_previous_state[0] = False
+            states = [tensor.clone() for tensor in snapshot['tensors']]
+            lengths = [length.clone() for length in snapshot['lengths']]
+            self.assertFalse(chat.restore_hybrid_prefill(snapshot))
+            self.assertTrue(all(torch.equal(a, b) for a, b in zip(states, snapshot['tensors'], strict=True)))
+            self.assertTrue(all(torch.equal(a, b) for a, b in zip(lengths, snapshot['lengths'], strict=True)))
 
 
 if __name__ == '__main__':

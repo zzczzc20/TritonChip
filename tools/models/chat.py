@@ -394,14 +394,16 @@ class Session:
             # Uploading the dummy token drains the prefill queue, so this
             # captures its full wall span instead of just enqueue time.
             prefill_seconds = time.perf_counter() - prefill_started
+            hybrid = (snapshot_hybrid_prefill(self.cache, length)
+                      if reuse and os.environ.get('TNCA_REUSE_HYBRID_PREFILL') == '1' else None)
             result = capture("decode", lambda: self.step_device(token))
             if (reuse and position is not None and len(self.cached) == length
                     and self._cache_tokens == length + 1
                     and inputs['input_ids'].device.type == 'cpu'
-                    and rewind_attention_cache(self.cache, length)):
-                # The dummy decode wrote only the next static KV slot. The
-                # prompt logits and the valid prefix still have the same
-                # device storage and bits; do not recompute the whole prompt.
+                    and (restore_hybrid_prefill(hybrid) if hybrid is not None
+                         else rewind_attention_cache(self.cache, length))):
+                # Prompt logits and cache state retain the same device bits;
+                # do not recompute the whole prompt after the dummy decode.
                 self.last_position, self._cache_tokens = position, length
                 self._warm_prefill = (inputs, list(self.cached), per_image, prefill, prefill_seconds)
                 retained = True
@@ -478,28 +480,18 @@ def clear_static_attention_cache(cache):
     return True
 
 
-def rewind_attention_cache(cache, valid_length):
-    """Restore a pure static attention cache after speculative EOS steps.
-
-    Standard static attention masks positions at or beyond cumulative_length;
-    later speculative slots are overwritten before they can be attended to.
-    Recurrent, sliding-window, uninitialized and unknown cache layers cannot
-    be rewound this way and continue to use the conservative full reset.
-    The length is host-side sequence metadata, copied into the existing
-    device scalars after generation; no device tensor is read by the host.
-    """
-    layers = getattr(cache, 'layers', None)
+def _static_attention_lengths(layers, valid_length):
     if not layers or type(valid_length) is not int or valid_length < 0:
-        return False
+        return None
     try:
         from transformers.cache_utils import StaticLayer
     except ImportError:
-        return False
+        return None
     lengths = []
     for layer in layers:
         # Exact type rules out sliding windows and custom recurrent state.
         if type(layer) is not StaticLayer or not getattr(layer, 'is_initialized', False):
-            return False
+            return None
         length = getattr(layer, 'cumulative_length', None)
         keys, values = getattr(layer, 'keys', None), getattr(layer, 'values', None)
         if (not torch.is_tensor(length) or length.numel() != 1 or not length.is_contiguous()
@@ -510,15 +502,109 @@ def rewind_attention_cache(cache, valid_length):
                 or keys.device != length.device or values.device != length.device
                 or keys.shape[-2] != layer.max_cache_len or values.shape[-2] != layer.max_cache_len
                 or valid_length > layer.max_cache_len):
-            return False
+            return None
         lengths.append(length)
+    return lengths
+
+
+def _write_static_lengths(lengths, valid_length):
+    value = torch.tensor(valid_length, dtype=torch.int64)
+    for length in lengths:
+        length.copy_(value)
+
+
+def rewind_attention_cache(cache, valid_length):
+    """Restore only standard static KV lengths, with no host tensor reads."""
+    lengths = _static_attention_lengths(getattr(cache, 'layers', None), valid_length)
+    if lengths is None:
+        return False
     # Validate every layer before mutating any. Keep the marked static device
     # addresses; replacing the tensors would invalidate compiled graphs.
-    values = {}
-    for length in lengths:
-        if length.dtype not in values:
-            values[length.dtype] = torch.tensor(valid_length, dtype=length.dtype)
-        length.copy_(values[length.dtype])
+    _write_static_lengths(lengths, valid_length)
+    return True
+
+
+def _linear_prefill_signature(layer):
+    """Only a fully initialized, stable standard linear cache is rewindable."""
+    count = getattr(layer, 'number_of_states', None)
+    if type(count) is not int or not 0 < count <= 16 or getattr(layer, 'record_past', None) is not False:
+        return None
+    names = ('is_conv_states_initialized', 'is_recurrent_states_initialized', 'has_previous_state',
+             'conv_states', 'recurrent_states', 'conv_kernel_size')
+    if any(not isinstance(getattr(layer, name, None), dict) for name in names):
+        return None
+    records = []
+    for index in range(count):
+        if (layer.is_conv_states_initialized.get(index) is not True
+                or layer.is_recurrent_states_initialized.get(index) is not True
+                or layer.has_previous_state.get(index) is not True):
+            return None
+        for name in ('conv_states', 'recurrent_states'):
+            tensor = getattr(layer, name).get(index)
+            if (not torch.is_tensor(tensor) or not tensor.is_contiguous() or tensor.storage_offset() != 0
+                    or tensor.numel() == 0
+                    or tensor.untyped_storage().nbytes() != tensor.numel() * tensor.element_size()):
+                return None
+            records.append((name, index, tensor, tuple(tensor.shape), tuple(tensor.stride()),
+                            tensor.dtype, tensor.device, tensor.untyped_storage().data_ptr()))
+    return (count, tuple(layer.conv_kernel_size.get(i) for i in range(count)), records)
+
+
+def snapshot_hybrid_prefill(cache, valid_length):
+    """Save standard hybrid recurrent state on-device before one dummy step.
+
+    Unknown/sliding/uninitialized layers and snapshots over 64 MiB fall back
+    to the original reset. No tensor contents are read by the host.
+    """
+    try:
+        import transformers
+        from transformers.cache_utils import LinearAttentionLayer, StaticCache, StaticLayer
+    except ImportError:
+        return None
+    if transformers.__version__ != '5.20.2' or type(cache) is not StaticCache:
+        return None
+    layers = getattr(cache, 'layers', None) or []
+    statics = [layer for layer in layers if type(layer) is StaticLayer]
+    linear = [layer for layer in layers if type(layer) is LinearAttentionLayer]
+    if not statics or not linear or len(statics) + len(linear) != len(layers):
+        return None
+    lengths = _static_attention_lengths(statics, valid_length)
+    if lengths is None:
+        return None
+    signatures = [_linear_prefill_signature(layer) for layer in linear]
+    if any(signature is None for signature in signatures):
+        return None
+    tensors = [record[2] for _, _, records in signatures for record in records]
+    if (sum(t.numel() * t.element_size() for t in tensors) > 64 * 1024 * 1024
+            or len({t.untyped_storage().data_ptr() for t in tensors}) != len(tensors)
+            or any(t.device != lengths[0].device for t in tensors)):
+        return None
+    copies = [tensor.clone(memory_format=torch.contiguous_format) for tensor in tensors]
+    return dict(cache=cache, layers=tuple(layers), statics=statics, lengths=tuple(lengths),
+                linear=linear, signatures=signatures, tensors=tensors, copies=copies, valid_length=valid_length)
+
+
+def restore_hybrid_prefill(snapshot):
+    """Restore the saved tensors only after every cache guard still matches."""
+    if snapshot is None:
+        return False
+    current_layers = getattr(snapshot['cache'], 'layers', None) or []
+    if (len(current_layers) != len(snapshot['layers']) or
+            any(a is not b for a, b in zip(current_layers, snapshot['layers'], strict=True))):
+        return False
+    lengths = _static_attention_lengths(snapshot['statics'], snapshot['valid_length'])
+    if lengths is None or any(a is not b for a, b in zip(lengths, snapshot['lengths'], strict=True)):
+        return False
+    for layer, before in zip(snapshot['linear'], snapshot['signatures'], strict=True):
+        after = _linear_prefill_signature(layer)
+        if after is None or before[:2] != after[:2] or len(before[2]) != len(after[2]):
+            return False
+        for old, new in zip(before[2], after[2], strict=True):
+            if old[:2] != new[:2] or old[2] is not new[2] or old[3:] != new[3:]:
+                return False
+    for tensor, saved in zip(snapshot['tensors'], snapshot['copies'], strict=True):
+        tensor.copy_(saved)
+    _write_static_lengths(lengths, snapshot['valid_length'])
     return True
 
 

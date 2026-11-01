@@ -687,3 +687,8 @@ decode cycle regressions recorded above.
 The [smaller proof-harness retry](x8_equal_output_proof_v4_failed_20261101.tgz)
 also ran out of vector registers in both control and candidate compilation;
 it is not a passing targeted test.
+
+The [smaller exact masked-row test](x8_equal_output_proof_v5_20261101.tgz)
+matched 256/256 DP-reference outputs in four input/mask cases for both routes,
+but every corresponding assembly hash was identical. It therefore does not
+exercise or validate the candidate's changed accumulator-output path.

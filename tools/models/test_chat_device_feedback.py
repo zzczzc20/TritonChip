@@ -122,6 +122,68 @@ class CodeCaptureTests(unittest.TestCase):
             self.assertTrue(torch.equal(result, torch.full((4,), 2.0)))
         self.assertEqual(len(compiled), 1)
 
+    def test_cached_python_wrapper_is_still_inspected(self):
+        import tempfile
+        from pathlib import Path
+        from torch._inductor.codecache import PyCodeCache
+        from tnca.inductor import host_fallbacks
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'cached_wrapper.py'
+            path.write_text('def possible_fallback():\n    return torch.ops.aten.add(1, 2)\n')
+            def load():
+                return PyCodeCache.load_by_key_path('chat_capture_test', str(path))
+            for _ in range(2):
+                _, code = chat.run_with_code_capture(load)
+                self.assertIn('ATen op: torch.ops.aten.add', host_fallbacks(code))
+            path.unlink()
+            with self.assertRaisesRegex(RuntimeError, 'cannot inspect cached Inductor wrapper'):
+                chat.run_with_code_capture(load)
+
+
+class UserReportTests(unittest.TestCase):
+    def test_json_flushes_text_before_finalizing_visible_time(self):
+        import io
+        import json
+        from chat_timing import user_visible_metrics
+        class Output(io.StringIO):
+            def __init__(self):
+                super().__init__()
+                self.flushed = []
+            def flush(self):
+                self.flushed.append(self.getvalue())
+        report = dict(status='pass', generated_text='hello', generated_tokens=[7, 2], logits=['private'],
+                      user_visible_timing=user_visible_metrics({'generated_tokens': [7, 2]}, 2, [2]))
+        stream = Output()
+        with mock.patch.object(chat.sys, 'stdout', stream), mock.patch.object(chat.time, 'perf_counter', return_value=16):
+            chat.emit_user_report(report, 10)
+        output = json.loads(stream.getvalue())
+        self.assertEqual(output['generated_text'], 'hello')
+        self.assertNotIn('logits', output)
+        self.assertIn('"generated_text": "hello"', stream.flushed[0])
+        self.assertNotIn('"user_visible_timing"', stream.flushed[0])
+        self.assertEqual(output['user_visible_timing']['prompt_to_return_seconds'], 6)
+        self.assertEqual(output['user_visible_timing']['non_special_token_ids_per_second'], 1 / 6)
+
+    def test_script_records_and_prints_the_flushed_token_rate(self):
+        import io
+        import json
+        from chat_timing import user_visible_metrics
+        report = dict(status='pass', generated_text='hello', generated_tokens=[7, 2],
+                      user_visible_timing=user_visible_metrics({'generated_tokens': [7, 2]}, 2, [2]),
+                      statistics=dict(prefill_seconds=1, decode_steps=1,
+                                      mean_decode_seconds_per_token=1, decode_tokens_per_second=1),
+                      steps=[dict(reused_cached_tokens=0)], session=dict(new_graphs_this_prompt=0))
+        app = object.__new__(chat.ChatApplication)
+        app.args = types.SimpleNamespace(image=[])
+        app.generate = mock.Mock(return_value=report)
+        stream, transcript = io.StringIO(), []
+        with mock.patch.object(chat.sys, 'stdout', stream), \
+                mock.patch.object(chat.time, 'perf_counter', side_effect=[10, 15]):
+            self.assertTrue(app.repl(lines=['hi', '/quit'], transcript=transcript))
+        stats = json.loads(next(line for line in stream.getvalue().splitlines() if line.startswith('{')))
+        self.assertEqual(stats['non_special_token_ids_per_second'], 1 / 5)
+        self.assertEqual(transcript[0]['report']['user_visible_timing']['prompt_to_return_seconds'], 5)
+
 
 class PrefillSegmentationTests(unittest.TestCase):
     def test_decode_warmup_resets_dummy_state(self):

@@ -31,6 +31,10 @@ wait, because implicitly waiting turns a programming error into a hang.
 stopped looking. The task keeps running, it is not cancelled, and it is
 certainly not successful. The device has its own, separate deadline, and that
 one is a fault.
+
+TNCA_ARG_UPLOAD_CACHE=1 opts in to reusing completed, input-only ABI blocks.
+Scratch and descriptor-bearing blocks are always uploaded, and reallocating
+over a cached range or a failed task invalidates the affected entry.
 """
 import json
 import os
@@ -52,6 +56,33 @@ from .errors import (AdmissionError, ArgumentError, ArtifactError,
 WORD = 8
 MAX_UNFINISHED = 8          # the contract's floor; this is exactly it
 DEFAULT_ALIGN = 64
+
+
+class _ArgumentUploadCache:
+    """Bounded snapshots of input-only ABI blocks still resident in the heap."""
+    def __init__(self, limit=128):
+        self.limit = limit
+        self.entries = OrderedDict()
+
+    def matches(self, address, data):
+        return self.entries.get(address) == bytes(data)
+
+    def invalidate(self, address, length):
+        for start, data in list(self.entries.items()):
+            if start < address + length and address < start + len(data):
+                del self.entries[start]
+
+    def remember(self, address, data):
+        data = bytes(data)
+        self.invalidate(address, len(data))
+        self.entries[address] = data
+        while len(self.entries) > self.limit:
+            self.entries.popitem(last=False)
+
+    def clear(self):
+        self.entries.clear()
+
+
 # All shipped NUCA images decode this 4 KiB page before external memory.
 # A host DMA can write its backing BO, but a core load reads TMU registers.
 # Keep the hole even when the allocated HBM window extends beyond 2 GiB.
@@ -410,6 +441,12 @@ class Session:
         # done_cycles measures, so they add host time and no device cycles.
         self._counters = _counter_spec() if counters else None
         self._lock = threading.RLock()
+        self._argument_upload_cache = (_ArgumentUploadCache()
+                                       if os.environ.get('TNCA_ARG_UPLOAD_CACHE', '0') == '1' else None)
+        self._argument_uploads_avoided = 0
+        self._argument_upload_bytes_avoided = 0
+        self._argument_uploads_attempted = 0
+        self._argument_upload_bytes_attempted = 0
         self._measurement_owner = None
         self._buffers = OrderedDict()
         self._modules = []
@@ -510,6 +547,15 @@ class Session:
                         code_allocated_bytes=self._code.used, code_peak_bytes=self._code.high_water)
 
     @property
+    def argument_upload_stats(self):
+        with self._lock:
+            return dict(enabled=self._argument_upload_cache is not None,
+                        uploads_avoided=self._argument_uploads_avoided,
+                        bytes_avoided=self._argument_upload_bytes_avoided,
+                        uploads_attempted=self._argument_uploads_attempted,
+                        bytes_attempted=self._argument_upload_bytes_attempted)
+
+    @property
     def latest_event(self):
         with self._lock:
             return next(reversed(self._events.values()), None)
@@ -519,6 +565,8 @@ class Session:
         self._check_usable()
         with self._lock:
             addr, size = self._heap.alloc(nbytes)
+            if self._argument_upload_cache is not None:
+                self._argument_upload_cache.invalidate(addr, size)
             self._next_buffer += 1
             buf = Buffer(self._next_buffer, addr, nbytes, self.id,
                          self.epoch, name, reserved=size)
@@ -838,6 +886,7 @@ class Session:
             task = dict(event=ev, module=module, block=block, arg_stride=arg_stride,
                         arg_addr=arg_addr, allocation=(arg_addr, reserved), grid=(gx, gy, gz),
                         depends_on=list(depends_on), leased=leased,
+                        argument_cacheable=not maps and not scratch,
                         # Kept so a failure can be saved and run again
                         # (failure.capture); the block alone is bytes, and
                         # a bundle a person cannot read is not a bundle.
@@ -972,7 +1021,7 @@ class Session:
             # except here, where it is the correct amount of argument
             # data to write.
             if task['block']:
-                self.dev.upload(task['arg_addr'], task['block'])
+                self._upload_argument_block(task)
             ev._to(RUNNING)
             if self.physical_grid:
                 self._run_physical_grid(task)
@@ -1115,8 +1164,34 @@ class Session:
         with self._lock:
             self._finish(task, SUCCEEDED)
 
+    def _upload_argument_block(self, task):
+        address, block = task['arg_addr'], task['block']
+        if self._argument_upload_cache is None:
+            self._argument_uploads_attempted += 1
+            self._argument_upload_bytes_attempted += len(block)
+            self.dev.upload(address, block)
+            return
+        with self._lock:
+            cache = self._argument_upload_cache
+            if task['argument_cacheable'] and cache.matches(address, block):
+                self._argument_uploads_avoided += 1
+                self._argument_upload_bytes_avoided += len(block)
+                task['argument_upload_valid'] = True
+                return
+            cache.invalidate(address, len(block))
+        self._argument_uploads_attempted += 1
+        self._argument_upload_bytes_attempted += len(block)
+        reply = self.dev.upload(address, block)
+        task['argument_upload_valid'] = bool(getattr(reply, 'ok', False))
+
     def _finish(self, task, state, error=None):
         ev = task['event']
+        cache = self._argument_upload_cache
+        if cache is not None and task.get('block') and task.get('allocation') is not None and not ev.terminal:
+            if state == SUCCEEDED and task.get('argument_cacheable') and task.get('argument_upload_valid'):
+                cache.remember(task['arg_addr'], task['block'])
+            else:
+                cache.invalidate(task['arg_addr'], len(task['block']))
         if not ev.terminal:
             ev._to(state, error)
         if self._active_events.get(ev.job_id) is ev:
@@ -1233,6 +1308,12 @@ class Session:
                     ev._to(FAILED, DeviceLost(
                         'the session was recovered before this task ran'))
             self.epoch += 1
+            if self._argument_upload_cache is not None:
+                self._argument_upload_cache.clear()
+            self._argument_uploads_avoided = 0
+            self._argument_upload_bytes_avoided = 0
+            self._argument_uploads_attempted = 0
+            self._argument_upload_bytes_attempted = 0
             self._events.clear()
             self._active_events.clear()
             self._queue.clear()

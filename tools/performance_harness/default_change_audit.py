@@ -251,6 +251,7 @@ def run(a):
                                                                root/'tools/asm')),
                    TRITON_CACHE_DIR=str(run_dir/'triton_cache'), TRITON_HOME=str(run_dir/'triton_home'),
                    TORCHINDUCTOR_CACHE_DIR=str(run_dir/'inductor_cache'), TMPDIR=str(run_dir/'tmp'),
+                   TNCA_COMPILE_CACHE_DIR=str(run_dir/'inductor_cache'),
                    TNCA_DUMP_DIR=str(run_dir/'dump'))
         cmd = [sys.executable, '-u', str(HERE), 'child', '--source-root', str(root),
                '--software-tree', tree, '--point', point['id'], '--point-sha256', point['sha256'],

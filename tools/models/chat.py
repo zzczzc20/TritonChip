@@ -26,6 +26,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import torch  # noqa: E402
 import qwen_fp8_lib as L  # noqa: E402
+from chat_timing import (compiler_delta, compiler_snapshot, finalize_user_visible_metrics,
+                         user_visible_metrics)  # noqa: E402
 
 
 CORE_PORT_BYTES_PER_SECOND = 2_400_000_000
@@ -114,14 +116,26 @@ def transfer_meter(enabled):
 
 
 def run_with_code_capture(fn):
-    """Capture newly generated Inductor wrappers without resetting compiled graphs."""
+    """Capture both new and persistent-cache Inductor wrappers for fallback checks."""
     from unittest.mock import patch
+    from torch._inductor.codecache import PyCodeCache
     from torch._inductor.graph import GraphLowering
     code = []
     def save_output_code(source):
         if source not in code:
             code.append(source)
-    with patch.object(GraphLowering, "save_output_code", save_output_code):
+    original_load = PyCodeCache.load_by_key_path
+    def load_and_capture(cls, key, path, *args, **kwargs):
+        module = original_load(key, path, *args, **kwargs)
+        # Never treat an unreadable cached wrapper as proof of no host work.
+        try:
+            source = Path(path).read_text(encoding="utf-8")
+        except OSError as error:
+            raise RuntimeError(f"cannot inspect cached Inductor wrapper {path}") from error
+        save_output_code(source)
+        return module
+    with patch.object(GraphLowering, "save_output_code", save_output_code), \
+            patch.object(PyCodeCache, "load_by_key_path", classmethod(load_and_capture)):
         result = fn()
     return result, code
 
@@ -140,6 +154,22 @@ def _counter_delta(before, after):
     if before is None or after is None:
         return None
     return dict(evicted=after["evicted_total"] - before["evicted_total"], loaded_modules=after["loaded_modules"])
+
+
+def argument_upload_counters():
+    """Host bookkeeping only; it does not read device memory."""
+    try:
+        from tnca.torch_device import MEMORY
+    except ImportError:
+        return None
+    return MEMORY.session().argument_upload_stats
+
+
+def argument_upload_delta(before, after):
+    if before is None or after is None:
+        return None
+    return dict(enabled=after['enabled'], **{key: after[key] - before[key] for key in
+                ('uploads_avoided', 'bytes_avoided', 'uploads_attempted', 'bytes_attempted')})
 
 
 def image_rows(grid_thw):
@@ -370,6 +400,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         for index in range(new_tokens):
             graph_start = counters["stats"]["unique_graphs"]
             code = code_store_counters()
+            argument_uploads = argument_upload_counters()
             started = time.perf_counter()
             with transfer_meter(True) as meter:
                 if index == 0:
@@ -395,6 +426,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                        input_tokens=prompt_tokens - reused if index == 0 else 1,
                        seconds=elapsed, new_graphs=counters["stats"]["unique_graphs"] - graph_start,
                        code_store=_counter_delta(code, code_store_counters()), logits_download_bytes=0,
+                       argument_uploads=argument_upload_delta(argument_uploads, argument_upload_counters()),
                        transfers_inside_step=meter.summary())
             if index == 0:
                 row.update(calls=calls, reused_cached_tokens=reused)
@@ -609,6 +641,20 @@ def public_report(report):
     return {k: v for k, v in report.items() if k != "logits"}
 
 
+def emit_user_report(report, prompt_started):
+    """Flush generated text before recording its arrival time, then finish the JSON."""
+    data = public_report(report)
+    generated = data.pop("generated_text")
+    timing = data.pop("user_visible_timing")
+    prefix = json.dumps(data, indent=2)[:-1].rstrip()
+    sys.stdout.write(prefix + ("," if data else "") + "\n  \"generated_text\": " + json.dumps(generated))
+    sys.stdout.flush()
+    finalize_user_visible_metrics(timing, time.perf_counter() - prompt_started,
+                                  "CLI main entry through generated-text stdout flush")
+    sys.stdout.write(",\n  \"user_visible_timing\": " + json.dumps(timing, indent=2) + "\n}\n")
+    sys.stdout.flush()
+
+
 def save_report(report, out):
     if out is None:
         return
@@ -668,7 +714,12 @@ class ChatApplication:
         return run_generation(cpu, self.processor, self.spec, inputs, text, new_tokens=new_tokens,
                               per_image=per_image_cpu, forced_tokens=forced)
 
-    def generate(self, prompt, images=(), forced=None, keep_history=False, check=True):
+    def generate(self, prompt, images=(), forced=None, keep_history=False, check=True, prompt_started=None):
+        if prompt_started is None:
+            prompt_started = time.perf_counter()
+        from torch._dynamo.utils import compilation_time_metrics, counters
+        compilation_before = compiler_snapshot(compilation_time_metrics, counters)
+        reference_seconds = 0.0
         args = self.args
         messages = (self.history if keep_history else []) + [user_message(prompt, images)]
         inputs, text = make_inputs(self.spec, self.processor, messages)
@@ -676,6 +727,7 @@ class ChatApplication:
             inputs = self.continuation(messages, inputs, text) or inputs
         reference = scale_floor = None
         if check and args.check_tokens and forced is None:
+            reference_started = time.perf_counter()
             if self.session is not None:
                 raise RuntimeError("the CPU reference must run before the model is placed on the device")
             L.install_fp8_route("reference", dot="exact", scale_div="ieee")
@@ -692,6 +744,7 @@ class ChatApplication:
             scale_floor = compare_logits(reference["logits"], reciprocal["logits"])
             del cpu
             gc.collect()
+            reference_seconds = time.perf_counter() - reference_started
         session = self.device_session()
         per_image, vision_calls = session.vision_features(inputs)
         result = run_generation(session, self.processor, self.spec, inputs, text, new_tokens=args.new_tokens,
@@ -731,6 +784,12 @@ class ChatApplication:
             generated = self.processor.batch_decode(torch.tensor(result["generated_tokens"])[None],
                                                     skip_special_tokens=False)[0]
             self.transcript = (text + generated, inputs["input_ids"][0].tolist() + result["generated_tokens"])
+        tokenizer = getattr(self.processor, "tokenizer", self.processor)
+        result["user_visible_timing"] = user_visible_metrics(
+            result, time.perf_counter() - prompt_started,
+            getattr(tokenizer, "all_special_ids", ()) or (), reference_seconds)
+        result["user_visible_timing"]["compiler"] = compiler_delta(
+            compilation_before, compilation_time_metrics, counters)
         return result
 
     def session_check(self, first, first_prompt, first_images, prompt):
@@ -796,8 +855,9 @@ class ChatApplication:
                 fields = line.split()[1:]
                 images = [] if not fields or fields == ["none"] else [Path(f).expanduser() for f in fields]
                 continue
+            prompt_started = time.perf_counter()
             try:
-                report = self.generate(line, open_images(images), keep_history=True)
+                report = self.generate(line, open_images(images), keep_history=True, prompt_started=prompt_started)
             except ValueError as error:          # e.g. the conversation no longer fits the static bucket
                 print("error>", error, "(use /reset)", flush=True)
                 if transcript is not None:
@@ -811,12 +871,19 @@ class ChatApplication:
                 print("error> generation failed or lacks device evidence:", report["status"], flush=True)
                 return False
             print("assistant>", report["generated_text"], flush=True)
+            finalize_user_visible_metrics(report["user_visible_timing"], time.perf_counter() - prompt_started,
+                                          "interactive prompt through assistant stdout flush")
             stats = report["statistics"]
+            visible = report["user_visible_timing"]
             print(json.dumps({k: stats[k] for k in ("prefill_seconds", "decode_steps",
                                                      "mean_decode_seconds_per_token",
                                                      "decode_tokens_per_second")}
                              | {"reused_cached_tokens": report["steps"][0]["reused_cached_tokens"],
-                                "new_graphs": report["session"]["new_graphs_this_prompt"]}), flush=True)
+                                "new_graphs": report["session"]["new_graphs_this_prompt"],
+                                "prompt_to_output_seconds": visible["prompt_to_return_seconds"],
+                                "returned_token_ids_per_second": visible["returned_token_ids_per_second"],
+                                "non_special_token_ids_per_second": visible["non_special_token_ids_per_second"]}),
+                  flush=True)
         return True
 
 
@@ -875,6 +942,7 @@ def parser():
 
 
 def main(argv=None):
+    prompt_started = time.perf_counter()
     args = parser().parse_args(argv)
     validate_sampling(args.temperature, args.top_k, args.top_p)
     if args.check_tokens < 0 or args.check_tokens > args.new_tokens:
@@ -904,14 +972,16 @@ def main(argv=None):
         return 0 if completed and all(t.get("report", {}).get("status") == "pass" for t in transcript) else 2
     images = open_images([Path(p).expanduser() for p in (args.image or [])])
     try:
-        report = app.generate(args.prompt, images)
+        report = app.generate(args.prompt, images, prompt_started=prompt_started)
         if args.session_check:
             check = app.session_check(report, args.prompt, images, args.session_check)
             report["persistent_session_check"] = check
             if not check["passed"] and report["status"] == "pass":
                 report["status"] = "failed-persistent-session-check"
         save_report(report, args.out)
-        print(json.dumps(public_report(report), indent=2), flush=True)
+        emit_user_report(report, prompt_started)
+        if args.out:
+            (args.out / "report.json").write_text(json.dumps(public_report(report), indent=2) + "\n")
         return 0 if report["status"] == "pass" else 2
     except BaseException:
         if args.out:

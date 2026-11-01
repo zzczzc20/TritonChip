@@ -766,3 +766,36 @@ registration SHA-256 is
 `5062ddc4cec987ee0764c89c4ddec6ef562a1863183d3e0b331f91e7c36b1abe`.
 The queue is waiting behind the separate precision quality diagnostic; no
 board performance result is yet available.
+
+## Host-path cache milestone, 2026-11-01
+
+The independent speed worktree adds a persistent Inductor graph cache keyed by
+TNCA source, graph, profile and target settings; cached wrappers remain subject
+to the numerical-fallback check. Prompt-to-output timing includes input
+preparation and the output flush, and reports returned IDs with and without
+special tokens. `TNCA_ARG_UPLOAD_CACHE=1` opts in to reusing input-only
+argument blocks, with invalidation on overlapping allocations and faults;
+`TNCA_CODE_CACHE_POLICY` selects the separately measured residency candidates.
+Both runtime optimizations remain opt-in.
+
+The off-board compiler-source snapshot passed 113/113 unchanged in the
+default-code audit and strict `make compiler` (170 compiler-unit tests and six
+IR RUN cases). The final chat and cache CPU tests passed 23/23. On a DP TLM
+matmul microbenchmark, cold versus warm graph calls took 1.268756 versus
+0.816111 seconds, with a cache miss then hit; changing the graph missed. All
+three outputs were bitwise equal to the reference, wrappers reported no host
+numerical fallback, and measured host reads were zero. This is not a model or
+board throughput measurement.
+
+A separate DP TLM pointwise microbenchmark kept four launches, 2,472 device
+cycles, 1,600 instructions and zero code loads in both cases. The optional
+argument cache reduced four argument uploads (3,072 bytes) to zero; both
+outputs were bitwise equal to the reference with zero host reads. Simulator
+wall times were 0.011960 and 0.011792 seconds; these are not board speedups.
+Raw logs, audit artifacts and the retained earlier strict-build failure are
+listed in [RAW_INDEX](../../RAW_INDEX.md).
+
+EOS still executes excess decode steps; the final full-model quality,
+no-fallback and user-visible throughput campaign has not run with this package.
+The pre-existing Stage 1/2 validation failures remain failures, and this
+milestone does not declare the PRs ready or alter their recorded outcomes.

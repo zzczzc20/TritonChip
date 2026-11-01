@@ -58,8 +58,8 @@ this module sets, each through an upstream extension point:
     `min_split_scan_rblock` = 256 after the device heuristic, which TNCA
     refuses; it also combines block partials in another order. A scan stays
     one looped scan per row, the conservative schedule.
-  * No compiled-graph cache (`fx_graph_cache`, AOTAutograd cache): their keys
-    do not cover the registrations above. No autotuning benchmarks
+  * The local compiled-graph cache is namespaced by TNCA source, target
+    options and toolchain; the AOTAutograd cache remains disabled. No autotuning benchmarks
     (`benchmark_epilogue_fusion`): the compiled graph never depends on host
     timing.
 
@@ -670,12 +670,24 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     # all). One configuration per template and no timing means the compiled
     # graph never depends on how fast the host was.
     config.benchmark_epilogue_fusion = False
-    # No compiled-graph cache. Its key covers Inductor's config but not the
-    # decompositions and heuristics registered above, so a graph compiled
-    # before configure() -- or before a change here -- would be served
-    # again with its host fallbacks in it. Kernels are still cached, by
-    # Triton, under a key that covers the TNCA compiler sources.
-    config.fx_graph_cache = False
+    # Upstream keys the graph, input signatures and guards.  Its key does not
+    # include TNCA's registrations, so isolate persistent entries by a hash
+    # of their source, toolchain and effective target options before enabling it.
+    cache_identity = None
+    # The experimental fused SDPA implementation explicitly requires the
+    # cache to be disabled until its custom operator is cache-safe.
+    config.fx_graph_cache = sdpa_mode != 'fused'
+    if config.fx_graph_cache:
+        from .compile_cache import configure_persistent_cache
+        try:
+            cache_identity = configure_persistent_cache(dict(max_block=max_block,
+                tensor_descriptors=bool(tensor_descriptors), no_x_dim=bool(no_x_dim),
+                reduction_rows=reduction_rows, gemm_tile=gemm_tile, sdpa_mode=sdpa_mode))
+        except OSError as error:
+            # An incomplete installed package or unwritable cache must not
+            # silently reuse stale code or stop ordinary compilation.
+            config.fx_graph_cache = False
+            cache_identity = dict(enabled=False, reason=str(error))
     config.fx_graph_remote_cache = False
     import torch._functorch.config as functorch_config
     functorch_config.enable_autograd_cache = False
@@ -692,7 +704,7 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
         online_attention.enable()
     else:
         online_attention.disable()
-    out = dict(cpu_backend=config.cpu_backend, max_block=max_block,
+    out = dict(compile_cache=cache_identity, cpu_backend=config.cpu_backend, max_block=max_block,
                persistent_reductions=config.triton.persistent_reductions,
                compile_threads=config.compile_threads,
                max_autotune_gemm_backends=config.max_autotune_gemm_backends,

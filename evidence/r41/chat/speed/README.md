@@ -692,3 +692,8 @@ The [smaller exact masked-row test](x8_equal_output_proof_v5_20261101.tgz)
 matched 256/256 DP-reference outputs in four input/mask cases for both routes,
 but every corresponding assembly hash was identical. It therefore does not
 exercise or validate the candidate's changed accumulator-output path.
+
+The [completed default-code audit](x8_equal_output_audit_20261101.tgz)
+compared 113/113 points unchanged, with zero changed or uncompared. The paired
+four-layer Qwen3.5 TLM comparison is still running; this candidate remains
+unmerged and not board-qualified.

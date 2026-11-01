@@ -387,9 +387,13 @@ class Session:
         reuse = (os.environ.get('TNCA_REUSE_WARM_PREFILL') == '1'
                  and getattr(self, 'device', None) == 'tnca')
         try:
+            prefill_started = time.perf_counter()
             prefill = capture("prefill", lambda: self.prefill_prompt(inputs, per_image))
             length, position = (self._cache_tokens, self.last_position) if reuse else (None, None)
             token = torch.zeros((1, 1), dtype=torch.long).to(self.dev)
+            # Uploading the dummy token drains the prefill queue, so this
+            # captures its full wall span instead of just enqueue time.
+            prefill_seconds = time.perf_counter() - prefill_started
             result = capture("decode", lambda: self.step_device(token))
             if (reuse and position is not None and len(self.cached) == length
                     and self._cache_tokens == length + 1
@@ -399,7 +403,7 @@ class Session:
                 # prompt logits and the valid prefix still have the same
                 # device storage and bits; do not recompute the whole prompt.
                 self.last_position, self._cache_tokens = position, length
-                self._warm_prefill = (inputs, list(self.cached), per_image, prefill)
+                self._warm_prefill = (inputs, list(self.cached), per_image, prefill, prefill_seconds)
                 retained = True
             return result
         finally:
@@ -411,11 +415,11 @@ class Session:
         saved, self._warm_prefill = self._warm_prefill, None
         if saved is None:
             return None
-        original_inputs, tokens, images, prefill = saved
+        original_inputs, tokens, images, prefill, seconds = saved
         if (original_inputs is inputs and images is per_image
                 and tokens == inputs['input_ids'][0].tolist()
                 and self.cached == tokens and self._cache_tokens == len(tokens)):
-            return prefill
+            return prefill, seconds
         return None
 
 
@@ -589,7 +593,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                     if saved_prefill is None:
                         logits, calls, reused = capture("prefill", lambda: session.prefill_prompt(inputs, per_image))
                     else:
-                        logits, calls, reused = saved_prefill
+                        (logits, calls, reused), warm_prefill_seconds = saved_prefill
                     # A chunked prompt can compile the one-token decode graph before
                     # generation starts. Attribute that captured wrapper to decode too.
                     if any(c["kind"] == "token" and c["new_graphs"] for c in calls):
@@ -624,7 +628,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 row.update(calls=calls, reused_cached_tokens=reused)
                 row['prefill_from_warmup'] = saved_prefill is not None
                 if saved_prefill is not None:
-                    row['prefill_seconds_in_warmup'] = sum(c.get('seconds', 0.0) for c in calls)
+                    row['prefill_seconds_in_warmup'] = warm_prefill_seconds
             rows.append(row)
             if queue_steps and index:
                 queued_meters.append((row, meter))

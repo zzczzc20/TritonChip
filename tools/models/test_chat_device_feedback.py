@@ -457,7 +457,10 @@ class PrefillSegmentationTests(unittest.TestCase):
         session.reset.assert_not_called()
         self.assertEqual(session._cache_tokens, 3)
         self.assertEqual(int(session.last_position.item()), 2)
-        self.assertEqual(session.consume_warm_prefill(inputs, None), (saved_logits, calls, 0))
+        (logits, actual_calls, reused), seconds = session.consume_warm_prefill(inputs, None)
+        self.assertIs(logits, saved_logits)
+        self.assertEqual((actual_calls, reused), (calls, 0))
+        self.assertGreaterEqual(seconds, 0)
         self.assertIsNone(session.consume_warm_prefill(inputs, None))
 
     def test_hybrid_warmup_keeps_the_existing_reset_path(self):

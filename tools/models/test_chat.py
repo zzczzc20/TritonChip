@@ -9,6 +9,12 @@ from chat_quality import first_token_reference, prior_assistant_text_matches, sc
 
 
 class ConversationEvidenceTests(unittest.TestCase):
+    def test_logit_comparison_rejects_missing_or_incomplete_steps(self):
+        with self.assertRaises(ValueError):
+            compare_logits([], [])
+        with self.assertRaises(ValueError):
+            compare_logits([torch.tensor([1.0])], [])
+
     def test_previous_answers_must_be_present_and_equal(self):
         self.assertTrue(prior_assistant_text_matches([], [], 0))
         self.assertTrue(prior_assistant_text_matches([{'text': 'Alice'}], [{'text': 'Alice'}], 1))
@@ -86,6 +92,13 @@ class ReportTests(unittest.TestCase):
 
 
 class AuthorQualityTests(unittest.TestCase):
+    def test_only_reference_and_warm_repeat_need_full_logits(self):
+        from chat_quality import needs_turn_logits
+        self.assertTrue(needs_turn_logits('cpu', False, None))
+        self.assertTrue(needs_turn_logits('tnca', True, None))
+        self.assertFalse(needs_turn_logits('tnca', False, None))
+        self.assertFalse(needs_turn_logits('tnca', True, object()))
+
     def test_near_ties_and_top_five_with_legacy_verdict(self):
         logits = torch.tensor([9.0, 8.0, 7.0, 6.0, 5.0, 4.0])
         reference = dict(text='Hello Alice', tokens=[0], first_token_reference=first_token_reference(logits))

@@ -12,9 +12,11 @@ class Tensor:
     def __init__(self, values):
         self.value = torch.tensor(values)
         self.device = types.SimpleNamespace(type='tnca')
+        self.cpu_reads = 0
     def reshape(self, *_):
         return self
     def cpu(self):
+        self.cpu_reads += 1
         return self.value
 
 class Meter:
@@ -37,8 +39,14 @@ class Session:
         self.cached = []
         self.choices = iter(choices)
         self.fed = []
+        self.produced_logits = []
+        self.produced_candidates = []
         self.prefill_compiles_decode = prefill_compiles_decode
-        self.greedy = lambda logits: Tensor([[int(logits.value.argmax())]])
+        def greedy(logits):
+            candidate = Tensor([[int(logits.value.argmax())]])
+            self.produced_candidates.append(candidate)
+            return candidate
+        self.greedy = greedy
         self.model = types.SimpleNamespace(
             named_parameters=lambda: iter(()), named_buffers=lambda: iter(()),
             config=types.SimpleNamespace(get_text_config=lambda: types.SimpleNamespace(num_hidden_layers=1)))
@@ -52,7 +60,9 @@ class Session:
         return capture('decode', lambda: Tensor([0, 1, 0, 0]))
     def next_logits(self):
         token = next(self.choices)
-        return Tensor([int(i == token) for i in range(4)])
+        logits = Tensor([int(i == token) for i in range(4)])
+        self.produced_logits.append(logits)
+        return logits
     def step_device(self, token):
         self.fed.append(int(token.cpu().item()))
         return self.next_logits()
@@ -61,7 +71,8 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
-    def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None):
+    def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None,
+                 retain_logits=True, logit_limit=None):
         session = Session(choices, prefill_compiles_decode)
         processor = types.SimpleNamespace(batch_decode=lambda ids, **kw: [str(ids.tolist())])
         spec = types.SimpleNamespace(name='test', repo='test', revision='test')
@@ -89,7 +100,8 @@ class DeviceFeedbackTests(unittest.TestCase):
              mock.patch.object(chat.L, 'device_memory', lambda dev: {}), \
              mock.patch.object(chat.L, 'cache_bytes', lambda cache: 0):
             report = chat.run_generation(session, processor, spec, {'input_ids': torch.tensor([[8, 9]])},
-                                         'prompt', new_tokens=len(choices), forced_tokens=forced)
+                                         'prompt', new_tokens=len(choices), forced_tokens=forced,
+                                         retain_logits=retain_logits, logit_limit=logit_limit)
         return session, report
     def test_feedback_and_teacher_tokens(self):
         session, report = self.run_case([1, 2, 1], [2, 0])
@@ -98,6 +110,8 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(report['candidate_tokens'], [1, 2, 1])
         self.assertEqual(session.cached, [8, 9, 2, 0])
         self.assertTrue(report['compiled_wrapper_roles_covered'])
+        self.assertEqual([x.cpu_reads for x in session.produced_logits], [1, 1, 1])
+        self.assertEqual([x.cpu_reads for x in session.produced_candidates], [1, 1, 1])
     def test_eos_discards_overrun_cache(self):
         session, report = self.run_case([1, 3, 2])
         self.assertEqual(session.fed, [1, 3])
@@ -109,10 +123,27 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(report['statistics']['executed_generation_steps'], 3)
         self.assertEqual(report['eos_overrun_steps'], 1)
         self.assertIs(report['eos_stop_observed'], False)
+        self.assertEqual([x.cpu_reads for x in session.produced_logits], [1, 1, 0])
+        self.assertEqual([x.cpu_reads for x in session.produced_candidates], [2, 2, 0])
     def test_decode_compiled_during_prefill_is_accounted_for(self):
         _, report = self.run_case([1, 2], prefill_compiles_decode=True)
         self.assertTrue(report['compiled_wrapper_roles_covered'])
         self.assertEqual(report['status'], 'pass')
+
+    def test_interactive_feedback_avoids_vocabulary_downloads(self):
+        session, report = self.run_case([1, 3, 2], retain_logits=False)
+        self.assertEqual(report['generated_tokens'], [1, 3])
+        self.assertEqual(report['logits'], [])
+        self.assertIs(report['logits_retained'], False)
+        self.assertEqual([x.cpu_reads for x in session.produced_logits], [0, 0, 0])
+        self.assertFalse(report['steady_decode_host_reads_detected'])
+
+    def test_diagnostics_download_only_requested_logit_steps(self):
+        session, report = self.run_case([1, 2, 1], logit_limit=1)
+        self.assertEqual(report['generated_tokens'], [1, 2, 1])
+        self.assertEqual(len(report['logits']), 1)
+        self.assertEqual(report['logit_limit'], 1)
+        self.assertEqual([x.cpu_reads for x in session.produced_logits], [1, 0, 0])
 
     def test_retrieval_timing_excludes_post_retrieval_fallback_inspection(self):
         clock = types.SimpleNamespace(now=0.0)
@@ -200,6 +231,7 @@ class UserReportTests(unittest.TestCase):
         stats = json.loads(next(line for line in stream.getvalue().splitlines() if line.startswith('{')))
         self.assertEqual(stats['non_special_token_ids_per_second'], 1 / 5)
         self.assertEqual(transcript[0]['report']['user_visible_timing']['prompt_to_return_seconds'], 5)
+        self.assertIs(app.generate.call_args.kwargs['retain_logits'], False)
 
 
 class PrefillSegmentationTests(unittest.TestCase):

@@ -84,6 +84,8 @@ def select_token(logits, sample, temperature, top_k, top_p, generator):
 
 
 def compare_logits(reference, candidate):
+    if not reference or len(reference) != len(candidate):
+        raise ValueError('logit comparison requires matching nonempty step sets')
     rows = []
     for index, (want, got) in enumerate(zip(reference, candidate)):
         x, y = want.double().flatten(), got.double().flatten()
@@ -343,7 +345,8 @@ def _vision_to(vision, dev):
 
 
 def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_tokens, per_image,
-                          vision_calls, sample, temperature, top_k, top_p, seed, forced_tokens):
+                          vision_calls, sample, temperature, top_k, top_p, seed, forced_tokens,
+                          retain_logits=True, logit_limit=None):
     """Run greedy feedback on the device; copy outputs only after the decode loop."""
     validate_device_sampling('tnca', sample)
     from torch._dynamo.utils import counters
@@ -420,7 +423,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
             if logits.device.type != "tnca" or current.device.type != "tnca":
                 raise RuntimeError("device model or token selection returned a host tensor")
             elapsed = time.perf_counter() - started
-            device_logits.append(logits)
+            if retain_logits and (logit_limit is None or len(device_logits) < logit_limit):
+                device_logits.append(logits)
             device_candidates.append(current)
             row = dict(step=index, kind="prefill" if index == 0 else "decode",
                        input_tokens=prompt_tokens - reused if index == 0 else 1,
@@ -436,15 +440,22 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     # This is output retrieval after generation, reported separately and not hidden in the step counters.
     retrieval_start = time.perf_counter()
     with transfer_meter(True) as retrieval:
-        candidates = [int(t.cpu().item()) for t in device_candidates]
-        logits_rows = [t.cpu() for t in device_logits]
+        candidates = []
+        for candidate in device_candidates:
+            value = int(candidate.cpu().item())
+            candidates.append(value)
+            # Candidate feedback has already completed on the device. Once
+            # EOS is retrieved, later candidates cannot appear in the reply.
+            if not forced_tokens and value in eos:
+                break
+        tokens = [forced_tokens[i] if forced_tokens and i < len(forced_tokens) else t
+                  for i, t in enumerate(candidates)]
+        # The device loop can execute beyond EOS. Those logits are discarded
+        # from the public result, so do not transfer entire vocabulary vectors
+        # for them. This is after generation and adds no steady-decode reads.
+        logits_rows = [t.cpu() for t in device_logits[:len(tokens)]]
         retrieval.mem.synchronize()
     retrieval_seconds = time.perf_counter() - retrieval_start
-    tokens = [forced_tokens[i] if forced_tokens and i < len(forced_tokens) else t
-              for i, t in enumerate(candidates)]
-    if not forced_tokens:
-        stop = next((i + 1 for i, t in enumerate(tokens) if t in eos), len(tokens))
-        tokens, candidates, logits_rows = tokens[:stop], candidates[:stop], logits_rows[:stop]
     for i, row in enumerate(rows):
         row.update(token=(tokens[i] if i < len(tokens) else None),
                    candidate_token=(candidates[i] if i < len(candidates) else None),
@@ -500,7 +511,9 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   stopped_at_eos=bool(tokens and tokens[-1] in eos), eos_token_ids=sorted(eos),
                   images=len(per_image or []), vision_calls=vision_calls or [],
                   vision_seconds=sum(c["seconds"] for c in vision_calls or []), steps=rows,
-                  statistics=stats, logits=logits_rows, fp8_route_in_use=L.fp8_route_in_use(),
+                  statistics=stats, logits=logits_rows, logits_retained=retain_logits,
+                  logit_limit=logit_limit,
+                  fp8_route_in_use=L.fp8_route_in_use(),
                   decode_weight_bytes=weight_bytes,
                   session=dict(prompt_index=session.prompts, cache_resets=session.resets,
                                new_graphs_this_prompt=counters["stats"]["unique_graphs"] - graphs_at_start,
@@ -526,17 +539,20 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
 
 def run_generation(session, processor, spec, inputs, prompt_text, *, new_tokens, per_image=None,
                    vision_calls=None, sample=False, temperature=1.0, top_k=0, top_p=1.0, seed=0,
-                   forced_tokens=None):
+                   forced_tokens=None, retain_logits=True, logit_limit=None):
     validate_sampling(temperature, top_k, top_p)
     if new_tokens < 1:
         raise ValueError("new-tokens must be positive")
     if forced_tokens is not None and not 0 < len(forced_tokens) <= new_tokens:
         raise ValueError("forced tokens must be nonempty and no longer than new-tokens")
+    if logit_limit is not None and (type(logit_limit) is not int or logit_limit < 0):
+        raise ValueError('logit-limit must be a nonnegative integer or None')
     if session.device == "tnca":
         return run_device_generation(session, processor, spec, inputs, prompt_text, new_tokens=new_tokens,
                                      per_image=per_image, vision_calls=vision_calls, sample=sample,
                                      temperature=temperature, top_k=top_k, top_p=top_p, seed=seed,
-                                     forced_tokens=forced_tokens)
+                                     forced_tokens=forced_tokens, retain_logits=retain_logits,
+                                     logit_limit=logit_limit)
     import torch._dynamo as dynamo
     from torch._dynamo.utils import counters
 
@@ -567,7 +583,8 @@ def run_generation(session, processor, spec, inputs, prompt_text, *, new_tokens,
         token, greedy = select_token(logits, sample, temperature, top_k, top_p, generator)
         candidate_tokens.append(token)
         tokens.append(forced_tokens[0] if forced_tokens else token)
-        logits_rows.append(logits)
+        if retain_logits and (logit_limit is None or len(logits_rows) < logit_limit):
+            logits_rows.append(logits)
         rows.append(dict(step=0, kind="prefill", input_tokens=prompt_tokens - reused, reused_cached_tokens=reused,
                          seconds=elapsed, calls=calls,
                          new_graphs=counters["stats"]["unique_graphs"] - graph_start,
@@ -594,7 +611,8 @@ def run_generation(session, processor, spec, inputs, prompt_text, *, new_tokens,
             candidate_tokens.append(token)
             forced = forced_tokens[index] if forced_tokens and index < len(forced_tokens) else None
             tokens.append(token if forced is None else forced)
-            logits_rows.append(logits)
+            if retain_logits and (logit_limit is None or len(logits_rows) < logit_limit):
+                logits_rows.append(logits)
             rows.append(dict(step=index, kind="decode", input_tokens=1, seconds=elapsed,
                              new_graphs=counters["stats"]["unique_graphs"] - graph_start,
                              token=tokens[-1], candidate_token=token, greedy_token=greedy,
@@ -616,7 +634,8 @@ def run_generation(session, processor, spec, inputs, prompt_text, *, new_tokens,
                   images=len(per_image or []), vision_calls=vision_calls or [],
                   vision_seconds=sum(c["seconds"] for c in vision_calls or []),
                   steps=rows, statistics=generation_stats(rows),
-                  logits=logits_rows, fp8_route_in_use=L.fp8_route_in_use(),
+                  logits=logits_rows, logits_retained=retain_logits, logit_limit=logit_limit,
+                  fp8_route_in_use=L.fp8_route_in_use(),
                   decode_weight_bytes=weight_bytes,
                   session=dict(prompt_index=session.prompts, cache_resets=session.resets,
                                new_graphs_this_prompt=counters["stats"]["unique_graphs"] - graphs_at_start,
@@ -718,7 +737,8 @@ class ChatApplication:
         return run_generation(cpu, self.processor, self.spec, inputs, text, new_tokens=new_tokens,
                               per_image=per_image_cpu, forced_tokens=forced)
 
-    def generate(self, prompt, images=(), forced=None, keep_history=False, check=True, prompt_started=None):
+    def generate(self, prompt, images=(), forced=None, keep_history=False, check=True, prompt_started=None,
+                 retain_logits=True):
         if prompt_started is None:
             prompt_started = time.perf_counter()
         from torch._dynamo.utils import compilation_time_metrics, counters
@@ -744,23 +764,30 @@ class ChatApplication:
             cpu = Session(self.model, self.spec, "cpu", args.bucket, 0)
             per_image_cpu, _ = cpu.vision_features(inputs)
             reciprocal = run_generation(cpu, self.processor, self.spec, inputs, text, new_tokens=args.check_tokens,
-                                        per_image=per_image_cpu, forced_tokens=forced)
+                                        per_image=per_image_cpu, forced_tokens=forced,
+                                        logit_limit=len(reference['logits']))
             scale_floor = compare_logits(reference["logits"], reciprocal["logits"])
             del cpu
             gc.collect()
             reference_seconds = time.perf_counter() - reference_started
         session = self.device_session()
         per_image, vision_calls = session.vision_features(inputs)
+        # Teacher-forced diagnostics need only the reference's actual steps;
+        # ordinary chat does not need to download any vocabulary vectors.
+        required_logits = len(reference['logits']) if reference is not None else 0
+        effective_retention = retain_logits or required_logits > 0
+        logit_limit = None if retain_logits else required_logits
         result = run_generation(session, self.processor, self.spec, inputs, text, new_tokens=args.new_tokens,
                                 per_image=per_image, vision_calls=vision_calls, sample=args.sample,
                                 temperature=args.temperature, top_k=args.top_k, top_p=args.top_p,
-                                seed=args.seed, forced_tokens=forced)
+                                seed=args.seed, forced_tokens=forced,
+                                retain_logits=effective_retention, logit_limit=logit_limit)
         result["model_scope"] = "reduced-depth-proof" if args.layers else "full-checkpoint"
         result["reduced_depth_layers"] = args.layers
         result["load"] = self.load_report
         result["versions"] = L.versions()
         if reference is not None:
-            comparison = compare_logits(reference["logits"], result["logits"][:args.check_tokens])
+            comparison = compare_logits(reference["logits"], result["logits"][:required_logits])
             # Default: the fixed --max-rel-l2 limit (the rule every run before 2026-10-28 is judged by; a
             # floor-derived limit used after TLM q35-v1 failed was withdrawn, evidence/r41/hbm_bw/AUDIT.md R6).
             # --cpu-floor-multiplier K > 0 selects the rule registered on 2026-10-28 before any run that uses it
@@ -866,7 +893,8 @@ class ChatApplication:
                 continue
             prompt_started = time.perf_counter()
             try:
-                report = self.generate(line, open_images(images), keep_history=True, prompt_started=prompt_started)
+                report = self.generate(line, open_images(images), keep_history=True, prompt_started=prompt_started,
+                                       retain_logits=False)
             except ValueError as error:          # e.g. the conversation no longer fits the static bucket
                 print("error>", error, "(use /reset)", flush=True)
                 if transcript is not None:
@@ -989,7 +1017,11 @@ def main(argv=None):
         return 0 if completed and all(t.get("report", {}).get("status") == "pass" for t in transcript) else 2
     images = open_images([Path(p).expanduser() for p in (args.image or [])])
     try:
-        report = app.generate(args.prompt, images, prompt_started=prompt_started)
+        # Ordinary one-shot chat returns text, not vocabulary vectors. Keep
+        # logits only when an explicit comparison or artifact needs them.
+        needs_logits = bool(args.out or args.session_check)
+        report = app.generate(args.prompt, images, prompt_started=prompt_started,
+                              retain_logits=needs_logits)
         if args.session_check:
             check = app.session_check(report, args.prompt, images, args.session_check)
             report["persistent_session_check"] = check

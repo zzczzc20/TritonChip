@@ -1051,3 +1051,12 @@ chunked route chose `Hello` (22.0) over `I` (21.875), also a 0.125 gap. Their
 1.25 and 242648 differing bits. The first-token flip occurs near a tie but is
 accompanied by broad numerical differences. Board logits were not captured,
 so this does not establish the complete cause of the board failure.
+
+A [pending full-checkpoint functional TLM diagnostic](q35_untimed_whole_pending_20261101.tgz)
+uses the same prompt with timeline memory in untimed mode, in three parallel
+runs: ordinary baseline, non-default b32 precision casts, and b32 precision
+casts plus `TNCA_IEEE_DIV=1`. The prior timed runs remain active. The attached
+comparison service first compares untimed baseline against timed baseline,
+then reports each route's logits versus CPU. This experiment measures no
+cycles, has not completed, and cannot establish board quality or an accepted
+fix; the timing/memory-model change must be checked for numerical equivalence.

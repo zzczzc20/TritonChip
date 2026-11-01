@@ -1068,3 +1068,12 @@ over `Hello` (21.875), while the same whole-prefill CPU reference selects
 ordinary whole-prefill TLM; 242712/248320 candidate logits differ bitwise.
 The candidate therefore does not resolve this first-token quality failure and
 is not a board pass. The other precision and untimed diagnostics remain pending.
+
+The completed [full-checkpoint precision-cast and b32 TLM diagnostic](q35_full_precise_b32_tlm_20261101.tgz)
+with default division selects CPU's first token `Hello` (22.25 versus `I`
+22.0), unlike ordinary whole-prefill TLM. It still differs from CPU in
+242077/248320 logits, with relative L2 0.0671156868 and max absolute error
+1.0078125. This is a promising first-token observation, not bitwise equality,
+complete generated-answer quality, a proven board fix, or a board result.
+The setting uses an Inductor precision-cast wrapper and non-default block size;
+it is not merged.

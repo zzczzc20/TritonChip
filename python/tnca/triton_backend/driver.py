@@ -120,6 +120,62 @@ def _active_logs():
     return _log_local.logs
 
 
+def _active_summaries():
+    if not hasattr(_log_local, 'summaries'):
+        _log_local.summaries = []
+    return _log_local.summaries
+
+
+class LaunchSummary:
+    """Keep the counters chat needs without constructing full launch records."""
+    def __init__(self):
+        self.entries = []
+        self.result = None
+
+    def record(self, kernel, session, event, moved, *, skipped=False):
+        self.entries.append((str(kernel), session, event, moved, skipped))
+
+    def finish(self):
+        by_kernel = {}
+        upload = download = resident = skipped_count = cycles = 0
+        complete_cycles = True
+        for name, session, event, moved, skipped in self.entries:
+            if event is not None and not event.ok:
+                session.wait(event)
+                if not event.ok:
+                    raise TNCALaunchError(f'{name}: {event.error}')
+            value = None if event is None else event.device_cycles
+            row = by_kernel.setdefault(name, dict(launches=0, device_cycles=0))
+            row['launches'] += 1
+            row['device_cycles'] += int(value or 0)
+            if value is None:
+                complete_cycles = False
+            else:
+                cycles += value
+            upload += moved.get('upload_bytes', 0)
+            download += moved.get('download_bytes', 0)
+            resident += moved.get('resident_bytes', 0)
+            skipped_count += bool(skipped)
+        self.result = dict(launches=len(self.entries), by_kernel=by_kernel,
+                           staging_upload_bytes=upload, staging_download_bytes=download,
+                           resident_bytes=resident, skipped_launches=skipped_count,
+                           device_cycles=cycles if complete_cycles else None)
+        self.entries.clear()
+        return self.result
+
+
+@contextlib.contextmanager
+def launch_summary():
+    """Collect aggregate transfer and cycle counts without per-launch detail."""
+    summary = LaunchSummary()
+    _active_summaries().append(summary)
+    try:
+        yield summary
+    finally:
+        assert _active_summaries().pop() is summary
+        summary.finish()
+
+
 @contextlib.contextmanager
 def launch_log(*, isolated=False):
     """Collect one dict per launch made while open (nested logs all see it)."""
@@ -221,6 +277,8 @@ class TNCALauncher:
                          buffers=len(storages), skipped=True)
             for log in _active_logs():
                 log.append(entry)
+            for summary in _active_summaries():
+                summary.record(self.metadata.name, None, None, entry, skipped=True)
             if launch_exit_hook is not None:
                 launch_exit_hook(launch_metadata)
             return
@@ -269,6 +327,8 @@ class TNCALauncher:
         for _name, raw, data in outputs.values():
             if data:
                 raw.copy_(torch.frombuffer(bytearray(data), dtype=torch.uint8))
+        for summary in _active_summaries():
+            summary.record(self.metadata.name, session, event, moved)
         from tnca.torch_device.graph import active_capture
         capture = active_capture()
         if _active_logs() or capture is not None:

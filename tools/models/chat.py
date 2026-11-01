@@ -123,7 +123,7 @@ def transfer_meter(enabled):
     if not enabled:
         return nullcontext(None)
     from qwen_tnca_layers import TransferMeter
-    return TransferMeter()
+    return TransferMeter(compact=True)
 
 
 def run_with_code_capture(fn):

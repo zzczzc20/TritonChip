@@ -750,3 +750,10 @@ instructions/MAC; decode 1353813837 → 1214231109 cycles, 95 → 95 launches,
 host reads. These are uncalibrated reduced-depth TLM results, not board
 throughput or independent full-model quality. The default standalone
 activation-quantizer failures above remain unchanged.
+
+After the scoped exact-reference matmul tests, unchanged 113-point default
+code audit, and bitwise one-layer VL and four-layer Qwen3.5 comparisons, the
+candidate was integrated as an opt-in `TNCA_X8_EQUAL_OUTPUT=1` route. The
+unrelated four default-division activation-quantizer failures remain recorded;
+no full-suite pass is claimed. A separate board session is being prepared
+behind the ongoing Qwen3.5 quality diagnostic. No board speedup is yet claimed.

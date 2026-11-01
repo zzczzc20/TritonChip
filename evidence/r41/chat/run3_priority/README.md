@@ -998,3 +998,25 @@ this same random case. This is still finite single-shape evidence, not a
 general exactness or board pass. [Two-layer, full-model, component and
 convolution TLM comparisons](q35_precise_b32_ieee_model_pending_20261101.tgz)
 with those knobs are pending.
+
+The [IEEE-division research](q35_div_signedzero_research_20261101.tgz)
+first confirmed `+0 / 2` produced `-0`; a [signed-zero-only patch](q35_div_signedzero_research_20261101.patch.gz)
+fixed 16/256 boundary mismatches and made the captured standalone convolution
+221184/221184 exact. However, both the old and fixed path retained 490/65536
+differences on finite random inputs, including extreme denominators and
+subnormals. That patch was not merged.
+
+The later [scaled/residual candidate and failed attempts](q35_div_v7_research_20261101.tgz)
+and [candidate patch](q35_div_v7_research_20261101.patch.gz) improve the
+ordinary IEEE-division path. Nine random sets total 589824/589824 bitwise
+matching finite inputs, 2928/2928 signed boundary comparisons match (NaNs
+checked by classification), and 32768/32768 near-overflow values match. In
+one 65536-input TLM test the candidate used 870797 device cycles and 634880
+instructions, versus the baseline's 526831 and 155648, one launch and no
+code loads during launch in each. On current integration source the existing
+explicit `tl.div_rn` path matched 65536/65536 before and after, but cycles
+increased 741451 to 1036176 and instructions 479232 to 892928. The
+[current-source default-code audit](q35_div_v7_current_audit_20261101.tgz)
+compared 113/113 unchanged. Two-layer Qwen3.5 compilation with the candidate
+failed from vector-register exhaustion, including separate attempts with
+window reuse and 16-wide blocks. It is not merged or board-qualified.

@@ -34,7 +34,7 @@ ENTRY_SHA = '71d301c88f8f8b7fc062179118e45b52fc46081722617bb8bbd2c1967316683c'
 
 
 def main():
-    sys.path.insert(0, str(OLD / 'tools/r41/run2_board'))
+    sys.path.insert(0, str(WORK / 'runtime_activation_equal_20261031/tools/r41/run2_board'))
     import auto
     import q35_timeout_recovery as recovery
     if ROOT.exists() or OUT.exists():

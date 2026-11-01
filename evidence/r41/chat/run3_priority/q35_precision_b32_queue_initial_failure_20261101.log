@@ -1,0 +1,9 @@
+Nov 01 11:51:32 acf3019 systemd[701794]: Started /home/zzhouch/tc_env/torchenv/bin/python -u /home/zzhouch/r41run3/queue_q35_precision_b32_20261101.py.
+Nov 01 11:51:32 acf3019 python[1211624]: Traceback (most recent call last):
+Nov 01 11:51:32 acf3019 python[1211624]:   File "/home/zzhouch/r41run3/queue_q35_precision_b32_20261101.py", line 135, in <module>
+Nov 01 11:51:32 acf3019 python[1211624]:     main()
+Nov 01 11:51:32 acf3019 python[1211624]:   File "/home/zzhouch/r41run3/queue_q35_precision_b32_20261101.py", line 39, in main
+Nov 01 11:51:32 acf3019 python[1211624]:     import q35_timeout_recovery as recovery
+Nov 01 11:51:32 acf3019 python[1211624]: ModuleNotFoundError: No module named 'q35_timeout_recovery'
+Nov 01 11:51:32 acf3019 systemd[701794]: r41-q35-precision-b32-whole-20261101.service: Main process exited, code=exited, status=1/FAILURE
+Nov 01 11:51:32 acf3019 systemd[701794]: r41-q35-precision-b32-whole-20261101.service: Failed with result 'exit-code'.

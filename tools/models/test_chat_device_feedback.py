@@ -76,11 +76,11 @@ class Session:
         logits = Tensor([int(i == token) for i in range(4)])
         self.produced_logits.append(logits)
         return logits
-    def step_device(self, token, position_device=None):
+    def step_device(self, token, position_device=None, position_host=None):
         self.fed.append(int(token.cpu().item()))
         if position_device is not None:
             self.fed_positions.append(position_device.clone())
-        self.last_position = self.last_position + 1
+        self.last_position = self.last_position + 1 if position_host is None else position_host
         self._cache_tokens += 1
         return self.next_logits()
     def reset(self):

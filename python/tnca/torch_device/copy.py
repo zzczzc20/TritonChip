@@ -47,22 +47,20 @@ def zero_full_storage(tensor):
 
 
 @triton.jit
-def _zero_view_kernel(DST, COUNT: tl.constexpr, SHAPE: tl.constexpr, STRIDES: tl.constexpr,
-                      BYTES: tl.constexpr, BLOCK: tl.constexpr, PROGRAMS: tl.constexpr):
-    """Clear the exact bytes of a strided cache tail on the device."""
+def _zero_view_kernel(DST, BYTES_PER_HEAD: tl.constexpr, HEADS: tl.constexpr,
+                      BATCH_STRIDE: tl.constexpr, HEAD_STRIDE: tl.constexpr,
+                      BLOCK: tl.constexpr, PROGRAMS_PER_HEAD: tl.constexpr):
+    """Clear contiguous tail rows per head, without per-byte shape division."""
     destination = DST.to(tl.pointer_type(tl.uint8))
     pid = tl.program_id(0)
-    for block in range(tl.cdiv(COUNT, BLOCK * PROGRAMS)):
-        index = (block * PROGRAMS + pid) * BLOCK + tl.arange(0, BLOCK)
-        element = index // BYTES
-        byte = index % BYTES
-        remaining = element
-        offset = tl.full((BLOCK,), 0, tl.int32)
-        for axis in tl.static_range(len(SHAPE) - 1, -1, -1):
-            coordinate = remaining % SHAPE[axis]
-            remaining = remaining // SHAPE[axis]
-            offset += coordinate * STRIDES[axis]
-        tl.store(destination + offset * BYTES + byte, tl.full((BLOCK,), 0, tl.uint8), index < COUNT)
+    group = pid // PROGRAMS_PER_HEAD
+    batch = group // HEADS
+    head = group % HEADS
+    local_pid = pid % PROGRAMS_PER_HEAD
+    base = batch * BATCH_STRIDE + head * HEAD_STRIDE
+    for block in range(tl.cdiv(BYTES_PER_HEAD, BLOCK * PROGRAMS_PER_HEAD)):
+        index = (block * PROGRAMS_PER_HEAD + local_pid) * BLOCK + tl.arange(0, BLOCK)
+        tl.store(destination + base + index, tl.full((BLOCK,), 0, tl.uint8), index < BYTES_PER_HEAD)
 
 
 def zero_view_tensor(tensor):
@@ -73,7 +71,7 @@ def zero_view_tensor(tensor):
     count = tensor.numel() * item
     if not count:
         return tensor
-    if (len(shape) != 4 or strides[-1] != 1 or shape[-1] * item % 8
+    if (len(shape) != 4 or strides[-1] != 1 or strides[-2] != shape[-1] or shape[-1] * item % 8
             or tensor.storage_offset() * item % 8
             or any(stride * item % 8 for stride in strides[:-1])):
         raise ValueError('tnca zero: view rows must be word aligned')
@@ -84,13 +82,19 @@ def zero_view_tensor(tensor):
         extent += (size - 1) * stride
     if count > MAX_SPAN or extent * item > MAX_SPAN:
         raise ValueError('tnca zero: view exceeds one launch')
-    block = 16  # Strided byte indices need more registers than a contiguous clear.
-    programs = min(triton.cdiv(count, block), 1024)
+    heads_total = shape[0] * shape[1]
+    if heads_total > 1024:
+        raise ValueError('tnca zero: too many cache heads')
+    block = 128
+    bytes_per_head = shape[2] * shape[3] * item
+    programs_per_head = min(triton.cdiv(bytes_per_head, block), 1024 // heads_total)
+    programs = heads_total * programs_per_head
     with _lock:
         previous = triton.runtime.driver.active
         try:
             triton.runtime.driver.set_active(TNCADriver())
-            _zero_view_kernel[(programs,)](tensor, count, shape, strides, item, block, programs, num_warps=1)
+            _zero_view_kernel[(programs,)](tensor, bytes_per_head, shape[1], strides[0] * item,
+                                           strides[1] * item, block, programs_per_head, num_warps=1)
         finally:
             triton.runtime.driver.set_active(previous)
     return tensor

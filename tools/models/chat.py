@@ -370,9 +370,22 @@ class Session:
         self.last_position = position
         return logits
 
-    def step_device(self, token, position_device=None):
+    def step_device(self, token, position_device=None, position_host=None):
         """Feed a device token without converting its value to a host scalar."""
-        position = self.last_position + 1
+        if self.last_position is None:
+            raise RuntimeError('decode requires a populated prompt cache')
+        if not torch.is_tensor(token) or token.device.type != self.dev.type:
+            raise ValueError('decode feedback token must already be resident on the session device')
+        if (position_device is None) != (position_host is None):
+            raise ValueError('queued decode needs both host and device position metadata')
+        if position_device is not None:
+            if (not torch.is_tensor(position_device) or not torch.is_tensor(position_host)
+                    or position_device.device.type != 'tnca' or position_host.device.type != 'cpu'
+                    or position_device.shape != position_host.shape
+                    or position_device.dtype != position_host.dtype
+                    or position_host.shape != self.last_position.shape):
+                raise ValueError('queued decode position metadata is incompatible with the cache')
+        position = self.last_position + 1 if position_host is None else position_host
         with torch.no_grad():
             logits = self._call_decode(token, position if position_device is None else position_device)
         self.last_position = position
@@ -433,14 +446,15 @@ def _vision_to(vision, dev):
 
 
 def stage_decode_positions(last_position, count, device):
-    """Upload known position metadata once, before the queued decode steps."""
+    """Prepare host and device position metadata once for queued decode."""
     if (not torch.is_tensor(last_position) or last_position.device.type != 'cpu'
             or last_position.dtype not in (torch.int32, torch.int64)
             or last_position.numel() == 0 or type(count) is not int or count < 2):
         raise ValueError('queued decode requires a CPU position and at least two tokens')
     shape = (count - 1,) + (1,) * last_position.ndim
     increments = torch.arange(1, count, dtype=last_position.dtype).reshape(shape)
-    return (last_position.unsqueeze(0) + increments).contiguous().to(device)
+    host = (last_position.unsqueeze(0) + increments).contiguous()
+    return host, host.to(device)
 
 
 def validate_queued_decode():
@@ -723,7 +737,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     queue_steps = os.environ.get('TNCA_QUEUE_STEPS') == '1' and new_tokens > 1
     if queue_steps:
         validate_queued_decode()
-    position_batch, queued_meters, queue_anchor = None, [], None
+    position_batch, host_positions, queued_meters, queue_anchor = None, None, [], None
     code_by_role = getattr(session, "_generation_code", {})
     session._generation_code = code_by_role
     from tnca.code_residency import RepeatedCodeTrace
@@ -778,10 +792,11 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                     feed = teacher[index - 1] if index - 1 < len(teacher) else current
                     with session._decode_code_trace.step():
                         logits = capture("decode", lambda: session.step_device(
-                            feed, position_batch[index - 1]) if queue_steps else session.step_device(feed))
+                            feed, position_batch[index - 1], host_positions[index - 1])
+                            if queue_steps else session.step_device(feed))
                 current = capture("selection", lambda: session.greedy(logits.reshape(-1)))
                 if queue_steps and index == 0:
-                    position_batch = stage_decode_positions(session.last_position, new_tokens, session.dev)
+                    host_positions, position_batch = stage_decode_positions(session.last_position, new_tokens, session.dev)
                 if not queue_steps or index == 0:
                     meter.mem.synchronize()
             if queue_steps and index == 0:

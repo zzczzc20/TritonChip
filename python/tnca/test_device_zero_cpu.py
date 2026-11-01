@@ -73,7 +73,7 @@ base = torch.arange(1 * 2 * 16 * 8, dtype=torch.int64).to(torch.uint8).reshape(1
 expected = base.clone()
 expected[:, :, 3:6, :] = 0
 view = base[:, :, 3:6, :]
-_zero_view_kernel[(8,)](view, view.numel(), tuple(view.shape), tuple(view.stride()), 1, 16, 8, num_warps=1)
+_zero_view_kernel[(2,)](view, 24, 2, view.stride(0), view.stride(1), 128, 1, num_warps=1)
 assert torch.equal(base, expected)
 '''
         env = dict(os.environ, TRITON_INTERPRET='1')

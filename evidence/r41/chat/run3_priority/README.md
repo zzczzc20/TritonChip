@@ -1077,3 +1077,18 @@ with default division selects CPU's first token `Hello` (22.25 versus `I`
 complete generated-answer quality, a proven board fix, or a board result.
 The setting uses an Inductor precision-cast wrapper and non-default block size;
 it is not merged.
+
+The separate whole-prefill precision-cast/b32 board diagnostic was registered
+with unchanged multi-turn scoring and the already-loaded image; it is a reduced
+proof and does not change the original failures. Its [first queue start](q35_precision_b32_queue_initial_failure_20261101.log)
+failed before registration because a recovery module path was wrong. The
+[first registered stage](q35_precision_b32_board_launch_failure_20261101.tgz)
+failed before model execution: the wrapper imported an older installed TNCA
+package under isolated Python. A revised wrapper explicitly selects the new
+independent runtime copy before importing Triton; a non-board import check
+confirmed that `tnca` resolves to that copy. The separately registered retry
+started its stage at 2026-11-01 03:59:04 UTC after the shared lock, card idle,
+image UUID/hash, clock and source-hash checks. Its registration SHA-256 is
+`7d5edef5c6d94734970835b552db7c7abff85f82759f4126808081606fa2b0bb`.
+The [queue](queue_q35_precision_b32_retry_20261101.py) uses a 600-second
+poll interval and never programs an image. No result is yet available.

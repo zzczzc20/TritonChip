@@ -1020,3 +1020,13 @@ increased 741451 to 1036176 and instructions 479232 to 892928. The
 compared 113/113 unchanged. Two-layer Qwen3.5 compilation with the candidate
 failed from vector-register exhaustion, including separate attempts with
 window reuse and 16-wide blocks. It is not merged or board-qualified.
+
+The [explicit-division wrapper experiment](q35_div_wrapper_research_20261101.tgz)
+reused the existing `tl.div_rn` lowering for non-default IEEE division; its
+[candidate patch](q35_div_wrapper_research_20261101.patch.gz) does not alter
+the default branch. On DP TLM it matched 65536/65536 finite random inputs,
+but failed 4/2928 signed boundary cases and 128/32768 near-overflow cases:
+a finite maximum result became infinity. The random run used 741451 device
+cycles and 479232 instructions, with one launch and no code loads during it.
+The candidate fails the exactness gate and is not merged or board-qualified;
+no 113-point audit or model speed claim is inferred from this failed probe.

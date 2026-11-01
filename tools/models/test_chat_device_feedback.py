@@ -363,6 +363,7 @@ class UserReportTests(unittest.TestCase):
         self.assertEqual(output['generated_text'], 'hello')
         self.assertNotIn('logits', output)
         self.assertIn('"generated_text": "hello"', stream.flushed[0])
+        self.assertNotIn('"status"', stream.flushed[0])
         self.assertNotIn('"user_visible_timing"', stream.flushed[0])
         self.assertEqual(output['user_visible_timing']['prompt_to_return_seconds'], 6)
         self.assertEqual(output['user_visible_timing']['non_special_token_ids_per_second'], 1 / 6)

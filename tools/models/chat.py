@@ -858,15 +858,19 @@ def public_report(report):
 
 
 def emit_user_report(report, prompt_started):
-    """Flush generated text before recording its arrival time, then finish the JSON."""
-    data = public_report(report)
-    generated = data.pop("generated_text")
-    timing = data.pop("user_visible_timing")
-    prefix = json.dumps(data, indent=2)[:-1].rstrip()
-    sys.stdout.write(prefix + ("," if data else "") + "\n  \"generated_text\": " + json.dumps(generated))
+    """Return text first, then serialize the detailed diagnostic fields."""
+    generated = report["generated_text"]
+    timing = report["user_visible_timing"]
+    sys.stdout.write('{\n  "generated_text": ' + json.dumps(generated))
     sys.stdout.flush()
     finalize_user_visible_metrics(timing, time.perf_counter() - prompt_started,
                                   "module entry through generated-text stdout flush; excludes interpreter startup")
+    data = public_report(report)
+    data.pop("generated_text")
+    data.pop("user_visible_timing")
+    if data:
+        body = json.dumps(data, indent=2)[1:-1].strip('\n')
+        sys.stdout.write(',\n' + body)
     sys.stdout.write(",\n  \"user_visible_timing\": " + json.dumps(timing, indent=2) + "\n}\n")
     sys.stdout.flush()
 

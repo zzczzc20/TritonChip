@@ -429,6 +429,7 @@ class Session:
         self._heap = _Allocator(heap_base, heap_limit, reserved=DEVICE_RESERVED_RANGES)
         self._worker = None
         self._stop = threading.Event()
+        self._queue_wake = threading.Event()
 
         self.dev = _open_device(self.backend_name, self.bench,
                                 workdir=self._workdir,
@@ -848,6 +849,7 @@ class Session:
             self._events[ev.job_id] = ev
             self._active_events[ev.job_id] = ev
             self._queue.append(task)
+            self._queue_wake.set()
             ev._to(QUEUED)
             return ev
 
@@ -923,8 +925,14 @@ class Session:
             with self._lock:
                 if self._queue:
                     task = self._queue[0]
+                else:
+                    # Clearing under the same lock used by submit avoids
+                    # losing a wakeup when a new launch arrives.
+                    self._queue_wake.clear()
             if task is None:
-                time.sleep(0.002)
+                # New work wakes the worker immediately. The timeout keeps
+                # direct _stop.set() users and recovery responsive too.
+                self._queue_wake.wait(timeout=0.002)
                 continue
             self._run_one(task)
             with self._lock:
@@ -1221,6 +1229,7 @@ class Session:
         """A new epoch: a new device, and every old handle invalid."""
         with self._lock:
             self._stop.set()
+            self._queue_wake.set()
         if self._worker:
             self._worker.join(timeout=30)
         try:
@@ -1264,6 +1273,7 @@ class Session:
                 remedy='wait for them, or accept the loss and recover(); '
                        'close() does not discard a task')
         self._stop.set()
+        self._queue_wake.set()
         if self._worker:
             self._worker.join(timeout=30)
         try:

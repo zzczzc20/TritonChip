@@ -232,6 +232,7 @@ class Session:
         self._cache_tokens = 0    # host metadata; never read a device tensor
         self.last_position = None
         self._warm_prefill = None
+        self._warm_prefill_mode = 'not-run'
         self.resets = 0
         self.prompts = 0
         self.greedy = (torch.compile(lambda x: x.float().argmax().reshape(1, 1),
@@ -386,6 +387,7 @@ class Session:
         retained = False
         reuse = (os.environ.get('TNCA_REUSE_WARM_PREFILL') == '1'
                  and getattr(self, 'device', None) == 'tnca')
+        self._warm_prefill_mode = 'fallback-reset' if reuse else 'disabled'
         try:
             prefill_started = time.perf_counter()
             prefill = capture("prefill", lambda: self.prefill_prompt(inputs, per_image))
@@ -406,6 +408,7 @@ class Session:
                 # do not recompute the whole prompt after the dummy decode.
                 self.last_position, self._cache_tokens = position, length
                 self._warm_prefill = (inputs, list(self.cached), per_image, prefill, prefill_seconds)
+                self._warm_prefill_mode = 'hybrid-restored' if hybrid is not None else 'static-rewound'
                 retained = True
             return result
         finally:
@@ -659,6 +662,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
             raise RuntimeError("decode warmup returned a host tensor")
         warmup = dict(seconds=time.perf_counter() - started, transfers=warmup_meter.summary())
         warmup['prefill_retained'] = getattr(session, '_warm_prefill', None) is not None
+        warmup['prefill_strategy'] = getattr(session, '_warm_prefill_mode', 'unavailable')
 
     old_recompile = torch._dynamo.config.error_on_recompile
     session.prompts += 1

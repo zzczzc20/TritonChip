@@ -455,6 +455,7 @@ class PrefillSegmentationTests(unittest.TestCase):
             self.assertEqual(session.warmup_decode(inputs), 'dummy')
         rewind.assert_called_once_with(session.cache, 3)
         session.reset.assert_not_called()
+        self.assertEqual(session._warm_prefill_mode, 'static-rewound')
         self.assertEqual(session._cache_tokens, 3)
         self.assertEqual(int(session.last_position.item()), 2)
         (logits, actual_calls, reused), seconds = session.consume_warm_prefill(inputs, None)
@@ -483,6 +484,7 @@ class PrefillSegmentationTests(unittest.TestCase):
             self.assertEqual(session.warmup_decode(inputs), 'dummy')
         session.reset.assert_called_once()
         self.assertIsNone(session._warm_prefill)
+        self.assertEqual(session._warm_prefill_mode, 'fallback-reset')
 
     def test_short_tail_is_prefilled_as_a_block(self):
         session = object.__new__(chat.Session)

@@ -132,6 +132,12 @@ class DeviceMemory:
 
     def locate(self, addr):
         """(Buffer, byte offset) of a device address inside a live storage."""
+        # Kernel arguments name their tensor's storage base. A decode token
+        # submits hundreds of kernels against thousands of live tensors; do
+        # not scan all allocations for the overwhelmingly common base case.
+        buf = self.buffers.get(addr)
+        if buf is not None:
+            return buf, 0
         for base, buf in self.buffers.items():
             if base <= addr < base + max(buf.size, 1):
                 return buf, addr - base

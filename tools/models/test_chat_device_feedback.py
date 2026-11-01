@@ -37,6 +37,7 @@ class Session:
         self.prompts = 0
         self.resets = 0
         self.cached = []
+        self.last_position = None
         self.choices = iter(choices)
         self.fed = []
         self.produced_logits = []
@@ -53,6 +54,7 @@ class Session:
         self.cache = object()
     def prefill_prompt(self, inputs, images):
         self.cached = inputs['input_ids'][0].tolist()
+        self.last_position = torch.tensor([len(self.cached) - 1])
         calls = ([{'kind': 'token', 'new_graphs': 1}] if self.prefill_compiles_decode else [])
         return self.next_logits(), calls, 0
     def warmup_decode(self, inputs, per_image=None, capture=None):
@@ -65,14 +67,16 @@ class Session:
         return logits
     def step_device(self, token):
         self.fed.append(int(token.cpu().item()))
+        self.last_position = self.last_position + 1
         return self.next_logits()
     def reset(self):
         self.cached = []
+        self.last_position = None
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
     def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None,
-                 retain_logits=True, logit_limit=None):
+                 retain_logits=True, logit_limit=None, rewind_hook=None):
         session = Session(choices, prefill_compiles_decode)
         processor = types.SimpleNamespace(batch_decode=lambda ids, **kw: [str(ids.tolist())])
         spec = types.SimpleNamespace(name='test', repo='test', revision='test')
@@ -89,7 +93,9 @@ class DeviceFeedbackTests(unittest.TestCase):
             # The decode graph compiled inside prefill is reused in generation.
             cached_decode = prefill_compiles_decode and capture_count == 4
             return fn(), ([] if cached_decode else ['test wrapper'])
-        with mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind,
+        rewind_patch = (mock.patch.object(chat, 'rewind_attention_cache', side_effect=rewind_hook)
+                        if rewind_hook is not None else nullcontext())
+        with rewind_patch, mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind,
                                             'tnca.code_residency': residency}), \
              mock.patch.object(chat, 'run_with_code_capture', capture), \
              mock.patch.object(chat, 'transfer_meter', lambda enabled: Meter()), \
@@ -123,6 +129,7 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(report['statistics']['executed_generation_steps'], 3)
         self.assertEqual(report['eos_overrun_steps'], 1)
         self.assertIs(report['eos_stop_observed'], False)
+        self.assertEqual(report['session']['cache_rewind'], 'full-reset')
         self.assertEqual([x.cpu_reads for x in session.produced_logits], [1, 1, 0])
         self.assertEqual([x.cpu_reads for x in session.produced_candidates], [2, 2, 0])
     def test_decode_compiled_during_prefill_is_accounted_for(self):
@@ -145,6 +152,20 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(report['logit_limit'], 1)
         self.assertEqual([x.cpu_reads for x in session.produced_logits], [1, 0, 0])
 
+    def test_eos_rewind_retains_only_the_actual_prefix(self):
+        calls = []
+        def rewind(cache, valid_length):
+            calls.append((cache, valid_length))
+            return True
+        session, report = self.run_case([1, 3, 2], rewind_hook=rewind)
+        self.assertEqual(report['generated_tokens'], [1, 3])
+        self.assertEqual(session.cached, [8, 9, 1])
+        self.assertEqual(int(session.last_position.item()), 2)
+        self.assertEqual(calls, [(session.cache, 3)])
+        self.assertEqual(session.resets, 0)
+        self.assertEqual(report['session']['cache_rewind'], 'static-attention-prefix-retained')
+        self.assertGreaterEqual(report['session']['cache_maintenance_seconds'], 0)
+
     def test_retrieval_timing_excludes_post_retrieval_fallback_inspection(self):
         clock = types.SimpleNamespace(now=0.0)
         clock.perf_counter = lambda: clock.now
@@ -155,6 +176,53 @@ class DeviceFeedbackTests(unittest.TestCase):
             _, report = self.run_case([1, 2], fallback_hook=inspect)
         self.assertGreater(clock.now, 0.0)
         self.assertEqual(report['output_retrieval_seconds'], 0.0)
+
+
+class AttentionRewindTests(unittest.TestCase):
+    def setUp(self):
+        self.module = types.ModuleType('transformers')
+        self.module.__path__ = []
+        self.cache_module = types.ModuleType('transformers.cache_utils')
+        class StaticLayer:
+            def __init__(self, length=7, capacity=16):
+                self.cumulative_length = torch.tensor(length, dtype=torch.int64)
+                self.max_cache_len = capacity
+                self.is_initialized = True
+                self.keys = torch.arange(capacity, dtype=torch.float32)
+                self.values = -self.keys.clone()
+        self.static_layer = StaticLayer
+        self.cache_module.StaticLayer = StaticLayer
+        self.patch = mock.patch.dict('sys.modules', {'transformers': self.module,
+                                                     'transformers.cache_utils': self.cache_module})
+        self.patch.start()
+        self.addCleanup(self.patch.stop)
+
+    def test_rewinds_every_static_layer_in_place(self):
+        layers = [self.static_layer(), self.static_layer()]
+        lengths = [layer.cumulative_length for layer in layers]
+        keys = [layer.keys.clone() for layer in layers]
+        values = [layer.values.clone() for layer in layers]
+        self.assertTrue(chat.rewind_attention_cache(types.SimpleNamespace(layers=layers), 3))
+        self.assertEqual([int(length) for length in lengths], [3, 3])
+        self.assertTrue(all(layer.cumulative_length is length for layer, length in zip(layers, lengths)))
+        self.assertTrue(all(torch.equal(layer.keys, original) for layer, original in zip(layers, keys)))
+        self.assertTrue(all(torch.equal(layer.values, original) for layer, original in zip(layers, values)))
+
+    def test_mixed_or_unsupported_cache_does_not_mutate_any_layer(self):
+        first = self.static_layer()
+        cache = types.SimpleNamespace(layers=[first, object()])
+        self.assertFalse(chat.rewind_attention_cache(cache, 3))
+        self.assertEqual(int(first.cumulative_length), 7)
+        self.assertFalse(chat.rewind_attention_cache(types.SimpleNamespace(layers=[]), 3))
+
+    def test_out_of_range_and_uninitialized_layers_are_rejected(self):
+        first, second = self.static_layer(), self.static_layer(capacity=4)
+        cache = types.SimpleNamespace(layers=[first, second])
+        self.assertFalse(chat.rewind_attention_cache(cache, 5))
+        self.assertEqual(int(first.cumulative_length), 7)
+        second.is_initialized = False
+        self.assertFalse(chat.rewind_attention_cache(cache, 3))
+        self.assertEqual(int(first.cumulative_length), 7)
 
 
 class CodeCaptureTests(unittest.TestCase):

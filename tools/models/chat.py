@@ -369,6 +369,42 @@ def _vision_to(vision, dev):
     return tuple(tuple(t.to(dev) for t in group) for group in vision)
 
 
+def rewind_attention_cache(cache, valid_length):
+    """Restore a pure static attention cache after speculative EOS steps.
+
+    Standard static attention masks positions at or beyond cumulative_length;
+    later speculative slots are overwritten before they can be attended to.
+    Recurrent, sliding-window, uninitialized and unknown cache layers cannot
+    be rewound this way and continue to use the conservative full reset.
+    The length is host-side sequence metadata, copied into the existing
+    device scalars after generation; no device tensor is read by the host.
+    """
+    layers = getattr(cache, 'layers', None)
+    if not layers or type(valid_length) is not int or valid_length < 0:
+        return False
+    try:
+        from transformers.cache_utils import StaticLayer
+    except ImportError:
+        return False
+    lengths = []
+    for layer in layers:
+        # Exact type rules out sliding windows and custom recurrent state.
+        if type(layer) is not StaticLayer or not getattr(layer, 'is_initialized', False):
+            return False
+        length = getattr(layer, 'cumulative_length', None)
+        if not torch.is_tensor(length) or length.numel() != 1 or valid_length > layer.max_cache_len:
+            return False
+        lengths.append(length)
+    # Validate every layer before mutating any. Keep the marked static device
+    # addresses; replacing the tensors would invalidate compiled graphs.
+    values = {}
+    for length in lengths:
+        if length.dtype not in values:
+            values[length.dtype] = torch.tensor(valid_length, dtype=length.dtype)
+        length.copy_(values[length.dtype])
+    return True
+
+
 def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_tokens, per_image,
                           vision_calls, sample, temperature, top_k, top_p, seed, forced_tokens,
                           retain_logits=True, logit_limit=None):
@@ -395,7 +431,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
 
     # Teacher tokens are transferred before the measured loop, never read back in it.
     teacher = [torch.tensor([[t]], dtype=torch.long).to(session.dev) for t in (forced_tokens or [])]
-    rows, device_logits, device_candidates = [], [], []
+    rows, device_logits, device_candidates, position_history = [], [], [], []
     code_by_role = getattr(session, "_generation_code", {})
     session._generation_code = code_by_role
     from tnca.code_residency import RepeatedCodeTrace
@@ -445,6 +481,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 meter.mem.synchronize()
             if logits.device.type != "tnca" or current.device.type != "tnca":
                 raise RuntimeError("device model or token selection returned a host tensor")
+            position_history.append(getattr(session, 'last_position', None))
             elapsed = time.perf_counter() - started
             if retain_logits and (logit_limit is None or len(device_logits) < logit_limit):
                 device_logits.append(logits)
@@ -483,11 +520,24 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         row.update(token=(tokens[i] if i < len(tokens) else None),
                    candidate_token=(candidates[i] if i < len(candidates) else None),
                    greedy_token=(candidates[i] if i < len(candidates) else None))
+    cache_rewind = 'not-needed'
+    cache_maintenance_start = time.perf_counter()
     if len(tokens) != new_tokens:
-        # The fixed-length device loop ran beyond EOS: discard that cache before another turn.
-        session.reset()
+        # Rewind only caches whose full state is the standard static KV cache.
+        # Hybrid/recurrent caches retain the original conservative reset.
+        position = position_history[len(tokens) - 1] if tokens else None
+        valid_length = len(session.cached) + max(0, len(tokens) - 1)
+        if (position is not None and not forced_tokens and tokens and tokens[-1] in eos
+                and rewind_attention_cache(session.cache, valid_length)):
+            session.cached += tokens[:-1]
+            session.last_position = position
+            cache_rewind = 'static-attention-prefix-retained'
+        else:
+            session.reset()
+            cache_rewind = 'full-reset'
     else:
         session.cached += tokens[:-1]
+    cache_maintenance_seconds = time.perf_counter() - cache_maintenance_start
     fallbacks = {role: host_fallbacks(source) for role, source in code_by_role.items()}
     covered = all(code_by_role.get(role) for role in ("prefill", "decode", "selection"))
     fallback = any(fallbacks.values()) if covered else None
@@ -539,6 +589,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   fp8_route_in_use=L.fp8_route_in_use(),
                   decode_weight_bytes=weight_bytes,
                   session=dict(prompt_index=session.prompts, cache_resets=session.resets,
+                               cache_rewind=cache_rewind, cache_maintenance_seconds=cache_maintenance_seconds,
                                new_graphs_this_prompt=counters["stats"]["unique_graphs"] - graphs_at_start,
                                unique_graphs_total=counters["stats"]["unique_graphs"]),
                   device_memory=L.device_memory(session.dev), cache_bytes=L.cache_bytes(session.cache),

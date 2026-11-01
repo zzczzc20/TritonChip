@@ -670,3 +670,12 @@ and instructions/MAC 0.4805297852 → 0.41796875; at 1×2048×2048 they show
 The first separate masked-row proof harness failed to compile on both paths
 because its shape did not enter the X8 lowering; this is recorded as a failed
 harness attempt, not a passed correctness case. The gates above remain pending.
+
+The [candidate suite and additional attempts](x8_equal_output_suite_20261101.tgz)
+show 16/16 FP8 and compiled-graph tests passing against exact references. A
+separate zero-activation 1×256×256 case matched 256/256 on both paths, with
+steady cycles 91280 → 77837, instructions/MAC 0.4805297852 → 0.41796875,
+one launch and no steady code loads. Two additional proof-harness revisions
+failed to compile on both routes: the first had an FP8 constant typing error;
+the second exhausted vector registers. Neither is an exactness pass. The
+113-point and paired model comparisons are still pending.

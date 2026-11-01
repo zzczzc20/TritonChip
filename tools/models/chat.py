@@ -235,7 +235,9 @@ class Session:
                                      fullgraph=True, dynamic=False) if device == "tnca" else None)
 
     def reset(self):
-        self.cache.reset()
+        if not (self.device == 'tnca' and os.environ.get('TNCA_DEVICE_ZERO') == '1'
+                and clear_static_attention_cache(self.cache)):
+            self.cache.reset()
         self.cached, self.last_position = [], None
         self._cache_tokens = 0
         self.resets += 1
@@ -373,6 +375,48 @@ class Session:
 
 def _vision_to(vision, dev):
     return tuple(tuple(t.to(dev) for t in group) for group in vision)
+
+
+def clear_static_attention_cache(cache):
+    """Batch complete standard KV clears before clearing length scalars.
+
+    Transformers 5.20.2 resets each layer's keys, values, then its length.
+    A host write to every scalar drains the device queue between each pair
+    of cache clears. Reordering those independent writes keeps their exact
+    final bits while allowing all device clears to queue together. Unknown,
+    hybrid and future cache implementations retain their own reset method.
+    """
+    try:
+        import transformers
+        from transformers.cache_utils import StaticCache, StaticLayer
+    except ImportError:
+        return False
+    if transformers.__version__ != '5.20.2' or type(cache) is not StaticCache:
+        return False
+    layers = getattr(cache, 'layers', None)
+    if not layers:
+        return False
+    for layer in layers:
+        if type(layer) is not StaticLayer or not getattr(layer, 'is_initialized', False):
+            return False
+        for tensor in (getattr(layer, 'keys', None), getattr(layer, 'values', None)):
+            if not torch.is_tensor(tensor) or not tensor.is_contiguous() or tensor.storage_offset() != 0:
+                return False
+            nbytes = tensor.numel() * tensor.element_size()
+            if (nbytes < 65536 or nbytes > (1 << 31) - (1 << 20) or nbytes % 8
+                    or tensor.untyped_storage().nbytes() != nbytes):
+                return False
+        length = getattr(layer, 'cumulative_length', None)
+        if (not torch.is_tensor(length) or length.dtype != torch.int64 or length.numel() != 1
+                or not length.is_contiguous() or length.storage_offset() != 0
+                or length.untyped_storage().nbytes() != length.element_size()):
+            return False
+    for layer in layers:
+        layer.keys.zero_()
+        layer.values.zero_()
+    for layer in layers:
+        layer.cumulative_length.zero_()
+    return True
 
 
 def rewind_attention_cache(cache, valid_length):

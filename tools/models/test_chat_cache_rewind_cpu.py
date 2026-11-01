@@ -72,6 +72,32 @@ class StaticAttentionContinuationTests(unittest.TestCase):
             with self.subTest(prefix=prefix, emitted=emitted, speculative=speculative):
                 self.continuation(prefix, emitted, speculative, suffix)
 
+    def test_batched_attention_clear_matches_transformers_reset_bitwise(self):
+        original = StaticCache(config=self.config, max_cache_len=1024)
+        optimized = StaticCache(config=self.config, max_cache_len=1024)
+        for cache in (original, optimized):
+            cache.early_initialization(batch_size=1, num_heads=2, head_dim=8,
+                                       dtype=torch.float32, device=torch.device('cpu'))
+        for first, second in zip(original.layers, optimized.layers, strict=True):
+            first.keys.normal_()
+            first.values.normal_()
+            first.cumulative_length.fill_(17)
+            second.keys.copy_(first.keys)
+            second.values.copy_(first.values)
+            second.cumulative_length.copy_(first.cumulative_length)
+        original.reset()
+        self.assertTrue(chat.clear_static_attention_cache(optimized))
+        for first, second in zip(original.layers, optimized.layers, strict=True):
+            self.assertTrue(torch.equal(first.keys, second.keys))
+            self.assertTrue(torch.equal(first.values, second.values))
+            self.assertTrue(torch.equal(first.cumulative_length, second.cumulative_length))
+
+    def test_small_or_uninitialized_cache_uses_transformers_reset(self):
+        small = self.make_cache()
+        self.assertFalse(chat.clear_static_attention_cache(small))
+        uninitialized = StaticCache(config=self.config, max_cache_len=1024)
+        self.assertFalse(chat.clear_static_attention_cache(uninitialized))
+
 
 if __name__ == '__main__':
     unittest.main()

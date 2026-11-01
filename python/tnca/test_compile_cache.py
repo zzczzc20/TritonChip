@@ -37,6 +37,23 @@ class CacheNamespaceTests(unittest.TestCase):
         self.assertNotEqual(first, key({'TNCA_PROFILE': 'dp'}, {'torch': '2'}))
         self.assertNotEqual(first, key({'TNCA_PROFILE': 'dp'}, options={'tile': 32}))
 
+    def test_runtime_cache_reset_and_test_edits_preserve_compiled_graphs(self):
+        base = {'TNCA_PROFILE': 'dp'}
+        self.assertEqual(cache.namespace('source', base, {}, {}),
+                         cache.namespace('source', dict(base, TNCA_DEVICE_ZERO='1'), {}, {}))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'compiler.py').write_text('compiler')
+            (root / 'test_compiler.py').write_text('first')
+            (root / 'tests').mkdir()
+            (root / 'tests' / 'helper.py').write_text('first')
+            before = cache.source_fingerprint({'tnca': root})
+            (root / 'test_compiler.py').write_text('changed')
+            (root / 'tests' / 'helper.py').write_text('changed')
+            self.assertEqual(before, cache.source_fingerprint({'tnca': root}))
+            (root / 'compiler.py').write_text('changed')
+            self.assertNotEqual(before, cache.source_fingerprint({'tnca': root}))
+
     def test_untuned_cache_survives_a_runtime_image_path_change(self):
         def key(env):
             return cache.namespace('source', env, {'torch': '1'}, {'tile': 16})

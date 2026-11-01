@@ -14,7 +14,7 @@ import platform
 # Execution-only settings cannot alter a compiled graph and often contain
 # per-run paths. Keep every other TNCA setting, including unknown future knobs.
 _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_DIR',
-                           'TNCA_SUBMIT',
+                           'TNCA_SUBMIT', 'TNCA_DEVICE_ZERO',
                            'TNCA_DEADLINE', 'TNCA_HOST_TIMEOUT'})
 # These select a runtime device or its measured clock. The ordinary compiler
 # does not use them, but autotuning observes the device and therefore must
@@ -40,7 +40,15 @@ def source_fingerprint(trees, files=None):
         if not root.is_dir():
             raise FileNotFoundError(f'compile cache source tree missing: {root}')
         for path in sorted(root.rglob('*')):
-            if path.is_file() and path.suffix in _SOURCE_SUFFIXES and '__pycache__' not in path.parts:
+            relative = path.relative_to(root)
+            # Tests cannot change compiler semantics. Including them makes a
+            # new test or a test-only edit invalidate every persistent graph,
+            # forcing minutes of avoidable recompilation for a user prompt.
+            test_file = (label in ('tnca', 'tnca_cc') and
+                         (path.name.startswith('test_') or path.name.endswith('_test.py')
+                          or 'tests' in relative.parts))
+            if (path.is_file() and path.suffix in _SOURCE_SUFFIXES
+                    and '__pycache__' not in path.parts and not test_file):
                 name = f'{label}/{path.relative_to(root).as_posix()}'
                 digest.update(name.encode() + b'\0')
                 digest.update(hashlib.sha256(path.read_bytes()).digest())

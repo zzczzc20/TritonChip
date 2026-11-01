@@ -1098,3 +1098,11 @@ matched all 248320 logits bitwise against the earlier timed TLM run of the
 same candidate. This confirms equivalence for that one recorded input and
 setting; it does not establish numerical equality to CPU, timing, or board
 quality. The untimed baseline and IEEE variants remain pending.
+
+The [completed three-route untimed TLM comparison](q35_untimed_all_tlm_20261101.tgz)
+matched the unmodified timed baseline bitwise over all 248320 logits for this
+prompt. Precision casts with b32 and default division selected `Hello`, while
+the same settings with IEEE division selected `I`; their respective relative
+L2 differences from CPU were 0.0671156868 and 0.0729162544. These are
+whole-prefill first-token diagnostics, not full-answer or board passes; the
+baseline's untimed/timed equality is evidence for this input only.

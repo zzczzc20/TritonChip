@@ -3260,6 +3260,7 @@ class TTIRImporter:
         items = [(s0, j) for s0 in range(0, k, step) for j in range(nchunks)]
         pending = {}
         a_tile = None
+        all_a_rows_equal = True
         for idx, (s0, j) in enumerate(items):
             rc = s0 // vlen
             if idx not in pending:
@@ -3272,6 +3273,7 @@ class TTIRImporter:
                 repeated_rows = (self._equal_a_stage_enabled()
                                  and step <= 64 and 64 % step == 0
                                  and all(a_parts[rc + c].equal_rows for c in range(step // vlen)))
+                all_a_rows_equal = all_a_rows_equal and repeated_rows
                 if repeated_rows:
                     b.comment('X8 A staging: proven equal rows share a packed register')
                 staged_rows = 64 // step if repeated_rows else vlen
@@ -3297,15 +3299,21 @@ class TTIRImporter:
             b_win, tok = pending.pop(idx)
             b.barrier_wait(tok)
             self._mma_into(accs[j], a_tile, Tile('window', b_win, step, vlen, ae))
+        same_output_rows = all_a_rows_equal and _os.environ.get('TNCA_X8_EQUAL_OUTPUT', '0') == '1'
         for j, acc in enumerate(accs):
-            off = self._take_scratch(vlen * vlen * 4)
+            off = self._take_scratch((1 if same_output_rows else vlen) * vlen * 4)
             addr = b.sbini('add', scratch, off)
-            for i in range(vlen):
+            for i in range(1 if same_output_rows else vlen):
                 b.store(addr if i == 0 else b.sbini('add', addr, 4 * vlen * i),
                         b.acc_read(acc, b.const(i)), size='w')
             b.fence()
             rid = ('register-chunk', op.get_result(0).id(), j) if n > vlen else op.get_result(0).id()
-            self._tiles[rid] = Tile('spilled', off, vlen, vlen, 'f32')
+            if same_output_rows:
+                self._tiles[rid] = Tile('lazy', lambda r, off=off: b.load(
+                    b.sbini('add', scratch, off), dtype='f32', size='w'),
+                    vlen, vlen, 'f32', equal_rows=True)
+            else:
+                self._tiles[rid] = Tile('spilled', off, vlen, vlen, 'f32')
         self._swapped_dots = getattr(self, '_swapped_dots', 0) + 1
         self._x8_dots = getattr(self, '_x8_dots', 0) + 1
         return True

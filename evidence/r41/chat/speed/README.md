@@ -701,3 +701,9 @@ unmerged and not board-qualified.
 A [broadcast-row follow-up](x8_equal_output_proof_v6_20261101.tgz) also
 matched the exact reference in four cases, but generated identical control and
 candidate assembly throughout; it does not prove the optimized path.
+
+A [one-layer Qwen3.5 profile attempt](x8_equal_output_q35_l1_failed_20261101.tgz)
+failed on both routes during cache/mask setup because that reduced model has
+no full-attention layer; its comparison also failed after both processes exited.
+It provides no model performance result. The four-layer comparison remains
+running, and a separate one-layer VL comparison was started.

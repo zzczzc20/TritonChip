@@ -598,6 +598,26 @@ class _ModuleView:
         return self._resident.code_size
 
 
+def _forget_resident(module):
+    """Remove every alias of an unloaded physical code allocation."""
+    for alias, resident in list(_loaded.items()):
+        if resident is module:
+            del _loaded[alias]
+            _module_views.pop(alias, None)
+    for lookup in (_loaded_by_artifact, _loaded_by_executable):
+        for alias, resident_key in list(lookup.items()):
+            if resident_key not in _loaded:
+                del lookup[alias]
+
+
+def _resident_for(key):
+    module = _loaded.get(key)
+    if module is not None and not getattr(module, 'alive', True):
+        _forget_resident(module)
+        return None
+    return module
+
+
 def _load(session, path):
     """The module for `path` in this session, loading it if needed.
 
@@ -621,17 +641,17 @@ def _load(session, path):
     trace_key = (session.id, session.epoch, executable or digest or path)
     if trace is not None:
         trace.request(session, trace_key, _loaded, _executable_digest)
-    m = _loaded.get(key)
+    m = _resident_for(key)
     if m is None:
         resident_key = _loaded_by_artifact.get(artifact_key)
-        m = _loaded.get(resident_key)
+        m = _resident_for(resident_key)
         if m is not None:
             _loaded[key] = m
             if resident_key in _module_views:
                 _module_views[key] = _module_views[resident_key]
     if m is None and executable_key is not None:
         resident_key = _loaded_by_executable.get(executable_key)
-        m = _loaded.get(resident_key)
+        m = _resident_for(resident_key)
         if m is not None:
             manifest = _verified_alias_manifest(path, executable)
             _loaded[key] = m
@@ -662,16 +682,7 @@ def _load(session, path):
             if old is None:
                 continue
             session.unload(old)
-            for alias, module in list(_loaded.items()):
-                if module is old:
-                    del _loaded[alias]
-                    _module_views.pop(alias, None)
-            for alias, resident_key in list(_loaded_by_artifact.items()):
-                if resident_key not in _loaded:
-                    del _loaded_by_artifact[alias]
-            for alias, resident_key in list(_loaded_by_executable.items()):
-                if resident_key not in _loaded:
-                    del _loaded_by_executable[alias]
+            _forget_resident(old)
             global evicted
             evicted += 1
             try:

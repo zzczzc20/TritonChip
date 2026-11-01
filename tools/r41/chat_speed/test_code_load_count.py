@@ -34,6 +34,26 @@ class FakeSession:
 
 
 class CodeLoadTests(unittest.TestCase):
+    def test_releasing_a_view_releases_one_allocation_and_invalidates_views(self):
+        import threading
+        from tnca.runtime import Session
+        session = object.__new__(Session)
+        session._lock = threading.RLock()
+        session.closed = session.poisoned = False
+        session.epoch = 7
+        session._active_events = {}
+        session._code = mock.Mock()
+        resident = types.SimpleNamespace(epoch=7, alive=True, code_addr=64,
+                                         code_size=128, params=[], name='kernel')
+        session._modules = [resident]
+        first = driver._ModuleView(resident, 'first', {'identity': {'kernel_name': 'kernel'}})
+        second = driver._ModuleView(resident, 'second', {'identity': {'kernel_name': 'kernel'}})
+        self.assertTrue(session.unload(first))
+        self.assertFalse(first.alive)
+        self.assertFalse(second.alive)
+        self.assertFalse(session.unload(second))
+        session._code.release.assert_called_once_with(64, 128)
+
     def test_replaced_artifact_at_same_path_does_not_reuse_old_code(self):
         from contextlib import ExitStack
         from tnca import artifact
@@ -103,6 +123,32 @@ class CodeLoadTests(unittest.TestCase):
             self.assertEqual((driver.loaded, driver.evicted), (2, 1))
             driver._load(session, str(b))
             self.assertEqual(driver.loaded, 3)
+
+    def test_explicitly_unloaded_module_does_not_remain_a_cache_hit(self):
+        from contextlib import ExitStack
+        from tnca import artifact
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable',
+                         '_module_views', '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                stack.enter_context(mock.patch.object(driver, name, {}))
+            stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+            stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+            manifest = dict(identity=dict(kernel_name='matmul', source_hash='source'),
+                            code=dict(segments=[dict(name='text', sha256='same')]),
+                            parameters=dict(signature=['x']), resources={}, execution={})
+            stack.enter_context(mock.patch.object(artifact, 'read_header', return_value=(manifest, 0)))
+            stack.enter_context(mock.patch.object(artifact, 'load', return_value=(manifest, {'text': b'same'})))
+            first, alias = [Path(directory) / name for name in ('first', 'alias')]
+            first.write_text('first'); alias.write_text('alias')
+            session = FakeSession()
+            resident = driver._load(session, str(first))[1]
+            old_view = driver._load(session, str(alias))[1]
+            session.unload(resident)
+            replacement = driver._load(session, str(alias))[1]
+            self.assertFalse(old_view.alive)
+            self.assertTrue(replacement.alive)
+            self.assertIsNot(replacement, resident)
+            self.assertEqual(driver.loaded, 2)
 
     def test_a_corrupt_equivalent_candidate_never_uses_resident_code(self):
         from contextlib import ExitStack

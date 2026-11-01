@@ -689,6 +689,10 @@ class Session:
         unfinished; the module may not be submitted afterwards."""
         self._check_usable()
         with self._lock:
+            # Equivalent artifacts can expose distinct provenance views of
+            # one resident allocation. Releasing a view releases that one
+            # allocation and invalidates every view of it.
+            module = getattr(module, '_resident', module)
             if module.epoch != self.epoch or not module.alive:
                 return False
             if self.unfinished:

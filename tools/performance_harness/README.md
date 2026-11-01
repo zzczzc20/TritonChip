@@ -302,6 +302,19 @@ service ceilings; `g4_rtl_report.py` and `g4_g2_cuts_report.py` are the G4 per-e
 `--model q35 --sample ...`. The CPU W8A8 route is a teacher-forced reference, never a device fallback; `--layers`
 is a reduced-depth integration proof only. Quality: `tools/models/chat_quality.py` (registered check
 `spec/r41/chat/quality-v1.json`). Use `~/flux-venv` on GB10 for TLM chat runs (it has `transformers`).
+For the author's 2026-11-01 content/first-token rule, use `spec/r41/chat/quality-author-20261101.json`;
+generate its CPU reference first. Old reference records without first-token logits can prove an exact
+first-token match, but a different first token is unverified unless the CPU top-five/near-tie data exists.
+The report retains the old containment score and records user-visible wall time after stdout flush.
+With `--warm-repeat --script spec/r41/chat/script-text.txt --script-checks
+spec/r41/chat/script-author-20261101.json`, quality, a bitwise warm repeat and the scripted conversation
+run in one model session. The warm repeat is same-process, not proof of a fresh-process cache hit.
+`tools/r41/chat_delivery/consolidated_plan.py` prepares the two manifests from the registered quality
+templates and complete CPU references. After the 17:50 UTC freeze, regenerate the plan with the full
+`--frozen-commit` equal to fetched `origin/r41`; install its overlay in a fresh source copy. The
+`run_consolidated.py` runner checks that source, image, clock, 15-minute idle period and deadline before
+starting either model. It does not program or reset the card. A failed part requires a separately
+registered targeted retry, at most once.
 Checkpoint fetch scripts: `fetch_qwen_fp8.py`, `fetch_qwen35_text.py`, `fetch_flux2_klein.py`.
 
 ## Tool catalog
@@ -640,7 +653,7 @@ No-board TLM A/B scripts for chat launch overhead.
 | `tools/r41/chat_speed/bench_code_cache_dp.py` | Synthetic code-cache pressure replay plus exact DP compute, no board. | `evidence/r41/chat/speed/README.md` | one-off |
 | `tools/r41/chat_speed/bench_hoisted_fp8.py` | Compare official fused FP8 with exact separately quantised FP8 on DP TLM. | none found | one-off |
 | `tools/r41/chat_speed/bench_runtime_events.py` | Runtime-history A/B: standard Torch matmul on DP TLM, no board. | none found | one-off |
-| `tools/r41/chat_speed/compare_argument_upload_tlm.py` | Compare argument-upload reuse and exact results from paired DP TLM runs. | `evidence/r41/chat/speed/README.md` | one-off |
+| `tools/r41/chat_delivery/followup_cpu_reference.py` | Reconstruct a recorded two-turn conversation and score its follow-up with a CPU reference. | `evidence/r41/chat/speed/README.md` | one-off |
 | `tools/r41/chat_speed/compare_model_cache_tlm.py` | Compare profiled model logits, code, transfers and launch metrics between DP TLM runs. | `evidence/r41/chat/speed/README.md` | one-off |
 | `tools/r41/chat_speed/queue_event_board.py` | Run the event-index board comparison after the priority chat stage passes. | none found | one-off |
 | `tools/r41/chat_speed/queue_activation_board.py` | Queue the gated activation-staging board session after prior tests pass. | none found | care |
@@ -751,6 +764,16 @@ Tests are listed by glob. Whether a test needs torch or a built model is not sta
 | `tools/models/test_*.py` | Chat driver, device feedback, FP8 checkpoint loader, Q35 pilot | care |
 | `tools/r41/chat_delivery/record_visible_baseline.py` | Derive labelled lower-bound user-visible wall rates from recorded board results | care |
 | `tools/r41/chat_delivery/rescore_q35_near_tie.py` | Rescore recorded Q35 answers under the registered near-tie rule | care |
+| `tools/r41/chat_delivery/deadline_baseline_queue.py` | Queue the two deadline baselines with guarded shared-card handoff | care |
+| `tools/r41/chat_delivery/test_deadline_baseline_queue.py` | Test shared-card handoff without using the board | care |
+| `tools/r41/chat_delivery/rescore_deadline_quality.py` | Rescore recorded quality with complete CPU first-token evidence | care |
+| `tools/r41/chat_delivery/test_rescore_deadline_quality.py` | Test rescoring and missing no-fallback evidence | care |
+| `tools/r41/chat_delivery/consolidated_plan.py` | Prepare the two registered single-session campaign manifests without running the board | care |
+| `tools/r41/chat_delivery/test_consolidated_plan.py` | Test campaign manifests and reference binding | care |
+| `tools/r41/chat_delivery/run_consolidated.py` | Run a frozen campaign with guarded idle, image and deadline checks | care |
+| `tools/r41/chat_delivery/test_run_consolidated.py` | Test frozen-source and campaign deadline guards without the board | care |
+| `tools/r41/chat_delivery/eos_bound.py` | Derive an ideal EOS-stop bound from recorded chat timings | care |
+| `tools/r41/chat_delivery/test_eos_bound.py` | Test EOS-bound accounting and incomplete data rejection | care |
 | `tools/r41/chat_speed/queue_equal_output_board.py` | Gate and queue an opt-in equal-output board session | care |
 <!-- END catalog -->
 

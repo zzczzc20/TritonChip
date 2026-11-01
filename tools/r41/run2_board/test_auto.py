@@ -136,6 +136,48 @@ class HbmReviewTests(unittest.TestCase):
 
 
 class StageTests(unittest.TestCase):
+    def test_explicit_extended_budget_preserves_three_hour_default(self):
+        import json
+        import sys
+        from unittest.mock import patch
+        folder = Path(__file__).parent
+        sys.path.insert(0, str(folder))
+        sys.modules.setdefault('auto', auto)
+        spec = importlib.util.spec_from_file_location('run2_stage_budget', folder/'stage.py')
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)/'root'
+            root.mkdir()
+            manifest = root/'manifest.json'
+            manifest.write_text(json.dumps({'id': 'smoke', 'board': {
+                'image_sha256': auto.IMAGE_SHA, 'image_uuid': auto.IMAGE_UUID,
+                'clock_hz': 100_000_000, 'profile': mod.PROFILE,
+                'backend_args': {'image_profile': mod.PROFILE, 'core_count': 3,
+                    'memory_ports': 3, 'hbm_bytes': 8 << 30, 'hbm_dma': True}}}))
+            row = {'id': 'smoke', 'manifest': 'manifest.json', 'sha256': mod.sha(manifest),
+                   'budget_seconds': 20700, 'checks': [{'path': 'batch.json',
+                    'field': ['status'], 'equals': 'complete'}]}
+            registration = {'experiments': [row]}
+            with patch.object(mod.subprocess, 'run') as run:
+                with self.assertRaisesRegex(ValueError, 'budget exceeds'):
+                    mod.run(root, Path(tmp)/'default', '/usr/bin/python3', registration)
+                run.assert_not_called()
+            registration['max_experiment_seconds'] = 21601
+            with self.assertRaisesRegex(ValueError, 'at most six hours'):
+                mod.run(root, Path(tmp)/'too-long', '/usr/bin/python3', registration)
+            registration['max_experiment_seconds'] = 20700
+            out = Path(tmp)/'authorized'
+            def fake_run(command, **kwargs):
+                target = out/'smoke'
+                target.mkdir()
+                (target/'report.json').write_text(json.dumps({'status': 'completed-experiment'}))
+                (target/'batch.json').write_text(json.dumps({'status': 'complete'}))
+            with patch.object(mod.subprocess, 'run', side_effect=fake_run) as run:
+                mod.run(root, out, '/usr/bin/python3', registration)
+                self.assertIn('20700', run.call_args.args[0])
+            self.assertEqual(json.loads((out/'stage.json').read_text())['status'], 'pass')
+
     def test_failed_result_never_publishes_a_passing_stage(self):
         import json
         import sys

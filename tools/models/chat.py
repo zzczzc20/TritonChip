@@ -13,13 +13,15 @@ uses transformers' modules and FP8Linear's official Hub route on TNCA. The CPU
 W8A8 route is an independent teacher-forced reference, never a device fallback.
 --layers is only a reduced-depth integration proof; full depth is the default.
 """
+import time
+_MODULE_STARTED = time.perf_counter()
+
 import argparse
 import gc
 import json
 import os
 from pathlib import Path
 import sys
-import time
 import traceback
 
 HERE = Path(__file__).resolve().parent
@@ -51,6 +53,11 @@ def validate_sampling(temperature, top_k, top_p):
         raise ValueError("top-k must be nonnegative")
     if not 0 < top_p <= 1:
         raise ValueError("top-p must be in (0, 1]")
+
+
+def validate_device_sampling(device, sample):
+    if device == 'tnca' and sample:
+        raise ValueError('TNCA device-side sampling is not implemented; use greedy decoding')
 
 
 def select_token(logits, sample, temperature, top_k, top_p, generator):
@@ -141,35 +148,26 @@ def run_with_code_capture(fn):
 
 
 def code_store_counters():
-    """Modules the runtime has unloaded to make room in the device code store, and modules loaded now.
-    A working set above the code store is served by least-recently-used reloads (a cost, not a fallback)."""
+    """Process-wide successful code loads, evictions and current resident aliases."""
     try:
         from tnca.triton_backend import driver
     except ImportError:
         return None
-    return dict(evicted_total=int(driver.evicted), loaded_modules=len(driver._loaded))
+    sessions = list(driver._Sessions.open.values())
+    return dict(loaded_total=int(driver.loaded), evicted_total=int(driver.evicted),
+                loaded_modules=len(driver._loaded),
+                code_words_written=sum(getattr(getattr(s, 'dev', None), 'code_words_written', 0) for s in sessions),
+                code_words_skipped=sum(getattr(getattr(s, 'dev', None), 'code_words_skipped', 0) for s in sessions))
 
 
 def _counter_delta(before, after):
     if before is None or after is None:
         return None
-    return dict(evicted=after["evicted_total"] - before["evicted_total"], loaded_modules=after["loaded_modules"])
-
-
-def argument_upload_counters():
-    """Host bookkeeping only; it does not read device memory."""
-    try:
-        from tnca.torch_device import MEMORY
-    except ImportError:
-        return None
-    return MEMORY.session().argument_upload_stats
-
-
-def argument_upload_delta(before, after):
-    if before is None or after is None:
-        return None
-    return dict(enabled=after['enabled'], **{key: after[key] - before[key] for key in
-                ('uploads_avoided', 'bytes_avoided', 'uploads_attempted', 'bytes_attempted')})
+    return dict(loads=after["loaded_total"] - before["loaded_total"],
+                evicted=after["evicted_total"] - before["evicted_total"], loaded_modules=after["loaded_modules"],
+                code_bytes_written=8 * (after.get('code_words_written', 0) - before.get('code_words_written', 0)),
+                code_bytes_unchanged=8 * (after.get('code_words_skipped', 0) - before.get('code_words_skipped', 0)),
+                scope='process-wide successful code loads and evictions')
 
 
 def image_rows(grid_thw):
@@ -347,8 +345,7 @@ def _vision_to(vision, dev):
 def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_tokens, per_image,
                           vision_calls, sample, temperature, top_k, top_p, seed, forced_tokens):
     """Run greedy feedback on the device; copy outputs only after the decode loop."""
-    if sample:
-        raise ValueError("TNCA device-side sampling is not implemented; use greedy decoding")
+    validate_device_sampling('tnca', sample)
     from torch._dynamo.utils import counters
     from tnca.inductor import host_fallbacks
 
@@ -373,6 +370,9 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     rows, device_logits, device_candidates = [], [], []
     code_by_role = getattr(session, "_generation_code", {})
     session._generation_code = code_by_role
+    from tnca.code_residency import RepeatedCodeTrace
+    if not hasattr(session, '_decode_code_trace'):
+        session._decode_code_trace = RepeatedCodeTrace()
     def capture(role, fn):
         result, code = run_with_code_capture(fn)
         code_by_role.setdefault(role, []).extend(code)
@@ -400,7 +400,6 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         for index in range(new_tokens):
             graph_start = counters["stats"]["unique_graphs"]
             code = code_store_counters()
-            argument_uploads = argument_upload_counters()
             started = time.perf_counter()
             with transfer_meter(True) as meter:
                 if index == 0:
@@ -414,7 +413,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 else:
                     # A forced token is a test input; otherwise feedback remains on TNCA.
                     feed = teacher[index - 1] if index - 1 < len(teacher) else current
-                    logits = capture("decode", lambda: session.step_device(feed))
+                    with session._decode_code_trace.step():
+                        logits = capture("decode", lambda: session.step_device(feed))
                 current = capture("selection", lambda: session.greedy(logits.reshape(-1)))
                 meter.mem.synchronize()
             if logits.device.type != "tnca" or current.device.type != "tnca":
@@ -426,7 +426,6 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                        input_tokens=prompt_tokens - reused if index == 0 else 1,
                        seconds=elapsed, new_graphs=counters["stats"]["unique_graphs"] - graph_start,
                        code_store=_counter_delta(code, code_store_counters()), logits_download_bytes=0,
-                       argument_uploads=argument_upload_delta(argument_uploads, argument_upload_counters()),
                        transfers_inside_step=meter.summary())
             if index == 0:
                 row.update(calls=calls, reused_cached_tokens=reused)
@@ -440,6 +439,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         candidates = [int(t.cpu().item()) for t in device_candidates]
         logits_rows = [t.cpu() for t in device_logits]
         retrieval.mem.synchronize()
+    retrieval_seconds = time.perf_counter() - retrieval_start
     tokens = [forced_tokens[i] if forced_tokens and i < len(forced_tokens) else t
               for i, t in enumerate(candidates)]
     if not forced_tokens:
@@ -511,8 +511,11 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   decode_warmup=warmup,
                   steady_decode_host_reads_detected=bool(read_during_decode),
                   model_tensor_placements=placements, output_retrieval=retrieval.summary(),
-                  output_retrieval_seconds=time.perf_counter() - retrieval_start,
-                  executed_generation_steps=len(rows), returned_tokens=len(tokens), device_target=device_target())
+                  output_retrieval_seconds=retrieval_seconds,
+                  executed_generation_steps=len(rows), returned_tokens=len(tokens),
+                  eos_overrun_steps=len(rows) - len(tokens) if not forced_tokens else None,
+                  eos_stop_observed=(len(rows) == len(tokens) if not forced_tokens and tokens and tokens[-1] in eos
+                                     else None), device_target=device_target())
     report["theoretical_core_port_bound"] = dict(
         bytes_per_second=CORE_PORT_BYTES_PER_SECOND, source=CORE_PORT_SOURCE,
         decode_weight_bytes=weight_bytes,
@@ -650,7 +653,7 @@ def emit_user_report(report, prompt_started):
     sys.stdout.write(prefix + ("," if data else "") + "\n  \"generated_text\": " + json.dumps(generated))
     sys.stdout.flush()
     finalize_user_visible_metrics(timing, time.perf_counter() - prompt_started,
-                                  "CLI main entry through generated-text stdout flush")
+                                  "module entry through generated-text stdout flush; excludes interpreter startup")
     sys.stdout.write(",\n  \"user_visible_timing\": " + json.dumps(timing, indent=2) + "\n}\n")
     sys.stdout.flush()
 
@@ -669,6 +672,7 @@ def save_report(report, out):
 
 class ChatApplication:
     def __init__(self, args):
+        validate_device_sampling(args.device, args.sample)
         self.args = args
         self.spec = spec_of(args.model)
         if args.device == "tnca":
@@ -812,7 +816,7 @@ class ChatApplication:
                     interpretation="same-session repeat after an intervening conversation; bitwise equality of "
                                    "logits and candidate tokens is required")
 
-    def repl(self, lines=None, transcript=None):
+    def repl(self, lines=None, transcript=None, on_turn=None):
         """Interactive chat; with `lines` (script mode) the same commands come from a file, every turn's report
         is appended to `transcript`, and a failed turn stops the script."""
         print("Qwen TNCA chat. /help lists commands; /quit exits.")
@@ -839,6 +843,11 @@ class ChatApplication:
                 self.args.sample = False
                 continue
             if line.startswith("/sample"):
+                try:
+                    validate_device_sampling(self.args.device, True)
+                except ValueError as error:
+                    print('error>', error, flush=True)
+                    continue
                 fields = line.split()
                 self.args.sample = True
                 if len(fields) > 1:
@@ -862,6 +871,8 @@ class ChatApplication:
                 print("error>", error, "(use /reset)", flush=True)
                 if transcript is not None:
                     transcript.append(dict(user=line, status="refused", error=str(error)))
+                    if on_turn is not None:
+                        on_turn(transcript[-1])
                     return False
                 continue
             images = []
@@ -869,6 +880,8 @@ class ChatApplication:
                 transcript.append(dict(user=line, assistant=report["generated_text"], report=public_report(report)))
             if report["status"] != "pass":
                 print("error> generation failed or lacks device evidence:", report["status"], flush=True)
+                if on_turn is not None and transcript is not None:
+                    on_turn(transcript[-1])
                 return False
             print("assistant>", report["generated_text"], flush=True)
             finalize_user_visible_metrics(report["user_visible_timing"], time.perf_counter() - prompt_started,
@@ -884,6 +897,8 @@ class ChatApplication:
                                 "returned_token_ids_per_second": visible["returned_token_ids_per_second"],
                                 "non_special_token_ids_per_second": visible["non_special_token_ids_per_second"]}),
                   flush=True)
+            if on_turn is not None and transcript is not None:
+                on_turn(transcript[-1])
         return True
 
 
@@ -942,7 +957,7 @@ def parser():
 
 
 def main(argv=None):
-    prompt_started = time.perf_counter()
+    prompt_started = _MODULE_STARTED if __name__ == '__main__' else time.perf_counter()
     args = parser().parse_args(argv)
     validate_sampling(args.temperature, args.top_k, args.top_p)
     if args.check_tokens < 0 or args.check_tokens > args.new_tokens:

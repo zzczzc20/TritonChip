@@ -14,7 +14,7 @@ import platform
 # Execution-only settings cannot alter a compiled graph and often contain
 # per-run paths. Keep every other TNCA setting, including unknown future knobs.
 _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_DIR',
-                           'TNCA_ARG_UPLOAD_CACHE', 'TNCA_CODE_CACHE_POLICY', 'TNCA_SUBMIT',
+                           'TNCA_SUBMIT',
                            'TNCA_DEADLINE', 'TNCA_HOST_TIMEOUT'})
 _SOURCE_SUFFIXES = frozenset({'.py', '.c', '.cpp', '.cc', '.h', '.hpp', '.td',
                               '.def', '.inc', '.cmake', '.json', '.toml', '.yaml', '.yml'})

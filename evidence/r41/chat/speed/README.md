@@ -1,5 +1,82 @@
 # R41 chat speed work
 
+## Author-rule scoring and wall timing
+
+The registered 2026-11-01 quality spec checks content and the CPU top-five or
+0.5-logit first-token rule, retaining the old containment score. A different
+first token without CPU logit evidence is unverified. The quality runner records
+wall time through output flush and model-load time on its first prompt. On GB10,
+24 CPU scoring, feedback and timing tests passed; an initial test import failed
+because it selected the older source tree. Both model CPU references completed,
+with first-token evidence for 7 VL and 6 Q35 turns. These are archived in
+`RAW_INDEX.md`. The catalog initially rejected one unlisted test; after adding
+it, 372 scripts were covered with zero stale entries. These are not board quality
+or speed claims.
+
+The two previously recorded Q35 multi-turn board attempts were independently
+[rescored](../q35_author_rescore_20261101.json) under the author rule: both
+turns pass content and first-token checks, with zero recorded decode reads and
+no captured CPU numerical fallback. Their original first-turn containment
+failures remain in the record. For each second turn the CPU reference's prior
+assistant text differs from the board conversation, a limitation recorded in
+the rescore. A separate [CPU follow-up](../q35_followup_cpu_20261101.json)
+reconstructed the segmented attempt's board first-response tokens: the CPU
+and board both selected token 59605 and the reconstructed input has the
+recorded 55-token length. The old board input IDs were not retained, so their
+bitwise identity with the reconstruction cannot be proven. These were
+reduced prompt sets, so the overall five-prompt verdict remains unverified.
+
+The consolidated flow also completed on both full CPU reference models: all
+registered prompts ran, the same-session warm repeat matched logits bitwise,
+and the three scripted answers met their content checks. The first VL attempt
+failed because its isolated copy lacked the image; its corrected retry and the
+failure are both indexed in `RAW_INDEX.md`. These CPU sessions do not establish
+board quality or a board speed gain.
+
+The deadline baseline's first full-checkpoint VL fact prompt on the loaded
+corrected image (`ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3`, 100 MHz) returned
+`Paris` and passed the author rule. Its wrapper and placement checks reported
+no host numerical fallback, and its 11 decode steps recorded zero host reads.
+The separate CPU-reference rescore agrees for this prompt; the remaining five
+prompts make the session verdict unverified. Prompt entry
+to output flush was 986.941526 s, including 586.815429 s warmup,
+123.922706 s prefill, 248.259355 s decode and 0.071660 s retrieval. It returned
+two token IDs including EOS (0.00202646 IDs/s), one non-special token
+(0.00101323 tokens/s), after 12 generation steps. This timing starts after the
+model was loaded, so it does not include process/model startup. The in-progress
+snapshot and separate CPU-reference rescore are indexed in `RAW_INDEX.md`;
+these are one prompt, not a complete session result.
+
+The next VL arithmetic prompt returned `42` and also passed the author rule;
+its 11 decode steps each recorded zero host reads. Its warm prompt-to-flush
+wall time was 370.443962 s: 123.594412 s prefill, 246.233496 s decode and
+0.073826 s retrieval. Three IDs including EOS were returned (0.00809839 IDs/s),
+two non-special tokens (0.00539893 tokens/s), after 12 generation steps.
+Different prompts and output lengths make this descriptive, not a cold/warm
+speedup comparison. A two-prompt snapshot is indexed in `RAW_INDEX.md`; the
+other four prompts remain unverified.
+
+Both deadline baseline attempts then timed out at their registered one-hour
+budgets; neither is a complete session. VL recorded five of six prompts,
+including both multi-turn responses, and Q35 recorded one of five prompts.
+Independent CPU-reference rescoring passes all recorded content and no-fallback
+checks, while marking each overall session unverified for missing prompts. Q35
+answered `Paris` on its first prompt in 2459.447795 s from prompt entry to
+output flush, with 1263.293939 s warmup, 665.885167 s prefill, 513.114506 s
+decode and 0.076426 s retrieval. Four IDs including EOS were returned
+(0.00162638 IDs/s), two non-special tokens (0.00081319 tokens/s), after 12
+generation steps. Its 11 decode steps recorded zero host reads. Both raw
+timeout reports and the separate rescoring are indexed in `RAW_INDEX.md`.
+
+At 100 MHz, wall time minus summed decode-device cycles is 19.0% for the VL
+fact prompt and 45.3% for the Q35 fact prompt. This residual includes transfers,
+waiting and possible counter overlap. Holding Q35 device cycles fixed, reaching
+a 30% residual fraction would require removing about 111.8 s of residual time
+across its 11 decode steps. An ideal free EOS decision would instead eliminate
+the recorded post-EOS decode work: 225.9 s for VL fact and 374.5 s for Q35
+fact. These are analytic bounds, not implemented or measured speedups; the
+calculator and input bindings are indexed in `RAW_INDEX.md`.
+
 The active-event runtime change and this candidate were developed outside the
 fixed board archive. Results below explicitly identify board measurements and
 uncalibrated DP SystemC/TLM comparisons.
@@ -773,10 +850,35 @@ The independent speed worktree adds a persistent Inductor graph cache keyed by
 TNCA source, graph, profile and target settings; cached wrappers remain subject
 to the numerical-fallback check. Prompt-to-output timing includes input
 preparation and the output flush, and reports returned IDs with and without
-special tokens. `TNCA_ARG_UPLOAD_CACHE=1` opts in to reusing input-only
-argument blocks, with invalidation on overlapping allocations and faults;
-`TNCA_CODE_CACHE_POLICY` selects the separately measured residency candidates.
-Both runtime optimizations remain opt-in.
+special tokens. The isolated argument-upload cache was cut from the delivery
+package: it avoided no uploads in the recorded VL two-decode-step and Q35
+one-decode-step comparisons, despite its pointwise microbenchmark result.
+The experimental code-residency policy was cut from the delivery package:
+the matched Qwen3.5 TLM run reduced code loads but increased device cycles,
+and no user-visible improvement has been established.
+The retained driver now counts successful code loads separately from resident
+aliases and evictions. A CPU mock reproduced a pre-existing `KeyError` when
+multiple evictions encountered an alias already removed by an earlier unload;
+skipping that stale alias fixed the test. The failure and corrected check are
+in [RAW_INDEX](../../RAW_INDEX.md); no board result is claimed.
+At a nominal 100 MHz, its 33,947,086 extra TLM cycles cost 0.339 seconds;
+under a no-overlap assumption, each of its 25 avoided loads would have to
+save over 13.6 ms to break even, before its own host bookkeeping. These are
+analytic TLM-based bounds, not measured board timings.
+
+The local batched delivery-test attempt could not import the rescoring test
+because the local Python has no PyTorch; that attempt failed. The same
+rescoring checks passed separately in the GB10 PyTorch environment. The other
+16 local delivery and cache-namespace checks passed.
+For the subsequent timing-boundary update, the first GB10 test attempt failed
+because its partial source overlay imported an older `chat_quality.py`.
+Copying the full model-tools source into the isolated test overlay fixed the
+import; the repeated 26 chat, timing and feedback CPU tests passed. Service
+records and the captured passing log are in [RAW_INDEX](../../RAW_INDEX.md).
+The frozen-source Git-archive preflight initially failed because its synthetic
+fixture had empty directories that Git does not preserve. The fixture was
+corrected; the frozen export and stage checks pass, and the reproduced
+failure and passing check are retained in [RAW_INDEX](../../RAW_INDEX.md).
 
 The off-board compiler-source snapshot passed 113/113 unchanged in the
 default-code audit and strict `make compiler` (170 compiler-unit tests and six
@@ -809,5 +911,40 @@ The reduced-depth model TLM comparator checks matching prompt, model, profile,
 launch structure and device code, complete bitwise logits, TNCA tensor
 placement, wrapper coverage and actual steady decode transfer counters. Four
 negative tests and both recorded baseline self-comparisons passed; these are
-validation of the comparator, not new model-speed measurements. The two
-argument-cache model comparisons remain pending.
+validation of the comparator, not new model-speed measurements. Both
+argument-cache model comparisons have completed. The one-layer
+VL comparison had zero mismatches for both 151,936-element logits, zero steady
+decode host reads and identical device code. Control → candidate prefill used
+28 → 28 launches, 23 → 23 code loads and 529853540 → 529934597 cycles;
+decode used 25 → 25 launches, 19 → 19 code loads and 489017348 → 475330348
+cycles. The candidate avoided **zero** argument uploads in either phase, so no
+upload benefit is established. These single DP TLM observations are not board
+speed, full-model quality or a causal cycle-speedup claim.
+
+The four-layer Q35 comparison also matched both 248,320-element logits bitwise
+and recorded zero steady-decode host reads. Control → candidate prefill used
+239 → 239 launches, 141 → 141 loads and 2206641939 → 2204901624 cycles;
+decode used 95 → 95 launches, 77 → 77 loads and 1344816549 → 1377079547
+cycles. The candidate avoided zero argument uploads in either phase. This is
+one decode step on reduced-depth TLM, not a board speedup or proof of the
+cache's behavior in later decode steps.
+
+An additional paired one-layer VL run covered two decode steps: all three
+logits tensors matched bitwise, both decode steps recorded zero host reads,
+and the upload cache avoided zero of 25 uploads in each decode step. Each
+route had 50 decode launches and 37 code loads. The reduced-depth Q35 pair
+was stopped without a completed report once the upload-cache candidate was
+cut from delivery; its partial logs and source remain in `RAW_INDEX.md`.
+It is descoped, not a pass or failure. These are uncalibrated TLM observations.
+
+An off-board CPU probe loaded 42 distinct VL TLM artifact files in 0.00654 s
+total; scaling their mean to 565 loads gives 0.0880 s. That estimate excludes
+device code uploads and is not a board measurement. Artifact parsing was not
+changed on this evidence.
+
+The first two reduced-depth model comparisons failed before model execution:
+`HF_HUB_OFFLINE=1` could not resolve finegrained-FP8 kernel version 4 from the
+local cache. The failures and source runner are retained in
+[RAW_INDEX](../../RAW_INDEX.md); retries use the same online loading setting as
+the recorded control. No model correctness or speed result is claimed for the
+failed attempts.

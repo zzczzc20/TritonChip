@@ -16,6 +16,12 @@ class MulticoreMMIOBackend(U50Backend):
     identity_magic = 0x0002_0000_544E_4341
     opcode_mask = 0xFF
     name = 'fpga-u280-multicore'
+    # tnca_multicore_mmio advances window_addr by 8 only on a successful
+    # response; U50Backend verifies each response before sending the next.
+    sequential_payload_window = True
+    # The v2 code RAM has no device write port. Keep only words confirmed
+    # through this exclusive host context; unchanged reload words need no MMIO.
+    code_payload_shadow = True
 
     def __init__(self, link, *, core_count=3, memory_ports=3,
                  hbm_dma=False, active_memory_ports=None, outstanding=None, **kwargs):

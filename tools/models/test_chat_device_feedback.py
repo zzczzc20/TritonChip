@@ -60,14 +60,14 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
-    def run_case(self, choices, forced=None, prefill_compiles_decode=False):
+    def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None):
         session = Session(choices, prefill_compiles_decode)
         processor = types.SimpleNamespace(batch_decode=lambda ids, **kw: [str(ids.tolist())])
         spec = types.SimpleNamespace(name='test', repo='test', revision='test')
         tnca = types.ModuleType('tnca')
         tnca.__path__ = []
         ind = types.ModuleType('tnca.inductor')
-        ind.host_fallbacks = lambda code: []
+        ind.host_fallbacks = fallback_hook or (lambda code: [])
         capture_count = 0
         def capture(fn):
             nonlocal capture_count
@@ -103,10 +103,23 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(report['executed_generation_steps'], 3)
         self.assertEqual(report['statistics']['generated_tokens'], 2)
         self.assertEqual(report['statistics']['executed_generation_steps'], 3)
+        self.assertEqual(report['eos_overrun_steps'], 1)
+        self.assertIs(report['eos_stop_observed'], False)
     def test_decode_compiled_during_prefill_is_accounted_for(self):
         _, report = self.run_case([1, 2], prefill_compiles_decode=True)
         self.assertTrue(report['compiled_wrapper_roles_covered'])
         self.assertEqual(report['status'], 'pass')
+
+    def test_retrieval_timing_excludes_post_retrieval_fallback_inspection(self):
+        clock = types.SimpleNamespace(now=0.0)
+        clock.perf_counter = lambda: clock.now
+        def inspect(_code):
+            clock.now += 10.0
+            return []
+        with mock.patch.object(chat, 'time', clock):
+            _, report = self.run_case([1, 2], fallback_hook=inspect)
+        self.assertGreater(clock.now, 0.0)
+        self.assertEqual(report['output_retrieval_seconds'], 0.0)
 
 
 class CodeCaptureTests(unittest.TestCase):

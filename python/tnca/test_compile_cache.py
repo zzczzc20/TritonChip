@@ -28,11 +28,10 @@ class CacheNamespaceTests(unittest.TestCase):
         def key(env, versions=None, options=None):
             return cache.namespace('source', env, versions or {'torch': '1'}, options or {'tile': 16})
         first = key({'TNCA_PROFILE': 'dp', 'TNCA_COMPILE_CACHE_DIR': '/a',
-                     'TNCA_TLM_OUT': '/run-a', 'TNCA_DUMP_DIR': '/dump-a',
-                     'TNCA_ARG_UPLOAD_CACHE': '1', 'TNCA_CODE_CACHE_POLICY': 'lfu-sqrt'})
+                     'TNCA_TLM_OUT': '/run-a', 'TNCA_DUMP_DIR': '/dump-a'})
         self.assertEqual(first, key({'TNCA_PROFILE': 'dp', 'TNCA_COMPILE_CACHE_DIR': '/b',
                                      'TNCA_TLM_OUT': '/run-b', 'TNCA_DUMP_DIR': '/dump-b',
-                                     'TNCA_ARG_UPLOAD_CACHE': '0', 'TNCA_SUBMIT': 'single'}))
+                                     'TNCA_SUBMIT': 'single'}))
         self.assertNotEqual(first, key({'TNCA_PROFILE': 'other'}))
         self.assertNotEqual(first, key({'TNCA_PROFILE': 'dp', 'TNCA_NEW_TARGET_KNOB': '1'}))
         self.assertNotEqual(first, key({'TNCA_PROFILE': 'dp'}, {'torch': '2'}))

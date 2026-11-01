@@ -4,6 +4,8 @@ This document follows `doc/engineering_discipline.md`. Every number below comes
 from an archived run and is labelled by domain: **board** (the U280 with the
 run-1 100 MHz image), **TLM** (the SystemC/TLM model, uncalibrated), **RTL**
 (Icarus simulation) or **CPU** (host-only reference or smoke runs).
+Archived run descriptions retain their original dates; the current delivery
+status is in the [R41 report](r41_report.md).
 
 `tools/models/chat.py` provides one-shot and interactive text chat with the pinned
 Qwen3-VL-2B-Instruct-FP8 and Qwen3.5-4B-FP8 checkpoints. It uses the official
@@ -20,17 +22,21 @@ Set `HF_HOME`, and use the Torch/Transformers environment already used by
 resolution was refused and that failure is preserved. The FPGA preparation uses
 the previously validated offline environment.
 
+For the current DP image, configure the board backend and loaded image first,
+then use its matching profile:
+
 ```sh
-TNCA_PROFILE=core-vrf-sync-v5 python tools/models/chat.py --model vl --device tnca \
+TNCA_PROFILE=core-vrf-sync-v5-x8-g2c4-dp python tools/models/chat.py --model vl --device tnca \
   --prompt "Hello. Introduce yourself briefly." --new-tokens 32 --bucket 256 \
   --out OUT
 ```
 
-Use `--model q35` for Qwen3.5-4B-FP8. `--sample --temperature 0.8 --top-k 40
---top-p 0.95 --seed 7` enables seeded sampling; omitting `--sample` selects
-greedy generation. Token selection, EOS handling and control flow run on the
-host. Model computation on TNCA uses `torch.compile(fullgraph=True)` and does
-not fall back to CPU numerical execution.
+Use `--model q35` for Qwen3.5-4B-FP8. TNCA supports greedy generation and
+selects and feeds back tokens on the device. `--sample` is supported by the CPU
+path; TNCA rejects it. The TNCA loop currently executes `--new-tokens` steps
+before retrieving results and trimming at EOS, so it may do extra decode work.
+Reports distinguish executed steps from returned tokens and record any host
+reads or numerical fallback.
 
 Interactive mode retains the loaded model and one generation session:
 
@@ -41,8 +47,8 @@ python tools/models/chat.py --model vl --device tnca --interactive
 The REPL commands are `/greedy`, `/sample TEMPERATURE [TOP_K TOP_P SEED]`,
 `/image PATH [PATH...]|none`, `/reset`, `/help` and `/quit`. `--script FILE`
 runs the same session from a file (one prompt or command per line) and writes
-every turn's report to `OUT/transcript.json`; this is how a chat is queued as a
-board step.
+every turn's report to `OUT/transcript.json`; sampling commands require the
+CPU path. This is also how a chat is queued as a board step.
 
 **Session.** The process creates the compiled prefill and decode stages and one
 static cache once, and every prompt reuses them. A new conversation resets the
@@ -50,18 +56,21 @@ cache in place (the same device tensors, zeroed). A follow-up turn whose
 rendered conversation text extends the cached transcript keeps the generated
 token IDs exactly as generated, tokenizes only the new template text, and
 prefills only the new tokens; otherwise the session resets and prefills the
-whole conversation. Qwen3.5's chat template drops the thinking block from
-earlier turns, so its follow-up turns take the reset path (CPU run
-`q35-full-repl.log`); Qwen3-VL text turns reuse the cache (21 cached tokens
-reused in `vl-full-repl.log` and `vl-script`). After the first two decode calls
-of a prompt, recompilation is refused.
+whole conversation. The TNCA path also resets the cache after a response
+trimmed at EOS because later fixed-length steps have already changed it.
+Graph and cache-reset counts are reported for each prompt.
 
-**Chunked prefill (optional).** `--prefill-chunk C` prefills text in chunks of
-C tokens and sends the remainder through the decode graph, so the number of
-compiled graphs no longer depends on prompt length. The default (0) prefills
-each prompt whole, which compiles one prefill graph per distinct prompt length.
-Image prompts are always prefilled whole, because an image's placeholder tokens
-must stay in one call.
+**Chunked prefill (optional).** `--prefill-chunk C` prefills text in blocks of
+up to C tokens; the final short block also uses prefill. The default (0)
+prefills each prompt whole. Image prompts are always prefilled whole, because
+an image's placeholder tokens must stay in one call.
+
+**Compiled graph cache.** Compiled TNCA graphs persist under
+`~/.cache/tnca/inductor` by default; set `TNCA_COMPILE_CACHE_DIR` to choose a
+different location. Cache entries are separated by source, profile, options
+and toolchain. The first run can still compile; a later matching run can reuse
+the artifacts. Cache hits and misses are reported, and no board speedup is
+claimed until it is measured.
 
 **Images.** `--image` is repeatable. The vision tower runs once per image, so
 each compiled call has exactly one static attention segment, and the per-image
@@ -97,10 +106,15 @@ after the result was seen; see `evidence/r41/hbm_bw/AUDIT.md`, R6.)
 
 ## Measurements and the memory-bandwidth ceiling
 
-Every report records actual wall time for prefill and each decode call, graph
-growth, host transfers inside each call, token IDs and output text. Decode
-seconds per token and tokens/s are derived from those logged step times. Model
-or RTL times are not physical-U280 measurements.
+Every report records prefill and per-decode wall time, host transfers, token IDs
+and output text. User-visible timing reports elapsed time through output flush,
+returned token rates with and without special IDs, and compilation, warmup and
+retrieval spans. One-shot timing begins at Python module entry and excludes
+interpreter startup; interactive timing begins when the prompt is entered.
+The per-step code-store counters include successful physical loads and
+evictions; resident aliases do not count as loads. Decode step rates count
+executed work, including work after EOS. Model or RTL times are not
+physical-U280 measurements.
 
 Decode rereads the language-model weights for each token. The existing core-port
 interface is 8 B/cycle per core at 100 MHz, or a theoretical aggregate 2.4 GB/s

@@ -11,6 +11,14 @@ import auto
 PROFILE = 'core-vrf-sync-v5-x8-g2c4-dp'
 
 
+def experiment_budget_limit(registration):
+    """Keep the three-hour default; an explicit registration may allow six."""
+    limit = registration.get('max_experiment_seconds', 10800)
+    if type(limit) is not int or not 0 < limit <= 21600:
+        raise ValueError('registered experiment limit must be an integer at most six hours')
+    return limit
+
+
 def check_coverage(root, rows, config):
     suite_path = root / config['suite']
     if sha(suite_path) != config['suite_sha256']:
@@ -47,6 +55,7 @@ def run(root, out, python, registration):
     # Preserve the virtualenv executable path: resolving its symlink escapes
     # the environment and silently loses its installed dependencies.
     root, out, python = Path(root).resolve(), Path(out).resolve(), Path(python).absolute()
+    budget_limit = experiment_budget_limit(registration)
     rows = registration.get('experiments')
     if not isinstance(rows, list) or not rows:
         raise ValueError('a stage must register at least one experiment')
@@ -81,8 +90,8 @@ def run(root, out, python, registration):
         if not row.get('checks'):
             raise ValueError('each experiment needs explicit result checks')
         if 'budget_seconds' in row and (type(row['budget_seconds']) not in (int, float)
-                or not math.isfinite(row['budget_seconds']) or not 0 < row['budget_seconds'] <= 10800):
-            raise ValueError('registered experiment budget must be at most three hours')
+                or not math.isfinite(row['budget_seconds']) or not 0 < row['budget_seconds'] <= budget_limit):
+            raise ValueError('registered experiment budget exceeds the stage limit')
     if registration.get('coverage'):
         check_coverage(root, rows, registration['coverage'])
     out.mkdir(parents=True, exist_ok=True)

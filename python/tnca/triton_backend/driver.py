@@ -41,12 +41,9 @@ one kernel.
 """
 import contextlib
 import json
-import math
 import os
 import tempfile
 import threading
-import weakref
-from collections import Counter
 import time
 
 from triton.backends.compiler import GPUTarget
@@ -474,7 +471,7 @@ class TNCALauncher:
 _loaded = {}
 _loaded_by_artifact = {}
 _artifact_hashes = {}
-_cache_frequency = weakref.WeakKeyDictionary()
+loaded = 0                   # successful physical code loads (process-wide)
 evicted = 0                  # modules unloaded to make code room (resident sessions)
 
 
@@ -498,25 +495,15 @@ def _load(session, path):
     tensors; replacing a session mid-graph invalidates common-clock spans.
     """
     from tnca.errors import BufferError as _BE
+    global loaded
     key = (session.id, session.epoch, path)
     digest = _artifact_sha256(path)
     artifact_key = (session.id, session.epoch, digest)
-    frequency = None
-    policy = os.environ.get('TNCA_CODE_CACHE_POLICY')
-    if policy in ('lfu', 'lfu-sqrt', 'lfu-fourth'):
-        state = _cache_frequency.setdefault(session, dict(epoch=session.epoch, calls=0, counts=Counter()))
-        if state['epoch'] != session.epoch:
-            state.update(epoch=session.epoch, calls=0, counts=Counter())
-        frequency = state['counts']
-        state['calls'] += 1
-        if state['calls'] >= 64:
-            # Age old hot artifacts every 64 lookups to adapt to a new phase.
-            for item in list(frequency):
-                frequency[item] //= 2
-                if not frequency[item]:
-                    del frequency[item]
-            state['calls'] = 0
-        frequency[(session.epoch, digest)] += 1
+    from tnca.code_residency import active as active_code_trace
+    trace = active_code_trace()
+    trace_key = (session.id, session.epoch, digest or path)
+    if trace is not None:
+        trace.request(session, trace_key, _loaded, _artifact_sha256)
     m = _loaded.get(key)
     if m is None:
         resident_key = _loaded_by_artifact.get(artifact_key)
@@ -528,6 +515,8 @@ def _load(session, path):
             if module is m:
                 _loaded[alias] = _loaded.pop(alias)
         _loaded_by_artifact[artifact_key] = key
+        if trace is not None:
+            trace.record(trace_key, m)
         return session, m
     try:
         m = session.load(path)
@@ -535,20 +524,12 @@ def _load(session, path):
         if 'overlaps the device heap' not in str(e):
             raise
         session.drain()
-        old_keys = [k for k in _loaded if k[:2] == (session.id, session.epoch)]
-        if frequency is not None:
-            def priority(k):
-                module = _loaded[k]
-                count = frequency[(session.epoch, _artifact_sha256(module.path))]
-                if policy == 'lfu-sqrt':
-                    return count / math.sqrt(module.code_size)
-                if policy == 'lfu-fourth':
-                    return count / math.sqrt(math.sqrt(module.code_size))
-                return count
-            old_keys.sort(key=priority)
+        old_keys = (trace.victims(session, _loaded, _artifact_sha256)
+                    if trace is not None else list(_loaded))
         for old_key in old_keys:
-            # Artifact aliases may already have been removed by an earlier
-            # iteration over the same module.
+            if old_key[0] != session.id or old_key[1] != session.epoch:
+                continue
+            # Unloading an earlier key removes every alias of that module.
             old = _loaded.get(old_key)
             if old is None:
                 continue
@@ -571,8 +552,11 @@ def _load(session, path):
             raise TNCALaunchError(
                 'the code region cannot hold this kernel even with every other module '
                 'unloaded (capacity-exceeded: code region)') from e
+    loaded += 1
     _loaded[key] = m
     _loaded_by_artifact[artifact_key] = key
+    if trace is not None:
+        trace.record(trace_key, m)
     return session, m
 
 

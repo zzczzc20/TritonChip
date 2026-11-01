@@ -1,0 +1,18 @@
+{
+  "schema": "tnca-chat-quality/1",
+  "id": "quality-author-20261101",
+  "registered_utc": "2026-11-01",
+  "source": "Author decision: evidence/r41/AUTHOR_DIRECTIVE_20261031.md, Qwen3.5 near-tie quality rule",
+  "scoring_rule": "author-20261101",
+  "procedure": "Greedy generation; each turn must satisfy its explicit content check and its first device token must be among the CPU reference's top five or within 0.5 of the CPU top logit. Report the old quality-v1 containment verdict alongside the new verdict. Missing first-token evidence is unverified, never a pass. Preserve previous results under their original rule.",
+  "new_tokens": 12,
+  "bucket": 256,
+  "prompts": [
+    {"id": "fact", "kind": "factual QA", "turns": ["What is the capital of France? Answer with one word."], "keywords": ["paris"], "content_checks": [{"all_terms": ["paris"]}]},
+    {"id": "arith", "kind": "arithmetic", "turns": ["What is 17 + 25? Answer with the number only."], "keywords": ["42"], "content_checks": [{"all_terms": ["42"]}]},
+    {"id": "reason", "kind": "reasoning", "turns": ["Tom is taller than Ann. Ann is taller than Bob. Who is the shortest? Answer with one name."], "keywords": ["bob"], "content_checks": [{"all_terms": ["bob"]}]},
+    {"id": "instruct", "kind": "instruction following", "turns": ["Reply with exactly the word OK in capital letters and nothing else."], "keywords": ["OK"], "content_checks": [{"all_terms": ["OK"]}]},
+    {"id": "multiturn", "kind": "multi-turn follow-up", "turns": ["My name is Alice. Please remember it and reply with one short sentence.", "What is my name? Answer with one word."], "keywords": ["alice"], "content_checks": [{"all_terms": ["alice"], "any_terms": ["remember", "remembered", "remembering", "noted", "acknowledged", "sure", "certainly", "okay", "yes", "of course", "got it"], "none_terms": ["cannot remember", "can't remember", "don't remember", "won't remember", "forgot", "forget"]}, {"all_terms": ["alice"]}]},
+    {"id": "image", "kind": "image description", "models": ["vl"], "images": ["spec/r41/chat/shapes.png"], "turns": ["Which shapes are in this image? Answer with a short list."], "keywords": ["circle", "triangle"], "content_checks": [{"all_terms": ["circle", "triangle"]}]}
+  ]
+}

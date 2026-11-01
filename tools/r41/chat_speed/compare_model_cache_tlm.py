@@ -34,14 +34,17 @@ def summarize(report, rows):
             macs += math.prod(activation['shape'][:-1]) * math.prod(weight['shape'])
             instructions += sum(value for name, value in row['counters'].items()
                                 if name.startswith('core_') and name.endswith('_instructions'))
-        step = next(step for step in report['steps'] if step['kind'] == kind)
+        steps = [(index, step) for index, step in enumerate(report['steps']) if step['kind'] == kind]
+        if not steps:
+            raise ValueError(f'{kind}: missing step report')
         result.append(dict(kind=kind, launches=len(launches),
                            device_cycles=sum(row['device_cycles'] for row in launches),
                            code_loads=sum(row['code_load_count'] for row in launches),
                            code_bytes=sum(row['code_upload_bytes'] for row in launches),
                            evictions=sum(row['evicted'] for row in launches),
-                           host_read_calls=step['transfers_inside_step']['host_read_calls'],
-                           argument_uploads=step.get('argument_uploads'), fp8_macs=macs,
+                           host_read_calls=sum(step['transfers_inside_step']['host_read_calls'] for _, step in steps),
+                           argument_uploads_by_step=[dict(step=step.get('step', index),
+                               counters=step.get('argument_uploads')) for index, step in steps], fp8_macs=macs,
                            fp8_instructions=instructions,
                            fp8_instructions_per_mac=instructions / macs if macs else None))
     return result

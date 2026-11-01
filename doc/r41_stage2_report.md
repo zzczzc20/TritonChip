@@ -1,5 +1,19 @@
 # R41 Stage 2 acceptance report
 
+**Current delivery status:** The existing Stage 1/2 verification failures
+remain unresolved and the PR reduction has not reached 80%. Historical pass
+counts below do not establish current acceptance or PR readiness.
+
+**Author-rule rescore, 2026-11-01:** Both previously recorded Qwen3.5
+multi-turn board attempts pass both turns under the new content and first-token
+rule; their original first-turn containment failures remain recorded. The
+second-turn CPU reference used a different prior assistant answer, and the
+four other prompts were not part of those attempts. A separate [CPU follow-up](../evidence/r41/chat/q35_followup_cpu_20261101.json)
+reconstructed the segmented attempt's first response and selected the same
+first token; the old board input IDs were not recorded. This is not complete
+chat acceptance. See the [side-by-side rescore](../evidence/r41/chat/q35_author_rescore_20261101.json)
+and [raw index](../evidence/r41/RAW_INDEX.md).
+
 **Author scope, 2026-10-31:** [the directive](../evidence/r41/AUTHOR_DIRECTIVE_20261031.md)
 makes the two full FP8 board chats and proof of no CPU numerical fallback and
 no steady-decode host tensor reads the closure focus. Q41/XL and other old-gate

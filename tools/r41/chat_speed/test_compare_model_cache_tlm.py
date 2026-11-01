@@ -68,6 +68,14 @@ class ModelComparisonTests(unittest.TestCase):
         result = gate.compare(self.control, self.candidate)
         self.assertIn('candidate: decode transfer counters are missing or nonzero', result['problems'])
 
+    def test_summary_preserves_later_decode_uploads(self):
+        report = json.loads(json.dumps(self.report))
+        report['steps'][1]['argument_uploads'] = {'uploads_avoided': 0}
+        report['steps'].append(dict(kind='decode', step=2, transfers_inside_step={'host_read_calls': 0},
+                                    argument_uploads={'uploads_avoided': 4}))
+        decode = gate.summarize(report, self.rows)[1]
+        self.assertEqual([row['counters']['uploads_avoided'] for row in decode['argument_uploads_by_step']], [0, 4])
+
 
 if __name__ == '__main__':
     unittest.main()

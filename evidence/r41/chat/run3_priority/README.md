@@ -930,3 +930,22 @@ values, with relative L2 4.57e-8. Final output difference remained
 38067/110592 (relative L2 0.00279098). These results identify multiple small
 operator differences and their BF16 impact in this isolated test; they do not
 yet identify the specific implementation defect or prove full-model causality.
+
+The deeper [convolution/delta comparison](q35_first_delta_20261031.tgz)
+found 56254/221184 differing convolution output values (relative L2 0.0025008),
+while QKV inputs were bitwise identical. However, adding these hooks changed
+the TLM first-layer output versus the previous two-layer probe in 62739/69120
+values (relative L2 0.0097398), so this is an instrumentation-dependent clue,
+not proof of the original graph's earliest divergence.
+
+The [rounding reconstruction and first precision-attempt failures](q35_gate_rounding_20261031.tgz)
+show the generated Inductor kernel converted the normalized BF16 intermediate
+to FP32 without its required round. Recomputing the captured TLM intermediate
+with that cast omitted reproduces 110592/110592 weighted outputs; honoring the
+BF16 cast gives 28575 mismatches. The first precision-wrapper attempts failed
+before a result because Triton was imported before the tree path was set. A
+[separately recorded retry](q35_precision_cast_retry_20261101.tgz) fixes import
+order, declares non-default `emulate_precision_casts=True`, and is running
+further checks. Its standalone gated-norm result has 1/110592 bit mismatch
+(relative L2 1.3869843e-6, max 3.0517578e-5), down from 38067; it is not
+bitwise exact, so this is not a passed exact gate or a board result.

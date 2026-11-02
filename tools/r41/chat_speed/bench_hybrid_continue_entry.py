@@ -17,9 +17,14 @@ def main():
     parser.add_argument('--layers', type=int, default=4)
     parser.add_argument('--prompt', required=True)
     parser.add_argument('--followup', default='What did I just ask?')
+    parser.add_argument('--context-words', type=int, default=0)
+    parser.add_argument('--warm-followup', action='store_true')
     args = parser.parse_args()
     if args.layers < 4:
         parser.error('Qwen3.5 needs a full-attention layer')
+    if not 0 <= args.context_words <= 200:
+        parser.error('context words must be between 0 and 200 for the 256-token bucket')
+    args.prompt = 'context ' * args.context_words + args.prompt
     sys.path.insert(0, str(args.tree / 'tools/models'))
     import chat
     import qwen_fp8_lib as library
@@ -51,7 +56,8 @@ def main():
     MEMORY.synchronize()
     os.environ['TNCA_DEVICE_EOS_GUARD'] = '1'
     reports = []
-    for mode in ('reset', 'retain'):
+    modes = ('warm-reset', 'reset', 'retain') if args.warm_followup else ('reset', 'retain')
+    for mode in modes:
         app.reset_conversation()
         app.session.reset()
         os.environ['TNCA_REUSE_GUARDED_HYBRID'] = '1' if mode == 'retain' else '0'
@@ -62,17 +68,20 @@ def main():
         if (first['status'] != 'pass' or not first['stopped_at_eos']
                 or not first['device_eos_guard']['enabled']):
             raise RuntimeError(f'{mode}: the guarded first turn did not reach diagnostic EOS')
-        chat.save_report(first, args.out / f'{mode}-first')
+        if mode != 'warm-reset':
+            chat.save_report(first, args.out / f'{mode}-first')
         chat_args.new_tokens = 2
         started = time.perf_counter()
         second = app.generate(args.followup, keep_history=True, prompt_started=started, retain_logits=True)
         print('assistant>', second['generated_text'], flush=True)
         chat.finalize_user_visible_metrics(second['user_visible_timing'], time.perf_counter() - started,
                                           'follow-up prompt through assistant stdout flush')
-        chat.save_report(second, args.out / f'{mode}-second')
+        if mode != 'warm-reset':
+            chat.save_report(second, args.out / f'{mode}-second')
         if second['status'] != 'pass':
             raise RuntimeError(f'{mode}: follow-up failed')
-        reports.append((first, second))
+        if mode != 'warm-reset':
+            reports.append((first, second))
         print(json.dumps({'mode': mode, 'first_cache': first['session']['cache_rewind'],
                           'followup_reused': second['steps'][0]['reused_cached_tokens'],
                           'followup_seconds': second['user_visible_timing']['prompt_to_return_seconds']}), flush=True)
@@ -103,11 +112,19 @@ def main():
                          followup_reused_tokens=second['steps'][0]['reused_cached_tokens'],
                          followup_timing=second['user_visible_timing']))
     passed = exact and tokens_equal and reads_zero and expected_modes and stopped_submitting
+    compilers = [row['followup_timing'].get('compiler') or {} for row in rows]
+    matched = (args.warm_followup and all(c.get('available') is True and
+               c.get('dynamo_compile_calls') == 0 and c.get('fx_graph_cache_misses') == 0
+               for c in compilers))
     result = dict(status='pass' if passed else 'fail',
                   scope='reduced four-layer Qwen3.5; artificial EOS, two conversational turns; not model quality',
                   logits_bitwise_equal=exact, tokens_equal=tokens_equal, no_fallback_and_zero_decode_reads=reads_zero,
                   diagnostic_eos_token=eos, expected_cache_paths=expected_modes,
-                  stopped_submitting_after_eos=stopped_submitting, rows=rows)
+                  stopped_submitting_after_eos=stopped_submitting, context_words=args.context_words,
+                  matched_warm=matched,
+                  matched_warm_wall_speedup=(rows[0]['followup_timing']['prompt_to_return_seconds'] /
+                                             rows[1]['followup_timing']['prompt_to_return_seconds']
+                                             if matched and passed else None), rows=rows)
     (args.out / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result), flush=True)
     if not passed:

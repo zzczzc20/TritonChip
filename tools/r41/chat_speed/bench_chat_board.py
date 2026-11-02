@@ -59,8 +59,14 @@ def model_command(args, root, out):
         return command + (['--group-suffix'] if args.static_group_suffix else []) + \
             (['--normal-chat-eos'] if args.static_normal_chat else [])
     if args.hybrid_eos_continuation:
-        return [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_hybrid_continue_entry.py'),
-                '--tree', str(root), '--layers', str(args.layers), '--prompt', args.prompt, '--out', str(out)]
+        command = [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_hybrid_continue_entry.py'),
+                   '--tree', str(root), '--layers', str(args.layers), '--prompt', args.prompt, '--out', str(out)]
+        words = getattr(args, 'hybrid_context_words', 0)
+        if words:
+            command.extend(['--context-words', str(words)])
+        if getattr(args, 'hybrid_warm_followup', False):
+            command.append('--warm-followup')
+        return command
     if args.device_eos_probe or args.early_eos_probe:
         return [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_eos_model_entry.py'),
                 '--tree', str(root), '--model', args.model, '--layers', str(args.layers),
@@ -83,6 +89,10 @@ def main():
                         help='compare guarded submissions with the device completion stop signal')
     parser.add_argument('--hybrid-eos-continuation', action='store_true',
                         help='compare hybrid cache reset and retention in one reduced-model session')
+    parser.add_argument('--hybrid-context-words', type=int, default=0,
+                        help='add repeated context to the reduced Qwen3.5 continuation')
+    parser.add_argument('--hybrid-warm-followup', action='store_true',
+                        help='warm both conversation shapes before the measured turns')
     parser.add_argument('--static-prefix-probe', action='store_true',
                         help='compare static-prefix reuse in a reduced edited conversation')
     parser.add_argument('--static-group-suffix', action='store_true',
@@ -108,6 +118,8 @@ def main():
     if args.hybrid_eos_continuation and (args.model != 'q35' or args.device_eos_probe or
                                          args.early_eos_probe or args.baseline_overlay_root):
         parser.error('hybrid continuation needs Qwen3.5, one overlay and no other probe')
+    if (args.hybrid_context_words or args.hybrid_warm_followup) and not args.hybrid_eos_continuation:
+        parser.error('hybrid warmup and context require the hybrid continuation probe')
     if args.device_eos_probe and args.early_eos_probe:
         parser.error('select only one EOS comparison')
     if (args.device_eos_probe or args.early_eos_probe) and args.baseline_overlay_root:

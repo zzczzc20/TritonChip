@@ -91,6 +91,18 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
+    def test_post_eos_accounting_counts_real_launches_without_claiming_tokens(self):
+        rows = [{'transfers_inside_step': {'launches': 4, 'device_cycles': 800}},
+                {'transfers_inside_step': {'launches': 5, 'device_cycles': 900}},
+                {'transfers_inside_step': {'launches': 3, 'device_cycles': 30}},
+                {'transfers_inside_step': {'launches': 3, 'device_cycles': 33}}]
+        self.assertEqual(chat.guarded_post_eos_stats(rows, 2, True),
+                         {'submitted_steps': 2, 'launches': 6, 'device_cycles': 63})
+        rows[-1]['transfers_inside_step']['device_cycles'] = None
+        self.assertIsNone(chat.guarded_post_eos_stats(rows, 2, True)['device_cycles'])
+        self.assertEqual(chat.guarded_post_eos_stats(rows, 4, False),
+                         {'submitted_steps': 0, 'launches': 0, 'device_cycles': 0})
+
     def test_device_eos_flag_reuse_resets_state_and_respects_epoch(self):
         session = types.SimpleNamespace(dev=torch.device('cpu'))
         hardware = types.SimpleNamespace(id=9, epoch=1)

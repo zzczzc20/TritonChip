@@ -115,6 +115,18 @@ def generation_stats(rows):
                 generation_seconds=sum(row["seconds"] for row in rows))
 
 
+def guarded_post_eos_stats(rows, returned_tokens, stopped_at_eos):
+    """Count submitted post-EOS work without calling skipped work generated tokens."""
+    if not stopped_at_eos:
+        return dict(submitted_steps=0, launches=0, device_cycles=0)
+    after = rows[returned_tokens:]
+    meters = [row.get('transfers_inside_step') or {} for row in after]
+    def total(key):
+        values = [meter.get(key) for meter in meters]
+        return sum(values) if all(value is not None for value in values) else None
+    return dict(submitted_steps=len(after), launches=total('launches'), device_cycles=total('device_cycles'))
+
+
 def make_inputs(spec, processor, messages):
     inputs = processor.apply_chat_template(messages, tokenize=True, add_generation_prompt=True,
                                            return_dict=True, return_tensors="pt", **spec.chat_kwargs)
@@ -1211,6 +1223,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   compiled_wrapper_required_roles=list(required_roles),
                   decode_warmup=warmup,
                   device_eos_guard=dict(enabled=stop_enabled, setup=stop_setup, observed_stop=observed_stop,
+                                        post_eos=(guarded_post_eos_stats(rows, len(tokens),
+                                            bool(tokens and tokens[-1] in eos)) if stop_enabled else None),
                                         scope='device skips post-EOS kernels; host still submits the planned steps'),
                   steady_decode_host_reads_detected=bool(read_during_decode),
                   model_tensor_placements=placements, output_retrieval=retrieval.summary(),

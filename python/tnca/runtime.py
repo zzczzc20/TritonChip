@@ -431,6 +431,22 @@ class _Allocator:
         return (addr >= self.next and not any(self.next < hi and end > lo
                                               for lo, hi in self.reserved))
 
+    def free_candidates(self, size, align=DEFAULT_ALIGN):
+        """First-fit and end-aligned positions from each free code interval."""
+        need = (size + align - 1) // align * align
+        candidates = []
+        for start, length in self.free_list:
+            first = (start + align - 1) // align * align
+            last = (start + length - need) // align * align
+            if first <= last:
+                candidates.append(first)
+                if last != first:
+                    candidates.append(last)
+        tail = (self.next + align - 1) // align * align
+        if self.can_alloc_at(size, tail, align):
+            candidates.append(tail)
+        return candidates
+
     def alloc_at(self, size, addr, align=DEFAULT_ALIGN):
         """Reserve a previously checked free address, or return None."""
         if not self.can_alloc_at(size, addr, align):
@@ -840,20 +856,48 @@ class Session:
         return failure.capture(self, event, outdir, note=note)
 
     def _known_code_address(self, code_hash, code):
-        """Return an exact still-resident code location, never a guessed hit."""
-        if not code_hash or not getattr(self.dev, 'code_payload_shadow', False):
+        """Prefer free code RAM that already holds the requested words.
+
+        The backend's shadow contains only successful device writes. A match
+        changes placement, never content: upload still checks every word and
+        writes all differences. Limit candidate locations to both ends of
+        free intervals plus the last exact location to bound host overhead.
+        """
+        if (not code_hash or os.environ.get('TNCA_CODE_REUSE', '1') != '1'
+                or not getattr(self.dev, 'code_payload_shadow', False)):
             return None
-        addr = self._code_address_hints.get(code_hash)
         shadow = getattr(self.dev, '_code_window_shadow', None)
         limit = getattr(self.dev, 'local_limit', None)
-        size = (len(code) + WORD - 1) // WORD * WORD
-        if (addr is None or not isinstance(shadow, dict) or limit is None
-                or addr + size > limit or not self._code.can_alloc_at(len(code), addr)):
+        if not isinstance(shadow, dict) or not shadow or limit is None:
             return None
-        for offset in range(0, len(code), WORD):
-            if shadow.get(addr + offset) != int.from_bytes(code[offset:offset + WORD], 'little'):
-                return None
-        return addr
+        candidates = self._code.free_candidates(len(code), align=64)
+        hint = self._code_address_hints.get(code_hash)
+        if hint is not None and self._code.can_alloc_at(len(code), hint, align=64):
+            candidates.append(hint)
+        candidates = list(dict.fromkeys(addr for addr in candidates
+                                        if addr + len(code) <= limit))
+        if len(candidates) < 2:
+            return None
+        padded = bytes(code) + b'\0' * (-len(code) % WORD)
+        words = tuple(value[0] for value in struct.iter_unpack('<Q', padded))
+        def score(addr):
+            return sum(shadow.get(addr + index * WORD) == word
+                       for index, word in enumerate(words))
+        first_score = score(candidates[0])
+        best, best_score = candidates[0], first_score
+        for addr in candidates[1:]:
+            matches = score(addr)
+            if matches > best_score:
+                best, best_score = addr, matches
+                if matches == len(words):
+                    break
+        # Favour first-fit unless the saved writes cover the search cost and
+        # the possibility that a different placement fragments the free list.
+        if best == hint and best_score == len(words):
+            return best
+        if best_score - first_score < max(128, len(words) // 8):
+            return None
+        return best
 
     def load(self, path):
         """Check an artifact against THIS device, then place its code."""

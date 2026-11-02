@@ -3,6 +3,7 @@ from collections import OrderedDict
 from types import SimpleNamespace
 from unittest import TestCase, main, mock
 import threading
+import random
 
 from tnca.runtime import Session, _Allocator
 
@@ -23,6 +24,51 @@ class CodeAddressReuseTests(TestCase):
         for block in ((64, 64), blocks[2], (256, 64)):
             allocator.release(*block)
         self.assertEqual((allocator.used, allocator.next, allocator.free_list), (0, 0, []))
+
+    def test_preferred_allocations_keep_live_ranges_disjoint(self):
+        rng = random.Random(412)
+        allocator = _Allocator(0, 8192, reserved=((2048, 2304), (6144, 6400)))
+        live = []
+        for _ in range(1000):
+            if live and rng.random() < 0.48:
+                allocator.release(*live.pop(rng.randrange(len(live))))
+            else:
+                size = rng.randrange(1, 500)
+                candidates = allocator.free_candidates(size)
+                if candidates:
+                    block = allocator.alloc_at(size, rng.choice(candidates))
+                    self.assertIsNotNone(block)
+                    start, length = block
+                    for other, nbytes in live:
+                        self.assertFalse(start < other + nbytes and other < start + length)
+                    for lo, hi in allocator.reserved:
+                        self.assertFalse(start < hi and lo < start + length)
+                    live.append(block)
+            self.assertEqual(allocator.used, sum(size for _, size in live))
+        rng.shuffle(live)
+        for block in live:
+            allocator.release(*block)
+        self.assertEqual((allocator.used, allocator.next, allocator.free_list), (0, 0, []))
+
+    def test_similar_code_selects_a_free_location_with_fewer_writes(self):
+        session = Session.__new__(Session)
+        session._code = _Allocator(0, 8192)
+        first, second, live = (session._code.alloc(2048) for _ in range(3))
+        session._code.release(*first)
+        session._code.release(*second)
+        session._code_address_hints = OrderedDict()
+        shadow = {}
+        for offset in range(0, 2048, 8):
+            shadow[offset] = 1
+            shadow[2048 + offset] = 2
+        session.dev = SimpleNamespace(code_payload_shadow=True, local_limit=8192,
+                                      _code_window_shadow=shadow)
+        code = (3).to_bytes(8, 'little') + (2).to_bytes(8, 'little') * 255
+        self.assertEqual(session._known_code_address('new-code', code), 2048)
+        placed = session._code.alloc_at(len(code), 2048)
+        self.assertEqual(placed, (2048, 2048))
+        self.assertFalse(session._code.can_alloc_at(2048, live[0]))
+        self.assertEqual(session._code.used, 4096)
 
     def test_free_exact_old_locations_avoid_uploading_unchanged_code(self):
         class Device:

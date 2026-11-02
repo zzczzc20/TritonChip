@@ -66,8 +66,9 @@ def main():
         chat_args.new_tokens = 2
         started = time.perf_counter()
         second = app.generate(args.followup, keep_history=True, prompt_started=started, retain_logits=True)
+        print('assistant>', second['generated_text'], flush=True)
         chat.finalize_user_visible_metrics(second['user_visible_timing'], time.perf_counter() - started,
-                                          'follow-up through reduced-model text')
+                                          'follow-up prompt through assistant stdout flush')
         chat.save_report(second, args.out / f'{mode}-second')
         if second['status'] != 'pass':
             raise RuntimeError(f'{mode}: follow-up failed')

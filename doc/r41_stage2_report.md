@@ -510,3 +510,32 @@ recorded.
 
 The rectified ledger is **38 passed, two failed, 47 not measured, seven blocked** (integrity passed); Stage 2 and R41 remain
 not accepted.
+
+## Consolidated FP8 chat campaign — 2026-11-01
+
+The registered run-2 board campaign finished on software commit `02d704f4`,
+image SHA-256 `791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09`,
+UUID `ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3`, at 100 MHz. VL passed all six
+quality prompts including the image prompt; Qwen3.5 passed all five under the
+author's registered near-tie rule. Both warm repeats and scripted chats passed.
+Quality turns recorded zero CPU numerical fallback and zero steady-decode host
+reads; parameters and buffers were recorded on `tnca:0`. Prior failures stay
+failed under their original rules. The author's descoped historical items
+remain descoped, not passed.
+
+The board's factual prompt timing below is module entry to flushed output,
+excluding interpreter startup. Rates count non-special returned token IDs;
+warm is the same-session repeated prompt, not an A/B speedup comparison.
+
+| Model | Cold wall / token/s | Warm wall / token/s | Cold warm-up | Cold prefill | Cold decode | Retrieval |
+|---|---|---|---|---|---|---|
+| Qwen3-VL-2B-FP8 | 980.808 s / 0.00101957 | 358.471 s / 0.00278963 | 571.262 s | 111.723 s | 242.703 s | 0.0718 s |
+| Qwen3.5-4B-FP8 | 2384.302 s / 0.00083882 | 668.736 s / 0.00299072 | 1229.749 s | 628.940 s | 357.186 s | 0.0762 s |
+
+The first VL and Qwen3.5 turns executed 10 and 8 decode steps after EOS,
+respectively: the frozen board version does not satisfy the EOS-stop speed
+requirement. The later speed branch has not been board-qualified; neither a
+speedup nor doubling is claimed. Existing Stage 1/2 check failures and the
+PR difference-reduction gap remain open. This chat result does not relabel
+those earlier checks. Raw result locations and digests are in
+[`RAW_INDEX.md`](../evidence/r41/RAW_INDEX.md).

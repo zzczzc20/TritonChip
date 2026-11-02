@@ -136,3 +136,21 @@ Status: **pending**. Historical failures and measured results remain unchanged.
 | Standalone Q35 script baseline | descoped by the author | [Interrupted record](../chat/run3_priority/author_batch_cancelled_final_20261101.tgz); script belongs in consolidated campaign. |
 | Q35 recorded answers, separate new-rule rescore | pass, segmented evidence | [Rescore](../chat/run3_priority/q35_author_neartie_rescore_20261101.json); original timeout and old-rule failure remain. |
 | Complete speed package and one board campaign | pending | [Author directive](../AUTHOR_DIRECTIVE_20261031.md). |
+
+
+## Consolidated board chat result — 2026-11-01
+
+The completed author-scoped campaign supplements the earlier rows; it does
+not erase their historical failures. Both models passed their full registered
+quality set, warm repeat and script, with no recorded CPU numerical fallback
+and zero steady-decode host reads on quality turns. The frozen board build
+executed extra steps after EOS, so speed closure remains open.
+
+| Model | Registered quality | User-visible cold / warm token/s |
+|---|---|---|
+| Qwen3-VL-2B-FP8 | 6/6 passed, image included | 0.00101957 / 0.00278963 |
+| Qwen3.5-4B-FP8 | 5/5 passed, author's near-tie rule | 0.00083882 / 0.00299072 |
+
+The factual-prompt measurements and limitations are in [the R41 report](../../../doc/r41_report.md);
+the raw board results and stage files remain at the paths in [RAW_INDEX](../RAW_INDEX.md).
+Older Stage 1/2 failures and the PR reduction gap remain open.

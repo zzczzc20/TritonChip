@@ -935,9 +935,12 @@ def next_static_prefix_state(cache, full, positions, reused, previous, chunk, *,
             or _static_attention_lengths(getattr(cache, 'layers', None), 0) is None):
         return None
     previous_length = len(previous['tokens']) if previous and previous['chunk'] == chunk else 0
+    reused_matches = (previous_length >= reused > 0 and
+                      full[:reused] == previous['tokens'][:reused] and
+                      torch.equal(positions[..., :reused], previous['positions'][..., :reused]))
     prior_matches = (previous_length and full[:previous_length] == previous['tokens']
                      and torch.equal(positions[..., :previous_length], previous['positions']))
-    if reused == 0 or (prior_matches and reused <= previous_length and reused % chunk == 0):
+    if reused == 0 or (reused_matches and reused % chunk == 0):
         length = len(full) // chunk * chunk
     elif prior_matches:
         length = min(previous_length, reused) // chunk * chunk

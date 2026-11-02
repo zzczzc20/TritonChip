@@ -82,6 +82,15 @@ class StaticAttentionContinuationTests(unittest.TestCase):
             for first_layer, second_layer in zip(reference.cache.layers, optimized.cache.layers, strict=True):
                 self.assertTrue(torch.equal(first_layer.keys, second_layer.keys))
                 self.assertTrue(torch.equal(first_layer.values, second_layer.values))
+            third = followup[:14] + [26, 27, 28, 29]
+            reference.reset()
+            expected, _, _ = reference.prefill_prompt({'input_ids': torch.tensor([third])}, None)
+            actual, _, reused = optimized.prefill_prompt({'input_ids': torch.tensor([third])}, None)
+            self.assertEqual(reused, 12)
+            self.assertTrue(torch.equal(expected, actual))
+            for first_layer, second_layer in zip(reference.cache.layers, optimized.cache.layers, strict=True):
+                self.assertTrue(torch.equal(first_layer.keys, second_layer.keys))
+                self.assertTrue(torch.equal(first_layer.values, second_layer.values))
 
     def continuation(self, prefix, emitted, speculative, suffix):
         clean, rewound = self.make_cache(), self.make_cache()

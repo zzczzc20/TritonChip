@@ -48,6 +48,18 @@ class ResidencyForecastTests(unittest.TestCase):
             self.trace._forecast(self.session, self.modules)
             self.assertEqual(simulate.call_count, 4)
 
+    def test_forecast_uses_loaded_identity_after_path_changes(self):
+        self.modules[self.a].path = 'replaced artifact path'
+        self.modules[self.a]._tnca_execution_identity = 'a'
+        loaded = {(5, 1, 'replaced artifact path', 'old-digest'): self.modules[self.a]}
+        digest = mock.Mock(side_effect=AssertionError('resident bytes should not be re-statted'))
+        with self.trace.step():
+            self.trace.request(self.session, self.a, loaded, digest)
+            self.assertIsNotNone(self.trace.decision)
+            self.trace.predict = True
+            self.assertEqual(self.trace.victims(self.session, loaded, digest), list(loaded))
+        digest.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

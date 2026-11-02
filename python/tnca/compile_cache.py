@@ -43,6 +43,8 @@ _UNTUNED_EQUIVALENT_SOURCE_DIGESTS = {
     'triton_backend/driver.py': {
         bytes.fromhex('d14df687b3e9f0774e80465aa5f49976ab67d0ad9c2cebe2b3d64934f8540bf8'):
             bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
+        bytes.fromhex('552e9688a02fe01f00bc92e76a45dd5866786eecc5e9538c8edf8553bc0bc677'):
+            bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
     },
 }
 

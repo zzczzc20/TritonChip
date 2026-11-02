@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare exact static-prefix reuse on a small edited-conversation workload."""
+"""Compare exact static-prefix reuse on small follow-up conversations."""
 import argparse
 import json
 import os
@@ -96,10 +96,12 @@ def main():
         second = app.generate(followup, keep_history=True, prompt_started=started, retain_logits=True)
         print('assistant>', second['generated_text'], flush=True)
         chat.finalize_user_visible_metrics(second['user_visible_timing'], time.perf_counter() - started,
-                                          'edited follow-up prompt through assistant stdout flush')
+                                          ('unedited follow-up prompt through assistant stdout flush'
+                                           if args.normal_chat_eos else
+                                           'edited follow-up prompt through assistant stdout flush'))
         chat.save_report(second, args.out / f'{mode}-second')
         if second['status'] != 'pass':
-            raise RuntimeError(f'{mode}: edited follow-up failed')
+            raise RuntimeError(f'{mode}: follow-up failed')
         reports.append((first, second))
         print(json.dumps({'mode': mode, 'reused': second['steps'][0]['reused_cached_tokens'],
                           'seconds': second['user_visible_timing']['prompt_to_return_seconds']}), flush=True)

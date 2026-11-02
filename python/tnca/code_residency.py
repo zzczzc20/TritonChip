@@ -20,6 +20,14 @@ def active():
     return getattr(_current, 'trace', None)
 
 
+def _resident_identity(module, digest):
+    # A module's executable identity belongs to the bytes that were loaded,
+    # not to whatever may later replace its pathname. It also avoids hundreds
+    # of file-stat calls when forecasting or sorting a decode's residents.
+    identity = getattr(module, '_tnca_execution_identity', None)
+    return identity if identity is not None else digest(module.path) or module.path
+
+
 class RepeatedCodeTrace:
     def __init__(self):
         self.previous = []
@@ -123,7 +131,7 @@ class RepeatedCodeTrace:
                 for cache_key, module in loaded.items():
                     if cache_key[:2] != session_key:
                         continue
-                    module_key = session_key + (digest(module.path) or module.path,)
+                    module_key = session_key + (_resident_identity(module, digest),)
                     modules[module_key] = module
                     modules.move_to_end(module_key)
                 try:
@@ -151,6 +159,6 @@ class RepeatedCodeTrace:
             return keys
         def score(key):
             module = loaded[key]
-            identity = (session.id, session.epoch, digest(module.path) or module.path)
+            identity = (session.id, session.epoch, _resident_identity(module, digest))
             return self._score(identity, module.code_size, self.position)
         return sorted(keys, key=score, reverse=True)

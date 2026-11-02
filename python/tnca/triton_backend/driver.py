@@ -812,6 +812,12 @@ def _load(session, path):
                 'the code region cannot hold this kernel even with every other module '
                 'unloaded (capacity-exceeded: code region)') from e
     loaded += 1
+    try:
+        # Retain the identity of the validated resident bytes even if their
+        # original pathname is subsequently atomically replaced.
+        m._tnca_execution_identity = executable or digest or path
+    except (AttributeError, TypeError):
+        pass  # Unusual immutable modules use the path-based fallback.
     _register_resident_alias(key, m)
     _bind_resident_lookup(m, 'artifact', artifact_key, key)
     if executable_key is not None:

@@ -463,6 +463,7 @@ class Session:
         full = ids[0].tolist()
         reused = len(self.cached)
         prior_static = getattr(self, '_static_prefix_state', None)
+        static_rewound = False
         if (per_image or full[:reused] != self.cached or reused >= len(full)
                 or getattr(self, '_cache_tokens', 0) != reused):
             # A Qwen chat template may rewrite an earlier assistant prefix
@@ -490,6 +491,7 @@ class Session:
                 if prefix and rewind_attention_cache(self.cache, prefix, dirty_length=reused):
                     self.cached, self._cache_tokens, reused = full[:prefix], prefix, prefix
                     self.last_position = positions[..., prefix - 1:prefix].clone()
+                    static_rewound = True
                 else:
                     if self.cached or getattr(self, '_cache_tokens', 0):
                         self.reset()
@@ -504,12 +506,15 @@ class Session:
             vision = _vision_to(vision, self.dev)
         rows, logits, at = [], None, reused
         segments = []
+        grouped_suffix = (static_rewound and self.chunk <= 8 and
+                          os.environ.get('TNCA_STATIC_SUFFIX_GROUP', '0') == '1')
         if vision is not None or not self.chunk:
             segments.append(("prefill", at, len(full)))
         else:
-            while len(full) - at >= self.chunk:
-                segments.append(("prefill", at, at + self.chunk))
-                at += self.chunk
+            segment_size = self.chunk * 2 if grouped_suffix else self.chunk
+            while len(full) - at >= segment_size:
+                segments.append(("prefill", at, at + segment_size))
+                at += segment_size
             if at < len(full):
                 segments.append(("prefill", at, len(full)))
         # A single checkpoint immediately before the last prefill segment
@@ -539,9 +544,15 @@ class Session:
         self._cache_tokens = len(full)
         self.last_position = positions[..., -1:]
         self._continuation_checkpoint = new_checkpoint
-        self._static_prefix_state = next_static_prefix_state(
-            self.cache, full, positions, reused, prior_static, self.chunk,
-            enabled=bool(getattr(self, '_capture_static_prefix', False) and not per_image))
+        if grouped_suffix:
+            # Until the larger segment is qualified, retain only the prefix
+            # known to have been computed in the original chunking scheme.
+            self._static_prefix_state = dict(tokens=full[:reused],
+                positions=positions[..., :reused].clone(), chunk=self.chunk)
+        else:
+            self._static_prefix_state = next_static_prefix_state(
+                self.cache, full, positions, reused, prior_static, self.chunk,
+                enabled=bool(getattr(self, '_capture_static_prefix', False) and not per_image))
         return logits, rows, reused
 
     def step(self, token):

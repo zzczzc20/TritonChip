@@ -51,6 +51,12 @@ class StaticAttentionContinuationTests(unittest.TestCase):
                           past_key_values=cache, use_cache=True).last_hidden_state
 
     def test_changed_conversation_reuses_only_exact_static_chunks(self):
+        self.exercise_static_prefix(group=False)
+
+    def test_grouped_static_suffix_matches_original_chunks(self):
+        self.exercise_static_prefix(group=True)
+
+    def exercise_static_prefix(self, *, group):
         def make_session(cache, capture):
             session = object.__new__(chat.Session)
             session.device, session.dev, session.cache, session.model = 'cpu', torch.device('cpu'), cache, self.model
@@ -68,7 +74,8 @@ class StaticAttentionContinuationTests(unittest.TestCase):
         followup = first[:10] + [20, 21, 22, 23, 24, 25]
         def positions(_model, inputs):
             return torch.arange(inputs['input_ids'].shape[1]).reshape(1, 1, -1).expand(4, 1, -1)
-        with torch.inference_mode(), mock.patch.object(chat.L, 'prefill_position_ids', side_effect=positions):
+        with torch.inference_mode(), mock.patch.object(chat.L, 'prefill_position_ids', side_effect=positions), \
+             mock.patch.dict('os.environ', {'TNCA_STATIC_SUFFIX_GROUP': '1' if group else '0'}):
             for session in (reference, optimized):
                 session.prefill_prompt({'input_ids': torch.tensor([first])}, None)
                 self.call(session.cache, [19], len(first))
@@ -86,7 +93,7 @@ class StaticAttentionContinuationTests(unittest.TestCase):
             reference.reset()
             expected, _, _ = reference.prefill_prompt({'input_ids': torch.tensor([third])}, None)
             actual, _, reused = optimized.prefill_prompt({'input_ids': torch.tensor([third])}, None)
-            self.assertEqual(reused, 12)
+            self.assertEqual(reused, 8 if group else 12)
             self.assertTrue(torch.equal(expected, actual))
             for first_layer, second_layer in zip(reference.cache.layers, optimized.cache.layers, strict=True):
                 self.assertTrue(torch.equal(first_layer.keys, second_layer.keys))

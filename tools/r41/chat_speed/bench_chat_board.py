@@ -54,8 +54,9 @@ def matched_warm_wall_speedup(rows, *, device_eos_probe, warm_cache):
 def model_command(args, root, out):
     """Build the selected model probe after its overlay and output are known."""
     if args.static_prefix_probe:
-        return [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_static_continue_entry.py'),
-                '--tree', str(root), '--layers', str(args.layers), '--out', str(out)]
+        command = [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_static_continue_entry.py'),
+                   '--tree', str(root), '--layers', str(args.layers), '--out', str(out)]
+        return command + (['--group-suffix'] if args.static_group_suffix else [])
     if args.hybrid_eos_continuation:
         return [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_hybrid_continue_entry.py'),
                 '--tree', str(root), '--layers', str(args.layers), '--prompt', args.prompt, '--out', str(out)]
@@ -83,6 +84,8 @@ def main():
                         help='compare hybrid cache reset and retention in one reduced-model session')
     parser.add_argument('--static-prefix-probe', action='store_true',
                         help='compare static-prefix reuse in a reduced edited conversation')
+    parser.add_argument('--static-group-suffix', action='store_true',
+                        help='also test a larger suffix prefill segment')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--python', type=Path, required=True)
     parser.add_argument('--model', choices=('vl', 'q35'), default='vl')
@@ -92,6 +95,8 @@ def main():
     args = parser.parse_args()
     if args.model == 'q35' and args.layers < 4:
         parser.error('Qwen3.5 needs at least four layers to include a full-attention cache')
+    if args.static_group_suffix and not args.static_prefix_probe:
+        parser.error('grouped suffix requires the static prefix probe')
     if args.static_prefix_probe and (args.model != 'vl' or args.hybrid_eos_continuation or
                                      args.device_eos_probe or args.early_eos_probe or args.baseline_overlay_root):
         parser.error('static prefix probe needs VL, one overlay and no other probe')
@@ -154,7 +159,8 @@ def main():
                          'TNCA_MMIO_DESCRIPTOR_CACHE', 'TNCA_CODE_REUSE',
                          'TNCA_DEFER_CACHE_RESET', 'TNCA_REUSE_FIRST_DECODE', 'TNCA_DEVICE_EOS_GUARD',
                          'TNCA_DEVICE_EOS_EARLY_STOP', 'TNCA_REUSE_GUARDED_HYBRID',
-                         'TNCA_HYBRID_PREFIX_CHECKPOINT', 'TNCA_STATIC_PREFIX_REWIND'):
+                         'TNCA_HYBRID_PREFIX_CHECKPOINT', 'TNCA_STATIC_PREFIX_REWIND',
+                         'TNCA_STATIC_SUFFIX_GROUP'):
                 run_env.pop(name, None)
             if mode == 'baseline-cold':
                 run_env.update(TNCA_REUSE_WARM_PREFILL='0', TNCA_REUSE_HYBRID_PREFILL='0',

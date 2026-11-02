@@ -16,7 +16,8 @@ class ComparisonScopeTest(unittest.TestCase):
     def test_model_command_selects_the_requested_probe(self):
         args = SimpleNamespace(python=Path('/venv/python'), model='q35', layers=4,
                                prompt='question', new_tokens=4, hybrid_eos_continuation=True,
-                               device_eos_probe=False, early_eos_probe=False, static_prefix_probe=False)
+                               device_eos_probe=False, early_eos_probe=False, static_prefix_probe=False,
+                               static_group_suffix=False)
         root, out = Path('/overlay'), Path('/results')
         command = model_command(args, root, out)
         self.assertEqual(command[2], '/overlay/tools/r41/chat_speed/bench_hybrid_continue_entry.py')

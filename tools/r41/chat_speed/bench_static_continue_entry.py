@@ -15,15 +15,16 @@ def main():
     parser.add_argument('--tree', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--layers', type=int, default=1)
+    parser.add_argument('--group-suffix', action='store_true')
     args = parser.parse_args()
     sys.path.insert(0, str(args.tree / 'tools/models'))
     import chat
 
     args.out.mkdir(parents=True, exist_ok=False)
-    prefix = 'context ' * 200
-    first_prompt = prefix + 'What is the capital of France?'
-    edited_prompt = prefix + 'What is the capital of Germany?'
-    followup = 'What did I ask?'
+    prefix = 'context ' * (221 if args.group_suffix else 200)
+    first_prompt = prefix + ('France' if args.group_suffix else 'What is the capital of France?')
+    edited_prompt = prefix + ('Germany' if args.group_suffix else 'What is the capital of Germany?')
+    followup = '?' + ' please' * 4 if args.group_suffix else 'What did I ask?'
     chat_args = chat.parser().parse_args([
         '--model', 'vl', '--device', 'tnca', '--tnca-tree', str(args.tree),
         '--layers', str(args.layers), '--prefill-chunk', '8', '--new-tokens', '2',
@@ -32,11 +33,21 @@ def main():
     warm = app.generate(first_prompt, retain_logits=False)
     if warm['status'] != 'pass':
         raise RuntimeError('reduced-model warmup failed')
+    if args.group_suffix:
+        # Warm the 16-token graph before either measured conversation.
+        app.session.reset()
+        app.session.chunk = 16
+        chat_args.new_tokens = 1
+        wider = app.generate(first_prompt, retain_logits=False)
+        app.session.chunk = 8
+        if wider['status'] != 'pass':
+            raise RuntimeError('grouped prefill warmup failed')
     reports = []
     for mode in ('reset', 'reuse'):
         app.reset_conversation()
         app.session.reset()
         os.environ['TNCA_STATIC_PREFIX_REWIND'] = '1' if mode == 'reuse' else '0'
+        os.environ['TNCA_STATIC_SUFFIX_GROUP'] = '1' if args.group_suffix and mode == 'reuse' else '0'
         chat_args.new_tokens = 1
         first = app.generate(first_prompt, keep_history=True, retain_logits=True)
         if first['status'] != 'pass':
@@ -69,8 +80,12 @@ def main():
                       turn['cpu_numerical_fallback'] is False for pair in reports for turn in pair)
     reused = [pair[1]['steps'][0]['reused_cached_tokens'] for pair in reports]
     correct_path = reused[0] == 0 and reused[1] > 0
+    grouped = any(call['tokens'] > 8 for call in reports[1][1]['steps'][0]['calls'])
+    if args.group_suffix:
+        correct_path = correct_path and grouped
     rows = [dict(mode=mode, first_tokens=first['generated_tokens'],
                  followup_tokens=second['generated_tokens'], followup_reused_tokens=second['steps'][0]['reused_cached_tokens'],
+                 followup_segments=[call['tokens'] for call in second['steps'][0]['calls']],
                  followup_timing=second['user_visible_timing'])
             for mode, (first, second) in zip(('reset', 'reuse'), reports, strict=True)]
     compilers = [row['followup_timing'].get('compiler') or {} for row in rows]
@@ -78,7 +93,9 @@ def main():
                   c.get('fx_graph_cache_misses') == 0 for c in compilers)
     passed = exact and tokens_equal and no_fallback and correct_path
     result = dict(status='pass' if passed else 'fail',
-                  scope='one-layer VL, edited prior prompt with 200 repeated context words; not full-model quality',
+                  scope=('reduced VL, edited prior prompt with 221 repeated context words and grouped suffix; not full-model quality'
+                         if args.group_suffix else
+                         'one-layer VL, edited prior prompt with 200 repeated context words; not full-model quality'),
                   logits_bitwise_equal=exact, tokens_equal=tokens_equal, no_fallback_and_zero_decode_reads=no_fallback,
                   expected_cache_paths=correct_path, matched_warm=matched,
                   matched_warm_wall_speedup=(rows[0]['followup_timing']['prompt_to_return_seconds'] /

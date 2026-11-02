@@ -91,6 +91,29 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
+    def test_device_eos_flag_reuse_resets_state_and_respects_epoch(self):
+        session = types.SimpleNamespace(dev=torch.device('cpu'))
+        hardware = types.SimpleNamespace(id=9, epoch=1)
+        latch = mock.Mock()
+        flag, identity, reused = chat.prepare_device_eos_flag(session, {0, 1}, hardware, latch)
+        self.assertFalse(reused)
+        self.assertEqual(latch.call_args.args[0].tolist(), [[2]])
+        self.assertEqual(flag.tolist(), [0])
+        session._device_eos_state = identity, flag
+        flag.fill_(1)
+        again, same_identity, reused = chat.prepare_device_eos_flag(session, {1, 0}, hardware, latch)
+        self.assertTrue(reused)
+        self.assertIs(again, flag)
+        self.assertEqual(again.tolist(), [0])
+        self.assertEqual(same_identity, identity)
+        self.assertEqual(latch.call_count, 1)
+        hardware.epoch += 1
+        replacement, new_identity, reused = chat.prepare_device_eos_flag(session, {0, 1}, hardware, latch)
+        self.assertFalse(reused)
+        self.assertIsNot(replacement, flag)
+        self.assertNotEqual(new_identity, identity)
+        self.assertEqual(latch.call_count, 2)
+
     def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None,
                  retain_logits=True, logit_limit=None, rewind_hook=None, queue=False, real_warmup=False,
                  prior_single=False, warmup_reads=0):

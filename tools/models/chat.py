@@ -613,6 +613,23 @@ def validate_queued_decode():
         raise ValueError('queued decode does not support host staging guards')
 
 
+def prepare_device_eos_flag(session, eos, hardware, latch):
+    """Reuse a sticky flag only for the same token set and device epoch."""
+    identity = (tuple(sorted(eos)), hardware.id, hardware.epoch)
+    previous = getattr(session, '_device_eos_state', None)
+    if previous is not None and previous[0] == identity:
+        flag = previous[1]
+        flag.zero_()
+        return flag, identity, True
+    sentinel = 0
+    while sentinel in eos:
+        sentinel += 1
+    flag = torch.zeros((1,), dtype=torch.long).to(session.dev)
+    dummy = torch.tensor([[sentinel]], dtype=torch.long).to(session.dev)
+    latch(dummy, flag, eos)
+    return flag, identity, False
+
+
 def clear_static_attention_cache(cache):
     """Batch complete standard KV clears before clearing length scalars.
 
@@ -929,22 +946,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         from tnca.torch_device.eos import latch_eos
         stop_started = time.perf_counter()
         hardware = MEMORY.session()
-        identity = (tuple(sorted(eos)), hardware.id, hardware.epoch)
-        previous = getattr(session, '_device_eos_state', None)
-        reuse_marker = previous is not None and previous[0] == identity
         with transfer_meter(True) as setup_meter:
-            if reuse_marker:
-                # The previous turn has drained; a single zero upload resets
-                # its sticky flag without recompiling or relaunching a dummy.
-                stop_flag = previous[1]
-                stop_flag.zero_()
-            else:
-                sentinel = 0
-                while sentinel in eos:
-                    sentinel += 1
-                stop_flag = torch.zeros((1,), dtype=torch.long).to(session.dev)
-                dummy = torch.tensor([[sentinel]], dtype=torch.long).to(session.dev)
-                latch_eos(dummy, stop_flag, eos)
+            stop_flag, identity, reuse_marker = prepare_device_eos_flag(session, eos, hardware, latch_eos)
             setup_meter.mem.synchronize()
         session._device_eos_state = (identity, stop_flag)
         flag_buffer, flag_offset = MEMORY.locate(storage_address(stop_flag))

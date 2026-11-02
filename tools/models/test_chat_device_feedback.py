@@ -91,6 +91,29 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
+    def test_optional_eos_setup_falls_back_only_before_device_submission(self):
+        from tnca.errors import CompileError
+        session = types.SimpleNamespace(dev=torch.device('cpu'))
+        hardware = types.SimpleNamespace(id=7, epoch=1, poisoned=False, latest_event=object())
+        error = CompileError('marker unavailable')
+        latch = mock.Mock(side_effect=error)
+        flag, identity, reused, reason = chat.prepare_optional_eos_flag(
+            session, {2}, hardware, latch, explicit=False)
+        self.assertIsNone(flag)
+        self.assertIsNone(identity)
+        self.assertFalse(reused)
+        self.assertIn('marker unavailable', reason)
+        with self.assertRaises(CompileError):
+            chat.prepare_optional_eos_flag(session, {2}, hardware, latch, explicit=True)
+        def submitted_then_failed(*args):
+            hardware.latest_event = object()
+            raise error
+        with self.assertRaises(CompileError):
+            chat.prepare_optional_eos_flag(session, {2}, hardware, submitted_then_failed, explicit=False)
+        hardware.poisoned = True
+        with self.assertRaises(CompileError):
+            chat.prepare_optional_eos_flag(session, {2}, hardware, latch, explicit=False)
+
     def test_interactive_rate_does_not_count_post_eos_submissions(self):
         report = {'device_eos_guard': {'enabled': True},
                   'statistics': {'prefill_seconds': 10, 'decode_steps': 11,

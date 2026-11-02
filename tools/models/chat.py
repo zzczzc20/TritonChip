@@ -678,6 +678,26 @@ def prepare_device_eos_flag(session, eos, hardware, latch):
     return flag, identity, False
 
 
+def prepare_optional_eos_flag(session, eos, hardware, latch, *, explicit):
+    """Disable automatic acceleration only before it submits device work.
+
+    An unavailable marker compiler or insufficient scratch memory must not
+    make ordinary device chat unusable. A submitted or poisoned device job,
+    however, is never hidden or retried as a successful inference.
+    """
+    from tnca.errors import BufferError as TncaBufferError, CompileError
+    previous = hardware.latest_event
+    try:
+        flag, identity, reused = prepare_device_eos_flag(session, eos, hardware, latch)
+    except (CompileError, TncaBufferError, ImportError) as error:
+        if explicit or hardware.poisoned or hardware.latest_event is not previous:
+            raise
+        session._device_eos_state = None
+        session._device_eos_flag_clean = False
+        return None, None, False, f'{type(error).__name__}: {str(error)[:240]}'
+    return flag, identity, reused, None
+
+
 def clear_static_attention_cache(cache):
     """Batch complete standard KV clears before clearing length scalars.
 
@@ -1002,16 +1022,29 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         # Compile the marker before the measured decode so its compiler may
         # inspect metadata without causing host reads inside a real step.
         from tnca.torch_device import MEMORY, storage_address
-        from tnca.torch_device.eos import latch_eos
         stop_started = time.perf_counter()
         hardware = MEMORY.session()
-        with transfer_meter(True) as setup_meter:
-            stop_flag, identity, reuse_marker = prepare_device_eos_flag(session, eos, hardware, latch_eos)
-            setup_meter.mem.synchronize()
-        session._device_eos_state = (identity, stop_flag)
-        flag_buffer, flag_offset = MEMORY.locate(storage_address(stop_flag))
-        stop_context = hardware.device_stop_guard(flag_buffer, flag_offset)
-        stop_setup = dict(seconds=None, transfers=setup_meter.summary(), marker_reused=reuse_marker)
+        explicit = os.environ.get('TNCA_DEVICE_EOS_GUARD') == '1'
+        try:
+            from tnca.torch_device.eos import latch_eos
+        except ImportError as error:
+            if explicit:
+                raise
+            stop_enabled = False
+            stop_disabled_reason = f'{type(error).__name__}: {str(error)[:240]}'
+        else:
+            with transfer_meter(True) as setup_meter:
+                stop_flag, identity, reuse_marker, reason = prepare_optional_eos_flag(
+                    session, eos, hardware, latch_eos, explicit=explicit)
+                setup_meter.mem.synchronize()
+            if stop_flag is None:
+                stop_enabled = False
+                stop_disabled_reason = reason
+            else:
+                session._device_eos_state = (identity, stop_flag)
+                flag_buffer, flag_offset = MEMORY.locate(storage_address(stop_flag))
+                stop_context = hardware.device_stop_guard(flag_buffer, flag_offset)
+                stop_setup = dict(seconds=None, transfers=setup_meter.summary(), marker_reused=reuse_marker)
 
     old_recompile = torch._dynamo.config.error_on_recompile
     session.prompts += 1

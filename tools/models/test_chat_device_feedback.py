@@ -91,6 +91,17 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
+    def test_completion_probe_defaults_only_to_the_tested_board_profile(self):
+        board = {'TNCA_BACKEND': 'fpga-u280-multicore', 'TNCA_PROFILE': 'core-vrf-sync-v5-x8-g2c4-dp'}
+        self.assertTrue(chat.use_device_eos_completion_probe(board, guard_enabled=True, queue_steps=False))
+        self.assertFalse(chat.use_device_eos_completion_probe(board, guard_enabled=True, queue_steps=True))
+        self.assertFalse(chat.use_device_eos_completion_probe(board, guard_enabled=False, queue_steps=False))
+        self.assertFalse(chat.use_device_eos_completion_probe({}, guard_enabled=True, queue_steps=False))
+        self.assertFalse(chat.use_device_eos_completion_probe(dict(board, TNCA_DEVICE_EOS_EARLY_STOP='0'),
+                                                               guard_enabled=True, queue_steps=False))
+        self.assertTrue(chat.use_device_eos_completion_probe({'TNCA_DEVICE_EOS_EARLY_STOP': '1'},
+                                                              guard_enabled=True, queue_steps=False))
+
     def test_optional_eos_setup_falls_back_only_before_device_submission(self):
         from tnca.errors import CompileError
         session = types.SimpleNamespace(dev=torch.device('cpu'))

@@ -692,6 +692,19 @@ def use_device_eos_guard(environ, new_tokens, forced_tokens, eos):
     return compatible
 
 
+def use_device_eos_completion_probe(environ, *, guard_enabled, queue_steps):
+    """Use the board-measured stop signal on the supported FPGA profile."""
+    requested = environ.get('TNCA_DEVICE_EOS_EARLY_STOP')
+    if requested not in (None, '0', '1'):
+        raise ValueError('TNCA_DEVICE_EOS_EARLY_STOP must be 0 or 1')
+    if not guard_enabled or queue_steps or requested == '0':
+        return False
+    if requested == '1':
+        return True
+    return (environ.get('TNCA_BACKEND') == 'fpga-u280-multicore'
+            and environ.get('TNCA_PROFILE') == 'core-vrf-sync-v5-x8-g2c4-dp')
+
+
 def prepare_device_eos_flag(session, eos, hardware, latch):
     """Reuse a sticky flag only for the same token set and device epoch."""
     identity = (tuple(sorted(eos)), hardware.id, hardware.epoch)
@@ -1038,9 +1051,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         validate_queued_decode()
     stop_enabled = use_device_eos_guard(os.environ, new_tokens, forced_tokens, eos)
     stop_disabled_reason = None
-    probe_request = os.environ.get('TNCA_DEVICE_EOS_EARLY_STOP', '0')
-    if probe_request not in ('0', '1'):
-        raise ValueError('TNCA_DEVICE_EOS_EARLY_STOP must be 0 or 1')
+    probe_request = use_device_eos_completion_probe(os.environ, guard_enabled=stop_enabled,
+                                                   queue_steps=queue_steps)
     probe_module, probe_calibration, probe_setup_seconds = None, None, 0.0
     probe_signalled, probe_cycles = False, []
     if stop_enabled:
@@ -1056,7 +1068,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 raise
             stop_enabled = False
             stop_disabled_reason = str(error)
-        if stop_enabled and probe_request == '1' and not queue_steps:
+        if stop_enabled and probe_request:
             # Reserve the tiny known-duration probe before generated code
             # fills the code store. Its ordinary, unguarded launch calibrates
             # the hardware completion counter without reading tensor data.
@@ -1411,7 +1423,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   decode_warmup=warmup,
                   device_eos_guard=dict(enabled=stop_enabled, disabled_reason=stop_disabled_reason,
                                         setup=stop_setup, observed_stop=observed_stop,
-                                        completion_probe=dict(requested=probe_request == '1',
+                                        completion_probe=dict(requested=probe_request,
                                             enabled=bool(stop_enabled and stop_flag is not None and probe_module is not None),
                                             calibration_cycles=probe_calibration,
                                             calibration_seconds=probe_setup_seconds,

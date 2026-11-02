@@ -8,6 +8,7 @@ import sys
 import time
 
 import torch
+from metrics import device_only
 
 
 def main():
@@ -92,8 +93,7 @@ def main():
                 for a, b in zip(reports[0], reports[1], strict=True))
     tokens_equal = all(a['generated_tokens'] == b['generated_tokens']
                        for a, b in zip(reports[0], reports[1], strict=True))
-    reads_zero = all(not turn['steady_decode_host_reads_detected'] and
-                     turn['cpu_numerical_fallback'] is False for pair in reports for turn in pair)
+    reads_zero = all(device_only(turn) for pair in reports for turn in pair)
     reused = reports[1][1]['steps'][0]['reused_cached_tokens']
     expected_modes = (reports[0][0]['session']['cache_rewind'] == 'full-reset-deferred' and
                       reports[1][0]['session']['cache_rewind'] == 'hybrid-prefix-retained-after-device-stop' and
@@ -117,7 +117,7 @@ def main():
                c.get('dynamo_compile_calls') == 0 and c.get('fx_graph_cache_misses') == 0
                for c in compilers))
     result = dict(status='pass' if passed else 'fail',
-                  scope='reduced four-layer Qwen3.5; artificial EOS, two conversational turns; not model quality',
+                  scope='reduced four-layer Qwen3.5; artificial EOS, chunked prefill; not model quality or target',
                   logits_bitwise_equal=exact, tokens_equal=tokens_equal, no_fallback_and_zero_decode_reads=reads_zero,
                   diagnostic_eos_token=eos, expected_cache_paths=expected_modes,
                   stopped_submitting_after_eos=stopped_submitting, context_words=args.context_words,

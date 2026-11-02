@@ -8,6 +8,7 @@ import sys
 import time
 
 import torch
+from metrics import device_only
 
 
 def main():
@@ -112,8 +113,7 @@ def main():
                 for a, b in zip(reports[0], reports[1], strict=True))
     tokens_equal = all(a['generated_tokens'] == b['generated_tokens']
                        for a, b in zip(reports[0], reports[1], strict=True))
-    no_fallback = all(not turn['steady_decode_host_reads_detected'] and
-                      turn['cpu_numerical_fallback'] is False for pair in reports for turn in pair)
+    no_fallback = all(device_only(turn) for pair in reports for turn in pair)
     reused = [pair[1]['steps'][0]['reused_cached_tokens'] for pair in reports]
     correct_path = reused[0] == 0 and reused[1] > 0
     grouped = any(call['tokens'] > 8 for call in reports[1][1]['steps'][0]['calls'])

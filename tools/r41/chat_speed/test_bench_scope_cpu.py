@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from bench_chat_board import comparison_scope, matched_warm_wall_speedup, model_command
+from metrics import device_only
 
 
 def row(*, available=True, misses=0, compiles=0):
@@ -13,6 +14,12 @@ def row(*, available=True, misses=0, compiles=0):
 
 
 class ComparisonScopeTest(unittest.TestCase):
+    def test_device_only_requires_explicit_negative_fallback_and_read_results(self):
+        self.assertTrue(device_only(dict(cpu_numerical_fallback=False, steady_decode_host_reads_detected=False)))
+        for fallback, reads in ((None, False), (False, None), (True, False), (False, True)):
+            self.assertFalse(device_only(dict(cpu_numerical_fallback=fallback, steady_decode_host_reads_detected=reads)))
+        self.assertFalse(device_only({}))
+
     def test_model_command_selects_the_requested_probe(self):
         args = SimpleNamespace(python=Path('/venv/python'), model='q35', layers=4,
                                prompt='question', new_tokens=4, hybrid_eos_continuation=True,

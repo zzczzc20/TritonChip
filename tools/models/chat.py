@@ -1043,6 +1043,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
 
     # This is output retrieval after generation, reported separately and not hidden in the step counters.
     retrieval_start = time.perf_counter()
+    observed_stop = None
     with transfer_meter(True) as retrieval:
         candidates = []
         for candidate in device_candidates:
@@ -1058,6 +1059,10 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         # from the public result, so do not transfer entire vocabulary vectors
         # for them. This is after generation and adds no steady-decode reads.
         logits_rows = [t.cpu() for t in device_logits[:len(tokens)]]
+        if stop_flag is not None:
+            # A single control check after generation detects a missing or
+            # prematurely latched stop without reading during decode.
+            observed_stop = int(stop_flag.cpu().item())
         retrieval.mem.synchronize()
     retrieval_seconds = time.perf_counter() - retrieval_start
     for i, row in enumerate(rows):
@@ -1108,6 +1113,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         status = "failed-no-host-fallback"
     elif fallback is None or vision_unknown:
         status = "unverified-no-host-fallback"
+    elif observed_stop is not None and observed_stop != int(bool(tokens and tokens[-1] in eos)):
+        status = "failed-device-eos-guard"
     else:
         status = "pass"
     weight_bytes = L.module_bytes(model, lambda name: not name.startswith("model.visual."))
@@ -1164,7 +1171,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   compiled_wrapper_fallbacks=fallbacks, compiled_wrapper_roles_covered=covered,
                   compiled_wrapper_required_roles=list(required_roles),
                   decode_warmup=warmup,
-                  device_eos_guard=dict(enabled=stop_enabled, setup=stop_setup,
+                  device_eos_guard=dict(enabled=stop_enabled, setup=stop_setup, observed_stop=observed_stop,
                                         scope='device skips post-EOS kernels; host still submits the planned steps'),
                   steady_decode_host_reads_detected=bool(read_during_decode),
                   model_tensor_placements=placements, output_retrieval=retrieval.summary(),

@@ -689,18 +689,43 @@ def _touch_resident(module):
         _loaded[alias] = _loaded.pop(alias)
 
 
+def _bind_resident_lookup(module, kind, identity, key):
+    """Index the reverse references so eviction visits only this allocation."""
+    lookup = _loaded_by_artifact if kind == 'artifact' else _loaded_by_executable
+    lookup[identity] = key
+    references = getattr(module, '_tnca_lookup_references', None)
+    if references is None:
+        try:
+            references = set()
+            module._tnca_lookup_references = references
+        except (AttributeError, TypeError):
+            return  # An externally provided immutable module uses the scan path.
+    references.add((kind, identity))
+
+
 def _forget_resident(module):
     """Remove every alias of an unloaded physical code allocation."""
-    for alias in _resident_aliases(module):
+    resident_aliases = _resident_aliases(module)
+    alias_set = set(resident_aliases)
+    for alias in resident_aliases:
         del _loaded[alias]
         _module_views.pop(alias, None)
     aliases = getattr(module, '_tnca_resident_aliases', None)
     if aliases is not None:
         aliases.clear()
-    for lookup in (_loaded_by_artifact, _loaded_by_executable):
-        for alias, resident_key in list(lookup.items()):
-            if resident_key not in _loaded:
-                del lookup[alias]
+    references = getattr(module, '_tnca_lookup_references', None)
+    if references is None:
+        for lookup in (_loaded_by_artifact, _loaded_by_executable):
+            for identity, resident_key in list(lookup.items()):
+                if resident_key in alias_set:
+                    del lookup[identity]
+    else:
+        for kind, identity in references:
+            lookup = _loaded_by_artifact if kind == 'artifact' else _loaded_by_executable
+            # A lookup may have been rebound to a different live allocation.
+            if lookup.get(identity) in alias_set:
+                del lookup[identity]
+        references.clear()
 
 
 def _resident_for(key):
@@ -751,9 +776,9 @@ def _load(session, path):
             _module_views[key] = _ModuleView(m, path, manifest)
     if m is not None:
         _touch_resident(m)
-        _loaded_by_artifact[artifact_key] = key
+        _bind_resident_lookup(m, 'artifact', artifact_key, key)
         if executable_key is not None:
-            _loaded_by_executable[executable_key] = key
+            _bind_resident_lookup(m, 'executable', executable_key, key)
         if trace is not None:
             trace.record(trace_key, m)
         return session, _module_views.get(key, m)
@@ -788,9 +813,9 @@ def _load(session, path):
                 'unloaded (capacity-exceeded: code region)') from e
     loaded += 1
     _register_resident_alias(key, m)
-    _loaded_by_artifact[artifact_key] = key
+    _bind_resident_lookup(m, 'artifact', artifact_key, key)
     if executable_key is not None:
-        _loaded_by_executable[executable_key] = key
+        _bind_resident_lookup(m, 'executable', executable_key, key)
     if trace is not None:
         trace.record(trace_key, m)
     return session, m

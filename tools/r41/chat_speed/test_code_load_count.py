@@ -40,9 +40,10 @@ class CodeLoadTests(unittest.TestCase):
             def items(self):
                 raise AssertionError('resident hit scanned every loaded kernel')
         with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
-            for name in ('_loaded_by_artifact', '_loaded_by_executable', '_module_views',
-                         '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+            for name in ('_module_views', '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
                 stack.enter_context(mock.patch.object(driver, name, {}))
+            for name in ('_loaded_by_artifact', '_loaded_by_executable'):
+                stack.enter_context(mock.patch.object(driver, name, NoFullScan()))
             stack.enter_context(mock.patch.object(driver, '_loaded', NoFullScan()))
             stack.enter_context(mock.patch.object(driver, 'loaded', 0))
             stack.enter_context(mock.patch.object(driver, 'evicted', 0))

@@ -36,6 +36,15 @@ _UNTUNED_RUNTIME_SOURCE_IDENTITIES = {
     'eos_guard.py': bytes.fromhex('ac0f4afd4d4a1bb29d926b0277448e718064b8373524fff40f1400065700aaeb'),
     'code_residency.py': bytes.fromhex('afebaf5e6aae31bdfcda5531189619d3bb4ca885669193d334ee1f4419ea09c8'),
 }
+# This exact driver revision only changes runtime lookup bookkeeping. An
+# unknown revision must use its real digest: the driver also exposes device
+# properties that can affect compilation.
+_UNTUNED_EQUIVALENT_SOURCE_DIGESTS = {
+    'triton_backend/driver.py': {
+        bytes.fromhex('d14df687b3e9f0774e80465aa5f49976ab67d0ad9c2cebe2b3d64934f8540bf8'):
+            bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
+    },
+}
 
 
 def semantic_environment(environ):
@@ -77,7 +86,10 @@ def source_fingerprint(trees, files=None, *, include_runtime=True):
                 if stable is not None:
                     digest.update(stable)
                 else:
-                    digest.update(hashlib.sha256(path.read_bytes()).digest())
+                    actual = hashlib.sha256(path.read_bytes()).digest()
+                    equivalent = (_UNTUNED_EQUIVALENT_SOURCE_DIGESTS.get(relative.as_posix(), {}).get(actual)
+                                  if label == 'tnca' and not include_runtime else None)
+                    digest.update(equivalent if equivalent is not None else actual)
     for label, path in sorted((files or {}).items()):
         path = Path(path)
         if not path.is_file():

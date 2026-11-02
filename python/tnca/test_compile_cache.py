@@ -119,6 +119,24 @@ class CacheNamespaceTests(unittest.TestCase):
                 self.assertEqual(old, cache.source_fingerprint({'tnca': root}, include_runtime=False))
                 self.assertNotEqual(tuned, cache.source_fingerprint({'tnca': root}, include_runtime=True))
 
+    def test_runtime_driver_equivalence_is_limited_to_the_known_revision(self):
+        import hashlib
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            driver = root / 'triton_backend/driver.py'
+            driver.parent.mkdir()
+            old_digest = hashlib.sha256(b'old driver').digest()
+            new_digest = hashlib.sha256(b'only runtime lookup changes').digest()
+            equivalent = {'triton_backend/driver.py': {new_digest: old_digest}}
+            with mock.patch.object(cache, '_UNTUNED_EQUIVALENT_SOURCE_DIGESTS', equivalent):
+                driver.write_bytes(b'old driver')
+                old = cache.source_fingerprint({'tnca': root}, include_runtime=False)
+                driver.write_bytes(b'only runtime lookup changes')
+                self.assertEqual(old, cache.source_fingerprint({'tnca': root}, include_runtime=False))
+                driver.write_bytes(b'unknown compiler-affecting revision')
+                self.assertNotEqual(old, cache.source_fingerprint({'tnca': root}, include_runtime=False))
+
     def test_missing_compiler_sources_fail_closed(self):
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaises(FileNotFoundError):

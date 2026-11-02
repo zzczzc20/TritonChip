@@ -895,7 +895,12 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     # separately and clear the cache before the actual prompt. Real decode
     # remains subject to the unchanged zero-read rule on every step.
     warmup, warm_feedback = None, None
-    if not code_by_role.get("decode") and session.prompts == 0:
+    if new_tokens > 1 and not code_by_role.get("decode"):
+        if session.prompts:
+            # Earlier one-token requests did not need a decode graph. Start
+            # its first warmup from a clean cache; the full new conversation
+            # is still present in inputs and is prefetched below.
+            session.reset()
         started = time.perf_counter()
         with transfer_meter(True) as warmup_meter:
             real_feedback = (getattr(session, 'supports_real_warmup_feedback', False)
@@ -1056,7 +1061,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         session.cached += tokens[:-1]
     cache_maintenance_seconds = time.perf_counter() - cache_maintenance_start
     fallbacks = generation_fallbacks(session, code_by_role, host_fallbacks)
-    covered = all(code_by_role.get(role) for role in ("prefill", "decode", "selection"))
+    required_roles = ("prefill", "selection", "decode") if len(rows) > 1 else ("prefill", "selection")
+    covered = all(code_by_role.get(role) for role in required_roles)
     fallback = any(fallbacks.values()) if covered else None
     vision_unknown = any(c.get("compiled_wrapper_fallbacks") is None for c in (vision_calls or []))
     vision_fallback = any(c.get("compiled_wrapper_fallbacks") for c in (vision_calls or []))
@@ -1121,6 +1127,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   device_memory=L.device_memory(session.dev), cache_bytes=L.cache_bytes(session.cache),
                   standard_torch_fullgraph=True, cpu_numerical_fallback=fallback,
                   compiled_wrapper_fallbacks=fallbacks, compiled_wrapper_roles_covered=covered,
+                  compiled_wrapper_required_roles=list(required_roles),
                   decode_warmup=warmup,
                   steady_decode_host_reads_detected=bool(read_during_decode),
                   model_tensor_placements=placements, output_retrieval=retrieval.summary(),

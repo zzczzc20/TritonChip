@@ -92,8 +92,12 @@ class Session:
 
 class DeviceFeedbackTests(unittest.TestCase):
     def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None,
-                 retain_logits=True, logit_limit=None, rewind_hook=None, queue=False, real_warmup=False):
+                 retain_logits=True, logit_limit=None, rewind_hook=None, queue=False, real_warmup=False,
+                 prior_single=False):
         session = Session(choices, prefill_compiles_decode)
+        if prior_single:
+            session.prompts, session.cached, session._cache_tokens = 1, [7, 8], 2
+            session.last_position = torch.tensor([1])
         if real_warmup:
             session.supports_real_warmup_feedback = True
             def warmup(inputs, per_image=None, capture=None, real_feedback=False):
@@ -144,6 +148,23 @@ class DeviceFeedbackTests(unittest.TestCase):
                                          'prompt', new_tokens=len(choices), forced_tokens=forced,
                                          retain_logits=retain_logits, logit_limit=logit_limit)
         return session, report
+
+    def test_one_token_request_skips_decode_warmup_and_checks_only_used_roles(self):
+        session, report = self.run_case([1])
+        self.assertEqual(report['generated_tokens'], [1])
+        self.assertEqual(session.fed, [])
+        self.assertIsNone(report['decode_warmup'])
+        self.assertEqual(report['compiled_wrapper_required_roles'], ['prefill', 'selection'])
+        self.assertTrue(report['compiled_wrapper_roles_covered'])
+        self.assertEqual(report['status'], 'pass')
+
+    def test_later_multi_token_request_warms_decode_from_a_clean_cache(self):
+        session, report = self.run_case([1, 2], prior_single=True)
+        self.assertEqual(session.resets, 1)
+        self.assertEqual(report['generated_tokens'], [1, 2])
+        self.assertEqual(session.fed, [1])
+        self.assertIsNotNone(report['decode_warmup'])
+        self.assertEqual(report['status'], 'pass')
 
     def test_real_warmup_reuses_the_first_decode_and_keeps_output_order(self):
         baseline, expected = self.run_case([1, 2, 1])

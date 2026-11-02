@@ -6,10 +6,12 @@ import os
 import random
 import struct
 import threading
+import gc
+import weakref
 
 from tnca import abi
 from tnca.errors import BufferError as TncaBufferError, QueueFull
-from tnca.runtime import (Session, _Allocator, _build_argument_block,
+from tnca.runtime import (Event, Session, _Allocator, _build_argument_block,
                           _encode_resolved_arguments, _first_undeclared_alias,
                           _requested_queue_depth)
 from tnca.torch_device.queue import submit_queued
@@ -91,6 +93,41 @@ class ArgumentLayoutTests(TestCase):
 
 
 class QueueOwnershipTests(TestCase):
+    def test_completed_events_remain_usable_without_retaining_the_whole_chain(self):
+        session = Session.__new__(Session)
+        session._check_usable = lambda: None
+        session._lock = threading.RLock()
+        session._measurement_owner = None
+        session.epoch = 1
+        session.physical_grid = False
+        session.large_grid = False
+        session._next_job = 0
+        session._heap = _Allocator(0x20000, 0x30000)
+        session._events = weakref.WeakValueDictionary()
+        session._last_event = None
+        session._active_events = OrderedDict()
+        session._queue = []
+        session._queue_wake = mock.Mock()
+        session._resolve = lambda module, args: ({}, [])
+        module = SimpleNamespace(epoch=1, alive=True, name='unit', params=[],
+                                 manifest={'identity': {'kernel_name': 'unit'}, 'resources': {}})
+        first = session.submit(module, {})
+        session._finish(first._task, 'SUCCEEDED')
+        session._queue.clear()
+        second = session.submit(module, {}, depends_on=[first])
+        session._finish(second._task, 'SUCCEEDED')
+        session._queue.clear()
+        self.assertIs(session.task_of(first), first._task)
+        self.assertEqual(second._task['dependency_jobs'], (first.job_id,))
+        self.assertIsNone(session.task_of(Event(first.job_id, first.epoch, 'foreign')))
+        previous = weakref.ref(first)
+        first_id = first.job_id
+        del first
+        gc.collect()
+        self.assertIsNone(previous())
+        self.assertNotIn(first_id, session._events)
+        self.assertIs(session.latest_event, second)
+
     def test_depth_is_bounded_and_defaults_to_eight(self):
         with mock.patch.dict(os.environ, {}, clear=True):
             self.assertEqual(_requested_queue_depth(), 8)

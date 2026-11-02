@@ -38,6 +38,7 @@ import operator
 import struct
 import threading
 import time
+import weakref
 from contextlib import contextmanager
 from collections import OrderedDict
 from functools import lru_cache
@@ -622,9 +623,13 @@ class Session:
         self._buffers = OrderedDict()
         self._modules = []
         self._queue = []
-        self._events = OrderedDict()
-        # Keep historical events for dependency identity and post-run inspection;
-        # hot-path admission and code eviction only need unfinished events.
+        # Callers keep event handles for as long as they need them. The
+        # session needs strong ownership only for unfinished work and the
+        # latest event; retaining every completed launch indefinitely grows
+        # without bound in a long-running chat process.
+        self._events = weakref.WeakValueDictionary()
+        self._last_event = None
+        # Unfinished jobs retain their events even if the caller drops them.
         self._active_events = OrderedDict()
         self._next_buffer = 0
         self._next_job = 0
@@ -738,6 +743,8 @@ class Session:
     @property
     def latest_event(self):
         with self._lock:
+            if hasattr(self, '_last_event'):
+                return self._last_event
             return next(reversed(self._events.values()), None)
 
     # ---- buffers ----------------------------------------------------------
@@ -845,10 +852,11 @@ class Session:
         # it, and a failure is captured after the failure. The event keeps
         # the reference, and the session still checks the event is its own
         # -- events are not portable between sessions.
-        task = getattr(event, '_task', None)
-        if task is None or getattr(event, 'epoch', None) != self.epoch:
-            return None
-        return task
+        with self._lock:
+            if (not isinstance(event, Event) or event.epoch != self.epoch
+                    or self._events.get(event.job_id) is not event):
+                return None
+            return getattr(event, '_task', None)
 
     def capture_failure(self, event, outdir, *, note=None):
         """Save this launch as a replayable bundle. See tnca.failure."""
@@ -1127,6 +1135,7 @@ class Session:
                 self._queue.append(task)
                 self._queue_wake.set()
                 ev._to(QUEUED)
+                self._last_event = ev
                 return ev
             except BaseException:
                 # The admission lock prevents the worker from seeing a
@@ -1434,6 +1443,10 @@ class Session:
                 # Not a rollback -- the contract does not promise one. A
                 # marker, so an ordinary read cannot consume it as a result.
                 buf.valid = False
+        # A finished event can still be inspected or used as a dependency,
+        # but it no longer needs to retain the whole predecessor chain.
+        task['dependency_jobs'] = tuple(dep.job_id for dep in task['depends_on'])
+        task['depends_on'] = ()
 
     def _poison_rest(self):
         with self._lock:
@@ -1531,12 +1544,13 @@ class Session:
         except Exception:
             pass
         with self._lock:
-            for ev in self._events.values():
+            for ev in list(self._events.values()):
                 if not ev.terminal:
                     ev._to(FAILED, DeviceLost(
                         'the session was recovered before this task ran'))
             self.epoch += 1
             self._events.clear()
+            self._last_event = None
             self._active_events.clear()
             self._queue.clear()
             self._buffers.clear()

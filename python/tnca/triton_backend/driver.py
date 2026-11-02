@@ -743,7 +743,7 @@ def _load(session, path):
     the device session and clock epoch for both CPU migration and resident
     tensors; replacing a session mid-graph invalidates common-clock spans.
     """
-    from tnca.errors import BufferError as _BE
+    from tnca.errors import BufferError as _BE, BufferBusy as _BB
     global loaded
     digest = _artifact_sha256(path)
     # A compiler may atomically replace an artifact at the same pathname.
@@ -787,30 +787,55 @@ def _load(session, path):
     except _BE as e:
         if 'overlaps the device heap' not in str(e):
             raise
-        session.drain()
+        # The U280 serializes code uploads with launches at the transport
+        # lock. An idle code allocation can therefore be replaced without
+        # first waiting for unrelated queued kernels. Keep this experimental
+        # path opt-in until its board comparison is complete.
+        parallel_evict = (os.environ.get('TNCA_DECODE_CODE_EVICT_ASYNC') == '1'
+                          and getattr(session, 'backend_name', None) == 'fpga-u280-multicore'
+                          and getattr(getattr(session, 'dev', None), '_io_lock', None) is not None)
+        if not parallel_evict:
+            session.drain()
         old_keys = (trace.victims(session, _loaded, _executable_digest)
                     if trace is not None else list(_loaded))
-        for old_key in old_keys:
-            if old_key[0] != session.id or old_key[1] != session.epoch:
-                continue
-            # Unloading an earlier key removes every alias of that module.
-            old = _loaded.get(old_key)
-            if old is None:
-                continue
-            session.unload(old)
-            _forget_resident(old)
-            global evicted
-            evicted += 1
-            try:
-                m = session.load(path)
-                break
-            except _BE as again:
-                if 'overlaps the device heap' not in str(again):
-                    raise
-        else:
-            raise TNCALaunchError(
-                'the code region cannot hold this kernel even with every other module '
-                'unloaded (capacity-exceeded: code region)') from e
+        for phase in range(2 if parallel_evict else 1):
+            blocked = False
+            for old_key in old_keys:
+                if old_key[0] != session.id or old_key[1] != session.epoch:
+                    continue
+                # Unloading an earlier key removes every alias of that module.
+                old = _loaded.get(old_key)
+                if old is None:
+                    continue
+                try:
+                    if parallel_evict and phase == 0:
+                        session.unload(old, allow_unrelated_tasks=True)
+                    else:
+                        session.unload(old)
+                except _BB:
+                    if not parallel_evict or phase:
+                        raise
+                    blocked = True
+                    continue
+                _forget_resident(old)
+                global evicted
+                evicted += 1
+                try:
+                    m = session.load(path)
+                    break
+                except _BE as again:
+                    if 'overlaps the device heap' not in str(again):
+                        raise
+            else:
+                if parallel_evict and not phase and blocked:
+                    # All remaining candidates are actually referenced by
+                    # queued work. Fall back to the original full barrier.
+                    session.drain()
+                    continue
+                raise TNCALaunchError(
+                    'the code region cannot hold this kernel even with every other module '
+                    'unloaded (capacity-exceeded: code region)') from e
+            break
     loaded += 1
     try:
         # Retain the identity of the validated resident bytes even if their

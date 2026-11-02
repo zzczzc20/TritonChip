@@ -984,7 +984,7 @@ class Session:
             self._modules.append(mod)
             return mod
 
-    def unload(self, module):
+    def unload(self, module, *, allow_unrelated_tasks=False):
         """Give a module's code space back. Refused while a task of it is
         unfinished; the module may not be submitted afterwards."""
         self._check_usable()
@@ -995,9 +995,12 @@ class Session:
             module = getattr(module, '_resident', module)
             if module.epoch != self.epoch or not module.alive:
                 return False
-            if self.unfinished:
-                # Conservative: a task records its kernel by name, not by
-                # module, so any unfinished task keeps every module loaded.
+            if self._active_events and (not allow_unrelated_tasks or any(
+                    getattr(event._task['module'], '_resident', event._task['module']) is module
+                    for event in self._active_events.values())):
+                # Keep the default all-task barrier for public callers. The
+                # optional path checks physical allocations, including views,
+                # while holding the same lock used for task admission.
                 raise BufferBusy(f'{module.name}: tasks are unfinished; unload waits for none')
             module.alive = False
             self._modules.remove(module)

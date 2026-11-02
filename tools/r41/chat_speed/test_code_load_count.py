@@ -7,7 +7,7 @@ import unittest
 from unittest import mock
 
 import triton  # Discover the TNCA plugin before importing its driver.
-from tnca.errors import BufferError
+from tnca.errors import BufferBusy, BufferError
 from tnca.triton_backend import driver
 
 
@@ -34,6 +34,61 @@ class FakeSession:
 
 
 class CodeLoadTests(unittest.TestCase):
+    def test_opt_in_eviction_waits_only_when_all_candidates_are_busy(self):
+        import threading
+        from contextlib import ExitStack
+        class QueuedSession(FakeSession):
+            def __init__(self):
+                super().__init__(capacity=2)
+                self.backend_name = 'fpga-u280-multicore'
+                self.dev = types.SimpleNamespace(_io_lock=threading.RLock())
+                self.busy = set()
+                self.drains = 0
+            def unload(self, module, *, allow_unrelated_tasks=False):
+                if self.busy and (not allow_unrelated_tasks or id(module) in self.busy):
+                    raise BufferBusy('module is in queued work')
+                return super().unload(module)
+            def drain(self):
+                self.drains += 1
+                self.busy.clear()
+        for all_busy in (False, True):
+            with self.subTest(all_busy=all_busy), tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+                for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable', '_module_views',
+                             '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                    stack.enter_context(mock.patch.object(driver, name, {}))
+                stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+                stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+                stack.enter_context(mock.patch.dict('os.environ', {'TNCA_DECODE_CODE_EVICT_ASYNC': '1'}))
+                paths = [Path(directory) / name for name in ('a', 'b', 'c')]
+                for path in paths:
+                    path.write_text(path.name)
+                session = QueuedSession()
+                first, second = [driver._load(session, str(path))[1] for path in paths[:2]]
+                session.busy = {id(first), id(second)} if all_busy else {id(first)}
+                driver._load(session, str(paths[2]))
+                self.assertEqual(session.drains, int(all_busy))
+                self.assertEqual(first.alive, not all_busy)
+                self.assertEqual(second.alive, all_busy)
+
+    def test_unrelated_work_cannot_free_code_referenced_by_a_view(self):
+        import threading
+        from tnca.runtime import Session
+        session = object.__new__(Session)
+        session._lock, session.closed, session.poisoned = threading.RLock(), False, False
+        session.epoch, session._code = 7, mock.Mock()
+        first = types.SimpleNamespace(epoch=7, alive=True, code_addr=64, code_size=64, params=[], name='a')
+        second = types.SimpleNamespace(epoch=7, alive=True, code_addr=128, code_size=64, params=[], name='b')
+        view = driver._ModuleView(first, 'first', {'identity': {'kernel_name': 'a'}})
+        session._modules = [first, second]
+        session._active_events = {1: types.SimpleNamespace(_task={'module': view})}
+        with self.assertRaises(BufferBusy):
+            session.unload(second)
+        with self.assertRaises(BufferBusy):
+            session.unload(first, allow_unrelated_tasks=True)
+        self.assertTrue(session.unload(second, allow_unrelated_tasks=True))
+        self.assertTrue(first.alive)
+        self.assertFalse(second.alive)
+
     def test_resident_hits_touch_only_the_allocation_aliases(self):
         from contextlib import ExitStack
         class NoFullScan(dict):

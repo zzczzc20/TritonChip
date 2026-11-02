@@ -17,6 +17,7 @@ _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_
                            'TNCA_SUBMIT', 'TNCA_QUEUE_DEPTH', 'TNCA_MMIO_DESCRIPTOR_CACHE', 'TNCA_CODE_REUSE', 'TNCA_DEVICE_ZERO', 'TNCA_QUEUE_STEPS',
                            'TNCA_REUSE_WARM_PREFILL', 'TNCA_DEFER_CACHE_RESET',
                            'TNCA_REUSE_HYBRID_PREFILL', 'TNCA_REUSE_FIRST_DECODE', 'TNCA_DEVICE_EOS_GUARD',
+                           'TNCA_DECODE_CODE_EVICT_ASYNC',
                            'TNCA_DEADLINE', 'TNCA_HOST_TIMEOUT'})
 # These select a runtime device or its measured clock. The ordinary compiler
 # does not use them, but autotuning observes the device and therefore must
@@ -44,6 +45,8 @@ _UNTUNED_EQUIVALENT_SOURCE_DIGESTS = {
         bytes.fromhex('d14df687b3e9f0774e80465aa5f49976ab67d0ad9c2cebe2b3d64934f8540bf8'):
             bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
         bytes.fromhex('552e9688a02fe01f00bc92e76a45dd5866786eecc5e9538c8edf8553bc0bc677'):
+            bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
+        bytes.fromhex('f819e520c50f80786d453476de7ae4013cee9770373fb902dad368021cba9f9b'):
             bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
     },
 }

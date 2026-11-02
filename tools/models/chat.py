@@ -921,13 +921,13 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         warmup['prefill_retained'] = getattr(session, '_warm_prefill', None) is not None
         warmup['prefill_strategy'] = getattr(session, '_warm_prefill_mode', 'unavailable')
 
-    stop_context, stop_flag, stop_setup = None, None, None
+    stop_context, stop_flag, stop_setup, stop_started = None, None, None, None
     if stop_enabled:
         # Compile the marker before the measured decode so its compiler may
         # inspect metadata without causing host reads inside a real step.
         from tnca.torch_device import MEMORY, storage_address
         from tnca.torch_device.eos import latch_eos
-        started = time.perf_counter()
+        stop_started = time.perf_counter()
         sentinel = 0
         while sentinel in eos:
             sentinel += 1
@@ -939,13 +939,17 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         hardware = MEMORY.session()
         flag_buffer, flag_offset = MEMORY.locate(storage_address(stop_flag))
         stop_context = hardware.device_stop_guard(flag_buffer, flag_offset)
-        stop_context.__enter__()
-        stop_setup = dict(seconds=time.perf_counter() - started, transfers=setup_meter.summary())
+        stop_setup = dict(seconds=None, transfers=setup_meter.summary())
 
     old_recompile = torch._dynamo.config.error_on_recompile
     session.prompts += 1
     graphs_at_start = counters["stats"]["unique_graphs"]
+    stop_entered = False
     try:
+        if stop_context is not None:
+            stop_context.__enter__()
+            stop_entered = True
+            stop_setup['seconds'] = time.perf_counter() - stop_started
         current = None
         for index in range(new_tokens):
             graph_start = counters["stats"]["unique_graphs"]
@@ -1037,9 +1041,11 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 pass
         raise
     finally:
-        if stop_context is not None:
-            stop_context.__exit__(*sys.exc_info())
-        torch._dynamo.config.error_on_recompile = old_recompile
+        try:
+            if stop_entered:
+                stop_context.__exit__(*sys.exc_info())
+        finally:
+            torch._dynamo.config.error_on_recompile = old_recompile
 
     # This is output retrieval after generation, reported separately and not hidden in the step counters.
     retrieval_start = time.perf_counter()

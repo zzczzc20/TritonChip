@@ -414,6 +414,46 @@ class _Allocator:
         self.high_water = max(self.high_water, self.used)
         return addr, need
 
+    def can_alloc_at(self, size, addr, align=DEFAULT_ALIGN):
+        """Can an aligned allocation be placed without touching live ranges?"""
+        if size <= 0 or addr < self.base or addr % align:
+            return False
+        need = (size + align - 1) // align * align
+        end = addr + need
+        if end > self.limit:
+            return False
+        if any(addr < hi and end > lo for lo, hi in self.reserved):
+            return False
+        if any(lo <= addr and end <= lo + length for lo, length in self.free_list):
+            return True
+        # A gap above the current top may become a reusable free interval;
+        # do not construct one across an MMIO-reserved address range.
+        return (addr >= self.next and not any(self.next < hi and end > lo
+                                              for lo, hi in self.reserved))
+
+    def alloc_at(self, size, addr, align=DEFAULT_ALIGN):
+        """Reserve a previously checked free address, or return None."""
+        if not self.can_alloc_at(size, addr, align):
+            return None
+        need = (size + align - 1) // align * align
+        end = addr + need
+        for index, (start, length) in enumerate(self.free_list):
+            stop = start + length
+            if start <= addr and end <= stop:
+                pieces = []
+                if start < addr:
+                    pieces.append((start, addr - start))
+                if end < stop:
+                    pieces.append((end, stop - end))
+                self.free_list[index:index + 1] = pieces
+                self.high_water = max(self.high_water, self.used)
+                return addr, need
+        if addr > self.next:
+            self.free_list.append((self.next, addr - self.next))
+        self.next = end
+        self.high_water = max(self.high_water, self.used)
+        return addr, need
+
     def release(self, addr, size):
         # The common single-launch case releases the heap's last block.
         # There is nothing to sort or merge when no older holes exist.
@@ -578,6 +618,10 @@ class Session:
             # AXI window (R40-04).
             heap_limit = _device.memory_limit(profile)
         self._code = _Allocator(code_base, heap_base, reserved=DEVICE_RESERVED_RANGES)
+        # An unloaded module leaves its code words in the FPGA's code RAM.
+        # Remember locations, but only reuse them when the backend can prove
+        # every word still matches and the allocator says the range is free.
+        self._code_address_hints = OrderedDict()
         self._heap = _Allocator(heap_base, heap_limit, reserved=DEVICE_RESERVED_RANGES)
         self._worker = None
         self._stop = threading.Event()
@@ -795,6 +839,22 @@ class Session:
         from . import failure
         return failure.capture(self, event, outdir, note=note)
 
+    def _known_code_address(self, code_hash, code):
+        """Return an exact still-resident code location, never a guessed hit."""
+        if not code_hash or not getattr(self.dev, 'code_payload_shadow', False):
+            return None
+        addr = self._code_address_hints.get(code_hash)
+        shadow = getattr(self.dev, '_code_window_shadow', None)
+        limit = getattr(self.dev, 'local_limit', None)
+        size = (len(code) + WORD - 1) // WORD * WORD
+        if (addr is None or not isinstance(shadow, dict) or limit is None
+                or addr + size > limit or not self._code.can_alloc_at(len(code), addr)):
+            return None
+        for offset in range(0, len(code), WORD):
+            if shadow.get(addr + offset) != int.from_bytes(code[offset:offset + WORD], 'little'):
+                return None
+        return addr
+
     def load(self, path):
         """Check an artifact against THIS device, then place its code."""
         self._check_usable()
@@ -828,22 +888,30 @@ class Session:
         if not code:
             raise ArtifactError('the artifact has no code segment')
 
+        code_hash = next((entry.get('sha256') for entry in man.get('code', {}).get('segments', ())
+                          if entry.get('name') == 'text'), None)
         with self._lock:
-            # The code region is allocated like the heap (first fit, freed
-            # space reused): with nothing ever unloaded it places modules one
-            # after another, 64-byte aligned, exactly as before; unload()
-            # gives a module's space back (R40-01: tensors resident in the
-            # heap outlive the code that last used them).
+            # Preserve a code-RAM hit only if its old address is currently
+            # free and all confirmed device words still match the artifact.
+            hint = self._known_code_address(code_hash, code)
             try:
-                addr, size = self._code.alloc(len(code), align=64)
+                placed = self._code.alloc_at(len(code), hint, align=64) if hint is not None else None
+                addr, size = placed if placed is not None else self._code.alloc(len(code), align=64)
             except BufferError:
                 raise BufferError('compiled code overlaps the device heap; increase heap_base') \
                     from None
-            reply = self.dev.upload(addr, code)
-            if not reply.ok:
+            try:
+                reply = self.dev.upload(addr, code)
+                if not reply.ok:
+                    raise TncaError(f"could not place code: {reply}", code='ARTIFACT_INVALID')
+            except BaseException:
                 self._code.release(addr, size)
-                raise TncaError(f"could not place code: {reply}",
-                                code='ARTIFACT_INVALID')
+                raise
+            if code_hash and getattr(self.dev, 'code_payload_shadow', False):
+                self._code_address_hints[code_hash] = addr
+                self._code_address_hints.move_to_end(code_hash)
+                if len(self._code_address_hints) > 1024:
+                    self._code_address_hints.popitem(last=False)
             mod = Module(path, man, addr, params, self.epoch)
             mod.code_size = size
             self._modules.append(mod)
@@ -1421,6 +1489,7 @@ class Session:
             self._modules.clear()
             self._next_job = 0
             self._code = _Allocator(self._code.base, self._code.limit, reserved=self._code.reserved)
+            self._code_address_hints.clear()
             self._heap = _Allocator(self._heap.base, self._heap.limit, reserved=self._heap.reserved)
             self.poisoned = False
             self.dev = _open_device(self.backend_name, self.bench,

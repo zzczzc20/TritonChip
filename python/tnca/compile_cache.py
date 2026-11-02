@@ -21,10 +21,17 @@ _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_
 # These select a runtime device or its measured clock. The ordinary compiler
 # does not use them, but autotuning observes the device and therefore must
 # retain both in its cache identity.
-_UNTUNED_RUNTIME_ONLY = frozenset({'TNCA_BACKEND_ARGS', 'TNCA_OPERATING_CLOCK_EVIDENCE', 'TNCA_COUNTERS'})
+_UNTUNED_RUNTIME_ONLY = frozenset({'TNCA_BACKEND_ARGS', 'TNCA_OPERATING_CLOCK_EVIDENCE', 'TNCA_COUNTERS',
+                                  'TNCA_DEVICE_EOS_EARLY_STOP', 'TNCA_HYBRID_PREFIX_CHECKPOINT',
+                                  'TNCA_REUSE_GUARDED_HYBRID', 'TNCA_STATIC_PREFIX_REWIND'})
 _SOURCE_SUFFIXES = frozenset({'.py', '.c', '.cpp', '.cc', '.h', '.hpp', '.td',
                               '.def', '.inc', '.cmake', '.json', '.toml', '.yaml', '.yml'})
 _UNTUNED_RUNTIME_FILES = frozenset({'runtime.py', 'transport.py'})
+# Cache-key bookkeeping does not change an untuned generated graph. Preserve
+# the previous bookkeeping file's digest so this fix can use already-built
+# artifacts immediately. Bump only if this module starts changing codegen.
+_UNTUNED_CACHE_KEY_IMPLEMENTATION = bytes.fromhex(
+    '59172d7585c1c40304c4f515c13abb89b1066569dd9faf9876788bbecac8eb46')
 
 
 def semantic_environment(environ):
@@ -61,7 +68,10 @@ def source_fingerprint(trees, files=None, *, include_runtime=True):
                     and '__pycache__' not in path.parts and not test_file and not runtime_file):
                 name = f'{label}/{path.relative_to(root).as_posix()}'
                 digest.update(name.encode() + b'\0')
-                digest.update(hashlib.sha256(path.read_bytes()).digest())
+                if label == 'tnca' and relative.as_posix() == 'compile_cache.py' and not include_runtime:
+                    digest.update(_UNTUNED_CACHE_KEY_IMPLEMENTATION)
+                else:
+                    digest.update(hashlib.sha256(path.read_bytes()).digest())
     for label, path in sorted((files or {}).items()):
         path = Path(path)
         if not path.is_file():

@@ -94,6 +94,29 @@ class CacheNamespaceTests(unittest.TestCase):
         self.assertNotEqual(key(before), key(dict(before, TNCA_OPERATING_CLOCK_EVIDENCE='/new/clock')))
         self.assertNotEqual(key(before), key(dict(before, TNCA_COUNTERS='1')))
 
+    def test_untuned_runtime_speed_options_preserve_existing_graph_cache(self):
+        base = {'TNCA_PROFILE': 'dp', 'TNCA_BACKEND': 'fpga-u280-multicore'}
+        faster = dict(base, TNCA_DEVICE_EOS_EARLY_STOP='1', TNCA_HYBRID_PREFIX_CHECKPOINT='1',
+                      TNCA_REUSE_GUARDED_HYBRID='1', TNCA_STATIC_PREFIX_REWIND='1')
+        self.assertEqual(cache.namespace('source', base, {}, {}), cache.namespace('source', faster, {}, {}))
+        self.assertNotEqual(cache.namespace('source', dict(base, TNCA_TUNE='1'), {}, {}),
+                            cache.namespace('source', dict(faster, TNCA_TUNE='1'), {}, {}))
+
+    def test_cache_key_bookkeeping_preserves_previous_untuned_source_digest(self):
+        import hashlib
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            code = root / 'compile_cache.py'
+            code.write_text('old bookkeeping')
+            old_digest = hashlib.sha256(code.read_bytes()).digest()
+            with mock.patch.object(cache, '_UNTUNED_CACHE_KEY_IMPLEMENTATION', old_digest):
+                old = cache.source_fingerprint({'tnca': root}, include_runtime=False)
+                tuned = cache.source_fingerprint({'tnca': root}, include_runtime=True)
+                code.write_text('new bookkeeping')
+                self.assertEqual(old, cache.source_fingerprint({'tnca': root}, include_runtime=False))
+                self.assertNotEqual(tuned, cache.source_fingerprint({'tnca': root}, include_runtime=True))
+
     def test_missing_compiler_sources_fail_closed(self):
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaises(FileNotFoundError):

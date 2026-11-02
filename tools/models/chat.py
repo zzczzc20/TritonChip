@@ -736,6 +736,19 @@ def use_hybrid_prefix_checkpoint(environ, *, keep_history, device, chunk):
             and environ.get('TNCA_PROFILE') == 'core-vrf-sync-v5-x8-g2c4-dp')
 
 
+def use_static_prefix_rewind(environ, *, keep_history, device, chunk):
+    """Enable the board-measured static prefix path for chunked chat."""
+    requested = environ.get('TNCA_STATIC_PREFIX_REWIND')
+    if requested not in (None, '0', '1'):
+        raise ValueError('TNCA_STATIC_PREFIX_REWIND must be 0 or 1')
+    if not keep_history or device != 'tnca' or not chunk or requested == '0':
+        return False
+    if requested == '1':
+        return True
+    return (environ.get('TNCA_BACKEND') == 'fpga-u280-multicore'
+            and environ.get('TNCA_PROFILE') == 'core-vrf-sync-v5-x8-g2c4-dp')
+
+
 def use_guarded_hybrid_retention(environ, *, checkpoint_enabled):
     requested = environ.get('TNCA_REUSE_GUARDED_HYBRID')
     if requested not in (None, '0', '1'):
@@ -1788,8 +1801,8 @@ class ChatApplication:
         session = self.device_session()
         session._capture_hybrid_checkpoint = use_hybrid_prefix_checkpoint(
             os.environ, keep_history=keep_history, device=session.device, chunk=session.chunk)
-        session._capture_static_prefix = (keep_history and session.device == 'tnca'
-                                          and os.environ.get('TNCA_STATIC_PREFIX_REWIND', '0') == '1')
+        session._capture_static_prefix = use_static_prefix_rewind(
+            os.environ, keep_history=keep_history, device=session.device, chunk=session.chunk)
         session.wait_for_cleanup()
         per_image, vision_calls = session.vision_features(inputs)
         # Teacher-forced diagnostics need only the reference's actual steps;

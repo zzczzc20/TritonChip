@@ -91,6 +91,15 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
+    def test_static_prefix_defaults_only_to_tested_chunked_board_chat(self):
+        board = {'TNCA_BACKEND': 'fpga-u280-multicore', 'TNCA_PROFILE': 'core-vrf-sync-v5-x8-g2c4-dp'}
+        options = dict(keep_history=True, device='tnca', chunk=8)
+        self.assertTrue(chat.use_static_prefix_rewind(board, **options))
+        self.assertFalse(chat.use_static_prefix_rewind(board, **dict(options, chunk=0)))
+        self.assertFalse(chat.use_static_prefix_rewind(board, **dict(options, keep_history=False)))
+        self.assertFalse(chat.use_static_prefix_rewind({}, **options))
+        self.assertFalse(chat.use_static_prefix_rewind(dict(board, TNCA_STATIC_PREFIX_REWIND='0'), **options))
+
     def test_hybrid_checkpoint_defaults_to_tested_chunked_board_chat(self):
         board = {'TNCA_BACKEND': 'fpga-u280-multicore', 'TNCA_PROFILE': 'core-vrf-sync-v5-x8-g2c4-dp'}
         options = dict(keep_history=True, device='tnca', chunk=8)

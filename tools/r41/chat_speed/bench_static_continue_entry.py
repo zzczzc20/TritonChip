@@ -16,9 +16,11 @@ def main():
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--layers', type=int, default=1)
     parser.add_argument('--group-suffix', action='store_true')
+    parser.add_argument('--normal-chat-eos', action='store_true')
     args = parser.parse_args()
     sys.path.insert(0, str(args.tree / 'tools/models'))
     import chat
+    import qwen_fp8_lib as library
 
     args.out.mkdir(parents=True, exist_ok=False)
     prefix = 'context ' * (221 if args.group_suffix else 200)
@@ -30,9 +32,22 @@ def main():
         '--layers', str(args.layers), '--prefill-chunk', '8', '--new-tokens', '2',
         '--bucket', '256', '--threads', '2', '--prompt', first_prompt])
     app = chat.ChatApplication(chat_args)
+    real_eos = library.generation_eos
+    if args.normal_chat_eos:
+        from tnca.torch_device import MEMORY
+        app.device_session()
+        MEMORY.synchronize()
+        MEMORY.session().prepare_device_stop_guard()
+        probe, calibration = MEMORY.session().prepare_device_stop_probe()
+        if probe is None:
+            raise RuntimeError(f'device completion probe could not be calibrated: {calibration}')
+        os.environ['TNCA_DEVICE_EOS_GUARD'] = '0'
     warm = app.generate(first_prompt, retain_logits=False)
     if warm['status'] != 'pass':
         raise RuntimeError('reduced-model warmup failed')
+    if args.normal_chat_eos and not warm['generated_tokens']:
+        raise RuntimeError('reduced-model warmup returned no token')
+    diagnostic_eos = warm['generated_tokens'][0] if args.normal_chat_eos else None
     if args.group_suffix:
         # Warm the 16-token graph before either measured conversation.
         app.session.reset()
@@ -42,21 +57,40 @@ def main():
         app.session.chunk = 8
         if wider['status'] != 'pass':
             raise RuntimeError('grouped prefill warmup failed')
+    if args.normal_chat_eos:
+        from tnca.torch_device.eos import latch_eos
+        for eos in ({diagnostic_eos}, real_eos(app.model)):
+            if not eos:
+                continue
+            sentinel = next(value for value in range(len(eos) + 1) if value not in eos)
+            flag = torch.zeros((1,), dtype=torch.long).to(app.session.dev)
+            token = torch.tensor([[sentinel]], dtype=torch.long).to(app.session.dev)
+            latch_eos(token, flag, eos)
+        MEMORY.synchronize()
     reports = []
     for mode in ('reset', 'reuse'):
         app.reset_conversation()
         app.session.reset()
         os.environ['TNCA_STATIC_PREFIX_REWIND'] = '1' if mode == 'reuse' else '0'
         os.environ['TNCA_STATIC_SUFFIX_GROUP'] = '1' if args.group_suffix and mode == 'reuse' else '0'
-        chat_args.new_tokens = 1
+        if args.normal_chat_eos:
+            os.environ['TNCA_DEVICE_EOS_GUARD'] = '1' if mode == 'reuse' else '0'
+            os.environ['TNCA_DEVICE_EOS_EARLY_STOP'] = '1' if mode == 'reuse' else '0'
+            library.generation_eos = lambda model: {diagnostic_eos}
+        chat_args.new_tokens = 4 if args.normal_chat_eos else 1
         first = app.generate(first_prompt, keep_history=True, retain_logits=True)
-        if first['status'] != 'pass':
+        if first['status'] != 'pass' or (args.normal_chat_eos and not first['stopped_at_eos']):
             raise RuntimeError(f'{mode}: first turn failed')
         chat.save_report(first, args.out / f'{mode}-first')
-        # Editing an old user message invalidates its changed suffix. Both
-        # paths see the same canonical conversation; only the shared prefix
-        # is retained by the candidate.
-        app.history[0]['content'][0]['text'] = edited_prompt
+        if args.normal_chat_eos:
+            # The original run-2 chat discarded its cache after EOS. Recreate
+            # that baseline while keeping the same unedited conversation.
+            if mode == 'reset':
+                app.session.reset()
+            library.generation_eos = real_eos
+        else:
+            # Editing an old user message invalidates its changed suffix.
+            app.history[0]['content'][0]['text'] = edited_prompt
         chat_args.new_tokens = 2
         started = time.perf_counter()
         second = app.generate(followup, keep_history=True, prompt_started=started, retain_logits=True)
@@ -83,6 +117,11 @@ def main():
     grouped = any(call['tokens'] > 8 for call in reports[1][1]['steps'][0]['calls'])
     if args.group_suffix:
         correct_path = correct_path and grouped
+    if args.normal_chat_eos:
+        probe_info = reports[1][0]['device_eos_guard']['completion_probe']
+        correct_path = (correct_path and probe_info['signalled'] and
+                        reports[1][0]['executed_generation_steps'] == len(reports[1][0]['generated_tokens']) and
+                        reports[0][0]['executed_generation_steps'] > len(reports[0][0]['generated_tokens']))
     rows = [dict(mode=mode, first_tokens=first['generated_tokens'],
                  followup_tokens=second['generated_tokens'], followup_reused_tokens=second['steps'][0]['reused_cached_tokens'],
                  followup_segments=[call['tokens'] for call in second['steps'][0]['calls']],
@@ -93,11 +132,13 @@ def main():
                   c.get('fx_graph_cache_misses') == 0 for c in compilers)
     passed = exact and tokens_equal and no_fallback and correct_path
     result = dict(status='pass' if passed else 'fail',
-                  scope=('reduced VL, edited prior prompt with 221 repeated context words and grouped suffix; not full-model quality'
+                  scope=('reduced VL, unedited conversation with artificial EOS and 221 repeated context words; not full-model quality'
+                         if args.normal_chat_eos else
+                         'reduced VL, edited prior prompt with 221 repeated context words and grouped suffix; not full-model quality'
                          if args.group_suffix else
                          'one-layer VL, edited prior prompt with 200 repeated context words; not full-model quality'),
                   logits_bitwise_equal=exact, tokens_equal=tokens_equal, no_fallback_and_zero_decode_reads=no_fallback,
-                  expected_cache_paths=correct_path, matched_warm=matched,
+                  diagnostic_eos_token=diagnostic_eos, expected_cache_paths=correct_path, matched_warm=matched,
                   matched_warm_wall_speedup=(rows[0]['followup_timing']['prompt_to_return_seconds'] /
                                             rows[1]['followup_timing']['prompt_to_return_seconds']
                                             if matched and passed else None), rows=rows)

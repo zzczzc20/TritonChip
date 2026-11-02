@@ -17,7 +17,7 @@ class ComparisonScopeTest(unittest.TestCase):
         args = SimpleNamespace(python=Path('/venv/python'), model='q35', layers=4,
                                prompt='question', new_tokens=4, hybrid_eos_continuation=True,
                                device_eos_probe=False, early_eos_probe=False, static_prefix_probe=False,
-                               static_group_suffix=False)
+                               static_group_suffix=False, static_normal_chat=False)
         root, out = Path('/overlay'), Path('/results')
         command = model_command(args, root, out)
         self.assertEqual(command[2], '/overlay/tools/r41/chat_speed/bench_hybrid_continue_entry.py')
@@ -26,6 +26,8 @@ class ComparisonScopeTest(unittest.TestCase):
         self.assertEqual(model_command(args, root, out)[2], '/overlay/tools/r41/chat_speed/bench_eos_model_entry.py')
         args.early_eos_probe, args.static_prefix_probe = False, True
         self.assertEqual(model_command(args, root, out)[2], '/overlay/tools/r41/chat_speed/bench_static_continue_entry.py')
+        args.static_group_suffix, args.static_normal_chat = True, True
+        self.assertEqual(model_command(args, root, out)[-2:], ['--group-suffix', '--normal-chat-eos'])
 
     def test_in_process_warm_requires_observed_zero_compilation(self):
         clean = [row(), row()]

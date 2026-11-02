@@ -56,7 +56,8 @@ def model_command(args, root, out):
     if args.static_prefix_probe:
         command = [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_static_continue_entry.py'),
                    '--tree', str(root), '--layers', str(args.layers), '--out', str(out)]
-        return command + (['--group-suffix'] if args.static_group_suffix else [])
+        return command + (['--group-suffix'] if args.static_group_suffix else []) + \
+            (['--normal-chat-eos'] if args.static_normal_chat else [])
     if args.hybrid_eos_continuation:
         return [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_hybrid_continue_entry.py'),
                 '--tree', str(root), '--layers', str(args.layers), '--prompt', args.prompt, '--out', str(out)]
@@ -86,6 +87,8 @@ def main():
                         help='compare static-prefix reuse in a reduced edited conversation')
     parser.add_argument('--static-group-suffix', action='store_true',
                         help='also test a larger suffix prefill segment')
+    parser.add_argument('--static-normal-chat', action='store_true',
+                        help='measure ordinary follow-up after diagnostic EOS')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--python', type=Path, required=True)
     parser.add_argument('--model', choices=('vl', 'q35'), default='vl')
@@ -97,6 +100,8 @@ def main():
         parser.error('Qwen3.5 needs at least four layers to include a full-attention cache')
     if args.static_group_suffix and not args.static_prefix_probe:
         parser.error('grouped suffix requires the static prefix probe')
+    if args.static_normal_chat and not args.static_group_suffix:
+        parser.error('normal-chat comparison requires grouped suffix and static prefix probe')
     if args.static_prefix_probe and (args.model != 'vl' or args.hybrid_eos_continuation or
                                      args.device_eos_probe or args.early_eos_probe or args.baseline_overlay_root):
         parser.error('static prefix probe needs VL, one overlay and no other probe')

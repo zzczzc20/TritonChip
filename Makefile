@@ -866,8 +866,11 @@ r41-core-boundary: $(patsubst %,$(BUILD)/%.vvp,$(R41_BENCHES)) $(BUILD)/t41_boun
 	   $(TOOLS)/run_test.sh "t41_boundary $$b $$r" \
 	     "$(VVP) $(BUILD)/$$b.vvp +hex=$(BUILD)/t41_boundary.hex +maxcycles=400000 $$r +r41cov" \
 	     || exit 1; \
-	   $(VVP) $(BUILD)/$$b.vvp +hex=$(BUILD)/t41_boundary.hex +maxcycles=400000 $$r +r41cov \
-	     | grep '^r41cov' | sed 's/^/      /'; \
+	   cov_log="$(BUILD)/r41cov.$$$$"; \
+	   $(VVP) $(BUILD)/$$b.vvp +hex=$(BUILD)/t41_boundary.hex +maxcycles=400000 $$r +r41cov > "$$cov_log" \
+	     || { rm -f "$$cov_log"; exit 1; }; \
+	   sed -n '/^r41cov/s/^/      /p' "$$cov_log" || { rm -f "$$cov_log"; exit 1; }; \
+	   rm -f "$$cov_log"; \
 	 done; done
 
 # R41 F10: the LSU pair's registered request boundary (REQ_REG=1) against the

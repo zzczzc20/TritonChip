@@ -883,9 +883,21 @@ class Session:
         def score(addr):
             return sum(shadow.get(addr + index * WORD) == word
                        for index, word in enumerate(words))
+        # An exact previous location is worth keeping even for a short code
+        # block. Stop on the first changed word instead of scoring it all.
+        if hint in candidates and hint != candidates[0] and all(
+                shadow.get(hint + index * WORD) == word for index, word in enumerate(words)):
+            return hint
+        # Probe a small, uniformly distributed sample before examining full
+        # payloads. Otherwise a fragmented code store could spend more CPU
+        # searching than the XRT writes it saves.
+        step = max(1, (len(words) + 15) // 16)
+        sample = tuple(range(0, len(words), step))
+        ranked = sorted(candidates[1:], key=lambda addr: sum(
+            shadow.get(addr + index * WORD) == words[index] for index in sample), reverse=True)
         first_score = score(candidates[0])
         best, best_score = candidates[0], first_score
-        for addr in candidates[1:]:
+        for addr in ranked[:3]:
             matches = score(addr)
             if matches > best_score:
                 best, best_score = addr, matches
@@ -893,8 +905,6 @@ class Session:
                     break
         # Favour first-fit unless the saved writes cover the search cost and
         # the possibility that a different placement fragments the free list.
-        if best == hint and best_score == len(words):
-            return best
         if best_score - first_score < max(128, len(words) // 8):
             return None
         return best

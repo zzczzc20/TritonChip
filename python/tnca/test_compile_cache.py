@@ -40,7 +40,8 @@ class CacheNamespaceTests(unittest.TestCase):
     def test_runtime_cache_reset_and_test_edits_preserve_compiled_graphs(self):
         base = {'TNCA_PROFILE': 'dp'}
         runtime = dict(base, TNCA_DEVICE_ZERO='1', TNCA_QUEUE_STEPS='1',
-                       TNCA_REUSE_WARM_PREFILL='1', TNCA_REUSE_HYBRID_PREFILL='1')
+                       TNCA_REUSE_WARM_PREFILL='1', TNCA_REUSE_HYBRID_PREFILL='1',
+                       TNCA_MMIO_DESCRIPTOR_CACHE='1', TNCA_CODE_REUSE='1')
         self.assertEqual(cache.namespace('source', base, {}, {}), cache.namespace('source', runtime, {}, {}))
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

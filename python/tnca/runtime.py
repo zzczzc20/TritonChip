@@ -1619,12 +1619,12 @@ class Session:
         module = getattr(module, '_resident', module)
         with self._lock:
             self._check_usable()
-            blockers = [event for event in self._active_events.values()
-                        if getattr(event._task['module'], '_resident', event._task['module']) is module]
+            blocker = next((event for event in reversed(self._active_events.values())
+                            if getattr(event._task['module'], '_resident', event._task['module']) is module), None)
         # The session executes admitted events in FIFO order. Completion of
         # the last matching event implies completion of all earlier matches.
-        if blockers and not blockers[-1].terminal:
-            self.wait(blockers[-1], timeout)
+        if blocker is not None and not blocker.terminal:
+            self.wait(blocker, timeout)
         return True
 
     @contextmanager

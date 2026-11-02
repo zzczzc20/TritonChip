@@ -718,6 +718,7 @@ class UserReportTests(unittest.TestCase):
         import json
         from chat_timing import user_visible_metrics
         report = dict(status='pass', generated_text='hello', generated_tokens=[7, 2],
+                      cpu_numerical_fallback=False, steady_decode_host_reads_detected=False,
                       user_visible_timing=user_visible_metrics({'generated_tokens': [7, 2]}, 2, [2]),
                       statistics=dict(prefill_seconds=1, decode_steps=1,
                                       mean_decode_seconds_per_token=1, decode_tokens_per_second=1),
@@ -731,6 +732,9 @@ class UserReportTests(unittest.TestCase):
             self.assertTrue(app.repl(lines=['hi', '/quit'], transcript=transcript))
         stats = json.loads(next(line for line in stream.getvalue().splitlines() if line.startswith('{')))
         self.assertEqual(stats['non_special_token_ids_per_second'], 1 / 5)
+        self.assertEqual(stats['status'], 'pass')
+        self.assertIs(stats['cpu_numerical_fallback'], False)
+        self.assertIs(stats['steady_decode_host_reads_detected'], False)
         self.assertEqual(transcript[0]['report']['user_visible_timing']['prompt_to_return_seconds'], 5)
         self.assertIs(app.generate.call_args.kwargs['retain_logits'], False)
 

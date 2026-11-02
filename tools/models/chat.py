@@ -1724,7 +1724,10 @@ def interactive_metrics(report):
         # diagnostic report keeps their launch and cycle counters separately.
         fields = ('prefill_seconds',)
     return ({key: stats[key] for key in fields}
-            | {'reused_cached_tokens': report['steps'][0]['reused_cached_tokens'],
+            | {'status': report.get('status'),
+               'cpu_numerical_fallback': report.get('cpu_numerical_fallback'),
+               'steady_decode_host_reads_detected': report.get('steady_decode_host_reads_detected'),
+               'reused_cached_tokens': report['steps'][0]['reused_cached_tokens'],
                'new_graphs': report['session']['new_graphs_this_prompt'],
                'prompt_to_output_seconds': visible['prompt_to_return_seconds'],
                'returned_token_ids_per_second': visible['returned_token_ids_per_second'],

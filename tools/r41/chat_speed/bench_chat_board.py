@@ -17,6 +17,23 @@ import time
 from bench_mmio_board import board_idle, IMAGE_UUID, PROFILE
 
 
+def comparison_scope(rows, *, device_eos_probe, warm_cache):
+    """Do not call timed compilation an equivalent warm-model comparison."""
+    compiler = [(row.get('timing') or {}).get('compiler') or {} for row in rows]
+    observed = len(compiler) == 2 and all(item.get('available') is True for item in compiler)
+    no_misses = observed and all(item.get('fx_graph_cache_misses') == 0 for item in compiler)
+    no_compile = no_misses and all(item.get('dynamo_compile_calls') == 0 for item in compiler)
+    if device_eos_probe:
+        if no_compile:
+            return 'matched in-process warm reduced-model turns with artificial EOS; not model quality'
+        return ('in-process warm reduced-model turns with artificial EOS; timed compilation occurred '
+                'or was not measured, so this is not a matched warm speed comparison')
+    if warm_cache:
+        return ('matched warm-cache processes, baseline then candidate' if no_compile else
+                'nominally warm-cache processes; timed compilation occurred or was not measured')
+    return 'cold process then warm-cache process; not a matched warm A/B'
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source-root', type=Path, required=True)
@@ -130,14 +147,8 @@ def main():
                 for mode, report in zip(modes, reports)]
         same_eos = not args.device_eos_probe or rows[0]['diagnostic_eos_token'] == rows[1]['diagnostic_eos_token']
         status = 'pass' if exact and tokens_equal and same_eos and all(row['status'] == 'pass' for row in rows) else 'fail'
-        warm_hits = all((row['timing'].get('compiler') or {}).get('fx_graph_cache_misses') == 0 for row in rows)
-        if args.device_eos_probe:
-            scope = 'matched in-process warm reduced-model turns with artificial EOS; not model quality'
-        elif args.warm_cache_dir:
-            scope = ('matched warm-cache processes, baseline then candidate' if warm_hits else
-                     'nominally warm-cache processes; at least one compile miss')
-        else:
-            scope = 'cold process then warm-cache process; not a matched warm A/B'
+        scope = comparison_scope(rows, device_eos_probe=args.device_eos_probe,
+                                 warm_cache=bool(args.warm_cache_dir))
         result = dict(status=status, domain=f'FPGA board; reduced {args.layers}-layer {args.model} checkpoint', image_uuid=IMAGE_UUID,
                       clock_hz=100000000, scope=scope,
                       source='supplied overlays with frozen compiler 02d704f4',

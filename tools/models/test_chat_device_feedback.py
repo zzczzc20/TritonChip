@@ -178,6 +178,15 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(actual['steps'][1]['decode_seconds_in_warmup'], 0.2)
         self.assertEqual(actual['statistics']['decode_seconds_already_in_warmup'], 0.2)
 
+    def test_queued_decode_uses_prefill_positions_after_real_warmup(self):
+        baseline, expected = self.run_case([1, 2, 1, 3], queue=True)
+        optimized, actual = self.run_case([1, 2, 1, 3], queue=True, real_warmup=True)
+        self.assertEqual(actual['generated_tokens'], expected['generated_tokens'])
+        self.assertEqual(optimized.fed, baseline.fed)
+        self.assertEqual([int(x.item()) for x in optimized.fed_positions], [3, 4])
+        self.assertTrue(actual['steps'][1]['decode_from_warmup'])
+        self.assertTrue(all(s['transfers_inside_step']['host_read_calls'] == 0 for s in actual['steps']))
+
     def test_real_warmup_retains_the_actual_feedback_without_rewind(self):
         session = object.__new__(chat.Session)
         session.device, session.dev, session.cache = 'tnca', torch.device('cpu'), object()

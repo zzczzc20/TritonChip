@@ -905,7 +905,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         with transfer_meter(True) as warmup_meter:
             real_feedback = (getattr(session, 'supports_real_warmup_feedback', False)
                              and os.environ.get('TNCA_REUSE_FIRST_DECODE', '1') == '1'
-                             and new_tokens > 1 and not forced_tokens and not queue_steps)
+                             and new_tokens > 1 and not forced_tokens)
             if real_feedback:
                 warmup_logits = session.warmup_decode(inputs, per_image, capture, real_feedback=True)
             else:
@@ -957,7 +957,10 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 current = (warm_feedback[0] if index == 0 and warm_feedback is not None
                            else capture("selection", lambda: session.greedy(logits.reshape(-1))))
                 if queue_steps and index == 0:
-                    host_positions, position_batch = stage_decode_positions(session.last_position, new_tokens, session.dev)
+                    # Real warmup has already advanced the session by one;
+                    # queued positions are indexed from the prefill state.
+                    position = warm_feedback[2] if warm_feedback is not None else session.last_position
+                    host_positions, position_batch = stage_decode_positions(position, new_tokens, session.dev)
                 if not queue_steps or index == 0:
                     meter.mem.synchronize()
             if queue_steps and index == 0:

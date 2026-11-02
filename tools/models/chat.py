@@ -176,6 +176,23 @@ def capture_generation_role(role, fn, code_by_role):
     return result
 
 
+def generation_fallbacks(session, code_by_role, inspect):
+    """Reuse an inspection only while every captured wrapper is unchanged.
+
+    New or replaced wrappers always force a complete inspection, including
+    cross-wrapper host-metadata classification. Cached lists are copied so
+    a caller cannot accidentally change the next prompt's verdict.
+    """
+    identity = tuple((role, tuple(sources)) for role, sources in code_by_role.items())
+    cached = getattr(session, '_fallback_inspection', None)
+    if cached is None or cached[0] != identity:
+        found = {role: tuple(inspect(sources)) for role, sources in code_by_role.items()}
+        session._fallback_inspection = (identity, found)
+    else:
+        found = cached[1]
+    return {role: list(items) for role, items in found.items()}
+
+
 def code_store_counters():
     """Process-wide successful code loads, evictions and current resident aliases."""
     try:
@@ -920,7 +937,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     else:
         session.cached += tokens[:-1]
     cache_maintenance_seconds = time.perf_counter() - cache_maintenance_start
-    fallbacks = {role: host_fallbacks(source) for role, source in code_by_role.items()}
+    fallbacks = generation_fallbacks(session, code_by_role, host_fallbacks)
     covered = all(code_by_role.get(role) for role in ("prefill", "decode", "selection"))
     fallback = any(fallbacks.values()) if covered else None
     vision_unknown = any(c.get("compiled_wrapper_fallbacks") is None for c in (vision_calls or []))

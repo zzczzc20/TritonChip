@@ -370,6 +370,23 @@ class UserReportTests(unittest.TestCase):
         self.assertIs(app.generate.call_args_list[0].kwargs['retain_logits'], False)
         self.assertEqual(app.generate.call_args_list[1].kwargs['forced'], [1])
 
+    def test_fallback_inspection_reuses_only_unchanged_wrappers(self):
+        session = types.SimpleNamespace()
+        wrappers = {'prefill': ['first'], 'decode': ['second']}
+        inspect = mock.Mock(side_effect=lambda code: list(code))
+        first = chat.generation_fallbacks(session, wrappers, inspect)
+        first['prefill'].clear()
+        second = chat.generation_fallbacks(session, wrappers, inspect)
+        self.assertEqual(second['prefill'], ['first'])
+        self.assertEqual(inspect.call_count, 2)
+        wrappers['decode'].append('new')
+        third = chat.generation_fallbacks(session, wrappers, inspect)
+        self.assertEqual(third['decode'], ['second', 'new'])
+        self.assertEqual(inspect.call_count, 4)
+        wrappers['prefill'][0] = 'replacement'
+        self.assertEqual(chat.generation_fallbacks(session, wrappers, inspect)['prefill'], ['replacement'])
+        self.assertEqual(inspect.call_count, 6)
+
     def test_json_flushes_text_before_finalizing_visible_time(self):
         import io
         import json

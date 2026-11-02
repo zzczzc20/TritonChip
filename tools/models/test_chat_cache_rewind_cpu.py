@@ -158,6 +158,29 @@ class HybridPrefillContinuationTests(unittest.TestCase):
                 self.assertTrue(torch.equal(first.keys[:, :, :8], second.keys[:, :, :8]))
                 self.assertTrue(torch.equal(first.values[:, :, :8], second.values[:, :, :8]))
 
+    def test_deferred_hybrid_reset_matches_eager_reset_on_the_next_prompt(self):
+        eager, deferred = self.make_cache(), self.make_cache()
+        first, next_prompt = [7, 4, 1], [5, 8, 2]
+        with torch.inference_mode():
+            for cache in (eager, deferred):
+                self.call(cache, first)
+                self.call(cache, [9])
+            eager.reset()
+            expected = self.call(eager, next_prompt)
+            session = object.__new__(chat.Session)
+            session.device, session.model, session.cache = 'cpu', self.model, deferred
+            session.cached, session._cache_tokens = first, len(first) + 1
+            session.last_position, session._warm_prefill = torch.tensor([3]), None
+            session._pending_reset, session.resets = False, 0
+            session.bucket, session.chunk = 32, 0
+            session._call_prefill = lambda ids, positions, vision: self.call(deferred, ids[0].tolist())
+            session.defer_reset()
+            with mock.patch.object(chat.L, 'prefill_position_ids', return_value=torch.tensor([[[0, 1, 2]]])):
+                actual, _, reused = session.prefill_prompt({'input_ids': torch.tensor([next_prompt])}, None)
+            self.assertTrue(torch.equal(actual, expected))
+            self.assertEqual(reused, 0)
+            self.assertEqual(session.resets, 1)
+
     def test_changed_hybrid_metadata_refuses_restore_without_mutation(self):
         cache = self.make_cache()
         with torch.inference_mode():

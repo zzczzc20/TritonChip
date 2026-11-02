@@ -481,15 +481,10 @@ class TNCALauncher:
                 raise TNCALaunchError('graph capture requires native resident tensors without guards')
             t_submit = time.perf_counter()
             if asynchronous:
-                from tnca.runtime import MAX_UNFINISHED
-                while len(session.unfinished) >= MAX_UNFINISHED:
-                    oldest = session.unfinished[0]
-                    session.wait(oldest)
-                    if not oldest.ok:
-                        raise TNCALaunchError(f'queued predecessor failed: {oldest.error}')
-            previous = session.latest_event if asynchronous else None
-            event = session.submit(module, bound, grid=grid,
-                                   depends_on=[previous] if previous is not None else [])
+                from tnca.torch_device.queue import submit_queued
+                event = submit_queued(session, module, bound, grid)
+            else:
+                event = session.submit(module, bound, grid=grid, depends_on=[])
             if capture is not None:
                 event._replay_command = (session, module, bound, grid, tuple(values))
             if asynchronous:

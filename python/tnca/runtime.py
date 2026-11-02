@@ -40,6 +40,7 @@ import threading
 import time
 from contextlib import contextmanager
 from collections import OrderedDict
+from functools import lru_cache
 
 from . import _data, abi, artifact, manifest as M
 from . import transport as T
@@ -50,12 +51,26 @@ from .errors import (AdmissionError, ArgumentError, ArtifactError,
                      SessionPoisoned, TncaError, Timeout, VersionError)
 
 WORD = 8
-MAX_UNFINISHED = 8          # the contract's floor; this is exactly it
+MAX_UNFINISHED = 8          # default and contract floor
 DEFAULT_ALIGN = 64
 # All shipped NUCA images decode this 4 KiB page before external memory.
 # A host DMA can write its backing BO, but a core load reads TMU registers.
 # Keep the hole even when the allocated HBM window extends beyond 2 GiB.
 DEVICE_RESERVED_RANGES = ((0x7fff0000, 0x7fff1000),)
+
+
+def _requested_queue_depth():
+    """Keep the default contract while allowing a bounded batched queue."""
+    raw = os.environ.get('TNCA_QUEUE_DEPTH')
+    if raw is None:
+        return MAX_UNFINISHED
+    try:
+        depth = int(raw)
+    except ValueError as error:
+        raise ValueError('TNCA_QUEUE_DEPTH must be an integer from 8 to 128') from error
+    if not MAX_UNFINISHED <= depth <= 128:
+        raise ValueError('TNCA_QUEUE_DEPTH must be an integer from 8 to 128')
+    return depth
 
 # States
 SUBMITTED, VALIDATED, QUEUED = 'SUBMITTED', 'VALIDATED', 'QUEUED'
@@ -111,6 +126,133 @@ def _active_core_mask(physical_grid, explicit_mask):
     if explicit_mask is not None and explicit_mask != mask:
         raise ValueError('TNCA_ACTIVE_CORES conflicts with explicit active_cores mask')
     return mask
+
+
+def _replicate_physical_arguments(block, stride, cores):
+    """Replicate a position-independent argument block with exact zero padding."""
+    if stride < len(block) or stride < 0 or cores < 1:
+        raise ValueError('invalid physical argument table dimensions')
+    return (bytearray(block) + bytearray(stride - len(block))) * cores
+
+
+@lru_cache(maxsize=512)
+def _argument_pack_plan(signature):
+    """Reuse layout and scalar dispatch for repeated kernel signatures."""
+    plan = []
+    for index, (name, kind) in enumerate(signature):
+        if kind == 'f32':
+            operation = 0
+        elif kind in ('i32', 'u32'):
+            operation = 1
+        elif kind in ('i64', 'u64', 'device_ptr64'):
+            operation = 2
+        else:
+            operation = 3
+        plan.append((name, kind, abi.offset_of(index), operation))
+    return tuple(plan)
+
+
+@lru_cache(maxsize=512)
+def _argument_offsets(signature):
+    return {name: offset for name, _kind, offset, _operation in _argument_pack_plan(signature)}
+
+
+@lru_cache(maxsize=512)
+def _argument_names(signature):
+    names = tuple(name for name, _kind in signature)
+    return names, frozenset(names)
+
+
+def _first_undeclared_alias(spans, allowed):
+    """Find the same first forbidden pair without comparing disjoint spans."""
+    if len(spans) <= 8:
+        for i, (name, start, end, _buffer) in enumerate(spans):
+            for other, other_start, other_end, _other_buffer in spans[i + 1:]:
+                if start < other_end and other_start < end and tuple(sorted((name, other))) not in allowed:
+                    return name, other
+        return None
+    active, best = [], None
+    # Keep original argument indices so diagnostics still name the same
+    # pair as the original nested-order check, including equal starts.
+    for index, span in sorted(enumerate(spans), key=lambda item: (item[1][1], item[0])):
+        name, start, end, _buffer = span
+        active = [(old_index, old) for old_index, old in active if old[2] > start]
+        for old_index, old in active:
+            if old[1] < end and tuple(sorted((name, old[0]))) not in allowed:
+                pair = (min(index, old_index), max(index, old_index))
+                if best is None or pair < best:
+                    best = pair
+        active.append((index, span))
+    if best is None:
+        return None
+    return spans[best[0]][0], spans[best[1]][0]
+
+
+def _encode_resolved_arguments(params, values):
+    """Encode values already checked by Session._resolve without rechecking names."""
+    if abi.SLOT_BYTES != 8:
+        return abi.encode_block(params, values)
+    out = bytearray(abi.block_size(len(params)))
+    for name, kind, at, operation in _argument_pack_plan(tuple(params)):
+        value = values[name]
+        # _resolve checks scalar types and handle bounds. Descriptor pointers
+        # are filled afterwards, so retain the ABI's 64-bit address check.
+        if kind in abi.POINTER_TYPES:
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ArgumentError(f'parameter {name!r}: resolved pointer must be an integer address, '
+                                    f'got {type(value).__name__}')
+            if not 0 <= value <= abi.TYPES['u64']['max']:
+                raise ArgumentError(f'parameter {name!r}: address {value} is outside 64 bits')
+        if operation == 0:
+            struct.pack_into('<f', out, at, float(value))
+        elif operation == 1:
+            struct.pack_into('<I', out, at, value & 0xFFFFFFFF)
+        elif operation == 2:
+            struct.pack_into('<Q', out, at, value & 0xFFFFFFFFFFFFFFFF)
+        else:
+            out[at:at + abi.SLOT_BYTES] = abi.encode_slot(kind, value)
+    return bytes(out)
+
+
+def _physical_argument_table(block, stride, cores, *, arg_addr, params, maps,
+                             map_start, scratch, scratch_start):
+    """Replicate validated arguments and patch only core-local addresses."""
+    if not maps and not scratch:
+        return _replicate_physical_arguments(block, stride, cores)
+    # Copy the already validated template once. Descriptor payloads and all
+    # ordinary arguments are identical; only a few pointer slots differ.
+    table = _replicate_physical_arguments(block, stride, cores)
+    descriptor_slots = _argument_offsets(tuple(params))
+    for core in range(cores):
+        core_base = arg_addr + core * stride
+        for index, (name, _data) in enumerate(maps):
+            pointer = core_base + map_start + 256 * index
+            if not 0 <= pointer <= abi.TYPES['u64']['max']:
+                raise ArgumentError(f'parameter {name!r}: address {pointer} is outside 64 bits')
+            struct.pack_into('<Q', table, core * stride + descriptor_slots[name], pointer)
+        if scratch:
+            struct.pack_into('<Q', table, core * stride + abi.block_size(len(params)), core_base + scratch_start)
+    return table
+
+
+def _build_argument_block(params, resolved, maps, *, arg_addr, arg_stride, cores,
+                          map_start, scratch, scratch_start):
+    """Build a complete launch block after its heap reservation succeeds."""
+    slots = abi.block_size(len(params)) + (8 if scratch else 0)
+    block = bytearray(scratch_start + scratch if scratch else (scratch_start if maps else slots))
+    for index, (name, data) in enumerate(maps):
+        offset = map_start + 256 * index
+        resolved[name] = arg_addr + offset
+        block[offset:offset + 256] = data
+    block[:abi.block_size(len(params))] = _encode_resolved_arguments(params, resolved)
+    if scratch:
+        struct.pack_into('<Q', block, abi.block_size(len(params)), arg_addr + scratch_start)
+    if cores:
+        # The ABI was validated once above. Most kernels have no core-local
+        # addresses; the remaining kernels patch only descriptor/scratch slots.
+        block = _physical_argument_table(block, arg_stride, cores, arg_addr=arg_addr,
+            params=params, maps=maps, map_start=map_start, scratch=scratch, scratch_start=scratch_start)
+    return block
 
 
 class Event:
@@ -273,6 +415,15 @@ class _Allocator:
         return addr, need
 
     def release(self, addr, size):
+        # The common single-launch case releases the heap's last block.
+        # There is nothing to sort or merge when no older holes exist.
+        if not self.free_list and addr + size == self.next:
+            self.next = addr
+            while True:
+                prior = next((lo for lo, hi in self.reserved if hi == self.next), None)
+                if prior is None:
+                    return
+                self.next = prior
         merged = []
         for a, n in sorted(self.free_list + [(addr, size)]):
             if merged and merged[-1][0] + merged[-1][1] == a:
@@ -336,6 +487,7 @@ class Session:
         Session._counter += 1
         self.id = Session._counter
         self.profile = profile
+        self.max_unfinished = _requested_queue_depth()
         if large_grid is None:
             value = os.environ.get('TNCA_LARGE_GRID', '0')
             if value not in ('0', '1'):
@@ -500,6 +652,19 @@ class Session:
     def unfinished(self):
         with self._lock:
             return [e for e in self._active_events.values() if not e.terminal]
+
+    @property
+    def unfinished_count(self):
+        """Count live admissions without rebuilding the event list per launch."""
+        with self._lock:
+            # Terminal transitions and removal use this same lock.
+            return len(self._active_events)
+
+    @property
+    def oldest_unfinished(self):
+        """The first admitted live event, or None after the queue drains."""
+        with self._lock:
+            return next(iter(self._active_events.values()), None)
 
     @property
     def memory_stats(self):
@@ -716,10 +881,11 @@ class Session:
                     'that module was loaded in a previous epoch')
             if not module.alive:
                 raise AdmissionError(f'{module.name} has been unloaded')
-            if len(self.unfinished) >= MAX_UNFINISHED:
+            limit = getattr(self, 'max_unfinished', MAX_UNFINISHED)
+            if len(self._active_events) >= limit:
                 raise QueueFull(
-                    f"{MAX_UNFINISHED} tasks are already unfinished",
-                    detail={'limit': MAX_UNFINISHED},
+                    f"{limit} tasks are already unfinished",
+                    detail={'limit': limit},
                     remedy='wait for one to finish; this does not block and '
                            'does not discard an older task')
 
@@ -813,64 +979,62 @@ class Session:
             arg_stride = (arg_size + 255) // 256 * 256 if self.physical_grid else 0
             arg_addr, reserved = self._heap.alloc(arg_stride * self._physical_core_count
                                                   if self.physical_grid else arg_size, align=256)
-            # Scratch is handed over zero-filled: the upload covers it, so a
-            # TensorMap the kernel builds there needs only its non-zero words
-            # stored (compile option sparse_tensormaps).
-            block = bytearray(scratch_start + scratch if scratch
-                              else (scratch_start if maps else slots))
-            for i, (name, data) in enumerate(maps):
-                offset = map_start + 256*i
-                resolved[name] = arg_addr + offset
-                block[offset:offset+256] = data
-            block[:abi.block_size(len(module.params))] = abi.encode_block(module.params, resolved)
-            if scratch:
-                struct.pack_into('<Q', block, abi.block_size(len(module.params)), arg_addr+scratch_start)
+            # A rejected encoding must not leak its argument-heap reservation.
+            # Scratch stays zero-filled for sparse TensorMap construction.
+            try:
+                block = _build_argument_block(module.params, resolved, maps, arg_addr=arg_addr,
+                    arg_stride=arg_stride, cores=self._physical_core_count if self.physical_grid else 0,
+                    map_start=map_start, scratch=scratch, scratch_start=scratch_start)
+            except BaseException:
+                self._heap.release(arg_addr, reserved)
+                raise
 
-            if self.physical_grid:
-                table = bytearray(arg_stride * self._physical_core_count)
-                for core in range(self._physical_core_count):
-                    core_args = dict(resolved)
-                    core_base = arg_addr + core * arg_stride
-                    core_block = bytearray(block)
-                    for i, (name, _data) in enumerate(maps):
-                        core_args[name] = core_base + map_start + 256*i
-                    core_block[:abi.block_size(len(module.params))] = abi.encode_block(module.params, core_args)
-                    if scratch:
-                        struct.pack_into('<Q', core_block, abi.block_size(len(module.params)), core_base + scratch_start)
-                    table[core*arg_stride:core*arg_stride+len(core_block)] = core_block
-                block = table
-
-            task = dict(event=ev, module=module, block=block, arg_stride=arg_stride,
-                        arg_addr=arg_addr, allocation=(arg_addr, reserved), grid=(gx, gy, gz),
-                        depends_on=list(depends_on), leased=leased,
-                        # Kept so a failure can be saved and run again
-                        # (failure.capture); the block alone is bytes, and
-                        # a bundle a person cannot read is not a bundle.
-                        args=dict(resolved))
-            ev._task = task
-            for buf in leased:
-                buf.leases += 1
-            self._events[ev.job_id] = ev
-            self._active_events[ev.job_id] = ev
-            self._queue.append(task)
-            self._queue_wake.set()
-            ev._to(QUEUED)
-            return ev
+            task, leased_count = None, 0
+            try:
+                task = dict(event=ev, module=module, block=block, arg_stride=arg_stride,
+                            arg_addr=arg_addr, allocation=(arg_addr, reserved), grid=(gx, gy, gz),
+                            depends_on=list(depends_on), leased=leased,
+                            # Retain readable arguments for a failure replay.
+                            args=dict(resolved))
+                ev._task = task
+                for buf in leased:
+                    buf.leases += 1
+                    leased_count += 1
+                self._events[ev.job_id] = ev
+                self._active_events[ev.job_id] = ev
+                self._queue.append(task)
+                self._queue_wake.set()
+                ev._to(QUEUED)
+                return ev
+            except BaseException:
+                # The admission lock prevents the worker from seeing a
+                # partially constructed task. Restore all ownership if host
+                # allocation or queue bookkeeping fails before publication.
+                if self._queue and self._queue[-1] is task:
+                    self._queue.pop()
+                self._active_events.pop(ev.job_id, None)
+                self._events.pop(ev.job_id, None)
+                for buf in leased[:leased_count]:
+                    buf.leases -= 1
+                if task is not None:
+                    task.pop('allocation', None)
+                self._heap.release(arg_addr, reserved)
+                raise
 
     def _resolve(self, module, args):
         """Arguments -> device values, with every check done here.
 
         Returns (values, buffers named). Raises before anything is queued.
         """
-        names = [n for n, _t in module.params]
+        names, name_set = _argument_names(tuple(module.params))
         missing = [n for n in names if n not in args]
-        extra = [k for k in args if k not in names]
+        extra = [k for k in args if k not in name_set]
         if missing or extra:
             raise ArgumentError(
                 f"argument mismatch: missing {missing}, unexpected {extra}",
                 detail={'signature': [f"{n}:{t}" for n, t in module.params]})
 
-        out, leased, spans = {}, [], []
+        out, leased, leased_seen, spans = {}, [], set(), []
         for name, kind in module.params:
             value = args[name]
             if isinstance(value, TensorDescriptor):
@@ -897,7 +1061,12 @@ class Session:
                         f"{name!r}: byte offset {offset} is outside "
                         f"{buf.name} (0..{buf.size - 1})")
                 out[name] = buf.addr + offset
-                leased.append(buf)
+                # Several arguments can refer to a declared alias. Lease each
+                # backing allocation once while retaining every span for the
+                # independent overlap check below.
+                if buf not in leased_seen:
+                    leased_seen.add(buf)
+                    leased.append(buf)
                 spans.append((name, buf.addr + offset,
                               buf.addr + buf.size, buf))
             else:
@@ -909,18 +1078,17 @@ class Session:
         # schedule to be accidentally safe (ABI-05).
         allowed = {tuple(sorted(p)) for p in
                    module.manifest['parameters'].get('alias_allowed') or []}
-        for i in range(len(spans)):
-            for j in range(i + 1, len(spans)):
-                (na, sa, ea, ba), (nb, sb, eb, bb) = spans[i], spans[j]
-                if sa < eb and sb < ea and tuple(sorted((na, nb))) not in allowed:
-                    raise TncaError(
-                        f"{na!r} and {nb!r} overlap and the manifest does "
-                        f"not declare them as aliases",
-                        code='ALIAS_UNDECLARED',
-                        detail={'declared': sorted(allowed)},
-                        remedy='declare the alias at compile time, or use '
-                               'separate buffers')
-        return out, list(dict.fromkeys(leased))
+        conflict = _first_undeclared_alias(spans, allowed)
+        if conflict is not None:
+            na, nb = conflict
+            raise TncaError(
+                f"{na!r} and {nb!r} overlap and the manifest does "
+                f"not declare them as aliases",
+                code='ALIAS_UNDECLARED',
+                detail={'declared': sorted(allowed)},
+                remedy='declare the alias at compile time, or use '
+                       'separate buffers')
+        return out, leased
 
     # ---- the queue --------------------------------------------------------
     def _run_queue(self):

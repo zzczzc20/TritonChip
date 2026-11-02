@@ -34,9 +34,9 @@ def main():
     args = parser.parse_args()
     if args.model == 'q35' and args.layers < 4:
         parser.error('Qwen3.5 needs at least four layers to include a full-attention cache')
-    if args.device_eos_probe and (args.baseline_overlay_root or args.warm_cache_dir):
-        parser.error('the device EOS probe uses one source overlay and its own cache')
-    if bool(args.baseline_overlay_root) != bool(args.warm_cache_dir):
+    if args.device_eos_probe and args.baseline_overlay_root:
+        parser.error('the device EOS probe uses one source overlay')
+    if not args.device_eos_probe and bool(args.baseline_overlay_root) != bool(args.warm_cache_dir):
         parser.error('warm A/B requires both a baseline overlay and an existing warm cache')
     if args.warm_cache_dir and not args.warm_cache_dir.is_dir():
         parser.error('warm cache directory does not exist')

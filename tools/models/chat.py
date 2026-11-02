@@ -1132,6 +1132,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                                                          if stats['generation_seconds'] > 0 else None),
                  decode_rate_scope='executed decode steps, including any work after EOS',
                  returned_rate_scope='returned token IDs including EOS; generation wall only, excludes output retrieval')
+    if stop_enabled:
+        stats['decode_rate_scope'] = 'host-submitted decode steps; device work after EOS is guarded'
     if queue_steps:
         stats['decode_time_scope'] = 'successive device completion times after one queued submission span'
         stats['decode_submission'] = 'queued-resident-device-feedback'

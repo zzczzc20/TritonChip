@@ -43,7 +43,7 @@ class CodeLoadTests(unittest.TestCase):
                 self.backend_name = 'fpga-u280-multicore'
                 self.dev = types.SimpleNamespace(_io_lock=threading.RLock())
                 self.busy = set()
-                self.drains = 0
+                self.drains, self.module_waits = 0, 0
             def unload(self, module, *, allow_unrelated_tasks=False):
                 if self.busy and (not allow_unrelated_tasks or id(module) in self.busy):
                     raise BufferBusy('module is in queued work')
@@ -51,8 +51,12 @@ class CodeLoadTests(unittest.TestCase):
             def drain(self):
                 self.drains += 1
                 self.busy.clear()
-        for all_busy in (False, True):
-            with self.subTest(all_busy=all_busy), tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            def wait_for_module(self, module):
+                self.module_waits += 1
+                self.busy.discard(id(module))
+        for all_busy, require_empty in ((False, False), (True, False), (True, True)):
+            with self.subTest(all_busy=all_busy, require_empty=require_empty), \
+                    tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
                 for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable', '_module_views',
                              '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
                     stack.enter_context(mock.patch.object(driver, name, {}))
@@ -65,10 +69,13 @@ class CodeLoadTests(unittest.TestCase):
                 session = QueuedSession()
                 first, second = [driver._load(session, str(path))[1] for path in paths[:2]]
                 session.busy = {id(first), id(second)} if all_busy else {id(first)}
+                if require_empty:
+                    session.require_empty.add(str(paths[2]))
                 driver._load(session, str(paths[2]))
-                self.assertEqual(session.drains, int(all_busy))
+                self.assertEqual(session.module_waits, int(all_busy))
+                self.assertEqual(session.drains, int(require_empty))
                 self.assertEqual(first.alive, not all_busy)
-                self.assertEqual(second.alive, all_busy)
+                self.assertEqual(second.alive, all_busy and not require_empty)
 
     def test_unrelated_work_cannot_free_code_referenced_by_a_view(self):
         import threading
@@ -80,7 +87,13 @@ class CodeLoadTests(unittest.TestCase):
         second = types.SimpleNamespace(epoch=7, alive=True, code_addr=128, code_size=64, params=[], name='b')
         view = driver._ModuleView(first, 'first', {'identity': {'kernel_name': 'a'}})
         session._modules = [first, second]
-        session._active_events = {1: types.SimpleNamespace(_task={'module': view})}
+        blocker = types.SimpleNamespace(_task={'module': view}, terminal=False)
+        unrelated = types.SimpleNamespace(_task={'module': second}, terminal=False)
+        session._active_events = {1: blocker, 2: unrelated}
+        session.wait = mock.Mock()
+        session.wait_for_module(view)
+        session.wait.assert_called_once_with(blocker, None)
+        session._active_events.pop(2)
         with self.assertRaises(BufferBusy):
             session.unload(second)
         with self.assertRaises(BufferBusy):

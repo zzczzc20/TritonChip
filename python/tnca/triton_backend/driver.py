@@ -798,8 +798,8 @@ def _load(session, path):
             session.drain()
         old_keys = (trace.victims(session, _loaded, _executable_digest)
                     if trace is not None else list(_loaded))
-        for phase in range(2 if parallel_evict else 1):
-            blocked = False
+        for phase in range(3 if parallel_evict else 1):
+            blocked = []
             for old_key in old_keys:
                 if old_key[0] != session.id or old_key[1] != session.epoch:
                     continue
@@ -808,14 +808,14 @@ def _load(session, path):
                 if old is None:
                     continue
                 try:
-                    if parallel_evict and phase == 0:
+                    if parallel_evict and phase < 2:
                         session.unload(old, allow_unrelated_tasks=True)
                     else:
                         session.unload(old)
                 except _BB:
-                    if not parallel_evict or phase:
+                    if not parallel_evict or phase == 2:
                         raise
-                    blocked = True
+                    blocked.append(old)
                     continue
                 _forget_resident(old)
                 global evicted
@@ -827,9 +827,14 @@ def _load(session, path):
                     if 'overlaps the device heap' not in str(again):
                         raise
             else:
-                if parallel_evict and not phase and blocked:
-                    # All remaining candidates are actually referenced by
-                    # queued work. Fall back to the original full barrier.
+                if parallel_evict and phase == 0 and blocked:
+                    # The oldest eligible victim needs only its own admitted
+                    # tasks to finish, not the entire queue.
+                    session.wait_for_module(blocked[0])
+                    continue
+                if parallel_evict and phase == 1 and blocked:
+                    # More busy allocations must leave or another submitter
+                    # reused the first victim; retain the full-barrier fallback.
                     session.drain()
                     continue
                 raise TNCALaunchError(

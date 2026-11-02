@@ -1611,6 +1611,18 @@ class Session:
                 self.wait(ev, timeout)
         return True
 
+    def wait_for_module(self, module, timeout=None):
+        """Wait only for admitted tasks that reference this code allocation."""
+        module = getattr(module, '_resident', module)
+        with self._lock:
+            self._check_usable()
+            blockers = [event for event in self._active_events.values()
+                        if getattr(event._task['module'], '_resident', event._task['module']) is module]
+        for event in blockers:
+            if not event.terminal:
+                self.wait(event, timeout)
+        return True
+
     @contextmanager
     def measurement_scope(self, *, wall_seconds, clock_hz):
         """Bound tuning launches on an idle Session without changing epochs.

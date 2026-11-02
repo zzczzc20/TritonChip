@@ -208,6 +208,24 @@ def pinned_fp8_quantizer(record):
         qauto.AUTO_QUANTIZER_MAPPING.update(old)
 
 
+def limit_text_layers(text, layers):
+    """Validate a reduced checkpoint before loading or placing its weights."""
+    original = text.num_hidden_layers
+    if layers < 1 or layers > original:
+        raise ValueError(f"layers must be in 1..{original}")
+    kinds = getattr(text, 'layer_types', None)
+    selected = kinds[:layers] if isinstance(kinds, list) else None
+    # Transformers' Qwen3.5 causal-mask setup queries an attention layer
+    # even for a reduced model. An all-linear prefix fails during the first
+    # prefill, after model loading and possibly after the FPGA is acquired.
+    if (getattr(text, 'model_type', None) == 'qwen3_5_text' and selected is not None
+            and 'full_attention' not in selected):
+        raise ValueError('Qwen3.5 reduced layers must include a full-attention layer')
+    text.num_hidden_layers = layers
+    if selected is not None:
+        text.layer_types = selected
+
+
 def load_model(spec, weights="fp8", dtype=torch.bfloat16, layers=None):
     """Official <Class>.from_pretrained on the pinned snapshot.  weights: fp8 (FP8Linear, W8A8) or bf16
     (transformers' own dequantize=True path).  layers is a reduced-depth proof limit, never a full-model result.
@@ -218,11 +236,7 @@ def load_model(spec, weights="fp8", dtype=torch.bfloat16, layers=None):
     cfg = AutoConfig.from_pretrained(snap)
     if layers is not None:
         text = cfg.get_text_config(decoder=True)
-        if layers < 1 or layers > text.num_hidden_layers:
-            raise ValueError(f"layers must be in 1..{text.num_hidden_layers}")
-        text.num_hidden_layers = layers
-        if isinstance(getattr(text, "layer_types", None), list):
-            text.layer_types = text.layer_types[:layers]
+        limit_text_layers(text, layers)
     fmt = fp8_format(cfg)
     if fmt is None:
         raise UnsupportedQuantization("checkpoint has no quantization_config")

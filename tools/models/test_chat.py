@@ -65,6 +65,22 @@ class SamplingTests(unittest.TestCase):
 
 
 class ReportTests(unittest.TestCase):
+    def test_reduced_qwen35_requires_attention_before_mutating_config(self):
+        from types import SimpleNamespace
+        from qwen_fp8_lib import limit_text_layers
+        text = SimpleNamespace(model_type='qwen3_5_text', num_hidden_layers=4,
+                               layer_types=['linear_attention'] * 3 + ['full_attention'])
+        with self.assertRaisesRegex(ValueError, 'full-attention'):
+            limit_text_layers(text, 3)
+        self.assertEqual(text.num_hidden_layers, 4)
+        self.assertEqual(len(text.layer_types), 4)
+        limit_text_layers(text, 4)
+        self.assertEqual(text.layer_types[-1], 'full_attention')
+        other = SimpleNamespace(model_type='qwen3_vl_text', num_hidden_layers=4,
+                                layer_types=['full_attention'] * 4)
+        limit_text_layers(other, 1)
+        self.assertEqual((other.num_hidden_layers, other.layer_types), (1, ['full_attention']))
+
     def test_code_store_report_counts_loads_and_evictions_since_step_start(self):
         from chat import _counter_delta
         before = dict(loaded_total=3, evicted_total=2, loaded_modules=2)

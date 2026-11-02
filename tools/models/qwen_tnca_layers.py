@@ -340,9 +340,17 @@ class TransferMeter:
         self.sites = {}
 
         def site(kind, n):
-            import traceback as tb
-            frames = [f for f in tb.extract_stack()[:-2] if "/tnca/torch_device/" not in f.filename][-4:]
-            key = kind + " <- " + " < ".join(f"{Path(f.filename).name}:{f.lineno}:{f.name}" for f in reversed(frames))
+            # Only four caller locations are reported; extracting the whole
+            # traceback also loads source lines and becomes expensive when a
+            # generation step performs hundreds of device transfers.
+            frame = sys._getframe(2)
+            frames = []
+            while frame is not None and len(frames) < 4:
+                code = frame.f_code
+                if "/tnca/torch_device/" not in code.co_filename:
+                    frames.append(f"{os.path.basename(code.co_filename)}:{frame.f_lineno}:{code.co_name}")
+                frame = frame.f_back
+            key = kind + " <- " + " < ".join(frames)
             self.sites[key] = self.sites.get(key, 0) + int(n)
 
         def r(addr, n):

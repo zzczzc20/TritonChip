@@ -41,7 +41,8 @@ class CacheNamespaceTests(unittest.TestCase):
         base = {'TNCA_PROFILE': 'dp'}
         runtime = dict(base, TNCA_DEVICE_ZERO='1', TNCA_QUEUE_STEPS='1',
                        TNCA_REUSE_WARM_PREFILL='1', TNCA_REUSE_HYBRID_PREFILL='1',
-                       TNCA_MMIO_DESCRIPTOR_CACHE='1', TNCA_CODE_REUSE='1', TNCA_DEFER_CACHE_RESET='1')
+                       TNCA_MMIO_DESCRIPTOR_CACHE='1', TNCA_CODE_REUSE='1', TNCA_DEFER_CACHE_RESET='1',
+                       TNCA_REUSE_FIRST_DECODE='1')
         self.assertEqual(cache.namespace('source', base, {}, {}), cache.namespace('source', runtime, {}, {}))
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -55,6 +56,21 @@ class CacheNamespaceTests(unittest.TestCase):
             self.assertEqual(before, cache.source_fingerprint({'tnca': root}))
             (root / 'compiler.py').write_text('changed')
             self.assertNotEqual(before, cache.source_fingerprint({'tnca': root}))
+
+    def test_untuned_cache_survives_transport_updates_but_tuned_cache_does_not(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'backends').mkdir()
+            for name in ('runtime.py', 'transport.py', 'backends/u50.py', 'inductor.py'):
+                (root / name).write_text('before')
+            untuned = cache.source_fingerprint({'tnca': root}, include_runtime=False)
+            tuned = cache.source_fingerprint({'tnca': root}, include_runtime=True)
+            for name in ('runtime.py', 'transport.py', 'backends/u50.py'):
+                (root / name).write_text('after')
+            self.assertEqual(untuned, cache.source_fingerprint({'tnca': root}, include_runtime=False))
+            self.assertNotEqual(tuned, cache.source_fingerprint({'tnca': root}, include_runtime=True))
+            (root / 'inductor.py').write_text('after')
+            self.assertNotEqual(untuned, cache.source_fingerprint({'tnca': root}, include_runtime=False))
 
     def test_untuned_cache_survives_a_runtime_image_path_change(self):
         def key(env):

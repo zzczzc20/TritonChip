@@ -24,6 +24,7 @@ _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_
 _UNTUNED_RUNTIME_ONLY = frozenset({'TNCA_BACKEND_ARGS', 'TNCA_OPERATING_CLOCK_EVIDENCE', 'TNCA_COUNTERS'})
 _SOURCE_SUFFIXES = frozenset({'.py', '.c', '.cpp', '.cc', '.h', '.hpp', '.td',
                               '.def', '.inc', '.cmake', '.json', '.toml', '.yaml', '.yml'})
+_UNTUNED_RUNTIME_FILES = frozenset({'runtime.py', 'transport.py'})
 
 
 def semantic_environment(environ):
@@ -34,7 +35,7 @@ def semantic_environment(environ):
             if key.startswith('TNCA_') and key not in runtime_only}
 
 
-def source_fingerprint(trees, files=None):
+def source_fingerprint(trees, files=None, *, include_runtime=True):
     """Hash content and relative names, independently of checkout location."""
     digest = hashlib.sha256()
     for label, root in sorted(trees.items()):
@@ -49,8 +50,15 @@ def source_fingerprint(trees, files=None):
             test_file = (label in ('tnca', 'tnca_cc') and
                          (path.name.startswith('test_') or path.name.endswith('_test.py')
                           or 'tests' in relative.parts))
+            # Untuned FX graphs do not embed the launch queue or the board's
+            # register transport. Hashing them forced several minutes of
+            # recompilation after a runtime-only deployment. Autotuning does
+            # depend on measured runtime behavior, so it retains these files.
+            runtime_file = (label == 'tnca' and not include_runtime and
+                            (relative.as_posix() in _UNTUNED_RUNTIME_FILES or
+                             (relative.parts and relative.parts[0] == 'backends')))
             if (path.is_file() and path.suffix in _SOURCE_SUFFIXES
-                    and '__pycache__' not in path.parts and not test_file):
+                    and '__pycache__' not in path.parts and not test_file and not runtime_file):
                 name = f'{label}/{path.relative_to(root).as_posix()}'
                 digest.update(name.encode() + b'\0')
                 digest.update(hashlib.sha256(path.read_bytes()).digest())
@@ -116,7 +124,7 @@ def configure_persistent_cache(options):
     override = os.environ.get('TNCA_DATA_DIR')
     trees, files = dependency_paths(package, Path(tnca_cc.__file__).resolve().parent,
                                     _data.path, assembler_files, (override,) if override else ())
-    source = source_fingerprint(trees, files)
+    source = source_fingerprint(trees, files, include_runtime=os.environ.get('TNCA_TUNE', '0') == '1')
     versions = dict(python=platform.python_version(), torch=torch.__version__,
                     triton=triton.__version__, machine=platform.machine())
     identity = namespace(source, os.environ, versions, options)

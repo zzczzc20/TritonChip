@@ -494,6 +494,32 @@ class PrefillSegmentationTests(unittest.TestCase):
         self.assertGreaterEqual(seconds, 0)
         self.assertIsNone(session.consume_warm_prefill(inputs, None))
 
+    def test_prefill_reuse_is_default_and_can_be_disabled(self):
+        for enabled in (True, False):
+            session = object.__new__(chat.Session)
+            session.device, session.dev, session.cache = 'tnca', torch.device('cpu'), object()
+            session.cached, session._cache_tokens, session.last_position = [], 0, None
+            session._warm_prefill = None
+            inputs = {'input_ids': torch.tensor([[2, 4, 8]])}
+            def prefill(data, _images):
+                session.cached = data['input_ids'][0].tolist()
+                session._cache_tokens = len(session.cached)
+                session.last_position = torch.tensor([2])
+                return object(), [], 0
+            def decode(_token):
+                session._cache_tokens += 1
+                return 'dummy'
+            session.prefill_prompt, session.step_device = prefill, decode
+            session.reset = mock.Mock()
+            env = {'TNCA_REUSE_WARM_PREFILL': '0'} if not enabled else {}
+            with mock.patch.dict(os.environ, env, clear=True), \
+                 mock.patch.object(chat, 'snapshot_hybrid_prefill', return_value=None), \
+                 mock.patch.object(chat, 'rewind_attention_cache', return_value=True) as rewind:
+                self.assertEqual(session.warmup_decode(inputs), 'dummy')
+            self.assertEqual(session._warm_prefill is not None, enabled)
+            self.assertEqual(rewind.call_count, int(enabled))
+            self.assertEqual(session.reset.call_count, int(not enabled))
+
     def test_hybrid_warmup_keeps_the_existing_reset_path(self):
         session = object.__new__(chat.Session)
         session.device, session.dev, session.cache = 'tnca', torch.device('cpu'), object()

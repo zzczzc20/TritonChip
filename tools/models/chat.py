@@ -403,7 +403,9 @@ class Session:
             raise RuntimeError("decode warmup requires a fresh cache")
         capture = capture or (lambda role, fn: fn())
         retained = False
-        reuse = (os.environ.get('TNCA_REUSE_WARM_PREFILL') == '1'
+        # Reuse is the normal device path when the cache can be rewound
+        # exactly; unsupported caches retain the existing reset fallback.
+        reuse = (os.environ.get('TNCA_REUSE_WARM_PREFILL', '1') == '1'
                  and getattr(self, 'device', None) == 'tnca')
         self._warm_prefill_mode = 'fallback-reset' if reuse else 'disabled'
         try:
@@ -415,7 +417,7 @@ class Session:
             # captures its full wall span instead of just enqueue time.
             prefill_seconds = time.perf_counter() - prefill_started
             hybrid = (snapshot_hybrid_prefill(self.cache, length)
-                      if reuse and os.environ.get('TNCA_REUSE_HYBRID_PREFILL') == '1' else None)
+                      if reuse and os.environ.get('TNCA_REUSE_HYBRID_PREFILL', '1') == '1' else None)
             result = capture("decode", lambda: self.step_device(token))
             if (reuse and position is not None and len(self.cached) == length
                     and self._cache_tokens == length + 1

@@ -42,6 +42,7 @@ one kernel.
 import contextlib
 import json
 import os
+import stat
 import tempfile
 import threading
 import time
@@ -596,10 +597,15 @@ def _executable_info(path):
     the identity. A candidate alias is separately verified before it can
     share code, and a view retains its own manifest.
     """
-    if not isinstance(path, str) or not os.path.isfile(path):
+    if not isinstance(path, str):
         return None, None
-    stat = os.stat(path)
-    stamp = _file_stamp(stat)
+    try:
+        file_stat = os.stat(path)
+    except OSError:
+        return None, None
+    if not stat.S_ISREG(file_stat.st_mode):
+        return None, None
+    stamp = _file_stamp(file_stat)
     cached = _executable_hashes.get(path)
     if cached is not None and cached[0] == stamp:
         return cached[1], None

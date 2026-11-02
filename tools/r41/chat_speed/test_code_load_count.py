@@ -34,6 +34,17 @@ class FakeSession:
 
 
 class CodeLoadTests(unittest.TestCase):
+    def test_executable_cache_hit_checks_file_state_once(self):
+        import os
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'kernel.tnca'
+            path.write_text('already validated')
+            stamp = driver._file_stamp(os.stat(path))
+            with mock.patch.object(driver, '_executable_hashes', {str(path): (stamp, 'identity')}), \
+                 mock.patch.object(driver.os, 'stat', wraps=os.stat) as stat_file:
+                self.assertEqual(driver._executable_info(str(path)), ('identity', None))
+            stat_file.assert_called_once_with(str(path))
+
     def test_opt_in_eviction_waits_only_when_all_candidates_are_busy(self):
         import threading
         from contextlib import ExitStack

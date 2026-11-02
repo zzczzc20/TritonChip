@@ -41,7 +41,7 @@ _UNTUNED_RUNTIME_SOURCE_IDENTITIES = {
 # properties that can affect compilation.
 _UNTUNED_EQUIVALENT_SOURCE_DIGESTS = {
     'triton_backend/driver.py': {
-        bytes.fromhex('a6abf5a0e7f42351b3cf0360f9b5127359d426e084b512d0466a10c1e839d79b'):
+        bytes.fromhex('b8ae97a86adf4c4ca607a796cdb6c8cccc9e362536b709dcb7c9866574f2915d'):
             bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
     },
 }

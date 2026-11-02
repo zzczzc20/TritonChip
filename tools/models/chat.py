@@ -1084,13 +1084,19 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         position = position_history[len(tokens) - 1] if tokens else None
         valid_length = len(session.cached) + max(0, len(tokens) - 1)
         expected_length = len(session.cached) + max(0, len(rows) - 1)
+        device_stopped = (stop_enabled and observed_stop == 1 and tokens and tokens[-1] in eos)
+        # Guarded kernels after EOS never write speculative KV slots. Those
+        # slots were already clean at prefill, so clearing the whole planned
+        # suffix would add work after the answer has finished.
+        dirty_length = valid_length if device_stopped else expected_length
         if (position is not None and not forced_tokens and tokens and tokens[-1] in eos
                 and getattr(session, '_cache_tokens', None) == expected_length
-                and rewind_attention_cache(session.cache, valid_length, dirty_length=expected_length)):
+                and rewind_attention_cache(session.cache, valid_length, dirty_length=dirty_length)):
             session.cached += tokens[:-1]
             session.last_position = position
             session._cache_tokens = valid_length
-            cache_rewind = 'static-attention-prefix-retained'
+            cache_rewind = ('static-attention-prefix-retained-after-device-stop' if device_stopped
+                            else 'static-attention-prefix-retained')
             retained_prefix_tokens = len(session.cached)
         else:
             defer_reset = getattr(session, 'defer_reset', None)

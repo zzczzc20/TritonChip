@@ -506,8 +506,16 @@ class Session:
             vision = _vision_to(vision, self.dev)
         rows, logits, at = [], None, reused
         segments = []
-        grouped_suffix = (static_rewound and self.chunk <= 8 and
-                          os.environ.get('TNCA_STATIC_SUFFIX_GROUP', '0') == '1')
+        group_requested = os.environ.get('TNCA_STATIC_SUFFIX_GROUP', '0') == '1'
+        prior_static_valid = (group_requested and prior_static is not None and prior_static['chunk'] == self.chunk
+                              and full[:len(prior_static['tokens'])] == prior_static['tokens']
+                              and positions.device.type == 'cpu'
+                              and torch.equal(positions[..., :len(prior_static['tokens'])], prior_static['positions']))
+        direct_static = (not static_rewound and not per_image and reused > 0 and prior_static_valid
+                         and full[:reused] == self.cached and getattr(self, '_cache_tokens', 0) == reused
+                         and _static_attention_lengths(getattr(self.cache, 'layers', None), reused) is not None)
+        grouped_suffix = (group_requested and (static_rewound or direct_static) and 0 < self.chunk <= 8
+                          and len(full) - reused >= self.chunk * 2)
         if vision is not None or not self.chunk:
             segments.append(("prefill", at, len(full)))
         else:
@@ -547,8 +555,10 @@ class Session:
         if grouped_suffix:
             # Until the larger segment is qualified, retain only the prefix
             # known to have been computed in the original chunking scheme.
-            self._static_prefix_state = dict(tokens=full[:reused],
-                positions=positions[..., :reused].clone(), chunk=self.chunk)
+            known = min(reused, len(prior_static['tokens'])) if prior_static else 0
+            known -= known % self.chunk
+            self._static_prefix_state = (dict(tokens=full[:known], positions=positions[..., :known].clone(),
+                                              chunk=self.chunk) if known else None)
         else:
             self._static_prefix_state = next_static_prefix_state(
                 self.cache, full, positions, reused, prior_static, self.chunk,

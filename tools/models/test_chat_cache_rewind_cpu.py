@@ -56,6 +56,42 @@ class StaticAttentionContinuationTests(unittest.TestCase):
     def test_grouped_static_suffix_matches_original_chunks(self):
         self.exercise_static_prefix(group=True)
 
+    def test_grouped_suffix_reuses_unedited_conversation(self):
+        def make_session(cache):
+            session = object.__new__(chat.Session)
+            session.device, session.dev, session.cache, session.model = 'cpu', torch.device('cpu'), cache, self.model
+            session.bucket, session.chunk, session.resets = 32, 4, 0
+            session.cached, session._cache_tokens, session.last_position = [], 0, None
+            session._warm_prefill = session._warm_feedback = session._continuation_checkpoint = None
+            session._static_prefix_state = None
+            session._pending_reset, session._capture_hybrid_checkpoint = False, False
+            session._capture_static_prefix = True
+            session._call_prefill = lambda ids, positions, vision: self.call(
+                cache, ids[0].tolist(), int(positions[0, 0, 0]))[0, -1]
+            return session
+        baseline, optimized = make_session(self.make_cache()), make_session(self.make_cache())
+        first, appended = [5, 7, 8, 9, 10, 11, 12, 13], [14, 15, 16, 17, 18, 19, 20, 21]
+        def positions(_model, inputs):
+            return torch.arange(inputs['input_ids'].shape[1]).reshape(1, 1, -1).expand(4, 1, -1)
+        with torch.inference_mode(), mock.patch.object(chat.L, 'prefill_position_ids', side_effect=positions):
+            for session in (baseline, optimized):
+                session.prefill_prompt({'input_ids': torch.tensor([first])}, None)
+                self.call(session.cache, [22], len(first))
+                session.cached.append(22)
+                session._cache_tokens += 1
+            followup = first + [22] + appended
+            with mock.patch.dict('os.environ', {'TNCA_STATIC_SUFFIX_GROUP': '0'}):
+                expected, _, _ = baseline.prefill_prompt({'input_ids': torch.tensor([followup])}, None)
+            with mock.patch.dict('os.environ', {'TNCA_STATIC_SUFFIX_GROUP': '1'}):
+                actual, calls, reused = optimized.prefill_prompt({'input_ids': torch.tensor([followup])}, None)
+            self.assertEqual(reused, len(first) + 1)
+            self.assertEqual([row['tokens'] for row in calls], [8])
+            self.assertEqual(optimized._static_prefix_state['tokens'], first)
+            self.assertTrue(torch.equal(expected, actual))
+            for a, b in zip(baseline.cache.layers, optimized.cache.layers, strict=True):
+                self.assertTrue(torch.equal(a.keys, b.keys))
+                self.assertTrue(torch.equal(a.values, b.values))
+
     def exercise_static_prefix(self, *, group):
         def make_session(cache, capture):
             session = object.__new__(chat.Session)

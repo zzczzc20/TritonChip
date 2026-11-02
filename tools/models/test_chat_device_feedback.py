@@ -907,6 +907,33 @@ class PrefillSegmentationTests(unittest.TestCase):
         self.assertGreaterEqual(seconds, 0)
         self.assertIsNone(session.consume_warm_prefill(inputs, None))
 
+    def test_first_decode_warmup_can_keep_the_prior_conversation_prefix(self):
+        session = object.__new__(chat.Session)
+        session.device, session.dev, session.cache = 'tnca', torch.device('cpu'), object()
+        session.cached, session._cache_tokens = [2, 4], 2
+        session.last_position, session._warm_prefill = torch.tensor([1]), None
+        inputs = {'input_ids': torch.tensor([[2, 4, 8, 16]])}
+        def prefill(data, _images):
+            self.assertEqual(session.cached, [2, 4])
+            session.cached = data['input_ids'][0].tolist()
+            session._cache_tokens, session.last_position = 4, torch.tensor([3])
+            return 'prompt logits', [], 2
+        def decode(_token):
+            session._cache_tokens += 1
+            session.last_position = session.last_position + 1
+            return 'dummy decode'
+        session.prefill_prompt, session.step_device = prefill, decode
+        session.reset = mock.Mock()
+        with self.assertRaisesRegex(RuntimeError, 'fresh cache'):
+            session.warmup_decode(inputs)
+        with mock.patch.dict(os.environ, {'TNCA_REUSE_WARM_PREFILL': '1'}), \
+             mock.patch.object(chat, 'snapshot_hybrid_prefill', return_value=None), \
+             mock.patch.object(chat, 'rewind_attention_cache', return_value=True):
+            self.assertEqual(session.warmup_decode(inputs, allow_cached=True), 'dummy decode')
+        session.reset.assert_not_called()
+        (logits, _calls, reused), _seconds = session.consume_warm_prefill(inputs, None)
+        self.assertEqual((logits, reused, session._cache_tokens), ('prompt logits', 2, 4))
+
     def test_prefill_reuse_is_default_and_can_be_disabled(self):
         for enabled in (True, False):
             session = object.__new__(chat.Session)

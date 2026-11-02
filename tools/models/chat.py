@@ -247,6 +247,7 @@ class Session:
     Prompts that carry images are prefilled whole (their image tokens must stay in one call)."""
 
     supports_real_warmup_feedback = True
+    supports_warmup_prefix_reuse = True
 
     def __init__(self, model, spec, device, bucket, prefill_chunk=0):
         self.model, self.spec, self.device, self.bucket, self.chunk = model, spec, device, bucket, prefill_chunk
@@ -598,12 +599,12 @@ class Session:
         self._cache_tokens += 1
         return logits
 
-    def warmup_decode(self, inputs, per_image=None, capture=None, real_feedback=False):
+    def warmup_decode(self, inputs, per_image=None, capture=None, real_feedback=False, allow_cached=False):
         """Compile against a populated prompt; optionally retain its exact KV state."""
         self.wait_for_cleanup()
         if getattr(self, '_pending_reset', False):
             self.reset()
-        if self.cached or self.last_position is not None:
+        if not allow_cached and (self.cached or self.last_position is not None):
             raise RuntimeError("decode warmup requires a fresh cache")
         capture = capture or (lambda role, fn: fn())
         retained = False
@@ -1205,20 +1206,26 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     # remains subject to the unchanged zero-read rule on every step.
     warmup, warm_feedback = None, None
     if new_tokens > 1 and not code_by_role.get("decode"):
-        if session.prompts:
+        reuse_prior = (session.prompts and getattr(session, 'supports_warmup_prefix_reuse', False)
+                       and os.environ.get('TNCA_REUSE_WARM_PREFILL', '1') == '1')
+        if session.prompts and not reuse_prior:
             # Earlier one-token requests did not need a decode graph. Start
-            # its first warmup from a clean cache; the full new conversation
-            # is still present in inputs and is prefetched below.
+            # with a clean cache if this session cannot safely reuse it.
             session.reset()
         started = time.perf_counter()
         with transfer_meter(True) as warmup_meter:
             real_feedback = (getattr(session, 'supports_real_warmup_feedback', False)
                              and os.environ.get('TNCA_REUSE_FIRST_DECODE', '0') == '1'
                              and new_tokens > 1 and not forced_tokens)
+            warmup_options = {}
             if real_feedback:
-                warmup_logits = session.warmup_decode(inputs, per_image, capture, real_feedback=True)
-            else:
-                warmup_logits = session.warmup_decode(inputs, per_image, capture)
+                warmup_options['real_feedback'] = True
+            if reuse_prior:
+                # prefill_prompt validates tokens and positions before using
+                # the old state. The regular warmup rewind then retains the
+                # exact new prefill after the dummy decode.
+                warmup_options['allow_cached'] = True
+            warmup_logits = session.warmup_decode(inputs, per_image, capture, **warmup_options)
             warmup_meter.mem.synchronize()
         if warmup_logits.device.type != "tnca":
             raise RuntimeError("decode warmup returned a host tensor")

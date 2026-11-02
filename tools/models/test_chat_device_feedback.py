@@ -534,6 +534,8 @@ class PrefillSegmentationTests(unittest.TestCase):
         self.assertTrue(session.schedule_idle_cleanup())
         with self.assertRaisesRegex(RuntimeError, 'background cache cleanup failed'):
             session.wait_for_cleanup()
+        with self.assertRaisesRegex(RuntimeError, 'background cache cleanup failed'):
+            session.wait_for_cleanup()
         self.assertTrue(session._pending_reset)
 
     def test_deferred_reset_happens_before_the_next_prefill(self):

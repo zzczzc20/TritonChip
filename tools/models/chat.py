@@ -257,6 +257,7 @@ class Session:
         self._warm_prefill = None
         self._warm_prefill_mode = 'not-run'
         self._pending_reset = False
+        self._cleanup_lock = threading.RLock()
         self._cleanup_thread = None
         self._cleanup_error = None
         self.resets = 0
@@ -264,49 +265,72 @@ class Session:
         self.greedy = (torch.compile(lambda x: x.float().argmax().reshape(1, 1),
                                      fullgraph=True, dynamic=False) if device == "tnca" else None)
 
+    def _cleanup_guard(self):
+        # Real sessions initialize the guard in __init__; the lazy case also
+        # supports lightweight sessions constructed by independent callers.
+        guard = getattr(self, '_cleanup_lock', None)
+        if guard is None:
+            guard = self._cleanup_lock = threading.RLock()
+        return guard
+
     def reset(self):
         self.wait_for_cleanup()
-        if not (self.device == 'tnca' and os.environ.get('TNCA_DEVICE_ZERO') == '1'
-                and clear_static_attention_cache(self.cache)):
-            self.cache.reset()
-        self.cached, self.last_position = [], None
-        self._cache_tokens = 0
-        self._warm_prefill = None
-        self._pending_reset = False
-        self.resets += 1
+        with self._cleanup_guard():
+            if not (self.device == 'tnca' and os.environ.get('TNCA_DEVICE_ZERO') == '1'
+                    and clear_static_attention_cache(self.cache)):
+                self.cache.reset()
+            self.cached, self.last_position = [], None
+            self._cache_tokens = 0
+            self._warm_prefill = None
+            self._pending_reset = False
+            self.resets += 1
 
     def wait_for_cleanup(self):
         """Join an earlier idle-time reset before any cache is used again."""
-        worker = getattr(self, '_cleanup_thread', None)
-        if worker is None or worker is threading.current_thread():
+        with self._cleanup_guard():
+            worker = getattr(self, '_cleanup_thread', None)
+        if worker is threading.current_thread():
             return
-        worker.join()
-        self._cleanup_thread = None
-        error, self._cleanup_error = getattr(self, '_cleanup_error', None), None
+        if worker is not None:
+            worker.join()
+        with self._cleanup_guard():
+            if getattr(self, '_cleanup_thread', None) is worker:
+                self._cleanup_thread = None
+            error = getattr(self, '_cleanup_error', None)
+        # Keep a failure sticky: concurrent callers must all refuse stale
+        # state, not have the first caller consume the error for the others.
         if error is not None:
             raise RuntimeError('background cache cleanup failed') from error
 
     def schedule_idle_cleanup(self):
         """Reset discarded state while an interactive user considers a reply."""
         self.wait_for_cleanup()
-        if not getattr(self, '_pending_reset', False):
-            return False
-        def cleanup():
+        with self._cleanup_guard():
+            if not getattr(self, '_pending_reset', False):
+                return False
+            def cleanup():
+                try:
+                    # Inference mode is thread-local; cached tensors may have
+                    # been created in that mode on the generation thread.
+                    with torch.inference_mode():
+                        self.reset()
+                        if self.device == 'tnca':
+                            from tnca.torch_device import MEMORY
+                            MEMORY.synchronize()
+                except BaseException as error:
+                    with self._cleanup_guard():
+                        self._cleanup_error = error
+            self._cleanup_error = None
+            worker = threading.Thread(target=cleanup, name='tnca-cache-cleanup')
+            self._cleanup_thread = worker
             try:
-                # Inference mode is thread-local; cached tensors may have
-                # been created in that mode on the generation thread.
-                with torch.inference_mode():
-                    self.reset()
-                    if self.device == 'tnca':
-                        from tnca.torch_device import MEMORY
-                        MEMORY.synchronize()
-            except BaseException as error:
-                self._cleanup_error = error
-        self._cleanup_error = None
-        worker = threading.Thread(target=cleanup, name='tnca-cache-cleanup')
-        self._cleanup_thread = worker
-        worker.start()
-        return True
+                # Publish and start under one lock: a concurrent waiter can
+                # never try to join a thread that has not started yet.
+                worker.start()
+            except BaseException:
+                self._cleanup_thread = None
+                raise
+            return True
 
     def defer_reset(self):
         """Invalidate speculative state now; clean device storage on next use.
@@ -317,10 +341,11 @@ class Session:
         performs the same reset before it can consume any cache state.
         """
         self.wait_for_cleanup()
-        self.cached, self.last_position = [], None
-        self._cache_tokens = 0
-        self._warm_prefill = None
-        self._pending_reset = True
+        with self._cleanup_guard():
+            self.cached, self.last_position = [], None
+            self._cache_tokens = 0
+            self._warm_prefill = None
+            self._pending_reset = True
 
     def vision_features(self, inputs):
         """The vision tower once per image (each call has exactly one attention segment), features concatenated

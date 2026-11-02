@@ -54,6 +54,13 @@ def main():
             hbm_bytes=8 * (1 << 30), device_clock=True))
         reports = []
         for mode in ('baseline-cold', 'optimized-warm'):
+            # Another client may not use this cooperative queue lock. Refuse
+            # an occupied or changed device before starting either process;
+            # XRT's exclusive context arbitrates the remaining open race.
+            current = auto.probe(sysfs)
+            if (not auto.idle(current) or current['uuid'] != IMAGE_UUID
+                    or auto.clock_mhz(sysfs) != 100):
+                raise RuntimeError(f'board became busy or changed before {mode}')
             run_env = dict(env)
             if mode == 'baseline-cold':
                 run_env.update(TNCA_REUSE_WARM_PREFILL='0', TNCA_REUSE_HYBRID_PREFILL='0',

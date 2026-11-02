@@ -928,7 +928,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
             retained_prefix_tokens = len(session.cached)
         else:
             defer_reset = getattr(session, 'defer_reset', None)
-            if defer_reset is None:
+            if defer_reset is None or os.environ.get('TNCA_DEFER_CACHE_RESET', '1') == '0':
                 session.reset()
                 cache_rewind = 'full-reset'
             else:

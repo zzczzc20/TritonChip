@@ -167,6 +167,15 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(report['session']['cache_rewind'], 'full-reset-deferred')
         self.assertEqual(report['generated_tokens'], [1, 3])
 
+    def test_eos_reset_can_use_the_original_eager_path(self):
+        def defer(session):
+            raise AssertionError('eager reset must not be deferred')
+        with mock.patch.dict(os.environ, {'TNCA_DEFER_CACHE_RESET': '0'}), \
+             mock.patch.object(Session, 'defer_reset', defer, create=True):
+            session, report = self.run_case([1, 3, 2])
+        self.assertEqual(session.resets, 1)
+        self.assertEqual(report['session']['cache_rewind'], 'full-reset')
+
     def test_eos_discards_overrun_cache(self):
         session, report = self.run_case([1, 3, 2])
         self.assertEqual(session.fed, [1, 3])

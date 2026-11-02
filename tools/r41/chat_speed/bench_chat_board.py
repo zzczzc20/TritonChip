@@ -23,6 +23,9 @@ def main():
     parser.add_argument('--overlay-root', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--python', type=Path, required=True)
+    parser.add_argument('--model', choices=('vl', 'q35'), default='vl')
+    parser.add_argument('--layers', type=int, default=1)
+    parser.add_argument('--new-tokens', type=int, default=4)
     parser.add_argument('--prompt', default='What is the capital of France? Answer with one word.')
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=False)
@@ -64,15 +67,15 @@ def main():
             run_env = dict(env)
             if mode == 'baseline-cold':
                 run_env.update(TNCA_REUSE_WARM_PREFILL='0', TNCA_REUSE_HYBRID_PREFILL='0',
-                               TNCA_MMIO_DESCRIPTOR_CACHE='0')
+                               TNCA_MMIO_DESCRIPTOR_CACHE='0', TNCA_CODE_REUSE='0', TNCA_DEFER_CACHE_RESET='0')
             else:
                 for name in ('TNCA_REUSE_WARM_PREFILL', 'TNCA_REUSE_HYBRID_PREFILL',
-                             'TNCA_MMIO_DESCRIPTOR_CACHE'):
+                             'TNCA_MMIO_DESCRIPTOR_CACHE', 'TNCA_CODE_REUSE', 'TNCA_DEFER_CACHE_RESET'):
                     run_env.pop(name, None)
             out = args.out / mode
             command = [str(args.python), '-u', str(args.overlay_root / 'tools/models/chat.py'),
-                       '--model', 'vl', '--device', 'tnca', '--tnca-tree', str(args.overlay_root),
-                       '--layers', '1', '--prefill-chunk', '8', '--new-tokens', '4',
+                       '--model', args.model, '--device', 'tnca', '--tnca-tree', str(args.overlay_root),
+                       '--layers', str(args.layers), '--prefill-chunk', '8', '--new-tokens', str(args.new_tokens),
                        '--bucket', '256', '--threads', '2', '--prompt', args.prompt, '--out', str(out)]
             print('starting', mode, datetime.datetime.now(datetime.timezone.utc).isoformat(), flush=True)
             with (args.out / f'{mode}.log').open('x') as log:
@@ -95,9 +98,9 @@ def main():
                                         for s in report.get('steps', []) if s.get('kind') == 'decode'])
                 for mode, report in zip(('baseline-cold', 'optimized-warm'), reports)]
         status = 'pass' if exact and tokens_equal and all(row['status'] == 'pass' for row in rows) else 'fail'
-        result = dict(status=status, domain='FPGA board; reduced one-layer VL checkpoint', image_uuid=IMAGE_UUID,
+        result = dict(status=status, domain=f'FPGA board; reduced {args.layers}-layer {args.model} checkpoint', image_uuid=IMAGE_UUID,
                       clock_hz=100000000, scope='cold process then warm-cache process; not a matched warm A/B',
-                      source='speed worktree overlay b13cbc5f with frozen compiler 02d704f4',
+                      source='supplied speed worktree overlay with frozen compiler 02d704f4',
                       prompt=args.prompt, logits_bitwise_equal=exact, tokens_equal=tokens_equal, rows=rows)
         (args.out / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
         print(json.dumps(result), flush=True)

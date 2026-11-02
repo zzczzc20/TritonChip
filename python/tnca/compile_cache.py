@@ -15,7 +15,7 @@ import platform
 # per-run paths. Keep every other TNCA setting, including unknown future knobs.
 _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_DIR',
                            'TNCA_SUBMIT', 'TNCA_QUEUE_DEPTH', 'TNCA_MMIO_DESCRIPTOR_CACHE', 'TNCA_CODE_REUSE', 'TNCA_DEVICE_ZERO', 'TNCA_QUEUE_STEPS',
-                           'TNCA_REUSE_WARM_PREFILL',
+                           'TNCA_REUSE_WARM_PREFILL', 'TNCA_DEFER_CACHE_RESET',
                            'TNCA_REUSE_HYBRID_PREFILL',
                            'TNCA_DEADLINE', 'TNCA_HOST_TIMEOUT'})
 # These select a runtime device or its measured clock. The ordinary compiler

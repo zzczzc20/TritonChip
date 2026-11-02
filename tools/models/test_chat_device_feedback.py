@@ -695,6 +695,26 @@ class UserReportTests(unittest.TestCase):
 
 
 class PrefillSegmentationTests(unittest.TestCase):
+    def test_hybrid_checkpoint_with_different_positions_is_not_reused(self):
+        session = object.__new__(chat.Session)
+        session.model, session.bucket, session.chunk, session.cache = object(), 64, 4, object()
+        session.cached, session._cache_tokens, session.last_position = [1, 2, 3, 4], 4, torch.tensor([3])
+        session._pending_reset, session._capture_hybrid_checkpoint = False, False
+        session._continuation_checkpoint = dict(tokens=[1, 2], chunk=4, positions=torch.tensor([[[0, 1]]]),
+                                                position=torch.tensor([[[1]]]), snapshot=object())
+        def reset():
+            session.cached, session._cache_tokens, session._continuation_checkpoint = [], 0, None
+        session.reset = mock.Mock(side_effect=reset)
+        session._call_prefill = lambda ids, positions, vision: torch.zeros(1)
+        inputs = {'input_ids': torch.tensor([[1, 2, 8, 9, 10]])}
+        positions = torch.tensor([[[9, 10, 11, 12, 13]]])
+        with mock.patch.object(chat.L, 'prefill_position_ids', return_value=positions), \
+             mock.patch.object(chat, 'restore_hybrid_prefill') as restore:
+            _, _, reused = session.prefill_prompt(inputs, None)
+        self.assertEqual(reused, 0)
+        session.reset.assert_called_once()
+        restore.assert_not_called()
+
     def test_shared_model_is_placed_once_for_prefill_and_decode(self):
         model = object()
         prefill = types.SimpleNamespace(model=model)

@@ -467,6 +467,8 @@ class Session:
             length = len(checkpoint['tokens']) if checkpoint is not None else 0
             can_restore = (not per_image and checkpoint is not None and 0 < length < len(full)
                            and full[:length] == checkpoint['tokens']
+                           and checkpoint['chunk'] == self.chunk and positions.device.type == 'cpu'
+                           and torch.equal(positions[..., :length], checkpoint['positions'])
                            and getattr(self, '_cache_tokens', 0) == reused and length <= reused)
             restored = (can_restore and restore_hybrid_prefill(
                 checkpoint['snapshot'], dirty_length=reused))
@@ -502,10 +504,12 @@ class Session:
         self._continuation_checkpoint = None
         new_checkpoint = None
         for kind, a, b in segments:
-            if checkpoint_at is not None and a == checkpoint_at and a > 0:
+            if checkpoint_at is not None and a == checkpoint_at and a > 0 and positions.device.type == 'cpu':
                 snapshot = snapshot_hybrid_prefill(self.cache, a)
                 if snapshot is not None:
-                    new_checkpoint = dict(tokens=full[:a], position=positions[..., a - 1:a], snapshot=snapshot)
+                    new_checkpoint = dict(tokens=full[:a], position=positions[..., a - 1:a].clone(),
+                                          positions=positions[..., :a].clone(), chunk=self.chunk,
+                                          snapshot=snapshot)
             graphs = counters["stats"]["unique_graphs"]
             started = time.perf_counter()
             with torch.no_grad():

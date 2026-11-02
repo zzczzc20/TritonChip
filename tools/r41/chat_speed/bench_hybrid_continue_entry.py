@@ -33,6 +33,12 @@ def main():
         '--layers', str(args.layers), '--prefill-chunk', '8', '--new-tokens', '2',
         '--bucket', '256', '--threads', '2', '--prompt', args.prompt])
     app = chat.ChatApplication(chat_args)
+    app.device_session()
+    MEMORY.synchronize()
+    MEMORY.session().prepare_device_stop_guard()
+    probe, calibration = MEMORY.session().prepare_device_stop_probe()
+    if probe is None:
+        raise RuntimeError(f'device completion probe could not be calibrated: {calibration}')
     warm = app.generate(args.prompt, retain_logits=False)
     if warm['status'] != 'pass' or not warm['generated_tokens']:
         raise RuntimeError('warmup failed')
@@ -49,6 +55,7 @@ def main():
         app.reset_conversation()
         app.session.reset()
         os.environ['TNCA_REUSE_GUARDED_HYBRID'] = '1' if mode == 'retain' else '0'
+        os.environ['TNCA_DEVICE_EOS_EARLY_STOP'] = '1' if mode == 'retain' else '0'
         chat_args.new_tokens = 4
         first = app.generate(args.prompt, keep_history=True, retain_logits=True)
         if (first['status'] != 'pass' or not first['stopped_at_eos']
@@ -80,18 +87,25 @@ def main():
     expected_modes = (reports[0][0]['session']['cache_rewind'] == 'full-reset-deferred' and
                       reports[1][0]['session']['cache_rewind'] == 'hybrid-prefix-retained-after-device-stop' and
                       reports[0][1]['steps'][0]['reused_cached_tokens'] == 0 and reused > 0)
+    probe_info = reports[1][0]['device_eos_guard']['completion_probe']
+    stopped_submitting = (probe_info['enabled'] and probe_info['signalled'] and
+                          reports[1][0]['executed_generation_steps'] == len(reports[1][0]['generated_tokens']) and
+                          reports[0][0]['executed_generation_steps'] > len(reports[0][0]['generated_tokens']))
     rows = []
     for mode, (first, second) in zip(('reset', 'retain'), reports, strict=True):
         rows.append(dict(mode=mode, first_tokens=first['generated_tokens'],
                          first_cache=first['session']['cache_rewind'],
+                         first_executed_steps=first['executed_generation_steps'],
+                         first_completion_probe=first['device_eos_guard']['completion_probe'],
                          followup_tokens=second['generated_tokens'],
                          followup_reused_tokens=second['steps'][0]['reused_cached_tokens'],
                          followup_timing=second['user_visible_timing']))
-    passed = exact and tokens_equal and reads_zero and expected_modes
+    passed = exact and tokens_equal and reads_zero and expected_modes and stopped_submitting
     result = dict(status='pass' if passed else 'fail',
                   scope='reduced four-layer Qwen3.5; artificial EOS, two conversational turns; not model quality',
                   logits_bitwise_equal=exact, tokens_equal=tokens_equal, no_fallback_and_zero_decode_reads=reads_zero,
-                  diagnostic_eos_token=eos, expected_cache_paths=expected_modes, rows=rows)
+                  diagnostic_eos_token=eos, expected_cache_paths=expected_modes,
+                  stopped_submitting_after_eos=stopped_submitting, rows=rows)
     (args.out / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result), flush=True)
     if not passed:

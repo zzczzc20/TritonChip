@@ -1,7 +1,9 @@
 """Check that compile-confounded board results are not presented as warm A/B."""
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 
-from bench_chat_board import comparison_scope, matched_warm_wall_speedup
+from bench_chat_board import comparison_scope, matched_warm_wall_speedup, model_command
 
 
 def row(*, available=True, misses=0, compiles=0):
@@ -11,6 +13,17 @@ def row(*, available=True, misses=0, compiles=0):
 
 
 class ComparisonScopeTest(unittest.TestCase):
+    def test_model_command_selects_the_requested_probe(self):
+        args = SimpleNamespace(python=Path('/venv/python'), model='q35', layers=4,
+                               prompt='question', new_tokens=4, hybrid_eos_continuation=True,
+                               device_eos_probe=False, early_eos_probe=False)
+        root, out = Path('/overlay'), Path('/results')
+        command = model_command(args, root, out)
+        self.assertEqual(command[2], '/overlay/tools/r41/chat_speed/bench_hybrid_continue_entry.py')
+        self.assertEqual(command[-1], '/results')
+        args.hybrid_eos_continuation, args.early_eos_probe = False, True
+        self.assertEqual(model_command(args, root, out)[2], '/overlay/tools/r41/chat_speed/bench_eos_model_entry.py')
+
     def test_in_process_warm_requires_observed_zero_compilation(self):
         clean = [row(), row()]
         self.assertIn('matched in-process warm', comparison_scope(

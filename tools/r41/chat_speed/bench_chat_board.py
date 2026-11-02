@@ -51,6 +51,21 @@ def matched_warm_wall_speedup(rows, *, device_eos_probe, warm_cache):
     return seconds[0] / seconds[1]
 
 
+def model_command(args, root, out):
+    """Build the selected model probe after its overlay and output are known."""
+    if args.hybrid_eos_continuation:
+        return [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_hybrid_continue_entry.py'),
+                '--tree', str(root), '--layers', str(args.layers), '--prompt', args.prompt, '--out', str(out)]
+    if args.device_eos_probe or args.early_eos_probe:
+        return [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_eos_model_entry.py'),
+                '--tree', str(root), '--model', args.model, '--layers', str(args.layers),
+                '--new-tokens', str(args.new_tokens), '--prompt', args.prompt, '--out', str(out)]
+    return [str(args.python), '-u', str(root / 'tools/models/chat.py'),
+            '--model', args.model, '--device', 'tnca', '--tnca-tree', str(root),
+            '--layers', str(args.layers), '--prefill-chunk', '8', '--new-tokens', str(args.new_tokens),
+            '--bucket', '256', '--threads', '2', '--prompt', args.prompt, '--out', str(out)]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source-root', type=Path, required=True)
@@ -59,6 +74,8 @@ def main():
     parser.add_argument('--warm-cache-dir', type=Path)
     parser.add_argument('--device-eos-probe', action='store_true',
                         help='compare warm reduced-model turns with a diagnostic EOS')
+    parser.add_argument('--early-eos-probe', action='store_true',
+                        help='compare guarded submissions with the device completion stop signal')
     parser.add_argument('--hybrid-eos-continuation', action='store_true',
                         help='compare hybrid cache reset and retention in one reduced-model session')
     parser.add_argument('--out', type=Path, required=True)
@@ -70,11 +87,14 @@ def main():
     args = parser.parse_args()
     if args.model == 'q35' and args.layers < 4:
         parser.error('Qwen3.5 needs at least four layers to include a full-attention cache')
-    if args.hybrid_eos_continuation and (args.model != 'q35' or args.device_eos_probe or args.baseline_overlay_root):
+    if args.hybrid_eos_continuation and (args.model != 'q35' or args.device_eos_probe or
+                                         args.early_eos_probe or args.baseline_overlay_root):
         parser.error('hybrid continuation needs Qwen3.5, one overlay and no other probe')
-    if args.device_eos_probe and args.baseline_overlay_root:
+    if args.device_eos_probe and args.early_eos_probe:
+        parser.error('select only one EOS comparison')
+    if (args.device_eos_probe or args.early_eos_probe) and args.baseline_overlay_root:
         parser.error('the device EOS probe uses one source overlay')
-    if not (args.device_eos_probe or args.hybrid_eos_continuation) and bool(args.baseline_overlay_root) != bool(args.warm_cache_dir):
+    if not (args.device_eos_probe or args.early_eos_probe or args.hybrid_eos_continuation) and bool(args.baseline_overlay_root) != bool(args.warm_cache_dir):
         parser.error('warm A/B requires both a baseline overlay and an existing warm cache')
     if args.warm_cache_dir and not args.warm_cache_dir.is_dir():
         parser.error('warm cache directory does not exist')
@@ -108,6 +128,7 @@ def main():
             hbm_bytes=8 * (1 << 30), device_clock=True))
         reports = []
         modes = (('hybrid-eos-continuation',) if args.hybrid_eos_continuation else
+                 ('guarded-submissions', 'early-stop') if args.early_eos_probe else
                  ('baseline', 'device-eos-guard') if args.device_eos_probe else
                  ('baseline-warm', 'optimized-warm') if args.warm_cache_dir else
                  ('baseline-cold', 'optimized-warm'))
@@ -122,28 +143,20 @@ def main():
             run_env = dict(env)
             for name in ('TNCA_REUSE_WARM_PREFILL', 'TNCA_REUSE_HYBRID_PREFILL',
                          'TNCA_MMIO_DESCRIPTOR_CACHE', 'TNCA_CODE_REUSE',
-                         'TNCA_DEFER_CACHE_RESET', 'TNCA_REUSE_FIRST_DECODE', 'TNCA_DEVICE_EOS_GUARD'):
+                         'TNCA_DEFER_CACHE_RESET', 'TNCA_REUSE_FIRST_DECODE', 'TNCA_DEVICE_EOS_GUARD',
+                         'TNCA_DEVICE_EOS_EARLY_STOP', 'TNCA_REUSE_GUARDED_HYBRID'):
                 run_env.pop(name, None)
             if mode == 'baseline-cold':
                 run_env.update(TNCA_REUSE_WARM_PREFILL='0', TNCA_REUSE_HYBRID_PREFILL='0',
                                TNCA_MMIO_DESCRIPTOR_CACHE='0', TNCA_CODE_REUSE='0', TNCA_DEFER_CACHE_RESET='0')
-            if args.hybrid_eos_continuation:
-                command = [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_hybrid_continue_entry.py'),
-                           '--tree', str(root), '--layers', str(args.layers), '--prompt', args.prompt,
-                           '--out', str(out)]
-            elif args.device_eos_probe:
+            if args.device_eos_probe:
                 run_env['TNCA_DEVICE_EOS_GUARD'] = '1' if mode == 'device-eos-guard' else '0'
+            if args.early_eos_probe:
+                run_env['TNCA_DEVICE_EOS_GUARD'] = '1'
+                run_env['TNCA_DEVICE_EOS_EARLY_STOP'] = '1' if mode == 'early-stop' else '0'
             root = args.baseline_overlay_root if mode == 'baseline-warm' else args.overlay_root
             out = args.out / mode
-            if args.device_eos_probe:
-                command = [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_eos_model_entry.py'),
-                           '--tree', str(root), '--model', args.model, '--layers', str(args.layers),
-                           '--new-tokens', str(args.new_tokens), '--prompt', args.prompt, '--out', str(out)]
-            else:
-                command = [str(args.python), '-u', str(root / 'tools/models/chat.py'),
-                           '--model', args.model, '--device', 'tnca', '--tnca-tree', str(root),
-                           '--layers', str(args.layers), '--prefill-chunk', '8', '--new-tokens', str(args.new_tokens),
-                           '--bucket', '256', '--threads', '2', '--prompt', args.prompt, '--out', str(out)]
+            command = model_command(args, root, out)
             print('starting', mode, datetime.datetime.now(datetime.timezone.utc).isoformat(), flush=True)
             with (args.out / f'{mode}.log').open('x') as log:
                 rc = subprocess.run(command, cwd=root, env=run_env,
@@ -172,16 +185,25 @@ def main():
                                               for s in report.get('steps', []) if 'warmup_decode_transfers' in s],
                      warmup_strategy=(report.get('decode_warmup') or {}).get('prefill_strategy'),
                      diagnostic_eos_token=report.get('diagnostic_eos_token'),
-                     device_eos_guard_enabled=(report.get('device_eos_guard') or {}).get('enabled'))
+                     executed_generation_steps=report.get('executed_generation_steps'),
+                     device_eos_guard_enabled=(report.get('device_eos_guard') or {}).get('enabled'),
+                     completion_probe=(report.get('device_eos_guard') or {}).get('completion_probe'))
                 for mode, report in zip(modes, reports)]
-        same_eos = not args.device_eos_probe or rows[0]['diagnostic_eos_token'] == rows[1]['diagnostic_eos_token']
+        eos_comparison = args.device_eos_probe or args.early_eos_probe
+        same_eos = not eos_comparison or rows[0]['diagnostic_eos_token'] == rows[1]['diagnostic_eos_token']
         status = 'pass' if exact and tokens_equal and same_eos and all(row['status'] == 'pass' for row in rows) else 'fail'
-        scope = comparison_scope(rows, device_eos_probe=args.device_eos_probe,
+        if args.early_eos_probe:
+            signal = rows[1]['completion_probe'] or {}
+            if (not signal.get('enabled') or not signal.get('signalled') or
+                    rows[1]['executed_generation_steps'] != len(rows[1]['tokens']) or
+                    rows[0]['executed_generation_steps'] <= len(rows[0]['tokens'])):
+                status = 'fail'
+        scope = comparison_scope(rows, device_eos_probe=eos_comparison,
                                  warm_cache=bool(args.warm_cache_dir))
         result = dict(status=status, domain=f'FPGA board; reduced {args.layers}-layer {args.model} checkpoint', image_uuid=IMAGE_UUID,
                       clock_hz=100000000, scope=scope,
                       matched_warm_wall_speedup=(matched_warm_wall_speedup(
-                          rows, device_eos_probe=args.device_eos_probe, warm_cache=bool(args.warm_cache_dir))
+                          rows, device_eos_probe=eos_comparison, warm_cache=bool(args.warm_cache_dir))
                           if status == 'pass' else None),
                       source='supplied overlays with frozen compiler 02d704f4',
                       prompt=args.prompt, logits_bitwise_equal=exact, tokens_equal=tokens_equal, rows=rows)

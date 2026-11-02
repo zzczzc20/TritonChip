@@ -1,11 +1,11 @@
 """Check that compile-confounded board results are not presented as warm A/B."""
 import unittest
 
-from bench_chat_board import comparison_scope
+from bench_chat_board import comparison_scope, matched_warm_wall_speedup
 
 
 def row(*, available=True, misses=0, compiles=0):
-    return {'timing': {'compiler': {'available': available,
+    return {'timing': {'prompt_to_return_seconds': 10, 'compiler': {'available': available,
                                     'fx_graph_cache_misses': misses,
                                     'dynamo_compile_calls': compiles}}}
 
@@ -28,6 +28,18 @@ class ComparisonScopeTest(unittest.TestCase):
     def test_cold_start_is_never_matched(self):
         self.assertIn('not a matched', comparison_scope(
             [row(), row()], device_eos_probe=False, warm_cache=False))
+
+    def test_speedup_is_withheld_for_timed_or_unobserved_compilation(self):
+        baseline, optimized = row(), row()
+        optimized['timing']['prompt_to_return_seconds'] = 4
+        self.assertEqual(2.5, matched_warm_wall_speedup(
+            [baseline, optimized], device_eos_probe=True, warm_cache=True))
+        for bad in (row(misses=1, compiles=1), row(compiles=1), row(available=False), {}):
+            self.assertIsNone(matched_warm_wall_speedup(
+                [bad, optimized], device_eos_probe=True, warm_cache=True))
+        optimized['timing']['prompt_to_return_seconds'] = 0
+        self.assertIsNone(matched_warm_wall_speedup(
+            [baseline, optimized], device_eos_probe=True, warm_cache=True))
 
 
 if __name__ == '__main__':

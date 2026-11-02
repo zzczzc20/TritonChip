@@ -8,6 +8,7 @@ import argparse
 import datetime
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -17,12 +18,17 @@ import time
 from bench_mmio_board import board_idle, IMAGE_UUID, PROFILE
 
 
-def comparison_scope(rows, *, device_eos_probe, warm_cache):
-    """Do not call timed compilation an equivalent warm-model comparison."""
+def compilation_free(rows):
+    """Require observed compilation counters from both measured turns."""
     compiler = [(row.get('timing') or {}).get('compiler') or {} for row in rows]
     observed = len(compiler) == 2 and all(item.get('available') is True for item in compiler)
     no_misses = observed and all(item.get('fx_graph_cache_misses') == 0 for item in compiler)
-    no_compile = no_misses and all(item.get('dynamo_compile_calls') == 0 for item in compiler)
+    return no_misses and all(item.get('dynamo_compile_calls') == 0 for item in compiler)
+
+
+def comparison_scope(rows, *, device_eos_probe, warm_cache):
+    """Do not call timed compilation an equivalent warm-model comparison."""
+    no_compile = compilation_free(rows)
     if device_eos_probe:
         if no_compile:
             return 'matched in-process warm reduced-model turns with artificial EOS; not model quality'
@@ -32,6 +38,17 @@ def comparison_scope(rows, *, device_eos_probe, warm_cache):
         return ('matched warm-cache processes, baseline then candidate' if no_compile else
                 'nominally warm-cache processes; timed compilation occurred or was not measured')
     return 'cold process then warm-cache process; not a matched warm A/B'
+
+
+def matched_warm_wall_speedup(rows, *, device_eos_probe, warm_cache):
+    """Only expose an A/B wall ratio when both measured turns were warm."""
+    if not (device_eos_probe or warm_cache) or not compilation_free(rows):
+        return None
+    seconds = [(row.get('timing') or {}).get('prompt_to_return_seconds') for row in rows]
+    if any(isinstance(s, bool) or not isinstance(s, (int, float)) or
+           not math.isfinite(s) or s <= 0 for s in seconds):
+        return None
+    return seconds[0] / seconds[1]
 
 
 def main():
@@ -151,6 +168,9 @@ def main():
                                  warm_cache=bool(args.warm_cache_dir))
         result = dict(status=status, domain=f'FPGA board; reduced {args.layers}-layer {args.model} checkpoint', image_uuid=IMAGE_UUID,
                       clock_hz=100000000, scope=scope,
+                      matched_warm_wall_speedup=(matched_warm_wall_speedup(
+                          rows, device_eos_probe=args.device_eos_probe, warm_cache=bool(args.warm_cache_dir))
+                          if status == 'pass' else None),
                       source='supplied overlays with frozen compiler 02d704f4',
                       prompt=args.prompt, logits_bitwise_equal=exact, tokens_equal=tokens_equal, rows=rows)
         (args.out / 'result.json').write_text(json.dumps(result, indent=2) + '\n')

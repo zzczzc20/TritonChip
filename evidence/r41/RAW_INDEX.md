@@ -57,3 +57,4 @@
 - `acf3019:/home/zzhouch/r41_eos_guard_20261102_f56ca67a/results/` — synthetic device EOS guard result and logs; no model-quality claim.
 - `acf3019:/home/zzhouch/r41_eos_model_20261102_9f4d4951/results/` — retained failed one-layer Qwen3.5 attempt; no full-attention cache.
 - `acf3019:/home/zzhouch/r41_eos_vl_retry_20261102_63523636/results/` — warm reduced one-layer VL EOS comparison with a diagnostic EOS; not full-model quality or throughput.
+- `acf3019:/home/zzhouch/r41_eos_q35_20261102_5023babb/results/` — four-layer Qwen3.5 diagnostic-EOS comparison; the raw scope label is incorrect because the measured turns included unequal compilation (94.46 s versus 10.64 s). This is not a matched warm wall-time A/B or full-model quality result.

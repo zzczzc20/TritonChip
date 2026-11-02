@@ -107,12 +107,30 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(again.tolist(), [0])
         self.assertEqual(same_identity, identity)
         self.assertEqual(latch.call_count, 1)
+        session._device_eos_flag_clean = True
+        with mock.patch.object(torch.Tensor, 'zero_', side_effect=AssertionError('already cleared')):
+            unchanged, _, reused = chat.prepare_device_eos_flag(session, {0, 1}, hardware, latch)
+        self.assertTrue(reused)
+        self.assertIs(unchanged, flag)
+        self.assertFalse(session._device_eos_flag_clean)
         hardware.epoch += 1
         replacement, new_identity, reused = chat.prepare_device_eos_flag(session, {0, 1}, hardware, latch)
         self.assertFalse(reused)
         self.assertIsNot(replacement, flag)
         self.assertNotEqual(new_identity, identity)
         self.assertEqual(latch.call_count, 2)
+
+    def test_idle_cleanup_resets_eos_flag_before_the_next_prompt(self):
+        session = object.__new__(chat.Session)
+        session.device = 'cpu'
+        session._pending_reset = False
+        flag = torch.tensor([1], dtype=torch.long)
+        session._device_eos_state = (((), 1, 1), flag)
+        self.assertTrue(session.schedule_idle_cleanup())
+        session.wait_for_cleanup()
+        self.assertEqual(flag.tolist(), [0])
+        self.assertTrue(session._device_eos_flag_clean)
+        self.assertFalse(session.schedule_idle_cleanup())
 
     def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None,
                  retain_logits=True, logit_limit=None, rewind_hook=None, queue=False, real_warmup=False,

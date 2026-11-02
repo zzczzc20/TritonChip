@@ -312,17 +312,26 @@ class Session:
         """Reset discarded state while an interactive user considers a reply."""
         self.wait_for_cleanup()
         with self._cleanup_guard():
-            if not getattr(self, '_pending_reset', False):
+            pending_reset = getattr(self, '_pending_reset', False)
+            eos_state = (None if getattr(self, '_device_eos_flag_clean', False)
+                         else getattr(self, '_device_eos_state', None))
+            if not pending_reset and eos_state is None:
                 return False
             def cleanup():
                 try:
                     # Inference mode is thread-local; cached tensors may have
                     # been created in that mode on the generation thread.
                     with torch.inference_mode():
-                        self.reset()
+                        if pending_reset:
+                            self.reset()
+                        if eos_state is not None:
+                            eos_state[1].zero_()
                         if self.device == 'tnca':
                             from tnca.torch_device import MEMORY
                             MEMORY.synchronize()
+                        with self._cleanup_guard():
+                            if getattr(self, '_device_eos_state', None) is eos_state:
+                                self._device_eos_flag_clean = True
                 except BaseException as error:
                     with self._cleanup_guard():
                         self._cleanup_error = error
@@ -619,7 +628,9 @@ def prepare_device_eos_flag(session, eos, hardware, latch):
     previous = getattr(session, '_device_eos_state', None)
     if previous is not None and previous[0] == identity:
         flag = previous[1]
-        flag.zero_()
+        if not getattr(session, '_device_eos_flag_clean', False):
+            flag.zero_()
+        session._device_eos_flag_clean = False
         return flag, identity, True
     sentinel = 0
     while sentinel in eos:
@@ -627,6 +638,7 @@ def prepare_device_eos_flag(session, eos, hardware, latch):
     flag = torch.zeros((1,), dtype=torch.long).to(session.dev)
     dummy = torch.tensor([[sentinel]], dtype=torch.long).to(session.dev)
     latch(dummy, flag, eos)
+    session._device_eos_flag_clean = False
     return flag, identity, False
 
 

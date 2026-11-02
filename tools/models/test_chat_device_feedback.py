@@ -93,7 +93,7 @@ class Session:
 class DeviceFeedbackTests(unittest.TestCase):
     def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None,
                  retain_logits=True, logit_limit=None, rewind_hook=None, queue=False, real_warmup=False,
-                 prior_single=False):
+                 prior_single=False, warmup_reads=0):
         session = Session(choices, prefill_compiles_decode)
         if prior_single:
             session.prompts, session.cached, session._cache_tokens = 1, [7, 8], 2
@@ -107,7 +107,9 @@ class DeviceFeedbackTests(unittest.TestCase):
                 token = capture('selection', lambda: session.greedy(prefill[0].reshape(-1)))
                 logits = capture('decode', lambda: session.step_device(token))
                 session._warm_prefill = (prefill, 0.1)
-                session._warm_feedback = (token, logits, position, 0.2, Meter().summary())
+                transfers = Meter().summary()
+                transfers['host_read_calls'] = warmup_reads
+                session._warm_feedback = (token, logits, position, 0.2, transfers)
                 return logits
             def consume(inputs, per_image):
                 saved, session._warm_prefill = session._warm_prefill, None
@@ -132,7 +134,8 @@ class DeviceFeedbackTests(unittest.TestCase):
             return fn(), ([] if cached_decode else ['test wrapper'])
         rewind_patch = (mock.patch.object(chat, 'rewind_attention_cache', side_effect=rewind_hook)
                         if rewind_hook is not None else nullcontext())
-        with rewind_patch, mock.patch.dict(os.environ, {'TNCA_QUEUE_STEPS': '1' if queue else '0'}), \
+        with rewind_patch, mock.patch.dict(os.environ, {'TNCA_QUEUE_STEPS': '1' if queue else '0',
+                                                       'TNCA_REUSE_FIRST_DECODE': '1' if real_warmup else '0'}), \
              mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind,
                                             'tnca.code_residency': residency}), \
              mock.patch.object(chat, 'run_with_code_capture', capture), \
@@ -177,6 +180,11 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertTrue(actual['steps'][1]['decode_from_warmup'])
         self.assertEqual(actual['steps'][1]['decode_seconds_in_warmup'], 0.2)
         self.assertEqual(actual['statistics']['decode_seconds_already_in_warmup'], 0.2)
+
+    def test_real_warmup_host_reads_fail_the_decode_gate(self):
+        _, result = self.run_case([1, 2, 1], real_warmup=True, warmup_reads=6)
+        self.assertEqual(result['status'], 'failed-no-host-fallback')
+        self.assertTrue(result['steady_decode_host_reads_detected'])
 
     def test_queued_decode_uses_prefill_positions_after_real_warmup(self):
         baseline, expected = self.run_case([1, 2, 1, 3], queue=True)

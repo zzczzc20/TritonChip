@@ -904,7 +904,7 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         started = time.perf_counter()
         with transfer_meter(True) as warmup_meter:
             real_feedback = (getattr(session, 'supports_real_warmup_feedback', False)
-                             and os.environ.get('TNCA_REUSE_FIRST_DECODE', '1') == '1'
+                             and os.environ.get('TNCA_REUSE_FIRST_DECODE', '0') == '1'
                              and new_tokens > 1 and not forced_tokens)
             if real_feedback:
                 warmup_logits = session.warmup_decode(inputs, per_image, capture, real_feedback=True)
@@ -1069,9 +1069,12 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     fallback = any(fallbacks.values()) if covered else None
     vision_unknown = any(c.get("compiled_wrapper_fallbacks") is None for c in (vision_calls or []))
     vision_fallback = any(c.get("compiled_wrapper_fallbacks") for c in (vision_calls or []))
-    read_during_decode = any((row["transfers_inside_step"]["host_read_calls"] or
-                              row["transfers_inside_step"]["staging_download_bytes"])
-                             for row in rows if row["kind"] == "decode")
+    read_during_decode = any(
+        row['transfers_inside_step']['host_read_calls']
+        or row['transfers_inside_step']['staging_download_bytes']
+        or (row.get('warmup_decode_transfers') or {}).get('host_read_calls', 0)
+        or (row.get('warmup_decode_transfers') or {}).get('staging_download_bytes', 0)
+        for row in rows if row['kind'] == 'decode')
     if fallback or vision_fallback or read_during_decode:
         status = "failed-no-host-fallback"
     elif fallback is None or vision_unknown:

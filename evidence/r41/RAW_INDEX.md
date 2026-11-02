@@ -49,3 +49,7 @@
 - `gx10-6646:/home/zhongchun/r41_delivery_load_count_20261101.tgz` — SHA-256 `baae65f121b477a783ff95df74a80c4af05a2263bff9cdd448f129e5115acc7d`; 40 CPU checks including mocked loader-call, resident-alias and eviction accounting. No board results.
 - `gx10-6646:/home/zhongchun/r41_code_alias_fix_20261101.tgz` — SHA-256 `8145299446040fbf940f3b13dafb5d55e7685b521c164c67d67d5ce91f05d8ec`; reproduced alias-eviction `KeyError`, corrected driver and passing CPU checks. The preceding archive holds the exact pre-fix driver. No board results.
 - `gx10-6646:/home/zhongchun/r41_delivery_loader_final_20261101.tgz` — SHA-256 `9220576ad0733efb537ad0c8c15106befa172b862066c24fc4c94668125f95ce`; 41 CPU chat, cache, feedback, rescore and loader-accounting tests after the alias fix. No board results.
+
+- `acf3019:/home/zzhouch/r41_consolidated_retry_20261101_02d704f4/results/` — completed consolidated board campaign and queue log, frozen source `02d704f4`; no copied logs.
+  - `q35/r41-final-q35-campaign-20261101/q35-quality/quality.json` — SHA-256 `dee800c732cd0decfa905486276d7e8e816c11f392417e42cc553ea11797fac5`; `q35/stage.json` — `79de3d05195e479f12b6fc6b411fb8206bdb8eea1395d2a4ab175bc80d12f322`.
+  - `vl/r41-final-vl-campaign-20261101/vl-quality/quality.json` — SHA-256 `aca53c60747c3f9a822396eb567ad24143d25b7dd4267bb1ba87eef2c581380a`; `vl/stage.json` — `783c1cfa3c21c931821156146071d8393ab046027bf6f667ebdf39060644277b`.

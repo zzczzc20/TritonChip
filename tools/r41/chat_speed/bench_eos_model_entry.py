@@ -19,6 +19,8 @@ def main():
     parser.add_argument('--new-tokens', type=int, default=12)
     parser.add_argument('--prompt', required=True)
     args = parser.parse_args()
+    if args.model == 'q35' and args.layers < 4:
+        parser.error('Qwen3.5 needs at least four layers to include a full-attention cache')
     sys.path.insert(0, str(args.tree / 'tools/models'))
     import chat
     import qwen_fp8_lib as library

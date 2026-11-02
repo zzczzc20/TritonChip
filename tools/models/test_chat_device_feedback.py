@@ -538,6 +538,15 @@ class AttentionRewindTests(unittest.TestCase):
             self.assertTrue(torch.equal(layer.keys[:, :, 7:], original_keys[:, :, 7:]))
             self.assertTrue(torch.equal(layer.values[:, :, 7:], original_values[:, :, 7:]))
 
+    def test_guarded_stop_keeps_valid_lengths_without_host_writes(self):
+        layers = [self.static_layer(length=3), self.static_layer(length=3)]
+        cache = types.SimpleNamespace(layers=layers)
+        with mock.patch.object(chat, '_write_static_lengths') as write:
+            self.assertTrue(chat.rewind_attention_cache(cache, 3, dirty_length=3, length_already_valid=True))
+            self.assertFalse(chat.rewind_attention_cache(cache, 3, dirty_length=7, length_already_valid=True))
+        write.assert_not_called()
+        self.assertEqual([int(layer.cumulative_length) for layer in layers], [3, 3])
+
     def test_mixed_or_unsupported_cache_does_not_mutate_any_layer(self):
         first = self.static_layer()
         cache = types.SimpleNamespace(layers=[first, object()])

@@ -896,10 +896,12 @@ def _clear_static_tail(views):
             view.zero_()
 
 
-def rewind_attention_cache(cache, valid_length, *, dirty_length=None):
+def rewind_attention_cache(cache, valid_length, *, dirty_length=None, length_already_valid=False):
     """Restore static KV and clear discarded slots without host tensor reads."""
     if dirty_length is None:
         return False  # Without the high-water mark, stale values cannot be cleared safely.
+    if length_already_valid and dirty_length != valid_length:
+        return False
     layers = getattr(cache, 'layers', None)
     lengths = _static_attention_lengths(layers, valid_length)
     if lengths is None:
@@ -910,7 +912,8 @@ def rewind_attention_cache(cache, valid_length, *, dirty_length=None):
     # Validate every layer before mutating any. Keep the marked static device
     # addresses; replacing the tensors would invalidate compiled graphs.
     _clear_static_tail(tails)
-    _write_static_lengths(lengths, valid_length)
+    if not length_already_valid:
+        _write_static_lengths(lengths, valid_length)
     return True
 
 
@@ -1005,9 +1008,9 @@ def retain_guarded_hybrid_cache(cache, valid_length):
     if (len({tensor.untyped_storage().data_ptr() for tensor in tensors}) != len(tensors)
             or any(tensor.device != lengths[0].device for tensor in tensors)):
         return False
-    # No post-EOS tensor kernel ran, so neither static tail nor linear state
-    # needs copying. Normalize static metadata without reading device data.
-    _write_static_lengths(lengths, valid_length)
+    # No post-EOS tensor kernel ran: static lengths and tails and recurrent
+    # tensors are already at the valid prefix, so no per-layer host writes
+    # or device copies are needed.
     return True
 
 
@@ -1394,8 +1397,10 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         dirty_length = valid_length if device_stopped else expected_length
         eligible = (position is not None and not forced_tokens and tokens and tokens[-1] in eos
                     and getattr(session, '_cache_tokens', None) == expected_length)
-        retained_static = (eligible and rewind_attention_cache(
-            session.cache, valid_length, dirty_length=dirty_length))
+        static_options = {'dirty_length': dirty_length}
+        if device_stopped:
+            static_options['length_already_valid'] = True
+        retained_static = eligible and rewind_attention_cache(session.cache, valid_length, **static_options)
         retained_hybrid = (eligible and not retained_static and device_stopped
                            and use_guarded_hybrid_retention(
                                os.environ, checkpoint_enabled=getattr(session, '_capture_hybrid_checkpoint', False))

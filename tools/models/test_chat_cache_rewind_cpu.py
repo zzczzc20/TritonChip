@@ -226,7 +226,9 @@ class HybridPrefillContinuationTests(unittest.TestCase):
             # must leave recurrent tensors untouched and continue exactly.
             linear = next(layer for layer in retained.layers if hasattr(layer, 'recurrent_states'))
             old = [t.clone() for t in linear.recurrent_states.values()]
-            self.assertTrue(chat.retain_guarded_hybrid_cache(retained, len(prompt) + len(emitted)))
+            with mock.patch.object(chat, '_write_static_lengths') as write:
+                self.assertTrue(chat.retain_guarded_hybrid_cache(retained, len(prompt) + len(emitted)))
+                write.assert_not_called()
             self.assertTrue(all(torch.equal(a, b) for a, b in zip(old, linear.recurrent_states.values(), strict=True)))
             self.assertTrue(torch.equal(self.call(clean, suffix), self.call(retained, suffix)))
             for original, actual in zip(clean.layers, retained.layers, strict=True):

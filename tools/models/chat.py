@@ -1473,10 +1473,10 @@ def main(argv=None):
             report["persistent_session_check"] = check
             if not check["passed"] and report["status"] == "pass":
                 report["status"] = "failed-persistent-session-check"
-        save_report(report, args.out)
+        # Flush the generated answer before writing optional diagnostics;
+        # saving vocabulary tensors must not delay the user-visible reply.
         emit_user_report(report, prompt_started)
-        if args.out:
-            (args.out / "report.json").write_text(json.dumps(public_report(report), indent=2) + "\n")
+        save_report(report, args.out)
         return 0 if report["status"] == "pass" else 2
     except BaseException:
         if args.out:

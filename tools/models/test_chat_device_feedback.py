@@ -383,6 +383,16 @@ class UserReportTests(unittest.TestCase):
         self.assertEqual(output['user_visible_timing']['prompt_to_return_seconds'], 6)
         self.assertEqual(output['user_visible_timing']['non_special_token_ids_per_second'], 1 / 6)
 
+    def test_one_shot_flushes_answer_before_saving_diagnostics(self):
+        report = {'status': 'pass', 'generated_text': 'hello'}
+        app = types.SimpleNamespace(generate=mock.Mock(return_value=report))
+        order = []
+        with mock.patch.object(chat, 'ChatApplication', return_value=app), \
+             mock.patch.object(chat, 'emit_user_report', side_effect=lambda *_: order.append('answer')), \
+             mock.patch.object(chat, 'save_report', side_effect=lambda *_: order.append('diagnostics')):
+            self.assertEqual(chat.main(['--model', 'vl', '--device', 'cpu', '--out', '/tmp/unused']), 0)
+        self.assertEqual(order, ['answer', 'diagnostics'])
+
     def test_script_records_and_prints_the_flushed_token_rate(self):
         import io
         import json

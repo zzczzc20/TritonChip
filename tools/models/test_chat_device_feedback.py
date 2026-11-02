@@ -91,6 +91,20 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
+    def test_interactive_rate_does_not_count_post_eos_submissions(self):
+        report = {'device_eos_guard': {'enabled': True},
+                  'statistics': {'prefill_seconds': 10, 'decode_steps': 11,
+                                 'mean_decode_seconds_per_token': 0.2, 'decode_tokens_per_second': 5},
+                  'steps': [{'reused_cached_tokens': 0}], 'session': {'new_graphs_this_prompt': 0},
+                  'user_visible_timing': {'prompt_to_return_seconds': 13,
+                                          'returned_token_ids_per_second': 1 / 13,
+                                          'non_special_token_ids_per_second': 1 / 13}}
+        shown = chat.interactive_metrics(report)
+        self.assertEqual(shown['non_special_token_ids_per_second'], 1 / 13)
+        self.assertNotIn('decode_tokens_per_second', shown)
+        report['device_eos_guard']['enabled'] = False
+        self.assertEqual(chat.interactive_metrics(report)['decode_tokens_per_second'], 5)
+
     def test_eos_guard_auto_enables_only_on_supported_device_path(self):
         board = {'TNCA_BACKEND': 'fpga-u280-multicore'}
         self.assertTrue(chat.use_device_eos_guard(board, 12, None, {2}))

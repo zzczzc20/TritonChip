@@ -1400,6 +1400,24 @@ def public_report(report):
     return {k: v for k, v in report.items() if k != "logits"}
 
 
+def interactive_metrics(report):
+    """Show returned-token throughput without presenting skipped work as output."""
+    stats = report['statistics']
+    visible = report['user_visible_timing']
+    fields = ('prefill_seconds', 'decode_steps', 'mean_decode_seconds_per_token',
+              'decode_tokens_per_second')
+    if (report.get('device_eos_guard') or {}).get('enabled'):
+        # Guarded post-EOS submissions are not generated tokens. The full
+        # diagnostic report keeps their launch and cycle counters separately.
+        fields = ('prefill_seconds',)
+    return ({key: stats[key] for key in fields}
+            | {'reused_cached_tokens': report['steps'][0]['reused_cached_tokens'],
+               'new_graphs': report['session']['new_graphs_this_prompt'],
+               'prompt_to_output_seconds': visible['prompt_to_return_seconds'],
+               'returned_token_ids_per_second': visible['returned_token_ids_per_second'],
+               'non_special_token_ids_per_second': visible['non_special_token_ids_per_second']})
+
+
 def emit_user_report(report, prompt_started):
     """Return text first, then serialize the detailed diagnostic fields."""
     generated = report["generated_text"]
@@ -1661,17 +1679,7 @@ class ChatApplication:
                                           "interactive prompt through assistant stdout flush")
             if source is None and self.session is not None:
                 self.session.schedule_idle_cleanup()
-            stats = report["statistics"]
-            visible = report["user_visible_timing"]
-            print(json.dumps({k: stats[k] for k in ("prefill_seconds", "decode_steps",
-                                                     "mean_decode_seconds_per_token",
-                                                     "decode_tokens_per_second")}
-                             | {"reused_cached_tokens": report["steps"][0]["reused_cached_tokens"],
-                                "new_graphs": report["session"]["new_graphs_this_prompt"],
-                                "prompt_to_output_seconds": visible["prompt_to_return_seconds"],
-                                "returned_token_ids_per_second": visible["returned_token_ids_per_second"],
-                                "non_special_token_ids_per_second": visible["non_special_token_ids_per_second"]}),
-                  flush=True)
+            print(json.dumps(interactive_metrics(report)), flush=True)
             if on_turn is not None and transcript is not None:
                 on_turn(transcript[-1])
         if getattr(self, 'session', None) is not None:

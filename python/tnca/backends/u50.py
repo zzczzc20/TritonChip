@@ -1377,6 +1377,13 @@ class _XRTRegisters:
                        'at other offsets still work')
 
 
+# These command descriptor registers are host-owned and persist until reset
+# in both MMIO implementations. Sequence and doorbell are deliberately absent:
+# every command must publish a new sequence and ring a new doorbell.
+_REQUEST_DESCRIPTOR_REGISTERS = frozenset((R_REQ_OP, R_REQ_A0, R_REQ_A1, R_REQ_A2,
+                                           R_REQ_A3, R_REQ_A4, R_REQ_A5, R_REQ_DEADLINE))
+
+
 class XDMALink(U50Link):
     """The board itself. NOT EXERCISED, and this docstring says so first.
 
@@ -1420,16 +1427,26 @@ class XDMALink(U50Link):
         self._accessor = accessor
         self._what = what or f'U50 index {index}'
         self._device = None
+        # Only an XRT context opened by us can establish exclusive ownership;
+        # externally supplied accessors retain the conservative write path.
+        self._request_register_shadow = None
+        self.request_register_writes = 0
+        self.request_register_reuses = 0
 
     def describe(self):
         return self._what
 
     def open(self):
         if self._accessor is None:
+            # _open_access obtains an exclusive IP context. In that context
+            # no other XRT client may alter the request descriptor registers.
             self._accessor = self._open_access()
+            if os.environ.get('TNCA_MMIO_DESCRIPTOR_CACHE', '1') == '1':
+                self._request_register_shadow = {}
         return self
 
     def close(self):
+        self._request_register_shadow = None
         acc, self._accessor = self._accessor, None
         if acc is not None and hasattr(acc, 'close'):
             try:
@@ -1463,7 +1480,24 @@ class XDMALink(U50Link):
         if self._accessor is None:
             raise DeviceLost('the board is not open',
                              detail={'medium': self._what})
-        self._accessor.write(offset, int(value) & 0xFFFF_FFFF_FFFF_FFFF)
+        value = int(value) & 0xFFFF_FFFF_FFFF_FFFF
+        shadow = self._request_register_shadow
+        if shadow is not None and offset in _REQUEST_DESCRIPTOR_REGISTERS:
+            if offset in shadow and shadow[offset] == value:
+                self.request_register_reuses += 1
+                return
+        try:
+            # Each 64-bit register write remains the required low/high pair.
+            # In particular the sequence and doorbell always reach the device.
+            self._accessor.write(offset, value)
+        except BaseException:
+            # A failed two-part transaction may leave any prior state unknown.
+            if shadow is not None:
+                shadow.clear()
+            raise
+        self.request_register_writes += 1
+        if shadow is not None and offset in _REQUEST_DESCRIPTOR_REGISTERS:
+            shadow[offset] = value
 
     # ---- R40-04: the AXI window's memory, through XRT ----------------------
     def hbm_open(self, nbytes):

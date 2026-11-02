@@ -642,7 +642,10 @@ def use_device_eos_guard(environ, new_tokens, forced_tokens, eos):
         raise ValueError('TNCA_DEVICE_EOS_GUARD must be 0 or 1')
     if new_tokens <= 1 or forced_tokens or not eos or requested == '0':
         return False
-    if automatic and environ.get('TNCA_BACKEND') != 'fpga-u280-multicore':
+    # Automatic activation is limited to the board/profile pair exercised by
+    # the EOS comparison. Other targets can still opt in explicitly.
+    if automatic and (environ.get('TNCA_BACKEND') != 'fpga-u280-multicore'
+                      or environ.get('TNCA_PROFILE') != 'core-vrf-sync-v5-x8-g2c4-dp'):
         return False
     compatible = (environ.get('TNCA_TRANSFER_POLICY', 'resident') == 'resident'
                   and environ.get('TNCA_LAUNCH') != 'skip'

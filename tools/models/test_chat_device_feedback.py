@@ -106,9 +106,10 @@ class DeviceFeedbackTests(unittest.TestCase):
         self.assertEqual(chat.interactive_metrics(report)['decode_tokens_per_second'], 5)
 
     def test_eos_guard_auto_enables_only_on_supported_device_path(self):
-        board = {'TNCA_BACKEND': 'fpga-u280-multicore'}
+        board = {'TNCA_BACKEND': 'fpga-u280-multicore', 'TNCA_PROFILE': 'core-vrf-sync-v5-x8-g2c4-dp'}
         self.assertTrue(chat.use_device_eos_guard(board, 12, None, {2}))
         self.assertFalse(chat.use_device_eos_guard({}, 12, None, {2}))
+        self.assertFalse(chat.use_device_eos_guard(dict(board, TNCA_PROFILE='core-sim'), 12, None, {2}))
         self.assertFalse(chat.use_device_eos_guard(board, 1, None, {2}))
         self.assertFalse(chat.use_device_eos_guard(board, 12, [2], {2}))
         self.assertFalse(chat.use_device_eos_guard(dict(board, TNCA_DEVICE_EOS_GUARD='0'), 12, None, {2}))

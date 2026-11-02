@@ -50,6 +50,39 @@ class StaticAttentionContinuationTests(unittest.TestCase):
         return self.model(input_ids=torch.tensor([tokens]), position_ids=positions,
                           past_key_values=cache, use_cache=True).last_hidden_state
 
+    def test_changed_conversation_reuses_only_exact_static_chunks(self):
+        def make_session(cache, capture):
+            session = object.__new__(chat.Session)
+            session.device, session.dev, session.cache, session.model = 'cpu', torch.device('cpu'), cache, self.model
+            session.bucket, session.chunk, session.resets = 32, 4, 0
+            session.cached, session._cache_tokens, session.last_position = [], 0, None
+            session._warm_prefill = session._warm_feedback = session._continuation_checkpoint = None
+            session._static_prefix_state = None
+            session._pending_reset, session._capture_hybrid_checkpoint = False, False
+            session._capture_static_prefix = capture
+            session._call_prefill = lambda ids, positions, vision: self.call(
+                cache, ids[0].tolist(), int(positions[0, 0, 0]))[0, -1]
+            return session
+        reference, optimized = make_session(self.make_cache(), False), make_session(self.make_cache(), True)
+        first = [5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+        followup = first[:10] + [20, 21, 22, 23, 24, 25]
+        def positions(_model, inputs):
+            return torch.arange(inputs['input_ids'].shape[1]).reshape(1, 1, -1).expand(4, 1, -1)
+        with torch.inference_mode(), mock.patch.object(chat.L, 'prefill_position_ids', side_effect=positions):
+            for session in (reference, optimized):
+                session.prefill_prompt({'input_ids': torch.tensor([first])}, None)
+                self.call(session.cache, [19], len(first))
+                session.cached.append(19)
+                session._cache_tokens += 1
+            reference.reset()
+            expected, _, _ = reference.prefill_prompt({'input_ids': torch.tensor([followup])}, None)
+            actual, _, reused = optimized.prefill_prompt({'input_ids': torch.tensor([followup])}, None)
+            self.assertEqual(reused, 8)
+            self.assertTrue(torch.equal(expected, actual))
+            for first_layer, second_layer in zip(reference.cache.layers, optimized.cache.layers, strict=True):
+                self.assertTrue(torch.equal(first_layer.keys, second_layer.keys))
+                self.assertTrue(torch.equal(first_layer.values, second_layer.values))
+
     def continuation(self, prefix, emitted, speculative, suffix):
         clean, rewound = self.make_cache(), self.make_cache()
         with torch.inference_mode():

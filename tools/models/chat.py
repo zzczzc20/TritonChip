@@ -275,6 +275,8 @@ class Session:
         self._warm_prefill_mode = 'not-run'
         self._continuation_checkpoint = None
         self._capture_hybrid_checkpoint = False
+        self._static_prefix_state = None
+        self._capture_static_prefix = False
         self._pending_reset = False
         self._cleanup_lock = threading.RLock()
         self._cleanup_thread = None
@@ -303,6 +305,7 @@ class Session:
             self._warm_prefill = None
             self._warm_feedback = None
             self._continuation_checkpoint = None
+            self._static_prefix_state = None
             self._pending_reset = False
             self.resets += 1
 
@@ -377,6 +380,7 @@ class Session:
             self._warm_prefill = None
             self._warm_feedback = None
             self._continuation_checkpoint = None
+            self._static_prefix_state = None
             self._pending_reset = True
 
     def vision_features(self, inputs):
@@ -458,6 +462,7 @@ class Session:
         positions = L.prefill_position_ids(self.model, inputs)
         full = ids[0].tolist()
         reused = len(self.cached)
+        prior_static = getattr(self, '_static_prefix_state', None)
         if (per_image or full[:reused] != self.cached or reused >= len(full)
                 or getattr(self, '_cache_tokens', 0) != reused):
             # A Qwen chat template may rewrite an earlier assistant prefix
@@ -477,9 +482,19 @@ class Session:
                 self._cache_tokens = reused = length
                 self.last_position = checkpoint['position']
             else:
-                if self.cached or getattr(self, '_cache_tokens', 0):
-                    self.reset()
-                reused = 0
+                # Static KV layers can rewind a changed conversation to a
+                # shared prefill chunk without copying recurrent state.
+                prefix = (matching_static_prefix(full, self.cached, positions, prior_static, self.chunk)
+                          if not per_image and getattr(self, '_capture_static_prefix', False)
+                          and getattr(self, '_cache_tokens', 0) == reused else 0)
+                if prefix and rewind_attention_cache(self.cache, prefix, dirty_length=reused):
+                    self.cached, self._cache_tokens, reused = full[:prefix], prefix, prefix
+                    self.last_position = positions[..., prefix - 1:prefix].clone()
+                else:
+                    if self.cached or getattr(self, '_cache_tokens', 0):
+                        self.reset()
+                    prior_static = None
+                    reused = 0
         if len(full) > self.bucket:
             raise ValueError(f"static bucket {self.bucket} is smaller than the {len(full)}-token conversation")
         vision = None
@@ -524,6 +539,9 @@ class Session:
         self._cache_tokens = len(full)
         self.last_position = positions[..., -1:]
         self._continuation_checkpoint = new_checkpoint
+        self._static_prefix_state = next_static_prefix_state(
+            self.cache, full, positions, reused, prior_static, self.chunk,
+            enabled=bool(getattr(self, '_capture_static_prefix', False) and not per_image))
         return logits, rows, reused
 
     def step(self, token):
@@ -705,6 +723,26 @@ def use_device_eos_completion_probe(environ, *, guard_enabled, queue_steps):
             and environ.get('TNCA_PROFILE') == 'core-vrf-sync-v5-x8-g2c4-dp')
 
 
+def use_hybrid_prefix_checkpoint(environ, *, keep_history, device, chunk):
+    """Enable the board-measured hybrid checkpoint for chunked interactive chat."""
+    requested = environ.get('TNCA_HYBRID_PREFIX_CHECKPOINT')
+    if requested not in (None, '0', '1'):
+        raise ValueError('TNCA_HYBRID_PREFIX_CHECKPOINT must be 0 or 1')
+    if not keep_history or device != 'tnca' or not chunk or requested == '0':
+        return False
+    if requested == '1':
+        return True
+    return (environ.get('TNCA_BACKEND') == 'fpga-u280-multicore'
+            and environ.get('TNCA_PROFILE') == 'core-vrf-sync-v5-x8-g2c4-dp')
+
+
+def use_guarded_hybrid_retention(environ, *, checkpoint_enabled):
+    requested = environ.get('TNCA_REUSE_GUARDED_HYBRID')
+    if requested not in (None, '0', '1'):
+        raise ValueError('TNCA_REUSE_GUARDED_HYBRID must be 0 or 1')
+    return requested == '1' or (requested is None and checkpoint_enabled)
+
+
 def prepare_device_eos_flag(session, eos, hardware, latch):
     """Reuse a sticky flag only for the same token set and device epoch."""
     identity = (tuple(sorted(eos)), hardware.id, hardware.epoch)
@@ -874,6 +912,40 @@ def rewind_attention_cache(cache, valid_length, *, dirty_length=None):
     _clear_static_tail(tails)
     _write_static_lengths(lengths, valid_length)
     return True
+
+
+def matching_static_prefix(full, cached, positions, state, chunk):
+    """Find only a proven, chunk-aligned prefix with identical positions."""
+    if (state is None or not chunk or state['chunk'] != chunk or positions.device.type != 'cpu'
+            or cached[:len(state['tokens'])] != state['tokens']):
+        return 0
+    limit = min(len(full) - 1, len(cached), len(state['tokens']))
+    shared = 0
+    while shared < limit and full[shared] == state['tokens'][shared]:
+        shared += 1
+    shared -= shared % chunk
+    if shared and torch.equal(positions[..., :shared], state['positions'][..., :shared]):
+        return shared
+    return 0
+
+
+def next_static_prefix_state(cache, full, positions, reused, previous, chunk, *, enabled):
+    """Remember only chunks proven equivalent to a fresh canonical prefill."""
+    if (not enabled or not chunk or positions.device.type != 'cpu'
+            or _static_attention_lengths(getattr(cache, 'layers', None), 0) is None):
+        return None
+    previous_length = len(previous['tokens']) if previous and previous['chunk'] == chunk else 0
+    prior_matches = (previous_length and full[:previous_length] == previous['tokens']
+                     and torch.equal(positions[..., :previous_length], previous['positions']))
+    if reused == 0 or (prior_matches and reused <= previous_length and reused % chunk == 0):
+        length = len(full) // chunk * chunk
+    elif prior_matches:
+        length = min(previous_length, reused) // chunk * chunk
+    else:
+        length = 0
+    if not length:
+        return None
+    return dict(tokens=full[:length], positions=positions[..., :length].clone(), chunk=chunk)
 
 
 def _linear_prefill_signature(layer):
@@ -1322,7 +1394,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         retained_static = (eligible and rewind_attention_cache(
             session.cache, valid_length, dirty_length=dirty_length))
         retained_hybrid = (eligible and not retained_static and device_stopped
-                           and os.environ.get('TNCA_REUSE_GUARDED_HYBRID', '0') == '1'
+                           and use_guarded_hybrid_retention(
+                               os.environ, checkpoint_enabled=getattr(session, '_capture_hybrid_checkpoint', False))
                            and retain_guarded_hybrid_cache(session.cache, valid_length))
         if retained_static or retained_hybrid:
             session.cached += tokens[:-1]
@@ -1705,8 +1778,10 @@ class ChatApplication:
             gc.collect()
             reference_seconds = time.perf_counter() - reference_started
         session = self.device_session()
-        session._capture_hybrid_checkpoint = (keep_history and session.device == 'tnca'
-                                              and os.environ.get('TNCA_HYBRID_PREFIX_CHECKPOINT', '0') == '1')
+        session._capture_hybrid_checkpoint = use_hybrid_prefix_checkpoint(
+            os.environ, keep_history=keep_history, device=session.device, chunk=session.chunk)
+        session._capture_static_prefix = (keep_history and session.device == 'tnca'
+                                          and os.environ.get('TNCA_STATIC_PREFIX_REWIND', '0') == '1')
         session.wait_for_cleanup()
         per_image, vision_calls = session.vision_features(inputs)
         # Teacher-forced diagnostics need only the reference's actual steps;

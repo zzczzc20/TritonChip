@@ -91,6 +91,18 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
+    def test_hybrid_checkpoint_defaults_to_tested_chunked_board_chat(self):
+        board = {'TNCA_BACKEND': 'fpga-u280-multicore', 'TNCA_PROFILE': 'core-vrf-sync-v5-x8-g2c4-dp'}
+        options = dict(keep_history=True, device='tnca', chunk=8)
+        self.assertTrue(chat.use_hybrid_prefix_checkpoint(board, **options))
+        self.assertFalse(chat.use_hybrid_prefix_checkpoint(board, **dict(options, chunk=0)))
+        self.assertFalse(chat.use_hybrid_prefix_checkpoint(board, **dict(options, keep_history=False)))
+        self.assertFalse(chat.use_hybrid_prefix_checkpoint({}, **options))
+        self.assertFalse(chat.use_hybrid_prefix_checkpoint(dict(board, TNCA_HYBRID_PREFIX_CHECKPOINT='0'), **options))
+        self.assertTrue(chat.use_guarded_hybrid_retention(board, checkpoint_enabled=True))
+        self.assertFalse(chat.use_guarded_hybrid_retention(
+            dict(board, TNCA_REUSE_GUARDED_HYBRID='0'), checkpoint_enabled=True))
+
     def test_completion_probe_defaults_only_to_the_tested_board_profile(self):
         board = {'TNCA_BACKEND': 'fpga-u280-multicore', 'TNCA_PROFILE': 'core-vrf-sync-v5-x8-g2c4-dp'}
         self.assertTrue(chat.use_device_eos_completion_probe(board, guard_enabled=True, queue_steps=False))

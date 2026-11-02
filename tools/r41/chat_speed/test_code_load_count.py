@@ -203,7 +203,8 @@ class CodeLoadTests(unittest.TestCase):
 
         def manifest(path):
             name = Path(path).name
-            return dict(identity=dict(kernel_name='matmul', abi_version=[1, 0], source_hash=name),
+            kernel_name = 'matmul_alias' if name == 'b' else 'matmul'
+            return dict(identity=dict(kernel_name=kernel_name, abi_version=[1, 0], source_hash=name),
                         code=dict(segments=[dict(name='text', sha256='identical-code')]),
                         parameters=dict(signature=['different' if name == 'c' else 'x']),
                         resources=dict(scratch_bytes=0), execution=dict(roles=1),
@@ -229,6 +230,7 @@ class CodeLoadTests(unittest.TestCase):
             verified.assert_called_once_with(str(b))
             self.assertEqual(view.code_addr, original.code_addr)
             self.assertEqual(view.path, str(b))
+            self.assertEqual(view.name, 'matmul_alias')
             self.assertEqual(view.manifest['identity']['source_hash'], 'b')
             self.assertIs(driver._load(session, str(b))[1], view)
             driver._load(session, str(c))  # Different argument contract cannot alias.

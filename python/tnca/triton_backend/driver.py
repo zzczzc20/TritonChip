@@ -578,6 +578,9 @@ def _execution_fingerprint(manifest):
     contract.pop('manifest_hash', None)
     identity = dict(contract.get('identity') or {})
     identity.pop('source_hash', None)
+    # The name labels diagnostics; it is not an instruction or ABI field.
+    # Per-artifact views keep the caller's name even when code is shared.
+    identity.pop('kernel_name', None)
     contract['identity'] = identity
     metadata = dict(contract.get('optional_metadata') or {})
     metadata.pop('provenance', None)
@@ -591,8 +594,8 @@ def _executable_info(path):
     """Find an execution identity, excluding only source provenance.
 
     Two independently compiled artifacts may have identical instructions,
-    ABI, target, execution contract and resources while their source hashes
-    and compiler provenance differ. They can share code RAM. Every segment
+    ABI, target, execution contract and resources while their kernel names,
+    source hashes and compiler provenance differ. They can share code RAM. Every segment
     is verified before sharing, and all other manifest fields remain part of
     the identity. A candidate alias is separately verified before it can
     share code, and a view retains its own manifest.

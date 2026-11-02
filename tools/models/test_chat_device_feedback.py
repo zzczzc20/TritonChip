@@ -156,6 +156,17 @@ class DeviceFeedbackTests(unittest.TestCase):
                                ('TNCA_LAUNCH', 'skip'), ('TNCA_GUARD_CHECK', '1'), ('TNCA_GUARD_BYTES', '8')):
                 with mock.patch.dict(os.environ, {key: value}), self.assertRaises(ValueError):
                     chat.validate_queued_decode()
+    def test_eos_defers_full_reset_until_the_next_prompt(self):
+        def defer(session):
+            session.deferred = True
+            session.cached, session._cache_tokens, session.last_position = [], 0, None
+        with mock.patch.object(Session, 'defer_reset', defer, create=True):
+            session, report = self.run_case([1, 3, 2])
+        self.assertTrue(session.deferred)
+        self.assertEqual(session.resets, 0)
+        self.assertEqual(report['session']['cache_rewind'], 'full-reset-deferred')
+        self.assertEqual(report['generated_tokens'], [1, 3])
+
     def test_eos_discards_overrun_cache(self):
         session, report = self.run_case([1, 3, 2])
         self.assertEqual(session.fed, [1, 3])
@@ -458,6 +469,28 @@ class PrefillSegmentationTests(unittest.TestCase):
         self.assertEqual(blocks, [[1, 2, 3]])
         self.assertEqual(session._cache_tokens, 3)
         self.assertEqual(rows[0]['tokens'], 3)
+
+    def test_deferred_reset_happens_before_the_next_prefill(self):
+        session = object.__new__(chat.Session)
+        session.device, session.model, session.cache = 'cpu', object(), mock.Mock()
+        session.cached, session._cache_tokens = [1, 2], 2
+        session.last_position, session._warm_prefill = torch.tensor([1]), object()
+        session._pending_reset, session.resets = False, 0
+        session.bucket, session.chunk = 16, 0
+        inputs = {'input_ids': torch.tensor([[3, 4, 5]])}
+        def prefill(ids, positions, vision):
+            session.cache.reset.assert_called_once()
+            return torch.zeros(4)
+        session._call_prefill = prefill
+        session.defer_reset()
+        session.cache.reset.assert_not_called()
+        self.assertIsNone(session.last_position)
+        with mock.patch.object(chat.L, 'prefill_position_ids', return_value=torch.tensor([[[0, 1, 2]]])):
+            session.prefill_prompt(inputs, None)
+        self.assertFalse(session._pending_reset)
+        self.assertEqual(session.cached, [3, 4, 5])
+        self.assertEqual(session._cache_tokens, 3)
+        self.assertEqual(session.resets, 1)
 
     def test_decode_warmup_resets_dummy_state(self):
         session = object.__new__(chat.Session)

@@ -238,6 +238,7 @@ class Session:
         self.last_position = None
         self._warm_prefill = None
         self._warm_prefill_mode = 'not-run'
+        self._pending_reset = False
         self.resets = 0
         self.prompts = 0
         self.greedy = (torch.compile(lambda x: x.float().argmax().reshape(1, 1),
@@ -250,7 +251,21 @@ class Session:
         self.cached, self.last_position = [], None
         self._cache_tokens = 0
         self._warm_prefill = None
+        self._pending_reset = False
         self.resets += 1
+
+    def defer_reset(self):
+        """Invalidate speculative state now; clean device storage on next use.
+
+        A recurrent cache cannot be rewound after speculative post-EOS work.
+        Its full reset may be expensive, but is unnecessary for returning
+        this answer or when a one-shot process exits. A following prompt
+        performs the same reset before it can consume any cache state.
+        """
+        self.cached, self.last_position = [], None
+        self._cache_tokens = 0
+        self._warm_prefill = None
+        self._pending_reset = True
 
     def vision_features(self, inputs):
         """The vision tower once per image (each call has exactly one attention segment), features concatenated
@@ -323,6 +338,8 @@ class Session:
 
     def prefill_prompt(self, inputs, per_image):
         """Bring the cache to the state after the whole prompt; return (last logits on host, call rows, reused)."""
+        if getattr(self, '_pending_reset', False):
+            self.reset()
         from torch._dynamo.utils import counters
         ids = inputs["input_ids"]
         positions = L.prefill_position_ids(self.model, inputs)
@@ -399,6 +416,8 @@ class Session:
 
     def warmup_decode(self, inputs, per_image=None, capture=None):
         """Compile against a populated prompt; optionally retain its exact KV state."""
+        if getattr(self, '_pending_reset', False):
+            self.reset()
         if self.cached or self.last_position is not None:
             raise RuntimeError("decode warmup requires a fresh cache")
         capture = capture or (lambda role, fn: fn())
@@ -891,8 +910,13 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
             cache_rewind = 'static-attention-prefix-retained'
             retained_prefix_tokens = len(session.cached)
         else:
-            session.reset()
-            cache_rewind = 'full-reset'
+            defer_reset = getattr(session, 'defer_reset', None)
+            if defer_reset is None:
+                session.reset()
+                cache_rewind = 'full-reset'
+            else:
+                defer_reset()
+                cache_rewind = 'full-reset-deferred'
     else:
         session.cached += tokens[:-1]
     cache_maintenance_seconds = time.perf_counter() - cache_maintenance_start

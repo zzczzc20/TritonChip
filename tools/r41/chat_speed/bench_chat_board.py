@@ -23,6 +23,8 @@ def main():
     parser.add_argument('--overlay-root', type=Path, required=True)
     parser.add_argument('--baseline-overlay-root', type=Path)
     parser.add_argument('--warm-cache-dir', type=Path)
+    parser.add_argument('--device-eos-probe', action='store_true',
+                        help='compare warm reduced-model turns with a diagnostic EOS')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--python', type=Path, required=True)
     parser.add_argument('--model', choices=('vl', 'q35'), default='vl')
@@ -30,6 +32,8 @@ def main():
     parser.add_argument('--new-tokens', type=int, default=4)
     parser.add_argument('--prompt', default='What is the capital of France? Answer with one word.')
     args = parser.parse_args()
+    if args.device_eos_probe and (args.baseline_overlay_root or args.warm_cache_dir):
+        parser.error('the device EOS probe uses one source overlay and its own cache')
     if bool(args.baseline_overlay_root) != bool(args.warm_cache_dir):
         parser.error('warm A/B requires both a baseline overlay and an existing warm cache')
     if args.warm_cache_dir and not args.warm_cache_dir.is_dir():
@@ -63,7 +67,9 @@ def main():
             image_profile=PROFILE, core_count=3, memory_ports=3, hbm_dma=True,
             hbm_bytes=8 * (1 << 30), device_clock=True))
         reports = []
-        modes = ('baseline-warm', 'optimized-warm') if args.warm_cache_dir else ('baseline-cold', 'optimized-warm')
+        modes = (('baseline', 'device-eos-guard') if args.device_eos_probe else
+                 ('baseline-warm', 'optimized-warm') if args.warm_cache_dir else
+                 ('baseline-cold', 'optimized-warm'))
         for mode in modes:
             # Another client may not use this cooperative queue lock. Refuse
             # an occupied or changed device before starting either process;
@@ -75,17 +81,24 @@ def main():
             run_env = dict(env)
             for name in ('TNCA_REUSE_WARM_PREFILL', 'TNCA_REUSE_HYBRID_PREFILL',
                          'TNCA_MMIO_DESCRIPTOR_CACHE', 'TNCA_CODE_REUSE',
-                         'TNCA_DEFER_CACHE_RESET', 'TNCA_REUSE_FIRST_DECODE'):
+                         'TNCA_DEFER_CACHE_RESET', 'TNCA_REUSE_FIRST_DECODE', 'TNCA_DEVICE_EOS_GUARD'):
                 run_env.pop(name, None)
             if mode == 'baseline-cold':
                 run_env.update(TNCA_REUSE_WARM_PREFILL='0', TNCA_REUSE_HYBRID_PREFILL='0',
                                TNCA_MMIO_DESCRIPTOR_CACHE='0', TNCA_CODE_REUSE='0', TNCA_DEFER_CACHE_RESET='0')
+            if args.device_eos_probe:
+                run_env['TNCA_DEVICE_EOS_GUARD'] = '1' if mode == 'device-eos-guard' else '0'
             root = args.baseline_overlay_root if mode == 'baseline-warm' else args.overlay_root
             out = args.out / mode
-            command = [str(args.python), '-u', str(root / 'tools/models/chat.py'),
-                       '--model', args.model, '--device', 'tnca', '--tnca-tree', str(root),
-                       '--layers', str(args.layers), '--prefill-chunk', '8', '--new-tokens', str(args.new_tokens),
-                       '--bucket', '256', '--threads', '2', '--prompt', args.prompt, '--out', str(out)]
+            if args.device_eos_probe:
+                command = [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_eos_model_entry.py'),
+                           '--tree', str(root), '--model', args.model, '--layers', str(args.layers),
+                           '--new-tokens', str(args.new_tokens), '--prompt', args.prompt, '--out', str(out)]
+            else:
+                command = [str(args.python), '-u', str(root / 'tools/models/chat.py'),
+                           '--model', args.model, '--device', 'tnca', '--tnca-tree', str(root),
+                           '--layers', str(args.layers), '--prefill-chunk', '8', '--new-tokens', str(args.new_tokens),
+                           '--bucket', '256', '--threads', '2', '--prompt', args.prompt, '--out', str(out)]
             print('starting', mode, datetime.datetime.now(datetime.timezone.utc).isoformat(), flush=True)
             with (args.out / f'{mode}.log').open('x') as log:
                 rc = subprocess.run(command, cwd=root, env=run_env,
@@ -97,7 +110,7 @@ def main():
         from safetensors.torch import load_file
         import torch
         a = load_file(str(args.out / modes[0] / 'logits.safetensors'))
-        b = load_file(str(args.out / 'optimized-warm/logits.safetensors'))
+        b = load_file(str(args.out / modes[1] / 'logits.safetensors'))
         exact = a.keys() == b.keys() and all(torch.equal(a[k].view(torch.uint8), b[k].view(torch.uint8)) for k in a)
         tokens_equal = reports[0]['generated_tokens'] == reports[1]['generated_tokens']
         rows = [dict(mode=mode, status=report.get('status'), tokens=report.get('generated_tokens'),
@@ -109,13 +122,20 @@ def main():
                                                for key in ('host_read_calls', 'host_read_bytes',
                                                            'staging_download_bytes', 'launches', 'device_cycles')}
                                               for s in report.get('steps', []) if 'warmup_decode_transfers' in s],
-                     warmup_strategy=(report.get('decode_warmup') or {}).get('prefill_strategy'))
+                     warmup_strategy=(report.get('decode_warmup') or {}).get('prefill_strategy'),
+                     diagnostic_eos_token=report.get('diagnostic_eos_token'),
+                     device_eos_guard_enabled=(report.get('device_eos_guard') or {}).get('enabled'))
                 for mode, report in zip(modes, reports)]
-        status = 'pass' if exact and tokens_equal and all(row['status'] == 'pass' for row in rows) else 'fail'
+        same_eos = not args.device_eos_probe or rows[0]['diagnostic_eos_token'] == rows[1]['diagnostic_eos_token']
+        status = 'pass' if exact and tokens_equal and same_eos and all(row['status'] == 'pass' for row in rows) else 'fail'
         warm_hits = all((row['timing'].get('compiler') or {}).get('fx_graph_cache_misses') == 0 for row in rows)
-        scope = ('matched warm-cache processes, baseline then candidate' if warm_hits else
-                 'nominally warm-cache processes; at least one compile miss') if args.warm_cache_dir else \
-                'cold process then warm-cache process; not a matched warm A/B'
+        if args.device_eos_probe:
+            scope = 'matched in-process warm reduced-model turns with artificial EOS; not model quality'
+        elif args.warm_cache_dir:
+            scope = ('matched warm-cache processes, baseline then candidate' if warm_hits else
+                     'nominally warm-cache processes; at least one compile miss')
+        else:
+            scope = 'cold process then warm-cache process; not a matched warm A/B'
         result = dict(status=status, domain=f'FPGA board; reduced {args.layers}-layer {args.model} checkpoint', image_uuid=IMAGE_UUID,
                       clock_hz=100000000, scope=scope,
                       source='supplied overlays with frozen compiler 02d704f4',

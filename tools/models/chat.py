@@ -275,6 +275,7 @@ class Session:
         self._warm_feedback = None
         self._warm_prefill_mode = 'not-run'
         self._continuation_checkpoint = None
+        self._fallback_continuation_checkpoint = None
         self._capture_hybrid_checkpoint = False
         self._static_prefix_state = None
         self._capture_static_prefix = False
@@ -306,6 +307,7 @@ class Session:
             self._warm_prefill = None
             self._warm_feedback = None
             self._continuation_checkpoint = None
+            self._fallback_continuation_checkpoint = None
             self._static_prefix_state = None
             self._pending_reset = False
             self.resets += 1
@@ -381,6 +383,7 @@ class Session:
             self._warm_prefill = None
             self._warm_feedback = None
             self._continuation_checkpoint = None
+            self._fallback_continuation_checkpoint = None
             self._static_prefix_state = None
             self._pending_reset = True
 
@@ -470,15 +473,18 @@ class Session:
             # A Qwen chat template may rewrite an earlier assistant prefix
             # (notably empty thinking tags). Recover only an exact, previously
             # saved chunk boundary; never reuse the changed token suffix.
-            checkpoint = getattr(self, '_continuation_checkpoint', None)
-            length = len(checkpoint['tokens']) if checkpoint is not None else 0
-            can_restore = (not per_image and checkpoint is not None and 0 < length < len(full)
-                           and full[:length] == checkpoint['tokens']
-                           and checkpoint['chunk'] == self.chunk and positions.device.type == 'cpu'
-                           and torch.equal(positions[..., :length], checkpoint['positions'])
-                           and getattr(self, '_cache_tokens', 0) == reused and length <= reused)
-            restored = (can_restore and restore_hybrid_prefill(
-                checkpoint['snapshot'], dirty_length=reused))
+            restored, checkpoint, length = False, None, 0
+            for candidate in (getattr(self, '_continuation_checkpoint', None),
+                              getattr(self, '_fallback_continuation_checkpoint', None)):
+                candidate_length = len(candidate['tokens']) if candidate is not None else 0
+                can_restore = (not per_image and candidate is not None and 0 < candidate_length < len(full)
+                               and full[:candidate_length] == candidate['tokens']
+                               and candidate['chunk'] == self.chunk and positions.device.type == 'cpu'
+                               and torch.equal(positions[..., :candidate_length], candidate['positions'])
+                               and getattr(self, '_cache_tokens', 0) == reused and candidate_length <= reused)
+                if can_restore and restore_hybrid_prefill(candidate['snapshot'], dirty_length=reused):
+                    restored, checkpoint, length = True, candidate, candidate_length
+                    break
             if restored:
                 self.cached = list(checkpoint['tokens'])
                 self._cache_tokens = reused = length
@@ -526,19 +532,28 @@ class Session:
                 at += segment_size
             if at < len(full):
                 segments.append(("prefill", at, len(full)))
-        # A single checkpoint immediately before the last prefill segment
-        # bounds device memory and retains a full chunk-aligned prefix.
+        # Keep the last checkpoint and, when recurrent state fits within the
+        # same 64 MiB total budget, one earlier boundary for templates that
+        # rewrite more than one chunk of the previous assistant prefix.
         checkpoint_at = (segments[-1][1] if getattr(self, '_capture_hybrid_checkpoint', False)
                          and not per_image and self.chunk and len(segments) > 1 else None)
+        fallback_at = (segments[-2][1] if checkpoint_at is not None and len(segments) > 2
+                       and os.environ.get('TNCA_HYBRID_FALLBACK_CHECKPOINT', '0') == '1' else None)
         self._continuation_checkpoint = None
-        new_checkpoint = None
+        self._fallback_continuation_checkpoint = None
+        new_checkpoint, fallback_checkpoint, fallback_bytes = None, None, 0
         for kind, a, b in segments:
-            if checkpoint_at is not None and a == checkpoint_at and a > 0 and positions.device.type == 'cpu':
-                snapshot = snapshot_hybrid_prefill(self.cache, a)
+            if a in (checkpoint_at, fallback_at) and a > 0 and positions.device.type == 'cpu':
+                budget = (32 * 1024 * 1024 if a == fallback_at else 64 * 1024 * 1024 - fallback_bytes)
+                snapshot = snapshot_hybrid_prefill(self.cache, a, max_bytes=budget)
                 if snapshot is not None:
-                    new_checkpoint = dict(tokens=full[:a], position=positions[..., a - 1:a].clone(),
-                                          positions=positions[..., :a].clone(), chunk=self.chunk,
-                                          snapshot=snapshot)
+                    saved = dict(tokens=full[:a], position=positions[..., a - 1:a].clone(),
+                                 positions=positions[..., :a].clone(), chunk=self.chunk, snapshot=snapshot)
+                    if a == fallback_at:
+                        fallback_checkpoint = saved
+                        fallback_bytes = sum(t.numel() * t.element_size() for t in snapshot['copies'])
+                    else:
+                        new_checkpoint = saved
             graphs = counters["stats"]["unique_graphs"]
             started = time.perf_counter()
             with torch.no_grad():
@@ -553,6 +568,7 @@ class Session:
         self._cache_tokens = len(full)
         self.last_position = positions[..., -1:]
         self._continuation_checkpoint = new_checkpoint
+        self._fallback_continuation_checkpoint = fallback_checkpoint
         if grouped_suffix:
             # Until the larger segment is qualified, retain only the prefix
             # known to have been computed in the original chunking scheme.
@@ -1049,7 +1065,7 @@ def retain_guarded_hybrid_cache(cache, valid_length):
     return True
 
 
-def snapshot_hybrid_prefill(cache, valid_length):
+def snapshot_hybrid_prefill(cache, valid_length, *, max_bytes=64 * 1024 * 1024):
     """Save standard hybrid recurrent state on-device before one dummy step.
 
     Unknown/sliding/uninitialized layers and snapshots over 64 MiB fall back
@@ -1075,7 +1091,7 @@ def snapshot_hybrid_prefill(cache, valid_length):
         return None
     tensors = [record[2] for _, _, records in signatures for record in records]
     required = sum(t.numel() * t.element_size() for t in tensors)
-    if (required > 64 * 1024 * 1024
+    if (type(max_bytes) is not int or not 0 <= max_bytes <= 64 * 1024 * 1024 or required > max_bytes
             or len({t.untyped_storage().data_ptr() for t in tensors}) != len(tensors)
             or any(t.device != lengths[0].device for t in tensors)):
         return None

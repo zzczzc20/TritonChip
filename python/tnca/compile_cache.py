@@ -23,7 +23,8 @@ _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_
 # retain both in its cache identity.
 _UNTUNED_RUNTIME_ONLY = frozenset({'TNCA_BACKEND_ARGS', 'TNCA_OPERATING_CLOCK_EVIDENCE', 'TNCA_COUNTERS',
                                   'TNCA_DEVICE_EOS_EARLY_STOP', 'TNCA_HYBRID_PREFIX_CHECKPOINT',
-                                  'TNCA_REUSE_GUARDED_HYBRID', 'TNCA_STATIC_PREFIX_REWIND',
+                                  'TNCA_HYBRID_FALLBACK_CHECKPOINT', 'TNCA_REUSE_GUARDED_HYBRID',
+                                  'TNCA_STATIC_PREFIX_REWIND',
                                   'TNCA_STATIC_SUFFIX_GROUP', 'TNCA_DECODE_CODE_EVICT_ASYNC'})
 _SOURCE_SUFFIXES = frozenset({'.py', '.c', '.cpp', '.cc', '.h', '.hpp', '.td',
                               '.def', '.inc', '.cmake', '.json', '.toml', '.yaml', '.yml'})

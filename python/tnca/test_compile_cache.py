@@ -97,6 +97,7 @@ class CacheNamespaceTests(unittest.TestCase):
     def test_untuned_runtime_speed_options_preserve_existing_graph_cache(self):
         base = {'TNCA_PROFILE': 'dp', 'TNCA_BACKEND': 'fpga-u280-multicore'}
         faster = dict(base, TNCA_DEVICE_EOS_EARLY_STOP='1', TNCA_HYBRID_PREFIX_CHECKPOINT='1',
+                      TNCA_HYBRID_FALLBACK_CHECKPOINT='1',
                       TNCA_REUSE_GUARDED_HYBRID='1', TNCA_STATIC_PREFIX_REWIND='1', TNCA_STATIC_SUFFIX_GROUP='1',
                       TNCA_DECODE_CODE_EVICT_ASYNC='1')
         self.assertEqual(cache.namespace('source', base, {}, {}), cache.namespace('source', faster, {}, {}))

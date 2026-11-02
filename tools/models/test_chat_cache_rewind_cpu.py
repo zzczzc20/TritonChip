@@ -222,6 +222,12 @@ class HybridPrefillContinuationTests(unittest.TestCase):
                           use_cache=True).last_hidden_state
 
     def test_chunk_checkpoint_matches_canonical_followup_bitwise(self):
+        self.exercise_chunk_checkpoint(fallback=False)
+
+    def test_earlier_hybrid_checkpoint_handles_a_longer_template_rewrite(self):
+        self.exercise_chunk_checkpoint(fallback=True)
+
+    def exercise_chunk_checkpoint(self, *, fallback):
         def make_session(cache, capture):
             session = object.__new__(chat.Session)
             session.device, session.dev, session.cache, session.model = 'cpu', torch.device('cpu'), cache, self.model
@@ -233,20 +239,28 @@ class HybridPrefillContinuationTests(unittest.TestCase):
             return session
         reference, optimized = make_session(self.make_cache(), False), make_session(self.make_cache(), True)
         first = [7, 4, 1, 9, 5, 6, 2, 3, 4, 1, 5, 6]
-        followup = first[:10] + [13, 14, 15, 16, 17, 18]
+        followup = (first[:6] + [13, 14, 15, 16, 17, 18, 20, 21, 22, 23] if fallback else
+                    first[:10] + [13, 14, 15, 16, 17, 18])
         def positions(_model, inputs):
             return torch.arange(inputs['input_ids'].shape[1]).reshape(1, 1, -1)
-        with torch.inference_mode(), mock.patch.object(chat.L, 'prefill_position_ids', side_effect=positions):
+        with torch.inference_mode(), mock.patch.object(chat.L, 'prefill_position_ids', side_effect=positions), \
+             mock.patch.dict('os.environ', {'TNCA_HYBRID_FALLBACK_CHECKPOINT': '1' if fallback else '0'}):
             for session in (reference, optimized):
                 session.prefill_prompt({'input_ids': torch.tensor([first])}, None)
                 self.call(session.cache, [19])
                 session.cached.append(19)
                 session._cache_tokens += 1
             self.assertEqual(optimized._continuation_checkpoint['tokens'], first[:8])
+            if fallback:
+                self.assertEqual(optimized._fallback_continuation_checkpoint['tokens'], first[:4])
+                snapshots = (optimized._continuation_checkpoint['snapshot'],
+                             optimized._fallback_continuation_checkpoint['snapshot'])
+                saved_bytes = sum(t.numel() * t.element_size() for snap in snapshots for t in snap['copies'])
+                self.assertLessEqual(saved_bytes, 64 * 1024 * 1024)
             reference.reset()
             expected, _, _ = reference.prefill_prompt({'input_ids': torch.tensor([followup])}, None)
             actual, _, reused = optimized.prefill_prompt({'input_ids': torch.tensor([followup])}, None)
-            self.assertEqual(reused, 8)
+            self.assertEqual(reused, 4 if fallback else 8)
             self.assertTrue(torch.equal(expected, actual))
             for first_layer, second_layer in zip(reference.cache.layers, optimized.cache.layers, strict=True):
                 for name in ('conv_states', 'recurrent_states'):

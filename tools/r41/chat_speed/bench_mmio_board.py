@@ -117,7 +117,7 @@ def main():
                                  device_cycles=cycles, last_value=actual))
                 print(json.dumps(rows[-1]), flush=True)
         result = dict(status='pass', domain='FPGA board, synthetic resident store launches',
-                      image_uuid=IMAGE_UUID, clock_hz=100000000, source='c14b4317',
+                      image_uuid=IMAGE_UUID, clock_hz=100000000, source='c14b4317:python/tnca/backends/u50.py over frozen runtime 02d704f4',
                       recorded_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                       rows=rows, speedup=rows[0]['seconds'] / rows[1]['seconds'],
                       limitations=['not a Qwen model or end-user token measurement',

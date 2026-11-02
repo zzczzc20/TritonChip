@@ -97,6 +97,7 @@ def main():
         status = 'pass' if exact and tokens_equal and all(row['status'] == 'pass' for row in rows) else 'fail'
         result = dict(status=status, domain='FPGA board; reduced one-layer VL checkpoint', image_uuid=IMAGE_UUID,
                       clock_hz=100000000, scope='cold process then warm-cache process; not a matched warm A/B',
+                      source='speed worktree overlay b13cbc5f with frozen compiler 02d704f4',
                       prompt=args.prompt, logits_bitwise_equal=exact, tokens_equal=tokens_equal, rows=rows)
         (args.out / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
         print(json.dumps(result), flush=True)

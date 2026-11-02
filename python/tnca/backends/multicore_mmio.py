@@ -22,6 +22,8 @@ class MulticoreMMIOBackend(U50Backend):
     # The v2 code RAM has no device write port. Keep only words confirmed
     # through this exclusive host context; unchanged reload words need no MMIO.
     code_payload_shadow = True
+    # Upload and physical launch both hold U50Backend's transport lock.
+    serialized_code_uploads = True
 
     def __init__(self, link, *, core_count=3, memory_ports=3,
                  hbm_dma=False, active_memory_ports=None, outstanding=None, **kwargs):

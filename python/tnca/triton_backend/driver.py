@@ -793,7 +793,7 @@ def _load(session, path):
         # path opt-in until its board comparison is complete.
         parallel_evict = (os.environ.get('TNCA_DECODE_CODE_EVICT_ASYNC') == '1'
                           and getattr(session, 'backend_name', None) == 'fpga-u280-multicore'
-                          and getattr(getattr(session, 'dev', None), '_io_lock', None) is not None)
+                          and getattr(getattr(session, 'dev', None), 'serialized_code_uploads', False))
         if not parallel_evict:
             session.drain()
         old_keys = (trace.victims(session, _loaded, _executable_digest)

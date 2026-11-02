@@ -49,6 +49,8 @@ _UNTUNED_EQUIVALENT_SOURCE_DIGESTS = {
             bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
         bytes.fromhex('e16ef36981e001b6ad331cd49ce2e294f2eeffea49d473066b8332ab2068b7f9'):
             bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
+        bytes.fromhex('a6abf5a0e7f42351b3cf0360f9b5127359d426e084b512d0466a10c1e839d79b'):
+            bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
     },
 }
 

@@ -995,6 +995,9 @@ class Session:
             module = getattr(module, '_resident', module)
             if module.epoch != self.epoch or not module.alive:
                 return False
+            if (allow_unrelated_tasks and self._active_events and
+                    not getattr(self.dev, 'serialized_code_uploads', False)):
+                raise CapabilityError('queued code eviction requires serialized device code uploads')
             if self._active_events and (not allow_unrelated_tasks or any(
                     getattr(event._task['module'], '_resident', event._task['module']) is module
                     for event in self._active_events.values())):

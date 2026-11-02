@@ -7,7 +7,7 @@ import unittest
 from unittest import mock
 
 import triton  # Discover the TNCA plugin before importing its driver.
-from tnca.errors import BufferBusy, BufferError
+from tnca.errors import BufferBusy, BufferError, CapabilityError
 from tnca.triton_backend import driver
 
 
@@ -41,7 +41,7 @@ class CodeLoadTests(unittest.TestCase):
             def __init__(self):
                 super().__init__(capacity=2)
                 self.backend_name = 'fpga-u280-multicore'
-                self.dev = types.SimpleNamespace(_io_lock=threading.RLock())
+                self.dev = types.SimpleNamespace(_io_lock=threading.RLock(), serialized_code_uploads=True)
                 self.busy = set()
                 self.drains, self.module_waits = 0, 0
             def unload(self, module, *, allow_unrelated_tasks=False):
@@ -82,6 +82,7 @@ class CodeLoadTests(unittest.TestCase):
         from tnca.runtime import Session
         session = object.__new__(Session)
         session._lock, session.closed, session.poisoned = threading.RLock(), False, False
+        session.dev = types.SimpleNamespace(serialized_code_uploads=True)
         session.epoch, session._code = 7, mock.Mock()
         first = types.SimpleNamespace(epoch=7, alive=True, code_addr=64, code_size=64, params=[], name='a')
         second = types.SimpleNamespace(epoch=7, alive=True, code_addr=128, code_size=64, params=[], name='b')
@@ -96,6 +97,10 @@ class CodeLoadTests(unittest.TestCase):
         session._active_events.pop(2)
         with self.assertRaises(BufferBusy):
             session.unload(second)
+        session.dev.serialized_code_uploads = False
+        with self.assertRaises(CapabilityError):
+            session.unload(second, allow_unrelated_tasks=True)
+        session.dev.serialized_code_uploads = True
         with self.assertRaises(BufferBusy):
             session.unload(first, allow_unrelated_tasks=True)
         self.assertTrue(session.unload(second, allow_unrelated_tasks=True))

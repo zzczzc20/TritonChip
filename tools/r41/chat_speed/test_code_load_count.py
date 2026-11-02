@@ -34,6 +34,33 @@ class FakeSession:
 
 
 class CodeLoadTests(unittest.TestCase):
+    def test_resident_hits_touch_only_the_allocation_aliases(self):
+        from contextlib import ExitStack
+        class NoFullScan(dict):
+            def items(self):
+                raise AssertionError('resident hit scanned every loaded kernel')
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            for name in ('_loaded_by_artifact', '_loaded_by_executable', '_module_views',
+                         '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                stack.enter_context(mock.patch.object(driver, name, {}))
+            stack.enter_context(mock.patch.object(driver, '_loaded', NoFullScan()))
+            stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+            stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+            a, alias, b, c = [Path(directory) / name for name in ('a', 'alias', 'b', 'c')]
+            a.write_text('shared'); alias.write_text('shared')
+            b.write_text('different'); c.write_text('third')
+            session = FakeSession(capacity=2)
+            first = driver._load(session, str(a))[1]
+            self.assertIs(driver._load(session, str(alias))[1], first)
+            other = driver._load(session, str(b))[1]
+            self.assertIs(driver._load(session, str(a))[1], first)
+            paths = [key[2] for key in driver._loaded]
+            self.assertEqual(paths, [str(b), str(a), str(alias)])
+            driver._load(session, str(c))
+            self.assertFalse(other.alive)
+            self.assertTrue(first.alive)
+            self.assertEqual((driver.loaded, driver.evicted), (3, 1))
+
     def test_releasing_a_view_releases_one_allocation_and_invalidates_views(self):
         import threading
         from tnca.runtime import Session

@@ -662,12 +662,41 @@ class _ModuleView:
         return self._resident.code_size
 
 
+def _register_resident_alias(key, module):
+    """Keep a per-allocation alias index for the launch hot path."""
+    _loaded[key] = module
+    aliases = getattr(module, '_tnca_resident_aliases', None)
+    if aliases is None:
+        try:
+            aliases = {}
+            module._tnca_resident_aliases = aliases
+        except (AttributeError, TypeError):
+            return  # Unusual externally provided modules retain the scan path.
+    aliases[key] = None
+
+
+def _resident_aliases(module):
+    aliases = getattr(module, '_tnca_resident_aliases', None)
+    if aliases is None:
+        return [key for key, resident in _loaded.items() if resident is module]
+    return [key for key in aliases if _loaded.get(key) is module]
+
+
+def _touch_resident(module):
+    # Preserve the existing eviction order for all aliases of this allocation
+    # without scanning every resident kernel for each of hundreds of launches.
+    for alias in _resident_aliases(module):
+        _loaded[alias] = _loaded.pop(alias)
+
+
 def _forget_resident(module):
     """Remove every alias of an unloaded physical code allocation."""
-    for alias, resident in list(_loaded.items()):
-        if resident is module:
-            del _loaded[alias]
-            _module_views.pop(alias, None)
+    for alias in _resident_aliases(module):
+        del _loaded[alias]
+        _module_views.pop(alias, None)
+    aliases = getattr(module, '_tnca_resident_aliases', None)
+    if aliases is not None:
+        aliases.clear()
     for lookup in (_loaded_by_artifact, _loaded_by_executable):
         for alias, resident_key in list(lookup.items()):
             if resident_key not in _loaded:
@@ -710,7 +739,7 @@ def _load(session, path):
         resident_key = _loaded_by_artifact.get(artifact_key)
         m = _resident_for(resident_key)
         if m is not None:
-            _loaded[key] = m
+            _register_resident_alias(key, m)
             if resident_key in _module_views:
                 _module_views[key] = _module_views[resident_key]
     if m is None and executable_key is not None:
@@ -718,12 +747,10 @@ def _load(session, path):
         m = _resident_for(resident_key)
         if m is not None:
             manifest = _verified_alias_manifest(path, executable)
-            _loaded[key] = m
+            _register_resident_alias(key, m)
             _module_views[key] = _ModuleView(m, path, manifest)
     if m is not None:
-        for alias, module in list(_loaded.items()):
-            if module is m:
-                _loaded[alias] = _loaded.pop(alias)
+        _touch_resident(m)
         _loaded_by_artifact[artifact_key] = key
         if executable_key is not None:
             _loaded_by_executable[executable_key] = key
@@ -760,7 +787,7 @@ def _load(session, path):
                 'the code region cannot hold this kernel even with every other module '
                 'unloaded (capacity-exceeded: code region)') from e
     loaded += 1
-    _loaded[key] = m
+    _register_resident_alias(key, m)
     _loaded_by_artifact[artifact_key] = key
     if executable_key is not None:
         _loaded_by_executable[executable_key] = key

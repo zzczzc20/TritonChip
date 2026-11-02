@@ -629,6 +629,8 @@ class Session:
         # without bound in a long-running chat process.
         self._events = weakref.WeakValueDictionary()
         self._last_event = None
+        self._stop_guard_local = threading.local()
+        self._stop_guard_pc = None
         # Unfinished jobs retain their events even if the caller drops them.
         self._active_events = OrderedDict()
         self._next_buffer = 0
@@ -1067,6 +1069,15 @@ class Session:
 
             # Resolve and validate every argument BEFORE anything starts.
             resolved, leased = self._resolve(module, args)
+            guard_local = getattr(self, '_stop_guard_local', None)
+            guard = getattr(guard_local, 'flag', None) if guard_local is not None else None
+            if guard is not None:
+                flag_buffer, flag_offset = guard
+                if (not self.physical_grid or flag_buffer.session_id != self.id
+                        or flag_buffer.epoch != self.epoch or not flag_buffer.alive or not flag_buffer.valid):
+                    raise AdmissionError('device stop flag is stale or physical dispatch is unavailable')
+                if flag_buffer not in leased:
+                    leased.append(flag_buffer)
 
             self._next_job += 1
             ev = Event(self._next_job, self.epoch, module.name)
@@ -1106,23 +1117,31 @@ class Session:
             map_start = (slots + 255) // 256 * 256
             scratch_start = map_start + 256 * len(maps)
             arg_size = max(scratch_start + scratch, slots, WORD)
-            arg_stride = (arg_size + 255) // 256 * 256 if self.physical_grid else 0
-            arg_addr, reserved = self._heap.alloc(arg_stride * self._physical_core_count
-                                                  if self.physical_grid else arg_size, align=256)
+            header = 256 if guard is not None else 0
+            arg_stride = (arg_size + header + 255) // 256 * 256 if self.physical_grid else 0
+            alloc_addr, reserved = self._heap.alloc(arg_stride * self._physical_core_count
+                                                    if self.physical_grid else arg_size, align=256)
+            arg_addr = alloc_addr + header
             # A rejected encoding must not leak its argument-heap reservation.
             # Scratch stays zero-filled for sparse TensorMap construction.
             try:
                 block = _build_argument_block(module.params, resolved, maps, arg_addr=arg_addr,
                     arg_stride=arg_stride, cores=self._physical_core_count if self.physical_grid else 0,
                     map_start=map_start, scratch=scratch, scratch_start=scratch_start)
+                if guard is not None:
+                    from .eos_guard import argument_table
+                    block = argument_table(block, arg_stride, self._physical_core_count,
+                                           module.code_addr, flag_buffer.addr + flag_offset)
             except BaseException:
-                self._heap.release(arg_addr, reserved)
+                self._heap.release(alloc_addr, reserved)
                 raise
 
             task, leased_count = None, 0
             try:
                 task = dict(event=ev, module=module, block=block, arg_stride=arg_stride,
-                            arg_addr=arg_addr, allocation=(arg_addr, reserved), grid=(gx, gy, gz),
+                            arg_addr=arg_addr, upload_addr=alloc_addr,
+                            guarded_pc=self._stop_guard_pc if guard is not None else None,
+                            allocation=(alloc_addr, reserved), grid=(gx, gy, gz),
                             depends_on=list(depends_on), leased=leased,
                             # Retain readable arguments for a failure replay.
                             args=dict(resolved))
@@ -1149,7 +1168,7 @@ class Session:
                     buf.leases -= 1
                 if task is not None:
                     task.pop('allocation', None)
-                self._heap.release(arg_addr, reserved)
+                self._heap.release(alloc_addr, reserved)
                 raise
 
     def _resolve(self, module, args):
@@ -1222,6 +1241,45 @@ class Session:
         return out, leased
 
     # ---- the queue --------------------------------------------------------
+    @contextmanager
+    def device_stop_guard(self, buffer, offset=0):
+        """Skip subsequent physical programs when a device flag becomes nonzero.
+
+        The flag remains a leased device buffer for every guarded task. The
+        calling thread controls admission; the queue itself still executes in
+        FIFO order and never transfers the flag to the host.
+        """
+        from .eos_guard import guard_code
+        with self._lock:
+            self._check_usable()
+            if not self.physical_grid:
+                raise AdmissionError('device stop guard requires physical grid dispatch')
+            if (not isinstance(buffer, Buffer) or buffer.session_id != self.id
+                    or buffer.epoch != self.epoch or not buffer.alive or not buffer.valid
+                    or not isinstance(offset, int) or offset < 0 or offset % WORD
+                    or offset + WORD > buffer.size):
+                raise ArgumentError('device stop flag must be a live aligned 64-bit buffer')
+            if self._active_events:
+                raise SessionBusy('device stop guard must be installed on an idle session')
+            if self._stop_guard_pc is None:
+                code = guard_code()
+                address, size = self._code.alloc(len(code), align=64)
+                try:
+                    reply = self.dev.upload(address, code)
+                    if not reply.ok:
+                        raise TncaError('could not place device stop guard', code='ARTIFACT_INVALID')
+                except BaseException:
+                    self._code.release(address, size)
+                    raise
+                self._stop_guard_pc = address
+            local = self._stop_guard_local
+            previous = getattr(local, 'flag', None)
+            local.flag = (buffer, offset)
+        try:
+            yield
+        finally:
+            local.flag = previous
+
     def _run_queue(self):
         while not self._stop.is_set():
             task = None
@@ -1283,7 +1341,7 @@ class Session:
             # except here, where it is the correct amount of argument
             # data to write.
             if task['block']:
-                self.dev.upload(task['arg_addr'], task['block'])
+                self.dev.upload(task.get('upload_addr', task['arg_addr']), task['block'])
             ev._to(RUNNING)
             if self.physical_grid:
                 self._run_physical_grid(task)
@@ -1399,7 +1457,10 @@ class Session:
         mask=(1<<(width*rpp))-1
         if rpp==2:mask|=1<<28
         if width>1:mask|=(1<<31)|((width.bit_length()-1)<<29)
-        reply = self.dev.launch_grid(task['module'].code_addr, task['arg_addr'], task['grid'],
+        pc = task.get('guarded_pc')
+        if pc is None:
+            pc = task['module'].code_addr
+        reply = self.dev.launch_grid(pc, task['arg_addr'], task['grid'],
                                      arg_stride=task['arg_stride'], active_cores=self.active_cores,
                                      role_mask=mask, group_width=width)
         if reply.status == T.ST_TIMEOUT:
@@ -1551,6 +1612,8 @@ class Session:
             self.epoch += 1
             self._events.clear()
             self._last_event = None
+            self._stop_guard_pc = None
+            self._stop_guard_local = threading.local()
             self._active_events.clear()
             self._queue.clear()
             self._buffers.clear()

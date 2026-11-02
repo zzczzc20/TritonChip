@@ -881,6 +881,10 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     queue_steps = os.environ.get('TNCA_QUEUE_STEPS') == '1' and new_tokens > 1
     if queue_steps:
         validate_queued_decode()
+    stop_enabled = (os.environ.get('TNCA_DEVICE_EOS_GUARD') == '1'
+                    and new_tokens > 1 and not forced_tokens and bool(eos))
+    if stop_enabled and os.environ.get('TNCA_REUSE_FIRST_DECODE', '0') == '1':
+        raise ValueError('device EOS guard requires the proven dummy-warmup path')
     position_batch, host_positions, queued_meters, queue_anchor = None, None, [], None
     code_by_role = getattr(session, "_generation_code", {})
     session._generation_code = code_by_role
@@ -916,6 +920,27 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         warmup = dict(seconds=time.perf_counter() - started, transfers=warmup_meter.summary())
         warmup['prefill_retained'] = getattr(session, '_warm_prefill', None) is not None
         warmup['prefill_strategy'] = getattr(session, '_warm_prefill_mode', 'unavailable')
+
+    stop_context, stop_flag, stop_setup = None, None, None
+    if stop_enabled:
+        # Compile the marker before the measured decode so its compiler may
+        # inspect metadata without causing host reads inside a real step.
+        from tnca.torch_device import MEMORY, storage_address
+        from tnca.torch_device.eos import latch_eos
+        started = time.perf_counter()
+        sentinel = 0
+        while sentinel in eos:
+            sentinel += 1
+        with transfer_meter(True) as setup_meter:
+            stop_flag = torch.zeros((1,), dtype=torch.long).to(session.dev)
+            dummy = torch.tensor([[sentinel]], dtype=torch.long).to(session.dev)
+            latch_eos(dummy, stop_flag, eos)
+            setup_meter.mem.synchronize()
+        hardware = MEMORY.session()
+        flag_buffer, flag_offset = MEMORY.locate(storage_address(stop_flag))
+        stop_context = hardware.device_stop_guard(flag_buffer, flag_offset)
+        stop_context.__enter__()
+        stop_setup = dict(seconds=time.perf_counter() - started, transfers=setup_meter.summary())
 
     old_recompile = torch._dynamo.config.error_on_recompile
     session.prompts += 1
@@ -956,6 +981,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                                 if queue_steps else session.step_device(feed))
                 current = (warm_feedback[0] if index == 0 and warm_feedback is not None
                            else capture("selection", lambda: session.greedy(logits.reshape(-1))))
+                if stop_flag is not None:
+                    latch_eos(current, stop_flag, eos)
                 if queue_steps and index == 0:
                     # Real warmup has already advanced the session by one;
                     # queued positions are indexed from the prefill state.
@@ -1010,6 +1037,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 pass
         raise
     finally:
+        if stop_context is not None:
+            stop_context.__exit__(*sys.exc_info())
         torch._dynamo.config.error_on_recompile = old_recompile
 
     # This is output retrieval after generation, reported separately and not hidden in the step counters.
@@ -1135,6 +1164,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   compiled_wrapper_fallbacks=fallbacks, compiled_wrapper_roles_covered=covered,
                   compiled_wrapper_required_roles=list(required_roles),
                   decode_warmup=warmup,
+                  device_eos_guard=dict(enabled=stop_enabled, setup=stop_setup,
+                                        scope='device skips post-EOS kernels; host still submits the planned steps'),
                   steady_decode_host_reads_detected=bool(read_during_decode),
                   model_tensor_placements=placements, output_retrieval=retrieval.summary(),
                   output_retrieval_seconds=retrieval_seconds,

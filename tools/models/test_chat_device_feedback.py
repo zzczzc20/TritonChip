@@ -4,6 +4,7 @@ import types
 import unittest
 import os
 import time
+import threading
 from contextlib import nullcontext
 from unittest import mock
 import torch
@@ -495,6 +496,45 @@ class PrefillSegmentationTests(unittest.TestCase):
         self.assertEqual(blocks, [[1, 2, 3]])
         self.assertEqual(session._cache_tokens, 3)
         self.assertEqual(rows[0]['tokens'], 3)
+
+    def test_idle_cleanup_overlaps_user_wait_and_joins_before_reuse(self):
+        session = object.__new__(chat.Session)
+        session.device, session.cache = 'cpu', mock.Mock()
+        session.cached, session.last_position, session._cache_tokens = [], None, 0
+        session._warm_prefill, session.resets = None, 0
+        session._pending_reset, session._cleanup_thread, session._cleanup_error = True, None, None
+        entered, release, joined = threading.Event(), threading.Event(), threading.Event()
+        def slow_reset():
+            entered.set()
+            if not release.wait(3):
+                raise RuntimeError('test reset was not released')
+        session.cache.reset.side_effect = slow_reset
+        self.assertTrue(session.schedule_idle_cleanup())
+        try:
+            self.assertTrue(entered.wait(1))
+            waiter = threading.Thread(target=lambda: (session.wait_for_cleanup(), joined.set()))
+            waiter.start()
+            self.assertFalse(joined.wait(0.01))
+            release.set()
+            self.assertTrue(joined.wait(1))
+            waiter.join()
+            self.assertFalse(session._pending_reset)
+            self.assertEqual(session.resets, 1)
+        finally:
+            release.set()
+            session.wait_for_cleanup()
+
+    def test_idle_cleanup_reports_failure_before_the_next_prompt(self):
+        session = object.__new__(chat.Session)
+        session.device, session.cache = 'cpu', mock.Mock()
+        session.cached, session.last_position, session._cache_tokens = [], None, 0
+        session._warm_prefill, session.resets = None, 0
+        session._pending_reset, session._cleanup_thread, session._cleanup_error = True, None, None
+        session.cache.reset.side_effect = OSError('lost device')
+        self.assertTrue(session.schedule_idle_cleanup())
+        with self.assertRaisesRegex(RuntimeError, 'background cache cleanup failed'):
+            session.wait_for_cleanup()
+        self.assertTrue(session._pending_reset)
 
     def test_deferred_reset_happens_before_the_next_prefill(self):
         session = object.__new__(chat.Session)

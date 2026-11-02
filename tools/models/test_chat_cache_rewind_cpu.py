@@ -175,6 +175,8 @@ class HybridPrefillContinuationTests(unittest.TestCase):
             session.bucket, session.chunk = 32, 0
             session._call_prefill = lambda ids, positions, vision: self.call(deferred, ids[0].tolist())
             session.defer_reset()
+            self.assertTrue(session.schedule_idle_cleanup())
+            session.wait_for_cleanup()
             with mock.patch.object(chat.L, 'prefill_position_ids', return_value=torch.tensor([[[0, 1, 2]]])):
                 actual, _, reused = session.prefill_prompt({'input_ids': torch.tensor([next_prompt])}, None)
             self.assertTrue(torch.equal(actual, expected))

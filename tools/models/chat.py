@@ -22,6 +22,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import threading
 import traceback
 
 HERE = Path(__file__).resolve().parent
@@ -256,12 +257,15 @@ class Session:
         self._warm_prefill = None
         self._warm_prefill_mode = 'not-run'
         self._pending_reset = False
+        self._cleanup_thread = None
+        self._cleanup_error = None
         self.resets = 0
         self.prompts = 0
         self.greedy = (torch.compile(lambda x: x.float().argmax().reshape(1, 1),
                                      fullgraph=True, dynamic=False) if device == "tnca" else None)
 
     def reset(self):
+        self.wait_for_cleanup()
         if not (self.device == 'tnca' and os.environ.get('TNCA_DEVICE_ZERO') == '1'
                 and clear_static_attention_cache(self.cache)):
             self.cache.reset()
@@ -271,6 +275,39 @@ class Session:
         self._pending_reset = False
         self.resets += 1
 
+    def wait_for_cleanup(self):
+        """Join an earlier idle-time reset before any cache is used again."""
+        worker = getattr(self, '_cleanup_thread', None)
+        if worker is None or worker is threading.current_thread():
+            return
+        worker.join()
+        self._cleanup_thread = None
+        error, self._cleanup_error = getattr(self, '_cleanup_error', None), None
+        if error is not None:
+            raise RuntimeError('background cache cleanup failed') from error
+
+    def schedule_idle_cleanup(self):
+        """Reset discarded state while an interactive user considers a reply."""
+        self.wait_for_cleanup()
+        if not getattr(self, '_pending_reset', False):
+            return False
+        def cleanup():
+            try:
+                # Inference mode is thread-local; cached tensors may have
+                # been created in that mode on the generation thread.
+                with torch.inference_mode():
+                    self.reset()
+                    if self.device == 'tnca':
+                        from tnca.torch_device import MEMORY
+                        MEMORY.synchronize()
+            except BaseException as error:
+                self._cleanup_error = error
+        self._cleanup_error = None
+        worker = threading.Thread(target=cleanup, name='tnca-cache-cleanup')
+        self._cleanup_thread = worker
+        worker.start()
+        return True
+
     def defer_reset(self):
         """Invalidate speculative state now; clean device storage on next use.
 
@@ -279,6 +316,7 @@ class Session:
         this answer or when a one-shot process exits. A following prompt
         performs the same reset before it can consume any cache state.
         """
+        self.wait_for_cleanup()
         self.cached, self.last_position = [], None
         self._cache_tokens = 0
         self._warm_prefill = None
@@ -355,6 +393,7 @@ class Session:
 
     def prefill_prompt(self, inputs, per_image):
         """Bring the cache to the state after the whole prompt; return (last logits on host, call rows, reused)."""
+        self.wait_for_cleanup()
         if getattr(self, '_pending_reset', False):
             self.reset()
         from torch._dynamo.utils import counters
@@ -401,6 +440,7 @@ class Session:
         return logits, rows, reused
 
     def step(self, token):
+        self.wait_for_cleanup()
         position = self.last_position + 1
         with torch.no_grad():
             logits = self._call_decode(torch.tensor([[token]], dtype=torch.long), position)
@@ -411,6 +451,7 @@ class Session:
 
     def step_device(self, token, position_device=None, position_host=None):
         """Feed a device token without converting its value to a host scalar."""
+        self.wait_for_cleanup()
         if self.last_position is None:
             raise RuntimeError('decode requires a populated prompt cache')
         if not torch.is_tensor(token) or token.device.type != self.dev.type:
@@ -433,6 +474,7 @@ class Session:
 
     def warmup_decode(self, inputs, per_image=None, capture=None):
         """Compile against a populated prompt; optionally retain its exact KV state."""
+        self.wait_for_cleanup()
         if getattr(self, '_pending_reset', False):
             self.reset()
         if self.cached or self.last_position is not None:
@@ -1255,6 +1297,7 @@ class ChatApplication:
             gc.collect()
             reference_seconds = time.perf_counter() - reference_started
         session = self.device_session()
+        session.wait_for_cleanup()
         per_image, vision_calls = session.vision_features(inputs)
         # Teacher-forced diagnostics need only the reference's actual steps;
         # ordinary chat does not need to download any vocabulary vectors.
@@ -1401,6 +1444,8 @@ class ChatApplication:
             print("assistant>", report["generated_text"], flush=True)
             finalize_user_visible_metrics(report["user_visible_timing"], time.perf_counter() - prompt_started,
                                           "interactive prompt through assistant stdout flush")
+            if source is None and self.session is not None:
+                self.session.schedule_idle_cleanup()
             stats = report["statistics"]
             visible = report["user_visible_timing"]
             print(json.dumps({k: stats[k] for k in ("prefill_seconds", "decode_steps",
@@ -1414,6 +1459,8 @@ class ChatApplication:
                   flush=True)
             if on_turn is not None and transcript is not None:
                 on_turn(transcript[-1])
+        if getattr(self, 'session', None) is not None:
+            self.session.wait_for_cleanup()
         return True
 
 

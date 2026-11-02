@@ -136,6 +136,42 @@ class HybridPrefillContinuationTests(unittest.TestCase):
         return self.model(input_ids=torch.tensor([tokens]), past_key_values=cache,
                           use_cache=True).last_hidden_state
 
+    def test_guarded_eos_preserves_hybrid_state_for_the_next_turn(self):
+        clean, retained = self.make_cache(), self.make_cache()
+        prompt, emitted, suffix = [7, 4, 1, 9], [5, 8], [2, 3, 6]
+        with torch.inference_mode():
+            for cache in (clean, retained):
+                self.call(cache, prompt)
+                for token in emitted:
+                    self.call(cache, [token])
+            # A latched device stop skips all speculative writes. Retention
+            # must leave recurrent tensors untouched and continue exactly.
+            linear = next(layer for layer in retained.layers if hasattr(layer, 'recurrent_states'))
+            old = [t.clone() for t in linear.recurrent_states.values()]
+            self.assertTrue(chat.retain_guarded_hybrid_cache(retained, len(prompt) + len(emitted)))
+            self.assertTrue(all(torch.equal(a, b) for a, b in zip(old, linear.recurrent_states.values(), strict=True)))
+            self.assertTrue(torch.equal(self.call(clean, suffix), self.call(retained, suffix)))
+            for original, actual in zip(clean.layers, retained.layers, strict=True):
+                for name in ('conv_states', 'recurrent_states'):
+                    if hasattr(original, name):
+                        for key, state in getattr(original, name).items():
+                            self.assertTrue(torch.equal(state, getattr(actual, name)[key]))
+                if hasattr(original, 'keys'):
+                    self.assertTrue(torch.equal(original.keys, actual.keys))
+                    self.assertTrue(torch.equal(original.values, actual.values))
+
+    def test_guarded_hybrid_rejects_unsupported_metadata_without_writes(self):
+        cache = self.make_cache()
+        with torch.inference_mode():
+            self.call(cache, [7, 4, 1])
+            linear = next(layer for layer in cache.layers if hasattr(layer, 'recurrent_states'))
+            linear.has_previous_state[0] = False
+            before = [layer.cumulative_length.clone() for layer in cache.layers
+                      if hasattr(layer, 'cumulative_length')]
+            self.assertFalse(chat.retain_guarded_hybrid_cache(cache, 3))
+            after = [layer.cumulative_length for layer in cache.layers if hasattr(layer, 'cumulative_length')]
+            self.assertTrue(all(torch.equal(a, b) for a, b in zip(before, after, strict=True)))
+
     def test_real_first_decode_reuse_matches_clean_hybrid_continuation(self):
         clean, warmed = self.make_cache(), self.make_cache()
         prompt = [7, 4, 1, 9]

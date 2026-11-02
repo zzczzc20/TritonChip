@@ -855,6 +855,40 @@ def _linear_prefill_signature(layer):
     return (count, tuple(layer.conv_kernel_size.get(i) for i in range(count)), records)
 
 
+def retain_guarded_hybrid_cache(cache, valid_length):
+    """Keep recurrent state when the device guard skipped every post-EOS kernel.
+
+    Call only after the device stop flag has been checked and all submitted
+    work has completed. The last real decode left each linear state at the
+    valid prefix; unlike an unguarded speculative decode, there is nothing to
+    roll back. Unknown cache layouts fall back to the ordinary full reset.
+    """
+    try:
+        import transformers
+        from transformers.cache_utils import LinearAttentionLayer, StaticCache, StaticLayer
+    except ImportError:
+        return False
+    if transformers.__version__ != '5.20.2' or type(cache) is not StaticCache:
+        return False
+    layers = getattr(cache, 'layers', None) or []
+    statics = [layer for layer in layers if type(layer) is StaticLayer]
+    linear = [layer for layer in layers if type(layer) is LinearAttentionLayer]
+    if not statics or not linear or len(statics) + len(linear) != len(layers):
+        return False
+    lengths = _static_attention_lengths(statics, valid_length)
+    signatures = [_linear_prefill_signature(layer) for layer in linear]
+    if lengths is None or any(signature is None for signature in signatures):
+        return False
+    tensors = [record[2] for _, _, records in signatures for record in records]
+    if (len({tensor.untyped_storage().data_ptr() for tensor in tensors}) != len(tensors)
+            or any(tensor.device != lengths[0].device for tensor in tensors)):
+        return False
+    # No post-EOS tensor kernel ran, so neither static tail nor linear state
+    # needs copying. Normalize static metadata without reading device data.
+    _write_static_lengths(lengths, valid_length)
+    return True
+
+
 def snapshot_hybrid_prefill(cache, valid_length):
     """Save standard hybrid recurrent state on-device before one dummy step.
 
@@ -1184,8 +1218,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     retained_prefix_tokens = 0
     cache_maintenance_start = time.perf_counter()
     if len(tokens) != new_tokens:
-        # Rewind only caches whose full state is the standard static KV cache.
-        # Hybrid/recurrent caches retain the original conservative reset.
+        # With a device stop, speculative kernels do not modify recurrent
+        # states, so an ordinary hybrid cache can preserve its valid prefix.
         position = position_history[len(tokens) - 1] if tokens else None
         valid_length = len(session.cached) + max(0, len(tokens) - 1)
         expected_length = len(session.cached) + max(0, len(rows) - 1)
@@ -1194,14 +1228,20 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         # slots were already clean at prefill, so clearing the whole planned
         # suffix would add work after the answer has finished.
         dirty_length = valid_length if device_stopped else expected_length
-        if (position is not None and not forced_tokens and tokens and tokens[-1] in eos
-                and getattr(session, '_cache_tokens', None) == expected_length
-                and rewind_attention_cache(session.cache, valid_length, dirty_length=dirty_length)):
+        eligible = (position is not None and not forced_tokens and tokens and tokens[-1] in eos
+                    and getattr(session, '_cache_tokens', None) == expected_length)
+        retained_static = (eligible and rewind_attention_cache(
+            session.cache, valid_length, dirty_length=dirty_length))
+        retained_hybrid = (eligible and not retained_static and device_stopped
+                           and os.environ.get('TNCA_REUSE_GUARDED_HYBRID', '0') == '1'
+                           and retain_guarded_hybrid_cache(session.cache, valid_length))
+        if retained_static or retained_hybrid:
             session.cached += tokens[:-1]
             session.last_position = position
             session._cache_tokens = valid_length
-            cache_rewind = ('static-attention-prefix-retained-after-device-stop' if device_stopped
-                            else 'static-attention-prefix-retained')
+            cache_rewind = ('hybrid-prefix-retained-after-device-stop' if retained_hybrid else
+                            'static-attention-prefix-retained-after-device-stop' if device_stopped else
+                            'static-attention-prefix-retained')
             retained_prefix_tokens = len(session.cached)
         else:
             defer_reset = getattr(session, 'defer_reset', None)

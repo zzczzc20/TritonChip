@@ -59,6 +59,8 @@ def main():
     parser.add_argument('--warm-cache-dir', type=Path)
     parser.add_argument('--device-eos-probe', action='store_true',
                         help='compare warm reduced-model turns with a diagnostic EOS')
+    parser.add_argument('--hybrid-eos-continuation', action='store_true',
+                        help='compare hybrid cache reset and retention in one reduced-model session')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--python', type=Path, required=True)
     parser.add_argument('--model', choices=('vl', 'q35'), default='vl')
@@ -68,9 +70,11 @@ def main():
     args = parser.parse_args()
     if args.model == 'q35' and args.layers < 4:
         parser.error('Qwen3.5 needs at least four layers to include a full-attention cache')
+    if args.hybrid_eos_continuation and (args.model != 'q35' or args.device_eos_probe or args.baseline_overlay_root):
+        parser.error('hybrid continuation needs Qwen3.5, one overlay and no other probe')
     if args.device_eos_probe and args.baseline_overlay_root:
         parser.error('the device EOS probe uses one source overlay')
-    if not args.device_eos_probe and bool(args.baseline_overlay_root) != bool(args.warm_cache_dir):
+    if not (args.device_eos_probe or args.hybrid_eos_continuation) and bool(args.baseline_overlay_root) != bool(args.warm_cache_dir):
         parser.error('warm A/B requires both a baseline overlay and an existing warm cache')
     if args.warm_cache_dir and not args.warm_cache_dir.is_dir():
         parser.error('warm cache directory does not exist')
@@ -103,7 +107,8 @@ def main():
             image_profile=PROFILE, core_count=3, memory_ports=3, hbm_dma=True,
             hbm_bytes=8 * (1 << 30), device_clock=True))
         reports = []
-        modes = (('baseline', 'device-eos-guard') if args.device_eos_probe else
+        modes = (('hybrid-eos-continuation',) if args.hybrid_eos_continuation else
+                 ('baseline', 'device-eos-guard') if args.device_eos_probe else
                  ('baseline-warm', 'optimized-warm') if args.warm_cache_dir else
                  ('baseline-cold', 'optimized-warm'))
         for mode in modes:
@@ -122,7 +127,11 @@ def main():
             if mode == 'baseline-cold':
                 run_env.update(TNCA_REUSE_WARM_PREFILL='0', TNCA_REUSE_HYBRID_PREFILL='0',
                                TNCA_MMIO_DESCRIPTOR_CACHE='0', TNCA_CODE_REUSE='0', TNCA_DEFER_CACHE_RESET='0')
-            if args.device_eos_probe:
+            if args.hybrid_eos_continuation:
+                command = [str(args.python), '-u', str(root / 'tools/r41/chat_speed/bench_hybrid_continue_entry.py'),
+                           '--tree', str(root), '--layers', str(args.layers), '--prompt', args.prompt,
+                           '--out', str(out)]
+            elif args.device_eos_probe:
                 run_env['TNCA_DEVICE_EOS_GUARD'] = '1' if mode == 'device-eos-guard' else '0'
             root = args.baseline_overlay_root if mode == 'baseline-warm' else args.overlay_root
             out = args.out / mode
@@ -142,6 +151,9 @@ def main():
             print('finished', mode, 'returncode', rc, flush=True)
             if rc != 0:
                 raise RuntimeError(f'{mode} failed; preserved its log and any failure report')
+            if args.hybrid_eos_continuation:
+                print((out / 'result.json').read_text(), flush=True)
+                return
             reports.append(json.loads((out / 'report.json').read_text()))
         from safetensors.torch import load_file
         import torch

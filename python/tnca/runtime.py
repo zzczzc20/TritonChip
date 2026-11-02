@@ -631,6 +631,9 @@ class Session:
         self._last_event = None
         self._stop_guard_local = threading.local()
         self._stop_guard_pc = None
+        self._stop_probe_module = None
+        self._stop_probe_calibration = None
+        self._stop_probe_preparing = False
         # Unfinished jobs retain their events even if the caller drops them.
         self._active_events = OrderedDict()
         self._next_buffer = 0
@@ -1263,6 +1266,61 @@ class Session:
                 self._stop_guard_pc = address
             return self._stop_guard_pc
 
+    def prepare_device_stop_probe(self):
+        """Reserve and calibrate the optional timing-based stop signal.
+
+        The host observes only a normal launch's completion-cycle counter;
+        it never downloads the device flag or a model tensor. A too-short or
+        missing calibration disables the probe and preserves normal chat.
+        Call while idle and before entering the guarded submission scope.
+        """
+        from .eos_guard import PROBE_BUSY_MIN_CYCLES, stop_probe_code
+        with self._lock:
+            self._check_usable()
+            if not self.physical_grid or self._active_events:
+                raise SessionBusy('device stop probe requires an idle physical-grid session')
+            if getattr(self._stop_guard_local, 'flag', None) is not None:
+                raise SessionBusy('device stop probe calibration must be unguarded')
+            if self._stop_probe_preparing:
+                raise SessionBusy('another thread is calibrating the device stop probe')
+            if self._stop_probe_module is not None:
+                return self._stop_probe_module, self._stop_probe_calibration
+            code = stop_probe_code()
+            address, size = self._code.alloc(len(code), align=64)
+            try:
+                reply = self.dev.upload(address, code)
+                if not reply.ok:
+                    raise TncaError('could not place device stop probe', code='ARTIFACT_INVALID')
+                manifest = {'identity': {'kernel_name': 'tnca_eos_stop_probe'},
+                            'parameters': {'signature': [], 'alias_allowed': []},
+                            'resources': {}, 'execution': {'program_to_role': {'0': ['role0']}}}
+                module = Module('<internal-eos-stop-probe>', manifest, address, [], self.epoch)
+                module.code_size = size
+                self._modules.append(module)
+                self._stop_probe_preparing = True
+            except BaseException:
+                self._code.release(address, size)
+                raise
+        try:
+            event = self.submit(module, {}, grid=(1, 1, 1))
+            self.wait(event)
+            if not event.ok:
+                raise TncaError('device stop probe calibration failed', code='KERNEL_FAULT')
+            cycles = event.device_cycles
+            if type(cycles) is not int or cycles < PROBE_BUSY_MIN_CYCLES:
+                self.unload(module)
+                return None, cycles
+            with self._lock:
+                self._stop_probe_module, self._stop_probe_calibration = module, cycles
+            return module, cycles
+        except BaseException:
+            if module.alive and not self.unfinished and not self.poisoned:
+                self.unload(module)
+            raise
+        finally:
+            with self._lock:
+                self._stop_probe_preparing = False
+
     @contextmanager
     def device_stop_guard(self, buffer, offset=0):
         """Skip physical programs after a device flag becomes nonzero.
@@ -1619,6 +1677,9 @@ class Session:
             self._events.clear()
             self._last_event = None
             self._stop_guard_pc = None
+            self._stop_probe_module = None
+            self._stop_probe_calibration = None
+            self._stop_probe_preparing = False
             self._stop_guard_local = threading.local()
             self._active_events.clear()
             self._queue.clear()

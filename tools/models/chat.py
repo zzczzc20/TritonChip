@@ -1002,6 +1002,11 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         validate_queued_decode()
     stop_enabled = use_device_eos_guard(os.environ, new_tokens, forced_tokens, eos)
     stop_disabled_reason = None
+    probe_request = os.environ.get('TNCA_DEVICE_EOS_EARLY_STOP', '0')
+    if probe_request not in ('0', '1'):
+        raise ValueError('TNCA_DEVICE_EOS_EARLY_STOP must be 0 or 1')
+    probe_module, probe_calibration, probe_setup_seconds = None, None, 0.0
+    probe_signalled, probe_cycles = False, []
     if stop_enabled:
         # Reserve 56 bytes before warmup fills code RAM. If automatic
         # activation cannot reserve the guard, retain ordinary device chat.
@@ -1015,6 +1020,16 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 raise
             stop_enabled = False
             stop_disabled_reason = str(error)
+        if stop_enabled and probe_request == '1' and not queue_steps:
+            # Reserve the tiny known-duration probe before generated code
+            # fills the code store. Its ordinary, unguarded launch calibrates
+            # the hardware completion counter without reading tensor data.
+            probe_started = time.perf_counter()
+            try:
+                probe_module, probe_calibration = MEMORY.session().prepare_device_stop_probe()
+            except TncaBufferError:
+                probe_module = None
+            probe_setup_seconds = time.perf_counter() - probe_started
     position_batch, host_positions, queued_meters, queue_anchor = None, None, [], None
     code_by_role = getattr(session, "_generation_code", {})
     session._generation_code = code_by_role
@@ -1094,6 +1109,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
             graph_start = counters["stats"]["unique_graphs"]
             code = code_store_counters()
             started = time.perf_counter()
+            step_probe_cycles = None
+            stop_after_step = False
             meter_context = (transfer_meter(True, deferred=True) if queue_steps and index
                              else transfer_meter(True))
             with meter_context as meter:
@@ -1133,6 +1150,18 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                     host_positions, position_batch = stage_decode_positions(position, new_tokens, session.dev)
                 if not queue_steps or index == 0:
                     meter.mem.synchronize()
+                if stop_enabled and stop_flag is not None and probe_module is not None:
+                    from tnca.eos_guard import stop_probe_indicates_stop
+                    event = hardware.submit(probe_module, {}, grid=(1, 1, 1))
+                    hardware.wait(event)
+                    if not event.ok:
+                        raise RuntimeError(f'device EOS completion probe failed: {event.error}')
+                    step_probe_cycles = event.device_cycles
+                    probe_cycles.append(step_probe_cycles)
+                    # If a counter is unavailable or unexpectedly large,
+                    # keep submitting work; only the short guarded path can
+                    # stop early. Retrieval below verifies the flag and EOS.
+                    stop_after_step = stop_probe_indicates_stop(step_probe_cycles)
             if queue_steps and index == 0:
                 queue_anchor = time.time()
             if logits.device.type != "tnca" or current.device.type != "tnca":
@@ -1148,6 +1177,15 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                        seconds=elapsed, new_graphs=counters["stats"]["unique_graphs"] - graph_start,
                        code_store=_counter_delta(code, code_store_counters()), logits_download_bytes=0,
                        transfers_inside_step=None if queue_steps and index else meter.summary())
+            if step_probe_cycles is not None:
+                row['eos_completion_probe_cycles'] = step_probe_cycles
+                # The probe is a runtime launch, not a Triton launch, so add
+                # it to the step's counters explicitly.
+                transfers = row['transfers_inside_step']
+                if transfers.get('launches') is not None:
+                    transfers['launches'] += 1
+                if transfers.get('device_cycles') is not None:
+                    transfers['device_cycles'] += step_probe_cycles
             if index == 0:
                 row.update(calls=calls, reused_cached_tokens=reused)
                 row['prefill_from_warmup'] = saved_prefill is not None
@@ -1158,6 +1196,9 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 row['decode_seconds_in_warmup'] = warm_feedback[3]
                 row['warmup_decode_transfers'] = warm_feedback[4]
             rows.append(row)
+            if stop_after_step:
+                probe_signalled = True
+                break
             if queue_steps and index:
                 queued_meters.append((row, meter))
         if queued_meters:
@@ -1270,6 +1311,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         status = "failed-no-host-fallback"
     elif fallback is None or vision_unknown:
         status = "unverified-no-host-fallback"
+    elif probe_signalled and not (tokens and tokens[-1] in eos and observed_stop == 1):
+        status = "failed-device-stop-probe"
     elif observed_stop is not None and observed_stop != int(bool(tokens and tokens[-1] in eos)):
         status = "failed-device-eos-guard"
     else:
@@ -1332,9 +1375,17 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   decode_warmup=warmup,
                   device_eos_guard=dict(enabled=stop_enabled, disabled_reason=stop_disabled_reason,
                                         setup=stop_setup, observed_stop=observed_stop,
+                                        completion_probe=dict(requested=probe_request == '1',
+                                            enabled=bool(stop_enabled and stop_flag is not None and probe_module is not None),
+                                            calibration_cycles=probe_calibration,
+                                            calibration_seconds=probe_setup_seconds,
+                                            launches=len(probe_cycles), cycles=probe_cycles,
+                                            signalled=probe_signalled,
+                                            scope='device completion-cycle counter; no tensor download'),
                                         post_eos=(guarded_post_eos_stats(rows, len(tokens),
                                             bool(tokens and tokens[-1] in eos)) if stop_enabled else None),
-                                        scope='device skips post-EOS kernels; host still submits the planned steps'),
+                                        scope=('host stops on the device completion signal' if probe_signalled else
+                                               'device skips post-EOS kernels; host submits the planned steps')),
                   steady_decode_host_reads_detected=bool(read_during_decode),
                   model_tensor_placements=placements, output_retrieval=retrieval.summary(),
                   output_retrieval_seconds=retrieval_seconds,

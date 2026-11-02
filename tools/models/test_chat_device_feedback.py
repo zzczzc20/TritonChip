@@ -197,7 +197,7 @@ class DeviceFeedbackTests(unittest.TestCase):
 
     def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None,
                  retain_logits=True, logit_limit=None, rewind_hook=None, queue=False, real_warmup=False,
-                 prior_single=False, warmup_reads=0):
+                 prior_single=False, warmup_reads=0, probe=False, bad_probe=False):
         session = Session(choices, prefill_compiles_decode)
         if prior_single:
             session.prompts, session.cached, session._cache_tokens = 1, [7, 8], 2
@@ -229,6 +229,27 @@ class DeviceFeedbackTests(unittest.TestCase):
         ind.host_fallbacks = fallback_hook or (lambda code: [])
         residency = types.ModuleType('tnca.code_residency')
         residency.RepeatedCodeTrace = lambda: types.SimpleNamespace(step=nullcontext)
+        fake_flag = Tensor([0])
+        hardware = types.SimpleNamespace(id=1, epoch=1, poisoned=False,
+            prepare_device_stop_guard=lambda: None,
+            prepare_device_stop_probe=lambda: (object(), 60000),
+            device_stop_guard=lambda *args: nullcontext(),
+            submit=lambda *args, **kwargs: types.SimpleNamespace(
+                ok=True, error=None, device_cycles=107 if bad_probe or fake_flag.value.item() else 60000),
+            wait=lambda event: None)
+        td = types.ModuleType('tnca.torch_device')
+        td.MEMORY = types.SimpleNamespace(synchronize=lambda: None, session=lambda: hardware,
+                                          locate=lambda address: (object(), 0))
+        td.storage_address = lambda tensor: 0
+        eos_module = types.ModuleType('tnca.torch_device.eos')
+        def latch(token, flag, eos):
+            flag.value.fill_(int(token.value.item() in eos) or int(flag.value.item()))
+        eos_module.latch_eos = latch
+        probe_module = types.ModuleType('tnca.eos_guard')
+        probe_module.stop_probe_indicates_stop = lambda cycles: type(cycles) is int and 0 < cycles < 2048
+        errors = types.ModuleType('tnca.errors')
+        errors.BufferError = type('BufferError', (Exception,), {})
+        errors.CompileError = type('CompileError', (Exception,), {})
         capture_count = 0
         def capture(fn):
             nonlocal capture_count
@@ -240,9 +261,14 @@ class DeviceFeedbackTests(unittest.TestCase):
                         if rewind_hook is not None else nullcontext())
         with rewind_patch, mock.patch.dict(os.environ, {'TNCA_QUEUE_STEPS': '1' if queue else '0',
                                                        'TNCA_REUSE_FIRST_DECODE': '1' if real_warmup else '0',
-                                                       'TNCA_DEVICE_EOS_GUARD': '0'}), \
+                                                       'TNCA_DEVICE_EOS_GUARD': '1' if probe else '0',
+                                                       'TNCA_DEVICE_EOS_EARLY_STOP': '1' if probe else '0'}), \
              mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind,
-                                            'tnca.code_residency': residency}), \
+                                            'tnca.code_residency': residency, 'tnca.errors': errors,
+                                            'tnca.torch_device': td, 'tnca.torch_device.eos': eos_module,
+                                            'tnca.eos_guard': probe_module}), \
+             mock.patch.object(chat, 'prepare_optional_eos_flag',
+                               return_value=(fake_flag, ((), 1, 1), False, None)), \
              mock.patch.object(chat, 'run_with_code_capture', capture), \
              mock.patch.object(chat, 'transfer_meter',
                                lambda enabled, **kwargs: Meter(synchronizations=session.synchronizations, **kwargs)), \
@@ -256,6 +282,19 @@ class DeviceFeedbackTests(unittest.TestCase):
                                          'prompt', new_tokens=len(choices), forced_tokens=forced,
                                          retain_logits=retain_logits, logit_limit=logit_limit)
         return session, report
+
+    def test_completion_signal_stops_without_speculative_decode(self):
+        session, report = self.run_case([1, 3, 2], probe=True)
+        self.assertEqual(report['generated_tokens'], [1, 3])
+        self.assertEqual(report['executed_generation_steps'], 2)
+        self.assertEqual(session.fed, [1])
+        self.assertEqual(report['status'], 'pass')
+        self.assertFalse(report['steady_decode_host_reads_detected'])
+        self.assertTrue(report['device_eos_guard']['completion_probe']['signalled'])
+
+    def test_false_completion_signal_cannot_be_reported_as_success(self):
+        _, report = self.run_case([1, 2, 3], probe=True, bad_probe=True)
+        self.assertEqual(report['status'], 'failed-device-stop-probe')
 
     def test_one_token_request_skips_decode_warmup_and_checks_only_used_roles(self):
         session, report = self.run_case([1])

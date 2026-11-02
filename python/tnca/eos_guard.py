@@ -13,6 +13,11 @@ from functools import lru_cache
 HEADER_BYTES = 256
 TARGET_OFFSET = HEADER_BYTES - 16
 FLAG_OFFSET = HEADER_BYTES - 8
+# The busy path retires at least one branch per iteration. The 15x margin
+# makes an unknown or unexpectedly short counter fail closed during setup.
+PROBE_ITERATIONS = 30000
+PROBE_BUSY_MIN_CYCLES = 30000
+PROBE_STOP_MAX_CYCLES = 2048
 
 
 @lru_cache(maxsize=1)
@@ -34,6 +39,26 @@ def guard_code():
     '''
     words = build_image(Assembler().assemble(source))
     return struct.pack('<' + 'Q' * len(words), *words)
+
+
+@lru_cache(maxsize=1)
+def stop_probe_code():
+    """A known long path; the stop guard's short path skips it completely."""
+    from tnca_asm import Assembler, build_image
+    source = f'''
+        .li s60, #{PROBE_ITERATIONS}
+    spin:
+        s.addi s60, s60, #-1
+        br.nz s60, spin
+        exit
+    '''
+    words = build_image(Assembler().assemble(source))
+    return struct.pack('<' + 'Q' * len(words), *words)
+
+
+def stop_probe_indicates_stop(cycles):
+    """Unknown counters fail closed and continue the ordinary device loop."""
+    return type(cycles) is int and 0 < cycles < PROBE_STOP_MAX_CYCLES
 
 
 def argument_table(block, stride, cores, target, flag):

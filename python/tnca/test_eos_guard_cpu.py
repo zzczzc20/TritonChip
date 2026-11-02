@@ -7,11 +7,18 @@ from collections import OrderedDict
 from types import SimpleNamespace
 from unittest import mock
 
-from tnca.eos_guard import HEADER_BYTES, argument_table, guard_code
+from tnca.eos_guard import (HEADER_BYTES, PROBE_BUSY_MIN_CYCLES, argument_table,
+                            guard_code, stop_probe_code, stop_probe_indicates_stop)
 from tnca.runtime import Buffer, Session, _Allocator, _build_argument_block
 
 
 class GuardLayoutTests(unittest.TestCase):
+    def test_completion_probe_is_conservative_without_a_tensor_read(self):
+        self.assertGreater(len(stop_probe_code()), 0)
+        self.assertTrue(stop_probe_indicates_stop(107))
+        for ambiguous in (0, None, True, PROBE_BUSY_MIN_CYCLES, 1 << 40):
+            self.assertFalse(stop_probe_indicates_stop(ambiguous))
+
     def test_header_preserves_core_local_descriptors_and_scratch(self):
         cores, stride, base = 3, 1024, 0x40000
         params = [('value', 'u64'), ('map', 'device_ptr64')]
@@ -70,6 +77,31 @@ class GuardLayoutTests(unittest.TestCase):
         ordinary = session.submit(module, {})
         self.assertIsNone(ordinary._task['guarded_pc'])
         self.assertEqual(ordinary._task['upload_addr'], ordinary._task['arg_addr'])
+
+    def test_probe_calibration_requires_a_long_unguarded_completion(self):
+        session = Session.__new__(Session)
+        session._check_usable = lambda: None
+        session._lock = threading.RLock()
+        session._stop_guard_local = threading.local()
+        session._stop_probe_module = session._stop_probe_calibration = None
+        session._stop_probe_preparing = False
+        session._active_events = OrderedDict()
+        session._modules = []
+        session._code = _Allocator(0x1000, 0x10000)
+        session.physical_grid, session.epoch, session.poisoned = True, 1, False
+        session.dev = SimpleNamespace(upload=lambda *args: SimpleNamespace(ok=True))
+        with mock.patch.object(session, 'submit', return_value=SimpleNamespace(ok=True, device_cycles=100)), \
+             mock.patch.object(session, 'wait'):
+            module, cycles = session.prepare_device_stop_probe()
+        self.assertIsNone(module)
+        self.assertEqual(cycles, 100)
+        self.assertEqual(session._code.used, 0)
+        with mock.patch.object(session, 'submit', return_value=SimpleNamespace(ok=True, device_cycles=60000)), \
+             mock.patch.object(session, 'wait'):
+            module, cycles = session.prepare_device_stop_probe()
+            self.assertEqual(session.prepare_device_stop_probe(), (module, cycles))
+        self.assertEqual(cycles, 60000)
+        self.assertTrue(module.alive)
 
 
 if __name__ == '__main__':

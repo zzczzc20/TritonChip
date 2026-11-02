@@ -17,7 +17,6 @@ _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_
                            'TNCA_SUBMIT', 'TNCA_QUEUE_DEPTH', 'TNCA_MMIO_DESCRIPTOR_CACHE', 'TNCA_CODE_REUSE', 'TNCA_DEVICE_ZERO', 'TNCA_QUEUE_STEPS',
                            'TNCA_REUSE_WARM_PREFILL', 'TNCA_DEFER_CACHE_RESET',
                            'TNCA_REUSE_HYBRID_PREFILL', 'TNCA_REUSE_FIRST_DECODE', 'TNCA_DEVICE_EOS_GUARD',
-                           'TNCA_DECODE_CODE_EVICT_ASYNC',
                            'TNCA_DEADLINE', 'TNCA_HOST_TIMEOUT'})
 # These select a runtime device or its measured clock. The ordinary compiler
 # does not use them, but autotuning observes the device and therefore must
@@ -25,7 +24,7 @@ _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_
 _UNTUNED_RUNTIME_ONLY = frozenset({'TNCA_BACKEND_ARGS', 'TNCA_OPERATING_CLOCK_EVIDENCE', 'TNCA_COUNTERS',
                                   'TNCA_DEVICE_EOS_EARLY_STOP', 'TNCA_HYBRID_PREFIX_CHECKPOINT',
                                   'TNCA_REUSE_GUARDED_HYBRID', 'TNCA_STATIC_PREFIX_REWIND',
-                                  'TNCA_STATIC_SUFFIX_GROUP'})
+                                  'TNCA_STATIC_SUFFIX_GROUP', 'TNCA_DECODE_CODE_EVICT_ASYNC'})
 _SOURCE_SUFFIXES = frozenset({'.py', '.c', '.cpp', '.cc', '.h', '.hpp', '.td',
                               '.def', '.inc', '.cmake', '.json', '.toml', '.yaml', '.yml'})
 _UNTUNED_RUNTIME_FILES = frozenset({'runtime.py', 'transport.py'})

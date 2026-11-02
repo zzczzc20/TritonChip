@@ -54,6 +54,9 @@ class GuardLayoutTests(unittest.TestCase):
         module = SimpleNamespace(epoch=1, alive=True, name='unit', params=[], code_addr=0x3000,
                                  manifest={'identity': {'kernel_name': 'unit'}, 'resources': {}, 'parameters': {},
                                            'execution': {'program_to_role': {'0': ['role0']}}})
+        reserved = session.prepare_device_stop_guard()
+        self.assertEqual(session.prepare_device_stop_guard(), reserved)
+        session.dev.upload.assert_called_once()
         with session.device_stop_guard(flag):
             event = session.submit(module, {})
             task = event._task

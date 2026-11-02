@@ -634,6 +634,27 @@ def validate_queued_decode():
         raise ValueError('queued decode does not support host staging guards')
 
 
+def use_device_eos_guard(environ, new_tokens, forced_tokens, eos):
+    """Enable the measured guard automatically on its supported FPGA path."""
+    requested = environ.get('TNCA_DEVICE_EOS_GUARD')
+    automatic = requested is None
+    if requested not in (None, '0', '1'):
+        raise ValueError('TNCA_DEVICE_EOS_GUARD must be 0 or 1')
+    if new_tokens <= 1 or forced_tokens or not eos or requested == '0':
+        return False
+    if automatic and environ.get('TNCA_BACKEND') != 'fpga-u280-multicore':
+        return False
+    compatible = (environ.get('TNCA_TRANSFER_POLICY', 'resident') == 'resident'
+                  and environ.get('TNCA_LAUNCH') != 'skip'
+                  and environ.get('TNCA_GUARD_CHECK') != '1'
+                  and int(environ.get('TNCA_GUARD_BYTES') or '0') == 0
+                  and environ.get('TNCA_TUNE', '0') != '1'
+                  and environ.get('TNCA_REUSE_FIRST_DECODE', '0') != '1')
+    if not compatible and not automatic:
+        raise ValueError('device EOS guard requires resident tensors and the proven warmup path')
+    return compatible
+
+
 def prepare_device_eos_flag(session, eos, hardware, latch):
     """Reuse a sticky flag only for the same token set and device epoch."""
     identity = (tuple(sorted(eos)), hardware.id, hardware.epoch)
@@ -922,10 +943,21 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     queue_steps = os.environ.get('TNCA_QUEUE_STEPS') == '1' and new_tokens > 1
     if queue_steps:
         validate_queued_decode()
-    stop_enabled = (os.environ.get('TNCA_DEVICE_EOS_GUARD') == '1'
-                    and new_tokens > 1 and not forced_tokens and bool(eos))
-    if stop_enabled and os.environ.get('TNCA_REUSE_FIRST_DECODE', '0') == '1':
-        raise ValueError('device EOS guard requires the proven dummy-warmup path')
+    stop_enabled = use_device_eos_guard(os.environ, new_tokens, forced_tokens, eos)
+    stop_disabled_reason = None
+    if stop_enabled:
+        # Reserve 56 bytes before warmup fills code RAM. If automatic
+        # activation cannot reserve the guard, retain ordinary device chat.
+        from tnca.torch_device import MEMORY
+        from tnca.errors import BufferError as TncaBufferError
+        MEMORY.synchronize()
+        try:
+            MEMORY.session().prepare_device_stop_guard()
+        except (TncaBufferError, ImportError) as error:
+            if os.environ.get('TNCA_DEVICE_EOS_GUARD') == '1':
+                raise
+            stop_enabled = False
+            stop_disabled_reason = str(error)
     position_batch, host_positions, queued_meters, queue_anchor = None, None, [], None
     code_by_role = getattr(session, "_generation_code", {})
     session._generation_code = code_by_role
@@ -1222,7 +1254,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                   compiled_wrapper_fallbacks=fallbacks, compiled_wrapper_roles_covered=covered,
                   compiled_wrapper_required_roles=list(required_roles),
                   decode_warmup=warmup,
-                  device_eos_guard=dict(enabled=stop_enabled, setup=stop_setup, observed_stop=observed_stop,
+                  device_eos_guard=dict(enabled=stop_enabled, disabled_reason=stop_disabled_reason,
+                                        setup=stop_setup, observed_stop=observed_stop,
                                         post_eos=(guarded_post_eos_stats(rows, len(tokens),
                                             bool(tokens and tokens[-1] in eos)) if stop_enabled else None),
                                         scope='device skips post-EOS kernels; host still submits the planned steps'),

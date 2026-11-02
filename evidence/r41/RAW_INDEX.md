@@ -53,3 +53,7 @@
 - `acf3019:/home/zzhouch/r41_consolidated_retry_20261101_02d704f4/results/` — completed consolidated board campaign and queue log, frozen source `02d704f4`; no copied logs.
   - `q35/r41-final-q35-campaign-20261101/q35-quality/quality.json` — SHA-256 `dee800c732cd0decfa905486276d7e8e816c11f392417e42cc553ea11797fac5`; `q35/stage.json` — `79de3d05195e479f12b6fc6b411fb8206bdb8eea1395d2a4ab175bc80d12f322`.
   - `vl/r41-final-vl-campaign-20261101/vl-quality/quality.json` — SHA-256 `aca53c60747c3f9a822396eb567ad24143d25b7dd4267bb1ba87eef2c581380a`; `vl/stage.json` — `783c1cfa3c21c931821156146071d8393ab046027bf6f667ebdf39060644277b`.
+
+- `acf3019:/home/zzhouch/r41_eos_guard_20261102_f56ca67a/results/` — synthetic device EOS guard result and logs; no model-quality claim.
+- `acf3019:/home/zzhouch/r41_eos_model_20261102_9f4d4951/results/` — retained failed one-layer Qwen3.5 attempt; no full-attention cache.
+- `acf3019:/home/zzhouch/r41_eos_vl_retry_20261102_63523636/results/` — warm reduced one-layer VL EOS comparison with a diagnostic EOS; not full-model quality or throughput.

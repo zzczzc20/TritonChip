@@ -1241,24 +1241,13 @@ class Session:
         return out, leased
 
     # ---- the queue --------------------------------------------------------
-    @contextmanager
-    def device_stop_guard(self, buffer, offset=0):
-        """Skip subsequent physical programs when a device flag becomes nonzero.
-
-        The flag remains a leased device buffer for every guarded task. The
-        calling thread controls admission; the queue itself still executes in
-        FIFO order and never transfers the flag to the host.
-        """
+    def prepare_device_stop_guard(self):
+        """Reserve the shared guard before compiled kernels fill code RAM."""
         from .eos_guard import guard_code
         with self._lock:
             self._check_usable()
             if not self.physical_grid:
                 raise AdmissionError('device stop guard requires physical grid dispatch')
-            if (not isinstance(buffer, Buffer) or buffer.session_id != self.id
-                    or buffer.epoch != self.epoch or not buffer.alive or not buffer.valid
-                    or not isinstance(offset, int) or offset < 0 or offset % WORD
-                    or offset + WORD > buffer.size):
-                raise ArgumentError('device stop flag must be a live aligned 64-bit buffer')
             if self._active_events:
                 raise SessionBusy('device stop guard must be installed on an idle session')
             if self._stop_guard_pc is None:
@@ -1272,6 +1261,23 @@ class Session:
                     self._code.release(address, size)
                     raise
                 self._stop_guard_pc = address
+            return self._stop_guard_pc
+
+    @contextmanager
+    def device_stop_guard(self, buffer, offset=0):
+        """Skip physical programs after a device flag becomes nonzero.
+
+        Every guarded task leases the flag. Admission is thread-local, FIFO
+        execution is unchanged, and the flag is never transferred to host.
+        """
+        with self._lock:
+            self._check_usable()
+            if (not isinstance(buffer, Buffer) or buffer.session_id != self.id
+                    or buffer.epoch != self.epoch or not buffer.alive or not buffer.valid
+                    or not isinstance(offset, int) or offset < 0 or offset % WORD
+                    or offset + WORD > buffer.size):
+                raise ArgumentError('device stop flag must be a live aligned 64-bit buffer')
+            self.prepare_device_stop_guard()
             local = self._stop_guard_local
             previous = getattr(local, 'flag', None)
             local.flag = (buffer, offset)

@@ -91,6 +91,19 @@ class Session:
         self.resets += 1
 
 class DeviceFeedbackTests(unittest.TestCase):
+    def test_eos_guard_auto_enables_only_on_supported_device_path(self):
+        board = {'TNCA_BACKEND': 'fpga-u280-multicore'}
+        self.assertTrue(chat.use_device_eos_guard(board, 12, None, {2}))
+        self.assertFalse(chat.use_device_eos_guard({}, 12, None, {2}))
+        self.assertFalse(chat.use_device_eos_guard(board, 1, None, {2}))
+        self.assertFalse(chat.use_device_eos_guard(board, 12, [2], {2}))
+        self.assertFalse(chat.use_device_eos_guard(dict(board, TNCA_DEVICE_EOS_GUARD='0'), 12, None, {2}))
+        for key, value in (('TNCA_TRANSFER_POLICY', 'per-kernel'), ('TNCA_GUARD_CHECK', '1'),
+                           ('TNCA_TUNE', '1'), ('TNCA_LAUNCH', 'skip'), ('TNCA_REUSE_FIRST_DECODE', '1')):
+            self.assertFalse(chat.use_device_eos_guard(dict(board, **{key: value}), 12, None, {2}))
+            with self.assertRaises(ValueError):
+                chat.use_device_eos_guard(dict(board, TNCA_DEVICE_EOS_GUARD='1', **{key: value}), 12, None, {2})
+
     def test_post_eos_accounting_counts_real_launches_without_claiming_tokens(self):
         rows = [{'transfers_inside_step': {'launches': 4, 'device_cycles': 800}},
                 {'transfers_inside_step': {'launches': 5, 'device_cycles': 900}},
@@ -188,7 +201,8 @@ class DeviceFeedbackTests(unittest.TestCase):
         rewind_patch = (mock.patch.object(chat, 'rewind_attention_cache', side_effect=rewind_hook)
                         if rewind_hook is not None else nullcontext())
         with rewind_patch, mock.patch.dict(os.environ, {'TNCA_QUEUE_STEPS': '1' if queue else '0',
-                                                       'TNCA_REUSE_FIRST_DECODE': '1' if real_warmup else '0'}), \
+                                                       'TNCA_REUSE_FIRST_DECODE': '1' if real_warmup else '0',
+                                                       'TNCA_DEVICE_EOS_GUARD': '0'}), \
              mock.patch.dict('sys.modules', {'tnca': tnca, 'tnca.inductor': ind,
                                             'tnca.code_residency': residency}), \
              mock.patch.object(chat, 'run_with_code_capture', capture), \

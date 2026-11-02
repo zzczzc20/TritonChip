@@ -55,6 +55,7 @@ def main():
         app.reset_conversation()
         app.session.reset()
         os.environ['TNCA_REUSE_GUARDED_HYBRID'] = '1' if mode == 'retain' else '0'
+        os.environ['TNCA_HYBRID_PREFIX_CHECKPOINT'] = '1' if mode == 'retain' else '0'
         os.environ['TNCA_DEVICE_EOS_EARLY_STOP'] = '1' if mode == 'retain' else '0'
         chat_args.new_tokens = 4
         first = app.generate(args.prompt, keep_history=True, retain_logits=True)

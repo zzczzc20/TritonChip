@@ -144,7 +144,8 @@ def main():
             for name in ('TNCA_REUSE_WARM_PREFILL', 'TNCA_REUSE_HYBRID_PREFILL',
                          'TNCA_MMIO_DESCRIPTOR_CACHE', 'TNCA_CODE_REUSE',
                          'TNCA_DEFER_CACHE_RESET', 'TNCA_REUSE_FIRST_DECODE', 'TNCA_DEVICE_EOS_GUARD',
-                         'TNCA_DEVICE_EOS_EARLY_STOP', 'TNCA_REUSE_GUARDED_HYBRID'):
+                         'TNCA_DEVICE_EOS_EARLY_STOP', 'TNCA_REUSE_GUARDED_HYBRID',
+                         'TNCA_HYBRID_PREFIX_CHECKPOINT'):
                 run_env.pop(name, None)
             if mode == 'baseline-cold':
                 run_env.update(TNCA_REUSE_WARM_PREFILL='0', TNCA_REUSE_HYBRID_PREFILL='0',

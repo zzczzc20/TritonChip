@@ -136,6 +136,42 @@ class HybridPrefillContinuationTests(unittest.TestCase):
         return self.model(input_ids=torch.tensor([tokens]), past_key_values=cache,
                           use_cache=True).last_hidden_state
 
+    def test_chunk_checkpoint_matches_canonical_followup_bitwise(self):
+        def make_session(cache, capture):
+            session = object.__new__(chat.Session)
+            session.device, session.dev, session.cache, session.model = 'cpu', torch.device('cpu'), cache, self.model
+            session.bucket, session.chunk, session.resets = 32, 4, 0
+            session.cached, session._cache_tokens, session.last_position = [], 0, None
+            session._warm_prefill = session._warm_feedback = session._continuation_checkpoint = None
+            session._pending_reset, session._capture_hybrid_checkpoint = False, capture
+            session._call_prefill = lambda ids, positions, vision: self.call(cache, ids[0].tolist())[0, -1]
+            return session
+        reference, optimized = make_session(self.make_cache(), False), make_session(self.make_cache(), True)
+        first = [7, 4, 1, 9, 5, 6, 2, 3, 4, 1, 5, 6]
+        followup = first[:10] + [13, 14, 15, 16, 17, 18]
+        def positions(_model, inputs):
+            return torch.arange(inputs['input_ids'].shape[1]).reshape(1, 1, -1)
+        with torch.inference_mode(), mock.patch.object(chat.L, 'prefill_position_ids', side_effect=positions):
+            for session in (reference, optimized):
+                session.prefill_prompt({'input_ids': torch.tensor([first])}, None)
+                self.call(session.cache, [19])
+                session.cached.append(19)
+                session._cache_tokens += 1
+            self.assertEqual(optimized._continuation_checkpoint['tokens'], first[:8])
+            reference.reset()
+            expected, _, _ = reference.prefill_prompt({'input_ids': torch.tensor([followup])}, None)
+            actual, _, reused = optimized.prefill_prompt({'input_ids': torch.tensor([followup])}, None)
+            self.assertEqual(reused, 8)
+            self.assertTrue(torch.equal(expected, actual))
+            for first_layer, second_layer in zip(reference.cache.layers, optimized.cache.layers, strict=True):
+                for name in ('conv_states', 'recurrent_states'):
+                    if hasattr(first_layer, name):
+                        for key, state in getattr(first_layer, name).items():
+                            self.assertTrue(torch.equal(state, getattr(second_layer, name)[key]))
+                if hasattr(first_layer, 'keys'):
+                    self.assertTrue(torch.equal(first_layer.keys, second_layer.keys))
+                    self.assertTrue(torch.equal(first_layer.values, second_layer.values))
+
     def test_guarded_eos_preserves_hybrid_state_for_the_next_turn(self):
         clean, retained = self.make_cache(), self.make_cache()
         prompt, emitted, suffix = [7, 4, 1, 9], [5, 8], [2, 3, 6]

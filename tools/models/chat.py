@@ -273,6 +273,8 @@ class Session:
         self._warm_prefill = None
         self._warm_feedback = None
         self._warm_prefill_mode = 'not-run'
+        self._continuation_checkpoint = None
+        self._capture_hybrid_checkpoint = False
         self._pending_reset = False
         self._cleanup_lock = threading.RLock()
         self._cleanup_thread = None
@@ -300,6 +302,7 @@ class Session:
             self._cache_tokens = 0
             self._warm_prefill = None
             self._warm_feedback = None
+            self._continuation_checkpoint = None
             self._pending_reset = False
             self.resets += 1
 
@@ -373,6 +376,7 @@ class Session:
             self._cache_tokens = 0
             self._warm_prefill = None
             self._warm_feedback = None
+            self._continuation_checkpoint = None
             self._pending_reset = True
 
     def vision_features(self, inputs):
@@ -456,9 +460,24 @@ class Session:
         reused = len(self.cached)
         if (per_image or full[:reused] != self.cached or reused >= len(full)
                 or getattr(self, '_cache_tokens', 0) != reused):
-            if self.cached or getattr(self, '_cache_tokens', 0):
-                self.reset()
-            reused = 0
+            # A Qwen chat template may rewrite an earlier assistant prefix
+            # (notably empty thinking tags). Recover only an exact, previously
+            # saved chunk boundary; never reuse the changed token suffix.
+            checkpoint = getattr(self, '_continuation_checkpoint', None)
+            length = len(checkpoint['tokens']) if checkpoint is not None else 0
+            can_restore = (not per_image and checkpoint is not None and 0 < length < len(full)
+                           and full[:length] == checkpoint['tokens']
+                           and getattr(self, '_cache_tokens', 0) == reused and length <= reused)
+            restored = (can_restore and restore_hybrid_prefill(
+                checkpoint['snapshot'], dirty_length=reused))
+            if restored:
+                self.cached = list(checkpoint['tokens'])
+                self._cache_tokens = reused = length
+                self.last_position = checkpoint['position']
+            else:
+                if self.cached or getattr(self, '_cache_tokens', 0):
+                    self.reset()
+                reused = 0
         if len(full) > self.bucket:
             raise ValueError(f"static bucket {self.bucket} is smaller than the {len(full)}-token conversation")
         vision = None
@@ -476,7 +495,17 @@ class Session:
                 at += self.chunk
             if at < len(full):
                 segments.append(("prefill", at, len(full)))
+        # A single checkpoint immediately before the last prefill segment
+        # bounds device memory and retains a full chunk-aligned prefix.
+        checkpoint_at = (segments[-1][1] if getattr(self, '_capture_hybrid_checkpoint', False)
+                         and not per_image and self.chunk and len(segments) > 1 else None)
+        self._continuation_checkpoint = None
+        new_checkpoint = None
         for kind, a, b in segments:
+            if checkpoint_at is not None and a == checkpoint_at and a > 0:
+                snapshot = snapshot_hybrid_prefill(self.cache, a)
+                if snapshot is not None:
+                    new_checkpoint = dict(tokens=full[:a], position=positions[..., a - 1:a], snapshot=snapshot)
             graphs = counters["stats"]["unique_graphs"]
             started = time.perf_counter()
             with torch.no_grad():
@@ -490,6 +519,7 @@ class Session:
         self.cached = full
         self._cache_tokens = len(full)
         self.last_position = positions[..., -1:]
+        self._continuation_checkpoint = new_checkpoint
         return logits, rows, reused
 
     def step(self, token):
@@ -942,7 +972,7 @@ def snapshot_hybrid_prefill(cache, valid_length):
                 linear=linear, signatures=signatures, tensors=tensors, copies=copies, valid_length=valid_length)
 
 
-def restore_hybrid_prefill(snapshot):
+def restore_hybrid_prefill(snapshot, *, dirty_length=None):
     """Restore the saved tensors only after every cache guard still matches."""
     if snapshot is None:
         return False
@@ -953,7 +983,9 @@ def restore_hybrid_prefill(snapshot):
     lengths = _static_attention_lengths(snapshot['statics'], snapshot['valid_length'])
     if lengths is None or any(a is not b for a, b in zip(lengths, snapshot['lengths'], strict=True)):
         return False
-    tails = _static_tail_views(snapshot['statics'], snapshot['valid_length'], snapshot['valid_length'] + 1)
+    if dirty_length is None:
+        dirty_length = snapshot['valid_length'] + 1
+    tails = _static_tail_views(snapshot['statics'], snapshot['valid_length'], dirty_length)
     if tails is None:
         return False
     for layer, before in zip(snapshot['linear'], snapshot['signatures'], strict=True):
@@ -1657,6 +1689,8 @@ class ChatApplication:
             gc.collect()
             reference_seconds = time.perf_counter() - reference_started
         session = self.device_session()
+        session._capture_hybrid_checkpoint = (keep_history and session.device == 'tnca'
+                                              and os.environ.get('TNCA_HYBRID_PREFIX_CHECKPOINT', '0') == '1')
         session.wait_for_cleanup()
         per_image, vision_calls = session.vision_features(inputs)
         # Teacher-forced diagnostics need only the reference's actual steps;

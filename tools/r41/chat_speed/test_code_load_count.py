@@ -89,11 +89,12 @@ class CodeLoadTests(unittest.TestCase):
         view = driver._ModuleView(first, 'first', {'identity': {'kernel_name': 'a'}})
         session._modules = [first, second]
         blocker = types.SimpleNamespace(_task={'module': view}, terminal=False)
+        last_blocker = types.SimpleNamespace(_task={'module': first}, terminal=False)
         unrelated = types.SimpleNamespace(_task={'module': second}, terminal=False)
-        session._active_events = {1: blocker, 2: unrelated}
+        session._active_events = {1: blocker, 2: unrelated, 3: last_blocker}
         session.wait = mock.Mock()
         session.wait_for_module(view)
-        session.wait.assert_called_once_with(blocker, None)
+        session.wait.assert_called_once_with(last_blocker, None)
         session._active_events.pop(2)
         with self.assertRaises(BufferBusy):
             session.unload(second)

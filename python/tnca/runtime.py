@@ -1621,9 +1621,10 @@ class Session:
             self._check_usable()
             blockers = [event for event in self._active_events.values()
                         if getattr(event._task['module'], '_resident', event._task['module']) is module]
-        for event in blockers:
-            if not event.terminal:
-                self.wait(event, timeout)
+        # The session executes admitted events in FIFO order. Completion of
+        # the last matching event implies completion of all earlier matches.
+        if blockers and not blockers[-1].terminal:
+            self.wait(blockers[-1], timeout)
         return True
 
     @contextmanager

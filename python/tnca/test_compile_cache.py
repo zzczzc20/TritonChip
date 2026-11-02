@@ -102,18 +102,20 @@ class CacheNamespaceTests(unittest.TestCase):
         self.assertNotEqual(cache.namespace('source', dict(base, TNCA_TUNE='1'), {}, {}),
                             cache.namespace('source', dict(faster, TNCA_TUNE='1'), {}, {}))
 
-    def test_cache_key_bookkeeping_preserves_previous_untuned_source_digest(self):
+    def test_runtime_bookkeeping_preserves_previous_untuned_source_digests(self):
         import hashlib
         from unittest import mock
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            code = root / 'compile_cache.py'
-            code.write_text('old bookkeeping')
-            old_digest = hashlib.sha256(code.read_bytes()).digest()
-            with mock.patch.object(cache, '_UNTUNED_CACHE_KEY_IMPLEMENTATION', old_digest):
+            names = ('compile_cache.py', 'eos_guard.py', 'code_residency.py')
+            for name in names:
+                (root / name).write_text('old ' + name)
+            old = {name: hashlib.sha256((root / name).read_bytes()).digest() for name in names}
+            with mock.patch.object(cache, '_UNTUNED_RUNTIME_SOURCE_IDENTITIES', old):
                 old = cache.source_fingerprint({'tnca': root}, include_runtime=False)
                 tuned = cache.source_fingerprint({'tnca': root}, include_runtime=True)
-                code.write_text('new bookkeeping')
+                for name in names:
+                    (root / name).write_text('new ' + name)
                 self.assertEqual(old, cache.source_fingerprint({'tnca': root}, include_runtime=False))
                 self.assertNotEqual(tuned, cache.source_fingerprint({'tnca': root}, include_runtime=True))
 

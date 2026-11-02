@@ -27,11 +27,14 @@ _UNTUNED_RUNTIME_ONLY = frozenset({'TNCA_BACKEND_ARGS', 'TNCA_OPERATING_CLOCK_EV
 _SOURCE_SUFFIXES = frozenset({'.py', '.c', '.cpp', '.cc', '.h', '.hpp', '.td',
                               '.def', '.inc', '.cmake', '.json', '.toml', '.yaml', '.yml'})
 _UNTUNED_RUNTIME_FILES = frozenset({'runtime.py', 'transport.py'})
-# Cache-key bookkeeping does not change an untuned generated graph. Preserve
-# the previous bookkeeping file's digest so this fix can use already-built
-# artifacts immediately. Bump only if this module starts changing codegen.
-_UNTUNED_CACHE_KEY_IMPLEMENTATION = bytes.fromhex(
-    '59172d7585c1c40304c4f515c13abb89b1066569dd9faf9876788bbecac8eb46')
+# These files only control runtime execution or cache bookkeeping. Preserve
+# their previous digests so already-built untuned graphs remain usable. Bump
+# an entry if that file ever starts changing generated graph semantics.
+_UNTUNED_RUNTIME_SOURCE_IDENTITIES = {
+    'compile_cache.py': bytes.fromhex('59172d7585c1c40304c4f515c13abb89b1066569dd9faf9876788bbecac8eb46'),
+    'eos_guard.py': bytes.fromhex('ac0f4afd4d4a1bb29d926b0277448e718064b8373524fff40f1400065700aaeb'),
+    'code_residency.py': bytes.fromhex('afebaf5e6aae31bdfcda5531189619d3bb4ca885669193d334ee1f4419ea09c8'),
+}
 
 
 def semantic_environment(environ):
@@ -68,8 +71,10 @@ def source_fingerprint(trees, files=None, *, include_runtime=True):
                     and '__pycache__' not in path.parts and not test_file and not runtime_file):
                 name = f'{label}/{path.relative_to(root).as_posix()}'
                 digest.update(name.encode() + b'\0')
-                if label == 'tnca' and relative.as_posix() == 'compile_cache.py' and not include_runtime:
-                    digest.update(_UNTUNED_CACHE_KEY_IMPLEMENTATION)
+                stable = (_UNTUNED_RUNTIME_SOURCE_IDENTITIES.get(relative.as_posix())
+                          if label == 'tnca' and not include_runtime else None)
+                if stable is not None:
+                    digest.update(stable)
                 else:
                     digest.update(hashlib.sha256(path.read_bytes()).digest())
     for label, path in sorted((files or {}).items()):

@@ -102,12 +102,14 @@ def compare_logits(reference, candidate):
 
 def generation_stats(rows):
     decode = [row for row in rows if row["kind"] == "decode"]
-    seconds = sum(row["seconds"] for row in decode)
+    warm_decode = sum(row.get('decode_seconds_in_warmup', 0.0) for row in decode)
+    seconds = sum(row["seconds"] for row in decode) + warm_decode
     warm_prefill = (rows[0].get('prefill_seconds_in_warmup', 0.0) if rows else 0.0)
     return dict(generated_tokens=len(rows), decode_steps=len(decode),
                 prefill_seconds=(rows[0]["seconds"] + warm_prefill) if rows else 0.0,
                 prefill_seconds_already_in_warmup=warm_prefill,
                 decode_seconds=seconds,
+                decode_seconds_already_in_warmup=warm_decode,
                 mean_decode_seconds_per_token=seconds / len(decode) if decode else None,
                 decode_tokens_per_second=len(decode) / seconds if decode and seconds > 0 else None,
                 generation_seconds=sum(row["seconds"] for row in rows))
@@ -232,6 +234,8 @@ class Session:
     the final short block through prefill, so no token in the prompt is silently treated as a decode step.
     Prompts that carry images are prefilled whole (their image tokens must stay in one call)."""
 
+    supports_real_warmup_feedback = True
+
     def __init__(self, model, spec, device, bucket, prefill_chunk=0):
         self.model, self.spec, self.device, self.bucket, self.chunk = model, spec, device, bucket, prefill_chunk
         if prefill_chunk < 0:
@@ -255,6 +259,7 @@ class Session:
         self._cache_tokens = 0    # host metadata; never read a device tensor
         self.last_position = None
         self._warm_prefill = None
+        self._warm_feedback = None
         self._warm_prefill_mode = 'not-run'
         self._pending_reset = False
         self._cleanup_lock = threading.RLock()
@@ -282,6 +287,7 @@ class Session:
             self.cached, self.last_position = [], None
             self._cache_tokens = 0
             self._warm_prefill = None
+            self._warm_feedback = None
             self._pending_reset = False
             self.resets += 1
 
@@ -345,6 +351,7 @@ class Session:
             self.cached, self.last_position = [], None
             self._cache_tokens = 0
             self._warm_prefill = None
+            self._warm_feedback = None
             self._pending_reset = True
 
     def vision_features(self, inputs):
@@ -497,7 +504,7 @@ class Session:
         self._cache_tokens += 1
         return logits
 
-    def warmup_decode(self, inputs, per_image=None, capture=None):
+    def warmup_decode(self, inputs, per_image=None, capture=None, real_feedback=False):
         """Compile against a populated prompt; optionally retain its exact KV state."""
         self.wait_for_cleanup()
         if getattr(self, '_pending_reset', False):
@@ -515,6 +522,28 @@ class Session:
             prefill_started = time.perf_counter()
             prefill = capture("prefill", lambda: self.prefill_prompt(inputs, per_image))
             length, position = (self._cache_tokens, self.last_position) if reuse else (None, None)
+            if (reuse and real_feedback and position is not None and len(self.cached) == length
+                    and inputs['input_ids'].device.type == 'cpu'):
+                # Warm the decode graph with the *actual* selected first
+                # token. This result is the real second-token logits, so the
+                # prompt and recurrent cache need neither a snapshot nor a
+                # dummy decode followed by a rewind and another decode.
+                from tnca.torch_device import MEMORY
+                MEMORY.synchronize()
+                prefill_seconds = time.perf_counter() - prefill_started
+                token = capture("selection", lambda: self.greedy(prefill[0].reshape(-1)))
+                decode_started = time.perf_counter()
+                with transfer_meter(True) as decode_meter:
+                    result = capture("decode", lambda: self.step_device(token))
+                    decode_meter.mem.synchronize()
+                decode_seconds = time.perf_counter() - decode_started
+                if self._cache_tokens != length + 1:
+                    raise RuntimeError('warm decode advanced an unexpected cache length')
+                self._warm_prefill = (inputs, list(self.cached), per_image, prefill, prefill_seconds)
+                self._warm_feedback = (token, result, position, decode_seconds, decode_meter.summary())
+                self._warm_prefill_mode = 'real-first-decode'
+                retained = True
+                return result
             token = torch.zeros((1, 1), dtype=torch.long).to(self.dev)
             # Uploading the dummy token drains the prefill queue, so this
             # captures its full wall span instead of just enqueue time.
@@ -544,10 +573,15 @@ class Session:
         if saved is None:
             return None
         original_inputs, tokens, images, prefill, seconds = saved
+        expected = len(tokens) + (1 if getattr(self, '_warm_feedback', None) is not None else 0)
         if (original_inputs is inputs and images is per_image
                 and tokens == inputs['input_ids'][0].tolist()
-                and self.cached == tokens and self._cache_tokens == len(tokens)):
+                and self.cached == tokens and self._cache_tokens == expected):
             return prefill, seconds
+        if getattr(self, '_warm_feedback', None) is not None:
+            # The saved decode consumed a token, so no caller can use that
+            # recurrent state after rejecting its associated prompt.
+            self.reset()
         return None
 
 
@@ -860,11 +894,17 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
     # a dummy token after populating the prompt cache; record all transfers
     # separately and clear the cache before the actual prompt. Real decode
     # remains subject to the unchanged zero-read rule on every step.
-    warmup = None
+    warmup, warm_feedback = None, None
     if not code_by_role.get("decode") and session.prompts == 0:
         started = time.perf_counter()
         with transfer_meter(True) as warmup_meter:
-            warmup_logits = session.warmup_decode(inputs, per_image, capture)
+            real_feedback = (getattr(session, 'supports_real_warmup_feedback', False)
+                             and os.environ.get('TNCA_REUSE_FIRST_DECODE', '1') == '1'
+                             and new_tokens > 1 and not forced_tokens and not queue_steps)
+            if real_feedback:
+                warmup_logits = session.warmup_decode(inputs, per_image, capture, real_feedback=True)
+            else:
+                warmup_logits = session.warmup_decode(inputs, per_image, capture)
             warmup_meter.mem.synchronize()
         if warmup_logits.device.type != "tnca":
             raise RuntimeError("decode warmup returned a host tensor")
@@ -892,6 +932,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                         logits, calls, reused = capture("prefill", lambda: session.prefill_prompt(inputs, per_image))
                     else:
                         (logits, calls, reused), warm_prefill_seconds = saved_prefill
+                        warm_feedback = getattr(session, '_warm_feedback', None)
+                        session._warm_feedback = None
                     # A chunked prompt can compile the one-token decode graph before
                     # generation starts. Attribute that captured wrapper to decode too.
                     if any(c["kind"] == "token" and c["new_graphs"] for c in calls):
@@ -900,11 +942,15 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 else:
                     # A forced token is a test input; otherwise feedback remains on TNCA.
                     feed = teacher[index - 1] if index - 1 < len(teacher) else current
-                    with session._decode_code_trace.step():
-                        logits = capture("decode", lambda: session.step_device(
-                            feed, position_batch[index - 1], host_positions[index - 1])
-                            if queue_steps else session.step_device(feed))
-                current = capture("selection", lambda: session.greedy(logits.reshape(-1)))
+                    if index == 1 and warm_feedback is not None:
+                        logits = warm_feedback[1]
+                    else:
+                        with session._decode_code_trace.step():
+                            logits = capture("decode", lambda: session.step_device(
+                                feed, position_batch[index - 1], host_positions[index - 1])
+                                if queue_steps else session.step_device(feed))
+                current = (warm_feedback[0] if index == 0 and warm_feedback is not None
+                           else capture("selection", lambda: session.greedy(logits.reshape(-1))))
                 if queue_steps and index == 0:
                     host_positions, position_batch = stage_decode_positions(session.last_position, new_tokens, session.dev)
                 if not queue_steps or index == 0:
@@ -913,7 +959,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 queue_anchor = time.time()
             if logits.device.type != "tnca" or current.device.type != "tnca":
                 raise RuntimeError("device model or token selection returned a host tensor")
-            position_history.append(getattr(session, 'last_position', None))
+            position_history.append(warm_feedback[2] if index == 0 and warm_feedback is not None
+                                    else getattr(session, 'last_position', None))
             elapsed = time.perf_counter() - started
             if retain_logits and (logit_limit is None or len(device_logits) < logit_limit):
                 device_logits.append(logits)
@@ -928,6 +975,10 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
                 row['prefill_from_warmup'] = saved_prefill is not None
                 if saved_prefill is not None:
                     row['prefill_seconds_in_warmup'] = warm_prefill_seconds
+            elif index == 1 and warm_feedback is not None:
+                row['decode_from_warmup'] = True
+                row['decode_seconds_in_warmup'] = warm_feedback[3]
+                row['warmup_decode_transfers'] = warm_feedback[4]
             rows.append(row)
             if queue_steps and index:
                 queued_meters.append((row, meter))
@@ -1040,6 +1091,8 @@ def run_device_generation(session, processor, spec, inputs, prompt_text, *, new_
         clock_hz = None
     decode_rows = [row for row in rows if row['kind'] == 'decode']
     cycles = [row['transfers_inside_step']['device_cycles'] for row in decode_rows]
+    cycles.extend(row['warmup_decode_transfers']['device_cycles'] for row in decode_rows
+                  if 'warmup_decode_transfers' in row)
     if clock_hz and clock_hz > 0 and cycles and all(c is not None for c in cycles) and stats['decode_seconds'] > 0:
         stats['decode_device_cycles'] = sum(cycles)
         stats['decode_estimated_non_device_wall_fraction'] = 1 - sum(cycles) / clock_hz / stats['decode_seconds']

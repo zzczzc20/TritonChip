@@ -136,6 +136,49 @@ class HybridPrefillContinuationTests(unittest.TestCase):
         return self.model(input_ids=torch.tensor([tokens]), past_key_values=cache,
                           use_cache=True).last_hidden_state
 
+    def test_real_first_decode_reuse_matches_clean_hybrid_continuation(self):
+        clean, warmed = self.make_cache(), self.make_cache()
+        prompt = [7, 4, 1, 9]
+        inputs = {'input_ids': torch.tensor([prompt])}
+        session = object.__new__(chat.Session)
+        session.device, session.dev, session.cache = 'tnca', torch.device('cpu'), warmed
+        session.cached, session._cache_tokens, session.last_position = [], 0, None
+        session.greedy = lambda logits: logits.argmax().reshape(1, 1)
+        session.reset = mock.Mock()
+        def prefill(data, _images):
+            tokens = data['input_ids'][0].tolist()
+            logits = self.call(warmed, tokens)[0, -1]
+            session.cached, session._cache_tokens = tokens, len(tokens)
+            session.last_position = torch.tensor([len(tokens) - 1])
+            return logits, [], 0
+        def decode(token):
+            logits = self.call(warmed, [int(token.item())])[0, -1]
+            session._cache_tokens += 1
+            session.last_position = session.last_position + 1
+            return logits
+        session.prefill_prompt, session.step_device = prefill, decode
+        import tnca.torch_device as td
+        class Meter:
+            def __enter__(self):
+                self.mem = td.MEMORY
+                return self
+            def __exit__(self, *args):
+                return False
+            def summary(self):
+                return {}
+        with torch.inference_mode(), mock.patch.object(td.MEMORY, 'synchronize'), \
+             mock.patch.object(chat, 'transfer_meter', lambda *args, **kwargs: Meter()):
+            expected_prefill = self.call(clean, prompt)[0, -1]
+            first = int(expected_prefill.argmax())
+            expected_decode = self.call(clean, [first])[0, -1]
+            actual_decode = session.warmup_decode(inputs, real_feedback=True)
+            saved = session.consume_warm_prefill(inputs, None)
+            self.assertTrue(torch.equal(saved[0][0], expected_prefill))
+            self.assertTrue(torch.equal(actual_decode, expected_decode))
+            self.assertEqual(int(session._warm_feedback[0].item()), first)
+            self.assertTrue(torch.equal(self.call(clean, [3]), self.call(warmed, [3])))
+        session.reset.assert_not_called()
+
     def test_dummy_decode_restore_matches_clean_hybrid_continuation_bitwise(self):
         clean, warmed = self.make_cache(), self.make_cache()
         prompt = [7, 4, 1, 9, 5]

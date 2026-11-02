@@ -26,9 +26,12 @@ def finalize_user_visible_metrics(timing, elapsed_seconds, scope):
     """Replace the provisional return time with the output-flush observation."""
     if elapsed_seconds < timing['prompt_to_return_seconds']:
         raise ValueError('output cannot precede report creation')
-    overlap = timing.get('prefill_seconds_already_in_warmup', 0.0)
-    if overlap < 0 or overlap > min(timing['prefill_seconds'],
-                                    timing['compile_and_decode_warmup_seconds']) + 1e-6:
+    prefill_overlap = timing.get('prefill_seconds_already_in_warmup', 0.0)
+    decode_overlap = timing.get('decode_seconds_already_in_warmup', 0.0)
+    if (prefill_overlap < 0 or decode_overlap < 0
+            or prefill_overlap > timing['prefill_seconds'] + 1e-6
+            or decode_overlap > timing['decode_seconds'] + 1e-6
+            or prefill_overlap + decode_overlap > timing['compile_and_decode_warmup_seconds'] + 1e-6):
         raise ValueError('prefill overlap must be contained in both measured spans')
     timing['prompt_to_return_seconds'] = elapsed_seconds
     timing['returned_token_ids_per_second'] = (timing['returned_token_ids'] / elapsed_seconds
@@ -38,7 +41,7 @@ def finalize_user_visible_metrics(timing, elapsed_seconds, scope):
     measured = sum(timing[key] for key in ('compile_and_decode_warmup_seconds', 'prefill_seconds',
                                            'decode_seconds', 'output_retrieval_seconds',
                                            'reference_check_seconds'))
-    measured -= overlap
+    measured -= prefill_overlap + decode_overlap
     timing['other_wall_seconds'] = max(0.0, elapsed_seconds - measured)
     timing['accounted_span_exceeds_wall'] = measured > elapsed_seconds + 1e-6
     timing['scope'] = scope
@@ -58,10 +61,14 @@ def user_visible_metrics(report, elapsed_seconds, special_ids=(), reference_seco
     if prefill_overlap < 0 or prefill_overlap > min(prefill, warmup) + 1e-6:
         raise ValueError('prefill overlap must be contained in both measured spans')
     decode = stats.get('decode_seconds', 0.0) or 0.0
+    decode_overlap = stats.get('decode_seconds_already_in_warmup', 0.0) or 0.0
+    if (decode_overlap < 0 or decode_overlap > decode + 1e-6
+            or prefill_overlap + decode_overlap > warmup + 1e-6):
+        raise ValueError('decode overlap must be contained in both measured spans')
     retrieval = report.get('output_retrieval_seconds', 0.0) or 0.0
-    decode_steps = [row.get('seconds') for row in report.get('steps', [])
-                    if row.get('kind') == 'decode']
-    measured = warmup + prefill + decode + retrieval + reference_seconds - prefill_overlap
+    decode_steps = [(row.get('seconds') or 0.0) + row.get('decode_seconds_in_warmup', 0.0)
+                    for row in report.get('steps', []) if row.get('kind') == 'decode']
+    measured = warmup + prefill + decode + retrieval + reference_seconds - prefill_overlap - decode_overlap
     return {
         'prompt_to_return_seconds': elapsed_seconds,
         'returned_token_ids': len(tokens),
@@ -72,6 +79,7 @@ def user_visible_metrics(report, elapsed_seconds, special_ids=(), reference_seco
         'prefill_seconds': prefill,
         'prefill_seconds_already_in_warmup': prefill_overlap,
         'decode_seconds': decode,
+        'decode_seconds_already_in_warmup': decode_overlap,
         'decode_step_seconds': decode_steps,
         'output_retrieval_seconds': retrieval,
         'reference_check_seconds': reference_seconds,

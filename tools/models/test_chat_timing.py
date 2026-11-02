@@ -42,6 +42,21 @@ class TimingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             user_visible_metrics(report, 10.0)
 
+    def test_real_decode_inside_warmup_is_counted_once(self):
+        report = {'generated_tokens': [1, 2], 'decode_warmup': {'seconds': 8.0},
+                  'statistics': {'prefill_seconds': 3.0, 'prefill_seconds_already_in_warmup': 2.0,
+                                 'decode_seconds': 4.0, 'decode_seconds_already_in_warmup': 3.0},
+                  'steps': [{'kind': 'prefill', 'seconds': 1.0},
+                            {'kind': 'decode', 'seconds': 1.0, 'decode_seconds_in_warmup': 3.0}]}
+        timing = user_visible_metrics(report, 15.0)
+        self.assertEqual(timing['decode_step_seconds'], [4.0])
+        self.assertEqual(timing['other_wall_seconds'], 5.0)
+        finalize_user_visible_metrics(timing, 16.0, 'through stdout')
+        self.assertEqual(timing['other_wall_seconds'], 6.0)
+        report['statistics']['decode_seconds_already_in_warmup'] = 7.0
+        with self.assertRaises(ValueError):
+            user_visible_metrics(report, 15.0)
+
     def test_compilation_subtotal_and_cache_hits_do_not_double_count_wall_time(self):
         metrics = {'_compile.compile_inner': [10.0]}
         counters = {'inductor': {'fxgraph_cache_hit': 2, 'fxgraph_cache_miss': 1}}

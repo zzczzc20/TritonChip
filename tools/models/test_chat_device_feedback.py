@@ -92,8 +92,24 @@ class Session:
 
 class DeviceFeedbackTests(unittest.TestCase):
     def run_case(self, choices, forced=None, prefill_compiles_decode=False, fallback_hook=None,
-                 retain_logits=True, logit_limit=None, rewind_hook=None, queue=False):
+                 retain_logits=True, logit_limit=None, rewind_hook=None, queue=False, real_warmup=False):
         session = Session(choices, prefill_compiles_decode)
+        if real_warmup:
+            session.supports_real_warmup_feedback = True
+            def warmup(inputs, per_image=None, capture=None, real_feedback=False):
+                assert real_feedback
+                prefill = capture('prefill', lambda: session.prefill_prompt(inputs, per_image))
+                position = session.last_position
+                token = capture('selection', lambda: session.greedy(prefill[0].reshape(-1)))
+                logits = capture('decode', lambda: session.step_device(token))
+                session._warm_prefill = (prefill, 0.1)
+                session._warm_feedback = (token, logits, position, 0.2, Meter().summary())
+                return logits
+            def consume(inputs, per_image):
+                saved, session._warm_prefill = session._warm_prefill, None
+                return saved
+            session.warmup_decode = warmup
+            session.consume_warm_prefill = consume
         session.synchronizations = []
         processor = types.SimpleNamespace(batch_decode=lambda ids, **kw: [str(ids.tolist())])
         spec = types.SimpleNamespace(name='test', repo='test', revision='test')
@@ -128,6 +144,49 @@ class DeviceFeedbackTests(unittest.TestCase):
                                          'prompt', new_tokens=len(choices), forced_tokens=forced,
                                          retain_logits=retain_logits, logit_limit=logit_limit)
         return session, report
+
+    def test_real_warmup_reuses_the_first_decode_and_keeps_output_order(self):
+        baseline, expected = self.run_case([1, 2, 1])
+        optimized, actual = self.run_case([1, 2, 1], real_warmup=True)
+        self.assertEqual(actual['generated_tokens'], expected['generated_tokens'])
+        self.assertEqual(optimized.fed, baseline.fed)
+        self.assertEqual(optimized.cached, baseline.cached)
+        self.assertEqual(optimized._cache_tokens, baseline._cache_tokens)
+        self.assertEqual(int(optimized.last_position.item()), int(baseline.last_position.item()))
+        self.assertTrue(actual['steps'][1]['decode_from_warmup'])
+        self.assertEqual(actual['steps'][1]['decode_seconds_in_warmup'], 0.2)
+        self.assertEqual(actual['statistics']['decode_seconds_already_in_warmup'], 0.2)
+
+    def test_real_warmup_retains_the_actual_feedback_without_rewind(self):
+        session = object.__new__(chat.Session)
+        session.device, session.dev, session.cache = 'tnca', torch.device('cpu'), object()
+        session.cached, session._cache_tokens, session.last_position = [], 0, None
+        inputs = {'input_ids': torch.tensor([[2, 4, 8]])}
+        def prefill(data, images):
+            session.cached = data['input_ids'][0].tolist()
+            session._cache_tokens = len(session.cached)
+            session.last_position = torch.tensor([2])
+            return torch.tensor([1., 5., 2.]), [], 0
+        def decode(token):
+            self.assertEqual(token.tolist(), [[1]])
+            session._cache_tokens += 1
+            session.last_position = session.last_position + 1
+            return torch.tensor([3., 2., 1.])
+        session.prefill_prompt, session.step_device = prefill, decode
+        session.greedy = lambda logits: logits.argmax().reshape(1, 1)
+        session.reset = mock.Mock()
+        import tnca.torch_device as td
+        with mock.patch.dict(os.environ, {'TNCA_REUSE_WARM_PREFILL': '1'}), \
+             mock.patch.object(td.MEMORY, 'synchronize'), \
+             mock.patch.object(chat, 'transfer_meter', lambda *a, **kw: Meter()), \
+             mock.patch.object(chat, 'rewind_attention_cache', side_effect=AssertionError('unneeded rewind')):
+            result = session.warmup_decode(inputs, real_feedback=True)
+        self.assertTrue(torch.equal(result, torch.tensor([3., 2., 1.])))
+        self.assertEqual(session._warm_prefill_mode, 'real-first-decode')
+        self.assertEqual(session._cache_tokens, 4)
+        self.assertEqual(int(session.last_position.item()), 3)
+        self.assertIsNotNone(session.consume_warm_prefill(inputs, None))
+        session.reset.assert_not_called()
     def test_feedback_and_teacher_tokens(self):
         session, report = self.run_case([1, 2, 1], [2, 0])
         self.assertEqual(session.fed, [2, 0])

@@ -332,6 +332,8 @@ class TransferMeter:
         self.mem = td.MEMORY
         self.compact = compact
         self.deferred = deferred
+        self._prior_read = self.mem.__dict__.get('read')
+        self._prior_write = self.mem.__dict__.get('write')
         self.stats = dict(host_read_calls=0, host_read_bytes=0, host_write_calls=0, host_write_bytes=0)
         self._r, self._w = self.mem.read, self.mem.write
 
@@ -368,7 +370,13 @@ class TransferMeter:
         try:
             self._ctx.__exit__(*exc)
         finally:
-            del self.mem.read, self.mem.write     # back to the class methods
+            # Nested meters must restore the outer meter instead of removing
+            # its hooks. Ordinary meters restore the class methods as before.
+            for name, prior in (('read', self._prior_read), ('write', self._prior_write)):
+                if prior is None:
+                    delattr(self.mem, name)
+                else:
+                    setattr(self.mem, name, prior)
         return False
 
     def summary(self):

@@ -40,6 +40,8 @@ removed from the current tree to keep the PR reviewable. Summaries and measured
 results remain. The exact original files remain in commit `14c4f7fb7964f377154f0bfe2fbb3b863ca70541`;
 restore an individual original when needed with `git restore --source=14c4f7fb7964f377154f0bfe2fbb3b863ca70541 --worktree -- PATH`.
 List removed paths with `git diff --name-only --diff-filter=D 14c4f7fb HEAD -- evidence/r41/hbm_bw`.
+Selected historical TLM JSON files are kept losslessly as `.json.gz`; the prediction and G4 report tools read
+them directly. To restore an original JSON file for another tool, run `gzip -dk PATH.json.gz`.
 
 ## Which tool for which question
 

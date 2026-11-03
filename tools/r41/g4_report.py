@@ -9,6 +9,7 @@ model) and prints the markdown tables quoted in G4_DESIGN.md. Nothing is
 typed in: every value is read from those files.
 """
 import argparse
+import gzip
 import json
 import re
 from collections import defaultdict
@@ -18,6 +19,17 @@ ROOT = Path(__file__).resolve().parents[2]
 TARGET = 320.0 / 3.0
 FAMS = ['copy', 'clone', 'add', 'sub', 'mul', 'div', 'relu', 'silu', 'gelu', 'exp', 'sigmoid', 'cast',
         'sum', 'mean', 'max', 'layernorm', 'rmsnorm', 'softmax']
+
+
+def read_json(path):
+    """Read a recorded report, including its losslessly compressed form."""
+    path = Path(path)
+    if not path.is_file() and path.suffix != '.gz':
+        path = path.with_name(path.name + '.gz')
+    if path.suffix == '.gz':
+        with gzip.open(path, 'rt', encoding='utf-8') as stream:
+            return json.load(stream)
+    return json.loads(path.read_text(encoding='utf-8'))
 
 
 def fmt(x):
@@ -129,7 +141,7 @@ def main():
     a = ap.parse_args()
     base = Path(a.dir)
     print('## Issue ceilings (analytic on compiled code)\n')
-    print(issue_table(json.loads((base/'issue_bound.json').read_text())))
+    print(issue_table(read_json(base/'issue_bound.json')))
     arms = [(f'tiled mode {m}', base/f'model_small_tiled{m}'/'suite_model.json') for m in (1, 2)]
     if all(p.exists() for _n, p in arms):
         print('\n## Tiled lowering, small points (model-prediction-uncalibrated, NON-DEFAULT TNCA_TILED_POINTWISE)\n')

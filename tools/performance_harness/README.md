@@ -235,7 +235,8 @@ The run-2 machinery in `tools/r41/run2_board/`:
 - `watch_plan.py --plan PLAN --image XCLBIN --out OUT [--poll 20]` waits for a complete plan and starts its guarded
   queue once.
 - `auto.py --plan PLAN --image XCLBIN --program P --out OUT [--sysfs ROOT] [--poll 5]` runs the approved plan after
-  a guarded idle interval. Missing inputs, malformed sysfs, a changed image or a failed stage stop the queue; it never
+  a guarded idle interval and holds the same shared lease as the performance and interactive queues. It rechecks idle
+  after acquiring that lease. Missing inputs, malformed sysfs, a changed image or a failed stage stop the queue; it never
   resets a device, kills a process or retries a failed load. `stage.py --root --out --python --registration` runs one
   registered stage.
 - `idle_monitor.py` records a monotonic idle interval without touching the card; it hard-codes `~/r41run3`.

@@ -83,6 +83,24 @@ class IdleTracker:
         return now - self.start >= self.seconds
 
 
+def claim_idle_lease(tracker, lease, probe_again, *, clock=time.monotonic):
+    """Claim the shared queue lock only while the same idle interval holds."""
+    try:
+        fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        # Another cooperative user holds the board; keep tracking actual idle.
+        return False
+    keep = False
+    try:
+        # The card may have changed between the last sample and the lock.
+        # IdleTracker also rejects a changed UUID, execution count or gap.
+        keep = tracker.observe(clock(), probe_again())
+        return keep
+    finally:
+        if not keep:
+            fcntl.flock(lease, fcntl.LOCK_UN)
+
+
 def validate_plan(plan, image):
     if sha(image) != IMAGE_SHA:
         raise ValueError('image hash is not the approved run-2 image')
@@ -164,7 +182,12 @@ def main():
         raise ValueError('program.sh missing')
     env = board_environment()
     a.out.mkdir(parents=True, exist_ok=True)
-    with (a.out / 'queue.lock').open('w') as lock, (a.out / 'queue.jsonl').open('a', buffering=1) as log:
+    # Existing candidate and interactive queues use this same inode. Hold it
+    # from the final idle recheck until all registered stages have finished.
+    shared = Path.home() / 'r41run3' / 'candidate_queue.lock'
+    shared.parent.mkdir(parents=True, exist_ok=True)
+    with (a.out / 'queue.lock').open('w') as lock, shared.open('a') as lease, \
+            (a.out / 'queue.jsonl').open('a', buffering=1) as log:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         def record(kind, **kw):
             log.write(json.dumps(dict(utc=datetime.datetime.now(datetime.timezone.utc).isoformat(), kind=kind, **kw))+'\n')
@@ -174,7 +197,7 @@ def main():
                 row = probe(a.sysfs)
                 ready = tracker.observe(time.monotonic(), row)
                 record('idle-probe', **row)
-                if ready:
+                if ready and claim_idle_lease(tracker, lease, lambda: probe(a.sysfs)):
                     break
             except (OSError, ValueError) as e:
                 tracker = IdleTracker(max_gap=max(15, a.poll * 2.5))

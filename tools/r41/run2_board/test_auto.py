@@ -1,4 +1,5 @@
 import importlib.util
+import fcntl
 from pathlib import Path
 import tempfile
 import unittest
@@ -38,6 +39,31 @@ class IdleTests(unittest.TestCase):
             (dev/'kdsstat').write_text('contexts: 0\n')
             with self.assertRaises(ValueError):
                 auto.probe(tmp)
+
+    def test_busy_shared_lease_preserves_idle_interval(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'board.lock'
+            with path.open('a') as other, path.open('a') as lease:
+                tracker=auto.IdleTracker(seconds=90,max_gap=1000)
+                self.assertFalse(tracker.observe(0,row()))
+                self.assertTrue(tracker.observe(90,row()))
+                fcntl.flock(other,fcntl.LOCK_EX|fcntl.LOCK_NB)
+                self.assertFalse(auto.claim_idle_lease(tracker,lease,lambda: row(),clock=lambda: 91))
+                self.assertEqual(tracker.start,0)
+                fcntl.flock(other,fcntl.LOCK_UN)
+                self.assertTrue(auto.claim_idle_lease(tracker,lease,lambda: row(),clock=lambda: 92))
+                with self.assertRaises(BlockingIOError):
+                    fcntl.flock(other,fcntl.LOCK_EX|fcntl.LOCK_NB)
+
+    def test_busy_after_shared_lease_restarts_idle_and_releases_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'board.lock'
+            with path.open('a') as lease, path.open('a') as other:
+                tracker=auto.IdleTracker(seconds=90,max_gap=1000)
+                tracker.observe(0,row());self.assertTrue(tracker.observe(90,row()))
+                self.assertFalse(auto.claim_idle_lease(tracker,lease,lambda: row(contexts=1),clock=lambda: 91))
+                self.assertIsNone(tracker.start)
+                fcntl.flock(other,fcntl.LOCK_EX|fcntl.LOCK_NB)
 
     def test_incomplete_plan_never_reaches_programming(self):
         with tempfile.TemporaryDirectory() as tmp:

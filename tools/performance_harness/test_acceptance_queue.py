@@ -48,6 +48,15 @@ class WaitingRule(unittest.TestCase):
             return len(attempts) > 1
         self.assertEqual(self.run_wait([idle()],claim=claim),960)
         self.assertEqual(len(attempts),2)
+    def test_observed_busy_recheck_restarts_the_interval(self):
+        attempts=[]
+        def claim(_row):
+            attempts.append(True)
+            # The locked recheck saw a context that disappeared before the
+            # next sample, without incrementing the execution counter.
+            return None if len(attempts) == 1 else True
+        self.assertEqual(self.run_wait([idle()],claim=claim),1860)
+        self.assertEqual(len(attempts),2)
     def test_activity_while_waiting_for_lease_restarts_the_interval(self):
         changed=idle();changed['total_execs']=1
         attempts=[]

@@ -46,8 +46,15 @@ def wait_idle(probe, expected, *, seconds=900, poll_seconds=10, clock=time.monot
                 # A busy cooperative lock does not invalidate an otherwise
                 # continuous idle interval. Keep sampling and retrying; actual
                 # activity or a changed image resets the interval above.
-                if claim is None or claim(row):
+                if claim is None:
                     return row
+                claimed = claim(row)
+                if claimed is True:
+                    return row
+                if claimed is None:
+                    # A recheck under the lease actually saw an interruption;
+                    # only a merely busy lease preserves the idle interval.
+                    idle_since = identity = None
         else:
             idle_since = identity = None
         last = now
@@ -107,7 +114,7 @@ def main():
                         now = experiment.sysfs_probe(declared)
                         if (experiment.board_refusal(board, now) or
                                 now.get('total_execs') != ready.get('total_execs')):
-                            return False
+                            return None
                         board_stack.enter_context(attempt.pop_all())
                         return True
 

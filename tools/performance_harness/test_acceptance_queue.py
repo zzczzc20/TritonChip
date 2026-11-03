@@ -17,12 +17,12 @@ class WaitingRule(unittest.TestCase):
             target=Path(tmp)/'system-python';target.touch()
             torch_python=Path(tmp)/'torchenv-python';torch_python.symlink_to(target)
             self.assertEqual(queue.absolute_path(torch_python),torch_python)
-    def run_wait(self,rows):
+    def run_wait(self,rows,claim=None):
         now=[0];history=[]
         def probe():
             row=rows[min(len(history),len(rows)-1)];history.append(now[0]);return row
         def sleep(t):now[0]+=t
-        queue.wait_idle(probe,IDENTITY,seconds=900,poll_seconds=60,clock=lambda:now[0],sleep=sleep)
+        queue.wait_idle(probe,IDENTITY,seconds=900,poll_seconds=60,clock=lambda:now[0],sleep=sleep,claim=claim)
         return now[0]
     def test_fifteen_elapsed_minutes_not_fifteen_instant_samples(self):
         self.assertEqual(self.run_wait([idle()]),900)
@@ -41,6 +41,21 @@ class WaitingRule(unittest.TestCase):
     def test_unreadable_total_execs_never_counts_as_idle(self):
         bad=idle();bad['total_execs']=None
         self.assertEqual(self.run_wait([bad,idle()]),960)
+    def test_busy_lease_does_not_restart_a_continuous_idle_interval(self):
+        attempts=[]
+        def claim(_row):
+            attempts.append(True)
+            return len(attempts) > 1
+        self.assertEqual(self.run_wait([idle()],claim=claim),960)
+        self.assertEqual(len(attempts),2)
+    def test_activity_while_waiting_for_lease_restarts_the_interval(self):
+        changed=idle();changed['total_execs']=1
+        attempts=[]
+        def claim(_row):
+            attempts.append(True)
+            return len(attempts) > 1
+        self.assertEqual(self.run_wait([idle()]*16+[changed],claim=claim),1860)
+        self.assertEqual(len(attempts),2)
     def test_wrong_image_refused_without_opening(self):
         bad=idle();bad['loaded_uuid']='other'
         with self.assertRaises(RuntimeError):self.run_wait([bad])

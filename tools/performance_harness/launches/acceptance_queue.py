@@ -26,7 +26,7 @@ def absolute_path(path):
     return path.expanduser().absolute()
 
 
-def wait_idle(probe, expected, *, seconds=900, poll_seconds=10, clock=time.monotonic, sleep=time.sleep):
+def wait_idle(probe, expected, *, seconds=900, poll_seconds=10, clock=time.monotonic, sleep=time.sleep, claim=None):
     idle_since = identity = last = None
     while True:
         now, row = clock(), probe()
@@ -43,7 +43,11 @@ def wait_idle(probe, expected, *, seconds=900, poll_seconds=10, clock=time.monot
                 reason = experiment.board_refusal(expected, row)
                 if reason:
                     raise RuntimeError(reason)
-                return row
+                # A busy cooperative lock does not invalidate an otherwise
+                # continuous idle interval. Keep sampling and retrying; actual
+                # activity or a changed image resets the interval above.
+                if claim is None or claim(row):
+                    return row
         else:
             idle_since = identity = None
         last = now
@@ -91,29 +95,32 @@ def main():
             board=experiment.board_identity(spec['board'],resolve)
             # Probe uses the raw device/sysfs declarations plus verified identity.
             declared=dict(spec['board'],**board)
-            while True:
-                ready = wait_idle(lambda: experiment.sysfs_probe(declared), board)
-                with ExitStack() as stack:
-                    try:
-                        stack.enter_context(board_lease(declared['device'], blocking=False))
-                    except BlockingIOError:
-                        time.sleep(10)
-                        continue
-                    # Recheck while holding the existing R41 chat queue lock.
-                    now = experiment.sysfs_probe(declared)
-                    if (experiment.board_refusal(board, now) or
-                            now.get('total_execs') != ready.get('total_execs')):
-                        continue
-                    target=a.out/spec['id']
-                    command=[str(a.python),str(a.root/'tools/performance_harness/experiment.py'),str(manifest),
-                             '--root',str(a.root),'--out',str(target),'--python',str(a.python),'--budget-seconds',str(remaining)]
-                    started=time.monotonic()
-                    with (a.out/(spec['id']+'.log')).open('a') as log:
-                        subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,check=True)
-                    remaining-=time.monotonic()-started
-                    result=json.loads((target/'report.json').read_text())
-                    if result['status']!='completed-experiment':raise RuntimeError(f"{spec['id']}: {result['status']}")
-                    break
+            with ExitStack() as board_stack:
+                def claim(ready):
+                    # Take the same lease as interactive chat and candidates.
+                    # Keep monitoring while another cooperative user holds it.
+                    with ExitStack() as attempt:
+                        try:
+                            attempt.enter_context(board_lease(declared['device'], blocking=False))
+                        except BlockingIOError:
+                            return False
+                        now = experiment.sysfs_probe(declared)
+                        if (experiment.board_refusal(board, now) or
+                                now.get('total_execs') != ready.get('total_execs')):
+                            return False
+                        board_stack.enter_context(attempt.pop_all())
+                        return True
+
+                wait_idle(lambda: experiment.sysfs_probe(declared), board, claim=claim)
+                target=a.out/spec['id']
+                command=[str(a.python),str(a.root/'tools/performance_harness/experiment.py'),str(manifest),
+                         '--root',str(a.root),'--out',str(target),'--python',str(a.python),'--budget-seconds',str(remaining)]
+                started=time.monotonic()
+                with (a.out/(spec['id']+'.log')).open('a') as log:
+                    subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,check=True)
+                remaining-=time.monotonic()-started
+                result=json.loads((target/'report.json').read_text())
+                if result['status']!='completed-experiment':raise RuntimeError(f"{spec['id']}: {result['status']}")
         (a.out/'DONE').write_text('commands completed; per-point acceptance still required\n')
 
 if __name__=='__main__':main()

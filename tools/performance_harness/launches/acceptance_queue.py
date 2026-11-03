@@ -6,6 +6,7 @@ runs only specified experiment manifests, with before/after image guards.
 --check-only performs manifest/shell checks with no sysfs or card access.
 """
 import argparse
+from contextlib import ExitStack
 import importlib.util
 import json
 import os
@@ -17,25 +18,35 @@ import time
 HERE=Path(__file__).resolve()
 sys.path.insert(0,str(HERE.parents[1]))
 import experiment
+sys.path.insert(0, str(HERE.parents[2]))
+from tritonchip_fpga_harness.board_lease import board_lease
 
 
 def absolute_path(path):
     return path.expanduser().absolute()
 
 
-def wait_idle(probe,expected,*,seconds=900,poll_seconds=10,clock=time.monotonic,sleep=time.sleep):
-    idle_since=None
+def wait_idle(probe, expected, *, seconds=900, poll_seconds=10, clock=time.monotonic, sleep=time.sleep):
+    idle_since = identity = last = None
     while True:
-        now=clock();row=probe()
-        # Missing or malformed counters must never count as idle.
-        idle=(row.get('contexts')==0 and row.get('outstanding_execs')==0 and not row.get('client_pid'))
+        now, row = clock(), probe()
+        # total_execs detects work which started and finished between polls.
+        idle = (row.get('contexts') == 0 and row.get('outstanding_execs') == 0
+                and not row.get('client_pid') and isinstance(row.get('total_execs'), int))
+        current = (row.get('loaded_uuid'), row.get('total_execs'),
+                   tuple(row.get('clock_counter_mhz') or ()))
         if idle:
-            if idle_since is None:idle_since=now
-            if now-idle_since>=seconds:
-                reason=experiment.board_refusal(expected,row)
-                if reason:raise RuntimeError(reason)
+            if (idle_since is None or current != identity or last is None
+                    or now < last or now - last > poll_seconds * 1.5):
+                idle_since, identity = now, current
+            if now - idle_since >= seconds:
+                reason = experiment.board_refusal(expected, row)
+                if reason:
+                    raise RuntimeError(reason)
                 return row
-        else:idle_since=None
+        else:
+            idle_since = identity = None
+        last = now
         sleep(poll_seconds)
 
 
@@ -57,9 +68,10 @@ def main():
         if not spec.get('steps') or not any(s['kind']=='fpga' for s in spec['steps']):raise ValueError('board manifest required')
         board=spec['board']
         approved={('30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de',100000000),
-                  ('a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083',90000000)}
+                  ('a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083',90000000),
+                  ('791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09',100000000)}
         if (board['image_sha256'],board['clock_hz']) not in approved:
-            raise ValueError('only already-approved B40/90 or run-1/100 images are admitted')
+            raise ValueError('only approved B40, run-1, or corrected run-2 images are admitted')
         specs.append((path,spec))
     if a.check_only:
         print(json.dumps(dict(status='prepared-only',manifests=[str(p) for p,_ in specs],card_access=False)))
@@ -79,16 +91,29 @@ def main():
             board=experiment.board_identity(spec['board'],resolve)
             # Probe uses the raw device/sysfs declarations plus verified identity.
             declared=dict(spec['board'],**board)
-            wait_idle(lambda:experiment.sysfs_probe(declared),board)
-            target=a.out/spec['id']
-            command=[str(a.python),str(a.root/'tools/performance_harness/experiment.py'),str(manifest),
-                     '--root',str(a.root),'--out',str(target),'--python',str(a.python),'--budget-seconds',str(remaining)]
-            started=time.monotonic()
-            with (a.out/(spec['id']+'.log')).open('a') as log:
-                subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,check=True)
-            remaining-=time.monotonic()-started
-            result=json.loads((target/'report.json').read_text())
-            if result['status']!='completed-experiment':raise RuntimeError(f"{spec['id']}: {result['status']}")
+            while True:
+                ready = wait_idle(lambda: experiment.sysfs_probe(declared), board)
+                with ExitStack() as stack:
+                    try:
+                        stack.enter_context(board_lease(declared['device'], blocking=False))
+                    except BlockingIOError:
+                        time.sleep(10)
+                        continue
+                    # Recheck while holding the existing R41 chat queue lock.
+                    now = experiment.sysfs_probe(declared)
+                    if (experiment.board_refusal(board, now) or
+                            now.get('total_execs') != ready.get('total_execs')):
+                        continue
+                    target=a.out/spec['id']
+                    command=[str(a.python),str(a.root/'tools/performance_harness/experiment.py'),str(manifest),
+                             '--root',str(a.root),'--out',str(target),'--python',str(a.python),'--budget-seconds',str(remaining)]
+                    started=time.monotonic()
+                    with (a.out/(spec['id']+'.log')).open('a') as log:
+                        subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,check=True)
+                    remaining-=time.monotonic()-started
+                    result=json.loads((target/'report.json').read_text())
+                    if result['status']!='completed-experiment':raise RuntimeError(f"{spec['id']}: {result['status']}")
+                    break
         (a.out/'DONE').write_text('commands completed; per-point acceptance still required\n')
 
 if __name__=='__main__':main()

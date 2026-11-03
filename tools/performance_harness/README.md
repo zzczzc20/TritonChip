@@ -24,6 +24,23 @@ Binding rules: [`doc/engineering_discipline.md`](../../doc/engineering_disciplin
 state its provenance, assumptions and measurement uncertainty. Screening results, model predictions and
 diagnostic traces never establish acceptance compliance.
 
+## FPGA harness integration and historical raw reports
+
+`python3 tools/tritonchip_fpga_harness/cli.py board-queue --out OUT --manifest M.json
+--check-only` validates a registered performance queue without board access. Omit
+`--check-only` only when the board is available and the run is authorised. The
+performance queue and the existing R41 chat queue use the same
+`~/r41run3/candidate_queue.lock`; the queue checks 15 continuous idle minutes,
+image, clock and intervening execution before launching. On an R41 shared-card
+host, the FPGA harness refuses its independent direct U280 measurement path.
+Build and link remain available. The queue never programs or resets the card.
+
+Bulky raw synthesis and routed timing logs from earlier HBM exploration are
+removed from the current tree to keep the PR reviewable. Summaries and measured
+results remain. The exact original files remain in commit `14c4f7fb7964f377154f0bfe2fbb3b863ca70541`;
+restore an individual original when needed with `git restore --source=14c4f7fb7964f377154f0bfe2fbb3b863ca70541 --worktree -- PATH`.
+List removed paths with `git diff --name-only --diff-filter=D 14c4f7fb HEAD -- evidence/r41/hbm_bw`.
+
 ## Which tool for which question
 
 | Question | Use | Notes and evidence |
@@ -775,6 +792,22 @@ Tests are listed by glob. Whether a test needs torch or a built model is not sta
 | `tools/r41/chat_delivery/eos_bound.py` | Derive an ideal EOS-stop bound from recorded chat timings | care |
 | `tools/r41/chat_delivery/test_eos_bound.py` | Test EOS-bound accounting and incomplete data rejection | care |
 | `tools/r41/chat_speed/queue_equal_output_board.py` | Gate and queue an opt-in equal-output board session | care |
+### Chat speed and session tools
+
+| Tool | Purpose | Class |
+|---|---|---|
+| `tools/r41/chat_delivery/summarize_session.py` | Summarize recorded chats without card access. | analysis |
+| `tools/r41/chat_delivery/test_summarize_session.py` | Test session summaries on CPU. | test |
+| `tools/r41/chat_speed/bench_chat_board.py` | Queue a reduced-model cold/warm board comparison. | board |
+| `tools/r41/chat_speed/bench_eos_board.py` | Queue an artificial EOS board comparison. | board |
+| `tools/r41/chat_speed/bench_eos_model_entry.py` | Run a reduced-model artificial EOS turn. | board |
+| `tools/r41/chat_speed/bench_hybrid_continue_entry.py` | Compare hybrid-prefix continuation on a reduced model. | board |
+| `tools/r41/chat_speed/bench_mmio_board.py` | Compare MMIO launch latency on the loaded image. | board |
+| `tools/r41/chat_speed/bench_static_continue_entry.py` | Compare static-prefix reuse on reduced conversations. | board |
+| `tools/r41/chat_speed/check_batched_runtime_tlm.py` | Check batched execution on the DP TLM. | model |
+| `tools/r41/chat_speed/interactive_board.py` | Queue full-model interactive chat on the loaded image. | board |
+| `tools/r41/chat_speed/metrics.py` | Check device-only telemetry and no fallback. | analysis |
+
 <!-- END catalog -->
 
 ### Needs a decision

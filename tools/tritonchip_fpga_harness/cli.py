@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -69,6 +70,12 @@ def main(argv: list[str] | None = None) -> int:
     st.add_argument("run_id")
     st.add_argument("--state-dir")
     st.add_argument("--json", action="store_true")
+    bq = sub.add_parser("board-queue", help="queue registered performance experiments on the shared R41 board")
+    bq.add_argument("--out", required=True, type=Path)
+    bq.add_argument("--manifest", required=True, action="append", type=Path)
+    bq.add_argument("--python", default=sys.executable, type=Path)
+    bq.add_argument("--budget-seconds", type=float, default=10800)
+    bq.add_argument("--check-only", action="store_true", help="validate without probing or using a board")
     m = sub.add_parser("measure", help="program the recorded XCLBIN and run board conformance/ArchBench")
     m.add_argument("run_id")
     m.add_argument("--state-dir")
@@ -160,6 +167,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         root = _root(args.repo)
+        if args.command == "board-queue":
+            command = [sys.executable, str(root / "tools/performance_harness/launches/acceptance_queue.py"),
+                       "--root", str(root), "--out", str(args.out), "--python", str(args.python),
+                       "--budget-seconds", str(args.budget_seconds)]
+            for manifest in args.manifest:
+                command.extend(["--manifest", str(manifest)])
+            if args.check_only:
+                command.append("--check-only")
+            return subprocess.call(command, cwd=root)
         if args.command == "doctor":
             board = load_json(args.manifest) if args.manifest else None
             target = args.target or (board or {}).get("target")

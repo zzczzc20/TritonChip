@@ -34,6 +34,16 @@ on another (§11.2).
 13. [What has been run](#13-what-has-been-run)
 14. [What the harness does not do](#14-what-the-harness-does-not-do)
 
+## Shared R41 board
+
+Use `cli.py board-queue --out OUT --manifest MANIFEST --check-only` to prepare
+registered performance experiments, then omit `--check-only` when authorised.
+This delegates to the performance harness queue and shares the R41 chat queue's
+board lease and idle checks. On a shared R41 host direct U280 `submit`/`measure`
+board stages are refused; `submit --skip-board` still builds normally. The
+queue never programs or resets the card. See the
+[performance harness guide](../performance_harness/README.md).
+
 ## 1. At a glance
 
 ```text

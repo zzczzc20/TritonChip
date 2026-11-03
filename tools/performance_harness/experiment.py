@@ -193,6 +193,8 @@ def sysfs_probe(board):
     row['client_pid'] = fields.get('client pid') or None
     value = fields.get('outstanding execs', '')
     row['outstanding_execs'] = int(value) if value.isdigit() else None
+    value = fields.get('total execs', '')
+    row['total_execs'] = int(value) if value.isdigit() else None
     return row
 
 

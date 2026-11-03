@@ -9,7 +9,7 @@ spec=importlib.util.spec_from_file_location('queue',Path(__file__).parent/'launc
 queue=importlib.util.module_from_spec(spec);spec.loader.exec_module(queue)
 IDENTITY=dict(image_uuid='49964b17-e0b4-5bd2-dd40-7fc37b1205d3',clock_hz=100000000,image_sha256='approved')
 
-def idle(**kwargs):return dict(loaded_uuid=IDENTITY['image_uuid'],clock_counter_mhz=[100],contexts=0,outstanding_execs=0,client_pid=None,**kwargs)
+def idle(**kwargs):return dict(loaded_uuid=IDENTITY['image_uuid'],clock_counter_mhz=[100],contexts=0,outstanding_execs=0,total_execs=0,client_pid=None,**kwargs)
 
 class WaitingRule(unittest.TestCase):
     def test_python_symlink_is_not_dereferenced(self):
@@ -34,6 +34,12 @@ class WaitingRule(unittest.TestCase):
         self.assertEqual(self.run_wait([busy,idle()]),960)
     def test_unreadable_counters_never_count_as_idle(self):
         bad=idle();bad['outstanding_execs']=None
+        self.assertEqual(self.run_wait([bad,idle()]),960)
+    def test_execution_between_polls_restarts_idle_interval(self):
+        changed=idle();changed['total_execs']=1
+        self.assertEqual(self.run_wait([idle()]*10+[changed]),1500)
+    def test_unreadable_total_execs_never_counts_as_idle(self):
+        bad=idle();bad['total_execs']=None
         self.assertEqual(self.run_wait([bad,idle()]),960)
     def test_wrong_image_refused_without_opening(self):
         bad=idle();bad['loaded_uuid']='other'

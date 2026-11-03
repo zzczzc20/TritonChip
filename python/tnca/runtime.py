@@ -38,8 +38,10 @@ import operator
 import struct
 import threading
 import time
+import weakref
 from contextlib import contextmanager
 from collections import OrderedDict
+from functools import lru_cache
 
 from . import _data, abi, artifact, manifest as M
 from . import transport as T
@@ -50,12 +52,26 @@ from .errors import (AdmissionError, ArgumentError, ArtifactError,
                      SessionPoisoned, TncaError, Timeout, VersionError)
 
 WORD = 8
-MAX_UNFINISHED = 8          # the contract's floor; this is exactly it
+MAX_UNFINISHED = 8          # default and contract floor
 DEFAULT_ALIGN = 64
 # All shipped NUCA images decode this 4 KiB page before external memory.
 # A host DMA can write its backing BO, but a core load reads TMU registers.
 # Keep the hole even when the allocated HBM window extends beyond 2 GiB.
 DEVICE_RESERVED_RANGES = ((0x7fff0000, 0x7fff1000),)
+
+
+def _requested_queue_depth():
+    """Keep the default contract while allowing a bounded batched queue."""
+    raw = os.environ.get('TNCA_QUEUE_DEPTH')
+    if raw is None:
+        return MAX_UNFINISHED
+    try:
+        depth = int(raw)
+    except ValueError as error:
+        raise ValueError('TNCA_QUEUE_DEPTH must be an integer from 8 to 128') from error
+    if not MAX_UNFINISHED <= depth <= 128:
+        raise ValueError('TNCA_QUEUE_DEPTH must be an integer from 8 to 128')
+    return depth
 
 # States
 SUBMITTED, VALIDATED, QUEUED = 'SUBMITTED', 'VALIDATED', 'QUEUED'
@@ -111,6 +127,133 @@ def _active_core_mask(physical_grid, explicit_mask):
     if explicit_mask is not None and explicit_mask != mask:
         raise ValueError('TNCA_ACTIVE_CORES conflicts with explicit active_cores mask')
     return mask
+
+
+def _replicate_physical_arguments(block, stride, cores):
+    """Replicate a position-independent argument block with exact zero padding."""
+    if stride < len(block) or stride < 0 or cores < 1:
+        raise ValueError('invalid physical argument table dimensions')
+    return (bytearray(block) + bytearray(stride - len(block))) * cores
+
+
+@lru_cache(maxsize=512)
+def _argument_pack_plan(signature):
+    """Reuse layout and scalar dispatch for repeated kernel signatures."""
+    plan = []
+    for index, (name, kind) in enumerate(signature):
+        if kind == 'f32':
+            operation = 0
+        elif kind in ('i32', 'u32'):
+            operation = 1
+        elif kind in ('i64', 'u64', 'device_ptr64'):
+            operation = 2
+        else:
+            operation = 3
+        plan.append((name, kind, abi.offset_of(index), operation))
+    return tuple(plan)
+
+
+@lru_cache(maxsize=512)
+def _argument_offsets(signature):
+    return {name: offset for name, _kind, offset, _operation in _argument_pack_plan(signature)}
+
+
+@lru_cache(maxsize=512)
+def _argument_names(signature):
+    names = tuple(name for name, _kind in signature)
+    return names, frozenset(names)
+
+
+def _first_undeclared_alias(spans, allowed):
+    """Find the same first forbidden pair without comparing disjoint spans."""
+    if len(spans) <= 8:
+        for i, (name, start, end, _buffer) in enumerate(spans):
+            for other, other_start, other_end, _other_buffer in spans[i + 1:]:
+                if start < other_end and other_start < end and tuple(sorted((name, other))) not in allowed:
+                    return name, other
+        return None
+    active, best = [], None
+    # Keep original argument indices so diagnostics still name the same
+    # pair as the original nested-order check, including equal starts.
+    for index, span in sorted(enumerate(spans), key=lambda item: (item[1][1], item[0])):
+        name, start, end, _buffer = span
+        active = [(old_index, old) for old_index, old in active if old[2] > start]
+        for old_index, old in active:
+            if old[1] < end and tuple(sorted((name, old[0]))) not in allowed:
+                pair = (min(index, old_index), max(index, old_index))
+                if best is None or pair < best:
+                    best = pair
+        active.append((index, span))
+    if best is None:
+        return None
+    return spans[best[0]][0], spans[best[1]][0]
+
+
+def _encode_resolved_arguments(params, values):
+    """Encode values already checked by Session._resolve without rechecking names."""
+    if abi.SLOT_BYTES != 8:
+        return abi.encode_block(params, values)
+    out = bytearray(abi.block_size(len(params)))
+    for name, kind, at, operation in _argument_pack_plan(tuple(params)):
+        value = values[name]
+        # _resolve checks scalar types and handle bounds. Descriptor pointers
+        # are filled afterwards, so retain the ABI's 64-bit address check.
+        if kind in abi.POINTER_TYPES:
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ArgumentError(f'parameter {name!r}: resolved pointer must be an integer address, '
+                                    f'got {type(value).__name__}')
+            if not 0 <= value <= abi.TYPES['u64']['max']:
+                raise ArgumentError(f'parameter {name!r}: address {value} is outside 64 bits')
+        if operation == 0:
+            struct.pack_into('<f', out, at, float(value))
+        elif operation == 1:
+            struct.pack_into('<I', out, at, value & 0xFFFFFFFF)
+        elif operation == 2:
+            struct.pack_into('<Q', out, at, value & 0xFFFFFFFFFFFFFFFF)
+        else:
+            out[at:at + abi.SLOT_BYTES] = abi.encode_slot(kind, value)
+    return bytes(out)
+
+
+def _physical_argument_table(block, stride, cores, *, arg_addr, params, maps,
+                             map_start, scratch, scratch_start):
+    """Replicate validated arguments and patch only core-local addresses."""
+    if not maps and not scratch:
+        return _replicate_physical_arguments(block, stride, cores)
+    # Copy the already validated template once. Descriptor payloads and all
+    # ordinary arguments are identical; only a few pointer slots differ.
+    table = _replicate_physical_arguments(block, stride, cores)
+    descriptor_slots = _argument_offsets(tuple(params))
+    for core in range(cores):
+        core_base = arg_addr + core * stride
+        for index, (name, _data) in enumerate(maps):
+            pointer = core_base + map_start + 256 * index
+            if not 0 <= pointer <= abi.TYPES['u64']['max']:
+                raise ArgumentError(f'parameter {name!r}: address {pointer} is outside 64 bits')
+            struct.pack_into('<Q', table, core * stride + descriptor_slots[name], pointer)
+        if scratch:
+            struct.pack_into('<Q', table, core * stride + abi.block_size(len(params)), core_base + scratch_start)
+    return table
+
+
+def _build_argument_block(params, resolved, maps, *, arg_addr, arg_stride, cores,
+                          map_start, scratch, scratch_start):
+    """Build a complete launch block after its heap reservation succeeds."""
+    slots = abi.block_size(len(params)) + (8 if scratch else 0)
+    block = bytearray(scratch_start + scratch if scratch else (scratch_start if maps else slots))
+    for index, (name, data) in enumerate(maps):
+        offset = map_start + 256 * index
+        resolved[name] = arg_addr + offset
+        block[offset:offset + 256] = data
+    block[:abi.block_size(len(params))] = _encode_resolved_arguments(params, resolved)
+    if scratch:
+        struct.pack_into('<Q', block, abi.block_size(len(params)), arg_addr + scratch_start)
+    if cores:
+        # The ABI was validated once above. Most kernels have no core-local
+        # addresses; the remaining kernels patch only descriptor/scratch slots.
+        block = _physical_argument_table(block, arg_stride, cores, arg_addr=arg_addr,
+            params=params, maps=maps, map_start=map_start, scratch=scratch, scratch_start=scratch_start)
+    return block
 
 
 class Event:
@@ -272,7 +415,72 @@ class _Allocator:
         self.high_water = max(self.high_water, self.used)
         return addr, need
 
+    def can_alloc_at(self, size, addr, align=DEFAULT_ALIGN):
+        """Can an aligned allocation be placed without touching live ranges?"""
+        if size <= 0 or addr < self.base or addr % align:
+            return False
+        need = (size + align - 1) // align * align
+        end = addr + need
+        if end > self.limit:
+            return False
+        if any(addr < hi and end > lo for lo, hi in self.reserved):
+            return False
+        if any(lo <= addr and end <= lo + length for lo, length in self.free_list):
+            return True
+        # A gap above the current top may become a reusable free interval;
+        # do not construct one across an MMIO-reserved address range.
+        return (addr >= self.next and not any(self.next < hi and end > lo
+                                              for lo, hi in self.reserved))
+
+    def free_candidates(self, size, align=DEFAULT_ALIGN):
+        """First-fit and end-aligned positions from each free code interval."""
+        need = (size + align - 1) // align * align
+        candidates = []
+        for start, length in self.free_list:
+            first = (start + align - 1) // align * align
+            last = (start + length - need) // align * align
+            if first <= last:
+                candidates.append(first)
+                if last != first:
+                    candidates.append(last)
+        tail = (self.next + align - 1) // align * align
+        if self.can_alloc_at(size, tail, align):
+            candidates.append(tail)
+        return candidates
+
+    def alloc_at(self, size, addr, align=DEFAULT_ALIGN):
+        """Reserve a previously checked free address, or return None."""
+        if not self.can_alloc_at(size, addr, align):
+            return None
+        need = (size + align - 1) // align * align
+        end = addr + need
+        for index, (start, length) in enumerate(self.free_list):
+            stop = start + length
+            if start <= addr and end <= stop:
+                pieces = []
+                if start < addr:
+                    pieces.append((start, addr - start))
+                if end < stop:
+                    pieces.append((end, stop - end))
+                self.free_list[index:index + 1] = pieces
+                self.high_water = max(self.high_water, self.used)
+                return addr, need
+        if addr > self.next:
+            self.free_list.append((self.next, addr - self.next))
+        self.next = end
+        self.high_water = max(self.high_water, self.used)
+        return addr, need
+
     def release(self, addr, size):
+        # The common single-launch case releases the heap's last block.
+        # There is nothing to sort or merge when no older holes exist.
+        if not self.free_list and addr + size == self.next:
+            self.next = addr
+            while True:
+                prior = next((lo for lo, hi in self.reserved if hi == self.next), None)
+                if prior is None:
+                    return
+                self.next = prior
         merged = []
         for a, n in sorted(self.free_list + [(addr, size)]):
             if merged and merged[-1][0] + merged[-1][1] == a:
@@ -336,6 +544,7 @@ class Session:
         Session._counter += 1
         self.id = Session._counter
         self.profile = profile
+        self.max_unfinished = _requested_queue_depth()
         if large_grid is None:
             value = os.environ.get('TNCA_LARGE_GRID', '0')
             if value not in ('0', '1'):
@@ -414,9 +623,18 @@ class Session:
         self._buffers = OrderedDict()
         self._modules = []
         self._queue = []
-        self._events = OrderedDict()
-        # Keep historical events for dependency identity and post-run inspection;
-        # hot-path admission and code eviction only need unfinished events.
+        # Callers keep event handles for as long as they need them. The
+        # session needs strong ownership only for unfinished work and the
+        # latest event; retaining every completed launch indefinitely grows
+        # without bound in a long-running chat process.
+        self._events = weakref.WeakValueDictionary()
+        self._last_event = None
+        self._stop_guard_local = threading.local()
+        self._stop_guard_pc = None
+        self._stop_probe_module = None
+        self._stop_probe_calibration = None
+        self._stop_probe_preparing = False
+        # Unfinished jobs retain their events even if the caller drops them.
         self._active_events = OrderedDict()
         self._next_buffer = 0
         self._next_job = 0
@@ -426,6 +644,10 @@ class Session:
             # AXI window (R40-04).
             heap_limit = _device.memory_limit(profile)
         self._code = _Allocator(code_base, heap_base, reserved=DEVICE_RESERVED_RANGES)
+        # An unloaded module leaves its code words in the FPGA's code RAM.
+        # Remember locations, but only reuse them when the backend can prove
+        # every word still matches and the allocator says the range is free.
+        self._code_address_hints = OrderedDict()
         self._heap = _Allocator(heap_base, heap_limit, reserved=DEVICE_RESERVED_RANGES)
         self._worker = None
         self._stop = threading.Event()
@@ -502,6 +724,19 @@ class Session:
             return [e for e in self._active_events.values() if not e.terminal]
 
     @property
+    def unfinished_count(self):
+        """Count live admissions without rebuilding the event list per launch."""
+        with self._lock:
+            # Terminal transitions and removal use this same lock.
+            return len(self._active_events)
+
+    @property
+    def oldest_unfinished(self):
+        """The first admitted live event, or None after the queue drains."""
+        with self._lock:
+            return next(iter(self._active_events.values()), None)
+
+    @property
     def memory_stats(self):
         """Actual reserved bytes, including retired leases and task scratch."""
         with self._lock:
@@ -513,6 +748,8 @@ class Session:
     @property
     def latest_event(self):
         with self._lock:
+            if hasattr(self, '_last_event'):
+                return self._last_event
             return next(reversed(self._events.values()), None)
 
     # ---- buffers ----------------------------------------------------------
@@ -620,15 +857,70 @@ class Session:
         # it, and a failure is captured after the failure. The event keeps
         # the reference, and the session still checks the event is its own
         # -- events are not portable between sessions.
-        task = getattr(event, '_task', None)
-        if task is None or getattr(event, 'epoch', None) != self.epoch:
-            return None
-        return task
+        with self._lock:
+            if (not isinstance(event, Event) or event.epoch != self.epoch
+                    or self._events.get(event.job_id) is not event):
+                return None
+            return getattr(event, '_task', None)
 
     def capture_failure(self, event, outdir, *, note=None):
         """Save this launch as a replayable bundle. See tnca.failure."""
         from . import failure
         return failure.capture(self, event, outdir, note=note)
+
+    def _known_code_address(self, code_hash, code):
+        """Prefer free code RAM that already holds the requested words.
+
+        The backend's shadow contains only successful device writes. A match
+        changes placement, never content: upload still checks every word and
+        writes all differences. Limit candidate locations to both ends of
+        free intervals plus the last exact location to bound host overhead.
+        """
+        if (not code_hash or os.environ.get('TNCA_CODE_REUSE', '1') != '1'
+                or not getattr(self.dev, 'code_payload_shadow', False)):
+            return None
+        shadow = getattr(self.dev, '_code_window_shadow', None)
+        limit = getattr(self.dev, 'local_limit', None)
+        if not isinstance(shadow, dict) or not shadow or limit is None:
+            return None
+        candidates = self._code.free_candidates(len(code), align=64)
+        hint = self._code_address_hints.get(code_hash)
+        if hint is not None and self._code.can_alloc_at(len(code), hint, align=64):
+            candidates.append(hint)
+        candidates = list(dict.fromkeys(addr for addr in candidates
+                                        if addr + len(code) <= limit))
+        if len(candidates) < 2:
+            return None
+        padded = bytes(code) + b'\0' * (-len(code) % WORD)
+        words = tuple(value[0] for value in struct.iter_unpack('<Q', padded))
+        def score(addr):
+            return sum(shadow.get(addr + index * WORD) == word
+                       for index, word in enumerate(words))
+        # An exact previous location is worth keeping even for a short code
+        # block. Stop on the first changed word instead of scoring it all.
+        if hint in candidates and hint != candidates[0] and all(
+                shadow.get(hint + index * WORD) == word for index, word in enumerate(words)):
+            return hint
+        # Probe a small, uniformly distributed sample before examining full
+        # payloads. Otherwise a fragmented code store could spend more CPU
+        # searching than the XRT writes it saves.
+        step = max(1, (len(words) + 15) // 16)
+        sample = tuple(range(0, len(words), step))
+        ranked = sorted(candidates[1:], key=lambda addr: sum(
+            shadow.get(addr + index * WORD) == words[index] for index in sample), reverse=True)
+        first_score = score(candidates[0])
+        best, best_score = candidates[0], first_score
+        for addr in ranked[:3]:
+            matches = score(addr)
+            if matches > best_score:
+                best, best_score = addr, matches
+                if matches == len(words):
+                    break
+        # Favour first-fit unless the saved writes cover the search cost and
+        # the possibility that a different placement fragments the free list.
+        if best_score - first_score < max(128, len(words) // 8):
+            return None
+        return best
 
     def load(self, path):
         """Check an artifact against THIS device, then place its code."""
@@ -663,37 +955,55 @@ class Session:
         if not code:
             raise ArtifactError('the artifact has no code segment')
 
+        code_hash = next((entry.get('sha256') for entry in man.get('code', {}).get('segments', ())
+                          if entry.get('name') == 'text'), None)
         with self._lock:
-            # The code region is allocated like the heap (first fit, freed
-            # space reused): with nothing ever unloaded it places modules one
-            # after another, 64-byte aligned, exactly as before; unload()
-            # gives a module's space back (R40-01: tensors resident in the
-            # heap outlive the code that last used them).
+            # Preserve a code-RAM hit only if its old address is currently
+            # free and all confirmed device words still match the artifact.
+            hint = self._known_code_address(code_hash, code)
             try:
-                addr, size = self._code.alloc(len(code), align=64)
+                placed = self._code.alloc_at(len(code), hint, align=64) if hint is not None else None
+                addr, size = placed if placed is not None else self._code.alloc(len(code), align=64)
             except BufferError:
                 raise BufferError('compiled code overlaps the device heap; increase heap_base') \
                     from None
-            reply = self.dev.upload(addr, code)
-            if not reply.ok:
+            try:
+                reply = self.dev.upload(addr, code)
+                if not reply.ok:
+                    raise TncaError(f"could not place code: {reply}", code='ARTIFACT_INVALID')
+            except BaseException:
                 self._code.release(addr, size)
-                raise TncaError(f"could not place code: {reply}",
-                                code='ARTIFACT_INVALID')
+                raise
+            if code_hash and getattr(self.dev, 'code_payload_shadow', False):
+                self._code_address_hints[code_hash] = addr
+                self._code_address_hints.move_to_end(code_hash)
+                if len(self._code_address_hints) > 1024:
+                    self._code_address_hints.popitem(last=False)
             mod = Module(path, man, addr, params, self.epoch)
             mod.code_size = size
             self._modules.append(mod)
             return mod
 
-    def unload(self, module):
+    def unload(self, module, *, allow_unrelated_tasks=False):
         """Give a module's code space back. Refused while a task of it is
         unfinished; the module may not be submitted afterwards."""
         self._check_usable()
         with self._lock:
+            # Equivalent artifacts can expose distinct provenance views of
+            # one resident allocation. Releasing a view releases that one
+            # allocation and invalidates every view of it.
+            module = getattr(module, '_resident', module)
             if module.epoch != self.epoch or not module.alive:
                 return False
-            if self.unfinished:
-                # Conservative: a task records its kernel by name, not by
-                # module, so any unfinished task keeps every module loaded.
+            if (allow_unrelated_tasks and self._active_events and
+                    not getattr(self.dev, 'serialized_code_uploads', False)):
+                raise CapabilityError('queued code eviction requires serialized device code uploads')
+            if self._active_events and (not allow_unrelated_tasks or any(
+                    getattr(event._task['module'], '_resident', event._task['module']) is module
+                    for event in self._active_events.values())):
+                # Keep the default all-task barrier for public callers. The
+                # optional path checks physical allocations, including views,
+                # while holding the same lock used for task admission.
                 raise BufferBusy(f'{module.name}: tasks are unfinished; unload waits for none')
             module.alive = False
             self._modules.remove(module)
@@ -712,10 +1022,11 @@ class Session:
                     'that module was loaded in a previous epoch')
             if not module.alive:
                 raise AdmissionError(f'{module.name} has been unloaded')
-            if len(self.unfinished) >= MAX_UNFINISHED:
+            limit = getattr(self, 'max_unfinished', MAX_UNFINISHED)
+            if len(self._active_events) >= limit:
                 raise QueueFull(
-                    f"{MAX_UNFINISHED} tasks are already unfinished",
-                    detail={'limit': MAX_UNFINISHED},
+                    f"{limit} tasks are already unfinished",
+                    detail={'limit': limit},
                     remedy='wait for one to finish; this does not block and '
                            'does not discard an older task')
 
@@ -767,6 +1078,15 @@ class Session:
 
             # Resolve and validate every argument BEFORE anything starts.
             resolved, leased = self._resolve(module, args)
+            guard_local = getattr(self, '_stop_guard_local', None)
+            guard = getattr(guard_local, 'flag', None) if guard_local is not None else None
+            if guard is not None:
+                flag_buffer, flag_offset = guard
+                if (not self.physical_grid or flag_buffer.session_id != self.id
+                        or flag_buffer.epoch != self.epoch or not flag_buffer.alive or not flag_buffer.valid):
+                    raise AdmissionError('device stop flag is stale or physical dispatch is unavailable')
+                if flag_buffer not in leased:
+                    leased.append(flag_buffer)
 
             self._next_job += 1
             ev = Event(self._next_job, self.epoch, module.name)
@@ -806,67 +1126,74 @@ class Session:
             map_start = (slots + 255) // 256 * 256
             scratch_start = map_start + 256 * len(maps)
             arg_size = max(scratch_start + scratch, slots, WORD)
-            arg_stride = (arg_size + 255) // 256 * 256 if self.physical_grid else 0
-            arg_addr, reserved = self._heap.alloc(arg_stride * self._physical_core_count
-                                                  if self.physical_grid else arg_size, align=256)
-            # Scratch is handed over zero-filled: the upload covers it, so a
-            # TensorMap the kernel builds there needs only its non-zero words
-            # stored (compile option sparse_tensormaps).
-            block = bytearray(scratch_start + scratch if scratch
-                              else (scratch_start if maps else slots))
-            for i, (name, data) in enumerate(maps):
-                offset = map_start + 256*i
-                resolved[name] = arg_addr + offset
-                block[offset:offset+256] = data
-            block[:abi.block_size(len(module.params))] = abi.encode_block(module.params, resolved)
-            if scratch:
-                struct.pack_into('<Q', block, abi.block_size(len(module.params)), arg_addr+scratch_start)
+            header = 256 if guard is not None else 0
+            arg_stride = (arg_size + header + 255) // 256 * 256 if self.physical_grid else 0
+            alloc_addr, reserved = self._heap.alloc(arg_stride * self._physical_core_count
+                                                    if self.physical_grid else arg_size, align=256)
+            arg_addr = alloc_addr + header
+            # A rejected encoding must not leak its argument-heap reservation.
+            # Scratch stays zero-filled for sparse TensorMap construction.
+            try:
+                block = _build_argument_block(module.params, resolved, maps, arg_addr=arg_addr,
+                    arg_stride=arg_stride, cores=self._physical_core_count if self.physical_grid else 0,
+                    map_start=map_start, scratch=scratch, scratch_start=scratch_start)
+                if guard is not None:
+                    from .eos_guard import argument_table
+                    block = argument_table(block, arg_stride, self._physical_core_count,
+                                           module.code_addr, flag_buffer.addr + flag_offset)
+            except BaseException:
+                self._heap.release(alloc_addr, reserved)
+                raise
 
-            if self.physical_grid:
-                table = bytearray(arg_stride * self._physical_core_count)
-                for core in range(self._physical_core_count):
-                    core_args = dict(resolved)
-                    core_base = arg_addr + core * arg_stride
-                    core_block = bytearray(block)
-                    for i, (name, _data) in enumerate(maps):
-                        core_args[name] = core_base + map_start + 256*i
-                    core_block[:abi.block_size(len(module.params))] = abi.encode_block(module.params, core_args)
-                    if scratch:
-                        struct.pack_into('<Q', core_block, abi.block_size(len(module.params)), core_base + scratch_start)
-                    table[core*arg_stride:core*arg_stride+len(core_block)] = core_block
-                block = table
-
-            task = dict(event=ev, module=module, block=block, arg_stride=arg_stride,
-                        arg_addr=arg_addr, allocation=(arg_addr, reserved), grid=(gx, gy, gz),
-                        depends_on=list(depends_on), leased=leased,
-                        # Kept so a failure can be saved and run again
-                        # (failure.capture); the block alone is bytes, and
-                        # a bundle a person cannot read is not a bundle.
-                        args=dict(resolved))
-            ev._task = task
-            for buf in leased:
-                buf.leases += 1
-            self._events[ev.job_id] = ev
-            self._active_events[ev.job_id] = ev
-            self._queue.append(task)
-            self._queue_wake.set()
-            ev._to(QUEUED)
-            return ev
+            task, leased_count = None, 0
+            try:
+                task = dict(event=ev, module=module, block=block, arg_stride=arg_stride,
+                            arg_addr=arg_addr, upload_addr=alloc_addr,
+                            guarded_pc=self._stop_guard_pc if guard is not None else None,
+                            allocation=(alloc_addr, reserved), grid=(gx, gy, gz),
+                            depends_on=list(depends_on), leased=leased,
+                            # Retain readable arguments for a failure replay.
+                            args=dict(resolved))
+                ev._task = task
+                for buf in leased:
+                    buf.leases += 1
+                    leased_count += 1
+                self._events[ev.job_id] = ev
+                self._active_events[ev.job_id] = ev
+                self._queue.append(task)
+                self._queue_wake.set()
+                ev._to(QUEUED)
+                self._last_event = ev
+                return ev
+            except BaseException:
+                # The admission lock prevents the worker from seeing a
+                # partially constructed task. Restore all ownership if host
+                # allocation or queue bookkeeping fails before publication.
+                if self._queue and self._queue[-1] is task:
+                    self._queue.pop()
+                self._active_events.pop(ev.job_id, None)
+                self._events.pop(ev.job_id, None)
+                for buf in leased[:leased_count]:
+                    buf.leases -= 1
+                if task is not None:
+                    task.pop('allocation', None)
+                self._heap.release(alloc_addr, reserved)
+                raise
 
     def _resolve(self, module, args):
         """Arguments -> device values, with every check done here.
 
         Returns (values, buffers named). Raises before anything is queued.
         """
-        names = [n for n, _t in module.params]
+        names, name_set = _argument_names(tuple(module.params))
         missing = [n for n in names if n not in args]
-        extra = [k for k in args if k not in names]
+        extra = [k for k in args if k not in name_set]
         if missing or extra:
             raise ArgumentError(
                 f"argument mismatch: missing {missing}, unexpected {extra}",
                 detail={'signature': [f"{n}:{t}" for n, t in module.params]})
 
-        out, leased, spans = {}, [], []
+        out, leased, leased_seen, spans = {}, [], set(), []
         for name, kind in module.params:
             value = args[name]
             if isinstance(value, TensorDescriptor):
@@ -893,7 +1220,12 @@ class Session:
                         f"{name!r}: byte offset {offset} is outside "
                         f"{buf.name} (0..{buf.size - 1})")
                 out[name] = buf.addr + offset
-                leased.append(buf)
+                # Several arguments can refer to a declared alias. Lease each
+                # backing allocation once while retaining every span for the
+                # independent overlap check below.
+                if buf not in leased_seen:
+                    leased_seen.add(buf)
+                    leased.append(buf)
                 spans.append((name, buf.addr + offset,
                               buf.addr + buf.size, buf))
             else:
@@ -905,20 +1237,119 @@ class Session:
         # schedule to be accidentally safe (ABI-05).
         allowed = {tuple(sorted(p)) for p in
                    module.manifest['parameters'].get('alias_allowed') or []}
-        for i in range(len(spans)):
-            for j in range(i + 1, len(spans)):
-                (na, sa, ea, ba), (nb, sb, eb, bb) = spans[i], spans[j]
-                if sa < eb and sb < ea and tuple(sorted((na, nb))) not in allowed:
-                    raise TncaError(
-                        f"{na!r} and {nb!r} overlap and the manifest does "
-                        f"not declare them as aliases",
-                        code='ALIAS_UNDECLARED',
-                        detail={'declared': sorted(allowed)},
-                        remedy='declare the alias at compile time, or use '
-                               'separate buffers')
-        return out, list(dict.fromkeys(leased))
+        conflict = _first_undeclared_alias(spans, allowed)
+        if conflict is not None:
+            na, nb = conflict
+            raise TncaError(
+                f"{na!r} and {nb!r} overlap and the manifest does "
+                f"not declare them as aliases",
+                code='ALIAS_UNDECLARED',
+                detail={'declared': sorted(allowed)},
+                remedy='declare the alias at compile time, or use '
+                       'separate buffers')
+        return out, leased
 
     # ---- the queue --------------------------------------------------------
+    def prepare_device_stop_guard(self):
+        """Reserve the shared guard before compiled kernels fill code RAM."""
+        from .eos_guard import guard_code
+        with self._lock:
+            self._check_usable()
+            if not self.physical_grid:
+                raise AdmissionError('device stop guard requires physical grid dispatch')
+            if self._active_events:
+                raise SessionBusy('device stop guard must be installed on an idle session')
+            if self._stop_guard_pc is None:
+                code = guard_code()
+                address, size = self._code.alloc(len(code), align=64)
+                try:
+                    reply = self.dev.upload(address, code)
+                    if not reply.ok:
+                        raise TncaError('could not place device stop guard', code='ARTIFACT_INVALID')
+                except BaseException:
+                    self._code.release(address, size)
+                    raise
+                self._stop_guard_pc = address
+            return self._stop_guard_pc
+
+    def prepare_device_stop_probe(self):
+        """Reserve and calibrate the optional timing-based stop signal.
+
+        The host observes only a normal launch's completion-cycle counter;
+        it never downloads the device flag or a model tensor. A too-short or
+        missing calibration disables the probe and preserves normal chat.
+        Call while idle and before entering the guarded submission scope.
+        """
+        from .eos_guard import PROBE_BUSY_MIN_CYCLES, stop_probe_code
+        with self._lock:
+            self._check_usable()
+            if not self.physical_grid or self._active_events:
+                raise SessionBusy('device stop probe requires an idle physical-grid session')
+            if getattr(self._stop_guard_local, 'flag', None) is not None:
+                raise SessionBusy('device stop probe calibration must be unguarded')
+            if self._stop_probe_preparing:
+                raise SessionBusy('another thread is calibrating the device stop probe')
+            if self._stop_probe_module is not None:
+                return self._stop_probe_module, self._stop_probe_calibration
+            code = stop_probe_code()
+            address, size = self._code.alloc(len(code), align=64)
+            try:
+                reply = self.dev.upload(address, code)
+                if not reply.ok:
+                    raise TncaError('could not place device stop probe', code='ARTIFACT_INVALID')
+                manifest = {'identity': {'kernel_name': 'tnca_eos_stop_probe'},
+                            'parameters': {'signature': [], 'alias_allowed': []},
+                            'resources': {}, 'execution': {'program_to_role': {'0': ['role0']}}}
+                module = Module('<internal-eos-stop-probe>', manifest, address, [], self.epoch)
+                module.code_size = size
+                self._modules.append(module)
+                self._stop_probe_preparing = True
+            except BaseException:
+                self._code.release(address, size)
+                raise
+        try:
+            event = self.submit(module, {}, grid=(1, 1, 1))
+            self.wait(event)
+            if not event.ok:
+                raise TncaError('device stop probe calibration failed', code='KERNEL_FAULT')
+            cycles = event.device_cycles
+            if type(cycles) is not int or cycles < PROBE_BUSY_MIN_CYCLES:
+                self.unload(module)
+                return None, cycles
+            with self._lock:
+                self._stop_probe_module, self._stop_probe_calibration = module, cycles
+            return module, cycles
+        except BaseException:
+            if module.alive and not self.unfinished and not self.poisoned:
+                self.unload(module)
+            raise
+        finally:
+            with self._lock:
+                self._stop_probe_preparing = False
+
+    @contextmanager
+    def device_stop_guard(self, buffer, offset=0):
+        """Skip physical programs after a device flag becomes nonzero.
+
+        Every guarded task leases the flag. Admission is thread-local, FIFO
+        execution is unchanged, and the flag is never transferred to host.
+        """
+        with self._lock:
+            self._check_usable()
+            if (not isinstance(buffer, Buffer) or buffer.session_id != self.id
+                    or buffer.epoch != self.epoch or not buffer.alive or not buffer.valid
+                    or not isinstance(offset, int) or offset < 0 or offset % WORD
+                    or offset + WORD > buffer.size):
+                raise ArgumentError('device stop flag must be a live aligned 64-bit buffer')
+            self.prepare_device_stop_guard()
+            local = self._stop_guard_local
+            previous = getattr(local, 'flag', None)
+            local.flag = (buffer, offset)
+        try:
+            yield
+        finally:
+            local.flag = previous
+
     def _run_queue(self):
         while not self._stop.is_set():
             task = None
@@ -980,7 +1411,7 @@ class Session:
             # except here, where it is the correct amount of argument
             # data to write.
             if task['block']:
-                self.dev.upload(task['arg_addr'], task['block'])
+                self.dev.upload(task.get('upload_addr', task['arg_addr']), task['block'])
             ev._to(RUNNING)
             if self.physical_grid:
                 self._run_physical_grid(task)
@@ -1096,7 +1527,10 @@ class Session:
         mask=(1<<(width*rpp))-1
         if rpp==2:mask|=1<<28
         if width>1:mask|=(1<<31)|((width.bit_length()-1)<<29)
-        reply = self.dev.launch_grid(task['module'].code_addr, task['arg_addr'], task['grid'],
+        pc = task.get('guarded_pc')
+        if pc is None:
+            pc = task['module'].code_addr
+        reply = self.dev.launch_grid(pc, task['arg_addr'], task['grid'],
                                      arg_stride=task['arg_stride'], active_cores=self.active_cores,
                                      role_mask=mask, group_width=width)
         if reply.status == T.ST_TIMEOUT:
@@ -1140,6 +1574,10 @@ class Session:
                 # Not a rollback -- the contract does not promise one. A
                 # marker, so an ordinary read cannot consume it as a result.
                 buf.valid = False
+        # A finished event can still be inspected or used as a dependency,
+        # but it no longer needs to retain the whole predecessor chain.
+        task['dependency_jobs'] = tuple(dep.job_id for dep in task['depends_on'])
+        task['depends_on'] = ()
 
     def _poison_rest(self):
         with self._lock:
@@ -1174,6 +1612,19 @@ class Session:
         for ev in self.unfinished:
             if not ev.terminal:
                 self.wait(ev, timeout)
+        return True
+
+    def wait_for_module(self, module, timeout=None):
+        """Wait only for admitted tasks that reference this code allocation."""
+        module = getattr(module, '_resident', module)
+        with self._lock:
+            self._check_usable()
+            blocker = next((event for event in reversed(self._active_events.values())
+                            if getattr(event._task['module'], '_resident', event._task['module']) is module), None)
+        # The session executes admitted events in FIFO order. Completion of
+        # the last matching event implies completion of all earlier matches.
+        if blocker is not None and not blocker.terminal:
+            self.wait(blocker, timeout)
         return True
 
     @contextmanager
@@ -1237,18 +1688,25 @@ class Session:
         except Exception:
             pass
         with self._lock:
-            for ev in self._events.values():
+            for ev in list(self._events.values()):
                 if not ev.terminal:
                     ev._to(FAILED, DeviceLost(
                         'the session was recovered before this task ran'))
             self.epoch += 1
             self._events.clear()
+            self._last_event = None
+            self._stop_guard_pc = None
+            self._stop_probe_module = None
+            self._stop_probe_calibration = None
+            self._stop_probe_preparing = False
+            self._stop_guard_local = threading.local()
             self._active_events.clear()
             self._queue.clear()
             self._buffers.clear()
             self._modules.clear()
             self._next_job = 0
             self._code = _Allocator(self._code.base, self._code.limit, reserved=self._code.reserved)
+            self._code_address_hints.clear()
             self._heap = _Allocator(self._heap.base, self._heap.limit, reserved=self._heap.reserved)
             self.poisoned = False
             self.dev = _open_device(self.backend_name, self.bench,

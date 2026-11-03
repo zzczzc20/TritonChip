@@ -155,6 +155,11 @@ def combine_verdicts(verdicts):
     return not any(value is False for value in verdicts)
 
 
+def needs_turn_logits(device, warm_repeat, first_capture):
+    """Retain only logits used by a CPU reference or the warm bitwise check."""
+    return device != 'tnca' or (warm_repeat and first_capture is None)
+
+
 def bitwise_logits_equal(before, after):
     import torch
     if not before or len(before) != len(after):
@@ -276,7 +281,8 @@ def main():
                 prompt_started = process_started if first_prompt else time.perf_counter()
                 first_prompt = False
                 report = app.generate(text, images if i == 0 else (), keep_history=True,
-                                      prompt_started=prompt_started)
+                                      prompt_started=prompt_started,
+                                      retain_logits=needs_turn_logits(a.device, a.warm_repeat, first_capture))
                 if report["status"] != "pass":
                     result["failed_generation"] = chat.public_report(report)
                     raise RuntimeError(f"generation failed or lacks device evidence: {report['status']}")
@@ -342,7 +348,8 @@ def main():
             prompt, images, tokens, logits = first_capture
             app.reset_conversation()
             started = time.perf_counter()
-            warm = app.generate(prompt, images, keep_history=True, prompt_started=started)
+            warm = app.generate(prompt, images, keep_history=True, prompt_started=started,
+                                retain_logits=True)
             print(json.dumps(dict(prompt='warm-repeat', user=prompt, assistant=warm['generated_text'])), flush=True)
             from chat_timing import finalize_user_visible_metrics
             finalize_user_visible_metrics(warm['user_visible_timing'], time.perf_counter() - started,

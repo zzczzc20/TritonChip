@@ -327,18 +327,30 @@ class TransferMeter:
     """Bytes the host moves to or from tnca memory (tnca.torch_device.MEMORY: to_host, from_host, fill_, .item())
     plus the runtime launch log (per-launch staging uploads/downloads) while open."""
 
-    def __init__(self):
+    def __init__(self, *, compact=False, deferred=False):
         import tnca.torch_device as td
         self.mem = td.MEMORY
+        self.compact = compact
+        self.deferred = deferred
+        self._prior_read = self.mem.__dict__.get('read')
+        self._prior_write = self.mem.__dict__.get('write')
         self.stats = dict(host_read_calls=0, host_read_bytes=0, host_write_calls=0, host_write_bytes=0)
         self._r, self._w = self.mem.read, self.mem.write
 
         self.sites = {}
 
         def site(kind, n):
-            import traceback as tb
-            frames = [f for f in tb.extract_stack()[:-2] if "/tnca/torch_device/" not in f.filename][-4:]
-            key = kind + " <- " + " < ".join(f"{Path(f.filename).name}:{f.lineno}:{f.name}" for f in reversed(frames))
+            # Only four caller locations are reported; extracting the whole
+            # traceback also loads source lines and becomes expensive when a
+            # generation step performs hundreds of device transfers.
+            frame = sys._getframe(2)
+            frames = []
+            while frame is not None and len(frames) < 4:
+                code = frame.f_code
+                if "/tnca/torch_device/" not in code.co_filename:
+                    frames.append(f"{os.path.basename(code.co_filename)}:{frame.f_lineno}:{code.co_name}")
+                frame = frame.f_back
+            key = kind + " <- " + " < ".join(frames)
             self.sites[key] = self.sites.get(key, 0) + int(n)
 
         def r(addr, n):
@@ -355,17 +367,31 @@ class TransferMeter:
         self.mem.read, self.mem.write = r, w
 
     def __enter__(self):
-        from tnca.triton_backend.driver import launch_log
-        self._ctx = launch_log()
+        from tnca.triton_backend.driver import launch_log, launch_summary
+        if self.deferred and not self.compact:
+            raise ValueError('deferred transfer accounting requires compact mode')
+        self._ctx = launch_summary(deferred=self.deferred) if self.compact else launch_log()
         self.log = self._ctx.__enter__()
         return self
 
     def __exit__(self, *exc):
-        self._ctx.__exit__(*exc)
-        del self.mem.read, self.mem.write     # back to the class methods
+        try:
+            self._ctx.__exit__(*exc)
+        finally:
+            # Nested meters must restore the outer meter instead of removing
+            # its hooks. Ordinary meters restore the class methods as before.
+            for name, prior in (('read', self._prior_read), ('write', self._prior_write)):
+                if prior is None:
+                    delattr(self.mem, name)
+                else:
+                    setattr(self.mem, name, prior)
         return False
 
     def summary(self):
+        if self.compact:
+            if self.log.result is None:
+                self.log.finish()
+            return dict(self.stats, host_sites=self.sites, **self.log.result)
         lg = self.log
         cyc = [e.get("device_cycles") for e in lg]
         by_kernel = {}

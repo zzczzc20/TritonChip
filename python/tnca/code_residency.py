@@ -20,6 +20,14 @@ def active():
     return getattr(_current, 'trace', None)
 
 
+def _resident_identity(module, digest):
+    # A module's executable identity belongs to the bytes that were loaded,
+    # not to whatever may later replace its pathname. It also avoids hundreds
+    # of file-stat calls when forecasting or sorting a decode's residents.
+    identity = getattr(module, '_tnca_execution_identity', None)
+    return identity if identity is not None else digest(module.path) or module.path
+
+
 class RepeatedCodeTrace:
     def __init__(self):
         self.previous = []
@@ -29,6 +37,7 @@ class RepeatedCodeTrace:
         self.predict = False
         self.decision = None
         self._session_key = None
+        self._forecast_cache = OrderedDict()
 
     @contextmanager
     def step(self):
@@ -87,6 +96,31 @@ class RepeatedCodeTrace:
             uploaded += size
         return uploaded
 
+    def _forecast(self, session, modules):
+        """Reuse a forecast only for exactly the same trace and allocator state.
+
+        Replaying a 565-launch decode trace twice at the start of every token
+        wastes host time once the code store reaches a repeating state. The
+        complete key includes ordering and addresses: an eviction, new code,
+        changed trace, or recovery epoch forces a fresh simulation.
+        """
+        allocator = session._code
+        key = (session.id, session.epoch, tuple(self.previous),
+               tuple((identity, module.code_addr, module.code_size)
+                     for identity, module in modules.items()),
+               allocator.base, allocator.limit, allocator.next,
+               allocator.reserved, tuple(allocator.free_list))
+        cached = self._forecast_cache.get(key)
+        if cached is not None:
+            self._forecast_cache.move_to_end(key)
+            return cached
+        result = (self._simulate(session, modules, 'lru'),
+                  self._simulate(session, modules, 'lookahead'))
+        self._forecast_cache[key] = result
+        if len(self._forecast_cache) > 4:
+            self._forecast_cache.popitem(last=False)
+        return result
+
     def request(self, session, key, loaded, digest):
         self.position += 1
         session_key = (session.id, session.epoch)
@@ -97,12 +131,11 @@ class RepeatedCodeTrace:
                 for cache_key, module in loaded.items():
                     if cache_key[:2] != session_key:
                         continue
-                    module_key = session_key + (digest(module.path) or module.path,)
+                    module_key = session_key + (_resident_identity(module, digest),)
                     modules[module_key] = module
                     modules.move_to_end(module_key)
                 try:
-                    lru = self._simulate(session, modules, 'lru')
-                    candidate = self._simulate(session, modules, 'lookahead')
+                    lru, candidate = self._forecast(session, modules)
                     self.decision = (lru, candidate)
                     self.predict = candidate * 5 <= lru * 4
                 except Exception:  # A forecast must never prevent a normal load.
@@ -126,6 +159,6 @@ class RepeatedCodeTrace:
             return keys
         def score(key):
             module = loaded[key]
-            identity = (session.id, session.epoch, digest(module.path) or module.path)
+            identity = (session.id, session.epoch, _resident_identity(module, digest))
             return self._score(identity, module.code_size, self.position)
         return sorted(keys, key=score, reverse=True)

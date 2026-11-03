@@ -67,8 +67,8 @@ class Graph:
         return plan_commands(self.commands)
 
     def replay(self, *, locality=False):
-        from tnca.runtime import MAX_UNFINISHED
-        from tnca.triton_backend.driver import _active_logs, TNCALaunchError
+        from tnca.triton_backend.driver import _active_logs
+        from .queue import submit_queued
         from . import _DeviceModule
         if not self.ready or self.invalid_reason:
             raise RuntimeError(f'tnca graph is invalid: {self.invalid_reason or "not captured"}')
@@ -91,15 +91,8 @@ class Graph:
             return replay_with_locality(self, lambda: self.replay())
         last = None
         for session, module, bound, grid, values, signatures, epoch, template in self.commands:
-            while len(session.unfinished) >= MAX_UNFINISHED:
-                oldest = session.unfinished[0]
-                session.wait(oldest)
-                if not oldest.ok:
-                    raise TNCALaunchError(f'replay predecessor failed: {oldest.error}')
-            previous = session.latest_event
             start = time.perf_counter()
-            last = session.submit(module, bound, grid=grid,
-                                  depends_on=[previous] if previous else [])
+            last = submit_queued(session, module, bound, grid, label='replay')
             last.stream_id = _DeviceModule.current_stream().stream_id
             entry = copy.deepcopy(template)
             entry.update(replay=True, stream_id=last.stream_id,

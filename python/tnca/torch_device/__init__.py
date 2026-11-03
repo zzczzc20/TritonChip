@@ -37,6 +37,7 @@ import contextlib
 import itertools
 import os
 import threading
+from collections import OrderedDict
 from pathlib import Path
 
 WORD = 8                     # tnca.backend: every transfer starts word-aligned
@@ -51,6 +52,44 @@ _lock = threading.RLock()
 _registered = False
 _ext = None
 NAME = 'tnca'
+
+
+class _HostZeroCache:
+    """Small immutable CPU zero buffers shared by repeated storage clears.
+
+    The device upload consumes the source synchronously. Keeping a bounded
+    number of common tensors avoids rebuilding and filling the same host
+    bytes for every cache layer without retaining model-sized allocations.
+    """
+    def __init__(self, max_bytes=8 * 1024 * 1024, min_bytes=64 * 1024):
+        self.max_bytes, self.min_bytes = max_bytes, min_bytes
+        self.bytes = 0
+        self.items = OrderedDict()
+        self.lock = threading.RLock()
+
+    def get(self, shape, dtype, nbytes):
+        if nbytes < self.min_bytes or nbytes > self.max_bytes:
+            return None
+        key = (tuple(shape), dtype)
+        with self.lock:
+            cached = self.items.get(key)
+            if cached is not None:
+                self.items.move_to_end(key)
+                return cached
+            import torch
+            try:
+                value = torch.zeros(key[0], dtype=dtype, device='cpu')
+            except (MemoryError, RuntimeError):
+                return None  # The established per-call path reports errors.
+            while self.items and self.bytes + nbytes > self.max_bytes:
+                _old_key, old = self.items.popitem(last=False)
+                self.bytes -= old.numel() * old.element_size()
+            self.items[key] = value
+            self.bytes += nbytes
+            return value
+
+
+_HOST_ZERO_CACHE = _HostZeroCache()
 
 
 # ---- device memory ----------------------------------------------------------
@@ -132,6 +171,12 @@ class DeviceMemory:
 
     def locate(self, addr):
         """(Buffer, byte offset) of a device address inside a live storage."""
+        # Kernel arguments name their tensor's storage base. A decode token
+        # submits hundreds of kernels against thousands of live tensors; do
+        # not scan all allocations for the overwhelmingly common base case.
+        buf = self.buffers.get(addr)
+        if buf is not None:
+            return buf, 0
         for base, buf in self.buffers.items():
             if base <= addr < base + max(buf.size, 1):
                 return buf, addr - base
@@ -231,6 +276,16 @@ def from_host(dst, src):
             data = torch.cat([data, torch.zeros(pad, dtype=torch.uint8)])
         MEMORY.write(base, memoryview(data.numpy()))
     if dst.is_contiguous() and n == dst.numel() * dst.element_size():
+        # The caller often already owns an exact dense CPU image (model
+        # weights, cache resets, or token metadata). The upload is
+        # synchronous, so its storage remains live until XRT consumes it;
+        # duplicating a large host tensor adds latency and peak memory.
+        if (isinstance(src, torch.Tensor) and src.device.type == 'cpu'
+                and src.dtype == dst.dtype and tuple(src.shape) == tuple(dst.shape)
+                and src.is_contiguous() and not src.requires_grad
+                and not src.is_conj() and not src.is_neg()):
+            write_dense(src.view(-1).view(torch.uint8))
+            return
         host = torch.empty(dst.shape, dtype=dst.dtype)
         host.copy_(src)
         write_dense(host.view(-1).view(torch.uint8))
@@ -291,6 +346,21 @@ def _register_ops(lib):
         return self
 
     def zero_(self):
+        # Large static attention caches are cleared between chat turns. The
+        # original host-staged path writes tens of MB through XRT each time.
+        # Restrict this experimental device path to complete aligned storage;
+        # a view or partial last word still takes the established exact path.
+        nbytes = self.numel() * self.element_size()
+        if (os.environ.get('TNCA_DEVICE_ZERO') == '1' and nbytes >= 65536
+                and nbytes % WORD == 0 and nbytes <= (1 << 31) - (1 << 20)
+                and self.is_contiguous() and self.storage_offset() == 0
+                and self.untyped_storage().nbytes() == nbytes):
+            from .copy import zero_full_storage
+            return zero_full_storage(self)
+        host = _HOST_ZERO_CACHE.get(self.shape, self.dtype, nbytes)
+        if host is not None:
+            from_host(self, host)
+            return self
         return fill_scalar(self, 0)
 
     def local_scalar_dense(self):

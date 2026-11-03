@@ -11,6 +11,95 @@ _lock = threading.RLock()
 _storage_modules = weakref.WeakKeyDictionary()
 
 
+@triton.jit(do_not_specialize=['N'])
+def _zero_storage_kernel(DST, N, BLOCK: tl.constexpr):
+    """Clear device bytes without staging an equally large host tensor."""
+    stride = tl.num_programs(0) * BLOCK
+    destination = DST.to(tl.pointer_type(tl.uint8))
+    for block in range(tl.cdiv(N, stride)):
+        index = (block * tl.num_programs(0) + tl.program_id(0)) * BLOCK + tl.arange(0, BLOCK)
+        tl.store(destination + index, tl.full((BLOCK,), 0, tl.uint8), index < N)
+
+
+def zero_full_storage(tensor):
+    """Queue an all-zero write for an aligned, contiguous whole storage.
+
+    The caller has checked eligibility. The normal native launcher owns
+    code residency and retains the storage until completion, just as for
+    a same-device copy. Numerical data never travels through the host.
+    """
+    from tnca.triton_backend.driver import TNCADriver
+    count = tensor.numel() * tensor.element_size()
+    if not count:
+        return tensor
+    if count > MAX_SPAN:
+        raise ValueError('tnca zero: storage exceeds one launch')
+    block = 128
+    programs = min(triton.cdiv(count, block), 1024)
+    with _lock:
+        previous = triton.runtime.driver.active
+        try:
+            triton.runtime.driver.set_active(TNCADriver())
+            _zero_storage_kernel[(programs,)](tensor, count, block, num_warps=1)
+        finally:
+            triton.runtime.driver.set_active(previous)
+    return tensor
+
+
+@triton.jit
+def _zero_view_kernel(DST, BYTES_PER_HEAD: tl.constexpr, HEADS: tl.constexpr,
+                      BATCH_STRIDE: tl.constexpr, HEAD_STRIDE: tl.constexpr,
+                      BLOCK: tl.constexpr, PROGRAMS_PER_HEAD: tl.constexpr):
+    """Clear contiguous tail rows per head, without per-byte shape division."""
+    destination = DST.to(tl.pointer_type(tl.uint8))
+    pid = tl.program_id(0)
+    group = pid // PROGRAMS_PER_HEAD
+    batch = group // HEADS
+    head = group % HEADS
+    local_pid = pid % PROGRAMS_PER_HEAD
+    base = batch * BATCH_STRIDE + head * HEAD_STRIDE
+    for block in range(tl.cdiv(BYTES_PER_HEAD, BLOCK * PROGRAMS_PER_HEAD)):
+        index = (block * PROGRAMS_PER_HEAD + local_pid) * BLOCK + tl.arange(0, BLOCK)
+        tl.store(destination + base + index, tl.full((BLOCK,), 0, tl.uint8), index < BYTES_PER_HEAD)
+
+
+def zero_view_tensor(tensor):
+    """Queue an exact device-side clear of an aligned, non-overlapping view."""
+    from tnca.triton_backend.driver import TNCADriver
+    item = tensor.element_size()
+    shape, strides = tuple(tensor.shape), tuple(tensor.stride())
+    count = tensor.numel() * item
+    if not count:
+        return tensor
+    if (len(shape) != 4 or strides[-1] != 1 or strides[-2] != shape[-1] or shape[-1] * item % 8
+            or tensor.storage_offset() * item % 8
+            or any(stride * item % 8 for stride in strides[:-1])):
+        raise ValueError('tnca zero: view rows must be word aligned')
+    extent = 1
+    for stride, size in sorted((stride, size) for stride, size in zip(strides, shape) if size > 1):
+        if stride < extent:
+            raise ValueError('tnca zero: view elements overlap')
+        extent += (size - 1) * stride
+    if count > MAX_SPAN or extent * item > MAX_SPAN:
+        raise ValueError('tnca zero: view exceeds one launch')
+    heads_total = shape[0] * shape[1]
+    if heads_total > 1024:
+        raise ValueError('tnca zero: too many cache heads')
+    block = 128
+    bytes_per_head = shape[2] * shape[3] * item
+    programs_per_head = min(triton.cdiv(bytes_per_head, block), 1024 // heads_total)
+    programs = heads_total * programs_per_head
+    with _lock:
+        previous = triton.runtime.driver.active
+        try:
+            triton.runtime.driver.set_active(TNCADriver())
+            _zero_view_kernel[(programs,)](tensor, bytes_per_head, shape[1], strides[0] * item,
+                                           strides[1] * item, block, programs_per_head, num_warps=1)
+        finally:
+            triton.runtime.driver.set_active(previous)
+    return tensor
+
+
 @triton.jit
 def _copy_storage_kernel(SRC, DST, N, BLOCK: tl.constexpr):
     stride = tl.num_programs(0) * BLOCK

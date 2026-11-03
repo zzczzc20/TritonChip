@@ -14,18 +14,49 @@ import platform
 # Execution-only settings cannot alter a compiled graph and often contain
 # per-run paths. Keep every other TNCA setting, including unknown future knobs.
 _RUNTIME_ONLY = frozenset({'TNCA_COMPILE_CACHE_DIR', 'TNCA_TLM_OUT', 'TNCA_DUMP_DIR',
-                           'TNCA_SUBMIT',
+                           'TNCA_SUBMIT', 'TNCA_QUEUE_DEPTH', 'TNCA_MMIO_DESCRIPTOR_CACHE', 'TNCA_CODE_REUSE', 'TNCA_DEVICE_ZERO', 'TNCA_QUEUE_STEPS',
+                           'TNCA_REUSE_WARM_PREFILL', 'TNCA_DEFER_CACHE_RESET',
+                           'TNCA_REUSE_HYBRID_PREFILL', 'TNCA_REUSE_FIRST_DECODE', 'TNCA_DEVICE_EOS_GUARD',
                            'TNCA_DEADLINE', 'TNCA_HOST_TIMEOUT'})
+# These select a runtime device or its measured clock. The ordinary compiler
+# does not use them, but autotuning observes the device and therefore must
+# retain both in its cache identity.
+_UNTUNED_RUNTIME_ONLY = frozenset({'TNCA_BACKEND_ARGS', 'TNCA_OPERATING_CLOCK_EVIDENCE', 'TNCA_COUNTERS',
+                                  'TNCA_DEVICE_EOS_EARLY_STOP', 'TNCA_HYBRID_PREFIX_CHECKPOINT',
+                                  'TNCA_HYBRID_FALLBACK_CHECKPOINT', 'TNCA_REUSE_GUARDED_HYBRID',
+                                  'TNCA_STATIC_PREFIX_REWIND',
+                                  'TNCA_STATIC_SUFFIX_GROUP', 'TNCA_DECODE_CODE_EVICT_ASYNC'})
 _SOURCE_SUFFIXES = frozenset({'.py', '.c', '.cpp', '.cc', '.h', '.hpp', '.td',
                               '.def', '.inc', '.cmake', '.json', '.toml', '.yaml', '.yml'})
+_UNTUNED_RUNTIME_FILES = frozenset({'runtime.py', 'transport.py'})
+# These files only control runtime execution or cache bookkeeping. Preserve
+# their previous digests so already-built untuned graphs remain usable. Bump
+# an entry if that file ever starts changing generated graph semantics.
+_UNTUNED_RUNTIME_SOURCE_IDENTITIES = {
+    'compile_cache.py': bytes.fromhex('59172d7585c1c40304c4f515c13abb89b1066569dd9faf9876788bbecac8eb46'),
+    'eos_guard.py': bytes.fromhex('ac0f4afd4d4a1bb29d926b0277448e718064b8373524fff40f1400065700aaeb'),
+    'code_residency.py': bytes.fromhex('afebaf5e6aae31bdfcda5531189619d3bb4ca885669193d334ee1f4419ea09c8'),
+}
+# This exact driver revision only changes runtime lookup bookkeeping. An
+# unknown revision must use its real digest: the driver also exposes device
+# properties that can affect compilation.
+_UNTUNED_EQUIVALENT_SOURCE_DIGESTS = {
+    'triton_backend/driver.py': {
+        bytes.fromhex('e4ec9c863ca9acbddc657070c3866a69c90ea6d5249e72fb4ff319d6f79f3009'):
+            bytes.fromhex('487a817c8a47cde51b1223b8dafd36ca9705ffe0472422a2a31f6762606dde98'),
+    },
+}
 
 
 def semantic_environment(environ):
+    runtime_only = _RUNTIME_ONLY
+    if environ.get('TNCA_TUNE', '0') != '1':
+        runtime_only = runtime_only | _UNTUNED_RUNTIME_ONLY
     return {key: value for key, value in sorted(environ.items())
-            if key.startswith('TNCA_') and key not in _RUNTIME_ONLY}
+            if key.startswith('TNCA_') and key not in runtime_only}
 
 
-def source_fingerprint(trees, files=None):
+def source_fingerprint(trees, files=None, *, include_runtime=True):
     """Hash content and relative names, independently of checkout location."""
     digest = hashlib.sha256()
     for label, root in sorted(trees.items()):
@@ -33,10 +64,33 @@ def source_fingerprint(trees, files=None):
         if not root.is_dir():
             raise FileNotFoundError(f'compile cache source tree missing: {root}')
         for path in sorted(root.rglob('*')):
-            if path.is_file() and path.suffix in _SOURCE_SUFFIXES and '__pycache__' not in path.parts:
+            relative = path.relative_to(root)
+            # Tests cannot change compiler semantics. Including them makes a
+            # new test or a test-only edit invalidate every persistent graph,
+            # forcing minutes of avoidable recompilation for a user prompt.
+            test_file = (label in ('tnca', 'tnca_cc') and
+                         (path.name.startswith('test_') or path.name.endswith('_test.py')
+                          or 'tests' in relative.parts))
+            # Untuned FX graphs do not embed the launch queue or the board's
+            # register transport. Hashing them forced several minutes of
+            # recompilation after a runtime-only deployment. Autotuning does
+            # depend on measured runtime behavior, so it retains these files.
+            runtime_file = (label == 'tnca' and not include_runtime and
+                            (relative.as_posix() in _UNTUNED_RUNTIME_FILES or
+                             (relative.parts and relative.parts[0] == 'backends')))
+            if (path.is_file() and path.suffix in _SOURCE_SUFFIXES
+                    and '__pycache__' not in path.parts and not test_file and not runtime_file):
                 name = f'{label}/{path.relative_to(root).as_posix()}'
                 digest.update(name.encode() + b'\0')
-                digest.update(hashlib.sha256(path.read_bytes()).digest())
+                stable = (_UNTUNED_RUNTIME_SOURCE_IDENTITIES.get(relative.as_posix())
+                          if label == 'tnca' and not include_runtime else None)
+                if stable is not None:
+                    digest.update(stable)
+                else:
+                    actual = hashlib.sha256(path.read_bytes()).digest()
+                    equivalent = (_UNTUNED_EQUIVALENT_SOURCE_DIGESTS.get(relative.as_posix(), {}).get(actual)
+                                  if label == 'tnca' and not include_runtime else None)
+                    digest.update(equivalent if equivalent is not None else actual)
     for label, path in sorted((files or {}).items()):
         path = Path(path)
         if not path.is_file():
@@ -99,7 +153,7 @@ def configure_persistent_cache(options):
     override = os.environ.get('TNCA_DATA_DIR')
     trees, files = dependency_paths(package, Path(tnca_cc.__file__).resolve().parent,
                                     _data.path, assembler_files, (override,) if override else ())
-    source = source_fingerprint(trees, files)
+    source = source_fingerprint(trees, files, include_runtime=os.environ.get('TNCA_TUNE', '0') == '1')
     versions = dict(python=platform.python_version(), torch=torch.__version__,
                     triton=triton.__version__, machine=platform.machine())
     identity = namespace(source, os.environ, versions, options)

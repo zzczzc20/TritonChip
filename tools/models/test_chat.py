@@ -9,6 +9,14 @@ from chat_quality import first_token_reference, prior_assistant_text_matches, sc
 
 
 class ConversationEvidenceTests(unittest.TestCase):
+    def test_logit_comparison_rejects_missing_or_incomplete_steps(self):
+        with self.assertRaises(ValueError):
+            compare_logits([], [])
+        with self.assertRaises(ValueError):
+            compare_logits([torch.tensor([1.0])], [])
+        with self.assertRaises(ValueError):
+            compare_logits([torch.tensor([1.0])], [torch.tensor([1.0, 2.0])])
+
     def test_previous_answers_must_be_present_and_equal(self):
         self.assertTrue(prior_assistant_text_matches([], [], 0))
         self.assertTrue(prior_assistant_text_matches([{'text': 'Alice'}], [{'text': 'Alice'}], 1))
@@ -57,6 +65,22 @@ class SamplingTests(unittest.TestCase):
 
 
 class ReportTests(unittest.TestCase):
+    def test_reduced_qwen35_requires_attention_before_mutating_config(self):
+        from types import SimpleNamespace
+        from qwen_fp8_lib import limit_text_layers
+        text = SimpleNamespace(model_type='qwen3_5_text', num_hidden_layers=4,
+                               layer_types=['linear_attention'] * 3 + ['full_attention'])
+        with self.assertRaisesRegex(ValueError, 'full-attention'):
+            limit_text_layers(text, 3)
+        self.assertEqual(text.num_hidden_layers, 4)
+        self.assertEqual(len(text.layer_types), 4)
+        limit_text_layers(text, 4)
+        self.assertEqual(text.layer_types[-1], 'full_attention')
+        other = SimpleNamespace(model_type='qwen3_vl_text', num_hidden_layers=4,
+                                layer_types=['full_attention'] * 4)
+        limit_text_layers(other, 1)
+        self.assertEqual((other.num_hidden_layers, other.layer_types), (1, ['full_attention']))
+
     def test_code_store_report_counts_loads_and_evictions_since_step_start(self):
         from chat import _counter_delta
         before = dict(loaded_total=3, evicted_total=2, loaded_modules=2)
@@ -86,6 +110,13 @@ class ReportTests(unittest.TestCase):
 
 
 class AuthorQualityTests(unittest.TestCase):
+    def test_only_reference_and_warm_repeat_need_full_logits(self):
+        from chat_quality import needs_turn_logits
+        self.assertTrue(needs_turn_logits('cpu', False, None))
+        self.assertTrue(needs_turn_logits('tnca', True, None))
+        self.assertFalse(needs_turn_logits('tnca', False, None))
+        self.assertFalse(needs_turn_logits('tnca', True, object()))
+
     def test_near_ties_and_top_five_with_legacy_verdict(self):
         logits = torch.tensor([9.0, 8.0, 7.0, 6.0, 5.0, 4.0])
         reference = dict(text='Hello Alice', tokens=[0], first_token_reference=first_token_reference(logits))

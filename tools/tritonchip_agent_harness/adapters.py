@@ -8,6 +8,10 @@ The line drawn for every CLI is the same:
 - What leaks the environment is switched off -- user configuration, memory
   carried between runs, telemetry, plugins and skills fetched from the
   network, update checks -- and in `offline` mode every web tool too.
+- What the harness itself provides is the same for every CLI: its skills
+  (`SKILLS_DIR`, mounted read-only) are linked into each CLI's own skills
+  directory, so each CLI discovers them the way its vendor made it discover
+  skills, from one byte-identical source. The run record names them by hash.
 
 Each switch is listed here, so a run record can name the configuration it ran under.
 """
@@ -26,6 +30,8 @@ from .siteconfig import Account
 MODES = ("offline", "open")
 CODEX_HOME = "/run/tnca-codex-home"
 WORKDIR = "/work"
+# The harness's skills, one subdirectory each, as the agent's container sees them.
+SKILLS_DIR = "/opt/tnca-skills"
 
 
 @dataclass
@@ -35,6 +41,7 @@ class Launch:
     env_files: list = field(default_factory=list)
     mounts: list = field(default_factory=list)
     switches: dict = field(default_factory=dict)  # what was turned off or on, for the run record
+    skills_dir: str = ""  # where this CLI looks for user skills; SKILLS_DIR's entries are linked there
 
 
 def codex_config(mode: str) -> str:
@@ -91,7 +98,8 @@ def launch(account: Account, prompt: str, mode: str, run_dir: Path, proxy_env: d
                    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1")
         return Launch(command, env, [account.credential], [], {
             "config_dir": "fresh per run", "mcp": "none (strict)", "updates": "off",
-            "nonessential_traffic": "off", "web_tools": "off" if mode == "offline" else "on"})
+            "nonessential_traffic": "off", "web_tools": "off" if mode == "offline" else "on"},
+            skills_dir=f"{AGENT_HOME}/.claude-run/skills")
     if account.cli == "codex":
         home = run_dir / "codex-home"
         home.mkdir(mode=0o700, exist_ok=True)
@@ -102,7 +110,8 @@ def launch(account: Account, prompt: str, mode: str, run_dir: Path, proxy_env: d
         return Launch(command, env, [], [Mount(home, CODEX_HOME, read_only=False)], {
             "codex_home": "fresh per run, auth.json copied", "updates": "off", "analytics": "off",
             "otel_metrics": "none", "remote_plugin": "off", "apps": "off", "skill_dependency_install": "off",
-            "memories": "off", "web_search": "disabled" if mode == "offline" else "live"})
+            "memories": "off", "web_search": "disabled" if mode == "offline" else "live"},
+            skills_dir=f"{CODEX_HOME}/skills")
     prov = account.options["provider"]
     command = ["opencode", "run", "--format", "json", "--auto", "--dir", WORKDIR, "-m", f"{prov}/{main}", prompt]
     env.update(OPENCODE_CONFIG_CONTENT=json.dumps(opencode_config(account, mode), separators=(",", ":")),
@@ -114,7 +123,8 @@ def launch(account: Account, prompt: str, mode: str, run_dir: Path, proxy_env: d
     return Launch(command, env, [account.credential], [], {
         "config": "inline only", "updates": "off", "models_fetch": "off", "default_plugins": "off",
         "lsp_download": "off", "reads_.claude": "off", "share": "off",
-        "webfetch": "deny" if mode == "offline" else "allow"})
+        "webfetch": "deny" if mode == "offline" else "allow"},
+        skills_dir=f"{AGENT_HOME}/.config/opencode/skills")
 
 
 def _events(out: str) -> list:
@@ -273,5 +283,5 @@ def _read(account: Account, out: str, run_dir: Path, export_session=None) -> dic
     return r
 
 
-__all__ = ["CODEX_HOME", "Launch", "MODES", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch", "opencode_config",
-           "parse", "tokens"]
+__all__ = ["CODEX_HOME", "Launch", "MODES", "SKILLS_DIR", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch",
+           "opencode_config", "parse", "tokens"]

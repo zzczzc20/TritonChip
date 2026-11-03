@@ -42,6 +42,8 @@ def main(argv=None) -> int:
     s = sub.add_parser("smoke", help="one trivial request per account, through the gateway")
     s.add_argument("--account", action="append", help="account label; default every account")
     s.add_argument("--mode", choices=("offline", "open"), default="offline")
+    s.add_argument("--probe", choices=("ok", "skills"), default="ok",
+                   help="skills: ask the CLI to list its skills; passes when it names every skill the harness provides")
     s.add_argument("--json", action="store_true")
     t = sub.add_parser("run-task", help="one task run: workspace, agent, gate, evaluator, record")
     t.add_argument("task", type=Path, help="a task package directory or its task.json")
@@ -49,6 +51,8 @@ def main(argv=None) -> int:
     t.add_argument("--mode", choices=("offline", "open"), default="offline")
     t.add_argument("--model", help="override the account's main model for this run")
     t.add_argument("--budget-seconds", type=int, help="override the task's wall-clock budget (the prompt says it too)")
+    t.add_argument("--no-skills", action="store_true",
+                   help="run without the harness's skills (a pilot's control arm; the record says so)")
     t.add_argument("--json", action="store_true")
     k = sub.add_parser("certify", help="build a final candidate's machine at the target's clock and run its points on "
                                        "the card (on the controller: no site configuration)")
@@ -93,7 +97,7 @@ def main(argv=None) -> int:
             task = load_task(args.task)
             if args.budget_seconds:
                 task = dataclasses.replace(task, wall_seconds=args.budget_seconds)
-            value = loop.run_task(site, task, args.agent, args.mode, args.model)
+            value = loop.run_task(site, task, args.agent, args.mode, args.model, skills=not args.no_skills)
             value["ok"] = value.get("validity") == "valid"
             if not args.json:
                 ev = value.get("evaluation") or {}
@@ -111,7 +115,7 @@ def main(argv=None) -> int:
                 print(f"  record: {value['run_dir']}/run.json")
         else:
             labels = args.account or list(site.accounts)
-            value = {"runs": [smoke.run(site, label, args.mode) for label in labels]}
+            value = {"runs": [smoke.run(site, label, args.mode, args.probe) for label in labels]}
             value["ok"] = all(r["ok"] for r in value["runs"])
             if not args.json:
                 for r in value["runs"]:

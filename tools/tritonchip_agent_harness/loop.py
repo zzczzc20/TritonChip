@@ -23,13 +23,15 @@ from typing import Optional
 from . import __version__, evaluator, occupancy, runner
 from .services import Broker
 from .siteconfig import Site, SiteError
-from .task import Task, render
+from .task import SKILL_PATH, Task, render
 from .workspace import export, gate
 
 PSEUDO = ("noop", "reference")
 
 
-def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: Optional[str] = None) -> dict:
+def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: Optional[str] = None,
+             skills: bool = True) -> dict:
+    """`skills=False` runs without the harness's skills: the control arm of a pilot, not a normal run."""
     if site.repository is None:
         raise SiteError("site.json has no `repository`: the clone workspaces are exported from")
     repo = site.repository
@@ -38,15 +40,19 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
     run_dir = site.state_dir / "runs" / f"{task.task_id}-{label}-{stamp}"
     run_dir.mkdir(parents=True)
     workspace = run_dir / "workspace"
-    prompt = render(task, mode)
+    exported = export(repo, task.base_commit, task.hide, workspace)
+    # The prompt names the test-case skill when the run provides it (runner mounts it at SKILL_PATH).
+    skill = skills and (runner.SKILLS_SOURCE / Path(SKILL_PATH).name / "SKILL.md").is_file()
+    prompt = render(task, mode, skill=skill)
     (run_dir / "prompt.md").write_text(prompt, encoding="utf-8")
     record: dict = {
         "schema": "tritonchip-agent-run/1", "run_id": run_dir.name, "harness_version": __version__,
         "task": {"id": task.task_id, "sha256": task.sha256, "base_commit": task.base_commit},
         "agent": agent, "mode": mode, "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
+        "skills": runner.skills_manifest() if skills else {},
         "started": time.time(),
     }
-    record["workspace"] = export(repo, task.base_commit, task.hide, workspace)
+    record["workspace"] = exported
 
     if agent == "noop":
         record["agent_result"] = {"pseudo": "noop"}
@@ -61,7 +67,8 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
             account = dataclasses.replace(account, models={**account.models, "main": model})
         broker = Broker(site, repo, task, workspace, run_dir) if task.services else None
         record["agent_result"] = runner.run_agent(site, account, prompt, mode, run_dir, workspace,
-                                                  timeout=float(task.wall_seconds), services=broker)
+                                                  timeout=float(task.wall_seconds), services=broker,
+                                                  skills=skills)
 
     g = gate(repo, task.base_commit, task.hide, task.design, workspace, out=run_dir / "candidate",
              evaluator_owned=task.evaluator_owned)

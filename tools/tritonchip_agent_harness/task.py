@@ -21,6 +21,15 @@ from pathlib import Path
 from typing import Optional
 
 SCHEMA = "tritonchip-agent-task/1"
+# A block of instruction.md that only a run WITHOUT the skill receives: the syllabus's own
+# measuring example, which the skill replaces. The control arm of a pilot gets today's text.
+WITHOUT_SKILL = re.compile(r"<!-- without-skill -->\n(.*?)<!-- /without-skill -->\n", re.S)
+
+# The test-case skill (decided 2026-10-27, README section 6.3): a method document and a
+# point-free measurement script, provided by the harness to every run's container at
+# this path (adapters.SKILLS_DIR / its name), the same for every task, run and CLI.
+# `render` names it when the run provides it.
+SKILL_PATH = "/opt/tnca-skills/testcase-design"
 
 
 class TaskError(ValueError):
@@ -102,14 +111,23 @@ def load_task(path: Path) -> Task:
                 path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest())
 
 
-def render(task: Task, mode: str) -> str:
-    """The exact text every agent receives. Its sha256 goes in the run record."""
+def render(task: Task, mode: str, skill: bool = False) -> str:
+    """The exact text every agent receives. Its sha256 goes in the run record.
+
+    `skill`: the run provides the test-case skill at SKILL_PATH; the instruction's
+    `without-skill` block is then left out.
+    """
+    instruction = WITHOUT_SKILL.sub("" if skill else r"\1", task.instruction)
     net = ("Only the model service you are talking to is reachable: there is no web access, no package index "
            "and no download." if mode == "offline" else
            "The network is open. Every connection is logged.")
     design = ", ".join(f"`{d}`" for d in task.design)
+    skill_text = (f"- The `testcase-design` skill (`{SKILL_PATH}/SKILL.md`) is how to design test cases of your own\n"
+                  f"  and measure them the way the evaluation does; its `scripts/tnca_case.py` judges and times one\n"
+                  f"  case by the evaluation's own rules.\n"
+                  if skill else "")
     services = _services_text(task.services)
-    return task.instruction.rstrip() + services + f"""
+    return instruction.rstrip() + services + f"""
 
 ## The rules of this run
 
@@ -119,7 +137,7 @@ def render(task: Task, mode: str) -> str:
   and drives the simulated device); a change anywhere else is ignored.
 - The evaluation runs a benchmark you are not shown. Each point is judged on its own: a point whose numbers
   are wrong, or that does not run on the device, is a failed point; the other points still count.
-- {net}
+{skill_text}- {net}
 - You have {task.wall_seconds // 60} minutes. When you are done, stop: your working directory as you leave
   it is your submission.
 - If you conclude the task cannot be done, say so and stop. That is a valid result.
@@ -164,4 +182,4 @@ def _services_text(cfg: dict) -> str:
     return "\n".join(lines)
 
 
-__all__ = ["Task", "TaskError", "load_task", "render"]
+__all__ = ["SKILL_PATH", "Task", "TaskError", "WITHOUT_SKILL", "load_task", "render"]

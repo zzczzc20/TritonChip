@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import shlex
 import shutil
 import tarfile
 import time
@@ -21,10 +22,16 @@ from .provider import AGENT_HOME, AgentContainer, Mount
 from .siteconfig import Account, Site
 
 BINARY = {"claude-code": "claude", "codex": "codex", "opencode": "opencode"}
-# The one harness file an agent's container gets: the bridge to the gateway's
-# socket. Never the harness directory, which holds the task packages (their
-# point lists and reference patches) and the evaluator.
+# The harness files an agent's container gets: the bridge to the gateway's
+# socket, and the skills directory (below). Never the harness directory
+# itself, which holds the task packages (their point lists and reference
+# patches) and the evaluator.
 BRIDGE_SCRIPT = "/opt/tnca-bridge/bridge.py"
+# The harness's skills (skills/<name>/SKILL.md), mounted read-only at
+# adapters.SKILLS_DIR and linked into the CLI's own skills directory, so every
+# CLI in every run discovers the same skills from the same bytes. Which
+# skills, and their hashes, go in the run record (`skills_manifest`).
+SKILLS_SOURCE = doctor.HERE / "skills"
 # The agent's side of the in-run services (services.py), and where their socket appears.
 SERVICE_CLI = "/usr/local/bin/tnca-service"
 SERVICE_DIR = "/run/tnca-service"
@@ -34,10 +41,38 @@ AUTH_JSON_LIMIT = 64 * 1024
 TRANSCRIPTS = {"claude-code": ".claude-run/projects", "opencode": ".local/share/opencode"}
 
 
-def agent_mounts(socket_dir: Path, workspace: Path, extra=()) -> list:
+def agent_mounts(socket_dir: Path, workspace: Path, extra=(), skills: bool = True) -> list:
     """Everything a run's agent container sees from the host, and nothing else."""
-    return [Mount(doctor.HERE / "bridge.py", BRIDGE_SCRIPT), Mount(socket_dir, doctor.SOCKET_DIR),
-            Mount(workspace, adapters.WORKDIR, read_only=False), *extra]
+    mounts = [Mount(doctor.HERE / "bridge.py", BRIDGE_SCRIPT), Mount(socket_dir, doctor.SOCKET_DIR),
+              Mount(workspace, adapters.WORKDIR, read_only=False)]
+    if skills:
+        mounts.append(Mount(SKILLS_SOURCE, adapters.SKILLS_DIR))
+    return mounts + list(extra)
+
+
+def skills_manifest(source: Path = SKILLS_SOURCE) -> dict:
+    """Each skill's name and the sha256 of its files (paths and contents), as the agent gets them."""
+    out = {}
+    for d in sorted(p for p in source.iterdir() if p.is_dir() and (p / "SKILL.md").is_file()):
+        h = hashlib.sha256()
+        for f in sorted(p for p in d.rglob("*") if p.is_file() and "__pycache__" not in p.parts
+                        and not p.name.startswith(".")):
+            h.update(f.relative_to(d).as_posix().encode() + b"\0" + f.read_bytes() + b"\0")
+        out[d.name] = h.hexdigest()
+    return out
+
+
+def link_skills(name: str, skills_dir: str, timeout: float = 60) -> dict:
+    """Link every mounted skill into the CLI's skills directory, inside the running container.
+
+    A link, not a copy: the source stays read-only, and the CLI's own listing
+    is what the record relies on. Returns what the directory then holds.
+    """
+    script = (f"mkdir -p {shlex.quote(skills_dir)} && for s in {adapters.SKILLS_DIR}/*/; do "
+              f"ln -s \"${{s%/}}\" {shlex.quote(skills_dir)}/; done && ls -1 {shlex.quote(skills_dir)}")
+    proc = _exec(name, ["sh", "-c", script], timeout=timeout)
+    return {"dir": skills_dir, "linked": proc.stdout.split() if proc.returncode == 0 else [],
+            "error": (proc.stderr or "").strip()[:300] if proc.returncode != 0 else None}
 
 
 def codex_auth_ok(copy: Path, master: Path) -> Optional[str]:
@@ -104,8 +139,11 @@ def _collect(name: str, account: Account, dest: Path) -> None:
 
 
 def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Path,
-              workspace: Optional[Path], timeout: float, services=None) -> dict:
-    """`services`, when given, is a started-on-demand services.Broker the agent reaches with `tnca-service`."""
+              workspace: Optional[Path], timeout: float, services=None, skills: bool = True) -> dict:
+    """`services`, when given, is a started-on-demand services.Broker the agent reaches with `tnca-service`.
+
+    `skills=False` leaves the harness's skills out of the container (the control arm of a pilot).
+    """
     run_id = run_dir.name
     gw, agent = f"tnca-gw-{run_id}", f"tnca-agent-{run_id}"
     result: dict = {"label": account.label, "cli": account.cli, "auth": account.auth, "mode": mode,
@@ -134,7 +172,7 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         if services is not None:
             extra += [Mount(services.start(), SERVICE_DIR), Mount(doctor.HERE / "service_cli.py", SERVICE_CLI)]
             env["TNCA_SERVICE"] = f"{SERVICE_DIR}/service.sock"
-        mounts = agent_mounts(socket_dir, workspace, extra)
+        mounts = agent_mounts(socket_dir, workspace, extra, skills=skills)
         c = AgentContainer(name=agent, image=site.images["agent"], cpus=site.cpus, memory=site.memory,
                            pids=site.pids, mounts=mounts, env=env, env_files=launch.env_files,
                            labels={"tritonchip-agent-harness": "agent", "run": run_id}, workdir=adapters.WORKDIR)
@@ -144,6 +182,8 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         time.sleep(1)
         version = _exec(agent, [BINARY[account.cli], "--version"], timeout=60)
         result["cli_version"] = (version.stdout.strip().splitlines() or [None])[-1]
+        result["skills"] = {"provided": skills_manifest() if skills else {},
+                            **(link_skills(agent, launch.skills_dir) if skills else {})}
         start = time.time()
         try:
             proc = _exec(agent, launch.command, timeout=timeout)
@@ -201,4 +241,5 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
     return result
 
 
-__all__ = ["BRIDGE_SCRIPT", "SERVICE_CLI", "agent_mounts", "codex_auth_ok", "proxy_env", "run_agent"]
+__all__ = ["BRIDGE_SCRIPT", "SERVICE_CLI", "SKILLS_SOURCE", "agent_mounts", "codex_auth_ok", "link_skills",
+           "proxy_env", "run_agent", "skills_manifest"]

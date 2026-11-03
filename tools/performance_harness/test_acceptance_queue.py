@@ -11,6 +11,33 @@ IDENTITY=dict(image_uuid='49964b17-e0b4-5bd2-dd40-7fc37b1205d3',clock_hz=1000000
 
 def idle(**kwargs):return dict(loaded_uuid=IDENTITY['image_uuid'],clock_counter_mhz=[100],contexts=0,outstanding_execs=0,total_execs=0,client_pid=None,**kwargs)
 
+class QueueBoardIdentity(unittest.TestCase):
+    def board(self):
+        return dict(image='image.xclbin', image_sha256='abc', image_uuid=IDENTITY['image_uuid'],
+                    clock_evidence='clock.json', clock_hz=IDENTITY['clock_hz'],
+                    memory_map={'window_base': 0}, device='0000:04:00.1', mgmt_device='0000:04:00.0')
+
+    def test_same_identity_and_memory_window_override_are_allowed(self):
+        board=self.board()
+        spec=dict(board=board, steps=[dict(id='one', kind='fpga',
+                                          board={'memory_map': {'window_base': 8}})])
+        self.assertEqual(queue.queue_board(spec),board)
+
+    def test_step_cannot_override_the_leased_board_or_image(self):
+        for key,value in (('device','0000:05:00.1'), ('mgmt_device','0000:05:00.0'),
+                          ('image_sha256','different'), ('image_uuid','00000000-0000-0000-0000-000000000001'),
+                          ('clock_hz',90000000)):
+            with self.subTest(key=key):
+                spec=dict(board=self.board(),steps=[dict(id='other',kind='fpga',board={key:value})])
+                with self.assertRaisesRegex(ValueError,'changes the queued board identity'):
+                    queue.queue_board(spec)
+
+    def test_incomplete_top_level_identity_is_refused_before_waiting(self):
+        board=self.board();del board['device']
+        with self.assertRaisesRegex(ValueError,'queue board identity lacks'):
+            queue.queue_board(dict(board=board,steps=[dict(kind='fpga')]))
+
+
 class WaitingRule(unittest.TestCase):
     def test_python_symlink_is_not_dereferenced(self):
         with tempfile.TemporaryDirectory() as tmp:

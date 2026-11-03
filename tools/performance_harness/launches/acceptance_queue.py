@@ -61,6 +61,41 @@ def wait_idle(probe, expected, *, seconds=900, poll_seconds=10, clock=time.monot
         sleep(poll_seconds)
 
 
+def queue_board(spec):
+    """All FPGA steps must use the identity whose idle time and lease we check.
+
+    experiment.run permits per-step board overrides. A queue that locks only
+    the top-level device must reject an override targeting another device,
+    image, management function, or clock before waiting or opening a card.
+    Other per-step board fields (for example a memory window) remain allowed.
+    """
+    board = spec.get('board')
+    steps = spec.get('steps')
+    if not isinstance(board, dict) or not isinstance(steps, list):
+        raise ValueError('board manifest required')
+    missing = [k for k in experiment.BOARD_FIELDS if board.get(k) in (None, '', {})]
+    if missing:
+        raise ValueError(f'queue board identity lacks {missing}')
+    fpga_steps = [step for step in steps if isinstance(step, dict) and step.get('kind') == 'fpga']
+    if not fpga_steps:
+        raise ValueError('board manifest required')
+
+    def identity(value):
+        device = value['device'].lower()
+        mgmt = (value.get('mgmt_device') or device[:-1] + '0').lower()
+        return (device, mgmt, value['image_sha256'].lower(),
+                experiment.canonical_uuid(value['image_uuid']), value['clock_hz'])
+
+    expected = identity(board)
+    for step in fpga_steps:
+        override = step.get('board') or {}
+        if not isinstance(override, dict):
+            raise ValueError('fpga step board override must be an object')
+        if identity(dict(board, **override)) != expected:
+            raise ValueError(f'fpga step {step.get("id", "<unnamed>")} changes the queued board identity')
+    return board
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--root',type=Path,required=True)
@@ -76,8 +111,7 @@ def main():
     for name in a.manifest:
         path=name if name.is_absolute() else a.root/name
         spec=json.loads(path.read_text())
-        if not spec.get('steps') or not any(s['kind']=='fpga' for s in spec['steps']):raise ValueError('board manifest required')
-        board=spec['board']
+        board=queue_board(spec)
         approved={('30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de',100000000),
                   ('a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083',90000000),
                   ('791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09',100000000)}

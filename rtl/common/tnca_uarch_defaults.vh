@@ -56,6 +56,11 @@
 `ifndef TNCA_UARCH_USE_BANKED_VRF
 `define TNCA_UARCH_USE_BANKED_VRF 0
 `endif
+// The physically timed R41 path is the default; legacy simulation profiles
+// explicitly select zero to retain their frozen single-cycle timing contract.
+`ifndef TNCA_UARCH_VALU_LATE
+`define TNCA_UARCH_VALU_LATE 2
+`endif
 `ifndef TNCA_UARCH_VRF_BYPASS
 `define TNCA_UARCH_VRF_BYPASS 0
 `endif

@@ -52,6 +52,9 @@
 
 module tnca_core #(
     parameter USE_BANKED_VRF = 0,
+    // R41's physically timed vector multiply/reduction path uses two stages.
+    // Legacy cycle-locked simulation can select its original single-cycle path.
+    parameter VALU_LATE      = 2,
     // R39 hardware switches. Each is 0 in every profile that predates it,
     // and 0 elaborates exactly the core that existed before it.
     //   VRF_BYPASS  (R39-06) a vector source being written back THIS cycle
@@ -1459,7 +1462,7 @@ module tnca_core #(
     // R41 T2 round 5: LATE = 2 -- the unit registers its own split and
     // valu_late_* is already the cycle-after-X result (vl_* carries only the
     // destination and the predicate result).
-    tnca_vector_alu #(.VLEN(VLEN), .ELEN(ELEN), .LATE(2)) u_valu (
+    tnca_vector_alu #(.VLEN(VLEN), .ELEN(ELEN), .LATE(VALU_LATE)) u_valu (
         .clk(clk), .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
         .va(va_data), .vb(vb_data), .sa(v_sop), .imm(x_imm),
         .use_imm(x_valu_imm),
@@ -1531,11 +1534,11 @@ module tnca_core #(
     // scalar multiply (r_wb_delay 1), so the reservation, the scoreboard and
     // the forwarding treat them as they treat any delayed result.
     `define TNCA_IS_VLATE(maj, fn) \
-        ((((maj) == `TNCA_MAJ_VINT) && (((fn) == `TNCA_V_MUL)    || \
+        ((VALU_LATE != 0) && ((((maj) == `TNCA_MAJ_VINT) && (((fn) == `TNCA_V_MUL)    || \
                                        ((fn) == `TNCA_V_MULI)   || \
                                        ((fn) == `TNCA_V_MULH_S) || \
                                        ((fn) == `TNCA_V_MULH_U))) || \
-         (((maj) == `TNCA_MAJ_RED) && ((fn) < `TNCA_RD_FADD)))
+         (((maj) == `TNCA_MAJ_RED) && ((fn) < `TNCA_RD_FADD))))
     wire x_is_vl     = x_valid && `TNCA_IS_VLATE(x_major, x_func);
     wire x_is_fpnorm = x_valid && `TNCA_IS_FPNORM(x_major);
     wire x_is_fpmc   = x_valid && `TNCA_IS_FPMC(x_major, x_func);

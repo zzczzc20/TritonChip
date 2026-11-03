@@ -16,20 +16,22 @@ and split (median/max |error|, mean signed error).
 """
 import argparse
 import collections
-import gzip
 import hashlib
 import itertools
 import json
 from pathlib import Path
 import statistics
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from json_io import read_json
 
 KNOBS = ('TNCA_ACTIVE_CORES', 'TNCA_RTL_MEM_PORTS', 'TNCA_RTL_OUTSTANDING', 'TNCA_TRANSFER_POLICY')
 FLAT = 0.02
 
 
 def load(path):
-    raw = Path(path).read_bytes()
-    return json.loads(gzip.decompress(raw) if str(path).endswith('.gz') else raw)
+    return read_json(path)[1]
 
 
 def knobs_of(r):
@@ -47,7 +49,7 @@ def main():
     ap.add_argument('--fidelity')
     ap.add_argument('--out', required=True)
     a = ap.parse_args()
-    ds = load(a.dataset)
+    dataset_path, ds = read_json(a.dataset)
     groups = collections.defaultdict(list)
     family = {}
     for r in ds['rows']:
@@ -107,7 +109,7 @@ def main():
                                 mean_signed=statistics.mean(p['rel_err'] for p in ps),
                                 points=sorted({p['point'] for p in ps}))
                            for (s, f), ps in sorted(fam.items())]
-    out['inputs'] = {str(p): hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in [a.dataset, *a.predictions]}
+    out['inputs'] = {str(p): hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in [dataset_path, *a.predictions]}
     Path(a.out).write_text(json.dumps(out, indent=1) + '\n')
     for knob, s in summary.items():
         print(f"{knob:22s} pairs={s['pairs']:3d} reproduced={s['reproduced']:3d} board~{s['median_board_ratio']:.3f} "

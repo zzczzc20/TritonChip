@@ -19,11 +19,12 @@ record ran is refused (knob-mismatch); without a record the prediction is
 kept but marked knobs_source=unverified-legacy-row.
 """
 import argparse
-import gzip
 import hashlib
 import json
 from pathlib import Path
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from json_io import read_json
 from prediction_domain import prediction_status, VALID_STATUSES
 
 
@@ -33,13 +34,7 @@ def sha(path):
 
 def read_results(path):
     """Read original or losslessly compressed results, preserving their source path."""
-    actual = Path(path)
-    if not actual.is_file() and actual.suffix != '.gz':
-        actual = actual.with_name(actual.name + '.gz')
-    if actual.suffix == '.gz':
-        with gzip.open(actual, 'rt', encoding='utf-8') as stream:
-            return actual, json.load(stream)
-    return actual, json.loads(actual.read_text(encoding='utf-8'))
+    return read_json(path)
 
 
 def row_knobs(row, results):

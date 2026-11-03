@@ -9,11 +9,14 @@ model) and prints the markdown tables quoted in G4_DESIGN.md. Nothing is
 typed in: every value is read from those files.
 """
 import argparse
-import gzip
 import json
 import re
 from collections import defaultdict
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "performance_harness"))
+from json_io import read_json as read_recorded_json
 
 ROOT = Path(__file__).resolve().parents[2]
 TARGET = 320.0 / 3.0
@@ -23,13 +26,7 @@ FAMS = ['copy', 'clone', 'add', 'sub', 'mul', 'div', 'relu', 'silu', 'gelu', 'ex
 
 def read_json(path):
     """Read a recorded report, including its losslessly compressed form."""
-    path = Path(path)
-    if not path.is_file() and path.suffix != '.gz':
-        path = path.with_name(path.name + '.gz')
-    if path.suffix == '.gz':
-        with gzip.open(path, 'rt', encoding='utf-8') as stream:
-            return json.load(stream)
-    return json.loads(path.read_text(encoding='utf-8'))
+    return read_recorded_json(path)[1]
 
 
 def fmt(x):

@@ -363,6 +363,7 @@ Manifest-driven experiments with explicit identities, guarded board access and t
 | `tools/performance_harness/acceptance_compare.py` | Compare actual paired board records; preserve numerical/performance failures. | `spec/r41/stage2/acceptance/s2-p1-gemm.json` | care |
 | `tools/performance_harness/acceptance_manifests.py` | Generate bounded lead-started acceptance registrations; never run a card. | `evidence/r41/acceptance/STATUS.md`, `evidence/r41/hbm_bw/AUDIT.md` | one-off |
 | `tools/performance_harness/board_batch.py` | Run a registered board batch with the frozen Stage 1 sampling rule. | `evidence/r41/hbm_bw/LINK_BUDGET.md`, `evidence/r41/hbm_bw/g4/board_tiled2/README.md` | care |
+| `tools/performance_harness/json_io.py` | Read plain or losslessly compressed recorded JSON. | model and G4 report tools | helper |
 | `tools/performance_harness/catalog_check.py` | Coverage check of this catalog: fails on a script that is neither listed here nor ignored, and on a listed path that no longer exists | `Makefile` | core |
 | `tools/performance_harness/clock_qualify.py` | Qualified operating clock of the R41 Stage 2 run-1 image (100 MHz). | `evidence/r41/hbm_bw/g4/run2/BRINGUP.md`, `evidence/r41/stage2/board/README.md` | care |
 | `tools/performance_harness/endurance_mixed.py` | Two-hour continuous mixed board run with session and resource-growth records (R41 S2-01 item 8). | `evidence/r41/stage2/board/README.md`, `spec/r41/run2/board/r2-s2-endurance.json` | one-off |

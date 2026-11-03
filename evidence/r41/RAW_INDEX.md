@@ -1,5 +1,8 @@
 # Raw evidence archive
 
+- The 78 generated HBM reports and logs removed for PR review remain in Git commit `14c4f7fb7964f377154f0bfe2fbb3b863ca70541` at their original paths; use `git show COMMIT:PATH` or the recovery command in `tools/performance_harness/README.md`.
+- Selected G4 model results and the issue-bound report remain in the current tree as lossless `.json.gz` files. Decompress with `gzip -dk` when an original `.json` path is required; the analysis tools read either form.
+
 - `acf3019:/home/zzhouch/r41_raw_archive/guard_15bded2f_20261101/raw.tar` — SHA-256 `93f347cb2e37217b6d00af203bb0344034319c81f3ab198c3c579333171ff153`; 302 diagnostic logs, reports and model raw results; original paths and per-file hashes in `SHA256SUMS` (SHA-256 `f0a60a00eb7dee0286528b0834ff02b95c7f67c21e7fb76e51e1eb13f45ec4f5`) beside the archive.
 
 - `acf3019:/home/zzhouch/r41_raw_archive/guard_15bded2f_batch2/raw.tar` — SHA-256 `d926bf7576fd0496b08945a4966019a5b6e45d930469dc9c79d2a1f6bf9eac30`; SystemC/TLM uncalibrated per-point raw results. `SHA256SUMS` SHA-256 `ebd1eec9caa1dd7030dde1d82ae77577345c5ba7af18c627bd61c3205c7c5928`.

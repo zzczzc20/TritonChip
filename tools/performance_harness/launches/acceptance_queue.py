@@ -10,6 +10,7 @@ from contextlib import ExitStack
 import importlib.util
 import json
 import os
+import socket
 from pathlib import Path
 import subprocess
 import sys
@@ -111,6 +112,7 @@ def main():
     for name in a.manifest:
         path=name if name.is_absolute() else a.root/name
         spec=json.loads(path.read_text())
+        experiment.validate_spec(spec, host=None if a.check_only else socket.gethostname())
         board=queue_board(spec)
         approved={('30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de',100000000),
                   ('a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083',90000000),

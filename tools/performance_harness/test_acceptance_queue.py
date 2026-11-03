@@ -1,5 +1,7 @@
 """Shared-card waiting rule: fake clocks and probes, no card access."""
 import importlib.util
+import json
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -36,6 +38,35 @@ class QueueBoardIdentity(unittest.TestCase):
         board=self.board();del board['device']
         with self.assertRaisesRegex(ValueError,'queue board identity lacks'):
             queue.queue_board(dict(board=board,steps=[dict(kind='fpga')]))
+
+
+class QueuePreflight(unittest.TestCase):
+    def manifest(self):
+        board=QueueBoardIdentity().board()
+        board['image_sha256']='30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de'
+        return dict(id='sample', allowed_hosts=['a-different-host'], hypothesis='h',
+                    competing_explanations=['c'], expected_observations=['o'], sources=['source'],
+                    expected_counter_changes=['counter'], board=board,
+                    steps=[dict(id='run',kind='fpga',argv=['python','run.py'],timeout_seconds=1,
+                                timing_boundary='device',cache_state='warm')])
+
+    def invoke(self, spec, *, check_only):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);path=root/'manifest.json';path.write_text(json.dumps(spec))
+            out=root/'out'
+            argv=['queue','--root',str(root),'--out',str(out),'--manifest',str(path)]
+            if check_only: argv.append('--check-only')
+            with mock.patch.object(sys,'argv',argv), mock.patch.object(experiment,'sysfs_probe',
+                    side_effect=AssertionError('preflight must not access a board')):
+                with self.assertRaises(ValueError): queue.main()
+            self.assertFalse(out.exists())
+
+    def test_bad_step_is_rejected_by_check_only_before_board_access(self):
+        spec=self.manifest();spec['steps'][0]['argv']=[]
+        self.invoke(spec,check_only=True)
+
+    def test_wrong_host_is_rejected_before_the_idle_wait(self):
+        self.invoke(self.manifest(),check_only=False)
 
 
 class WaitingRule(unittest.TestCase):

@@ -123,7 +123,7 @@ above.
    step up to, but not including, its first device probe (the probe raises a sentinel; process execution is
    forbidden).
 3. Check the queue: `python3 tools/performance_harness/launches/acceptance_queue.py --root SRC --out OUT --python PY
-   --manifest M.json --check-only` (manifest and shell checks; no sysfs or card access).
+   --manifest M.json --check-only` (manifest structure and declared board identity; no image-file, sysfs or card access).
 4. Launch it detached on the FPGA host with the same command minus `--check-only`
    (`--budget-seconds` defaults to 10800, idle waits excluded; `--manifest` may repeat). The queue waits for 15
    idle minutes and an approved loaded image, runs the manifests with before and after image guards and never

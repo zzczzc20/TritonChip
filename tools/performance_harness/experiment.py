@@ -224,16 +224,49 @@ def conclusion_fields(record, source):
     return {k: record[k] for k in CONCLUSION_FIELDS}
 
 
+def validate_spec(spec, *, host=None):
+    """Validate the shared experiment contract without touching a device.
+
+    Pass a host to enforce the registration's execution location; omit it to
+    inspect a manifest on a different machine before sending it to the queue.
+    Every step is checked before the queue can wait for or lease a board.
+    """
+    if not isinstance(spec, dict) or not all(spec.get(k) for k in (
+            'id', 'hypothesis', 'competing_explanations', 'expected_observations', 'sources', 'steps')):
+        raise ValueError('experiment lacks its hypothesis, evidence or commands')
+    hosts = spec.get('allowed_hosts')
+    if not isinstance(hosts, list) or not hosts or any(not isinstance(x, str) or not x for x in hosts):
+        raise ValueError('experiment must name its allowed hosts')
+    if host is not None and host not in hosts:
+        raise ValueError('this experiment may run only on its declared remote hosts')
+    steps = spec['steps']
+    if not isinstance(steps, list) or any(not isinstance(step, dict) for step in steps):
+        raise ValueError('each step requires an explicit command and evidence kind')
+    ids = [step.get('id') for step in steps]
+    if (any(not isinstance(name, str) or not name.replace('-', '').replace('_', '').isalnum() for name in ids)
+            or len(set(ids)) != len(ids)):
+        raise ValueError('step ids must be unique simple names')
+    if any(step.get('kind') == 'fpga' for step in steps) and not spec.get('expected_counter_changes'):
+        raise ValueError('a board experiment must declare its expected counter changes')
+    budget = spec.get('budget_seconds')
+    if budget is not None and (type(budget) not in (int, float) or not 0 < budget <= 259200):
+        raise ValueError('experiment total budget must be finite and positive')
+    for step in steps:
+        argv = step.get('argv')
+        kind = step.get('kind')
+        if (not isinstance(kind, str) or kind not in KINDS or not isinstance(argv, list) or not argv
+                or any(not isinstance(arg, str) for arg in argv) or not argv[0]):
+            raise ValueError('each step requires an explicit command and evidence kind')
+        timeout = step.get('timeout_seconds')
+        if type(timeout) not in (int, float) or not 0 < timeout <= 259200:
+            raise ValueError('each command requires a finite positive budget')
+        if step['kind'] in BOARD_KINDS and (not step.get('timing_boundary') or not step.get('cache_state')):
+            raise ValueError(f'fpga step {step["id"]} must declare its timing boundary and cache state')
+
+
 def run(manifest, root, out, *, python, retry_failed=False, conclusion=None, board_probe=sysfs_probe, budget_seconds=None):
     spec = json.loads(manifest.read_text())
-    if socket.gethostname() not in spec['allowed_hosts']:
-        raise ValueError('this experiment may run only on its declared remote hosts')
-    if not all(spec.get(k) for k in ('id', 'hypothesis', 'competing_explanations',
-                                    'expected_observations', 'sources', 'steps')):
-        raise ValueError('experiment lacks its hypothesis, evidence or commands')
-    board_steps = [s for s in spec['steps'] if s.get('kind') in BOARD_KINDS]
-    if board_steps and not spec.get('expected_counter_changes'):
-        raise ValueError('a board experiment must declare its expected counter changes')
+    validate_spec(spec, host=socket.gethostname())
     root, out = root.resolve(), out.resolve()
     out.mkdir(parents=True, exist_ok=True)
     def expand(value):
@@ -263,23 +296,14 @@ def run(manifest, root, out, *, python, retry_failed=False, conclusion=None, boa
     if spec.get('registration'):
         report['registration'] = spec['registration']
     report_path = out/'report.json'
-    ids = [step['id'] for step in spec['steps']]
-    if len(set(ids)) != len(ids) or any(not name.replace('-', '').replace('_', '').isalnum() for name in ids):
-        raise ValueError('step ids must be unique simple names')
     experiment_started = time.monotonic()
     total_budget = spec.get('budget_seconds')
     if budget_seconds is not None:
         if type(budget_seconds) not in (int, float) or not 0 < budget_seconds <= 259200:
             raise ValueError('caller budget must be finite and positive')
         total_budget = min(total_budget, budget_seconds) if total_budget is not None else budget_seconds
-    if total_budget is not None and (type(total_budget) not in (int, float) or not 0 < total_budget <= 259200):
-        raise ValueError('experiment total budget must be finite and positive')
     for step in spec['steps']:
-        if step['kind'] not in KINDS or not isinstance(step['argv'], list) or not step['argv']:
-            raise ValueError('each step requires an explicit command and evidence kind')
         timeout = step['timeout_seconds']
-        if type(timeout) not in (int, float) or not 0 < timeout <= 259200:
-            raise ValueError('each command requires a finite positive budget')
         if total_budget is not None:
             remaining = total_budget - (time.monotonic() - experiment_started)
             if remaining <= 0:
@@ -310,8 +334,6 @@ def run(manifest, root, out, *, python, retry_failed=False, conclusion=None, boa
                 identity[name] = step[name]
         board = None
         if step['kind'] in BOARD_KINDS:
-            if not step.get('timing_boundary') or not step.get('cache_state'):
-                raise ValueError(f'fpga step {step["id"]} must declare its timing boundary and cache state')
             if tree is None:
                 raise ValueError('an fpga step requires the product software tree identity')
             declared = dict(spec.get('board') or {}, **(step.get('board') or {}))

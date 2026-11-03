@@ -2,6 +2,7 @@
   "schema": "tritonchip-agent-task/1",
   "task_id": "r40-multicore-pilot",
   "kind": "cross-layer",
+  "skills": ["testcase-design"],
   "note": "Pilot on R40's three-core U280 machine (spec/devices/u280-3core-r40.json: three core-vrf-sync-v5 cores, NUCA, three HBM outlets, 90 MHz), starting from PR9 at 6b36db5, a descendant of main with R40 (PR #10) merged. The score is the evaluator's own simulation of the image's top level, built from the candidate's description in a device container of its own; each launch's cycles are the control block's MMIO endpoints, kept where the candidate's code cannot reach them, and a launch that reports completion before its memory traffic drains fails. Validated before use by known-answer submissions (VALIDATION.md). Certification of a hardware-changing candidate on the card is not yet wired for multicore.",
   "base_commit": "6b36db5a069792686c5bbbeb8b713364c5bb5519",
   "design": [

@@ -237,15 +237,26 @@ carries the method into every run: how a case is defined, judged and timed,
 the roofline bound, the dimensions a class varies in, and a script that
 measures a case with copies of the evaluation's own `compare` and bound code.
 It is an Agent Skill (`SKILL.md` with a name and a description, scripts
-beside it), the format all three CLIs read. The runner mounts the harness's
-`skills/` read-only at `/opt/tnca-skills` in every run's container and links
-each skill into the CLI's own skills directory, so each CLI discovers it as
-its vendor intended and the agent invokes it on its own; the task text names
-it in one line and leaves out the syllabus's own measuring example, which it
-replaces. Every run of every CLI gets the same bytes, which the run record
-lists by name and hash; `run-task --no-skills` is a pilot's control arm and
-gets today's text. Adding a skill is adding a directory under `skills/`;
-nothing else changes, and no task's base commit is involved. The skill names
+beside it), the format all three CLIs read.
+
+**Which skills a run gets** is decided in three layers (`skills.py`, decided
+2026-11-03), each with one job. The **catalog** is the directory: every skill
+the harness can provide, each self-describing through its front matter, and
+the hash over all of it is the skills' environment version. A **task**
+declares its default set (`task.json` `skills`, by name); a task that
+declares none gets none. A **run** may override the task: `run-task --skills
+a,b`, or `--no-skills` for a pilot's control arm. The runner stages the
+selected skills into the run's directory, mounts that directory alone,
+read-only, at `/opt/tnca-skills`, and links only those into the CLI's own
+skills directory, so each CLI discovers them as its vendor intended and the
+agent invokes them on its own. The prompt names the selected skills from
+their front matter (no task text knows a skill by heart) and leaves out the
+syllabus's own measuring example when any skill is given. The run record
+names the selected set, where it came from (the task or the run), each
+skill's hash and the catalog's version. Adding a skill is adding a directory
+under `skills/` and naming it in the tasks that want it; no task's base
+commit is involved. Tools travel inside a skill (`scripts/`); what needs a
+mount of its own is the environment's, not a skill. The skill names
 no point, family list or tier size; a harness test checks that against the
 live registry (§17). It is machine-independent, as ArchBench is: it defines
 what is measured (each launch's cycles from start to end, summed; the
@@ -437,6 +448,7 @@ experiments at scale use dedicated accounts or API keys.
 ## 9. The workspace and the gate
 
 **A task package** (`tasks/<id>/`): `task.json` (base commit, design paths,
+the skills a run of it gets by default (§6.3),
 evaluator-owned paths, hidden paths, budget, the validation and final sets),
 `instruction.md` (the syllabus) and an optional `reference.patch` (the known
 answer, for validating the loop). The prompt is the syllabus with the run's
@@ -914,9 +926,11 @@ the totals and means of its tokens and occupancy.
 **Equalised CLI conditions.** Off for every CLI: instruction files, web tools
 (offline), memory, MCP, hooks, network-fetched plugins and skills, telemetry,
 auto-update. On for every CLI, from one read-only source: the harness's
-skills (`skills/`), linked into each CLI's skills directory and listed by
-hash in the run record, so two runs are comparable only when their skill
-sets are equal. Each CLI's own bundled skills stay, as its vendor ships them
+skills a task declares or a run selects (§6.3), linked into each CLI's skills
+directory and listed by name, hash and catalog version in the run record,
+so two runs are comparable only when their skill sets are equal: the cell
+is (scaffold, model, auth mode, task, skill set). Each CLI's own bundled
+skills stay, as its vendor ships them
 (Claude Code 2.1.287 lists 14, Codex 0.162.1 four, opencode 1.19.0 one); they
 are a recorded difference, read from `smoke --probe skills`. CLI versions pinned. Task text byte-identical. Differences
 that cannot be equalised are recorded: reasoning-effort scales, compaction,
@@ -1080,6 +1094,7 @@ service request's snapshot; each role's CPU time.
 | 2026-10-27 | Acceptance: pilot 3 on `replay-mzero`, Claude Code and Codex once each with and once each without the skill. Recorded from the transcripts: the distinct (operator, shape, dtype) cases the agent ran, which of the class's dimensions they covered, whether the script was used, the time used. The score is recorded and is not the criterion. The skill text is then frozen as part of the environment version; a later change is a new version |
 | 2026-10-28 | Server occupancy is wall-clock time, per role and per machine: which machine (the operator's label from the site configuration, never a name looked up at run time), start, end and seconds; the queue wait apart; the resources the harness reserved for the role (container CPU limits, the job's threads, one card). CPU use comes later; no cgroup accounting now. Seven segments, one entry per instance: the sandbox, each scoring request, the final evaluation (both sets together), each quick-tier request, each slow-tier request's build on the build worker and its board stage on the card host (one entry for the whole request where no split is recorded), and certification's link and board stage, in `certification.json` (§14). Decided by the user |
 | 2026-10-28 | The skill is machine-independent, as ArchBench is. It defines what is measured (each launch's cycles from start to end, summed; the correctness protocol; the roofline bound), and the machine that is measured on is the environment's: the task text names the machine and the backend settings that select it, and the script takes them from the shell as the agent's own Python would, setting only the profile and the optimisation level. The bound stays the evaluation's per-profile `spec_peak`, so L and η are one core's on every machine and the script says so beside every L; how a candidate stands against the base machine is the ratio of their cycles on the same case, which the skill tells the agent to measure first and keep. The evaluation's `/hbm` branch of `tnca_peak` is copied, with its test. `r40-multicore-pilot`'s instruction marks only its Python example as the skill's to replace; the environment settings above it stay in both arms, and a test holds that for every task. This corrects the skill's wording, which had taken the single-core machine's way of running a grid (`serial-grid`, PROTOCOL.md) for part of the definition; nothing in the delivery changes. Decided by the user after the branch was checked against PR #9's head (3e54d3c3, merged into `testcase-skill`) |
+| 2026-11-03 | Which skills a run gets: three layers (§6.3). The catalog is the `skills/` directory, each skill self-describing by its front matter, the hash over all of it the skills' environment version; a task declares its default set in `task.json` (`skills`; none declared, none given); a run may override it (`--skills a,b`, `--no-skills`). Only the selected skills are staged, mounted and linked; the prompt names them from their front matter; the record names the set, its source, each hash and the catalog version. Tools travel inside skills; what needs its own mount is the environment's. The skills mechanism goes to main as one pull request. Decided by the user |
 
 **Open.**
 
@@ -1132,6 +1147,7 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Visibility | TileBench in the image checked against ArchBench | planned | — |
 | Visibility | Test-case skill: an Agent Skill in the harness (`skills/testcase-design/`), mounted read-only into every run's container and linked into each CLI's skills directory; named by `task.render`, which then drops the syllabus's measuring example; listed by hash in the run record | done | branch `testcase-skill`: the six example cases pass end to end in the toolchain container on core-vrf-sync-v5 (2026-10-27); `smoke --probe skills` on Myserver the same day: Claude Code 2.1.287, Codex 0.162.1 and opencode 1.19.0 each link `testcase-design` into their skills directory and name it when asked to list their skills, all three records carrying the same directory hash; merged with PR #9's head 3e54d3c3 and its wording made machine-independent, the per-core L labelled (2026-10-28) |
 | Visibility | Equivalence test of the skill's copied code against ArchBench's; leak check of the skill directory against the live registry; delivery checks (never in a workspace, mounted read-only at the path the prompt names, every CLI has a skills directory, manifest, both arms of every task's prompt, the `/hbm` peak) | done | `tests/test_testcase_skill.py`: 22 tests, the 6 that need torch run on the U280 host |
+| Visibility | Which skills a run gets: the catalog, the task's default set, the run's override; staged, mounted and linked per run; named in the prompt from the front matter; in the record with hashes and the catalog version | done | `skills.py`; `tests/test_skills.py`; every shipped task declares `testcase-design` |
 | Pilots | Pilot 3: `replay-mzero` with and without the skill, Claude Code and Codex, test behaviour recorded | planned | — |
 | Evaluator | CHIA-level evaluator: base plus overlay, own copies | done | noop 1.000; reference 1.016 / 1.010 |
 | Evaluator | The evaluator's platform from a pinned commit, laid over every tree | done | `task.json` `evaluation.platform` |
@@ -1227,6 +1243,12 @@ PYTHONPATH=tools python3 -m tritonchip_agent_harness smoke
 
 ```bash
 PYTHONPATH=tools python3 -m tritonchip_agent_harness run-task tools/tritonchip_agent_harness/tasks/r39-v5-main-pilot --agent noop
+```
+
+A run gets the skills its task declares; `--skills a,b` picks others, `--no-skills` none (§6.3):
+
+```bash
+PYTHONPATH=tools python3 -m tritonchip_agent_harness run-task tools/tritonchip_agent_harness/tasks/r39-v5-main-pilot --agent noop --no-skills
 ```
 
 ```bash

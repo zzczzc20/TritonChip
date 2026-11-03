@@ -17,7 +17,7 @@ if __package__ in (None, ""):
     from tritonchip_agent_harness.siteconfig import SiteError, credential_status, load_site
     from tritonchip_agent_harness.workspace import WorkspaceError
 else:
-    from . import certify, doctor, loop, smoke, stats
+    from . import skills, certify, doctor, loop, smoke, stats
     from .task import TaskError, load_task
     from .provider import ProviderError
     from .siteconfig import SiteError, credential_status, load_site
@@ -51,8 +51,11 @@ def main(argv=None) -> int:
     t.add_argument("--mode", choices=("offline", "open"), default="offline")
     t.add_argument("--model", help="override the account's main model for this run")
     t.add_argument("--budget-seconds", type=int, help="override the task's wall-clock budget (the prompt says it too)")
-    t.add_argument("--no-skills", action="store_true",
-                   help="run without the harness's skills (a pilot's control arm; the record says so)")
+    which_skills = t.add_mutually_exclusive_group()
+    which_skills.add_argument("--skills", metavar="NAME[,NAME...]",
+                              help="the skills this run gets, instead of the task's own set (the record says so)")
+    which_skills.add_argument("--no-skills", action="store_true",
+                              help="run without any skill (a pilot's control arm; the record says so)")
     t.add_argument("--json", action="store_true")
     k = sub.add_parser("certify", help="build a final candidate's machine at the target's clock and run its points on "
                                        "the card (on the controller: no site configuration)")
@@ -97,7 +100,8 @@ def main(argv=None) -> int:
             task = load_task(args.task)
             if args.budget_seconds:
                 task = dataclasses.replace(task, wall_seconds=args.budget_seconds)
-            value = loop.run_task(site, task, args.agent, args.mode, args.model, skills=not args.no_skills)
+            chosen = [] if args.no_skills else ([s for s in args.skills.split(",") if s] if args.skills else None)
+            value = loop.run_task(site, task, args.agent, args.mode, args.model, skills=chosen)
             value["ok"] = value.get("validity") == "valid"
             if not args.json:
                 ev = value.get("evaluation") or {}
@@ -124,7 +128,7 @@ def main(argv=None) -> int:
         if args.json:
             print(json.dumps(value, indent=2, sort_keys=True))
         return 0 if value["ok"] else 1
-    except (SiteError, ProviderError, TaskError, certify.CertifyError, WorkspaceError, OSError) as exc:
+    except (SiteError, ProviderError, TaskError, skills.SkillError, certify.CertifyError, WorkspaceError, OSError) as exc:
         print(f"agent-harness: {exc}", file=sys.stderr)
         return 2
 

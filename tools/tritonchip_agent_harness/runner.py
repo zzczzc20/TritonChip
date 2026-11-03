@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Optional
 
 from . import adapters, doctor, provider
+from . import skills as skills_
 from .provider import AGENT_HOME, AgentContainer, Mount
 from .siteconfig import Account, Site
 
@@ -27,11 +28,11 @@ BINARY = {"claude-code": "claude", "codex": "codex", "opencode": "opencode"}
 # itself, which holds the task packages (their point lists and reference
 # patches) and the evaluator.
 BRIDGE_SCRIPT = "/opt/tnca-bridge/bridge.py"
-# The harness's skills (skills/<name>/SKILL.md), mounted read-only at
-# adapters.SKILLS_DIR and linked into the CLI's own skills directory, so every
-# CLI in every run discovers the same skills from the same bytes. Which
-# skills, and their hashes, go in the run record (`skills_manifest`).
-SKILLS_SOURCE = doctor.HERE / "skills"
+# The skills a run gets (skills.py): the selected ones are staged into the run's
+# directory, that directory alone is mounted read-only at adapters.SKILLS_DIR, and
+# the CLI's own skills directory links to what is mounted, so every CLI in every
+# run discovers the same skills from the same bytes. The run record names them.
+SKILLS_SOURCE = skills_.SOURCE
 # The agent's side of the in-run services (services.py), and where their socket appears.
 SERVICE_CLI = "/usr/local/bin/tnca-service"
 SERVICE_DIR = "/run/tnca-service"
@@ -41,25 +42,16 @@ AUTH_JSON_LIMIT = 64 * 1024
 TRANSCRIPTS = {"claude-code": ".claude-run/projects", "opencode": ".local/share/opencode"}
 
 
-def agent_mounts(socket_dir: Path, workspace: Path, extra=(), skills: bool = True) -> list:
-    """Everything a run's agent container sees from the host, and nothing else."""
+def agent_mounts(socket_dir: Path, workspace: Path, extra=(), skills: Optional[Path] = None) -> list:
+    """Everything a run's agent container sees from the host, and nothing else.
+
+    `skills`: the run's staged skills directory (skills.stage), mounted read-only; None mounts no skill.
+    """
     mounts = [Mount(doctor.HERE / "bridge.py", BRIDGE_SCRIPT), Mount(socket_dir, doctor.SOCKET_DIR),
               Mount(workspace, adapters.WORKDIR, read_only=False)]
-    if skills:
-        mounts.append(Mount(SKILLS_SOURCE, adapters.SKILLS_DIR))
+    if skills is not None:
+        mounts.append(Mount(skills, adapters.SKILLS_DIR))
     return mounts + list(extra)
-
-
-def skills_manifest(source: Path = SKILLS_SOURCE) -> dict:
-    """Each skill's name and the sha256 of its files (paths and contents), as the agent gets them."""
-    out = {}
-    for d in sorted(p for p in source.iterdir() if p.is_dir() and (p / "SKILL.md").is_file()):
-        h = hashlib.sha256()
-        for f in sorted(p for p in d.rglob("*") if p.is_file() and "__pycache__" not in p.parts
-                        and not p.name.startswith(".")):
-            h.update(f.relative_to(d).as_posix().encode() + b"\0" + f.read_bytes() + b"\0")
-        out[d.name] = h.hexdigest()
-    return out
 
 
 def link_skills(name: str, skills_dir: str, timeout: float = 60) -> dict:
@@ -139,11 +131,12 @@ def _collect(name: str, account: Account, dest: Path) -> None:
 
 
 def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Path,
-              workspace: Optional[Path], timeout: float, services=None, skills: bool = True) -> dict:
+              workspace: Optional[Path], timeout: float, services=None, skills: Optional[list] = None) -> dict:
     """`services`, when given, is a started-on-demand services.Broker the agent reaches with `tnca-service`.
 
-    `skills=False` leaves the harness's skills out of the container (the control arm of a pilot).
+    `skills`: the names of the skills this run gets (skills.select), staged and mounted; none by default.
     """
+    selected = skills_.select(skills or [])
     run_id = run_dir.name
     gw, agent = f"tnca-gw-{run_id}", f"tnca-agent-{run_id}"
     result: dict = {"label": account.label, "cli": account.cli, "auth": account.auth, "mode": mode,
@@ -172,7 +165,8 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         if services is not None:
             extra += [Mount(services.start(), SERVICE_DIR), Mount(doctor.HERE / "service_cli.py", SERVICE_CLI)]
             env["TNCA_SERVICE"] = f"{SERVICE_DIR}/service.sock"
-        mounts = agent_mounts(socket_dir, workspace, extra, skills=skills)
+        staged = skills_.stage(selected, run_dir / "skills") if selected else None
+        mounts = agent_mounts(socket_dir, workspace, extra, skills=staged)
         c = AgentContainer(name=agent, image=site.images["agent"], cpus=site.cpus, memory=site.memory,
                            pids=site.pids, mounts=mounts, env=env, env_files=launch.env_files,
                            labels={"tritonchip-agent-harness": "agent", "run": run_id}, workdir=adapters.WORKDIR)
@@ -182,8 +176,8 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         time.sleep(1)
         version = _exec(agent, [BINARY[account.cli], "--version"], timeout=60)
         result["cli_version"] = (version.stdout.strip().splitlines() or [None])[-1]
-        result["skills"] = {"provided": skills_manifest() if skills else {},
-                            **(link_skills(agent, launch.skills_dir) if skills else {})}
+        result["skills"] = {"provided": skills_.manifest(selected), "catalog": skills_.version(),
+                            **(link_skills(agent, launch.skills_dir) if selected else {})}
         start = time.time()
         try:
             proc = _exec(agent, launch.command, timeout=timeout)
@@ -242,4 +236,4 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
 
 
 __all__ = ["BRIDGE_SCRIPT", "SERVICE_CLI", "SKILLS_SOURCE", "agent_mounts", "codex_auth_ok", "link_skills",
-           "proxy_env", "run_agent", "skills_manifest"]
+           "proxy_env", "run_agent"]

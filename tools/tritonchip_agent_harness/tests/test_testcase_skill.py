@@ -31,9 +31,11 @@ R38 = ROOT / "tools" / "r38" / "archbench"
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(ROOT))
 
-from tritonchip_agent_harness import adapters, runner  # noqa: E402
+from tritonchip_agent_harness import adapters, runner, skills  # noqa: E402
 from tritonchip_agent_harness.siteconfig import Account  # noqa: E402
-from tritonchip_agent_harness.task import SKILL_PATH, load_task, render  # noqa: E402
+from tritonchip_agent_harness.task import load_task, render  # noqa: E402
+
+SKILL_PATH = f"{adapters.SKILLS_DIR}/testcase-design"
 from tritonchip_agent_harness.workspace import hidden  # noqa: E402
 
 try:
@@ -312,11 +314,14 @@ class Delivery(unittest.TestCase):
 
     def test_mounted_read_only_at_the_path_the_prompt_names(self):
         self.assertEqual(runner.SKILLS_SOURCE, SKILL.parent)
-        self.assertEqual(SKILL_PATH, f"{adapters.SKILLS_DIR}/{SKILL.name}")
-        mounts = runner.agent_mounts(Path("/tmp/sock"), Path("/tmp/ws"))
-        skills = [m for m in mounts if m.target == adapters.SKILLS_DIR]
-        self.assertEqual([(m.source, m.read_only) for m in skills], [(SKILL.parent, True)])
-        self.assertFalse([m for m in runner.agent_mounts(Path("/tmp/sock"), Path("/tmp/ws"), skills=False)
+        self.assertEqual(skills.catalog()[SKILL.name].mounted, SKILL_PATH)
+        with tempfile.TemporaryDirectory() as tmp:
+            staged = skills.stage(skills.select([SKILL.name]), Path(tmp) / "skills")
+            self.assertEqual([p.name for p in staged.iterdir()], [SKILL.name])
+            mounts = runner.agent_mounts(Path("/tmp/sock"), Path("/tmp/ws"), skills=staged)
+            mounted = [m for m in mounts if m.target == adapters.SKILLS_DIR]
+            self.assertEqual([(m.source, m.read_only) for m in mounted], [(staged, True)])
+        self.assertFalse([m for m in runner.agent_mounts(Path("/tmp/sock"), Path("/tmp/ws"))
                           if m.target == adapters.SKILLS_DIR])
 
     def test_skill_md_is_an_agent_skill(self):
@@ -345,18 +350,19 @@ class Delivery(unittest.TestCase):
             self.assertNotEqual(launch.skills_dir, adapters.SKILLS_DIR, cli)
 
     def test_manifest_names_the_skill_and_follows_its_bytes(self):
-        manifest = runner.skills_manifest()
-        self.assertIn(SKILL.name, manifest)
-        self.assertEqual(manifest, runner.skills_manifest())
+        manifest = skills.manifest(skills.select([SKILL.name]))
+        self.assertEqual(list(manifest), [SKILL.name])
+        self.assertEqual(manifest, skills.manifest(skills.select([SKILL.name])))
         self.assertEqual(len(manifest[SKILL.name]), 64)
 
     def test_render_names_the_skill_and_drops_the_control_example(self):
         task = load_task(HERE / "tasks" / "replay-mzero")
         self.assertIn("<!-- without-skill -->", task.instruction)
-        with_skill = render(task, "offline", skill=True)
+        self.assertEqual(task.skills, (SKILL.name,))
+        with_skill = render(task, "offline", skills=task.skills)
         without = render(task, "offline")
         self.assertIn(f"`{SKILL_PATH}/SKILL.md`", with_skill)
-        self.assertIn("scripts/tnca_case.py", with_skill)
+        self.assertIn(skills.catalog()[SKILL.name].description, with_skill)
         self.assertNotIn("assert_close", with_skill)
         self.assertNotIn("<!--", with_skill)
         self.assertIn("assert_close", without)
@@ -373,7 +379,8 @@ class Delivery(unittest.TestCase):
             task = load_task(task_dir)
             self.assertIn("assert_close", task.instruction, task.task_id)
             self.assertEqual(task.instruction.count("<!-- without-skill -->"), 1, task.task_id)
-            with_skill, without = render(task, "offline", skill=True), render(task, "offline")
+            with_skill, without = render(task, "offline", skills=task.skills), render(task, "offline")
+            self.assertIn(SKILL.name, task.skills, task.task_id)
             self.assertNotIn("assert_close", with_skill, task.task_id)
             self.assertIn("assert_close", without, task.task_id)
             for env in re.findall(r"TNCA_BACKEND\S*", task.instruction):

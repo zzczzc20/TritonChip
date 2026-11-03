@@ -20,7 +20,7 @@ import json
 import secrets
 import time
 
-from . import doctor, provider, runner
+from . import skills, doctor, provider, runner
 from .siteconfig import Site, credential_status
 
 PROMPT = "Reply with exactly: OK"
@@ -38,7 +38,8 @@ def run(site: Site, label: str, mode: str = "offline", probe: str = "ok") -> dic
     run_dir = site.state_dir / "runs" / f"smoke-{label}-{stamp}"
     run_dir.mkdir(parents=True)
     result = {"schema": "tritonchip-agent-smoke/1", "run_id": run_dir.name, "probe": probe,
-              **runner.run_agent(site, account, PROMPTS[probe], mode, run_dir, None, timeout=300)}
+              **runner.run_agent(site, account, PROMPTS[probe], mode, run_dir, None, timeout=300,
+                                 skills=sorted(skills.catalog()) if probe == "skills" else None)}
 
     # The boundary, probed from a fresh container on the same gateway configuration.
     gw = f"tnca-gw-{run_dir.name}-probe"

@@ -18,18 +18,18 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
+
+from . import skills as catalog_
 
 SCHEMA = "tritonchip-agent-task/1"
 # A block of instruction.md that only a run WITHOUT the skill receives: the syllabus's own
 # measuring example, which the skill replaces. The control arm of a pilot gets today's text.
 WITHOUT_SKILL = re.compile(r"<!-- without-skill -->\n(.*?)<!-- /without-skill -->\n", re.S)
 
-# The test-case skill (decided 2026-10-27, README section 6.3): a method document and a
-# point-free measurement script, provided by the harness to every run's container at
-# this path (adapters.SKILLS_DIR / its name), the same for every task, run and CLI.
-# `render` names it when the run provides it.
-SKILL_PATH = "/opt/tnca-skills/testcase-design"
+# The skills a run gets are chosen in three layers (skills.py, decided 2026-11-03): the
+# catalog, the task's default set (`task.json` `skills`), and a run's override. `render`
+# names the selected ones from their front matter.
 
 
 class TaskError(ValueError):
@@ -51,6 +51,7 @@ class Task:
     services: dict
     path: Path
     sha256: str
+    skills: tuple = ()
 
 
 def load_task(path: Path) -> Task:
@@ -60,7 +61,7 @@ def load_task(path: Path) -> Task:
     raw = path.read_bytes()
     v = json.loads(raw)
     required = {"schema", "task_id", "kind", "base_commit", "design", "hide", "instruction", "budget", "evaluation"}
-    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services"}
+    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services", "skills"}
     missing = required - set(v)
     if missing or unknown:
         raise TaskError(f"{path}: missing {sorted(missing)}, unknown {sorted(unknown)}")
@@ -85,6 +86,13 @@ def load_task(path: Path) -> Task:
         drain = ev.get("drain_cycles")
         if drain is not None and (isinstance(drain, bool) or not isinstance(drain, int) or drain < 0):
             raise TaskError(f"{path}: evaluation.drain_cycles must be a non-negative whole number of cycles")
+    skills = v.get("skills", [])
+    if not isinstance(skills, list) or not all(isinstance(s, str) and catalog_.NAME.match(s) for s in skills):
+        raise TaskError(f"{path}: skills must be a list of skill names")
+    try:
+        catalog_.select(skills)
+    except catalog_.SkillError as exc:
+        raise TaskError(f"{path}: {exc}") from None
     services = dict(v.get("services") or {})
     unknown_services = set(services) - {"score", "fpga_quick", "fpga_slow"}
     if unknown_services:
@@ -108,24 +116,22 @@ def load_task(path: Path) -> Task:
                 evaluator_owned=tuple(v.get("evaluator_owned", ())), hide=tuple(v["hide"]), instruction=(path.parent / v["instruction"]).read_text(encoding="utf-8"),
                 reference=ref, wall_seconds=int(v["budget"]["wall_seconds"]), evaluation=dict(ev),
                 services=services,
-                path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest())
+                path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest(), skills=tuple(skills))
 
 
-def render(task: Task, mode: str, skill: bool = False) -> str:
+def render(task: Task, mode: str, skills: Iterable[str] = ()) -> str:
     """The exact text every agent receives. Its sha256 goes in the run record.
 
-    `skill`: the run provides the test-case skill at SKILL_PATH; the instruction's
-    `without-skill` block is then left out.
+    `skills`: the names of the skills the run provides (skills.py). With any, the
+    instruction's `without-skill` block -- what a skill replaces -- is left out.
     """
-    instruction = WITHOUT_SKILL.sub("" if skill else r"\1", task.instruction)
+    selected = catalog_.select(skills)
+    instruction = WITHOUT_SKILL.sub("" if selected else r"\1", task.instruction)
     net = ("Only the model service you are talking to is reachable: there is no web access, no package index "
            "and no download." if mode == "offline" else
            "The network is open. Every connection is logged.")
     design = ", ".join(f"`{d}`" for d in task.design)
-    skill_text = (f"- The `testcase-design` skill (`{SKILL_PATH}/SKILL.md`) is how to design test cases of your own\n"
-                  f"  and measure them the way the evaluation does; its `scripts/tnca_case.py` judges and times one\n"
-                  f"  case by the evaluation's own rules.\n"
-                  if skill else "")
+    skill_text = catalog_.prompt_lines(selected)
     services = _services_text(task.services)
     return instruction.rstrip() + services + f"""
 
@@ -182,4 +188,4 @@ def _services_text(cfg: dict) -> str:
     return "\n".join(lines)
 
 
-__all__ = ["SKILL_PATH", "Task", "TaskError", "WITHOUT_SKILL", "load_task", "render"]
+__all__ = ["Task", "TaskError", "WITHOUT_SKILL", "load_task", "render"]

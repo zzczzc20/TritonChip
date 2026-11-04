@@ -124,6 +124,9 @@ class Model:
         its result. A load's result is there when the unit lets it go."""
         if op.kind in MEMREAD:
             return self.lsu_busy(op)
+        if op.kind == 'vcvt' and op.attrs.get('preserve_fp8_nan_sign'):
+            issue = int(self.issue['vector_reads_vrf'])
+            return max(int(self.lat['vfp']), issue + int(self.lat['vcmp'])) + int(self.lat['valu'])
         return int(self.lat.get(self.klass(op), self.lat['other']))
 
     _BYTES = {'b': 1, 'h': 2, 'w': 4, 'd': 8}
@@ -141,6 +144,11 @@ class Model:
         holds issue for the read on the banked file."""
         if op.kind in ('comment', 'label') or self.klass(op) == 'alias':
             return 0
+        if op.kind == 'vcvt' and op.attrs.get('preserve_fp8_nan_sign'):
+            # The checked signed conversion emits a comparison, a conversion,
+            # and a predicated vector update; none is an ISA macro-op. Under
+            # predicate pressure codegen falls back to four vector operations.
+            return 3 * int(self.issue['vector_reads_vrf'])
         if any(getattr(v, 'kind', None) == VECTOR for v in _values_in(op)):
             return int(self.issue['vector_reads_vrf'])
         if any(getattr(r, 'kind', None) == VECTOR for r in op.results):

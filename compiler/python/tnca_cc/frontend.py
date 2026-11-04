@@ -5360,6 +5360,10 @@ class TTIRImporter:
 
                 def convert(r, get=get, root_get=root_get):
                     x = get(r)
+                    if (rule[0] == 'narrow' and rule[2] == 'f32'
+                            and root_get is None and tile.store == 'f32'):
+                        return self.b.vcvt(tile.store, rtype, x,
+                                           preserve_fp8_nan_sign=True)
                     y = self.b.vcvt(tile.store, rtype, x)
                     return self._fp8_nan_fix(rule, y, tile.store, x,
                                              x if root_get is None else root_get(r), rtype)
@@ -5385,6 +5389,11 @@ class TTIRImporter:
             return
         _, elem, _bcast = self._float_shape(op)
         x = self._vec(src, stype)
+        if (rule is not None and rule[0] == 'narrow' and rule[2] == 'f32'
+                and rule[1] is src and stype == 'f32'):
+            self._v[res.id()] = self.b.vcvt(stype, rtype, x,
+                                             preserve_fp8_nan_sign=True)
+            return
         y = self.b.vcvt(stype, rtype, x)
         if rule is not None:
             root = x if rule[1] is src else self._vec(rule[1], rule[2])

@@ -713,6 +713,35 @@ class CodeGen:
         src, dst = op.attrs['src'], op.attrs['dst']
         aliases = {'f8E4M3FN': 'e4m3', 'f8E5M2': 'e5m2'}
         src, dst = aliases.get(src, src), aliases.get(dst, dst)
+        if op.attrs.get('preserve_fp8_nan_sign'):
+            if src != 'f32' or dst not in ('e4m3', 'e5m2'):
+                raise Diagnostic('signed FP8 narrowing requires an f32 source')
+            try:
+                p = self.alloc.predicate()
+            except ResourceError:
+                # Predicate pressure is not a reason to change numerics or
+                # reject a kernel; use an ordinary vector temporary instead.
+                tmp = self.alloc.vector()
+                try:
+                    self._emit(f'vf.cvt.{src}.{dst}', f'v{v.reg}', f'v{a.reg}')
+                    self._emit('v.lshri', f'v{tmp}', f'v{a.reg}', '#24')
+                    self._emit('v.andi', f'v{tmp}', f'v{tmp}', '#128')
+                    self._emit('v.or', f'v{v.reg}', f'v{v.reg}', f'v{tmp}',
+                               comment='a NaN keeps its sign')
+                finally:
+                    self.alloc.free('v', tmp)
+            else:
+                try:
+                    # Compare the raw f32 bits as signed integers. The regular
+                    # conversion already retains the sign of every non-NaN;
+                    # ORing bit 7 on negative lanes also fixes signed NaNs.
+                    self._emit(f'vf.cvt.{src}.{dst}', f'v{v.reg}', f'v{a.reg}')
+                    self._emit('v.cmpi.lt', f'p{p}', f'v{a.reg}', '#0')
+                    self._emit('v.ori', f'v{v.reg}', f'v{v.reg}', '#128',
+                               pred=f'p{p}', comment='a NaN keeps its sign')
+                finally:
+                    self.alloc.free('p', p)
+            return
         # sec 8.4 gives int<->float their own opcodes and float->float a
         # shared one; the assembler spells the first two out.
         self._emit(f"vf.cvt.{src}.{dst}", f"v{v.reg}", f"v{a.reg}",

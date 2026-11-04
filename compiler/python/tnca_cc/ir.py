@@ -282,15 +282,21 @@ class Builder:
         self._emit('vfms', [v], [a, b, c], comment=comment)
         return v
 
-    def vcvt(self, src, dst, a, comment=None):
+    def vcvt(self, src, dst, a, comment=None, *, preserve_fp8_nan_sign=False):
         """A numeric conversion (ISA sec 8.4).
 
         `src` and `dst` are the ISA's own format names, in the ISA's own
         order: `vcvt('s32', 'f32', x)` is `vf.cvt.s32.f32`, widening a
-        signed integer to binary32.
+        signed integer to binary32. Signed FP8 narrowing additionally keeps
+        the source sign on NaNs; it is defined only for binary32 input.
         """
         v = self._value(VECTOR, dst, hint='c')
-        self._emit('vcvt', [v], [a], src=src, dst=dst, comment=comment)
+        attrs = dict(src=src, dst=dst, comment=comment)
+        if preserve_fp8_nan_sign:
+            if src != 'f32' or dst not in ('f8E4M3FN', 'f8E5M2'):
+                raise Diagnostic('signed FP8 narrowing requires an f32 source')
+            attrs['preserve_fp8_nan_sign'] = True
+        self._emit('vcvt', [v], [a], **attrs)
         return v
 
     def vextract(self, v, lane, dtype=None):

@@ -46,7 +46,7 @@
       "implementation": {"rtl_parameters": {"VALU_LATE": 0}},
       "platform_binding": {
         "kind": "simulation",
-        "bench": "sim/build/tb_core_dp14.vvp",
+        "bench": "sim/build/tb_core_dp29.vvp",
         "bench_args": [
           "+allroles"
         ],
@@ -539,8 +539,10 @@
         }
       },
       "platform_binding": {
-        "kind": "none",
-        "what": "no image and no bench bound yet; the core-level RTL regression is make core-mmadp (MAC_DP=1)"
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_run2.vvp",
+        "bench_args": ["+allroles"],
+        "what": "the run-2 core bench reads back this profile's capabilities and resources"
       }
     }
   },

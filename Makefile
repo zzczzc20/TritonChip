@@ -367,6 +367,12 @@ $(TB)/core/progs/t41_mmadp.s: $(TB)/core/progs/gen_t41_mmadp.py $(TOOLS)/model/f
 # R41 G2: m.mma.dp.async (ISA sec 9C.4) through the core with the shared MAC
 # lane (MAC_DP=1), at three register-cut placements (latency 3, 4, 5), against
 # the exact oracle; and, on the machine without the capability, the refusal.
+# The core-sim-dp profile fixes MAC_CUTS=29; build its readback bench even
+# when the larger matrix regression has not already been run.
+$(BUILD)/tb_core_dp29.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   -P tb_tnca_core.MAC_DP=1 -P tb_tnca_core.MAC_CUTS=29 -o $@ $(TB)/core/tb_tnca_core.v
+
 .PHONY: core-mmadp
 core-mmadp: $(TB)/core/progs/t41_mmadp.s $(BUILD)/t41_mmadp.hex $(BUILD)/tb_core.vvp | dirs
 	@for c in 0 18 29 31; do \
@@ -2371,7 +2377,8 @@ r1-profile-tests: $(BUILD)/tb_core.vvp $(BUILD)/tb_core4.vvp \
                   $(BUILD)/tb_top.vvp $(BUILD)/tb_core_vrf.vvp $(BUILD)/tb_core_xpose.vvp \
                   $(BUILD)/tb_core_r39hw.vvp $(BUILD)/tb_core_r39sw.vvp \
                   $(BUILD)/tb_core_r39sw4.vvp $(BUILD)/tb_core_r39sw5.vvp \
-                  $(BUILD)/tb_core_r39sw5x8.vvp $(BUILD)/tb_core_g2.vvp
+                  $(BUILD)/tb_core_r39sw5x8.vvp $(BUILD)/tb_core_g2.vvp \
+                  $(BUILD)/tb_core_dp29.vvp $(BUILD)/tb_core_g2c4.vvp $(BUILD)/tb_core_run2.vvp
 	@$(PYTHON) tools/r1/profile_tests.py --json $(BUILD)/profile_tests.json
 
 r1-signoff:

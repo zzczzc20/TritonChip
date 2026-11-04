@@ -498,10 +498,6 @@ jobs:
     name: "R40 grid and pipeline (${{ matrix.suite }})"
     runs-on: ubuntu-24.04
     timeout-minutes: 180
-    # Keep the pinned PyPI wheels but avoid retaining another copy of the
-    # multi-gigabyte Torch/CUDA downloads on the small hosted-runner disk.
-    env:
-      PIP_NO_CACHE_DIR: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -515,6 +511,10 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             iverilog yosys build-essential cmake ninja-build python3 python3-venv \
             libmlir-20-dev mlir-20-tools llvm-20-dev
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('spec/r1_toolchain.lock.json') }}
       - name: Locked Torch, Triton and plugin
         run: |
           set -euo pipefail
@@ -558,6 +558,10 @@ jobs:
     name: "R40 multicore MMIO (${{ matrix.lane }})"
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    # The locked PyPI Torch dependencies fill the runner when pip caches a
+    # second copy of their downloads; retain the lock without that cache.
+    env:
+      PIP_NO_CACHE_DIR: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -584,10 +588,6 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             iverilog yosys build-essential cmake ninja-build python3 python3-venv \
             libmlir-20-dev mlir-20-tools llvm-20-dev
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ hashFiles('spec/r1_toolchain.lock.json') }}
       - name: Locked Torch, Triton and plugin
         run: |
           set -euo pipefail

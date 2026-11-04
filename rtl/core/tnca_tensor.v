@@ -657,8 +657,20 @@ module tnca_tensor #(
     function x_oob_f;
         input [31:0] row;
         input [31:0] unit;
+        reg [32:0] lo;
+        reg [31:0] hi0, hi1;
+        reg valid0, valid1;
         begin
-            x_oob_f = !in_dim(t_c3, row, t_e3) ||
+            // Same wrapped signed-coordinate test as in_dim, expressed
+            // locally for synthesis tools that cannot nest Verilog functions.
+            lo = {1'b0, t_c3[31:0]} + {1'b0, row};
+            hi0 = t_c3[63:32];
+            hi1 = hi0 + 32'd1;
+            valid0 = !hi0[31] && ((hi0 < t_e3[63:32]) ||
+                     ((hi0 == t_e3[63:32]) && (lo[31:0] < t_e3[31:0])));
+            valid1 = !hi1[31] && ((hi1 < t_e3[63:32]) ||
+                     ((hi1 == t_e3[63:32]) && (lo[31:0] < t_e3[31:0])));
+            x_oob_f = !(lo[32] ? valid1 : valid0) ||
                       ({unit[28:0], 3'd0} >= (x_cols_ok << t_esz));
         end
     endfunction

@@ -359,10 +359,13 @@ def rtl03(log):
         log.append(f"    {label}: clean")
         return True
 
-    ok &= yosys(f"read_verilog -DSYNTHESIS {incs} {files}\n"
+    # R41 RTL includes SystemVerilog loop-local declarations in .v sources.
+    # Parse the complete exported hierarchy in that language mode, as the
+    # FPGA flow does, while keeping both structural checks intact.
+    ok &= yosys(f"read_verilog -sv -DSYNTHESIS {incs} {files}\n"
                 f"hierarchy -top {top} -check\ncheck -noinit\n",
                 "the whole exported hierarchy elaborates and connects")
-    ok &= yosys(f"read_verilog -DSYNTHESIS {incs} {files}\n"
+    ok &= yosys(f"read_verilog -sv -DSYNTHESIS {incs} {files}\n"
                 f"hierarchy -top {top} -check\n"
                 f"select {top}\nproc\ncheck -assert\n",
                 f"`proc; check -assert` on {top}: no latch, no "

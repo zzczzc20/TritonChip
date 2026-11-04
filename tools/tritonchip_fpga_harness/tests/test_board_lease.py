@@ -1,9 +1,14 @@
 """The performance and FPGA tools coordinate without accessing a board."""
 import tempfile
 import unittest
+import sys
 from types import SimpleNamespace
 from unittest import mock
 from pathlib import Path
+
+TOOLS = Path(__file__).resolve().parents[2]
+if str(TOOLS) not in sys.path:
+    sys.path.insert(0, str(TOOLS))
 
 from tritonchip_fpga_harness.board_lease import board_lease, lease_path, shared_r41_device
 

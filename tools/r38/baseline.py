@@ -11,8 +11,9 @@ own hash, the profile's configuration hash and the tool versions.
 
     --run      run the gate at --levels and write sim/build/r38/baseline_O<n>.json
     --freeze   write spec/r38/baseline_cycles.json from the O2 report
-    --check    run O2 twice; every case must pass, both runs must give the same
-               cycles case for case, and both must equal the frozen file
+    --check    run O2 twice; every case must pass and both runs must agree.
+               Frozen cycles remain exact apart from the author's two named
+               FP8 one-cycle exceptions, recorded separately from the baseline.
 
 The cycles are serial-grid: the runtime launches a grid one program at a
 time and adds the per-program counts. They are the right thing to compare
@@ -30,6 +31,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'python'))
 from tnca import profiles                                  # noqa: E402
+import cycle_exception as X                                # noqa: E402
 
 OUT = ROOT / 'sim' / 'build' / 'r38'
 FROZEN = ROOT / 'spec' / 'r38' / 'baseline_cycles.json'
@@ -140,6 +142,7 @@ def main():
 
     # --check
     frozen = json.loads(args.reference.read_text())
+    exception = X.load_rule()
     if frozen['profile'] != args.profile or frozen['level'] != 2:
         ap.error('reference must match the selected profile and O2')
     runs = [run_level(2, args.source, args.profile, OUT / f'baseline_check_{i}.json') for i in (1, 2)]
@@ -154,14 +157,16 @@ def main():
             print('CHECK profile configuration: recorded R39 amendment; cycles still compared case by case')
         else:
             bad.append('profile configuration differs from the frozen baseline and its recorded amendment')
-    for case in sorted(set(a) | set(b) | set(frozen['cycles'])):
-        if a.get(case) != b.get(case):
-            bad.append(f'{case}: not deterministic ({a.get(case)} vs {b.get(case)})')
-        if a.get(case) != frozen['cycles'].get(case):
-            bad.append(f'{case}: {a.get(case)} cycles, frozen baseline says {frozen["cycles"].get(case)}')
+    cycle_problems, accepted = X.compare_cycles(frozen['cycles'], a, b, args.profile,
+                                                frozen['level'], args.reference, exception)
+    bad.extend(cycle_problems)
+    for case, original, measured in accepted:
+        print(f'CHECK {case}: author-approved +1 RTL cycle '
+              f'({original} -> {measured}); frozen value retained')
     for line in bad:
         print('CHECK', line)
-    print(f'baseline check: {"FAIL" if bad else "PASS"} ({len(a)} cases, two runs)')
+    exceptions = f', {len(accepted)} author-approved +1-cycle exceptions' if accepted else ''
+    print(f'baseline check: {"FAIL" if bad else "PASS"} ({len(a)} cases, two runs{exceptions})')
     return 1 if bad else 0
 
 

@@ -9,7 +9,8 @@ doc/r38_stage1_tasks_and_acceptance.md S1-02, tests 1-8.
       and the slack is attained (it is the real window offset, not a margin)
     3 stall_total and every overlapping count <= delta perf_cycles
     4 snapshots never decrease within a session
-    5 all O2 cases pass with counters on, cycles identical to the baseline
+    5 all O2 cases pass with counters on; cycles match the baseline, except
+      the author's two FP8 +1-cycle cases, checked against counters off
     6 a device without op 7 reports unavailable, not zero, and still runs
     7 two RTL mutations of the counter mux are each caught by 1-3
     8 the generated include is current (R36 checks are run separately:
@@ -28,6 +29,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 import harness as H                                         # noqa: E402
+import cycle_exception as X                                # noqa: E402
 
 OUT = ROOT / 'sim' / 'build' / 'r38' / 'profiler'
 SPEC = json.loads((ROOT / 'spec' / 'r38' / 'counters.json').read_text())
@@ -117,6 +119,7 @@ def main():
     report('8 generated include current', [] if gen.returncode == 0 else ['stale include'])
 
     base, base_src = baseline_cycles()
+    exception = X.load_rule()
     for profile in args.profiles:
         only = PROBE if args.quick else None
         if args.backend:
@@ -137,8 +140,32 @@ def main():
             if base is None:
                 numeric.append('no S1-01 baseline to compare cycles with')
             else:
-                numeric += [f'{r["case"]}: {r["cycles"]} cycles with counters, baseline {base.get(r["case"])}'
-                            for r in rows if r['ok'] and r['cycles'] != base.get(r['case'])]
+                accepted = {}
+                for row in rows:
+                    if not row['ok']:
+                        continue
+                    name = row['case']
+                    verdict = X.cycle_match(name, profile, 2, base.get(name),
+                                            row.get('cycles'), ROOT / base_src, exception)
+                    if verdict == 'authorized':
+                        accepted[name] = row
+                    elif verdict == 'mismatch':
+                        numeric.append(f'{name}: {row.get("cycles")} cycles with counters, '
+                                       f'baseline {base.get(name)}')
+                if accepted:
+                    # The old frozen number belongs to older code. A +1
+                    # exception must not hide counter overhead: run exactly
+                    # these current kernels without counters and compare each
+                    # program's cycles, as well as its numerical result.
+                    controls = H.run_cases(2, OUT / 'artifacts-core-sim-no-counters',
+                                           only=sorted(accepted), profile=profile,
+                                           session_kwargs=dict(bench=str(bench), counters=False),
+                                           progress=False)
+                    problems = X.counter_control_problems(accepted, controls, accepted)
+                    numeric.extend(problems)
+                    if not problems:
+                        print('  author-approved FP8 +1-cycle cases: '
+                              'counters-on and counters-off match per program')
             if not args.quick and len(rows) != 149:
                 numeric.append(f'{len(rows)} cases ran, expected 149')
         report(f'5 no perturbation [{profile}] vs '

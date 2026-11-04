@@ -83,6 +83,9 @@ module tnca_tensor #(
     parameter MEM_BYTES = 8,
     parameter TAG_W     = 4,        // engine-local tag
     parameter NTAG      = 16,
+    // The timed FPGA path registers the coordinate product; legacy core-sim
+    // keeps the original single-cycle product-and-accumulate timing.
+    parameter MUL_PIPE  = 1,
     // The transposed window write (ISA sec 9E mod[5]). 0: not built (the
     // corner-turn buffer and its states are removed); 1: 16-bit elements
     // (capability `tensor_transpose`); 2: 16-bit and 1-byte elements
@@ -1391,11 +1394,12 @@ module tnca_tensor #(
             // base + sum over the outer positions of coordinate * stride,
             // one multiply a cycle. The walk after this is adds only.
             S_TMUL: begin
-                if (t_pv) t_acc <= t_acc + mul_q;
+                if (MUL_PIPE != 0 && t_pv) t_acc <= t_acc + mul_q;
                 if (t_mp < 3'd4) begin
+                    if (MUL_PIPE == 0) t_acc <= t_acc + mul_p;
                     t_mp  <= t_mp + 3'd1;
-                    t_pv  <= 1'b1;
-                end else if (t_pv) begin
+                    t_pv  <= (MUL_PIPE != 0);
+                end else if (MUL_PIPE != 0 && t_pv) begin
                     t_pv  <= 1'b0;            // the last product lands now
                 end else begin
                     t_P0 <= t_acc; t_P1 <= t_acc; t_P2 <= t_acc; t_P3 <= t_acc; t_ps <= t_acc + t_CB;

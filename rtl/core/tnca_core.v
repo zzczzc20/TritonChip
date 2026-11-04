@@ -55,6 +55,7 @@ module tnca_core #(
     // R41's physically timed vector multiply/reduction path uses two stages.
     // Legacy cycle-locked simulation can select its original single-cycle path.
     parameter VALU_LATE      = 2,
+    parameter TENSOR_MUL_PIPE = 1,
     // R39 hardware switches. Each is 0 in every profile that predates it,
     // and 0 elaborates exactly the core that existed before it.
     //   VRF_BYPASS  (R39-06) a vector source being written back THIS cycle
@@ -2129,6 +2130,7 @@ module tnca_core #(
         .DESC_N(DESC_N), .DESC_W(DESC_W), .WIN_N(WIN_N), .WIN_W(WIN_W),
         .BAR_W(BAR_W), .MEM_DW(TENSOR_DW), .MEM_BYTES(TENSOR_BYTES),
         .TAG_W(CTAG_W), .NTAG(1 << CTAG_W), .HAS_XPOSE(HAS_TENSOR_XPOSE),
+        .MUL_PIPE(TENSOR_MUL_PIPE),
         .LINE_ENGINE(TXF_LINE ? 1 : 0), .LSLOT_N(1 << (MTAG_W - 1)), .LSLOT_W(MTAG_W - 1),
         .PTAG_W(TP_TW), .PORT_DW(TP_DW), .PORT_BYTES(TP_BY)
     ) u_txf (

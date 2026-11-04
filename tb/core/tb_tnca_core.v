@@ -32,6 +32,7 @@ module tb_tnca_core;
     parameter USE_BANKED_VRF = 0;
     // Match core-sim's frozen timing and the timed banked FPGA profile.
     parameter VALU_LATE      = USE_BANKED_VRF ? 2 : 0;
+    parameter TENSOR_MUL_PIPE = USE_BANKED_VRF ? 1 : 0;
     parameter VRF_BYPASS     = 0;
     parameter FE_NOBUBBLE    = 0;
     parameter VRF_PREFETCH   = 0;
@@ -107,7 +108,7 @@ module tb_tnca_core;
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
         .CORE_ID(0), .NUM_CORES(1), .HAS_SFU(1),
-        .USE_BANKED_VRF(USE_BANKED_VRF), .VALU_LATE(VALU_LATE),
+        .USE_BANKED_VRF(USE_BANKED_VRF), .VALU_LATE(VALU_LATE), .TENSOR_MUL_PIPE(TENSOR_MUL_PIPE),
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),

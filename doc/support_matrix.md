@@ -98,12 +98,12 @@ it is a statement about which column of evidence exists.
 | `v.subi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 | `v.muli` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 | `v.andi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
-| `v.ori` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.ori` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.xori` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 | `v.shli` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 | `v.lshri` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.ashri` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
-| `v.cmpi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| `v.cmpi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `v.movi` | VINT | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `vf.add` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `vf.sub` | VFP | (baseline) | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
@@ -194,7 +194,7 @@ it is a statement about which column of evidence exists.
 | `mb.wait` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no |
 | `mb.inval` | MBAR | mbarrier | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
 
-170 instructions: 118 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
+170 instructions: 120 the compiler emits, 0 it has a lowering for and refuses on every R1 profile, 20 executed on the whole machine.
 
 `gated` in the emit column means the lowering exists and the capability
 is false everywhere, so asking for it is a compile error rather than a

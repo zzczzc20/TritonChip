@@ -290,11 +290,12 @@ class Builder:
         signed integer to binary32. Signed FP8 narrowing additionally keeps
         the source sign on NaNs; it is defined only for binary32 input.
         """
-        v = self._value(VECTOR, dst, hint='c')
-        attrs = dict(src=src, dst=dst, comment=comment)
         if preserve_fp8_nan_sign:
             if src != 'f32' or dst not in ('f8E4M3FN', 'f8E5M2'):
                 raise Diagnostic('signed FP8 narrowing requires an f32 source')
+        v = self._value(VECTOR, dst, hint='c')
+        attrs = dict(src=src, dst=dst, comment=comment)
+        if preserve_fp8_nan_sign:
             attrs['preserve_fp8_nan_sign'] = True
         self._emit('vcvt', [v], [a], **attrs)
         return v

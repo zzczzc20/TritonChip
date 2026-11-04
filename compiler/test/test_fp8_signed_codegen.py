@@ -10,11 +10,21 @@ import rtl_harness as H
 from test_fp8_convert import F32_IN, torch_e4m3_from_f32, torch_e5m2_from_f32, words
 from tnca_cc import TargetInfo
 from tnca_cc.codegen import CodeGen
-from tnca_cc.diagnostics import ResourceError
+from tnca_cc.diagnostics import Diagnostic, ResourceError
 from tnca_cc.ir import Builder, make_kernel
 
 
 class FP8SignedCodegenTests(unittest.TestCase):
+    def test_signed_narrowing_rejects_other_format_pairs(self):
+        k = make_kernel('fp8_signed_invalid')
+        b = Builder(k, k.role(0).region)
+        x = b.load(b.const(0x10000), dtype='f32', size='w')
+        before = len(k.role(0).region.ops)
+        for src, dst in (('f16', 'f8E4M3FN'), ('f32', 'f16')):
+            with self.assertRaises(Diagnostic):
+                b.vcvt(src, dst, x, preserve_fp8_nan_sign=True)
+        self.assertEqual(len(k.role(0).region.ops), before)
+
     def run_conversion(self, fmt, reference, pressure):
         if not H.available():
             self.skipTest(H.why_unavailable())

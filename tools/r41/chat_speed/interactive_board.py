@@ -9,7 +9,23 @@ import subprocess
 import sys
 import time
 
-from bench_mmio_board import PROFILE, board_idle
+from bench_mmio_board import IMAGE_UUID, PROFILE, board_idle
+
+
+def idle_ready(auto, tracker, sysfs, monitor, now):
+    """Use the shared monitor when fresh, otherwise observe our own interval."""
+    try:
+        row = auto.probe(sysfs)
+        if row['uuid'] != IMAGE_UUID or auto.clock_mhz(sysfs) != 100:
+            tracker.start = tracker.last = tracker.identity = None
+            return False
+        ready = tracker.observe(now, row)
+        if not auto.idle(row):
+            return False
+        return ready or board_idle(auto, monitor, sysfs)
+    except (OSError, ValueError, KeyError, TypeError):
+        tracker.start = tracker.last = tracker.identity = None
+        return False
 
 
 def main():
@@ -27,19 +43,21 @@ def main():
     sys.path.insert(0, str(root / 'tools/r41/run2_board'))
     import auto
     sysfs, monitor = Path('/sys/bus/pci/devices'), work / 'idle_monitor.json'
-    print('Waiting for 15 minutes of board idleness and the shared queue lock.', flush=True)
+    tracker = auto.IdleTracker()
+    print('Waiting for the expected image and clock, 15 minutes of board idleness, '
+          'and the shared queue lock.', flush=True)
     with (work / 'candidate_queue.lock').open('a') as lock:
         while True:
-            if board_idle(auto, monitor, sysfs):
+            if idle_ready(auto, tracker, sysfs, monitor, time.monotonic()):
                 try:
                     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 except BlockingIOError:
                     pass
                 else:
-                    if board_idle(auto, monitor, sysfs):
+                    if idle_ready(auto, tracker, sysfs, monitor, time.monotonic()):
                         break
                     fcntl.flock(lock, fcntl.LOCK_UN)
-            time.sleep(60)
+            time.sleep(5)
         env = os.environ.copy()
         env.pop('TNCA_LAUNCH', None)
         env.update(TNCA_BOARD='u280', TNCA_TORCH_DEVICE='native',

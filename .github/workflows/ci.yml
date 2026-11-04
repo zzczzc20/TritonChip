@@ -170,6 +170,7 @@ jobs:
         run: |
           python3 -m unittest discover -s tools/tritonchip_agent_harness/tests -p 'test_*.py'
           python3 -m unittest discover -s tools/tritonchip_fpga_harness/tests -p 'test_*.py'
+          python3 tools/r41/chat_speed/test_interactive_idle.py
 
       # R3's performance model: six graphs whose cycle counts are worked out
       # by hand in the test, and exact agreement required. No RTL, no

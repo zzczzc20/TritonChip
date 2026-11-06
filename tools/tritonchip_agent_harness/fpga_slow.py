@@ -48,8 +48,9 @@ RETRIES = 2                # an infrastructure failure is tried again this many 
 REPORT_BYTES = 4 << 20     # the most of one Vivado report fetched from the build host
 PATHS = 8                  # worst paths returned
 DRC_ROWS = 10
-_DESIGN_ERROR = re.compile(r"ERROR: \[(?:VPL|Place|Route|Synth|DRC|Opt|Phys|Timing|Vivado 12|Common 17-69|"
-                           r"Constraints|Implflow|IP_Flow)")
+# Vivado's own messages for a design that does not place, route, fit, synthesise or pass DRC. Generic ids
+# (`Common 17-69`, a VPL step's failure) also follow licence and disk failures, so they are not here.
+_DESIGN_ERROR = re.compile(r"ERROR: \[(?:Place|Route|Synth|DRC|Opt|Phys|Timing|Constraints) \d+-\d+\]")
 _STAGES = (("write_bitstream", "bitstream"), ("route_design", "route"), ("phys_opt", "phys_opt"),
            ("place_design", "place"), ("opt_design", "opt"), ("synth", "synthesis"))
 
@@ -67,6 +68,21 @@ def hardware_digest(candidate: Optional[Path]) -> str:
     for c in sorted(report["taken"], key=lambda c: c["path"]):
         if not c["path"].startswith(evaluator.HARDWARE):
             continue
+        h.update(f"{c['path']}\0{c['status']}\0".encode())
+        f = candidate / "files" / c["path"]
+        if c["status"] != "deleted" and f.is_file():
+            h.update(f.read_bytes())
+    return h.hexdigest()
+
+
+def snapshot_digest(candidate: Optional[Path]) -> str:
+    """The whole snapshot (every file the gate took), as one hash: what a post-run certification matches an
+    in-run board record by."""
+    h = hashlib.sha256()
+    if candidate is None:
+        return "base"
+    report = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))
+    for c in sorted(report["taken"], key=lambda c: c["path"]):
         h.update(f"{c['path']}\0{c['status']}\0".encode())
         f = candidate / "files" / c["path"]
         if c["status"] != "deleted" and f.is_file():
@@ -135,14 +151,17 @@ def cancel(job: dict, cfg: dict) -> dict:
 # -- the build: one Vivado flow -------------------------------------------------------------------
 
 def classify(pipe: dict, clock_mhz: Optional[float] = None) -> str:
-    """'ok', 'design' (the candidate's: charged) or 'infra' (not charged, tried again), from the build record:
+    """'ok', 'design' (the candidate's: charged), 'infra' (not charged, tried again) or 'timeout' (not charged,
+    not tried again), from the build record:
     the FPGA harness's own status, the routed timing it read, the clock it observed and its errors."""
     build = pipe.get("build") or {}
     status = build.get("status")
     if status == "PASS" and pipe.get("status") == "PASS" and build.get("xclbin_sha256"):
         return "ok"
-    if status == "TIMING_FAIL" or pipe.get("status") == "TIMEOUT" or status == "TIMEOUT":
-        # A flow that ran past its generous cap was the design's to make shorter.
+    if pipe.get("status") == "TIMEOUT" or status == "TIMEOUT":
+        # Ran past its cap: not a failure the spec names as the design's, nor one a retry would cure.
+        return "timeout"
+    if status == "TIMING_FAIL":
         return "design"
     if status != "BUILD_FAIL" or build.get("preflight_failed"):
         return "infra"
@@ -155,9 +174,23 @@ def classify(pipe: dict, clock_mhz: Optional[float] = None) -> str:
     return "design" if _DESIGN_ERROR.search(text) else "infra"
 
 
-def _scrub(text: str, site: Site) -> str:
+def _host_words(site: Site) -> list:
+    cfg = site.fpga_pipeline or {}
+    words = [cfg.get("build_host"), cfg.get("board_host")]
+    try:
+        from tritonchip_fpga_harness.hosts import load_hosts
+        for h in load_hosts(cfg["hosts"]).values():
+            target = str(h.ssh)
+            words += [h.name, target, target.split("@")[-1], target.split("@")[0] if "@" in target else None]
+    except Exception:  # noqa: BLE001 -- the names above still go
+        pass
+    return sorted({w for w in words if w and len(w) > 2}, key=len, reverse=True)
+
+
+def _scrub(text: str, site: Site, words: Optional[list] = None) -> str:
     text = re.sub(r"(?<![\w.])/(?:[\w.+-]+/)+([\w.+-]+)", r"\1", str(text))
-    for name in filter(None, [(site.fpga_pipeline or {}).get("build_host"), (site.fpga_pipeline or {}).get("board_host")]):
+    text = re.sub(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", "<address>", text)
+    for name in words if words is not None else _host_words(site):
         text = text.replace(name, "<host>")
     return text[:300]
 
@@ -307,11 +340,18 @@ def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict) -> dict:
         if key in metrics:
             visible[key] = metrics[key]
     if outcome == "design":
+        words = _host_words(site)
         visible["stage"] = failing_stage(pipe)
         visible.update({k: v for k, v in routed.items() if v})
+        if visible.get("drc"):
+            visible["drc"] = [dict(r, description=_scrub(r["description"], site, words)) for r in visible["drc"]]
+        for row in visible.get("worst_paths") or []:
+            for key in ("start", "end"):
+                if key in row:
+                    row[key] = _scrub(row[key], site, words)[:160]
         if build.get("error"):
-            visible["error"] = _scrub(build["error"], site)
-        tail = [_scrub(x, site) for x in (build.get("log_tail") or []) if "ERROR" in str(x) or "CRITICAL" in str(x)]
+            visible["error"] = _scrub(build["error"], site, words)
+        tail = [_scrub(x, site, words) for x in (build.get("log_tail") or []) if "ERROR" in str(x) or "CRITICAL" in str(x)]
         if tail:
             visible["errors"] = tail[-10:]
     return visible
@@ -358,35 +398,43 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
 
 # -- the card ----------------------------------------------------------------------------------------
 
-def _check_view(name: str, ran: dict, task: Task) -> object:
+def _check_view(ran: dict) -> str:
+    """A board check, as the agent sees it: whether it passed. Its log is the container's, so the
+    candidate's to write: it stays in the run record."""
     if ran.get("exit") == 0:
         return "pass"
-    return {"status": "fail" if ran.get("exit") is not None else "did not finish",
-            "log_tail": evaluator.scrubbed(ran.get("log_tail") or [], task, keep=20)}
+    return "did not finish" if ran.get("timed_out") or ran.get("exit") is None else "fail"
 
 
 def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict, sim: dict,
-            job_dir: Path, job: dict, seconds: int) -> dict:
+            job_dir: Path, job: dict, seconds: int, base_xclbin: Optional[str] = None) -> dict:
     """The validation points (and the task's board checks) on `image`, tried again on an infrastructure
-    failure; the agent's view against the base on the card."""
+    failure; the agent's view against the base on the card. outcome: ok, candidate (charged) or infra."""
     points = list(task.evaluation["validation"])
-    rec = None
+    rec, attempts = None, []
     for attempt in range(RETRIES + 1):
-        rec = board.measure(site, repo, task, candidate, image, points, job_dir / f"card-{attempt}",
-                            job["containers"], f"{job['remote_id']}-c{attempt}", seconds)
-        status = (rec.get("session") or {}).get("status")
-        if board.ok(rec) or status == "refused-admission" or job.get("_cancel_requested"):
+        try:
+            rec = board.measure(site, repo, task, candidate, image, points, job_dir / f"card-{attempt}",
+                                job["containers"], f"{job['remote_id']}-c{attempt}", seconds, base_xclbin=base_xclbin)
+            outcome = board.status(rec)
+        except Exception as exc:  # noqa: BLE001 -- a host, the forward, a parse: the infrastructure's
+            rec, outcome = {"error": f"{type(exc).__name__}: {exc}"}, "infra"
+        attempts.append({"outcome": outcome, "status": (rec.get("session") or {}).get("status"),
+                         "error": rec.get("error")})
+        if outcome != "infra" or job.get("_cancel_requested"):
             break
-    status = (rec.get("session") or {}).get("status")
-    if status == "refused-admission":
-        return {"outcome": "design", "record": rec,
-                "visible": {"status": "the card refused the image",
-                            "why": _scrub((rec.get("session") or {}).get("detail") or "", site)}}
-    if not board.ok(rec):
-        return {"outcome": "infra", "record": rec,
+    detail = _scrub(((rec.get("session") or {}).get("detail") or (rec.get("session") or {}).get("reason") or ""), site)
+    if outcome == "infra":
+        return {"outcome": "infra", "record": rec, "attempts": attempts,
                 "visible": {"status": "not measured", "why": "the card host could not give a session; not charged"}}
+    if outcome == "candidate" and not (rec.get("measured") or {}).get("stopped"):
+        return {"outcome": "candidate", "record": rec, "attempts": attempts,
+                "visible": {"status": "the card did not take the image",
+                            "session": (rec.get("session") or {}).get("status"), "why": detail}}
     got = rec["points"]
     visible: dict = {"status": "measured"}
+    if (rec.get("measured") or {}).get("stopped"):
+        visible["note"] = "the card session ran out of time before every point ran"
     try:
         base = board.baseline(site, repo, task)
         full = evaluator.score(base["points"], got, points)
@@ -394,20 +442,34 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
         failures = evaluator.failure_counts(full)
         if failures:
             visible["failures"] = failures
-    except board.BoardError as exc:
+    except Exception as exc:  # noqa: BLE001 -- no base on the card yet: passed points only
         full = None
         passed = sum(1 for p in points if (got.get(p) or {}).get("status") == "pass")
-        visible["validation"] = {"n": len(points), "passed": passed,
-                                 "note": f"no base measured on the card to compare with ({_scrub(str(exc), site)})"}
+        visible["validation"] = {"n": len(points), "passed": passed, "note": "no base measured on the card to compare with"}
+        job["baseline_error"] = f"{type(exc).__name__}: {exc}"
     sim_rows = {r["point"]: r for r in (((sim or {}).get("full") or {}).get("points") or [])}
     agree = sum(1 for p in points if (got.get(p) or {}).get("status") == "pass" and sim_rows.get(p, {}).get("failure")
                 is None and ((got[p].get("observer") or {}).get("done_cycles") == sim_rows[p].get("done_cycles")))
     visible["counted_as_in_simulation"] = agree
     checks = ((rec.get("measured") or {}).get("checks")) or {}
-    bad = {name: _check_view(name, ran, task) for name, ran in checks.items() if ran.get("exit") != 0}
     if checks:
+        bad = {name: _check_view(ran) for name, ran in checks.items() if _check_view(ran) != "pass"}
         visible["checks"] = bad or "all passed"
-    return {"outcome": "ok", "record": rec, "score": full, "visible": visible}
+    return {"outcome": outcome if outcome == "candidate" else "ok", "record": rec, "attempts": attempts,
+            "score": full, "visible": visible}
+
+
+def _base_xclbin(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict) -> Optional[str]:
+    """The base's image on the card host, for the session to compare HBM maps with -- only for a built image
+    whose device description kept the base's (the map follows the description)."""
+    if image.get("kind") != "built":
+        return None
+    if evaluator.hardware_changed(repo, task, candidate).get("device"):
+        return None
+    try:
+        return board.base_image(site, task)["path"]
+    except board.BoardError:
+        return None
 
 
 def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, job: dict,
@@ -441,9 +503,10 @@ def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: 
         job["tree_commit"] = built["tree_commit"]
         visible["build"] = built["visible"]
         job["outcome"] = built["outcome"]
-        if built["outcome"] == "infra":
+        if built["outcome"] in ("infra", "timeout"):
             visible.update(status="not built", charged=None,
-                           why="the build infrastructure failed after retries; not charged")
+                           why=("the build infrastructure failed after retries" if built["outcome"] == "infra"
+                                else "the flow ran past its time limit") + "; not charged")
             return visible, full
         if built["outcome"] == "design":
             visible.update(status="infeasible", charged="flow")
@@ -454,21 +517,28 @@ def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: 
         visible["charged"] = "flow"
         if not with_board:
             return visible, full
-        image = board.put_image(site, built["run_id"], job["image"]["sha256"], job["image"]["xclbin"],
-                                job["remote_id"])
+        try:
+            image = board.put_image(site, built["run_id"], job["image"]["sha256"], job["image"]["xclbin"],
+                                    job["remote_id"])
+        except Exception as exc:  # noqa: BLE001 -- the flow ran and is charged; its image waits on the build host
+            full["card"] = {"error": f"{type(exc).__name__}: {exc}"}
+            visible["board"] = {"status": "not measured", "why": "the image could not reach the card host; "
+                                "ask again for this hardware: it needs no new flow"}
+            return visible, full
         job["image"]["card"] = image
     elif not with_board:
         raise SlowError("a request that needs no flow has nothing to do without the board")
-    card = on_card(site, repo, task, candidate, image, sim, job_dir, job, board_seconds)
+    card = on_card(site, repo, task, candidate, image, sim, job_dir, job, board_seconds,
+                   base_xclbin=_base_xclbin(site, repo, task, candidate, image))
     full["card"] = {k: v for k, v in card.items() if k != "visible"}
     visible["board"] = card["visible"]
     if job["kind"] == "software":
-        job["outcome"] = card["outcome"]
-        visible["charged"] = "board_run" if card["outcome"] in ("ok", "design") else None
+        job["outcome"] = "design" if card["outcome"] == "candidate" else card["outcome"]
+        visible["charged"] = "board_run" if card["outcome"] in ("ok", "candidate") else None
         if card["outcome"] == "infra":
             visible["status"] = "not measured"
     return visible, full
 
 
-__all__ = ["SlowError", "build", "cancel", "classify", "hardware_digest", "manifest", "on_card", "run",
+__all__ = ["SlowError", "build", "cancel", "classify", "hardware_digest", "snapshot_digest", "manifest", "on_card", "run",
            "routed_report", "worst_paths", "slr_utilization", "drc_rules"]

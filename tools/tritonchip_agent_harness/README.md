@@ -905,10 +905,13 @@ run:
   stays open while a slow request runs.
 - **What the agent sees**: for a failed flow, the quick tier's fields plus the
   routed design's (failing stage, hold slack, per-SLR utilisation, SLR
-  crossings on the worst paths, failing DRC rules), host paths and names
-  scrubbed; on the card, the validation set's aggregate against the base on the
-  card, how many points counted what simulation counted, and each board check
-  that did not pass. Point names, cycles and records stay in the run record.
+  crossings on the worst paths, failing DRC rules), host paths, names and
+  addresses scrubbed; on the card, the validation set's aggregate against the
+  base on the card (the base measured on its image, validation points only:
+  the final set never runs while an agent does), how many points counted what
+  simulation counted, and which board checks did not pass (pass or fail only:
+  a check's log is the container's). Point names, cycles, logs and records stay
+  in the run record. A failed request's error text stays there too.
 - **At the run's end** a slow request still running runs to its end, unseen by
   the agent; with `certify_after_run` the harness then certifies the run's
   candidate on the card itself (`certify.after_run`: all validation and final
@@ -922,11 +925,18 @@ unless its UUID is already loaded (a measured image stays; the next session
 overwrites it), and runs the board relay (`tnca.backends.board_relay`), which
 owns the card and executes link operations only. The candidate's compiler and
 runtime run in the evaluator's container here, with no network, and reach the
-relay through an SSH-forwarded Unix socket. The relay writes each launch's count
-(the control block's own launch timestamps and done count) to a log on the card
-host: that log is the score, as the bench's observer is in simulation. The card
-has no drain observation, so `not-drained` stays simulation's. The site names
-the card:
+relay through an SSH-forwarded Unix socket. The relay logs every launch the
+device admitted (read from the control block's `served` register after each
+doorbell, so an aliased one is seen too) with the control block's own launch
+timestamps and done count, to a log on the card host: that log is the score, as
+the bench's observer is in simulation, and a point whose log shows a launch it
+could not count is rejected (`unobserved-launch`). Each point, and each board
+check, runs in a container of its own; before it starts, the harness writes its
+label into the session over SSH, and the relay files the launches under that
+label whatever the client says, zeroing the card's memory between labels.
+Files the containers wrote are read without following links and bounded; of a
+board check the agent learns only whether it passed. The card has no drain
+observation, so `not-drained` stays simulation's. The site names the card:
 
 ```json
 "fpga_pipeline": {

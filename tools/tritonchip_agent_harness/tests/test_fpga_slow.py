@@ -12,7 +12,7 @@ from unittest import mock
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE.parent))
 
-from tritonchip_agent_harness import fpga_slow  # noqa: E402
+from tritonchip_agent_harness import board, fpga_slow  # noqa: E402
 from tritonchip_agent_harness.task import Task, TaskError, load_task, render  # noqa: E402
 
 
@@ -73,7 +73,7 @@ class SlowService(unittest.TestCase):
                                               board_seconds=60)
             self.assertEqual(visible["board"]["validation"]["speedup_geomean"], 2.0)
             self.assertEqual(visible["board"]["counted_as_in_simulation"], 1)
-            self.assertEqual(visible["board"]["checks"]["fp8"]["status"], "fail")
+            self.assertEqual(visible["board"]["checks"], {"fp8": "fail"})
             self.assertEqual(visible["charged"], "board_run")
             self.assertNotIn("secret.validation", json.dumps(visible))
             self.assertNotIn("secret.final", json.dumps(visible))
@@ -104,6 +104,27 @@ class SlowService(unittest.TestCase):
         self.assertEqual(fpga_slow.classify({"status": "BUILD_FAIL", "build": {
             "status": "BUILD_FAIL", "log_tail": ["ERROR: license checkout failed"]}}), "infra")
         self.assertEqual(fpga_slow.classify({"status": "PIPELINE_FAIL"}), "infra")
+        self.assertEqual(fpga_slow.classify({"status": "TIMEOUT", "build": {}}), "timeout")
+
+    def test_a_launch_the_relay_could_not_count_rejects_the_point(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            observe = Path(tmp)
+            (observe / "0.log").write_text("cmd op=1 seq=7 obs=10 done=10 status=0\nunfinished seq=6\nend launches=2\n")
+            (observe / "1.log").write_text("cmd op=1 seq=9 obs=12 done=12 status=0\nend launches=1\n")
+            rec = {"status": "pass", "time": {"device": 10}}
+            got = board.scored(task(), ["a", "b"], {"records": {"a": rec, "b": dict(rec, time={"device": 12})}},
+                               observe)
+            self.assertEqual(got["a"]["status"], "unobserved-launch")
+            self.assertEqual(got["b"]["status"], "pass")
+
+    def test_a_container_written_link_is_never_followed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "secret").write_text("key")
+            (root / "check.log").symlink_to(root / "secret")
+            self.assertIsNone(board.read_safe(root / "check.log"))
+            (root / "plain").write_text("ok")
+            self.assertEqual(board.read_safe(root / "plain"), b"ok")
 
     def test_build_only_cancel_reconciles_no_card_host(self):
         from tritonchip_fpga_harness import hosts, pipeline

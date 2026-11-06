@@ -120,6 +120,14 @@ class Broker:
                 job["outlived_run"] = True
                 job["note"] = "still running when the agent stopped; it ran to its end, unseen by the agent"
                 continue
+            if job["service"] == "fpga-slow" and job.get("charge"):
+                # Queued, never started: its reservation goes back.
+                with self.lock:
+                    if job["charge"] == "flow":
+                        self.flows_left += 1
+                    else:
+                        self.board_runs_left += 1
+                    job["charged"] = None
             job["state"] = "cancelled"
             job["note"] = "still running when the agent stopped; its result is not kept"
             stopped.append(job)
@@ -197,6 +205,7 @@ class Broker:
                "remote_id": f"tnca-{secrets.token_hex(8)}"}
         if service in ("fpga-quick", "fpga-slow"):
             job["hardware"] = fpga_slow.hardware_digest(candidate)
+            job["digest"] = fpga_slow.snapshot_digest(candidate)
         if service == "fpga-slow":
             job["mode"] = self.slow_mode
             refused = self._slow_kind(job, candidate)
@@ -289,8 +298,13 @@ class Broker:
                 job["state"], job["result"] = "done", visible
         except Exception as exc:  # noqa: BLE001
             error = {"error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+            # A slow request's failure can carry host names, paths and whatever a container wrote: the
+            # agent learns that it failed and was not charged; the text stays in the record.
+            shown = ({"status": "failed", "why": "the request failed on the infrastructure; not charged"}
+                     if job["service"] == "fpga-slow" else error)
             if job["state"] == "running":
-                job["state"], job["result"] = "failed", error
+                job["state"], job["result"] = "failed", shown
+                job["full"] = error
             else:
                 job["full"] = error
         finally:

@@ -117,8 +117,7 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
                 and not pseudo):
             # The harness certifies the run's candidate on the card itself (report section 8.9, B1).
             try:
-                record["certification"] = certify.after_run(site, repo, task, record, run_dir,
-                                                            broker.images if broker is not None else {})
+                record["certification"] = certify.after_run(site, repo, task, record, run_dir, broker)
             except Exception as exc:  # noqa: BLE001 -- the run's record is kept; certify by hand
                 record["certification"] = {"verdict": "no-verdict", "why": f"{type(exc).__name__}: {str(exc)[:300]}"}
     record["occupancy"] = occupancy.of_run(site, task, record["agent_result"], evaluated)

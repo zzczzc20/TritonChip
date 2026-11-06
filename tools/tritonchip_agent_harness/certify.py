@@ -436,17 +436,20 @@ def _board_rows(sim: dict, got: dict) -> list:
     return rows
 
 
-def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, images: dict) -> dict:
+def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, broker=None) -> dict:
     """The run's candidate on the card, by the harness, once the run is over (report section 8.9: B1, B10).
 
-    Its machine is built unless this run already built exactly this hardware (an in-run slow request's
-    image is reused) or it kept the base's (the base's image); then every validation and final point
-    runs through the relay (board.py), and the task's board checks with them. The verdicts are this
-    module's: certified, infeasible, board-fail (the card refused the image), board-disagrees (a point
-    or a board check), no-verdict (the infrastructure: run it again)."""
+    Selection is the run's: its final candidate (a run with islands will hand the top 3 by validation score
+    here, in order). Its machine is built unless this run already built exactly this hardware (an in-run slow
+    request's image is reused) or it kept the base's (the base's image). An in-run board record of exactly
+    this snapshot stands for the validation points and the board checks; the rest -- the final points, or all
+    of them -- run through the relay (board.py). Verdicts: certified, infeasible, board-fail (the card did not
+    take the image), board-disagrees (a point or a board check), no-verdict (the infrastructure: run again)."""
     import secrets
     from . import board, fpga_slow
     cfg = (task.services or {}).get("fpga_slow") or {}
+    images = broker.images if broker is not None else {}
+    jobs = list(broker.jobs.values()) if broker is not None else []
     candidate = run_dir / "candidate" if record["gate"]["taken"] else None
     names = points(task)
     sim = simulated_from_run(record, names)
@@ -454,9 +457,12 @@ def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, images:
            "containers": f"tnca-cert-{secrets.token_hex(6)}"}
     work = run_dir / "certification"
     out: dict = {"started": time.time(), "hardware_changed": record["hardware"]["changed"]}
+    digest = fpga_slow.snapshot_digest(candidate)
+    reused = next((j for j in jobs if j["service"] == "fpga-slow" and j.get("digest") == digest
+                   and j.get("state") == "done" and ((j.get("full") or {}).get("card") or {}).get("outcome") == "ok"),
+                  None)
     if record["hardware"]["changed"]:
-        digest = fpga_slow.hardware_digest(candidate)
-        built = images.get(digest)
+        built = images.get(fpga_slow.hardware_digest(candidate))
         if built:
             out["image_from"] = "an in-run slow request"
             image = built.get("card") or board.put_image(site, built["build_run"], built["sha256"], built["xclbin"],
@@ -474,23 +480,35 @@ def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, images:
     else:
         image = board.base_image(site, task)
     out["image"] = image
-    rec = board.measure(site, repo, task, candidate, image, names, work / "card", job["containers"],
-                        job["remote_id"], float(cfg.get("board_minutes", 120)) * 60)
-    out["card"] = rec
-    status = (rec.get("session") or {}).get("status")
-    if status == "refused-admission":
-        out.update(verdict="board-fail", why=(rec.get("session") or {}).get("detail"))
-    elif not board.ok(rec):
-        out.update(verdict="no-verdict", why=f"card session {status}")
+    got, checks = {}, {}
+    todo = names
+    if reused:
+        card = reused["full"]["card"]["record"]
+        got.update({p: r for p, r in (card.get("points") or {}).items() if p in task.evaluation["validation"]})
+        checks.update(((card.get("measured") or {}).get("checks")) or {})
+        todo = [p for p in names if p not in got]
+        out["reused"] = {"request": reused["id"], "points": sorted(got)}
+    if todo:
+        rec = board.measure(site, repo, task, candidate, image, todo, work / "card", job["containers"],
+                            job["remote_id"], float(cfg.get("board_minutes", 120)) * 60, with_checks=not reused)
+        out["card"] = rec
+        state = board.status(rec)
+        if state != "ok":
+            why = (rec.get("session") or {}).get("detail") or (rec.get("session") or {}).get("reason")
+            out.update(verdict="board-fail" if state == "candidate" and not (rec.get("measured") or {}).get("stopped")
+                       else "no-verdict", why=why or f"card session {(rec.get('session') or {}).get('status')}",
+                       finished=time.time())
+            return out
+        got.update(rec["points"])
+        checks.update(((rec.get("measured") or {}).get("checks")) or {})
+    rows = _board_rows(sim, got)
+    failed_checks = sorted(n for n, c in checks.items() if c.get("exit") != 0)
+    bad = [r for r in rows if r["problem"]]
+    out["rows"] = rows
+    if bad or failed_checks:
+        why = [f"{r['point']}: {r['problem']}" for r in bad[:5]] + [f"board check {n} did not pass" for n in failed_checks]
+        out.update(verdict="board-disagrees", why="; ".join(why))
     else:
-        rows = _board_rows(sim, rec["points"])
-        checks = {n: c for n, c in (((rec.get("measured") or {}).get("checks")) or {}).items() if c.get("exit") != 0}
-        bad = [r for r in rows if r["problem"]]
-        out["rows"] = rows
-        if bad or checks:
-            why = [f"{r['point']}: {r['problem']}" for r in bad[:5]] + [f"board check {n} did not pass" for n in checks]
-            out.update(verdict="board-disagrees", why="; ".join(why))
-        else:
-            out.update(verdict="certified", why=None)
+        out.update(verdict="certified", why=None)
     out["finished"] = time.time()
     return out

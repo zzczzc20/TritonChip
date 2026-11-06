@@ -380,7 +380,7 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
         rec = None
         path = hostout / f"archbench-{i}.jsonl"
         if path.exists():
-            for line in path.read_text(encoding="utf-8").splitlines():
+            for line in _container_text(path).splitlines():
                 try:
                     r = json.loads(line)
                 except json.JSONDecodeError:
@@ -465,7 +465,7 @@ def _measure_observed(site: Site, hosttree: Path, devtree: Path, task: Task, out
         rec = None
         path = hostout / f"archbench-{i}.jsonl"
         if path.exists():
-            for line in path.read_text(encoding="utf-8").splitlines():
+            for line in _container_text(path).splitlines():
                 try:
                     r = json.loads(line)
                 except json.JSONDecodeError:
@@ -492,7 +492,7 @@ def _measure(site: Site, tree: Path, task: Task, out: Path, name: str) -> dict:
     records = {}
     path = out / "archbench.jsonl"
     if path.exists():
-        for line in path.read_text(encoding="utf-8").splitlines():
+        for line in _container_text(path).splitlines():
             try:
                 r = json.loads(line)
             except json.JSONDecodeError:
@@ -597,7 +597,7 @@ FAILURE_NAMES = {"missing", "no-status", "fallback", "no-cycles", "no-observatio
                  "numeric-error", "unsupported", "not-measured", "runtime-fault", "timeout"}
 # The anti-tamper checks' verdicts: the agent learns that a measurement was
 # rejected, never which check rejected it.
-REJECTED = {"record-disagrees", "activity-outside-launch", "not-drained"}
+REJECTED = {"record-disagrees", "activity-outside-launch", "not-drained", "unobserved-launch"}
 
 
 def failure_counts(scored: dict) -> dict:
@@ -623,8 +623,25 @@ def scrubbed(lines: list, task: Task, keep: int = 20) -> list:
     return out
 
 
+def _container_text(path: Path, limit: int = 8 << 20) -> str:
+    """A file the candidate's container could write: no link followed (a link would read the harness host's
+    own file), a regular file (never a device or a pipe that blocks), at most `limit` bytes."""
+    import os
+    import stat
+    try:
+        fd = os.open(str(path), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError:
+        return ""
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return ""
+        return os.read(fd, limit).decode("utf-8", errors="replace")
+    finally:
+        os.close(fd)
+
+
 def _read_lines(path: Path) -> list:
-    return path.read_text(encoding="utf-8", errors="replace").splitlines() if path.is_file() else []
+    return _container_text(path).splitlines()
 
 
 def point_independent_errors(out: Path, task: Task, got: dict) -> dict:

@@ -87,7 +87,7 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
             turns = Turns(None, task, broker, None, prompt, cfg=task.resume)
         record["agent_result"] = runner.run_agent(site, account, prompt, mode, run_dir, workspace,
                                                   timeout=float(task.wall_seconds), services=broker,
-                                                  skills=names, turns=turns)
+                                                  skills=names, **({"turns": turns} if turns else {}))
         if turns is not None:
             record["agent_result"].update(stop_reason=turns.stop_reason or record["agent_result"].get("stop_reason"),
                                           idle=turns.idle, restarts=turns.restarts, resume_mode=turns.mode,

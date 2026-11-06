@@ -16,15 +16,22 @@ a Unix socket, which the harness forwards over SSH. Everything above the link
 is the candidate's `MulticoreMMIOBackend`, unchanged, on the far side.
 
     python -m tnca.backends.board_relay --xclbin X [--index N | --bdf BDF]
-        --unix SOCKET --observe-dir DIR [--stop FILE] [--idle-timeout S]
-        [--deadline-seconds S] [--ip-name NAME] [--words N]
+        --unix SOCKET --observe-dir DIR [--label-file FILE] [--stop FILE]
+        [--idle-timeout S] [--deadline-seconds S] [--drain-seconds S]
+        [--hbm-bytes N] [--summary FILE] [--ip-name NAME] [--words N]
 
-It prints `listening SOCKET` once the board is open and its identity register
-answers, and `stopped {json}` on the way out. It serves many connections, one
-at a time (a second concurrent one is refused, as the board's exclusive context
-would refuse a second local process), and ends on the first of: FILE appears,
-`--idle-timeout` seconds pass with no connection, `--deadline-seconds` pass,
-or the device is lost. The link is closed and the image left loaded.
+It prints `listening SOCKET` once the board is open, its identity register
+answers and (with --hbm-bytes) the HBM buffer is allocated and cleared, and a
+short `stopped {json}` on the way out; --summary gets the full account, every
+connection with its label and client label. It serves many connections, one
+at a time, and ends on the first of: the stop file appears, `--idle-timeout`
+seconds pass with no connection, `--deadline-seconds` pass, or the device is
+lost. The link is closed and the image left loaded.
+
+One connection at a time: a connection that arrives while another is being
+served waits up to ten seconds for it to end (a client that has just exited
+is usually only an unread EOF away), and is refused after that, as the board's
+exclusive context would refuse a second local process.
 
 THE PROTOCOL
 
@@ -32,7 +39,7 @@ relay.py's framing: `struct.pack('<II', len(head), len(payload)) + head +
 payload`, head JSON. Replies are `{"ok": true, ...}` or `{"ok": false,
 "error": ..., "code": ...}` (a tnca error code). Ops:
 
-    hello        {label}            -> protocol, label, device, image
+    hello        {label}            -> protocol, label, client_label, device, image
     read         {offset}           -> value
     host_status  {}                 -> value (the payload window's status)
     write        {}                 -> nothing (carries only `writes`)
@@ -46,38 +53,57 @@ the op itself. `RelayLink.write_reg` returns nothing to its caller, so the
 client holds its register writes and sends them with the next operation that
 needs an answer: a request's ten descriptor writes and its doorbell travel with
 the first poll of its response, a payload word's address, data and start with
-its status read. Every operation crosses an SSH tunnel at a few milliseconds,
-and without this a request was eleven crossings before its first poll.
+its status read. Every operation crosses an SSH tunnel at a few milliseconds.
+
+Register offsets must be 8-byte aligned and below 0x200: the AXI-Lite slave
+decodes nine address bits (rtl/board/tnca_multicore_hbm_xo.v), so 0x248 would
+be the doorbell under another name and pass by the observer.
+
+WHOSE CONNECTION IT IS
+
+The label a connection's launches are filed under is read from --label-file
+when the connection is accepted. The harness writes that file over ssh between
+point containers, when no client is connected; the hello's own label is kept
+only as `client_label`, because candidate code can reconnect with any label it
+likes. A missing file or one that is not [A-Za-z0-9_-]{1,32} is `unlabelled`.
+
+When an accepted connection's label differs from the previous connection's
+and the HBM buffer exists, the buffer is cleared before the connection is
+served: the device's caches hand the window back (the backend's own cache
+handoff request, which writes back and invalidates every line), then the whole
+buffer is written with zeros by DMA, 16 MiB at a time. It is cleared the same
+way once when it is first allocated. Nothing a point (or an earlier user of
+the card) left in device memory reaches the next point. A connection whose
+clearing cannot be done is refused, never served on a dirty buffer.
 
 THE OBSERVER
 
 What the evaluator scores is written here, by the relay, to
-`<observe-dir>/<label>.log` (the label each connection's hello names; several
-connections may share one, and append). Before forwarding any doorbell (0x48,
-bit 0) and when a connection ends, the relay looks at
-rtl/fpga/tnca_multicore_mmio.v's launch registers. When the launch this
-connection rang (req_op 11, admitted: idle and req_seq > served) has completed
--- launch_sequence (0xf8) equals its sequence and the response registers still
-answer it -- it appends
+`<observe-dir>/<label>.log`, from rtl/fpga/tnca_multicore_mmio.v's registers:
 
-    cmd op=1 seq=<launch_sequence> obs=<launch_end-launch_start> done=<rsp_r1:rsp_r0> status=<rsp_status>
+  * after forwarding each doorbell write it reads `served` (0xa0); if that
+    advanced, the device admitted a request, and if `req_op` (0x08) then reads
+    11 it was a launch: pending, its id = served, under the connection's label;
+  * before serving each operation, before each doorbell, and at connection
+    end, a pending launch whose id equals `launch_sequence` (0xf8) has
+    completed, and its line is appended:
 
-the same fields as tb/fpga/tnca_multicore_board_regs.v's simulation observer.
+        cmd op=1 seq=<id> obs=<launch_end-launch_start> done=<rsp_r1:rsp_r0> status=<rsp_status>
+
+  * at connection end a pending launch is waited for, polled for up to
+    --drain-seconds, before `end launches=<n>` closes the connection's record.
+
+The fields are tb/fpga/tnca_multicore_board_regs.v's simulation observer's.
 There are no settle/quiet/rd/wr fields: the board has no observation of its
 cores draining or of its outlets' transactions in flight, and a field the
-board cannot measure is left out, not written as zero. A rung launch that has
-not completed when its connection ends is written as `unfinished seq=<n>`, one
-the device answered without starting as `refused seq=<n> status=<s>`, one whose
-ring did not take as `dropped seq=<n>`, and one whose response registers no
-longer answer it as `lost seq=<n>`: none of them is a `cmd` line, so the
-evaluator sees no observation rather than a made-up one. Each connection ends
-with `end launches=<n>`. The client cannot write these registers (the control
-block has no write path to them) and cannot ring a doorbell except through
-this relay, so the record is the platform's, not the candidate's.
-
-A client that rings a launch while another is still running is not tracked
-past what the device does with it: the device drops such a ring, and in the
-one race where it does not, that launch goes unrecorded rather than misfiled.
+board cannot measure is left out, not written as zero. Anything that is not a
+clean observation is a line of its own, never a `cmd` line: `unfinished seq=`
+(still running when the drain ran out), `refused seq= status=` (answered
+without starting), `lost seq=` (its response registers no longer answer it),
+`uncleared connection=` and `refused-concurrent connection=`. The harness
+rejects a point whose log holds any of them. The client cannot write the launch
+registers (the control block has no write path to them) and cannot ring a
+doorbell except through this relay, so the record is the platform's.
 """
 import argparse
 import glob
@@ -95,28 +121,33 @@ import time
 from ..errors import (ALL_CODES, ArgumentError, DependencyFailed, DeviceLost,
                       Timeout, TncaError)
 from ..hbm_layout import StripedHBMLayout
-from .u50 import (DEFAULT_WORDS, IP_NAME, R_DOORBELL, R_MAGIC, R_REQ_OP,
-                  R_REQ_SEQ, R_RSP_R0, R_RSP_R1, R_RSP_SEQ, R_RSP_STATUS,
-                  R_SERVED, U50Link)
+from .u50 import (AXI_STAT_PRESENT, DEFAULT_WORDS, IP_NAME, R_AXI_SIZE,
+                  R_AXI_STAT, R_DOORBELL, R_MAGIC, R_REQ_A0, R_REQ_A1, R_REQ_A2,
+                  R_REQ_A3, R_REQ_A4, R_REQ_A5, R_REQ_OP, R_REQ_SEQ, R_RSP_R0,
+                  R_RSP_R1, R_RSP_SEQ, R_RSP_STATUS, R_SERVED, U50Link)
 
 PROTOCOL = 1
 
 # rtl/fpga/tnca_multicore_mmio.v's launch timestamps (U50Backend.
-# launch_timestamps reads the same three) and its physical-grid launch opcode.
+# launch_timestamps reads the same three), its physical-grid launch opcode
+# and its cache handoff (multicore_mmio.OP_CACHE_HANDOFF).
 R_LAUNCH_VERSION = 0xE0
 R_LAUNCH_START = 0xE8
 R_LAUNCH_END = 0xF0
 R_LAUNCH_SEQUENCE = 0xF8
 OP_PHYSICAL_LAUNCH = 11
+OP_CACHE_HANDOFF = 18
 
-#: The largest HBM transfer one message carries. The client splits bigger
-#: ones; the relay refuses bigger ones, since it owns memory on a shared host.
+#: The largest HBM transfer one message carries, and the piece the relay
+#: clears the buffer in. The client splits bigger transfers; the relay refuses
+#: bigger ones, since it owns memory on a shared host.
 CHUNK = 1 << 24
 MAX_HEAD = 1 << 20
-#: The control block's AXI-Lite aperture (fpga/kernel_multicore_hbm.xml
-#: range 0x1000). An offset XRT would refuse is refused here instead, since a
-#: refused register access is read as a lost device and ends the card session.
-MAX_OFFSET = 0x1000
+#: Nine decoded address bits (rtl/board/tnca_multicore_hbm_xo.v ADDR_BITS(9)):
+#: every offset at or above this aliases one below it, the doorbell included.
+MAX_OFFSET = 0x200
+#: How long a connection that arrived during another may wait for it to end.
+BACKLOG_SECONDS = 10.0
 
 _LABEL = re.compile(r'[A-Za-z0-9_-]{1,32}')
 _M64 = (1 << 64) - 1
@@ -171,118 +202,177 @@ def _int(head, key, lo, hi):
 
 def _offset(value):
     if type(value) is not int or not 0 <= value < MAX_OFFSET or value % 8:
-        raise ArgumentError(f'register offset {value!r} is not an aligned control-block address')
+        raise ArgumentError(f'register offset {value!r} is not an aligned control-block address '
+                            f'below {MAX_OFFSET:#x}')
     return value
+
+
+def _label(text):
+    return text if isinstance(text, str) and _LABEL.fullmatch(text) else None
 
 
 # ---------------------------------------------------------------------------
 # the server: trusted, on the card host
 # ---------------------------------------------------------------------------
 class _Connection:
-    def __init__(self, sock, number):
-        self.sock, self.number = sock, number
-        self.label = None
-        self.log = None
-        self.launches = 0
+    def __init__(self, sock, number, label, log):
+        self.sock, self.number, self.label, self.log = sock, number, label, log
+        self.client_label = None
+        self.launches = self.anomalies = self.ops = 0
         self.pending = None
-        self.ops = 0
+        self.cleared_seconds = None
         self.started = time.monotonic()
 
-    def line(self, text):
+    def line(self, text, *, anomaly=False):
         self.log.write(text + '\n')
         self.log.flush()
+        self.anomalies += anomaly
+
+    def record(self):
+        return dict(number=self.number, label=self.label, client_label=self.client_label,
+                    ops=self.ops, launches=self.launches, anomalies=self.anomalies,
+                    cleared_seconds=self.cleared_seconds,
+                    seconds=round(time.monotonic() - self.started, 1))
 
 
 class BoardRelay:
     """One open board link, served to one connection at a time."""
 
-    def __init__(self, link, observe_dir, image):
+    def __init__(self, link, observe_dir, image, *, label_file=None, drain_seconds=120.0):
         self.link = link
         self.observe_dir = observe_dir
         self.image = image
+        self.label_file = label_file
+        self.drain_seconds = drain_seconds
         self.hbm = None
+        self.used_since_clear = False
         self.fatal = None
-        self.connections = self.refused = self.launches = self.unfinished = 0
-        self.labels = set()
+        self.previous_label = None
+        self.connections = []
+        self.refused = 0
+        self.clears = []
 
     # -- a connection's life -------------------------------------------------
-    def begin(self, conn, head):
-        """The label comes from a first `hello`; anything else is unlabelled."""
-        label = head.get('label') if head.get('op') == 'hello' else None
-        conn.label = label if isinstance(label, str) and _LABEL.fullmatch(label) else 'unlabelled'
-        conn.log = open(os.path.join(self.observe_dir, conn.label + '.log'), 'a', buffering=1)
-        self.connections += 1
-        self.labels.add(conn.label)
-        _say(f'connection {conn.number} label={conn.label}')
-
-    def end(self, conn):
-        """Capture what the connection left, then close its record."""
-        if conn.log is not None:
-            try:
-                if self.fatal is None:
-                    self.capture(conn)
-            except Exception as e:                         # noqa: BLE001
-                self.fatal = self.fatal or f'capture at connection end: {e}'
-            if conn.pending is not None:
-                conn.line(f'unfinished seq={conn.pending}')
-                self.unfinished += 1
-            conn.line(f'end launches={conn.launches}')
-            conn.log.close()
-            self.launches += conn.launches
+    def read_label(self):
         try:
-            conn.sock.close()
+            with open(self.label_file) as fh:
+                return _label(fh.read().strip()) or 'unlabelled'
+        except (OSError, TypeError, UnicodeDecodeError):
+            return 'unlabelled'
+
+    def _open_log(self, label):
+        try:
+            return open(os.path.join(self.observe_dir, label + '.log'), 'a', buffering=1)
+        except OSError as e:
+            # Nothing can be served that cannot be recorded; the card is fine.
+            raise DependencyFailed(f'the observer log for {label} cannot be opened: {e}') from e
+
+    def accept(self, sock, number):
+        """The connection, under the label file's label, on a cleared buffer."""
+        label = self.read_label()
+        conn = _Connection(sock, number, label, self._open_log(label))
+        _say(f'connection {number} label={label}')
+        if self.hbm is not None and label != self.previous_label and self.used_since_clear:
+            try:
+                conn.cleared_seconds = self.clear_hbm()
+            except Exception:
+                conn.line(f'uncleared connection={number}', anomaly=True)
+                self._close(conn, close_socket=False)     # the caller sends why
+                raise
+        self.previous_label, self.used_since_clear = label, True
+        return conn
+
+    def refuse(self, sock, number, why):
+        """A connection that cannot be served: told why, and filed as such."""
+        self.refused += 1
+        label = self.read_label()
+        try:
+            with self._open_log(label) as log:
+                log.write(f'refused-concurrent connection={number}\nend launches=0\n')
+        except DependencyFailed as e:
+            _say(str(e))
+        try:
+            sock.settimeout(5.0)
+            _send(sock, dict(ok=False, code='DEPENDENCY_FAILED', error=why))
         except OSError:
             pass
-        _say(f'connection {conn.number} label={conn.label} ended: ops={conn.ops} '
-             f'launches={conn.launches} seconds={time.monotonic() - conn.started:.1f}')
+        sock.close()
+        _say(f'connection {number} label={label} refused: {why}')
+
+    def end(self, conn):
+        """Wait out its launch, then close its record with `end`."""
+        try:
+            if self.fatal is None:
+                drain = time.monotonic() + self.drain_seconds
+                while not self.observe(conn) and time.monotonic() < drain:
+                    time.sleep(0.05)
+        except Exception as e:                             # noqa: BLE001
+            self.fatal = self.fatal or f'observing at connection end: {type(e).__name__}: {e}'
+        if conn.pending is not None:
+            conn.line(f'unfinished seq={conn.pending}', anomaly=True)
+        self._close(conn)
+
+    def _close(self, conn, *, close_socket=True):
+        conn.line(f'end launches={conn.launches}')
+        conn.log.close()
+        if close_socket:
+            try:
+                conn.sock.close()
+            except OSError:
+                pass
+        self.connections.append(conn.record())
+        _say(f'connection {conn.number} ended: {json.dumps(conn.record(), sort_keys=True)}')
 
     # -- the observer --------------------------------------------------------
-    def capture(self, conn):
-        """Resolve this connection's rung launch, if the device has."""
-        if conn.pending is None:
-            return
+    def observe(self, conn):
+        """Resolve the connection's pending launch if the device has; True
+        when nothing is left pending."""
+        pending = conn.pending
+        if pending is None:
+            return True
         r = self.link.read_reg
         seq = r(R_LAUNCH_SEQUENCE)
-        if seq == 0:
-            return                       # admitted and still running
-        pending, conn.pending = conn.pending, None
-        if seq != pending:
-            # The launch registers were not touched: the device answered the
-            # doorbell without starting (flags refused), or never took it.
-            if r(R_RSP_SEQ) == pending:
-                conn.line(f'refused seq={pending} status={r(R_RSP_STATUS) & 0xF}')
+        if seq == pending:
+            start, end = r(R_LAUNCH_START), r(R_LAUNCH_END)
+            status, r0, r1 = r(R_RSP_STATUS), r(R_RSP_R0), r(R_RSP_R1)
+            if r(R_RSP_SEQ) != pending or r(R_LAUNCH_SEQUENCE) != pending:
+                conn.line(f'lost seq={pending}', anomaly=True)
             else:
-                conn.line(f'dropped seq={pending}')
-            return
-        start, end = r(R_LAUNCH_START), r(R_LAUNCH_END)
-        status, r0, r1 = r(R_RSP_STATUS), r(R_RSP_R0), r(R_RSP_R1)
-        if r(R_RSP_SEQ) != seq or r(R_LAUNCH_SEQUENCE) != seq:
-            conn.line(f'lost seq={pending}')
-            return
-        conn.line(f'cmd op=1 seq={seq} obs={(end - start) & _M64} '
-                  f'done={((r1 & _M32) << 32) | (r0 & _M32)} status={status & 0xF}')
-        conn.launches += 1
+                conn.line(f'cmd op=1 seq={pending} obs={(end - start) & _M64} '
+                          f'done={((r1 & _M32) << 32) | (r0 & _M32)} status={status & 0xF}')
+                conn.launches += 1
+            conn.pending = None
+        elif r(R_RSP_SEQ) == pending:
+            # Answered at the doorbell (its flags refused) and never started:
+            # a running launch holds rsp_seq at zero until it completes.
+            conn.line(f'refused seq={pending} status={r(R_RSP_STATUS) & 0xF}', anomaly=True)
+            conn.pending = None
+        return conn.pending is None
 
     def write(self, conn, offset, value):
         offset = _offset(offset)
         if type(value) is not int or not 0 <= value <= _M64:
             raise ArgumentError(f'register value {value!r} is not an unsigned 64-bit integer')
-        launch = None
-        if offset == R_DOORBELL and value & 1:
-            self.capture(conn)
-            r = self.link.read_reg
-            seq = r(R_REQ_SEQ)
-            # The doorbell is admitted only when idle and req_seq > served
-            # (the control block's own rule); anything else is dropped there.
-            if r(R_REQ_OP) == OP_PHYSICAL_LAUNCH and not r(R_DOORBELL) and seq > r(R_SERVED):
-                launch = seq
+        if offset != R_DOORBELL or not value & 1:
+            self.link.write_reg(offset, value)
+            return
+        r = self.link.read_reg
+        self.observe(conn)               # the registers still answer the last request
+        before = r(R_SERVED)
         self.link.write_reg(offset, value)
-        if launch is not None:
-            conn.pending = launch
+        served = r(R_SERVED)
+        if served != before and r(R_REQ_OP) == OP_PHYSICAL_LAUNCH:
+            if conn.pending is not None:
+                # Admitted means the device was idle, so the earlier launch
+                # completed in the instant between observe() and the doorbell
+                # and its registers now belong to this one.
+                conn.line(f'lost seq={conn.pending}', anomaly=True)
+            conn.pending = served
 
     # -- one message ---------------------------------------------------------
     def handle(self, conn, head, payload):
         """(reply, payload, keep the connection)."""
+        self.observe(conn)
         writes = head.get('writes', [])
         if not isinstance(writes, list) or any(not isinstance(w, list) or len(w) != 2 for w in writes):
             raise ArgumentError('writes is a list of [offset, value] pairs')
@@ -292,7 +382,8 @@ class BoardRelay:
         if op == 'hello':
             if conn.ops > 1:
                 raise ArgumentError('hello is the first operation of a connection')
-            return dict(ok=True, protocol=PROTOCOL, label=conn.label,
+            conn.client_label = _label(head.get('label'))
+            return dict(ok=True, protocol=PROTOCOL, label=conn.label, client_label=conn.client_label,
                         device=self.link.describe(), image=self.image), b'', True
         if op == 'read':
             return dict(ok=True, value=self.link.read_reg(_offset(head.get('offset')))), b'', True
@@ -312,26 +403,93 @@ class BoardRelay:
             return dict(ok=True), b'', False
         raise ArgumentError(f'unknown operation {op!r}')
 
+    # -- the HBM buffer ------------------------------------------------------
     def hbm_open(self, nbytes):
-        """One buffer for the card session, made on the first request.
+        """One buffer for the card session, handed to every connection.
 
         Every connection's backend asks at start. A second 8 GiB allocation
-        cannot succeed while the first lives, and freeing it between
-        connections would hand the next one a different buffer for no gain,
-        so the first is kept and handed out again, for the same size only.
+        cannot succeed while the first lives, so one is kept and handed out
+        again, for the same size only; accept() clears it between labels.
+        Normally it was made at startup (allocate(), --hbm-bytes). Made here,
+        inside a connection, it is zeroed without the cache handoff: a request
+        of the relay's own would advance `served` under the client's backend,
+        whose next request would then carry a sequence the device drops.
         """
         if self.hbm is None:
-            got = self.link.hbm_open(nbytes)
-            if got is None:
-                raise DependencyFailed('this board link cannot allocate the AXI window')
-            layout = getattr(self.link, 'hbm_layout', None)
-            self.hbm = dict(requested=nbytes, base=got[0], size=got[1],
-                            allocation=getattr(self.link, 'hbm_allocation', None),
-                            layout=layout.name if layout is not None else None)
+            self.allocate(nbytes, handoff=False)
+            self.used_since_clear = True     # by the connection that asked
         elif nbytes != self.hbm['requested']:
             raise ArgumentError(f'this card session allocated its HBM buffer for '
                                 f'{self.hbm["requested"]} bytes; {nbytes} were asked for')
         return {k: self.hbm[k] for k in ('base', 'size', 'allocation', 'layout')}
+
+    def allocate(self, nbytes, *, handoff=True):
+        """The buffer, made and cleared. At startup, before any client."""
+        got = self.link.hbm_open(nbytes)
+        if got is None:
+            raise DependencyFailed('this board link cannot allocate the AXI window')
+        layout = getattr(self.link, 'hbm_layout', None)
+        self.hbm = dict(requested=nbytes, base=got[0], size=got[1],
+                        allocation=getattr(self.link, 'hbm_allocation', None),
+                        layout=layout.name if layout is not None else None)
+        self.clear_hbm(handoff=handoff)
+
+    def clear_hbm(self, *, handoff=True):
+        """The device's caches hand the window back, then the buffer is zeroed.
+        Only between connections, where no client's backend is numbering
+        requests (see hbm_open)."""
+        t = time.monotonic()
+        if handoff:
+            self._handoff()
+        # Physical BO offsets through the XRT accessor, whatever the layout:
+        # every byte of the buffer, in CHUNK pieces.
+        accessor = getattr(self.link, '_accessor', None)
+        write = getattr(accessor, 'bo_write', None) or self.link.hbm_write
+        zeros, size = bytes(CHUNK), self.hbm['size']
+        for at in range(0, size, CHUNK):
+            write(at, zeros if size - at >= CHUNK else zeros[:size - at])
+        seconds = round(time.monotonic() - t, 3)
+        self.clears.append(seconds)
+        self.used_since_clear = False
+        _say(f'HBM buffer of {size} bytes cleared in {seconds}s (cache handoff: {handoff})')
+        return seconds
+
+    def _handoff(self):
+        """The backend's OP_CACHE_HANDOFF over the whole window, as a request
+        of the relay's own between connections: every cached line of the
+        window written back and invalidated, so the zeros are what the device
+        reads next. A window the device cannot reach has nothing cached."""
+        r, w = self.link.read_reg, self.link.write_reg
+        stat, size = r(R_AXI_STAT), r(R_AXI_SIZE)
+        if not stat & AXI_STAT_PRESENT or not size:
+            return
+        deadline = time.monotonic() + self.drain_seconds
+        while r(R_DOORBELL):
+            if time.monotonic() > deadline:
+                raise DependencyFailed('the device is still busy with an earlier launch; '
+                                       'its memory cannot be cleared')
+            time.sleep(0.05)
+        seq = r(R_SERVED) + 1
+        for offset, value in ((R_REQ_SEQ, seq), (R_REQ_OP, OP_CACHE_HANDOFF), (R_REQ_A0, (stat >> 32) << 12),
+                              (R_REQ_A1, size), (R_REQ_A2, 0), (R_REQ_A3, 0), (R_REQ_A4, 0), (R_REQ_A5, 0)):
+            w(offset, value)
+        w(R_DOORBELL, 1)
+        deadline = time.monotonic() + 60.0
+        while r(R_RSP_SEQ) != seq:
+            if time.monotonic() > deadline:
+                raise DeviceLost('the cache handoff before clearing HBM did not complete')
+            time.sleep(0.001)
+        status = r(R_RSP_STATUS) & 0xF
+        if status:
+            raise DeviceLost(f'the cache handoff before clearing HBM answered status {status}')
+
+    def summary(self):
+        return dict(connections=len(self.connections), refused=self.refused,
+                    launches=sum(c['launches'] for c in self.connections),
+                    anomalies=sum(c['anomalies'] for c in self.connections),
+                    labels=sorted({c['label'] for c in self.connections}),
+                    clears=len(self.clears), clear_seconds=round(sum(self.clears), 3),
+                    connection_records=self.connections, fatal=self.fatal)
 
 
 def _error_reply(e):
@@ -369,6 +527,27 @@ def _sha256(path):
     return h.hexdigest()
 
 
+def _serve_message(relay, conn):
+    """One request and its reply; False when the connection is over."""
+    try:
+        head, payload = _recv(conn.sock)
+        if head is None:
+            return False
+        conn.ops += 1
+        try:
+            reply, data, keep = relay.handle(conn, head, payload)
+        except Exception as e:                             # noqa: BLE001
+            reply, data, keep = _error_reply(e), b'', True
+            if reply['code'] not in _RECOVERABLE:
+                relay.fatal = reply['error']
+                keep = False
+        _send(conn.sock, reply, data)
+        return keep
+    except (OSError, ValueError, ArgumentError) as e:
+        _say(f'connection {conn.number}: {type(e).__name__}: {e}')
+        return False
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--xclbin', required=True)
@@ -377,11 +556,17 @@ def main(argv=None):
     where.add_argument('--bdf')
     ap.add_argument('--unix', required=True, help='the Unix socket to listen on')
     ap.add_argument('--observe-dir', required=True, help='where <label>.log observer records go')
+    ap.add_argument('--label-file', help='the trusted label of the next connection (else "unlabelled")')
     ap.add_argument('--stop', help='stop when this file appears')
     ap.add_argument('--idle-timeout', type=float, default=1800.0,
                     help='stop after this many seconds with no connection (0: never)')
     ap.add_argument('--deadline-seconds', type=float, default=0.0,
                     help='stop this many seconds after start (0: no deadline)')
+    ap.add_argument('--drain-seconds', type=float, default=120.0,
+                    help='how long a connection\'s end waits for its last launch')
+    ap.add_argument('--hbm-bytes', type=int, default=0,
+                    help='allocate and clear the HBM buffer at startup (the backend\'s hbm_bytes)')
+    ap.add_argument('--summary', help='write the full summary (every connection) here as JSON')
     ap.add_argument('--ip-name', default=IP_NAME)
     ap.add_argument('--words', type=int, default=DEFAULT_WORDS)
     args = ap.parse_args(argv)
@@ -415,7 +600,10 @@ def main(argv=None):
         with open(f'/sys/class/drm/renderD{128 + index}/device/xclbinuuid') as fh:
             uuid = fh.read().strip().lower()
         relay = BoardRelay(link, args.observe_dir,
-                           dict(xclbin_sha256=_sha256(args.xclbin), uuid=uuid, bdf=args.bdf, index=index))
+                           dict(xclbin_sha256=_sha256(args.xclbin), uuid=uuid, bdf=args.bdf, index=index),
+                           label_file=args.label_file, drain_seconds=args.drain_seconds)
+        if args.hbm_bytes:
+            relay.allocate(args.hbm_bytes)
         if os.path.exists(args.unix):
             os.unlink(args.unix)
         srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -425,11 +613,20 @@ def main(argv=None):
         finally:
             os.umask(mask)
         srv.listen(8)
+        srv.setblocking(False)               # accept() below never waits
+
+        def _accept():
+            try:
+                sock, _ = srv.accept()
+            except (BlockingIOError, InterruptedError):
+                return None
+            sock.setblocking(True)
+            return sock
         print(f'listening {args.unix}', flush=True)
         _say(f'serving {link.describe()} image {uuid} on {args.unix}')
 
         deadline = started + args.deadline_seconds if args.deadline_seconds > 0 else None
-        idle_since, number = time.monotonic(), 0
+        idle_since, number, backlog = time.monotonic(), 0, None
         while reason is None:
             now = time.monotonic()
             if relay.fatal:
@@ -442,48 +639,44 @@ def main(argv=None):
                 reason = 'idle-timeout'
             if reason:
                 break
-            watch = [srv] + ([conn.sock] if conn else [])
-            ready, _, _ = select.select(watch, [], [], 1.0)
-            if srv in ready:
-                sock, _ = srv.accept()
-                number += 1
-                if conn is None:
+            if conn is None:
+                watch, wait = [srv], 1.0
+            elif backlog is None:
+                watch, wait = [srv, conn.sock], 1.0
+            else:                            # a newcomer waits: watch only the one being served
+                watch, wait = [conn.sock], max(0.0, min(1.0, backlog + BACKLOG_SECONDS - now))
+            ready, _, _ = select.select(watch, [], [], wait)
+            if conn is not None and conn.sock in ready and not _serve_message(relay, conn):
+                relay.end(conn)
+                conn, idle_since = None, time.monotonic()
+            if conn is None:
+                sock = _accept() if srv in ready or backlog is not None else None
+                backlog = None
+                if sock is not None:
+                    number += 1
                     sock.settimeout(300.0)       # a message, once begun, arrives
-                    conn = _Connection(sock, number)
-                else:
-                    relay.refused += 1
                     try:
-                        sock.settimeout(5.0)
-                        _send(sock, dict(ok=False, code='DEPENDENCY_FAILED',
-                                         error=f'the board relay is serving connection {conn.number} '
-                                               f'({conn.label}); the card takes one client at a time'))
-                    except OSError:
-                        pass
-                    sock.close()
-            if conn is not None and conn.sock in ready:
-                keep = True
-                try:
-                    head, payload = _recv(conn.sock)
-                    if head is None:
-                        keep = False
-                    else:
-                        conn.ops += 1
-                        if conn.label is None:
-                            relay.begin(conn, head)
+                        conn = relay.accept(sock, number)
+                    except Exception as e:             # noqa: BLE001
+                        reply = _error_reply(e)
+                        _say(f'connection {number} not served: {reply["error"]}')
                         try:
-                            reply, data, keep = relay.handle(conn, head, payload)
-                        except Exception as e:             # noqa: BLE001
-                            reply, data = _error_reply(e), b''
-                            if reply['code'] not in _RECOVERABLE:
-                                relay.fatal = reply['error']
-                                keep = False
-                        _send(conn.sock, reply, data)
-                except (OSError, ValueError, ArgumentError) as e:
-                    _say(f'connection {conn.number}: {type(e).__name__}: {e}')
-                    keep = False
-                if not keep:
-                    relay.end(conn)
-                    conn, idle_since = None, time.monotonic()
+                            _send(sock, reply)
+                        except OSError:
+                            pass
+                        sock.close()
+                        if reply['code'] not in _RECOVERABLE:
+                            relay.fatal = reply['error']
+                        idle_since = time.monotonic()
+            elif srv in ready:
+                backlog = time.monotonic()
+            elif backlog is not None and time.monotonic() - backlog >= BACKLOG_SECONDS:
+                backlog = None
+                sock = _accept()
+                if sock is not None:
+                    number += 1
+                    relay.refuse(sock, number, f'the board relay is serving connection {conn.number} '
+                                               f'({conn.label}); the card takes one client at a time')
     except (KeyboardInterrupt, SystemExit):               # pragma: no cover
         reason = reason or 'signal'
     except Exception as e:                                 # noqa: BLE001
@@ -502,15 +695,22 @@ def main(argv=None):
                 srv.close()
                 if os.path.exists(args.unix):
                     os.unlink(args.unix)
+    if relay is not None and relay.fatal and reason not in ('device-lost', 'failed'):
+        reason = 'device-lost'
     summary = dict(reason=reason, seconds=round(time.monotonic() - started, 1))
     if relay is not None:
-        summary.update(connections=relay.connections, refused=relay.refused, launches=relay.launches,
-                       unfinished=relay.unfinished, labels=sorted(relay.labels), fatal=relay.fatal)
+        summary.update(relay.summary())
+    if args.summary:
+        with open(args.summary + '.tmp', 'w') as fh:
+            json.dump(summary, fh, indent=1, sort_keys=True)
+        os.replace(args.summary + '.tmp', args.summary)
+    # One short line: whoever reads it may not be reading while this exits.
+    short = {k: v for k, v in summary.items() if k != 'connection_records'}
     try:
-        print('stopped ' + json.dumps(summary, sort_keys=True), flush=True)
+        print('stopped ' + json.dumps(short, sort_keys=True), flush=True)
     except OSError:
         pass                                # the session that read `listening` is gone
-    _say(f'stopped: {json.dumps(summary, sort_keys=True)}')
+    _say(f'stopped: {reason}')
     if relay is None:
         return 2
     return 3 if relay.fatal else 0
@@ -522,24 +722,26 @@ def main(argv=None):
 _ERRORS = {'DEVICE_LOST': DeviceLost, 'DEPENDENCY_FAILED': DependencyFailed,
            'ARGUMENT_INVALID': ArgumentError, 'WAIT_TIMEOUT': Timeout}
 
+#: What each relay this process reached said it serves, by socket path: the
+#: image's sha256 and uuid, from its hello.
+_IDENTITY = {}
+
 
 class RelayLink(U50Link):
     """A board link whose registers and HBM are a relay's, over a Unix socket.
 
     The same methods `MulticoreXDMALink` gives the backend, and nothing the
     backend does is different above them. `xclbin` is None on purpose: the
-    image is a file on the card host, chosen there, and code here that wanted
-    to hash it would be hashing something else. `relay_info` is what the relay
-    said it is serving (device, image sha256 and uuid).
+    image is a file on the card host, chosen there. `image_sha256` and
+    `image_uuid` are what the relay says it serves (its hello), which is where
+    a record's image identity comes from on this backend.
     """
 
     xclbin = None
 
     def __init__(self, address, label=None, *, words=DEFAULT_WORDS, timeout=600.0):
-        if label is not None and not (isinstance(label, str) and _LABEL.fullmatch(label)):
-            raise ArgumentError(f'relay label {label!r} is not [A-Za-z0-9_-]{{1,32}}',
-                                remedy='the label names the observer log; an unusable one would '
-                                       'file this connection\'s launches under "unlabelled"')
+        if label is not None and _label(label) is None:
+            raise ArgumentError(f'relay label {label!r} is not [A-Za-z0-9_-]{{1,32}}')
         self.address = os.fspath(address)
         self.label = label
         self.words = words
@@ -549,6 +751,14 @@ class RelayLink(U50Link):
         self.hbm_layout = None
         self._sock = None
         self._writes = []
+
+    @property
+    def image_sha256(self):
+        return ((self.relay_info or {}).get('image') or {}).get('xclbin_sha256')
+
+    @property
+    def image_uuid(self):
+        return ((self.relay_info or {}).get('image') or {}).get('uuid')
 
     def describe(self):
         device = (self.relay_info or {}).get('device', 'a board')
@@ -580,6 +790,7 @@ class RelayLink(U50Link):
             self._drop()                    # refused (a busy relay) or unreachable: not open
             raise
         self.relay_info = reply
+        _IDENTITY[self.address] = reply.get('image')
         return self
 
     def close(self):
@@ -676,15 +887,30 @@ class RelayLink(U50Link):
                 pass
 
 
+def relay_identity(address, label=None):
+    """{'xclbin_sha256', 'uuid', ...} of the image the relay at `address`
+    serves: from this process's earlier hello to it, or a hello of its own
+    (one connection, no operation, `end launches=0` in the observer)."""
+    address = os.fspath(address)
+    if _IDENTITY.get(address) is None:
+        link = RelayLink(address, label=label)
+        try:
+            link.open()
+        finally:
+            link.close()
+    return _IDENTITY[address]
+
+
 def relay(**kwargs):
     """The factory `fpga-u280-multicore-relay` is registered with.
 
     `address` is the relay's socket as this host sees it (the SSH-forwarded
-    path); `label` names this connection's observer log. The rest are
-    `multicore_mmio.board`'s backend arguments -- ready.json's `backend_args`
-    -- and none of the link's: the card host chose the image and opened the
-    link, so `xclbin`, `index`, `ip_name` and `accessor` are refused here
-    rather than accepted and ignored.
+    path); `label` is sent in the hello and recorded as the client's claim
+    only (the relay files launches under the label the harness wrote). The
+    rest are `multicore_mmio.board`'s backend arguments -- ready.json's
+    `backend_args` -- and none of the link's: the card host chose the image
+    and opened the link, so `xclbin`, `index`, `ip_name` and `accessor` are
+    refused here rather than accepted and ignored.
     """
     from .multicore_mmio import board
     kwargs.pop('bench', None)

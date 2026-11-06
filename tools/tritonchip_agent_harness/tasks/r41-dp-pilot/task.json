@@ -115,7 +115,7 @@
     "timeout_seconds": 10800,
     "drain_cycles": 8,
     "platform": {
-      "commit": "b476f3fb72a90771235375d5a361f03ba9efcaad",
+      "commit": "00cd50da42b9ac3acb280c833687a52d16e5d3a7",
       "paths": [
         "python/tnca/backends/multicore_mmio.py",
         "python/tnca/backends/multicore_mmio_sim.py",
@@ -129,8 +129,22 @@
         "tb/fpga/tnca_multicore_shared_hbm.vh",
         "tb/common/tnca_sparse_map.vh",
         "tb/fpga/tnca_stage_probes.vh",
-        "python/tnca/hbm_layout.py"
+        "python/tnca/hbm_layout.py",
+        "python/tnca/backend.py",
+        "python/tnca/backends/board_relay.py"
       ]
+    },
+    "certify": {
+      "commit": "00cd50da42b9ac3acb280c833687a52d16e5d3a7",
+      "paths": [
+        "flow/fpga/",
+        "fpga/",
+        "rtl/board/",
+        "rtl/fpga/",
+        "tools/tritonchip_fpga_harness/"
+      ],
+      "target": "u280-multicore-r41",
+      "clock_mhz": 100
     }
   },
   "services": {
@@ -141,6 +155,32 @@
       "minutes": 45,
       "job_minutes": 30,
       "period_ns": 10.0
+    },
+    "fpga_slow": {
+      "mode": "board",
+      "flows": 3,
+      "board_runs": 6,
+      "flow_minutes": 480,
+      "board_minutes": 120,
+      "board_checks": [
+        {
+          "name": "fp8",
+          "command": [
+            "/opt/torchenv/bin/python",
+            "tools/performance_harness/fp8_cases.py",
+            "--out",
+            "/out/checks/fp8"
+          ],
+          "env": {
+            "PYTHONPATH": "/work:/work/python:/work/compiler/python:/work/tools/asm",
+            "TNCA_PROFILE": "core-vrf-sync-v5-x8-g2c4-dp-board",
+            "TNCA_DEADLINE": "200000000000",
+            "TNCA_HOST_TIMEOUT": "6000"
+          },
+          "timeout_seconds": 3600
+        }
+      ],
+      "certify_after_run": true
     }
   }
 }

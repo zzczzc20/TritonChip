@@ -148,7 +148,10 @@ def session(site: Site, task: Task, image: dict, tag: str, deadline_s: float, jo
               f"nohup {q(card.python)} -m tritonchip_fpga_harness.board_session --xclbin {q(image['path'])} "
               f"--sha256 {q(image['sha256'])} --bdf {q(cfg['bdf'])} --socket {q(sock)} --out {q(folder)} "
               f"--stop {q(folder + '/stop')} --idle-seconds {int(cfg.get('idle_seconds', IDLE_SECONDS))} "
-              f"--deadline-seconds {int(deadline_s)} > {q(folder + '/session.log')} 2>&1 < /dev/null &")
+              f"--deadline-seconds {int(deadline_s)} "
+              # One point's compile may keep the relay without a client for a while: the task's own limit.
+              f"--relay-idle-seconds {int(float(task.evaluation['timeout_seconds']))} "
+              f"> {q(folder + '/session.log')} 2>&1 < /dev/null &")
     _remote(card, ["sh", "-c", script])
     job_dir.mkdir(parents=True, exist_ok=True)
     record = {"host": card.name, "folder": folder, "platform_commit": platform, "sync": synced,

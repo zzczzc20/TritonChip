@@ -65,6 +65,8 @@ class Site:
     fpga_worker: Optional[dict] = None
     # Optional split-host full FPGA pipeline for the in-run fpga-slow service.
     fpga_pipeline: Optional[dict] = None
+    # How many evaluations may run at once on this host (islands share it; report section 8.8 P10).
+    evaluations: Optional[int] = None
 
     def account(self, label: str) -> Account:
         if label not in self.accounts:
@@ -108,7 +110,10 @@ def load_site(path: Optional[Path] = None) -> Site:
         raise SiteError("images: each must be an image reference")
 
     res = value["resources"]
-    _keys("resources", res, {"cpus", "memory", "pids"})
+    _keys("resources", res, {"cpus", "memory", "pids"}, {"evaluations"})
+    if "evaluations" in res and (not isinstance(res["evaluations"], int) or isinstance(res["evaluations"], bool)
+                                 or res["evaluations"] < 1):
+        raise SiteError("resources.evaluations must be a positive integer")
     if not isinstance(res["cpus"], (int, float)) or isinstance(res["cpus"], bool) or res["cpus"] <= 0:
         raise SiteError("resources.cpus must be a positive number")
     if not isinstance(res["memory"], str) or not _MEMORY.match(res["memory"]):
@@ -165,16 +170,32 @@ def load_site(path: Optional[Path] = None) -> Site:
 
     worker = value.get("fpga_worker")
     if worker is not None:
-        _keys("fpga_worker", worker, {"ssh", "workdir", "vivado_settings"}, {"ro_binds", "threads", "part"})
+        _keys("fpga_worker", worker, {"ssh", "workdir", "vivado_settings"}, {"ro_binds", "threads", "part", "sandbox"})
         if not all(isinstance(worker[k], str) and worker[k] for k in ("ssh", "workdir", "vivado_settings")):
             raise SiteError("fpga_worker: ssh, workdir and vivado_settings must be strings")
         if not isinstance(worker.get("ro_binds", []), list):
             raise SiteError("fpga_worker.ro_binds must be a list of paths")
+        if worker.get("sandbox", "bwrap") not in ("bwrap", "unshare"):
+            raise SiteError("fpga_worker.sandbox must be bwrap (default) or unshare (a worker without bubblewrap)")
 
     pipeline = value.get("fpga_pipeline")
     if pipeline is not None:
         _keys("fpga_pipeline", pipeline, {"hosts", "build_host"},
-              {"board_host", "allow_candidate_host_code"})
+              {"board_host", "allow_candidate_host_code", "card"})
+        card = pipeline.get("card")
+        if card is not None:
+            # The card host's board sessions (board.py): the card's PCI function, how long it must have been
+            # idle, where the card host keeps the images tasks name by hash, and what a board check reads here.
+            _keys("fpga_pipeline.card", card, {"bdf"}, {"idle_seconds", "max_wait_seconds", "images", "check_mounts"})
+            if not re.fullmatch(r"[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]", str(card["bdf"])):
+                raise SiteError("fpga_pipeline.card.bdf must be a PCI address")
+            if not isinstance(card.get("idle_seconds", 900), int) or card.get("idle_seconds", 900) < 60:
+                raise SiteError("fpga_pipeline.card.idle_seconds must be at least 60")
+            for key in ("images", "check_mounts"):
+                if not isinstance(card.get(key, {}), dict) or not all(
+                        isinstance(k, str) and isinstance(v, str) and v.startswith("/")
+                        for k, v in card.get(key, {}).items()):
+                    raise SiteError(f"fpga_pipeline.card.{key} must map names to absolute paths")
         hosts = _path(pipeline["hosts"], "fpga_pipeline.hosts")
         if not all(isinstance(pipeline[k], str) and pipeline[k] for k in ("build_host",)):
             raise SiteError("fpga_pipeline.build_host must be a non-empty name")
@@ -185,7 +206,7 @@ def load_site(path: Optional[Path] = None) -> Site:
         if not isinstance(allow_code, bool):
             raise SiteError("fpga_pipeline.allow_candidate_host_code must be boolean")
         pipeline = {"hosts": hosts, "build_host": pipeline["build_host"],
-                    "board_host": board_host, "allow_candidate_host_code": allow_code}
+                    "board_host": board_host, "allow_candidate_host_code": allow_code, "card": card}
 
     return Site(
         path=path, provider=value["provider"], images=dict(images),
@@ -196,6 +217,7 @@ def load_site(path: Optional[Path] = None) -> Site:
         repository=_path(value["repository"], "repository") if value.get("repository") else None,
         fpga_worker=dict(worker) if worker else None,
         fpga_pipeline=pipeline,
+        evaluations=res.get("evaluations"),
     )
 
 

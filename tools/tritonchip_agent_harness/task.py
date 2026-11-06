@@ -18,9 +18,18 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
+
+from . import skills as catalog_
 
 SCHEMA = "tritonchip-agent-task/1"
+# A block of instruction.md that only a run WITHOUT the skill receives: the syllabus's own
+# measuring example, which the skill replaces. The control arm of a pilot gets today's text.
+WITHOUT_SKILL = re.compile(r"<!-- without-skill -->\n(.*?)<!-- /without-skill -->\n", re.S)
+
+# The skills a run gets are chosen in three layers (skills.py, decided 2026-11-03): the
+# catalog, the task's default set (`task.json` `skills`), and a run's override. `render`
+# names the selected ones from their front matter.
 
 
 class TaskError(ValueError):
@@ -42,6 +51,9 @@ class Task:
     services: dict
     path: Path
     sha256: str
+    skills: tuple = ()
+    islands: Optional[dict] = None
+    resume: Optional[dict] = None
 
 
 def load_task(path: Path) -> Task:
@@ -51,7 +63,7 @@ def load_task(path: Path) -> Task:
     raw = path.read_bytes()
     v = json.loads(raw)
     required = {"schema", "task_id", "kind", "base_commit", "design", "hide", "instruction", "budget", "evaluation"}
-    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services"}
+    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services", "skills", "islands", "resume"}
     missing = required - set(v)
     if missing or unknown:
         raise TaskError(f"{path}: missing {sorted(missing)}, unknown {sorted(unknown)}")
@@ -76,40 +88,143 @@ def load_task(path: Path) -> Task:
         drain = ev.get("drain_cycles")
         if drain is not None and (isinstance(drain, bool) or not isinstance(drain, int) or drain < 0):
             raise TaskError(f"{path}: evaluation.drain_cycles must be a non-negative whole number of cycles")
+    skills = v.get("skills", [])
+    if not isinstance(skills, list) or not all(isinstance(s, str) and catalog_.NAME.match(s) for s in skills):
+        raise TaskError(f"{path}: skills must be a list of skill names")
+    try:
+        catalog_.select(skills)
+    except catalog_.SkillError as exc:
+        raise TaskError(f"{path}: {exc}") from None
     services = dict(v.get("services") or {})
     unknown_services = set(services) - {"score", "fpga_quick", "fpga_slow"}
     if unknown_services:
         raise TaskError(f"{path}: unknown services {sorted(unknown_services)}")
     slow = services.get("fpga_slow")
     if slow is not None:
-        if not isinstance(slow, dict) or set(slow) != {"minutes", "job_minutes", "mode"}:
-            raise TaskError(f"{path}: services.fpga_slow needs minutes, job_minutes and mode")
-        for key in ("minutes", "job_minutes"):
-            if (not isinstance(slow[key], (int, float)) or isinstance(slow[key], bool)
-                    or slow[key] <= 0):
-                raise TaskError(f"{path}: services.fpga_slow.{key} must be positive")
-        if slow["job_minutes"] > slow["minutes"]:
-            raise TaskError(f"{path}: fpga_slow.job_minutes exceeds its total budget")
-        if slow["mode"] not in ("build", "board"):
-            raise TaskError(f"{path}: services.fpga_slow.mode must be build or board")
-        if int(v["budget"]["wall_seconds"]) < slow["job_minutes"] * 60:
-            raise TaskError(f"{path}: agent wall budget is shorter than one FPGA slow request")
+        _check_slow(path, slow, ev)
+    islands = _check_islands(path, v.get("islands"), services)
+    resume = _check_resume(path, v.get("resume"))
     ref = path.parent / v["reference"] if v.get("reference") else None
     return Task(task_id=v["task_id"], kind=v["kind"], base_commit=v["base_commit"], design=tuple(v["design"]),
                 evaluator_owned=tuple(v.get("evaluator_owned", ())), hide=tuple(v["hide"]), instruction=(path.parent / v["instruction"]).read_text(encoding="utf-8"),
                 reference=ref, wall_seconds=int(v["budget"]["wall_seconds"]), evaluation=dict(ev),
                 services=services,
-                path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest())
+                path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest(), skills=tuple(skills), islands=islands, resume=resume)
 
 
-def render(task: Task, mode: str) -> str:
-    """The exact text every agent receives. Its sha256 goes in the run record."""
+# The descriptors an island grid may use (islands.py); the first version has the change's layer only.
+FEATURES = ("layer",)
+
+
+def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
+    """`islands` (report section 8.5): how many islands, how they see each other, the grid's axes. The task's
+    budgets are each island's: wall clock, scoring requests (its commits), quick-tier minutes; the slow
+    tier's counts stay the run's (section 8.9, B7)."""
+    if value is None:
+        return None
+    known = {"count", "topology", "migration_interval", "migration_rate", "features", "max_idle_turns",
+             "max_restarts", "target"}
+    if not isinstance(value, dict) or set(value) - known or "count" not in value:
+        raise TaskError(f"{path}: islands needs count (and may have {', '.join(sorted(known - {'count'}))})")
+    n = value["count"]
+    if not isinstance(n, int) or isinstance(n, bool) or not 1 <= n <= 16:
+        raise TaskError(f"{path}: islands.count must be 1..16")
+    topo = value.get("topology", "ring")
+    if isinstance(topo, dict):
+        ok = all(str(k).isdigit() and int(k) < n and isinstance(v, list)
+                 and all(isinstance(x, int) and 0 <= x < n and x != int(k) for x in v) for k, v in topo.items())
+        if not ok:
+            raise TaskError(f"{path}: islands.topology as a map: island -> list of the islands it sees")
+    elif topo not in ("ring", "all", "none"):
+        raise TaskError(f"{path}: islands.topology must be ring, all, none or an adjacency map")
+    for key, lo in (("migration_interval", 1), ("max_idle_turns", 1), ("max_restarts", 0)):
+        x = value.get(key, lo)
+        if not isinstance(x, int) or isinstance(x, bool) or x < lo:
+            raise TaskError(f"{path}: islands.{key} must be an integer >= {lo}")
+    rate = value.get("migration_rate", 0.3)
+    if not isinstance(rate, (int, float)) or isinstance(rate, bool) or not 0 < rate <= 1:
+        raise TaskError(f"{path}: islands.migration_rate must be in (0, 1]")
+    features = value.get("features", ["layer"])
+    if not isinstance(features, list) or not features or any(f not in FEATURES for f in features):
+        raise TaskError(f"{path}: islands.features: known axes are {', '.join(FEATURES)}")
+    target = value.get("target")
+    if target is not None and (not isinstance(target, dict) or set(target) - {"speedup_geomean", "fast_1"}
+                               or not all(isinstance(x, (int, float)) for x in target.values())):
+        raise TaskError(f"{path}: islands.target may name speedup_geomean and/or fast_1")
+    if not ((services or {}).get("score") or {}).get("requests"):
+        raise TaskError(f"{path}: islands need services.score.requests: an island's commits")
+    return {"count": n, "topology": topo, "migration_interval": int(value.get("migration_interval", 3)),
+            "migration_rate": float(rate), "features": list(features),
+            "max_idle_turns": int(value.get("max_idle_turns", 3)), "max_restarts": int(value.get("max_restarts", 2)),
+            "target": target}
+
+
+def _check_resume(path: Path, value) -> Optional[dict]:
+    """`resume` (a plain run's early-exit resume, 2026-11-07): when the agent's CLI stops before the time is up,
+    the harness continues it, as an island's controller does (islands.Turns); an islands task has its own."""
+    if value is None:
+        return None
+    if not isinstance(value, dict) or set(value) - {"max_idle_turns", "max_restarts"}:
+        raise TaskError(f"{path}: resume may have max_idle_turns and max_restarts")
+    for key, lo, default in (("max_idle_turns", 1, 3), ("max_restarts", 0, 2)):
+        x = value.get(key, default)
+        if not isinstance(x, int) or isinstance(x, bool) or x < lo:
+            raise TaskError(f"{path}: resume.{key} must be an integer >= {lo}")
+    return {"max_idle_turns": int(value.get("max_idle_turns", 3)), "max_restarts": int(value.get("max_restarts", 2))}
+
+
+_CHECK_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
+
+
+def _check_slow(path: Path, slow, ev: dict) -> None:
+    """services.fpga_slow (report section 8.9): counts, not minutes, for the run; caps for one request."""
+    required = {"mode", "flows", "board_runs", "flow_minutes", "board_minutes"}
+    optional = {"base_image_sha256", "board_checks", "certify_after_run"}
+    if not isinstance(slow, dict) or not required <= set(slow) or set(slow) - required - optional:
+        raise TaskError(f"{path}: services.fpga_slow needs {', '.join(sorted(required))} "
+                        f"(and may have {', '.join(sorted(optional))})")
+    if slow["mode"] not in ("build", "board"):
+        raise TaskError(f"{path}: services.fpga_slow.mode must be build or board")
+    for key in ("flows", "board_runs"):
+        if not isinstance(slow[key], int) or isinstance(slow[key], bool) or slow[key] < 0:
+            raise TaskError(f"{path}: services.fpga_slow.{key} must be a count")
+    for key in ("flow_minutes", "board_minutes"):
+        if not isinstance(slow[key], (int, float)) or isinstance(slow[key], bool) or slow[key] <= 0:
+            raise TaskError(f"{path}: services.fpga_slow.{key} must be positive")
+    sha = slow.get("base_image_sha256")
+    if sha is not None and not (isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{64}", sha)):
+        raise TaskError(f"{path}: services.fpga_slow.base_image_sha256 must be a sha256")
+    checks = slow.get("board_checks", [])
+    if not isinstance(checks, list):
+        raise TaskError(f"{path}: services.fpga_slow.board_checks must be a list")
+    for c in checks:
+        if (not isinstance(c, dict) or not _CHECK_NAME.match(str(c.get("name", "")))
+                or not isinstance(c.get("command"), list) or not c["command"]
+                or not all(isinstance(a, str) for a in c["command"])
+                or not isinstance(c.get("env", {}), dict) or set(c) - {"name", "command", "env", "timeout_seconds"}):
+            raise TaskError(f"{path}: each services.fpga_slow.board_checks entry needs a name and a command list")
+    if not isinstance(slow.get("certify_after_run", False), bool):
+        raise TaskError(f"{path}: services.fpga_slow.certify_after_run must be boolean")
+    if slow["mode"] == "board" and not isinstance(ev.get("platform"), dict):
+        raise TaskError(f"{path}: board mode needs evaluation.platform: the card host runs its code only")
+
+
+def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[int] = None) -> str:
+    """The exact text every agent receives. Its sha256 goes in the run record.
+
+    `skills`: the names of the skills the run provides (skills.py). With any, the
+    instruction's `without-skill` block -- what a skill replaces -- is left out.
+    """
+    selected = catalog_.select(skills)
+    instruction = WITHOUT_SKILL.sub("" if selected else r"\1", task.instruction)
     net = ("Only the model service you are talking to is reachable: there is no web access, no package index "
            "and no download." if mode == "offline" else
            "The network is open. Every connection is logged.")
     design = ", ".join(f"`{d}`" for d in task.design)
-    services = _services_text(task.services)
-    return task.instruction.rstrip() + services + f"""
+    skill_text = catalog_.prompt_lines(selected)
+    services = _services_text(task.services, islands=island is not None and bool(task.islands),
+                              resumed=bool(task.resume))
+    return instruction.rstrip() + services + f"""
 
 ## The rules of this run
 
@@ -119,14 +234,44 @@ def render(task: Task, mode: str) -> str:
   and drives the simulated device); a change anywhere else is ignored.
 - The evaluation runs a benchmark you are not shown. Each point is judged on its own: a point whose numbers
   are wrong, or that does not run on the device, is a failed point; the other points still count.
-- {net}
-- You have {task.wall_seconds // 60} minutes. When you are done, stop: your working directory as you leave
-  it is your submission.
-- If you conclude the task cannot be done, say so and stop. That is a valid result.
-"""
+{skill_text}- {net}
+{_ending(task, island)}"""
 
 
-def _services_text(cfg: dict) -> str:
+def _ending(task: Task, island: Optional[int]) -> str:
+    if (island is None or not task.islands) and task.resume:
+        return (f"- You have {task.wall_seconds // 60} minutes. Keep improving until the time runs out: your working "
+                f"directory as it is then is your submission. If you stop earlier, you are asked to continue; a "
+                f"turn that calls no tool counts as idle, and {task.resume['max_idle_turns']} idle turns in a row "
+                f"end the run with your working directory as it is.\n")
+    if island is None or not task.islands:
+        return (f"- You have {task.wall_seconds // 60} minutes. When you are done, stop: your working directory as "
+                f"you leave\n  it is your submission.\n"
+                f"- If you conclude the task cannot be done, say so and stop. That is a valid result.\n")
+    cfg = task.islands
+    n = cfg["count"]
+    others = ("" if n == 1 else
+              f" You are island {island} of {n}; other islands work on the same task at the same time, and you "
+              f"see the commits of the islands your island is connected to.")
+    target = cfg.get("target")
+    goal = (f" The run ends early if a commit reaches {', '.join(f'{k} {v:g}' for k, v in target.items())} on the "
+            f"validation set." if target else "")
+    return (f"- You have {task.wall_seconds // 60} minutes and "
+            f"{int(((task.services or {}).get('score') or {}).get('requests', 0))} commits.{others} Keep improving "
+            f"until your commits or your time run out: a commit is what counts, not your working directory as you "
+            f"leave it, and the best commit by the validation set is the result.{goal}\n"
+            f"- `tnca-service submit score --message \"one line on what this commit changes\"` commits a snapshot: "
+            f"it is scored as the score service scores it and kept in the archive with your message (shown to other "
+            f"islands as yours, unverified). Its reply, once done, also gives your best commit, your island's grid "
+            f"(one elite per cell; cells are what a commit changed: compiler only, hardware only, or both), and every "
+            f"{cfg['migration_interval']} commits some elites of connected islands to consider.\n"
+            f"- `tnca-service archive` lists the commits you can see; `tnca-service read-commit ID` prints one as a "
+            f"patch against the base commit (`git apply` it on a clean tree to continue from it).\n"
+            f"- If you stop, you are asked to continue; a turn that calls no tool counts as idle, and "
+            f"{cfg['max_idle_turns']} idle turns in a row end your island.\n")
+
+
+def _services_text(cfg: dict, islands: bool = False, resumed: bool = False) -> str:
     """How the agent may ask the evaluator for a measurement, and how much it may ask."""
     if not cfg:
         return ""
@@ -134,12 +279,20 @@ def _services_text(cfg: dict) -> str:
     lines = ["", "", "## Measurements you can ask for", "",
              "From your shell, `tnca-service` asks the evaluator to measure a snapshot of your working directory "
              "the way the final evaluation will (only changes under the paths it takes count). Whether and when "
-             "to use it is up to you. Requests run in the background and your time keeps running while they do. "
-             "A request still running when you stop is cancelled, and its result is lost.", ""]
+             "to use it is up to you. Requests run in the background and your time keeps running while they do. " +
+             ("When you stop you are asked to continue, and your requests keep running; the budgets below are "
+              "this island's unless they say they are shared." if islands else
+              "When you stop you are asked to continue, and your requests keep running until the time runs out "
+              "(a board request still running then runs to its end, unseen)." if resumed else
+              "A request still running when you stop is cancelled, and its result is lost (a board request "
+              "excepted, below)."), ""]
     if score:
         lines.append(f"- `tnca-service submit score`: the hidden validation set, in simulation. You get how many "
                      f"points passed, the geometric-mean speedup over the points that passed, and the share of all "
-                     f"points that passed and got faster. No point names, shapes or errors. You have "
+                     f"points that passed and got faster. When points fail, how many failed of each kind (such as "
+                     f"numeric-error, timeout or measurement-rejected), and when your device did not build or "
+                     f"staging stopped before any point ran, the last lines of that log. Never which point, its "
+                     f"shape or its own error text. You have "
                      f"{int(score.get('requests', 0))} such requests.")
     if fpga:
         lines.append(f"- `tnca-service submit fpga-quick`: out-of-context synthesis and timing of the whole device "
@@ -149,19 +302,34 @@ def _services_text(cfg: dict) -> str:
                      f"{float(fpga.get('minutes', 0)):g} minutes of FPGA time in total, charged as used; one request "
                      f"at a time, and one that could run past what is left is refused. Post-synthesis timing is "
                      f"optimistic: routing adds delay.")
-    if slow:
-        action = ("full implementation and validation-set board measurement" if slow["mode"] == "board"
-                  else "full implementation and routed timing, without the board stage")
-        lines.append(f"- `tnca-service submit fpga-slow`: {action}, using the FPGA harness. "
-                     f"One request may take up to {float(slow['job_minutes']):g} minutes; the total slow-tier "
-                     f"budget is {float(slow['minutes']):g} minutes, charged as used. The request runs in the "
-                     f"background; it is cancelled if your agent run ends before it finishes. "
-                     f"If a board stage would execute candidate host code, the site must explicitly permit it. "
-                     f"You see build/timing information" +
-                     (" and only an aggregate for the hidden validation set." if slow["mode"] == "board" else "."))
+    if slow and slow["mode"] == "build":
+        lines.append(f"- `tnca-service submit fpga-slow`: the full implementation of your machine on the FPGA "
+                     f"(place and route at the target clock, one Vivado flow of up to "
+                     f"{float(slow['flow_minutes']):g} minutes), and its routed timing. You have "
+                     f"{int(slow['flows'])} such flows in this run.")
+    elif slow:
+        lines.append(
+            f"- `tnca-service submit fpga-slow`: the real card. Board time is precious: a request that changed "
+            f"the machine (RTL, the profile's parameters, the device description) is first fully implemented "
+            f"(one Vivado flow, which takes hours; up to {float(slow['flow_minutes']):g} minutes), and you have "
+            f"{int(slow['flows'])} flows in this run{', shared by every island' if islands else ''}. Accumulate enough hardware change, and be confident in it, "
+            f"before you ask. A request that kept the machine (compiler and software only), or that asks again "
+            f"for hardware this run already built, needs no flow and runs on the card directly; you have "
+            f"{int(slow['board_runs'])} such board runs{', shared by every island' if islands else ''}. Before anything is charged, the snapshot's validation "
+            f"set must pass in simulation, and a hardware request needs an `fpga-quick` result of this run on "
+            f"exactly that hardware that met timing; otherwise it is refused and not charged. A flow that fails "
+            f"on your design (timing or place-and-route does not converge, it does not fit, DRC) counts; one "
+            f"that fails on the infrastructure does not, and is retried for you. One slow request at a time; "
+            f"the quick tier stays open while it runs. The card is shared: a request waits until the card has "
+            f"been idle for a while, and that wait is part of its time. On the card you get the hidden "
+            f"validation set's aggregate against the base on the card (as the score service gives it), how "
+            f"many points counted the cycles simulation counted, and any board check (such as FP8 bit "
+            f"alignment) that did not pass; for a flow that failed, why: the failing stage, slack, the worst "
+            f"paths and whether they cross an SLR, utilisation per SLR, the DRC rules that failed. A board "
+            f"request still running when you stop runs to its end, but you will not see its result.")
     lines += ["- `tnca-service budget`, `tnca-service status [ID]`, `tnca-service result ID`, "
               "`tnca-service wait ID`: what is left, and the results."]
     return "\n".join(lines)
 
 
-__all__ = ["Task", "TaskError", "load_task", "render"]
+__all__ = ["Task", "TaskError", "WITHOUT_SKILL", "load_task", "render"]

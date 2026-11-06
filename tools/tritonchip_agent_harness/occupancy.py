@@ -84,10 +84,31 @@ def services(site, task, requests) -> list:
                              reserved={"cpus": fpga_quick.threads(worker)}))
         else:
             cfg = site.fpga_pipeline or {}
-            out += (stages((job.get("full") or {}).get("pipeline"), cfg.get("build_host"), cfg.get("board_host"),
-                           ("fpga-slow-build", "fpga-slow-board"), job["id"])
-                    or [entry("fpga-slow", None, *times, **common, covers=WHOLE_SLOW)])
+            full = job.get("full") or {}
+            # The link from its pipeline's steps; the card from its session (board.py), wait for idle included.
+            got = stages((full.get("build") or {}).get("pipeline") or full.get("pipeline"), cfg.get("build_host"),
+                         cfg.get("board_host"), ("fpga-slow-build", "fpga-slow-board"), job["id"])
+            got += _card(((full.get("card") or {}).get("record")), "fpga-slow-board", job["id"])
+            out += got or [entry("fpga-slow", None, *times, **common, covers=WHOLE_SLOW)]
     return out
+
+
+def _card(record: Optional[dict], role: str, request_id: Optional[str] = None) -> list:
+    """A card session's hold on the card host, from the harness's request to the session's end."""
+    if not record or record.get("started_at") is None:
+        return []
+    return [entry(role, record.get("host"), record["started_at"], record.get("finished_at"),
+                  reserved={"cards": 1}, request_id=request_id)]
+
+
+def certification(site, cert) -> list:
+    """The automatic certification after a run (certify.after_run): its link, if it needed one, and its card."""
+    if not isinstance(cert, dict):
+        return []
+    cfg = site.fpga_pipeline or {}
+    out = stages(((cert.get("build") or {}).get("pipeline")), cfg.get("build_host"), None,
+                 ("certify-build", "certify-board"), None)
+    return out + _card(cert.get("card"), "certify-board")
 
 
 def of_run(site, task, agent_result: dict, evaluated: Optional[tuple]) -> list:

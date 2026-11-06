@@ -55,6 +55,7 @@ target, stage the package data and build the simulated device:
     make -s python/tnca/data/.staged
     tnca-sim prepare --profile core-vrf-sync-v5
 
+<!-- without-skill -->
 Then a test case of your own looks like this (the model and inputs are yours
 to choose):
 
@@ -83,3 +84,4 @@ torch.testing.assert_close(got, expected)
 `python/tnca/triton_backend/driver.py` documents what `launch_log()` records
 for each launch, and `python/tnca/inductor.py` how Inductor is pointed at
 TNCA.
+<!-- /without-skill -->

@@ -8,6 +8,10 @@ The line drawn for every CLI is the same:
 - What leaks the environment is switched off -- user configuration, memory
   carried between runs, telemetry, plugins and skills fetched from the
   network, update checks -- and in `offline` mode every web tool too.
+- What the harness itself provides is the same for every CLI: its skills
+  (`SKILLS_DIR`, mounted read-only) are linked into each CLI's own skills
+  directory, so each CLI discovers them the way its vendor made it discover
+  skills, from one byte-identical source. The run record names them by hash.
 
 Each switch is listed here, so a run record can name the configuration it ran under.
 """
@@ -15,6 +19,7 @@ Each switch is listed here, so a run record can name the configuration it ran un
 from __future__ import annotations
 
 import json
+import re
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -26,6 +31,8 @@ from .siteconfig import Account
 MODES = ("offline", "open")
 CODEX_HOME = "/run/tnca-codex-home"
 WORKDIR = "/work"
+# The harness's skills, one subdirectory each, as the agent's container sees them.
+SKILLS_DIR = "/opt/tnca-skills"
 
 
 @dataclass
@@ -35,6 +42,7 @@ class Launch:
     env_files: list = field(default_factory=list)
     mounts: list = field(default_factory=list)
     switches: dict = field(default_factory=dict)  # what was turned off or on, for the run record
+    skills_dir: str = ""  # where this CLI looks for user skills; SKILLS_DIR's entries are linked there
 
 
 def codex_config(mode: str) -> str:
@@ -77,7 +85,11 @@ def opencode_config(account: Account, mode: str) -> dict:
     }
 
 
-def launch(account: Account, prompt: str, mode: str, run_dir: Path, proxy_env: dict) -> Launch:
+def launch(account: Account, prompt: str, mode: str, run_dir: Path, proxy_env: dict,
+           session: Optional[str] = None) -> Launch:
+    """The CLI's command and environment. `session`: continue that session of the CLI (an island's next turn,
+    report section 8.4 D2) -- `claude -p --resume`, `codex exec ... resume`, `opencode run --session`; none of
+    the three is verified yet on the pinned versions, so the caller falls back to a new session when one fails."""
     if mode not in MODES:
         raise ValueError(f"network mode must be one of {MODES}")
     main = account.models["main"]
@@ -85,26 +97,32 @@ def launch(account: Account, prompt: str, mode: str, run_dir: Path, proxy_env: d
     if account.cli == "claude-code":
         command = ["claude", "-p", prompt, "--model", main, "--output-format", "stream-json", "--verbose",
                    "--dangerously-skip-permissions", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}']
+        if session:
+            command += ["--resume", session]
         if mode == "offline":
             command += ["--disallowedTools", "WebSearch,WebFetch"]
         env.update(CLAUDE_CONFIG_DIR=f"{AGENT_HOME}/.claude-run", DISABLE_AUTOUPDATER="1",
                    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1")
         return Launch(command, env, [account.credential], [], {
             "config_dir": "fresh per run", "mcp": "none (strict)", "updates": "off",
-            "nonessential_traffic": "off", "web_tools": "off" if mode == "offline" else "on"})
+            "nonessential_traffic": "off", "web_tools": "off" if mode == "offline" else "on"},
+            skills_dir=f"{AGENT_HOME}/.claude-run/skills")
     if account.cli == "codex":
         home = run_dir / "codex-home"
         home.mkdir(mode=0o700, exist_ok=True)
         (home / "config.toml").write_text(codex_config(mode), encoding="utf-8")
+        resume = f"resume {shlex.quote(session)} " if session else ""
         command = ["sh", "-c", "exec codex exec --json --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox "
-                               f"-C {WORKDIR} -m {shlex.quote(main)} {shlex.quote(prompt)} < /dev/null"]
+                               f"-C {WORKDIR} -m {shlex.quote(main)} {resume}{shlex.quote(prompt)} < /dev/null"]
         env.update(CODEX_HOME=CODEX_HOME)
         return Launch(command, env, [], [Mount(home, CODEX_HOME, read_only=False)], {
             "codex_home": "fresh per run, auth.json copied", "updates": "off", "analytics": "off",
             "otel_metrics": "none", "remote_plugin": "off", "apps": "off", "skill_dependency_install": "off",
-            "memories": "off", "web_search": "disabled" if mode == "offline" else "live"})
+            "memories": "off", "web_search": "disabled" if mode == "offline" else "live"},
+            skills_dir=f"{CODEX_HOME}/skills")
     prov = account.options["provider"]
-    command = ["opencode", "run", "--format", "json", "--auto", "--dir", WORKDIR, "-m", f"{prov}/{main}", prompt]
+    command = ["opencode", "run", "--format", "json", "--auto", "--dir", WORKDIR, "-m", f"{prov}/{main}"]
+    command += (["--session", session] if session else []) + [prompt]
     env.update(OPENCODE_CONFIG_CONTENT=json.dumps(opencode_config(account, mode), separators=(",", ":")),
                OPENCODE_DISABLE_AUTOUPDATE="1", OPENCODE_DISABLE_MODELS_FETCH="1",
                OPENCODE_DISABLE_DEFAULT_PLUGINS="1", OPENCODE_DISABLE_LSP_DOWNLOAD="1",
@@ -114,7 +132,8 @@ def launch(account: Account, prompt: str, mode: str, run_dir: Path, proxy_env: d
     return Launch(command, env, [account.credential], [], {
         "config": "inline only", "updates": "off", "models_fetch": "off", "default_plugins": "off",
         "lsp_download": "off", "reads_.claude": "off", "share": "off",
-        "webfetch": "deny" if mode == "offline" else "allow"})
+        "webfetch": "deny" if mode == "offline" else "allow"},
+        skills_dir=f"{AGENT_HOME}/.config/opencode/skills")
 
 
 def _events(out: str) -> list:
@@ -208,6 +227,92 @@ def tokens(cli: str, usage: Optional[dict], model_usage: Optional[dict] = None) 
     return {**counts, "by_model": by_model}
 
 
+# Throttling, by the provider rather than by the agent: what each CLI prints
+# when a request was refused for rate, load or quota. Matched only in error
+# context (error events, a failed result, stderr), never in the agent's own
+# text, which may well talk about rate limits. Most specific first. The
+# patterns are the providers' documented error texts (HTTP 429/529, Anthropic's
+# rate_limit_error and overloaded_error, OpenAI's insufficient_quota, GLM's codes
+# 1113/1302/1305); no throttled run of the pinned CLIs has been recorded yet.
+_THROTTLE = (
+    ("usage-limit", re.compile(r"(?i)usage limit|(?:5-hour|weekly|daily|session) limit reached"
+                               r"|insufficient[_ ]quota|exceeded your current quota"
+                               r"|\\?\"code\\?\"\s*:\s*\\?\"?1113\b|余额不足")),
+    ("overloaded", re.compile(r"(?i)\b529\b|overloaded")),
+    ("rate-limit", re.compile(r"(?i)\b429\b|rate[_ ]?limit|too many requests"
+                              r"|\\?\"code\\?\"\s*:\s*\\?\"?130[25]\b|速率限制|限流|并发|访问量过大|请求过于频繁")),
+)
+
+
+def _error_context(account: Account, out: str, err: str) -> list:
+    """The texts in which a refusal by the provider would show: never the agent's own messages."""
+    texts = []
+    for e in _events(out):
+        kind = f"{e.get('type', '')} {e.get('subtype', '')}".lower()
+        if account.cli == "claude-code" and e.get("type") == "result":
+            if e.get("is_error") or e.get("subtype") != "success":
+                texts.append(json.dumps(e.get("result")) + " " + str(e.get("subtype")))
+        elif "error" in kind or "retry" in kind or "failed" in kind:
+            texts.append(json.dumps(e, ensure_ascii=False))
+    # What the CLI printed outside its JSON stream (an error it gave up with), never the agent's messages.
+    plain = [line for line in out.splitlines() if line.strip() and not line.lstrip().startswith("{")]
+    texts.append("\n".join(plain[-20:]))
+    texts.append((err or "")[-4000:])
+    return texts
+
+
+def throttle(account: Account, out: str, err: str) -> Optional[dict]:
+    """Whether the provider refused the run's requests for rate, load or quota; None if nothing says so.
+
+    A throttled run is not an agent that gave up or crashed: the record keeps
+    the two apart, and a controller that resumes runs waits instead of counting
+    it as idle. `retries` counts the retry events a CLI printed on its own
+    (retrying inside one invocation); `evidence` is a short excerpt."""
+    texts = _error_context(account, out, err)
+    for kind, pattern in _THROTTLE:
+        for text in texts:
+            m = pattern.search(text)
+            if m:
+                lo = max(0, m.start() - 80)
+                retries = sum(1 for e in _events(out) if "retry" in f"{e.get('type', '')} {e.get('subtype', '')}".lower())
+                return {"kind": kind, "evidence": text[lo:lo + 200], "retries": retries}
+    return None
+
+
+def session_id(account: Account, out: str) -> Optional[str]:
+    """The CLI's session, from its own events: what a next turn resumes."""
+    for e in _events(out):
+        if account.cli == "claude-code" and e.get("session_id"):
+            return str(e["session_id"])
+        if account.cli == "codex" and e.get("type") == "thread.started" and e.get("thread_id"):
+            return str(e["thread_id"])
+        if account.cli == "opencode" and e.get("sessionID"):
+            return str(e["sessionID"])
+    return None
+
+
+_CODEX_TOOL_ITEMS = ("command_execution", "file_change", "mcp_tool_call", "web_search")
+
+
+def tool_calls(account: Account, out: str) -> int:
+    """How many tools the agent called in one turn: an island's idle count is turns with none (D7)."""
+    n, seen = 0, set()
+    for e in _events(out):
+        if account.cli == "claude-code" and e.get("type") == "assistant":
+            n += sum(1 for c in ((e.get("message") or {}).get("content") or [])
+                     if isinstance(c, dict) and c.get("type") == "tool_use")
+        elif account.cli == "codex" and e.get("type") == "item.completed":
+            n += (e.get("item") or {}).get("type") in _CODEX_TOOL_ITEMS
+        elif account.cli == "opencode":
+            part = e.get("part") or {}
+            if part.get("type") == "tool":
+                key = part.get("callID") or part.get("id")
+                if key not in seen:
+                    seen.add(key)
+                    n += 1
+    return n
+
+
 def parse(account: Account, out: str, run_dir: Path, export_session=None) -> dict:
     """What the CLI answered last, which models served it, the usage it reported, and that usage in one schema."""
     r = _read(account, out, run_dir, export_session)
@@ -273,5 +378,5 @@ def _read(account: Account, out: str, run_dir: Path, export_session=None) -> dic
     return r
 
 
-__all__ = ["CODEX_HOME", "Launch", "MODES", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch", "opencode_config",
-           "parse", "tokens"]
+__all__ = ["CODEX_HOME", "Launch", "MODES", "SKILLS_DIR", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch",
+           "opencode_config", "parse", "session_id", "throttle", "tokens", "tool_calls"]

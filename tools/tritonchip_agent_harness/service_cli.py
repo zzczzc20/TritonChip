@@ -4,7 +4,10 @@
     tnca-service budget                what is left
     tnca-service submit score          the hidden validation set, in simulation: an aggregate
     tnca-service submit fpga-quick     synthesis and timing of the whole device on the FPGA part
-    tnca-service submit fpga-slow      full link; optional validation-set board measurement
+    tnca-service submit fpga-slow      the card: a hardware change is first fully linked (a flow)
+    tnca-service submit score --message TEXT    on an island: a commit, with one line on what it changes
+    tnca-service archive               on an island: the commits you can see
+    tnca-service read-commit ID        on an island: one commit, as a patch against the base commit
     tnca-service status [ID]           one request, or all of them
     tnca-service result ID             a finished request's result
     tnca-service wait ID [SECONDS]     wait for a request to finish, then print its result
@@ -51,6 +54,17 @@ def main(argv) -> int:
         reply = call({"op": "budget"})
     elif cmd == "submit" and len(rest) == 1:
         reply = call({"op": "submit", "service": rest[0]})
+    elif cmd == "submit" and len(rest) == 3 and rest[1] == "--message":
+        reply = call({"op": "submit", "service": rest[0], "message": rest[2]})
+    elif cmd == "archive" and not rest:
+        reply = call({"op": "archive"})
+    elif cmd == "read-commit" and len(rest) == 1:
+        reply = call({"op": "read-commit", "id": rest[0]})
+        if reply.get("patch") is not None and not reply.get("error"):
+            # The patch as it is, for `git apply`; what it is goes to stderr.
+            print(json.dumps({k: v for k, v in reply.items() if k != "patch"}), file=sys.stderr)
+            sys.stdout.write(reply["patch"])
+            return 0
     elif cmd == "status":
         reply = call({"op": "status", "id": rest[0]} if rest else {"op": "status"})
     elif cmd == "result" and len(rest) == 1:

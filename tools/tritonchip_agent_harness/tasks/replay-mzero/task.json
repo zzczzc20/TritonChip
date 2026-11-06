@@ -2,6 +2,7 @@
   "schema": "tritonchip-agent-task/1",
   "task_id": "replay-mzero",
   "kind": "cross-layer",
+  "skills": ["testcase-design"],
   "note": "A replay on main + the profile header (P1) + the leak cleanup (6f2bdee) + the image build (d1a00dd): the zero-accumulator m.zero lowering of 49da68a removed. reference.patch is the developers' change; a no-op agent scores 1.0. Cross-layer: the agent may change the compiler, the ISA and the hardware. ArchBench is hidden: archbench/ and every file the 2026-10-15 leak audit found revealing its points are removed from the workspace. Residual leaks the export cannot remove (comments in files the flow needs) are listed in the README, section 6.5.",
   "base_commit": "083b57d7a90f951daec658074208c7c588a21a7b",
   "design": [

@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import shlex
 import shutil
 import tarfile
 import time
@@ -17,14 +18,21 @@ from pathlib import Path
 from typing import Optional
 
 from . import adapters, doctor, provider
+from . import skills as skills_
 from .provider import AGENT_HOME, AgentContainer, Mount
 from .siteconfig import Account, Site
 
 BINARY = {"claude-code": "claude", "codex": "codex", "opencode": "opencode"}
-# The one harness file an agent's container gets: the bridge to the gateway's
-# socket. Never the harness directory, which holds the task packages (their
-# point lists and reference patches) and the evaluator.
+# The harness files an agent's container gets: the bridge to the gateway's
+# socket, and the skills directory (below). Never the harness directory
+# itself, which holds the task packages (their point lists and reference
+# patches) and the evaluator.
 BRIDGE_SCRIPT = "/opt/tnca-bridge/bridge.py"
+# The skills a run gets (skills.py): the selected ones are staged into the run's
+# directory, that directory alone is mounted read-only at adapters.SKILLS_DIR, and
+# the CLI's own skills directory links to what is mounted, so every CLI in every
+# run discovers the same skills from the same bytes. The run record names them.
+SKILLS_SOURCE = skills_.SOURCE
 # The agent's side of the in-run services (services.py), and where their socket appears.
 SERVICE_CLI = "/usr/local/bin/tnca-service"
 SERVICE_DIR = "/run/tnca-service"
@@ -34,10 +42,29 @@ AUTH_JSON_LIMIT = 64 * 1024
 TRANSCRIPTS = {"claude-code": ".claude-run/projects", "opencode": ".local/share/opencode"}
 
 
-def agent_mounts(socket_dir: Path, workspace: Path, extra=()) -> list:
-    """Everything a run's agent container sees from the host, and nothing else."""
-    return [Mount(doctor.HERE / "bridge.py", BRIDGE_SCRIPT), Mount(socket_dir, doctor.SOCKET_DIR),
-            Mount(workspace, adapters.WORKDIR, read_only=False), *extra]
+def agent_mounts(socket_dir: Path, workspace: Path, extra=(), skills: Optional[Path] = None) -> list:
+    """Everything a run's agent container sees from the host, and nothing else.
+
+    `skills`: the run's staged skills directory (skills.stage), mounted read-only; None mounts no skill.
+    """
+    mounts = [Mount(doctor.HERE / "bridge.py", BRIDGE_SCRIPT), Mount(socket_dir, doctor.SOCKET_DIR),
+              Mount(workspace, adapters.WORKDIR, read_only=False)]
+    if skills is not None:
+        mounts.append(Mount(skills, adapters.SKILLS_DIR))
+    return mounts + list(extra)
+
+
+def link_skills(name: str, skills_dir: str, timeout: float = 60) -> dict:
+    """Link every mounted skill into the CLI's skills directory, inside the running container.
+
+    A link, not a copy: the source stays read-only, and the CLI's own listing
+    is what the record relies on. Returns what the directory then holds.
+    """
+    script = (f"mkdir -p {shlex.quote(skills_dir)} && for s in {adapters.SKILLS_DIR}/*/; do "
+              f"ln -s \"${{s%/}}\" {shlex.quote(skills_dir)}/; done && ls -1 {shlex.quote(skills_dir)}")
+    proc = _exec(name, ["sh", "-c", script], timeout=timeout)
+    return {"dir": skills_dir, "linked": proc.stdout.split() if proc.returncode == 0 else [],
+            "error": (proc.stderr or "").strip()[:300] if proc.returncode != 0 else None}
 
 
 def codex_auth_ok(copy: Path, master: Path) -> Optional[str]:
@@ -103,10 +130,38 @@ def _collect(name: str, account: Account, dest: Path) -> None:
                 target.write_bytes(src.read())
 
 
+def _turn(agent: str, account: Account, command: list, timeout: float) -> tuple:
+    """One CLI invocation in the running sandbox: its output, and how it ended."""
+    started = time.time()
+    try:
+        proc = _exec(agent, command, timeout=max(1.0, timeout))
+        record = {"stop_reason": "exited", "exit": proc.returncode}
+        stdout, stderr = proc.stdout, proc.stderr
+    except Exception as exc:  # subprocess.TimeoutExpired, chiefly
+        provider.docker("exec", agent, "pkill", "-TERM", "-f", BINARY[account.cli], check=False, timeout=30)
+        record = {"stop_reason": "timeout" if "Timeout" in type(exc).__name__ else f"error: {type(exc).__name__}",
+                  "exit": None}
+        stdout = (getattr(exc, "stdout", None) or b"")
+        stderr = (getattr(exc, "stderr", None) or b"")
+        stdout = stdout.decode(errors="replace") if isinstance(stdout, bytes) else stdout
+        stderr = stderr.decode(errors="replace") if isinstance(stderr, bytes) else stderr
+    record["seconds"] = round(time.time() - started, 1)
+    return stdout, stderr, record
+
+
 def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Path,
-              workspace: Optional[Path], timeout: float, services=None) -> dict:
-    """`services`, when given, is a started-on-demand services.Broker the agent reaches with `tnca-service`."""
-    run_id = run_dir.name
+              workspace: Optional[Path], timeout: float, services=None, skills: Optional[list] = None,
+              turns=None, name: Optional[str] = None) -> dict:
+    """`services`, when given, is a started-on-demand services.Broker the agent reaches with `tnca-service`.
+
+    `turns`, an island's controller: called after each CLI run with that turn's record and the seconds left;
+    it returns the next prompt (the same session), `(prompt, True)` for a new session, or None to stop.
+    `name`: the sandbox's name suffix when several run at once (islands); the run's id otherwise.
+
+    `skills`: the names of the skills this run gets (skills.select), staged and mounted; none by default.
+    """
+    selected = skills_.select(skills or [])
+    run_id = name or run_dir.name
     gw, agent = f"tnca-gw-{run_id}", f"tnca-agent-{run_id}"
     result: dict = {"label": account.label, "cli": account.cli, "auth": account.auth, "mode": mode,
                     "requested_model": account.models["main"], "credential_in_sandbox": True,
@@ -134,7 +189,8 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         if services is not None:
             extra += [Mount(services.start(), SERVICE_DIR), Mount(doctor.HERE / "service_cli.py", SERVICE_CLI)]
             env["TNCA_SERVICE"] = f"{SERVICE_DIR}/service.sock"
-        mounts = agent_mounts(socket_dir, workspace, extra)
+        staged = skills_.stage(selected, run_dir / "skills") if selected else None
+        mounts = agent_mounts(socket_dir, workspace, extra, skills=staged)
         c = AgentContainer(name=agent, image=site.images["agent"], cpus=site.cpus, memory=site.memory,
                            pids=site.pids, mounts=mounts, env=env, env_files=launch.env_files,
                            labels={"tritonchip-agent-harness": "agent", "run": run_id}, workdir=adapters.WORKDIR)
@@ -144,26 +200,44 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         time.sleep(1)
         version = _exec(agent, [BINARY[account.cli], "--version"], timeout=60)
         result["cli_version"] = (version.stdout.strip().splitlines() or [None])[-1]
+        result["skills"] = {"provided": skills_.manifest(selected), "catalog": skills_.version(),
+                            **(link_skills(agent, launch.skills_dir) if selected else {})}
         start = time.time()
-        try:
-            proc = _exec(agent, launch.command, timeout=timeout)
-            result["stop_reason"] = "exited"
-            result["exit"] = proc.returncode
-            stdout, stderr = proc.stdout, proc.stderr
-        except Exception as exc:  # subprocess.TimeoutExpired, chiefly
-            provider.docker("exec", agent, "pkill", "-TERM", "-f", BINARY[account.cli], check=False, timeout=30)
-            result["stop_reason"] = "timeout" if "Timeout" in type(exc).__name__ else f"error: {type(exc).__name__}"
-            result["exit"] = None
-            stdout = (getattr(exc, "stdout", None) or b"")
-            stderr = (getattr(exc, "stderr", None) or b"")
-            stdout = stdout.decode(errors="replace") if isinstance(stdout, bytes) else stdout
-            stderr = stderr.decode(errors="replace") if isinstance(stderr, bytes) else stderr
+        command, turn, session, turns_log, total = launch.command, 0, None, [], {}
+        while True:
+            left = timeout - (time.time() - start)
+            stdout, stderr, record = _turn(agent, account, command, left)
+            suffix = "" if turn == 0 else f"-{turn}"
+            (out_dir / f"stdout{suffix}.jsonl").write_text(stdout or "", encoding="utf-8")
+            (out_dir / f"stderr{suffix}.txt").write_text(stderr or "", encoding="utf-8")
+            exporter = (lambda sid: _exec(agent, ["opencode", "export", sid], timeout=120).stdout) \
+                if account.cli == "opencode" else None
+            parsed = adapters.parse(account, stdout or "", run_dir, exporter)
+            record.update(turn=turn, tool_calls=adapters.tool_calls(account, stdout or ""),
+                          throttled=adapters.throttle(account, stdout or "", stderr or ""),
+                          tokens=parsed.get("tokens"))
+            session = adapters.session_id(account, stdout or "") or session
+            record["session"] = session
+            turns_log.append(record)
+            for k, v in (parsed.get("tokens") or {}).items():
+                if isinstance(v, (int, float)):
+                    total[k] = total.get(k, 0) + v
+            result.update(parsed)
+            result.update(stop_reason=record["stop_reason"], exit=record["exit"], throttled=record["throttled"])
+            # One CLI run, or an island's turns (report section 8.4 D2/D7): the controller says whether, and
+            # with what prompt, the agent goes on; the same session when the CLI gave one, else a new one.
+            nxt = turns(record, timeout - (time.time() - start)) if turns is not None else None
+            if nxt is None or timeout - (time.time() - start) < 30:
+                break
+            turn += 1
+            prompt_next, fresh = nxt if isinstance(nxt, tuple) else (nxt, False)
+            use = None if fresh else session
+            command = adapters.launch(account, prompt_next, mode, run_dir, proxy_env(), session=use).command
+            record["next"] = "resume" if use else "new-session"
         result["seconds"] = round(time.time() - start, 1)
-        (out_dir / "stdout.jsonl").write_text(stdout or "", encoding="utf-8")
-        (out_dir / "stderr.txt").write_text(stderr or "", encoding="utf-8")
-        exporter = (lambda sid: _exec(agent, ["opencode", "export", sid], timeout=120).stdout) \
-            if account.cli == "opencode" else None
-        result.update(adapters.parse(account, stdout or "", run_dir, exporter))
+        if turns is not None:
+            result["turns"] = turns_log
+            result["tokens"] = total or result.get("tokens")
         _collect(agent, account, out_dir / "transcript")
     finally:
         provider.remove(agent)
@@ -201,4 +275,5 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
     return result
 
 
-__all__ = ["BRIDGE_SCRIPT", "SERVICE_CLI", "agent_mounts", "codex_auth_ok", "proxy_env", "run_agent"]
+__all__ = ["BRIDGE_SCRIPT", "SERVICE_CLI", "SKILLS_SOURCE", "agent_mounts", "codex_auth_ok", "link_skills",
+           "proxy_env", "run_agent"]

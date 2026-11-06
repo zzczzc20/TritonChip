@@ -690,7 +690,7 @@ harness or manifest error.
 | `validate` | judges an existing build directory | `--target`, `--build-dir`, `--historical`, `--output` |
 | `export <run>` | writes the evidence packet; `--light` leaves out v++'s working tree | `--state-dir`, `--output`, `--light` |
 | `import` | installs a run built on another host from its light packet, every file's hash checked (§11.2) | `--state-dir`, `--from-tar FILE\|-` |
-| `pipeline <manifest>` | builds on one server of a hosts file and measures on another (§11.2) | `--hosts`, `--build-host`, `--board-host`, `--timeout`, `--poll`, `--skip-board`, `--build-run`, `--no-sync`, `--adapter mock`, `--output` |
+| `pipeline <manifest>` | builds on one server of a hosts file and measures on another (§11.2) | `--hosts`, `--build-host`, `--board-host`, `--timeout`, `--poll`, `--skip-board`, `--build-run`, `--measure-run`, `--expect-xclbin-sha256`, `--no-sync`, `--adapter mock`, `--output` |
 | `sync <host>` | puts a clean checkout of a commit on a server, from a git bundle | `--hosts`, `--commit` |
 | `dispatch <host> <manifest>` | sends a manifest to a worker over SSH (§11.1) | `--remote-repo`, `--state-dir`, `--timeout`, `--ssh-timeout`, `--skip-board`, `--output` |
 | `worker --stdin` | the remote end of `dispatch` and `pipeline`: `doctor`, `submit`, `status`, `export`, `measure` | |
@@ -860,6 +860,20 @@ running from an earlier controller is attached to rather than started again.
 `--skip-board` stops after the build; `--no-sync` uses the checkouts as they
 are; `--adapter mock` plays the build (and its board stage measures a
 placeholder image), to exercise the servers without Vivado.
+
+`pipeline --measure-run RUN_ID` builds nothing: it measures the image of a
+run the card server already holds (it was measured there before), built from
+another commit, with the manifest's commit checked out on the card server
+driving the card -- its runtime, compiler and ArchBench. It is how a change
+to software alone is measured on the machine it shares with its base. No
+build server is named or touched (`--build-host` is not needed); the card
+server measures with `--allow-source-mismatch`, which the run's result
+records (`software.relation`); the manifest must name that run's candidate,
+target and mode, and is sent without its source commit; `--expect-xclbin-sha256`
+fails the pipeline if the image measured hashes otherwise; and the
+measurement must have been driven by this commit's checkout. A measurement of
+that run already in progress is never attached to: it is another request's,
+and the pipeline stops instead.
 
 **How long the controller waits.** `--timeout` is each remote command's limit
 on the server (package, link, load, conformance; ArchBench has its own

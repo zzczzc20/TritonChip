@@ -33,6 +33,8 @@ DEFAULT_PART = "xcu280-fsvh2892-2L-e"
 # Parameters of the top that are not the machine's: the platform's own.
 NOT_MACHINE = {"CORE_ID", "NUM_CORES", "HOST_TAG", "WORDS", "ADDR_W", "ADDR_BITS", "PHYS_VREGS", "PHYS_W"}
 
+# Vivado's banner, the first lines of its log: "****** Vivado v2023.2 (64-bit)".
+_VIVADO_VERSION = re.compile(r"\bVivado v(\d{4}\.\d+(?:\.\d+)?)\b")
 _DEFINE = re.compile(r"`define\s+TNCA_(?:IF|UARCH)_([A-Z][A-Z0-9_]*)\s+(-?\d+)\s*$", re.M)
 _PARAM = re.compile(r"^\s*parameter\s+([A-Z][A-Z0-9_]*)\s*=", re.M)
 
@@ -112,13 +114,23 @@ def _ns(word: str) -> Optional[float]:
         return None
 
 
+def vivado_version(job_dir: Path) -> Optional[str]:
+    """The Vivado release that ran the job, from its own log's banner; None when there is no log."""
+    for log in sorted((job_dir / "ooc").glob("*/vivado.log")) if (job_dir / "ooc").exists() else []:
+        m = _VIVADO_VERSION.search(log.read_text(errors="replace")[:4096])
+        if m:
+            return m.group(1)
+    return None
+
+
 def threads(worker: dict) -> int:
     """Vivado's thread limit for a job on the worker: the site's `threads`, else 4."""
     return int(worker.get("threads", 4))
 
 
 def _sandboxed(worker: dict, remote: str, period: float, generics: dict, seconds: int) -> str:
-    """The command the build worker runs: the flow's own script, inside bubblewrap, with a hard deadline."""
+    """The command the build worker runs: the flow's own script, inside bubblewrap (or `unshare` on a worker
+    without it), with a hard deadline."""
     binds = ["--ro-bind", "/usr", "/usr", "--ro-bind-try", "/lib", "/lib", "--ro-bind-try", "/lib64", "/lib64",
              "--ro-bind-try", "/lib32", "/lib32", "--ro-bind", "/bin", "/bin", "--ro-bind-try", "/sbin", "/sbin",
              "--ro-bind", "/etc", "/etc"]
@@ -128,17 +140,32 @@ def _sandboxed(worker: dict, remote: str, period: float, generics: dict, seconds
     # after every NAME=VALUE pair, and a whole profile's worth of them is longer than a file name may be.
     out = f"{remote}/sim/build/ooc/{TOP}"
     files = "$(cd rtl && ls common/*.v core/*.v gen/*.v nuca/*.v noc/*.v tile/*.v fpga/*.v *.v)"
+    # OOC_SV=1: the flow reads the sources as SystemVerilog, as the board build does
+    # (flow/synth/vivado_ooc_timing.tcl since R41); the same files either way for earlier trees.
     inner = (f"source {shlex.quote(worker['vivado_settings'])} >/dev/null 2>&1; mkdir -p {out} && "
-             f"OOC_GENERICS={shlex.quote(' '.join(f'{k}={v}' for k, v in generics.items()))} "
+             f"OOC_SV=1 OOC_GENERICS={shlex.quote(' '.join(f'{k}={v}' for k, v in generics.items()))} "
              f"vivado -mode batch -nojournal -nolog -source flow/synth/vivado_ooc_timing.tcl -tclargs "
              f"{TOP} {period:g} {shlex.quote(worker.get('part', DEFAULT_PART))} {out} {remote}/rtl {files} "
              f"> {out}/vivado.log 2>&1")
-    bwrap = (["timeout", "--kill-after=30", str(seconds), "bwrap", "--unshare-all", "--die-with-parent", "--new-session"]
-             + binds + ["--bind", remote, remote, "--tmpfs", "/tmp", "--tmpfs", "/home/sandbox",
-                        "--setenv", "HOME", "/home/sandbox", "--proc", "/proc", "--dev", "/dev", "--chdir", remote,
-                        "/bin/bash", "-c", inner])
+    if worker.get("sandbox", "bwrap") == "unshare":
+        # A worker without bubblewrap (the author's shared x86 Vivado machine,
+        # 2026-11-06): a user and network namespace keep the job offline and
+        # unprivileged, with no filesystem view of its own. The tree it runs is
+        # the base's flow with the candidate's hardware applied (services.py:
+        # apply_candidate only=HARDWARE), so the candidate supplies RTL and
+        # parameters, never the script; the job is niced, as the author's own
+        # OOC screens are, and stays one at a time (services: one FPGA request
+        # across both tiers).
+        sandbox = ["timeout", "--kill-after=30", str(seconds), "nice", "-n", "10", "unshare", "-Urn",
+                   "/bin/bash", "-c", f"cd {shlex.quote(remote)} && {inner}"]
+    else:
+        sandbox = (["timeout", "--kill-after=30", str(seconds), "bwrap", "--unshare-all", "--die-with-parent",
+                    "--new-session"]
+                   + binds + ["--bind", remote, remote, "--tmpfs", "/tmp", "--tmpfs", "/home/sandbox",
+                              "--setenv", "HOME", "/home/sandbox", "--proc", "/proc", "--dev", "/dev",
+                              "--chdir", remote, "/bin/bash", "-c", inner])
     return (f"cd {shlex.quote(remote)} && sed -i 's/maxThreads 8/maxThreads {threads(worker)}/' "
-            f"flow/synth/vivado_ooc_timing.tcl && {' '.join(shlex.quote(a) for a in bwrap)} > run.log 2>&1")
+            f"flow/synth/vivado_ooc_timing.tcl && {' '.join(shlex.quote(a) for a in sandbox)} > run.log 2>&1")
 
 
 def run(worker: dict, tree: Path, profile: str, period: float, seconds: int, job_dir: Path, job_id: str) -> dict:
@@ -147,8 +174,10 @@ def run(worker: dict, tree: Path, profile: str, period: float, seconds: int, job
     generics = effective_params(tree, profile)
     remote = f"{worker['workdir'].rstrip('/')}/{job_id}"
     ssh = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", worker["ssh"]]
+    # Which worker and which Vivado: estimates from two releases (or two
+    # machines) are not one series, and a site may switch workers.
     result: dict = {"profile": profile, "period_ns": period, "part": worker.get("part", DEFAULT_PART),
-                    "parameters": generics}
+                    "parameters": generics, "worker": worker["ssh"], "vivado_settings": worker["vivado_settings"]}
     started = time.time()
     try:
         subprocess.run(ssh + [f"mkdir -p {shlex.quote(remote)}"], check=True, capture_output=True, timeout=60)
@@ -167,6 +196,7 @@ def run(worker: dict, tree: Path, profile: str, period: float, seconds: int, job
     finally:
         result["seconds"] = round(time.time() - started, 1)
         subprocess.run(ssh + [f"rm -rf {shlex.quote(remote)}"], capture_output=True, timeout=60)
+    result["vivado_version"] = vivado_version(job_dir)
     reports = next((d for d in (job_dir / "ooc").glob("*") if (d / f"{TOP}_summary.rpt").exists()), None) \
         if (job_dir / "ooc").exists() else None
     if reports is None:
@@ -194,4 +224,5 @@ def cancel(worker: dict, job_id: str) -> None:
                     f"pkill -f {shlex.quote(pattern)}"], capture_output=True, timeout=60)
 
 
-__all__ = ["cancel", "effective_params", "parse_paths", "parse_summary", "parse_util", "run", "threads"]
+__all__ = ["cancel", "effective_params", "parse_paths", "parse_summary", "parse_util", "run", "threads",
+           "vivado_version"]

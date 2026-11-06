@@ -1,0 +1,203 @@
+{
+  "schema": "tritonchip-agent-task/1",
+  "task_id": "r41-dp-island1",
+  "kind": "cross-layer",
+  "note": "One island (islands.py) on r41-dp-pilot's machine, points and budgets: the first run of the island path before more islands (user's decision of 2026-11-07, '1 island first'). Everything but `islands` is r41-dp-pilot's, and its instruction is that task's file: keep the two task.json in step when the pilot changes. The budgets are this island's: 4 h, 6 commits (scoring requests), 45 quick-tier minutes; the slow tier's 3 flows and 6 board runs are the run's.",
+  "base_commit": "b476f3fb72a90771235375d5a361f03ba9efcaad",
+  "design": [
+    "compiler/",
+    "python/tnca/",
+    "isa/",
+    "rtl/",
+    "spec/r1_profiles.json",
+    "spec/devices/"
+  ],
+  "evaluator_owned": [
+    "python/tnca/device.py",
+    "python/tnca/runtime.py",
+    "python/tnca/transport.py",
+    "python/tnca/backend.py",
+    "python/tnca/backends/",
+    "python/tnca/triton_backend/driver.py",
+    "python/tnca/inductor.py",
+    "python/tnca/profiles.py",
+    "python/tnca/_data.py",
+    "rtl/board/",
+    "rtl/fpga/",
+    "python/tnca/devices.py",
+    "python/tnca/compile_cache.py",
+    "python/tnca/code_residency.py",
+    "python/tnca/eos_guard.py",
+    "python/tnca/hbm_layout.py",
+    "python/tnca/linalg_decomp.py",
+    "python/tnca/mask_index.py",
+    "python/tnca/inductor_tuning.py",
+    "python/tnca/inductor_tuning_worker.py",
+    "python/tnca/torch_device/queue.py"
+  ],
+  "hide": [
+    "archbench/",
+    "compiler/README.md",
+    "doc/architecture_overview.md",
+    "doc/compiler_overview.md",
+    "doc/docmap.state.json",
+    "doc/docmap.toml",
+    "doc/r38_board_bringup.md",
+    "doc/r38_pytorch_p1plus.md",
+    "doc/r38_stage1_status.md",
+    "doc/r39_report.md",
+    "doc/r39_tasks_and_acceptance.md",
+    "doc/r40_closeout_plan.md",
+    "doc/r40_cold_call_audit.md",
+    "doc/r40_hbm.md",
+    "doc/r40_report.md",
+    "doc/r40_tasks_and_acceptance.md",
+    "doc/r40_tasks_and_acceptance_v2.en.md",
+    "doc/r40_tasks_and_acceptance_v2.md",
+    "doc/r40_tasks_and_acceptance_v3.en.md",
+    "doc/r40_tasks_and_acceptance_v3.md",
+    "doc/r40_tnca_device.md",
+    "doc/r40_v3/",
+    "doc/r41_chat.md",
+    "doc/r41_execution_tasks.md",
+    "doc/r41_report.md",
+    "doc/r41_stage1_report.md",
+    "doc/r41_stage2_report.md",
+    "doc/r41_tasks_and_acceptance.md",
+    "flow/fpga/README.md",
+    "spec/r35_workloads.json",
+    "spec/r38/design_changes/xpose-dma-001.json",
+    "spec/r38/evidence_registry.json",
+    "spec/r38/suites/dev.json",
+    "spec/r39/baseline_archbench.json",
+    "spec/r39/baseline_archbench.jsonl",
+    "spec/r39/baseline_archbench_medium.jsonl",
+    "spec/r3_workloads.json",
+    "spec/r3v2_inventory.json",
+    "spec/r40/",
+    "spec/r41/",
+    "tools/models/",
+    "tools/performance_harness/",
+    "tools/r37/aot_run.py",
+    "tools/r37/upstream_cases.py",
+    "tools/r38/archbench/",
+    "tools/r38/dev_cases.py",
+    "tools/r38/tdesc_tests.py",
+    "tools/r38/triton_native_run.py",
+    "tools/r40/",
+    "tools/r41/",
+    "tutorial/11_running_on_the_u280.md"
+  ],
+  "instruction": "../r41-dp-pilot/instruction.md",
+  "budget": {
+    "wall_seconds": 14400
+  },
+  "evaluation": {
+    "profile": "core-vrf-sync-v5-x8-g2c4-dp-board",
+    "device": "u280-3core-r41",
+    "validation": [
+      "op.add/tiny/fp16-n1000",
+      "op.layernorm/tiny/fp16-r4-d64",
+      "op.linear/tiny/fp16-m16-k64-n64",
+      "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+      "op.attention_decode/small/fp16-b1-h4-l256-d32",
+      "op.add/membound/fp16-small-strided-r32-c1024"
+    ],
+    "final": [
+      "op.transpose/tiny/fp32-r32-c32",
+      "op.softmax/tiny/fp16-r4-c64",
+      "op.rope/tiny/fp16-b1-h2-s16-d16",
+      "op.w8a8_linear/tiny/e4m3-to-bf16-m16-k64-n64",
+      "op.gemv/small/fp16-k256-n512",
+      "op.gemv/medium/fp16-k320-n448"
+    ],
+    "jobs": 12,
+    "timeout_seconds": 10800,
+    "drain_cycles": 8,
+    "platform": {
+      "commit": "5a4f8528e262ab5cb23e52762b404fa4cea95a2e",
+      "paths": [
+        "python/tnca/backends/multicore_mmio.py",
+        "python/tnca/backends/multicore_mmio_sim.py",
+        "python/tnca/backends/u50_sim.py",
+        "python/tnca/devices.py",
+        "rtl/fpga/tnca_multicore_mmio.v",
+        "tb/common/tnca_axi_line_model.v",
+        "tb/fpga/tnca_mmio_journal.vh",
+        "tb/fpga/tnca_multicore_board_regs.v",
+        "tb/fpga/tnca_multicore_dma.vh",
+        "tb/fpga/tnca_multicore_shared_hbm.vh",
+        "tb/common/tnca_sparse_map.vh",
+        "tb/fpga/tnca_stage_probes.vh",
+        "python/tnca/hbm_layout.py",
+        "python/tnca/backend.py",
+        "python/tnca/backends/board_relay.py",
+        "archbench/platforms/tnca.py",
+        "archbench/run.py",
+        "archbench/generate.py",
+        "python/tnca/operating_clock.py",
+        "python/tnca/inductor_tuning.py"
+      ]
+    },
+    "certify": {
+      "commit": "5a4f8528e262ab5cb23e52762b404fa4cea95a2e",
+      "paths": [
+        "flow/fpga/",
+        "fpga/",
+        "rtl/board/",
+        "rtl/fpga/",
+        "tools/tritonchip_fpga_harness/"
+      ],
+      "target": "u280-multicore-r41",
+      "clock_mhz": 100
+    }
+  },
+  "services": {
+    "score": {
+      "requests": 6
+    },
+    "fpga_quick": {
+      "minutes": 45,
+      "job_minutes": 30,
+      "period_ns": 10.0
+    },
+    "fpga_slow": {
+      "mode": "board",
+      "flows": 3,
+      "board_runs": 6,
+      "flow_minutes": 480,
+      "board_minutes": 240,
+      "board_checks": [
+        {
+          "name": "fp8",
+          "command": [
+            "/opt/torchenv/bin/python",
+            "tools/performance_harness/fp8_cases.py",
+            "--out",
+            "/out/checks/fp8"
+          ],
+          "env": {
+            "PYTHONPATH": "/work:/work/python:/work/compiler/python:/work/tools/asm",
+            "TNCA_PROFILE": "core-vrf-sync-v5-x8-g2c4-dp-board",
+            "TNCA_DEADLINE": "200000000000",
+            "TNCA_HOST_TIMEOUT": "6000"
+          },
+          "timeout_seconds": 3600
+        }
+      ],
+      "certify_after_run": true,
+      "base_image_sha256": "7aa3e8500b6c7fbaa3186bdf3205089c69cfc352d08666233750f320d9b4d361"
+    }
+  },
+  "islands": {
+    "count": 1,
+    "topology": "ring",
+    "migration_interval": 3,
+    "migration_rate": 0.3,
+    "features": [
+      "layer"
+    ],
+    "max_idle_turns": 3,
+    "max_restarts": 2
+  }
+}

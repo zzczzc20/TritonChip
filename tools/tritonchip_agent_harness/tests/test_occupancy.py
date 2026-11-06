@@ -197,7 +197,7 @@ class RunRecord(unittest.TestCase):
         self.assertEqual(evaluator.reserved(SITE, task, ["a", "b", "c"]), {"cpus": 8.0})
 
     def test_an_agent_run_lists_its_sandbox_its_requests_and_the_evaluation(self):
-        def run_agent(site, account, prompt, mode, run_dir, workspace, timeout, services=None):
+        def run_agent(site, account, prompt, mode, run_dir, workspace, timeout, services=None, skills=None):
             self.assertIsNotNone(services, "the task's services get a broker")
             return {"label": "claude", "cli": "claude-code", "stop_reason": "exited",
                     "container": {"started": 100.0, "finished": 700.0},

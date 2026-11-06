@@ -130,14 +130,38 @@ def _collect(name: str, account: Account, dest: Path) -> None:
                 target.write_bytes(src.read())
 
 
+def _turn(agent: str, account: Account, command: list, timeout: float) -> tuple:
+    """One CLI invocation in the running sandbox: its output, and how it ended."""
+    started = time.time()
+    try:
+        proc = _exec(agent, command, timeout=max(1.0, timeout))
+        record = {"stop_reason": "exited", "exit": proc.returncode}
+        stdout, stderr = proc.stdout, proc.stderr
+    except Exception as exc:  # subprocess.TimeoutExpired, chiefly
+        provider.docker("exec", agent, "pkill", "-TERM", "-f", BINARY[account.cli], check=False, timeout=30)
+        record = {"stop_reason": "timeout" if "Timeout" in type(exc).__name__ else f"error: {type(exc).__name__}",
+                  "exit": None}
+        stdout = (getattr(exc, "stdout", None) or b"")
+        stderr = (getattr(exc, "stderr", None) or b"")
+        stdout = stdout.decode(errors="replace") if isinstance(stdout, bytes) else stdout
+        stderr = stderr.decode(errors="replace") if isinstance(stderr, bytes) else stderr
+    record["seconds"] = round(time.time() - started, 1)
+    return stdout, stderr, record
+
+
 def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Path,
-              workspace: Optional[Path], timeout: float, services=None, skills: Optional[list] = None) -> dict:
+              workspace: Optional[Path], timeout: float, services=None, skills: Optional[list] = None,
+              turns=None, name: Optional[str] = None) -> dict:
     """`services`, when given, is a started-on-demand services.Broker the agent reaches with `tnca-service`.
+
+    `turns`, an island's controller: called after each CLI run with that turn's record and the seconds left;
+    it returns the next prompt (the same session), `(prompt, True)` for a new session, or None to stop.
+    `name`: the sandbox's name suffix when several run at once (islands); the run's id otherwise.
 
     `skills`: the names of the skills this run gets (skills.select), staged and mounted; none by default.
     """
     selected = skills_.select(skills or [])
-    run_id = run_dir.name
+    run_id = name or run_dir.name
     gw, agent = f"tnca-gw-{run_id}", f"tnca-agent-{run_id}"
     result: dict = {"label": account.label, "cli": account.cli, "auth": account.auth, "mode": mode,
                     "requested_model": account.models["main"], "credential_in_sandbox": True,
@@ -179,27 +203,41 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         result["skills"] = {"provided": skills_.manifest(selected), "catalog": skills_.version(),
                             **(link_skills(agent, launch.skills_dir) if selected else {})}
         start = time.time()
-        try:
-            proc = _exec(agent, launch.command, timeout=timeout)
-            result["stop_reason"] = "exited"
-            result["exit"] = proc.returncode
-            stdout, stderr = proc.stdout, proc.stderr
-        except Exception as exc:  # subprocess.TimeoutExpired, chiefly
-            provider.docker("exec", agent, "pkill", "-TERM", "-f", BINARY[account.cli], check=False, timeout=30)
-            result["stop_reason"] = "timeout" if "Timeout" in type(exc).__name__ else f"error: {type(exc).__name__}"
-            result["exit"] = None
-            stdout = (getattr(exc, "stdout", None) or b"")
-            stderr = (getattr(exc, "stderr", None) or b"")
-            stdout = stdout.decode(errors="replace") if isinstance(stdout, bytes) else stdout
-            stderr = stderr.decode(errors="replace") if isinstance(stderr, bytes) else stderr
+        command, turn, session, turns_log, total = launch.command, 0, None, [], {}
+        while True:
+            left = timeout - (time.time() - start)
+            stdout, stderr, record = _turn(agent, account, command, left)
+            suffix = "" if turn == 0 else f"-{turn}"
+            (out_dir / f"stdout{suffix}.jsonl").write_text(stdout or "", encoding="utf-8")
+            (out_dir / f"stderr{suffix}.txt").write_text(stderr or "", encoding="utf-8")
+            exporter = (lambda sid: _exec(agent, ["opencode", "export", sid], timeout=120).stdout) \
+                if account.cli == "opencode" else None
+            parsed = adapters.parse(account, stdout or "", run_dir, exporter)
+            record.update(turn=turn, tool_calls=adapters.tool_calls(account, stdout or ""),
+                          throttled=adapters.throttle(account, stdout or "", stderr or ""),
+                          tokens=parsed.get("tokens"))
+            session = adapters.session_id(account, stdout or "") or session
+            record["session"] = session
+            turns_log.append(record)
+            for k, v in (parsed.get("tokens") or {}).items():
+                if isinstance(v, (int, float)):
+                    total[k] = total.get(k, 0) + v
+            result.update(parsed)
+            result.update(stop_reason=record["stop_reason"], exit=record["exit"], throttled=record["throttled"])
+            # One CLI run, or an island's turns (report section 8.4 D2/D7): the controller says whether, and
+            # with what prompt, the agent goes on; the same session when the CLI gave one, else a new one.
+            nxt = turns(record, timeout - (time.time() - start)) if turns is not None else None
+            if nxt is None or timeout - (time.time() - start) < 30:
+                break
+            turn += 1
+            prompt_next, fresh = nxt if isinstance(nxt, tuple) else (nxt, False)
+            use = None if fresh else session
+            command = adapters.launch(account, prompt_next, mode, run_dir, proxy_env(), session=use).command
+            record["next"] = "resume" if use else "new-session"
         result["seconds"] = round(time.time() - start, 1)
-        (out_dir / "stdout.jsonl").write_text(stdout or "", encoding="utf-8")
-        (out_dir / "stderr.txt").write_text(stderr or "", encoding="utf-8")
-        exporter = (lambda sid: _exec(agent, ["opencode", "export", sid], timeout=120).stdout) \
-            if account.cli == "opencode" else None
-        result.update(adapters.parse(account, stdout or "", run_dir, exporter))
-        # Refused by the provider (rate, load, quota), not stopped by the agent: kept apart in the record.
-        result["throttled"] = adapters.throttle(account, stdout or "", stderr or "")
+        if turns is not None:
+            result["turns"] = turns_log
+            result["tokens"] = total or result.get("tokens")
         _collect(agent, account, out_dir / "transcript")
     finally:
         provider.remove(agent)

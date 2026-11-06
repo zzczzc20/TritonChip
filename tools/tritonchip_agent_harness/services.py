@@ -54,9 +54,26 @@ FPGA_NOTE = ("post-synthesis estimate: delays leave out most of the wire, so the
              "the routed design is the slow tier's to judge")
 
 
+class Shared:
+    """What a run's islands share (report sections 8.9 B7/B8 and 8.8 P10): the slow tier's counts and the
+    images it built, one slow request at a time, the cap on evaluations at once -- and one lock for all of
+    their brokers' state. A run without islands has one of its own."""
+
+    def __init__(self, site: Site, task: Task) -> None:
+        fs = (task.services or {}).get("fpga_slow") or {}
+        self.flows_left = int(fs.get("flows", 0))
+        self.board_runs_left = int(fs.get("board_runs", 0))
+        self.images: dict = {}
+        self.slow: Optional[str] = None
+        self.lock = threading.Lock()
+        n = getattr(site, "evaluations", None)
+        self.evaluations = threading.BoundedSemaphore(int(n)) if n else None
+
+
 class Broker:
     def __init__(self, site: Site, repo: Path, task: Task, workspace: Path, run_dir: Path,
-                 runners: Optional[dict] = None) -> None:
+                 runners: Optional[dict] = None, island: Optional[int] = None, archive=None,
+                 shared: Optional[Shared] = None) -> None:
         self.site, self.repo, self.task, self.workspace = site, repo, task, workspace
         self.run_id = run_dir.name
         self.dir = run_dir / "services"
@@ -68,19 +85,25 @@ class Broker:
         self.period = float(fq.get("period_ns", 10.0))
         fs = cfg.get("fpga_slow") or {}
         self.slow_mode = fs.get("mode", "board")
-        self.flows_left = int(fs.get("flows", 0))
-        self.board_runs_left = int(fs.get("board_runs", 0))
         self.flow_seconds = int(float(fs.get("flow_minutes", 480)) * 60)
         self.board_seconds = int(float(fs.get("board_minutes", 120)) * 60)
-        # Hardware this run built (fpga_slow.hardware_digest -> its image): asked for again, it needs no flow.
-        self.images: dict = {}
+        # The slow tier's counts and images, and the lock, are the run's (islands share them).
+        self.shared = shared or Shared(site, task)
+        self.island, self.archive = island, archive
         self.runners: dict = runners or {"score": self._run_score, "fpga-quick": self._run_fpga,
                                          "fpga-slow": self._run_slow}
         self.jobs: dict = {}
         self.busy: dict = {}
-        self.lock = threading.Lock()
+        self.lock = self.shared.lock
         self.socket_dir: Optional[Path] = None
         self._server = None
+
+    # The slow tier's counts and images live in Shared: one pool for a run's islands.
+    flows_left = property(lambda self: self.shared.flows_left,
+                          lambda self, v: setattr(self.shared, "flows_left", v))
+    board_runs_left = property(lambda self: self.shared.board_runs_left,
+                               lambda self, v: setattr(self.shared, "board_runs_left", v))
+    images = property(lambda self: self.shared.images)
 
     # -- lifetime ------------------------------------------------------------------
     def start(self) -> Path:
@@ -162,7 +185,13 @@ class Broker:
         if op == "budget":
             return self.budget()
         if op == "submit":
-            return self.submit(request.get("service"))
+            return self.submit(request.get("service"), message=request.get("message"))
+        if op == "archive":
+            return self.archive.view(self.island) if self.archive is not None else {"error": "this run has no islands"}
+        if op == "read-commit":
+            if self.archive is None:
+                return {"error": "this run has no islands"}
+            return self.archive.read(self.island, str(request.get("id")))
         if op == "status":
             if request.get("id"):
                 return self._view(request["id"], with_result=False)
@@ -180,7 +209,7 @@ class Broker:
                 "fpga_slow_board_runs_left": self.board_runs_left,
                 "busy": sorted(self.busy)}
 
-    def submit(self, service) -> dict:
+    def submit(self, service, message=None) -> dict:
         if service not in SERVICES:
             return {"error": f"no service {service!r}; there are: {', '.join(SERVICES)}"}
         with self.lock:
@@ -191,6 +220,8 @@ class Broker:
             job_id = f"{'s' if service == 'score' else 'f' if service == 'fpga-quick' else 'l'}{n}"
             job_dir = self.dir / job_id
             self.busy[service] = job_id
+            if service == "fpga-slow":
+                self.shared.slow = f"{self.island if self.island is not None else ''}:{job_id}"
         g = gate(self.repo, self.task.base_commit, self.task.hide, self.task.design, self.workspace,
                  out=job_dir / "candidate", evaluator_owned=self.task.evaluator_owned)
         candidate = job_dir / "candidate" if g["taken"] else None
@@ -200,11 +231,20 @@ class Broker:
         if g["verdict"] != "PASS" or problems:
             with self.lock:
                 self.busy.pop(service, None)
+                if service == "fpga-slow":
+                    self.shared.slow = None
             return {"refused": "the snapshot cannot be measured", "rejected": g["rejected"][:20] or problems,
                     "snapshot": snapshot, **self.budget()}
         job = {"id": job_id, "service": service, "state": "queued", "submitted": time.time(),
                "snapshot": snapshot, "containers": f"tnca-svc-{self.run_id}-{job_id}",
                "remote_id": f"tnca-{secrets.token_hex(8)}"}
+        if self.island is not None:
+            job["containers"] = f"tnca-svc-{self.run_id}-i{self.island}-{job_id}"
+            if service == "score":
+                job["message"] = str(message or "")[:200]
+                job["digest"] = fpga_slow.snapshot_digest(candidate)
+                job["hardware"] = fpga_slow.hardware_digest(candidate)
+                job["candidate"] = str(candidate) if candidate else None
         if service in ("fpga-quick", "fpga-slow"):
             job["hardware"] = fpga_slow.hardware_digest(candidate)
             job["digest"] = fpga_slow.snapshot_digest(candidate)
@@ -214,6 +254,7 @@ class Broker:
             if refused:
                 with self.lock:
                     self.busy.pop(service, None)
+                    self.shared.slow = None
                 return {"refused": refused, "snapshot": snapshot, **self.budget()}
         with self.lock:
             if service == "score":
@@ -265,6 +306,8 @@ class Broker:
     def _refusal(self, service: str) -> Optional[str]:
         if service in self.busy:
             return f"a {service} request is already running ({self.busy[service]}); one at a time"
+        if service == "fpga-slow" and self.shared.slow:
+            return f"another island's slow request is running ({self.shared.slow}); one at a time per run"
         if service == "score" and self.score_left <= 0:
             return "no scoring requests left"
         if service == "fpga-quick":
@@ -289,6 +332,8 @@ class Broker:
         with self.lock:
             if job["state"] != "queued":  # cancelled before it started
                 self.busy.pop(job["service"], None)
+                if job["service"] == "fpga-slow":
+                    self.shared.slow = None
                 return
             job["state"], job["started"] = "running", time.time()
         try:
@@ -313,9 +358,20 @@ class Broker:
             job["finished"] = time.time()
             with self.lock:
                 self.busy.pop(job["service"], None)
+                if job["service"] == "fpga-slow":
+                    self.shared.slow = None
 
     def _run_score(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
-        r = evaluator.measure_validation(self.site, self.repo, self.task, candidate, job_dir, job["containers"])
+        slots = self.shared.evaluations
+        queued = time.time()
+        if slots is not None:
+            slots.acquire()
+        job["eval_queued_seconds"] = round(time.time() - queued, 1)
+        try:
+            r = evaluator.measure_validation(self.site, self.repo, self.task, candidate, job_dir, job["containers"])
+        finally:
+            if slots is not None:
+                slots.release()
         visible = {"validation": r["aggregate"]}
         # On failure, what may be said of why (README section 6.4): failed points counted by
         # kind, and the logs of what failed before any point ran (a device that did not
@@ -323,6 +379,11 @@ class Broker:
         for key in ("failures", "device_build_errors", "stage_errors"):
             if r.get(key):
                 visible[key] = r[key]
+        if self.archive is not None:
+            # An island's scoring request is its commit: kept in the archive, its reply the island's view.
+            entry = self.archive.add(self.island, job, candidate, r)
+            job["commit"] = entry["id"]
+            visible.update(self.archive.reply(self.island, entry))
         return visible, r
 
     def _run_fpga(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:

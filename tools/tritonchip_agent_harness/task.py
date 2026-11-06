@@ -52,6 +52,7 @@ class Task:
     path: Path
     sha256: str
     skills: tuple = ()
+    islands: Optional[dict] = None
 
 
 def load_task(path: Path) -> Task:
@@ -61,7 +62,7 @@ def load_task(path: Path) -> Task:
     raw = path.read_bytes()
     v = json.loads(raw)
     required = {"schema", "task_id", "kind", "base_commit", "design", "hide", "instruction", "budget", "evaluation"}
-    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services", "skills"}
+    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services", "skills", "islands"}
     missing = required - set(v)
     if missing or unknown:
         raise TaskError(f"{path}: missing {sorted(missing)}, unknown {sorted(unknown)}")
@@ -100,12 +101,60 @@ def load_task(path: Path) -> Task:
     slow = services.get("fpga_slow")
     if slow is not None:
         _check_slow(path, slow, ev)
+    islands = _check_islands(path, v.get("islands"), services)
     ref = path.parent / v["reference"] if v.get("reference") else None
     return Task(task_id=v["task_id"], kind=v["kind"], base_commit=v["base_commit"], design=tuple(v["design"]),
                 evaluator_owned=tuple(v.get("evaluator_owned", ())), hide=tuple(v["hide"]), instruction=(path.parent / v["instruction"]).read_text(encoding="utf-8"),
                 reference=ref, wall_seconds=int(v["budget"]["wall_seconds"]), evaluation=dict(ev),
                 services=services,
-                path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest(), skills=tuple(skills))
+                path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest(), skills=tuple(skills), islands=islands)
+
+
+# The descriptors an island grid may use (islands.py); the first version has the change's layer only.
+FEATURES = ("layer",)
+
+
+def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
+    """`islands` (report section 8.5): how many islands, how they see each other, the grid's axes. The task's
+    budgets are each island's: wall clock, scoring requests (its commits), quick-tier minutes; the slow
+    tier's counts stay the run's (section 8.9, B7)."""
+    if value is None:
+        return None
+    known = {"count", "topology", "migration_interval", "migration_rate", "features", "max_idle_turns",
+             "max_restarts", "target"}
+    if not isinstance(value, dict) or set(value) - known or "count" not in value:
+        raise TaskError(f"{path}: islands needs count (and may have {', '.join(sorted(known - {'count'}))})")
+    n = value["count"]
+    if not isinstance(n, int) or isinstance(n, bool) or not 1 <= n <= 16:
+        raise TaskError(f"{path}: islands.count must be 1..16")
+    topo = value.get("topology", "ring")
+    if isinstance(topo, dict):
+        ok = all(str(k).isdigit() and int(k) < n and isinstance(v, list)
+                 and all(isinstance(x, int) and 0 <= x < n and x != int(k) for x in v) for k, v in topo.items())
+        if not ok:
+            raise TaskError(f"{path}: islands.topology as a map: island -> list of the islands it sees")
+    elif topo not in ("ring", "all", "none"):
+        raise TaskError(f"{path}: islands.topology must be ring, all, none or an adjacency map")
+    for key, lo in (("migration_interval", 1), ("max_idle_turns", 1), ("max_restarts", 0)):
+        x = value.get(key, lo)
+        if not isinstance(x, int) or isinstance(x, bool) or x < lo:
+            raise TaskError(f"{path}: islands.{key} must be an integer >= {lo}")
+    rate = value.get("migration_rate", 0.3)
+    if not isinstance(rate, (int, float)) or isinstance(rate, bool) or not 0 < rate <= 1:
+        raise TaskError(f"{path}: islands.migration_rate must be in (0, 1]")
+    features = value.get("features", ["layer"])
+    if not isinstance(features, list) or not features or any(f not in FEATURES for f in features):
+        raise TaskError(f"{path}: islands.features: known axes are {', '.join(FEATURES)}")
+    target = value.get("target")
+    if target is not None and (not isinstance(target, dict) or set(target) - {"speedup_geomean", "fast_1"}
+                               or not all(isinstance(x, (int, float)) for x in target.values())):
+        raise TaskError(f"{path}: islands.target may name speedup_geomean and/or fast_1")
+    if not ((services or {}).get("score") or {}).get("requests"):
+        raise TaskError(f"{path}: islands need services.score.requests: an island's commits")
+    return {"count": n, "topology": topo, "migration_interval": int(value.get("migration_interval", 3)),
+            "migration_rate": float(rate), "features": list(features),
+            "max_idle_turns": int(value.get("max_idle_turns", 3)), "max_restarts": int(value.get("max_restarts", 2)),
+            "target": target}
 
 
 _CHECK_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
@@ -144,7 +193,7 @@ def _check_slow(path: Path, slow, ev: dict) -> None:
         raise TaskError(f"{path}: board mode needs evaluation.platform: the card host runs its code only")
 
 
-def render(task: Task, mode: str, skills: Iterable[str] = ()) -> str:
+def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[int] = None) -> str:
     """The exact text every agent receives. Its sha256 goes in the run record.
 
     `skills`: the names of the skills the run provides (skills.py). With any, the
@@ -169,10 +218,35 @@ def render(task: Task, mode: str, skills: Iterable[str] = ()) -> str:
 - The evaluation runs a benchmark you are not shown. Each point is judged on its own: a point whose numbers
   are wrong, or that does not run on the device, is a failed point; the other points still count.
 {skill_text}- {net}
-- You have {task.wall_seconds // 60} minutes. When you are done, stop: your working directory as you leave
-  it is your submission.
-- If you conclude the task cannot be done, say so and stop. That is a valid result.
-"""
+{_ending(task, island)}"""
+
+
+def _ending(task: Task, island: Optional[int]) -> str:
+    if island is None or not task.islands:
+        return (f"- You have {task.wall_seconds // 60} minutes. When you are done, stop: your working directory as "
+                f"you leave\n  it is your submission.\n"
+                f"- If you conclude the task cannot be done, say so and stop. That is a valid result.\n")
+    cfg = task.islands
+    n = cfg["count"]
+    others = ("" if n == 1 else
+              f" You are island {island} of {n}; other islands work on the same task at the same time, and you "
+              f"see the commits of the islands your island is connected to.")
+    target = cfg.get("target")
+    goal = (f" The run ends early if a commit reaches {', '.join(f'{k} {v:g}' for k, v in target.items())} on the "
+            f"validation set." if target else "")
+    return (f"- You have {task.wall_seconds // 60} minutes and "
+            f"{int(((task.services or {}).get('score') or {}).get('requests', 0))} commits.{others} Keep improving "
+            f"until your commits or your time run out: a commit is what counts, not your working directory as you "
+            f"leave it, and the best commit by the validation set is the result.{goal}\n"
+            f"- `tnca-service submit score --message \"one line on what this commit changes\"` commits a snapshot: "
+            f"it is scored as the score service scores it and kept in the archive with your message (shown to other "
+            f"islands as yours, unverified). Its reply, once done, also gives your best commit, your island's grid "
+            f"(one elite per cell; cells are what a commit changed: compiler only, hardware only, or both), and every "
+            f"{cfg['migration_interval']} commits some elites of connected islands to consider.\n"
+            f"- `tnca-service archive` lists the commits you can see; `tnca-service read-commit ID` prints one as a "
+            f"patch against the base commit (`git apply` it on a clean tree to continue from it).\n"
+            f"- If you stop, you are asked to continue; a turn that calls no tool counts as idle, and "
+            f"{cfg['max_idle_turns']} idle turns in a row end your island.\n")
 
 
 def _services_text(cfg: dict) -> str:

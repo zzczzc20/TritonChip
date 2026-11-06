@@ -65,6 +65,8 @@ class Site:
     fpga_worker: Optional[dict] = None
     # Optional split-host full FPGA pipeline for the in-run fpga-slow service.
     fpga_pipeline: Optional[dict] = None
+    # How many evaluations may run at once on this host (islands share it; report section 8.8 P10).
+    evaluations: Optional[int] = None
 
     def account(self, label: str) -> Account:
         if label not in self.accounts:
@@ -108,7 +110,10 @@ def load_site(path: Optional[Path] = None) -> Site:
         raise SiteError("images: each must be an image reference")
 
     res = value["resources"]
-    _keys("resources", res, {"cpus", "memory", "pids"})
+    _keys("resources", res, {"cpus", "memory", "pids"}, {"evaluations"})
+    if "evaluations" in res and (not isinstance(res["evaluations"], int) or isinstance(res["evaluations"], bool)
+                                 or res["evaluations"] < 1):
+        raise SiteError("resources.evaluations must be a positive integer")
     if not isinstance(res["cpus"], (int, float)) or isinstance(res["cpus"], bool) or res["cpus"] <= 0:
         raise SiteError("resources.cpus must be a positive number")
     if not isinstance(res["memory"], str) or not _MEMORY.match(res["memory"]):
@@ -212,6 +217,7 @@ def load_site(path: Optional[Path] = None) -> Site:
         repository=_path(value["repository"], "repository") if value.get("repository") else None,
         fpga_worker=dict(worker) if worker else None,
         fpga_pipeline=pipeline,
+        evaluations=res.get("evaluations"),
     )
 
 

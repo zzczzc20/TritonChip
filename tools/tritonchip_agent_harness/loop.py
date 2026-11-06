@@ -60,6 +60,11 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
     record["workspace"] = exported
 
     broker = None
+    if task.islands and agent not in PSEUDO and not agent.startswith("patch:"):
+        account = site.account(agent)
+        if model:
+            account = dataclasses.replace(account, models={**account.models, "main": model})
+        return _islands(site, task, account, mode, names, record, run_dir, repo)
     if agent == "noop":
         record["agent_result"] = {"pseudo": "noop"}
     elif agent == "reference" or agent.startswith("patch:"):
@@ -126,6 +131,83 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
     (run_dir / "run.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     record["run_dir"] = str(run_dir)
     return record
+
+
+def _islands(site: Site, task: Task, account, mode: str, names: list, record: dict, run_dir: Path,
+             repo: Path) -> dict:
+    """A run of islands (islands.py): the base measured once before any island, every island at once, the
+    slow requests that outlived their islands waited for, then the archive's top 3 by validation to the final
+    evaluation and, when the task asks, to the card."""
+    import types
+    from . import islands as islands_, services
+    evaluator.baseline(site, repo, task)
+    shared = services.Shared(site, task)
+    got = islands_.run(site, task, account, mode, run_dir, repo, names, Broker, shared)
+    archive, brokers = got["archive"], [r["broker"] for r in got["islands"] if r]
+    for b in brokers:
+        b.wait_outlived()
+    rows = []
+    for r in got["islands"]:
+        if not r:
+            continue
+        agent_result = dict(r["agent_result"])
+        agent_result["services"] = r["broker"].record()
+        rows.append({**{k: v for k, v in r.items() if k not in ("broker", "agent_result")},
+                     "agent_result": agent_result})
+    record["islands"] = {"config": task.islands, "islands": rows}
+    record["archive"] = archive.record()
+    view = types.SimpleNamespace(images=shared.images,
+                                 jobs={f"{b.island}:{k}": j for b in brokers for k, j in b.jobs.items()})
+    record["champions"] = _champions(site, repo, task, archive, view, run_dir)
+    record["occupancy"] = []
+    for row in rows:
+        for e in occupancy.of_run(site, task, row["agent_result"], None):
+            record["occupancy"].append({**e, "island": row["island"]})
+    for c in record["champions"]:
+        if c.get("evaluated"):
+            points = [*task.evaluation["validation"], *task.evaluation["final"]]
+            record["occupancy"].append(occupancy.entry("final-evaluation", None, *c["evaluated"],
+                                                       reserved=evaluator.reserved(site, task, points)))
+        record["occupancy"] += occupancy.certification(site, c.get("certification"))
+    valid = [c for c in record["champions"] if (c.get("evaluation") or {}).get("valid")]
+    record["validity"] = "valid" if valid else ("no-commit" if not archive.ranked() else "infra-invalid")
+    record["finished"] = time.time()
+    (run_dir / "run.json").write_text(json.dumps(record, indent=2, sort_keys=True, default=str) + "\n",
+                                      encoding="utf-8")
+    record["run_dir"] = str(run_dir)
+    return record
+
+
+def _champions(site: Site, repo: Path, task: Task, archive, view, run_dir: Path) -> list:
+    """The archive's top 3 by the validation aggregate, in order. Each gets the final evaluation (the final
+    set runs only now); with the card, they go on until one is certified (D8, section 8.9 B1). Which commit
+    is chosen never looks at the final set."""
+    slow = (task.services or {}).get("fpga_slow") or {}
+    on_card = bool(slow.get("certify_after_run")) and slow.get("mode") == "board"
+    out = []
+    for rank, e in enumerate(archive.ranked()[:3], 1):
+        cand = Path(e["candidate"]) if e["candidate"] else None
+        here = run_dir / "champions" / e["id"]
+        here.mkdir(parents=True, exist_ok=True)
+        started = time.time()
+        evaluation = evaluator.evaluate(site, repo, task, cand, here)
+        c = {"rank": rank, "id": e["id"], "island": e["island"], "labels": e["labels"], "cell": e["cell"],
+             "validation_in_run": e["validation"], "evaluation": evaluation, "evaluated": (started, time.time())}
+        out.append(c)
+        if not on_card:
+            break   # the first is the run's result; nothing decides between it and the next without the card
+        if not evaluation.get("valid"):
+            continue
+        taken = json.loads((cand / "candidate.json").read_text(encoding="utf-8"))["taken"] if cand else []
+        rec = {"gate": {"taken": [t["path"] for t in taken]}, "evaluation": evaluation,
+               "hardware": evaluator.hardware_changed(repo, task, cand)}
+        try:
+            c["certification"] = certify.after_run(site, repo, task, rec, cand.parent if cand else here, view)
+        except Exception as exc:  # noqa: BLE001 -- recorded; the next champion is tried
+            c["certification"] = {"verdict": "no-verdict", "why": f"{type(exc).__name__}: {str(exc)[:300]}"}
+        if c["certification"].get("verdict") == "certified":
+            break
+    return out
 
 
 __all__ = ["PSEUDO", "run_task"]

@@ -971,6 +971,44 @@ Vivado settings script, read-only binds, threads, part).
 - **Versions (decided 2026-10-17, was O13).** The Vivado flow runs on the build worker with its Vitis 2022.2; the card host only loads and measures. Validated once: `b5c606d` linked on the build worker in 103 minutes (213 on the card host with 2023.2, an earlier link), closed 100 MHz with ap_clk WNS +0.138 ns (2023.2: +0.177), and its XCLBIN loaded on the card's 2023.2/XRT 2.16 shell, whose gates check only the platform's interface UUID. The U280 target accepts images from 2022.2 and 2023.2, and the build worker's installation overrides the target's default path.
 - **How a candidate crosses (built, FPGA harness).** `pipeline` in `tools/tritonchip_fpga_harness` (its README §11.2) runs one candidate across the two: a clean checkout of the commit on each from a git bundle, the build detached on the build worker, a light packet of the image and records streamed through the controller into the card host, where every file's hash is checked before the run is installed, and the board stage there. The servers never connect to each other. A real candidate ran through it on 2026-10-17: the base hardware linked on the build worker in 105 minutes (ap_clk WNS +0.138 ns), loaded on the card, conformance 5 of 5, ArchBench tiny 27 of 27 with every point's cycles equal to the same design built with 2023.2 on the card host. (Both board stages compiled with the card host's installed `tnca`, an older tree, not the checkout's; found and fixed on 2026-10-18, `969201b`, §19.)
 
+### 12.6 Islands: persistent agents, an archive, MAP-Elites, migration (first version, 2026-11-07)
+
+`islands.py`, decided in the population-search report (section 8, D1-D8). A task with an `islands` block runs
+that many agents at once, each in its own sandbox and workspace, for the task's budgets read as the island's
+(wall clock; scoring requests, which are its commits; quick-tier minutes). The slow tier's counts and images,
+one slow request at a time, and the site's cap on evaluations at once (`resources.evaluations`) are the run's.
+One island and N islands take the same path; without the block a run is as before.
+
+```json
+"islands": {"count": 3, "topology": "ring", "migration_interval": 3, "migration_rate": 0.3,
+            "features": ["layer"], "max_idle_turns": 3, "max_restarts": 2, "target": {"speedup_geomean": 1.5}}
+```
+
+- **Commit.** `tnca-service submit score --message "..."`: scored as the score service scores it, then kept in
+  the archive with the layers it changed (`compiler`, `isa`, `rtl` with comments and whitespace removed,
+  `profile`, `device`; computed by the controller, never from the message) and its cell: compiler only,
+  hardware only, or cross-layer (`features: ["layer"]`, the first and only axis so far; section 8.7). The reply
+  adds the island's best commit, its grid (one elite per cell, by fast_1 then the geometric-mean speedup), and
+  every `migration_interval` commits the top `migration_rate` of the connected islands' elites not given before.
+- **Seeing.** One function of `topology` (ring: the previous island, as AgenticEvolve; `all`; `none`; or a map
+  island -> islands it sees) decides migration, `tnca-service archive` and `tnca-service read-commit ID`, which
+  refuses an id the island cannot see and returns only the design overlay as a patch against the base commit.
+  A failed commit is listed to its own island only. The message is shown as unverified.
+- **Keeping the agent going.** When the CLI stops, the controller resumes the same session with "continue"
+  (`claude -p --resume`, `codex exec resume`, `opencode run --session`: not yet verified on the pinned
+  versions; a failed resume falls back to a new session with the task again). A turn with no tool call is idle;
+  `max_idle_turns` idle turns in a row end the island. A CLI failure that was not a provider's throttling is a
+  crash, restarted at most `max_restarts` times. A throttled turn waits and is not counted. An island also ends
+  when its time or commits run out, or when any commit reaches `target`. The agent saying it is done is not an end.
+- **After the run.** The base was measured before any island started. The archive's top 3 by the validation
+  aggregate get the final evaluation in order; with `fpga_slow.certify_after_run` each goes to the card
+  (`certify.after_run`, an in-run board record of the same snapshot reused) until one is certified. The run
+  record has the configuration, every island's turns, stop reason, idle and restart counts, the archive, the
+  best-so-far trajectory (per commit: time, island, fitness, island best, run best) and the champions.
+
+Not yet: a sandbox that died cannot be recreated (its island ends as crashed); queue waits for an evaluation
+are recorded but do not extend an island's clock; axes other than the layer; a judge-model descriptor.
+
 ## 13. Fair comparison and statistics
 
 **Unit of comparison.** One cell is a (scaffold, model, auth mode) on a fixed

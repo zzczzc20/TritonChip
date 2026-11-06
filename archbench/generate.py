@@ -77,7 +77,7 @@ def main(argv=None):
     from .models import LLAMA, MODEL_TOL, LlamaDecode, LlamaPrefill
     from .ops import gen
     from .platforms.common import _to_fp32, compare, environment, flatten, ieee_fp32, now
-    from .platforms.tnca import BOARD_CLOCK_HZ, EVIDENCE
+    from .platforms.tnca import BOARD_CLOCK_HZ, EVIDENCE, device_id
 
     class PrefillKV(LlamaPrefill):
         """The prefill point's model, returning the prompt's K/V as well."""
@@ -122,7 +122,9 @@ def main(argv=None):
                               backend=backend, backend_args=backend_kwargs, opt_level=args.opt_level,
                               inductor=config),
                 evidence_level=EVIDENCE.get(backend, 'measured-rtl'), clock_hz=clock,
-                xclbin_sha256=_sha256(xclbin) if xclbin and os.path.isfile(xclbin) else None,
+                # A file named in the arguments, or the image a board relay serves.
+                xclbin_sha256=(_sha256(xclbin) if xclbin and os.path.isfile(xclbin)
+                               else device_id(args.profile, backend, backend_kwargs, full=True)),
                 command=' '.join([sys.executable, '-m', 'archbench.generate'] + (argv or sys.argv[1:])),
                 env=environment(), timestamp=now())
     print(f"generate: llama {args.tier} (dim {c.dim}, {c.n_layers} layers, vocab {c.vocab}), "

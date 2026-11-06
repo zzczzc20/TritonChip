@@ -30,6 +30,10 @@
   "allowed_auto_frequency_rules": [
     "AUTO-FREQ-SCALING-08"
   ],
+  "timing_exempt_clocks": [
+    "hbm_aclk"
+  ],
+  "timing_exception_decision": "2026-11-07, the user: on R41 only the HBM system clock hbm_aclk may miss timing (and be moved by v++, AUTO-FREQ-SCALING-07); the kernel clock must close at 100 MHz. Paths into every other clock are judged as before; hbm_aclk's own figures are recorded.",
   "environment": {
     "VPP_JOBS": "2",
     "LINK_EXTRA": "--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=SSI_SpreadSLLs"

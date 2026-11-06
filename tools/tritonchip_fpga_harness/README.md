@@ -44,6 +44,27 @@ board stages are refused; `submit --skip-board` still builds normally. The
 queue never programs or resets the card. See the
 [performance harness guide](../performance_harness/README.md).
 
+### A card session for an agent's candidate
+
+`python -m tritonchip_fpga_harness.board_session --xclbin X --sha256 S --bdf
+0000:04:00.1 --out DIR` runs on the card host from the platform's checkout and
+no candidate code with it: it checks the image (sha256, UUID, kernel clock,
+the static HBM map against a registered base map when one exists; CDC and core
+placement are recorded `not-checked`), waits for 15 minutes of continuous idle,
+takes the shared lease, programs only when the loaded UUID differs (`program.sh
+--check`, then `--go`, judged by the UUID and the clock counter), and starts
+`python -m tnca.backends.board_relay` on `DIR/relay.sock`. The relay holds the
+card and executes only link-level operations (register reads and writes, the
+HBM buffer) for clients that open the `fpga-u280-multicore-relay` backend with
+`address=` the forwarded socket and `label=`; it writes the launch observations
+the evaluator scores to `DIR/observe/<label>.log` itself. `DIR/ready.json`
+gives a client the socket, the clock evidence and the exact `backend_args`; the
+relay ends when `DIR/stop` appears, after `--relay-idle-seconds` without a
+connection, or at `--deadline-seconds`; then the lease is released and
+`DIR/session.json` records the status (`ok`, `refused-admission`,
+`busy-timeout`, `program-failed`, `relay-failed`, `timeout`), timings and
+probes. The image stays loaded. Both files' docstrings carry the details.
+
 ## 1. At a glance
 
 ```text

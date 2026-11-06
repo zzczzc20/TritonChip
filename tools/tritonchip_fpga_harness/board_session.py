@@ -3,42 +3,55 @@
 Run on the card host from the platform's own checkout (this file's tree):
 
     python -m tritonchip_fpga_harness.board_session --xclbin X --sha256 S
-        --bdf 0000:04:00.1 --out DIR [--socket P] [--stop FILE]
-        [--idle-seconds 900] [--deadline-seconds N] [--python PY]
-        [--device NAME|PATH] [--base-map PATH] [--relay-idle-seconds S]
+        --bdf 0000:04:00.1 --out DIR [--socket P] [--stop FILE] [--label-file F]
+        [--idle-seconds 900] [--deadline-seconds N] [--relay-idle-seconds S]
+        [--drain-seconds 120] [--python PY] [--device NAME|PATH]
+        [--base-xclbin BASE]
 
 No candidate-written code runs here. The candidate's host side (its compiler
 and python/tnca) runs on another machine and reaches the card through
 python/tnca/backends/board_relay.py, which this session starts from this
 checkout's python and which executes only link-level operations. In order:
 
- 1. admission: the image's sha256 is S; xclbinutil reads its UUID and clocks
-    and DATA_CLK is the device description's kernel clock; its static HBM map
-    equals the registered base map when the R41 map tooling and a registered
-    map exist (else recorded `not-checked`). CDC and core placement need the
-    routed checkpoint, which the card host does not have: recorded
-    `not-checked`, never passed.
+ 1. admission. The image's own checks -- sha256 is S, xclbinutil reads a UUID
+    the header carries, DATA_CLK is the device description's kernel clock, and
+    with --base-xclbin its static HBM map equals the base image's (read the
+    same way; without one, `not-checked` and why) -- fail as
+    `refused-admission`. A check that could not be made (a tool or a file
+    missing, a tool's own failure, an unreadable base image) is
+    `admission-error`. The device description is --device: a spec/devices
+    name, or the candidate's own file, which the harness uploads to
+    DIR/device.json; it must pass tnca.devices.validate, and the client's
+    backend arguments come from it. CDC and core placement need the routed
+    checkpoint, which the card host does not have: `not-checked`, never passed.
  2. idle: the card continuously idle for --idle-seconds (no context, no
     outstanding exec, no client of any account, the same loaded UUID and exec
     count throughout), then the shared lease taken non-blocking and the card
     probed again under it (acceptance_queue's rule: a busy lease keeps the
-    interval, a change under the lease restarts it).
+    interval, a change under the lease restarts it). The stop file ends the
+    wait as `busy-timeout`.
  3. program, only when the loaded UUID is not the image's: flow/fpga/program.sh
     --check, then --go. Judged by the loaded UUID and the clock counter, never
     by program.sh's exit status (reloading the image already on the card is a
     silent no-op, which is why an already-loaded image is not reloaded).
  4. three probes 2 s apart: the image's UUID and the kernel clock (100 MHz on
-    R41) on the board counter; DIR/clock_evidence.json from them.
- 5. the relay on DIR/relay.sock (or --socket), observer logs in DIR/observe/,
-    then DIR/ready.json: everything a client needs (socket, image, clock,
-    clock evidence inline, the exact backend_args for `relay(...)`).
+    R41) on the board counter. DIR/clock_evidence.json from them, in
+    tnca.operating_clock's schema under its counter-only qualification, and
+    checked with qualified_clock() as a client's ArchBench will check it.
+ 5. the relay on DIR/relay.sock (or --socket), its observer logs in
+    DIR/observe/, the labels it files them under read from DIR/label (or
+    --label-file), its HBM buffer made and cleared before it listens; then
+    DIR/ready.json: everything a client needs (socket, image, clock, clock
+    evidence inline, the exact backend_args for `relay(...)`).
  6. wait until the relay exits: --stop FILE (default DIR/stop) appears, or no
     connection for --relay-idle-seconds, or the deadline. Past the deadline
     the session makes the stop file itself, and only then terminates its own
-    relay process.
+    relay process. DIR/relay_summary.json is the relay's account of every
+    connection.
  7. the lease released, then DIR/session.json (written once, at the end):
-    status ok | refused-admission | busy-timeout | program-failed |
-    relay-failed | timeout, with timings and probes before and after.
+    status ok | refused-admission | admission-error | busy-timeout |
+    program-failed | relay-failed | device-lost | timeout, the reason in both
+    `reason` and `detail`, with timings and probes before and after.
 
 The image stays loaded afterwards; the next session overwrites it. The session
 never resets the card, never kills a process it did not start, and touches the
@@ -53,7 +66,6 @@ import argparse
 import contextlib
 import datetime
 import hashlib
-import importlib.util
 import json
 import os
 import pwd
@@ -76,7 +88,8 @@ ROOT = Path(__file__).resolve().parents[2]
 VITIS_SETTINGS = '/tools/Xilinx/Vitis/2023.2/settings64.sh'
 XRT_SETUP = '/opt/xilinx/xrt/setup.sh'
 POLL_SECONDS = 5.0
-RELAY_UP_SECONDS = 120.0
+# The relay allocates and clears 8 GiB of HBM before it listens.
+RELAY_UP_SECONDS = 300.0
 RELAY_GRACE_SECONDS = 60.0
 CDC_NOT_CHECKED = 'not-checked: needs the routed checkpoint, which the card host does not have'
 
@@ -182,16 +195,21 @@ def platform_commit():
 # 1. admission
 # ---------------------------------------------------------------------------
 def admit(a, image, env, record):
+    """The image's own checks. A failed one is `refused-admission`; a check
+    that could not be made (a tool missing, a file the harness did not put
+    there, a tool's own failure) is `admission-error`."""
     adm = record['admission']
     adm.update(cdc=CDC_NOT_CHECKED, core_placement=CDC_NOT_CHECKED)
     if not image.is_file():
-        raise _End('refused-admission', f'no image at {image}')
+        raise _End('admission-error', f'no image at {image}')
     adm['sha256'] = sha = sha256(image)
     if sha != a.sha256.lower():
         raise _End('refused-admission', f'the image sha256 is {sha}, not the declared {a.sha256}')
     try:
         info = xclbin_info(image, env)
-    except (OSError, subprocess.CalledProcessError) as e:
+    except OSError as e:
+        raise _End('admission-error', f'xclbinutil did not run: {e}')
+    except subprocess.CalledProcessError as e:
         raise _End('refused-admission', f'xclbinutil cannot read the image: {e}')
     adm.update(uuid=info['uuid'], clocks_metadata=info['clocks'])
     experiment = _experiment()
@@ -202,48 +220,77 @@ def admit(a, image, env, record):
         raise _End('refused-admission', f'no usable image UUID: {e}')
     if not carried:
         raise _End('refused-admission', f'the image header does not carry its reported UUID {uuid}')
-    _on_path(ROOT / 'python')
-    from tnca import devices
-    try:
-        desc = devices.load(a.device)
-    except devices.DeviceError as e:
-        raise _End('refused-admission', f'device description {a.device}: {e}')
+    desc, devices = load_device(a.device, adm)
     mhz = desc['platform']['kernel_clock_mhz']
-    adm['device'] = dict(name=desc['name'], path=str(devices.path(a.device)),
-                         fingerprint=devices.fingerprint(desc), kernel_clock_mhz=mhz)
     if info['clocks'].get('DATA_CLK') not in (None, mhz):
         raise _End('refused-admission', f'the image metadata clocks DATA_CLK at '
                                         f'{info["clocks"]["DATA_CLK"]} MHz, not {mhz}')
-    try:
-        adm['hbm_map'] = hbm_map(image, Path(a.base_map) if a.base_map else
-                                 ROOT / 'spec' / 'r41' / 'run3' / 'xclbin_hbm_map.json')
-    except Exception as e:                                 # noqa: BLE001
-        raise _End('refused-admission', f'the R41 map tooling cannot read the image: '
-                                        f'{type(e).__name__}: {e}')
+    adm['hbm_map'] = compare_hbm_maps(image, a.base_xclbin)
     if adm['hbm_map']['status'] == 'differs':
-        raise _End('refused-admission', 'the image\'s HBM map differs from the registered base map')
+        raise _End('refused-admission', 'the image\'s HBM map differs from the base image\'s')
     return dict(sha256=sha, uuid=uuid, clocks=info['clocks'], mhz=mhz,
                 backend_args=devices.backend_args(desc))
 
 
-def hbm_map(image, base):
-    """The R41 map tooling's static parse of the image, against the registered
-    base map; the image's own sha256 is the one field allowed to differ."""
-    tool = ROOT / 'tools' / 'r41' / 'run2_board' / 'candidate_map.py'
-    if not tool.is_file():
-        return dict(status='not-checked', reason=f'no R41 map tooling at {tool}')
-    if not base.is_file():
-        return dict(status='not-checked', reason=f'no registered base map at {base}')
-    _on_path(tool.parent)                  # candidate_map imports its sibling `auto`
-    spec = importlib.util.spec_from_file_location('_board_session_candidate_map', tool)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    mine = json.loads(json.dumps(module.read_map(image)))
-    registered = json.loads(base.read_text())
-    keys = ('groups', 'allocation_8gib')
-    same = all(k in registered and mine.get(k) == registered[k] for k in keys)
-    return dict(status='equal' if same else 'differs', compared=list(keys), base_map=str(base),
-                base_map_sha256=sha256(base), image_map=mine)
+def load_device(spec, adm):
+    """The device description the client's backend arguments come from: a
+    spec/devices name from this checkout, or a file -- the candidate's own,
+    which the harness uploads to DIR/device.json. A file is held to the same
+    content checks (tnca.devices.validate); only the rule that a description
+    is named for its file is not asked of an upload."""
+    _on_path(ROOT / 'python')
+    from tnca import devices
+    path = devices.path(spec)
+    if not path.is_file():
+        raise _End('admission-error', f'no device description at {path}')
+    try:
+        desc = json.loads(path.read_text(encoding='utf-8'))
+        devices.validate(desc)
+    except Exception as e:                                 # noqa: BLE001
+        raise _End('refused-admission', f'device description {path}: {type(e).__name__}: {e}')
+    adm['device'] = dict(name=desc['name'], path=str(path), sha256=sha256(path),
+                         fingerprint=devices.fingerprint(desc),
+                         kernel_clock_mhz=desc['platform']['kernel_clock_mhz'],
+                         backend_args=devices.backend_args(desc))
+    return desc, devices
+
+
+def hbm_map(image):
+    """The image's static HBM map, read as the R41 map tooling reads it
+    (tools/r41/run2_board/candidate_map.read_map, without the file's hash):
+    the memory group behind each of the kernel's three AXI masters, and the
+    physical PC topology under an 8 GiB allocation at base 0. No device is
+    opened."""
+    _on_path(ROOT / 'python')
+    from tnca.backends.u50 import IP_NAME, _xclbin_bank, _xclbin_hbm_allocation
+    return json.loads(json.dumps(dict(
+        groups=[_xclbin_bank(str(image), IP_NAME, arg_index=i) for i in range(3)],
+        allocation_8gib=_xclbin_hbm_allocation(str(image), 0, 8 << 30))))
+
+
+def compare_hbm_maps(image, base):
+    """The candidate's map against the base image's, both read the same way.
+    The harness passes a base only when the candidate's device description
+    kept the base's memory fields; without one there is nothing to hold the
+    map to, and that is recorded rather than passed."""
+    if not base:
+        return dict(status='not-checked', reason='no base image was given (--base-xclbin): the harness '
+                                                 'gives one only when the candidate kept the base\'s '
+                                                 'memory-related device fields')
+    base = Path(base).resolve()
+    try:
+        theirs = hbm_map(base)
+        base_sha = sha256(base)
+    except Exception as e:                                 # noqa: BLE001
+        raise _End('admission-error', f'the base image {base} has no readable HBM map: '
+                                      f'{type(e).__name__}: {e}')
+    try:
+        mine = hbm_map(image)
+    except Exception as e:                                 # noqa: BLE001
+        raise _End('refused-admission', f'the image has no readable HBM map: {type(e).__name__}: {e}')
+    return dict(status='equal' if mine == theirs else 'differs', compared=['groups', 'allocation_8gib'],
+                base_xclbin=str(base), base_sha256=base_sha, image_map=mine,
+                base_map=None if mine == theirs else theirs)
 
 
 # ---------------------------------------------------------------------------
@@ -340,31 +387,50 @@ def verify(a, admitted, out, record):
     if not all(idle(s) for s in samples):
         raise _End('busy-timeout', 'another client opened the card after the lease was taken')
     record['clock']['mhz'] = admitted['mhz']
-    evidence = dict(schema='tnca-agent-harness-board-clock/1', image_sha256=admitted['sha256'],
-                    image_uuid=admitted['uuid'], clock_hz=admitted['mhz'] * 1_000_000,
+    # tnca.operating_clock's schema, under the qualification that says what
+    # this is: the board counter and nothing else (no static review here).
+    _on_path(ROOT / 'python')
+    from tnca.operating_clock import BOARD_SESSION, qualified_clock
+    evidence = dict(schema='tnca-qualified-operating-clock/1', qualification=BOARD_SESSION,
+                    image_sha256=admitted['sha256'], image_uuid=admitted['uuid'],
+                    clock_hz=admitted['mhz'] * 1_000_000, clock_source='measured-board-counter',
+                    counter_samples=[dict(loaded_xclbin_uuid=s.get('loaded_uuid'),
+                                          frequencies_mhz=s.get('clock_counter_mhz'),
+                                          observed_utc=s.get('observed_utc')) for s in samples],
                     kernel_clock_mhz=admitted['mhz'], hbm_aclk_metadata_mhz=admitted['clocks'].get('hbm_aclk'),
-                    counter_samples=[s.get('clock_counter_mhz') for s in samples], bdf=a.bdf,
-                    captured_utc=utc(), programmed=record['programmed'],
+                    bdf=a.bdf, host=record['host'], programmed=record['programmed'], captured_utc=utc(),
+                    static_review=dict(timing=CDC_NOT_CHECKED, route=CDC_NOT_CHECKED, cdc=CDC_NOT_CHECKED,
+                                       core_placement=CDC_NOT_CHECKED),
                     note='kernel clock from the board counter, three samples 2 s apart after the '
                          'loaded UUID was verified; hbm_aclk from xclbin metadata only')
     write_json(out / 'clock_evidence.json', evidence)
+    # What a client's ArchBench will ask of it (TNCA_OPERATING_CLOCK_EVIDENCE).
+    try:
+        qualified_clock(out / 'clock_evidence.json', admitted['sha256'])
+    except ValueError as e:
+        raise _End('program-failed', f'the clock evidence does not qualify: {e}')
     return evidence
 
 
 # ---------------------------------------------------------------------------
 # 5, 6. the relay
 # ---------------------------------------------------------------------------
-def start_relay(a, image, env, paths, deadline, record):
+def start_relay(a, image, env, paths, deadline, backend_args, record):
+    """The relay, from this checkout's python; its HBM buffer is made and
+    cleared before it says `listening`."""
     remaining = max(1.0, deadline - time.monotonic())
     cmd = [a.python, '-m', 'tnca.backends.board_relay', '--xclbin', str(image), '--bdf', a.bdf,
-           '--unix', str(paths['socket']), '--observe-dir', str(paths['observe']), '--stop', str(paths['stop']),
-           '--idle-timeout', str(a.relay_idle_seconds), '--deadline-seconds', f'{remaining:.0f}']
+           '--unix', str(paths['socket']), '--observe-dir', str(paths['observe']),
+           '--label-file', str(paths['label']), '--stop', str(paths['stop']),
+           '--idle-timeout', str(a.relay_idle_seconds), '--deadline-seconds', f'{remaining:.0f}',
+           '--drain-seconds', str(a.drain_seconds), '--hbm-bytes', str(backend_args['hbm_bytes']),
+           '--summary', str(paths['summary'])]
     relay_env = {k: v for k, v in env.items() if not k.startswith('TNCA_')}
     relay_env['PYTHONPATH'] = str(ROOT / 'python')
     log = paths['out'] / 'relay.log'
     proc = subprocess.Popen(cmd, cwd=str(ROOT / 'python'), env=relay_env, stdin=subprocess.DEVNULL,
                             stdout=subprocess.PIPE, stderr=log.open('a'), start_new_session=True)
-    record['relay'].update(pid=proc.pid, command=cmd, log=str(log))
+    record['relay'].update(pid=proc.pid, command=cmd, log=str(log), summary_path=str(paths['summary']))
     ready, _, _ = select.select([proc.stdout], [], [], RELAY_UP_SECONDS)
     line = proc.stdout.readline().decode(errors='replace').strip() if ready else ''
     if not line.startswith('listening '):
@@ -387,13 +453,16 @@ def stop_relay(proc, paths, record, *, grace=RELAY_GRACE_SECONDS):
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
-    rest = proc.stdout.read().decode(errors='replace').splitlines()
-    for line in rest:
+    for line in proc.stdout.read().decode(errors='replace').splitlines():
         if line.startswith('stopped '):
             try:
                 record['relay']['summary'] = json.loads(line[len('stopped '):])
             except ValueError:
                 record['relay']['summary'] = line
+    try:                                   # the full one, every connection in it
+        record['relay']['summary'] = json.loads(paths['summary'].read_text())
+    except (OSError, ValueError):
+        pass
     record['relay']['exit_code'] = proc.returncode
 
 
@@ -405,6 +474,9 @@ def run_relay(proc, paths, deadline, record):
     stop_relay(proc, paths, record)
     summary = record['relay'].get('summary')
     reason = summary.get('reason') if isinstance(summary, dict) else None
+    if reason == 'device-lost' or proc.returncode == 3:
+        fatal = summary.get('fatal') if isinstance(summary, dict) else None
+        raise _End('device-lost', f'the relay lost the device: {fatal}; see {record["relay"]["log"]}')
     if timed_out or reason == 'deadline':
         raise _End('timeout', 'the session deadline ended the relay')
     if proc.returncode != 0 or reason not in ('stop-file', 'idle-timeout'):
@@ -427,13 +499,20 @@ def main(argv=None):
                     help='the relay stops after this long with no connection')
     ap.add_argument('--python', default=sys.executable, help='the interpreter that runs the relay')
     ap.add_argument('--device', default='u280-3core-r41',
-                    help='device description (spec/devices name or path) the backend args come from')
-    ap.add_argument('--base-map', help='registered HBM map (default spec/r41/run3/xclbin_hbm_map.json)')
+                    help='the device description the backend args come from: a spec/devices name, or '
+                         'a file (the harness uploads the candidate\'s to DIR/device.json)')
+    ap.add_argument('--base-xclbin', help='compare the image\'s HBM map with this base image\'s '
+                                          '(else recorded not-checked)')
+    ap.add_argument('--label-file', help='the trusted label of the next relay connection (default DIR/label)')
+    ap.add_argument('--drain-seconds', type=float, default=120.0,
+                    help='how long the relay waits for a connection\'s last launch at its end')
     a = ap.parse_args(argv)
 
     out = Path(a.out).resolve()
     paths = dict(out=out, socket=Path(a.socket).resolve() if a.socket else out / 'relay.sock',
-                 stop=Path(a.stop).resolve() if a.stop else out / 'stop', observe=out / 'observe')
+                 stop=Path(a.stop).resolve() if a.stop else out / 'stop', observe=out / 'observe',
+                 label=Path(a.label_file).resolve() if a.label_file else out / 'label',
+                 summary=out / 'relay_summary.json')
     # Refusals that leave nothing behind: there is no session to record yet.
     problems = []
     try:
@@ -458,7 +537,8 @@ def main(argv=None):
                   session_pid=os.getpid(), started_utc=utc(), platform=platform_commit(),
                   image=dict(path=str(image), sha256_declared=a.sha256.lower()), bdf=a.bdf,
                   out=str(out), socket=str(paths['socket']), stop=str(paths['stop']),
-                  observe_dir=str(paths['observe']), admission={}, programmed=None, program={},
+                  observe_dir=str(paths['observe']), label_file=str(paths['label']),
+                  admission={}, programmed=None, program={},
                   clock={}, probes={}, timings={}, lease=dict(path=str(lease)), relay={})
     timings = record['timings']
 
@@ -475,7 +555,7 @@ def main(argv=None):
         try:
             env = board_env(a.bdf)
         except (OSError, subprocess.CalledProcessError) as e:
-            raise _End('refused-admission', f'no Vitis/XRT environment on this host: {e}')
+            raise _End('admission-error', f'no Vitis/XRT environment on this host: {e}')
         admitted = admit(a, image, env, record)
         record['image'].update(sha256=admitted['sha256'], uuid=admitted['uuid'],
                                clocks_metadata=admitted['clocks'])
@@ -501,12 +581,13 @@ def main(argv=None):
                 record['phase'] = 'relay'
                 t = time.monotonic()
                 try:
-                    proc = start_relay(a, image, env, paths, deadline, record)
+                    proc = start_relay(a, image, env, paths, deadline, admitted['backend_args'], record)
                     write_json(out / 'ready.json', dict(
                         schema='tnca-board-session-ready/1', ready_utc=utc(), host=record['host'],
                         session_pid=os.getpid(), relay_pid=proc.pid, bdf=a.bdf,
                         socket=str(paths['socket']), stop=str(paths['stop']),
                         observe_dir=str(paths['observe']), observe_log='<observe_dir>/<label>.log',
+                        label_file=str(paths['label']), drain_seconds=a.drain_seconds,
                         image=dict(path=str(image), sha256=admitted['sha256'], uuid=admitted['uuid']),
                         programmed=record['programmed'], clock_mhz=admitted['mhz'],
                         clock_evidence=evidence, clock_evidence_path=str(out / 'clock_evidence.json'),
@@ -529,10 +610,11 @@ def main(argv=None):
         record['status'], record['reason'] = e.status, e.reason
     except Exception as e:                                 # noqa: BLE001
         # Nothing expected this; the phase it happened in names the status.
-        record['status'] = {'admission': 'refused-admission', 'idle': 'busy-timeout',
+        record['status'] = {'admission': 'admission-error', 'idle': 'busy-timeout',
                             'program': 'program-failed'}.get(record['phase'], 'relay-failed')
         record['reason'] = f'unexpected {type(e).__name__}: {e}'
     finally:
+        record['detail'] = record['reason']        # the harness reads `detail`
         for s in (signal.SIGTERM, signal.SIGINT):
             signal.signal(s, signal.SIG_IGN)
         if 'held_seconds' in record['lease']:

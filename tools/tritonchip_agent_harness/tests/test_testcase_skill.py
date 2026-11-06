@@ -374,13 +374,15 @@ class Delivery(unittest.TestCase):
 
     def test_every_task_marks_its_example_and_keeps_its_machine(self):
         """The skill replaces the syllabus's measuring example in every task; what selects the
-        machine (a backend, its arguments) is the environment's and stays in both arms."""
+        machine (a backend, its arguments) is the environment's and stays in both arms. Both arms
+        render whatever the task's default set is: a task may default to none (r41-dp-pilot, whose
+        baseline runs without skills) and a run give it the skill with --skills."""
         for task_dir in sorted((HERE / "tasks").iterdir()):
             task = load_task(task_dir)
             self.assertIn("assert_close", task.instruction, task.task_id)
             self.assertEqual(task.instruction.count("<!-- without-skill -->"), 1, task.task_id)
-            with_skill, without = render(task, "offline", skills=task.skills), render(task, "offline")
-            self.assertIn(SKILL.name, task.skills, task.task_id)
+            with_skill, without = render(task, "offline", skills=(SKILL.name,)), render(task, "offline")
+            self.assertIn(task.skills, ((), (SKILL.name,)), task.task_id)
             self.assertNotIn("assert_close", with_skill, task.task_id)
             self.assertIn("assert_close", without, task.task_id)
             for env in re.findall(r"TNCA_BACKEND\S*", task.instruction):

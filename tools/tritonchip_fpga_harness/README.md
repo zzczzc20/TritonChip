@@ -298,6 +298,26 @@ not accepted.
 A missed timing is `TIMING_FAIL` even though `v++` exits non-zero for it;
 `BUILD_FAIL` is a link that never got as far as a routed report.
 
+**A target's timing exception.** A target may declare
+`"timing_exempt_clocks": ["hbm_aclk"]` (`u280-multicore-r41` does, by the
+user's decision of 2026-11-07: only the HBM system clock may miss timing, the
+kernel clock must close). `timing_clean` is then computed from the routed
+summary's Intra Clock, Inter Clock and Other Path Groups tables instead of the
+design row: every row whose destination clock is not exempt must have no
+negative WNS, TNS, WHS, THS, WPWS or TPWS and no failing endpoint; rows into
+an exempt clock are recorded with their figures, not judged; and the rows
+must account for the design row's worst slacks and failing endpoints, or the
+build fails. `no_auto_frequency_scaling` accepts a rule other than the
+allowed ones only on a line where v++ says it moved an exempt clock (R41:
+`AUTO-FREQ-SCALING-07`, hbm_aclk 450 to 433.4 MHz); `expected_clock` still
+reads the kernel clock back at the target's MHz. link.sh's own
+`LINK_FAILED freq-moved` (exit 3) is then not a build failure: the check
+`link_ok_marker` says it was accepted, and the link stage carries
+`accepted_exit`. The record names the exception and the exempt clocks' rows
+under `artifact_validation.timing.exception`, and `result.json` repeats it as
+`timing_exception`. A target without the key keeps the design-wide rule; the
+key may not name the kernel clock.
+
 ### 4.2 Where the numbers are
 
 `result.json` carries the whole judgement under `artifact_validation` (also

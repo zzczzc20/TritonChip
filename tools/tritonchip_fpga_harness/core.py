@@ -376,6 +376,15 @@ def validate_profile(profile: Profile) -> None:
     expected = data.get("expected_artifacts", [])
     if len(expected) != 2 or not all(isinstance(item, str) and item for item in expected):
         raise SchemaError(f"profile {profile.name} must define two expected_artifacts")
+    exempt = data.get("timing_exempt_clocks", [])
+    if not isinstance(exempt, list) or not all(isinstance(c, str) and c for c in exempt):
+        raise SchemaError(f"profile {profile.name}: timing_exempt_clocks must be a list of clock names")
+    # The exception is for system clocks the kernel only crosses into. The
+    # kernel clock -- clk_kernel_00 in the routed tables, DATA_CLK in the
+    # xclbin, ap_clk at the kernel -- must close on every target.
+    kernel = [c for c in exempt if re.search(r"kernel|data_clk|ap_clk", c, re.I)]
+    if kernel:
+        raise SchemaError(f"profile {profile.name}: timing_exempt_clocks names the kernel clock ({kernel})")
 
 
 def run_profile(package_dir: Path, root: Path, manifest: dict[str, Any]) -> Profile:
@@ -821,10 +830,15 @@ def _configured_ooc(root: Path, run_dir: Path, manifest: dict[str, Any], timeout
 def _implementation_verdict(run_dir: Path, profile: Profile, manifest: dict[str, Any], stages: list[dict[str, Any]]) -> dict[str, Any]:
     """Judge the package/link (or OOC) stages from what they left behind."""
     missing = [str(p.relative_to(run_dir)) for p in _expected_artifacts(run_dir, profile, manifest["mode"], manifest) if not p.is_file()]
-    stage_ok = all(s.get("returncode") == 0 for s in stages)
     validation = run_dir / "artifact_validation.json"
     validation_value = load_json(validation) if validation.is_file() else None
     validation_ok = validation_value is None or bool(validation_value.get("ok", False))
+    # A stage's non-zero exit is a failure unless the adapter recorded it as
+    # covered by the target's timing exception (link.sh's `freq-moved` when
+    # only exempt clocks moved), and the validation that excused it passed.
+    stage_ok = all(s.get("returncode") == 0 or (
+        validation_ok and (s.get("accepted_exit") or {}).get("returncode") == s.get("returncode")
+        and (validation_value or {}).get("link_exit_accepted")) for s in stages)
     failed_checks = {check.get("name", "") for check in (validation_value or {}).get("checks", []) if not check.get("ok", False)}
     preflight_path = run_dir / "preflight.json"
     preflight = load_json(preflight_path) if preflight_path.is_file() else None
@@ -850,7 +864,15 @@ def _implementation_verdict(run_dir: Path, profile: Profile, manifest: dict[str,
         status = "TIMING_FAIL"
     else:
         status = "BUILD_FAIL"
-    return {"status": status, "missing": missing, "validation": validation_value}
+    verdict = {"status": status, "missing": missing, "validation": validation_value}
+    exception = ((validation_value or {}).get("timing") or {}).get("exception")
+    if exception is not None:
+        # Said at the top of the result: which exception, and the exempt
+        # clocks' own figures, whether or not it was needed.
+        verdict["timing_exception"] = {k: exception.get(k) for k in (
+            "target_key", "exempt_clocks", "applied", "ok", "exempt_failing", "moved", "unaccounted", "reason")
+            if k in exception}
+    return verdict
 
 
 def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: Path, adapter_name: str, allow_dirty: bool = False, timeout_s: int | None = None, run_id: str | None = None, skip_board: bool = False) -> dict[str, Any]:
@@ -969,7 +991,7 @@ def submit(package_dir: Path, root: Path, manifest: dict[str, Any], state_dir: P
         missing = verdict["missing"]
         validation_value = verdict["validation"]
         refused = verdict.get("preflight_failed") or []
-        result = {"schema_version": 1, "run_id": run_id, "status": final_status, "source_commit": source["commit"], "target": manifest["target"], "mode": manifest["mode"], "image": manifest.get("image"), "image_unapplied": verdict.get("image_unapplied"), "stages": stages, "missing_artifacts": missing, "artifact_validation": validation_value, "measurement": measurement, "measurement_error": measurement_error, "preflight_failed": refused, "board_deferred": bool(skip_board and manifest.get("board")), "artifacts": {str(p.relative_to(run_dir)): file_sha256(p) for p in run_dir.rglob("*") if p.is_file() and p.parent.name == "artifacts"}, "resource_before": resource_before, "resource_after": host_resource_snapshot(state_dir), "elapsed_s": time.time() - started}
+        result = {"schema_version": 1, "run_id": run_id, "status": final_status, "source_commit": source["commit"], "target": manifest["target"], "mode": manifest["mode"], "image": manifest.get("image"), "image_unapplied": verdict.get("image_unapplied"), "timing_exception": verdict.get("timing_exception"), "stages": stages, "missing_artifacts": missing, "artifact_validation": validation_value, "measurement": measurement, "measurement_error": measurement_error, "preflight_failed": refused, "board_deferred": bool(skip_board and manifest.get("board")), "artifacts": {str(p.relative_to(run_dir)): file_sha256(p) for p in run_dir.rglob("*") if p.is_file() and p.parent.name == "artifacts"}, "resource_before": resource_before, "resource_after": host_resource_snapshot(state_dir), "elapsed_s": time.time() - started}
         if refused:
             result["error"] = "the target cannot run here: " + "; ".join(f"{c['name']} ({c['detail']})" for c in refused)
         dump_json(run_dir / "result.json", result)

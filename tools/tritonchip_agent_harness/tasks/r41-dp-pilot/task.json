@@ -115,7 +115,7 @@
     "timeout_seconds": 10800,
     "drain_cycles": 8,
     "platform": {
-      "commit": "00cd50da42b9ac3acb280c833687a52d16e5d3a7",
+      "commit": "5f1abe9eff8724ca3d949b0f2e62ec4e3ac63ee7",
       "paths": [
         "python/tnca/backends/multicore_mmio.py",
         "python/tnca/backends/multicore_mmio_sim.py",
@@ -131,11 +131,16 @@
         "tb/fpga/tnca_stage_probes.vh",
         "python/tnca/hbm_layout.py",
         "python/tnca/backend.py",
-        "python/tnca/backends/board_relay.py"
+        "python/tnca/backends/board_relay.py",
+        "archbench/platforms/tnca.py",
+        "archbench/run.py",
+        "archbench/generate.py",
+        "python/tnca/operating_clock.py",
+        "python/tnca/inductor_tuning.py"
       ]
     },
     "certify": {
-      "commit": "00cd50da42b9ac3acb280c833687a52d16e5d3a7",
+      "commit": "5f1abe9eff8724ca3d949b0f2e62ec4e3ac63ee7",
       "paths": [
         "flow/fpga/",
         "fpga/",
@@ -161,7 +166,7 @@
       "flows": 3,
       "board_runs": 6,
       "flow_minutes": 480,
-      "board_minutes": 120,
+      "board_minutes": 240,
       "board_checks": [
         {
           "name": "fp8",

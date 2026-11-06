@@ -31,9 +31,10 @@ checkout's python and which executes only link-level operations. In order:
     interval, a change under the lease restarts it). The stop file ends the
     wait as `busy-timeout`.
  3. program, only when the loaded UUID is not the image's: flow/fpga/program.sh
-    --check, then --go. Judged by the loaded UUID and the clock counter, never
-    by program.sh's exit status (reloading the image already on the card is a
-    silent no-op, which is why an already-loaded image is not reloaded).
+    --check, then --go. Judged by the loaded UUID and the clock counter, not
+    by program.sh's exit 0 (reloading the image already on the card is a
+    silent no-op, which is why an already-loaded image is not reloaded); its
+    exit 5 (loaded, HBM did not come up, no kernel may run) is believed.
  4. three probes 2 s apart: the image's UUID and the kernel clock (100 MHz on
     R41) on the board counter. DIR/clock_evidence.json from them, in
     tnca.operating_clock's schema under its counter-only qualification, and
@@ -50,8 +51,22 @@ checkout's python and which executes only link-level operations. In order:
     connection.
  7. the lease released, then DIR/session.json (written once, at the end):
     status ok | refused-admission | admission-error | busy-timeout |
-    program-failed | relay-failed | device-lost | timeout, the reason in both
-    `reason` and `detail`, with timings and probes before and after.
+    program-failed | relay-failed | device-lost | timeout | killed, the reason
+    in both `reason` and `detail`, `cause` (whose failure it is: `image`, the
+    candidate's, or `infrastructure`, never charged to it; null when ok), with
+    timings and probes before and after.
+
+Causes. image: refused-admission; device-lost (the relay lost the device
+running the image, or the image's control block did not answer it); and
+program-failed when --check refused one of its file gates, when --go loaded it
+and the card then reported another UUID (exit 4) or its HBM did not come up
+(exit 5), or when the kernel clock counter is wrong with the image loaded.
+infrastructure: admission-error, busy-timeout, relay-failed (the relay's own
+failure, INTERNAL), timeout, killed (a signal), any unexpected exception
+(a full disk among them), and program-failed when the card became busy
+before programming, --check refused on a machine-wide gate (in use, another
+loader, thermal), --go never loaded the image, or the session's own clock
+evidence did not qualify.
 
 The image stays loaded afterwards; the next session overwrites it. The session
 never resets the card, never kills a process it did not start, and touches the
@@ -94,10 +109,18 @@ RELAY_GRACE_SECONDS = 60.0
 CDC_NOT_CHECKED = 'not-checked: needs the routed checkpoint, which the card host does not have'
 
 
+#: Whose failure a status is, when it is not stated where it is raised:
+#: "image" is charged to the candidate, "infrastructure" never is.
+CAUSE = {'refused-admission': 'image', 'device-lost': 'image', 'admission-error': 'infrastructure',
+         'busy-timeout': 'infrastructure', 'relay-failed': 'infrastructure',
+         'timeout': 'infrastructure', 'killed': 'infrastructure'}
+
+
 class _End(Exception):
-    def __init__(self, status, reason):
+    def __init__(self, status, reason, cause=None):
         super().__init__(reason)
         self.status, self.reason = status, reason
+        self.cause = cause or CAUSE[status]       # program-failed always says which
 
 
 def utc():
@@ -351,7 +374,8 @@ def program(a, image, admitted, env, before, out, record):
             raise _End('refused-admission', 'the image changed before it was programmed')
         now = probe(a.bdf)
         if not idle(now) or now['total_execs'] != before['total_execs']:
-            raise _End('program-failed', f'the card changed or became busy before program.sh {mode}')
+            raise _End('program-failed', f'the card changed or became busy before program.sh {mode}',
+                       'infrastructure')
         log = out / f'program{mode}.log'
         record['programmed'] = mode == '--go'
         with log.open('w') as fh:
@@ -364,8 +388,34 @@ def program(a, image, admitted, env, before, out, record):
         rec[f'{mode[2:]}_exit'] = rc
         rec[f'{mode[2:]}_log'] = str(log)
         if mode == '--check' and rc != 0:
-            raise _End('program-failed', f'program.sh --check refused (exit {rc}); see {log}')
-    # Whatever --go said, the card's own answer decides (verify()).
+            # Gates 1-3 are the file's (it parses, its platform, its interface
+            # UUID); 4-6 are the machine's (in use, another loader, thermal).
+            image_gates = check_gates_failed(log, 'the .xclbin')
+            rec['check_failed_gates'] = image_gates
+            raise _End('program-failed', f'program.sh --check refused (exit {rc}); see {log}',
+                       'image' if image_gates else 'infrastructure')
+    if rec.get('go_exit') == 5:
+        # program.sh's documented post-load failure: the image is in the
+        # region and its HBM did not come up; no kernel may run on it. Not the
+        # silent no-op of a reload (that is exit 0), so it is believed.
+        raise _End('program-failed', f'program.sh --go: the image loaded and its HBM did not come up; '
+                                     f'see {log}', 'image')
+    # Otherwise the card's own answer decides (verify()), not the exit status.
+
+
+def check_gates_failed(log, section):
+    """program.sh's `[FAIL]` lines under one of its gate headings."""
+    failed, current = [], None
+    try:
+        lines = Path(log).read_text(errors='replace').splitlines()
+    except OSError:
+        return failed
+    for line in lines:
+        if line and not line.startswith(' '):
+            current = line.strip()
+        elif current == section and line.strip().startswith('[FAIL]'):
+            failed.append(line.strip())
+    return failed
 
 
 def verify(a, admitted, out, record):
@@ -380,10 +430,16 @@ def verify(a, admitted, out, record):
     clocks = [(s.get('clock_counter_mhz') or [None])[0] for s in samples]
     record['probes']['after_program'] = samples[-1]
     if loaded != {admitted['uuid']}:
+        # The image's when program.sh loaded it and the card then reports
+        # another UUID (its exit 4); a load that never happened (gates at
+        # --go, the loader failing or timing out) or a UUID that changed under
+        # an already-loaded image is not.
+        cause = 'image' if record['program'].get('go_exit') == 4 else 'infrastructure'
         raise _End('program-failed', f'the card reports {sorted(map(str, loaded))}, not the image '
-                                     f'{admitted["uuid"]}')
+                                     f'{admitted["uuid"]}', cause)
     if set(clocks) != {admitted['mhz']}:
-        raise _End('program-failed', f'the kernel clock counter reads {clocks} MHz, not {admitted["mhz"]}')
+        raise _End('program-failed', f'the kernel clock counter reads {clocks} MHz, not {admitted["mhz"]}',
+                   'image')
     if not all(idle(s) for s in samples):
         raise _End('busy-timeout', 'another client opened the card after the lease was taken')
     record['clock']['mhz'] = admitted['mhz']
@@ -408,7 +464,7 @@ def verify(a, admitted, out, record):
     try:
         qualified_clock(out / 'clock_evidence.json', admitted['sha256'])
     except ValueError as e:
-        raise _End('program-failed', f'the clock evidence does not qualify: {e}')
+        raise _End('program-failed', f'the clock evidence does not qualify: {e}', 'infrastructure')
     return evidence
 
 
@@ -435,6 +491,12 @@ def start_relay(a, image, env, paths, deadline, backend_args, record):
     line = proc.stdout.readline().decode(errors='replace').strip() if ready else ''
     if not line.startswith('listening '):
         stop_relay(proc, paths, record)
+        summary = record['relay'].get('summary')
+        if isinstance(summary, dict) and summary.get('fatal_code') == 'DEVICE_LOST':
+            # The image's control block did not answer the relay (identity,
+            # timestamps, the startup handoff): the image, not the relay.
+            raise _End('device-lost', f'the relay could not use the loaded image: '
+                                      f'{summary.get("fatal")}; see {log}')
         raise _End('relay-failed', f'the relay did not come up ({line or "no output"}); see {log}')
     return proc
 
@@ -474,7 +536,8 @@ def run_relay(proc, paths, deadline, record):
     stop_relay(proc, paths, record)
     summary = record['relay'].get('summary')
     reason = summary.get('reason') if isinstance(summary, dict) else None
-    if reason == 'device-lost' or proc.returncode == 3:
+    fatal_code = summary.get('fatal_code') if isinstance(summary, dict) else None
+    if reason == 'device-lost' or fatal_code == 'DEVICE_LOST' or proc.returncode == 3:
         fatal = summary.get('fatal') if isinstance(summary, dict) else None
         raise _End('device-lost', f'the relay lost the device: {fatal}; see {record["relay"]["log"]}')
     if timed_out or reason == 'deadline':
@@ -532,7 +595,7 @@ def main(argv=None):
     image = Path(a.xclbin).resolve()
     t0 = time.monotonic()
     deadline = t0 + a.deadline_seconds
-    record = dict(schema='tnca-board-session/1', status=None, reason=None, phase='admission',
+    record = dict(schema='tnca-board-session/1', status=None, reason=None, cause=None, phase='admission',
                   host=socket.gethostname(), user=pwd.getpwuid(os.getuid()).pw_name,
                   session_pid=os.getpid(), started_utc=utc(), platform=platform_commit(),
                   image=dict(path=str(image), sha256_declared=a.sha256.lower()), bdf=a.bdf,
@@ -545,7 +608,7 @@ def main(argv=None):
     def _signalled(signum, _frame):
         for s in (signal.SIGTERM, signal.SIGINT):
             signal.signal(s, signal.SIG_IGN)
-        raise _End('timeout', f'the session received signal {signum}')
+        raise _End('killed', f'the session received signal {signum}')
     for s in (signal.SIGTERM, signal.SIGINT):
         signal.signal(s, _signalled)
     signal.signal(signal.SIGHUP, signal.SIG_IGN)     # an ssh that drops is not a stop
@@ -607,12 +670,14 @@ def main(argv=None):
                     record['lease']['held_seconds'] = round(time.monotonic() - lease_taken, 1)
         record['status'] = 'ok'
     except _End as e:
-        record['status'], record['reason'] = e.status, e.reason
+        record['status'], record['reason'], record['cause'] = e.status, e.reason, e.cause
     except Exception as e:                                 # noqa: BLE001
-        # Nothing expected this; the phase it happened in names the status.
+        # Nothing expected this (a full disk, a bug here): the phase it
+        # happened in names the status, and it is never the image's.
         record['status'] = {'admission': 'admission-error', 'idle': 'busy-timeout',
                             'program': 'program-failed'}.get(record['phase'], 'relay-failed')
         record['reason'] = f'unexpected {type(e).__name__}: {e}'
+        record['cause'] = 'infrastructure'
     finally:
         record['detail'] = record['reason']        # the harness reads `detail`
         for s in (signal.SIGTERM, signal.SIGINT):
@@ -622,7 +687,7 @@ def main(argv=None):
         timings['total_seconds'] = round(time.monotonic() - t0, 1)
         record['ended_utc'] = utc()
         write_json(out / 'session.json', record)
-    print(json.dumps(dict(status=record['status'], reason=record['reason'], out=str(out))))
+    print(json.dumps(dict(status=record['status'], cause=record['cause'], reason=record['reason'], out=str(out))))
     return 0 if record['status'] == 'ok' else 1
 
 

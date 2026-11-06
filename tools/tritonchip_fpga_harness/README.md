@@ -67,9 +67,10 @@ HBM buffer (device caches handed back, then zeros) whenever the label changes.
 appears, after `--relay-idle-seconds` without a connection, or at
 `--deadline-seconds`; then the lease is released and `DIR/session.json`
 records the status (`ok`, `refused-admission`, `admission-error`,
-`busy-timeout`, `program-failed`, `relay-failed`, `device-lost`, `timeout`),
-the reason as `detail`, timings and probes. The image stays loaded. Both
-files' docstrings carry the details.
+`busy-timeout`, `program-failed`, `relay-failed`, `device-lost`, `timeout`,
+`killed`), its `cause` (`image`, charged to the candidate, or
+`infrastructure`, never), the reason as `detail`, timings and probes. The
+image stays loaded. Both files' docstrings carry the details.
 
 ## 1. At a glance
 

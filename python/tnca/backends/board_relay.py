@@ -23,7 +23,10 @@ is the candidate's `MulticoreMMIOBackend`, unchanged, on the far side.
 It prints `listening SOCKET` once the board is open, its identity register
 answers and (with --hbm-bytes) the HBM buffer is allocated and cleared, and a
 short `stopped {json}` on the way out; --summary gets the full account, every
-connection with its label and client label. It serves many connections, one
+connection with its label and client label. It exits 0 when stopped as asked,
+3 when the device stopped answering (DEVICE_LOST: an XRT register access or
+DMA failed), 4 on anything else unexpected (INTERNAL: the relay's own fault
+until shown otherwise) and 2 when it never started. It serves many connections, one
 at a time, and ends on the first of: the stop file appears, `--idle-timeout`
 seconds pass with no connection, `--deadline-seconds` pass, or the device is
 lost. The link is closed and the image left loaded.
@@ -69,9 +72,11 @@ likes. A missing file or one that is not [A-Za-z0-9_-]{1,32} is `unlabelled`.
 
 When an accepted connection's label differs from the previous connection's
 and the HBM buffer exists, the buffer is cleared before the connection is
-served: the device's caches hand the window back (the backend's own cache
-handoff request, which writes back and invalidates every line), then the whole
-buffer is written with zeros by DMA, 16 MiB at a time. It is cleared the same
+served: once the doorbell register reads idle (waited for up to
+--drain-seconds), the window registers are set to the whole buffer and the
+device's caches hand all of it back (the backend's own cache handoff request,
+which writes back and invalidates every line), then the whole buffer is
+written with zeros by DMA, 16 MiB at a time. It is cleared the same
 way once when it is first allocated. Nothing a point (or an earlier user of
 the card) left in device memory reaches the next point. A connection whose
 clearing cannot be done is refused, never served on a dirty buffer.
@@ -81,9 +86,15 @@ THE OBSERVER
 What the evaluator scores is written here, by the relay, to
 `<observe-dir>/<label>.log`, from rtl/fpga/tnca_multicore_mmio.v's registers:
 
-  * after forwarding each doorbell write it reads `served` (0xa0); if that
-    advanced, the device admitted a request, and if `req_op` (0x08) then reads
-    11 it was a launch: pending, its id = served, under the connection's label;
+  * the relay keeps its own watermark of `served` (0xa0), moved only by
+    requests it saw admitted, its own handoffs included. Before each
+    operation, around each doorbell and at connection end it reads `served`:
+    an advance that matches the ring it forwarded (req_seq and req_op read as
+    it was rung) is that request, and if req_op was 11 a launch is pending,
+    its id = served, under the connection's label; any other advance is an
+    `unaccounted served=<old>-><new>` line. A ring whose advance a read right
+    after it does not show yet is settled at the next operation, not taken as
+    dropped;
   * before serving each operation, before each doorbell, and at connection
     end, a pending launch whose id equals `launch_sequence` (0xf8) has
     completed, and its line is appended:
@@ -100,7 +111,8 @@ board cannot measure is left out, not written as zero. Anything that is not a
 clean observation is a line of its own, never a `cmd` line: `unfinished seq=`
 (still running when the drain ran out), `refused seq= status=` (answered
 without starting), `lost seq=` (its response registers no longer answer it),
-`uncleared connection=` and `refused-concurrent connection=`. The harness
+`unaccounted served=`, `uncleared connection=` and
+`refused-concurrent connection=`. The harness
 rejects a point whose log holds any of them. The client cannot write the launch
 registers (the control block has no write path to them) and cannot ring a
 doorbell except through this relay, so the record is the platform's.
@@ -121,7 +133,7 @@ import time
 from ..errors import (ALL_CODES, ArgumentError, DependencyFailed, DeviceLost,
                       Timeout, TncaError)
 from ..hbm_layout import StripedHBMLayout
-from .u50 import (AXI_STAT_PRESENT, DEFAULT_WORDS, IP_NAME, R_AXI_SIZE,
+from .u50 import (AXI_STAT_PRESENT, DEFAULT_WORDS, IP_NAME, R_AXI_BASE, R_AXI_SIZE,
                   R_AXI_STAT, R_DOORBELL, R_MAGIC, R_REQ_A0, R_REQ_A1, R_REQ_A2,
                   R_REQ_A3, R_REQ_A4, R_REQ_A5, R_REQ_OP, R_REQ_SEQ, R_RSP_R0,
                   R_RSP_R1, R_RSP_SEQ, R_RSP_STATUS, R_SERVED, U50Link)
@@ -220,6 +232,7 @@ class _Connection:
         self.client_label = None
         self.launches = self.anomalies = self.ops = 0
         self.pending = None
+        self.doorbell = None             # a ring whose admission is not settled yet
         self.cleared_seconds = None
         self.started = time.monotonic()
 
@@ -246,11 +259,21 @@ class BoardRelay:
         self.drain_seconds = drain_seconds
         self.hbm = None
         self.used_since_clear = False
-        self.fatal = None
+        self.fatal = self.fatal_code = None
         self.previous_label = None
         self.connections = []
         self.refused = 0
         self.clears = []
+        # The relay's own account of the device's `served`: moved only by
+        # requests the relay saw admitted, its own handoffs included.
+        self.served = link.read_reg(R_SERVED)
+
+    def fail(self, error):
+        """End the card session over `error`, keeping the first cause: a
+        DEVICE_LOST is the device's, anything unexpected is INTERNAL."""
+        if self.fatal is None:
+            reply = _error_reply(error)
+            self.fatal, self.fatal_code = reply['error'], reply['code']
 
     # -- a connection's life -------------------------------------------------
     def read_label(self):
@@ -272,13 +295,14 @@ class BoardRelay:
         label = self.read_label()
         conn = _Connection(sock, number, label, self._open_log(label))
         _say(f'connection {number} label={label}')
-        if self.hbm is not None and label != self.previous_label and self.used_since_clear:
-            try:
+        try:
+            self.settle(conn)            # nothing may have moved while nobody was connected
+            if self.hbm is not None and label != self.previous_label and self.used_since_clear:
                 conn.cleared_seconds = self.clear_hbm()
-            except Exception:
-                conn.line(f'uncleared connection={number}', anomaly=True)
-                self._close(conn, close_socket=False)     # the caller sends why
-                raise
+        except Exception:
+            conn.line(f'uncleared connection={number}', anomaly=True)
+            self._close(conn, close_socket=False)     # the caller sends why
+            raise
         self.previous_label, self.used_since_clear = label, True
         return conn
 
@@ -300,14 +324,16 @@ class BoardRelay:
         _say(f'connection {number} label={label} refused: {why}')
 
     def end(self, conn):
-        """Wait out its launch, then close its record with `end`."""
+        """Settle its last ring, wait out its launch, then close its record."""
         try:
             if self.fatal is None:
+                self.settle(conn)
                 drain = time.monotonic() + self.drain_seconds
                 while not self.observe(conn) and time.monotonic() < drain:
                     time.sleep(0.05)
+                    self.settle(conn)
         except Exception as e:                             # noqa: BLE001
-            self.fatal = self.fatal or f'observing at connection end: {type(e).__name__}: {e}'
+            self.fail(e)
         if conn.pending is not None:
             conn.line(f'unfinished seq={conn.pending}', anomaly=True)
         self._close(conn)
@@ -324,6 +350,38 @@ class BoardRelay:
         _say(f'connection {conn.number} ended: {json.dumps(conn.record(), sort_keys=True)}')
 
     # -- the observer --------------------------------------------------------
+    def settle(self, conn, *, just_rung=False):
+        """Account for every advance of `served` since the relay last did.
+
+        An advance is a request the device admitted. One that matches the
+        connection's unsettled ring (its req_seq, req_op read as it was rung)
+        is that ring's; any other is an `unaccounted` line, and the point is
+        rejected -- something admitted a request the relay did not forward.
+        Right after a ring (`just_rung`), no advance yet proves nothing across
+        the AXI-Lite bridge, so the ring stays unsettled; by the next
+        operation a ring with no advance was dropped by the device.
+        """
+        served = self.link.read_reg(R_SERVED)
+        if served == self.served:
+            if not just_rung:
+                conn.doorbell = None
+            return
+        rung, conn.doorbell = conn.doorbell, None
+        if rung is not None and served == rung[0]:
+            self._admitted(conn, served, rung[1])
+        else:
+            conn.line(f'unaccounted served={self.served}->{served}', anomaly=True)
+        self.served = served
+
+    def _admitted(self, conn, seq, op):
+        if op != OP_PHYSICAL_LAUNCH:
+            return
+        if conn.pending is not None:
+            # Admitted means the device was idle, so the earlier launch
+            # completed unobserved and its registers now belong to this one.
+            conn.line(f'lost seq={conn.pending}', anomaly=True)
+        conn.pending = seq
+
     def observe(self, conn):
         """Resolve the connection's pending launch if the device has; True
         when nothing is left pending."""
@@ -357,21 +415,20 @@ class BoardRelay:
             self.link.write_reg(offset, value)
             return
         r = self.link.read_reg
+        self.settle(conn)                # every earlier advance accounted for first
         self.observe(conn)               # the registers still answer the last request
-        before = r(R_SERVED)
+        # The descriptor as rung: the ring itself changes neither register.
+        seq, op = r(R_REQ_SEQ), r(R_REQ_OP)
         self.link.write_reg(offset, value)
-        served = r(R_SERVED)
-        if served != before and r(R_REQ_OP) == OP_PHYSICAL_LAUNCH:
-            if conn.pending is not None:
-                # Admitted means the device was idle, so the earlier launch
-                # completed in the instant between observe() and the doorbell
-                # and its registers now belong to this one.
-                conn.line(f'lost seq={conn.pending}', anomaly=True)
-            conn.pending = served
+        conn.doorbell = (seq, op)
+        # Usually settled here; a read that does not yet show the advance
+        # leaves it to the next operation's settle(), never to "not admitted".
+        self.settle(conn, just_rung=True)
 
     # -- one message ---------------------------------------------------------
     def handle(self, conn, head, payload):
         """(reply, payload, keep the connection)."""
+        self.settle(conn)
         self.observe(conn)
         writes = head.get('writes', [])
         if not isinstance(writes, list) or any(not isinstance(w, list) or len(w) != 2 for w in writes):
@@ -435,7 +492,7 @@ class BoardRelay:
         self.clear_hbm(handoff=handoff)
 
     def clear_hbm(self, *, handoff=True):
-        """The device's caches hand the window back, then the buffer is zeroed.
+        """The device's caches hand the buffer back, then the buffer is zeroed.
         Only between connections, where no client's backend is numbering
         requests (see hbm_open)."""
         t = time.monotonic()
@@ -455,21 +512,34 @@ class BoardRelay:
         return seconds
 
     def _handoff(self):
-        """The backend's OP_CACHE_HANDOFF over the whole window, as a request
-        of the relay's own between connections: every cached line of the
-        window written back and invalidated, so the zeros are what the device
-        reads next. A window the device cannot reach has nothing cached."""
+        """The backend's OP_CACHE_HANDOFF over the whole buffer, as a request
+        of the relay's own between connections: every cached line written
+        back and invalidated, so the zeros are what the device reads next.
+
+        Always after the device reads idle (bounded by --drain-seconds, else
+        the connection is refused `uncleared`), and always over the whole
+        allocated buffer: the window registers are set to it first (they
+        accept a write only when idle, and the next client's backend sets
+        them again at its start), because the device refuses a handoff that
+        reaches past its current window, and a client's window says nothing
+        about what was cached before it.
+        """
         r, w = self.link.read_reg, self.link.write_reg
-        stat, size = r(R_AXI_STAT), r(R_AXI_SIZE)
-        if not stat & AXI_STAT_PRESENT or not size:
-            return
         deadline = time.monotonic() + self.drain_seconds
         while r(R_DOORBELL):
             if time.monotonic() > deadline:
                 raise DependencyFailed('the device is still busy with an earlier launch; '
                                        'its memory cannot be cleared')
             time.sleep(0.05)
-        seq = r(R_SERVED) + 1
+        stat = r(R_AXI_STAT)
+        if not stat & AXI_STAT_PRESENT:
+            raise DependencyFailed('the image has no AXI window to hand back')
+        base, size = self.hbm['base'], self.hbm['size']
+        w(R_AXI_BASE, base)
+        w(R_AXI_SIZE, size)
+        if (r(R_AXI_BASE), r(R_AXI_SIZE)) != (base, size):
+            raise DeviceLost('the AXI window registers did not take the whole buffer before clearing')
+        seq = self.served + 1
         for offset, value in ((R_REQ_SEQ, seq), (R_REQ_OP, OP_CACHE_HANDOFF), (R_REQ_A0, (stat >> 32) << 12),
                               (R_REQ_A1, size), (R_REQ_A2, 0), (R_REQ_A3, 0), (R_REQ_A4, 0), (R_REQ_A5, 0)):
             w(offset, value)
@@ -479,6 +549,7 @@ class BoardRelay:
             if time.monotonic() > deadline:
                 raise DeviceLost('the cache handoff before clearing HBM did not complete')
             time.sleep(0.001)
+        self.served = seq                # the relay's own request, accounted
         status = r(R_RSP_STATUS) & 0xF
         if status:
             raise DeviceLost(f'the cache handoff before clearing HBM answered status {status}')
@@ -489,21 +560,26 @@ class BoardRelay:
                     anomalies=sum(c['anomalies'] for c in self.connections),
                     labels=sorted({c['label'] for c in self.connections}),
                     clears=len(self.clears), clear_seconds=round(sum(self.clears), 3),
-                    connection_records=self.connections, fatal=self.fatal)
+                    connection_records=self.connections, fatal=self.fatal, fatal_code=self.fatal_code)
 
 
 def _error_reply(e):
+    """A tnca error keeps its code. StripedHBMLayout refuses a range outside
+    its 8 GiB with ValueError, which is the client's argument. Anything else
+    nobody expected is INTERNAL: the relay's own fault until shown otherwise,
+    never DEVICE_LOST, which only the link raises when the device stopped
+    answering (an XRT register access refused, a DMA failed)."""
     code = getattr(e, 'code', None)
     if code not in ALL_CODES:
-        # StripedHBMLayout refuses a range outside its 8 GiB with ValueError.
-        code = 'ARGUMENT_INVALID' if isinstance(e, ValueError) else 'DEVICE_LOST'
+        code = 'ARGUMENT_INVALID' if isinstance(e, ValueError) else 'INTERNAL'
     return dict(ok=False, error=f'{type(e).__name__}: {e}', code=code)
 
 
 #: A refusal the client can act on and the device is unharmed by. Anything
-#: else (a register access XRT refused, an error nobody expected) leaves the
-#: card in a state the relay cannot vouch for, so it ends the card session.
+#: else leaves the card in a state the relay cannot vouch for, so it ends the
+#: card session: DEVICE_LOST (exit 3) or INTERNAL and the rest (exit 4).
 _RECOVERABLE = frozenset({'ARGUMENT_INVALID', 'DEPENDENCY_FAILED'})
+EXIT_DEVICE_LOST, EXIT_INTERNAL, EXIT_STARTUP = 3, 4, 2
 
 
 def _say(text):
@@ -539,7 +615,7 @@ def _serve_message(relay, conn):
         except Exception as e:                             # noqa: BLE001
             reply, data, keep = _error_reply(e), b'', True
             if reply['code'] not in _RECOVERABLE:
-                relay.fatal = reply['error']
+                relay.fail(e)
                 keep = False
         _send(conn.sock, reply, data)
         return keep
@@ -581,7 +657,7 @@ def main(argv=None):
         signal.signal(sig, _bye)
     signal.signal(signal.SIGHUP, signal.SIG_IGN)
 
-    reason, conn, srv, relay, link = None, None, None, None, None
+    reason, conn, srv, relay, link, startup_code = None, None, None, None, None, None
     try:
         index = index_for_bdf(args.bdf) if args.bdf else (args.index or 0)
         os.makedirs(args.observe_dir, exist_ok=True)
@@ -630,7 +706,7 @@ def main(argv=None):
         while reason is None:
             now = time.monotonic()
             if relay.fatal:
-                reason = 'device-lost'
+                reason = 'device-lost' if relay.fatal_code == 'DEVICE_LOST' else 'internal-error'
             elif deadline is not None and now >= deadline:
                 reason = 'deadline'
             elif args.stop and os.path.exists(args.stop):
@@ -666,7 +742,7 @@ def main(argv=None):
                             pass
                         sock.close()
                         if reply['code'] not in _RECOVERABLE:
-                            relay.fatal = reply['error']
+                            relay.fail(e)
                         idle_since = time.monotonic()
             elif srv in ready:
                 backlog = time.monotonic()
@@ -681,9 +757,12 @@ def main(argv=None):
         reason = reason or 'signal'
     except Exception as e:                                 # noqa: BLE001
         _say(f'failed: {type(e).__name__}: {e}')
-        reason = reason or 'failed'
+        startup_code = _error_reply(e)['code']
         if relay is not None:
-            relay.fatal = relay.fatal or f'{type(e).__name__}: {e}'
+            relay.fail(e)
+            reason = reason or ('device-lost' if relay.fatal_code == 'DEVICE_LOST' else 'internal-error')
+        else:
+            reason = reason or 'failed'
     finally:
         if conn is not None:
             relay.end(conn)
@@ -695,11 +774,15 @@ def main(argv=None):
                 srv.close()
                 if os.path.exists(args.unix):
                     os.unlink(args.unix)
-    if relay is not None and relay.fatal and reason not in ('device-lost', 'failed'):
-        reason = 'device-lost'
+    if relay is not None and relay.fatal and reason not in ('device-lost', 'internal-error'):
+        reason = 'device-lost' if relay.fatal_code == 'DEVICE_LOST' else 'internal-error'
     summary = dict(reason=reason, seconds=round(time.monotonic() - started, 1))
     if relay is not None:
         summary.update(relay.summary())
+    else:
+        # Never listened: whether the image's control block failed to answer
+        # (DEVICE_LOST) or the relay could not start for another reason.
+        summary.update(fatal_code=startup_code)
     if args.summary:
         with open(args.summary + '.tmp', 'w') as fh:
             json.dump(summary, fh, indent=1, sort_keys=True)
@@ -712,8 +795,10 @@ def main(argv=None):
         pass                                # the session that read `listening` is gone
     _say(f'stopped: {reason}')
     if relay is None:
-        return 2
-    return 3 if relay.fatal else 0
+        return EXIT_STARTUP
+    if relay.fatal:
+        return EXIT_DEVICE_LOST if relay.fatal_code == 'DEVICE_LOST' else EXIT_INTERNAL
+    return 0
 
 
 # ---------------------------------------------------------------------------

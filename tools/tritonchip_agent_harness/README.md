@@ -997,12 +997,16 @@ One island and N islands take the same path; without the block a run is as befor
 - **Keeping the agent going.** When the CLI stops, the controller resumes the same session with "continue"
   (`claude -p --resume`, `codex exec resume`, `opencode run --session`: not yet verified on the pinned
   versions; a failed resume falls back to a new session with the task again). A turn with no tool call is idle;
-  `max_idle_turns` idle turns in a row end the island. A CLI failure that was not a provider's throttling is a
-  crash, restarted at most `max_restarts` times. A throttled turn waits and is not counted. An island also ends
+  `max_idle_turns` idle turns in a row end the island. A resume that fails before resuming ever worked switches
+  the island to new sessions for the rest of the run (`resume_mode` in the record; not a crash). A CLI failure
+  of a session that had started, not a provider's throttling, is a crash, restarted at most `max_restarts`
+  times. A throttled turn waits and is not counted (its wait is recorded). An island also ends
   when its time or commits run out, or when any commit reaches `target`. The agent saying it is done is not an end.
-- **After the run.** The base was measured before any island started. The archive's top 3 by the validation
-  aggregate get the final evaluation in order; with `fpga_slow.certify_after_run` each goes to the card
-  (`certify.after_run`, an in-run board record of the same snapshot reused) until one is certified. The run
+- **After the run.** The base was measured before any island started. Every commit has finished before the
+  archive is ranked. The best commit by the validation aggregate gets the final evaluation and is the run's
+  result; with `fpga_slow.certify_after_run`, the top 3 distinct snapshots go, in order, to the final
+  evaluation and the card (`certify.after_run`, an in-run board record of the same snapshot reused) until
+  one is certified. A target reached, or an operator's interrupt, stops every island's current turn. The run
   record has the configuration, every island's turns, stop reason, idle and restart counts, the archive, the
   best-so-far trajectory (per commit: time, island, fitness, island best, run best) and the champions.
 

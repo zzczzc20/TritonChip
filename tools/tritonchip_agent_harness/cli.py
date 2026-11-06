@@ -105,7 +105,17 @@ def main(argv=None) -> int:
             chosen = [] if args.no_skills else ([s for s in args.skills.split(",") if s] if args.skills else None)
             value = loop.run_task(site, task, args.agent, args.mode, args.model, skills=chosen)
             value["ok"] = value.get("validity") == "valid"
-            if not args.json:
+            if not args.json and value.get("islands"):
+                print(f"{value['run_id']}: validity={value['validity']} islands={len(value['islands']['islands'])}")
+                for row in value["islands"]["islands"]:
+                    print(f"  island {row['island']}: {row['commits']} commits, stop={row['stop_reason']}, "
+                          f"restarts={row['restarts']}, resume={row['resume_mode']}")
+                for c in value.get("champions") or []:
+                    ev = c.get("evaluation") or {}
+                    cert = (c.get("certification") or {}).get("verdict")
+                    print(f"  champion {c['rank']} ({c['id']}, {c['cell']}): final "
+                          f"{(ev.get('final') or {}).get('speedup_geomean')}, card {cert}")
+            elif not args.json:
                 ev = value.get("evaluation") or {}
                 print(f"{value['run_id']}: validity={value['validity']} gate={value['gate']['verdict']} "
                       f"taken={value['gate']['taken']}")

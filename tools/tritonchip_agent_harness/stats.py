@@ -37,8 +37,15 @@ def run_dirs(paths) -> list:
     return sorted(found)
 
 
+def agent_results(run: dict) -> list:
+    """A run's agent results: its one agent's, or each island's."""
+    if run.get("islands"):
+        return [row.get("agent_result") or {} for row in run["islands"].get("islands") or [] if row]
+    return [run.get("agent_result") or {}]
+
+
 def framework(run: dict) -> tuple:
-    result = run.get("agent_result") or {}
+    result = (agent_results(run) or [{}])[0]
     if result.get("pseudo"):
         return None, None, result["pseudo"]
     return result.get("cli"), result.get("requested_model"), result.get("label")
@@ -80,11 +87,19 @@ def summarise(paths) -> dict:
             continue
         g = groups.setdefault(framework(run), {"runs": 0, "tokens": [], "entries": []})
         g["runs"] += 1
-        result = run.get("agent_result") or {}
-        if result.get("cli"):
-            # A record from before `tokens` existed is normalised from its raw usage.
-            g["tokens"].append(result.get("tokens") or tokens(result["cli"], result.get("usage"),
-                                                              result.get("model_usage")))
+        summed: dict = {}
+        for result in agent_results(run):
+            if result.get("cli"):
+                # A record from before `tokens` existed is normalised from its raw usage; an island run's
+                # islands add up to the run's.
+                for k, v in (result.get("tokens") or tokens(result["cli"], result.get("usage"),
+                                                            result.get("model_usage")) or {}).items():
+                    if isinstance(v, (int, float)):
+                        summed[k] = summed.get(k, 0) + v
+                    else:
+                        summed.setdefault(k, v)
+        if summed:
+            g["tokens"].append(summed)
         g["entries"] += (run.get("occupancy") or []) + (cert.get("occupancy") or [])
     order = sorted(groups, key=lambda k: tuple(v or "" for v in k))
     return {"runs": sum(g["runs"] for g in groups.values()), "skipped": skipped,

@@ -29,7 +29,6 @@ images and its one-at-a-time stay the run's (section 8.9, B7/B8), and so does a 
 
 from __future__ import annotations
 
-import difflib
 import json
 import math
 import re
@@ -134,6 +133,7 @@ class Archive:
         self.lock = threading.Lock()
         self.started = time.time()
         self.target_hit = threading.Event()
+        self.halt = threading.Event()      # the target, or the operator: every island stops
 
     def _summary(self, e: dict) -> dict:
         return {"id": e["id"], "island": e["island"], "labels": e["labels"], "cell": e["cell"],
@@ -167,6 +167,7 @@ class Archive:
             target = self.cfg.get("target")
             if target and e["listed"] and all((agg.get(k) or 0) >= v for k, v in target.items()):
                 self.target_hit.set()
+                self.halt.set()
         return e
 
     def _best(self, entries: list) -> Optional[dict]:
@@ -228,37 +229,55 @@ class Archive:
 
 
 def overlay_patch(repo: Path, base: str, candidate: Path) -> str:
-    """A unified diff of the snapshot's taken files against the base commit, for `git apply`."""
+    """The snapshot's taken files against the base commit, as git itself writes the diff -- new and deleted
+    files, modes, a missing final newline, binary files -- so `git apply` takes it back. Built in a scratch
+    index of the harness's own repository (the base's tree, the candidate's files on top); the workspace and
+    the repository's own index are not touched."""
+    import os
+    import subprocess
+    import tempfile
     report = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))
-    out = []
-    for c in sorted(report["taken"], key=lambda c: c["path"]):
-        path = c["path"]
-        try:
-            before = "" if c["status"] == "added" else git("-C", str(repo), "show", f"{base}:{path}").decode("utf-8")
-            after = "" if c["status"] == "deleted" else (candidate / "files" / path).read_text(encoding="utf-8")
-        except (UnicodeDecodeError, OSError, Exception):  # noqa: BLE001 -- a binary file
-            out.append(f"# {path}: a binary or unreadable file changed; not shown\n")
-            continue
-        a = "/dev/null" if c["status"] == "added" else f"a/{path}"
-        b = "/dev/null" if c["status"] == "deleted" else f"b/{path}"
-        out.append(f"diff --git a/{path} b/{path}\n")
-        out.extend(difflib.unified_diff(before.splitlines(keepends=True), after.splitlines(keepends=True), a, b))
-        if out and not out[-1].endswith("\n"):
-            out[-1] += "\n\\ No newline at end of file\n"
-    return "".join(out)
+    paths = sorted(c["path"] for c in report["taken"])
+    if not paths:
+        return ""
+    with tempfile.TemporaryDirectory() as tmp:
+        env = {**os.environ, "GIT_INDEX_FILE": str(Path(tmp) / "index")}
+
+        def g(*args, data=None):
+            return subprocess.run(["git", "-C", str(repo), *args], input=data, env=env, capture_output=True,
+                                  check=True).stdout
+
+        g("read-tree", base)
+        for c in report["taken"]:
+            if c["status"] == "deleted":
+                g("update-index", "--force-remove", "--", c["path"])
+                continue
+            f = candidate / "files" / c["path"]
+            oid = g("hash-object", "-w", "--stdin", data=f.read_bytes()).decode().strip()
+            mode = "100755" if os.access(f, os.X_OK) else "100644"
+            g("update-index", "--add", "--cacheinfo", f"{mode},{oid},{c['path']}")
+        return g("diff-index", "--cached", "-p", "--binary", "--full-index", base, "--", *paths).decode(
+            "utf-8", errors="replace")
 
 
 # -- the controller ---------------------------------------------------------------------------------------
 
 class Turns:
-    """One island's turn policy for runner.run_agent: continue, restart, wait, or stop -- and why it stopped."""
+    """One island's turn policy for runner.run_agent: continue, restart, wait, or stop -- and why it stopped.
+
+    D2: the same session is resumed; a CLI whose resume fails before it ever worked falls back to new sessions
+    for the rest of the run (`mode`), which is recorded and is not a crash. A crash is a session that had
+    started failing without being throttled; `max_restarts` of them end the island."""
 
     def __init__(self, island: int, task: Task, broker, archive: Archive, prompt: str):
         self.island, self.task, self.broker, self.archive, self.prompt = island, task, broker, archive, prompt
         self.cfg = task.islands
         self.idle = self.restarts = self.throttle_waits = 0
+        self.throttle_seconds = 0.0
         self.stop_reason: Optional[str] = None
-        self.last = "first"     # how the turn that just ended was started: first, resume, new-session
+        self.last = "first"         # how the turn that just ended was started: first, resume, new-session
+        self.mode = "resume"        # resume, or new-session once a resume has failed before ever working
+        self.resume_worked = False
 
     def _commits_left(self) -> int:
         with self.broker.lock:
@@ -267,36 +286,43 @@ class Turns:
             return self.broker.score_left + (1 if running else 0)
 
     def __call__(self, record: dict, left: float):
-        if self.archive.target_hit.is_set():
-            self.stop_reason = "target"
+        if self.archive.halt.is_set():
+            self.stop_reason = "target" if self.archive.target_hit.is_set() else "interrupted"
             return None
         if record.get("stop_reason") == "timeout" or left < 60:
             self.stop_reason = "wall-clock"
             return None
+        if record.get("tool_calls"):
+            self.idle = 0
         if record.get("throttled"):
             # Refused by the provider, not stopped by the agent: wait, and do not count it (P9).
             self.throttle_waits += 1
-            time.sleep(min(300.0, max(10.0, left / 10)))
-            return self._next(fresh=False)
+            wait = min(300.0, max(10.0, left / 10))
+            self.throttle_seconds += wait
+            self.archive.halt.wait(wait)
+            return self._next(fresh=not record.get("session") or self.mode == "new-session")
         if self._commits_left() <= 0:
             self.stop_reason = "commits-exhausted"
             return None
         crashed = record.get("exit") not in (0, None) and not record.get("tool_calls")
+        if crashed and self.last == "resume" and not self.resume_worked:
+            self.mode = "new-session"           # this CLI's resume does not work here: never again, no charge
+            return self._next(fresh=True)
         if crashed:
             self.restarts += 1
             if self.restarts > self.cfg["max_restarts"]:
                 self.stop_reason = "crashed"
                 return None
-            # A resume that failed is not tried again: a new session, with the task again.
-            return self._next(fresh=self.last == "resume" or not record.get("session"))
-        if record.get("tool_calls"):
-            self.idle = 0
-        else:
+            # D7: the same session when it can be resumed, else a new one with the task again.
+            return self._next(fresh=self.mode == "new-session" or not record.get("session"))
+        if self.last == "resume":
+            self.resume_worked = True
+        if not record.get("tool_calls"):
             self.idle += 1
             if self.idle >= self.cfg["max_idle_turns"]:
                 self.stop_reason = "idle"
                 return None
-        return self._next(fresh=not record.get("session"))
+        return self._next(fresh=not record.get("session") or self.mode == "new-session")
 
     def _next(self, fresh: bool):
         self.last = "new-session" if fresh else "resume"
@@ -305,12 +331,22 @@ class Turns:
                   f"`tnca-service archive` lists the commits you can see.")
         if fresh:
             return (self.prompt + "\n\nYou are resuming earlier work on this island: your working directory holds "
-                    "it. " + status, True)
+                    "it, and `tnca-service archive` lists your commits. Keep a short NOTES.md at the top of your "
+                    "working directory on what you tried and what you learned, for whoever continues. " + status, True)
         return "Continue improving. " + status
+
+
+def _stop_agents(run_dir: Path, count: int, cli: str) -> None:
+    """Every island's CLI asked to end its turn (target reached, or the operator stopped the run)."""
+    from . import provider
+    for i in range(count):
+        provider.docker("exec", f"tnca-agent-{run_dir.name}-i{i}", "pkill", "-TERM", "-f", runner.BINARY[cli],
+                        check=False, timeout=30)
 
 
 def run(site, task: Task, account, mode: str, run_dir: Path, repo: Path, names: list, broker_cls, shared) -> dict:
     """Every island, at once; their records, the archive and the trajectory."""
+    import hashlib
     cfg = task.islands
     archive = Archive(repo, task)
     out = {"config": cfg, "islands": []}
@@ -318,30 +354,55 @@ def run(site, task: Task, account, mode: str, run_dir: Path, repo: Path, names: 
 
     def one(i: int) -> None:
         idir = run_dir / f"island-{i}"
-        idir.mkdir(parents=True, exist_ok=True)
-        workspace = idir / "workspace"
-        exported = export(repo, task.base_commit, task.hide, workspace)
-        broker = broker_cls(site, repo, task, workspace, idir, island=i, archive=archive, shared=shared)
-        prompt = render(task, mode, skills=names, island=i)
-        (idir / "prompt.md").write_text(prompt, encoding="utf-8")
-        turns = Turns(i, task, broker, archive, prompt)
+        broker, turns, agent, exported, prompt = None, None, {}, None, ""
         try:
+            idir.mkdir(parents=True, exist_ok=True)
+            workspace = idir / "workspace"
+            exported = export(repo, task.base_commit, task.hide, workspace)
+            # The run's id in every container name: two runs on one host never share one (the review's H2).
+            broker = broker_cls(site, repo, task, workspace, idir, island=i, archive=archive, shared=shared,
+                                run_id=f"{run_dir.name}-i{i}")
+            prompt = render(task, mode, skills=names, island=i)
+            (idir / "prompt.md").write_text(prompt, encoding="utf-8")
+            turns = Turns(i, task, broker, archive, prompt)
             agent = runner.run_agent(site, account, prompt, mode, idir, workspace, timeout=float(task.wall_seconds),
                                      services=broker, skills=names, turns=turns, name=f"{run_dir.name}-i{i}")
         except Exception as exc:  # noqa: BLE001 -- one island failing ends that island, not the run (D7)
-            agent = {"error": f"{type(exc).__name__}: {exc}"}
-            turns.stop_reason = turns.stop_reason or "crashed"
+            agent = {**agent, "error": f"{type(exc).__name__}: {exc}"}
         results[i] = {"island": i, "workspace": exported, "agent_result": agent, "broker": broker,
-                      "stop_reason": turns.stop_reason or agent.get("stop_reason"), "idle": turns.idle,
-                      "restarts": turns.restarts, "throttle_waits": turns.throttle_waits,
+                      "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest() if prompt else None,
+                      "stop_reason": (turns.stop_reason if turns else None) or agent.get("stop_reason")
+                      or ("crashed" if agent.get("error") else None),
+                      "idle": turns.idle if turns else None, "restarts": turns.restarts if turns else None,
+                      "resume_mode": turns.mode if turns else None,
+                      "throttle_waits": turns.throttle_waits if turns else None,
+                      "throttle_seconds": round(turns.throttle_seconds, 1) if turns else None,
                       "commits": archive.commits[i]}
 
     for i in range(cfg["count"]):
         t = threading.Thread(target=one, args=(i,), name=f"island-{i}")
         threads.append(t)
         t.start()
-    for t in threads:
-        t.join()
+
+    def watch() -> None:
+        # The target ends the whole run (D7): every island's current turn is stopped, not waited for.
+        while any(t.is_alive() for t in threads):
+            if archive.halt.wait(15):
+                _stop_agents(run_dir, cfg["count"], account.cli)
+                return
+
+    threading.Thread(target=watch, name="islands-watch", daemon=True).start()
+    try:
+        for t in threads:
+            while t.is_alive():
+                t.join(5)
+    except KeyboardInterrupt:
+        # The operator: every island ends its turn and cleans up its sandbox in its own `finally`.
+        archive.halt.set()
+        _stop_agents(run_dir, cfg["count"], account.cli)
+        for t in threads:
+            t.join(120)
+        raise
     out["islands"] = results
     out["archive"] = archive
     return out

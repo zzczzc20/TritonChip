@@ -206,7 +206,7 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
            "The network is open. Every connection is logged.")
     design = ", ".join(f"`{d}`" for d in task.design)
     skill_text = catalog_.prompt_lines(selected)
-    services = _services_text(task.services)
+    services = _services_text(task.services, islands=island is not None and bool(task.islands))
     return instruction.rstrip() + services + f"""
 
 ## The rules of this run
@@ -249,7 +249,7 @@ def _ending(task: Task, island: Optional[int]) -> str:
             f"{cfg['max_idle_turns']} idle turns in a row end your island.\n")
 
 
-def _services_text(cfg: dict) -> str:
+def _services_text(cfg: dict, islands: bool = False) -> str:
     """How the agent may ask the evaluator for a measurement, and how much it may ask."""
     if not cfg:
         return ""
@@ -257,9 +257,11 @@ def _services_text(cfg: dict) -> str:
     lines = ["", "", "## Measurements you can ask for", "",
              "From your shell, `tnca-service` asks the evaluator to measure a snapshot of your working directory "
              "the way the final evaluation will (only changes under the paths it takes count). Whether and when "
-             "to use it is up to you. Requests run in the background and your time keeps running while they do. "
-             "A request still running when you stop is cancelled, and its result is lost (a board request "
-             "excepted, below).", ""]
+             "to use it is up to you. Requests run in the background and your time keeps running while they do. " +
+             ("When you stop you are asked to continue, and your requests keep running; the budgets below are "
+              "this island's unless they say they are shared." if islands else
+              "A request still running when you stop is cancelled, and its result is lost (a board request "
+              "excepted, below)."), ""]
     if score:
         lines.append(f"- `tnca-service submit score`: the hidden validation set, in simulation. You get how many "
                      f"points passed, the geometric-mean speedup over the points that passed, and the share of all "
@@ -286,10 +288,10 @@ def _services_text(cfg: dict) -> str:
             f"- `tnca-service submit fpga-slow`: the real card. Board time is precious: a request that changed "
             f"the machine (RTL, the profile's parameters, the device description) is first fully implemented "
             f"(one Vivado flow, which takes hours; up to {float(slow['flow_minutes']):g} minutes), and you have "
-            f"{int(slow['flows'])} flows in this run. Accumulate enough hardware change, and be confident in it, "
+            f"{int(slow['flows'])} flows in this run{', shared by every island' if islands else ''}. Accumulate enough hardware change, and be confident in it, "
             f"before you ask. A request that kept the machine (compiler and software only), or that asks again "
             f"for hardware this run already built, needs no flow and runs on the card directly; you have "
-            f"{int(slow['board_runs'])} such board runs. Before anything is charged, the snapshot's validation "
+            f"{int(slow['board_runs'])} such board runs{', shared by every island' if islands else ''}. Before anything is charged, the snapshot's validation "
             f"set must pass in simulation, and a hardware request needs an `fpga-quick` result of this run on "
             f"exactly that hardware that met timing; otherwise it is refused and not charged. A flow that fails "
             f"on your design (timing or place-and-route does not converge, it does not fit, DRC) counts; one "

@@ -42,7 +42,9 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
     run_dir = site.state_dir / "runs" / f"{task.task_id}-{label}-{stamp}"
     run_dir.mkdir(parents=True)
     workspace = run_dir / "workspace"
-    exported = export(repo, task.base_commit, task.hide, workspace)
+    island_run = bool(task.islands) and agent not in PSEUDO and not agent.startswith("patch:")
+    # An island run's workspaces are its islands' own (islands.py); the run has none of its own.
+    exported = None if island_run else export(repo, task.base_commit, task.hide, workspace)
     # The skills this run gets: the task's default set, or the run's override; the prompt names them.
     source = "task" if skills is None else "run"
     names = list(task.skills) if skills is None else list(skills)
@@ -60,7 +62,8 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
     record["workspace"] = exported
 
     broker = None
-    if task.islands and agent not in PSEUDO and not agent.startswith("patch:"):
+    if island_run:
+        record["prompt_sha256"] = None   # each island's prompt is its own, hashed in its row
         account = site.account(agent)
         if model:
             account = dataclasses.replace(account, models={**account.models, "main": model})
@@ -146,6 +149,10 @@ def _islands(site: Site, task: Task, account, mode: str, names: list, record: di
     archive, brokers = got["archive"], [r["broker"] for r in got["islands"] if r]
     for b in brokers:
         b.wait_outlived()
+        # Every commit has finished (or was cancelled) before the archive is ranked.
+        for j in list(b.jobs.values()):
+            if j["service"] != "fpga-slow" and j.get("thread"):
+                j["thread"].join()
     rows = []
     for r in got["islands"]:
         if not r:
@@ -184,10 +191,19 @@ def _champions(site: Site, repo: Path, task: Task, archive, view, run_dir: Path)
     is chosen never looks at the final set."""
     slow = (task.services or {}).get("fpga_slow") or {}
     on_card = bool(slow.get("certify_after_run")) and slow.get("mode") == "board"
-    out = []
-    for rank, e in enumerate(archive.ranked()[:3], 1):
+    out, seen, top = [], set(), []
+    for e in archive.ranked():
+        # The same snapshot committed twice (a re-commit, a migrated patch applied as it was) is one candidate.
+        if e.get("digest") in seen:
+            continue
+        seen.add(e.get("digest"))
+        top.append(e)
+        if len(top) == 3:
+            break
+    for rank, e in enumerate(top, 1):
         cand = Path(e["candidate"]) if e["candidate"] else None
-        here = run_dir / "champions" / e["id"]
+        # The run's id in the directory name: the evaluator names its containers after it.
+        here = run_dir / "champions" / f"{run_dir.name}-c{rank}"
         here.mkdir(parents=True, exist_ok=True)
         started = time.time()
         evaluation = evaluator.evaluate(site, repo, task, cand, here)

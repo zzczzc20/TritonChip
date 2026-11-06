@@ -82,6 +82,39 @@ class Islands(unittest.TestCase):
             self.assertEqual(sealed.view(0)["commits"], [])
             self.assertEqual(len(sealed.view(1)["commits"]), 1)
 
+    def test_a_read_commit_patch_applies_with_git(self):
+        import os
+        import subprocess
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = root / "repo"
+            run = lambda *a, cwd=repo: subprocess.run(a, cwd=cwd, check=True, capture_output=True)  # noqa: E731
+            repo.mkdir()
+            run("git", "init", "-q")
+            (repo / "nonl.txt").write_text("x\ny")
+            (repo / "gone.txt").write_text("keep\n")
+            (repo / "run.sh").write_text("#!/bin/sh\n")
+            run("git", "add", "-A")
+            run("git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "commit", "-qm", "b")
+            base = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True).stdout.strip()
+            c = root / "cand"
+            (c / "files" / "sub").mkdir(parents=True)
+            (c / "files" / "nonl.txt").write_text("x\nY")
+            (c / "files" / "sub" / "added.py").write_text("new\n")
+            (c / "files" / "run.sh").write_text("#!/bin/sh\necho hi\n")
+            os.chmod(c / "files" / "run.sh", 0o755)
+            (c / "candidate.json").write_text(json.dumps({"base_commit": base, "taken": [
+                {"path": "nonl.txt", "status": "modified"}, {"path": "sub/added.py", "status": "added"},
+                {"path": "gone.txt", "status": "deleted"}, {"path": "run.sh", "status": "modified"}]}))
+            (root / "p.diff").write_text(islands.overlay_patch(repo, base, c))
+            run("git", "clone", "-q", str(repo), str(root / "ws"), cwd=root)
+            run("git", "apply", str(root / "p.diff"), cwd=root / "ws")
+            ws = root / "ws"
+            self.assertEqual((ws / "nonl.txt").read_text(), "x\nY")
+            self.assertEqual((ws / "sub" / "added.py").read_text(), "new\n")
+            self.assertFalse((ws / "gone.txt").exists())
+            self.assertTrue(os.access(ws / "run.sh", os.X_OK))
+
     def test_an_island_stops_on_idle_turns_and_restarts_a_crash_at_most_twice(self):
         broker = types.SimpleNamespace(lock=threading.Lock(), jobs={}, score_left=3,
                                        budget=lambda: {"score_requests_left": 3})
@@ -93,11 +126,13 @@ class Islands(unittest.TestCase):
         self.assertIsNone(t({"exit": 0, "tool_calls": 0, "session": "s"}, 500))
         self.assertEqual(t.stop_reason, "idle")
         c = islands.Turns(0, task(1), broker, a, "PROMPT")
-        first = c({"exit": 1, "tool_calls": 0, "session": "s"}, 500)
-        self.assertIsInstance(first, str)                    # resume the same session
-        again = c({"exit": 1, "tool_calls": 0, "session": "s"}, 500)
-        self.assertEqual(again[1], True)                     # that resume failed: a new session
-        self.assertIsNone(c({"exit": 1, "tool_calls": 0, "session": "s"}, 500))
+        self.assertIsInstance(c({"exit": 1, "tool_calls": 0, "session": "s"}, 500), str)   # crash 1: resume
+        # That resume failed before resuming ever worked: new sessions from now on, and no crash counted.
+        self.assertEqual(c({"exit": 1, "tool_calls": 0, "session": "s"}, 500)[1], True)
+        self.assertEqual((c.mode, c.restarts), ("new-session", 1))
+        self.assertEqual(c({"exit": 0, "tool_calls": 3, "session": "s2"}, 500)[1], True)  # stays new-session
+        self.assertEqual(c({"exit": 1, "tool_calls": 0, "session": "s3"}, 500)[1], True)  # crash 2
+        self.assertIsNone(c({"exit": 1, "tool_calls": 0, "session": "s4"}, 500))          # crash 3: the end
         self.assertEqual((c.stop_reason, c.restarts), ("crashed", 3))
         broker.score_left = 0
         d = islands.Turns(0, task(1), broker, a, "PROMPT")

@@ -217,7 +217,8 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
         extra += f"--base-xclbin {q(base_xclbin)} "
     # `mkdir .started` is the start's own lock: SSH's retry of a dropped connection cannot start it twice.
     script = (f"mkdir {q(folder + '/.started')} 2>/dev/null || exit 0; cd {q(checkout)} && "
-              f"PYTHONPATH=tools:python PYTHONDONTWRITEBYTECODE=1 "
+              # The host's own PYTHONPATH (hosts.json `environment`: XRT's python bindings) stays behind ours.
+              f"PYTHONPATH=tools:python${{PYTHONPATH:+:$PYTHONPATH}} PYTHONDONTWRITEBYTECODE=1 "
               f"nohup {q(card.python)} -m tritonchip_fpga_harness.board_session --xclbin {q(image['path'])} "
               f"--sha256 {q(image['sha256'])} --bdf {q(cfg['bdf'])} --socket {q(sock)} --out {q(folder)} "
               f"--stop {q(folder + '/stop')} --idle-seconds {int(cfg.get('idle_seconds', IDLE_SECONDS))} "

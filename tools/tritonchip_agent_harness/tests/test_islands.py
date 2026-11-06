@@ -120,7 +120,7 @@ class Islands(unittest.TestCase):
                                        budget=lambda: {"score_requests_left": 3})
         a = islands.Archive(Path("."), task(1))
         t = islands.Turns(0, task(1), broker, a, "PROMPT")
-        self.assertEqual(t({"exit": 0, "tool_calls": 2, "session": "s"}, 500), t._next(False))
+        self.assertEqual(t({"exit": 0, "tool_calls": 2, "session": "s"}, 500), t._next(False, 500))
         self.assertIsNotNone(t({"exit": 0, "tool_calls": 0, "session": "s"}, 500))
         self.assertIsNotNone(t({"exit": 0, "tool_calls": 0, "session": "s"}, 500))
         self.assertIsNone(t({"exit": 0, "tool_calls": 0, "session": "s"}, 500))
@@ -139,6 +139,19 @@ class Islands(unittest.TestCase):
         self.assertIsNone(d({"exit": 0, "tool_calls": 4, "session": "s"}, 500))
         self.assertEqual(d.stop_reason, "commits-exhausted")
 
+
+    def test_the_resume_line_gives_the_minutes_and_every_service_left(self):
+        import dataclasses
+        broker = types.SimpleNamespace(lock=threading.Lock(), jobs={}, score_left=7, budget=lambda: {
+            "score_requests_left": 7, "fpga_minutes_left": 30.0,
+            "fpga_slow_flows_left": 1, "fpga_slow_board_runs_left": 9})
+        full = dataclasses.replace(task(1), services={"score": {"requests": 20}, "fpga_quick": {"minutes": 45},
+                                                      "fpga_slow": {"mode": "board", "flows": 2}})
+        t = islands.Turns(0, full, broker, islands.Archive(Path("."), full), "PROMPT")
+        nxt = t({"exit": 0, "tool_calls": 2, "session": "s"}, 25261)
+        self.assertEqual(nxt, "Continue improving. Left: about 421 minutes of your time, 7 commits, "
+                              "30.0 minutes of fpga-quick, 1 fpga-slow flows and 9 board runs. "
+                              "`tnca-service archive` lists the commits you can see.")
 
     def test_a_plain_run_with_resume_continues_until_idle(self):
         import dataclasses

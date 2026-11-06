@@ -307,21 +307,21 @@ class Turns:
                 self.archive.halt.wait(wait)
             else:
                 time.sleep(wait)
-            return self._next(fresh=not record.get("session") or self.mode == "new-session")
+            return self._next(not record.get("session") or self.mode == "new-session", left - wait)
         if self.archive is not None and self._commits_left() <= 0:
             self.stop_reason = "commits-exhausted"
             return None
         crashed = record.get("exit") not in (0, None) and not record.get("tool_calls")
         if crashed and self.last == "resume" and not self.resume_worked:
             self.mode = "new-session"           # this CLI's resume does not work here: never again, no charge
-            return self._next(fresh=True)
+            return self._next(True, left)
         if crashed:
             self.restarts += 1
             if self.restarts > self.cfg["max_restarts"]:
                 self.stop_reason = "crashed"
                 return None
             # D7: the same session when it can be resumed, else a new one with the task again.
-            return self._next(fresh=self.mode == "new-session" or not record.get("session"))
+            return self._next(self.mode == "new-session" or not record.get("session"), left)
         if self.last == "resume":
             self.resume_worked = True
         if not record.get("tool_calls"):
@@ -329,17 +329,30 @@ class Turns:
             if self.idle >= self.cfg["max_idle_turns"]:
                 self.stop_reason = "idle"
                 return None
-        return self._next(fresh=not record.get("session") or self.mode == "new-session")
+        return self._next(not record.get("session") or self.mode == "new-session", left)
 
-    def _next(self, fresh: bool):
+    def _left(self, left: float) -> str:
+        """D2's neutral status line: the minutes left and what is left of each service the task has."""
+        parts = [f"about {max(0, int(left // 60))} minutes of your time"]
+        if self.broker is not None:
+            b, svc = self.broker.budget(), self.task.services or {}
+            if "score" in svc:
+                parts.append(f"{b.get('score_requests_left')} "
+                             + ("commits" if self.archive is not None else "score requests"))
+            if "fpga_quick" in svc:
+                parts.append(f"{b.get('fpga_minutes_left')} minutes of fpga-quick")
+            if "fpga_slow" in svc:
+                parts.append(f"{b.get('fpga_slow_flows_left')} fpga-slow flows and "
+                             f"{b.get('fpga_slow_board_runs_left')} board runs")
+        return "Left: " + ", ".join(parts) + "."
+
+    def _next(self, fresh: bool, left: float):
         self.last = "new-session" if fresh else "resume"
         if self.archive is not None:
-            b = self.broker.budget()
-            status = (f"{b.get('score_requests_left')} commits and the rest of your time are left. "
-                      f"`tnca-service archive` lists the commits you can see.")
+            status = self._left(left) + " `tnca-service archive` lists the commits you can see."
             where = "your working directory holds it, and `tnca-service archive` lists your commits"
         else:
-            status = ("The rest of your time is left; your working directory as it is when the time runs out "
+            status = (self._left(left) + " Your working directory as it is when the time runs out "
                       "is your submission.")
             where = "your working directory holds it"
         if fresh:

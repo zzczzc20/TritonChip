@@ -263,15 +263,19 @@ def overlay_patch(repo: Path, base: str, candidate: Path) -> str:
 # -- the controller ---------------------------------------------------------------------------------------
 
 class Turns:
-    """One island's turn policy for runner.run_agent: continue, restart, wait, or stop -- and why it stopped.
+    """A turn policy for runner.run_agent -- an island's, or a plain run's with the task's `resume` block:
+    continue, restart, wait, or stop, and why it stopped.
 
     D2: the same session is resumed; a CLI whose resume fails before it ever worked falls back to new sessions
     for the rest of the run (`mode`), which is recorded and is not a crash. A crash is a session that had
-    started failing without being throttled; `max_restarts` of them end the island."""
+    started failing without being throttled; `max_restarts` of them end the run (or the island). A turn with
+    no tool call is idle; `max_idle_turns` of them in a row end it. The agent saying it is done is not an end.
+    `archive` is None for a plain run: no commits to count, no target."""
 
-    def __init__(self, island: int, task: Task, broker, archive: Archive, prompt: str):
+    def __init__(self, island: Optional[int], task: Task, broker, archive: Optional[Archive], prompt: str,
+                 cfg: Optional[dict] = None):
         self.island, self.task, self.broker, self.archive, self.prompt = island, task, broker, archive, prompt
-        self.cfg = task.islands
+        self.cfg = cfg or task.islands
         self.idle = self.restarts = self.throttle_waits = 0
         self.throttle_seconds = 0.0
         self.stop_reason: Optional[str] = None
@@ -286,7 +290,7 @@ class Turns:
             return self.broker.score_left + (1 if running else 0)
 
     def __call__(self, record: dict, left: float):
-        if self.archive.halt.is_set():
+        if self.archive is not None and self.archive.halt.is_set():
             self.stop_reason = "target" if self.archive.target_hit.is_set() else "interrupted"
             return None
         if record.get("stop_reason") == "timeout" or left < 60:
@@ -299,9 +303,12 @@ class Turns:
             self.throttle_waits += 1
             wait = min(300.0, max(10.0, left / 10))
             self.throttle_seconds += wait
-            self.archive.halt.wait(wait)
+            if self.archive is not None:
+                self.archive.halt.wait(wait)
+            else:
+                time.sleep(wait)
             return self._next(fresh=not record.get("session") or self.mode == "new-session")
-        if self._commits_left() <= 0:
+        if self.archive is not None and self._commits_left() <= 0:
             self.stop_reason = "commits-exhausted"
             return None
         crashed = record.get("exit") not in (0, None) and not record.get("tool_calls")
@@ -326,13 +333,19 @@ class Turns:
 
     def _next(self, fresh: bool):
         self.last = "new-session" if fresh else "resume"
-        b = self.broker.budget()
-        status = (f"{b.get('score_requests_left')} commits and the rest of your time are left. "
-                  f"`tnca-service archive` lists the commits you can see.")
+        if self.archive is not None:
+            b = self.broker.budget()
+            status = (f"{b.get('score_requests_left')} commits and the rest of your time are left. "
+                      f"`tnca-service archive` lists the commits you can see.")
+            where = "your working directory holds it, and `tnca-service archive` lists your commits"
+        else:
+            status = ("The rest of your time is left; your working directory as it is when the time runs out "
+                      "is your submission.")
+            where = "your working directory holds it"
         if fresh:
-            return (self.prompt + "\n\nYou are resuming earlier work on this island: your working directory holds "
-                    "it, and `tnca-service archive` lists your commits. Keep a short NOTES.md at the top of your "
-                    "working directory on what you tried and what you learned, for whoever continues. " + status, True)
+            return (self.prompt + f"\n\nYou are resuming earlier work: {where}. Keep a short NOTES.md at the top of "
+                    "your working directory on what you tried and what you learned, for whoever continues. " + status,
+                    True)
         return "Continue improving. " + status
 
 

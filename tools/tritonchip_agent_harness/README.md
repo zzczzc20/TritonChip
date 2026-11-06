@@ -971,6 +971,17 @@ Vivado settings script, read-only binds, threads, part).
 - **Versions (decided 2026-10-17, was O13).** The Vivado flow runs on the build worker with its Vitis 2022.2; the card host only loads and measures. Validated once: `b5c606d` linked on the build worker in 103 minutes (213 on the card host with 2023.2, an earlier link), closed 100 MHz with ap_clk WNS +0.138 ns (2023.2: +0.177), and its XCLBIN loaded on the card's 2023.2/XRT 2.16 shell, whose gates check only the platform's interface UUID. The U280 target accepts images from 2022.2 and 2023.2, and the build worker's installation overrides the target's default path.
 - **How a candidate crosses (built, FPGA harness).** `pipeline` in `tools/tritonchip_fpga_harness` (its README §11.2) runs one candidate across the two: a clean checkout of the commit on each from a git bundle, the build detached on the build worker, a light packet of the image and records streamed through the controller into the card host, where every file's hash is checked before the run is installed, and the board stage there. The servers never connect to each other. A real candidate ran through it on 2026-10-17: the base hardware linked on the build worker in 105 minutes (ap_clk WNS +0.138 ns), loaded on the card, conformance 5 of 5, ArchBench tiny 27 of 27 with every point's cycles equal to the same design built with 2023.2 on the card host. (Both board stages compiled with the card host's installed `tnca`, an older tree, not the checkout's; found and fixed on 2026-10-18, `969201b`, §19.)
 
+### 12.5a Early-exit resume for a plain run (2026-11-07)
+
+A plain run (no `islands`) whose task has `"resume": {"max_idle_turns": 3, "max_restarts": 2}` is kept going
+the way an island is (`islands.Turns` without an archive): when the CLI stops before the time is up, the same
+session is resumed with "continue"; a CLI whose resume never works falls back to new sessions (with the task
+again and a NOTES.md hand-over); `max_idle_turns` turns without a tool call in a row end the run; a crash is
+restarted at most `max_restarts` times; a throttled turn waits uncounted. The prompt then says to keep
+improving until the time runs out (the working directory then is the submission) instead of "when you are
+done, stop". `agent_result` records every turn, the stop reason, idle and restart counts and `resume_mode`.
+Without the block a plain run is as before.
+
 ### 12.6 Islands: persistent agents, an archive, MAP-Elites, migration (first version, 2026-11-07)
 
 `islands.py`, decided in the population-search report (section 8, D1-D8). A task with an `islands` block runs

@@ -188,5 +188,9 @@
       "certify_after_run": true,
       "base_image_sha256": "7aa3e8500b6c7fbaa3186bdf3205089c69cfc352d08666233750f320d9b4d361"
     }
+  },
+  "resume": {
+    "max_idle_turns": 3,
+    "max_restarts": 2
   }
 }

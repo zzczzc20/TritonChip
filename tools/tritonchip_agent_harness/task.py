@@ -53,6 +53,7 @@ class Task:
     sha256: str
     skills: tuple = ()
     islands: Optional[dict] = None
+    resume: Optional[dict] = None
 
 
 def load_task(path: Path) -> Task:
@@ -62,7 +63,7 @@ def load_task(path: Path) -> Task:
     raw = path.read_bytes()
     v = json.loads(raw)
     required = {"schema", "task_id", "kind", "base_commit", "design", "hide", "instruction", "budget", "evaluation"}
-    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services", "skills", "islands"}
+    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services", "skills", "islands", "resume"}
     missing = required - set(v)
     if missing or unknown:
         raise TaskError(f"{path}: missing {sorted(missing)}, unknown {sorted(unknown)}")
@@ -102,12 +103,13 @@ def load_task(path: Path) -> Task:
     if slow is not None:
         _check_slow(path, slow, ev)
     islands = _check_islands(path, v.get("islands"), services)
+    resume = _check_resume(path, v.get("resume"))
     ref = path.parent / v["reference"] if v.get("reference") else None
     return Task(task_id=v["task_id"], kind=v["kind"], base_commit=v["base_commit"], design=tuple(v["design"]),
                 evaluator_owned=tuple(v.get("evaluator_owned", ())), hide=tuple(v["hide"]), instruction=(path.parent / v["instruction"]).read_text(encoding="utf-8"),
                 reference=ref, wall_seconds=int(v["budget"]["wall_seconds"]), evaluation=dict(ev),
                 services=services,
-                path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest(), skills=tuple(skills), islands=islands)
+                path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest(), skills=tuple(skills), islands=islands, resume=resume)
 
 
 # The descriptors an island grid may use (islands.py); the first version has the change's layer only.
@@ -155,6 +157,20 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
             "migration_rate": float(rate), "features": list(features),
             "max_idle_turns": int(value.get("max_idle_turns", 3)), "max_restarts": int(value.get("max_restarts", 2)),
             "target": target}
+
+
+def _check_resume(path: Path, value) -> Optional[dict]:
+    """`resume` (a plain run's early-exit resume, 2026-11-07): when the agent's CLI stops before the time is up,
+    the harness continues it, as an island's controller does (islands.Turns); an islands task has its own."""
+    if value is None:
+        return None
+    if not isinstance(value, dict) or set(value) - {"max_idle_turns", "max_restarts"}:
+        raise TaskError(f"{path}: resume may have max_idle_turns and max_restarts")
+    for key, lo, default in (("max_idle_turns", 1, 3), ("max_restarts", 0, 2)):
+        x = value.get(key, default)
+        if not isinstance(x, int) or isinstance(x, bool) or x < lo:
+            raise TaskError(f"{path}: resume.{key} must be an integer >= {lo}")
+    return {"max_idle_turns": int(value.get("max_idle_turns", 3)), "max_restarts": int(value.get("max_restarts", 2))}
 
 
 _CHECK_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
@@ -206,7 +222,8 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
            "The network is open. Every connection is logged.")
     design = ", ".join(f"`{d}`" for d in task.design)
     skill_text = catalog_.prompt_lines(selected)
-    services = _services_text(task.services, islands=island is not None and bool(task.islands))
+    services = _services_text(task.services, islands=island is not None and bool(task.islands),
+                              resumed=bool(task.resume))
     return instruction.rstrip() + services + f"""
 
 ## The rules of this run
@@ -222,6 +239,11 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
 
 
 def _ending(task: Task, island: Optional[int]) -> str:
+    if (island is None or not task.islands) and task.resume:
+        return (f"- You have {task.wall_seconds // 60} minutes. Keep improving until the time runs out: your working "
+                f"directory as it is then is your submission. If you stop earlier, you are asked to continue; a "
+                f"turn that calls no tool counts as idle, and {task.resume['max_idle_turns']} idle turns in a row "
+                f"end the run with your working directory as it is.\n")
     if island is None or not task.islands:
         return (f"- You have {task.wall_seconds // 60} minutes. When you are done, stop: your working directory as "
                 f"you leave\n  it is your submission.\n"
@@ -249,7 +271,7 @@ def _ending(task: Task, island: Optional[int]) -> str:
             f"{cfg['max_idle_turns']} idle turns in a row end your island.\n")
 
 
-def _services_text(cfg: dict, islands: bool = False) -> str:
+def _services_text(cfg: dict, islands: bool = False, resumed: bool = False) -> str:
     """How the agent may ask the evaluator for a measurement, and how much it may ask."""
     if not cfg:
         return ""
@@ -260,6 +282,8 @@ def _services_text(cfg: dict, islands: bool = False) -> str:
              "to use it is up to you. Requests run in the background and your time keeps running while they do. " +
              ("When you stop you are asked to continue, and your requests keep running; the budgets below are "
               "this island's unless they say they are shared." if islands else
+              "When you stop you are asked to continue, and your requests keep running until the time runs out "
+              "(a board request still running then runs to its end, unseen)." if resumed else
               "A request still running when you stop is cancelled, and its result is lost (a board request "
               "excepted, below)."), ""]
     if score:

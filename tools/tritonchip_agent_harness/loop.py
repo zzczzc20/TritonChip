@@ -80,9 +80,19 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
         if model:
             account = dataclasses.replace(account, models={**account.models, "main": model})
         broker = Broker(site, repo, task, workspace, run_dir) if task.services else None
+        # The task's `resume`: when the CLI stops early, it is continued (islands.Turns, without an archive).
+        turns = None
+        if task.resume:
+            from .islands import Turns
+            turns = Turns(None, task, broker, None, prompt, cfg=task.resume)
         record["agent_result"] = runner.run_agent(site, account, prompt, mode, run_dir, workspace,
                                                   timeout=float(task.wall_seconds), services=broker,
-                                                  skills=names)
+                                                  skills=names, turns=turns)
+        if turns is not None:
+            record["agent_result"].update(stop_reason=turns.stop_reason or record["agent_result"].get("stop_reason"),
+                                          idle=turns.idle, restarts=turns.restarts, resume_mode=turns.mode,
+                                          throttle_waits=turns.throttle_waits,
+                                          throttle_seconds=round(turns.throttle_seconds, 1))
         if broker is not None and broker.wait_outlived():
             # A slow request the agent left running ran to its end (report section 8.9, B10): its record,
             # unseen by the agent, joins the run's, and its image may serve the certification below.

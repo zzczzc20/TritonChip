@@ -140,5 +140,27 @@ class Islands(unittest.TestCase):
         self.assertEqual(d.stop_reason, "commits-exhausted")
 
 
+    def test_a_plain_run_with_resume_continues_until_idle(self):
+        import dataclasses
+        plain = dataclasses.replace(task(1), islands=None, resume={"max_idle_turns": 2, "max_restarts": 1})
+        t = islands.Turns(None, plain, None, None, "PROMPT", cfg=plain.resume)
+        nxt = t({"exit": 0, "tool_calls": 5, "session": "s"}, 900)
+        self.assertTrue(nxt.startswith("Continue improving.") and "submission" in nxt)
+        self.assertIsNotNone(t({"exit": 0, "tool_calls": 0, "session": "s"}, 900))
+        self.assertIsNone(t({"exit": 0, "tool_calls": 0, "session": "s"}, 900))
+        self.assertEqual(t.stop_reason, "idle")
+        self.assertIsNone(islands.Turns(None, plain, None, None, "P", cfg=plain.resume)({"stop_reason": "timeout"}, 10))
+
+    def test_the_resume_option_changes_the_plain_prompt(self):
+        import dataclasses
+        from tritonchip_agent_harness.task import render
+        plain = dataclasses.replace(task(1), islands=None, services={})
+        self.assertIn("When you are done, stop", render(plain, "offline"))
+        resumed = dataclasses.replace(plain, resume={"max_idle_turns": 3, "max_restarts": 2})
+        text = render(resumed, "offline")
+        self.assertIn("Keep improving until the time runs out", text)
+        self.assertNotIn("When you are done, stop", text)
+
+
 if __name__ == "__main__":
     unittest.main()

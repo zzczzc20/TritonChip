@@ -44,6 +44,34 @@ board stages are refused; `submit --skip-board` still builds normally. The
 queue never programs or resets the card. See the
 [performance harness guide](../performance_harness/README.md).
 
+### A card session for an agent's candidate
+
+`python -m tritonchip_fpga_harness.board_session --xclbin X --sha256 S --bdf
+0000:04:00.1 --out DIR [--device DIR/device.json] [--base-xclbin BASE]` runs on
+the card host from the platform's checkout and no candidate code with it: it
+checks the image (sha256, UUID, kernel clock, and with `--base-xclbin` its
+static HBM map against the base image's; CDC and core placement are recorded
+`not-checked`), waits for 15 minutes of continuous idle, takes the shared
+lease, programs only when the loaded UUID differs (`program.sh --check`, then
+`--go`, judged by the UUID and the clock counter), and starts `python -m
+tnca.backends.board_relay` on `DIR/relay.sock`. The relay holds the card and
+executes only link-level operations (register reads and writes below 0x200,
+the HBM buffer) for clients that open the `fpga-u280-multicore-relay` backend
+with `address=` the forwarded socket. It files each connection's launch
+observations under the label the harness wrote to `DIR/label` before the
+connection (never the client's), in `DIR/observe/<label>.log`, and clears the
+HBM buffer (device caches handed back, then zeros) whenever the label changes.
+`DIR/ready.json` gives a client the socket, the clock evidence (which
+`tnca.operating_clock` qualifies as counter-only) and the exact
+`backend_args` from the device description; the relay ends when `DIR/stop`
+appears, after `--relay-idle-seconds` without a connection, or at
+`--deadline-seconds`; then the lease is released and `DIR/session.json`
+records the status (`ok`, `refused-admission`, `admission-error`,
+`busy-timeout`, `program-failed`, `relay-failed`, `device-lost`, `timeout`,
+`killed`), its `cause` (`image`, charged to the candidate, or
+`infrastructure`, never), the reason as `detail`, timings and probes. The
+image stays loaded. Both files' docstrings carry the details.
+
 ## 1. At a glance
 
 ```text
@@ -270,6 +298,26 @@ not accepted.
 
 A missed timing is `TIMING_FAIL` even though `v++` exits non-zero for it;
 `BUILD_FAIL` is a link that never got as far as a routed report.
+
+**A target's timing exception.** A target may declare
+`"timing_exempt_clocks": ["hbm_aclk"]` (`u280-multicore-r41` does, by the
+user's decision of 2026-11-07: only the HBM system clock may miss timing, the
+kernel clock must close). `timing_clean` is then computed from the routed
+summary's Intra Clock, Inter Clock and Other Path Groups tables instead of the
+design row: every row whose destination clock is not exempt must have no
+negative WNS, TNS, WHS, THS, WPWS or TPWS and no failing endpoint; rows into
+an exempt clock are recorded with their figures, not judged; and the rows
+must account for the design row's worst slacks and failing endpoints, or the
+build fails. `no_auto_frequency_scaling` accepts a rule other than the
+allowed ones only on a line where v++ says it moved an exempt clock (R41:
+`AUTO-FREQ-SCALING-07`, hbm_aclk 450 to 433.4 MHz); `expected_clock` still
+reads the kernel clock back at the target's MHz. link.sh's own
+`LINK_FAILED freq-moved` (exit 3) is then not a build failure: the check
+`link_ok_marker` says it was accepted, and the link stage carries
+`accepted_exit`. The record names the exception and the exempt clocks' rows
+under `artifact_validation.timing.exception`, and `result.json` repeats it as
+`timing_exception`. A target without the key keeps the design-wide rule; the
+key may not name the kernel clock.
 
 ### 4.2 Where the numbers are
 
@@ -642,7 +690,7 @@ harness or manifest error.
 | `validate` | judges an existing build directory | `--target`, `--build-dir`, `--historical`, `--output` |
 | `export <run>` | writes the evidence packet; `--light` leaves out v++'s working tree | `--state-dir`, `--output`, `--light` |
 | `import` | installs a run built on another host from its light packet, every file's hash checked (§11.2) | `--state-dir`, `--from-tar FILE\|-` |
-| `pipeline <manifest>` | builds on one server of a hosts file and measures on another (§11.2) | `--hosts`, `--build-host`, `--board-host`, `--timeout`, `--poll`, `--skip-board`, `--build-run`, `--no-sync`, `--adapter mock`, `--output` |
+| `pipeline <manifest>` | builds on one server of a hosts file and measures on another (§11.2) | `--hosts`, `--build-host`, `--board-host`, `--timeout`, `--poll`, `--skip-board`, `--build-run`, `--measure-run`, `--expect-xclbin-sha256`, `--no-sync`, `--adapter mock`, `--output` |
 | `sync <host>` | puts a clean checkout of a commit on a server, from a git bundle | `--hosts`, `--commit` |
 | `dispatch <host> <manifest>` | sends a manifest to a worker over SSH (§11.1) | `--remote-repo`, `--state-dir`, `--timeout`, `--ssh-timeout`, `--skip-board`, `--output` |
 | `worker --stdin` | the remote end of `dispatch` and `pipeline`: `doctor`, `submit`, `status`, `export`, `measure` | |
@@ -812,6 +860,20 @@ running from an earlier controller is attached to rather than started again.
 `--skip-board` stops after the build; `--no-sync` uses the checkouts as they
 are; `--adapter mock` plays the build (and its board stage measures a
 placeholder image), to exercise the servers without Vivado.
+
+`pipeline --measure-run RUN_ID` builds nothing: it measures the image of a
+run the card server already holds (it was measured there before), built from
+another commit, with the manifest's commit checked out on the card server
+driving the card -- its runtime, compiler and ArchBench. It is how a change
+to software alone is measured on the machine it shares with its base. No
+build server is named or touched (`--build-host` is not needed); the card
+server measures with `--allow-source-mismatch`, which the run's result
+records (`software.relation`); the manifest must name that run's candidate,
+target and mode, and is sent without its source commit; `--expect-xclbin-sha256`
+fails the pipeline if the image measured hashes otherwise; and the
+measurement must have been driven by this commit's checkout. A measurement of
+that run already in progress is never attached to: it is another request's,
+and the pipeline stops instead.
 
 **How long the controller waits.** `--timeout` is each remote command's limit
 on the server (package, link, load, conformance; ArchBench has its own

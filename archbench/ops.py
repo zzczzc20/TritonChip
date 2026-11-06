@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 from .registry import Demand, Point, TORCH_DTYPE, register
 
-B = {'fp32': 4, 'fp16': 2, 'bf16': 2}
+B = {'fp32': 4, 'fp16': 2, 'bf16': 2, 'e4m3': 1, 'e5m2': 1}
 I64 = 8
 
 
@@ -28,10 +28,13 @@ def _fmt(**kw):
     return '-'.join(f'{k}{v}' for k, v in kw.items())
 
 
-def op(family, tier, dtype, params, make, demand, *, track=('llm',), tol=None, note=''):
-    pid = f'op.{family}/{tier}/{dtype}-{_fmt(**params)}'
+def op(family, tier, dtype, params, make, demand, *, track=('llm',), tol=None, note='', out=None):
+    # `out`: the result's dtype where it is not `dtype` (an FP8 GEMM writes
+    # bf16); named in the id after the operands, as membound names a cast.
+    head = f'{dtype}-to-{out}' if out else dtype
+    pid = f'op.{family}/{tier}/{head}-{_fmt(**params)}'
     return register(Point(pid, 'op', family, tier, dtype, dict(params), make, demand,
-                          track=tuple(track), tol=tol, note=note))
+                          track=tuple(track), tol=tol, note=note, out_dtype=out))
 
 
 # ---------------------------------------------------------------------------
@@ -205,6 +208,91 @@ for tier, (bt, m, k, n) in BMMS.items():
 
 
 # ---------------------------------------------------------------------------
+# FP8 GEMMs: the generic patterns quantised inference is written in, as
+# tools/performance_harness/fp8_cases.py exercises them (its scaled_mm and
+# linear groups), registered as ordinary points. E4M3 operands, tensorwise
+# fp32 scales, bf16 results; judged at the result's tolerance (registry
+# Point.tolerance), not bit for bit. The CPU reference is torch's own
+# _scaled_mm / matmul (archbench/platforms/common.py keeps FP8 operands FP8).
+# ---------------------------------------------------------------------------
+
+def randfp8(g, shape, dtype='e4m3'):
+    """FP8 values spread over several binades, as fp8_cases.fp8_operands
+    draws them, so partial sums round instead of cancelling exactly."""
+    mag = torch.pow(2.0, torch.randint(-3, 4, shape, generator=g).float())
+    return (torch.randn(shape, generator=g) * mag).to(getattr(torch, TORCH_DTYPE[dtype]))
+
+
+class ScaledMM(torch.nn.Module):
+    """torch._scaled_mm with E4M3 operands, tensorwise scales, bf16 out.
+    The second operand arrives (n, k) row-major and is handed over
+    transposed: the column-major layout _scaled_mm requires of it."""
+    def forward(self, a, bt, sa, sb):
+        return torch._scaled_mm(a, bt.t(), scale_a=sa, scale_b=sb, out_dtype=torch.bfloat16)
+
+
+class W8A8Linear(torch.nn.Module):
+    """Static W8A8 (fp8_cases.w8a8_linear): the activation quantised with a
+    static scale, an FP8 GEMM with the input and weight scales and the
+    bias, bf16 out. The bias is cast to the output dtype, which the
+    bf16 bias of the point already is; the fp32 reference path needs it."""
+    def forward(self, x, w, ws, xs, bias):
+        q = (x / xs).clamp(-448.0, 448.0).to(torch.float8_e4m3fn)
+        return torch._scaled_mm(q, w.t(), scale_a=xs, scale_b=ws, bias=bias.to(torch.bfloat16),
+                                out_dtype=torch.bfloat16)
+
+
+class WeightFP8Linear(torch.nn.Module):
+    """Weight-only FP8 (fp8_cases.weight_only_linear): the E4M3 weight upcast
+    to the activation's dtype and scaled, then a bf16 GEMM."""
+    def forward(self, x, w, ws, bias):
+        return F.linear(x, w.to(x.dtype) * ws, bias)
+
+
+FP8_SCALES = (0.0371, 1.83)      # (scale_a, scale_b) of fp8_cases' tensorwise cases
+W8A8_SCALES = (0.0213, 0.0157)   # (weight_scale, input_scale) of fp8_cases' linear group
+SCALAR = 4                       # one fp32 tensorwise scale
+
+FP8_GEMM = dict(tiny=(16, 64, 64))    # the tiny linear's shape; K a whole FP8 K64 fragment
+for tier, (m, k, n) in FP8_GEMM.items():
+    def mk_scaled(seed, m=m, k=k, n=n):
+        g = gen(seed)
+        a, bt = randfp8(g, (m, k)), randfp8(g, (n, k))
+        return ScaledMM(), (a, bt, torch.tensor(FP8_SCALES[0]), torch.tensor(FP8_SCALES[1]))
+    op('scaled_mm', tier, 'e4m3', dict(m=m, k=k, n=n), mk_scaled,
+       Demand(macs=m * k * n, fp_ops=m * n, read_bytes=(m * k + n * k) * B['e4m3'] + 2 * SCALAR,
+              write_bytes=m * n * B['bf16']),
+       out='bf16', note='E4M3 x E4M3, tensorwise scales: the epilogue scales each output once')
+
+    def mk_w8a8(seed, m=m, k=k, n=n):
+        g = gen(seed)
+        x = randn(g, (m, k), 'bf16', 2.0)
+        w = (torch.randn(n, k, generator=g)
+             * torch.pow(2.0, torch.randint(-2, 3, (n, k), generator=g).float())).to(torch.float8_e4m3fn)
+        bias = randn(g, (n,), 'bf16')
+        return W8A8Linear(), (x, w, torch.tensor(W8A8_SCALES[0]), torch.tensor(W8A8_SCALES[1]), bias)
+    op('w8a8_linear', tier, 'e4m3', dict(m=m, k=k, n=n), mk_w8a8,
+       Demand(macs=m * k * n, fp_ops=2 * m * k + 2 * m * n,
+              read_bytes=m * k * B['bf16'] + n * k * B['e4m3'] + 2 * SCALAR + n * B['bf16'],
+              write_bytes=m * n * B['bf16']),
+       out='bf16', note='static W8A8: a divide and a clamp per activation element, then the '
+                        'E4M3 GEMM, a scale and a bias add per output')
+
+    def mk_wfp8(seed, m=m, k=k, n=n):
+        g = gen(seed)
+        x = randn(g, (m, k), 'bf16', 2.0)
+        w = (torch.randn(n, k, generator=g)
+             * torch.pow(2.0, torch.randint(-2, 3, (n, k), generator=g).float())).to(torch.float8_e4m3fn)
+        bias = randn(g, (n,), 'bf16')
+        return WeightFP8Linear(), (x, w, torch.tensor(W8A8_SCALES[0]), bias)
+    op('wfp8_linear', tier, 'bf16', dict(m=m, k=k, n=n, w='e4m3'), mk_wfp8,
+       Demand(macs=m * k * n, fp_ops=n * k + m * n,
+              read_bytes=m * k * B['bf16'] + n * k * B['e4m3'] + SCALAR + n * B['bf16'],
+              write_bytes=m * n * B['bf16']),
+       note='weight-only FP8: the weight is read as E4M3 (1 byte), scaled once, and the GEMM is bf16')
+
+
+# ---------------------------------------------------------------------------
 # Attention
 # ---------------------------------------------------------------------------
 
@@ -229,7 +317,11 @@ for tier, (b, h, s, d) in PREFILL.items():
        note='causal: only the s(s+1)/2 unmasked scores are work')
 
 DECODE = dict(tiny=(1, 2, 16, 16), small=(1, 4, 256, 32), medium=(1, 8, 256, 32), large=(1, 32, 2048, 64))
-for tier, (b, h, l, d) in DECODE.items():
+# A second small shape with a 64-entry cache: the same one-query kernel as the
+# l256 point at about a quarter of its cycles (262k on the R41 board), for a
+# scoring set that is run many times; the l256 point stays for the final set.
+DECODE_SHORT = [('small', (1, 4, 64, 32))]
+for tier, (b, h, l, d) in list(DECODE.items()) + DECODE_SHORT:
     op('attention_decode', tier, 'fp16', dict(b=b, h=h, l=l, d=d),
        lambda seed, b=b, h=h, l=l, d=d: (DecodeAttention(), (
            randn(gen(seed), (b, h, 1, d), 'fp16'),

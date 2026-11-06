@@ -10,7 +10,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE.parent))
 
-from tritonchip_agent_harness.adapters import parse, tokens  # noqa: E402
+from tritonchip_agent_harness.adapters import parse, throttle, tokens  # noqa: E402
 from tritonchip_agent_harness.siteconfig import Account  # noqa: E402
 
 
@@ -137,6 +137,44 @@ class Opencode(unittest.TestCase):
                      "part": {"id": "prt_0", "type": "step-start"}})
         t = parse(account("opencode"), out, Path(tempfile.mkdtemp()))["tokens"]
         self.assertEqual(set(t.values()), {None})
+
+
+
+class Throttle(unittest.TestCase):
+    """A run the provider refused (rate, load, quota) is told apart from one the agent ended."""
+
+    def test_claude_codes_failed_result_names_the_refusal(self):
+        final = {"type": "result", "subtype": "error_during_execution", "is_error": True,
+                 "result": 'API Error: 429 {"type":"error","error":{"type":"rate_limit_error"}}'}
+        t = throttle(account("claude-code"), lines({"type": "system", "subtype": "init"}, final), "")
+        self.assertEqual(t["kind"], "rate-limit")
+        self.assertIn("429", t["evidence"])
+
+    def test_overloaded_and_usage_limit_are_their_own_kinds(self):
+        over = {"type": "result", "subtype": "success", "is_error": True,
+                "result": 'API Error: 529 {"type":"error","error":{"type":"overloaded_error"}}'}
+        self.assertEqual(throttle(account("claude-code"), lines(over), "")["kind"], "overloaded")
+        self.assertEqual(throttle(account("codex"), lines({"type": "turn.failed", "error": {
+            "message": "You've hit your usage limit. Try again later."}}), "")["kind"], "usage-limit")
+
+    def test_glms_codes_through_opencode(self):
+        err = {"type": "error", "error": {"name": "APIError", "data": {
+            "message": '{"error":{"code":"1302","message":"您的账户已达到速率限制"}}'}}}
+        self.assertEqual(throttle(account("opencode"), lines(err), "")["kind"], "rate-limit")
+        self.assertEqual(throttle(account("opencode"), "", 'error: {"code": 1113, "message": "余额不足"}')["kind"],
+                         "usage-limit")
+
+    def test_the_agents_own_words_are_not_a_refusal(self):
+        # The agent discussing rate limits, or a tool's output mentioning 429, is not throttling.
+        said = {"type": "assistant", "message": {"content": [{"type": "text", "text": "Rate limit? 429 cycles."}]}}
+        tool = {"type": "item.completed", "item": {"type": "command_execution", "aggregated_output": "HTTP 429"}}
+        ok = dict(CLAUDE_RESULT, result="I avoided the rate limit; 429 points pass.")
+        self.assertIsNone(throttle(account("claude-code"), lines(said, ok), ""))
+        self.assertIsNone(throttle(account("codex"), lines(tool, {"type": "turn.completed", "usage": {}}), ""))
+
+    def test_a_cli_that_gave_up_in_plain_text(self):
+        self.assertEqual(throttle(account("claude-code"), "Claude AI usage limit reached|1767225600\n", "")["kind"],
+                         "usage-limit")
 
 
 if __name__ == "__main__":

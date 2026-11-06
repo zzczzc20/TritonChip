@@ -20,6 +20,7 @@ This document describes the contents and how to run them.
 | Group | Families | Notes |
 |---|---|---|
 | LLM operators | `add`, `silu`, `gelu_tanh`, `swiglu`, `softmax`, `rmsnorm`, `layernorm`, `argmax`, `matmul`, `linear`, `gemv`, `bmm`, `attention_prefill`, `attention_decode`, `rope`, `embedding`, `copy` | FP16 unless noted; `matmul` also in FP32; `copy` in HBM tier |
+| FP8 GEMMs | `scaled_mm`, `w8a8_linear`, `wfp8_linear` | The `scaled_mm` and `linear` groups of `tools/performance_harness/fp8_cases.py` as registered points: `torch._scaled_mm` with E4M3 operands and tensorwise scales, a static W8A8 linear, a weight-only FP8 linear (bf16 GEMM). bf16 results, judged at the result's tolerance like any other point (`registry.Point.tolerance`), never bit for bit; tiny tier. `python -m archbench.fp8_check` runs them eagerly on a CPU with torch |
 | General operators | `transpose`, `cumsum`, `conv2d`; FP32 `add`, `softmax` (row length not a multiple of 16), `matmul` | Patterns outside decoder inference |
 | LLM models | `llama_prefill`, `llama_decode` | LLaMA-2/3 architecture: RMSNorm, grouped-query attention with RoPE, SwiGLU MLP. Prefill returns the logits of the last position; decode generates one token against a *P*-entry KV cache and returns the new K/V entries |
 | Other models | `gpt2_block`, `mlp`, `resnet_block` | GPT-2 block (LayerNorm, biased QKV, GELU); two-layer MLP; ResNet basic block (general track) |

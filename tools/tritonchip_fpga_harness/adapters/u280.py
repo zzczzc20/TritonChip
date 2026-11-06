@@ -47,6 +47,7 @@ class U280FlowAdapter:
                 xo_name=str(expected_artifacts[0]),
                 xclbin_name=str(expected_artifacts[1]),
                 allowed_auto_frequency_rules=tuple(data.get("allowed_auto_frequency_rules", [])),
+                timing_exempt_clocks=tuple(data.get("timing_exempt_clocks", [])),
                 accepted_vitis_versions=tuple(str(v) for v in data.get("vitis_versions", [])),
                 environment=environment,
                 package_script=root / str(data["package_script"]),
@@ -67,15 +68,21 @@ class U280FlowAdapter:
         impl = self._impl(root, profile, extra_env)
         result = impl.run(build, mode="full", timeout_s=timeout_s)
         stages: list[dict[str, Any]] = []
+        accepted = result.artifacts.link_exit_accepted if result.artifacts is not None else None
         for command in result.commands:
             name = "package" if command.argv and command.argv[0] == impl.config.vivado else "link"
-            stages.append({
+            stage = {
                 "name": name,
                 "returncode": command.returncode,
                 "log": str(Path(command.log_path).relative_to(run_dir)),
                 "timed_out": command.timed_out,
                 "resource": command.resource,
-            })
+            }
+            if name == "link" and accepted and command.returncode != 0 and not command.timed_out:
+                # link.sh's `freq-moved` verdict under the target's timing
+                # exception: recorded with its exit status, not a failure.
+                stage["accepted_exit"] = dict(accepted, returncode=command.returncode)
+            stages.append(stage)
         from ..schema import dump_json
         dump_json(run_dir / "preflight.json", result.preflight.as_dict())
         if result.artifacts is not None:

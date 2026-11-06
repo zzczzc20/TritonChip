@@ -236,6 +236,126 @@ class BaselineKey(unittest.TestCase):
         self.assertEqual(sorted(p.name for p in (site.state_dir / "baselines").glob("*.json")),
                          sorted(f"{evaluator.baseline_key(t)}.json" for t in (one, other)))
 
+    def test_two_callers_at_once_measure_the_base_once(self):
+        # Two runs of one task start together: one measures, the other waits for
+        # it and reads the kept result. Never two measurements in the same
+        # directory under the same container name.
+        import threading
+        import time as _time
+        repo = device_repo()
+        task = device_task(repo, validation=["p"], platform={"commit": "c" * 40, "paths": []})
+        active, peak, measured = [0], [0], []
+        guard = threading.Lock()
+
+        def trees(repo, task, candidate, work):
+            for tree in ("host-tree", "device-tree"):
+                (work / tree).mkdir(parents=True)
+            return work / "host-tree", work / "device-tree"
+
+        def measure(*_):
+            with guard:
+                active[0] += 1
+                peak[0] = max(peak[0], active[0])
+                measured.append(1)
+            _time.sleep(0.3)
+            with guard:
+                active[0] -= 1
+            return {"exit": 0, "missing": [], "points": {"p": {"status": "pass", "cycles": 1000}}}
+
+        site = types.SimpleNamespace(state_dir=Path(tempfile.mkdtemp()))
+        got = []
+        with mock.patch.object(evaluator, "_trees", side_effect=trees), \
+                mock.patch.object(evaluator, "_measure_trees", side_effect=measure):
+            threads = [threading.Thread(target=lambda: got.append(evaluator.baseline(site, repo, task)))
+                       for _ in range(2)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+        self.assertEqual((len(measured), peak[0]), (1, 1))
+        self.assertEqual([g["points"]["p"]["cycles"] for g in got], [1000, 1000])
+
+
+class FailureFeedback(unittest.TestCase):
+    """What a failed scoring request may say (README section 6.4): failed points counted by kind, and
+    the logs of what failed before any point ran. Never a point's name, never a point's own log."""
+
+    def setUp(self):
+        self.repo = device_repo()
+        self.task = device_task(self.repo, validation=["op.secret_mm", "op.secret_add"], final=["op.held_out"],
+                                platform={"commit": "c" * 40, "paths": []})
+
+    def test_failed_points_are_counted_by_kind_only(self):
+        rows = [{"point": "a", "failure": None}, {"point": "b", "failure": "numeric-error"},
+                {"point": "c", "failure": "numeric-error"}, {"point": "d", "failure": "record-disagrees"},
+                {"point": "e", "failure": "not-drained"}, {"point": "f", "failure": "timeout"}]
+        self.assertEqual(evaluator.failure_counts({"points": rows}),
+                         {"measurement-rejected": 2, "numeric-error": 2, "timeout": 1})
+
+    def test_a_status_the_candidate_could_write_is_not_a_channel(self):
+        # The candidate's compiler runs in the process that writes the record: a status
+        # spelling a shape comes back as "other".
+        rows = [{"point": "a", "failure": "M16K32N16"}, {"point": "b", "failure": "missing"}]
+        self.assertEqual(evaluator.failure_counts({"points": rows}), {"missing": 1, "other": 1})
+
+    def test_logs_lose_every_hidden_points_name(self):
+        lines = ["", "x" * 400, "loading op.secret_mm and op.held_out", "done"]
+        self.assertEqual(evaluator.scrubbed(lines, self.task),
+                         ["x" * 300, "loading <point> and <point>", "done"])
+
+    def test_a_multicore_device_that_did_not_elaborate_says_why(self):
+        out = Path(tempfile.mkdtemp())
+        (out / "dev0.log").write_text("the device did not build: [DEPENDENCY_FAILED] multicore MMIO harness did "
+                                      "not elaborate\n  diagnostic: rtl/core/tnca_alu.v:42: syntax error\n")
+        (out / "dev1.log").write_text("the device did not build: same\n")
+        got = {"points": {"op.secret_mm": {"status": "runtime-fault"}}, "missing": ["op.secret_add"]}
+        errors = evaluator.point_independent_errors(out, self.task, got)
+        self.assertEqual(list(errors), ["device_build_errors"])
+        self.assertIn("rtl/core/tnca_alu.v:42: syntax error", errors["device_build_errors"][-1])
+
+    def test_a_device_that_served_points_returns_nothing(self):
+        out = Path(tempfile.mkdtemp())
+        (out / "dev0.log").write_text("serving op.secret_mm 3 cores\n")
+        (out / "host").mkdir()
+        (out / "host" / "stage.log").write_text("warning: something\n")
+        (out / "host" / "archbench-0.log").write_text("op.secret_mm: shape 16x32 unsupported\n")
+        got = {"points": {"op.secret_mm": {"status": "unsupported"}}, "missing": []}
+        self.assertEqual(evaluator.point_independent_errors(out, self.task, got), {})
+
+    def test_staging_that_stopped_the_host_says_why(self):
+        out = Path(tempfile.mkdtemp())
+        (out / "host").mkdir()
+        (out / "host" / "stage.log").write_text("make: *** [python/tnca/data/.staged] Error 1\n"
+                                                "ImportError: cannot import name 'lower' (op.held_out)\n")
+        got = {"points": {}, "missing": ["op.secret_mm", "op.secret_add"]}
+        errors = evaluator.point_independent_errors(out, self.task, got)
+        self.assertEqual(errors["stage_errors"][-1], "ImportError: cannot import name 'lower' (<point>)")
+
+    def test_the_scoring_reply_carries_counts_and_early_errors(self):
+        task = self.task
+
+        def trees(repo, task, candidate, work):
+            for tree in ("host-tree", "device-tree"):
+                (work / tree).mkdir(parents=True, exist_ok=True)
+            return work / "host-tree", work / "device-tree"
+
+        def measure(site, host, dev, vtask, out, *_):
+            out.mkdir(parents=True)
+            (out / "dev0.log").write_text("the device did not build: elaboration failed\n")
+            return {"exit": 1, "points": {"op.secret_mm": {"status": "runtime-fault"}},
+                    "missing": ["op.secret_add"], "observed": True}
+
+        base = {"points": {p: {"status": "pass", "cycles": 100} for p in ("op.secret_mm", "op.secret_add")}}
+        with mock.patch.object(evaluator, "baseline", return_value=base), \
+                mock.patch.object(evaluator, "_trees", side_effect=trees), \
+                mock.patch.object(evaluator, "_measure_trees", side_effect=measure):
+            r = evaluator.measure_validation(types.SimpleNamespace(), self.repo, task, None,
+                                             Path(tempfile.mkdtemp()), "n")
+        self.assertEqual(r["aggregate"]["passed"], 0)
+        self.assertEqual(r["failures"], {"missing": 1, "runtime-fault": 1})
+        self.assertEqual(r["device_build_errors"], ["the device did not build: elaboration failed"])
+        self.assertIsNone(r["stage_errors"])
+
 
 class DeviceCheck(unittest.TestCase):
     def setUp(self):

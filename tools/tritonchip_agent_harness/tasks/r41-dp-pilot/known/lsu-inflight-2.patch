@@ -1,0 +1,13 @@
+diff --git a/spec/r1_profiles.json b/spec/r1_profiles.json
+index 610875ff..d54d48f6 100644
+--- a/spec/r1_profiles.json
++++ b/spec/r1_profiles.json
+@@ -585,7 +585,7 @@
+           "FE_NOBUBBLE": 1,
+           "VRF_PREFETCH": 1,
+           "RCTX_SWITCH": 2,
+-          "LSU_INFLIGHT": 1,
++          "LSU_INFLIGHT": 2,
+           "FPU_OVERLAP": 1,
+           "MTX_ABUF": 1,
+           "FMA_IMPL": 1,

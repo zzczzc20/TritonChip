@@ -16,6 +16,8 @@ Run them all with
 | `one_row.py` | one row against a weight matrix: no reuse of the weights, so the memory port binds, not the MACs |
 | `batched.py` | a batch of independent products: the batch dimension and how launches are formed |
 | `two_launches.py` | two products with a nonlinearity between: several launches in one program, the model tolerance |
+| `long_stream_row.py` | one row against a matrix too large to keep in flight: the stream length, where memory-level parallelism binds (the decode-time projection at a realistic size) |
+| `cached_context.py` | one query against a cached context: the stream is the stored context, the reduction ends in a softmax (the other half of a decode step) |
 
 The same method applies to any class: ask what the class varies in (dtype,
 the leading dimension, a reduction length, a batch, an epilogue, a tail, how

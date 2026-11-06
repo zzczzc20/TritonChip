@@ -132,6 +132,8 @@ a compiler or a machine behave differently are few and general:
 | an epilogue | a bias, an activation, a residual after the main operation: whether it fuses into the kernel or costs a second pass over the output |
 | a tail | a dimension that is not a multiple of the vector length: the masked last block takes a different path, and a change that is right for full blocks can break it |
 | the reduction length | a long K against a short one changes where the time goes between loading operands and accumulating |
+| the stream length | how many bytes one launch streams through the memory path once, against what a core keeps in flight: a short stream hides the memory's round trip, a long one is paced by how many requests stay outstanding against it. One row against a large matrix is the decode-time case; it is where a machine's memory-level parallelism shows, and a change there is invisible on a small matrix |
+| a cached context | one query against a context computed earlier: the stream is the stored context, not the weights, it grows with the context, and the reduction ends in a normalisation. A decode step is made of these as much as of projections |
 | several launches | a real program is a graph, not a kernel; the time between launches, and what each launch's inputs cost to move, only show in a multi-launch case |
 | input values | large values, values near a tie, NaN and infinities where the operator defines them: the protocol compares NaN positions, and a numerically careless change passes random inputs and fails these |
 
@@ -142,9 +144,11 @@ it. Shapes are yours to choose, and an arbitrary choice is a better test than
 a round one. A set of six to ten cases built this way covers a class; a
 single shape covers nothing but itself.
 
-**A worked example** for the matrix-multiply class is in `examples/`: six
-cases, one per dimension, with a note on what each isolates. Copy the
-pattern for any class.
+**A worked example** for the matrix-multiply class is in `examples/`: eight
+cases, one per dimension, with a note on what each isolates; the last two
+are the decode-time shapes (one row against a large matrix, one query
+against a cached context), which a class of model workloads always has and a
+set of small square shapes never covers. Copy the pattern for any class.
 
 ## 5. Measuring
 

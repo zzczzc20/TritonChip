@@ -186,9 +186,13 @@ def cmd_preflight(a):
     env = board_env()
     info = xclbin_info(a.image, env=env)
     hub = Path(a.hf) / 'hub'
-    snapshots = {r: sorted(p.name for p in (hub / f'models--{r.replace("/", "--")}' / 'snapshots').glob('*'))
-                 if (hub / f'models--{r.replace("/", "--")}' / 'snapshots').exists() else []
-                 for r in ('Qwen/Qwen3-VL-2B-Instruct-FP8', 'lovedheart/Qwen3.5-4B-FP8', 'kernels-community/finegrained-fp8')}
+    # Model repos cache under models--<repo>; the Hub kernel (a "kernel" repo type) under kernels--<repo>,
+    # and its offline resolution also needs refs/v<major> there (see KERNEL_NOTE.txt in our HF_HOME).
+    repos = {'Qwen/Qwen3-VL-2B-Instruct-FP8': 'models', 'lovedheart/Qwen3.5-4B-FP8': 'models',
+             'kernels-community/finegrained-fp8': 'kernels'}
+    snapshots = {r: sorted(p.name for p in (hub / f'{kind}--{r.replace("/", "--")}' / 'snapshots').glob('*'))
+                 if (hub / f'{kind}--{r.replace("/", "--")}' / 'snapshots').exists() else []
+                 for r, kind in repos.items()}
     check = subprocess.run([a.python, '-c', 'import torch,triton,transformers,kernels;print(torch.__version__,triton.__version__,'
                             'transformers.__version__,kernels.__version__)'], capture_output=True, text=True)
     result = dict(tree=str(Path(a.tree).resolve()), base_commit=base_commit(a.tree), image=str(Path(a.image).resolve()),

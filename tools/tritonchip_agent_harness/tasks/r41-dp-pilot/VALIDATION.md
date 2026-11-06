@@ -110,3 +110,46 @@ about 36k LUTs the base machine does not have.
 - `flow/fpga/link.sh` refuses any automatic frequency scaling other than
   rule 08 (exit 3, `LINK_FAILED freq-moved`); the base image itself scales
   `hbm_aclk`, so certification needs the declared platform exception (D4).
+
+## The base image (re-linked 2026-11-06)
+
+Linked from the base `b476f3fb` on the author's shared x86 Vivado machine
+(Vitis 2023.2) through the FPGA harness pipeline (run
+`20261106T072410Z-45ff9131`, target `u280-multicore-r41`, image.device
+`u280-3core-r41`, about 7 h): `tnca_u280.xclbin` sha256
+`7aa3e8500b6c7fbaa3186bdf3205089c69cfc352d08666233750f320d9b4d361`, UUID
+`d6bd7770-9a0f-c5ba-77fe-f0ad9cee61e6`, DATA_CLK 100 MHz. The kernel clock
+closes: WNS +0.111 ns, 0 of 1,145,149 endpoints failing, WHS +0.001 ns. The
+platform's `hbm_aclk` auto-scaled 450 to 433 MHz with 22 failing setup
+endpoints (WNS -0.085 ns, TNS -0.856 ns), so `link.sh` reports `LINK_FAILED
+freq-moved` and the harness records TIMING_FAIL: these are the same figures
+as the author's corrected candidate (791b8af2), which the author accepted by
+waiver. The harness's certification needs the declared platform exception
+(D4) to call such an image feasible; the pilot records it as this section.
+
+## Board pilot (2026-11-06, smoke mode; driver `board/board_pilot.py`)
+
+The image was programmed on the shared U280 after 902 s of continuous idle
+(previous card image UUID 0bc441ad-2388-f291-e945-5dc6b994d4a1, a foreign
+300 MHz design, recorded), `program.sh --check` and `--go` both 0, three
+counter samples `[100, 500, 430, 0]`: kernel 100 MHz, HBM counter 430 as in
+the author's capture. The chat tooling's four auto-enabled paths (EOS
+guard, early stop, hybrid prefix checkpoint, static prefix rewind) were
+pinned to 0, the campaign's loop; CPU references regenerated on acf3019
+under the author rule with first-token references.
+
+**Qwen3-VL-2B-FP8, registered prompt `fact` (reduced proof):** pass under
+`author-20261101` (content, first token equal to the CPU's, containment),
+warm repeat pass with bitwise-equal logits, scripted chat 3 of 3 turns
+pass, no CPU numerical fallback, every parameter and buffer on `tnca:0`.
+
+| | this base image | author's campaign |
+|---|---|---|
+| cold prompt to return | 854.7 s | 980.8 s |
+| compile and warm-up | 557.9 s | 571.3 s |
+| decode, 11 steps | 229.5 s (20.9 s per step) | 242.7 s |
+| cold non-special tokens/s | 0.00117 | 0.00102 |
+| warm repeat | 336.6 s, 0.00297 tokens/s | 358.5 s, 0.00279 |
+
+The same loop (12 executed steps, post-EOS work counted) 6 to 13 percent
+faster: ef273883's runtime changes, not a measurement difference.

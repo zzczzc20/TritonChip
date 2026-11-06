@@ -121,13 +121,41 @@ def base_profile(name):
     return name.split('/', 1)[0]
 
 
-def spec_peak(profile='core-sim', *, target=None, overrides=None):
-    """Per-cycle service rates for one single-core profile."""
+# The matrix engine's MACs per cycle per operand format, in multiples of VLEN
+# (copied from the evaluation, tools/r38/archbench/peaks.py). Without the
+# matrix_dp capability every format is 1x; with it each MAC forms a group of
+# products per cycle (m.mma.dp.async, ISA sec 9C.4): FP32 1x, FP16/BF16/FP8
+# pairs 2x, E4M3 x E4M3 4x. 'e4m3' means both operands E4M3.
+MMA_GROUP = {'fp32': 1, 'fp16': 2, 'bf16': 2, 'fp8': 2, 'e5m2': 2, 'e4m3': 4}
+MMA_DP_SOURCES = {
+    'fp_lane': 'rtl/core/tnca_vector_fpu.v (VLEN lanes) + mma_mac',
+    'mma_mac': 'rtl/core/tnca_matrix.v MAC_DP=1: VLEN tnca_mac_lane MACs, each a group of '
+               '1 (FP32), 2 (FP16/BF16/FP8 pairs) or 4 (E4M3 x E4M3) products per cycle '
+               '(m.mma.dp.async, ISA sec 9C.4)',
+}
+
+
+def mma_rate(target, mma_dtype=None):
+    """Matrix-engine MACs per cycle on `target` for one operand format; with no
+    format on a matrix_dp target the generous end (4x), as the evaluation does:
+    a rate too high only loosens a bound, one too low shows as eta > 1."""
+    if mma_dtype is not None and mma_dtype not in MMA_GROUP:
+        raise ValueError(f'no matrix-engine rate for operand format {mma_dtype!r}')
+    vlen = target['vlen']
+    if not target['capabilities'].get('matrix_dp'):
+        return vlen
+    return vlen * (MMA_GROUP[mma_dtype] if mma_dtype else max(MMA_GROUP.values()))
+
+
+def spec_peak(profile='core-sim', *, target=None, overrides=None, mma_dtype=None):
+    """Per-cycle service rates for one single-core profile. `mma_dtype` is the
+    matrix operand format of the case being bounded; it matters only on a
+    profile with the matrix_dp capability (mma_rate)."""
     if profile.endswith('/hbm') and target is None:
         # As the evaluation has it (archbench/bounds.py tnca_peak): HBM changes the
         # backing memory, while this profile still has the same single core and its
         # shared 64-bit memory ingress.
-        peak = spec_peak(base_profile(profile), overrides=overrides)
+        peak = spec_peak(base_profile(profile), overrides=overrides, mma_dtype=mma_dtype)
         peak['profile'] = profile
         return peak
     t = target or target_for(profile)
@@ -135,17 +163,21 @@ def spec_peak(profile='core-sim', *, target=None, overrides=None):
         raise ValueError(f'{profile}: spec_peak v0 covers single-core profiles only')
     vlen = t['vlen']
     has_sfu = bool(t['capabilities'].get('sfu'))
+    mma = mma_rate(t, mma_dtype)
     peak = dict(
-        fp_lane=vlen + vlen,
-        mma_mac=vlen,
+        fp_lane=vlen + mma,
+        mma_mac=mma,
         int_lane=vlen,
         sfu_lane=SFU_SLICES if has_sfu else 0,
         mem_bytes=MEM_DW_BITS // 8,
         issue=t['issue']['width'],
     )
     peak.update(overrides or {})
-    return dict(profile=profile, unit='per-cycle', rates=peak, sources=SOURCES,
-                kind='spec_peak')
+    out = dict(profile=profile, unit='per-cycle', rates=peak, sources=SOURCES,
+               kind='spec_peak')
+    if t['capabilities'].get('matrix_dp'):
+        out.update(mma_dtype=mma_dtype, sources=dict(SOURCES, **MMA_DP_SOURCES))
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -223,9 +255,11 @@ def workload(demand, id='case', operator='case', category='case'):
                     sfu_ops=demand.sfu_ops, read_bytes=demand.read_bytes, write_bytes=demand.write_bytes)
 
 
-def bound(demand, profile, *, scoped=False):
-    """(cycles, binding resource, terms) for a Demand on a profile."""
-    return lower_bound(workload(demand), spec_peak(profile), scoped=scoped)
+def bound(demand, profile, *, scoped=False, mma_dtype=None):
+    """(cycles, binding resource, terms) for a Demand on a profile. `mma_dtype`
+    is the case's matrix operand format (its dtype), as the evaluation passes a
+    point's; it only matters on a profile with the matrix_dp capability."""
+    return lower_bound(workload(demand), spec_peak(profile, mma_dtype=mma_dtype), scoped=scoped)
 
 
 def eta(L, cycles):

@@ -24,7 +24,11 @@ import torch
 
 TOLERANCE = {'fp32': 2e-4, 'fp16': 2e-2, 'bf16': 6e-2}
 MODEL_TOLERANCE = {'fp16': 5e-2}
-TORCH_DTYPE = {'fp32': 'float32', 'fp16': 'float16', 'bf16': 'bfloat16'}
+TORCH_DTYPE = {'fp32': 'float32', 'fp16': 'float16', 'bf16': 'bfloat16',
+               # The two OCP FP8 encodings, as the evaluation's registry names them: GEMM
+               # operand formats only; a case in them computes a bf16 or fp16 result and is
+               # judged at that dtype's tolerance (TOLERANCE has no FP8 entry on purpose).
+               'e4m3': 'float8_e4m3fn', 'e5m2': 'float8_e5m2'}
 _NAME = {torch.float32: 'fp32', torch.float16: 'fp16', torch.bfloat16: 'bf16'}
 
 

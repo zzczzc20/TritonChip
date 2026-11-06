@@ -97,7 +97,9 @@ def measure(module, inputs, *, profile, opt_level=2, tol=None, model=False, dema
     try:
         d = demand or B.demand_of(module, inputs, fp_ops=fp_ops, sfu_ops=sfu_ops)
         rec['demand'] = d.as_dict()
-        L, binding, terms = B.bound(d, profile)
+        # The case's dtype is its matrix operand format for the bound, as the
+        # evaluation passes a point's (an FP8 case on a matrix_dp profile gets the 4x rate).
+        L, binding, terms = B.bound(d, profile, mma_dtype=dtype if dtype in B.MMA_GROUP else None)
         rec['bound'] = dict(cycles=L, binding=binding, terms=terms, unit='cycles',
                             scope='one core of the profile, as the evaluation\'s own bound')
     except Exception as exc:                                 # a bound is advice, not a verdict

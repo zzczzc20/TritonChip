@@ -314,9 +314,44 @@ def cmd_fp8(a):
     return guarded_run(a, cmd, env, a.out, 'fp8-cases', image_uuid=uuid)
 
 
+def cmd_archbench(a):
+    """The task's hidden points on the card, one archbench.run per point: measured-board records
+    (the shell's own cycle count at 100 MHz), the board truth the simulation's cycles are judged
+    against at certification, and what a board-scored request would return."""
+    env = model_env(a.tree, a.python, a.hf or Path(a.out) / 'no-hf', a.out, image=a.image, evidence=a.evidence)
+    env.update(TNCA_ACTIVE_CORES='3', TNCA_OPT_LEVEL='2', TNCA_HOST_TIMEOUT='7200')
+    # archbench's tnca platform validates TNCA_OPERATING_CLOCK_EVIDENCE as the author's full
+    # qualification record (schema tnca-qualified-operating-clock/1, built by his identity
+    # stage); our clock_evidence.json is the harness's own three-sample record, read by chat.py
+    # for clock_hz only. Without the variable archbench records the backend's nominal 100 MHz.
+    env.pop('TNCA_OPERATING_CLOCK_EVIDENCE', None)
+    uuid = xclbin_info(a.image, env=env)['uuid']
+    worst = 0
+    for i, point in enumerate(a.point):
+        cmd = [a.python, '-m', 'archbench.run', '--platform', 'tnca', '--profile', PROFILE, '--point', point,
+               '--out', str(Path(a.out) / f'archbench-{i}.jsonl')]
+        rc = guarded_run(a, cmd, env, Path(a.out) / f'point-{i}', f'archbench-{i}', image_uuid=uuid)
+        worst = max(worst, rc)
+    rows = []
+    for i, point in enumerate(a.point):
+        p = Path(a.out) / f'archbench-{i}.jsonl'
+        for line in p.read_text().splitlines() if p.exists() else []:
+            r = json.loads(line)
+            rows.append(dict(point=r.get('point_id'), status=r.get('status'), cycles=(r.get('time') or {}).get('device'),
+                             launches=(r.get('time') or {}).get('launches'), err=(r.get('correctness') or {}).get('max_rel_err'),
+                             evidence=r.get('evidence')))
+    write(Path(a.out) / 'summary.json', rows)
+    for r in rows:
+        print(json.dumps(r))
+    return worst
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest='cmd', required=True)
+    p = sub.add_parser('archbench'); p.add_argument('--tree', required=True); p.add_argument('--image', required=True)
+    p.add_argument('--python', required=True); p.add_argument('--hf'); p.add_argument('--evidence', required=True)
+    p.add_argument('--out', required=True); p.add_argument('--point', action='append', required=True)
     p = sub.add_parser('preflight'); p.add_argument('--tree', required=True); p.add_argument('--image', required=True)
     p.add_argument('--python', required=True); p.add_argument('--hf', required=True); p.add_argument('--out', required=True)
     p = sub.add_parser('idle'); p.add_argument('--seconds', type=int, default=900); p.add_argument('--poll', type=float, default=5.0)

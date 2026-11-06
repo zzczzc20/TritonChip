@@ -1,0 +1,34 @@
+{
+  "schema": "tnca-r41-freeze-check/2",
+  "stage": 1,
+  "status": "frozen-inputs-verified",
+  "lock_sha256": "58962c7e92973ad3ea4a48e94b9f159541bc863006c5bae256372d97499b1ae9",
+  "registry_checked": true,
+  "original_unique_points": 113,
+  "required_packages": [
+    "S1-00",
+    "S1-01",
+    "S1-02",
+    "S1-03",
+    "S1-04",
+    "S1-05"
+  ],
+  "delivery_acceptance": "not-measured",
+  "command": [
+    "/home/zhongchun/tc_env/torchenv/bin/python",
+    "tools/performance_harness/stage_contract.py",
+    "--stage",
+    "1",
+    "--out",
+    "/home/zhongchun/r41s1-claude-runs/freeze-check-stage1.json"
+  ],
+  "software_tree": "files:3a465e02a9f67f0f8d08bd12df5fae953b1270b8ed37eabe38cd25368bb1de0d",
+  "git": null,
+  "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+  "contract_sha256": "2e0e598b9331dca5e922ce901ccd0d801792cefb41ca7fbf9b7bc4a41de3ddfd",
+  "lock_files": 31,
+  "host": "gx10-6646",
+  "python": "/home/zhongchun/tc_env/torchenv/bin/python",
+  "python_version": "3.12.3",
+  "checked_utc": "2026-10-21T08:52:04.066373+00:00"
+}

@@ -153,6 +153,23 @@ def main():
           f"{between} operation(s) placed between a producer and its consumer {probs or ''}")
     ok &= good
 
+    # Every banked-VRF target resolves to a banked latency model (R41 G4: the
+    # resized profiles fell to the flip-flop default and were scheduled for a
+    # different register file).
+    import json as _json
+    spec = _json.load(open(ROOT / 'spec' / 'r39_sched_model.json'))
+    profiles = _json.load(open(ROOT / 'spec' / 'r1_profiles.json'))['profiles']
+    wrong = []
+    for f in sorted((ROOT / 'compiler' / 'targets').glob('*.json')):
+        t = _json.load(open(f))
+        impl = profiles.get(t.get('profile'), {}).get('implementation', {})
+        banked = impl.get('vector_register_file') == 'banked'
+        name = S.Model.model_name(spec, t['name'])
+        if banked and not name.startswith('banked'):
+            wrong.append(f"{t['name']} -> {name}")
+    print(f"  {'PASS' if not wrong else 'FAIL'}  scheduling model per target {wrong or ''}")
+    ok &= not wrong
+
     import harness as H
     from tnca import aot, device
     rec = Recorder()

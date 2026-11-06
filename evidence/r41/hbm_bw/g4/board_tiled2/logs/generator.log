@@ -1,0 +1,30 @@
+clock_utc=2026-10-29T02:24:25Z
+source_commit=8f19b1131c8f8b4b454831b6317d772774f93383
+host=GB10
+command=python3 tools/r41/membound_manifests.py --check && python3 tools/r41/membound_manifests.py --tiled2
+Traceback (most recent call last):
+  File "/home/zhongchun/kimi-k8bw/tools/r41/membound_manifests.py", line 290, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/zhongchun/kimi-k8bw/tools/r41/membound_manifests.py", line 264, in main
+    out = build(tiled2=args.tiled2)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/kimi-k8bw/tools/r41/membound_manifests.py", line 133, in build
+    estimate, method = estimator()
+                       ^^^^^^^^^^^
+  File "/home/zhongchun/kimi-k8bw/tools/r41/membound_manifests.py", line 104, in estimator
+    rows = run1_records()
+           ^^^^^^^^^^^^^^
+  File "/home/zhongchun/kimi-k8bw/tools/r41/membound_manifests.py", line 69, in run1_records
+    with tarfile.open(ROOT/RUN1) as tar:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/tarfile.py", line 1855, in open
+    return func(name, "r", fileobj, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/tarfile.py", line 1923, in gzopen
+    fileobj = GzipFile(name, mode + "b", compresslevel, fileobj)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/gzip.py", line 192, in __init__
+    fileobj = self.myfileobj = builtins.open(filename, mode or 'rb')
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/zhongchun/kimi-k8bw/evidence/r41/hbm_bw/link_budget/board_run1/run1_streaming.tgz'

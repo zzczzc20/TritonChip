@@ -1,0 +1,17 @@
+{
+ "schema": "tnca-chat-quality/1",
+ "id": "quality-v1",
+ "registered_utc": "2026-10-28",
+ "source": "author decision, in the lead's chat, 2026-10-28: the acceptance criterion is whether the final model can hold a normal conversation and show normal intelligence; a registered chat-quality check fixed before the run",
+ "procedure": "Greedy generation, at most new_tokens tokens or EOS. The CPU W8A8 reference model (tools/models/fp8_blockwise_ref.py, exact dot, IEEE scale division) answers first; its answers are archived before any device run and are the expected answers. A device answer passes a turn when (1) it contains every keyword the CPU answer contains, case-insensitively, and (2) it contains the CPU answer's normalized text or the CPU answer contains the device answer's normalized text (containment either way). Token-by-token agreement with the CPU answer (length of the common prefix and exact equality) is reported for every turn. Keywords apply to the last turn of a prompt. A prompt passes when all its turns pass; the check passes when every prompt passes. The keywords are a-priori expectations of normal intelligence; a keyword the CPU answer itself lacks is reported and not required of the device.",
+ "new_tokens": 12,
+ "bucket": 256,
+ "prompts": [
+  {"id": "fact", "kind": "factual QA", "turns": ["What is the capital of France? Answer with one word."], "keywords": ["paris"]},
+  {"id": "arith", "kind": "arithmetic", "turns": ["What is 17 + 25? Answer with the number only."], "keywords": ["42"]},
+  {"id": "reason", "kind": "reasoning", "turns": ["Tom is taller than Ann. Ann is taller than Bob. Who is the shortest? Answer with one name."], "keywords": ["bob"]},
+  {"id": "instruct", "kind": "instruction following", "turns": ["Reply with exactly the word OK in capital letters and nothing else."], "keywords": ["OK"]},
+  {"id": "multiturn", "kind": "multi-turn follow-up", "turns": ["My name is Alice. Please remember it and reply with one short sentence.", "What is my name? Answer with one word."], "keywords": ["alice"]},
+  {"id": "image", "kind": "image description", "models": ["vl"], "images": ["spec/r41/chat/shapes.png"], "turns": ["Which shapes are in this image? Answer with a short list."], "keywords": ["circle", "triangle"]}
+ ]
+}

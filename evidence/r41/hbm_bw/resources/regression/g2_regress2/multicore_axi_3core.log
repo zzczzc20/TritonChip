@@ -1,0 +1,26 @@
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1718
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=15678
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=28778
+AXI OUTLET TRAFFIC port=0 reads=114 writes=38
+AXI OUTLET TRAFFIC port=1 reads=57 writes=19
+MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=36882
+MULTICORE AXI PERSISTENT PASS N=3 ports=2 stages=2 write_delay=300 drain_wait=84
+tb/fpga/tb_multicore_axi.v:263: $finish called at 368820000 (1ps)
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1718
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=16180
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=29719
+AXI OUTLET TRAFFIC port=0 reads=60 writes=20
+AXI OUTLET TRAFFIC port=1 reads=57 writes=19
+AXI OUTLET TRAFFIC port=2 reads=54 writes=18
+MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=38507
+MULTICORE AXI PERSISTENT PASS N=3 ports=3 stages=2 write_delay=300 drain_wait=91
+tb/fpga/tb_multicore_axi.v:263: $finish called at 385070000 (1ps)
+MULTICORE AXI MATRIX PASS 2 configurations
+
+real	4m10.207s
+user	4m9.101s
+sys	0m1.083s

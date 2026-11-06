@@ -1,0 +1,80 @@
+{
+  "status": "failed-chat-quality",
+  "passed": false,
+  "scope": "full checkpoint; separate prompt, reduced proof",
+  "quality_sha256": "57783b175a1aa58f473cc7e07111a926b453a49b47571937b54ac0fabec27864",
+  "turns": [
+    {
+      "index": 0,
+      "text": "I have remembered your name, Alice.\n",
+      "reference": "Hello Alice, I have noted your name.\n",
+      "score": {
+        "passed": false,
+        "required_keywords": [],
+        "keywords_missing_in_reference": [],
+        "keywords_ok": true,
+        "containment": false,
+        "tokens_equal": false,
+        "common_prefix_tokens": 0,
+        "device_tokens": 11,
+        "reference_tokens": 12
+      },
+      "prefill_tokens_per_second": 0.030556608038421695,
+      "decode_steps_per_second": 0.012634838369002853,
+      "decode_steps": 11,
+      "decode_host_reads": 0,
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_roles_covered": true,
+      "compiled_wrapper_fallbacks": {
+        "prefill": [],
+        "decode": [],
+        "selection": []
+      },
+      "placements": {
+        "parameters": {
+          "tnca:0": 924
+        },
+        "buffers": {
+          "tnca:0": 4
+        }
+      }
+    },
+    {
+      "index": 1,
+      "text": "Alice\n",
+      "reference": "Alice\n",
+      "score": {
+        "passed": true,
+        "required_keywords": [
+          "alice"
+        ],
+        "keywords_missing_in_reference": [],
+        "keywords_ok": true,
+        "containment": true,
+        "tokens_equal": true,
+        "common_prefix_tokens": 4,
+        "device_tokens": 4,
+        "reference_tokens": 4
+      },
+      "prefill_tokens_per_second": 0.033704992194528424,
+      "decode_steps_per_second": 0.009044222388411464,
+      "decode_steps": 11,
+      "decode_host_reads": 0,
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_roles_covered": true,
+      "compiled_wrapper_fallbacks": {
+        "prefill": [],
+        "decode": [],
+        "selection": []
+      },
+      "placements": {
+        "parameters": {
+          "tnca:0": 924
+        },
+        "buffers": {
+          "tnca:0": 4
+        }
+      }
+    }
+  ]
+}

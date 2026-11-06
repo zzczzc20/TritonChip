@@ -1,0 +1,162 @@
+HYBRID COVERAGE fast=29 slow_beats=1460
+HYBRID FAST PEAK 3
+HYBRID LSU MITER PASS beat_w=4 seed=1 accesses=600 requests=1562 stall=0% cycles REQ_REG=0 17991 REQ_REG=1 21492
+tb/core/tb_lsu_hybrid.v:309: $finish called at 214920000 (1ps)
+HYBRID COVERAGE fast=418 slow_beats=424
+HYBRID FAST PEAK 8
+HYBRID LSU MITER PASS beat_w=4 seed=1 accesses=600 requests=3732 stall=0% cycles REQ_REG=0 19996 REQ_REG=1 10036
+tb/core/tb_lsu_hybrid.v:309: $finish called at 199960000 (1ps)
+HYBRID COVERAGE fast=29 slow_beats=1460
+HYBRID FAST PEAK 2
+HYBRID LSU MITER PASS beat_w=4 seed=1 accesses=600 requests=1562 stall=30% cycles REQ_REG=0 23514 REQ_REG=1 26922
+tb/core/tb_lsu_hybrid.v:309: $finish called at 269220000 (1ps)
+HYBRID COVERAGE fast=418 slow_beats=424
+HYBRID FAST PEAK 8
+HYBRID LSU MITER PASS beat_w=4 seed=1 accesses=600 requests=3732 stall=30% cycles REQ_REG=0 26827 REQ_REG=1 12184
+tb/core/tb_lsu_hybrid.v:309: $finish called at 268270000 (1ps)
+HYBRID COVERAGE fast=16 slow_beats=1412
+HYBRID FAST PEAK 1
+HYBRID LSU MITER PASS beat_w=4 seed=7 accesses=600 requests=1471 stall=0% cycles REQ_REG=0 17667 REQ_REG=1 21037
+tb/core/tb_lsu_hybrid.v:309: $finish called at 210370000 (1ps)
+HYBRID COVERAGE fast=418 slow_beats=460
+HYBRID FAST PEAK 8
+HYBRID LSU MITER PASS beat_w=4 seed=7 accesses=600 requests=3776 stall=0% cycles REQ_REG=0 20248 REQ_REG=1 9384
+tb/core/tb_lsu_hybrid.v:309: $finish called at 202480000 (1ps)
+HYBRID COVERAGE fast=16 slow_beats=1412
+HYBRID FAST PEAK 1
+HYBRID LSU MITER PASS beat_w=4 seed=7 accesses=600 requests=1471 stall=30% cycles REQ_REG=0 21788 REQ_REG=1 25872
+tb/core/tb_lsu_hybrid.v:309: $finish called at 258720000 (1ps)
+HYBRID COVERAGE fast=418 slow_beats=460
+HYBRID FAST PEAK 8
+HYBRID LSU MITER PASS beat_w=4 seed=7 accesses=600 requests=3776 stall=30% cycles REQ_REG=0 25724 REQ_REG=1 12114
+tb/core/tb_lsu_hybrid.v:309: $finish called at 257240000 (1ps)
+HYBRID COVERAGE fast=31 slow_beats=1480
+HYBRID FAST PEAK 2
+HYBRID LSU MITER PASS beat_w=4 seed=39 accesses=600 requests=1576 stall=0% cycles REQ_REG=0 18114 REQ_REG=1 21189
+tb/core/tb_lsu_hybrid.v:309: $finish called at 211890000 (1ps)
+HYBRID COVERAGE fast=417 slow_beats=393
+HYBRID FAST PEAK 8
+HYBRID LSU MITER PASS beat_w=4 seed=39 accesses=600 requests=3699 stall=0% cycles REQ_REG=0 19804 REQ_REG=1 9298
+tb/core/tb_lsu_hybrid.v:309: $finish called at 198040000 (1ps)
+HYBRID COVERAGE fast=31 slow_beats=1480
+HYBRID FAST PEAK 2
+HYBRID LSU MITER PASS beat_w=4 seed=39 accesses=600 requests=1576 stall=30% cycles REQ_REG=0 21874 REQ_REG=1 26613
+tb/core/tb_lsu_hybrid.v:309: $finish called at 266130000 (1ps)
+HYBRID COVERAGE fast=417 slow_beats=393
+HYBRID FAST PEAK 8
+HYBRID LSU MITER PASS beat_w=4 seed=39 accesses=600 requests=3699 stall=30% cycles REQ_REG=0 26125 REQ_REG=1 11694
+tb/core/tb_lsu_hybrid.v:309: $finish called at 261250000 (1ps)
+HYBRID COVERAGE fast=29 slow_beats=1460
+HYBRID FAST PEAK 3
+HYBRID LSU MITER PASS beat_w=5 seed=1 accesses=600 requests=1562 stall=0% cycles REQ_REG=0 17991 REQ_REG=1 21492
+tb/core/tb_lsu_hybrid.v:309: $finish called at 214920000 (1ps)
+HYBRID COVERAGE fast=525 slow_beats=147
+HYBRID FAST PEAK 16
+HYBRID LSU MITER PASS beat_w=5 seed=1 accesses=600 requests=4336 stall=0% cycles REQ_REG=0 20768 REQ_REG=1 5402
+tb/core/tb_lsu_hybrid.v:309: $finish called at 207680000 (1ps)
+HYBRID COVERAGE fast=29 slow_beats=1460
+HYBRID FAST PEAK 2
+HYBRID LSU MITER PASS beat_w=5 seed=1 accesses=600 requests=1562 stall=30% cycles REQ_REG=0 23514 REQ_REG=1 26922
+tb/core/tb_lsu_hybrid.v:309: $finish called at 269220000 (1ps)
+HYBRID COVERAGE fast=525 slow_beats=147
+HYBRID FAST PEAK 16
+HYBRID LSU MITER PASS beat_w=5 seed=1 accesses=600 requests=4336 stall=30% cycles REQ_REG=0 26441 REQ_REG=1 7106
+tb/core/tb_lsu_hybrid.v:309: $finish called at 264410000 (1ps)
+HYBRID COVERAGE fast=16 slow_beats=1412
+HYBRID FAST PEAK 1
+HYBRID LSU MITER PASS beat_w=5 seed=7 accesses=600 requests=1471 stall=0% cycles REQ_REG=0 17667 REQ_REG=1 21037
+tb/core/tb_lsu_hybrid.v:309: $finish called at 210370000 (1ps)
+HYBRID COVERAGE fast=524 slow_beats=133
+HYBRID FAST PEAK 16
+HYBRID LSU MITER PASS beat_w=5 seed=7 accesses=600 requests=4322 stall=0% cycles REQ_REG=0 20357 REQ_REG=1 4881
+tb/core/tb_lsu_hybrid.v:309: $finish called at 203570000 (1ps)
+HYBRID COVERAGE fast=16 slow_beats=1412
+HYBRID FAST PEAK 1
+HYBRID LSU MITER PASS beat_w=5 seed=7 accesses=600 requests=1471 stall=30% cycles REQ_REG=0 21788 REQ_REG=1 25872
+tb/core/tb_lsu_hybrid.v:309: $finish called at 258720000 (1ps)
+HYBRID COVERAGE fast=524 slow_beats=133
+HYBRID FAST PEAK 16
+HYBRID LSU MITER PASS beat_w=5 seed=7 accesses=600 requests=4322 stall=30% cycles REQ_REG=0 26798 REQ_REG=1 6986
+tb/core/tb_lsu_hybrid.v:309: $finish called at 267980000 (1ps)
+HYBRID COVERAGE fast=31 slow_beats=1480
+HYBRID FAST PEAK 2
+HYBRID LSU MITER PASS beat_w=5 seed=39 accesses=600 requests=1576 stall=0% cycles REQ_REG=0 18114 REQ_REG=1 21189
+tb/core/tb_lsu_hybrid.v:309: $finish called at 211890000 (1ps)
+HYBRID COVERAGE fast=523 slow_beats=102
+HYBRID FAST PEAK 16
+HYBRID LSU MITER PASS beat_w=5 seed=39 accesses=600 requests=4286 stall=0% cycles REQ_REG=0 20327 REQ_REG=1 5034
+tb/core/tb_lsu_hybrid.v:309: $finish called at 203270000 (1ps)
+HYBRID COVERAGE fast=31 slow_beats=1480
+HYBRID FAST PEAK 2
+HYBRID LSU MITER PASS beat_w=5 seed=39 accesses=600 requests=1576 stall=30% cycles REQ_REG=0 21874 REQ_REG=1 26613
+tb/core/tb_lsu_hybrid.v:309: $finish called at 266130000 (1ps)
+HYBRID COVERAGE fast=523 slow_beats=102
+HYBRID FAST PEAK 16
+HYBRID LSU MITER PASS beat_w=5 seed=39 accesses=600 requests=4286 stall=30% cycles REQ_REG=0 27353 REQ_REG=1 6182
+tb/core/tb_lsu_hybrid.v:309: $finish called at 273530000 (1ps)
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=176/138 cpl=174/137
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=1 stall=0 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=154/600 cpl=152/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=1 stall=0 burst=1
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=171/140 cpl=169/139
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=1 stall=30 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=152/600 cpl=150/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=1 stall=30 burst=1
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=175/157 cpl=173/155
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=7 stall=0 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=155/600 cpl=153/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=7 stall=0 burst=1
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=176/159 cpl=175/158
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=7 stall=30 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=153/600 cpl=151/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=7 stall=30 burst=1
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=181/133 cpl=179/131
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=39 stall=0 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=155/600 cpl=153/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=39 stall=0 burst=1
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=164/130 cpl=163/128
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=39 stall=30 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=149/600 cpl=147/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=6 seed=39 stall=30 burst=1
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=176/138 cpl=174/137
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=7 seed=1 stall=0 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=154/600 cpl=152/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=7 seed=1 stall=0 burst=1
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=171/140 cpl=169/139
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=7 seed=1 stall=30 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=152/600 cpl=150/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=7 seed=1 stall=30 burst=1
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=175/157 cpl=173/155
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=7 seed=7 stall=0 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=155/600 cpl=153/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=7 seed=7 stall=0 burst=1
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=176/159 cpl=175/158
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=7 seed=7 stall=30 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=153/600 cpl=151/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=7 seed=7 stall=30 burst=1
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=181/133 cpl=179/131
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=7 seed=39 stall=0 burst=0
+FATAL: tb/core/tb_lsu_hybrid.v:294: timeout pc=155/600 cpl=153/600
+       Time: 700010000  Scope: tb_lsu_hybrid
+HYBRID LSU FAIL beat_w=7 seed=39 stall=0 burst=1

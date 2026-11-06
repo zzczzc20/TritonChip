@@ -1,0 +1,34 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "hbm8",
+ "experiments": [
+  {
+   "id": "r2-s2-hbm8",
+   "manifest": "spec/r41/run2/board/r2-s2-hbm8.json",
+   "sha256": "722f1122d9d95f3043437a115a0e023af509fcddc67159ea5b7a81ac7a789708",
+   "checks": [
+    {
+     "path": "summary.json",
+     "field": [
+      "qualified"
+     ],
+     "equals": true
+    }
+   ]
+  },
+  {
+   "id": "r2-s2-hbm8-big",
+   "manifest": "spec/r41/run2/board/r2-s2-hbm8-big.json",
+   "sha256": "21861d766105ec58db08deead37b71d2766a3566a5d3883afd75a46a65413583",
+   "checks": [
+    {
+     "path": "summary.json",
+     "field": [
+      "qualified"
+     ],
+     "equals": true
+    }
+   ]
+  }
+ ]
+}

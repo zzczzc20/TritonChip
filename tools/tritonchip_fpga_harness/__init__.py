@@ -6,4 +6,3 @@ and on a U50 host with Vivado/Vitis installed.
 """
 
 __version__ = "0.2.0"
-

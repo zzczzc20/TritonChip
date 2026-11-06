@@ -1,0 +1,102 @@
+{
+  "schema": "tnca-qualified-operating-clock/1",
+  "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "qualification": "r41-corrected-candidate-100mhz",
+  "clock_hz": 100000000,
+  "clock_source": "measured-board-counter",
+  "physical_core_slrs": {
+    "0": 0,
+    "1": 1,
+    "2": 2
+  },
+  "setup_scope": "kernel-clock",
+  "setup_wns_ns": 0.111,
+  "hold_whs_ns": 0.0,
+  "pulse_width_wpws_ns": 0.0,
+  "route_legal": true,
+  "cdc_review": "passed",
+  "clock_capture": {
+    "schema": "tnca-loaded-clock-capture/1",
+    "observed_utc": "2026-10-30T17:27:15.931802+00:00",
+    "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+    "loaded_xclbin_uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+    "device": "0000:04:00.1",
+    "counter_path": "/sys/bus/pci/devices/0000:04:00.0/clock_freq_counter.m.28311552/clock_counter_freqs",
+    "counter_samples": [
+      {
+        "raw": "100\n500\n430\n0\n",
+        "frequencies_mhz": [
+          100,
+          500,
+          430,
+          0
+        ]
+      },
+      {
+        "raw": "100\n500\n430\n0\n",
+        "frequencies_mhz": [
+          100,
+          500,
+          430,
+          0
+        ]
+      },
+      {
+        "raw": "100\n500\n430\n0\n",
+        "frequencies_mhz": [
+          100,
+          500,
+          430,
+          0
+        ]
+      }
+    ],
+    "icap_readback": {
+      "/sys/bus/pci/devices/0000:04:00.0/icap.m.22020096/clock_freqs": "100\n500\n430\n0\n",
+      "/sys/bus/pci/devices/0000:04:00.1/icap.u.22020096/clock_freqs": "100\n500\n430\n0\n"
+    },
+    "clock_hz": 100000000,
+    "physical_core_clock_divider": 1,
+    "clock_source": "measured-board-counter",
+    "measurement_resolution_hz": 1000000,
+    "scope": "DATA clock counter index 0 (v++ clock ID 0, DATA_CLK); undivided core clock; integer MHz readout; read-only sysfs, captured after program.sh loaded the image"
+  },
+  "evidence_files": {
+    "timing": {
+      "path": "/home/zzhouch/r41run3/reports/timing.rpt",
+      "sha256": "335f558a8ec3b8f18a7e3b78c138fc19d464c1ec4c1316baeb820dbabf289df0"
+    },
+    "route": {
+      "path": "/home/zzhouch/r41run3/reports/route_status.rpt",
+      "sha256": "2f9a29b957406fb7356caf23aa467a9322238dc828b64937374db166e9caa06b"
+    },
+    "cdc": {
+      "path": "/home/zzhouch/r41run3/reports/cdc.rpt",
+      "sha256": "8c98866634215f258f21c6baf2b1a3c848425ae65b50289a7ccaf4679dcae529"
+    },
+    "placement": {
+      "path": "/home/zzhouch/r41run3/reports/actual_cores.rpt",
+      "sha256": "edef2c1486e20da4b73f1a54129f2f8bb6648751a08dee7299d4f94552a710f4"
+    },
+    "bus_skew": {
+      "path": "/home/zzhouch/r41run3/reports/bus_skew.rpt",
+      "sha256": "e897d0999580e6c17d177d47b5261f4cf3d48125c8f3046fb6075ca329067082"
+    },
+    "failing_setup": {
+      "path": "/home/zzhouch/r41run3/reports/failing_setup_all_groups.tsv",
+      "sha256": "a2d778630f4d11e6296ebd7dbdda592eb2befff34d33f03ff182e574a9f4553d"
+    },
+    "board_clock": {
+      "path": "/home/zzhouch/r41run3/board_clock_after_load.json",
+      "sha256": "f7fd7b54aa4b2a33bc7b12f37408955281453644c6531831c0cad1dae1e9edfd"
+    },
+    "clock_review": {
+      "path": "/home/zzhouch/r41run3/clock_review.json",
+      "sha256": "93e99e8d94109ede345c0160f288a6cb20a75b5a2c64ce27fdf30415f0c6c723"
+    },
+    "cdc_review": {
+      "path": "/home/zzhouch/r41run3/cdc_review.json",
+      "sha256": "adec6741f5082aac7992cfe244bbf1b77fd8308f5cd832f6db16c8bd11f48129"
+    }
+  }
+}

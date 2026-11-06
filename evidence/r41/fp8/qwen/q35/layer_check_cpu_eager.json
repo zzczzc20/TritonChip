@@ -1,0 +1,3832 @@
+{
+ "model": "qwen3.5-4b-fp8",
+ "device": "cpu",
+ "compiled": false,
+ "fp8_kernel": {
+  "kind": "reference",
+  "module": "fp8_blockwise_ref",
+  "dot": "exact",
+  "fma": false,
+  "scale_div": "ieee"
+ },
+ "layers": 200,
+ "all_bitwise_equal_cpu_reference": true,
+ "max_rel_l2_vs_cpu": 0.0,
+ "max_rel_l2_vs_exact": 0.0020147394616979205,
+ "max_cpu_rel_l2_vs_exact": 0.0020147394616979205,
+ "max_bf16_rounding_of_exact": 0.0020147394613060934,
+ "recip_scale": {
+  "max_rel_l2_vs_ieee_output": 0.0034489508158593632,
+  "min_frac_outputs_equal": 0.594172794117647,
+  "max_exact_recip_vs_exact_ieee": 0.0031031858874635936
+ },
+ "dequant_bf16": {
+  "max_rel_l2_vs_exact_w8a8": 0.03301754361433796,
+  "min_rel_l2_vs_exact_w8a8": 0.0043671424443305,
+  "max_rel_l2_vs_unquantized_activation": 0.0028576924505987595
+ },
+ "w8a8_max_rel_l2_vs_unquantized_activation": 0.03295683071882042,
+ "criterion": "rel_l2_vs_exact of every layer within ~1.1x bf16_rounding_of_exact (a correct device GEMM only adds output rounding); bitwise vs the cpu reference only if the device rounds alike",
+ "rows": {
+  "model.language_model.layers.0.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0015544426804111658,
+   "cpu_rel_l2_vs_exact": 0.0015544426804111658,
+   "bf16_rounding_of_exact": 0.001554442680368248,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0006828654507972169,
+   "recip_scale_frac_outputs_equal": 0.8953400735294118,
+   "exact_recip_vs_exact_ieee": 0.0002482486690615935,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.0043671424443305,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.004249560600750269,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001830031058386678,
+   "input_absmax": 18.5
+  },
+  "model.language_model.layers.0.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001660818344820433,
+   "cpu_rel_l2_vs_exact": 0.001660818344820433,
+   "bf16_rounding_of_exact": 0.0016608183330439985,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0013741270096451197,
+   "recip_scale_frac_outputs_equal": 0.8207146139705882,
+   "exact_recip_vs_exact_ieee": 0.000969002063417433,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01337009400733537,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01328354289621262,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021922968195619862,
+   "input_absmax": 63.25
+  },
+  "model.language_model.layers.0.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001671321223374069,
+   "cpu_rel_l2_vs_exact": 0.001671321223374069,
+   "bf16_rounding_of_exact": 0.0016713212205633815,
+   "recip_scale_rel_l2_vs_ieee_output": 0.00170488423703814,
+   "recip_scale_frac_outputs_equal": 0.8140883501838235,
+   "exact_recip_vs_exact_ieee": 0.0013019105500430214,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017048152354308854,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.016954771121450343,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002397680150452995,
+   "input_absmax": 63.25
+  },
+  "model.language_model.layers.0.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016557821866397258,
+   "cpu_rel_l2_vs_exact": 0.0016557821866397258,
+   "bf16_rounding_of_exact": 0.0016557821846172117,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0027626464851436706,
+   "recip_scale_frac_outputs_equal": 0.7404028799019607,
+   "exact_recip_vs_exact_ieee": 0.0023330339464777577,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023544542490829583,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02349443262375671,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002185862848748076,
+   "input_absmax": 4.9375
+  },
+  "model.language_model.layers.0.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016616194886216278,
+   "cpu_rel_l2_vs_exact": 0.0016616194886216278,
+   "bf16_rounding_of_exact": 0.0016616194852069096,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002799484459240457,
+   "recip_scale_frac_outputs_equal": 0.7363664215686274,
+   "exact_recip_vs_exact_ieee": 0.00237689194022381,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.024012553187340045,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023963235988330757,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002195270883004076,
+   "input_absmax": 4.9375
+  },
+  "model.language_model.layers.0.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016294043354221238,
+   "cpu_rel_l2_vs_exact": 0.0016294043354221238,
+   "bf16_rounding_of_exact": 0.0016294043303300562,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021489561729530265,
+   "recip_scale_frac_outputs_equal": 0.6847104779411765,
+   "exact_recip_vs_exact_ieee": 0.0014912209267861905,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020181185139281087,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020148910366424723,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021199144726543554,
+   "input_absmax": 3.109375
+  },
+  "model.language_model.layers.1.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016095249962240152,
+   "cpu_rel_l2_vs_exact": 0.0016095249962240152,
+   "bf16_rounding_of_exact": 0.0016095249960929171,
+   "recip_scale_rel_l2_vs_ieee_output": 0.003102644687919663,
+   "recip_scale_frac_outputs_equal": 0.8030376838235294,
+   "exact_recip_vs_exact_ieee": 0.0029172508501731764,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.013803344874979395,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.013751647671743085,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001996831853654524,
+   "input_absmax": 3.0
+  },
+  "model.language_model.layers.1.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016715190531120165,
+   "cpu_rel_l2_vs_exact": 0.0016715190531120165,
+   "bf16_rounding_of_exact": 0.0016715190526204223,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002148279379433716,
+   "recip_scale_frac_outputs_equal": 0.7899169921875,
+   "exact_recip_vs_exact_ieee": 0.0017705308410606738,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.021142699655118648,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.021091425632759012,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002145459097938447,
+   "input_absmax": 31.125
+  },
+  "model.language_model.layers.1.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016704703298697954,
+   "cpu_rel_l2_vs_exact": 0.0016704703298697954,
+   "bf16_rounding_of_exact": 0.001670470322270051,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0020732428627831825,
+   "recip_scale_frac_outputs_equal": 0.7994571461397059,
+   "exact_recip_vs_exact_ieee": 0.001697739429049621,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020221822838123633,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020169785268899034,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021717809601706117,
+   "input_absmax": 31.125
+  },
+  "model.language_model.layers.1.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001657235923329325,
+   "cpu_rel_l2_vs_exact": 0.001657235923329325,
+   "bf16_rounding_of_exact": 0.0016572359207985112,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021864725767945783,
+   "recip_scale_frac_outputs_equal": 0.7924785539215686,
+   "exact_recip_vs_exact_ieee": 0.0017658843583899938,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02355450787481508,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023500309191761916,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021977666163716853,
+   "input_absmax": 6.8125
+  },
+  "model.language_model.layers.1.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016611463266269682,
+   "cpu_rel_l2_vs_exact": 0.0016611463266269682,
+   "bf16_rounding_of_exact": 0.0016611463247407946,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002298046403786657,
+   "recip_scale_frac_outputs_equal": 0.7871591605392156,
+   "exact_recip_vs_exact_ieee": 0.0018842871158533969,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.024817058446806234,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.024762168172910617,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022238914552867506,
+   "input_absmax": 6.8125
+  },
+  "model.language_model.layers.1.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.00167086642508236,
+   "cpu_rel_l2_vs_exact": 0.00167086642508236,
+   "bf16_rounding_of_exact": 0.0016708664230884504,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002610315421281347,
+   "recip_scale_frac_outputs_equal": 0.6375,
+   "exact_recip_vs_exact_ieee": 0.0019897111279600014,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.021537853815581546,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.021489432834416393,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021766682557531245,
+   "input_absmax": 1.3515625
+  },
+  "model.language_model.layers.2.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016610195831565644,
+   "cpu_rel_l2_vs_exact": 0.0016610195831565644,
+   "bf16_rounding_of_exact": 0.0016610195824132436,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0015896963081629843,
+   "recip_scale_frac_outputs_equal": 0.79390625,
+   "exact_recip_vs_exact_ieee": 0.001360553472062246,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.014072984520311978,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.014310319816760283,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00212675759958443,
+   "input_absmax": 3.015625
+  },
+  "model.language_model.layers.2.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016522449636115933,
+   "cpu_rel_l2_vs_exact": 0.0016522449636115933,
+   "bf16_rounding_of_exact": 0.001652244959771879,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0023572419961861127,
+   "recip_scale_frac_outputs_equal": 0.7504509420955883,
+   "exact_recip_vs_exact_ieee": 0.001926015648262066,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02037827410142265,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020338063725505093,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002156612324615753,
+   "input_absmax": 37.5
+  },
+  "model.language_model.layers.2.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016561259517261161,
+   "cpu_rel_l2_vs_exact": 0.0016561259517261161,
+   "bf16_rounding_of_exact": 0.001656125951550964,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0020682770291493772,
+   "recip_scale_frac_outputs_equal": 0.7705623851102941,
+   "exact_recip_vs_exact_ieee": 0.0016182382990815424,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017546019842634507,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01750382787722863,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002135921612761665,
+   "input_absmax": 37.5
+  },
+  "model.language_model.layers.2.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016602079523213773,
+   "cpu_rel_l2_vs_exact": 0.0016602079523213773,
+   "bf16_rounding_of_exact": 0.0016602079488679243,
+   "recip_scale_rel_l2_vs_ieee_output": 0.00265369623600803,
+   "recip_scale_frac_outputs_equal": 0.7328916462418301,
+   "exact_recip_vs_exact_ieee": 0.002216678371103896,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.022745620763397534,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.022694170944377,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021727318634666795,
+   "input_absmax": 9.0
+  },
+  "model.language_model.layers.2.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016597646284303555,
+   "cpu_rel_l2_vs_exact": 0.0016597646284303555,
+   "bf16_rounding_of_exact": 0.001659764626129494,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002854081443007546,
+   "recip_scale_frac_outputs_equal": 0.7199576184640523,
+   "exact_recip_vs_exact_ieee": 0.002442976537303819,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.024882176788124266,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.024837274332130444,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002221008890119905,
+   "input_absmax": 9.0
+  },
+  "model.language_model.layers.2.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0017063521365415447,
+   "cpu_rel_l2_vs_exact": 0.0017063521365415447,
+   "bf16_rounding_of_exact": 0.0017063521332471813,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0014362200490467,
+   "recip_scale_frac_outputs_equal": 0.7058363970588235,
+   "exact_recip_vs_exact_ieee": 0.0009882968922947555,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01129154472907995,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011212603420811916,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00204030218742621,
+   "input_absmax": 8.3125
+  },
+  "model.language_model.layers.3.self_attn.q_proj": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016849821989773917,
+   "cpu_rel_l2_vs_exact": 0.0016849821989773917,
+   "bf16_rounding_of_exact": 0.001684982195221088,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0013027724265220332,
+   "recip_scale_frac_outputs_equal": 0.8488898782169118,
+   "exact_recip_vs_exact_ieee": 0.0006883535770648456,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.00852032732351095,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.008485471856924288,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018434366263043664,
+   "input_absmax": 59.25
+  },
+  "model.language_model.layers.3.self_attn.k_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016509423374140334,
+   "cpu_rel_l2_vs_exact": 0.0016509423374140334,
+   "bf16_rounding_of_exact": 0.0016509423372461864,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0024251241808939,
+   "recip_scale_frac_outputs_equal": 0.7548138786764705,
+   "exact_recip_vs_exact_ieee": 0.002005587971743492,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023160142769688356,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023108986157454308,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022103927226271116,
+   "input_absmax": 59.25
+  },
+  "model.language_model.layers.3.self_attn.v_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016562293784545652,
+   "cpu_rel_l2_vs_exact": 0.0016562293784545652,
+   "bf16_rounding_of_exact": 0.0016562293784055117,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002651599791515529,
+   "recip_scale_frac_outputs_equal": 0.7479319852941176,
+   "exact_recip_vs_exact_ieee": 0.0022034788574505277,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.022476791727796343,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02242715198163212,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021729858648963977,
+   "input_absmax": 59.25
+  },
+  "model.language_model.layers.3.self_attn.o_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001725399866750585,
+   "cpu_rel_l2_vs_exact": 0.001725399866750585,
+   "bf16_rounding_of_exact": 0.0017253998633255836,
+   "recip_scale_rel_l2_vs_ieee_output": 0.00188301635750398,
+   "recip_scale_frac_outputs_equal": 0.7465533088235294,
+   "exact_recip_vs_exact_ieee": 0.001531227808840818,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.012985334428442371,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01294950474479145,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019605860982658194,
+   "input_absmax": 4.96875
+  },
+  "model.language_model.layers.3.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016588296016472482,
+   "cpu_rel_l2_vs_exact": 0.0016588296016472482,
+   "bf16_rounding_of_exact": 0.001658829598770322,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0022346289065127765,
+   "recip_scale_frac_outputs_equal": 0.7690257352941177,
+   "exact_recip_vs_exact_ieee": 0.00183032567475043,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.022519691359136864,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.022467186792507015,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021601123753084476,
+   "input_absmax": 9.8125
+  },
+  "model.language_model.layers.3.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016578556797437962,
+   "cpu_rel_l2_vs_exact": 0.0016578556797437962,
+   "bf16_rounding_of_exact": 0.0016578556746978629,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002441202167980104,
+   "recip_scale_frac_outputs_equal": 0.7576363357843138,
+   "exact_recip_vs_exact_ieee": 0.0020599205580486145,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02473296871676203,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.024671114047167177,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002229068137406701,
+   "input_absmax": 9.8125
+  },
+  "model.language_model.layers.3.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016638000158257016,
+   "cpu_rel_l2_vs_exact": 0.0016638000158257016,
+   "bf16_rounding_of_exact": 0.001663800013257169,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021074745160493593,
+   "recip_scale_frac_outputs_equal": 0.6588740808823529,
+   "exact_recip_vs_exact_ieee": 0.0014831569772991151,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019315794883046123,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019278801602332668,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020791069936256555,
+   "input_absmax": 2.5625
+  },
+  "model.language_model.layers.4.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016656120320773717,
+   "cpu_rel_l2_vs_exact": 0.0016656120320773717,
+   "bf16_rounding_of_exact": 0.0016656120300337512,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001787238818903098,
+   "recip_scale_frac_outputs_equal": 0.8067922794117647,
+   "exact_recip_vs_exact_ieee": 0.0013603916941493514,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020144399860539643,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02011445918536452,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002145760715254057,
+   "input_absmax": 2.203125
+  },
+  "model.language_model.layers.4.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016567084076083351,
+   "cpu_rel_l2_vs_exact": 0.0016567084076083351,
+   "bf16_rounding_of_exact": 0.0016567084065062998,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019201347789017398,
+   "recip_scale_frac_outputs_equal": 0.7989042394301471,
+   "exact_recip_vs_exact_ieee": 0.0015003600020032396,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020753794474666243,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02068984456772308,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021217654924011744,
+   "input_absmax": 38.0
+  },
+  "model.language_model.layers.4.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016593729750136806,
+   "cpu_rel_l2_vs_exact": 0.0016593729750136806,
+   "bf16_rounding_of_exact": 0.0016593729735908914,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001789086084566036,
+   "recip_scale_frac_outputs_equal": 0.8139016544117647,
+   "exact_recip_vs_exact_ieee": 0.0013531584325016687,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01868108081351206,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01860936000249705,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020862938236531027,
+   "input_absmax": 38.0
+  },
+  "model.language_model.layers.4.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016574644942096962,
+   "cpu_rel_l2_vs_exact": 0.0016574644942096962,
+   "bf16_rounding_of_exact": 0.0016574644906012738,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0025732517895483992,
+   "recip_scale_frac_outputs_equal": 0.756241064133987,
+   "exact_recip_vs_exact_ieee": 0.0021532546299896094,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.021829466009068876,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02177327506450298,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00219626350537041,
+   "input_absmax": 21.625
+  },
+  "model.language_model.layers.4.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016629977734339612,
+   "cpu_rel_l2_vs_exact": 0.0016629977734339612,
+   "bf16_rounding_of_exact": 0.0016629977678434813,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0028604867660446034,
+   "recip_scale_frac_outputs_equal": 0.7418224060457517,
+   "exact_recip_vs_exact_ieee": 0.0024747598605406144,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02450360355737132,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.024446380015201705,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022244177755646978,
+   "input_absmax": 21.625
+  },
+  "model.language_model.layers.4.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001667909325298309,
+   "cpu_rel_l2_vs_exact": 0.001667909325298309,
+   "bf16_rounding_of_exact": 0.0016679093229402364,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002524767289117893,
+   "recip_scale_frac_outputs_equal": 0.6287086397058823,
+   "exact_recip_vs_exact_ieee": 0.0018973816638320736,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020481216828257057,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02043042563494832,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002164458786897175,
+   "input_absmax": 5.65625
+  },
+  "model.language_model.layers.5.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016616745934178142,
+   "cpu_rel_l2_vs_exact": 0.0016616745934178142,
+   "bf16_rounding_of_exact": 0.0016616745931765937,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001956805044996845,
+   "recip_scale_frac_outputs_equal": 0.785657169117647,
+   "exact_recip_vs_exact_ieee": 0.001547041717920508,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019803902996376268,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019734018630726675,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002243124028343782,
+   "input_absmax": 3.890625
+  },
+  "model.language_model.layers.5.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016594501836550025,
+   "cpu_rel_l2_vs_exact": 0.0016594501836550025,
+   "bf16_rounding_of_exact": 0.0016594501821966343,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018649269048554408,
+   "recip_scale_frac_outputs_equal": 0.8036333869485294,
+   "exact_recip_vs_exact_ieee": 0.0014824151832718321,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019484321351243172,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019435876501149415,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021041494397577424,
+   "input_absmax": 47.0
+  },
+  "model.language_model.layers.5.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001640076593585083,
+   "cpu_rel_l2_vs_exact": 0.001640076593585083,
+   "bf16_rounding_of_exact": 0.0016400765890590737,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0015715857449515465,
+   "recip_scale_frac_outputs_equal": 0.8296156939338235,
+   "exact_recip_vs_exact_ieee": 0.0011460642548060142,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015091816883379721,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.015044858130343338,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020411073776064738,
+   "input_absmax": 47.0
+  },
+  "model.language_model.layers.5.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001658258493101868,
+   "cpu_rel_l2_vs_exact": 0.001658258493101868,
+   "bf16_rounding_of_exact": 0.0016582584891736345,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021028957459447027,
+   "recip_scale_frac_outputs_equal": 0.8096417994281045,
+   "exact_recip_vs_exact_ieee": 0.001702834568408646,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020673517743667096,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02061995798643327,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021572318769396744,
+   "input_absmax": 24.0
+  },
+  "model.language_model.layers.5.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016586291184685715,
+   "cpu_rel_l2_vs_exact": 0.0016586291184685715,
+   "bf16_rounding_of_exact": 0.0016586291148526103,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0024103831151204434,
+   "recip_scale_frac_outputs_equal": 0.7933861825980392,
+   "exact_recip_vs_exact_ieee": 0.0020478203854704747,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02421491015831757,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02415740287014255,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022036641232626585,
+   "input_absmax": 24.0
+  },
+  "model.language_model.layers.5.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001629717620993126,
+   "cpu_rel_l2_vs_exact": 0.001629717620993126,
+   "bf16_rounding_of_exact": 0.0016297176099089713,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002590932434530697,
+   "recip_scale_frac_outputs_equal": 0.6167555147058823,
+   "exact_recip_vs_exact_ieee": 0.0019251241318386882,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019905064892936374,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019847246892803625,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002117798037575854,
+   "input_absmax": 6.25
+  },
+  "model.language_model.layers.6.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001620586867186622,
+   "cpu_rel_l2_vs_exact": 0.001620586867186622,
+   "bf16_rounding_of_exact": 0.001620586857716692,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002724602005988669,
+   "recip_scale_frac_outputs_equal": 0.7251470588235294,
+   "exact_recip_vs_exact_ieee": 0.002392417843810932,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018203070666970307,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01815554913578567,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002132642001507806,
+   "input_absmax": 17.375
+  },
+  "model.language_model.layers.6.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016579248891096057,
+   "cpu_rel_l2_vs_exact": 0.0016579248891096057,
+   "bf16_rounding_of_exact": 0.0016579248878780335,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018557384659559368,
+   "recip_scale_frac_outputs_equal": 0.8249942555147058,
+   "exact_recip_vs_exact_ieee": 0.0014848991270285665,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01877188052801695,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.0187187067205484,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020643294891168123,
+   "input_absmax": 47.5
+  },
+  "model.language_model.layers.6.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016704173133725582,
+   "cpu_rel_l2_vs_exact": 0.0016704173133725582,
+   "bf16_rounding_of_exact": 0.001670417313046448,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0013580188516802945,
+   "recip_scale_frac_outputs_equal": 0.8561207490808823,
+   "exact_recip_vs_exact_ieee": 0.0009301801101479191,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01216862979728598,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01212266985621774,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020120126625329704,
+   "input_absmax": 47.5
+  },
+  "model.language_model.layers.6.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016601437139251878,
+   "cpu_rel_l2_vs_exact": 0.0016601437139251878,
+   "bf16_rounding_of_exact": 0.0016601437092919088,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0022930296616424195,
+   "recip_scale_frac_outputs_equal": 0.7813534007352941,
+   "exact_recip_vs_exact_ieee": 0.001833994820265052,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01944577574482506,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019385766726836676,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021220242216761285,
+   "input_absmax": 36.25
+  },
+  "model.language_model.layers.6.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001658471108581774,
+   "cpu_rel_l2_vs_exact": 0.001658471108581774,
+   "bf16_rounding_of_exact": 0.0016584711058929475,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002601153744220317,
+   "recip_scale_frac_outputs_equal": 0.7540798611111111,
+   "exact_recip_vs_exact_ieee": 0.0021902893298388626,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02302011176953957,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02296356455660549,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021850082330305,
+   "input_absmax": 36.25
+  },
+  "model.language_model.layers.6.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001920278042526758,
+   "cpu_rel_l2_vs_exact": 0.001920278042526758,
+   "bf16_rounding_of_exact": 0.0019202780412472381,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002134689578965937,
+   "recip_scale_frac_outputs_equal": 0.6345772058823529,
+   "exact_recip_vs_exact_ieee": 0.0015286823368064902,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.0159991567952226,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01593824500798386,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022035285826520305,
+   "input_absmax": 57.75
+  },
+  "model.language_model.layers.7.self_attn.q_proj": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016468894121880605,
+   "cpu_rel_l2_vs_exact": 0.0016468894121880605,
+   "bf16_rounding_of_exact": 0.0016468894043318659,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001305844827245165,
+   "recip_scale_frac_outputs_equal": 0.8630902458639705,
+   "exact_recip_vs_exact_ieee": 0.0007603139592606568,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01010418021185684,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.010073603185040685,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018301050007463167,
+   "input_absmax": 72.5
+  },
+  "model.language_model.layers.7.self_attn.k_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016865589807066232,
+   "cpu_rel_l2_vs_exact": 0.0016865589807066232,
+   "bf16_rounding_of_exact": 0.001686558980658031,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018675711762540471,
+   "recip_scale_frac_outputs_equal": 0.7980238970588235,
+   "exact_recip_vs_exact_ieee": 0.0014686989295976535,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01760436416202009,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017567222058366905,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00204509235898882,
+   "input_absmax": 72.5
+  },
+  "model.language_model.layers.7.self_attn.v_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016555019044940643,
+   "cpu_rel_l2_vs_exact": 0.0016555019044940643,
+   "bf16_rounding_of_exact": 0.0016555018938946905,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002131599382551101,
+   "recip_scale_frac_outputs_equal": 0.7891429227941177,
+   "exact_recip_vs_exact_ieee": 0.0017820986097442774,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020159557012170124,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020110276155075733,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00209333934184942,
+   "input_absmax": 72.5
+  },
+  "model.language_model.layers.7.self_attn.o_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0017099645956090317,
+   "cpu_rel_l2_vs_exact": 0.0017099645956090317,
+   "bf16_rounding_of_exact": 0.001709964593608666,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002763496318107093,
+   "recip_scale_frac_outputs_equal": 0.743125,
+   "exact_recip_vs_exact_ieee": 0.002378546836370917,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.027238298207188125,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.027193099354410943,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002533157571151017,
+   "input_absmax": 9.8125
+  },
+  "model.language_model.layers.7.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001657413762443527,
+   "cpu_rel_l2_vs_exact": 0.001657413762443527,
+   "bf16_rounding_of_exact": 0.0016574137616808975,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0024438388995777337,
+   "recip_scale_frac_outputs_equal": 0.8351932700163399,
+   "exact_recip_vs_exact_ieee": 0.002121622257820789,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017025742407055587,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.016984135786186523,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020083897540816723,
+   "input_absmax": 32.25
+  },
+  "model.language_model.layers.7.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001659105204826322,
+   "cpu_rel_l2_vs_exact": 0.001659105204826322,
+   "bf16_rounding_of_exact": 0.0016591052028972443,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002503102290637076,
+   "recip_scale_frac_outputs_equal": 0.8046657986111111,
+   "exact_recip_vs_exact_ieee": 0.002157619743260701,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.024288843411376257,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.024238574774785186,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022091179089450256,
+   "input_absmax": 32.25
+  },
+  "model.language_model.layers.7.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016578436764144943,
+   "cpu_rel_l2_vs_exact": 0.0016578436764144943,
+   "bf16_rounding_of_exact": 0.001657843667068833,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0026446790483818624,
+   "recip_scale_frac_outputs_equal": 0.6231985294117647,
+   "exact_recip_vs_exact_ieee": 0.0019310731677941056,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020610980048369813,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020566733557335896,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021593240430237155,
+   "input_absmax": 5.03125
+  },
+  "model.language_model.layers.8.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016407995249837271,
+   "cpu_rel_l2_vs_exact": 0.0016407995249837271,
+   "bf16_rounding_of_exact": 0.0016407995242585828,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0024549570141874097,
+   "recip_scale_frac_outputs_equal": 0.7720266544117647,
+   "exact_recip_vs_exact_ieee": 0.0021418403431084127,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.0217438450278246,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02167693988974906,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021883522198415622,
+   "input_absmax": 2.75
+  },
+  "model.language_model.layers.8.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016476045193544958,
+   "cpu_rel_l2_vs_exact": 0.0016476045193544958,
+   "bf16_rounding_of_exact": 0.0016476045188443956,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0016862024389114436,
+   "recip_scale_frac_outputs_equal": 0.8182545381433823,
+   "exact_recip_vs_exact_ieee": 0.0012581791562027793,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018065055347863526,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.018007278132544338,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002056326736764271,
+   "input_absmax": 58.0
+  },
+  "model.language_model.layers.8.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016595573313489132,
+   "cpu_rel_l2_vs_exact": 0.0016595573313489132,
+   "bf16_rounding_of_exact": 0.0016595573305792173,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0014357893034004383,
+   "recip_scale_frac_outputs_equal": 0.8352194393382353,
+   "exact_recip_vs_exact_ieee": 0.0009990360454841338,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.014682401112088827,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.014645287280810406,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019782691944499535,
+   "input_absmax": 58.0
+  },
+  "model.language_model.layers.8.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016598530670290294,
+   "cpu_rel_l2_vs_exact": 0.0016598530670290294,
+   "bf16_rounding_of_exact": 0.0016598530657214502,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021817070728907865,
+   "recip_scale_frac_outputs_equal": 0.8095320159313726,
+   "exact_recip_vs_exact_ieee": 0.0017167391306884855,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018051602228223662,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017996153807680864,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020586159391951533,
+   "input_absmax": 30.75
+  },
+  "model.language_model.layers.8.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016595033182214413,
+   "cpu_rel_l2_vs_exact": 0.0016595033182214413,
+   "bf16_rounding_of_exact": 0.0016595033161605792,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0026680532024512386,
+   "recip_scale_frac_outputs_equal": 0.7725592320261437,
+   "exact_recip_vs_exact_ieee": 0.0023035242936323202,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.024183188842762875,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.024128085490353213,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002196483226648049,
+   "input_absmax": 30.75
+  },
+  "model.language_model.layers.8.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016641485096766252,
+   "cpu_rel_l2_vs_exact": 0.0016641485096766252,
+   "bf16_rounding_of_exact": 0.0016641485088628267,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0025306131875169136,
+   "recip_scale_frac_outputs_equal": 0.6454871323529412,
+   "exact_recip_vs_exact_ieee": 0.0018832999373960208,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020878514708217326,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020825216830448606,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002178176930951236,
+   "input_absmax": 5.3125
+  },
+  "model.language_model.layers.9.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016507108290421484,
+   "cpu_rel_l2_vs_exact": 0.0016507108290421484,
+   "bf16_rounding_of_exact": 0.0016507108219548374,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002159611669715389,
+   "recip_scale_frac_outputs_equal": 0.78140625,
+   "exact_recip_vs_exact_ieee": 0.0017267270283386324,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023745491194006988,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.0236591735652222,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0023100919482172953,
+   "input_absmax": 3.03125
+  },
+  "model.language_model.layers.9.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016671003001160736,
+   "cpu_rel_l2_vs_exact": 0.0016671003001160736,
+   "bf16_rounding_of_exact": 0.001667100281107345,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0016668314526156647,
+   "recip_scale_frac_outputs_equal": 0.8189194623161765,
+   "exact_recip_vs_exact_ieee": 0.0012535797324782652,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.0177313663273525,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01769340653154835,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002049816097974935,
+   "input_absmax": 58.5
+  },
+  "model.language_model.layers.9.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016757533825673887,
+   "cpu_rel_l2_vs_exact": 0.0016757533825673887,
+   "bf16_rounding_of_exact": 0.0016757533826575117,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0012558811945880541,
+   "recip_scale_frac_outputs_equal": 0.8529871323529412,
+   "exact_recip_vs_exact_ieee": 0.0007863737197510468,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011902121783285487,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011864311224053218,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001954553980124104,
+   "input_absmax": 58.5
+  },
+  "model.language_model.layers.9.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016560918420621634,
+   "cpu_rel_l2_vs_exact": 0.0016560918420621634,
+   "bf16_rounding_of_exact": 0.0016560918380289068,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019310583896036935,
+   "recip_scale_frac_outputs_equal": 0.8336588541666666,
+   "exact_recip_vs_exact_ieee": 0.0016031031876491196,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019376733749565157,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019329974656214992,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021119916811903005,
+   "input_absmax": 33.75
+  },
+  "model.language_model.layers.9.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001659080797051306,
+   "cpu_rel_l2_vs_exact": 0.001659080797051306,
+   "bf16_rounding_of_exact": 0.0016590807936527833,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0022969811634209283,
+   "recip_scale_frac_outputs_equal": 0.8142680249183006,
+   "exact_recip_vs_exact_ieee": 0.001983413439049111,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023983045801666117,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02393899399991514,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022048617051704843,
+   "input_absmax": 33.75
+  },
+  "model.language_model.layers.9.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001668231198160586,
+   "cpu_rel_l2_vs_exact": 0.001668231198160586,
+   "bf16_rounding_of_exact": 0.0016682311929008605,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0027540945082594206,
+   "recip_scale_frac_outputs_equal": 0.6026608455882353,
+   "exact_recip_vs_exact_ieee": 0.0020709988854623763,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02141108053798291,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02136300296859227,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002228349510599471,
+   "input_absmax": 4.15625
+  },
+  "model.language_model.layers.10.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001555561463169086,
+   "cpu_rel_l2_vs_exact": 0.001555561463169086,
+   "bf16_rounding_of_exact": 0.0015555614625835429,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0022948216818252233,
+   "recip_scale_frac_outputs_equal": 0.7335018382352941,
+   "exact_recip_vs_exact_ieee": 0.0018971633512576346,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02129449784909784,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.021254962544106925,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002139802857711839,
+   "input_absmax": 17.875
+  },
+  "model.language_model.layers.10.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001664225064735,
+   "cpu_rel_l2_vs_exact": 0.001664225064735,
+   "bf16_rounding_of_exact": 0.001664225063373497,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0017705662555771234,
+   "recip_scale_frac_outputs_equal": 0.8187672334558823,
+   "exact_recip_vs_exact_ieee": 0.001366758494450971,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017556511054274235,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017511342875082325,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002034398569726583,
+   "input_absmax": 58.75
+  },
+  "model.language_model.layers.10.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001667049240412878,
+   "cpu_rel_l2_vs_exact": 0.001667049240412878,
+   "bf16_rounding_of_exact": 0.0016670492379697182,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0012594636817022291,
+   "recip_scale_frac_outputs_equal": 0.8528234145220588,
+   "exact_recip_vs_exact_ieee": 0.0008347934753412359,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011934315006641416,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011894439286223121,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019774267177628353,
+   "input_absmax": 58.75
+  },
+  "model.language_model.layers.10.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001658261758968148,
+   "cpu_rel_l2_vs_exact": 0.001658261758968148,
+   "bf16_rounding_of_exact": 0.001658261754544651,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0027915699838569593,
+   "recip_scale_frac_outputs_equal": 0.7880821078431373,
+   "exact_recip_vs_exact_ieee": 0.002466497913722922,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018558706974113368,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01851537720692424,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002117760108868186,
+   "input_absmax": 47.0
+  },
+  "model.language_model.layers.10.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016585170294611937,
+   "cpu_rel_l2_vs_exact": 0.0016585170294611937,
+   "bf16_rounding_of_exact": 0.0016585170278640962,
+   "recip_scale_rel_l2_vs_ieee_output": 0.003118325614010489,
+   "recip_scale_frac_outputs_equal": 0.761492800245098,
+   "exact_recip_vs_exact_ieee": 0.0028119364305562037,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.022140622350791273,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02209270315419351,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021510186165296257,
+   "input_absmax": 47.0
+  },
+  "model.language_model.layers.10.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016511372658908655,
+   "cpu_rel_l2_vs_exact": 0.0016511372658908655,
+   "bf16_rounding_of_exact": 0.0016511372432562955,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002857837170871695,
+   "recip_scale_frac_outputs_equal": 0.6244761029411765,
+   "exact_recip_vs_exact_ieee": 0.0022452625213043296,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020978956572201002,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020924510046653376,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002211046862395093,
+   "input_absmax": 4.03125
+  },
+  "model.language_model.layers.11.self_attn.q_proj": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001661256529155351,
+   "cpu_rel_l2_vs_exact": 0.001661256529155351,
+   "bf16_rounding_of_exact": 0.001661256526676007,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0011837914910645454,
+   "recip_scale_frac_outputs_equal": 0.8876795151654412,
+   "exact_recip_vs_exact_ieee": 0.0006915888580299861,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.00976261682853571,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.009742338898980542,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018192110015373202,
+   "input_absmax": 85.5
+  },
+  "model.language_model.layers.11.self_attn.k_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016603031371535603,
+   "cpu_rel_l2_vs_exact": 0.0016603031371535603,
+   "bf16_rounding_of_exact": 0.001660303137142135,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001682424694534721,
+   "recip_scale_frac_outputs_equal": 0.8396829044117647,
+   "exact_recip_vs_exact_ieee": 0.0013323462330494752,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01629076746461473,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.016257523845436255,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020103976459783673,
+   "input_absmax": 85.5
+  },
+  "model.language_model.layers.11.self_attn.v_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016550895208139525,
+   "cpu_rel_l2_vs_exact": 0.0016550895208139525,
+   "bf16_rounding_of_exact": 0.0016550895202581389,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018602384358855312,
+   "recip_scale_frac_outputs_equal": 0.8339039522058823,
+   "exact_recip_vs_exact_ieee": 0.0015847834737359892,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018677411785576123,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01864405576142754,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002034409120763322,
+   "input_absmax": 85.5
+  },
+  "model.language_model.layers.11.self_attn.o_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016772274584274484,
+   "cpu_rel_l2_vs_exact": 0.0016772274584274484,
+   "bf16_rounding_of_exact": 0.0016772274566309807,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0034489508158593632,
+   "recip_scale_frac_outputs_equal": 0.693782169117647,
+   "exact_recip_vs_exact_ieee": 0.0031031858874635936,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.03301754361433796,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.03295683071882042,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002656476910580988,
+   "input_absmax": 1.765625
+  },
+  "model.language_model.layers.11.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016615270628232881,
+   "cpu_rel_l2_vs_exact": 0.0016615270628232881,
+   "bf16_rounding_of_exact": 0.0016615270609531558,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0017381609736040458,
+   "recip_scale_frac_outputs_equal": 0.8325827205882353,
+   "exact_recip_vs_exact_ieee": 0.0012702245290786896,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018008346395902413,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01796319524820895,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020783087466140298,
+   "input_absmax": 36.5
+  },
+  "model.language_model.layers.11.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016584254892304691,
+   "cpu_rel_l2_vs_exact": 0.0016584254892304691,
+   "bf16_rounding_of_exact": 0.001658425485145586,
+   "recip_scale_rel_l2_vs_ieee_output": 0.00208351105304495,
+   "recip_scale_frac_outputs_equal": 0.8068742340686275,
+   "exact_recip_vs_exact_ieee": 0.0016540838650836054,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023213795921652052,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023168613374462427,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002193949983278523,
+   "input_absmax": 36.5
+  },
+  "model.language_model.layers.11.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016537461025852242,
+   "cpu_rel_l2_vs_exact": 0.0016537461025852242,
+   "bf16_rounding_of_exact": 0.0016537461010635288,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002946330857909274,
+   "recip_scale_frac_outputs_equal": 0.6070726102941176,
+   "exact_recip_vs_exact_ieee": 0.0023327789770784474,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.021947801883520884,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.021894685323857493,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022292924442159625,
+   "input_absmax": 2.765625
+  },
+  "model.language_model.layers.12.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016521025148620915,
+   "cpu_rel_l2_vs_exact": 0.0016521025148620915,
+   "bf16_rounding_of_exact": 0.001652102513986606,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002922023988255627,
+   "recip_scale_frac_outputs_equal": 0.7713970588235294,
+   "exact_recip_vs_exact_ieee": 0.0025586253122092187,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.025333086937534333,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02528161671356514,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0023676720678416905,
+   "input_absmax": 1.953125
+  },
+  "model.language_model.layers.12.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016783370403305976,
+   "cpu_rel_l2_vs_exact": 0.0016783370403305976,
+   "bf16_rounding_of_exact": 0.00167833703856175,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0016252245007253117,
+   "recip_scale_frac_outputs_equal": 0.8222124885110295,
+   "exact_recip_vs_exact_ieee": 0.001213518770519019,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017366250473186507,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017313022689446848,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020356236233836232,
+   "input_absmax": 66.0
+  },
+  "model.language_model.layers.12.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016801465962605474,
+   "cpu_rel_l2_vs_exact": 0.0016801465962605474,
+   "bf16_rounding_of_exact": 0.0016801465662958266,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0012039001050198283,
+   "recip_scale_frac_outputs_equal": 0.8484260110294117,
+   "exact_recip_vs_exact_ieee": 0.0007462571750610393,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011706406634717264,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011647730395738872,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001957607364749354,
+   "input_absmax": 66.0
+  },
+  "model.language_model.layers.12.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016565539050174447,
+   "cpu_rel_l2_vs_exact": 0.0016565539050174447,
+   "bf16_rounding_of_exact": 0.001656553903672245,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021296533945444145,
+   "recip_scale_frac_outputs_equal": 0.8024037479575163,
+   "exact_recip_vs_exact_ieee": 0.0017009265802136186,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018101709568881245,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.018063336742882564,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020614373958005904,
+   "input_absmax": 37.0
+  },
+  "model.language_model.layers.12.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016589332042648989,
+   "cpu_rel_l2_vs_exact": 0.0016589332042648989,
+   "bf16_rounding_of_exact": 0.0016589332036134137,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002479252041214156,
+   "recip_scale_frac_outputs_equal": 0.7729460273692811,
+   "exact_recip_vs_exact_ieee": 0.0020789699918741713,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.0234042560035712,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02335745935561268,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022025179830309576,
+   "input_absmax": 37.0
+  },
+  "model.language_model.layers.12.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016567161544758392,
+   "cpu_rel_l2_vs_exact": 0.0016567161544758392,
+   "bf16_rounding_of_exact": 0.0016567161484302248,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002557179281549975,
+   "recip_scale_frac_outputs_equal": 0.6620450367647058,
+   "exact_recip_vs_exact_ieee": 0.001963479393132276,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.021613853255579733,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02154907087490704,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022212905252306067,
+   "input_absmax": 6.5625
+  },
+  "model.language_model.layers.13.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016669649000031355,
+   "cpu_rel_l2_vs_exact": 0.0016669649000031355,
+   "bf16_rounding_of_exact": 0.0016669648985333653,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0027013112341282525,
+   "recip_scale_frac_outputs_equal": 0.7903125,
+   "exact_recip_vs_exact_ieee": 0.002394341866429987,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023984768663980416,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023921640646123284,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0023194788365569706,
+   "input_absmax": 2.765625
+  },
+  "model.language_model.layers.13.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016664024614573803,
+   "cpu_rel_l2_vs_exact": 0.0016664024614573803,
+   "bf16_rounding_of_exact": 0.0016664024597277747,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019051308470825648,
+   "recip_scale_frac_outputs_equal": 0.7947868795955882,
+   "exact_recip_vs_exact_ieee": 0.00151065188199086,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017711206549410417,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017662824974757744,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002021782131184897,
+   "input_absmax": 62.0
+  },
+  "model.language_model.layers.13.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016791976560489208,
+   "cpu_rel_l2_vs_exact": 0.0016791976560489208,
+   "bf16_rounding_of_exact": 0.001679197653648805,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0012574165341003864,
+   "recip_scale_frac_outputs_equal": 0.8515021829044118,
+   "exact_recip_vs_exact_ieee": 0.0007592341134332065,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.010474552877859434,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01044842784154811,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00191265680044925,
+   "input_absmax": 62.0
+  },
+  "model.language_model.layers.13.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001654847956452188,
+   "cpu_rel_l2_vs_exact": 0.001654847956452188,
+   "bf16_rounding_of_exact": 0.001654847954707551,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001877626020206443,
+   "recip_scale_frac_outputs_equal": 0.8278556474673202,
+   "exact_recip_vs_exact_ieee": 0.0014337210802398016,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01921035571236207,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01917568086852394,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002069127626479771,
+   "input_absmax": 38.0
+  },
+  "model.language_model.layers.13.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016593368118342714,
+   "cpu_rel_l2_vs_exact": 0.0016593368118342714,
+   "bf16_rounding_of_exact": 0.0016593368100122363,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0022307053725693898,
+   "recip_scale_frac_outputs_equal": 0.8006242340686275,
+   "exact_recip_vs_exact_ieee": 0.0018446971388172944,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023270079295816464,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02322075631226055,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002182522748789878,
+   "input_absmax": 38.0
+  },
+  "model.language_model.layers.13.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016580592492585334,
+   "cpu_rel_l2_vs_exact": 0.0016580592492585334,
+   "bf16_rounding_of_exact": 0.0016580592378665816,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002807253741712396,
+   "recip_scale_frac_outputs_equal": 0.594172794117647,
+   "exact_recip_vs_exact_ieee": 0.0021255598014929275,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02177808096056044,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.021715461871261155,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022501742490895725,
+   "input_absmax": 4.5625
+  },
+  "model.language_model.layers.14.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016618259497000307,
+   "cpu_rel_l2_vs_exact": 0.0016618259497000307,
+   "bf16_rounding_of_exact": 0.001661825948519374,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002090502058847073,
+   "recip_scale_frac_outputs_equal": 0.8102159926470588,
+   "exact_recip_vs_exact_ieee": 0.0016645143556474026,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023336802241585325,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023299237241453316,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022537660908258195,
+   "input_absmax": 4.4375
+  },
+  "model.language_model.layers.14.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016644350395385822,
+   "cpu_rel_l2_vs_exact": 0.0016644350395385822,
+   "bf16_rounding_of_exact": 0.0016644350392751104,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0016156072537417668,
+   "recip_scale_frac_outputs_equal": 0.8267621208639706,
+   "exact_recip_vs_exact_ieee": 0.0012328541942775132,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017336003928968762,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01729260230394437,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002028659617497682,
+   "input_absmax": 60.5
+  },
+  "model.language_model.layers.14.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016684000402833632,
+   "cpu_rel_l2_vs_exact": 0.0016684000402833632,
+   "bf16_rounding_of_exact": 0.0016684000390815863,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0012060030168594307,
+   "recip_scale_frac_outputs_equal": 0.855618106617647,
+   "exact_recip_vs_exact_ieee": 0.0007695826772481403,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.012044123559442583,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011990615981948765,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019651447047888708,
+   "input_absmax": 60.5
+  },
+  "model.language_model.layers.14.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016597611298661814,
+   "cpu_rel_l2_vs_exact": 0.0016597611298661814,
+   "bf16_rounding_of_exact": 0.0016597611278083388,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019056914947396288,
+   "recip_scale_frac_outputs_equal": 0.8277918198529411,
+   "exact_recip_vs_exact_ieee": 0.0015135919095322968,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019348881245020495,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01929947162971723,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002099773414958802,
+   "input_absmax": 44.0
+  },
+  "model.language_model.layers.14.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016577790647785756,
+   "cpu_rel_l2_vs_exact": 0.0016577790647785756,
+   "bf16_rounding_of_exact": 0.0016577790636606302,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0022384240316638275,
+   "recip_scale_frac_outputs_equal": 0.8084916258169934,
+   "exact_recip_vs_exact_ieee": 0.0018722939847676447,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02251167668839784,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02245948444158157,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021531723112343274,
+   "input_absmax": 44.0
+  },
+  "model.language_model.layers.14.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016961990151187934,
+   "cpu_rel_l2_vs_exact": 0.0016961990151187934,
+   "bf16_rounding_of_exact": 0.001696199013111863,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002644951653428987,
+   "recip_scale_frac_outputs_equal": 0.6360248161764706,
+   "exact_recip_vs_exact_ieee": 0.001996387926250093,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020134143734232838,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020111341932437774,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021781165490620397,
+   "input_absmax": 4.0
+  },
+  "model.language_model.layers.15.self_attn.q_proj": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016514717634252725,
+   "cpu_rel_l2_vs_exact": 0.0016514717634252725,
+   "bf16_rounding_of_exact": 0.0016514717595311685,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0011666803348971044,
+   "recip_scale_frac_outputs_equal": 0.8881433823529412,
+   "exact_recip_vs_exact_ieee": 0.0006971150121755433,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01009904064037787,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.010072760679849852,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001816472006923008,
+   "input_absmax": 73.5
+  },
+  "model.language_model.layers.15.self_attn.k_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016591551289072352,
+   "cpu_rel_l2_vs_exact": 0.0016591551289072352,
+   "bf16_rounding_of_exact": 0.0016591551274105936,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0017773142758327977,
+   "recip_scale_frac_outputs_equal": 0.8373851102941177,
+   "exact_recip_vs_exact_ieee": 0.0014411154746409068,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.016759446801559868,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01673021735600006,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001992272514224849,
+   "input_absmax": 73.5
+  },
+  "model.language_model.layers.15.self_attn.v_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016302264589926289,
+   "cpu_rel_l2_vs_exact": 0.0016302264589926289,
+   "bf16_rounding_of_exact": 0.0016302264583268453,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019462126515517285,
+   "recip_scale_frac_outputs_equal": 0.8275505514705882,
+   "exact_recip_vs_exact_ieee": 0.0016431870631546637,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01946868884907566,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019429494715696615,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002038499560866708,
+   "input_absmax": 73.5
+  },
+  "model.language_model.layers.15.self_attn.o_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016589572515951787,
+   "cpu_rel_l2_vs_exact": 0.0016589572515951787,
+   "bf16_rounding_of_exact": 0.0016589572445535443,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0028372614675632895,
+   "recip_scale_frac_outputs_equal": 0.7118014705882353,
+   "exact_recip_vs_exact_ieee": 0.002380882475856072,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.03192219274002612,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.031866180204883195,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002727098095710025,
+   "input_absmax": 3.0
+  },
+  "model.language_model.layers.15.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016561022093077343,
+   "cpu_rel_l2_vs_exact": 0.0016561022093077343,
+   "bf16_rounding_of_exact": 0.0016561022067677039,
+   "recip_scale_rel_l2_vs_ieee_output": 0.00192470081764975,
+   "recip_scale_frac_outputs_equal": 0.8409071180555555,
+   "exact_recip_vs_exact_ieee": 0.001564968111325794,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018630186601987238,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.018571009550482902,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002062548010407099,
+   "input_absmax": 43.0
+  },
+  "model.language_model.layers.15.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016558828673157752,
+   "cpu_rel_l2_vs_exact": 0.0016558828673157752,
+   "bf16_rounding_of_exact": 0.00165588286289819,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002241002168637492,
+   "recip_scale_frac_outputs_equal": 0.8219005310457517,
+   "exact_recip_vs_exact_ieee": 0.001890346211549851,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023006916258700636,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.022948953622201854,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021843818170525628,
+   "input_absmax": 43.0
+  },
+  "model.language_model.layers.15.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016658841563375198,
+   "cpu_rel_l2_vs_exact": 0.0016658841563375198,
+   "bf16_rounding_of_exact": 0.0016658841318522807,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002437938820468668,
+   "recip_scale_frac_outputs_equal": 0.6406341911764706,
+   "exact_recip_vs_exact_ieee": 0.0017492386793698143,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02061733797378068,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020559801424811713,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022130183488143895,
+   "input_absmax": 6.8125
+  },
+  "model.language_model.layers.16.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001628739210325602,
+   "cpu_rel_l2_vs_exact": 0.001628739210325602,
+   "bf16_rounding_of_exact": 0.0016287392096395437,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002069829637063595,
+   "recip_scale_frac_outputs_equal": 0.7490670955882353,
+   "exact_recip_vs_exact_ieee": 0.0016415730961925733,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02096463920094341,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020908856608508625,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022106742481640923,
+   "input_absmax": 3.875
+  },
+  "model.language_model.layers.16.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016698370537675897,
+   "cpu_rel_l2_vs_exact": 0.0016698370537675897,
+   "bf16_rounding_of_exact": 0.0016698370518351037,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002045301518790805,
+   "recip_scale_frac_outputs_equal": 0.8023494944852941,
+   "exact_recip_vs_exact_ieee": 0.0017139181553843283,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01719591819055911,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017158060874853463,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020323865639387427,
+   "input_absmax": 65.0
+  },
+  "model.language_model.layers.16.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016665459916799664,
+   "cpu_rel_l2_vs_exact": 0.0016665459916799664,
+   "bf16_rounding_of_exact": 0.0016665459919209188,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0015810726921694559,
+   "recip_scale_frac_outputs_equal": 0.8322323069852942,
+   "exact_recip_vs_exact_ieee": 0.0012586487943329794,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011848114980451612,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011813710179257381,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019191323914723275,
+   "input_absmax": 65.0
+  },
+  "model.language_model.layers.16.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001656536163195251,
+   "cpu_rel_l2_vs_exact": 0.001656536163195251,
+   "bf16_rounding_of_exact": 0.0016565361561672366,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001996384493520555,
+   "recip_scale_frac_outputs_equal": 0.8153135212418301,
+   "exact_recip_vs_exact_ieee": 0.0015707370106583722,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019331652965273397,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01927651627612187,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020716131575529667,
+   "input_absmax": 40.75
+  },
+  "model.language_model.layers.16.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016560904400731028,
+   "cpu_rel_l2_vs_exact": 0.0016560904400731028,
+   "bf16_rounding_of_exact": 0.0016560904264440763,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0023893859815583103,
+   "recip_scale_frac_outputs_equal": 0.7928296058006536,
+   "exact_recip_vs_exact_ieee": 0.0020113670549256443,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023655626334510602,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023595003411791122,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002213878652495047,
+   "input_absmax": 40.75
+  },
+  "model.language_model.layers.16.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016624681211434443,
+   "cpu_rel_l2_vs_exact": 0.0016624681211434443,
+   "bf16_rounding_of_exact": 0.001662468118717376,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0023521236725969788,
+   "recip_scale_frac_outputs_equal": 0.66921875,
+   "exact_recip_vs_exact_ieee": 0.0016748143697665437,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.021713679343595735,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.021666962240677583,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002255480610038862,
+   "input_absmax": 5.03125
+  },
+  "model.language_model.layers.17.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001652771469862436,
+   "cpu_rel_l2_vs_exact": 0.001652771469862436,
+   "bf16_rounding_of_exact": 0.0016527714638105739,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021891517304043653,
+   "recip_scale_frac_outputs_equal": 0.7718658088235294,
+   "exact_recip_vs_exact_ieee": 0.0017149148120068425,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02098849901436992,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020911583478375913,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022765064820802084,
+   "input_absmax": 9.875
+  },
+  "model.language_model.layers.17.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016827279234685384,
+   "cpu_rel_l2_vs_exact": 0.0016827279234685384,
+   "bf16_rounding_of_exact": 0.0016827279226727645,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018330570166953037,
+   "recip_scale_frac_outputs_equal": 0.7669519761029412,
+   "exact_recip_vs_exact_ieee": 0.001379677857886687,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017580895146155923,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017541940755583112,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00204928161248245,
+   "input_absmax": 58.5
+  },
+  "model.language_model.layers.17.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016939473747620366,
+   "cpu_rel_l2_vs_exact": 0.0016939473747620366,
+   "bf16_rounding_of_exact": 0.0016939473727208094,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0012819415364006632,
+   "recip_scale_frac_outputs_equal": 0.8251866957720588,
+   "exact_recip_vs_exact_ieee": 0.0007534027965056219,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.010988951228408554,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.010948954149780813,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001928672503694747,
+   "input_absmax": 58.5
+  },
+  "model.language_model.layers.17.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016598874010002019,
+   "cpu_rel_l2_vs_exact": 0.0016598874010002019,
+   "bf16_rounding_of_exact": 0.0016598873974999577,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019736495708872963,
+   "recip_scale_frac_outputs_equal": 0.7894301470588235,
+   "exact_recip_vs_exact_ieee": 0.0015154416952021985,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019924712029253923,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019869231055349063,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002103602314113069,
+   "input_absmax": 39.25
+  },
+  "model.language_model.layers.17.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016600621399390453,
+   "cpu_rel_l2_vs_exact": 0.0016600621399390453,
+   "bf16_rounding_of_exact": 0.001660062136433352,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002393040422378342,
+   "recip_scale_frac_outputs_equal": 0.768249591503268,
+   "exact_recip_vs_exact_ieee": 0.0019649084032541627,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02386260231883293,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023800323119760013,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022064227215850387,
+   "input_absmax": 39.25
+  },
+  "model.language_model.layers.17.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001663013744094812,
+   "cpu_rel_l2_vs_exact": 0.001663013744094812,
+   "bf16_rounding_of_exact": 0.0016630137206505534,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0026217657407446196,
+   "recip_scale_frac_outputs_equal": 0.6234283088235294,
+   "exact_recip_vs_exact_ieee": 0.0019294203885009764,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02140508807534676,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.021334330439437856,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022609725012966743,
+   "input_absmax": 5.53125
+  },
+  "model.language_model.layers.18.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016791272404473843,
+   "cpu_rel_l2_vs_exact": 0.0016791272404473843,
+   "bf16_rounding_of_exact": 0.0016791272401542297,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021817859657080056,
+   "recip_scale_frac_outputs_equal": 0.7939384191176471,
+   "exact_recip_vs_exact_ieee": 0.0017657784198423408,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020650797291676307,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020594915701945084,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022038960369003134,
+   "input_absmax": 8.125
+  },
+  "model.language_model.layers.18.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001666015745280018,
+   "cpu_rel_l2_vs_exact": 0.001666015745280018,
+   "bf16_rounding_of_exact": 0.0016660157436838234,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0023981702296200585,
+   "recip_scale_frac_outputs_equal": 0.7640151079963236,
+   "exact_recip_vs_exact_ieee": 0.0020312234659287825,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017990704386900973,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017949101454230988,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020328196966467446,
+   "input_absmax": 56.75
+  },
+  "model.language_model.layers.18.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016671983958795654,
+   "cpu_rel_l2_vs_exact": 0.0016671983958795654,
+   "bf16_rounding_of_exact": 0.0016671983956059,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019128016342671757,
+   "recip_scale_frac_outputs_equal": 0.7909581801470589,
+   "exact_recip_vs_exact_ieee": 0.001495276696721145,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.013839480269325598,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.013793995469405152,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019994789199858226,
+   "input_absmax": 56.75
+  },
+  "model.language_model.layers.18.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001657816709244216,
+   "cpu_rel_l2_vs_exact": 0.001657816709244216,
+   "bf16_rounding_of_exact": 0.0016578167057571004,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0025355449638017422,
+   "recip_scale_frac_outputs_equal": 0.8301062091503268,
+   "exact_recip_vs_exact_ieee": 0.0022596094430486964,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018367736036895666,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.018329781334517053,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002036058615944422,
+   "input_absmax": 46.0
+  },
+  "model.language_model.layers.18.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016568942871975113,
+   "cpu_rel_l2_vs_exact": 0.0016568942871975113,
+   "bf16_rounding_of_exact": 0.0016568942846399261,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0024902982537652416,
+   "recip_scale_frac_outputs_equal": 0.805819801879085,
+   "exact_recip_vs_exact_ieee": 0.00214612117932005,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023107145895009198,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023056599542333935,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021719735594370694,
+   "input_absmax": 46.0
+  },
+  "model.language_model.layers.18.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001931204179843166,
+   "cpu_rel_l2_vs_exact": 0.001931204179843166,
+   "bf16_rounding_of_exact": 0.0019312041724121748,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021026579590001835,
+   "recip_scale_frac_outputs_equal": 0.6499264705882353,
+   "exact_recip_vs_exact_ieee": 0.001534328717024444,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01639765949161084,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01636075113303364,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0023375408594672044,
+   "input_absmax": 76.5
+  },
+  "model.language_model.layers.19.self_attn.q_proj": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016639440453321763,
+   "cpu_rel_l2_vs_exact": 0.0016639440453321763,
+   "bf16_rounding_of_exact": 0.0016639440414798264,
+   "recip_scale_rel_l2_vs_ieee_output": 0.00129589193806906,
+   "recip_scale_frac_outputs_equal": 0.875881778492647,
+   "exact_recip_vs_exact_ieee": 0.0007760225939311541,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.010951759311853021,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.010930077107546636,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001845594811277007,
+   "input_absmax": 59.25
+  },
+  "model.language_model.layers.19.self_attn.k_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016673648336087467,
+   "cpu_rel_l2_vs_exact": 0.0016673648336087467,
+   "bf16_rounding_of_exact": 0.0016673648330090877,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0016654490171098886,
+   "recip_scale_frac_outputs_equal": 0.8276539522058823,
+   "exact_recip_vs_exact_ieee": 0.001311742614372085,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01705056843986624,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017020753045174346,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020062264142038143,
+   "input_absmax": 59.25
+  },
+  "model.language_model.layers.19.self_attn.v_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016418529284812362,
+   "cpu_rel_l2_vs_exact": 0.0016418529284812362,
+   "bf16_rounding_of_exact": 0.001641852926518399,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021164050002350685,
+   "recip_scale_frac_outputs_equal": 0.8150965073529411,
+   "exact_recip_vs_exact_ieee": 0.0018108661998068158,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020798572910038424,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020754866050104074,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002138902680379499,
+   "input_absmax": 59.25
+  },
+  "model.language_model.layers.19.self_attn.o_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0015913246978257365,
+   "cpu_rel_l2_vs_exact": 0.0015913246978257365,
+   "bf16_rounding_of_exact": 0.0015913246944806324,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002157256896095773,
+   "recip_scale_frac_outputs_equal": 0.7296001838235294,
+   "exact_recip_vs_exact_ieee": 0.0018058754807329716,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02209654268322552,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.022054159198928575,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002211972730596516,
+   "input_absmax": 49.0
+  },
+  "model.language_model.layers.19.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016581991535302041,
+   "cpu_rel_l2_vs_exact": 0.0016581991535302041,
+   "bf16_rounding_of_exact": 0.0016581991448605612,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019006323863424888,
+   "recip_scale_frac_outputs_equal": 0.8172730290032679,
+   "exact_recip_vs_exact_ieee": 0.0014242706178549417,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017570815395565265,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01753057151764238,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019867235390058345,
+   "input_absmax": 38.25
+  },
+  "model.language_model.layers.19.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016578940625490417,
+   "cpu_rel_l2_vs_exact": 0.0016578940625490417,
+   "bf16_rounding_of_exact": 0.0016578940614462303,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002502859026365304,
+   "recip_scale_frac_outputs_equal": 0.7769263174019608,
+   "exact_recip_vs_exact_ieee": 0.002115913123155614,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023650277207812338,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02359466950149952,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00220969533682567,
+   "input_absmax": 38.25
+  },
+  "model.language_model.layers.19.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001658377126933014,
+   "cpu_rel_l2_vs_exact": 0.001658377126933014,
+   "bf16_rounding_of_exact": 0.0016583771226312508,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0024705126157776257,
+   "recip_scale_frac_outputs_equal": 0.6491957720588235,
+   "exact_recip_vs_exact_ieee": 0.001808473957112791,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018712156161572163,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.0186587069576412,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021980880998267458,
+   "input_absmax": 10.25
+  },
+  "model.language_model.layers.20.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016736181137038922,
+   "cpu_rel_l2_vs_exact": 0.0016736181137038922,
+   "bf16_rounding_of_exact": 0.0016736181099254945,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002045472071988336,
+   "recip_scale_frac_outputs_equal": 0.7784558823529412,
+   "exact_recip_vs_exact_ieee": 0.0015631892027409887,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.021530800634401125,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.021479475672482037,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002288613937993075,
+   "input_absmax": 12.375
+  },
+  "model.language_model.layers.20.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016595900387881464,
+   "cpu_rel_l2_vs_exact": 0.0016595900387881464,
+   "bf16_rounding_of_exact": 0.0016595900375113988,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021010760177553748,
+   "recip_scale_frac_outputs_equal": 0.7634909237132353,
+   "exact_recip_vs_exact_ieee": 0.0016951030978132615,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.014930497631506624,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.014890301701595561,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019077115227630695,
+   "input_absmax": 50.5
+  },
+  "model.language_model.layers.20.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016635168278503738,
+   "cpu_rel_l2_vs_exact": 0.0016635168278503738,
+   "bf16_rounding_of_exact": 0.0016635168060558064,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018724470881598297,
+   "recip_scale_frac_outputs_equal": 0.802395450367647,
+   "exact_recip_vs_exact_ieee": 0.0014097906456574808,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.012576762637264665,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.012529293652714154,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001853198320377602,
+   "input_absmax": 50.5
+  },
+  "model.language_model.layers.20.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016586914926405372,
+   "cpu_rel_l2_vs_exact": 0.0016586914926405372,
+   "bf16_rounding_of_exact": 0.0016586914858273442,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002077523287446424,
+   "recip_scale_frac_outputs_equal": 0.7990821589052287,
+   "exact_recip_vs_exact_ieee": 0.0016291927087434162,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017222691013630165,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01718879349433788,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001977073032515714,
+   "input_absmax": 34.25
+  },
+  "model.language_model.layers.20.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016604276024202917,
+   "cpu_rel_l2_vs_exact": 0.0016604276024202917,
+   "bf16_rounding_of_exact": 0.0016604275998524604,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002724277659336136,
+   "recip_scale_frac_outputs_equal": 0.7649573631535947,
+   "exact_recip_vs_exact_ieee": 0.0023494210479635797,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023616199179972687,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02355148332497272,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002195166911931436,
+   "input_absmax": 34.25
+  },
+  "model.language_model.layers.20.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001659220405505524,
+   "cpu_rel_l2_vs_exact": 0.001659220405505524,
+   "bf16_rounding_of_exact": 0.0016592203899418823,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002291663821806618,
+   "recip_scale_frac_outputs_equal": 0.6903400735294117,
+   "exact_recip_vs_exact_ieee": 0.0016271449447451364,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019797746188053994,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019731117983046727,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022488282000619796,
+   "input_absmax": 10.25
+  },
+  "model.language_model.layers.21.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016571069524528124,
+   "cpu_rel_l2_vs_exact": 0.0016571069524528124,
+   "bf16_rounding_of_exact": 0.001657106939150267,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0017089499840905406,
+   "recip_scale_frac_outputs_equal": 0.7994347426470588,
+   "exact_recip_vs_exact_ieee": 0.001286301618880991,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01723660045000426,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017175066977932647,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022510411118120896,
+   "input_absmax": 26.25
+  },
+  "model.language_model.layers.21.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016587636321411083,
+   "cpu_rel_l2_vs_exact": 0.0016587636321411083,
+   "bf16_rounding_of_exact": 0.0016587636320468376,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0022022783607944596,
+   "recip_scale_frac_outputs_equal": 0.7378719554227942,
+   "exact_recip_vs_exact_ieee": 0.0017523493171711377,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015464193351607933,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.015428200627951317,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019337653857068081,
+   "input_absmax": 43.0
+  },
+  "model.language_model.layers.21.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016640468062866717,
+   "cpu_rel_l2_vs_exact": 0.0016640468062866717,
+   "bf16_rounding_of_exact": 0.0016640468058554468,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0020148748481668946,
+   "recip_scale_frac_outputs_equal": 0.7800695082720588,
+   "exact_recip_vs_exact_ieee": 0.0015198869643727269,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.012403984571808878,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.012370800851101482,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018464436577192147,
+   "input_absmax": 43.0
+  },
+  "model.language_model.layers.21.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001659459290613259,
+   "cpu_rel_l2_vs_exact": 0.001659459290613259,
+   "bf16_rounding_of_exact": 0.001659459289044795,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018772018884847105,
+   "recip_scale_frac_outputs_equal": 0.8117391748366013,
+   "exact_recip_vs_exact_ieee": 0.0013995346821505184,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01672984124308852,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01668349127696536,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019728075477253282,
+   "input_absmax": 30.25
+  },
+  "model.language_model.layers.21.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001660606146514302,
+   "cpu_rel_l2_vs_exact": 0.001660606146514302,
+   "bf16_rounding_of_exact": 0.0016606061426180459,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002535653417584063,
+   "recip_scale_frac_outputs_equal": 0.7747025633169935,
+   "exact_recip_vs_exact_ieee": 0.002145596000910276,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023429702835528747,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02337230971187845,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022028636090277495,
+   "input_absmax": 30.25
+  },
+  "model.language_model.layers.21.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001659656524144065,
+   "cpu_rel_l2_vs_exact": 0.001659656524144065,
+   "bf16_rounding_of_exact": 0.0016596565102271724,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0028227804693083417,
+   "recip_scale_frac_outputs_equal": 0.6293795955882353,
+   "exact_recip_vs_exact_ieee": 0.0021849910557599317,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019892642799189737,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019833406421911254,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002263811857688315,
+   "input_absmax": 15.125
+  },
+  "model.language_model.layers.22.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0017365616243300908,
+   "cpu_rel_l2_vs_exact": 0.0017365616243300908,
+   "bf16_rounding_of_exact": 0.0017365616240877016,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018182907259154325,
+   "recip_scale_frac_outputs_equal": 0.8093336397058823,
+   "exact_recip_vs_exact_ieee": 0.001317932296027005,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01908605976958884,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019038803407964183,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002219892359874523,
+   "input_absmax": 13.875
+  },
+  "model.language_model.layers.22.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016643676691980537,
+   "cpu_rel_l2_vs_exact": 0.0016643676691980537,
+   "bf16_rounding_of_exact": 0.0016643676652625295,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002084938826509391,
+   "recip_scale_frac_outputs_equal": 0.7205552045036765,
+   "exact_recip_vs_exact_ieee": 0.0015722239934099788,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.016518820826664806,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01647836428923958,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001967411047513209,
+   "input_absmax": 35.75
+  },
+  "model.language_model.layers.22.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016645486520049072,
+   "cpu_rel_l2_vs_exact": 0.0016645486520049072,
+   "bf16_rounding_of_exact": 0.0016645486508553903,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0017836187408837027,
+   "recip_scale_frac_outputs_equal": 0.7909811580882353,
+   "exact_recip_vs_exact_ieee": 0.0011253257825192286,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.012924677447737305,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.012896358561537546,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018594278842167529,
+   "input_absmax": 35.75
+  },
+  "model.language_model.layers.22.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016596847529307226,
+   "cpu_rel_l2_vs_exact": 0.0016596847529307226,
+   "bf16_rounding_of_exact": 0.0016596847499382211,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019608560220801974,
+   "recip_scale_frac_outputs_equal": 0.786657475490196,
+   "exact_recip_vs_exact_ieee": 0.0013865016709761174,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01466504565094109,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.014641838509880675,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018987325299864124,
+   "input_absmax": 28.875
+  },
+  "model.language_model.layers.22.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016606796138889921,
+   "cpu_rel_l2_vs_exact": 0.0016606796138889921,
+   "bf16_rounding_of_exact": 0.001660679611401384,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002592134424386226,
+   "recip_scale_frac_outputs_equal": 0.7225822099673203,
+   "exact_recip_vs_exact_ieee": 0.002154719318182732,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02092467802481763,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020884014367857716,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021033843587174323,
+   "input_absmax": 28.875
+  },
+  "model.language_model.layers.22.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0015720952529127005,
+   "cpu_rel_l2_vs_exact": 0.0015720952529127005,
+   "bf16_rounding_of_exact": 0.0015720952491029387,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0017256215676656817,
+   "recip_scale_frac_outputs_equal": 0.6897518382352941,
+   "exact_recip_vs_exact_ieee": 0.0012038228819228158,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015404858756241716,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01539660034565891,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002042525875001973,
+   "input_absmax": 88.0
+  },
+  "model.language_model.layers.23.self_attn.q_proj": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016626786372815866,
+   "cpu_rel_l2_vs_exact": 0.0016626786372815866,
+   "bf16_rounding_of_exact": 0.0016626786339762028,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0015344816761264837,
+   "recip_scale_frac_outputs_equal": 0.8352007697610294,
+   "exact_recip_vs_exact_ieee": 0.0009737199811276122,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011994386618712799,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011966700890485208,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018485142633313805,
+   "input_absmax": 38.0
+  },
+  "model.language_model.layers.23.self_attn.k_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016589202139329971,
+   "cpu_rel_l2_vs_exact": 0.0016589202139329971,
+   "bf16_rounding_of_exact": 0.0016589202131283396,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0017531428997642775,
+   "recip_scale_frac_outputs_equal": 0.802883731617647,
+   "exact_recip_vs_exact_ieee": 0.0013344399499549485,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01828497813231492,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.018246950549867108,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019894022443553636,
+   "input_absmax": 38.0
+  },
+  "model.language_model.layers.23.self_attn.v_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001676871358623889,
+   "cpu_rel_l2_vs_exact": 0.001676871358623889,
+   "bf16_rounding_of_exact": 0.001676871358535373,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0024732439186470616,
+   "recip_scale_frac_outputs_equal": 0.7530560661764706,
+   "exact_recip_vs_exact_ieee": 0.002154127793843728,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.021637169669979993,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.021588498114101195,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020788215046214204,
+   "input_absmax": 38.0
+  },
+  "model.language_model.layers.23.self_attn.o_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001688765188067671,
+   "cpu_rel_l2_vs_exact": 0.001688765188067671,
+   "bf16_rounding_of_exact": 0.0016887651860448695,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0027284420195516535,
+   "recip_scale_frac_outputs_equal": 0.6803308823529411,
+   "exact_recip_vs_exact_ieee": 0.002362004903685146,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02384874753624667,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023801191917183145,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022792200071265483,
+   "input_absmax": 25.5
+  },
+  "model.language_model.layers.23.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016553695908668585,
+   "cpu_rel_l2_vs_exact": 0.0016553695908668585,
+   "bf16_rounding_of_exact": 0.0016553695846664197,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002040705364707507,
+   "recip_scale_frac_outputs_equal": 0.7900173611111111,
+   "exact_recip_vs_exact_ieee": 0.0015111005069400332,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015840196084002355,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.015798742158402733,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019352598733291704,
+   "input_absmax": 25.0
+  },
+  "model.language_model.layers.23.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016624036647467253,
+   "cpu_rel_l2_vs_exact": 0.0016624036647467253,
+   "bf16_rounding_of_exact": 0.0016624036621894584,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002746919580113756,
+   "recip_scale_frac_outputs_equal": 0.7356796364379085,
+   "exact_recip_vs_exact_ieee": 0.0023301019282837496,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.02357103384308235,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023519723253120017,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022052205644350663,
+   "input_absmax": 25.0
+  },
+  "model.language_model.layers.23.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016454944728645255,
+   "cpu_rel_l2_vs_exact": 0.0016454944728645255,
+   "bf16_rounding_of_exact": 0.0016454944719445695,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0025444364241037584,
+   "recip_scale_frac_outputs_equal": 0.6250505514705882,
+   "exact_recip_vs_exact_ieee": 0.0018627484490166333,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019071760348991332,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019027056356763612,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022428364591297865,
+   "input_absmax": 18.125
+  },
+  "model.language_model.layers.24.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016843564124760437,
+   "cpu_rel_l2_vs_exact": 0.0016843564124760437,
+   "bf16_rounding_of_exact": 0.0016843564102508785,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018186109340683676,
+   "recip_scale_frac_outputs_equal": 0.7895404411764706,
+   "exact_recip_vs_exact_ieee": 0.0013720635153599925,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018153406519635387,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.018076250863586815,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022983228509403336,
+   "input_absmax": 24.625
+  },
+  "model.language_model.layers.24.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016666538107990144,
+   "cpu_rel_l2_vs_exact": 0.0016666538107990144,
+   "bf16_rounding_of_exact": 0.0016666538098729343,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0015670033976715675,
+   "recip_scale_frac_outputs_equal": 0.8298426011029412,
+   "exact_recip_vs_exact_ieee": 0.0010859082843663785,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01515362559850217,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.015108816954192791,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019294198620136598,
+   "input_absmax": 33.75
+  },
+  "model.language_model.layers.24.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016656085776267494,
+   "cpu_rel_l2_vs_exact": 0.0016656085776267494,
+   "bf16_rounding_of_exact": 0.0016656085533608145,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001394752046157944,
+   "recip_scale_frac_outputs_equal": 0.8595904181985294,
+   "exact_recip_vs_exact_ieee": 0.0008499719161740245,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.012982104653209448,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.012957014785883389,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018571018619640259,
+   "input_absmax": 33.75
+  },
+  "model.language_model.layers.24.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016595730609552425,
+   "cpu_rel_l2_vs_exact": 0.0016595730609552425,
+   "bf16_rounding_of_exact": 0.0016595730581214433,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002145825569996507,
+   "recip_scale_frac_outputs_equal": 0.7989698223039216,
+   "exact_recip_vs_exact_ieee": 0.0016373171664804233,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015691386652980855,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.015639746344674632,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00192209141004777,
+   "input_absmax": 24.25
+  },
+  "model.language_model.layers.24.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016626256508709436,
+   "cpu_rel_l2_vs_exact": 0.0016626256508709436,
+   "bf16_rounding_of_exact": 0.001662625650354995,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0028510586043483735,
+   "recip_scale_frac_outputs_equal": 0.7415122038398693,
+   "exact_recip_vs_exact_ieee": 0.002467226032174701,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023753956106060785,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02370059537042063,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022031556409578884,
+   "input_absmax": 24.25
+  },
+  "model.language_model.layers.24.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001659140253665355,
+   "cpu_rel_l2_vs_exact": 0.001659140253665355,
+   "bf16_rounding_of_exact": 0.0016591402410595648,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002386795180684169,
+   "recip_scale_frac_outputs_equal": 0.6576930147058824,
+   "exact_recip_vs_exact_ieee": 0.0017373531341793205,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019177732209314423,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01911034529182917,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022898455155707467,
+   "input_absmax": 20.75
+  },
+  "model.language_model.layers.25.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016828563187699537,
+   "cpu_rel_l2_vs_exact": 0.0016828563187699537,
+   "bf16_rounding_of_exact": 0.0016828563185826329,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0025582552838630764,
+   "recip_scale_frac_outputs_equal": 0.765546875,
+   "exact_recip_vs_exact_ieee": 0.0021635105339238903,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01972103115684008,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019674348743512614,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002242627869915722,
+   "input_absmax": 9.8125
+  },
+  "model.language_model.layers.25.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001659614051930309,
+   "cpu_rel_l2_vs_exact": 0.001659614051930309,
+   "bf16_rounding_of_exact": 0.00165961405031723,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019374985094808132,
+   "recip_scale_frac_outputs_equal": 0.7741368910845589,
+   "exact_recip_vs_exact_ieee": 0.0014455194088819527,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.014065197494605669,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.014037918132457989,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018724046336780799,
+   "input_absmax": 36.5
+  },
+  "model.language_model.layers.25.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016614167927603612,
+   "cpu_rel_l2_vs_exact": 0.0016614167927603612,
+   "bf16_rounding_of_exact": 0.0016614167907492011,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018421408366095962,
+   "recip_scale_frac_outputs_equal": 0.8109949448529412,
+   "exact_recip_vs_exact_ieee": 0.001280544390978631,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.013050726087613426,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.013024493463972771,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001860126140647714,
+   "input_absmax": 36.5
+  },
+  "model.language_model.layers.25.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016572763402978427,
+   "cpu_rel_l2_vs_exact": 0.0016572763402978427,
+   "bf16_rounding_of_exact": 0.0016572763369540867,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001801780736710687,
+   "recip_scale_frac_outputs_equal": 0.8227711397058823,
+   "exact_recip_vs_exact_ieee": 0.001225383964045634,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.014630041304181789,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.014594456320085688,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018962019452265894,
+   "input_absmax": 25.0
+  },
+  "model.language_model.layers.25.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016606336209851024,
+   "cpu_rel_l2_vs_exact": 0.0016606336209851024,
+   "bf16_rounding_of_exact": 0.0016606336178656355,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0025453405991876896,
+   "recip_scale_frac_outputs_equal": 0.7396446078431372,
+   "exact_recip_vs_exact_ieee": 0.002112532166471128,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.024102015560206514,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.024042327477028343,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022051304750755315,
+   "input_absmax": 25.0
+  },
+  "model.language_model.layers.25.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016652713146696502,
+   "cpu_rel_l2_vs_exact": 0.0016652713146696502,
+   "bf16_rounding_of_exact": 0.00166527131342518,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0021233233233571114,
+   "recip_scale_frac_outputs_equal": 0.6740211397058824,
+   "exact_recip_vs_exact_ieee": 0.0013828425670519753,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.0178030350302644,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01773894603393189,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002292719503831385,
+   "input_absmax": 55.25
+  },
+  "model.language_model.layers.26.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.00164887370679875,
+   "cpu_rel_l2_vs_exact": 0.00164887370679875,
+   "bf16_rounding_of_exact": 0.0016488737064831662,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001910284837381294,
+   "recip_scale_frac_outputs_equal": 0.7623621323529411,
+   "exact_recip_vs_exact_ieee": 0.0013881749802760045,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018222947922388818,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01812794002276405,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0024217903615269903,
+   "input_absmax": 20.375
+  },
+  "model.language_model.layers.26.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001658587501454897,
+   "cpu_rel_l2_vs_exact": 0.001658587501454897,
+   "bf16_rounding_of_exact": 0.0016585874989843328,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002113178517829636,
+   "recip_scale_frac_outputs_equal": 0.7567210477941176,
+   "exact_recip_vs_exact_ieee": 0.0016746795174024886,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015440175047776242,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.015403017955645954,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019199713852458302,
+   "input_absmax": 34.5
+  },
+  "model.language_model.layers.26.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016674344672469115,
+   "cpu_rel_l2_vs_exact": 0.0016674344672469115,
+   "bf16_rounding_of_exact": 0.001667434465305036,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018683830471239594,
+   "recip_scale_frac_outputs_equal": 0.8195858226102941,
+   "exact_recip_vs_exact_ieee": 0.0013202341308440487,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.013200196340456204,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.013156396035934529,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018865593084448908,
+   "input_absmax": 34.5
+  },
+  "model.language_model.layers.26.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016555721467719571,
+   "cpu_rel_l2_vs_exact": 0.0016555721467719571,
+   "bf16_rounding_of_exact": 0.0016555721415553646,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0014378307473931862,
+   "recip_scale_frac_outputs_equal": 0.8771063112745098,
+   "exact_recip_vs_exact_ieee": 0.0009802797453845927,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.013656086416917403,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.013628360460502873,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018618527511096994,
+   "input_absmax": 29.125
+  },
+  "model.language_model.layers.26.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001655466823320216,
+   "cpu_rel_l2_vs_exact": 0.001655466823320216,
+   "bf16_rounding_of_exact": 0.001655466820426827,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001974786123833163,
+   "recip_scale_frac_outputs_equal": 0.8188023386437908,
+   "exact_recip_vs_exact_ieee": 0.001638854290680301,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.023110666266123975,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.023062066123587285,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021740586301437904,
+   "input_absmax": 29.125
+  },
+  "model.language_model.layers.26.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001316233822937645,
+   "cpu_rel_l2_vs_exact": 0.001316233822937645,
+   "bf16_rounding_of_exact": 0.0013162338216329392,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001599725322683013,
+   "recip_scale_frac_outputs_equal": 0.6731341911764706,
+   "exact_recip_vs_exact_ieee": 0.0011604482290808729,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01291108272773488,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.012991034111704675,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0025273781267604193,
+   "input_absmax": 167.0
+  },
+  "model.language_model.layers.27.self_attn.q_proj": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016590105549109536,
+   "cpu_rel_l2_vs_exact": 0.0016590105549109536,
+   "bf16_rounding_of_exact": 0.0016590105532459216,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0017910099231744025,
+   "recip_scale_frac_outputs_equal": 0.8062815946691176,
+   "exact_recip_vs_exact_ieee": 0.0012049438357341453,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011910021781326581,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011881692284546542,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018308243069546984,
+   "input_absmax": 41.75
+  },
+  "model.language_model.layers.27.self_attn.k_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016498897261866402,
+   "cpu_rel_l2_vs_exact": 0.0016498897261866402,
+   "bf16_rounding_of_exact": 0.0016498897261788793,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0026356364723274816,
+   "recip_scale_frac_outputs_equal": 0.7653377757352942,
+   "exact_recip_vs_exact_ieee": 0.0022834396564695957,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020220431719793115,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.020190484172750642,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021294322691280147,
+   "input_absmax": 41.75
+  },
+  "model.language_model.layers.27.self_attn.v_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016256132594273847,
+   "cpu_rel_l2_vs_exact": 0.0016256132594273847,
+   "bf16_rounding_of_exact": 0.0016256132589610513,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0022910784157562985,
+   "recip_scale_frac_outputs_equal": 0.7101332720588235,
+   "exact_recip_vs_exact_ieee": 0.001902915628322027,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01950059159556289,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.019449992648094057,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002017663484050193,
+   "input_absmax": 41.75
+  },
+  "model.language_model.layers.27.self_attn.o_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0020147394616979205,
+   "cpu_rel_l2_vs_exact": 0.0020147394616979205,
+   "bf16_rounding_of_exact": 0.0020147394613060934,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001895249657518211,
+   "recip_scale_frac_outputs_equal": 0.7060661764705882,
+   "exact_recip_vs_exact_ieee": 0.0016398143050440229,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017680992297370326,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017571970784349182,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0028576924505987595,
+   "input_absmax": 27.625
+  },
+  "model.language_model.layers.27.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016556875810769703,
+   "cpu_rel_l2_vs_exact": 0.0016556875810769703,
+   "bf16_rounding_of_exact": 0.0016556875793604865,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001886589593362252,
+   "recip_scale_frac_outputs_equal": 0.8341413909313725,
+   "exact_recip_vs_exact_ieee": 0.0013945562175926003,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.013007405091580828,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.012974497092991257,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018420596773701299,
+   "input_absmax": 32.0
+  },
+  "model.language_model.layers.27.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016662896972468773,
+   "cpu_rel_l2_vs_exact": 0.0016662896972468773,
+   "bf16_rounding_of_exact": 0.001666289693861167,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0025685553233555426,
+   "recip_scale_frac_outputs_equal": 0.7575048508986928,
+   "exact_recip_vs_exact_ieee": 0.002202299130119122,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.021106934504505768,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.021056565668176,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021103375398584374,
+   "input_absmax": 32.0
+  },
+  "model.language_model.layers.27.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001576249126732801,
+   "cpu_rel_l2_vs_exact": 0.001576249126732801,
+   "bf16_rounding_of_exact": 0.0015762491250237707,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001886426706519102,
+   "recip_scale_frac_outputs_equal": 0.6603676470588236,
+   "exact_recip_vs_exact_ieee": 0.0012741794536870793,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015817173582115103,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01558213112401924,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0023658816199353745,
+   "input_absmax": 90.5
+  },
+  "model.language_model.layers.28.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016481043685647912,
+   "cpu_rel_l2_vs_exact": 0.0016481043685647912,
+   "bf16_rounding_of_exact": 0.001648104363423366,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018301067778459855,
+   "recip_scale_frac_outputs_equal": 0.8120818014705883,
+   "exact_recip_vs_exact_ieee": 0.001354059545182023,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015081369728241449,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.014970823984694145,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002282227644963869,
+   "input_absmax": 19.375
+  },
+  "model.language_model.layers.28.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016614325715366039,
+   "cpu_rel_l2_vs_exact": 0.0016614325715366039,
+   "bf16_rounding_of_exact": 0.0016614325657719157,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002028165724614443,
+   "recip_scale_frac_outputs_equal": 0.8049761603860294,
+   "exact_recip_vs_exact_ieee": 0.001681792392542481,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.012887455172060948,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.012849972768701328,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018554164780618092,
+   "input_absmax": 35.5
+  },
+  "model.language_model.layers.28.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016618015376237156,
+   "cpu_rel_l2_vs_exact": 0.0016618015376237156,
+   "bf16_rounding_of_exact": 0.00166180153326317,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0025890918992387017,
+   "recip_scale_frac_outputs_equal": 0.8587431066176471,
+   "exact_recip_vs_exact_ieee": 0.00229884431225754,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011791082447027782,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011772302276519028,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001827952427548404,
+   "input_absmax": 35.5
+  },
+  "model.language_model.layers.28.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016596685169978237,
+   "cpu_rel_l2_vs_exact": 0.0016596685169978237,
+   "bf16_rounding_of_exact": 0.001659668513951228,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0016326466375219052,
+   "recip_scale_frac_outputs_equal": 0.856155535130719,
+   "exact_recip_vs_exact_ieee": 0.0011011477471239881,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.012785549156572899,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.012753762705462213,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018403941329272232,
+   "input_absmax": 28.875
+  },
+  "model.language_model.layers.28.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016613090842466113,
+   "cpu_rel_l2_vs_exact": 0.0016613090842466113,
+   "bf16_rounding_of_exact": 0.0016613090813741443,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002187256118604553,
+   "recip_scale_frac_outputs_equal": 0.7813495710784314,
+   "exact_recip_vs_exact_ieee": 0.0017881797860747524,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020303576954100972,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02025672028134095,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020785109876565494,
+   "input_absmax": 28.875
+  },
+  "model.language_model.layers.28.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016641013458515794,
+   "cpu_rel_l2_vs_exact": 0.0016641013458515794,
+   "bf16_rounding_of_exact": 0.001664101328149557,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0025067334848204205,
+   "recip_scale_frac_outputs_equal": 0.6635707720588235,
+   "exact_recip_vs_exact_ieee": 0.0018610593686776982,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01944768132516973,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01939935129268851,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022779185467871623,
+   "input_absmax": 38.75
+  },
+  "model.language_model.layers.29.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016598590568640632,
+   "cpu_rel_l2_vs_exact": 0.0016598590568640632,
+   "bf16_rounding_of_exact": 0.0016598590561857543,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018798007444734074,
+   "recip_scale_frac_outputs_equal": 0.8032628676470588,
+   "exact_recip_vs_exact_ieee": 0.0013789782212926373,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.017439827976891652,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.017374776534477967,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0023027124222852724,
+   "input_absmax": 15.1875
+  },
+  "model.language_model.layers.29.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016546839969358166,
+   "cpu_rel_l2_vs_exact": 0.0016546839969358166,
+   "bf16_rounding_of_exact": 0.0016546839905702858,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0018541784433571192,
+   "recip_scale_frac_outputs_equal": 0.7769631778492647,
+   "exact_recip_vs_exact_ieee": 0.0013853538469824698,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.014814531502638936,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.0147806002396056,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0019071983927817096,
+   "input_absmax": 34.25
+  },
+  "model.language_model.layers.29.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016678008037238413,
+   "cpu_rel_l2_vs_exact": 0.0016678008037238413,
+   "bf16_rounding_of_exact": 0.001667800802003207,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0016341943154252832,
+   "recip_scale_frac_outputs_equal": 0.8462344898897058,
+   "exact_recip_vs_exact_ieee": 0.0010684018492789539,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.012136935070284537,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.012096247811253532,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001837043108288843,
+   "input_absmax": 34.25
+  },
+  "model.language_model.layers.29.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016499801957190429,
+   "cpu_rel_l2_vs_exact": 0.0016499801957190429,
+   "bf16_rounding_of_exact": 0.0016499801947434897,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0016070392408296394,
+   "recip_scale_frac_outputs_equal": 0.8513135723039216,
+   "exact_recip_vs_exact_ieee": 0.0010010930658392407,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011860708780043508,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011828979245084952,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018144923708042272,
+   "input_absmax": 36.25
+  },
+  "model.language_model.layers.29.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016539054454628352,
+   "cpu_rel_l2_vs_exact": 0.0016539054454628352,
+   "bf16_rounding_of_exact": 0.0016539054447928195,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002103334427850324,
+   "recip_scale_frac_outputs_equal": 0.7627629697712418,
+   "exact_recip_vs_exact_ieee": 0.0016494514866533397,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018300571847465082,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.018255311100932925,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00200035683043422,
+   "input_absmax": 36.25
+  },
+  "model.language_model.layers.29.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001654313601280953,
+   "cpu_rel_l2_vs_exact": 0.001654313601280953,
+   "bf16_rounding_of_exact": 0.001654313599288579,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002267472819753239,
+   "recip_scale_frac_outputs_equal": 0.6756663602941176,
+   "exact_recip_vs_exact_ieee": 0.001657080054739668,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.018834798057469196,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.018758087335284602,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002253340121441279,
+   "input_absmax": 35.25
+  },
+  "model.language_model.layers.30.linear_attn.out_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001656943995355368,
+   "cpu_rel_l2_vs_exact": 0.001656943995355368,
+   "bf16_rounding_of_exact": 0.0016569439932257056,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0017914893873640697,
+   "recip_scale_frac_outputs_equal": 0.7822288602941176,
+   "exact_recip_vs_exact_ieee": 0.001230864099076722,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015950811153449096,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.015877860508884466,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022547824403632197,
+   "input_absmax": 39.25
+  },
+  "model.language_model.layers.30.linear_attn.in_proj_qkv": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016762968546860906,
+   "cpu_rel_l2_vs_exact": 0.0016762968546860906,
+   "bf16_rounding_of_exact": 0.0016762968528598189,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0015715318125752713,
+   "recip_scale_frac_outputs_equal": 0.8175881778492647,
+   "exact_recip_vs_exact_ieee": 0.0011505953353833432,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.013123421647522726,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.013090792969762594,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018702091465293736,
+   "input_absmax": 41.25
+  },
+  "model.language_model.layers.30.linear_attn.in_proj_z": {
+   "shape": [
+    85,
+    2560,
+    4096
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016609864811684737,
+   "cpu_rel_l2_vs_exact": 0.0016609864811684737,
+   "bf16_rounding_of_exact": 0.0016609864802967155,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0015213676984134551,
+   "recip_scale_frac_outputs_equal": 0.8559426700367647,
+   "exact_recip_vs_exact_ieee": 0.001027994683401318,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.012637675143732255,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.012599207518616033,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018591987245270179,
+   "input_absmax": 41.25
+  },
+  "model.language_model.layers.30.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016538197019250486,
+   "cpu_rel_l2_vs_exact": 0.0016538197019250486,
+   "bf16_rounding_of_exact": 0.0016538197014930045,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0015079256579673898,
+   "recip_scale_frac_outputs_equal": 0.8907998876633987,
+   "exact_recip_vs_exact_ieee": 0.0010816309781991572,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011941483170375237,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.011906646849587551,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001809169028297324,
+   "input_absmax": 37.25
+  },
+  "model.language_model.layers.30.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016530337005939723,
+   "cpu_rel_l2_vs_exact": 0.0016530337005939723,
+   "bf16_rounding_of_exact": 0.0016530336977649673,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0015419590533549952,
+   "recip_scale_frac_outputs_equal": 0.8527126736111111,
+   "exact_recip_vs_exact_ieee": 0.0011757509152750844,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015039290965195866,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.015001927726215832,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0018995362784596575,
+   "input_absmax": 37.25
+  },
+  "model.language_model.layers.30.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016682420372274907,
+   "cpu_rel_l2_vs_exact": 0.0016682420372274907,
+   "bf16_rounding_of_exact": 0.001668242021209574,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002318170013858288,
+   "recip_scale_frac_outputs_equal": 0.6651194852941177,
+   "exact_recip_vs_exact_ieee": 0.0016893299685287251,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019020342650112196,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01897322060060732,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002256074899005999,
+   "input_absmax": 89.5
+  },
+  "model.language_model.layers.31.self_attn.q_proj": {
+   "shape": [
+    85,
+    2560,
+    8192
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016711677777190004,
+   "cpu_rel_l2_vs_exact": 0.0016711677777190004,
+   "bf16_rounding_of_exact": 0.0016711677752137128,
+   "recip_scale_rel_l2_vs_ieee_output": 0.00164355191632202,
+   "recip_scale_frac_outputs_equal": 0.7949936810661765,
+   "exact_recip_vs_exact_ieee": 0.0010764817918796979,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011262820887768706,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.01122921764335938,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001821886456975999,
+   "input_absmax": 39.25
+  },
+  "model.language_model.layers.31.self_attn.k_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016844158652287936,
+   "cpu_rel_l2_vs_exact": 0.0016844158652287936,
+   "bf16_rounding_of_exact": 0.0016844158643241022,
+   "recip_scale_rel_l2_vs_ieee_output": 0.002438201779191346,
+   "recip_scale_frac_outputs_equal": 0.7546530330882353,
+   "exact_recip_vs_exact_ieee": 0.0020690248487135457,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020796300189519987,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02073038318512715,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002143162410126637,
+   "input_absmax": 39.25
+  },
+  "model.language_model.layers.31.self_attn.v_proj": {
+   "shape": [
+    85,
+    2560,
+    1024
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016477977491791635,
+   "cpu_rel_l2_vs_exact": 0.0016477977491791635,
+   "bf16_rounding_of_exact": 0.0016477977508490152,
+   "recip_scale_rel_l2_vs_ieee_output": 0.001433232829834435,
+   "recip_scale_frac_outputs_equal": 0.7727826286764706,
+   "exact_recip_vs_exact_ieee": 0.000920242499992555,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.009167392040974243,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.00913577312821971,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0017503874328708318,
+   "input_absmax": 39.25
+  },
+  "model.language_model.layers.31.self_attn.o_proj": {
+   "shape": [
+    85,
+    4096,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016442700527541027,
+   "cpu_rel_l2_vs_exact": 0.0016442700527541027,
+   "bf16_rounding_of_exact": 0.0016442700520488559,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0020767210155809936,
+   "recip_scale_frac_outputs_equal": 0.7606295955882353,
+   "exact_recip_vs_exact_ieee": 0.0016324043633370016,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.020404432348475603,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.02032851948348709,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022649863196403403,
+   "input_absmax": 32.0
+  },
+  "model.language_model.layers.31.mlp.gate_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.0016480182729363127,
+   "cpu_rel_l2_vs_exact": 0.0016480182729363127,
+   "bf16_rounding_of_exact": 0.001648018270733936,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0016736343766134447,
+   "recip_scale_frac_outputs_equal": 0.8047896241830066,
+   "exact_recip_vs_exact_ieee": 0.001041521991886781,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.010246012491951572,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.010219369524240282,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0017631758561838652,
+   "input_absmax": 39.75
+  },
+  "model.language_model.layers.31.mlp.up_proj": {
+   "shape": [
+    85,
+    2560,
+    9216
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.00166429732273104,
+   "cpu_rel_l2_vs_exact": 0.00166429732273104,
+   "bf16_rounding_of_exact": 0.0016642973215951998,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0015921967691129562,
+   "recip_scale_frac_outputs_equal": 0.763891441993464,
+   "exact_recip_vs_exact_ieee": 0.001040223325944266,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.010187179191404563,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.010164973579569183,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.001776137790764703,
+   "input_absmax": 39.75
+  },
+  "model.language_model.layers.31.mlp.down_proj": {
+   "shape": [
+    85,
+    9216,
+    2560
+   ],
+   "bitwise_equal_cpu_reference": true,
+   "rel_l2_vs_cpu": 0.0,
+   "rel_l2_vs_exact": 0.001733400811183587,
+   "cpu_rel_l2_vs_exact": 0.001733400811183587,
+   "bf16_rounding_of_exact": 0.0017334008111487926,
+   "recip_scale_rel_l2_vs_ieee_output": 0.0019302251758539079,
+   "recip_scale_frac_outputs_equal": 0.7071139705882353,
+   "exact_recip_vs_exact_ieee": 0.0013402369887011182,
+   "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01630769596166656,
+   "w8a8_rel_l2_vs_unquantized_activation": 0.016246299729658083,
+   "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0020982709501735793,
+   "input_absmax": 135.0
+  }
+ }
+}

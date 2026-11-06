@@ -1,0 +1,4 @@
+{"status": "prepared-only", "manifests": ["/home/zzhouch/r41_chat_90f1a60/spec/r41/chat/s2-qwen-chat-v3-q35.json"], "card_access": false}
+sh-ok
+{"status": "prepared-only", "manifests": ["/home/zzhouch/r41_chat_90f1a60/spec/r41/chat/s2-qwen-chat-v3-vl.json"], "card_access": false}
+sh-ok

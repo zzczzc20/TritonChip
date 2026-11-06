@@ -346,10 +346,24 @@ def own10(log):
             # One register each: the point is the window budget, and an
             # eight-register window would exhaust the register file first and
             # test a different limit.
-            for _ in range(n):
-                b.window(1)
+            windows = [b.window(1) for _ in range(n)]
+            # Keep every window live until all have been defined. Merely
+            # declaring unused windows allows the lifetime allocator to reuse
+            # one hardware slot, so that does not test simultaneous capacity.
+            for window in windows:
+                b.window_reg(window)
             b.exit()
         return build
+
+    def disjoint_windows(b):
+        for _ in range(t.num_windows + 1):
+            window = b.window(1)
+            b.window_reg(window)
+        b.exit()
+
+    reusable, detail = compile_ok(disjoint_windows)
+    log.append(f"    disjoint windows share slots -> {'accepted' if reusable else 'refused'}"
+               + (f": {str(detail).splitlines()[0][:80]}" if detail else ''))
 
     for n in (t.num_windows, t.num_windows + 1):
         ok, d = compile_ok(n_windows(n))
@@ -373,8 +387,8 @@ def own10(log):
     within = [c for c in cases if c[0].startswith(str(t.num_windows) + ' ')
               or c[0].startswith(str(t.num_barriers) + ' ')]
     over = [c for c in cases if c not in within]
-    return (all(c[1] for c in within) and not any(c[1] for c in over)), \
-        'resource budgets refused at the limit, not past it'
+    return (reusable and all(c[1] for c in within) and not any(c[1] for c in over)), \
+        'live resource budgets enforced and disjoint windows reused'
 
 
 # --------------------------------------------------------------------------

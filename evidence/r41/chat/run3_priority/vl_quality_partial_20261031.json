@@ -1,0 +1,166 @@
+{
+ "schema": "tnca-chat-quality-result/1",
+ "spec": "quality-v1",
+ "spec_path": "/home/zzhouch/r41run3/runtime_prepared/spec/r41/chat/quality-v1.json",
+ "model": "qwen3vl-2b-fp8",
+ "device": "tnca",
+ "model_scope": "full-checkpoint",
+ "reference": "/home/zzhouch/r41run3/runtime_prepared/evidence/r41/chat/quality-ref/vl.json",
+ "prompts": [
+  {
+   "id": "fact",
+   "kind": "factual QA",
+   "keywords": [
+    "paris"
+   ],
+   "turns": [
+    {
+     "user": "What is the capital of France? Answer with one word.",
+     "text": "Paris",
+     "tokens": [
+      59604,
+      151645
+     ],
+     "statistics": {
+      "generated_tokens": 2,
+      "decode_steps": 1,
+      "prefill_seconds": 610.5533736450016,
+      "decode_seconds": 41.23126417398453,
+      "mean_decode_seconds_per_token": 41.23126417398453,
+      "decode_tokens_per_second": 0.02425344019965715,
+      "generation_seconds": 651.7846378189861
+     },
+     "session": {
+      "prompt_index": 1,
+      "cache_resets": 0,
+      "new_graphs_this_prompt": 2,
+      "unique_graphs_total": 2
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 610.5533736450016,
+       "new_graphs": 2,
+       "code_store": {
+        "evicted": 2426,
+        "loaded_modules": 10
+       },
+       "reused_cached_tokens": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 41.23126417398453,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 368,
+        "loaded_modules": 10
+       },
+       "reused_cached_tokens": null
+      }
+     ]
+    }
+   ],
+   "scores": [
+    {
+     "passed": true,
+     "required_keywords": [
+      "paris"
+     ],
+     "keywords_missing_in_reference": [],
+     "keywords_ok": true,
+     "containment": true,
+     "tokens_equal": true,
+     "common_prefix_tokens": 2,
+     "device_tokens": 2,
+     "reference_tokens": 2
+    }
+   ],
+   "passed": true
+  },
+  {
+   "id": "arith",
+   "kind": "arithmetic",
+   "keywords": [
+    "42"
+   ],
+   "turns": [
+    {
+     "user": "What is 17 + 25? Answer with the number only.",
+     "text": "42",
+     "tokens": [
+      19,
+      17,
+      151645
+     ],
+     "statistics": {
+      "generated_tokens": 3,
+      "decode_steps": 2,
+      "prefill_seconds": 136.69932052798686,
+      "decode_seconds": 85.2971401970135,
+      "mean_decode_seconds_per_token": 42.64857009850675,
+      "decode_tokens_per_second": 0.023447444959825578,
+      "generation_seconds": 221.99646072500036
+     },
+     "session": {
+      "prompt_index": 2,
+      "cache_resets": 1,
+      "new_graphs_this_prompt": 0,
+      "unique_graphs_total": 2
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 136.69932052798686,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 1445,
+        "loaded_modules": 6
+       },
+       "reused_cached_tokens": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 42.487091286020586,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 367,
+        "loaded_modules": 8
+       },
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 42.81004891099292,
+       "new_graphs": 0,
+       "code_store": {
+        "evicted": 366,
+        "loaded_modules": 10
+       },
+       "reused_cached_tokens": null
+      }
+     ]
+    }
+   ],
+   "scores": [
+    {
+     "passed": true,
+     "required_keywords": [
+      "42"
+     ],
+     "keywords_missing_in_reference": [],
+     "keywords_ok": true,
+     "containment": true,
+     "tokens_equal": true,
+     "common_prefix_tokens": 3,
+     "device_tokens": 3,
+     "reference_tokens": 3
+    }
+   ],
+   "passed": true
+  }
+ ],
+ "status": "running",
+ "prefill_chunk": 8,
+ "new_tokens": 12,
+ "reduced_proof": false
+}

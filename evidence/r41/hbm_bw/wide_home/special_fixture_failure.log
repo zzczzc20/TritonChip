@@ -1,0 +1,4 @@
+Initial fixture selected HOME_W=0, unsupported by the existing line_addr function:
+rtl/nuca/tnca_nuca_slice.v:243: error: Part select SLICE_ID[-1:0] is out of order.
+rtl/nuca/tnca_nuca_slice.v:243: error: part select st[-1:0] is out of order.
+/tmp/r41-hbmbw-home-special.vvp: Unable to open input file.

@@ -1,0 +1,13 @@
+`ifdef TNCA_HOME_PIPE_TRACE
+ always @(posedge clk) if (rst_n) begin
+  if (req_valid && req_ready && req_addr[19:6]==14'hc25)
+   $display("AXT %m t=%0t ADMIT we=%0d slot=%0d src=%0d tag=%0d data[63:0]=%h", $time, req_we, free_slot, req_src, req_tag, req_wdata[63:0]);
+  if (req_valid && !req_ready && req_addr[19:6]==14'hc25 && hazard)
+   $display("AXT %m t=%0t HAZARD-WAIT we=%0d", $time, req_we);
+  if (m_awvalid && m_awready && address[issue_slot][19:6]==14'hc25) $display("AXT %m t=%0t AW slot=%0d addr=%h", $time, issue_slot, m_awaddr);
+  if (m_wvalid && m_wready && address[issue_slot][19:6]==14'hc25) $display("AXT %m t=%0t W slot=%0d beat=%0d last=%0d data=%h", $time, issue_slot, wbeat, m_wlast, m_wdata[63:0]);
+  if (m_arvalid && m_arready && address[issue_slot][19:6]==14'hc25) $display("AXT %m t=%0t AR slot=%0d addr=%h", $time, issue_slot, m_araddr);
+  if (m_bvalid && m_bready && m_bid<OUT_N && address[m_bid][19:6]==14'hc25) $display("AXT %m t=%0t B slot=%0d", $time, m_bid);
+  if (read_final && address[m_rid][19:6]==14'hc25) $display("AXT %m t=%0t RFINAL slot=%0d", $time, m_rid);
+ end
+`endif

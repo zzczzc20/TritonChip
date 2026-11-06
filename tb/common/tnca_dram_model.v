@@ -22,6 +22,9 @@ module tnca_dram_model #(
     // 1 is the unlimited model every bench had before DCO; a cache policy
     // that saves traffic only shows up in time when traffic costs time.
     parameter INTERVAL   = 1,
+    // Reads in flight. A read arriving with the pool full is lost, so a
+    // requester with more tags than this needs a larger pool.
+    parameter POOL       = 32,
     parameter SEED       = 32'hACE1_2345
 ) (
     input  wire                     clk,
@@ -41,7 +44,6 @@ module tnca_dram_model #(
     output reg  [LINE_BITS-1:0]     rsp_rdata
 );
 
-    localparam POOL  = 32;
     localparam OFF_W = 6;
 
     reg [LINE_BITS-1:0] mem [0:LINES-1];

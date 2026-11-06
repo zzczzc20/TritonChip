@@ -28,6 +28,8 @@ that the same torch program reaches any of them unchanged:
                        a simulator runs ~500 target cycles per second)
     TNCA_LAUNCH=skip   compile every kernel and run none (coverage sweeps);
                        the launch log marks each entry `skipped`
+    TNCA_SUBMIT=single restore per-kernel host waits; native resident launches
+                       otherwise share the bounded asynchronous device queue
     TNCA_GUARD_BYTES, TNCA_GUARD_CHECK
                        debugging: poisoned margins around every buffer, to
                        catch out-of-bounds writes and reads (_guards)
@@ -40,6 +42,7 @@ one kernel.
 import contextlib
 import json
 import os
+import stat
 import tempfile
 import threading
 import time
@@ -82,9 +85,10 @@ class _Sessions:
             # board context here can race its still-owned XRT resources,
             # including from tensor destructors unwinding the failed launch.
             if s is None or s.closed:
-                s = Session(profile=profile, deadline_cycles=int(os.environ.get('TNCA_DEADLINE', '5000000')),
-                            host_timeout=float(os.environ.get('TNCA_HOST_TIMEOUT', '600')),
-                            counters=os.environ.get('TNCA_COUNTERS') == '1',
+                kwargs = dict(kwargs)
+                kwargs.setdefault('deadline_cycles', int(os.environ.get('TNCA_DEADLINE', '5000000')))
+                kwargs.setdefault('host_timeout', float(os.environ.get('TNCA_HOST_TIMEOUT', '600')))
+                s = Session(profile=profile, counters=os.environ.get('TNCA_COUNTERS') == '1',
                             backend=backend, **kwargs)
                 cls.open[key] = s
             return s
@@ -108,6 +112,7 @@ _atexit.register(_Sessions.close_all)
 
 
 _log_local = threading.local()
+_bench_local = threading.local()       # set while triton.autotune benchmarks a config
 
 
 def _active_logs():
@@ -116,13 +121,77 @@ def _active_logs():
     return _log_local.logs
 
 
+def _active_summaries():
+    if not hasattr(_log_local, 'summaries'):
+        _log_local.summaries = []
+    return _log_local.summaries
+
+
+class LaunchSummary:
+    """Keep the counters chat needs without constructing full launch records."""
+    def __init__(self):
+        self.entries = []
+        self.result = None
+        self.completion_time = None
+
+    def record(self, kernel, session, event, moved, *, skipped=False):
+        self.entries.append((str(kernel), session, event, moved, skipped))
+
+    def finish(self):
+        if self.result is not None:
+            return self.result
+        by_kernel = {}
+        upload = download = resident = skipped_count = cycles = 0
+        complete_cycles = True
+        for name, session, event, moved, skipped in self.entries:
+            if event is not None and not event.ok:
+                session.wait(event)
+                if not event.ok:
+                    raise TNCALaunchError(f'{name}: {event.error}')
+            if event is not None:
+                self.completion_time = dict(event.history).get('SUCCEEDED')
+            value = None if event is None else event.device_cycles
+            row = by_kernel.setdefault(name, dict(launches=0, device_cycles=0))
+            row['launches'] += 1
+            row['device_cycles'] += int(value or 0)
+            if value is None:
+                complete_cycles = False
+            else:
+                cycles += value
+            upload += moved.get('upload_bytes', 0)
+            download += moved.get('download_bytes', 0)
+            resident += moved.get('resident_bytes', 0)
+            skipped_count += bool(skipped)
+        self.result = dict(launches=len(self.entries), by_kernel=by_kernel,
+                           staging_upload_bytes=upload, staging_download_bytes=download,
+                           resident_bytes=resident, skipped_launches=skipped_count,
+                           device_cycles=cycles if complete_cycles else None)
+        self.entries.clear()
+        return self.result
+
+
+@contextlib.contextmanager
+def launch_summary(*, deferred=False):
+    """Collect aggregate transfer and cycle counts without per-launch detail."""
+    summary = LaunchSummary()
+    _active_summaries().append(summary)
+    try:
+        yield summary
+    finally:
+        assert _active_summaries().pop() is summary
+        if not deferred:
+            summary.finish()
+
+
 @contextlib.contextmanager
 def launch_log(*, isolated=False):
     """Collect one dict per launch made while open (nested logs all see it)."""
     log = []
     previous = _active_logs() if isolated else None
+    previous_summaries = _active_summaries() if isolated else None
     if isolated:
         _log_local.logs = []
+        _log_local.summaries = []
     _active_logs().append(log)
     try:
         yield log
@@ -132,6 +201,7 @@ def launch_log(*, isolated=False):
         assert _active_logs().pop() is log
         if previous is not None:
             _log_local.logs = previous
+            _log_local.summaries = previous_summaries
         # An asynchronous launch log is measured through completion, never
         # just submission. Nested contexts share each entry's final values.
         for entry in log:
@@ -195,7 +265,7 @@ class TNCALauncher:
         torch = _torch()
         if launch_enter_hook is not None:
             launch_enter_hook(launch_metadata)
-        if os.environ.get('TNCA_LAUNCH') == 'skip':
+        if os.environ.get('TNCA_LAUNCH') == 'skip' or getattr(_bench_local, 'compile_only', False):
             # Compile-only sweeps (TNCA_LAUNCH=skip): every kernel of a graph
             # is compiled, none is run, and the outputs are whatever the host
             # buffers held. The log says so, so no caller can take the
@@ -217,6 +287,8 @@ class TNCALauncher:
                          buffers=len(storages), skipped=True)
             for log in _active_logs():
                 log.append(entry)
+            for summary in _active_summaries():
+                summary.record(self.metadata.name, None, None, entry, skipped=True)
             if launch_exit_hook is not None:
                 launch_exit_hook(launch_metadata)
             return
@@ -242,10 +314,13 @@ class TNCALauncher:
         session, module = _load(_Sessions.get(self.profile), function)
         guard, poisons = _guards()
         grid = (max(gridX, 1), max(gridY, 1), max(gridZ, 1))
-        submit_policy = os.environ.get('TNCA_SUBMIT', 'single')
+        submit_policy = os.environ.get('TNCA_SUBMIT', 'batched')
         if submit_policy not in ('single', 'batched'):
             raise TNCALaunchError(f'unsupported TNCA_SUBMIT {submit_policy!r}')
-        asynchronous = submit_policy == 'batched'
+        native = all(v.device.type == 'tnca' for v in values if isinstance(v, torch.Tensor)) and \
+            all(v.base.device.type == 'tnca' for v in values
+                if type(v).__name__ == 'TensorDescriptor' and hasattr(v, 'base'))
+        asynchronous = submit_policy == 'batched' and native
         runs = [self._launch_once(session, module, values, grid, guard, poison,
                                   asynchronous=asynchronous)
                 for poison in poisons]
@@ -262,6 +337,8 @@ class TNCALauncher:
         for _name, raw, data in outputs.values():
             if data:
                 raw.copy_(torch.frombuffer(bytearray(data), dtype=torch.uint8))
+        for summary in _active_summaries():
+            summary.record(self.metadata.name, session, event, moved)
         from tnca.torch_device.graph import active_capture
         capture = active_capture()
         if _active_logs() or capture is not None:
@@ -405,15 +482,10 @@ class TNCALauncher:
                 raise TNCALaunchError('graph capture requires native resident tensors without guards')
             t_submit = time.perf_counter()
             if asynchronous:
-                from tnca.runtime import MAX_UNFINISHED
-                while len(session.unfinished) >= MAX_UNFINISHED:
-                    oldest = session.unfinished[0]
-                    session.wait(oldest)
-                    if not oldest.ok:
-                        raise TNCALaunchError(f'queued predecessor failed: {oldest.error}')
-            previous = session.latest_event if asynchronous else None
-            event = session.submit(module, bound, grid=grid,
-                                   depends_on=[previous] if previous is not None else [])
+                from tnca.torch_device.queue import submit_queued
+                event = submit_queued(session, module, bound, grid)
+            else:
+                event = session.submit(module, bound, grid=grid, depends_on=[])
             if capture is not None:
                 event._replay_command = (session, module, bound, grid, tuple(values))
             if asynchronous:
@@ -462,20 +534,215 @@ class TNCALauncher:
                     pass
 
 _loaded = {}
+_loaded_by_artifact = {}
+_loaded_by_executable = {}
+_module_views = {}
 _artifact_hashes = {}
+_artifact_stats = {}
+_executable_hashes = {}
+loaded = 0                   # successful physical code loads (process-wide)
 evicted = 0                  # modules unloaded to make code room (resident sessions)
+
+
+def _file_stamp(stat):
+    return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
 
 
 def _artifact_sha256(path):
     """The sha256 of the .tnca a launch ran, for the record's provenance
     (archbench/PROTOCOL.md, protocol 2): what was measured, named by content."""
+    if not isinstance(path, str):
+        return None
+    try:
+        stat = os.stat(path)
+    except OSError:
+        return None
+    stamp = _file_stamp(stat)
     h = _artifact_hashes.get(path)
-    if h is None and isinstance(path, str) and os.path.exists(path):
+    if h is None or _artifact_stats.get(path) != stamp:
         import hashlib
         with open(path, 'rb') as fh:
+            before = _file_stamp(os.fstat(fh.fileno()))
             h = hashlib.sha256(fh.read()).hexdigest()
+            after = _file_stamp(os.fstat(fh.fileno()))
+        if before != stamp or after != stamp:
+            raise TNCALaunchError('compiled artifact changed while being read')
         _artifact_hashes[path] = h
+        _artifact_stats[path] = stamp
     return h
+
+
+def _execution_fingerprint(manifest):
+    """Identity of executable code and its complete runtime contract."""
+    contract = dict(manifest)
+    contract.pop('manifest_hash', None)
+    identity = dict(contract.get('identity') or {})
+    identity.pop('source_hash', None)
+    # The name labels diagnostics; it is not an instruction or ABI field.
+    # Per-artifact views keep the caller's name even when code is shared.
+    identity.pop('kernel_name', None)
+    contract['identity'] = identity
+    metadata = dict(contract.get('optional_metadata') or {})
+    metadata.pop('provenance', None)
+    contract['optional_metadata'] = metadata
+    import hashlib
+    return hashlib.sha256(json.dumps(contract, sort_keys=True, separators=(',', ':'),
+                                     ensure_ascii=False, allow_nan=False).encode()).hexdigest()
+
+
+def _executable_info(path):
+    """Find an execution identity, excluding only source provenance.
+
+    Two independently compiled artifacts may have identical instructions,
+    ABI, target, execution contract and resources while their kernel names,
+    source hashes and compiler provenance differ. They can share code RAM. Every segment
+    is verified before sharing, and all other manifest fields remain part of
+    the identity. A candidate alias is separately verified before it can
+    share code, and a view retains its own manifest.
+    """
+    if not isinstance(path, str):
+        return None, None
+    try:
+        file_stat = os.stat(path)
+    except OSError:
+        return None, None
+    if not stat.S_ISREG(file_stat.st_mode):
+        return None, None
+    stamp = _file_stamp(file_stat)
+    cached = _executable_hashes.get(path)
+    if cached is not None and cached[0] == stamp:
+        return cached[1], None
+    from tnca import artifact
+    from tnca.errors import TncaError
+    try:
+        # The usual cache miss proceeds to Session.load, which verifies the
+        # complete artifact. Reading just the header here avoids a second
+        # full code read for every newly compiled kernel.
+        manifest, _payload_at = artifact.read_header(path)
+    except (TncaError, OSError, ValueError, KeyError):
+        # Session.load still performs its normal validation and reports the
+        # actual error; an unreadable artifact is never shared by this route.
+        return None, None
+    if _file_stamp(os.stat(path)) != stamp:
+        raise TNCALaunchError('compiled artifact changed while its header was read')
+    fingerprint = _execution_fingerprint(manifest)
+    _executable_hashes[path] = (stamp, fingerprint)
+    return fingerprint, manifest
+
+
+def _verified_alias_manifest(path, expected):
+    """Validate every byte before binding a second artifact to resident code."""
+    from tnca import artifact
+    before = _executable_hashes[path][0]
+    manifest, _segments = artifact.load(path)
+    stat = os.stat(path)
+    after = _file_stamp(stat)
+    if before != after or _execution_fingerprint(manifest) != expected:
+        raise TNCALaunchError('compiled artifact changed during code-residency lookup')
+    return manifest
+
+
+def _executable_digest(path):
+    return _executable_info(path)[0] or _artifact_sha256(path) or path
+
+
+class _ModuleView:
+    """Per-artifact provenance and manifest over one physical code allocation."""
+    def __init__(self, resident, path, manifest):
+        self._resident = resident
+        self.path, self.manifest = path, manifest
+        self.params = resident.params
+        self.name = manifest['identity']['kernel_name']
+
+    @property
+    def alive(self):
+        return self._resident.alive
+
+    @property
+    def epoch(self):
+        return self._resident.epoch
+
+    @property
+    def code_addr(self):
+        return self._resident.code_addr
+
+    @property
+    def code_size(self):
+        return self._resident.code_size
+
+
+def _register_resident_alias(key, module):
+    """Keep a per-allocation alias index for the launch hot path."""
+    _loaded[key] = module
+    aliases = getattr(module, '_tnca_resident_aliases', None)
+    if aliases is None:
+        try:
+            aliases = {}
+            module._tnca_resident_aliases = aliases
+        except (AttributeError, TypeError):
+            return  # Unusual externally provided modules retain the scan path.
+    aliases[key] = None
+
+
+def _resident_aliases(module):
+    aliases = getattr(module, '_tnca_resident_aliases', None)
+    if aliases is None:
+        return [key for key, resident in _loaded.items() if resident is module]
+    return [key for key in aliases if _loaded.get(key) is module]
+
+
+def _touch_resident(module):
+    # Preserve the existing eviction order for all aliases of this allocation
+    # without scanning every resident kernel for each of hundreds of launches.
+    for alias in _resident_aliases(module):
+        _loaded[alias] = _loaded.pop(alias)
+
+
+def _bind_resident_lookup(module, kind, identity, key):
+    """Index the reverse references so eviction visits only this allocation."""
+    lookup = _loaded_by_artifact if kind == 'artifact' else _loaded_by_executable
+    lookup[identity] = key
+    references = getattr(module, '_tnca_lookup_references', None)
+    if references is None:
+        try:
+            references = set()
+            module._tnca_lookup_references = references
+        except (AttributeError, TypeError):
+            return  # An externally provided immutable module uses the scan path.
+    references.add((kind, identity))
+
+
+def _forget_resident(module):
+    """Remove every alias of an unloaded physical code allocation."""
+    resident_aliases = _resident_aliases(module)
+    alias_set = set(resident_aliases)
+    for alias in resident_aliases:
+        del _loaded[alias]
+        _module_views.pop(alias, None)
+    aliases = getattr(module, '_tnca_resident_aliases', None)
+    if aliases is not None:
+        aliases.clear()
+    references = getattr(module, '_tnca_lookup_references', None)
+    if references is None:
+        for lookup in (_loaded_by_artifact, _loaded_by_executable):
+            for identity, resident_key in list(lookup.items()):
+                if resident_key in alias_set:
+                    del lookup[identity]
+    else:
+        for kind, identity in references:
+            lookup = _loaded_by_artifact if kind == 'artifact' else _loaded_by_executable
+            # A lookup may have been rebound to a different live allocation.
+            if lookup.get(identity) in alias_set:
+                del lookup[identity]
+        references.clear()
+
+
+def _resident_for(key):
+    module = _loaded.get(key)
+    if module is not None and not getattr(module, 'alive', True):
+        _forget_resident(module)
+        return None
+    return module
 
 
 def _load(session, path):
@@ -485,35 +752,117 @@ def _load(session, path):
     the device session and clock epoch for both CPU migration and resident
     tensors; replacing a session mid-graph invalidates common-clock spans.
     """
-    from tnca.errors import BufferError as _BE
-    key = (session.id, session.epoch, path)
-    m = _loaded.pop(key, None)
+    from tnca.errors import BufferError as _BE, BufferBusy as _BB
+    global loaded
+    digest = _artifact_sha256(path)
+    # A compiler may atomically replace an artifact at the same pathname.
+    # The old code must not become the new path's resident cache hit.
+    key = (session.id, session.epoch, path, digest)
+    artifact_key = (session.id, session.epoch, digest)
+    executable, manifest = _executable_info(path)
+    if executable is not None and _artifact_stats.get(path) != _executable_hashes[path][0]:
+        raise TNCALaunchError('compiled artifact changed between hash and contract checks')
+    executable_key = (session.id, session.epoch, executable) if executable is not None else None
+    from tnca.code_residency import active as active_code_trace
+    trace = active_code_trace()
+    trace_key = (session.id, session.epoch, executable or digest or path)
+    if trace is not None:
+        trace.request(session, trace_key, _loaded, _executable_digest)
+    m = _resident_for(key)
+    if m is None:
+        resident_key = _loaded_by_artifact.get(artifact_key)
+        m = _resident_for(resident_key)
+        if m is not None:
+            _register_resident_alias(key, m)
+            if resident_key in _module_views:
+                _module_views[key] = _module_views[resident_key]
+    if m is None and executable_key is not None:
+        resident_key = _loaded_by_executable.get(executable_key)
+        m = _resident_for(resident_key)
+        if m is not None:
+            manifest = _verified_alias_manifest(path, executable)
+            _register_resident_alias(key, m)
+            _module_views[key] = _ModuleView(m, path, manifest)
     if m is not None:
-        _loaded[key] = m             # most recently used last (eviction order)
-        return session, m
+        _touch_resident(m)
+        _bind_resident_lookup(m, 'artifact', artifact_key, key)
+        if executable_key is not None:
+            _bind_resident_lookup(m, 'executable', executable_key, key)
+        if trace is not None:
+            trace.record(trace_key, m)
+        return session, _module_views.get(key, m)
     try:
         m = session.load(path)
     except _BE as e:
         if 'overlaps the device heap' not in str(e):
             raise
-        session.drain()
-        for old_key in list(_loaded):
-            if old_key[0] != session.id or old_key[1] != session.epoch:
-                continue
-            session.unload(_loaded.pop(old_key))
-            global evicted
-            evicted += 1
-            try:
-                m = session.load(path)
-                break
-            except _BE as again:
-                if 'overlaps the device heap' not in str(again):
-                    raise
-        else:
-            raise TNCALaunchError(
-                'the code region cannot hold this kernel even with every other module '
-                'unloaded (capacity-exceeded: code region)') from e
-    _loaded[key] = m
+        # The U280 serializes code uploads with launches at the transport
+        # lock. An idle code allocation can therefore be replaced without
+        # first waiting for unrelated queued kernels. Keep this experimental
+        # path opt-in until its board comparison is complete.
+        parallel_evict = (os.environ.get('TNCA_DECODE_CODE_EVICT_ASYNC') == '1'
+                          and getattr(session, 'backend_name', None) == 'fpga-u280-multicore'
+                          and getattr(getattr(session, 'dev', None), 'serialized_code_uploads', False))
+        if not parallel_evict:
+            session.drain()
+        old_keys = (trace.victims(session, _loaded, _executable_digest)
+                    if trace is not None else list(_loaded))
+        for phase in range(3 if parallel_evict else 1):
+            blocked = []
+            for old_key in old_keys:
+                if old_key[0] != session.id or old_key[1] != session.epoch:
+                    continue
+                # Unloading an earlier key removes every alias of that module.
+                old = _loaded.get(old_key)
+                if old is None:
+                    continue
+                try:
+                    if parallel_evict and phase < 2:
+                        session.unload(old, allow_unrelated_tasks=True)
+                    else:
+                        session.unload(old)
+                except _BB:
+                    if not parallel_evict or phase == 2:
+                        raise
+                    blocked.append(old)
+                    continue
+                _forget_resident(old)
+                global evicted
+                evicted += 1
+                try:
+                    m = session.load(path)
+                    break
+                except _BE as again:
+                    if 'overlaps the device heap' not in str(again):
+                        raise
+            else:
+                if parallel_evict and phase == 0 and blocked:
+                    # The oldest eligible victim needs only its own admitted
+                    # tasks to finish, not the entire queue.
+                    session.wait_for_module(blocked[0])
+                    continue
+                if parallel_evict and phase == 1 and blocked:
+                    # More busy allocations must leave or another submitter
+                    # reused the first victim; retain the full-barrier fallback.
+                    session.drain()
+                    continue
+                raise TNCALaunchError(
+                    'the code region cannot hold this kernel even with every other module '
+                    'unloaded (capacity-exceeded: code region)') from e
+            break
+    loaded += 1
+    try:
+        # Retain the identity of the validated resident bytes even if their
+        # original pathname is subsequently atomically replaced.
+        m._tnca_execution_identity = executable or digest or path
+    except (AttributeError, TypeError):
+        pass  # Unusual immutable modules use the path-based fallback.
+    _register_resident_alias(key, m)
+    _bind_resident_lookup(m, 'artifact', artifact_key, key)
+    if executable_key is not None:
+        _bind_resident_lookup(m, 'executable', executable_key, key)
+    if trace is not None:
+        trace.record(trace_key, m)
     return session, m
 
 
@@ -609,10 +958,20 @@ class TNCADriver(DriverBase):
 
     def get_benchmarker(self):
         def bench(fn, *a, **k):
-            import time
-            t = time.perf_counter()
-            fn()
-            return (time.perf_counter() - t) * 1e3
+            # triton.autotune on TNCA: every config is compiled, none is run
+            # (TNCA_LAUNCH=skip for the call). The host's wall time of a
+            # simulator or board round trip is not the device's time, and
+            # the configs Triton offers differ here only in what the backend
+            # can hold: one that does not fit raises OutOfResources at
+            # compile time and the tuner drops it. The rest tie, and the
+            # tuner keeps the first -- the kernel author's first choice.
+            _bench_local.compile_only = True
+            try:
+                fn()
+            finally:
+                _bench_local.compile_only = False
+            quantiles = k.get('quantiles')
+            return [1.0] * len(quantiles) if quantiles else 1.0
         return bench
 
     def get_empty_cache_for_benchmark(self):

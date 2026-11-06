@@ -1,0 +1,8 @@
+s4c4 3 op.copy/membound/fp32-small-contig-r16-c1024
+s4c4 3 op.add/membound/fp32-small-contig-r16-c1024
+s4c4 3 op.relu/membound/fp32-small-contig-r16-c1024
+s4c4 3 op.clone/membound/fp32-small-contig-r16-c1024
+s4c4 2 op.copy/membound/fp32-small-contig-r16-c1024
+s4c4 2 op.add/membound/fp32-small-contig-r16-c1024
+s4c4 2 op.relu/membound/fp32-small-contig-r16-c1024
+s4c4 2 op.clone/membound/fp32-small-contig-r16-c1024

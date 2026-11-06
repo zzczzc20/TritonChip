@@ -6,6 +6,7 @@ module tnca_multicore_axi #(
  parameter DCO_REGISTERED_RANGES=0,
     parameter NUCA_REGISTER_VICTIM_SELECT = 0,
     parameter NUCA_CACHE_DATA_PIPELINE = 0,
+    parameter NUCA_SHARED_DATA_READ = 0,   // R41 G2: one LUTRAM read port per slice line array
     parameter NUCA_REGISTER_VICTIM_RANK = 0,
     parameter DCO_TLW_PIPE_STAGES = 0,
     parameter DCO_REGISTER_WRITES = 0,
@@ -13,11 +14,12 @@ module tnca_multicore_axi #(
  parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,CODE_LINK_STAGES=0,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
- parameter VREGS_PER_RCTX=64,AUTO_VBASE=1,
+ parameter VREGS_PER_RCTX=64,ACC_N=16,ACC_W=4,BAR_N=32,BAR_W=5,BAR_EPOCH_W=48,FMA_IMPL=0,MAC_DP=0,MAC_CUTS=29,PHYS_ADDR_W=64,AUTO_VBASE=1,
  parameter HAS_SFU=1,HAS_ATOMICS=1,HAS_SYS_ATOMICS=0,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
- parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
+ parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,MTX_VRF_REG=0,LSU_INFLIGHT=2,
+ parameter HYBRID_LSU=0,SFU_LANES=1,HOME_BACKGROUND_READS=0,HOME_LINE_WRITE_NOFILL=0,HOME_LINE_PIPE=0,TENSOR_LINE=0,HOME_MSHR_N=8,LINE_SLOTS=8,MEM_TAG_W=(HOME_MSHR_N>1?$clog2(HOME_MSHR_N):1),
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
- parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,LINK_STAGES=2,AXI_DATA_W=256,AXI_OUT_N=8,
+ parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,LINK_STAGES=2,AXI_DATA_W=256,AXI_OUT_N=8,AXI_PIPELINED_ISSUE=0,AXI_LINE_LUTRAM=0,HBM_STRIPED=0,
  parameter AXI_ID_W=(AXI_OUT_N>1?$clog2(AXI_OUT_N):1),MEM_BASE=64'h20000,CACHE_MAINTENANCE=0
 )(
  input wire clk,rst_n,
@@ -83,10 +85,10 @@ module tnca_multicore_axi #(
  wire [MEM_PORTS*64-1:0] ports_req_addr;
  wire [MEM_PORTS-1:0] ports_req_we;
  wire [MEM_PORTS*512-1:0] ports_req_wdata;
- wire [MEM_PORTS*3-1:0] ports_req_tag;
+ wire [MEM_PORTS*MEM_TAG_W-1:0] ports_req_tag;
  wire [MEM_PORTS*SRC_W-1:0] ports_req_src;
  wire [MEM_PORTS-1:0] ports_rsp_valid;
- wire [MEM_PORTS*3-1:0] ports_rsp_tag;
+ wire [MEM_PORTS*MEM_TAG_W-1:0] ports_rsp_tag;
  wire [MEM_PORTS*SRC_W-1:0] ports_rsp_src;
  wire [MEM_PORTS*512-1:0] ports_rsp_rdata;
  wire mem_req_valid;
@@ -94,10 +96,10 @@ module tnca_multicore_axi #(
  wire [63:0] mem_req_addr;
  wire mem_req_we;
  wire [511:0] mem_req_wdata;
- wire [2:0] mem_req_tag;
+ wire [MEM_TAG_W-1:0] mem_req_tag;
  wire [SRC_W-1:0] mem_req_src;
  wire mem_rsp_valid;
- wire [2:0] mem_rsp_tag;
+ wire [MEM_TAG_W-1:0] mem_rsp_tag;
  wire [SRC_W-1:0] mem_rsp_src;
  wire [511:0] mem_rsp_rdata;
  wire memory_mode_fault;
@@ -113,7 +115,7 @@ module tnca_multicore_axi #(
  assign all_idle=shell_all_idle && memory_drained;
  assign busy=shell_busy || !memory_drained;
  tnca_multicore_shell #(
-  .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK), .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .DCO_REGISTER_WRITES(DCO_REGISTER_WRITES), .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),
+  .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK), .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .DCO_REGISTER_WRITES(DCO_REGISTER_WRITES), .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),
   .NX(NX),
   .NY(NY),
   .N(N),
@@ -128,7 +130,7 @@ module tnca_multicore_axi #(
   .RCTX_W(RCTX_W),
   .PHYS_VREGS(PHYS_VREGS),
   .PHYS_W(PHYS_W),
-  .VREGS_PER_RCTX(VREGS_PER_RCTX),
+  .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .PHYS_ADDR_W(PHYS_ADDR_W),
   .AUTO_VBASE(AUTO_VBASE),
   .HAS_SFU(HAS_SFU),
   .HAS_ATOMICS(HAS_ATOMICS),
@@ -139,7 +141,9 @@ module tnca_multicore_axi #(
   .VRF_PREFETCH(VRF_PREFETCH),
   .RCTX_SWITCH(RCTX_SWITCH),
   .MTX_ABUF(MTX_ABUF),
+  .MTX_VRF_REG(MTX_VRF_REG),
   .LSU_INFLIGHT(LSU_INFLIGHT),
+  .HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.HOME_LINE_PIPE(HOME_LINE_PIPE),.TENSOR_LINE(TENSOR_LINE),.HOME_MSHR_N(HOME_MSHR_N),.LINE_SLOTS(LINE_SLOTS),
   .FPU_OVERLAP(FPU_OVERLAP),
   .RSLICE(RSLICE),
   .RPAIR(RPAIR),
@@ -235,10 +239,10 @@ module tnca_multicore_axi #(
  wire [MEM_PORTS*64-1:0] raw_ports_req_addr;
  wire [MEM_PORTS-1:0] raw_ports_req_we;
  wire [MEM_PORTS*512-1:0] raw_ports_req_wdata;
- wire [MEM_PORTS*3-1:0] raw_ports_req_tag;
+ wire [MEM_PORTS*MEM_TAG_W-1:0] raw_ports_req_tag;
  wire [MEM_PORTS*SRC_W-1:0] raw_ports_req_src;
  wire [MEM_PORTS-1:0] raw_ports_rsp_valid;
- wire [MEM_PORTS*3-1:0] raw_ports_rsp_tag;
+ wire [MEM_PORTS*MEM_TAG_W-1:0] raw_ports_rsp_tag;
  wire [MEM_PORTS*SRC_W-1:0] raw_ports_rsp_src;
  wire [MEM_PORTS*512-1:0] raw_ports_rsp_rdata;
  generate if(MEM_PORTS>1)begin:g_raw
@@ -253,10 +257,10 @@ module tnca_multicore_axi #(
  wire [MEM_PORTS-1:0] mode_req_valid,mode_req_ready,mode_req_we,mode_rsp_valid;
  wire [MEM_PORTS*64-1:0] mode_req_addr;
  wire [MEM_PORTS*512-1:0] mode_req_wdata,mode_rsp_rdata;
- wire [MEM_PORTS*3-1:0] mode_req_tag,mode_rsp_tag;
+ wire [MEM_PORTS*MEM_TAG_W-1:0] mode_req_tag,mode_rsp_tag;
  wire [MEM_PORTS*SRC_W-1:0] mode_req_src,mode_rsp_src;
  generate if(MEMORY_CONTROLS)begin:g_memory_mode
-  tnca_memory_mode #(.PORTS(MEM_PORTS),.N_SRC(N),.SRC_W(SRC_W)) mode(
+  tnca_memory_mode #(.PORTS(MEM_PORTS),.N_SRC(N),.SRC_W(SRC_W),.TAG_W(MEM_TAG_W)) mode(
    .clk(clk),.rst_n(rst_n),.single_port(memory_active_ports==1),
    .s_req_valid(ports_req_valid),.s_req_ready(ports_req_ready),.s_req_addr(ports_req_addr),
    .s_req_we(ports_req_we),.s_req_wdata(ports_req_wdata),.s_req_tag(ports_req_tag),.s_req_src(ports_req_src),
@@ -275,16 +279,16 @@ module tnca_multicore_axi #(
  end endgenerate
  generate for(genvar p=0;p<MEM_PORTS;p=p+1)begin:g_outlet
   wire qv,qr,qwe,rv;wire [63:0] qa;wire [511:0] qd,rd;
-  wire [SRC_W-1:0] qs,rs;wire [2:0] qt,rt;
-  tnca_line_link #(.SRC_W(SRC_W),.TAG_W(3),.STAGES(LINK_STAGES)) link(
+  wire [SRC_W-1:0] qs,rs;wire [MEM_TAG_W-1:0] qt,rt;
+  tnca_line_link #(.SRC_W(SRC_W),.TAG_W(MEM_TAG_W),.STAGES(LINK_STAGES)) link(
    .clk(clk),.rst_n(rst_n),.idle(link_idle[p]),
    .s_req_valid(mode_req_valid[p]),.s_req_ready(mode_req_ready[p]),
    .s_req_addr(mode_req_addr[p*64+:64]),.s_req_we(mode_req_we[p]),
-   .s_req_wdata(mode_req_wdata[p*512+:512]),.s_req_src(mode_req_src[p*SRC_W+:SRC_W]),.s_req_tag(mode_req_tag[p*3+:3]),
-   .s_rsp_valid(mode_rsp_valid[p]),.s_rsp_rdata(mode_rsp_rdata[p*512+:512]),.s_rsp_src(mode_rsp_src[p*SRC_W+:SRC_W]),.s_rsp_tag(mode_rsp_tag[p*3+:3]),
+   .s_req_wdata(mode_req_wdata[p*512+:512]),.s_req_src(mode_req_src[p*SRC_W+:SRC_W]),.s_req_tag(mode_req_tag[p*MEM_TAG_W+:MEM_TAG_W]),
+   .s_rsp_valid(mode_rsp_valid[p]),.s_rsp_rdata(mode_rsp_rdata[p*512+:512]),.s_rsp_src(mode_rsp_src[p*SRC_W+:SRC_W]),.s_rsp_tag(mode_rsp_tag[p*MEM_TAG_W+:MEM_TAG_W]),
    .m_req_valid(qv),.m_req_ready(qr),.m_req_addr(qa),.m_req_we(qwe),.m_req_wdata(qd),.m_req_src(qs),.m_req_tag(qt),
    .m_rsp_valid(rv),.m_rsp_rdata(rd),.m_rsp_src(rs),.m_rsp_tag(rt));
-  tnca_line_axi #(.SRC_W(SRC_W),.TAG_W(3),.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.DYNAMIC_LIMIT(MEMORY_CONTROLS),.ID_W(AXI_ID_W),.MEM_BASE(MEM_BASE)) adapter(
+  tnca_line_axi #(.HBM_STRIPED(HBM_STRIPED),.PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.LINE_LUTRAM(AXI_LINE_LUTRAM),.HAZARD_ADDR_W(PHYS_ADDR_W),.SRC_W(SRC_W),.TAG_W(MEM_TAG_W),.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.DYNAMIC_LIMIT(MEMORY_CONTROLS),.ID_W(AXI_ID_W),.MEM_BASE(MEM_BASE)) adapter(
    .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(qr),.req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
    .rsp_valid(rv),.rsp_rdata(rd),.rsp_src(rs),.rsp_tag(rt),
    .admission_limit(memory_outstanding),.axi_base(axi_base[p*64+:64]),.axi_size(axi_size[p*64+:64]),.fault(adapter_fault[p]),.idle(axi_idle[p]),

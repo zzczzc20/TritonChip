@@ -1,0 +1,5 @@
+Oct 27 05:57:20 gx10-6646 systemd[2282]: Started r41-accept-p2-rtl-v4.service - /usr/bin/taskset -c 0-5 timeout 3600 env PATH=/home/zhongchun/tc_env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin PYTHONPATH=/home/zhongchun/r41-accept-p2-v4:/home/zhongchun/r41-accept-p2-v4/python:/home/zhongchun/r41-accept-p2-v4/compiler/python:/home/zhongchun/r41-accept-p2-v4/tools/asm TNCA_BACKEND=fpga-multicore-sim "TNCA_BACKEND_ARGS={\"core_count\":3,\"memory_ports\":3,\"memory_bytes\":8388608,\"maintenance\":true,\"hbm_dma\":true,\"board_top\":true,\"noc_link_stages\":2,\"dispatch_stages\":2,\"home_stages\":2,\"code_stages\":2}" TNCA_HOST_TIMEOUT=1800 TNCA_DEADLINE=200000000 /home/zhongchun/tc_env/torchenv/bin/python -u /home/zhongchun/r41-accept-p2-v4/tools/performance_harness/locality_case.py --out /home/zhongchun/r41-accept-p2/rtl-v4.
+Oct 27 06:04:23 gx10-6646 taskset[695022]: {"status": "functional-pass", "graphs": 2}
+Oct 27 06:04:24 gx10-6646 systemd[2282]: r41-accept-p2-rtl-v4.service: Consumed 7min 21.527s CPU time.
+Result=success
+ExecMainStatus=0

@@ -1,0 +1,12 @@
+{
+  "schema": "tnca-chat-script-checks/1",
+  "id": "script-author-20261101",
+  "source": "Author directive: one full model session covers quality, no CPU fallback, speed and scripted chat",
+  "script": "spec/r41/chat/script-text.txt",
+  "script_sha256": "b046c5bf7e2d07c18afb7d12064cd2a117397a5905b295fb09d61da1906de897",
+  "checks": [
+    {"all_terms": ["paris"]},
+    {"all_terms": ["rome"]},
+    {"any_terms": ["hi", "hello", "hey", "greetings"]}
+  ]
+}

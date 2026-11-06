@@ -1,0 +1,4 @@
+Observed from the remote Vivado screen log before the x86 SSH connection stopped responding:
+R41_WIDE_HOME_SCREEN wns=1.628 whs=0.011
+INFO: [Common 17-206] Exiting Vivado at Tue Oct 27 11:51:34 2026...
+The complete routed timing, utilization and DRC reports have not yet been retrieved; subsequent SSH attempts timed out during banner exchange.

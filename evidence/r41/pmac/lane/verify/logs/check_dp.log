@@ -1,0 +1,15 @@
+dump_0.txt: lines=1000000 V1=1000000 V2L=1000000 V2D=1000000 V3=437439 fail=0 ro_visible=4 nan=18534 inf=65503 zero=1 sub=2
+dump_10.txt: lines=1000000 V1=0 V2L=1000000 V2D=1000000 V3=0 fail=0 ro_visible=308 nan=69586 inf=107628 zero=256 sub=2104
+dump_11.txt: lines=1000000 V1=0 V2L=1000000 V2D=1000000 V3=0 fail=0 ro_visible=53 nan=44834 inf=85216 zero=19094 sub=31855
+dump_12.txt: lines=1000000 V1=0 V2L=1000000 V2D=1000000 V3=0 fail=0 ro_visible=295086 nan=3847 inf=508935 zero=453 sub=0
+dump_13.txt: lines=1000000 V1=0 V2L=1000000 V2D=1000000 V3=0 fail=0 ro_visible=248089 nan=471 inf=80361 zero=34895 sub=7948
+dump_14.txt: lines=1000000 V1=0 V2L=1000000 V2D=1000000 V3=0 fail=0 ro_visible=147 nan=180308 inf=228051 zero=3584 sub=26234
+dump_15.txt: lines=1000000 V1=0 V2L=1000000 V2D=1000000 V3=0 fail=0 ro_visible=86 nan=295211 inf=272550 zero=5747 sub=17661
+dump_16.txt: lines=1000000 V1=0 V2L=1000000 V2D=1000000 V3=0 fail=0 ro_visible=0 nan=0 inf=0 zero=130548 sub=369569
+dump_1.txt: lines=1000000 V1=1000000 V2L=1000000 V2D=1000000 V3=437887 fail=0 ro_visible=0 nan=0 inf=0 zero=147207 sub=41519
+dump_2.txt: lines=1000000 V1=1000000 V2L=1000000 V2D=1000000 V3=437084 fail=0 ro_visible=4388 nan=4 inf=0 zero=208368 sub=2
+dump_3.txt: lines=1000000 V1=1000000 V2L=1000000 V2D=1000000 V3=437740 fail=0 ro_visible=3 nan=654620 inf=52553 zero=191 sub=172
+dump_4.txt: lines=1000000 V1=1000000 V2L=1000000 V2D=1000000 V3=437954 fail=0 ro_visible=18 nan=18787 inf=65112 zero=69 sub=57
+dump_5.txt: lines=1000000 V1=1000000 V2L=1000000 V2D=1000000 V3=437159 fail=0 ro_visible=0 nan=18707 inf=65465 zero=1447 sub=1199
+TOTAL: lines=13000000 V1=6000000 V2L=13000000 V2D=13000000 V3=2625263 fail=0 ro_visible=548182 nan=1304909 inf=1531374 zero=551860 sub=498322
+PASS

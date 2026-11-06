@@ -1,0 +1,52 @@
+---- nuca slice ----
+seed=20260918 trace_hash=d256443f854f7fe5 writes=1015
+issued=4096 reads_checked=3081 inflight_left=0
+hit=860 miss=3099 merge=137 wb=751 mshr_full=118 target_full=0 hit_past_block=23
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=3035 dead_evict=0 gear=8
+PASS
+tb/nuca/tb_nuca_wide.v:459: $finish called at 266046000 (1ps)
+HOME SERVICE mode=2 word_bytes=64 accepted=4096 responses=4096 span_cycles=27511 hit=0 miss=4096 fast_fills=4096
+---- nuca slice ----
+seed=20260918 trace_hash=910aaeb6dd1e6325 writes=0
+issued=4096 reads_checked=4096 inflight_left=0
+hit=0 miss=4096 merge=0 wb=0 mshr_full=726 target_full=0 hit_past_block=93
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=4032 dead_evict=0 gear=8
+PASS
+tb/nuca/tb_nuca_wide.v:459: $finish called at 275156000 (1ps)
+WIDE HOME MERGED READ-WRITE PASS pipeline=0
+WIDE HOME SPECIAL PASS pipeline=0 atomic_cases=288 transactions=1456 MMIO_words=8
+tb/nuca/tb_nuca_wide_special.v:116: $finish called at 197110000 (1ps)
+---- nuca slice ----
+seed=20260918 trace_hash=d256443f854f7fe5 writes=1015
+issued=4096 reads_checked=3081 inflight_left=0
+hit=865 miss=3099 merge=132 wb=751 mshr_full=78 target_full=0 hit_past_block=16
+OWNER_EPOCH retries=756
+policy=0 bypass=0 evict=3035 dead_evict=0 gear=8
+PASS
+tb/nuca/tb_nuca_wide.v:459: $finish called at 279466000 (1ps)
+HOME SERVICE mode=2 word_bytes=64 accepted=4096 responses=4096 span_cycles=27511 hit=0 miss=4096 fast_fills=4096
+---- nuca slice ----
+seed=20260918 trace_hash=910aaeb6dd1e6325 writes=0
+issued=4096 reads_checked=4096 inflight_left=0
+hit=0 miss=4096 merge=0 wb=0 mshr_full=726 target_full=0 hit_past_block=93
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=4032 dead_evict=0 gear=8
+PASS
+tb/nuca/tb_nuca_wide.v:459: $finish called at 275156000 (1ps)
+WIDE HOME MERGED READ-WRITE PASS pipeline=1
+WIDE HOME SPECIAL PASS pipeline=1 atomic_cases=288 transactions=1456 MMIO_words=8
+tb/nuca/tb_nuca_wide_special.v:116: $finish called at 197110000 (1ps)
+NUCA MAINTENANCE PASS full_tag=0 latency=1 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 2790000 (1ps)
+NUCA MAINTENANCE PASS full_tag=0 latency=8 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 3440000 (1ps)
+NUCA MAINTENANCE PASS full_tag=0 latency=31 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 5430000 (1ps)
+NUCA MAINTENANCE PASS full_tag=1 latency=1 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 2790000 (1ps)
+NUCA MAINTENANCE PASS full_tag=1 latency=8 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 3440000 (1ps)
+NUCA MAINTENANCE PASS full_tag=1 latency=31 stall=1 reorder=1 writes=4
+tb/nuca/tb_nuca_maintenance.v:148: $finish called at 5430000 (1ps)

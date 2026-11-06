@@ -1,0 +1,111 @@
+Slack (MET) :             0.361ns  (required time - arrival time)
+  Source:                 g_tile[1].u_slice/cur_ms_reg[1]_rep/C
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Destination:            g_tile[1].u_slice/data_mem_reg_r2_0_63_392_398/RAMC/I
+                            (rising edge-triggered cell RAMD64E clocked by clk  {rise@0.000ns fall@5.000ns period=10.000ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            10.000ns  (clk rise@10.000ns - clk rise@0.000ns)
+  Data Path Delay:        9.203ns  (logic 1.446ns (15.712%)  route 7.757ns (84.288%))
+  Logic Levels:           18  (CARRY8=4 LUT3=2 LUT4=2 LUT6=7 MUXF7=2 RAMD64E=1)
+  Clock Path Skew:        -0.345ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    3.141ns = ( 13.141 - 10.000 ) 
+    Source Clock Delay      (SCD):    3.665ns
+    Clock Pessimism Removal (CPR):    0.179ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+  Clock Net Delay (Source):      3.594ns (routing 1.865ns, distribution 1.729ns)
+  Clock Net Delay (Destination): 3.081ns (routing 1.697ns, distribution 1.384ns)
+
+    Location             Delay type                Incr(ns)  Path(ns)    PBlock               Netlist Resource(s)
+  -------------------------------------------------------------------    ----------------------------------------
+                         (clock clk rise edge)        0.000     0.000 r                       
+                                                      0.000     0.000 r                       raw_clk (IN)
+                         net (fo=0)                   0.043     0.043                         raw_clk
+    BUFGCE_X0Y0          BUFGCE (Prop_BUFCE_BUFGCE_I_O)
+                                                      0.028     0.071 r                       clock_buffer/O
+    X6Y5 (CLOCK_ROOT)    net (fo=52700, routed)       3.594     3.665                         g_tile[1].u_slice/clk
+    SLR Crossing[0->1]   
+    SLICE_X218Y424       FDRE                                         r  p0_cache1            g_tile[1].u_slice/cur_ms_reg[1]_rep/C
+  -------------------------------------------------------------------    ----------------------------------------
+    SLICE_X218Y424       FDRE (Prop_EFF_SLICEL_C_Q)
+                                                      0.079     3.744 r  p0_cache1            g_tile[1].u_slice/cur_ms_reg[1]_rep/Q
+                         net (fo=132, routed)         0.742     4.486                         g_tile[1].u_slice/cur_ms_reg[1]_rep_n_0
+    SLICE_X203Y457       LUT6 (Prop_C6LUT_SLICEL_I2_O)
+                                                      0.088     4.574 r  p0_cache1            g_tile[1].u_slice/g_sync_tags.g_way[0].bank_reg_0_31_0_13_i_20/O
+                         net (fo=1, routed)           0.010     4.584                         g_tile[1].u_slice/g_sync_tags.g_way[0].bank_reg_0_31_0_13_i_20_n_0
+    SLICE_X203Y457       MUXF7 (Prop_F7MUX_CD_SLICEL_I1_O)
+                                                      0.064     4.648 r  p0_cache1            g_tile[1].u_slice/g_sync_tags.g_way[0].bank_reg_0_31_0_13_i_10/O
+                         net (fo=3031, routed)        2.608     7.256                         g_tile[1].u_slice/data_mem_reg_r2_128_191_455_461/ADDRE4
+    SLICE_X175Y265       RAMD64E (Prop_E6LUT_SLICEM_RADR4_O)
+                                                      0.052     7.308 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_r2_128_191_455_461/RAME/O
+                         net (fo=1, routed)           0.340     7.648                         g_tile[1].u_slice/data_mem_reg_r2_128_191_455_461_n_4
+    SLICE_X178Y265       LUT6 (Prop_C6LUT_SLICEL_I1_O)
+                                                      0.050     7.698 r  p0_cache1            g_tile[1].u_slice/rsq_data_reg_0_3_0_13_i_250/O
+                         net (fo=1, routed)           0.010     7.708                         g_tile[1].u_slice/p_1_out__0[459]
+    SLICE_X178Y265       MUXF7 (Prop_F7MUX_CD_SLICEL_I1_O)
+                                                      0.064     7.772 r  p0_cache1            g_tile[1].u_slice/rsq_data_reg_0_3_0_13_i_147/O
+                         net (fo=1, routed)           0.483     8.255                         g_tile[1].u_slice/rsq_data_reg_0_3_0_13_i_147_n_0
+    SLICE_X183Y281       LUT6 (Prop_G6LUT_SLICEL_I0_O)
+                                                      0.123     8.378 r  p0_cache1            g_tile[1].u_slice/rsq_data_reg_0_3_0_13_i_78/O
+                         net (fo=3, routed)           0.639     9.017                         g_tile[1].u_slice/rsq_data_reg_0_3_0_13_i_78_n_0
+    SLICE_X194Y318       LUT4 (Prop_H6LUT_SLICEM_I3_O)
+                                                      0.090     9.107 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_11_11_i_9/O
+                         net (fo=15, routed)          0.425     9.532                         g_tile[1].u_slice/old[11]
+    SLICE_X202Y321       LUT4 (Prop_F6LUT_SLICEL_I3_O)
+                                                      0.123     9.655 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_741/O
+                         net (fo=1, routed)           0.011     9.666                         g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_741_n_0
+    SLICE_X202Y321       CARRY8 (Prop_CARRY8_SLICEL_S[5]_CO[7])
+                                                      0.155     9.821 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_655/CO[7]
+                         net (fo=1, routed)           0.026     9.847                         g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_655_n_0
+    SLICE_X202Y322       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     9.862 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_498/CO[7]
+                         net (fo=1, routed)           0.026     9.888                         g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_498_n_0
+    SLICE_X202Y323       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.015     9.903 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_334/CO[7]
+                         net (fo=1, routed)           0.026     9.929                         g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_334_n_0
+    SLICE_X202Y324       CARRY8 (Prop_CARRY8_SLICEL_CI_CO[7])
+                                                      0.022     9.951 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_297/CO[7]
+                         net (fo=1, routed)           0.156    10.107                         g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_297_n_0
+    SLICE_X202Y325       LUT3 (Prop_F6LUT_SLICEL_I0_O)
+                                                      0.148    10.255 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_254/O
+                         net (fo=128, routed)         0.454    10.709                         g_tile[1].u_slice/data_mem_reg_0_255_0_0_i_254_n_0
+    SLICE_X200Y314       LUT6 (Prop_G6LUT_SLICEL_I0_O)
+                                                      0.035    10.744 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_10_10_i_11/O
+                         net (fo=1, routed)           0.044    10.788                         g_tile[1].u_slice/data_mem_reg_0_255_10_10_i_11_n_0
+    SLICE_X200Y314       LUT6 (Prop_F6LUT_SLICEL_I3_O)
+                                                      0.097    10.885 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_10_10_i_7/O
+                         net (fo=2, routed)           0.293    11.178                         g_tile[1].u_slice/amo_alu0_return[10]
+    SLICE_X192Y314       LUT3 (Prop_B6LUT_SLICEM_I1_O)
+                                                      0.089    11.267 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_10_10_i_5/O
+                         net (fo=1, routed)           0.099    11.366                         g_tile[1].u_slice/data_mem_reg_0_255_10_10_i_5_n_0
+    SLICE_X192Y316       LUT6 (Prop_H6LUT_SLICEM_I5_O)
+                                                      0.101    11.467 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_10_10_i_2/O
+                         net (fo=8, routed)           0.656    12.124                         g_tile[1].u_slice/data_mem_reg_0_255_10_10_i_2_n_0
+    SLICE_X183Y279       LUT6 (Prop_H6LUT_SLICEL_I3_O)
+                                                      0.036    12.160 r  p0_cache1            g_tile[1].u_slice/data_mem_reg_0_255_394_394_i_1/O
+                         net (fo=16, routed)          0.708    12.868                         g_tile[1].u_slice/data_mem_reg_r2_0_63_392_398/DIC
+    SLICE_X176Y266       RAMD64E                                      r  p0_cache1            g_tile[1].u_slice/data_mem_reg_r2_0_63_392_398/RAMC/I
+  -------------------------------------------------------------------    ----------------------------------------
+
+                         (clock clk rise edge)       10.000    10.000 r                       
+                                                      0.000    10.000 r                       raw_clk (IN)
+                         net (fo=0)                   0.036    10.036                         raw_clk
+    BUFGCE_X0Y0          BUFGCE (Prop_BUFCE_BUFGCE_I_O)
+                                                      0.024    10.060 r                       clock_buffer/O
+    X6Y5 (CLOCK_ROOT)    net (fo=52700, routed)       3.081    13.141                         g_tile[1].u_slice/data_mem_reg_r2_0_63_392_398/WCLK
+    SLR Crossing[0->1]   
+    SLICE_X176Y266       RAMD64E                                      r  p0_cache1            g_tile[1].u_slice/data_mem_reg_r2_0_63_392_398/RAMC/CLK
+                         clock pessimism              0.179    13.320                           
+                         clock uncertainty           -0.035    13.285                           
+    SLICE_X176Y266       RAMD64E (Setup_C6LUT_SLICEM_CLK_I)
+                                                     -0.056    13.229    p0_cache1              g_tile[1].u_slice/data_mem_reg_r2_0_63_392_398/RAMC
+  -------------------------------------------------------------------
+                         required time                         13.229                           
+                         arrival time                         -12.868                           
+  -------------------------------------------------------------------
+                         slack                                  0.361                           
+

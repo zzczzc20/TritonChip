@@ -12,11 +12,12 @@ rules it is checked against:
 2. **It patches nothing.** No change to the common compiler, the runtime
    state machine or the compute core. It adds a file and registers a
    backend through the published extension point. The checker compares
-   the installed package's files before and after.
+   the repository's common core and runtime files before and after.
 
 3. **It runs on real RTL.** The small program really executes, its
-   answers are checked against an oracle computed here, and the shared
-   conformance suite runs against the backend it registered.
+   answers are checked against an oracle from the shared conformance suite,
+   and the shared conformance suite runs against the backend it registered.
+   The checker runs the rehearsal twice to verify reproducibility.
 
 ## What it contains
 

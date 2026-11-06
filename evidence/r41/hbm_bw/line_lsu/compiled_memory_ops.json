@@ -1,0 +1,60 @@
+[
+  {
+    "artifact": "r41-hbmbw-operator100-v1/wide8/runs/op.silu__small__fp16-n16384/dump/triton_poi_fused_silu_0/triton_poi_fused_silu_0.s",
+    "sha256": "cd76cde3a823c44e0b44388c081b9a125120366f7deda99f813aea22203334a3",
+    "memory_instructions": [
+      "v.ld.h       v6, [s12, #0]",
+      "v.ld.h       v0, [s2, #0]",
+      "v.ld.h       v7, [s13, #0]",
+      "v.ld.h       v19, [s6, #0]",
+      "v.ld.h       v3, [s14, #0]",
+      "v.ld.h       v0, [s8, #0]",
+      "v.ld.h       v11, [s9, #0]",
+      "v.ld.h       v13, [s13, #0]",
+      "v.st.h       [s3, #0], v8",
+      "v.st.h       [s6, #0], v0",
+      "v.st.h       [s8, #0], v10",
+      "v.st.h       [s4, #0], v2",
+      "v.st.h       [s2, #0], v3",
+      "v.st.h       [s5, #0], v1",
+      "v.st.h       [s9, #0], v5",
+      "v.st.h       [s1, #0], v6"
+    ],
+    "contiguous_halfword_loads": 8,
+    "contiguous_halfword_stores": 8,
+    "scope": "opcode audit only; dynamic addresses and eligible fraction not yet measured"
+  },
+  {
+    "artifact": "r41-hbmbw-operator100-v1/wide8/runs/op.add__small__fp16-n16384/dump/triton_poi_fused_add_0/triton_poi_fused_add_0.s",
+    "sha256": "077f784e389a90d849e0a5c9a5ad1cfa9b5ba5a2008cefcc4e5f3abcb4cf1ae9",
+    "memory_instructions": [
+      "v.ld.h       v14, [s13, #0]",
+      "v.ld.h       v3, [s2, #0]",
+      "v.ld.h       v14, [s14, #0]",
+      "v.ld.h       v0, [s6, #0]",
+      "v.ld.h       v2, [s16, #0]",
+      "v.ld.h       v0, [s1, #0]",
+      "v.ld.h       v2, [s9, #0]",
+      "v.ld.h       v0, [s14, #0]",
+      "v.ld.h       v2, [s3, #0]",
+      "v.ld.h       v0, [s6, #0]",
+      "v.ld.h       v2, [s11, #0]",
+      "v.ld.h       v0, [s1, #0]",
+      "v.ld.h       v2, [s9, #0]",
+      "v.ld.h       v0, [s14, #0]",
+      "v.ld.h       v2, [s3, #0]",
+      "v.ld.h       v0, [s15, #0]",
+      "v.st.h       [s16, #0], v7",
+      "v.st.h       [s10, #0], v9",
+      "v.st.h       [s13, #0], v1",
+      "v.st.h       [s4, #0], v3",
+      "v.st.h       [s5, #0], v4",
+      "v.st.h       [s12, #0], v5",
+      "v.st.h       [s6, #0], v6",
+      "v.st.h       [s2, #0], v2"
+    ],
+    "contiguous_halfword_loads": 16,
+    "contiguous_halfword_stores": 8,
+    "scope": "opcode audit only; dynamic addresses and eligible fraction not yet measured"
+  }
+]

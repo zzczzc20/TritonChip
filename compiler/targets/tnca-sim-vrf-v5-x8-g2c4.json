@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "name": "tnca-sim-vrf-v5-x8-g2c4",
+  "description": "core-vrf-sync-v5-x8 with R41 G2's approved cuts except the contexts cut: eight mbarriers instead of 32 and 38-bit barrier epochs instead of 48, with four Role Contexts (256 physical vector registers) as in v5-x8. The author withdrew the 4->2 contexts cut on 2026-10-29 because of its measured slowdown (evidence/r41/hbm_bw/g4/g2_cuts/README.md). The accumulator file keeps its 16 slots. Every instruction, format and capability of v5-x8 is unchanged; artifacts compiled for 32 barriers do not run here.",
+  "note": "Generated file -- do not edit. Run `make target`. Derived from rtl/core/tnca_core.v, rtl/tnca_top.v and isa/tnca-isa-v0.1.json; see compiler_overview.md sec 15 C0.",
+  "isa_version": "0.1",
+  "num_rctx": 4,
+  "num_cores": 1,
+  "mesh": {
+    "x": 2,
+    "y": 2
+  },
+  "vlen": 16,
+  "elen_bits": 32,
+  "registers": {
+    "vreg_logical_per_rctx": 64,
+    "vreg_physical_total": 256,
+    "vreg_encodable": 256,
+    "sreg_per_rctx": 64,
+    "preg_per_rctx": 16
+  },
+  "accumulators": {
+    "count": 16,
+    "rows": 16,
+    "element": "f32"
+  },
+  "barriers": {
+    "count": 8,
+    "index_width": 3,
+    "counts": "arrivals_and_operations_separately",
+    "operation_unit": "one_complete_async_command"
+  },
+  "descriptors": {
+    "count": 16
+  },
+  "windows": {
+    "count": 32
+  },
+  "dma": {
+    "max_rank": 5,
+    "dtypes": [
+      "f16",
+      "bf16"
+    ],
+    "descriptor_bytes": 256,
+    "descriptor_semantic_bytes": 128,
+    "padding_modes": [
+      "zero",
+      "clamp",
+      "fault"
+    ],
+    "destination": "rf_window",
+    "note": "A window names vector registers and nothing else (ISA sec 9D.2); it is not a scratchpad and has no byte pointer, so a transfer target must be a register range."
+  },
+  "mma": {
+    "shape": {
+      "m": 16,
+      "n": 16,
+      "k": 16
+    },
+    "dtypes": {
+      "f16": 0,
+      "bf16": 1,
+      "e5m2": 2,
+      "e4m3": 3
+    },
+    "k_steps": {
+      "k16": 0,
+      "k32": 1,
+      "k64": 2
+    },
+    "accumulate": "increasing_k",
+    "fused": true,
+    "bit_reproducible": true,
+    "source_release": "on_command_completion",
+    "separate_source_completion": false
+  },
+  "capabilities": {
+    "vector_fp32": true,
+    "sfu": true,
+    "gather_scatter": true,
+    "atomics_device": true,
+    "atomics_system": false,
+    "matrix_f16": true,
+    "matrix_bf16": true,
+    "matrix_fp8": true,
+    "tensor_dma": true,
+    "tensor_store": true,
+    "tensor_transpose": true,
+    "tensor_transpose_8bit": true,
+    "mbarrier": true,
+    "packed_f16": false,
+    "cache_hints": false,
+    "fence": true,
+    "rctx_slice": true,
+    "rctx_pair": true
+  },
+  "latency": {
+    "fp_result_cycles": 2,
+    "mul_result_cycles": 3
+  },
+  "issue": {
+    "width": 1,
+    "note": "Single issue; sec 10.4 accumulates cost per shared unit."
+  },
+  "memory": {
+    "line_bytes": 64,
+    "nuca": {
+      "sets": 64,
+      "ways": 8,
+      "mshrs": 8,
+      "targets": 16,
+      "placement": "static_home",
+      "note": "home = H(physical line address); no replication and no migration, so there is no inter-slice coherence protocol to model."
+    },
+    "gather_index_scaling": "element",
+    "gather_index_bits": 32,
+    "gather_index_signed": true,
+    "addressable_scratchpad": false
+  },
+  "scalar": {
+    "width_bits": 64,
+    "has_floating_point": false,
+    "note": "SALU is integer only; move uniform FP through the vector domain or carry it as a bit pattern."
+  },
+  "trap_codes": {
+    "NONE": 0,
+    "ILLEGAL_INSTRUCTION": 1,
+    "MISALIGNED_PC": 2,
+    "ACCESS_FAULT": 3,
+    "DESCRIPTOR_FAULT": 4,
+    "BARRIER_FAULT": 5,
+    "RESOURCE_EXHAUSTED": 6,
+    "TRAP_USER": 64
+  },
+  "design_fact_sources": {
+    "tensor_max_rank": "rtl/core/tnca_core.v TNCA_SPEC_MAX_RANK; the transfer engine implements rank 1-5 (ISA sec 9E), signed coordinates, zero/NaN/fault padding",
+    "mma_shape": "ISA sec 9C: m.mma.async is a 16x16x16 step",
+    "mma_accum_order": "ISA sec 9C.1: RNE_f32(exact(A)*exact(B) + C), increasing k, bit-reproducible",
+    "gather_index_scaling": "ISA sec 9.1: lane i => Sa + sext(Vb[i]) * sz",
+    "descriptor_bytes": "ISA sec 9D.3",
+    "descriptor_semantic_bytes": "ISA sec 9D.3: bytes 0-127 are semantics, 128-255 are ignorable hints"
+  },
+  "profile": "core-vrf-sync-v5-x8-g2c4",
+  "topology": "single",
+  "elaboration": {
+    "NUM_RCTX": 4,
+    "RCTX_W": 2,
+    "VREGS_PER_RCTX": 64,
+    "PHYS_VREGS": 256,
+    "HAS_SFU": 1,
+    "HAS_ATOMICS": 1,
+    "HAS_SYS_ATOMICS": 0,
+    "RSLICE": 1,
+    "HAS_TENSOR_XPOSE": 2,
+    "RPAIR": 1,
+    "BAR_N": 8,
+    "BAR_W": 3,
+    "BAR_EPOCH_W": 38
+  },
+  "compiler": {
+    "snapshot_fence": true,
+    "why": "The run-2 images of this profile build the line-wide transfer engine (TENSOR_LINE): its TensorMap snapshot is one line request beside the LSU, so the context's map stores must be fenced before td.load (R41 G4, evidence/r41/hbm_bw/G4_DESIGN.md sec 9.6)."
+  }
+}

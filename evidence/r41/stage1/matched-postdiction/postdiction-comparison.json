@@ -1,0 +1,568 @@
+{
+  "schema": "tnca-captured-input-postdiction/1",
+  "status": "postdiction-recorded",
+  "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a",
+  "rows": [
+    {
+      "kind": "memory",
+      "case": "p1o1",
+      "graph": null,
+      "shape": null,
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 22011,
+      "board_samples": [
+        17000,
+        17147,
+        16984
+      ],
+      "board_median_cycles": 17000,
+      "signed_residual": 0.29476470588235293,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "memory",
+      "case": "p1o8",
+      "graph": null,
+      "shape": null,
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 17798,
+      "board_samples": [
+        15842,
+        15870,
+        15908
+      ],
+      "board_median_cycles": 15870,
+      "signed_residual": 0.12148708254568368,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "memory",
+      "case": "p3o8",
+      "graph": null,
+      "shape": null,
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 17800,
+      "board_samples": [
+        15836,
+        15824,
+        16011
+      ],
+      "board_median_cycles": 15836,
+      "signed_residual": 0.12402121747916141,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "baseline",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 5854,
+      "board_samples": [
+        3816,
+        3843,
+        3847
+      ],
+      "board_median_cycles": 3843,
+      "signed_residual": 0.5232890970595888,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "baseline",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 117506,
+      "board_samples": [
+        124660,
+        124848,
+        124590
+      ],
+      "board_median_cycles": 124660,
+      "signed_residual": -0.057388095620086635,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "baseline",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 6288,
+      "board_samples": [
+        4394,
+        4394,
+        4419
+      ],
+      "board_median_cycles": 4394,
+      "signed_residual": 0.43104233045061446,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "baseline",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 117798,
+      "board_samples": [
+        123920,
+        123656,
+        123945
+      ],
+      "board_median_cycles": 123920,
+      "signed_residual": -0.049402840542285345,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage1",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 5871,
+      "board_samples": [
+        3886,
+        3882,
+        3884
+      ],
+      "board_median_cycles": 3884,
+      "signed_residual": 0.5115859938208033,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage1",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 117417,
+      "board_samples": [
+        125446,
+        125536,
+        125395
+      ],
+      "board_median_cycles": 125446,
+      "signed_residual": -0.0640036350302122,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage1",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 6291,
+      "board_samples": [
+        4457,
+        4478,
+        4484
+      ],
+      "board_median_cycles": 4478,
+      "signed_residual": 0.40486824475212146,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage1",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 117531,
+      "board_samples": [
+        122774,
+        122925,
+        122950
+      ],
+      "board_median_cycles": 122925,
+      "signed_residual": -0.043880414887126296,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage2",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 5233,
+      "board_samples": [
+        3219,
+        3219,
+        3269
+      ],
+      "board_median_cycles": 3219,
+      "signed_residual": 0.6256601429015222,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage2",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 116353,
+      "board_samples": [
+        123184,
+        123229,
+        123201
+      ],
+      "board_median_cycles": 123201,
+      "signed_residual": -0.055583964415873245,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage2",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 5653,
+      "board_samples": [
+        3814,
+        3810,
+        3784
+      ],
+      "board_median_cycles": 3810,
+      "signed_residual": 0.4837270341207349,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage2",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 116107,
+      "board_samples": [
+        120949,
+        120929,
+        120992
+      ],
+      "board_median_cycles": 120949,
+      "signed_residual": -0.04003340250849532,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage3",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 5243,
+      "board_samples": [
+        3275,
+        3237,
+        3248
+      ],
+      "board_median_cycles": 3248,
+      "signed_residual": 0.6142241379310345,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage3",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": true
+      },
+      "comparison_status": "matched-postdiction",
+      "refusal_reasons": [],
+      "model_cycles": 118417,
+      "board_samples": [
+        127726,
+        127595,
+        127634
+      ],
+      "board_median_cycles": 127634,
+      "signed_residual": -0.07221430026481972,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage3",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": false
+      },
+      "comparison_status": "not-comparable",
+      "refusal_reasons": [
+        "bindings differ"
+      ],
+      "model_cycles": 5663,
+      "board_samples": [
+        3655,
+        3646,
+        3650
+      ],
+      "board_median_cycles": 3650,
+      "signed_residual": null,
+      "output_hashes_equal": true
+    },
+    {
+      "kind": "pipeline",
+      "case": "stage3",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "identity_checks": {
+        "inputs": true,
+        "code": true,
+        "resources": true,
+        "bindings": false
+      },
+      "comparison_status": "not-comparable",
+      "refusal_reasons": [
+        "bindings differ"
+      ],
+      "model_cycles": 119645,
+      "board_samples": [
+        128103,
+        128584,
+        129411
+      ],
+      "board_median_cycles": 128584,
+      "signed_residual": null,
+      "output_hashes_equal": true
+    }
+  ],
+  "matched": 17,
+  "not_comparable": 2,
+  "input_report_sha256": {
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-memory-service/report.json": "495d3d3e75e93205644d46519512be6aaa25674b918eb177e067c5aca63b85a1",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/report.json": "d217b2c60e2efe3744b4b7e85222e745a1011320fb8786e872122adcdd7468ce",
+    "/home/zhongchun/r41s1-matched-postdict-v1/model-p1o1/report.json": "8a915540242536a85377428fa9ea0b104e43e9e57296afb98e0a97c7bd547861",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-memory-service/r1-p1o1/report.json": "5350416f20b8e33e91ac7b1453baf54ad5fd89fd7e4f65309563dba92791afa7",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-memory-service/r2-p1o1/report.json": "435e159187e0cd72d251f96d2e89d1a2bb67fb4923660fd4f74de53c82e3f07c",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-memory-service/r3-p1o1/report.json": "89281d976668b5edd5a63b5bbb5aca8b6a30b209057b2382021e61158dda25eb",
+    "/home/zhongchun/r41s1-matched-postdict-v1/model-p1o8/report.json": "d9c2b641c16fd15851b6091fae2fc5f60331047e27977846f800b99c8c381c4e",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-memory-service/r1-p1o8/report.json": "b2cc7ab92aa73dc64be0c61670207e1195059b843e55f33c881b542215a31dc0",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-memory-service/r2-p1o8/report.json": "e036f4e3cc2296f8f9373bc78762f675aa968e5893ddcbebd95274bd05b0f7a4",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-memory-service/r3-p1o8/report.json": "7007adbcfa8b4675da88827bfca33dafd7dd4c62c104847c4fcaddb63e184ec1",
+    "/home/zhongchun/r41s1-matched-postdict-v1/model-p3o8/report.json": "d36c44bde7e21b41696ae01f146b6a32b1dfa664de49b32720f7ac0570a36f6a",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-memory-service/r1-p3o8/report.json": "c9cac28627242a6ae4a88442153db5a026d13adb27067a158bd821cef63a00e6",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-memory-service/r2-p3o8/report.json": "ad54816b8089fd39fa195c0a17bfc7d8da0942fbe5f2bfbc9f7d379fae9d5a5d",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-memory-service/r3-p3o8/report.json": "388b0eeabbdba2a23eacfb4ca809f3c62e97d72f79a0a69f6fe0a6d0e9cf646b",
+    "/home/zhongchun/r41s1-matched-postdict-v1/model-baseline/report.json": "995c48cec11615ed9de7b247d7b2a84a34de7680a59ee4a8793ac76beb395014",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r1-baseline/report.json": "7c4adbcd6bcd9246b1c84ffbe08e04ea1f97e214c6d9fc464f42d97f836006e7",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r2-baseline/report.json": "04358f7cc83bf1b588f5b2d445b2db3f061b140ac803d9811427e4c1e94bead8",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r3-baseline/report.json": "4f8dde2ca8ccb4068b862444933f7cc908390d98f691d45a16fde141925cd4df",
+    "/home/zhongchun/r41s1-matched-postdict-v1/model-stage1/report.json": "0b7d2b8435cab0cb0fdbe223af5a78450162ce10f0f8dadb1cf521937abcefc8",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r1-stage1/report.json": "e380b42ea9d19ae0bf273e3db86e9cc50867b6e7bccb4886ffa9a853cbcd9e62",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r2-stage1/report.json": "a1ef34538e75e1d43e2eabfd4209dd73c9dedd208c5da4d73f82ab9e973cd2fe",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r3-stage1/report.json": "5fe3910dc376722cd9c8ea79909d769e496d61649f1f6a7df54dba2ddd1ab2e5",
+    "/home/zhongchun/r41s1-matched-postdict-v1/model-stage2/report.json": "5174bdd7df8e263720f59432a74bf68d5a25059e2fa83901add42be05ccc66ed",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r1-stage2/report.json": "a11421b982656237d2af1db1a5c84558f99bb53ac612d15100ce2cd27c3ae3a9",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r2-stage2/report.json": "ed88dff17937afe870d306d2b14e1accda1ac6f7db152e128bf98439c9d386e9",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r3-stage2/report.json": "9a802b79529b7edd6673d84e162d167a60f4848bf905eb31bfc3d369983db2b4",
+    "/home/zhongchun/r41s1-matched-postdict-v1/model-stage3/report.json": "86eece89ecab3504f85fc5b8ec9903e4caa8410266205635d54d704328b6e315",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r1-stage3/report.json": "785cbd6067e9885119fc9fd1a058627d749ee7dd97b4f4fbeb07ea0a86482558",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r2-stage3/report.json": "aac45e70d197d256115862f21bb58b9fdd3dae8b8b21cd657396f01a78af05d5",
+    "/home/zhongchun/r41s1-old-mapping-control-v1-proof/fixed-collection/out/board-pipeline-admission/r3-stage3/report.json": "911e1d00818b22a759fe812652a58986558d642049caf60b304fa8d5909f1ef2"
+  },
+  "domain": {
+    "created_utc": "2026-10-26T21:52:37.607093+00:00",
+    "source_config_sha256": "1e731106c0cbf556828d4a6ef9b10e11f8b5626aacff4a34d7cecfb45c38c575",
+    "config_sha256": "5b8bfd71936a87746b78ca6499fb3b02acbc812b887eb8e0fea3484e95b8fe34",
+    "overrides": {
+      "host_launch_cycles": 0,
+      "host_transfer_cycles": 0,
+      "host_transfer_cycles_per_kib": 0
+    },
+    "host_handoff": "dma-maintenance",
+    "memory_bytes": 4295098368,
+    "map_sha256": "a1019970fe9548fda5e9b7e44442a14f1a886decd397f472c498dd15f5970bc2",
+    "scope": "postdiction of completed launch cycles only; explicit ABI maintenance affects cache state outside launch timing; no parameters fitted; not host-call latency or unseen holdout"
+  },
+  "comparator_sha256": "e8f2dd2fba27a0520e5e40dc1726990bf858521395d4010d6a8aeba1d65730a4",
+  "timing_qualification": "uncalibrated",
+  "scope": "completed-launch cycles only; captured physical inputs, code, resources and Tensor bindings; not whole-call latency",
+  "limitations": [
+    "postdiction after measurements; not sealed prediction or unseen holdout",
+    "no fitting; model uncertainty remains material; no default promotion",
+    "mismatched bindings retain their numerical results but have no physical residual"
+  ]
+}

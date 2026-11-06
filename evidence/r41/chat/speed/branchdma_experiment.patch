@@ -1,0 +1,59 @@
+diff --git a/compiler/python/tnca_cc/frontend.py b/compiler/python/tnca_cc/frontend.py
+index e05c707d..1e089e59 100644
+--- a/compiler/python/tnca_cc/frontend.py
++++ b/compiler/python/tnca_cc/frontend.py
+@@ -3221,7 +3221,12 @@ class TTIRImporter:
+             # (a predicated-off command completes, ISA sec 9A.3).
+             ok = b.vextract(oks, j)
+             done = self._control_label('x8dot_done')
+-            b.branch_nz(ok, done)
++            branch_dma = _os.environ.get('TNCA_X8_BRANCH_DMA') == '1'
++            if branch_dma:
++                fast = self._control_label('x8dot_fast')
++                bar = b.barrier(name=f"fill{len(self.kernel.barriers)}")
++                tok = b.barrier_arm(bar, arrivals=0, ops=1)
++            b.branch_nz(ok, fast if branch_dma else done)
+             kk = self._copy_value(b.const(0))
+             # The arm's scalars are formed inside it, so none is live
+             # across the whole dot.
+@@ -3236,6 +3241,14 @@ class TTIRImporter:
+                 g = b.gather(src, lane_vecs[j], mask=mask, other=0, dtype='i32', size='b')
+                 b.store(b.sbin('add', fill, b.sbini('shl', kk, (vlen - 1).bit_length())), g, size='b')
+                 b.fence()
++            if branch_dma:
++                b.dma_load(b_win, fill_desc.value, [b.const(0), b.const(0)], tok, dtype=ae)
++                b.branch_nz(b.const(1), done)
++                b.label(fast)
++                b.dma_load(b_win, desc.value, [b.vextract(rows, j), b.const(s0)], tok,
++                           dtype=ae, transpose=True)
++                b.label(done)
++                return b_win, tok
+             b.label(done)
+             bar = b.barrier(name=f"fill{len(self.kernel.barriers)}")
+             tok = b.barrier_arm(bar, arrivals=0, ops=2)
+diff --git a/compiler/python/tnca_cc/window_lifetime.py b/compiler/python/tnca_cc/window_lifetime.py
+index 16ba2cb6..d3f9f0f4 100644
+--- a/compiler/python/tnca_cc/window_lifetime.py
++++ b/compiler/python/tnca_cc/window_lifetime.py
+@@ -6,6 +6,7 @@ loop back edges. Shared producer/consumer roles retain the fixed layout.
+ """
+ from .diagnostics import ResourceError
+ from .ir import TOKEN
++import os
+ 
+ 
+ def assign(kernel, limit, last_uses):
+@@ -25,7 +26,12 @@ def assign(kernel, limit, last_uses):
+                             for v in inner.operands + inner.results)
+                     for inner in ops[min(i + 1, start):max(i, start)])
+                 for start, end in loops)
+-            if destination > i and not guarded_loop:
++            # Diagnostic only: _x8_dot's mutually exclusive DMA arms issue
++            # the same window/token and join before the shared barrier wait.
++            # The union of the two arms is conservative for window lifetime.
++            x8_diamond = (os.environ.get('TNCA_X8_BRANCH_DMA') == '1' and
++                          op.attrs['target'].startswith(('x8dot_fast_', 'x8dot_done_')))
++            if destination > i and not guarded_loop and not x8_diamond:
+                 raise ResourceError('window reuse requires straight-line code or structured loops',
+                                     because=f'branch {i} -> {op.attrs["target"]} ({destination}); '
+                                             f'loop intervals {loops}')

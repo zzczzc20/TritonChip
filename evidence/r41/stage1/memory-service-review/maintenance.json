@@ -1,0 +1,422 @@
+{
+  "schema": "tnca-memory-service-study/1",
+  "domains": [
+    "model",
+    "rtl"
+  ],
+  "status": "screening-and-RTL-diagnostic-complete",
+  "rows": [
+    {
+      "label": "rtl-p1-d1",
+      "ports": 1,
+      "outstanding": 1,
+      "model_minus_board_over_board": null,
+      "device_cycles": 37429,
+      "cycle_ratio_to_domain_baseline": 1.0,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 862,
+          "write_lines": 257
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {},
+      "model_timing_status": null,
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "rtl-p1-d8",
+      "ports": 1,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 19132,
+      "cycle_ratio_to_domain_baseline": 0.511154452429934,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 863,
+          "write_lines": 258
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {},
+      "model_timing_status": null,
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "rtl-p3-d8",
+      "ports": 3,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 21623,
+      "cycle_ratio_to_domain_baseline": 0.5777071254909295,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 291,
+          "write_lines": 87
+        },
+        {
+          "port": 1,
+          "read_lines": 285,
+          "write_lines": 84
+        },
+        {
+          "port": 2,
+          "read_lines": 284,
+          "write_lines": 86
+        }
+      ],
+      "model_accumulated_service_ledger": {},
+      "model_timing_status": null,
+      "host_dma_handoffs": null,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "model-p1-d1",
+      "ports": 1,
+      "outstanding": 1,
+      "model_minus_board_over_board": null,
+      "device_cycles": 22011,
+      "cycle_ratio_to_domain_baseline": 1.0,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 776,
+          "write_lines": 258
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {
+        "core_0_lsu_wait_cycles": 27962,
+        "core_1_lsu_wait_cycles": 23288,
+        "core_2_lsu_wait_cycles": 28251,
+        "home_0_engine_queue_cycles": 130636,
+        "home_0_engine_service_cycles": 14316,
+        "home_0_evictions": 8,
+        "home_0_hits": 236,
+        "home_0_maintenance_completed": 1,
+        "home_0_merges": 1804,
+        "home_0_misses": 261,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 369490,
+        "home_0_writebacks": 87,
+        "home_1_engine_queue_cycles": 113551,
+        "home_1_engine_service_cycles": 14287,
+        "home_1_evictions": 6,
+        "home_1_hits": 261,
+        "home_1_maintenance_completed": 1,
+        "home_1_merges": 1794,
+        "home_1_misses": 257,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 378970,
+        "home_1_writebacks": 85,
+        "home_2_engine_queue_cycles": 111283,
+        "home_2_engine_service_cycles": 14254,
+        "home_2_evictions": 8,
+        "home_2_hits": 260,
+        "home_2_maintenance_completed": 1,
+        "home_2_merges": 1787,
+        "home_2_misses": 258,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 379365,
+        "home_2_writebacks": 86,
+        "link_0_1_bytes": 82128,
+        "link_0_1_queue_cycles": 0,
+        "link_0_1_service_cycles": 3397,
+        "link_1_0_bytes": 80928,
+        "link_1_0_queue_cycles": 109,
+        "link_1_0_service_cycles": 3397,
+        "link_1_2_bytes": 79952,
+        "link_1_2_queue_cycles": 257,
+        "link_1_2_service_cycles": 3285,
+        "link_2_1_bytes": 77728,
+        "link_2_1_queue_cycles": 0,
+        "link_2_1_service_cycles": 3285,
+        "outlet_0_peak_outstanding": 0,
+        "outlet_0_queue_cycles": 0,
+        "outlet_0_reads": 776,
+        "outlet_0_service_cycles": 2326,
+        "outlet_0_wait_cycles": 896098,
+        "outlet_0_writes": 258,
+        "outlet_1_peak_outstanding": 0,
+        "outlet_1_queue_cycles": 0,
+        "outlet_1_reads": 0,
+        "outlet_1_service_cycles": 0,
+        "outlet_1_wait_cycles": 0,
+        "outlet_1_writes": 0,
+        "outlet_2_peak_outstanding": 0,
+        "outlet_2_queue_cycles": 0,
+        "outlet_2_reads": 0,
+        "outlet_2_service_cycles": 0,
+        "outlet_2_wait_cycles": 0,
+        "outlet_2_writes": 0,
+        "host_dma_handoffs": 1
+      },
+      "model_timing_status": "uncalibrated",
+      "host_dma_handoffs": 1,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "model-p1-d8",
+      "ports": 1,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 17798,
+      "cycle_ratio_to_domain_baseline": 0.8085957021489255,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 776,
+          "write_lines": 258
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_accumulated_service_ledger": {
+        "core_0_lsu_wait_cycles": 19268,
+        "core_1_lsu_wait_cycles": 20846,
+        "core_2_lsu_wait_cycles": 20875,
+        "home_0_engine_queue_cycles": 175261,
+        "home_0_engine_service_cycles": 14352,
+        "home_0_evictions": 8,
+        "home_0_hits": 248,
+        "home_0_maintenance_completed": 1,
+        "home_0_merges": 1804,
+        "home_0_misses": 261,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 225108,
+        "home_0_writebacks": 87,
+        "home_1_engine_queue_cycles": 183831,
+        "home_1_engine_service_cycles": 14251,
+        "home_1_evictions": 6,
+        "home_1_hits": 249,
+        "home_1_maintenance_completed": 1,
+        "home_1_merges": 1794,
+        "home_1_misses": 257,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 232262,
+        "home_1_writebacks": 85,
+        "home_2_engine_queue_cycles": 178419,
+        "home_2_engine_service_cycles": 14254,
+        "home_2_evictions": 8,
+        "home_2_hits": 260,
+        "home_2_maintenance_completed": 1,
+        "home_2_merges": 1787,
+        "home_2_misses": 258,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 229940,
+        "home_2_writebacks": 86,
+        "link_0_1_bytes": 85008,
+        "link_0_1_queue_cycles": 0,
+        "link_0_1_service_cycles": 3521,
+        "link_1_0_bytes": 84000,
+        "link_1_0_queue_cycles": 564,
+        "link_1_0_service_cycles": 3521,
+        "link_1_2_bytes": 77072,
+        "link_1_2_queue_cycles": 712,
+        "link_1_2_service_cycles": 3201,
+        "link_2_1_bytes": 76576,
+        "link_2_1_queue_cycles": 0,
+        "link_2_1_service_cycles": 3201,
+        "outlet_0_peak_outstanding": 4,
+        "outlet_0_queue_cycles": 76,
+        "outlet_0_reads": 776,
+        "outlet_0_service_cycles": 2326,
+        "outlet_0_wait_cycles": 83573,
+        "outlet_0_writes": 258,
+        "outlet_1_peak_outstanding": 0,
+        "outlet_1_queue_cycles": 0,
+        "outlet_1_reads": 0,
+        "outlet_1_service_cycles": 0,
+        "outlet_1_wait_cycles": 0,
+        "outlet_1_writes": 0,
+        "outlet_2_peak_outstanding": 0,
+        "outlet_2_queue_cycles": 0,
+        "outlet_2_reads": 0,
+        "outlet_2_service_cycles": 0,
+        "outlet_2_wait_cycles": 0,
+        "outlet_2_writes": 0,
+        "host_dma_handoffs": 1
+      },
+      "model_timing_status": "uncalibrated",
+      "host_dma_handoffs": 1,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    },
+    {
+      "label": "model-p3-d8",
+      "ports": 3,
+      "outstanding": 8,
+      "model_minus_board_over_board": null,
+      "device_cycles": 17800,
+      "cycle_ratio_to_domain_baseline": 0.8086865658080051,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "shader_code_sha256": [
+        "80bf15f26eed5045a1f457dfd47011183b89d458d6dcf5c06687d2545fd44c42"
+      ],
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 261,
+          "write_lines": 87
+        },
+        {
+          "port": 1,
+          "read_lines": 257,
+          "write_lines": 85
+        },
+        {
+          "port": 2,
+          "read_lines": 258,
+          "write_lines": 86
+        }
+      ],
+      "model_accumulated_service_ledger": {
+        "core_0_lsu_wait_cycles": 21007,
+        "core_1_lsu_wait_cycles": 20202,
+        "core_2_lsu_wait_cycles": 20696,
+        "home_0_engine_queue_cycles": 171622,
+        "home_0_engine_service_cycles": 14343,
+        "home_0_evictions": 8,
+        "home_0_hits": 245,
+        "home_0_maintenance_completed": 1,
+        "home_0_merges": 1804,
+        "home_0_misses": 261,
+        "home_0_peak_mshrs": 1,
+        "home_0_resolution_cycles": 221147,
+        "home_0_writebacks": 87,
+        "home_1_engine_queue_cycles": 179461,
+        "home_1_engine_service_cycles": 14260,
+        "home_1_evictions": 6,
+        "home_1_hits": 252,
+        "home_1_maintenance_completed": 1,
+        "home_1_merges": 1794,
+        "home_1_misses": 257,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 228698,
+        "home_1_writebacks": 85,
+        "home_2_engine_queue_cycles": 179397,
+        "home_2_engine_service_cycles": 14257,
+        "home_2_evictions": 8,
+        "home_2_hits": 259,
+        "home_2_maintenance_completed": 1,
+        "home_2_merges": 1788,
+        "home_2_misses": 258,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 229950,
+        "home_2_writebacks": 86,
+        "link_0_1_bytes": 86880,
+        "link_0_1_queue_cycles": 0,
+        "link_0_1_service_cycles": 3598,
+        "link_1_0_bytes": 85824,
+        "link_1_0_queue_cycles": 183,
+        "link_1_0_service_cycles": 3598,
+        "link_1_2_bytes": 75488,
+        "link_1_2_queue_cycles": 269,
+        "link_1_2_service_cycles": 3133,
+        "link_2_1_bytes": 74896,
+        "link_2_1_queue_cycles": 0,
+        "link_2_1_service_cycles": 3133,
+        "outlet_0_peak_outstanding": 6,
+        "outlet_0_queue_cycles": 28,
+        "outlet_0_reads": 261,
+        "outlet_0_service_cycles": 783,
+        "outlet_0_wait_cycles": 4573,
+        "outlet_0_writes": 87,
+        "outlet_1_peak_outstanding": 6,
+        "outlet_1_queue_cycles": 30,
+        "outlet_1_reads": 257,
+        "outlet_1_service_cycles": 769,
+        "outlet_1_wait_cycles": 4155,
+        "outlet_1_writes": 85,
+        "outlet_2_peak_outstanding": 7,
+        "outlet_2_queue_cycles": 29,
+        "outlet_2_reads": 258,
+        "outlet_2_service_cycles": 774,
+        "outlet_2_wait_cycles": 4362,
+        "outlet_2_writes": 86,
+        "host_dma_handoffs": 1
+      },
+      "model_timing_status": "uncalibrated",
+      "host_dma_handoffs": 1,
+      "high_water_scope": "raw before/after snapshots retain peak counters; peak deltas are not occupancy"
+    }
+  ],
+  "scope": "resident standard Torch graph after warm call; no explicit inter-call CPU download; native ABI maintenance remains included",
+  "cycle_metric": "completed launch cycles only; prelaunch maintenance outside launch windows; raw service deltas surround the full native call",
+  "model_host_handoff_policy": "dma-maintenance",
+  "cache_boundary": "explicit native DMA maintenance is included; physical cache/controller timing equivalence is unproven",
+  "model_scope": "uncalibrated; accumulated resource service/queue cycles may exceed elapsed makespan",
+  "board_closure": "not-measured",
+  "decision": "retain existing product defaults; diagnostic outlet/depth baselines do not select a physical policy"
+}

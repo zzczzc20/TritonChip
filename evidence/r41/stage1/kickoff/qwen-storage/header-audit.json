@@ -1,0 +1,14 @@
+{
+  "schema": "tnca-storage-header-audit/1",
+  "status": "pass",
+  "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+  "shards": {
+    "model.safetensors-00001-of-00001.safetensors": {
+      "tensors": 632,
+      "distinct_storages": 632,
+      "distinct_bytes": 4548144832
+    }
+  },
+  "selected_distinct_bytes": 3763655360,
+  "checkpoint_distinct_bytes": 4548144832
+}

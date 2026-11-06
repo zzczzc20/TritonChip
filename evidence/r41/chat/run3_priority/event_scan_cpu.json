@@ -1,0 +1,40 @@
+{
+  "domain": "CPU synthetic session-event scan; no board or model",
+  "repetitions": 100,
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "machine": "aarch64",
+  "rows": [
+    {
+      "history_events": 1000,
+      "seconds_per_scan": {
+        "unfinished": 9.780552238225937e-05,
+        "drain": 9.881541132926941e-05,
+        "unload_guard": 0.00012275347486138345
+      }
+    },
+    {
+      "history_events": 10000,
+      "seconds_per_scan": {
+        "unfinished": 0.0010070129856467247,
+        "drain": 0.0010618775617331267,
+        "unload_guard": 0.0012517072074115275
+      }
+    },
+    {
+      "history_events": 30000,
+      "seconds_per_scan": {
+        "unfinished": 0.0032568010408431294,
+        "drain": 0.00342213680036366,
+        "unload_guard": 0.0038930127397179604
+      }
+    },
+    {
+      "history_events": 60000,
+      "seconds_per_scan": {
+        "unfinished": 0.00646544074639678,
+        "drain": 0.007253559641540051,
+        "unload_guard": 0.007857848377898335
+      }
+    }
+  ]
+}

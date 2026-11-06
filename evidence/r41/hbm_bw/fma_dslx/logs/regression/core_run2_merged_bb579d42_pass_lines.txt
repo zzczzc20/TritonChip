@@ -1,0 +1,88 @@
+  t00_scalar (run2)      PASS   cycles=586 issued=290 hazard=127 lsu=0 wb=0 squash=42
+  t00_scalar (run2, ooo mem) PASS   cycles=586 issued=290 hazard=127 lsu=0 wb=0 squash=42
+  t01_vector (run2)      PASS   cycles=1029 issued=492 hazard=239 lsu=0 wb=0 squash=62
+  t01_vector (run2, ooo mem) PASS   cycles=1029 issued=492 hazard=239 lsu=0 wb=0 squash=62
+  t02_mem (run2)         PASS   cycles=945 issued=353 hazard=362 lsu=56 wb=3 squash=40
+  t02_mem (run2, ooo mem) PASS   cycles=1296 issued=353 hazard=668 lsu=101 wb=0 squash=40
+  t03_fp (run2)          PASS   cycles=3101 issued=1431 hazard=831 lsu=26 wb=0 squash=194
+  t03_fp (run2, ooo mem) PASS   cycles=3205 issued=1431 hazard=906 lsu=55 wb=0 squash=194
+  t04_roles (run2)       PASS   cycles=122 issued=70 hazard=24 lsu=0 wb=2 squash=9
+  t04_roles (run2, ooo mem) PASS   cycles=151 issued=70 hazard=41 lsu=3 wb=1 squash=9
+  t05_fault (run2)       PASS   cycles=519 issued=228 hazard=21 lsu=4 wb=1 squash=68
+  t05_fault (run2, ooo mem) PASS   cycles=529 issued=228 hazard=31 lsu=4 wb=0 squash=68
+  t06_alu (run2)         PASS   cycles=4636 issued=2099 hazard=1467 lsu=264 wb=0 squash=187
+  t06_alu (run2, ooo mem) PASS   cycles=5169 issued=2099 hazard=1826 lsu=438 wb=1 squash=187
+  t11_matrix (run2)      PASS   cycles=3641 issued=727 hazard=466 lsu=456 wb=5 squash=77
+  t11_matrix (run2, ooo mem) PASS   cycles=4031 issued=727 hazard=493 lsu=819 wb=0 squash=77
+  t12_tensor (run2)      PASS   cycles=1717 issued=213 hazard=132 lsu=0 wb=0 squash=23
+  t12_tensor (run2, ooo mem) PASS   cycles=2952 issued=213 hazard=132 lsu=0 wb=0 squash=23
+  t13_share (run2)       PASS   cycles=149 issued=71 hazard=26 lsu=10 wb=3 squash=10
+  t13_share (run2, ooo mem) PASS   cycles=184 issued=71 hazard=34 lsu=41 wb=1 squash=10
+  t14_caps_dp (run2)     PASS   cycles=1086 issued=213 hazard=202 lsu=6 wb=0 squash=20
+  t14_caps_dp (run2, ooo mem) PASS   cycles=1553 issued=213 hazard=261 lsu=23 wb=0 squash=20
+  t15_target_vrf_v5_x8_g2c4_dp (run2) PASS   cycles=326 issued=284 hazard=0 lsu=0 wb=0 squash=44
+  t15_target_vrf_v5_x8_g2c4_dp (run2, ooo mem) PASS   cycles=326 issued=284 hazard=0 lsu=0 wb=0 squash=44
+  t16_vecadd (run2)      PASS   cycles=1029 issued=442 hazard=344 lsu=29 wb=3 squash=51
+  t16_vecadd (run2, ooo mem) PASS   cycles=1593 issued=442 hazard=878 lsu=59 wb=0 squash=51
+  t17_descfault (run2)   PASS   cycles=115 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t17_descfault (run2, ooo mem) PASS   cycles=423 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t18_squash (run2)      PASS   cycles=1326 issued=458 hazard=414 lsu=60 wb=20 squash=107
+  t18_squash (run2, ooo mem) PASS   cycles=1869 issued=458 hazard=1126 lsu=35 wb=0 squash=107
+  t19_waitgen0 (run2)    PASS   cycles=90 issued=47 hazard=21 lsu=0 wb=0 squash=5
+  t19_waitgen0 (run2, ooo mem) PASS   cycles=90 issued=47 hazard=21 lsu=0 wb=0 squash=5
+  t20_sfu (run2)         PASS   cycles=1251 issued=409 hazard=541 lsu=121 wb=2 squash=41
+  t20_sfu (run2, ooo mem) PASS   cycles=1404 issued=409 hazard=587 lsu=226 wb=3 squash=41
+  t21_cvt (run2)         PASS   cycles=1954 issued=572 hazard=1188 lsu=0 wb=0 squash=33
+  t21_cvt (run2, ooo mem) PASS   cycles=2894 issued=572 hazard=2128 lsu=0 wb=0 squash=33
+  t22_atomic (run2)      PASS   cycles=2994 issued=1429 hazard=996 lsu=90 wb=20 squash=118
+  t22_atomic (run2, ooo mem) PASS   cycles=4557 issued=1429 hazard=2120 lsu=522 wb=6 squash=118
+  t23_amofault (run2)    PASS   cycles=58 issued=28 hazard=20 lsu=0 wb=0 squash=3
+  t23_amofault (run2, ooo mem) PASS   cycles=75 issued=28 hazard=37 lsu=0 wb=0 squash=3
+  t25_mmasf (run2)       PASS   cycles=1292 issued=168 hazard=96 lsu=316 wb=2 squash=10
+  t25_mmasf (run2, ooo mem) PASS   cycles=1554 issued=168 hazard=96 lsu=578 wb=0 squash=10
+  t28_count (run2)       PASS   cycles=14 issued=12 hazard=0 lsu=0 wb=0 squash=1
+  t28_count (run2, ooo mem) PASS   cycles=14 issued=12 hazard=0 lsu=0 wb=0 squash=1
+  t29_vrfbank (run2)     PASS   cycles=547 issued=84 hazard=62 lsu=22 wb=1 squash=10
+  t29_vrfbank (run2, ooo mem) PASS   cycles=576 issued=84 hazard=62 lsu=51 wb=1 squash=10
+  t40_f2i (run2)         PASS   cycles=3011 issued=1057 hazard=1504 lsu=0 wb=0 squash=97
+  t40_f2i (run2, ooo mem) PASS   cycles=4112 issued=1057 hazard=2605 lsu=0 wb=0 squash=97
+  t33_tdesc_load (run2)  PASS   cycles=12052 issued=5096 hazard=2181 lsu=0 wb=0 squash=689
+  t33_tdesc_load (run2, ooo mem) PASS   cycles=17166 issued=5096 hazard=2181 lsu=0 wb=0 squash=689
+  t34_tdesc_store (run2) PASS   cycles=8034 issued=3087 hazard=2150 lsu=44 wb=4 squash=410
+  t34_tdesc_store (run2, ooo mem) PASS   cycles=14627 issued=3087 hazard=5855 lsu=76 wb=0 squash=410
+  t36_reduce (run2)      PASS   cycles=8843 issued=4185 hazard=1944 lsu=0 wb=0 squash=545
+  t36_reduce (run2, ooo mem) PASS   cycles=8969 issued=4185 hazard=2070 lsu=0 wb=0 squash=545
+  t37_lsu_straddle (run2) PASS   cycles=21976 issued=10186 hazard=6294 lsu=69 wb=38 squash=1345
+  t37_lsu_straddle (run2, ooo mem) PASS   cycles=28370 issued=10186 hazard=12481 lsu=276 wb=0 squash=1345
+  t38_wbfreeze (run2)    PASS   cycles=4412 issued=1979 hazard=1067 lsu=0 wb=0 squash=221
+  t38_wbfreeze (run2, ooo mem) PASS   cycles=4768 issued=1981 hazard=1067 lsu=0 wb=0 squash=223
+  t39_freeze_drop (run2) PASS   cycles=3634 issued=1647 hazard=733 lsu=20 wb=0 squash=173
+  t39_freeze_drop (run2, ooo mem) PASS   cycles=4269 issued=1650 hazard=921 lsu=35 wb=0 squash=176
+  t39_switch (run2)      PASS   cycles=3607 issued=1700 hazard=143 lsu=587 wb=82 squash=236
+  t39_switch (run2, ooo mem) PASS   cycles=4488 issued=1700 hazard=302 lsu=1400 wb=49 squash=236
+  t39_isolate (run2)     PASS   cycles=2612 issued=2017 hazard=268 lsu=8 wb=3 squash=337
+  t39_isolate (run2, ooo mem) PASS   cycles=2583 issued=2017 hazard=213 lsu=17 wb=7 squash=337
+  t39_slice (run2)       PASS   cycles=2620 issued=428 hazard=26 lsu=431 wb=3 squash=33
+  t39_slice (run2, ooo mem) PASS   cycles=4261 issued=428 hazard=26 lsu=792 wb=0 squash=33
+  t35_tdesc_frank (run2) PASS   cycles=159 issued=34 hazard=21 lsu=0 wb=0 squash=1
+  t35_tdesc_frank (run2, ooo mem) PASS   cycles=468 issued=34 hazard=21 lsu=0 wb=0 squash=1
+  t35_tdesc_fpad2 (run2) PASS   cycles=131 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fpad2 (run2, ooo mem) PASS   cycles=440 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fnanint (run2) PASS   cycles=131 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fnanint (run2, ooo mem) PASS   cycles=440 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fsb (run2)   PASS   cycles=138 issued=22 hazard=12 lsu=0 wb=0 squash=1
+  t35_tdesc_fsb (run2, ooo mem) PASS   cycles=447 issued=22 hazard=12 lsu=0 wb=0 squash=1
+  t35_tdesc_fblock (run2) PASS   cycles=131 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fblock (run2, ooo mem) PASS   cycles=440 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fclamp (run2) PASS   cycles=131 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t35_tdesc_fclamp (run2, ooo mem) PASS   cycles=440 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t41_boundary (run2)    PASS   cycles=914 issued=371 hazard=315 lsu=38 wb=0 squash=42
+  t41_boundary (run2, ooo mem) PASS   cycles=1147 issued=371 hazard=488 lsu=98 wb=0 squash=42
+  t39_pair (run2)        PASS   cycles=1991 issued=234 hazard=77 lsu=0 wb=0 squash=18
+  t39_pair (run2, ooo mem) PASS   cycles=2783 issued=234 hazard=77 lsu=0 wb=0 squash=18
+  t30_xpose (run2)       PASS   cycles=3754 issued=1641 hazard=699 lsu=0 wb=0 squash=228
+  t30_xpose (run2, ooo mem) PASS   cycles=4849 issued=1641 hazard=699 lsu=0 wb=0 squash=228
+  t32_xpose_badsize (run2) PASS   cycles=115 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t32_xpose_badsize (run2, ooo mem) PASS   cycles=423 issued=18 hazard=9 lsu=0 wb=0 squash=1
+  t41_mmadp (run2)       PASS   cycles=12437 issued=2030 hazard=1105 lsu=2634 wb=15 squash=206
+  t41_mmadp (run2, ooo mem) PASS   cycles=14378 issued=2030 hazard=1105 lsu=4575 wb=0 squash=206

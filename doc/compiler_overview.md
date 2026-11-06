@@ -35,12 +35,12 @@ For day-to-day use (build targets, module map, debugging commands), see [`compil
 |---|---|---|
 | Triton kernels (AOT) | All 45 original TileBench operators, 149 cases, compile and run correctly on the RTL at O0, O1 and O2: 447/447 | `make r37`, [`r37_validation.md`](r37_validation.md) |
 | Native `kernel[grid](...)` launches | Through the `triton.backends` plugin; the plugin's code is byte-identical to AOT for the same TTIR | `make r38-torch` (`plugin_identity.py`, `triton_native_run.py`) |
-| PyTorch | `torch.compile` → Inductor → Triton → TNCA with zero host fallback on 22 graph tests (a 23rd checks that a real host fallback, `torch.sort`, is detected) and on all 52 tiny/small ArchBench points (operators plus LLaMA prefill/decode, GPT-2 block, MLP, ResNet block) | `make r38-torch`, `make archbench-coverage` |
-| Tensor descriptors | Ranks 1–5, as Triton defines them for TMA on NVIDIA GPUs: `tl.make_tensor_descriptor` with run-time shapes and strides, host `TensorDescriptor` arguments, `load`/`store`/`atomic_*`/`gather`/`scatter`, zero or NaN padding, signed coordinates. Executed by the transfer engine (`t.ld.async`/`t.st.async`, rank 1–5) or the LSU. Inductor's own tensor-descriptor code generation is available with `configure(tensor_descriptors=True)` | `tools/r38/tdesc_tests.py` (10/10 on the RTL, bit-exact); RTL `t33`–`t35` |
+| PyTorch | `torch.compile` → Inductor → Triton → TNCA with zero host fallback on 22 offloading graph tests (23rd fallback detection test + device-assert trap check pass: 24/24) and on all 52 tiny/small ArchBench points (operators plus LLaMA prefill/decode, GPT-2 block, MLP, ResNet block) | `make r38-torch`, `make archbench-coverage` |
+| Tensor descriptors | Ranks 1–5, as Triton defines them for TMA on NVIDIA GPUs: `tl.make_tensor_descriptor` with run-time shapes and strides, host `TensorDescriptor` arguments, `load`/`store`/`atomic_*`/`gather`/`scatter`, zero or NaN padding, signed coordinates. Executed by the transfer engine (`t.ld.async`/`t.st.async`, rank 1–5) or the LSU. Inductor codegen supported and enabled by default (`configure()`) | `tools/r38/tdesc_tests.py` (10/10 on the RTL, bit-exact); RTL `t33`–`t35` |
 | Execution | RTL simulator (`core-sim`, `core-vrf-sync-v1`, `core-xpose-v1`), the board protocol in simulation (`fpga-u50-sim`), and the Alveo U280 board | ArchBench tiny 27/27 on RTL and on the U280; small 25/25 on the U280 |
 | Cycle fidelity | Board cycles equal simulator cycles launch by launch (tiny tier) | [`architecture_overview.md`](architecture_overview.md) §10.1 |
 | Compiler stability | 447 R3.7 artifacts are byte-identical before and after the R38 compiler changes | `make r38-identity` |
-| Performance | Correctness-first; no instruction scheduling; η ≈ 1 % on models | §13 |
+| Performance | Correctness-first baseline without instruction scheduling; η ≈ 1 % on models | §13 |
 
 ## 2. The stack end to end
 
@@ -59,7 +59,7 @@ For day-to-day use (build targets, module map, debugging commands), see [`compil
    │  TTIR → TNCA IR                                 (frontend, tiles, packed, wide, mathlib)
    │  layout plans; O2: upstream LinearLayout        (layout)
    │  O1+: TNCA-IR scalar passes                     (optimization)
-   │  register allocation, ownership checks, asm     (codegen, asm, footprints, protocol)
+   │  register allocation, ownership checks, asm     (codegen, schedule, asm, footprints, protocol)
    ▼
  tools/asm/tnca_asm.py ──► machine code ──► .tnca artifact (manifest + ABI + provenance)
    │
@@ -98,13 +98,14 @@ Three entry points produce TTIR. All of them call `tnca.aot._lower_ttir`, so the
 | Upstream `LinearLayout` composed into layout plans | | | ✓ (ablation: `no_ll`) | `layout.py`, `upstream/layout.py` |
 | TNCA-IR passes: broadcast-compare folding, dead `other` removal, lane-0 store narrowing, strength reduction, pure-scalar CSE, dead pure-value removal | | ✓ | ✓ | `optimization.py` |
 | Narrow constant materialisation | | ✓ | ✓ | `codegen.py` |
+| Basic-block list scheduling (machine latency/hazard model) | (opt) | (opt) | (opt) | `schedule.py` |
 | Register allocation and assembly | ✓ | ✓ | ✓ | `codegen.py`, `asm.py` |
 
 Details:
 
 - **Upstream passes are mandatory where enabled.** If the pinned upstream bindings are missing at O1/O2, compilation fails; it never falls back silently to a weaker pipeline.
 - **Every program that compiles at O2 compiles at O0.** O0 is legalisation only. The R3.7 suite checks this on all 149 cases.
-- **No machine scheduling.** Instructions are emitted in program order. This is the largest known performance gap (§13).
+- **Instruction scheduling.** Basic blocks are list-scheduled against the measured machine latency and hazard model (`schedule.py`, `spec/r39_sched_model.json`; R39-01) when enabled (`TNCA_SCHEDULE=1`, default on the Triton/Inductor path; default 0 for `compile_aot`). If the allocator cannot fit the scheduled block without spilling, compilation safely falls back to program order.
 
 ## 5. Value model: from Triton blocks to registers
 
@@ -347,7 +348,7 @@ There is one `Session` per (profile, backend, arguments), kept for the life of t
 - Inductor offers this for CPU tensors only when a Triton backend is registered under the name `cpu`, which is why the plugin's entry point has that name.
 - Inductor's CPU branch skips the 16-byte rules that Triton's `make_tensor_descriptor` itself enforces, so `configure()` installs a checker through `TritonKernel.tma_compatibility_checker_cls`. It applies Inductor's CUDA rules instead, refuses descriptors whose innermost block is `XBLOCK` in a reduction (TNCA runs reductions one row per program), and keeps to the element types the compiler takes through a descriptor.
 - With these rules, a graph gets descriptors on TNCA exactly where it would on an NVIDIA GPU.
-- Off by default; the pointer-based code generation is unchanged.
+- When disabled (`configure(tensor_descriptors=False)` or `TNCA_TENSOR_DESCRIPTORS=0`), kernels fall back to pointer-based code generation.
 
 **Multi-step generation:** `python -m archbench.generate` chains prefill and decode steps on one model. Each step compiles for its cache length. The device's K/V outputs feed the next step, and each step's logits are checked against an FP32 reference given the same inputs.
 
@@ -365,7 +366,7 @@ There is one authoring source for opcodes and encodings, `tools/asm/tnca_isa.py`
 | `tools/isa/export_schema.py` | `isa/tnca-isa-v0.1.json` |
 | `tools/isa/gen.py` | `TNCAOpcodes.inc`, `TNCAInstrInfo.td`, `doc/isa/opcode-map.md` |
 | `tools/isa/gen_target.py` | `compiler/targets/*.json`: per-profile target files from the schema, `spec/r1_profiles.json` and RTL parameters |
-| `tools/isa/gen_support_matrix.py` | [`support_matrix.md`](support_matrix.md): what the ISA defines, what each profile implements, what the compiler emits (111 of 169 instructions) |
+| `tools/isa/gen_support_matrix.py` | [`support_matrix.md`](support_matrix.md): what the ISA defines, what each profile implements, what the compiler emits (114 of 169 instructions) |
 | `tools/isa/check_consistency.py` | Checks the hand-written RTL decode defines against the tables |
 
 `make isa` regenerates everything. `make compiler` checks that nothing is stale.
@@ -384,7 +385,7 @@ The original plan put asynchrony and role partitioning in an MLIR dialect. That 
   - C4: automatic context specialisation into producer/consumer roles (`partition.py`).
   - They run on the RTL (`make compiler-rtl`), including four-role elaboration on `core-4r`.
 
-The Triton path uses neither. Every Triton or PyTorch kernel runs as one role context, with asynchrony confined to a single program (transfer, then mbarrier wait, then compute). Connecting the role-partitioning work to TTIR is a next step (§15.4).
+The Triton path uses neither: the product compiler is Python-based (`tnca_cc`). Every kernel runs in a single role context by default, with asynchrony confined to a single program (transfer, then mbarrier wait, then compute). On sliced targets (`rctx_slice`), SPMD execution distributes programs across role contexts (`rctx_spmd`, Mode B). On targets with role-context pairs (`rctx_pair`), `partition.py` loop specialization (`rctx_roles`, Mode A) splits eligible loops into producer and consumer contexts.
 
 ## 12. Verification
 
@@ -424,17 +425,16 @@ The matrix unit is almost idle: 16-wide tiles and LSU-fed operands keep it below
 
 1. **Block width ≤ 16 per dimension.** A tensor wider than 16 is not split across registers. Inductor is configured around this, which caps tile size, matrix-unit use and data reuse.
 2. **No `scf.if`** (§6), and the other unsupported constructs listed there.
-3. **No instruction scheduling,** and an allocator that cannot spill.
+3. **Instruction scheduling fallback and no spilling.** When list scheduling is disabled or falls back when register peaks cannot fit, instructions are emitted in program order. The register allocator cannot spill (resource exhaustion raises `ResourceError`).
 4. **Every launch round-trips through the host.** Arguments are uploaded and downloaded per launch; tensors do not stay on the device (PyTorch P2).
-5. **One role context per Triton program.** The partitioning and pipelining work (C3/C4) is not connected to TTIR.
+5. **Role Context utilization.** Single role context per program is the default execution model (`serial-grid`), except where `rctx_spmd` distributes grid programs across contexts on sliced targets or `rctx_roles` pairs producer/consumer contexts on `rctx_pair` targets.
 6. **`i64` is exact but slow** (scalar per-lane emulation), and limited to one-row tiles.
 7. **Tile access patterns.** Transfer-engine tiles need a unit column stride; non-uniform `[R, 1]` broadcasts with R > 1 are not covered.
 8. **Raw FP16/BF16 arithmetic** in hand-written kernels is miscompiled (§6). Upcast with `.to(tl.float32)`, as Inductor does.
 9. **Descriptors.** A box row wider than 16 elements is refused (one row is one register). An N-D value with more than two non-unit dimensions is a row tile: elementwise operations, stores and reshapes that keep the last dimension work, but a `trans` that moves more than the last two dimensions does not. Descriptor atomics on FP16/BF16 are refused (the only floating atomic is FP32 add). `round_f32_to_tf32` is refused rather than ignored.
 10. **Stale text:**
    - `tnca_cc/__init__.py` calls the plugin C++ (it is Python).
-   - The `r38_pytorch_p1plus.md` diagram names `_compile_ttir` (it is `_lower_ttir`) and counts 12 graph tests (now 23, plus the trap check).
-   - The `_op_tt_trans` docstring predates the transposed-transfer RTL.
+   - The `_op_tt_trans` docstring in `frontend.py` predates the transposed-transfer RTL.
    - `tools/r38/tdesc_tests.py` records the path each case took from the dumped assembly; the R3.7 cases do not.
 
 ## 15. Next steps
@@ -465,8 +465,8 @@ Connect context specialisation (`partition.py`, C4) and the two-role pipeline (C
 
 ### 15.5 Instruction scheduling and allocation
 
-These are the cheapest performance work:
-- **List scheduling** within basic blocks, aimed at the 30 % hazard stalls.
+These address the largest microarchitectural bottlenecks:
+- **List scheduling** within basic blocks (`schedule.py`, R39-01) addresses hazard stalls on the standard path; extending it with global scheduling and latency tuning.
 - **Bank-aware register allocation** (`bankcost.py` already models VRF bank conflicts).
 - **Spilling,** so resource exhaustion is not a compile failure.
 

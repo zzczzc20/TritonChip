@@ -1,0 +1,368 @@
+clock_utc=2026-10-28T15:06:24Z
+domain=RTL simulation
+host=GB10
+command=make r40-line-axi
+base_commit=669c70aa8584cdf63ef59ee026ea05c6ac1526cb
+worktree_diff_sha256=e43775d1750f8628b4bc6ac9c19796d8b9e3a437ccbef5f0912876ad07f1cbd9
+image_tcl_sha256=50843bee977ebad5712205d6a4a8ca4827477d3c5ceafd5b5ecaa93f9bb1b58b
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=64 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 78441000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=64 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 78441000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33891000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33541000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=8
+LINE AXI PASS width=64 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=31 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 16351000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=8
+LINE AXI PASS width=64 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=31 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 15961000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=128 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 68961000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=128 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 68961000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=128 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=4 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 29621000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=128 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=5 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 29691000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=8
+LINE AXI PASS width=128 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=18 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 12661000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=8
+LINE AXI PASS width=128 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=22 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 12301000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=256 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 64631000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=256 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 64631000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 28101000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=1 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27721000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=8
+LINE AXI PASS width=256 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=11 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 11601000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=8
+LINE AXI PASS width=256 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=9 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 11421000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=512 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 63051000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=512 slots=1 mode=0 stages=0 write_ack=1 completed=192 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 63051000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=512 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27341000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=512 slots=3 mode=0 stages=0 write_ack=1 completed=192 peak=3 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27341000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=8
+LINE AXI PASS width=512 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 11221000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=8
+LINE AXI PASS width=512 slots=8 mode=0 stages=0 write_ack=1 completed=192 peak=8 collisions=8 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 11261000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=64 slots=3 mode=1 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 411000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=64 slots=3 mode=1 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 411000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=64 slots=3 mode=2 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=0 writes=1
+tb/fpga/tb_line_axi.v:221: $finish called at 611000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=64 slots=3 mode=2 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=0 writes=1
+tb/fpga/tb_line_axi.v:221: $finish called at 611000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=3 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33901000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=3 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33551000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=64 slots=3 mode=4 stages=0 write_ack=1 completed=0 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 371000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=64 slots=3 mode=4 stages=0 write_ack=1 completed=0 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 371000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=5 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=0 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 33921000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=5 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=0 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 33571000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=256 slots=3 mode=1 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 351000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=256 slots=3 mode=1 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 351000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=256 slots=3 mode=2 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=0 writes=1
+tb/fpga/tb_line_axi.v:221: $finish called at 601000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=256 slots=3 mode=2 stages=0 write_ack=1 completed=1 peak=1 collisions=0 reads=0 writes=1
+tb/fpga/tb_line_axi.v:221: $finish called at 601000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=3 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 28111000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=3 stages=0 write_ack=1 completed=192 peak=3 collisions=1 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27731000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=256 slots=3 mode=4 stages=0 write_ack=1 completed=0 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 371000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=1
+LINE AXI PASS width=256 slots=3 mode=4 stages=0 write_ack=1 completed=0 peak=1 collisions=0 reads=1 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 371000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=5 stages=0 write_ack=1 completed=192 peak=3 collisions=6 reads=0 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 28131000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=5 stages=0 write_ack=1 completed=192 peak=3 collisions=1 reads=0 writes=0
+tb/fpga/tb_line_axi.v:221: $finish called at 27751000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=8 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33721000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=8 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33781000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=8 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33731000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=5 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33601000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=8 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33751000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=14 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33671000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 28101000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=2 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 28031000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=4 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27921000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27971000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=4 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27941000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 28061000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=512 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=1 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27211000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=512 slots=3 mode=0 stages=1 write_ack=1 completed=192 peak=5 collisions=1 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27051000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=512 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=1 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27271000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=512 slots=3 mode=0 stages=2 write_ack=1 completed=192 peak=7 collisions=3 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27151000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=512 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=1 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27611000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=512 slots=3 mode=0 stages=4 write_ack=1 completed=192 peak=11 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27141000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=0 write_ack=0 completed=141 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33701000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=0 write_ack=0 completed=141 peak=3 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33531000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=2 write_ack=0 completed=141 peak=6 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33871000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=64 slots=3 mode=0 stages=2 write_ack=0 completed=141 peak=6 collisions=10 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 33631000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=0 write_ack=0 completed=141 peak=3 collisions=5 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27921000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=0 write_ack=0 completed=141 peak=3 collisions=5 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27901000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=2 write_ack=0 completed=141 peak=6 collisions=6 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 28111000 (1ps)
+RUNTIME LIMIT limit=0 peak_slots=3
+LINE AXI PASS width=256 slots=3 mode=0 stages=2 write_ack=0 completed=141 peak=6 collisions=1 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 27931000 (1ps)
+RUNTIME LIMIT limit=1 peak_slots=1
+LINE AXI PASS width=256 slots=8 mode=0 stages=0 write_ack=0 completed=141 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 64631000 (1ps)
+RUNTIME LIMIT limit=8 peak_slots=8
+LINE AXI PASS width=256 slots=8 mode=0 stages=0 write_ack=0 completed=141 peak=7 collisions=11 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 11591000 (1ps)
+RUNTIME LIMIT limit=1 peak_slots=1
+LINE AXI PASS width=256 slots=8 mode=0 stages=0 write_ack=0 completed=141 peak=1 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 64631000 (1ps)
+RUNTIME LIMIT limit=8 peak_slots=8
+LINE AXI PASS width=256 slots=8 mode=0 stages=0 write_ack=0 completed=141 peak=7 collisions=15 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 11601000 (1ps)
+RUNTIME LIMIT limit=1 peak_slots=1
+LINE AXI PASS width=256 slots=8 mode=0 stages=2 write_ack=0 completed=141 peak=4 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 64641000 (1ps)
+RUNTIME LIMIT limit=8 peak_slots=8
+LINE AXI PASS width=256 slots=8 mode=0 stages=2 write_ack=0 completed=141 peak=10 collisions=9 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 11631000 (1ps)
+RUNTIME LIMIT limit=1 peak_slots=1
+LINE AXI PASS width=256 slots=8 mode=0 stages=2 write_ack=0 completed=141 peak=4 collisions=0 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 64641000 (1ps)
+RUNTIME LIMIT limit=8 peak_slots=8
+LINE AXI PASS width=256 slots=8 mode=0 stages=2 write_ack=0 completed=141 peak=10 collisions=10 reads=141 writes=51
+tb/fpga/tb_line_axi.v:221: $finish called at 11591000 (1ps)
+LINE STREAM MEASURE pipeline=0 write=0 slots=32 delay=16 lines=256 issue_span=510 cycles=529
+LINE STREAM PASS pipeline=0 write=0 slots=32 lines=256 issue_span=510 cycles=529
+tb/fpga/tb_line_axi_stream.v:80: $finish called at 5330000 (1ps)
+LINE STREAM MEASURE pipeline=0 write=0 slots=64 delay=16 lines=256 issue_span=510 cycles=529
+LINE STREAM PASS pipeline=0 write=0 slots=64 lines=256 issue_span=510 cycles=529
+tb/fpga/tb_line_axi_stream.v:80: $finish called at 5330000 (1ps)
+LINE STREAM MEASURE pipeline=0 write=1 slots=32 delay=16 lines=256 issue_span=510 cycles=529
+LINE STREAM PASS pipeline=0 write=1 slots=32 lines=256 issue_span=510 cycles=529
+tb/fpga/tb_line_axi_stream.v:80: $finish called at 5330000 (1ps)
+LINE STREAM MEASURE pipeline=0 write=1 slots=64 delay=16 lines=256 issue_span=510 cycles=529
+LINE STREAM PASS pipeline=0 write=1 slots=64 lines=256 issue_span=510 cycles=529
+tb/fpga/tb_line_axi_stream.v:80: $finish called at 5330000 (1ps)
+LINE STREAM MEASURE pipeline=1 write=0 slots=32 delay=16 lines=256 issue_span=255 cycles=274
+LINE STREAM PASS pipeline=1 write=0 slots=32 lines=256 issue_span=255 cycles=274
+tb/fpga/tb_line_axi_stream.v:80: $finish called at 2780000 (1ps)
+LINE STREAM MEASURE pipeline=1 write=0 slots=64 delay=16 lines=256 issue_span=255 cycles=274
+LINE STREAM PASS pipeline=1 write=0 slots=64 lines=256 issue_span=255 cycles=274
+tb/fpga/tb_line_axi_stream.v:80: $finish called at 2780000 (1ps)
+LINE STREAM MEASURE pipeline=1 write=1 slots=32 delay=16 lines=256 issue_span=255 cycles=274
+LINE STREAM PASS pipeline=1 write=1 slots=32 lines=256 issue_span=255 cycles=274
+tb/fpga/tb_line_axi_stream.v:80: $finish called at 2780000 (1ps)
+LINE STREAM MEASURE pipeline=1 write=1 slots=64 delay=16 lines=256 issue_span=255 cycles=274
+LINE STREAM PASS pipeline=1 write=1 slots=64 lines=256 issue_span=255 cycles=274
+tb/fpga/tb_line_axi_stream.v:80: $finish called at 2780000 (1ps)
+LINE AXI MATRIX PASS 78 configurations + 8 stream cases line_lutram=0
+MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=1 id=13 status=2 cycles=1685
+MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=41177
+MULTICORE SHELL GRID PASS N=1 id=12 status=0 cycles=77916
+AXI OUTLET TRAFFIC port=0 reads=171 writes=57
+MULTICORE SHELL GRID PASS N=1 id=14 status=1 cycles=84547
+MULTICORE AXI PERSISTENT PASS N=1 ports=1 stages=0 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:263: $finish called at 845470000 (1ps)
+MULTICORE SHELL GRID PASS N=2 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=2 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=2 id=13 status=2 cycles=1691
+MULTICORE SHELL GRID PASS N=2 id=11 status=0 cycles=24108
+MULTICORE SHELL GRID PASS N=2 id=12 status=0 cycles=44470
+AXI OUTLET TRAFFIC port=0 reads=87 writes=29
+AXI OUTLET TRAFFIC port=1 reads=84 writes=28
+MULTICORE SHELL GRID PASS N=2 id=14 status=1 cycles=52189
+MULTICORE AXI PERSISTENT PASS N=2 ports=2 stages=1 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:263: $finish called at 521890000 (1ps)
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1718
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=15527
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=28565
+AXI OUTLET TRAFFIC port=0 reads=114 writes=38
+AXI OUTLET TRAFFIC port=1 reads=57 writes=19
+MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=36658
+MULTICORE AXI PERSISTENT PASS N=3 ports=2 stages=2 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:263: $finish called at 366580000 (1ps)
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1718
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=16061
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=29557
+AXI OUTLET TRAFFIC port=0 reads=60 writes=20
+AXI OUTLET TRAFFIC port=1 reads=57 writes=19
+AXI OUTLET TRAFFIC port=2 reads=54 writes=18
+MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=38344
+MULTICORE AXI PERSISTENT PASS N=3 ports=3 stages=2 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:263: $finish called at 383440000 (1ps)
+MULTICORE SHELL GRID PASS N=4 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=4 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=4 id=13 status=2 cycles=1703
+MULTICORE SHELL GRID PASS N=4 id=11 status=0 cycles=15828
+MULTICORE SHELL GRID PASS N=4 id=12 status=0 cycles=28825
+AXI OUTLET TRAFFIC port=0 reads=45 writes=15
+AXI OUTLET TRAFFIC port=1 reads=42 writes=14
+AXI OUTLET TRAFFIC port=2 reads=42 writes=14
+AXI OUTLET TRAFFIC port=3 reads=42 writes=14
+MULTICORE SHELL GRID PASS N=4 id=14 status=1 cycles=38627
+MULTICORE AXI PERSISTENT PASS N=4 ports=4 stages=2 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:263: $finish called at 386270000 (1ps)
+MULTICORE SHELL GRID PASS N=8 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=8 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=8 id=13 status=2 cycles=1740
+MULTICORE SHELL GRID PASS N=8 id=11 status=0 cycles=10415
+MULTICORE SHELL GRID PASS N=8 id=12 status=0 cycles=18452
+AXI OUTLET TRAFFIC port=0 reads=63 writes=21
+AXI OUTLET TRAFFIC port=1 reads=66 writes=22
+AXI OUTLET TRAFFIC port=2 reads=42 writes=14
+MULTICORE SHELL GRID PASS N=8 id=14 status=1 cycles=28086
+MULTICORE AXI PERSISTENT PASS N=8 ports=3 stages=2 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:263: $finish called at 280860000 (1ps)
+MULTICORE SHELL GRID PASS N=8 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=8 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=8 id=13 status=2 cycles=1800
+MULTICORE SHELL GRID PASS N=8 id=11 status=0 cycles=13419
+MULTICORE SHELL GRID PASS N=8 id=12 status=0 cycles=24535
+AXI OUTLET TRAFFIC port=0 reads=21 writes=7
+AXI OUTLET TRAFFIC port=1 reads=21 writes=7
+AXI OUTLET TRAFFIC port=2 reads=21 writes=7
+AXI OUTLET TRAFFIC port=3 reads=21 writes=7
+AXI OUTLET TRAFFIC port=4 reads=24 writes=8
+AXI OUTLET TRAFFIC port=5 reads=21 writes=7
+AXI OUTLET TRAFFIC port=6 reads=21 writes=7
+AXI OUTLET TRAFFIC port=7 reads=21 writes=7
+MULTICORE SHELL GRID PASS N=8 id=14 status=1 cycles=37314
+MULTICORE AXI PERSISTENT PASS N=8 ports=8 stages=4 write_delay=15 drain_wait=0
+tb/fpga/tb_multicore_axi.v:263: $finish called at 373140000 (1ps)
+MULTICORE AXI MATRIX PASS 7 configurations
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1718
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=15678
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=28778
+AXI OUTLET TRAFFIC port=0 reads=114 writes=38
+AXI OUTLET TRAFFIC port=1 reads=57 writes=19
+MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=36882
+MULTICORE AXI PERSISTENT PASS N=3 ports=2 stages=2 write_delay=300 drain_wait=84
+tb/fpga/tb_multicore_axi.v:263: $finish called at 368820000 (1ps)
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1718
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=16180
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=29719
+AXI OUTLET TRAFFIC port=0 reads=60 writes=20
+AXI OUTLET TRAFFIC port=1 reads=57 writes=19
+AXI OUTLET TRAFFIC port=2 reads=54 writes=18
+MULTICORE SHELL GRID PASS N=3 id=14 status=1 cycles=38507
+MULTICORE AXI PERSISTENT PASS N=3 ports=3 stages=2 write_delay=300 drain_wait=91
+tb/fpga/tb_multicore_axi.v:263: $finish called at 385070000 (1ps)
+MULTICORE AXI MATRIX PASS 2 configurations

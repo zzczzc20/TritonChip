@@ -1,0 +1,23 @@
+{
+  "schema": "tnca-old-mapping-control/1",
+  "status": "isolated-control-prepared",
+  "frozen_commit": "25094197f6e6",
+  "frozen_software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a",
+  "control_software_tree": "files:b95b380161aebba3f4dee6f4c60ca1c76abb064f5d90863a454d8a3717fa484b",
+  "source": "/home/zhongchun/r41s1-archive-25094197f6e6",
+  "destination": "/home/zhongchun/r41s1-old-mapping-control-v2-preparation-test",
+  "changed_product_files": [
+    "compiler/python/tnca_cc/register_blocks.py"
+  ],
+  "source_file_sha256": "afe678aaa3e7a935fb0019f8be17286f51ee218c21c04fcee3aeed660b29cdf8",
+  "control_file_sha256": "0e81a1cb06742046c2aad20ff99e32e693cfbbb1207fa0d9bfce54c5363521a5",
+  "removed_method": "    def value_users(self, imp, value):\n        \"\"\"Project the original use graph into this independent column chunk.\n\n        The module walk indexes real SSA values. Virtual chunk ids must use\n        the same projected users, otherwise a loop's dot/add stops matching\n        its resident accumulator and is lowered to row-by-row ACC traffic.\n        The full original use count is retained, including external users:\n        in-place accumulation must never hide a live use of the old value.\n        \"\"\"\n        original = value.value if isinstance(value, _ValueView) else value\n        return [(_OpView(user, self.chunk, self.vlen), operand)\n                for user, operand in imp._value_users.get(original.id(), [])]\n",
+  "removed_method_sha256": "4aef01d5ca69bb28ebd236d339addefa19b9b4e65c9d5b0fc12cc017a8258d3e",
+  "preparation_script_sha256": "c8dda767dd75c5908dda6427d6b21fe3ccf719331fdd01bc9bebcdb976041d38",
+  "board_map_reference": {
+    "path": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/window_samples.json",
+    "sha256": "fa36cf03ec9f9424bb73a855c0692abb92959878aa808cff4018cecb4637b5a0"
+  },
+  "scope": "negative control removes only virtual-column SSA-user projection; numerical and performance checks still required",
+  "unchanged": "all other product files, including runtime, Inductor templates, references, ISA and RTL"
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "tnca-r41-xl41-stream-pilot/1",
+  "point": "XL41-stream",
+  "point_sha256": "60f2f19d959b8ec2517e718f776dffbad6cb2556c97debd3649e9f4341d4d269",
+  "timeout_seconds": 3600,
+  "scope": "one bounded XL pilot, not the full XL-core suite or acceptance",
+  "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "image_uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+  "clock_hz": 100000000,
+  "pilot_script_sha256": "ffb69fb17a217d7b43e1252b628ba80af69a7d26482fdbb21e4644598900d704",
+  "board_guard_sha256": "fb6c519b678f0b6f7bab0cfc005676e2cc0b60c15c1902ef01f717c906d098cb",
+  "xl_registration_sha256": "2c30fa79ba4cb48defc4d1f67596c88daf6ca3a027adc59ce53627db7c609676",
+  "cpu_pilot_evidence_sha256": "c4d86a1b11cce62dd497331520541606f322510febdf1f0beef2c638ebd85241",
+  "inputs": {
+    "spec/r41/stage2/xl_core.json": "0b5d7d477bfd781bfef214c9256aeef7b319ce2571addcd91afdac8cf08bcbe6",
+    "tools/models/qwen35_reference.py": "4064f57006365b7b22ffae53a9d0d1b6382e71cb15c91a705b37c6a0ccf27159",
+    "tools/models/qwen_fp8_lib.py": "4983c12942cb9281aae50564749e9a45fb935c7523c7af150fe88cf2207d232d",
+    "tools/models/flux2_klein_run.py": "ca2ad6a7d97d845af49c91d166d4404e1e8b01caa8775cf7ea6f0830b817b0b8",
+    "tools/models/fp8_blockwise_ref.py": "db72d8422719cea806f3e34b75c635cd9198fb6426dd52e542edc2a7d734a5be",
+    "tools/models/fp8_checkpoint.py": "98f5d4d4b2404523935e125ce98909ef7eac9134d85aa7f73b90636c6135ba89",
+    "tools/r41/run2_board/auto.py": "1cfb1a461b1b559a83cb3a797e34d275f824bb8262be137ae92ee683a1ad5d12"
+  },
+  "predecessor": "verified successful XL41 GEMV board pilot after the Q41 BF16 pilot",
+  "load_policy": "never program an image; require matching loaded image and idle card"
+}

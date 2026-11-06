@@ -1,0 +1,14 @@
+..F......
+======================================================================
+FAIL: test_current_index_passes_no_board_item (__main__.AcceptanceTests.test_current_index_passes_no_board_item)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ubuntu/TritonChip/tools/performance_harness/test_stage1_acceptance.py", line 66, in test_current_index_passes_no_board_item
+    self.assertNotEqual(rows[item_id]['status'], 'pass', item_id)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'pass' == 'pass' : S1-01.unified_experiment_resume_dedup_failures
+
+----------------------------------------------------------------------
+Ran 9 tests in 2.044s
+
+FAILED (failures=1)

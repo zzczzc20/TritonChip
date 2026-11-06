@@ -2,28 +2,30 @@
 
 What makes `tnca` a PyTorch device, what each piece is registered through,
 and what changes in Inductor once it is one. Implementation:
-`python/tnca/torch_device/` (`csrc/tnca_device.cpp`, `__init__.py`,
-`inductor_device.py`). Contract: `doc/r40_tasks_and_acceptance.md` R40-01.
+`python/tnca/torch_device/` (`csrc/tnca_device.cpp`, `__init__.py`, `copy.py`,
+`graph.py`, `inductor_device.py`, `policy.py`). Contract:
+[r40_tasks_and_acceptance.md](r40_tasks_and_acceptance.md) R40-01.
 
 ## 1. The device
 
 | Piece | Registered through | What it is |
 |---|---|---|
 | Name | `torch.utils.rename_privateuse1_backend("tnca")` | PrivateUse1 is `tnca`; `Tensor.tnca()`, `is_tnca` from `generate_methods_for_privateuse1_backend` |
-| Storage | C++ `REGISTER_ALLOCATOR(PrivateUse1, ...)` | A DataPtr holds a **device address**: a buffer of the TNCA runtime's heap (`Session.allocate`), never dereferenced on the host. `tensor.data_ptr()` is where the bytes are on the device |
-| Metadata operators | C++ `TORCH_LIBRARY_IMPL(aten, PrivateUse1)` | `empty.memory_format`, `empty_strided`, `as_strided`, `view`, `_reshape_alias`, `set_` (storage, storage+offset), `resize_`. The CPU's own code, since none reads data; a storage that must grow is reallocated and copied on the device, never `memcpy`'d |
+| Storage | C++ `REGISTER_ALLOCATOR(PrivateUse1, ...)` | A DataPtr holds a **device address**: a buffer of the TNCA runtime's heap (`Session.allocate`), word-aligned (8 bytes), keeping a launch reserve (`TNCA_LAUNCH_RESERVE`, 32 KiB default), never dereferenced on the host. `tensor.data_ptr()` is where the bytes are on the device |
+| Metadata operators | C++ `TORCH_LIBRARY_IMPL(aten, PrivateUse1)` | `empty.memory_format`, `empty_strided`, `as_strided`, `view`, `_reshape_alias`, `set_` (storage, storage+offset), `resize_`. The CPU's own code, since none reads data; a storage that must grow is reallocated and copied on the device via `copy_storage` (`copy.py`), never `memcpy`'d |
 | Device guard | C++ `C10_REGISTER_GUARD_IMPL(PrivateUse1, ...)` | Current device, one default stream per device |
 | Hooks | `torch._C._acc.register_python_privateuseone_hook` | `is_available`, `has_primary_context`, `is_built` |
-| Data operators | `torch.library` (Python) | `_copy_from`, `_copy_from_and_resize` (host↔device, device↔device, any strides and dtypes), `fill_`, `zero_`, `_local_scalar_dense`. Through the Session; a strided view stages exactly the span of storage it names and writes back only its own bytes |
-| Device module | `torch._register_device_module("tnca", ...)` | `torch.tnca`: `is_available`, `device_count`, `current_device`, `set_device`, `device`, `synchronize`, `Stream`, `Event`, `memory_allocated` |
+| Data operators | `torch.library` (Python) | `_copy_from`, `_copy_from_and_resize` (host↔device, device↔device, any strides and dtypes), `fill_`, `zero_`, `_local_scalar_dense` (`item()`). Same-device copies execute directly on TNCA via Triton kernels (`copy_tensor` with `_copy_kernel`, `copy_storage` with `_copy_storage_kernel`); host↔device copies stage through host memory, where a strided view stages exactly the span of storage it names and writes back only its own bytes. Complex dtypes are refused |
+| Device module | `torch._register_device_module("tnca", ...)` | `torch.tnca`: `is_available`, `device_count`, `current_device`, `set_device`, `device`, `synchronize`, `Stream`, `Event`, `Graph`, `graph`, `memory_allocated`, `max_memory_allocated` |
 
 Everything that computes runs through `torch.compile`. An eager operator
 with no `tnca` kernel is refused by the dispatcher (`NotImplementedError`) and
 never runs on the host.
 
-R40-01 launches synchronously, one stream per device: an event is always
-complete. Ordering across streams, asynchronous copies and deferred frees
-are R40-02's.
+R40-01 launches synchronously, one stream per device: stream identities
+share the physical device FIFO, while Python `Stream` and `Event` report
+actual queue completion. Ordering across streams, asynchronous copies and
+deferred frees are R40-02's.
 
 Why C++ at all: torch 2.14's Python-only route
 (`torch.utils.backend_registration._setup_privateuseone_for_python_backend`)
@@ -36,12 +38,12 @@ semantics for free.
 
 | Piece | Registered through |
 |---|---|
-| Dynamo device interface | `register_interface_for_device("tnca", TncaInterface)`. Properties are the profile's target file, not placeholders: cores, Role Contexts, vector length, dtype capabilities |
+| Dynamo device interface | `register_interface_for_device("tnca", TncaInterface)`. Properties are the profile's target file, not placeholders: cores, Role Contexts, vector length, registers, total memory, dtype capabilities |
 | Scheduling and wrapper | `register_backend_for_device("tnca", TritonScheduling, PythonWrapperTnca)`; the wrapper's header registers the device in the process that runs it |
 | Lowering policy | `tnca.torch_device.policy` (§3) |
-| Wrapper operations | `register_device_op_overrides("tnca", ...)`: raw stream, `torch.tnca.set_device`, `torch.tnca.device`, `torch.tnca.synchronize` |
+| Wrapper operations | `register_device_op_overrides("tnca", ...)`: raw stream, `torch.tnca.set_device`, `torch.tnca.device`, `torch.tnca.synchronize`, `torch.tnca.current_stream` |
 | Heuristics, templates, descriptors | `tnca.inductor`: the same pointwise/reduction caps, the single 16×16×16 GEMM/conv configuration and the descriptor rules as the CPU path, registered for device type `tnca` too (`TNCA_DEVICE_TYPES`) |
-| Triton | Kernels compile for `GPUTarget("tnca", 0, 1)`, which TNCA's Triton backend (registry key `cpu`) serves. A second registry entry, `tnca`, carries the same, already active, driver and a compiler that claims no target. It exists because Inductor sets a Triton device's driver up by looking for an active backend not named `cpu`. It is added after Triton has created its one driver, since Triton counts active drivers and compatible compilers |
+| Triton | Kernels compile for `GPUTarget("tnca", 0, 1)`, which TNCA's Triton backend (registry key `cpu`) serves. A second registry entry, `tnca`, carries the same, already active, driver and a compiler that claims no target (Inductor looks for an active backend not named `cpu`). Shared-memory limits query the active backend dynamically (`tc.max_shared_mem`) to avoid device-ordinal collisions with CUDA. Precompile config (`th.CachingAutotuner._precompile_config`) selects the `cpu` driver with `skip_gpu_driver_setup()` for `tnca` |
 | Launch | `tnca.triton_backend.driver`: a `tnca` tensor's own buffer and byte offset are the argument, so nothing is copied (`resident_bytes` in the launch log). A launch mixing host and device tensors is refused |
 
 ## 3. Inductor's lowering policy for `tnca`
@@ -75,7 +77,8 @@ rather than a side effect of registering a device:
 | `TNCA_POLICY_TEMPLATES` | Triton GEMM/conv templates (`utils.use_triton_template`, rebound in `kernel.{mm,bmm,conv,mm_plus_mm,mm_grouped}`) | The CPU branch: templates for f16/bf16/f32. A non-GPU device other than `cpu` would get none, and there is no device ATen GEMM |
 | `TNCA_POLICY_VARIANCE` | Two-step vs Welford variance (`lowering.use_two_step_variance`) | The CPU threshold (`config.cpp.use_two_step_variance_threshold`) |
 | `TNCA_POLICY_CAT` | Pointwise cat vs `ConcatKernel` (`lowering.cat`) | `ConcatKernel` |
-| `TNCA_POLICY_MM_DECOMP` | Small-matmul decompositions (`decomposition.{bmm,mm,addmm}`) | The CPU branches |
+| `TNCA_POLICY_MM_DECOMP` | Small-matmul decompositions (`decomposition.{bmm,mm,addmm}`) and batched matmul lowering (`tuned_bmm`: M or N of 1 becomes multiply and sum) | The CPU branches |
+| `TNCA_POLICY_DEPTHWISE` | 1-D depthwise convolutions (`decomposition[aten.convolution.default]`) | Generic Torch slice and pointwise decomposition with FP32 accumulation for half precision, unrolled up to 16 taps (Triton conv templates lack grouped 1-D support) |
 | `TNCA_POLICY_LAYOUT` | Channels-last for a graph with convolutions (`GraphLowering.decide_layout_opt`; the CPU path always chooses it, MKLDNN being present) | Channels-last |
 | `TNCA_POLICY_REALIZE` | Realization and fusion heuristics (`ir.is_cpu`: storing a reused heavy result such as softmax's `exp`, opcount/read thresholds; `BaseSchedulerNode.is_cpu`: no loop reordering or index inversion in fusion) | The CPU's |
 | (C++) | SDPA backend (`_fused_sdp_choice` stub) | The CPU selector's answer, so flash-attention-for-CPU is decomposed as on the B39 path; a device SDPA kernel is R40-08's |
@@ -85,11 +88,11 @@ The remaining device-type branches, and what they mean for `tnca`:
 | Where | For `tnca` |
 |---|---|
 | `scheduler.create_backend` | `TritonScheduling` (registered) |
-| Generated kernel header `set_driver_to_gpu()`; `triton_heuristics` precompile | Find the `tnca` registry entry, whose driver is TNCA's and already active |
+| Generated kernel header `set_driver_to_gpu()`; `triton_heuristics` precompile | Find the `tnca` registry entry (whose driver is TNCA's and already active); precompile sets CPU driver with `skip_gpu_driver_setup()` |
 | `codegen.triton` read-after-store in a reduction loop | `tl.debug_barrier()`, which the TNCA compiler lowers to a fence (ISA §9.2) |
 | `utils.device_need_guard` | No device guard in the wrapper (one device per process in R40-01) |
 | `scheduler` (0-d CPU tensors read by a device kernel) | Not converted to scalars for a non-GPU device; such an argument is refused by the launcher (mixed devices) |
-| CUDA graphs, benchmarking, autotune subprocesses | Not used |
+| CUDA graphs, benchmarking, autotune subprocesses | Upstream Inductor CUDA graph capture is unused; native graph capture and guarded replay is provided by `torch.tnca.graph` / `torch.tnca.Graph` |
 
 Every override is scoped to tensors on `tnca`; CPU and CUDA tensors in the
 same process keep upstream's behaviour.

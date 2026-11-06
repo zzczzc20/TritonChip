@@ -1,0 +1,33 @@
+test_actual_event_span_wins_over_active_cycle_sum (__main__.PolicyTests.test_actual_event_span_wins_over_active_cycle_sum) ... ok
+test_cache_key_covers_every_identity_field (__main__.PolicyTests.test_cache_key_covers_every_identity_field) ... ok
+test_graph_time_budget_counts_compile_and_measure_overrun (__main__.PolicyTests.test_graph_time_budget_counts_compile_and_measure_overrun) ... ok
+test_host_time_and_mixed_epoch_are_refused (__main__.PolicyTests.test_host_time_and_mixed_epoch_are_refused) ... ok
+test_independent_processes_share_atomic_records (__main__.PolicyTests.test_independent_processes_share_atomic_records) ... ok
+test_independent_samples_exclude_host_gaps_and_preserve_raw_median (__main__.PolicyTests.test_independent_samples_exclude_host_gaps_and_preserve_raw_median) ... ok
+test_independent_samples_reject_empty_excess_and_changed_session (__main__.PolicyTests.test_independent_samples_reject_empty_excess_and_changed_session) ... ok
+test_invalid_endpoints_and_frequency_refused (__main__.PolicyTests.test_invalid_endpoints_and_frequency_refused) ... ok
+test_missing_identity_and_relaxed_budgets_are_refused (__main__.PolicyTests.test_missing_identity_and_relaxed_budgets_are_refused) ... ok
+test_parallel_requests_share_kernel_and_graph_budget (__main__.PolicyTests.test_parallel_requests_share_kernel_and_graph_budget) ... ok
+test_persistent_cache_reopens_and_rejects_damage (__main__.PolicyTests.test_persistent_cache_reopens_and_rejects_damage) ... ok
+test_persistent_concurrent_publication_is_complete (__main__.PolicyTests.test_persistent_concurrent_publication_is_complete) ... ok
+test_reopening_expired_worker_budget_does_not_reset_time (__main__.PolicyTests.test_reopening_expired_worker_budget_does_not_reset_time) ... ok
+test_resource_and_false_capability_refused_before_callback (__main__.PolicyTests.test_resource_and_false_capability_refused_before_callback) ... ok
+test_sixteen_measured_candidates_across_repeated_searches (__main__.PolicyTests.test_sixteen_measured_candidates_across_repeated_searches) ... ok
+test_uncertainty_retains_baseline_and_cache_preserves_decision (__main__.PolicyTests.test_uncertainty_retains_baseline_and_cache_preserves_decision) ... ok
+test_worker_processes_share_candidate_limit_and_deadline (__main__.PolicyTests.test_worker_processes_share_candidate_limit_and_deadline) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.383s
+
+OK
+test_descendants_do_not_outlive_successful_measurement (__main__.TestAutotuneWorker.test_descendants_do_not_outlive_successful_measurement) ... ok
+test_existing_result_file_refused (__main__.TestAutotuneWorker.test_existing_result_file_refused) ... ok
+test_invalid_endpoint_json_is_not_a_measurement (__main__.TestAutotuneWorker.test_invalid_endpoint_json_is_not_a_measurement) ... ok
+test_nonzero_child_exit (__main__.TestAutotuneWorker.test_nonzero_child_exit) ... ok
+test_successful_child_writes_valid_record_and_log (__main__.TestAutotuneWorker.test_successful_child_writes_valid_record_and_log) ... ok
+test_timeout_child_sleep (__main__.TestAutotuneWorker.test_timeout_child_sleep) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.444s
+
+OK

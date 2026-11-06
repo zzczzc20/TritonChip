@@ -3,6 +3,7 @@ import unittest
 from tnca_cc.frontend import TTIRImporter
 from tnca_cc.target import TargetInfo
 from tnca_cc.rctx_spmd import apply
+from tnca_cc.tiles import Affine2D
 
 
 def execute(ops, *, initial=None, programs=3):
@@ -40,6 +41,21 @@ def execute(ops, *, initial=None, programs=3):
 
 
 class DescriptorPublicationTests(unittest.TestCase):
+    def test_body_pointer_descriptor_is_not_hoisted_before_its_definition(self):
+        imp = TTIRImporter(TargetInfo.default())
+        b = imp.b
+        argument = b.const(0x20000)
+        imp._prologue_pos = len(b.region.ops)
+        sliced = b.sbini('add', argument, 1024)
+        pid = b.program_id(0)
+        imp._args = {0: ('slice', sliced)}
+        before = list(b.region.ops)
+        desc = imp._hoisted_tile_descriptor(
+            'slice', 'f32', Affine2D(32, 1, dynamic=[(pid, 32)]),
+            (16, 16), 'sliced matrix')
+        self.assertIsNone(desc)
+        self.assertEqual(b.region.ops, before)
+
     def program(self,dynamic):
         imp=TTIRImporter(TargetInfo.default());b=imp.b
         addr=b.const(0x20200);pid=b.program_id(0)

@@ -1,0 +1,14 @@
+commit 082c9a2dd00f24d0a0394477c1f3a3aba97c06b2 start 2026-10-28T08:29:35Z host gx10-6646
+== nuca: make nuca
+nuca exit 0
+== nuca_dco: make nuca-dco
+nuca_dco exit 0
+== nuca_shared_read: make nuca-shared-read
+nuca_shared_read exit 0
+== cache_maintenance: make r40-cache-maintenance
+cache_maintenance exit 0
+== image_geometry_base: python3 tools/r40/image_geometry_tests.py --image-tcl images/image.tcl
+image_geometry_base exit 1
+== image_geometry_shared_read: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_shared_read.tcl
+image_geometry_shared_read exit 1
+end 2026-10-28T08:38:49Z

@@ -26,6 +26,7 @@ module tnca_top #(
     parameter DCO_REGISTERED_RANGES = 0,
     parameter NUCA_REGISTER_VICTIM_SELECT = 0,
     parameter NUCA_CACHE_DATA_PIPELINE = 0,
+    parameter NUCA_SHARED_DATA_READ = 0,   // R41 G2: one LUTRAM read port per slice line array
     parameter NUCA_REGISTER_VICTIM_RANK = 0,
     parameter DCO_TLW_PIPE_STAGES = 0,
     parameter DCO_REGISTER_WRITES = 0,
@@ -43,6 +44,11 @@ module tnca_top #(
     parameter ELEN        = 32,
     parameter LW          = 4,
     parameter VREGS_PER_RCTX = 64,
+    // R41 G2 resource sizing (defaults: the delivered machine): accumulator slots, mbarriers, the barrier epoch width
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0, MAC_DP = 0, MAC_CUTS = 29,
+    // and the home slice's physical address width (64: unchanged; below 64 an
+    // address at or above 2^(PHYS_ADDR_W-1) is folded so it stays out of range)
+    parameter PHYS_ADDR_W = 64,
     parameter PHYS_VREGS  = 128,
     // Optional R39/v5 core mechanisms; legacy system defaults stay unchanged.
     parameter USE_BANKED_VRF = 0,
@@ -51,6 +57,14 @@ module tnca_top #(
     parameter VRF_PREFETCH = 0,
     parameter RCTX_SWITCH = 0,
     parameter MTX_ABUF = 0,
+    parameter MTX_VRF_REG = 0,
+    parameter HYBRID_LSU = 0,
+    parameter HOME_BACKGROUND_READS = 0,
+    parameter HOME_LINE_WRITE_NOFILL = 0,   // R41 G4: full-line stores allocate without a fill
+    parameter HOME_LINE_PIPE = 0,                // R41 G4: pipelined home (tnca_home_pipe) when HYBRID_LSU
+    parameter TENSOR_LINE = 0,                   // R41 G4: the transfer engine's line path when HYBRID_LSU
+    parameter SFU_LANES = 1,
+    parameter NOC_PAYLOAD_W = HYBRID_LSU ? 720 : 216,
     parameter LSU_INFLIGHT = 1,
     parameter FPU_OVERLAP = 0,
     parameter RSLICE = 0,
@@ -172,7 +186,7 @@ module tnca_top #(
 
     localparam N  = NX * NY;
     localparam NV = `TNCA_NOC_NV;
-    localparam FW = XW + YW + `TNCA_NOC_PAYLOAD_W;
+    localparam FW = XW + YW + NOC_PAYLOAD_W;
 
     wire [N*NV-1:0]     li_valid, li_ready, lo_valid, lo_ready;
     wire [N*NV*FW-1:0]  li_flit,  lo_flit;
@@ -254,9 +268,29 @@ module tnca_top #(
     wire [N-1:0] host_readies, host_responses, host_busy_tiles;
     wire [N*64-1:0] host_response_data;
     wire dispatch_ready;
-    wire host_allow=GLOBAL_GRID && HOST_ACCESS && dispatch_ready && !grid_valid && all_idle && !maintenance_requested;
+    wire host_allow_live=GLOBAL_GRID && HOST_ACCESS && dispatch_ready && !grid_valid && all_idle && !maintenance_requested;
+    // Registered at the source; tile 0 registers it again in its own SLR.
+    // The tile's grant uses a two-cycle-old permission. That is exact for the
+    // grant: a host access is admitted only with the whole system idle and no
+    // command or maintenance pending (tnca_multicore_mmio serializes them and
+    // tnca_multicore_shell masks host_valid while a command is offered), so
+    // every input of host_allow_live is constant from admission until the
+    // access completes. A stale 1 after that has no h_valid to grant; a stale
+    // 0 only delays the grant.
+    reg host_allow;
+    always @(posedge clk) host_allow <= rst_n && host_allow_live;
     assign host_ready=host_readies[0];assign host_rsp_valid=host_responses[0];
     assign host_busy=host_busy_tiles[0];assign host_rsp_data=host_response_data[63:0];
+`ifndef SYNTHESIS
+    // A grant (host_busy rising) must never happen where the unregistered
+    // permission was false: the registered permission may only delay grants.
+    reg host_allow_live_d=1'b0,host_busy_d=1'b0;
+    always @(posedge clk) begin
+        if(rst_n && host_busy && !host_busy_d && !host_allow_live_d)
+            $fatal(1,"tnca_top: host grant without live quiescence permission");
+        host_allow_live_d<=host_allow_live;host_busy_d<=rst_n && host_busy;
+    end
+`endif
     wire [63:0] dispatch_pc;
     wire [N*64-1:0] dispatch_args;
     wire [N*32-1:0] dispatch_x, dispatch_y, dispatch_z;
@@ -448,10 +482,11 @@ module tnca_top #(
     generate
         for (t = 0; t < N; t = t + 1) begin : g_tile
             tnca_tile #(
-                .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
+                .HYBRID_LSU(HYBRID_LSU),.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.HOME_LINE_PIPE(HOME_LINE_PIPE),.TENSOR_LINE(TENSOR_LINE),.SFU_LANES(SFU_LANES),.NOC_PAYLOAD_W(NOC_PAYLOAD_W),
+                .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
                 .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .HOST_ACCESS(HOST_ACCESS && GLOBAL_GRID && t==0), .NX(NX), .NY(NY), .XW(XW), .YW(YW),
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
-                .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX),
+                .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .PHYS_ADDR_W(PHYS_ADDR_W),
                 .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
                 .USE_BANKED_VRF(USE_BANKED_VRF),
                 .VRF_BYPASS(VRF_BYPASS),
@@ -459,6 +494,7 @@ module tnca_top #(
                 .VRF_PREFETCH(VRF_PREFETCH),
                 .RCTX_SWITCH(RCTX_SWITCH),
                 .MTX_ABUF(MTX_ABUF),
+                .MTX_VRF_REG(MTX_VRF_REG),
                 .LSU_INFLIGHT(LSU_INFLIGHT),
                 .FPU_OVERLAP(FPU_OVERLAP),
                 .RSLICE(RSLICE),
@@ -537,7 +573,7 @@ module tnca_top #(
 
     tnca_mesh #(
         .NX(NX), .NY(NY), .XW(XW), .YW(YW),
-        .PAYLOAD_W(`TNCA_NOC_PAYLOAD_W), .NV(NV),
+        .PAYLOAD_W(NOC_PAYLOAD_W), .NV(NV),
         .DEPTH(NOC_DEPTH), .AW(NOC_AW),.LINK_STAGES(NOC_LINK_STAGES)
     ) u_mesh (
         .clk(clk), .rst_n(rst_n),

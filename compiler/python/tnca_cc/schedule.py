@@ -71,13 +71,26 @@ class Model:
     def for_target(cls, target):
         with open(find('spec', 'r39_sched_model.json')) as fh:
             spec = json.load(fh)
-        name = spec['by_target'].get(getattr(target, 'name', None), spec['default'])
+        name = cls.model_name(spec, getattr(target, 'name', None))
         return cls(name, spec['models'][name])
+
+    @staticmethod
+    def model_name(spec, target_name):
+        """The target's model, else the model of the longest listed target its
+        name extends (a resized profile, e.g. tnca-sim-vrf-v5-x8-g2c4, keeps its
+        base's pipeline and register file, so it keeps its base's latencies),
+        else the default. Before this, a resized profile fell to the default
+        model and was scheduled for a different register file."""
+        by = spec['by_target']
+        if target_name in by:
+            return by[target_name]
+        base = max((k for k in by if target_name and target_name.startswith(k + '-')), key=len, default=None)
+        return by[base] if base else spec['default']
 
     def klass(self, op):
         k = op.kind
         if k in ('sbin', 'sbini'):
-            return 'smul' if op.attrs.get('op') == 'mul' else 'salu'
+            return 'smul' if op.attrs.get('op') in ('mul', 'mulhu') else 'salu'
         if k in ('const', 'program_id', 'num_programs', 'special', 'scmp', 'assign'):
             return 'salu'
         if k == 'sload':
@@ -111,6 +124,9 @@ class Model:
         its result. A load's result is there when the unit lets it go."""
         if op.kind in MEMREAD:
             return self.lsu_busy(op)
+        if op.kind == 'vcvt' and op.attrs.get('preserve_fp8_nan_sign'):
+            issue = int(self.issue['vector_reads_vrf'])
+            return max(int(self.lat['vfp']), issue + int(self.lat['vcmp'])) + int(self.lat['valu'])
         return int(self.lat.get(self.klass(op), self.lat['other']))
 
     _BYTES = {'b': 1, 'h': 2, 'w': 4, 'd': 8}
@@ -128,6 +144,11 @@ class Model:
         holds issue for the read on the banked file."""
         if op.kind in ('comment', 'label') or self.klass(op) == 'alias':
             return 0
+        if op.kind == 'vcvt' and op.attrs.get('preserve_fp8_nan_sign'):
+            # The checked signed conversion emits a comparison, a conversion,
+            # and a predicated vector update; none is an ISA macro-op. Under
+            # predicate pressure codegen falls back to four vector operations.
+            return 3 * int(self.issue['vector_reads_vrf'])
         if any(getattr(v, 'kind', None) == VECTOR for v in _values_in(op)):
             return int(self.issue['vector_reads_vrf'])
         if any(getattr(r, 'kind', None) == VECTOR for r in op.results):

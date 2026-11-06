@@ -1,0 +1,22 @@
+{
+  "archive_sha256": "918a6a03b937824f3c290f831df0c68cca28e28cc668c87e21d93c35aca86c75",
+  "host": "acf3019:/home/zzhouch/r41s2_endurance_9bc8990",
+  "members": {
+    "out/s2-endurance/report.json": {
+      "size": 104544,
+      "sha256": "5c41d12384043226e927df0d0ba8872a268f5f8fbd0bfb53ea8499ed80ee0da4"
+    },
+    "out/s2-endurance/mix/endurance.json": {
+      "size": 11967,
+      "sha256": "3e0b1938c017a739242f01f7a27e8c1898923b81cb2445cb190cec918a00683f"
+    },
+    "out/s2-endurance/mix/sessions.jsonl": {
+      "size": 145602,
+      "sha256": "d86d17bd8332b724ea41edccd37a49ae74a0627494cc3c87749810223d17367d"
+    },
+    "out/s2-endurance/mix/host.jsonl": {
+      "size": 36194,
+      "sha256": "ddf9d4e2574ce56dbc2ba8af0719e9a46ff643eb7e4cfc20d741a338f233abd4"
+    }
+  }
+}

@@ -96,7 +96,9 @@ direction. It was deleted when the matrix unit and the vector FPU moved to the
 generated pair: keeping two conversion implementations in agreement is the
 cost the generator exists to avoid, and the surviving one is verified
 exhaustively where this one was verified over 131,072 vectors. Its numbers
-stay here as the comparison point. `exp2` and `log2` remain over the flag at 69 and 72 levels, which is
+stay here as the comparison point.
+
+`exp2` and `log2` remain over the flag at 69 and 72 levels, which is
 one 32×16 multiplier in a library whose 32×32 multiplier is 65 levels by
 itself; XLS's own estimate agrees, putting `exp2` at 1220 ps against a floor of
 1217. Nothing is left there to restructure.

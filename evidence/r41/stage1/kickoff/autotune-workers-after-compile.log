@@ -1,0 +1,11 @@
+test_descendants_do_not_outlive_successful_measurement (__main__.TestAutotuneWorker.test_descendants_do_not_outlive_successful_measurement) ... ok
+test_existing_result_file_refused (__main__.TestAutotuneWorker.test_existing_result_file_refused) ... ok
+test_invalid_endpoint_json_is_not_a_measurement (__main__.TestAutotuneWorker.test_invalid_endpoint_json_is_not_a_measurement) ... ok
+test_nonzero_child_exit (__main__.TestAutotuneWorker.test_nonzero_child_exit) ... ok
+test_successful_child_writes_valid_record_and_log (__main__.TestAutotuneWorker.test_successful_child_writes_valid_record_and_log) ... ok
+test_timeout_child_sleep (__main__.TestAutotuneWorker.test_timeout_child_sleep) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.474s
+
+OK

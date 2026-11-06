@@ -1,0 +1,94 @@
+// Independent boundary tests for fast timing and slow request identities.
+#include "../include/tnca_dram.hpp"
+#include "../include/tnca_dram_map.hpp"
+#include <limits>
+
+template<class F> static void refuses(F f,const char* fragment){
+    try{f();}catch(const std::runtime_error& error){
+        require(std::string(error.what()).find(fragment)!=std::string::npos,"unexpected refusal");
+        return;
+    }
+    throw std::runtime_error("expected explicit domain refusal");
+}
+
+int sc_main(int argc,char** argv){
+    try{
+        require(argc==2,"usage: tnca-dram-path-test MODEL.cfg");
+        Config config(argv[1]);FastDram fast(config);
+        for(u64 arrival:{0ULL,1234ULL,1000000ULL}){
+            require(fast.complete({0,0x400000,false,arrival})==arrival+config.get("hbm_latency_cycles")+config.get("tl_outlet_beat_cycles"),"fast read boundary");
+            require(fast.complete({2,0x400000,true,arrival})==arrival+config.get("tl_hbm_write_latency_cycles"),"fast write boundary");
+        }
+        SlowDram slow;slow.fallback[0]=7;slow.fallback[1]=11;slow.beats_extra=3;
+        require(slow.complete({0,0x400000,false,100})==110,"read fallback boundary");
+        require(slow.complete({0,0x400000,true,100})==111,"write response boundary");
+        std::vector<u64> keys;
+        for(unsigned port=0;port<4;++port)for(bool write:{false,true})for(unsigned occ=0;occ<2;++occ){
+            u64 key=(SlowDram::base_key(port,0xfffffffc0ULL,write)<<SlowDram::OCC_BITS)|occ;
+            require(SlowDram::address_of(key)==0xfffffffc0ULL && SlowDram::port_of(key)==port && SlowDram::write_of(key)==write,"request key round trip");
+            keys.push_back(key);
+        }
+        auto installed=keys;
+        std::vector<std::uint16_t> lat(keys.size());
+        for(size_t i=0;i<lat.size();++i)lat[i]=std::uint16_t(100+i);
+        slow.install(std::move(keys),std::move(lat));slow.begin_command();
+        for(size_t i=installed.size();i-->0;){
+            std::uint32_t value=0;
+            require(slow.find(installed[i],value) && value==100+i,"reordered request lookup");
+        }
+        require(slow.complete({3,0xfffffffc0ULL,true,1000})==1114,"matched first occurrence");
+        require(slow.complete({3,0xfffffffc0ULL,true,1000})==1115,"matched repeated occurrence");
+        require(slow.requests==2 && slow.matched==2,"request accounting");
+        std::vector<std::uint16_t> replay_lat(installed.size());
+        for(size_t i=0;i<replay_lat.size();++i)replay_lat[i]=std::uint16_t(100+i);
+        require(slow.stability(installed,replay_lat,0).within_tolerance,"exact fixed point");
+        std::reverse(installed.begin(),installed.end());std::reverse(replay_lat.begin(),replay_lat.end());
+        require(slow.stability(installed,replay_lat,0).within_tolerance,"reordered fixed point");
+        ++replay_lat[0];
+        require(!slow.stability(installed,replay_lat,5000).within_tolerance,"unstable latency at equal request count");
+        require(slow.stability(installed,replay_lat,10000).within_tolerance,"explicit latency tolerance");
+        installed[0]^=(1ULL<<(SlowDram::OCC_BITS+20));
+        require(!slow.stability(installed,replay_lat,1000000).same_requests,"changed request at equal count");
+        installed.pop_back();replay_lat.pop_back();
+        require(!slow.stability(installed,replay_lat,1000000).same_requests,"missing request");
+        refuses([&]{slow.complete({4,0,false,0});},"outlet");
+        refuses([&]{slow.complete({0,1ULL<<36,false,0});},"address");
+        auto base=SlowDram::base_key(0,0x400000,false);
+        slow.occurrence[base]=(1U<<SlowDram::OCC_BITS)-1;
+        slow.complete({0,0x400000,false,0}); // final unique representable occurrence
+        refuses([&]{slow.complete({0,0x400000,false,0});},"occurrence");
+        refuses([&]{slow.install({1},{2,3});},"inconsistent");
+        refuses([&]{slow.install({1,1},{2,3});},"duplicate");
+        require(SlowDram::latency_value(65535)==65535,"maximum supported latency");
+        refuses([]{SlowDram::latency_value(65536);},"latency outside");
+        std::istringstream mapping("TNCA_DRAM_MAP_V1\nwindow 128 320 384\npc 7 256 256 320 192\npc 2 512 256 512 192\n");
+        DramAddressMap physical(mapping,32,256);
+        auto first=physical.translate(128),next=physical.translate(320),last=physical.translate(448);
+        require(first.pc==7 && first.offset==64 && first.physical==320,"offset BO and topology PC tag");
+        require(next.pc==2 && next.offset==0 && next.physical==512,"physical PC boundary");
+        require(last.pc==2 && last.offset==128 && last.physical==640,"last complete line");
+        refuses([&]{physical.translate(64);},"SRAM");
+        refuses([&]{physical.translate(449);},"outside AXI");
+        std::istringstream gap("TNCA_DRAM_MAP_V1\nwindow 128 320 384\npc 7 256 256 320 128\npc 2 512 256 512 192\n");
+        refuses([&]{DramAddressMap invalid(gap,32,256);},"gaps");
+        std::istringstream repeated("TNCA_DRAM_MAP_V1\nwindow 128 320 384\npc 7 256 256 320 192\npc 7 512 256 512 192\n");
+        refuses([&]{DramAddressMap invalid(repeated,32,256);},"repeated PC");
+        // One 8 GiB BO over PC0-PC31 (the R41 planned map's geometry): the
+        // PC15/PC16 boundary, the last line and one byte past the BO top.
+        std::ostringstream eight;eight<<"TNCA_DRAM_MAP_V1\n# planned geometry\nwindow 131072 0 8589934592\n";
+        for(u64 pc=0;pc<32;++pc)eight<<"pc "<<pc<<' '<<(pc<<28)<<' '<<(1ULL<<28)<<' '<<(pc<<28)<<' '<<(1ULL<<28)<<'\n';
+        std::istringstream eight_in(eight.str());DramAddressMap wide(eight_in,32,1ULL<<28);
+        const u64 top=131072+(1ULL<<33);
+        auto pc15=wide.translate(131072+(1ULL<<32)-64),pc16=wide.translate(131072+(1ULL<<32)),pc31=wide.translate(top-64);
+        require(pc15.pc==15 && pc15.offset==(1ULL<<28)-64 && pc16.pc==16 && pc16.offset==0 && pc16.physical==(1ULL<<32),"8 GiB map: PC15/PC16 boundary");
+        require(pc31.pc==31 && pc31.offset==(1ULL<<28)-64 && pc31.physical==(1ULL<<33)-64,"8 GiB map: last BO line");
+        require(wide.translate(top-1,1).pc==31,"8 GiB map: last BO byte");
+        refuses([&]{wide.translate(top,1);},"outside AXI");
+        refuses([&]{wide.translate(top-63,64);},"outside AXI");
+        refuses([&]{wide.translate(131072+(1ULL<<32)-32,64);},"crosses");
+        std::istringstream short_pc(std::string("TNCA_DRAM_MAP_V1\nwindow 131072 0 8589934592\npc 0 0 268435456 0 268435456\n"));
+        refuses([&]{DramAddressMap invalid(short_pc,32,1ULL<<28);},"incomplete");
+        std::cout<<"{\"status\":\"pass\",\"checks\":[\"fast-boundaries\",\"slow-fallback\",\"key-roundtrip\",\"reordered-repeats\",\"domain-refusals\",\"8gib-map-boundaries\"]}\n";
+        return 0;
+    }catch(const std::exception& error){std::cerr<<error.what()<<'\n';return 1;}
+}

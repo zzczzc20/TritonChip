@@ -1,0 +1,133 @@
+{
+  "evidence": "native-SystemC-uncalibrated",
+  "rows": [
+    {
+      "variant": "baseline",
+      "configuration": {},
+      "cycles": 50347,
+      "logical_bytes": 147456,
+      "logical_gb_per_s_at_100mhz": 0.2928794168470813,
+      "board_measured": false
+    },
+    {
+      "variant": "v3_lsu_8_prefetch_0",
+      "configuration": {
+        "tl_core_beat_bytes": "64",
+        "tl_noc_payload_bytes": "64",
+        "tl_lsu_units": "8",
+        "tl_lsu_shared_issue": "0",
+        "tl_memory_lanes": "8",
+        "lsu_beat_slots": "8",
+        "outlets": "32",
+        "active_outlets": "32",
+        "tl_pc_stripe_bytes": "4096",
+        "mshrs": "128",
+        "targets": "256",
+        "tl_prefetch_lines": "0"
+      },
+      "cycles": 6944,
+      "logical_bytes": 147456,
+      "logical_gb_per_s_at_100mhz": 2.1235023041474657,
+      "board_measured": false,
+      "predicted_stream_add_speedup": 7.25043202764977,
+      "meets_50gbps": false,
+      "meets_5x": true
+    },
+    {
+      "variant": "v3_lsu_16_prefetch_0",
+      "configuration": {
+        "tl_core_beat_bytes": "64",
+        "tl_noc_payload_bytes": "64",
+        "tl_lsu_units": "16",
+        "tl_lsu_shared_issue": "0",
+        "tl_memory_lanes": "8",
+        "lsu_beat_slots": "4",
+        "outlets": "32",
+        "active_outlets": "32",
+        "tl_pc_stripe_bytes": "4096",
+        "mshrs": "128",
+        "targets": "256",
+        "tl_prefetch_lines": "0"
+      },
+      "cycles": 3864,
+      "logical_bytes": 147456,
+      "logical_gb_per_s_at_100mhz": 3.8161490683229817,
+      "board_measured": false,
+      "predicted_stream_add_speedup": 13.029761904761905,
+      "meets_50gbps": false,
+      "meets_5x": true
+    },
+    {
+      "variant": "v3_lsu_8_prefetch_16",
+      "configuration": {
+        "tl_core_beat_bytes": "64",
+        "tl_noc_payload_bytes": "64",
+        "tl_lsu_units": "8",
+        "tl_lsu_shared_issue": "0",
+        "tl_memory_lanes": "8",
+        "lsu_beat_slots": "8",
+        "outlets": "32",
+        "active_outlets": "32",
+        "tl_pc_stripe_bytes": "4096",
+        "mshrs": "128",
+        "targets": "256",
+        "tl_prefetch_lines": "16"
+      },
+      "cycles": 7133,
+      "logical_bytes": 147456,
+      "logical_gb_per_s_at_100mhz": 2.067236786765737,
+      "board_measured": false,
+      "predicted_stream_add_speedup": 7.058320482265526,
+      "meets_50gbps": false,
+      "meets_5x": true
+    },
+    {
+      "variant": "v3_lsu_8_prefetch_64",
+      "configuration": {
+        "tl_core_beat_bytes": "64",
+        "tl_noc_payload_bytes": "64",
+        "tl_lsu_units": "8",
+        "tl_lsu_shared_issue": "0",
+        "tl_memory_lanes": "8",
+        "lsu_beat_slots": "8",
+        "outlets": "32",
+        "active_outlets": "32",
+        "tl_pc_stripe_bytes": "4096",
+        "mshrs": "128",
+        "targets": "256",
+        "tl_prefetch_lines": "64"
+      },
+      "cycles": 16197,
+      "logical_bytes": 147456,
+      "logical_gb_per_s_at_100mhz": 0.9103908131135395,
+      "board_measured": false,
+      "predicted_stream_add_speedup": 3.1084151386059147,
+      "meets_50gbps": false,
+      "meets_5x": false
+    },
+    {
+      "variant": "v3_lsu_16_prefetch_64",
+      "configuration": {
+        "tl_core_beat_bytes": "64",
+        "tl_noc_payload_bytes": "64",
+        "tl_lsu_units": "16",
+        "tl_lsu_shared_issue": "0",
+        "tl_memory_lanes": "8",
+        "lsu_beat_slots": "4",
+        "outlets": "32",
+        "active_outlets": "32",
+        "tl_pc_stripe_bytes": "4096",
+        "mshrs": "128",
+        "targets": "256",
+        "tl_prefetch_lines": "64"
+      },
+      "cycles": 15515,
+      "logical_bytes": 147456,
+      "logical_gb_per_s_at_100mhz": 0.9504092813406381,
+      "board_measured": false,
+      "predicted_stream_add_speedup": 3.245053174347406,
+      "meets_50gbps": false,
+      "meets_5x": false
+    }
+  ]
+}

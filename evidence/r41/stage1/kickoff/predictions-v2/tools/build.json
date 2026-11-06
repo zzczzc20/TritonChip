@@ -1,0 +1,21 @@
+{
+ "source_commit": "c2c96d33aec2cc9214756e425371b07927c98b2f",
+ "source_archive_sha256": "0a5771153ee04eb9772580a100bec4d85637048dda2c0c6c8de3fc816e6b05f7",
+ "binary": "/home/zhongchun/r41s1-c2c96d3/model-build/tnca-chip",
+ "binary_sha256": "72b6c58c21ae59b63a9b0139bfe887972eafd9ca8c396e8b602864f67026943e",
+ "ramulator2_commit": "c6c7a5de0cef35935d6fad7369e6271406798865",
+ "ramulator2_checkout": "c6c7a5de0cef35935d6fad7369e6271406798865",
+ "configs": {
+  "fast": {
+   "path": "/home/zhongchun/r41s1-c2c96d3/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+   "sha256": "1e731106c0cbf556828d4a6ef9b10e11f8b5626aacff4a34d7cecfb45c38c575"
+  },
+  "slow": {
+   "path": "/home/zhongchun/r41s1-c2c96d3/src/tools/performance_harness/systemc/configs/r40-board-m3.cfg",
+   "sha256": "6f6007b50a7ed30f6770c8b03736079a73a04046b26a994b33306dd025c9e36f"
+  }
+ },
+ "map_sha256": "a1019970fe9548fda5e9b7e44442a14f1a886decd397f472c498dd15f5970bc2",
+ "host": "gx10-6646",
+ "not_run": {}
+}

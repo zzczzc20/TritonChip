@@ -1,0 +1,5 @@
+tb_line_axi_hbm8: base 0000000000000000, 8 GiB window: legal edges and refusals pass
+tb_line_axi_hbm8: base 0000000100000000, 8 GiB window: legal edges and refusals pass
+tb_line_axi_hbm8: base fffffffe00000000, 8 GiB window: legal edges and refusals pass
+tb_line_axi_hbm8 PASS checks=35
+tb/fpga/tb_line_axi_hbm8.v:115: $finish called at 5356000 (1ps)

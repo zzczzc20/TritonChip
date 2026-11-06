@@ -1,0 +1,1124 @@
+{
+  "schema": "tnca-prediction-residuals/1",
+  "predictions": [
+    {
+      "path": "evidence/r41/stage1/kickoff/gemm-subset-predictions-v2.json",
+      "sha256": "49f4171d8c5815a99f88fb1f6077a260082faf7137ada5860830d183fa675e0a",
+      "sealed_before_board_utc": "2026-10-21T13:07:45.457073+00:00",
+      "software_tree": "files:8c7139023d76d8572a82faef65312ce03bb439def8475792de826f44acb956ee"
+    }
+  ],
+  "board": [
+    {
+      "path": "out/board-gemm-tile/gemm/formal.jsonl",
+      "sha256": "a48296d52af7bb40024e009dce035941c08f99b60e44b089d8ca922c648548cd"
+    }
+  ],
+  "board_records_used": 18,
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "clock_hz": 90000000,
+  "rows": [
+    {
+      "point": "model.mlp/medium/fp16-t128-d128",
+      "arm": "candidate",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,32,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          33110335,
+          35154200,
+          35011890
+        ],
+        "serial_grid_samples": [
+          24399804,
+          24386477,
+          24392373
+        ],
+        "graph_makespan_median": 35011890,
+        "serial_grid_median": 24392373,
+        "programs": [
+          [
+            "triton_tem_fused_addmm_gelu_t_0",
+            "0ef3cbb1c63da95b45ee692d2627769f966362d54af731b44c4a238c6d1867ca"
+          ],
+          [
+            "triton_tem_fused_addmm_gelu_t_1",
+            "deed0ba8bafd851c18e1c637368076179826f63b423d3bd8090d2509e93c8054"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 27325086,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "778fba6668bf262c9515f3056a307b7493a1a96d7a70be85ec91ccef61e2b005",
+        "residual": -0.21954838770486254,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 27500632,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "2720fb28e50919982c71dd3c989b0e01a8145a360308ef5870c8e321b06c248c",
+        "residual": -0.21453449099720123,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "model.mlp/medium/fp16-t128-d128",
+      "arm": "control",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,16,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          10578991,
+          10862342,
+          10784856
+        ],
+        "serial_grid_samples": [
+          4165299,
+          4165912,
+          4164887
+        ],
+        "graph_makespan_median": 10784856,
+        "serial_grid_median": 4165299,
+        "programs": [
+          [
+            "triton_tem_fused_addmm_gelu_t_0",
+            "fc00088235c404af96216020aa97da7f497549ec4467f43f742d2fff5b2204fe"
+          ],
+          [
+            "triton_tem_fused_addmm_gelu_t_1",
+            "4998caeb936fadbeab9af3678633e917285fd3ed66c78237e319976749cf330b"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 9549977,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "0af23765d7e57862502224d208856161f541a3f1027b07dee7ca8598e154d4a6",
+        "residual": -0.11450120428126254,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 9600147,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "62ea65346bec10bf2ee2474db4f6bb1adf45b28383415dc382387ed685b37b12",
+        "residual": -0.10984931092264931,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+      "arm": "candidate",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,32,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          5164199,
+          5168414,
+          5160079
+        ],
+        "serial_grid_samples": [
+          5164197,
+          5168412,
+          5160077
+        ],
+        "graph_makespan_median": 5164199,
+        "serial_grid_median": 5164197,
+        "programs": [
+          [
+            "triton_tem_fused_bmm_0",
+            "a390fcbc5c1abb33634bea4861da538946c3a90f67da76330d3df55222f10f51"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 4503647,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "00e463a624b65f31e3aa67e37d6d661fc0462ef5b77ca78abc0a0e250b0a44c0",
+        "residual": -0.12790986559580683,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 4525400,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "fab7ae5509369c0d3bdf95f95feb2f015461d2e79f46901cb321ce6748f84252",
+        "residual": -0.12369759569683507,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+      "arm": "control",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,16,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          5570905,
+          5570939,
+          5569926
+        ],
+        "serial_grid_samples": [
+          5570903,
+          5570937,
+          5569924
+        ],
+        "graph_makespan_median": 5570905,
+        "serial_grid_median": 5570903,
+        "programs": [
+          [
+            "triton_tem_fused_bmm_0",
+            "67385dadcadd401022004d067bcd4eb163e3bbaa45a9042032e355054bf63882"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 4868182,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "8ef2fa46ad3de3937d2d8ae38f90d201d3c9e055663f15f12e0d4a88f5985991",
+        "residual": -0.12614162330895967,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 4876798,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "300f6670dd31b5fff75abfaddde7ad79508d915978fda51c71dc5c0ff1ed78d3",
+        "residual": -0.12459501642910802,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.gemv/hbm/fp16-k4096-n11008",
+      "arm": "candidate",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,32,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          1317542703
+        ],
+        "serial_grid_samples": [
+          1317542701
+        ],
+        "graph_makespan_median": 1317542703,
+        "serial_grid_median": 1317542701,
+        "programs": [
+          [
+            "triton_tem_fused_mm_t_0",
+            "412ab0534ecf1e7592cf42c31ce4a8da8b2989cb45228fc91b78835434beca8d"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 1489687288,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "9834f136d532e55f8bbee4f085ce559a9730e49ae027662bfc17614e06c51c5b",
+        "residual": 0.13065579173110112,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 1615491807,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "a90b1776fd9132511df700704df07de263f61960009a8190f36d40a31097a712",
+        "residual": 0.22613999783200955,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.gemv/hbm/fp16-k4096-n11008",
+      "arm": "control",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,16,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          248610897
+        ],
+        "serial_grid_samples": [
+          248610895
+        ],
+        "graph_makespan_median": 248610897,
+        "serial_grid_median": 248610895,
+        "programs": [
+          [
+            "triton_tem_fused_mm_t_0",
+            "8f7fbba79dc95bd62c5cdcf7beebeb648da5285eb236a40d988ca5a4a6f00c54"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 233351401,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "06e42011c6a4d4180c6bc8d2611d2cee8bfc3d7b8277e4e51c581ac9078be302",
+        "residual": -0.061379031185427084,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 241560290,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "45d7dc12a11d689744dff5bd230fc1bf882c4e007151490e74ea827fee4f1cac",
+        "residual": -0.02836000788814981,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.gemv/medium/fp16-k320-n448",
+      "arm": "candidate",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,32,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          2355205,
+          2355891,
+          2355897
+        ],
+        "serial_grid_samples": [
+          2355203,
+          2355889,
+          2355895
+        ],
+        "graph_makespan_median": 2355891,
+        "serial_grid_median": 2355889,
+        "programs": [
+          [
+            "triton_tem_fused_mm_t_0",
+            "d58551177d8cadc00711109a22c1ddbadb20b01c74b940d65d08278c113c4d62"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 2085953,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "04dc16ba5fa904f4f99b73519eaaf0bf3b262887db24d5183873ae5cb4c6e2f5",
+        "residual": -0.11458000391359363,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 2093912,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "6d0612b9a5fb06cf88e7feae26f4d0b67e48ef8b64a730b187ad6dcdd7dde19f",
+        "residual": -0.11120166425356691,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.gemv/medium/fp16-k320-n448",
+      "arm": "control",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,16,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          714212,
+          714669,
+          714473
+        ],
+        "serial_grid_samples": [
+          714210,
+          714667,
+          714471
+        ],
+        "graph_makespan_median": 714473,
+        "serial_grid_median": 714471,
+        "programs": [
+          [
+            "triton_tem_fused_mm_t_0",
+            "8f797a784a81cc16c48a9c26a10f69a5cf6a982dca810e2e4d95345216c29cd9"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 675727,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "f2a9e231994a594bd2bed9e178d6196c47fa89632cb571f8b844e5779ff13da6",
+        "residual": -0.05423018084658203,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 678785,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "aa8dda27fa7327debc8c30abbd9e8239da79412e6ffc671a2cade3f85d05e776",
+        "residual": -0.049950103082971646,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+      "arm": "candidate",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,32,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          50934524509
+        ],
+        "serial_grid_samples": [
+          50934524507
+        ],
+        "graph_makespan_median": 50934524509,
+        "serial_grid_median": 50934524507,
+        "programs": [
+          [
+            "triton_tem_fused_addmm_t_0",
+            "11d7283c78303a97659c758ae127c72c775acf28cdb19bfdbdfeab5b6bb0a085"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 49270103996,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "156704b142385fbe32cac19fa81b55c494a1cfdfab64b6ce41f1a4564821638b",
+        "residual": -0.032677648982585496,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "status": "prediction-not-run",
+        "reason": "slow path estimated at 4.1 h (fast-path model time 2146 s x largest measured slow/fast ratio 6.86) exceeds the 3 h budget; not run"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+      "arm": "control",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,16,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          5898995537
+        ],
+        "serial_grid_samples": [
+          5898995535
+        ],
+        "graph_makespan_median": 5898995537,
+        "serial_grid_median": 5898995535,
+        "programs": [
+          [
+            "triton_tem_fused_addmm_t_0",
+            "1d34e8315e57d3b2b83dfc84ff5793bbd354aba3edd1e898c1958f4c50a5861d"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 6436787044,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "fa0d474d870236458a5598da7caa9ccd3c11396cf2dd80a4032443dd884c6a92",
+        "residual": 0.09116662381363656,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 6852270706,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "aa8f2b7bdaba8a57596645c7621fbf2c57a930536bf2d1a3cf031b92b9c83244",
+        "residual": 0.16159957454126142,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.linear/medium/fp16-m128-k320-n256",
+      "arm": "candidate",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,32,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          10664991,
+          10667385,
+          10663388
+        ],
+        "serial_grid_samples": [
+          10664989,
+          10667383,
+          10663386
+        ],
+        "graph_makespan_median": 10664991,
+        "serial_grid_median": 10664989,
+        "programs": [
+          [
+            "triton_tem_fused_addmm_t_0",
+            "5d3f37fd0ac02a5c07638686f69de6d1280c7b3b0325f9ff6053a19ba4c5e281"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 9318383,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "adab46b6cc19fcc76897d24e2b887207e9f27c0c241156e1c00994481c67e321",
+        "residual": -0.1262643353379295,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 9346929,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "8770c1a49a55932d0fba28077003941b7f5f2586c1bc101245dbcb841acca9aa",
+        "residual": -0.12358772735954489,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.linear/medium/fp16-m128-k320-n256",
+      "arm": "control",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,16,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          1949449,
+          1949852,
+          1949329
+        ],
+        "serial_grid_samples": [
+          1949447,
+          1949850,
+          1949327
+        ],
+        "graph_makespan_median": 1949449,
+        "serial_grid_median": 1949447,
+        "programs": [
+          [
+            "triton_tem_fused_addmm_t_0",
+            "fdb8c0f7a37ae8459a4dd00f57e2b5786cbb883867f9b5359359a2abfb27a5bd"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 1826446,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "5dc8c5ac923e9c53030a75af09dc439611ad247a0dd7d5116720a12af44cf75d",
+        "residual": -0.06309629028510107,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 1849835,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "330ee748eb32dea8b5fe6b6bab780cee7d5882b294524a086a7614d80ec41f6b",
+        "residual": -0.05109854117753273,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "arm": "candidate",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,32,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          34919267466
+        ],
+        "serial_grid_samples": [
+          34919267464
+        ],
+        "graph_makespan_median": 34919267466,
+        "serial_grid_median": 34919267464,
+        "programs": [
+          [
+            "triton_tem_fused_mm_0",
+            "b70a521bb48321fca19ad81bbff5c9536fdf57880d1cbad9ee3de9224bc4d488"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 32801987937,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "7bfff8ca5fadf1a185ddac605170894c4490bfe090995d4b53ee08ab9e77da98",
+        "residual": -0.06063356085752775,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "status": "prediction-not-run",
+        "reason": "slow path estimated at 6.5 h (fast-path model time 3390 s x largest measured slow/fast ratio 6.86) exceeds the 3 h budget; not run"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+      "arm": "control",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,16,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          11485664099
+        ],
+        "serial_grid_samples": [
+          11485664097
+        ],
+        "graph_makespan_median": 11485664099,
+        "serial_grid_median": 11485664097,
+        "programs": [
+          [
+            "triton_tem_fused_mm_0",
+            "4c59959819cc22e3a84da50ad64df15a970f29aa731c494363766c6ae8856e1d"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 10796755932,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "7680f687fe5bec151f596af60570332f77242d0d9ef7559bfc09acbc3143c67f",
+        "residual": -0.05997982885987235,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 11167827297,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "e915d26a04fe2e6ace990da01257d9cd6bf1835ad8dd2b4142be6cdb39bb52a0",
+        "residual": -0.02767247929770752,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.matmul/medium/fp16-m128-k192-n128",
+      "arm": "candidate",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,32,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          1771852,
+          1774543,
+          1772243
+        ],
+        "serial_grid_samples": [
+          1771850,
+          1774541,
+          1772241
+        ],
+        "graph_makespan_median": 1772243,
+        "serial_grid_median": 1772241,
+        "programs": [
+          [
+            "triton_tem_fused_mm_0",
+            "e21cb10f3015714c670366d0f4efdd4bda9c741b290916075496e9797709256d"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 1655686,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "95495fbf50b228b1c0f7e0c3eaae54f2b9f3bdaa7e6364f360fe95b73e94e364",
+        "residual": -0.06576806905147883,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 1659992,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "cc200979d2e733e691bc701403a24733331a32a51f807571595c14f17aeeac16",
+        "residual": -0.06333837966915372,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.matmul/medium/fp16-m128-k192-n128",
+      "arm": "control",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,16,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          567409,
+          567392,
+          567587
+        ],
+        "serial_grid_samples": [
+          567407,
+          567390,
+          567585
+        ],
+        "graph_makespan_median": 567409,
+        "serial_grid_median": 567407,
+        "programs": [
+          [
+            "triton_tem_fused_mm_0",
+            "4376071663851e22598f81392ba9483309477059123eddd2bfe5de3dcdf2e4f9"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 546688,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "bdadc312bfe8fc7da9c3c4db798823a60fb7f0ec925a7d33270187bd1ba05ebf",
+        "residual": -0.03651863118138768,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 550681,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "cb5ddc109d0ecfe1d28e1b08f8e0f3e73939e51b733132c2cfb6a407180f7ced",
+        "residual": -0.029481379392995177,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.matmul/medium/fp32-m128-k192-n128",
+      "arm": "candidate",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,32,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          3046196,
+          3042233,
+          3041644
+        ],
+        "serial_grid_samples": [
+          3046194,
+          3042231,
+          3041642
+        ],
+        "graph_makespan_median": 3042233,
+        "serial_grid_median": 3042231,
+        "programs": [
+          [
+            "triton_tem_fused_mm_0",
+            "76d623c2bf6800d6abb283665c52a2877498a061b4a05b401b551988b6c9b17d"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 2935928,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "114647055e8d0bd1831a63cf7fe6a07a334630d6b4669db14553fe6105f85366",
+        "residual": -0.034943082926258445,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 2950625,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "59c3995fd80b314d9772be90b840183c9790bb45fce513a40e8000e37b50d395",
+        "residual": -0.030112092006102098,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.matmul/medium/fp32-m128-k192-n128",
+      "arm": "control",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "1",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,16,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "1",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "per-kernel",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          1744304,
+          1739810,
+          1740243
+        ],
+        "serial_grid_samples": [
+          1744302,
+          1739808,
+          1740241
+        ],
+        "graph_makespan_median": 1740243,
+        "serial_grid_median": 1740241,
+        "programs": [
+          [
+            "triton_tem_fused_mm_0",
+            "afcd4031d142889b28da5de04140d95d3791b03587b67df60819ceae273dd2c9"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 1833746,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "6873a8fecf1f0ceceb4a65b58a999380f6d0018ad4b23ba63a8dd763a6ad88c8",
+        "residual": 0.05372985267000068,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 1841871,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "690ad387af1d501b4bcd86364252fc07dd921b6dc6188cba7233ddb6e7e39173",
+        "residual": 0.058398740865499815,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    }
+  ],
+  "summary": {
+    "fast": {
+      "qualified_residuals": 18,
+      "median_abs": 0.06443217966828996,
+      "max_abs": 0.21954838770486254,
+      "not_comparable": 0,
+      "inconclusive": 0,
+      "not_run": 0
+    },
+    "slow": {
+      "qualified_residuals": 0,
+      "median_abs": null,
+      "max_abs": null,
+      "not_comparable": 0,
+      "inconclusive": 16,
+      "not_run": 2
+    }
+  },
+  "status": "residuals-recorded",
+  "result": "18 configurations; 0 without a board record; qualified residuals fast 18, slow 0",
+  "residual": {
+    "fast_median_abs": 0.06443217966828996,
+    "slow_median_abs": null,
+    "definition": "(model graph cycles - board graph makespan median) / board"
+  },
+  "conclusion": "prospective uncalibrated residuals; they validate, never calibrate, the model, and none of these points may enter a later fit as unseen holdout",
+  "next_step": "compare fast and slow residuals against their simulator cost; seal new predictions before any further board run of changed software",
+  "performance_gate": "not-measured"
+}

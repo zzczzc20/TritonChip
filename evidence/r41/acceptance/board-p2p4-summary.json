@@ -1,0 +1,344 @@
+{
+  "schema": "r41-p2p4-board-closeout/1",
+  "archive": "evidence/r41/acceptance/board-p2p4-7b10e7b-try2.tgz",
+  "archive_sha256": "c2e9f804a7cb4fe45b8d5a54fc118930493bdad85a226f927057bc455bfc279a",
+  "source_commit": "7b10e7b542714739d8120053ad23fc391c24f215",
+  "software_tree": "files:145496fb72f3df9753d7e0b3a27921ca9843e5f99882774d626f0d6399359180",
+  "interpreter": "/home/zzhouch/bin/torchenv-python",
+  "board": {
+    "image_uuid": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+    "image_sha256": "30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de",
+    "clock_hz": 100000000
+  },
+  "step_wall_seconds": {
+    "s2-p2-locality/locality": 61.24539475608617,
+    "s2-p4-lifecycle/aliases": 3.5880332058295608,
+    "s2-p4-lifecycle/eviction": 49.10635571740568,
+    "s2-p4-lifecycle/barrier": 3.7881807764060795,
+    "s2-p4-lifecycle/grid": 3.9485524990595877
+  },
+  "locality": [
+    {
+      "graph": "residual",
+      "output_sha256": "c5d15ff11b903f1c3307d7a427248ca03a27073b2f2e5491f1eefdc28b43b9b7",
+      "runs": [
+        {
+          "locality": false,
+          "host_scope_seconds": 0.0028403718024492264,
+          "device_cycles": [
+            565
+          ],
+          "memory_port_line_changes": [
+            {
+              "port": 0,
+              "read_lines": 0,
+              "write_lines": 0
+            },
+            {
+              "port": 1,
+              "read_lines": 1,
+              "write_lines": 0
+            },
+            {
+              "port": 2,
+              "read_lines": 1,
+              "write_lines": 0
+            }
+          ]
+        },
+        {
+          "locality": true,
+          "host_scope_seconds": 0.05274711223319173,
+          "device_cycles": [
+            645
+          ],
+          "memory_port_line_changes": [
+            {
+              "port": 0,
+              "read_lines": 3,
+              "write_lines": 0
+            },
+            {
+              "port": 1,
+              "read_lines": 8,
+              "write_lines": 4
+            },
+            {
+              "port": 2,
+              "read_lines": 12,
+              "write_lines": 0
+            }
+          ]
+        },
+        {
+          "locality": false,
+          "host_scope_seconds": 0.0021387296728789806,
+          "device_cycles": [
+            668
+          ],
+          "memory_port_line_changes": [
+            {
+              "port": 0,
+              "read_lines": 3,
+              "write_lines": 0
+            },
+            {
+              "port": 1,
+              "read_lines": 4,
+              "write_lines": 0
+            },
+            {
+              "port": 2,
+              "read_lines": 3,
+              "write_lines": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "graph": "projection",
+      "output_sha256": "d364c6df61da7aa37b5c3bb15c5489b32d3bc916e60fb1019b70e44363934f2b",
+      "runs": [
+        {
+          "locality": false,
+          "host_scope_seconds": 0.0069319261237978935,
+          "device_cycles": [
+            6427
+          ],
+          "memory_port_line_changes": [
+            {
+              "port": 0,
+              "read_lines": 16,
+              "write_lines": 16
+            },
+            {
+              "port": 1,
+              "read_lines": 16,
+              "write_lines": 14
+            },
+            {
+              "port": 2,
+              "read_lines": 17,
+              "write_lines": 14
+            }
+          ]
+        },
+        {
+          "locality": true,
+          "host_scope_seconds": 0.029526589903980494,
+          "device_cycles": [
+            6412
+          ],
+          "memory_port_line_changes": [
+            {
+              "port": 0,
+              "read_lines": 25,
+              "write_lines": 16
+            },
+            {
+              "port": 1,
+              "read_lines": 22,
+              "write_lines": 18
+            },
+            {
+              "port": 2,
+              "read_lines": 20,
+              "write_lines": 14
+            }
+          ]
+        },
+        {
+          "locality": false,
+          "host_scope_seconds": 0.007014102768152952,
+          "device_cycles": [
+            6442
+          ],
+          "memory_port_line_changes": [
+            {
+              "port": 0,
+              "read_lines": 17,
+              "write_lines": 16
+            },
+            {
+              "port": 1,
+              "read_lines": 17,
+              "write_lines": 14
+            },
+            {
+              "port": 2,
+              "read_lines": 19,
+              "write_lines": 14
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "name": "undeclared-overlapping-storage-arguments",
+      "status": "refused-before-admission",
+      "error_type": "TncaError",
+      "error": "[ALIAS_UNDECLARED] 'a' and 'b' overlap and the manifest does not declare them as aliases\n  declared: []\n  try: declare the alias at compile time, or use separate buffers"
+    },
+    {
+      "name": "out-of-bounds-view",
+      "status": "refused-before-admission",
+      "error_type": "ArgumentError",
+      "error": "[ARGUMENT_INVALID] 'b': byte offset 128 is outside buf1 (0..127)"
+    },
+    {
+      "name": "forged-high-bit-storage-owner",
+      "status": "refused-before-admission",
+      "error_type": "ArgumentError",
+      "error": "[ARGUMENT_INVALID] locality storage is not owned by this session"
+    },
+    {
+      "name": "distinct-storage-handles-overlap",
+      "status": "refused-before-admission",
+      "error_type": "TncaError",
+      "error": "[ALIAS_UNDECLARED] 'a' and 'b' overlap and the manifest does not declare them as aliases\n  declared: []\n  try: declare the alias at compile time, or use separate buffers"
+    }
+  ],
+  "eviction": {
+    "graphs": 117,
+    "modules_unloaded": 1,
+    "host_wall_seconds": 49.10635571740568
+  },
+  "barrier": {
+    "schema": "tnca-r41-barrier-epoch/1",
+    "status": "pass",
+    "requested_arms": 65537,
+    "board_acceptance": "not-measured",
+    "backend": "fpga-u280-multicore",
+    "software_tree": "files:145496fb72f3df9753d7e0b3a27921ca9843e5f99882774d626f0d6399359180",
+    "artifact_sha256": "f4d6f9ca1283feedd0b7bc199fa7debed3787b09b1aa654194607b6fe3c811c1",
+    "event": {
+      "state": "SUCCEEDED",
+      "ok": true,
+      "device_cycles": 1114281,
+      "error": "None"
+    },
+    "memory_stats": {
+      "epoch": 0,
+      "heap_capacity_bytes": 4294963200,
+      "heap_reserved_ranges": [
+        [
+          2147418112,
+          2147422208
+        ]
+      ],
+      "heap_allocated_bytes": 64,
+      "heap_peak_bytes": 832,
+      "code_allocated_bytes": 128,
+      "code_peak_bytes": 128
+    },
+    "observed": {
+      "completed_arm_wait_iterations": 65537
+    }
+  },
+  "grid": {
+    "schema": "tnca-r41-grid-admission/1",
+    "status": "pass",
+    "requested_programs": 65537,
+    "checks": [
+      {
+        "name": "opt-in-required",
+        "status": "pass",
+        "base_limit": 16777216,
+        "requested": 16777217,
+        "error": "[ADMISSION_REFUSED] 16777217 programs exceeds the 16777216 limit\n  at: grid_admission grid 16777217x1x1\n  grid: [16777217, 1, 1]\n  limit: 16777216\n  requested: 16777217\n  try: large grids require large_grid=True and an image advertising the R40 GRID_CAP extension"
+      },
+      {
+        "name": "bounded-queue-overflow",
+        "status": "pass",
+        "queue_limit": 8,
+        "admitted_dependent": 7,
+        "error": "[QUEUE_FULL] 8 tasks are already unfinished\n  limit: 8\n  try: wait for one to finish; this does not block and does not discard an older task"
+      },
+      {
+        "name": "exact-grid-and-drain",
+        "status": "pass",
+        "unique_program_ids": 65537,
+        "completion_atomics": 65544,
+        "output_sha256": "57fd373ee44015819d58dd1d659cb640d01bd2086259263db74f0339f0e9bfc6"
+      },
+      {
+        "name": "advertised-capacity-refusal",
+        "status": "pass",
+        "advertised_limit": 16777216,
+        "requested": 16777217,
+        "error": "[ADMISSION_REFUSED] 16777217 programs exceeds the 16777216 limit\n  at: grid_admission grid 16777217x1x1\n  grid: [16777217, 1, 1]\n  limit: 16777216\n  requested: 16777217\n  try: large grids require large_grid=True and an image advertising the R40 GRID_CAP extension"
+      }
+    ],
+    "events": [
+      {
+        "job_id": 1,
+        "state": "SUCCEEDED",
+        "device_cycles": 2068605
+      },
+      {
+        "job_id": 2,
+        "state": "SUCCEEDED",
+        "device_cycles": 215
+      },
+      {
+        "job_id": 3,
+        "state": "SUCCEEDED",
+        "device_cycles": 146
+      },
+      {
+        "job_id": 4,
+        "state": "SUCCEEDED",
+        "device_cycles": 140
+      },
+      {
+        "job_id": 5,
+        "state": "SUCCEEDED",
+        "device_cycles": 145
+      },
+      {
+        "job_id": 6,
+        "state": "SUCCEEDED",
+        "device_cycles": 158
+      },
+      {
+        "job_id": 7,
+        "state": "SUCCEEDED",
+        "device_cycles": 146
+      },
+      {
+        "job_id": 8,
+        "state": "SUCCEEDED",
+        "device_cycles": 146
+      }
+    ],
+    "board_acceptance": "not-measured",
+    "backend": "fpga-u280-multicore",
+    "software_tree": "files:145496fb72f3df9753d7e0b3a27921ca9843e5f99882774d626f0d6399359180",
+    "artifact_sha256": "8180d166ad4388b480b8e8fdedbe57a9c060a03835137e5b57add9ea126c4ea7",
+    "memory_stats": {
+      "epoch": 0,
+      "heap_capacity_bytes": 4294963200,
+      "heap_reserved_ranges": [
+        [
+          2147418112,
+          2147422208
+        ]
+      ],
+      "heap_allocated_bytes": 524416,
+      "heap_peak_bytes": 530560,
+      "code_allocated_bytes": 192,
+      "code_peak_bytes": 192
+    }
+  },
+  "judgments": {
+    "S2-03.A.5": "passed: physical off/on/off traffic and latency are supplied; no performance gain is claimed",
+    "S2-04.D.3": "passed: compound high-bit, bounds and illegal-alias refusals occur before admission",
+    "S2-04.D.4": "passed: opt-in, bounded queue, exact completion/drain and advertised-capacity refusal",
+    "S2-04.D.6": "passed: more than 65,536 physical barrier arm/wait iterations completed",
+    "S2-04.D.7": "not measured: targeted eviction passes, but a persistent full-model session is still required",
+    "S2-03.B": "not measured: this queue did not execute the separate pipeline manifest"
+  }
+}

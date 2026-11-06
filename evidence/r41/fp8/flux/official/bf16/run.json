@@ -1,0 +1,97 @@
+{
+ "schema": "tnca-flux2-klein-run/1",
+ "mode": "official",
+ "versions": {
+  "python": "3.12.3",
+  "torch": "2.14.0+cu130",
+  "diffusers": "0.41.0",
+  "transformers": "5.20.2",
+  "accelerate": "1.15.0",
+  "safetensors": "0.8.0",
+  "huggingface_hub": "1.33.0",
+  "numpy": "2.5.3",
+  "machine": "aarch64",
+  "cpu_capability": "SVE128",
+  "threads": 8
+ },
+ "settings": {
+  "prompt": "A cat holding a sign that says hello world",
+  "height": 256,
+  "width": 256,
+  "steps": 4,
+  "seed": 0,
+  "transformer": "bf16",
+  "fp8_mode": "scaled_mm"
+ },
+ "pipeline_transformer_dtype": "torch.bfloat16",
+ "load_seconds": 0.419,
+ "call_seconds": 49.554,
+ "tensors": {
+  "step0_latents": {
+   "shape": [
+    1,
+    256,
+    128
+   ],
+   "dtype": "bfloat16",
+   "sha256": "26a03cd3199171136ebcea7e1ccb664291266d64154a893813ce82827c310252",
+   "mean": -0.012575964443385601,
+   "std": 0.9673335552215576,
+   "absmax": 4.1875,
+   "finite": true
+  },
+  "step1_latents": {
+   "shape": [
+    1,
+    256,
+    128
+   ],
+   "dtype": "bfloat16",
+   "sha256": "8449f310eca71637e38265a020887d564bd89c94ca11180f95432c5447056be3",
+   "mean": -0.013878491707146168,
+   "std": 0.910396158695221,
+   "absmax": 3.875,
+   "finite": true
+  },
+  "step2_latents": {
+   "shape": [
+    1,
+    256,
+    128
+   ],
+   "dtype": "bfloat16",
+   "sha256": "62b2c180fed7247b3973892a1f8504c4bd17317a4dca080281f1859ae4121a28",
+   "mean": -0.015530542470514774,
+   "std": 0.805108368396759,
+   "absmax": 3.3125,
+   "finite": true
+  },
+  "step3_latents": {
+   "shape": [
+    1,
+    256,
+    128
+   ],
+   "dtype": "bfloat16",
+   "sha256": "d93bbb478035c78196ff580b354235c5306cf83576ba70d135fa16761c6a5b62",
+   "mean": -0.027238035574555397,
+   "std": 1.0059170722961426,
+   "absmax": 5.3125,
+   "finite": true
+  },
+  "image_pt": {
+   "shape": [
+    1,
+    3,
+    256,
+    256
+   ],
+   "dtype": "bfloat16",
+   "sha256": "08718f9ee437da80bbd5f0be446c413ac0e78a917bbf8b465ecc1ceef8e8a14a",
+   "mean": 0.7188921570777893,
+   "std": 0.23270383477210999,
+   "absmax": 1.0,
+   "finite": true
+  }
+ }
+}

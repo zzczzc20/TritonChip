@@ -7,7 +7,7 @@ Generated evidence lives under `sim/build/r38/` and is not in Git.
 
 | WP | State | Evidence / command | Open |
 |---|---|---|---|
-| S1-00 evidence registry | **PASS** | `python3 tools/r38/evidence_tests.py` (15 entries, 6/6 mutations caught) | — |
+| S1-00 evidence registry | **PASS** | `python3 tools/r38/evidence_tests.py` (21 entries, 6/6 mutations caught) | — |
 | S1-01 baseline | **PASS** | `make r38-baseline`: 447/447 (O0/O1/O2 × 149). `make r38-baseline-check`: two O2 runs identical to `spec/r38/baseline_cycles.json` through the official device path, after the RTL changes below | — |
 | S1-02 profiler v0 | **PASS** | `make r38-profiler`: identities on every program of all 149 O2 cases, `core-sim` and `core-vrf-sync-v1`; cycles equal to the frozen baseline; old device reports unavailable; 2/2 mutations caught. `r36-rtl-tests` PASS; `r36-build-tests` PASS on the x86_64 acceptance host (`sim/build/r38/r36_build_linux.log`) | — |
 | S1-03 records/manifest | **PASS** | `tools/r38/manifest_tests.py` | — |
@@ -17,7 +17,7 @@ Generated evidence lives under `sim/build/r38/` and is not in Git.
 | S1-07 three-layer feature | **PASS** | `tools/r38/loop_tests.py` 6/6; `make r38-xpose-rtl`; R37 447/447 on `core-sim` (cycles identical at O0/O1/O2) and 447/447 on `core-xpose-v1`; record `spec/r38/design_changes/xpose-dma-001.json` | — |
 | S1-08 case ablations | — | — | after S1-07 |
 | S1-09 gates | L0/L1/L2 + selftest implemented; selftest **PASS** | `tools/r38/gate.py l0\|l1\|l2\|selftest`; log `sim/build/r38/devops_log.jsonl` | an L2 promotion run |
-| S1-10 PyTorch (P1+, replaces the P0/P1 plan) | **IN PROGRESS**: ArchBench(torch) tiny + small 52/52 compile with zero host fallback and launch counts equal to the generated wrapper's; 7 regression graphs added for the fixes (incl. a device-assert trap) PASS; single-query (decode) attention fixed (three boolean defects, §6 of the P1+ doc); **tiny tier on the RTL 27/27 pass** (section below); 24/24 graph tests + the assert trap | [r38_pytorch_p1plus.md](r38_pytorch_p1plus.md) §6; `make r38-torch`, `make archbench-coverage`, `make archbench-tiny` | Agent pilot not started |
+| S1-10 PyTorch (P1+, replaces the P0/P1 plan) | **IN PROGRESS**: ArchBench(torch) tiny + small 52/52 compile with zero host fallback and launch counts equal to the generated wrapper's; 11 regression graphs added for the fixes (expanded to 23 graphs + 1 device-assert trap check, 24/24 pass); single-query (decode) attention fixed (three boolean defects, §6 of the P1+ doc); **tiny tier on the RTL 27/27 pass** (section below); 23 graph tests + the assert trap (24/24 pass) | [r38_pytorch_p1plus.md](r38_pytorch_p1plus.md) §6; `make r38-torch`, `make archbench-coverage`, `make archbench-tiny` | Agent pilot not started |
 | S1-10 NVIDIA scoring rules | **written**: [archbench/PROTOCOL.md](../archbench/PROTOCOL.md); exercised on GB10: 76/76 points under bound v2, η ≤ 1 throughout (bound v1 had found an η = 1.2 audit failure) | `make archbench-gpu`, `python -m archbench.report` | GB10 tensor-core peak is an upper estimate |
 | Board (Stage 2 hand-off) | **U280 loaded, ladder B1–B6 passed** (2026-10-08) | [r38_board_bringup.md](r38_board_bringup.md) §5: conformance 5/5 measured, profiler (full), ArchBench tiny 27/27 + small 25/25, tiny cycles identical to the RTL launch by launch, multi-step LLaMA generation | board evidence is `measured-board` in ArchBench records; the evidence registry entry stays `documented` until Stage 2 levels apply |
 | S1-11 related work | — | — | — |
@@ -80,7 +80,7 @@ semantic minimum.
 ## S1-07: transposed tensor-DMA write (implemented)
 
 ISA §9E specifies `t.ld.async` `mod[5]` (transposed write into an RF window).
-`rtl/core/tnca_tensor.v` does not implement it, so commit `a5b53f0` gated the compiler's
+`rtl/core/tnca_tensor.v` previously did not implement it, so commit `a5b53f0` gated the compiler's
 `dma_load(transpose=True)` behind a capability that is false on every profile, and
 `tl.trans` / `b.T` read the source down its columns through the LSU — consistent with
 the transpose and GEMM traffic above.
@@ -100,7 +100,7 @@ elements cost +120 % gates; the design was narrowed to the 16-bit MMA operand ty
 
 Also closed on the way: `mod[5]` without the feature and any non-zero `mod[4:3]` now
 raise ILLEGAL_INSTRUCTION instead of silently transferring the tile untransposed
-(doc/r37_isa_gaps.md §1).
+([r37_isa_gaps.md §1](r37_isa_gaps.md)).
 
 Known limits: the untransposed A operand of these GEMMs still goes through the LSU —
 host-descriptor loads never use the transfer engine (`frontend.py`, `d.address is not

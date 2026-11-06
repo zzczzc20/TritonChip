@@ -1,0 +1,55 @@
+{
+ "model": "qwen3vl-2b-fp8",
+ "versions": {
+  "python": "3.12.3",
+  "torch": "2.14.0+cu130",
+  "transformers": "5.20.2",
+  "accelerate": "1.15.0",
+  "safetensors": "0.8.0",
+  "tokenizers": "0.23.3",
+  "huggingface_hub": "1.33.0",
+  "numpy": "2.5.3",
+  "machine": "aarch64",
+  "cpu_capability": "SVE128",
+  "threads": 8,
+  "torchvision": "0.29.0+cu130",
+  "kernels": "0.17.2"
+ },
+ "snapshot_view": null,
+ "this_host": {
+  "fp8_linear_modules": 196,
+  "config_dequantize": false,
+  "warnings": [
+   "You have loaded an FP8 model on CPU and have a CUDA or XPU device available, make sure to set your model on a GPU or XPU device in order to run your model. To remove this warning, pass device_map = 'cuda' or 'xpu'. "
+  ],
+  "sample": "model.language_model.layers.0.mlp.down_proj",
+  "sample_weight_dtype": "torch.float8_e4m3fn",
+  "sample_module": "FP8Linear",
+  "torch_cuda_is_available": true,
+  "fp8linear_forward_cpu": {
+   "error": "AttributeError: module 'triton' has no attribute 'runtime'",
+   "frames": [
+    "jit.py:778 run",
+    "compiler.py:496 launch_metadata",
+    "compiler.py:464 _init_handles",
+    "driver.py:284 __init__"
+   ]
+  }
+ },
+ "no_cuda_host_simulated": {
+  "fp8_linear_modules": 0,
+  "config_dequantize": null,
+  "warnings": [
+   "Using FP8 quantized models requires a GPU or XPU, we will default to dequantizing the model to bf16 since no GPU or XPU is available"
+  ],
+  "sample": "model.language_model.layers.0.mlp.down_proj",
+  "sample_weight_dtype": "torch.bfloat16",
+  "sample_module": "Linear",
+  "dequantized_weights_bitwise_equal_reference": true,
+  "dequantized_layers_checked": 196
+ },
+ "quantizer_source": {
+  "file": "/home/zhongchun/flux-venv/lib/python3.12/site-packages/transformers/quantizers/quantizer_finegrained_fp8.py",
+  "rule": "validate_environment: if not dequantize and not torch.cuda.is_available() and not is_torch_xpu_available(): pre-quantized -> warning and quantization_config.dequantize = True; not pre-quantized -> RuntimeError"
+ }
+}

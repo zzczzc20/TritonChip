@@ -1,0 +1,21 @@
+# Vivado 2023.2 RTL elaboration of tnca_tensor alone (x86 host), the core's tags at the s4c4 image: TAG_W 4, LSLOT_W 5, PTAG_W 4 (LE=0) or 6 (LE=1).
+# le0/le1: this commit's tnca_tensor.v; old: 7b646be (LINE_ENGINE 0 fails, which broke the s4c4 kernel synthesis).
+== le0.log
+# synth_design -rtl -top tnca_tensor -part xcu280-fsvh2892-2L-e -include_dirs rtl/common -generic LINE_ENGINE=$::env(LE) -generic TAG_W=4 -generic NTAG=16 -generic LSLOT_W=5 -generic LSLOT_N=32 -generic PTAG_W=$::env(PT) -generic PORT_DW=$::env(PD) -generic PORT_BYTES=$::env(PB) -generic HAS_XPOSE=2 -generic RCTX_W=2 -generic BAR_W=3
+Command: synth_design -rtl -top tnca_tensor -part xcu280-fsvh2892-2L-e -include_dirs rtl/common -generic LINE_ENGINE=0 -generic TAG_W=4 -generic NTAG=16 -generic LSLOT_W=5 -generic LSLOT_N=32 -generic PTAG_W=4 -generic PORT_DW=64 -generic PORT_BYTES=8 -generic HAS_XPOSE=2 -generic RCTX_W=2 -generic BAR_W=3
+# puts ELAB_OK
+ELAB_OK
+== le1.log
+# synth_design -rtl -top tnca_tensor -part xcu280-fsvh2892-2L-e -include_dirs rtl/common -generic LINE_ENGINE=$::env(LE) -generic TAG_W=4 -generic NTAG=16 -generic LSLOT_W=5 -generic LSLOT_N=32 -generic PTAG_W=$::env(PT) -generic PORT_DW=$::env(PD) -generic PORT_BYTES=$::env(PB) -generic HAS_XPOSE=2 -generic RCTX_W=2 -generic BAR_W=3
+Command: synth_design -rtl -top tnca_tensor -part xcu280-fsvh2892-2L-e -include_dirs rtl/common -generic LINE_ENGINE=1 -generic TAG_W=4 -generic NTAG=16 -generic LSLOT_W=5 -generic LSLOT_N=32 -generic PTAG_W=6 -generic PORT_DW=512 -generic PORT_BYTES=64 -generic HAS_XPOSE=2 -generic RCTX_W=2 -generic BAR_W=3
+# puts ELAB_OK
+ELAB_OK
+== old.log
+# synth_design -rtl -top tnca_tensor -part xcu280-fsvh2892-2L-e -include_dirs rtl/common -generic LINE_ENGINE=$::env(LE) -generic TAG_W=4 -generic NTAG=16 -generic LSLOT_W=5 -generic LSLOT_N=32 -generic PTAG_W=$::env(PT) -generic PORT_DW=$::env(PD) -generic PORT_BYTES=$::env(PB) -generic HAS_XPOSE=2 -generic RCTX_W=2 -generic BAR_W=3
+Command: synth_design -rtl -top tnca_tensor -part xcu280-fsvh2892-2L-e -include_dirs rtl/common -generic LINE_ENGINE=0 -generic TAG_W=4 -generic NTAG=16 -generic LSLOT_W=5 -generic LSLOT_N=32 -generic PTAG_W=4 -generic PORT_DW=64 -generic PORT_BYTES=8 -generic HAS_XPOSE=2 -generic RCTX_W=2 -generic BAR_W=3
+ERROR: [Synth 8-524] part-select [4:0] out of range of prefix 'mem_rsp_tag' [/home/vivado/g4elab/rtl/core/tnca_tensor.v:799]
+ERROR: [Synth 8-525] part-select width could not be resolved to a constant [/home/vivado/g4elab/rtl/core/tnca_tensor.v:844]
+ERROR: [Synth 8-525] part-select width could not be resolved to a constant [/home/vivado/g4elab/rtl/core/tnca_tensor.v:845]
+ERROR: [Synth 8-525] part-select width could not be resolved to a constant [/home/vivado/g4elab/rtl/core/tnca_tensor.v:846]
+ERROR: [Synth 8-6156] failed synthesizing module 'tnca_tensor' [/home/vivado/g4elab/rtl/core/tnca_tensor.v:73]
+ERROR: [Vivado_Tcl 4-5] Elaboration failed - please see the console for details

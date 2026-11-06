@@ -1,0 +1,54 @@
+{
+  "schema": "tnca-r41-q41-bf16-full-queue/1",
+  "scope": "complete Q41-core and tail plus a second core process; not clean-archive reproduction or final acceptance",
+  "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "image_uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+  "clock_hz": 100000000,
+  "pilot_script_sha256": "fb6c519b678f0b6f7bab0cfc005676e2cc0b60c15c1902ef01f717c906d098cb",
+  "q41_registration_sha256": "84288a95be50f4f9b725062281cdde248dda7c850baa5412cbbc7418b9199d02",
+  "stream_registration_sha256": "b143c2e39a581d8969f8777f9c54a501ea4907c3620ea688fe31da364be0d7c3",
+  "inputs": {
+    "spec/r41/stage2/model_lock.json": "3b4330efde6f6ea261e3939ce14e22c7e4e241ac12abbe77bb5fb3b2f3caaccf",
+    "spec/r41/stage2/model_points.json": "d9d6aca9fc72c716183314c54b8524c0ff71a2ff06a311ae851a953c15da8b03",
+    "evidence/r41/stage1/kickoff/qwen-storage/inventory.json": "e3ed497b69aba722451d3fdb27608c762a0992a1bfab79acf329f659201bfe3a",
+    "evidence/r41/stage1/kickoff/transformers-reference/sources.json": "bb18dfd4c8d1538a56ed18c563f4a834a1396b2ff6448cca61f135c90bbd927d",
+    "evidence/r41/acceptance/p0/cross-validation.json": "a8ad536a59c8e4b128b3266046f7fddb383207009b9890e8490fb77a49178c51",
+    "tools/models/qwen35_reference.py": "4064f57006365b7b22ffae53a9d0d1b6382e71cb15c91a705b37c6a0ccf27159",
+    "tools/models/qwen_fp8_lib.py": "4983c12942cb9281aae50564749e9a45fb935c7523c7af150fe88cf2207d232d",
+    "tools/models/flux2_klein_run.py": "ca2ad6a7d97d845af49c91d166d4404e1e8b01caa8775cf7ea6f0830b817b0b8",
+    "tools/models/fp8_blockwise_ref.py": "db72d8422719cea806f3e34b75c635cd9198fb6426dd52e542edc2a7d734a5be",
+    "tools/models/fp8_checkpoint.py": "98f5d4d4b2404523935e125ce98909ef7eac9134d85aa7f73b90636c6135ba89",
+    "tools/r41/run2_board/auto.py": "1cfb1a461b1b559a83cb3a797e34d275f824bb8262be137ae92ee683a1ad5d12"
+  },
+  "stages": [
+    {
+      "id": "core",
+      "point": "Q41-core",
+      "steps": 17
+    },
+    {
+      "id": "tail",
+      "point": "Q41-tail",
+      "steps": 5
+    },
+    {
+      "id": "independent-core",
+      "point": "Q41-core",
+      "steps": 17
+    }
+  ],
+  "budget_rule": {
+    "prefill_multiplier": 2,
+    "decode_multiplier": 2,
+    "fixed_seconds": 1200,
+    "minimum_seconds": 1800,
+    "source": "successful board pilot step wall times including state comparisons; bound calculated before each stage"
+  },
+  "predecessor": "verified successful XL41-stream board pilot and Q41 BF16 board pilot",
+  "load_policy": "never program an image; require matching loaded image and idle card",
+  "cpu_full_preflight_sha256": "ef5958fbef6976dca0683b28440a2e3b1c7273a164b898c454dbe20029c83cb2",
+  "waiter_dependencies": {
+    "q41_pilot_waiter.py": "26d1b2a68dbf4c068ed8f615e2eed36bf9230956e43ff8248758f259d5372a7b",
+    "xl41_pilot_waiter.py": "59a8d79f4d9378227c2441dc846e1c51546e1e050c58b8ddadaacc26e873b739"
+  }
+}

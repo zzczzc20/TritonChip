@@ -1,0 +1,84 @@
+{
+ "schema": "tnca-input-staging/1",
+ "host": "acf3019",
+ "path": "~/r41s2_fp8_inputs/hf/hub/models--lovedheart--Qwen3.5-4B-FP8",
+ "repo": "lovedheart/Qwen3.5-4B-FP8",
+ "revision": "752f65fd155dd34323cfc22d6143df1d48ce3c28",
+ "source": "GB10 ~/flux-hf/hub (the snapshot used by every Qwen3.5 SystemC/TLM and CPU run)",
+ "staged_utc": "2026-10-28",
+ "method": "tar stream; each blob re-hashed on acf3019: sha256 for 64-hex (LFS) names, git hash-object for 40-hex names",
+ "blobs": [
+  {
+   "name": "35b7391d7cd9231b6b88aaab920a2386f8813187ec94e4225616e940f64ea46b",
+   "recomputed": "35b7391d7cd9231b6b88aaab920a2386f8813187ec94e4225616e940f64ea46b",
+   "match": true
+  },
+  {
+   "name": "f2428aa0bc3f84fe2f750cd28ea574987587f47166417ebe89736adb74bbfd5a",
+   "recomputed": "f2428aa0bc3f84fe2f750cd28ea574987587f47166417ebe89736adb74bbfd5a",
+   "match": true
+  },
+  {
+   "name": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+   "recomputed": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+   "match": true
+  },
+  {
+   "name": "0a5e3926a0c8a11302c92b26fa252636f9e58da7",
+   "recomputed": "0a5e3926a0c8a11302c92b26fa252636f9e58da7",
+   "match": true
+  },
+  {
+   "name": "0aa0ce0658d60ac4a5d609f4eadb0e8e43514176",
+   "recomputed": "0aa0ce0658d60ac4a5d609f4eadb0e8e43514176",
+   "match": true
+  },
+  {
+   "name": "2ea84a437d448ff71b08df68fdd949d5cc4ebb64",
+   "recomputed": "2ea84a437d448ff71b08df68fdd949d5cc4ebb64",
+   "match": true
+  },
+  {
+   "name": "3ba673a5ad7d4d13f54155ecd38b2a94a6dac8fe",
+   "recomputed": "3ba673a5ad7d4d13f54155ecd38b2a94a6dac8fe",
+   "match": true
+  },
+  {
+   "name": "5e26251d688df26aee220f0897c483f2cc306a66",
+   "recomputed": "5e26251d688df26aee220f0897c483f2cc306a66",
+   "match": true
+  },
+  {
+   "name": "a494e019ca1502219fd0128658b979e5f05ae8e8",
+   "recomputed": "a494e019ca1502219fd0128658b979e5f05ae8e8",
+   "match": true
+  },
+  {
+   "name": "a585dec894e63da457d9440ec6aa7caa16d20860",
+   "recomputed": "a585dec894e63da457d9440ec6aa7caa16d20860",
+   "match": true
+  },
+  {
+   "name": "b5cd2b4634fcf8d8e7529180a03ab55ac1330ccc",
+   "recomputed": "b5cd2b4634fcf8d8e7529180a03ab55ac1330ccc",
+   "match": true
+  },
+  {
+   "name": "c94c51f67935a6f2e7dedcfab83656abd661410a",
+   "recomputed": "c94c51f67935a6f2e7dedcfab83656abd661410a",
+   "match": true
+  },
+  {
+   "name": "eda48d3e75a8e59a8479ee4ec8b37f76e711d9c1",
+   "recomputed": "eda48d3e75a8e59a8479ee4ec8b37f76e711d9c1",
+   "match": true
+  },
+  {
+   "name": "f938136e3adacfd92be087f6e113b5d6d97f678f",
+   "recomputed": "f938136e3adacfd92be087f6e113b5d6d97f678f",
+   "match": true
+  }
+ ],
+ "all_match": true,
+ "card_access": false
+}

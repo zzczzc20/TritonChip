@@ -1,0 +1,1885 @@
+{
+ "schema": "tnca-r41-stage1-required-index/1",
+ "plan": "spec/r41/stage1/plan.json",
+ "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+ "contract": "doc/r41_tasks_and_acceptance.md",
+ "contract_sha256": "2e0e598b9331dca5e922ce901ccd0d801792cefb41ca7fbf9b7bc4a41de3ddfd",
+ "checker": "tools/performance_harness/stage1_acceptance.py",
+ "kinds": [
+  "rtl",
+  "systemc",
+  "board",
+  "compile",
+  "doc"
+ ],
+ "claims": "pass | fail | not-measured | blocked; the checker never upgrades a claim",
+ "board": {
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "clock_hz": 90000000,
+  "clock_evidence_sha256": "8ad4b3bd30a3f5fe8819fe59ef8ad160fd0de1478aaa506dc33d82785fb9f487",
+  "backend": "fpga-u280-multicore",
+  "backend_args": {
+   "xclbin": "/home/zzhouch/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+   "image_profile": "core-vrf-sync-v5",
+   "core_count": 3,
+   "memory_ports": 3,
+   "hbm_dma": true,
+   "hbm_bytes": 4294967296,
+   "device_clock": true
+  }
+ },
+ "historical": {
+  "software_trees": [
+   "files:fe1b5199db515440d2d3407aed61ef1eed5edb627e5baf9cda10be5a7198cf75"
+  ],
+  "paths": [
+   "evidence/r40/"
+  ]
+ },
+ "holdout": [
+  "spec/r41/holdout.json",
+  "spec/r40/suites/R40-04.model-holdout.json"
+ ],
+ "items": {
+  "S1-00.baseline_identity": {
+   "claim": "pass",
+   "requires": [
+    "doc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "spec/r41/stage1/baseline.json",
+     "sha256": "ce668a658c109cd58bfdd336b1c6a233928c47c1db3998e7a009204ff953eebc",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    },
+    {
+     "path": "spec/r41/stage1/lock.json",
+     "sha256": "58962c7e92973ad3ea4a48e94b9f159541bc863006c5bae256372d97499b1ae9",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    }
+   ],
+   "note": "B40-OBS software/image/clock/cores identity, frozen by the Stage 1 lock"
+  },
+  "S1-00.original_inventory_and_hashes": {
+   "claim": "pass",
+   "requires": [
+    "doc",
+    "compile"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "spec/r41/stage1/plan.json",
+     "sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    },
+    {
+     "path": "spec/r41/stage1/lock.json",
+     "sha256": "58962c7e92973ad3ea4a48e94b9f159541bc863006c5bae256372d97499b1ae9",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/freeze-check.json",
+     "sha256": "aee3409453eb3217abca1420805ec8fca576f0a1eee3dddf9522c35e05a4598d",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     },
+     "format": "text",
+     "note": "legacy record: command on the first line, no tree identity; registry check of 113 unique points"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/freeze-check-v2.json",
+     "sha256": "5e8d56924228901471123c4a86cf32abe323253b721269695bfd54de72cf174f",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "uncommitted",
+      "software_tree": "files:3a465e02a9f67f0f8d08bd12df5fae953b1270b8ed37eabe38cd25368bb1de0d"
+     },
+     "format": "json",
+     "note": "make r41-freeze-check record with command, software tree and registry check of 113 unique points"
+    }
+   ],
+   "note": "original suites with sha256 in the plan; registry check of every point definition (r41-freeze-check)"
+  },
+  "S1-00.required_study_target_scope": {
+   "claim": "pass",
+   "requires": [
+    "doc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "spec/r41/stage1/plan.json",
+     "sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    },
+    {
+     "path": "doc/r41_tasks_and_acceptance.md",
+     "sha256": "2e0e598b9331dca5e922ce901ccd0d801792cefb41ca7fbf9b7bc4a41de3ddfd",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    }
+   ],
+   "note": "required/study/target lists of the frozen plan"
+  },
+  "S1-00.diagnostic_development_holdout_split": {
+   "claim": "pass",
+   "requires": [
+    "doc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "spec/r41/stage1/plan.json",
+     "sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    },
+    {
+     "path": "spec/r41/holdout.json",
+     "sha256": "1edf9a8bba72a41705357794c886043ddcb74b0c70c4acf2de949f04ea62f0af",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    }
+   ],
+   "note": "diagnostic subsets, selection development set and sealed holdout"
+  },
+  "S1-00.budgets": {
+   "claim": "pass",
+   "requires": [
+    "doc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "spec/r41/stage1/plan.json",
+     "sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    }
+   ],
+   "note": "compile/model/board/worker budgets in the frozen plan"
+  },
+  "S1-00.carryover": {
+   "claim": "pass",
+   "requires": [
+    "doc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "spec/r41/carryover.json",
+     "sha256": "326c61a920e7829d4c7c92db9c40ce86464c52c76a7957e232283a53709633c2",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    }
+   ],
+   "note": "R40 carry-over ledger"
+  },
+  "S1-01.unified_experiment_resume_dedup_failures": {
+   "claim": "pass",
+   "requires": [
+    "compile",
+    "board"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/experiment-runner-tests.log",
+     "sha256": "25ed1f7fc83fd24d12863b1066b11e685345ad2d58a9270a8795e42070023498",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-anchors/report.json",
+     "sha256": "66698f72c850c36994d700978cf704de3c396fcc9e1512ac98ec161a85d82fe6",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "experiment-report"
+    }
+   ],
+   "note": "Six physical manifests completed through the registered runner; existing runner failure/resume tests retained."
+  },
+  "S1-01.native_systemc_real_artifacts_common_session": {
+   "claim": "pass",
+   "requires": [
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/harness-smoke-v3-summary.json",
+     "sha256": "22faa5f6d69d9214e33771864204658d5143a4092649fa8176f835c09f6c1ade",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/harness-smoke-v6-evidence.tgz",
+     "sha256": "b46ff474d65fa95b994f9144e4134a412f4ca36448d967db6ad25086ff128147",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "971d3314e135f6db04ca8d6d76dad9d48a696859",
+      "software_tree": "files:b70bdd52f543ab95550182857fa5884b14a9752846db33123726da82f13bf378"
+     }
+    }
+   ],
+   "note": "compiler artifacts through the common Session on the native model"
+  },
+  "S1-01.off_aggregate_trace_architecture_invariance": {
+   "claim": "pass",
+   "requires": [
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/harness-smoke-v3-summary.json",
+     "sha256": "22faa5f6d69d9214e33771864204658d5143a4092649fa8176f835c09f6c1ade",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/harness-smoke-v6-evidence.tgz",
+     "sha256": "b46ff474d65fa95b994f9144e4134a412f4ca36448d967db6ad25086ff128147",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "971d3314e135f6db04ca8d6d76dad9d48a696859",
+      "software_tree": "files:b70bdd52f543ab95550182857fa5884b14a9752846db33123726da82f13bf378"
+     }
+    }
+   ],
+   "note": "monitor modes leave numerics, cycles and counters unchanged; bounded trace reports drops"
+  },
+  "S1-01.fast_and_ramulator2_paths": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "board"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/harness-smoke-v4-evidence.tgz",
+     "sha256": "1b55db5b8da4ec4bacd3898221124a6fed8cbfadfe2395ee6b19bcbf84b40156",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff",
+      "software_tree": "files:0180c28f5ee85a6afca9a645bb91ca4b97969e46e47b35abd9270835ec60a07f"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/memory_paths.md",
+     "sha256": "67cbce9e69b1f364455be201ad329bfca7027051e70ff5308504c3510aff18a7",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "a0c9e7252160dc237ef81d96114f3e617616cde5"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-prospective/prospective/formal.jsonl",
+     "sha256": "d0f64ffbbc7307ed6e710a40f1bbfa7ff5a26423a5c5d2fd1e7e845a31c5a345",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/board/metrics.json",
+     "sha256": "0e092d6a1391ce97c9c5dff18ed7a47e4eba6fac3719ef7f821af436a1eb0aa6",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Both paths evaluated against board and simulator costs; slow fixed-point predictions remain inconclusive, with two subset arms not run. No accuracy qualification claimed."
+  },
+  "S1-01.dependency_and_address_map_provenance": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "board"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/physical-dram-map-v2-evidence.tgz",
+     "sha256": "4d97500f7e91ad5762fee5f7383d638158ba45f4c719dab9a2487f7384c4db78",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "e0d1307fcdbd4564d7f984f11e81c8e55188dc3d",
+      "software_tree": "files:d4f73164dd9eee54cfc1d454d64ab8f416ff9737855c0a4c56431b31c3750c5d"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/address_map.md",
+     "sha256": "95636ee3759ef5fe7ec0462aeb4e625b2d9cb4b474a399f5e4a70d7dd3e5094c",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "dd694a763e76e55f206374db8c0e0e8cf7ec45e1"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/hbm_controller/a3_hbm_inst.xci.gz",
+     "sha256": "d8911f1ec22a7c99e19c96f883e2b1320cd69a09b497138aedd2fb4bc128ddc7",
+     "kind": "compile",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/hbm_controller/README.md",
+     "sha256": "14daec13052a103e8e5e3486bb1d51ce342971199a4d5b31a97a40a07f1c291b",
+     "kind": "doc",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/hbm_controller/bridge-v2-evidence.tgz",
+     "sha256": "94cd2f506aee5ca3c01a32df2e2edd63a028aa43db95310ed955a4d5fa5b86ad",
+     "kind": "systemc",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/hbm_controller/sources.sha256",
+     "sha256": "55817a5793b2beb291f9ddf175a69931eea618d88b3ff999d1e2c36a3bb2507a",
+     "kind": "doc",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-prospective/prospective/formal.jsonl",
+     "sha256": "d0f64ffbbc7307ed6e710a40f1bbfa7ff5a26423a5c5d2fd1e7e845a31c5a345",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    }
+   ],
+   "note": "Pinned dependencies and actual B40 board configuration retained; qualified physical records bind the exported map."
+  },
+  "S1-01.no_latency_double_counting": {
+   "claim": "pass",
+   "requires": [
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/host-handoff-v1-evidence.tgz",
+     "sha256": "055128e5ba18e3f7904b65156fe666948df079efdba021bb7b776a5a5db39ac9",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "5594333a22c0f1ff392a1578f36c400f9009a954",
+      "software_tree": "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/latency_boundaries.md",
+     "sha256": "8cd1d70561218afe43f43b12d11934499968d3443259de0b3d77a19bb963e22c",
+     "kind": "doc",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/hbm_controller/bridge-v2-evidence.tgz",
+     "sha256": "94cd2f506aee5ca3c01a32df2e2edd63a028aa43db95310ed955a4d5fa5b86ad",
+     "kind": "systemc",
+     "binds": {}
+    }
+   ],
+   "note": "segment-by-segment boundary audit (latency_boundaries.md): the two DRAM paths differ only in DramPath::complete; Ramulator2 latency is scheduling + device timing (idle line 34 DRAM cycles vs tRCD+tCL+tBL 28, no fixed pipeline); the fixed AXI/controller/PHY part is dram_fixed_cycles in the slow path and inside hbm_latency_cycles in the fast path, never both; dram-path and bridge tests pass on the current bridge sources"
+  },
+  "S1-01.backpressure_completion_write_response": {
+   "claim": "pass",
+   "requires": [
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/physical-dram-map-v2-evidence.tgz",
+     "sha256": "4d97500f7e91ad5762fee5f7383d638158ba45f4c719dab9a2487f7384c4db78",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "e0d1307fcdbd4564d7f984f11e81c8e55188dc3d",
+      "software_tree": "files:d4f73164dd9eee54cfc1d454d64ab8f416ff9737855c0a4c56431b31c3750c5d"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/harness-smoke-v6-evidence.tgz",
+     "sha256": "b46ff474d65fa95b994f9144e4134a412f4ca36448d967db6ad25086ff128147",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "971d3314e135f6db04ca8d6d76dad9d48a696859",
+      "software_tree": "files:b70bdd52f543ab95550182857fa5884b14a9752846db33123726da82f13bf378"
+     }
+    }
+   ],
+   "note": "Ramulator completion queues, retries, write completion and turnaround; maintenance drains accepted traffic"
+  },
+  "S1-01.calibration_validation_holdout_separation": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "board"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/prospective-prediction-v2.json",
+     "sha256": "eff75a74abb9e7d5a49e2375313343ade18d3a922b9651e7622f4c5eeccd7766",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-prospective/prospective/formal.jsonl",
+     "sha256": "d0f64ffbbc7307ed6e710a40f1bbfa7ff5a26423a5c5d2fd1e7e845a31c5a345",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    }
+   ],
+   "note": "Sealed predictions compared without fitting. Diagnostic reuse removes unseen status; sealed holdout was not run or fitted. Full model stays uncalibrated."
+  },
+  "S1-01.out_of_domain_refusal": {
+   "claim": "pass",
+   "requires": [
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/harness-smoke-v5-evidence.tgz",
+     "sha256": "abd3dd824335011bdeac9df61f4b39b504cf4a41cb97c5000ecc90ed80441710",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "14f2ab70a854094558fa74d1df8ceb738bc4200b",
+      "software_tree": "files:aba51a9690f975882cf7b7c18ca89afffb9f46d54fbf11ac053197d571aacba0"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/harness-smoke-v4-evidence.tgz",
+     "sha256": "1b55db5b8da4ec4bacd3898221124a6fed8cbfadfe2395ee6b19bcbf84b40156",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff",
+      "software_tree": "files:0180c28f5ee85a6afca9a645bb91ca4b97969e46e47b35abd9270835ec60a07f"
+     }
+    }
+   ],
+   "note": "slow-path domain and fixed-point refusals return explicit statuses"
+  },
+  "S1-01.clean_build_smoke": {
+   "claim": "pass",
+   "requires": [
+    "compile",
+    "systemc"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/archive-25094197f6e6-harness-evidence.tgz",
+     "sha256": "3239d2760df30349df92d5c1796b5cea4eacc22b19f7bdc284ef55399138de35",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/archive-25094197f6e6-report.json",
+     "sha256": "e0aa638563cbc04befa5ddb6db133a057fcdf03d200cbb3e6ea1dbc49c43d655",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "git archive of 25094197f6e6 (sha256 6361cd4e...) unpacked on GB10 with fresh Torch extension, Triton and Inductor caches; the 19-step harness-smoke manifest completed (model configure/build, slow fixed-point qualification, process lifetime, DRAM boundaries, Ramulator mechanisms, native artifacts, monitor invariance, slow path, timing status, representative IR); history: the earlier d1feb89 archive run (kickoff/archive-d1feb89-harness-evidence.tgz) is on an older tree and is not counted"
+  },
+  "S1-01.case_gemm_fragment": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "rtl",
+    "board"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/fragments-old-vs-fixed.json",
+     "sha256": "7576a338d8d172cb38fc9b5ce9c60fab54c8ea601f94ed35c841f13b77e19305",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": [
+       "files:c6750cbb1721e0a456486988e2facb0b9cbbcee56d06164b28ecbbd76ae3e8a9",
+       "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
+      ]
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-gemm-tile/gemm/formal.jsonl",
+     "sha256": "a48296d52af7bb40024e009dce035941c08f99b60e44b089d8ca922c648548cd",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/bitwise-k-order/rtl-bitwise-v1-evidence.tgz",
+     "sha256": "6d1f3ad8f33342125755a33c1edd0980ce033c2d16df1a37d73068ee42ff4bf6",
+     "kind": "rtl",
+     "binds": {
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2"
+     }
+    }
+   ],
+   "note": "Closed-negative performance study: all 18 configurations correct; wide tile slower on 8/9. Structural repair is separate from speedup."
+  },
+  "S1-01.case_memory_service": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "rtl",
+    "board"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/memory-service-v1-evidence.tgz",
+     "sha256": "55275a6f401856f4c1f495cd238da99221245d69ac35c4d608e66fff2b820a28",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "a0c9e7252160dc237ef81d96114f3e617616cde5",
+      "software_tree": "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-memory-service/report.json",
+     "sha256": "495d3d3e75e93205644d46519512be6aaa25674b918eb177e067c5aca63b85a1",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "experiment-report"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/memory-service-v1-evidence.tgz",
+     "sha256": "55275a6f401856f4c1f495cd238da99221245d69ac35c4d608e66fff2b820a28",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Closed bounded study with board cohort and historical model/RTL mechanisms. Matching-source absolute model residual remains unavailable; no physical overlap counter or new default gain is asserted."
+  },
+  "S1-01.case_pipeline_admission": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "rtl",
+    "board"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/pipeline-admission-v2-evidence.tgz",
+     "sha256": "b8dad47d247bc6819e858c3dbcaaf96f9e66008a7ee5f6576015d773bf254554",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "5594333a22c0f1ff392a1578f36c400f9009a954",
+      "software_tree": [
+       "files:3fe5e7e5a386ccf345a7df15482554b98dd6ce117d0eabcbf4bcaac117cc169d",
+       "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
+      ]
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-pipeline-admission/report.json",
+     "sha256": "d217b2c60e2efe3744b4b7e85222e745a1011320fb8786e872122adcdd7468ce",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "experiment-report"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/pipeline-admission-v2-evidence.tgz",
+     "sha256": "b8dad47d247bc6819e858c3dbcaaf96f9e66008a7ee5f6576015d773bf254554",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Closed bounded study with board cohort and historical model/RTL mechanisms. Matching-source absolute model residual remains unavailable; no physical overlap counter or new default gain is asserted."
+  },
+  "S1-01.negative_case": {
+   "claim": "pass",
+   "requires": [
+    "rtl"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/pipeline-admission-v2-evidence.tgz",
+     "sha256": "b8dad47d247bc6819e858c3dbcaaf96f9e66008a7ee5f6576015d773bf254554",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "5594333a22c0f1ff392a1578f36c400f9009a954",
+      "software_tree": [
+       "files:3fe5e7e5a386ccf345a7df15482554b98dd6ce117d0eabcbf4bcaac117cc169d",
+       "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
+      ]
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/memory-service-v1-evidence.tgz",
+     "sha256": "55275a6f401856f4c1f495cd238da99221245d69ac35c4d608e66fff2b820a28",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "a0c9e7252160dc237ef81d96114f3e617616cde5",
+      "software_tree": "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/pipeline_admission.md",
+     "sha256": "0803dc155b0fc5286a4c8df03539c75fa9bf70b15c9de95690987f77a804e23f",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "5594333a22c0f1ff392a1578f36c400f9009a954"
+     }
+    }
+   ],
+   "note": "third ring stage overlaps more yet runs slower (RTL); 3/8 outlets slower than 1/8 (RTL)"
+  },
+  "S1-01.prospective_prediction_board_residual": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "board"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/prospective-prediction.json",
+     "sha256": "b5c543b220266a8a7f8597a8eacc80f14b3cfd621d086fd789e43a2b7e740afb",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": "files:b3f03a8947c1ac4fddcd43e1be45c02bc9f4dfd05ac7673049b359411daabf69"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/prospective-wide-erratum.json",
+     "sha256": "aedce92565cae63c6030753607b1b458722dd7a2d77fc61539c029e43aa2b8b6",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "uncommitted"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/run-graphs-knobs-v1",
+     "sha256": "f1ee1d5dad51f49fbd16d59a2568d6dceccd0a4c14da1b9ce0cc4758fe08410f",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "uncommitted",
+      "software_tree": "files:3a465e02a9f67f0f8d08bd12df5fae953b1270b8ed37eabe38cd25368bb1de0d"
+     },
+     "note": "run_graphs.py records verified platform.knobs (16,32,16 override end to end on the model)"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/prospective-prediction-v2.json",
+     "sha256": "eff75a74abb9e7d5a49e2375313343ade18d3a922b9651e7622f4c5eeccd7766",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "uncommitted",
+      "software_tree": "files:8c7139023d76d8572a82faef65312ce03bb439def8475792de826f44acb956ee"
+     },
+     "note": "v2 sealed before any board run: candidate/control x fast/slow on c2c96d3 with the B40 DRAM map"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/gemm-subset-predictions-v2.json",
+     "sha256": "49f4171d8c5815a99f88fb1f6077a260082faf7137ada5860830d183fa675e0a",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "uncommitted",
+      "software_tree": "files:8c7139023d76d8572a82faef65312ce03bb439def8475792de826f44acb956ee"
+     },
+     "note": "v2 sealed: 9 R40-03 GEMM points x {16,16,16; 16,32,16} x fast/slow"
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-prospective/prospective/formal.jsonl",
+     "sha256": "d0f64ffbbc7307ed6e710a40f1bbfa7ff5a26423a5c5d2fd1e7e845a31c5a345",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/prospective-prediction-v2.json",
+     "sha256": "eff75a74abb9e7d5a49e2375313343ade18d3a922b9651e7622f4c5eeccd7766",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Residuals recomputed from measured records and executable identities: fast +1.94%/-3.13%; slow inconclusive. No prediction substitutes for measurement."
+  },
+  "S1-01.matched_rtl_speed_measurement": {
+   "claim": "pass",
+   "requires": [
+    "rtl",
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/matched-native-speed-v1-evidence.tgz",
+     "sha256": "d259bbd5fbedf55d6ceae7f66328eb8865261a6e32011cff23ee769980164a1d",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/matched-native-speed-v1-evidence.tgz",
+     "sha256": "d259bbd5fbedf55d6ceae7f66328eb8865261a6e32011cff23ee769980164a1d",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029"
+     }
+    }
+   ],
+   "note": "same AOT artifact, inputs and addresses; 3 completed executions each; no timeout-derived ratio"
+  },
+  "S1-01.retain_known_model_mismatches": {
+   "claim": "pass",
+   "requires": [
+    "doc",
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/matched-native-speed-v1-evidence.tgz",
+     "sha256": "d259bbd5fbedf55d6ceae7f66328eb8865261a6e32011cff23ee769980164a1d",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/memory_service.md",
+     "sha256": "63c8ad43a0e6a194817e3b9821ffab9097032a5177bf22d38de86f428deb1e43",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "a0c9e7252160dc237ef81d96114f3e617616cde5"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/pipeline_admission.md",
+     "sha256": "0803dc155b0fc5286a4c8df03539c75fa9bf70b15c9de95690987f77a804e23f",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "5594333a22c0f1ff392a1578f36c400f9009a954"
+     }
+    }
+   ],
+   "note": "cycle mismatches and negative cohorts retained, none deleted"
+  },
+  "S1-02.two_resident_16x16_accumulators_for_16x32": {
+   "claim": "pass",
+   "requires": [
+    "compile",
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/fragments-old-vs-fixed.json",
+     "sha256": "7576a338d8d172cb38fc9b5ce9c60fab54c8ea601f94ed35c841f13b77e19305",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": [
+       "files:c6750cbb1721e0a456486988e2facb0b9cbbcee56d06164b28ecbbd76ae3e8a9",
+       "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
+      ]
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/residency-fp16",
+     "sha256": "52252f4d8579c7176ac14735f6b056434add2156c36b2b02a2e7482c825dd1d8",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/fragment-residency-final.log",
+     "sha256": "78614f50d4dadd5ba3a7fe5a252a48ad0a66f63ccda9c776449cf3367d720a8f",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    }
+   ],
+   "note": "two 16x16 accumulators stay resident across K for the 16x32 logical tile"
+  },
+  "S1-02.ordered_k_and_loop_residency": {
+   "claim": "pass",
+   "requires": [
+    "compile"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/bitwise-k-order/systemc-bitwise.json",
+     "sha256": "ac01a5fef3228dc6f0318c1f455870d8b92fcacc184d12ef7441b7bb8f8cdaae",
+     "kind": "compile",
+     "binds": {
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/bitwise-k-order/systemc-bitwise-v1-evidence.tgz",
+     "sha256": "a484659d8af9898a11d38d93205bc78363e309558d6e5d6cded920d13cf7fd4f",
+     "kind": "systemc",
+     "binds": {
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/bitwise-k-order/rtl-bitwise.json",
+     "sha256": "4a8b14172e7940240e207a36741d41fd9031e2f0e15be45753630cd64acc003d",
+     "kind": "compile",
+     "binds": {
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/bitwise-k-order/rtl-bitwise-v1-evidence.tgz",
+     "sha256": "6d1f3ad8f33342125755a33c1edd0980ce033c2d16df1a37d73068ee42ff4bf6",
+     "kind": "rtl",
+     "binds": {
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2"
+     }
+    }
+   ],
+   "note": "16x32 two-fragment output bitwise equal to the 16x16 path and to an independent per-K FP32 FMA reference for standard Torch mm/addmm, FP16/BF16, non-contiguous, M/N tails, K 7/33/48/65/113, on SystemC (80 rows) and RTL (16 rows); cancellation inputs make a wrong K order change up to 1452 elements per graph"
+  },
+  "S1-02.tails_masks_noncontiguous_and_resource_refusal": {
+   "claim": "pass",
+   "requires": [
+    "compile",
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/residency-bf16-strided",
+     "sha256": "58e76df493d6c376d46d58f91a6fce3926e91ec7248ff591f01dd9147e6b73a5",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/residency-fp16",
+     "sha256": "52252f4d8579c7176ac14735f6b056434add2156c36b2b02a2e7482c825dd1d8",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
+     }
+    }
+   ],
+   "note": "tail shapes, masks, BF16 strided inputs and resource refusal"
+  },
+  "S1-02.resource_plan_layout_lifetime_bank_allocation": {
+   "claim": "pass",
+   "requires": [
+    "compile"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/execution-plan-tests.log",
+     "sha256": "34fbaf7a21a872429ef9a9c2688be9d5e9df000b9dd5676ab91506ecbad76a2f",
+     "kind": "compile",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/compiler-regression-plan-v1.log",
+     "sha256": "b9aa51af989e506d4bc6354440ce4ffe71a95f3ccb47884b389803bf9a7db447",
+     "kind": "compile",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/tuning-plan-v1-evidence.tgz",
+     "sha256": "b498c89569afaad0765d9d3dedd8887f8cb989616239d2c9538d884eed32b68a",
+     "kind": "rtl",
+     "binds": {}
+    }
+   ],
+   "note": "execution_resources records per kernel physical fragments, valid/padding MACs (static TTIR shapes), K-loop accumulator round trips, VRF peak/window/ACC/barrier/code bytes, descriptor vs pointer transfers, transfer/MMA command counts and dependencies, and select/refuse reasons; the Inductor retile/fallback, the code-store refusal and TNCA_TUNE admission read it (falsified-plan test); hand-computed count tests for 16x16, 16x32, 17x65x33 tail, masked 20x24x40; default compiled code byte-identical on 113 points"
+  },
+  "S1-02.two_standard_torch_graphs_execute": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "rtl"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/fragments-old-vs-fixed.json",
+     "sha256": "7576a338d8d172cb38fc9b5ce9c60fab54c8ea601f94ed35c841f13b77e19305",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": [
+       "files:c6750cbb1721e0a456486988e2facb0b9cbbcee56d06164b28ecbbd76ae3e8a9",
+       "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
+      ]
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/pipeline-admission-v2-evidence.tgz",
+     "sha256": "b8dad47d247bc6819e858c3dbcaaf96f9e66008a7ee5f6576015d773bf254554",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "5594333a22c0f1ff392a1578f36c400f9009a954",
+      "software_tree": [
+       "files:3fe5e7e5a386ccf345a7df15482554b98dd6ce117d0eabcbf4bcaac117cc169d",
+       "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
+      ]
+     }
+    }
+   ],
+   "note": "standard Torch mm and addmm execute the multi-fragment path on the model and RTL"
+  },
+  "S1-02.numeric_ownership_resource_checks": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "compile"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/residency-fp16",
+     "sha256": "52252f4d8579c7176ac14735f6b056434add2156c36b2b02a2e7482c825dd1d8",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/aot-regressions.log",
+     "sha256": "e6c9fbf2e084d6db8d53131237832c72f7b10954eea0ebcd363d8213c12d85e1",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    }
+   ],
+   "note": "numerics, async ownership and resource counters checked"
+  },
+  "S1-02.code_and_dynamic_counters": {
+   "claim": "pass",
+   "requires": [
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/fragments/fragments-old-vs-fixed.json",
+     "sha256": "7576a338d8d172cb38fc9b5ce9c60fab54c8ea601f94ed35c841f13b77e19305",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": [
+       "files:c6750cbb1721e0a456486988e2facb0b9cbbcee56d06164b28ecbbd76ae3e8a9",
+       "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
+      ]
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/fragments/fragments-narrow-vs-wide.json",
+     "sha256": "b7bc10892afd4a30701768b4c05b7861aa2f573164fc464fae360f5fd756c47c",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045"
+     }
+    }
+   ],
+   "note": "generated code and dynamic counters show the per-row accumulator traffic removed"
+  },
+  "S1-02.original_gemm_subset_retest": {
+   "claim": "pass",
+   "requires": [
+    "board"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-gemm-tile/gemm/formal.jsonl",
+     "sha256": "a48296d52af7bb40024e009dce035941c08f99b60e44b089d8ca922c648548cd",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    }
+   ],
+   "note": "Nine frozen subset points, both tiles: 18 numerical passes. Performance hypothesis fails on eight points."
+  },
+  "S1-02.old_mapping_and_conservative_baseline_comparisons": {
+   "claim": "pass",
+   "requires": [
+    "board"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-gemm-tile/gemm/formal.jsonl",
+     "sha256": "a48296d52af7bb40024e009dce035941c08f99b60e44b089d8ca922c648548cd",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/old-mapping/board-comparison.json",
+     "sha256": "a179f425368d2160a349192079d611fe30ead436e33a363ada7c6fca74a4058f",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Matched nine-point board comparison records the isolated old-mapping control, repaired wide tile and conservative 16x16 baseline. The repair comparison and no-slower performance failure are separate judgments."
+  },
+  "S1-03.barrier_ordering_audit_and_negative_cases": {
+   "claim": "pass",
+   "requires": [
+    "rtl"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/barrier-ordering-v2-evidence.tgz",
+     "sha256": "0093af936743de135432f7d89ea822601a3685d430681dcbf1bcbe7fecc56e70",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/synchronization.md",
+     "sha256": "f8ca78de8d72fe2fe2eaba3553b4c96a6069571c934b4df3c85bf32e80e18995",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    }
+   ],
+   "note": "store/reload, alias, cross-role and async-lease negatives"
+  },
+  "S1-03.public_inductor_tnca_tuning_consumer": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "rtl"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/public-tuning-v4-evidence.tgz",
+     "sha256": "292de939116febbeccc733fffe8c15537dfee647bda81ee2aff6165347a73f26",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/public-tuning-v2-evidence.tgz",
+     "sha256": "a7bc2343a1b5bccf63088e8dd4869ff8e691ccc54b97e5370c29a5643282d19d",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/tuning.md",
+     "sha256": "dffa863762f2885e23e80dea7be5c7f278f5ad0fb5381b325bb37aa39df92187",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    }
+   ],
+   "note": "TNCA_TUNE consumer in the public CachingAutotuner path"
+  },
+  "S1-03.semantic_resource_candidates_and_conservative_fallback": {
+   "claim": "pass",
+   "requires": [
+    "compile",
+    "rtl"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/tuning-policy-v4.log",
+     "sha256": "017d9e3724960b969700cbd5b51395bc016e24f19896240a1ceb99a6f49cf11f",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/public-tuning-v4-evidence.tgz",
+     "sha256": "292de939116febbeccc733fffe8c15537dfee647bda81ee2aff6165347a73f26",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    }
+   ],
+   "note": "generic retile candidates; the legal 16-lane baseline is always present"
+  },
+  "S1-03.graph_budget_and_worker_termination": {
+   "claim": "pass",
+   "requires": [
+    "compile",
+    "systemc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/public-tuning-v2-evidence.tgz",
+     "sha256": "a7bc2343a1b5bccf63088e8dd4869ff8e691ccc54b97e5370c29a5643282d19d",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/autotune-workers-after-compile.log",
+     "sha256": "3d18b2e2529d1aa3cfb8358b0bb6538bea88958afe36a2798791df586a94c6bb",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029"
+     }
+    }
+   ],
+   "note": "graph budget; a hung candidate compiler is terminated at its deadline"
+  },
+  "S1-03.device_drain_recovery": {
+   "claim": "pass",
+   "requires": [
+    "board"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/measurement-scope-tests.log",
+     "sha256": "4a86e6ba93fc308f5a5ccb6fe70042398511d7d6bc39bf523217f3daf507f473",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/deadline-expiry/report.json",
+     "sha256": "504375229f12941c20a505927b844d7c1044874e3a15ce4f056f08f0ab542a83",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "deadline-expiry"
+    }
+   ],
+   "note": "Forced deadline poisons session at unchanged epoch; limits restored, recover advances epoch, stale handle refused and output correct. Error text is DEVICE_LOST despite expiry label other."
+  },
+  "S1-03.isolated_tuning_samples": {
+   "claim": "pass",
+   "requires": [
+    "rtl",
+    "compile"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/public-tuning-v4-evidence.tgz",
+     "sha256": "292de939116febbeccc733fffe8c15537dfee647bda81ee2aff6165347a73f26",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/tuning-policy-v4.log",
+     "sha256": "017d9e3724960b969700cbd5b51395bc016e24f19896240a1ceb99a6f49cf11f",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    }
+   ],
+   "note": "tuning samples isolated from formal logs; formal execution one resident launch"
+  },
+  "S1-03.identity_complete_cache": {
+   "claim": "pass",
+   "requires": [
+    "rtl",
+    "compile"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/public-tuning-v4-evidence.tgz",
+     "sha256": "292de939116febbeccc733fffe8c15537dfee647bda81ee2aff6165347a73f26",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/tuning-policy-v4.log",
+     "sha256": "017d9e3724960b969700cbd5b51395bc016e24f19896240a1ceb99a6f49cf11f",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    }
+   ],
+   "note": "cache key covers source, shapes, placements, tree, image, map and clock; actual cache hit"
+  },
+  "S1-03.device_endpoint_ranking": {
+   "claim": "pass",
+   "requires": [
+    "board"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/public-tuning-v4-evidence.tgz",
+     "sha256": "292de939116febbeccc733fffe8c15537dfee647bda81ee2aff6165347a73f26",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-first/formal.jsonl",
+     "sha256": "5327e80c916e5a688e728fecb5e03088260f32aa93574226a182dc47e9357460",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-rerun/formal.jsonl",
+     "sha256": "50d1a06c44c204bdbd601852a3fa99d637bc600193a770000ff819b07d18050b",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-check.json",
+     "sha256": "d6d75d3e9e09c17fa547de4d5c3c1360780522e45a5da886336545bef74972bf",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "tune-check"
+    }
+   ],
+   "note": "Three kernels ranked; three cached selections reused; no tuning samples in formal launch counts."
+  },
+  "S1-03.uncertainty_fallback": {
+   "claim": "pass",
+   "requires": [
+    "compile"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/tuning-policy-v4.log",
+     "sha256": "017d9e3724960b969700cbd5b51395bc016e24f19896240a1ceb99a6f49cf11f",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    }
+   ],
+   "note": "overlapping or insufficient samples retain the baseline"
+  },
+  "S1-03.locality_consumer_safety_and_board_design": {
+   "claim": "pass",
+   "requires": [
+    "doc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/locality_design.md",
+     "sha256": "7f73826be587941b302c09ef0de10db78de462c05ae9d5e8c702d80f47e0afaf",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    }
+   ],
+   "note": "consumer, storage/alias/lifetime, refusals, Stage 2 board plan"
+  },
+  "S1-04.M1_M4_regression": {
+   "claim": "pass",
+   "requires": [
+    "rtl"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/merged-boundaries-summary.json",
+     "sha256": "afef5b0167d195d1c2760e077071d9094a89409c4942bea8d981630ed891185f",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/merged-boundaries.tgz",
+     "sha256": "12ecb39958e8d7e51728c0af96a68d31fdb3d6ac4b659a364b35ad975852a47a",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    }
+   ],
+   "note": "merged M1-M4 RTL regression"
+  },
+  "S1-04.critical_path_owners_candidates_validation": {
+   "claim": "pass",
+   "requires": [
+    "doc",
+    "compile"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/frequency_preflight.md",
+     "sha256": "bd2869bafcec0ddc8975c973c20e3443b181d97d2c15d3e388156be5ba3f6fa3",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/frequency-preflight-v2-evidence.tgz",
+     "sha256": "fb2d829911df9c41e7b1bb3f68223c6d73843e3935897a0a474d13a41bf29ecb",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    }
+   ],
+   "note": "path families F01-F10 with owners, candidates and validation plans"
+  },
+  "S1-04.unit_ooc_and_region_resource_preflight": {
+   "claim": "pass",
+   "requires": [
+    "rtl"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/historical-ooc-audit.json",
+     "sha256": "ec36755eebcca33a274dc941c006480b53eede95f5845bdc9e8200d5f6f2163a",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "f5ff452187894441619ba3c0a3c168fc16197029"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/f07_ooc/f07-ooc-evidence.tgz",
+     "sha256": "df2dd0e172db79a81443255507b01bbcd1c602f721a3bf2f2da0c0b632f53dee",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "a3eda5e310dc2d189237f98b114d64a1682780d0"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/f07_ooc/README.md",
+     "sha256": "245343198105787ec30a3b5ad8202b85e6eb7bb2ac44cfe96abfcb389080018a",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "a3eda5e310dc2d189237f98b114d64a1682780d0"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/regional_preflight.json",
+     "sha256": "788e0b84db2faa557853fd225b1e8cfacd5a4e7cec63b9735088030e195febb2",
+     "kind": "compile",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/regional_preflight.md",
+     "sha256": "ab2f32b01ae6bcb83e7dfc99f3ed74f893279880a9784920f99581253524d30d",
+     "kind": "doc",
+     "binds": {}
+    }
+   ],
+   "note": "unit OOC: merged M1-M4 units (paired, A3 vs merged; sources identical to HEAD per historical-ooc-audit) and the one implemented fixed candidate F07/C1 (paired slice screen); regional: per-SLR LUT/FF preflight from those deltas on A3 routed counts. Unimplemented F01-F06/F08-F10 have no RTL to screen and stay Stage 2. Not a routed result."
+  },
+  "S1-04.fixed_next_implementation_candidate_list": {
+   "claim": "pass",
+   "requires": [
+    "doc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/frequency_preflight.md",
+     "sha256": "bd2869bafcec0ddc8975c973c20e3443b181d97d2c15d3e388156be5ba3f6fa3",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff"
+     }
+    }
+   ],
+   "note": "fixed candidate list for the next full implementation"
+  },
+  "S1-04.official_language_distinct_storage_inventory": {
+   "claim": "pass",
+   "requires": [
+    "compile"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/qwen-storage",
+     "sha256": "4728e9aef050fbc664ffc9a7461a54cf46a02e68ae6d04962f75c9f20fbf139e",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/language-meta-v1-evidence.tgz",
+     "sha256": "0e2adcded41e96ccc3fd0fac5236743498d30a411194c4108684e5bebe3913fc",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "5594333a22c0f1ff392a1578f36c400f9009a954"
+     }
+    }
+   ],
+   "note": "320 language-branch storages, 3,763,655,360 bytes, independent header audit"
+  },
+  "S1-04.operator_state_dtype_inventory": {
+   "claim": "pass",
+   "requires": [
+    "compile",
+    "doc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/language-meta-v1-evidence.tgz",
+     "sha256": "0e2adcded41e96ccc3fd0fac5236743498d30a411194c4108684e5bebe3913fc",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "5594333a22c0f1ff392a1578f36c400f9009a954"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/model_feasibility.md",
+     "sha256": "3d03bb904583127d7391a8aa346579d4c145d5a5073104fcae9a80dcbf9bd2ba",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "a0c9e7252160dc237ef81d96114f3e617616cde5"
+     }
+    }
+   ],
+   "note": "operator and state dtype inventory from the full-branch ATen graphs"
+  },
+  "S1-04.D256_depthwise_FP32_recurrence_compile_function": {
+   "claim": "pass",
+   "requires": [
+    "systemc",
+    "rtl"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/depthwise-regression-v2-evidence.tgz",
+     "sha256": "98204a4a8f1503bb3572b4d0cc083505e2e2e603cadcd964f11d6df6fcbc0f0e",
+     "kind": "rtl",
+     "binds": {
+      "git_commit": "d1feb89cfcfde3db385c4a885cb9e360407ac58f",
+      "software_tree": "files:0108a361c9bfe12d9c05e5bac0bea1ff752c7a94952045d8c993f3e6884419dd"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/primitive-ir-v2-evidence.tgz",
+     "sha256": "0c08f533f79cf48590f189120bf94dc7c74c6930286c9b1b2994bf79969bc6b5",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff",
+      "software_tree": "files:8f41b1b5240b45145d330e81581e809ff4a41d51be90561004526c2bd1cfc834"
+     }
+    }
+   ],
+   "note": "D256 attention, depthwise conv and FP32 recurrence representatives compile and pass"
+  },
+  "S1-04.compile_code_IR_memory_estimates": {
+   "claim": "pass",
+   "requires": [
+    "compile"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/kickoff/primitive-ir-v2-evidence.tgz",
+     "sha256": "0c08f533f79cf48590f189120bf94dc7c74c6930286c9b1b2994bf79969bc6b5",
+     "kind": "systemc",
+     "binds": {
+      "git_commit": "841d66afdee037144b1fadb9fd1f6e048aab63ff",
+      "software_tree": "files:8f41b1b5240b45145d330e81581e809ff4a41d51be90561004526c2bd1cfc834"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/model_estimates.json",
+     "sha256": "d31612ef1ea0c4a21e99714f5ec55fd8dd8f24e0e9cce100820146b6867d8c2f",
+     "kind": "compile",
+     "binds": {
+      "software_tree": "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/model_estimates.md",
+     "sha256": "d654530d55a1e4da63926a55e38baea3667ade6e3b31f2d9b86d9bd6675dca88",
+     "kind": "doc",
+     "binds": {}
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/model-estimates-v1-evidence.tgz",
+     "sha256": "0e2f78bf0c6e917f37d7966d3ca9f10b8923db398a894e0171996f2d3502ebd3",
+     "kind": "compile",
+     "binds": {
+      "software_tree": "files:d35b4197c409549d4ce4af32721cca3f1ca47248f09f5519b7c3415b5d6bf0b9"
+     }
+    }
+   ],
+   "note": "full 24-layer Qwen3.5-2B language branch compiled offline for prefill 128 and a fixed-bucket decode step, with four named harness shims for standard-path blockers B1-B4 (B5/B6 recorded): per-kernel code bytes, unique code working set (603,680 B, 4.63x the code store), compile time per stage, compiler RSS, IR sizes and an allocator-trace device peak (3.558 GiB; the 4 GiB window misses the 1.25x margin by 481 MB). Estimates, not a Stage 2 capacity pass."
+  },
+  "S1-04.public_model_cache_adapter_difference_inventory": {
+   "claim": "pass",
+   "requires": [
+    "doc"
+   ],
+   "final_identity": false,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/model_feasibility.md",
+     "sha256": "3d03bb904583127d7391a8aa346579d4c145d5a5073104fcae9a80dcbf9bd2ba",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "a0c9e7252160dc237ef81d96114f3e617616cde5"
+     }
+    }
+   ],
+   "note": "public interface and cache-adapter differences"
+  },
+  "S1-05.all_stage1_required": {
+   "derived_from": [
+    "S1-00",
+    "S1-01",
+    "S1-02",
+    "S1-03",
+    "S1-04"
+   ],
+   "note": "passes only when every S1-00..S1-04 item passes"
+  },
+  "S1-05.original_full_suite_on_90mhz": {
+   "claim": "pass",
+   "requires": [
+    "board"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-original-suite/original/formal.jsonl",
+     "sha256": "2dbf40d804409ba9ee84f0e46a4fa7130d7463cbc3026986b1a537a6b9975d08",
+     "kind": "board",
+     "format": "archbench-jsonl",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "113/113 original points pass on frozen identity; completed batch has no rejected final runs. Device serial-grid comparison against 113 B40-OBS points: sum ratio 1.000322, no >5% regressions; host and graph nonregression not claimed.",
+   "coverage": "original_suites"
+  },
+  "S1-05.fragment_path_actually_used": {
+   "claim": "pass",
+   "requires": [
+    "board"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-gemm-tile/gemm/formal.jsonl",
+     "sha256": "a48296d52af7bb40024e009dce035941c08f99b60e44b089d8ca922c648548cd",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    }
+   ],
+   "note": "Measured candidate artifacts match sealed executable identities; native fp16 matmul uses two accumulators. Numerical capability passes, performance hypothesis fails."
+  },
+  "S1-05.tuning_and_fallback_integrated": {
+   "claim": "pass",
+   "requires": [
+    "board"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-first/formal.jsonl",
+     "sha256": "5327e80c916e5a688e728fecb5e03088260f32aa93574226a182dc47e9357460",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-rerun/formal.jsonl",
+     "sha256": "50d1a06c44c204bdbd601852a3fa99d637bc600193a770000ff819b07d18050b",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/board/out/board-tune-qualification/tune-check.json",
+     "sha256": "d6d75d3e9e09c17fa547de4d5c3c1360780522e45a5da886336545bef74972bf",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "tune-check"
+    }
+   ],
+   "note": "Physical endpoint ranking/cache/sample isolation and forced recovery qualified; conservative fallback regression evidence retained in S1-03."
+  },
+  "S1-05.three_harness_cases": {
+   "derived_from": [
+    "S1-01.case_gemm_fragment",
+    "S1-01.case_memory_service",
+    "S1-01.case_pipeline_admission"
+   ],
+   "note": "the three closed-loop cases"
+  },
+  "S1-05.new_default_nonregression": {
+   "claim": "pass",
+   "requires": [
+    "board"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-original-suite/original/formal.jsonl",
+     "sha256": "2dbf40d804409ba9ee84f0e46a4fa7130d7463cbc3026986b1a537a6b9975d08",
+     "kind": "board",
+     "format": "archbench-jsonl",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    },
+    {
+     "path": "evidence/r41/stage1/board/original-suite-comparison.json",
+     "sha256": "8dd0fecf139c4b610b38d093120a33515da6a6dd4700f0bef30f7b8348b3ec75",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "113/113 original points pass on frozen identity; completed batch has no rejected final runs. Device serial-grid comparison against 113 B40-OBS points: sum ratio 1.000322, no >5% regressions; host and graph nonregression not claimed."
+  },
+  "S1-05.clean_archive_fresh_cache_rebuild": {
+   "claim": "pass",
+   "requires": [
+    "compile",
+    "board"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-anchors/anchors/formal.jsonl",
+     "sha256": "3f4ead48fd388a7d7a4e6bf0c4bd6b9a23e0e0c960e627d82856d886f6c44a43",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    },
+    {
+     "path": "evidence/r41/stage1/kickoff/archive-25094197f6e6-report.json",
+     "sha256": "e0aa638563cbc04befa5ddb6db133a057fcdf03d200cbb3e6ea1dbc49c43d655",
+     "kind": "compile",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Final-source clean archive smoke on GB10 plus physical anchors rebuilt with experiment-local caches."
+  },
+  "S1-05.frozen_board_anchor_reproduction": {
+   "claim": "pass",
+   "requires": [
+    "board"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/board/out/board-anchors/anchors/formal.jsonl",
+     "sha256": "3f4ead48fd388a7d7a4e6bf0c4bd6b9a23e0e0c960e627d82856d886f6c44a43",
+     "kind": "board",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     },
+     "format": "archbench-jsonl"
+    }
+   ],
+   "note": "Three frozen anchors across three independent interleaved sessions; measured identity and numerical checks pass; descriptive cycle spreads documented."
+  },
+  "S1-05.stage1_report": {
+   "claim": "pass",
+   "requires": [
+    "doc"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "doc/r41_stage1_report.md",
+     "sha256": "164f745822f76380c79cdb6a9ffb84acb803f92d46431d1f8a8a2c8b0c585694",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Evidence-qualified closeout report for the accepted frozen Stage 1 product."
+  },
+  "S1-05.stage2_ready_blocker_list": {
+   "claim": "pass",
+   "requires": [
+    "doc"
+   ],
+   "final_identity": true,
+   "evidence": [
+    {
+     "path": "evidence/r41/stage1/stage2_readiness.md",
+     "sha256": "e0222f2afb03fcba8dbdf449a2c2068c1ed0e3595d4faaa4c853c8bd29dfaee7",
+     "kind": "doc",
+     "binds": {
+      "git_commit": "25094197f6e6",
+      "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+     }
+    }
+   ],
+   "note": "Stage 1 board results and remaining Stage 2 boundaries documented."
+  }
+ }
+}

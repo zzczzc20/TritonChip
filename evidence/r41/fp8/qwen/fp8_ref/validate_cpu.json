@@ -1,0 +1,827 @@
+{
+ "schema": "tnca-fp8-blockwise-ref-validate/2",
+ "torch": "2.14.0+cu130",
+ "checks": {
+  "reference_vs_literal_kernel_transcription_fp32": {
+   "M1_N256_K384_scale-float32": {
+    "n": 256,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.0
+   },
+   "M1_N256_K384_scale-bfloat16": {
+    "n": 256,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.0
+   },
+   "M7_N384_K256_scale-float32": {
+    "n": 2688,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.0
+   },
+   "M7_N384_K256_scale-bfloat16": {
+    "n": 2688,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.0
+   },
+   "M16_N1024_K2048_scale-float32": {
+    "n": 16384,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.6
+   },
+   "M16_N1024_K2048_scale-bfloat16": {
+    "n": 16384,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.7
+   },
+   "M64_N2048_K1024_scale-float32": {
+    "n": 131072,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.9
+   },
+   "M64_N2048_K1024_scale-bfloat16": {
+    "n": 131072,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.7
+   },
+   "M130_N256_K6144_scale-float32": {
+    "n": 33280,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.9
+   },
+   "M130_N256_K6144_scale-bfloat16": {
+    "n": 33280,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.6
+   },
+   "M5_N200_K328_scale-float32": {
+    "n": 1000,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.0
+   },
+   "M5_N200_K328_scale-bfloat16": {
+    "n": 1000,
+    "bitwise_equal": true,
+    "frac_equal": 1.0,
+    "n_diff": 0,
+    "max_ulp_same_sign": 0,
+    "n_sign_flips": 0,
+    "max_err_over_row_absmax": 0.0,
+    "rel_l2": 0.0,
+    "seconds": 0.0
+   }
+  },
+  "variants": {
+   "M1_N256_K384_scale-float32": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 5.7956541824738435e-08,
+     "exact_fma_ieee": 4.851261053776638e-08,
+     "fp32_ieee": 5.9480415115575486e-08,
+     "fp32_fma_ieee": 5.0416944476295404e-08,
+     "exact_recip": 5.7801439694015096e-08,
+     "exact_fma_recip": 4.979614647391806e-08,
+     "fp32_recip": 5.933270010036451e-08,
+     "fp32_fma_recip": 5.10291273755864e-08
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 256,
+     "bitwise_equal": false,
+     "frac_equal": 0.96484375,
+     "n_diff": 9,
+     "max_ulp_same_sign": 3328,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 4.7126326170163174e-08,
+     "rel_l2": 1.551522320039377e-08
+    },
+    "fma_vs_nofma": {
+     "n": 256,
+     "bitwise_equal": false,
+     "frac_equal": 0.7109375,
+     "n_diff": 74,
+     "max_ulp_same_sign": 88,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 4.7126326170163174e-08,
+     "rel_l2": 4.4549342339534904e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 256,
+     "bitwise_equal": false,
+     "frac_equal": 0.921875,
+     "n_diff": 20,
+     "max_ulp_same_sign": 512,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 2.3563163085081587e-08,
+     "rel_l2": 6.458752274971288e-09
+    },
+    "bf16_out_rel_l2_vs_exact": 0.0016577139300260092,
+    "bf16_rounding_of_exact": 0.0016577139300260092,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015567982697250187,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 256,
+     "bitwise_equal": false,
+     "frac_equal": 0.1328125,
+     "n_diff": 222,
+     "max_ulp_same_sign": 184,
+     "n_sign_flips": 1,
+     "max_err_over_row_absmax": 0.013888888888888888,
+     "rel_l2": 0.015576578231355252
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.015368157205935344,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021441551232996565
+   },
+   "M1_N256_K384_scale-bfloat16": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 4.3403028925539723e-08,
+     "exact_fma_ieee": 3.7783052421500725e-08,
+     "fp32_ieee": 4.4404099025631846e-08,
+     "fp32_fma_ieee": 3.777631914304645e-08,
+     "exact_recip": 4.3403028925539723e-08,
+     "exact_fma_recip": 3.7783052421500725e-08,
+     "fp32_recip": 4.4404099025631846e-08,
+     "fp32_fma_recip": 3.777631914304645e-08
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 256,
+     "bitwise_equal": false,
+     "frac_equal": 0.9921875,
+     "n_diff": 2,
+     "max_ulp_same_sign": 1,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 3.254067291248004e-08,
+     "rel_l2": 7.289244444792542e-09
+    },
+    "fma_vs_nofma": {
+     "n": 256,
+     "bitwise_equal": false,
+     "frac_equal": 0.80859375,
+     "n_diff": 49,
+     "max_ulp_same_sign": 1,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 6.508134582496008e-08,
+     "rel_l2": 4.0637946367599606e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 256,
+     "bitwise_equal": true,
+     "frac_equal": 1.0,
+     "n_diff": 0,
+     "max_ulp_same_sign": 0,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 0.0,
+     "rel_l2": 0.0
+    },
+    "bf16_out_rel_l2_vs_exact": 0.0017534196608560743,
+    "bf16_rounding_of_exact": 0.0017534196608560743,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.019817854794133602,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 256,
+     "bitwise_equal": false,
+     "frac_equal": 0.05078125,
+     "n_diff": 243,
+     "max_ulp_same_sign": 247,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 0.019230769230769232,
+     "rel_l2": 0.020016821099504187
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.019182147785812047,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002460972645863274
+   },
+   "M7_N384_K256_scale-float32": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 5.437344405688062e-08,
+     "exact_fma_ieee": 4.673422892048153e-08,
+     "fp32_ieee": 5.759921408285917e-08,
+     "fp32_fma_ieee": 5.113989235125239e-08,
+     "exact_recip": 7.362494025520038e-08,
+     "exact_fma_recip": 6.78986849789485e-08,
+     "fp32_recip": 7.573910866839268e-08,
+     "fp32_fma_recip": 7.026139651966553e-08
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 2688,
+     "bitwise_equal": false,
+     "frac_equal": 0.9832589285714286,
+     "n_diff": 45,
+     "max_ulp_same_sign": 7,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 8.404131840994834e-08,
+     "rel_l2": 2.4580025879581383e-08
+    },
+    "fma_vs_nofma": {
+     "n": 2688,
+     "bitwise_equal": false,
+     "frac_equal": 0.7898065476190477,
+     "n_diff": 565,
+     "max_ulp_same_sign": 1,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 9.98770912515059e-08,
+     "rel_l2": 4.406694315854928e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 2688,
+     "bitwise_equal": false,
+     "frac_equal": 0.5264136904761905,
+     "n_diff": 1273,
+     "max_ulp_same_sign": 4,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 2.100774355931468e-07,
+     "rel_l2": 5.749079607294914e-08
+    },
+    "bf16_out_rel_l2_vs_exact": 0.0017040995151867404,
+    "bf16_rounding_of_exact": 0.0017040995151867404,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.016731566763529382,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 2688,
+     "bitwise_equal": false,
+     "frac_equal": 0.23623511904761904,
+     "n_diff": 2053,
+     "max_ulp_same_sign": 421,
+     "n_sign_flips": 18,
+     "max_err_over_row_absmax": 0.032679738562091505,
+     "rel_l2": 0.016860196604618148
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.016661267394794732,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0021032055490336375
+   },
+   "M7_N384_K256_scale-bfloat16": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 4.642013565091125e-08,
+     "exact_fma_ieee": 3.7740345304975655e-08,
+     "fp32_ieee": 4.6622705221066105e-08,
+     "fp32_fma_ieee": 3.808726801041156e-08,
+     "exact_recip": 8.44395371956095e-08,
+     "exact_fma_recip": 7.997024178878742e-08,
+     "fp32_recip": 8.445887692025074e-08,
+     "fp32_fma_recip": 8.005948727991057e-08
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 2688,
+     "bitwise_equal": false,
+     "frac_equal": 0.9851190476190477,
+     "n_diff": 40,
+     "max_ulp_same_sign": 15,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 9.219235824917861e-08,
+     "rel_l2": 5.637792346360671e-09
+    },
+    "fma_vs_nofma": {
+     "n": 2688,
+     "bitwise_equal": false,
+     "frac_equal": 0.7901785714285714,
+     "n_diff": 564,
+     "max_ulp_same_sign": 1,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 9.219235824917861e-08,
+     "rel_l2": 4.221061119627298e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 2688,
+     "bitwise_equal": false,
+     "frac_equal": 0.484375,
+     "n_diff": 1386,
+     "max_ulp_same_sign": 4,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 1.8438471649835723e-07,
+     "rel_l2": 8.296132870028512e-08
+    },
+    "bf16_out_rel_l2_vs_exact": 0.0016222952569314095,
+    "bf16_rounding_of_exact": 0.0016222952569314095,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.015255823346596527,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 2688,
+     "bitwise_equal": false,
+     "frac_equal": 0.24851190476190477,
+     "n_diff": 2020,
+     "max_ulp_same_sign": 441,
+     "n_sign_flips": 11,
+     "max_err_over_row_absmax": 0.024096385542168676,
+     "rel_l2": 0.015266413778422238
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.01524318849250376,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0023770979769451948
+   },
+   "M16_N1024_K2048_scale-float32": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 5.6645002436424656e-08,
+     "exact_fma_ieee": 4.989854958850096e-08,
+     "fp32_ieee": 5.700658683440971e-08,
+     "fp32_fma_ieee": 5.0002774359082315e-08,
+     "exact_recip": 0.0005822787283173106,
+     "exact_fma_recip": 0.0005822781214917907,
+     "fp32_recip": 0.0005822789450912394,
+     "fp32_fma_recip": 0.0005822782780717275
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 16384,
+     "bitwise_equal": false,
+     "frac_equal": 0.980712890625,
+     "n_diff": 316,
+     "max_ulp_same_sign": 256,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 1.2977089726712873e-07,
+     "rel_l2": 1.5219074435207953e-08
+    },
+    "fma_vs_nofma": {
+     "n": 16384,
+     "bitwise_equal": false,
+     "frac_equal": 0.59466552734375,
+     "n_diff": 6641,
+     "max_ulp_same_sign": 945,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 1.2267189194405507e-07,
+     "rel_l2": 5.194275724938828e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 16384,
+     "bitwise_equal": false,
+     "frac_equal": 0.43798828125,
+     "n_diff": 9208,
+     "max_ulp_same_sign": 12035400,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 0.0012464772999980914,
+     "rel_l2": 0.0005822784366284183
+    },
+    "bf16_out_rel_l2_vs_exact": 0.0016504321476441325,
+    "bf16_rounding_of_exact": 0.001650432153198856,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.01717929650882115,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 16384,
+     "bitwise_equal": false,
+     "frac_equal": 0.162353515625,
+     "n_diff": 13724,
+     "max_ulp_same_sign": 1040,
+     "n_sign_flips": 73,
+     "max_err_over_row_absmax": 0.02531645569620253,
+     "rel_l2": 0.017262303494928296
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.017022875010950712,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.00230541389540831
+   },
+   "M16_N1024_K2048_scale-bfloat16": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 4.970383381014573e-08,
+     "exact_fma_ieee": 4.2032594093328386e-08,
+     "fp32_ieee": 5.027251137879592e-08,
+     "fp32_fma_ieee": 4.295881441055231e-08,
+     "exact_recip": 0.00011582616002319891,
+     "exact_fma_recip": 0.0001158264467918906,
+     "fp32_recip": 0.00011582623744708517,
+     "fp32_fma_recip": 0.00011582656340070769
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 16384,
+     "bitwise_equal": false,
+     "frac_equal": 0.97418212890625,
+     "n_diff": 423,
+     "max_ulp_same_sign": 2048,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 1.2713812960232084e-07,
+     "rel_l2": 1.6673306866394517e-08
+    },
+    "fma_vs_nofma": {
+     "n": 16384,
+     "bitwise_equal": false,
+     "frac_equal": 0.62725830078125,
+     "n_diff": 6107,
+     "max_ulp_same_sign": 7168,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 9.711557987372838e-08,
+     "rel_l2": 4.694185381602873e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 16384,
+     "bitwise_equal": false,
+     "frac_equal": 0.343994140625,
+     "n_diff": 10748,
+     "max_ulp_same_sign": 16802668,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 0.003295002207266265,
+     "rel_l2": 0.00011582719639528651
+    },
+    "bf16_out_rel_l2_vs_exact": 0.001651740238710168,
+    "bf16_rounding_of_exact": 0.001651740238710168,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011537450788990945,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 16384,
+     "bitwise_equal": false,
+     "frac_equal": 0.22381591796875,
+     "n_diff": 12717,
+     "max_ulp_same_sign": 962,
+     "n_sign_flips": 26,
+     "max_err_over_row_absmax": 0.022292993630573247,
+     "rel_l2": 0.01165692705722455
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.011433492168258291,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0023377121496516765
+   },
+   "M64_N2048_K1024_scale-float32": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 5.266819948203676e-08,
+     "exact_fma_ieee": 4.587742165226536e-08,
+     "fp32_ieee": 5.3475687819338985e-08,
+     "fp32_fma_ieee": 4.667334989807406e-08,
+     "exact_recip": 0.00016694842702493667,
+     "exact_fma_recip": 0.0001669483012914597,
+     "fp32_recip": 0.00016694842667183996,
+     "fp32_fma_recip": 0.00016694832165461813
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 131072,
+     "bitwise_equal": false,
+     "frac_equal": 0.9798965454101562,
+     "n_diff": 2635,
+     "max_ulp_same_sign": 7168,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 1.9436225080815825e-07,
+     "rel_l2": 1.507408831505926e-08
+    },
+    "fma_vs_nofma": {
+     "n": 131072,
+     "bitwise_equal": false,
+     "frac_equal": 0.6363372802734375,
+     "n_diff": 47666,
+     "max_ulp_same_sign": 64951,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 1.0997286749413185e-07,
+     "rel_l2": 4.47098046967625e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 131072,
+     "bitwise_equal": false,
+     "frac_equal": 0.48610687255859375,
+     "n_diff": 67357,
+     "max_ulp_same_sign": 43188496,
+     "n_sign_flips": 13,
+     "max_err_over_row_absmax": 0.014162553141112243,
+     "rel_l2": 0.00016694862709870008
+    },
+    "bf16_out_rel_l2_vs_exact": 0.0016567696295630757,
+    "bf16_rounding_of_exact": 0.0016567696295630714,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.010465960520112439,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 131072,
+     "bitwise_equal": false,
+     "frac_equal": 0.15772247314453125,
+     "n_diff": 110399,
+     "max_ulp_same_sign": 1258,
+     "n_sign_flips": 605,
+     "max_err_over_row_absmax": 0.03362068965517241,
+     "rel_l2": 0.010592536415313396
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.010342288268580609,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022871704035115643
+   },
+   "M64_N2048_K1024_scale-bfloat16": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 4.807949102194665e-08,
+     "exact_fma_ieee": 4.024641602907835e-08,
+     "fp32_ieee": 4.877288368910385e-08,
+     "fp32_fma_ieee": 4.091761010507826e-08,
+     "exact_recip": 0.00039288465400289814,
+     "exact_fma_recip": 0.0003928846880895513,
+     "fp32_recip": 0.0003928846739582718,
+     "fp32_fma_recip": 0.0003928847189260051
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 131072,
+     "bitwise_equal": false,
+     "frac_equal": 0.9811782836914062,
+     "n_diff": 2467,
+     "max_ulp_same_sign": 512,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 1.589420478220595e-07,
+     "rel_l2": 1.475520533961549e-08
+    },
+    "fma_vs_nofma": {
+     "n": 131072,
+     "bitwise_equal": false,
+     "frac_equal": 0.633392333984375,
+     "n_diff": 48052,
+     "max_ulp_same_sign": 15872,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 1.1842964189718602e-07,
+     "rel_l2": 4.599564836812348e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 131072,
+     "bitwise_equal": false,
+     "frac_equal": 0.409027099609375,
+     "n_diff": 77460,
+     "max_ulp_same_sign": 29433984,
+     "n_sign_flips": 2,
+     "max_err_over_row_absmax": 0.004261717645715538,
+     "rel_l2": 0.00039288480745815945
+    },
+    "bf16_out_rel_l2_vs_exact": 0.001656449367454786,
+    "bf16_rounding_of_exact": 0.0016564493626533793,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.011611136610349288,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 131072,
+     "bitwise_equal": false,
+     "frac_equal": 0.14841461181640625,
+     "n_diff": 111619,
+     "max_ulp_same_sign": 1486,
+     "n_sign_flips": 565,
+     "max_err_over_row_absmax": 0.030660377358490566,
+     "rel_l2": 0.011721721990866895
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.011487487295402924,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0023540456223927002
+   },
+   "M130_N256_K6144_scale-float32": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 7.134416156981448e-08,
+     "exact_fma_ieee": 6.406578167401604e-08,
+     "fp32_ieee": 7.174478337250818e-08,
+     "fp32_fma_ieee": 6.468183236420451e-08,
+     "exact_recip": 0.0012560114353096473,
+     "exact_fma_recip": 0.001256011536506535,
+     "fp32_recip": 0.0012560114211857944,
+     "fp32_fma_recip": 0.0012560115184072566
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 33280,
+     "bitwise_equal": false,
+     "frac_equal": 0.9640625,
+     "n_diff": 1196,
+     "max_ulp_same_sign": 256,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 2.334121021374013e-07,
+     "rel_l2": 2.0030228028313795e-08
+    },
+    "fma_vs_nofma": {
+     "n": 33280,
+     "bitwise_equal": false,
+     "frac_equal": 0.4749098557692308,
+     "n_diff": 17475,
+     "max_ulp_same_sign": 4487,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 2.3545271120657585e-07,
+     "rel_l2": 6.464992394514705e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 33280,
+     "bitwise_equal": false,
+     "frac_equal": 0.07776442307692308,
+     "n_diff": 30692,
+     "max_ulp_same_sign": 23450176,
+     "n_sign_flips": 7,
+     "max_err_over_row_absmax": 0.005766758759266506,
+     "rel_l2": 0.0012560107578936234
+    },
+    "bf16_out_rel_l2_vs_exact": 0.001665237884385663,
+    "bf16_rounding_of_exact": 0.0016652378843822115,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.014585627070991352,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 33280,
+     "bitwise_equal": false,
+     "frac_equal": 0.13167067307692307,
+     "n_diff": 28898,
+     "max_ulp_same_sign": 998,
+     "n_sign_flips": 137,
+     "max_err_over_row_absmax": 0.027507267441860467,
+     "rel_l2": 0.014678685773996853
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.014476149428712703,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002282853333624734
+   },
+   "M130_N256_K6144_scale-bfloat16": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 6.298371682940298e-08,
+     "exact_fma_ieee": 5.559844642119468e-08,
+     "fp32_ieee": 6.364823106877114e-08,
+     "fp32_fma_ieee": 5.623584584684383e-08,
+     "exact_recip": 0.0007323829978433737,
+     "exact_fma_recip": 0.0007323825760153954,
+     "fp32_recip": 0.0007323830401535717,
+     "fp32_fma_recip": 0.0007323825769724435
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 33280,
+     "bitwise_equal": false,
+     "frac_equal": 0.9646634615384615,
+     "n_diff": 1176,
+     "max_ulp_same_sign": 1024,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 1.48858434437982e-07,
+     "rel_l2": 1.974344965509164e-08
+    },
+    "fma_vs_nofma": {
+     "n": 33280,
+     "bitwise_equal": false,
+     "frac_equal": 0.4863581730769231,
+     "n_diff": 17094,
+     "max_ulp_same_sign": 145408,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 1.7543391825340799e-07,
+     "rel_l2": 6.247222774183074e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 33280,
+     "bitwise_equal": false,
+     "frac_equal": 0.12845552884615385,
+     "n_diff": 29005,
+     "max_ulp_same_sign": 31402048,
+     "n_sign_flips": 6,
+     "max_err_over_row_absmax": 0.003553910738484765,
+     "rel_l2": 0.0007323825790144439
+    },
+    "bf16_out_rel_l2_vs_exact": 0.001653635771633439,
+    "bf16_rounding_of_exact": 0.0016536357716334074,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.013025833567971679,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 33280,
+     "bitwise_equal": false,
+     "frac_equal": 0.14969951923076924,
+     "n_diff": 28298,
+     "max_ulp_same_sign": 1065,
+     "n_sign_flips": 142,
+     "max_err_over_row_absmax": 0.027718926553672318,
+     "rel_l2": 0.01313063423875576
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.012942101171109532,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0022313773424342967
+   },
+   "M5_N200_K328_scale-float32": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 5.091492018106161e-08,
+     "exact_fma_ieee": 4.388035593611057e-08,
+     "fp32_ieee": 5.09950247840213e-08,
+     "fp32_fma_ieee": 4.4022732752783496e-08,
+     "exact_recip": 8.253979374715653e-05,
+     "exact_fma_recip": 8.254080387046158e-05,
+     "fp32_recip": 8.253971253044799e-05,
+     "fp32_fma_recip": 8.2540641347246e-05
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 1000,
+     "bitwise_equal": false,
+     "frac_equal": 0.996,
+     "n_diff": 4,
+     "max_ulp_same_sign": 4,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 2.981829328438362e-08,
+     "rel_l2": 3.4083830535514374e-09
+    },
+    "fma_vs_nofma": {
+     "n": 1000,
+     "bitwise_equal": false,
+     "frac_equal": 0.776,
+     "n_diff": 224,
+     "max_ulp_same_sign": 42,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 5.963658656876725e-08,
+     "rel_l2": 4.235536084385994e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 1000,
+     "bitwise_equal": false,
+     "frac_equal": 0.338,
+     "n_diff": 662,
+     "max_ulp_same_sign": 140416,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 0.0001889883428364234,
+     "rel_l2": 8.253907410917767e-05
+    },
+    "bf16_out_rel_l2_vs_exact": 0.001645840165273646,
+    "bf16_rounding_of_exact": 0.001645840165273646,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.025207157194051043,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 1000,
+     "bitwise_equal": false,
+     "frac_equal": 0.259,
+     "n_diff": 741,
+     "max_ulp_same_sign": 534,
+     "n_sign_flips": 9,
+     "max_err_over_row_absmax": 0.029513888888888888,
+     "rel_l2": 0.025182314763746484
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.024993965101737126,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.0024457429491242266
+   },
+   "M5_N200_K328_scale-bfloat16": {
+    "fp32_out_rel_l2_vs_exact": {
+     "exact_ieee": 4.440128432407661e-08,
+     "exact_fma_ieee": 3.891035658938076e-08,
+     "fp32_ieee": 4.4725989572556665e-08,
+     "fp32_fma_ieee": 3.9268472705075635e-08,
+     "exact_recip": 8.405078277425995e-08,
+     "exact_fma_recip": 8.440123176671716e-08,
+     "fp32_recip": 8.452128498020722e-08,
+     "fp32_fma_recip": 8.482519437644137e-08
+    },
+    "fp32_dot_vs_exact_dot": {
+     "n": 1000,
+     "bitwise_equal": false,
+     "frac_equal": 0.993,
+     "n_diff": 7,
+     "max_ulp_same_sign": 8,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 4.914700941922094e-08,
+     "rel_l2": 6.970922120391132e-09
+    },
+    "fma_vs_nofma": {
+     "n": 1000,
+     "bitwise_equal": false,
+     "frac_equal": 0.811,
+     "n_diff": 189,
+     "max_ulp_same_sign": 2,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 9.829401883844188e-08,
+     "rel_l2": 4.475801809615818e-08
+    },
+    "recip_vs_ieee_scale": {
+     "n": 1000,
+     "bitwise_equal": false,
+     "frac_equal": 0.695,
+     "n_diff": 305,
+     "max_ulp_same_sign": 4,
+     "n_sign_flips": 0,
+     "max_err_over_row_absmax": 9.739368651270803e-08,
+     "rel_l2": 7.735082373510103e-08
+    },
+    "bf16_out_rel_l2_vs_exact": 0.001742227162300801,
+    "bf16_rounding_of_exact": 0.001742227162300801,
+    "dequant_bf16_rel_l2_vs_exact_w8a8": 0.009208748537467634,
+    "dequant_bf16_vs_w8a8_bf16": {
+     "n": 1000,
+     "bitwise_equal": false,
+     "frac_equal": 0.369,
+     "n_diff": 631,
+     "max_ulp_same_sign": 395,
+     "n_sign_flips": 4,
+     "max_err_over_row_absmax": 0.01129032258064516,
+     "rel_l2": 0.009371386663434159
+    },
+    "w8a8_rel_l2_vs_unquantized_activation": 0.009313352908078148,
+    "dequant_bf16_rel_l2_vs_unquantized_activation": 0.002324519042280943
+   }
+  }
+ },
+ "variant_names": "<dot>[_fma]_<scale_div>: dot exact|fp32, fma contraction, scale_div ieee|recip"
+}

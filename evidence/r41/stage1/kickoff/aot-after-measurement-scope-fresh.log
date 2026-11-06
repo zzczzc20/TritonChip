@@ -1,0 +1,14 @@
+test_buffer_bounds_refused_before_submission (__main__.AotIntegrationTests.test_buffer_bounds_refused_before_submission) ... ok
+test_cache_distinguishes_pointer_element_types (__main__.AotIntegrationTests.test_cache_distinguishes_pointer_element_types) ... ok
+test_code_cannot_overwrite_heap (__main__.AotIntegrationTests.test_code_cannot_overwrite_heap) ... ok
+test_descriptor_layout_and_bounds (__main__.AotIntegrationTests.test_descriptor_layout_and_bounds) ... ok
+test_device_build_publishes_atomically (__main__.AotIntegrationTests.test_device_build_publishes_atomically) ... ok
+test_dtype_constexpr_is_recorded (__main__.AotIntegrationTests.test_dtype_constexpr_is_recorded) ... ok
+test_freed_blocks_merge_back_into_one (__main__.AotIntegrationTests.test_freed_blocks_merge_back_into_one) ... ok
+test_launch_alignment_after_buffer_reuse (__main__.AotIntegrationTests.test_launch_alignment_after_buffer_reuse) ... ok
+test_queue_scratch_isolation_and_backing_buffer_leases (__main__.AotIntegrationTests.test_queue_scratch_isolation_and_backing_buffer_leases) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 6.125s
+
+OK

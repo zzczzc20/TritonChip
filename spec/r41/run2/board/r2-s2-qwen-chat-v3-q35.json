@@ -1,0 +1,232 @@
+{
+ "schema": "tnca-experiment-spec/1",
+ "id": "r2-s2-qwen-chat-v3-q35",
+ "allowed_hosts": [
+  "acf3019"
+ ],
+ "hypothesis": "Run-2 board execution of the workload registered in spec/r41/chat/s2-qwen-chat-v3-q35.json passes its explicit numerical and structural checks on the approved 100 MHz image.",
+ "competing_explanations": [
+  "the run-2 image, its striped HBM layout, or its four-context DP profile changes behavior",
+  "a workload fails, falls back, times out, or is omitted from its registered checks",
+  "the card identity or clock changes during the run"
+ ],
+ "expected_counter_changes": [
+  "real prefill/decode launches change completion and memory-port traffic counters; the run records the observed deltas without a predetermined traffic or performance target",
+  "after the first decode graph is compiled, subsequent decode steps of a prompt add no graphs and perform no host reads",
+  "the persistent-session repeat records its graph count, code-store evictions and bitwise logit comparison; a mismatch is recorded as a failure",
+  "teacher-forced comparisons, failures and timeouts are recorded rather than assumed to pass",
+  "the chat-quality step records every prompt's answer, its scores against the archived CPU answers and its decode rate; a failed score is recorded as a failure"
+ ],
+ "expected_observations": [
+  "the registered workload completes with its numerical and structural checks passing on run-2",
+  "the experiment records the observed image, clock, software tree and raw results"
+ ],
+ "board": {
+  "image": "{home}/r41run2-auto/run2.xclbin",
+  "image_sha256": "1bf769fdbfbeb93586be86561664d43e785af3a01a739d19a3882647132d2d13",
+  "image_uuid": "01490bbd-d831-23bf-d783-56ec51bd71ce",
+  "clock_evidence": "{home}/r41run2-auto/qualified_clock.json",
+  "clock_hz": 100000000,
+  "device": "0000:04:00.1",
+  "mgmt_device": "0000:04:00.0",
+  "backend": "fpga-u280-multicore",
+  "backend_args": {
+   "xclbin": "{home}/r41run2-auto/run2.xclbin",
+   "image_profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "core_count": 3,
+   "memory_ports": 3,
+   "hbm_dma": true,
+   "hbm_bytes": 8589934592,
+   "device_clock": true
+  },
+  "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+  "transport": {
+   "deadline_cycles": 200000000000,
+   "host_timeout_seconds": 10800,
+   "source": "spec/r41/stage2/board/s2-qwen-fp8.json"
+  },
+  "memory_map": {
+   "window_base": 0,
+   "window_bytes": 8589934592,
+   "local_limit": 131072,
+   "bank": "MBG[0:31]",
+   "physical_pcs": "PC0-PC31",
+   "source": "evidence/r41/hbm_bw/g4/run2/link_1f0a5aff/xclbin_map.json",
+   "source_sha256": "c1e7b1a4f8fb4f05107fc231dcb6fbbb54361c568053e95107d34c03ae65b9fc"
+  },
+  "image_source": {
+   "commit": "1f0a5aff4b5d2df6ef9f3805513d37638bf5bc0d",
+   "branch": "r41-hbm-bw",
+   "record": "{home}/r41run2-auto/source_review_fullflow.json",
+   "parameters": "evidence/r41/hbm_bw/g4/run2/image.tcl",
+   "run": "evidence/r41/hbm_bw/g4/run2/BRINGUP.md"
+  },
+  "load_policy": "approved run-2 image after 15 consecutive idle minutes; every FPGA step checks identity"
+ },
+ "sources": [
+  "archbench",
+  "compiler/python",
+  "compiler/targets",
+  "evidence/r41/chat/quality-ref",
+  "{home}/r41run2-auto/source_review_fullflow.json",
+  "evidence/r41/hbm_bw/g4/run2/link_1f0a5aff/xclbin_map.json",
+  "isa",
+  "python/tnca",
+  "spec/r41/chat/quality-v1.json",
+  "spec/r41/run2/board/r2-s2-qwen-chat-v3-q35.json",
+  "spec/r41/chat/script-text.txt",
+  "spec/r41/chat/shapes-rot90.png",
+  "spec/r41/chat/shapes.png",
+  "tools/asm",
+  "tools/models",
+  "tools/performance_harness"
+ ],
+ "env": {
+  "MAX_JOBS": "1",
+  "OMP_NUM_THREADS": "1",
+  "MKL_NUM_THREADS": "1",
+  "CUDA_VISIBLE_DEVICES": "",
+  "PYTHONFAULTHANDLER": "1",
+  "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm",
+  "TRITON_CACHE_DIR": "{out}/caches/triton",
+  "TORCHINDUCTOR_CACHE_DIR": "{out}/caches/inductor",
+  "TORCH_EXTENSIONS_DIR": "{out}/caches/torch-extensions"
+ },
+ "registration": {
+  "status": "registered-not-run",
+  "derived_from": "spec/r41/chat/s2-qwen-chat-v3-q35.json",
+  "derived_from_sha256": "20a5c5a7df2e924d8a384f3b2a2a23f1b4bcf7a04c7a8227c93bfcc648ee04ca",
+  "generator": "tools/r41/run2_board/manifests.py",
+  "image_source_commit": "1f0a5aff4b5d2df6ef9f3805513d37638bf5bc0d",
+  "source_scope": "frozen image source separately verified; runtime tree recorded by experiment.py",
+  "inherited_expected_observations": [
+   "each chat report records the actual prefill/decode calls, graph counts, host transfers, code-store evictions and teacher-forced comparisons",
+   "no result is inferred if a step fails or the execution budget expires"
+  ],
+  "inherited_registration": {
+   "status": "registered-not-run",
+   "registered_utc": "2026-10-28",
+   "contract": "R41 chat/generation driver; not a claim of Stage 2 acceptance",
+   "launch": "spec/r41/chat/board_queue.sh",
+   "tool": "tools/models/chat.py",
+   "inputs": "{home}/r41s2_fp8_inputs (pinned HF snapshots and snapview; CPU reference is generated directly by chat.py)",
+   "reference": "tools/models/fp8_blockwise_ref.py",
+   "settings": "default TNCA compiler/runtime settings; only the platform identity is selected (TNCA_BACKEND, TNCA_BACKEND_ARGS, TNCA_PROFILE matching the loaded image, clock evidence, deadlines and host timeouts)"
+  }
+ },
+ "steps": [
+  {
+   "id": "q35-session",
+   "kind": "fpga",
+   "timeout_seconds": 5400,
+   "env": {
+    "TNCA_BACKEND": "fpga-u280-multicore",
+    "TNCA_BACKEND_ARGS": "{\"xclbin\":\"{home}/r41run2-auto/run2.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8-g2c4-dp\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":8589934592,\"device_clock\":true}",
+    "TNCA_PROFILE": "core-vrf-sync-v5-x8-g2c4-dp",
+    "TNCA_OPERATING_CLOCK_EVIDENCE": "{home}/r41run2-auto/qualified_clock.json",
+    "TNCA_DEADLINE": "200000000000",
+    "TNCA_HOST_TIMEOUT": "5400",
+    "HF_HOME": "{home}/r41s2_fp8_inputs/hf",
+    "HF_HUB_OFFLINE": "1",
+    "QWEN_FP8_VIEW_DIR": "{home}/r41s2_fp8_inputs/snapview"
+   },
+   "argv": [
+    "{home}/r41s2_fp8env/bin/python",
+    "-I",
+    "-u",
+    "{root}/tools/models/chat.py",
+    "--model",
+    "q35",
+    "--device",
+    "tnca",
+    "--tnca-tree",
+    "{root}",
+    "--threads",
+    "4",
+    "--prompt",
+    "Say hi.",
+    "--new-tokens",
+    "4",
+    "--check-tokens",
+    "2",
+    "--bucket",
+    "64",
+    "--session-check",
+    "Say no.",
+    "--cpu-floor-multiplier",
+    "2",
+    "--require-argmax",
+    "--out",
+    "{out}/q35-session"
+   ],
+   "timing_boundary": "wall time of each actual model call in the chat report; compilation is included in the first prefill/decode calls and is not hidden",
+   "cache_state": "fresh process and session per step; experiment-local Triton/Inductor/extension caches under {out}/caches",
+   "outputs": [
+    "{out}/q35-session/report.json"
+   ]
+  },
+  {
+   "id": "q35-quality",
+   "kind": "fpga",
+   "timeout_seconds": 5400,
+   "env": {
+    "TNCA_BACKEND": "fpga-u280-multicore",
+    "TNCA_BACKEND_ARGS": "{\"xclbin\":\"{home}/r41run2-auto/run2.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8-g2c4-dp\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":8589934592,\"device_clock\":true}",
+    "TNCA_PROFILE": "core-vrf-sync-v5-x8-g2c4-dp",
+    "TNCA_OPERATING_CLOCK_EVIDENCE": "{home}/r41run2-auto/qualified_clock.json",
+    "TNCA_DEADLINE": "200000000000",
+    "TNCA_HOST_TIMEOUT": "5400",
+    "HF_HOME": "{home}/r41s2_fp8_inputs/hf",
+    "HF_HUB_OFFLINE": "1",
+    "QWEN_FP8_VIEW_DIR": "{home}/r41s2_fp8_inputs/snapview"
+   },
+   "argv": [
+    "{home}/r41s2_fp8env/bin/python",
+    "-I",
+    "-u",
+    "{root}/tools/models/chat_quality.py",
+    "--model",
+    "q35",
+    "--device",
+    "tnca",
+    "--tnca-tree",
+    "{root}",
+    "--threads",
+    "4",
+    "--spec",
+    "{root}/spec/r41/chat/quality-v1.json",
+    "--reference",
+    "{root}/evidence/r41/chat/quality-ref/q35.json",
+    "--root",
+    "{root}",
+    "--prefill-chunk",
+    "8",
+    "--out",
+    "{out}/q35-quality"
+   ],
+   "timing_boundary": "wall time of each actual model call in the chat report; compilation is included in the first prefill/decode calls and is not hidden",
+   "cache_state": "fresh process and session per step; experiment-local Triton/Inductor/extension caches under {out}/caches",
+   "outputs": [
+    "{out}/q35-quality/quality.json"
+   ]
+  }
+ ],
+ "tolerance_rule": {
+  "registered_utc": "2026-10-28",
+  "source": "author decision, in the lead's chat, 2026-10-28 (relayed by the coordinator): the per-token logit tolerance may be changed if the new rule is written into the registered spec, with date and justification, before the next result",
+  "rule": "per teacher-forced step: rel_l2(device logits, CPU W8A8 reference logits) <= max(0.05, 2 x the CPU reference's own reciprocal-vs-IEEE scale-rounding floor at that step), and the device argmax equals the reference argmax (chat.py --cpu-floor-multiplier 2 --require-argmax)",
+  "justification": "The CPU W8A8 reference is itself ambiguous at the level of its activation-scale rounding: computing the scale as amax*(1/448) instead of amax/448 moves the Qwen3.5 logits by a relative L2 of 0.05941731822088129 at the second checked token (evidence/r41/chat/q35-cpu-floor-v1.tgz), more than the fixed 0.05 limit. A device that rounds differently but no worse than the reference's own alternatives is within twice that floor; the argmax requirement keeps the chosen token itself exact. The 0.05 minimum keeps the old limit wherever the floor is small.",
+  "prior_results": "Runs before this registration are judged by the fixed 0.05 rule and keep their judgments (the Qwen3.5 TLM runs remain failed)."
+ },
+ "chat_quality": {
+  "spec": "spec/r41/chat/quality-v1.json",
+  "reference_answers": "evidence/r41/chat/quality-ref/",
+  "source": "author decision, in the lead's chat, 2026-10-28: the acceptance criterion is whether the final model can hold a normal conversation and show normal intelligence; a registered chat-quality check fixed before the run",
+  "prefill": "text turns are prefilled in chunks of 8 tokens with the remainder through the decode graph, so the compiled prefill shapes stay bounded across prompts; image turns are prefilled whole; graphs compile with static shapes"
+ },
+ "environment": {
+  "interpreter": "{home}/r41s2_fp8env/bin/python (torchenv with a .pth that sets torch.version.cuda)",
+  "status": "author-approved as the default chat environment, in the lead's chat, 2026-10-28"
+ },
+ "budget_note": "The queue's 10,800-second execution cap applies across the steps in order; a step that does not fit is recorded as not run or stopped."
+}

@@ -1,0 +1,2 @@
+WIDE NI MESH PASS data=64 payload=216 links=2 stall=0 requests=768 injection_span=768 cycles=782
+tb/noc/tb_wide_ni.v:106: $finish called at 7865000 (1ps)

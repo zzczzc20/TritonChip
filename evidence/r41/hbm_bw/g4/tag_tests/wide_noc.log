@@ -1,0 +1,28 @@
+WIDE NI MESH PASS data=64 tag=5 payload=216 links=0 stall=0 requests=768 injection_span=768 cycles=776
+tb/noc/tb_wide_ni.v:106: $finish called at 7805000 (1ps)
+WIDE NI MESH PASS data=64 tag=5 payload=216 links=0 stall=1 requests=768 injection_span=859 cycles=869
+tb/noc/tb_wide_ni.v:106: $finish called at 8735000 (1ps)
+WIDE NI MESH PASS data=64 tag=5 payload=216 links=2 stall=0 requests=768 injection_span=768 cycles=782
+tb/noc/tb_wide_ni.v:106: $finish called at 7865000 (1ps)
+WIDE NI MESH PASS data=64 tag=5 payload=216 links=2 stall=1 requests=768 injection_span=859 cycles=878
+tb/noc/tb_wide_ni.v:106: $finish called at 8825000 (1ps)
+WIDE NI MESH PASS data=512 tag=5 payload=720 links=0 stall=0 requests=768 injection_span=768 cycles=776
+tb/noc/tb_wide_ni.v:106: $finish called at 7805000 (1ps)
+WIDE NI MESH PASS data=512 tag=5 payload=720 links=0 stall=1 requests=768 injection_span=859 cycles=869
+tb/noc/tb_wide_ni.v:106: $finish called at 8735000 (1ps)
+WIDE NI MESH PASS data=512 tag=5 payload=720 links=2 stall=0 requests=768 injection_span=768 cycles=782
+tb/noc/tb_wide_ni.v:106: $finish called at 7865000 (1ps)
+WIDE NI MESH PASS data=512 tag=5 payload=720 links=2 stall=1 requests=768 injection_span=859 cycles=878
+tb/noc/tb_wide_ni.v:106: $finish called at 8825000 (1ps)
+WIDE NI MESH PASS data=512 tag=7 payload=722 links=0 stall=0 requests=768 injection_span=768 cycles=776
+tb/noc/tb_wide_ni.v:106: $finish called at 7805000 (1ps)
+WIDE NI MESH PASS data=512 tag=7 payload=722 links=0 stall=1 requests=768 injection_span=859 cycles=869
+tb/noc/tb_wide_ni.v:106: $finish called at 8735000 (1ps)
+WIDE NI MESH PASS data=512 tag=7 payload=722 links=2 stall=0 requests=768 injection_span=768 cycles=782
+tb/noc/tb_wide_ni.v:106: $finish called at 7865000 (1ps)
+WIDE NI MESH PASS data=512 tag=7 payload=722 links=2 stall=1 requests=768 injection_span=859 cycles=878
+tb/noc/tb_wide_ni.v:106: $finish called at 8825000 (1ps)
+tnca_core_ni INCONSISTENT GEOMETRY REFUSED
+tnca_slice_ni INCONSISTENT GEOMETRY REFUSED
+WIDE NOC ALL 12 CONFIGURATIONS PASS
+rc=0

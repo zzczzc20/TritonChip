@@ -1,0 +1,35 @@
+{
+  "status": "real-collection-integrity-checks-pass",
+  "positive_points": 9,
+  "refusals": [
+    {
+      "mutation": "output-bytes",
+      "rejected": "experiment output hash mismatch"
+    },
+    {
+      "mutation": "missing-point",
+      "rejected": "exact nine-point old and eighteen-configuration fixed/narrow cohorts required"
+    },
+    {
+      "mutation": "wrong-image",
+      "rejected": "model.mlp/medium/fp16-t128-d128: wrong image 0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "mutation": "numeric-failure",
+      "rejected": "model.mlp/medium/fp16-t128-d128: status fail"
+    },
+    {
+      "mutation": "source-delta",
+      "rejected": "measured source delta is not isolated: ['compiler/python/tnca_cc/frontend.py', 'compiler/python/tnca_cc/register_blocks.py']"
+    },
+    {
+      "mutation": "artifact-bytes",
+      "rejected": "actual executed artifact missing or changed"
+    },
+    {
+      "mutation": "unfinished",
+      "rejected": "complete experiment on the registered source required"
+    }
+  ],
+  "comparator_sha256": "c34d41cf06290f0fb1b7641253680e1ea9d3de600cfc0bf215093c49598ec86b"
+}

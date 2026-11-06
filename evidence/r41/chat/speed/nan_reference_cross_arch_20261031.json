@@ -1,0 +1,87 @@
+{
+  "scope": "256 raw IEEE input-pair combinations; CPU only",
+  "count": 256,
+  "bit_mismatches": 16,
+  "differences": [
+    {
+      "index": 32,
+      "x86": "7fc12345",
+      "gb10": "7fc00001"
+    },
+    {
+      "index": 33,
+      "x86": "7fc12345",
+      "gb10": "ffc00001"
+    },
+    {
+      "index": 48,
+      "x86": "ffc12345",
+      "gb10": "7fc00001"
+    },
+    {
+      "index": 49,
+      "x86": "ffc12345",
+      "gb10": "ffc00001"
+    },
+    {
+      "index": 64,
+      "x86": "7fffffff",
+      "gb10": "7fc00001"
+    },
+    {
+      "index": 65,
+      "x86": "7fffffff",
+      "gb10": "ffc00001"
+    },
+    {
+      "index": 80,
+      "x86": "ffffffff",
+      "gb10": "7fc00001"
+    },
+    {
+      "index": 81,
+      "x86": "ffffffff",
+      "gb10": "ffc00001"
+    },
+    {
+      "index": 102,
+      "x86": "ffc00000",
+      "gb10": "7fc00000"
+    },
+    {
+      "index": 103,
+      "x86": "ffc00000",
+      "gb10": "7fc00000"
+    },
+    {
+      "index": 118,
+      "x86": "ffc00000",
+      "gb10": "7fc00000"
+    },
+    {
+      "index": 119,
+      "x86": "ffc00000",
+      "gb10": "7fc00000"
+    },
+    {
+      "index": 136,
+      "x86": "ffc00000",
+      "gb10": "7fc00000"
+    },
+    {
+      "index": 137,
+      "x86": "ffc00000",
+      "gb10": "7fc00000"
+    },
+    {
+      "index": 152,
+      "x86": "ffc00000",
+      "gb10": "7fc00000"
+    },
+    {
+      "index": 153,
+      "x86": "ffc00000",
+      "gb10": "7fc00000"
+    }
+  ]
+}

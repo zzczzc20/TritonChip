@@ -1,0 +1,71 @@
+diff --git a/python/tnca/triton_backend/driver.py b/python/tnca/triton_backend/driver.py
+index 3ef712a1..98c3535c 100644
+--- a/python/tnca/triton_backend/driver.py
++++ b/python/tnca/triton_backend/driver.py
+@@ -41,9 +41,12 @@ one kernel.
+ """
+ import contextlib
+ import json
++import math
+ import os
+ import tempfile
+ import threading
++import weakref
++from collections import Counter
+ import time
+ 
+ from triton.backends.compiler import GPUTarget
+@@ -471,6 +474,7 @@ class TNCALauncher:
+ _loaded = {}
+ _loaded_by_artifact = {}
+ _artifact_hashes = {}
++_cache_frequency = weakref.WeakKeyDictionary()
+ evicted = 0                  # modules unloaded to make code room (resident sessions)
+ 
+ 
+@@ -497,6 +501,22 @@ def _load(session, path):
+     key = (session.id, session.epoch, path)
+     digest = _artifact_sha256(path)
+     artifact_key = (session.id, session.epoch, digest)
++    frequency = None
++    policy = os.environ.get('TNCA_CODE_CACHE_POLICY')
++    if policy in ('lfu', 'lfu-sqrt'):
++        state = _cache_frequency.setdefault(session, dict(epoch=session.epoch, calls=0, counts=Counter()))
++        if state['epoch'] != session.epoch:
++            state.update(epoch=session.epoch, calls=0, counts=Counter())
++        frequency = state['counts']
++        state['calls'] += 1
++        if state['calls'] >= 256:
++            # Age old hot artifacts so the cache can adapt to a new phase.
++            for item in list(frequency):
++                frequency[item] //= 2
++                if not frequency[item]:
++                    del frequency[item]
++            state['calls'] = 0
++        frequency[(session.epoch, digest)] += 1
+     m = _loaded.get(key)
+     if m is None:
+         resident_key = _loaded_by_artifact.get(artifact_key)
+@@ -515,10 +535,19 @@ def _load(session, path):
+         if 'overlaps the device heap' not in str(e):
+             raise
+         session.drain()
+-        for old_key in list(_loaded):
+-            if old_key[0] != session.id or old_key[1] != session.epoch:
++        old_keys = [k for k in _loaded if k[:2] == (session.id, session.epoch)]
++        if frequency is not None:
++            def priority(k):
++                module = _loaded[k]
++                count = frequency[(session.epoch, _artifact_sha256(module.path))]
++                return count / math.sqrt(module.code_size) if policy == 'lfu-sqrt' else count
++            old_keys.sort(key=priority)
++        for old_key in old_keys:
++            # Artifact aliases may already have been removed by an earlier
++            # iteration over the same module.
++            old = _loaded.get(old_key)
++            if old is None:
+                 continue
+-            old = _loaded[old_key]
+             session.unload(old)
+             for alias, module in list(_loaded.items()):
+                 if module is old:

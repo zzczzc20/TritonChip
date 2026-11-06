@@ -62,10 +62,10 @@ def main():
                    double_it, signature=SIG, constexprs={'BLOCK': 16},
                    profile='core-imaginary',
                    output='/tmp/tnca-tutorial-06b.tnca'))
-    ok &= show("a block wider than one element per lane",
+    ok &= show("an invalid value for a known option",
                lambda: aot.compile_aot(
-                   double_it, signature=SIG, constexprs={'BLOCK': 256},
-                   profile=PROFILE,
+                   double_it, signature=SIG, constexprs={'BLOCK': 16},
+                   profile=PROFILE, options={'window_reuse': 2},
                    output='/tmp/tnca-tutorial-06c.tnca'))
 
     art = aot.compile_aot(double_it, signature=SIG,

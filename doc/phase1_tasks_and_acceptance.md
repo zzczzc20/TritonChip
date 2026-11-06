@@ -1,285 +1,285 @@
-# 第一阶段 R1：完整任务清单与不可豁免的验收合同
+# Phase 1 (R1): Full Task Inventory and Non-Waivable Acceptance Contract
 
-版本：1.0，2026-09-19。状态：**规范已制定，实现尚未验收。**
+Version: 1.0, 2026-09-19. Status: **Specification established; implementation not yet accepted.**
 
-依据：[当前代码审计](production_readiness_audit_2026-09-19.md)、[架构原始设计](design/tnca_v1_architecture_draft.md)、[编译器原始设计](design/tnca_v1_compiler_draft.md)。审计基线 commit 为 `6c90063`；当时的测试记录在 [audit/2026-09-19](audit/2026-09-19/verification_summary.json)。旧回归通过不表示本合同已通过。
+Basis: [Current Code Audit](production_readiness_audit_2026-09-19.md), [Original Architecture Design](design/tnca_v1_architecture_draft.md), [Original Compiler Design](design/tnca_v1_compiler_draft.md). The audit baseline commit is `6c90063`; historical test records are archived in [audit/2026-09-19](audit/2026-09-19/verification_summary.json). Passing legacy regressions does not signify passing this contract.
 
-本文件把审计中的 R1 落成执行合同。**本阶段完成的唯一判据是：本文所有必交付项、所有必跑用例、所有证据要求，在同一个候选 commit 上全部满足。没有百分比完成验收，没有带问题通过，没有临时豁免。**
+This document operationalizes R1 from the audit into an executable contract. **The sole criterion for completion of this phase is: all mandatory deliverables, all mandatory test cases, and all evidentiary requirements in this document are fully satisfied on the identical candidate commit. There is no percentage-based completion acceptance, no conditional pass with known defects, and no temporary waivers.**
 
-## 1. 阶段目标、边界和禁止退让的规则
+## 1. Phase Objectives, Boundaries, and Non-Waivable Rules
 
-### 1.1 唯一阶段目标
+### 1.1 Sole Phase Objective
 
-交付一个可在干净环境重建、可可靠发现失败、编译器能阻止已支持程序中的异步资源违规、编译目标与实际硬件一致的 **2×2 实验性 AOT 基线**。
+Deliver a **2×2 experimental AOT baseline** that can be reconstructed in a clean environment, reliably detects failures, enforces compiler prevention of asynchronous resource violations in supported programs, and aligns compilation targets with actual hardware instances.
 
-这里的 AOT 基线指已有的提前编译到汇编/镜像并在 RTL 上执行的流程。R1 不要求完成 R2 的可安装产品 CLI、动态参数 ABI、通用 grid scheduler、生产 loader 或真实 host driver。R1 必须提供统一的**验收入口和编译安全检查入口**，不能用产品入口尚未完成作为关闭检查的理由。
+Here, the AOT baseline refers to the existing flow of ahead-of-time compilation to assembly/binary and execution on RTL. R1 does not require completing R2's installable production CLI, dynamic parameter ABI, general grid scheduler, production loader, or physical host driver. R1 must provide unified **acceptance entry points and compilation safety checking entry points**, and the lack of a production entry point cannot be used as justification for disabling checks.
 
-### 1.2 范围冻结
+### 1.2 Scope Freeze
 
-| 必须在 R1 完成 | R1 不新增的能力 |
+| Mandatory in R1 | Excluded from R1 (No New Capabilities) |
 |---|---|
-| F01–F04 的根因修复；K16/K32/K64 与 dtype 的实际 footprint 校验 | 新的 Attention/Conv 算子或完整 Triton 支持 |
-| F05 的边界封闭：不支持的 topology 在运行前拒绝 | 4×4 实现、任意 grid 调度 |
-| F06 的安全子集实现与显式拒绝；保住已有合法循环/多角色路径 | 通用跨 CFG、任意嵌套 region 的完整优化编译器 |
-| F07 中当前 importer 的函数选择、参数绑定、支持边界检查 | 正式 Triton 插件的全部 pass、完整 LLVM target、生产 runtime |
-| F08 中完成本基线所需的锁定环境、CI、生成物再生成与证据 | FPGA/ASIC 签核、真实 SRAM、host 一致性、生产多租户隔离 |
-| F09 中现有有限 workload 的进展/资源守恒回归 | 无限流量下的全系统活性证明、新 cache/flow policy |
-| F11 中当前状态、能力矩阵与验证记录同步 | 完整性能调优、全芯片 PPA 承诺 |
+| Root-cause remediation of F01–F04; actual footprint verification for K16/K32/K64 and dtypes | New Attention/Conv operators or full Triton coverage |
+| Closure of F05 boundaries: reject unsupported topologies prior to execution | 4×4 implementation, arbitrary grid scheduling |
+| Safe subset implementation and explicit rejection for F06; preserve existing valid loops / multi-role paths | General cross-CFG, arbitrary nested region optimizing compiler |
+| Function selection, parameter binding, and support boundary validation for current importer in F07 | Full passes of official Triton plugin, complete LLVM target, production runtime |
+| Locked environment, CI, artifact regeneration, and evidence required for this baseline in F08 | FPGA/ASIC signoff, physical SRAMs, host coherence, production multi-tenant isolation |
+| Progress and resource-conservation regressions for existing finite workloads in F09 | System-wide liveness proofs under unbounded traffic, new cache/flow policies |
+| Synchronization of current status, capability matrix, and verification records in F11 | Full performance tuning, full-chip PPA commitments |
 
-此边界是阶段分工，不是对阶段内失败的豁免。审计概述中的“先修 F01–F05”在 R1 的确切含义是：F01–F04 完整修复，F05 通过禁止不支持的配置关闭当前错误入口；4×4 功能实现留给 R4。
+This boundary constitutes phased division of labor, not a waiver for failures within this phase. The phrase "first resolve F01–F05" in the audit summary means specifically for R1: complete fixes for F01–F04, and closing current error entry points for F05 by forbidding unsupported configurations; full 4×4 functional implementation is deferred to R4.
 
-### 1.3 验收规则
+### 1.3 Acceptance Rules
 
-1. **零失败、零错误、零跳过、零 xfail、零 xpass、零超时、零失联子进程。** 缺工具、没有硬件 profile、FileCheck 未安装、Triton import 失败都使验收失败。
-2. 负例必须作为正式测试执行：预期的编译拒绝/硬件 trap 是测试的成功条件。负例不能以 unittest skip、xfail 或忽略退出码实现。
-3. 缺失证据、没有执行、结果未知、结果格式错误均等价于未通过；不能默认 PASS。
-4. 禁止删除或禁用基线测试、降低随机规模、提高数值容差、增加资源以掩盖原 profile 的错误、移除负例、删除功能声明以规避本文件冻结的必保留能力。
-5. 禁止“重跑直到成功”：release run 内 retry=0。任一次失败均保留该 run 的 FAIL；修复后用新的候选 commit 重新执行完整验收。
-6. 不得将另一个 commit、另一个 profile、单核测试或模型测试的结果替代当前候选的整机结果。
-7. 不得修改生成汇编、人工补 barrier、预填正确输出、绕过真实前端来满足相应 E2E 用例。
-8. 所有强制用例必须有唯一 ID；发现的用例集合必须等于验收清单的集合。仅比较总数不够，重命名/拆分必须保留原语义 ID 的映射。
-9. 候选 commit 的任一受控源码、配置、锁文件、测试或本合同有变化，都使旧签收失效。不得在已知失败后仅修改清单或门槛将同一候选转为通过。
-10. 没有 waiver 字段、允许失败列表或“仅开发环境问题”的例外。若不能达到本合同，阶段状态保持 **NOT ACCEPTED**。
+1. **Zero failures, zero errors, zero skips, zero xfail, zero xpass, zero timeouts, and zero orphaned subprocesses.** Missing tools, absent hardware profiles, uninstalled FileCheck, or Triton import failures cause acceptance to fail.
+2. Negative test cases must execute as formal tests: expected compilation rejection or hardware trap is the success condition. Negative tests must not be implemented as unittest skips, xfail, or ignored exit codes.
+3. Missing evidence, unexecuted tests, unknown results, and corrupted result formats are all equivalent to failure; PASS must never be assumed by default.
+4. Forbidding deletion or disabling of baseline tests, reduction of randomization scale, relaxation of numerical tolerances, inflation of resources to conceal original profile defects, removal of negative tests, or deletion of capability declarations to evade preserved capabilities frozen in this document.
+5. "Retry until pass" is forbidden: retry=0 within release runs. Any single failure retains FAIL for that run; after remediation, full acceptance must be re-executed from scratch on a new candidate commit.
+6. Results from another commit, another profile, single-core tests, or simulation models must not substitute for full-system results on the current candidate.
+7. Modifying generated assembly, manually inserting barriers, pre-filling correct outputs, or bypassing the real frontend to satisfy corresponding E2E test cases is strictly prohibited.
+8. All mandatory test cases must possess unique IDs; the discovered test case set must strictly equal the acceptance inventory set. Comparing total counts alone is insufficient; renaming or splitting must retain mappings to original semantic IDs.
+9. Any modification to tracked source code, configurations, lockfiles, tests, or this contract invalidates previous signoffs for the candidate commit. Modifying inventories or thresholds to turn a known failure on the same candidate into a pass is prohibited.
+10. No waiver fields, allowed-failure lists, or "development-environment-only" exceptions exist. If this contract is not fully satisfied, the phase status remains **NOT ACCEPTED**.
 
-## 2. 必须保留的配置和能力
+## 2. Mandatory Configurations and Capabilities to Preserve
 
-### 2.1 配置清单
+### 2.1 Configuration Inventory
 
-下列为 R1 规范 ID，实施时必须形成机器可读 profile；旧名字允许保留为无歧义的别名，不能把不同实例混为同一 target。
+The following are R1 specification IDs, which must form machine-readable profiles upon implementation; legacy names may be retained as unambiguous aliases, but distinct instances must not be conflated into the same target.
 
-| Profile ID | 硬件范围 | 必须冻结的关键参数 | 必跑验证 |
+| Profile ID | Hardware Scope | Mandatory Frozen Key Parameters | Mandatory Verification |
 |---|---|---|---|
-| `core-2r-sfu` | 独立 core | 2 RCTX，VLEN=16，ELEN=32，128 physical VREG，64 logical VREG/RCTX，SFU=1 | fast/slow/ooo、原 core 程序、编译器 RTL、能力读回 |
-| `core-4r-sfu` | 独立 core | 4 RCTX，VLEN=16，ELEN=32，128 physical VREG，32 logical VREG/RCTX，SFU=1 | 能力读回、一个 producer/两个 consumer、多消费者最后释放 |
-| `system-2x2-nosfu` | 四 tile 整机 | NX=NY=2，每 tile 2 RCTX，SFU=0；每 slice 64 sets、8 ways、64 B line、8 MSHR、16 targets | 每 tile 能力读回、原 top 四种运行、真实 Triton 整机 E2E |
+| `core-2r-sfu` | Standalone core | 2 RCTX, VLEN=16, ELEN=32, 128 physical VREGs, 64 logical VREGs/RCTX, SFU=1 | fast/slow/ooo, original core programs, compiler RTL, capability readback |
+| `core-4r-sfu` | Standalone core | 4 RCTX, VLEN=16, ELEN=32, 128 physical VREGs, 32 logical VREGs/RCTX, SFU=1 | Capability readback, one producer / two consumers, multi-consumer last release |
+| `system-2x2-nosfu` | 4-tile full system | NX=NY=2, 2 RCTX/tile, SFU=0; per slice: 64 sets, 8 ways, 64 B line, 8 MSHRs, 16 targets | Per-tile capability readback, 4 original top runs, real Triton full-system E2E |
 
-其余资源数量以冻结的统一 profile 文件为准，必须和实际 elaboration 逐项相符。不能把 `core-4r-sfu` 写成已经验收的四 core/四 RCTX 整机。fast/slow/ooo 是内存行为变体，必须具有不同 build fingerprint，但不伪造不同 ISA 能力。
+Remaining resource quantities are governed by the frozen unified profile files and must correspond item-by-item to actual elaboration. `core-4r-sfu` must not be represented as an accepted 4-core / 4-RCTX full system. fast/slow/ooo are memory behavioral variants that must carry distinct build fingerprints without fabricating divergent ISA capabilities.
 
-R1 的 system profile 不支持 NX/NY 改为 1×1、1×2、2×1、4×4 或非正值；这些配置必须在配置校验/elaboration 阶段失败，不能启动仿真后错误路由。独立 core profile 不等于 1×1 mesh。
+The R1 system profile does not support changing NX/NY to 1×1, 1×2, 2×1, 4×4, or non-positive values; such configurations must fail during configuration validation / elaboration rather than launching simulation into misrouting. Standalone core profiles do not equal a 1×1 mesh.
 
-### 2.2 不能退步的功能集合
+### 2.2 Capabilities Subject to Non-Regression
 
-- 所有审计基线中的 core 程序、浮点/转换/SFU/decoder/assembler 用例。
-- Python TNCA IR 的 masked elementwise、integer/FP32 reduction、gather；真实 Triton 的 add/mul-add 及已存在的角色分区闭环。
-- FP16/BF16 GEMM，现有 stride 和 M/N/K tail；原专用 GEMM planner 与 lowering。
-- 两角色 ready/free 流水、2/3-slot ring、0/1/2/3/5/6 次迭代、predicated-off async、错误传播、slow/ooo。
-- 已有 unrolled 与 rolled 专用 GEMM 路径，包括 rolled K64/K128 和三槽 K96；四 RCTX 的双消费者释放。
-- NUCA hit-past-block、dirty writeback、MSHR/target、mesh 背压、设备原子操作与既有异常隔离。
+- All core programs, floating-point / conversion / SFU / decoder / assembler test cases from the audit baseline.
+- Python TNCA IR masked elementwise, integer/FP32 reduction, gather; real Triton add/mul-add and existing role-partitioned closed loops.
+- FP16/BF16 GEMM, existing stride and M/N/K tail support; original specialized GEMM planner and lowering.
+- Two-role ready/free pipelines, 2/3-slot ring, 0/1/2/3/5/6 iterations, predicated-off async, error propagation, slow/ooo memory models.
+- Existing unrolled and rolled specialized GEMM paths, including rolled K64/K128 and 3-slot K96; dual-consumer release on 4 RCTXs.
+- NUCA hit-past-block, dirty writeback, MSHR/target tracking, mesh backpressure, device atomic operations, and existing exception isolation.
 
-本清单按**具体入口**保留能力：手工构造 TNCA IR 的 GEMM 不得标成真实 Triton GEMM；单核 SFU 不得标成整机 SFU。通用 TTIR 控制流未实现可以明确拒绝，但不能顺便拒绝已经能正确运行的专用 rolled pipeline。
+This inventory preserves capabilities by **concrete entry point**: hand-constructed TNCA IR GEMMs must not be labeled as real Triton GEMMs; single-core SFU must not be labeled as full-system SFU. Unimplemented general TTIR control flow may be explicitly rejected, but must not cause rejection of already functional specialized rolled pipelines.
 
-## 3. 全部工作包及独立验收门槛
+## 3. All Work Packages and Independent Acceptance Gates
 
-每个工作包都必须交付实现、测试、文档和证据；责任字段必须填写实际负责人。下表中的角色只是实施职责，不代替最终负责人记录。
+Each work package must deliver implementation, tests, documentation, and evidence; the assignee field must record actual individuals responsible. Roles in the tables represent functional responsibilities and do not substitute for final signoff attribution.
 
-### R1-01：冻结规范、支持矩阵和基线用例
+### R1-01: Freeze Specifications, Support Matrix, and Baseline Cases
 
-责任：维护者/验证。
+Responsibility: Maintainers / Verification.
 
-必须完成：
+Mandatory deliverables:
 
-- 导出基线的全部语义用例 ID、入口、profile、输入、期望结果与旧测试位置；建立 `r1_required_cases.json` 或等价受版本控制清单。
-- 将“ISA 定义、profile 实现、编译器可生成、整机验证”分为四列，另列 dtype/K/shape/stride/control-flow 限制。
-- 为所有异步操作写出 read/write footprint、资源保持时刻、释放事件、错误完成行为、barrier generation 和 predicated-off 行为。
-- 给每个新用例绑定本文件工作包/审计问题 ID；把两份原始设计标为设计意图，不覆盖成现状说明。
+- Export all baseline semantic test case IDs, entry points, profiles, inputs, expected outputs, and legacy test locations; establish `r1_required_cases.json` or equivalent version-controlled inventory.
+- Divide support matrices into four explicit columns: "Defined in ISA", "Implemented in Profile", "Emittable by Compiler", and "Verified in Full-System RTL", alongside explicit dtype/K/shape/stride/control-flow constraints.
+- Document read/write footprints, resource hold durations, release events, error completion behavior, barrier generation, and predicated-off semantics for all asynchronous operations.
+- Map each new test case to work packages in this document and audit finding IDs; mark the two original design documents as architectural intent without overwriting them as descriptions of current state.
 
-验收：基线所有语义 ID 均可追踪；不存在只有“支持”二字而无入口/profile/测试的条目；必跑清单不得为空；没有未确定的边界、TBD、TODO 或未填写责任人。实现暂缺但属于必交付范围的条目只能标 FAIL/NOT RUN，不能标不适用。
+Acceptance: All baseline semantic IDs are traceable; no entries contain bare "supported" assertions without entry points, profiles, and tests; mandatory test inventory must not be empty; no unresolved boundaries, TBDs, TODOs, or unassigned owners. Items lacking implementation within the mandatory delivery scope must be marked FAIL/NOT RUN rather than N/A.
 
-### R1-02：统一失败传播、超时和结果格式（F02）
+### R1-02: Unified Failure Propagation, Timeouts, and Result Formats (F02)
 
-责任：构建/验证。
+Responsibility: Build / Verification.
 
-必须完成：
+Mandatory deliverables:
 
-- 修复 Make、Python runner、IR runner、assembler/simulator 调用链；上游任一非零退出不得被 `tail`、管道或日志格式掩盖。
-- `rtl_harness.run/run_system` 同时检查进程返回码、预期结果、完整输出；禁止仅用 `'PASS' in stdout` 判成功。
-- 所有子进程有 wall-clock timeout；RTL 另有 cycle timeout。超时终止整个该测试进程组，回收子孙进程并写出 TIMEOUT。
-- strict 模式任何 skip/xfail/xpass 都失败；开发模式可保留可选测试，但不能产生 R1 PASS 证据。
-- 测试构建、输入、输出、dump 使用每次 run/用例独立目录；不共享 `cc_<name>` 文件，不能读取上次运行残留。
+- Remediate Make, Python runner, IR runner, assembler, and simulator invocation chains; any upstream non-zero exit code must not be swallowed by `tail`, shell pipes, or log formatters.
+- `rtl_harness.run/run_system` must concurrently inspect process return codes, expected results, and complete output; determining success solely via `'PASS' in stdout` is strictly prohibited.
+- All subprocesses must have wall-clock timeouts; RTL simulations must additionally enforce cycle timeouts. Subprocess timeouts must terminate the entire process group, reclaim descendant processes, and output TIMEOUT.
+- Strict mode fails on any skip, xfail, or xpass; development mode may retain optional tests, but cannot generate R1 PASS evidence.
+- Test builds, inputs, outputs, and dumps must utilize independent per-run and per-case directories; `cc_<name>` files must not be shared across runs, and residual artifacts from previous executions must never be read.
 
-下列失败注入逐项必跑，测试驱动必须检测到预期失败；驱动自身最后返回 0 才表示此负例通过：
+The following failure injections are mandatory and must be verified individually; test harnesses must observe expected failures, and the harness itself returning 0 indicates a passing negative test:
 
-| ID | 注入 | 必须观察到的结果 |
+| ID | Injection | Mandatory Observed Result |
 |---|---|---|
-| RUN-01 | `TRITON_PYTHON=/usr/bin/false` 调两个 E2E Make 入口 | 两个入口分别非零退出 |
-| RUN-02 | interpreter 不存在、Triton import 异常、FileCheck 缺失 | 明确缺失依赖，strict 非零；不是 SKIP |
-| RUN-03 | Python assertion/error、assembler 非零 | 顶层 gate 非零，原 traceback/stderr 保留 |
-| RUN-04 | simulator 输出 PASS 后退出 7 | 判失败，记录 exit=7 |
-| RUN-05 | simulator 退出 0，但无结果、同时出现 PASS/FAIL、结果格式损坏 | 全部判失败 |
-| RUN-06 | 子进程挂起并派生一个挂起子进程 | 到截止时间后终止整个测试进程组；5 秒内无存活子孙进程 |
-| RUN-07 | suite 空集合、少发现一个必跑 case、重复 case ID、skip、xfail、xpass | 全部判失败 |
-| RUN-08 | 删除本次 dump，但保留上次正确 dump | 判失败，不消费旧输出 |
-| RUN-09 | IR shell pipeline 第一段失败、末段成功 | 判失败 |
-| RUN-10 | 同一用例两个并发 run，输入/输出不同 | 两个结果各自正确，工件无覆盖/交叉读取 |
+| RUN-01 | `TRITON_PYTHON=/usr/bin/false` invoking two E2E Make targets | Both targets exit non-zero |
+| RUN-02 | Absent interpreter, Triton import exception, missing FileCheck | Explicit missing dependency diagnostic, strict non-zero; not SKIP |
+| RUN-03 | Python assertion/error, non-zero assembler exit | Top-level gate non-zero, original traceback/stderr preserved |
+| RUN-04 | Simulator outputs PASS then exits 7 | Judged FAIL, exit=7 recorded |
+| RUN-05 | Simulator exits 0 with no result, concurrent PASS/FAIL, or corrupted format | All judged FAIL |
+| RUN-06 | Subprocess hangs and spawns a hanging child process | Terminates entire process group at deadline; no surviving descendant processes within 5 seconds |
+| RUN-07 | Empty suite, missing one mandatory case, duplicate case ID, skip, xfail, xpass | All judged FAIL |
+| RUN-08 | Current dump deleted while retaining prior valid dump | Judged FAIL, does not consume stale output |
+| RUN-09 | Shell pipeline fails at first stage and succeeds at final stage | Judged FAIL |
+| RUN-10 | Two concurrent runs of identical case with distinct inputs/outputs | Both results correct, no artifact collision or cross-reading |
 
-固定超时上限：单个 metadata/unit/IR 用例 120 秒，单个 RTL 仿真 600 秒，单个 native build 步骤 3600 秒，已配置环境中的整次验收 7200 秒，独立 bootstrap 14400 秒。测试管理器必须在每个截止时刻后 5 秒内结束相关子进程并报告失败；其本身也受外层 watchdog 管理。发布运行不允许用环境变量提高或关闭这些上限。
+Fixed timeout limits: single metadata/unit/IR case: 120 seconds; single RTL simulation: 600 seconds; single native build step: 3600 seconds; entire acceptance run in pre-configured environment: 7200 seconds; standalone bootstrap: 14400 seconds. Test managers must terminate relevant subprocesses within 5 seconds of deadlines and report failure; test managers themselves must be supervised by an outer watchdog. Release runs must not increase or disable these limits via environment variables.
 
-失败注入使用 1 秒的受控假进程超时，不必为测试 runner 等待实际 600 秒。原 RTL 的 cycle limit 不得调大来掩盖进展回归。
+Failure injections use controlled 1-second mock process timeouts and need not wait the full 600 seconds. Baseline RTL cycle limits must not be inflated to mask progress regressions.
 
-### R1-03：构建依赖、增量失效与生成物只读检查（F04）
+### R1-03: Build Dependencies, Invalidation, and Read-Only Artifact Verification (F04)
 
-责任：构建/RTL。
+Responsibility: Build / RTL.
 
-必须完成：统一每个 bench 的 source/include 依赖；纳入 `rtl/gen`、所有 `.vh`、testbench、内存模型、Python 生成器的导入文件、工具版本、profile、seed、向量数量。为输出写入构建 fingerprint，编译参数变化必须失效。
+Mandatory deliverables: Unify source/include dependencies for every benchmark; incorporate `rtl/gen`, all `.vh` files, testbenches, memory models, imported files of Python generators, tool versions, profiles, seeds, and vector counts. Record build fingerprints in outputs; compilation parameter changes must invalidate caches.
 
-`generate` 与 `check-generated` 分离。后者不能先自动生成或修复，再声称一致。检查路径必须覆盖 ISA schema、TableGen/C++ 表、文档 opcode map、所有 target、XLS 生成 RTL 和其相关表。
+Decouple `generate` from `check-generated`. The latter must not automatically generate or fix files before claiming consistency. The check path must cover ISA schemas, TableGen/C++ tables, opcode maps in documentation, all targets, XLS generated RTL, and associated tables.
 
-| ID | 必须执行的试验 | 成功条件 |
+| ID | Mandatory Experiment | Success Condition |
 |---|---|---|
-| BUILD-01 | 修改 core RTL、公共 `.vh`、生成 RTL、内存模型各一次 | 所有受影响 bench 确实重新调用编译器；非仅打印“最新” |
-| BUILD-02 | 切换 2/4 RCTX、SFU、slow/ooo、seed、向量数量和工具 fingerprint | 新输出对应新配置；不得复用旧 build |
-| BUILD-03 | 改生成器或其导入 oracle/常量文件 | 依赖输出重新生成；需要的编译随之发生 |
-| BUILD-04 | 人为制造 stale schema/target/XLS RTL 后只运行 check | 非零；整个受控源树与检查前逐文件 hash 相同 |
-| BUILD-05 | 相同输入做 clean build 与合法 incremental build | binary、生成文件、规范化报告、数值结果、确定性 cycle 计数相同 |
-| BUILD-06 | 无输入变化重复 build | 不重复编译/生成依赖目标；允许执行本来就要求每次运行的测试 |
-| BUILD-07 | 故意放入另一 profile 的旧仿真/编译产物 | fingerprint 检查在执行前拒绝 |
+| BUILD-01 | Modify core RTL, common `.vh`, generated RTL, and memory model once each | All affected benchmarks re-invoke compiler; not just printing "up to date" |
+| BUILD-02 | Switch 2/4 RCTX, SFU, slow/ooo, seed, vector count, and tool fingerprint | New output corresponds to new configuration; cannot reuse stale build |
+| BUILD-03 | Modify generator or imported oracle/constants | Dependent outputs re-generated; necessary downstream compilations occur |
+| BUILD-04 | Deliberately introduce stale schema/target/XLS RTL and run check only | Non-zero exit; tracked source tree matches pre-check file-by-file hashes |
+| BUILD-05 | Clean build vs. legal incremental build on identical inputs | Binary, generated files, normalized reports, numerical outputs, deterministic cycle count identical |
+| BUILD-06 | Repeated build without input changes | No redundant re-compilation/re-generation of dependencies; tests designated for every run may execute |
+| BUILD-07 | Deliberately inject stale simulation/compilation artifacts from another profile | Fingerprint verification rejects prior to execution |
 
-BUILD-01 至 BUILD-04 在隔离 checkout 执行，不污染候选树。不能只用 `make -n` 作为最终证据；必须归档实际执行和产物来源。
+BUILD-01 through BUILD-04 must execute in isolated checkouts without dirtying the candidate tree. Relying solely on `make -n` is insufficient for final evidence; actual execution and artifact provenance must be archived.
 
-### R1-04：统一 profile 与真实实例能力（F03、F05 边界）
+### R1-04: Unified Profiles and Actual Instance Capabilities (F03, F05 Boundary)
 
-责任：RTL/编译器。
+Responsibility: RTL / Compiler.
 
-必须完成：以唯一配置源生成 elaboration 参数、target JSON、能力期望和测试命令；参数覆盖必须传到实际实例。修复 system SFU=false 及独立 core 的 num_cores/mesh 描述；编译结果附上 profile ID、配置 hash、ISA/schema 版本，现有仿真 launcher 在启动前校验。
+Mandatory deliverables: Derive elaboration parameters, target JSONs, capability expectations, and test commands from a single configuration source; parameter overrides must propagate to physical instances. Correct system SFU=false and standalone core num_cores/mesh descriptions; tag compilation artifacts with profile ID, configuration hash, and ISA/schema version; existing simulation launchers must verify these before execution.
 
-| ID | 用例 | 必须结果 |
+| ID | Test Case | Mandatory Result |
 |---|---|---|
-| CFG-01 | 三个 profile 的顶层能力读回 | 所有可读资源/能力逐项匹配；system 四个 tile 都执行读回 |
-| CFG-02 | 无硬件读回寄存器的配置字段 | 通过 elaboration 导出的实例参数清单核验；不是再次读取同一 JSON 自证 |
-| CFG-03 | core SFU 正例与 system SFU 负例 | core 正常数值执行；compiler 对 system 提前拒绝；直接注入非法指令触发规定的硬件 fault |
-| CFG-04 | target 配置 hash、ISA 版本或必需能力故意不匹配 | launcher 执行第一条指令前拒绝，无内存副作用 |
-| CFG-05 | 非法 topology、RCTX 数/位宽不一致、RF 基址越界、参数组合不合法 | 配置/elaboration 非零；不得截断索引或静默修正 |
-| CFG-06 | core-4r profile 检查 | 实际四 RCTX；不能从 system-2x2 JSON 拷贝出虚假的四 core 信息 |
+| CFG-01 | Top-level capability readback across three profiles | All readable resources/capabilities match item-by-item; system reads back all 4 tiles |
+| CFG-02 | Configuration fields without hardware readback registers | Verified via elaboration-exported instance parameter list; not self-attestation by re-reading the same JSON |
+| CFG-03 | Core SFU positive case vs. system SFU negative case | Core executes numerical computation; compiler rejects system up-front; direct instruction injection triggers specified hardware fault |
+| CFG-04 | Deliberately mismatched target configuration hash, ISA version, or required capability | Launcher rejects before executing first instruction, no memory side effects |
+| CFG-05 | Illegal topology, RCTX count/width mismatch, RF base out of bounds, invalid parameter combinations | Configuration/elaboration exits non-zero; no index truncation or silent correction |
+| CFG-06 | `core-4r` profile check | Actual 4 RCTXs; cannot copy spurious 4-core information from `system-2x2` JSON |
 
-系统 SFU 保持关闭是正确 profile 的一部分，不能为了消除不一致而无验证地把 SFU 打开。所有参数正例和负例都通过同一配置入口。
+Keeping system SFU disabled is part of the correct profile; SFU must not be enabled without verification merely to eliminate discrepancies. All parameter positive and negative tests must route through the identical configuration entry point.
 
-### R1-05：按实际指令计算资源 footprint（F01）
+### R1-05: Instruction-Accurate Resource Footprint Calculation (F01)
 
-责任：编译器/ISA。
+Responsibility: Compiler / ISA.
 
-必须完成：建立统一的显式及隐式资源效果描述，供分配器、所有权检查、lowering 和诊断使用。MMA 范围从实际 K/dtype/layout 计算；DMA 坐标、源/目标 window、accumulator、barrier、descriptor 的生命周期按冻结合同处理，不从 target 默认形状猜测。
+Mandatory deliverables: Establish unified explicit and implicit resource effect specifications for allocators, ownership checkers, lowerings, and diagnostics. MMA footprints must be derived dynamically from actual K, datatype, and layout; lifecycles of DMA coordinates, source/destination windows, accumulators, barriers, and descriptors must follow frozen contracts, not default target shapes.
 
-VLEN=16、ELEN=32 时一个 VREG=64 B，M=N=16 的每个 A/B fragment 必须满足：
+With VLEN=16 and ELEN=32, one VREG equals 64 B. For M=N=16, each A/B fragment must satisfy:
 
-| 输入格式 | K16 | K32 | K64 |
+| Input Format | K16 | K32 | K64 |
 |---|---:|---:|---:|
 | FP16/BF16 | 8 VREG | 16 VREG | 32 VREG |
 | E5M2/E4M3 | 4 VREG | 8 VREG | 16 VREG |
 
-| ID | 用例 | 必须结果 |
+| ID | Test Case | Mandatory Result |
 |---|---|---|
-| FP-01 | 上表 4 dtype × 3 K 的 12 个组合 | read footprint 精确等于独立公式；不能过小或以扩大资源掩盖 |
-| FP-02 | 每个组合分别让 A、B 短 1 个寄存器 | 编译拒绝；诊断给出实际 K/dtype、所需/可用范围 |
-| FP-03 | 每个组合的精确长度、长 1、越过逻辑/物理 RF 末端 | 合法范围接受；越界拒绝；超出 profile 总预算报告 resource error |
-| FP-04 | K64 + 8-register FP16 windows 的审计负例 | 编译阶段拒绝，不能交给 RTL fault |
-| FP-05 | rank=1/2 坐标连续范围，末端越界，非法 dtype/K/rank/window offset | 合法值精确建模；非法值统一诊断，不发生 wrap |
-| FP-06 | role-local 名称不同但映射到重叠物理 RF | 分配后识别真实重叠；不能仅比较 SSA identity |
+| FP-01 | 12 combinations of the above 4 dtypes × 3 K values | Read footprint matches independent formula exactly; cannot underestimate or mask via inflated resources |
+| FP-02 | Shorten A and B by 1 register for each combination | Compilation rejected; diagnostic reports actual K/dtype, required vs. available range |
+| FP-03 | Exact length, length+1, beyond logical/physical RF end for each combination | Legal range accepted; out-of-bounds rejected; exceeding profile budget reports resource error |
+| FP-04 | Audit negative case of K64 + 8-register FP16 windows | Rejected during compilation; must not defer to RTL fault |
+| FP-05 | Rank=1/2 coordinate contiguous range, endpoint out of bounds, illegal dtype/K/rank/window offset | Legal values accurately modeled; illegal values yield uniform diagnostics without wrapping |
+| FP-06 | Distinct role-local names mapping to overlapping physical RF | Detects physical overlap post-allocation; cannot rely solely on SSA identity |
 
-FP-01 是局部资源公式测试；它不强迫 32 logical VREG 的 profile 容纳两个各 32-register 的窗口。容量不够时必须在整体资源分配阶段拒绝，不能跳过 footprint 用例。独立公式 oracle 不能调用被测 footprint 函数。
+FP-01 is a local resource formula test; it does not force a 32-logical-VREG profile to host two 32-register windows simultaneously. Insufficient capacity must be rejected during global resource allocation without skipping footprint test cases. Independent formula oracles must not invoke the footprint function under test.
 
-### R1-06：所有编译入口强制执行异步安全检查（F01、F06）
+### R1-06: Mandatory Asynchronous Safety Checks Across All Compilation Entry Points (F01, F06)
 
-责任：编译器。
+Responsibility: Compiler.
 
-必须完成：
+Mandatory deliverables:
 
-- 分配前验证逻辑生命周期，分配后验证物理范围；所有发射操作的读写统一经过检查，禁止只修 `_op_window_put`。
-- 支持 reader 集合、独占 writer、accumulator 访问顺序、event/barrier generation 和多角色物理别名；每个资源仅在相应完成/释放时回收。
-- 与 ISA/RTL 核对 DMA 坐标的真实 snapshot/read 时刻并冻结合同：如果发射即快照，证明快照后不再读原寄存器；如果延迟读取，分配器必须持有至规定事件。禁止用未经证明的“应该已读完”提前 free。
-- 缺少必须完成事件、未知操作的资源效果、未验证控制流都必须拒绝，不得默认无副作用。
-- `check_protocol=False` 不能关闭发射安全性。可保留调试模型开关，但所有已支持编译路径仍必须执行不可绕过的静态/分配后验证；低层 raw assembler 不属于安全编译器入口，文档必须明确区分。
-- 同一个 IR 重复编译以及以不同顺序编译 roles 不得被 `Value.reg` 等共享可变状态污染。
+- Verify logical lifecycles before allocation and physical ranges after allocation; all issued read/write operations must pass unified checking; modifying `_op_window_put` alone is prohibited.
+- Support reader sets, exclusive writers, accumulator access ordering, event/barrier generations, and multi-role physical aliasing; each resource is reclaimed only upon corresponding completion/release.
+- Verify and freeze real snapshot/read moments of DMA coordinates against ISA/RTL contracts: if snapshotted at issue, prove the source register is not read thereafter; if delayed, allocator must hold it until specified events. Premature deallocation based on unproven assumptions of "should be finished reading" is prohibited.
+- Missing mandatory completion events, unknown resource effects, or unverified control flow must be rejected; operations must never be assumed side-effect-free by default.
+- `check_protocol=False` must not disable issue safety. Debug model toggles may be retained, but all supported compilation paths must execute non-bypassable static and post-allocation checks; low-level raw assemblers do not constitute safe compiler entry points and must be explicitly distinguished in documentation.
+- Compiling identical IR repeatedly or compiling roles in varying order must not be contaminated by shared mutable state such as `Value.reg`.
 
-下列每个负例都必须有一个仅修正事件/顺序/范围的合法配对正例；正例不能通过删除计算实现：
+Every negative case below must pair with a valid positive case correcting only events, ordering, or ranges; positive cases cannot pass by eliminating computation:
 
-| ID | 必测错误或约束 |
+| ID | Mandatory Defect or Constraint Tested |
 |---|---|
-| OWN-01 | MMA outstanding 时通过 window_put、普通向量写、DMA refill 三种路径覆盖 A/B |
-| OWN-02 | DMA 写入未完成时读取/计算其目标；两个 writer 同时占用重叠范围 |
-| OWN-03 | 异步 store 源在 source-reusable 前被覆盖；其语义至少在有该操作的 MLIR/协议层验证 |
-| OWN-04 | DMA 坐标在合同允许时刻前重用；完成之后允许正常重用 |
-| OWN-05 | accumulator 在不允许的 outstanding 状态下被读、清零、重分配；合法的硬件串行更新按明确合同接受 |
-| OWN-06 | 缺 await、等待错误事件/错误 generation、重复释放、过期事件释放新租约 |
-| OWN-07 | 两消费者仅一方释放便重用 window；必须等最后一方释放 |
-| OWN-08 | A/B 部分重叠、多角色物理别名、隐式读范围超出显式基寄存器 |
-| OWN-09 | predicated-off async 仍完成一次；错误完成不发布有效数据且能唤醒等待者 |
-| OWN-10 | 窗口、barrier、descriptor、accumulator、role 数及 RF 超预算；禁止部分成功发射 |
-| OWN-11 | 已支持的 rolled/unrolled 循环跨迭代覆盖、遗漏释放与退出未排空 |
-| OWN-12 | 不同 roles 编译顺序、同 IR 连续编译两次、切换 target 后再编译 | 
+| OWN-01 | Overwrite A/B while MMA is outstanding via window_put, regular vector write, or DMA refill |
+| OWN-02 | Read/compute destination while DMA write is incomplete; two writers concurrently occupying overlapping ranges |
+| OWN-03 | Asynchronous store source overwritten before source-reusable; semantics verified at least in MLIR/protocol layer containing this op |
+| OWN-04 | DMA coordinates reused prior to contract-permitted moment; reuse allowed after completion |
+| OWN-05 | Accumulator read, cleared, or reallocated while outstanding; legal hardware serialized updates accepted under explicit contract |
+| OWN-06 | Missing await, waiting on wrong event / wrong generation, double release, expired event releasing new lease |
+| OWN-07 | Two consumers where only one releases before window reuse; must await final consumer release |
+| OWN-08 | Partial A/B overlap, multi-role physical aliasing, implicit read footprint exceeding explicit base register |
+| OWN-09 | Predicated-off async still completes once; error completion publishes no valid data and wakes waiters |
+| OWN-10 | Window, barrier, descriptor, accumulator, role count, or RF budget exceeded; partial issue forbidden |
+| OWN-11 | Supported rolled/unrolled loops with cross-iteration overwrites, omitted releases, or exit without draining |
+| OWN-12 | Varied role compilation orders, compiling identical IR twice, compiling after switching targets |
 
-验收：所有违规在编译期拒绝；错误码稳定，包含操作位置（无源代码位置时给 IR op/role ID）、资源类型/范围、当前所有者、冲突事件和修复方向。OWN-12 的合法输入要求汇编/binary 与语义报告确定一致。
+Acceptance: All violations rejected at compile time; error diagnostics are deterministic, specifying operation location (IR op/role ID if source location unavailable), resource type/range, current owner, conflicting event, and remediation guidance. Legal inputs for OWN-12 must produce deterministically identical assembly/binary and semantic reports.
 
-对于 OWN-09 的错误完成，编译器测试验证协议构造，RTL 测试验证运行时唤醒与 fault；不能要求编译器预测外存动态故障。所有无法在当前层表达的测试必须明确放到能表达它的层，不能记为 skip。
+For OWN-09 error completions, compiler tests verify protocol construction, while RTL tests verify runtime wakeups and faults; compilers are not expected to predict external dynamic memory faults. Tests that cannot be expressed in the current layer must be assigned to the layer where they can be expressed, rather than marked as skips.
 
-### R1-07：MLIR 与 TTIR 的支持边界不得默默越过（F06、F07 部分）
+### R1-07: MLIR and TTIR Support Boundaries Must Not Be Silently Crossed (F06, Partial F07)
 
-责任：编译器。
+Responsibility: Compiler.
 
-必须完成：MLIR verifier 使用统一资源语义并覆盖 accumulator/别名；R1 MLIR 路径允许限定为单 block，但必须显式拒绝不支持的多 block、嵌套 region 与跨 block lease。Python 的既有专用 rolled pipeline 必须通过模板协议不变量或数据流分析证明，不能只模拟第一轮后就声称所有迭代安全。
+Mandatory deliverables: MLIR verifier must use unified resource semantics and cover accumulators/aliasing; R1 MLIR path may be restricted to single blocks, but must explicitly reject unsupported multi-block constructs, nested regions, and cross-block leases. Existing Python specialized rolled pipelines must be proven via template protocol invariants or dataflow analysis, rather than simulating only the initial iteration before claiming all iterations are safe.
 
-TTIR importer 必须只选择指定函数；参数按明确 signature 的名字/索引映射，不能依赖传入 dict 的插入顺序；类型、shape、操作和常量解析失败必须返回受控诊断，不能静默转换或崩溃。
+TTIR importer must select only the designated target function; function arguments must bind by signature name/index rather than dictionary insertion order; type, shape, operation, and constant parsing failures must return structured diagnostics rather than silently converting or crashing.
 
-| ID | 必须用例 | 判据 |
+| ID | Mandatory Test Case | Success Criterion |
 |---|---|---|
-| IR-01 | MLIR 单 block 合法 DMA/MMA/store/await；OWN 系列适用负例 | 正例通过，负例按资源合同拒绝 |
-| IR-02 | 多 block、分支只一侧 await、嵌套 region、事件经 block argument 转发 | 未实现的结构明确报 unsupported；不得不检查直接接受 |
-| IR-03 | Python 已有 rolled K64/K128、三槽 K96及非法跨迭代重用 | 原正例仍通过；非法生命周期拒绝；不能统一禁用循环 |
-| IR-04 | 两函数 module、目标不存在、不同 dict 插入顺序、缺/多参数、类型不符 | 仅编译目标函数；同一语义参数结果一致；非法输入受控拒绝 |
-| IR-05 | BLOCK≠VLEN、未支持 scf/dot/layout/op/type、未知资源效果 | 在 lowering 前或当步明确拒绝，不生成可执行成功工件 |
-| IR-06 | 浮点常量：±0、有限值、NaN/Inf 及前端允许的字面编码；解析损坏 | 支持者保留规定 bit 语义；未支持/损坏者诊断，不能读成另一个值 |
-| IR-07 | 同一资源安全样例的 Python IR 与 MLIR 表达 | 二者对支持范围内合法性结论一致；差异必须修复而非屏蔽 |
+| IR-01 | MLIR single-block legal DMA/MMA/store/await; applicable OWN negative suite | Positives pass, negatives rejected per resource contract |
+| IR-02 | Multi-block, branch with single-sided await, nested regions, event passed via block argument | Unsupported constructs explicitly report unsupported; must not accept unchecked |
+| IR-03 | Python existing rolled K64/K128, 3-slot K96, and invalid cross-iteration reuse | Original positives pass; illegal lifecycles rejected; cannot disable loops wholesale |
+| IR-04 | Multi-function module, target non-existent, varied dict insertion orders, missing/extra arguments, type mismatch | Only target function compiled; identical semantics yield identical result; invalid input cleanly rejected |
+| IR-05 | BLOCK≠VLEN, unsupported scf/dot/layout/op/type, unknown resource effect | Explicitly rejected before or during lowering; no executable artifacts generated |
+| IR-06 | Floating-point constants: ±0, finite, NaN/Inf, frontend literal encodings; corrupted parsing | Supported maintain bit semantics; unsupported/corrupted produce diagnostics without reading as another value |
+| IR-07 | Same resource safety test in Python IR and MLIR | Consistent legality conclusions; discrepancies must be resolved, not masked |
 
-没有实现通用 CFG 的情况下，IR-02 的明确拒绝是冻结的支持边界；不是删除已有能力。诊断不得使用 KeyError、assertion traceback 或解释器崩溃代替正常用户错误。
+In the absence of a general CFG implementation, explicit rejection in IR-02 defines the frozen support boundary; it does not constitute deleting existing capabilities. Diagnostics must not substitute KeyError, assertion traceback, or interpreter crashes for standard user error reporting.
 
-### R1-08：保留并扩充 RTL 与 E2E 回归
+### R1-08: Preserve and Expand RTL and E2E Regressions
 
-责任：验证/RTL/编译器。
+Responsibility: Verification / RTL / Compiler.
 
-必须完成：所有原测试迁移到统一 runner；把新的编译安全正例送到 RTL；增加同周期多 completion、延迟/乱序返回、循环 slot 重用及多消费者释放的可观测检查；失败 seed 可单独重放。
+Mandatory deliverables: Migrate all baseline tests to the unified runner; feed new compiler safety positive cases into RTL; add observable checks for simultaneous same-cycle completions, delayed/out-of-order responses, loop slot reuse, and multi-consumer releases; failing seeds must be independently replayable.
 
-固定基础矩阵：
+Fixed baseline regression matrix:
 
-| ID | 必跑范围 | 不可降低的规模/结果要求 |
+| ID | Mandatory Scope | Non-Waivable Scale / Result Requirements |
 |---|---|---|
-| REG-01 | 审计基线的所有语义用例 | 全部保留并通过；原 76 项 compiler-unit 中跳过的 7 项按实际入口执行，允许去重但不允许消失 |
-| REG-02 | 原 compiler RTL、IR、真实 Triton 单核/整机 | 原 67 个 compiler RTL 测试语义、2 个 IR 文件中的全部 case、5 个单核和2个整机 Triton 测试语义全部执行 |
-| REG-03 | 所有原 core 程序 | fast/slow/ooo 全跑；预期 fault 程序核对准确 fault 与未受影响角色 |
-| REG-04 | Pipeline | iteration ∈ {0,1,2,3,5,6} × stages ∈ {2,3} × memory ∈ {fast,slow,ooo}，36 组合全部通过 |
-| REG-05 | GEMM | 原 FP16/BF16、stride、全部 tail、rolled/unrolled cases 保留；新增 K16/32/64 指令的合法 footprint 计算/发射测试 |
-| REG-06 | NUCA | fast/slow/ooo，每种每 seed 至少 800 请求；命中越过阻塞 miss、eviction/dirty WB、target/MSHR 压力相关计数真实触发 |
-| REG-07 | Mesh | 每 seed 至少 20,000 包，双 VN、全部源目的对、随机接收背压；零丢包、零重复、零错路由、零同流乱序 |
-| REG-08 | Top | t10_mesh/t24_amo_mesh × single-role/all-roles 四种运行全部通过 |
-| REG-09 | 两消费者 | core-4r，最后释放语义在 slow/ooo 下各通过；延迟不同消费者验证不能提前重用 |
-| REG-10 | 异步错误与完成碰撞 | DMA/MMA 同周期完成均被计数；错误唤醒、不发布错误数据、最终排空与 fault 精确符合合同 |
-| REG-11 | 真实 Triton closure | 由固定版本 Triton 前端生成 TTIR；单核 masked tail、多角色结果、整机四 block 输出及 remote traffic 检查全部真实运行 |
+| REG-01 | All semantic cases from audit baseline | All preserved and passing; 7 skipped compiler-unit tests executed via actual entry points, deduplication permitted but cases cannot disappear |
+| REG-02 | Baseline compiler RTL, IR, real Triton single-core/system | 67 compiler RTL test semantics, all cases across 2 IR files, 5 single-core and 2 system Triton test semantics executed |
+| REG-03 | All baseline core programs | fast/slow/ooo all executed; expected fault programs verify exact fault and unaffected roles |
+| REG-04 | Pipeline | iteration ∈ {0,1,2,3,5,6} × stages ∈ {2,3} × memory ∈ {fast,slow,ooo}, all 36 combinations pass |
+| REG-05 | GEMM | Original FP16/BF16, strides, all tails, rolled/unrolled preserved; new K16/32/64 footprint/issue tests added |
+| REG-06 | NUCA | fast/slow/ooo, ≥800 requests per seed per mode; hit-past-block, eviction/dirty WB, target/MSHR pressure counters genuinely triggered |
+| REG-07 | Mesh | ≥20,000 packets per seed, dual VNs, all src-dst pairs, randomized ingress backpressure; zero packet loss, zero duplication, zero misrouting, zero in-stream reordering |
+| REG-08 | Top | t10_mesh/t24_amo_mesh × single-role/all-roles: all 4 runs pass |
+| REG-09 | Two consumers | core-4r, last-release semantics pass under slow/ooo; delaying different consumers verifies no premature reuse |
+| REG-10 | Async errors and completion collision | DMA/MMA completions in same cycle both counted; error wakeup, suppressing invalid data, final drain, and fault match contract |
+| REG-11 | Real Triton closure | TTIR generated by pinned Triton frontend; single-core masked tail, multi-role results, system 4-block output and remote traffic checks genuinely executed |
 
-REG-04 的 36 个组合各执行一次固定输入，slow/ooo 再执行下述额外 seed。REG-06/07、REG-09/10 及 REG-04 的 slow/ooo 使用 **{1, 7, 42} 三个 seed**；必须把 seed 传到真正控制 stimulus、stall、reorder 的 PRNG，而非只记在日志中。R1 首次验收不得缩短此矩阵。新增 seed 控制必须保留基线的原默认向量/程序语义，不能通过换 seed 消除失败。
+The 36 combinations of REG-04 each execute once on fixed stimulus; slow/ooo then execute the additional seeds below. REG-06/07, REG-09/10, and slow/ooo for REG-04 use **three seeds: {1, 7, 42}**; seeds must propagate to the PRNG controlling stimulus, stalls, and reordering, rather than merely being recorded in logs. Initial R1 acceptance must not truncate this matrix. Seed control additions must preserve baseline default vector/program semantics without swapping seeds to bypass failures.
 
-所有 seed 路径记录输入/调度 trace hash；三种 seed 必须实际产生不同 trace，相同 seed 的重复运行必须可重放。对于组合覆盖，驱动必须报告“已触发”的计数或 assertion cover；只跑了 20,000 包却没有背压不能通过 REG-07。
+All seed paths record input/scheduling trace hashes; the three seeds must produce distinct execution traces, while repeated runs with identical seeds must be deterministic and replayable. For combinatorial coverage, drivers must report "triggered" counters or assertion coverage; executing 20,000 packets without backpressure does not pass REG-07.
 
-浮点：精确 ISA 操作按照既有 exact oracle 与规定 NaN/zero 行为比较；SFU 按现有 ISA 的误差界比较。不得把精确比较改为容差，不得放宽 SFU 误差界。保留审计基线默认向量规模：FMA 41,240；decoder 773；转换 866,495 输入 × 两实例；SFU 单元 16,740；core SFU 1,042 批 × 16 lanes；multi-format FPU 5,012。重构生成器后数量可以增加，不能减少；同时保留原固定种子的输入语义，不能用重复向量充数。
+Floating-point: Exact ISA operations compare against existing exact oracles and specified NaN/zero behavior; SFU compares against error bounds defined in the current ISA. Exact comparisons must not be converted to tolerances, and SFU error bounds must not be relaxed. Preserve baseline default vector scales: FMA 41,240; decoder 773; conversions 866,495 inputs × 2 instances; SFU unit 16,740; core SFU 1,042 batches × 16 lanes; multi-format FPU 5,012. Restructured generators may increase but not decrease counts, while preserving original fixed-seed input semantics; repeating identical vectors to inflate counts is prohibited.
 
-### R1-09：可复现工具链与生成链（F08）
+### R1-09: Reproducible Toolchain and Generation Pipeline (F08)
 
-责任：构建/工具链。
+Responsibility: Build / Toolchain.
 
-必须完成：
+Mandatory deliverables:
 
-- 受控锁文件固定 Triton/LLVM commit、Python 与依赖版本、Icarus、CMake/Ninja、生成工具和基础 OS/image digest；doctor 校验版本、hash、平台与必需能力。
-- 建立 **Linux x86_64** 必验收环境；参考 runner 至少 8 vCPU、32 GiB RAM、100 GiB 可用磁盘，具体 OS/image digest 和工具锁必须在候选 commit 内固定。不是引用维护者现有虚拟环境路径。
-- 给 XLS 提供固定 revision/依赖的本地 Linux 或容器执行方式；从全部 DSLX/表/参数重新生成受控 RTL，不能依赖个人 SSH、私钥或远程 `cur` 目录。
-- 允许下载固定 checksum 的公开/授权工具分发包；不能把未校验的本地缓存或浮动 tag 当锁定版本。锁文件中的每个外部依赖记录来源、版本和 digest。
-- 生成物 provenance 覆盖传递依赖，不只记录顶层 `.x` hash。运行后的受控源码不得发生任何自动修复。
+- Pinned lockfiles fixing Triton/LLVM commits, Python and dependency versions, Icarus, CMake/Ninja, generation tools, and base OS/image digest; doctor checks versions, hashes, platform, and required capabilities.
+- Establish mandatory **Linux x86_64** acceptance environment; reference runner requires at least 8 vCPUs, 32 GiB RAM, 100 GiB available disk; exact OS/image digest and tool locks must be pinned in the candidate commit. Do not reference maintainer-specific virtual environment paths.
+- Provide local Linux or container execution for XLS with pinned revisions/dependencies; regenerate tracked RTL from all DSLX, tables, and parameters without relying on personal SSH accounts, private keys, or remote `cur` directories.
+- Permit downloading public/licensed tool packages with fixed checksums; unverified local caches or floating tags must not serve as locked versions. Lockfiles must record source, version, and digest for every external dependency.
+- Artifact provenance must cover transitive dependencies, not just top-level `.x` hashes. Tracked sources must not undergo automatic mutations during execution.
 
-验收：两套相互独立的临时环境 A/B，从同一个干净候选 checkout bootstrap 和构建；B 不可复制 A 的 build/venv/生成物，允许使用校验过的只读下载缓存。两个环境全部 R1 测试通过；ISA/profile/XLS 生成物、目标 binary 的 hash 相同。中间 host 可执行文件若含路径/时间戳可不要求 byte-identical，但规范化去除字段必须预先列入受控清单，不能去除语义配置、数值或 cycle 计数。
+Acceptance: Two mutually isolated temporary environments A and B bootstrap and build from the same clean candidate checkout; B must not copy A's build, virtualenv, or generated artifacts, but may use verified read-only download caches. All R1 tests pass in both environments; ISA, profile, and XLS generated artifacts and target binaries must yield identical hashes. Intermediate host binaries containing paths/timestamps need not be byte-identical, but normalized exclusion fields must be pre-listed in the tracked inventory and must not strip semantic configuration, numerical results, or cycle counts.
 
-macOS 保留为开发平台；R1 不允许用 macOS 成功替代 Linux 双环境验收，也不能宣称 macOS 完整 R1 认证而没有同等证据。
+macOS is retained as a development platform; R1 does not permit substituting macOS success for Linux dual-environment acceptance, nor claiming full macOS R1 certification without equivalent evidence.
 
-### R1-10：CI 门禁与不可混用的验收工件
+### R1-10: CI Gating and Unmixable Acceptance Artifacts
 
-责任：CI/验证。
+Responsibility: CI / Verification.
 
-必须提供以下稳定入口。**这些命令是待实现的接口要求，本文件不声称它们已经存在：**
+The following stable entry points must be provided. **These commands are pending interface requirements; this document does not claim they currently exist:**
 
 ```sh
 make r1-doctor
@@ -289,100 +289,100 @@ make r1-acceptance
 make r1-verify-evidence EVIDENCE=<run-directory>
 ```
 
-各入口失败均非零；`r1-acceptance` 固定 strict、retry=0，调用前置检查和全部必跑测试，不能由用户 flag 关闭其中一类。生成 fresh environment 与 source mutation 试验可作为受控 CI jobs，但其结果必须由同一次候选验收汇总，不能靠手工拼一个 PASS 文件。
+Failure of any entry point must exit non-zero; `r1-acceptance` fixes strict mode and retry=0, executing prerequisite checks and all mandatory tests without allowing users to disable any subset via flags. Fresh environment generation and source mutation experiments may run as managed CI jobs, but their results must aggregate into the single candidate acceptance rather than manually assembling a composite PASS.
 
-每个 run 至少归档：
+Each run must archive at least:
 
 ```text
-run.json                    commit、tree、clean 状态、环境/工具锁 hash、开始/结束时间
-profiles/                   配置输入、生成 target、elaboration 参数、能力读回
-inventory.json              required/discovered/executed ID 集合与映射
-results.json + junit.xml    每 case 状态、返回码、时间、seed、profile、证据路径
-logs/                       全量 stdout/stderr；不只保留 tail
-build/                      实际命令、依赖图/fingerprint、生成物/provenance hash
-cases/                      输入、TTIR/TNCA IR、分配/footprint、汇编/binary、输出/计数
-mutations/                  失败注入、构建失效、checker mutation 的实际结果
-checksums.sha256            所有工件的完整性清单
-acceptance.json             最终机器判决及每个工作包对应证据
+run.json                    commit, tree, clean status, environment/tool lock hashes, start/end time
+profiles/                   configuration inputs, generated targets, elaboration parameters, capability readbacks
+inventory.json              required/discovered/executed ID sets and mappings
+results.json + junit.xml    per-case status, return code, duration, seed, profile, evidence paths
+logs/                       full stdout/stderr; not truncated to tail
+build/                      actual commands, dependency graph/fingerprints, generated artifacts/provenance hashes
+cases/                      inputs, TTIR/TNCA IR, allocation/footprints, assembly/binary, outputs/counters
+mutations/                  actual results of failure injection, build invalidation, checker mutations
+checksums.sha256            integrity manifest across all artifacts
+acceptance.json             final machine verdict and evidence corresponding to each work package
 ```
 
-验收：`r1-verify-evidence` 对缺文件、改一个输出字节、混入另一 commit/profile、删除一个测试、伪造 discovered count、缺失结束状态分别返回非零。检查器必须重新计算 hash 和集合关系，不能只信任 `acceptance.json` 的 PASS。CI 成功状态必须取自该验证器；上传工件失败也不能算完成。
+Acceptance: `r1-verify-evidence` exits non-zero upon missing files, a single modified output byte, mixed commits/profiles, deleted tests, fabricated discovered counts, or missing terminal states. The verifier must recompute hashes and set relations without blindly trusting `acceptance.json`'s PASS. CI success status must derive from this verifier; artifact upload failures also constitute run failure.
 
-### R1-11：证明检查器确实能失败
+### R1-11: Proving Checkers Truly Detect Failures (Mutation)
 
-责任：验证，修改与运行均在隔离副本中。
+Responsibility: Verification; modifications and executions take place in isolated clones.
 
-必须逐个做受控 mutation，不能把变异提交到候选实现：
+Controlled mutations must be executed individually without committing mutations to the candidate tree:
 
-| ID | 故意破坏一处 | 必须将其检出的用例 |
+| ID | Deliberate Fault Injection | Mandatory Detecting Test Case |
 |---|---|---|
-| MUT-01 | 移除普通/window 写入的 ownership 检查 | OWN-01；不能依赖 RTL 数值恰好出错 |
-| MUT-02 | 将实际 K footprint 恢复为 target 默认 K16 | FP-02/FP-04 |
-| MUT-03 | 移除生成 RTL 或 `.vh` 的构建依赖 | BUILD-01 |
-| MUT-04 | system target 的 SFU 改成 true | CFG-01/CFG-03 |
-| MUT-05 | 恢复 `python ... | tail` 吞退出码 | RUN-01 |
-| MUT-06 | 允许未知资源效果或不支持 CFG 无检查通过 | IR-02/IR-05 |
-| MUT-07 | 最后消费者释放前回收 window | OWN-07/REG-09 |
+| MUT-01 | Remove ownership check for standard/window writes | OWN-01; cannot rely on fortuitous RTL numerical error |
+| MUT-02 | Revert actual K footprint to target default K16 | FP-02/FP-04 |
+| MUT-03 | Remove build dependencies for generated RTL or `.vh` | BUILD-01 |
+| MUT-04 | Change system target SFU to true | CFG-01/CFG-03 |
+| MUT-05 | Restore `python ... | tail` exit code swallowing | RUN-01 |
+| MUT-06 | Permit unknown resource effects or unsupported CFG without check | IR-02/IR-05 |
+| MUT-07 | Reclaim window prior to final consumer release | OWN-07/REG-09 |
 
-验收：七种 mutation 各自至少使指定测试失败，失败原因与破坏点对应；基线未变异时同一测试通过；变异试验结束后候选源码 hash 不变。不接受“测试数量增加了”作为该工作包证据。
+Acceptance: Each of the seven mutations causes at least the specified test to fail, with failure diagnostics matching the injected fault; without mutations, baseline tests pass; candidate source hashes remain unchanged after mutation runs. Merely increasing test counts is not accepted as evidence for this work package.
 
-### R1-12：当前状态文档、交接和最终签收
+### R1-12: Current Status Documentation, Handoff, and Final Signoff
 
-责任：维护者。
+Responsibility: Maintainers.
 
-必须更新 `Readme.md`、`compiler/README.md`、`doc/conformance.md` 和工具链状态说明，使其指向当前 support matrix、三种 profile、严格测试入口、已知限制与本合同。保留审计历史，不把过去缺陷从记录中删除。
+Must update `Readme.md`, `compiler/README.md`, `doc/conformance.md`, and toolchain status notes to reference the current support matrix, three profiles, strict test entry points, known limitations, and this contract. Historical audit records must be preserved without removing past defects from documentation.
 
-必须附本阶段完成报告：每个工作包的负责人、实现 commit、用例 ID、证据路径与最终状态。对本阶段支持范围内的新发现正确性/验证阻断问题，必须补 regression 并修复；不能因为未写在最初 F01–F04 中就放行。
+Must attach the phase completion report: assignees, implementation commits, test case IDs, evidence paths, and final status for each work package. Any newly discovered correctness or verification blockers within the supported scope must receive regression tests and fixes; they cannot be excused merely because they were not listed in the initial F01–F04.
 
-验收：不存在“C0/C1/C4 done”等无条件完成声明与实际支持矩阵矛盾；不将原型写成量产级；清楚记录未验收的后续阶段。签收表 12 项全为 PASS，所有证据由同一候选 commit 的机器验证器核验通过。
+Acceptance: No unconditional completion claims (such as "C0/C1/C4 done") contradicting the actual support matrix; prototypes must not be represented as production-ready; unverified future phases must be clearly noted. All 12 items in the signoff table must be PASS, with all evidence validated by the automated verifier on the identical candidate commit.
 
-## 4. 实施顺序与依赖
+## 4. Implementation Order and Dependencies
 
-| 批次 | 工作包 | 该批次完成后允许做什么 |
+| Batch | Work Packages | Permitted Progression Post-Batch |
 |---|---|---|
-| 1 | R1-01、R1-02 | 有冻结用例和可信失败传播，可开始根因修复 |
-| 2 | R1-03、R1-04、R1-09 | 构建/profile/工具链可信，可获取可比较的修复证据 |
-| 3 | R1-05、R1-06、R1-07 | 实际编译入口实施统一安全边界 |
-| 4 | R1-08、R1-11 | 正例、负例、压力和变异检测完整闭合 |
-| 5 | R1-10、R1-12 | 双环境完整验收、证据验证、阶段签收 |
+| 1 | R1-01, R1-02 | Frozen cases and trustworthy failure propagation available; root-cause fixes can begin |
+| 2 | R1-03, R1-04, R1-09 | Build, profile, and toolchain trustworthy; comparable remediation evidence can be captured |
+| 3 | R1-05, R1-06, R1-07 | Unified safety boundaries implemented across actual compilation entry points |
+| 4 | R1-08, R1-11 | Full closure across positive tests, negative tests, stress regressions, and mutation detection |
+| 5 | R1-10, R1-12 | Dual-environment full acceptance, evidence verification, and phase signoff |
 
-CI 框架与文档可提前开发，但不能在依赖未完成时提前签收。每个修复提交先跑相关正负例，候选发布必须从头运行全套，不能把逐提交结果相加替代最终完整 run。
+CI frameworks and documentation may be developed concurrently, but cannot be signed off before dependencies conclude. Each fix commit runs relevant positive and negative tests; candidate release must execute the full suite from scratch without aggregating piecemeal per-commit runs into the final acceptance verdict.
 
-## 5. 最终判决算法与签收表
+## 5. Final Verdict Algorithm and Signoff Table
 
-最终 gate 必须执行以下判决，任一条件不成立即退出非零：
+The final gate must execute the following decision algorithm, exiting non-zero if any condition fails:
 
 ```text
-候选 commit 固定且源树干净
-AND 三种 profile 的配置与顶层实际实例匹配
-AND 工具锁/生成链/依赖变更试验全部通过
+Candidate commit pinned AND source tree clean
+AND configurations of the three profiles match top-level actual instances
+AND tool locks / generation pipeline / dependency change experiments all PASS
 AND required IDs == discovered IDs == executed IDs
-AND 所有必跑 case == PASS
-AND skip/error/fail/xfail/xpass/timeout/retry/orphan_process 均为 0
-AND 所有负例和 mutation 的预期拒绝都被测试驱动验证
-AND 现有合法功能无退步，新增错误入口均被关闭
-AND 独立环境 A 和 B 均完整通过，规定的产物确定一致
-AND 证据文件完整、hash 正确、commit/profile/run 归属一致
-AND R1-01 ... R1-12 全部 PASS
+AND all mandatory cases == PASS
+AND skip / error / fail / xfail / xpass / timeout / retry / orphan_process all == 0
+AND expected rejections of all negative cases and mutations verified by test runner
+AND existing valid capabilities have no regression, newly discovered error entry points closed
+AND independent environments A and B both fully PASS with deterministically identical specified artifacts
+AND evidence files complete, hashes correct, commit/profile/run attribution consistent
+AND R1-01 through R1-12 all PASS
 => ACCEPTED
-否则 => NOT ACCEPTED
+OTHERWISE => NOT ACCEPTED
 ```
 
-required/discovered/executed 的比较以每个环境/profile/seed 展开后的唯一执行 ID 为准；共享语义 case ID 保留用于追踪。不能把同一 case 跑两次当成另一个遗漏 case。
+Comparison of required, discovered, and executed IDs is performed against unique execution IDs expanded per environment, profile, and seed; shared semantic case IDs are preserved for tracking. Executing the same test case twice cannot be counted as covering another missing test.
 
-| 工作包 | 初始状态 | 负责人 | 证据与最终判决 |
+| Work Package | Initial Status | Assignee | Evidence & Final Verdict |
 |---|---|---|---|
-| R1-01 规范/基线 | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-02 runner/失败传播 | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-03 构建/生成物 | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-04 profile/能力 | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-05 footprint | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-06 ownership | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-07 IR/前端边界 | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-08 RTL/E2E | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-09 可复现环境 | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-10 CI/工件 | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-11 mutation | NOT VERIFIED | 实施时填写 | 未交付 |
-| R1-12 文档/交接 | NOT VERIFIED | 实施时填写 | 未交付 |
+| R1-01 Specifications / Baseline | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-02 Runner / Failure Propagation | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-03 Build / Generated Artifacts | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-04 Profile / Capabilities | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-05 Footprint Calculation | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-06 Ownership Verification | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-07 IR / Frontend Boundaries | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-08 RTL / E2E Regressions | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-09 Reproducible Environments | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-10 CI / Artifact Verification | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-11 Mutation Verification | NOT VERIFIED | To be filled during execution | Undelivered |
+| R1-12 Documentation / Handoff | NOT VERIFIED | To be filled during execution | Undelivered |
 
-**本文件的写入不改变以上初始状态。只有实际完成全部任务并获得上述证据，才允许宣布“R1 完成”，并启动依赖 R1 验收结果的 R2 交付。**
+**The writing of this document does not alter the initial status above. Only actually completing all tasks and obtaining the requisite evidence permits declaring "R1 Complete" and initiating Phase 2 (R2) delivery dependent on R1 acceptance results.**

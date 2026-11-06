@@ -198,6 +198,7 @@ class SimLink(U50Link):
             argv.append('+assert_fatal')
         if self.trace:
             argv.append('+trace')
+        argv += list(getattr(self, 'plusargs', ()))
         journal = getattr(self, 'journal_dir', None)
         if journal:
             os.makedirs(journal, exist_ok=False)

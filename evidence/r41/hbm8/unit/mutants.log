@@ -1,0 +1,3 @@
+m_trunc33: FATAL: /home/zhongchun/r41-hbm8/tb/fpga/tb_line_axi_hbm8.v:62: read 0000000100020000 issued AR 0000000000000000, expected 0000000200000000
+m_nolimit: FATAL: /home/zhongchun/r41-hbm8/tb/fpga/tb_line_axi_hbm8.v:84: illegal 0000000200020000 was offered ready
+m_noalign: FATAL: /home/zhongchun/r41-hbm8/tb/fpga/tb_line_axi_hbm8.v:84: illegal 0000000100020008 was offered ready

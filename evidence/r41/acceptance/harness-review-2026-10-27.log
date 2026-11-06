@@ -1,0 +1,69 @@
+cd tools/performance_harness && python3 test_experiment.py && python3 test_board_tools.py && python3 test_stage1_acceptance.py && python3 test_stage_contract.py
+.............
+----------------------------------------------------------------------
+Ran 13 tests in 1.081s
+
+OK
+2026-10-27T12:30:37.818283+00:00 OK   op.short__a-s1 0.1 []
+2026-10-27T12:30:37.935265+00:00 OK   op.long__c-s1 10.0 []
+2026-10-27T12:30:38.052594+00:00 OK   op.long__c-s2 10.0 []
+2026-10-27T12:30:38.171919+00:00 OK   op.short__a-s2 0.1 []
+2026-10-27T12:30:38.290055+00:00 OK   op.short__a-s3 0.1 []
+2026-10-27T12:30:38.407844+00:00 OK   op.long__c-s3 10.0 []
+.2026-10-27T12:30:38.535357+00:00 OK   op.short__a-q 0.1 []
+2026-10-27T12:30:38.652591+00:00 OK   op.short__b-q 0.2 []
+2026-10-27T12:30:38.772205+00:00 OK   op.short__a-f3 0.1 []
+2026-10-27T12:30:38.889531+00:00 OK   op.short__b-f3 0.2 []
+2026-10-27T12:30:39.006872+00:00 OK   op.long__c-q 10.0 []
+..2026-10-27T12:30:39.315932+00:00 OK   op.short__b-r001 0.2 []
+2026-10-27T12:30:39.316306+00:00 OK   r001 op.short/b 19708 KiB 
+2026-10-27T12:30:39.485076+00:00 OK   op.short__a-r001 0.1 []
+2026-10-27T12:30:39.485392+00:00 OK   r001 op.short/a 19708 KiB 
+2026-10-27T12:30:39.485800+00:00 OK   r001 fp8_cases/quick/scaled_mm None KiB 
+.2026-10-27T12:30:39.613011+00:00 FAIL op.short__a-q  ['exit 1', 'status fail fallbacks [] []']
+2026-10-27T12:30:39.731112+00:00 FAIL op.short__b-q  ['image ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff']
+2026-10-27T12:30:39.850929+00:00 OK   op.long__c-q 10.0 []
+2026-10-27T12:30:39.979882+00:00 OK   op.short__a-q 0.1 []
+2026-10-27T12:30:40.097891+00:00 OK   op.short__a-f3 0.1 []
+2026-10-27T12:30:40.216472+00:00 FAIL op.short__b-q  ['image ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff']
+.2026-10-27T12:30:40.350385+00:00 OK   op.short__a-q 0.1 []
+2026-10-27T12:30:40.469645+00:00 OK   op.short__b-q 2.0 []
+..2026-10-27T12:30:40.628074+00:00 FAIL op.short__a-t1  ['qualified clock evidence identity']
+2026-10-27T12:30:40.750605+00:00 OK   op.short__a-t1 0.1 []
+...........
+----------------------------------------------------------------------
+Ran 18 tests in 3.918s
+
+OK
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 1.949s
+
+OK
+F.
+======================================================================
+FAIL: test_record_is_valid_json_with_tree_identity (__main__.FreezeRecordTests.test_record_is_valid_json_with_tree_identity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ubuntu/TritonChip/tools/performance_harness/test_stage_contract.py", line 21, in test_record_is_valid_json_with_tree_identity
+    self.assertEqual(run.returncode, 0, run.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 0 : Traceback (most recent call last):
+  File "/home/ubuntu/TritonChip/tools/performance_harness/stage_contract.py", line 125, in <module>
+    main()
+    ~~~~^^
+  File "/home/ubuntu/TritonChip/tools/performance_harness/stage_contract.py", line 113, in main
+    result = record(stage=args.stage, registry_check=not args.no_registry,
+                    command=[sys.executable, *sys.argv])
+  File "/home/ubuntu/TritonChip/tools/performance_harness/stage_contract.py", line 91, in record
+    result = verify(root, stage=stage, registry_check=registry_check)
+  File "/home/ubuntu/TritonChip/tools/performance_harness/stage_contract.py", line 39, in verify
+    raise ValueError(f'frozen input changed: {name}')
+ValueError: frozen input changed: doc/r41_tasks_and_acceptance.md
+
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.344s
+
+FAILED (failures=1)
+make: *** [Makefile:53: r41-harness-tests] Error 1

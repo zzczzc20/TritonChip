@@ -1,0 +1,139 @@
+{
+  "status": "pass",
+  "scope": "full-checkpoint Qwen3.5 board session at 100 MHz",
+  "report_sha256": "71a4f43e7ad61eaa1fcbf8accc72ba41271a4b71e8cd5e1d024c14dff8591644",
+  "teacher_passed": true,
+  "persistent_passed": true,
+  "rounds": [
+    {
+      "round": 0,
+      "status": "pass",
+      "text": "Hi there! How",
+      "tokens": [
+        12675,
+        1017,
+        0,
+        2500
+      ],
+      "prefill_tokens_per_second": 0.034452665558917336,
+      "decode_steps_per_second": 0.015742891977999458,
+      "decode_seconds": 190.56219176200102,
+      "decode_device_cycles": 11320317067,
+      "decode_non_device_wall_fraction": 0.4059515708583845,
+      "decode_launches": [
+        725,
+        725,
+        725
+      ],
+      "decode_evictions": [
+        561,
+        559,
+        559
+      ],
+      "decode_host_reads": 0,
+      "decode_steps": 3,
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_roles_covered": true,
+      "compiled_wrapper_fallbacks": {
+        "prefill": [],
+        "decode": [],
+        "selection": []
+      },
+      "model_tensor_placements": {
+        "parameters": {
+          "tnca:0": 924
+        },
+        "buffers": {
+          "tnca:0": 4
+        }
+      }
+    },
+    {
+      "round": 1,
+      "status": "pass",
+      "text": "Understood. I",
+      "tokens": [
+        15771,
+        49942,
+        13,
+        353
+      ],
+      "prefill_tokens_per_second": 0.1227978132646603,
+      "decode_steps_per_second": 0.016265416413908836,
+      "decode_seconds": 184.44040556100663,
+      "decode_device_cycles": 11343899293,
+      "decode_non_device_wall_fraction": 0.3849558474730298,
+      "decode_launches": [
+        725,
+        725,
+        725
+      ],
+      "decode_evictions": [
+        561,
+        559,
+        559
+      ],
+      "decode_host_reads": 0,
+      "decode_steps": 3,
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_roles_covered": true,
+      "compiled_wrapper_fallbacks": {
+        "prefill": [],
+        "decode": [],
+        "selection": []
+      },
+      "model_tensor_placements": {
+        "parameters": {
+          "tnca:0": 924
+        },
+        "buffers": {
+          "tnca:0": 4
+        }
+      }
+    },
+    {
+      "round": 2,
+      "status": "pass",
+      "text": "Hi there! How",
+      "tokens": [
+        12675,
+        1017,
+        0,
+        2500
+      ],
+      "prefill_tokens_per_second": 0.12429471134574721,
+      "decode_steps_per_second": 0.015880325606891402,
+      "decode_seconds": 188.91300306198536,
+      "decode_device_cycles": 11368822592,
+      "decode_non_device_wall_fraction": 0.39819798490685643,
+      "decode_launches": [
+        725,
+        725,
+        725
+      ],
+      "decode_evictions": [
+        561,
+        559,
+        559
+      ],
+      "decode_host_reads": 0,
+      "decode_steps": 3,
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_roles_covered": true,
+      "compiled_wrapper_fallbacks": {
+        "prefill": [],
+        "decode": [],
+        "selection": []
+      },
+      "model_tensor_placements": {
+        "parameters": {
+          "tnca:0": 924
+        },
+        "buffers": {
+          "tnca:0": 4
+        }
+      }
+    }
+  ],
+  "code_loads": "not measured in board report"
+}

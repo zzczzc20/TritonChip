@@ -1,0 +1,315 @@
+{
+  "host": "acf3019:/home/zzhouch/r41s2_board_86a3d929cf3d_fp8",
+  "collection": "read-only JSON/JSONL, excluding caches/dumps/bundles/step caches",
+  "sha256": "a44913d53a6a5e3edf26687628b88d7b7ebf881aef2ca877089ae6eb3631b671",
+  "members": {
+    "out/s2-fp8-hub/hub/report.json": {
+      "size": 18336,
+      "sha256": "723a24221533afafb1d9e6df1ced15e7688c977db00f4fe465b0df182a6f6e0d"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/2VVGX6UCOKQNQSHOVL2VKOSDAICUSMM27TOCXOL4WB5XP2XG4FJA/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "a2dc81fe37cbd561690635798a97240108967f46789c51dec80ef5c25fffd693"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/2VVGX6UCOKQNQSHOVL2VKOSDAICUSMM27TOCXOL4WB5XP2XG4FJA/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1125,
+      "sha256": "a1dee45023f90b55d6938b2000ab8bbba3454b65f8e9e1cd6f98569d8b696528"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/354WGTYKOF2LXCJWDQX7BMPKWHEYIZ6VVKJJXNVJB4VFLO2TGC3Q/__grp__w8a8_tensor_dynamic_fp8_matmul_kernel.json": {
+      "size": 901,
+      "sha256": "b85ad7916b5e5c9bd6a1a57e581b8c51f58083d8b348d7ec871557f82ecb44bb"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/354WGTYKOF2LXCJWDQX7BMPKWHEYIZ6VVKJJXNVJB4VFLO2TGC3Q/w8a8_tensor_dynamic_fp8_matmul_kernel.json": {
+      "size": 1116,
+      "sha256": "b78f4ef819187ed69b8271658d8a62399c5f6381f07db0bbbcf92792668a5122"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/3B775RUJXGV2SWGBP6KS4O2DLINI6E5D6TI37YD3ESSCH6Y2UNNA/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "f44d24d20c70e7d2cf55f601cebfb1ec0df7d1ec31c7bbfed65ed188ef17041c"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/3B775RUJXGV2SWGBP6KS4O2DLINI6E5D6TI37YD3ESSCH6Y2UNNA/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1125,
+      "sha256": "577b27eed9ea1c71b97e82c4af8abcded56aa0c2b91e126f5587cf863b40f5c9"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/AB4JKATGG5I7BPLS4ICOV5LESHG3CCYB5UATMU6PU4LSZQ3TEA7A/__grp___fp8_act_quant_kernel.json": {
+      "size": 773,
+      "sha256": "e42b9a3ef804a420c39e51b454278dc241403897654386c53517057fba754e5d"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/AB4JKATGG5I7BPLS4ICOV5LESHG3CCYB5UATMU6PU4LSZQ3TEA7A/_fp8_act_quant_kernel.json": {
+      "size": 1047,
+      "sha256": "3badfe50639c4aaafd649763b9db7e61fb654c9340df741e9de7268729cc1995"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/B4Q2BPF73ORO3ISJPWWMNUB5MPAPBOA47ZBFZ6XIMXOQ7QRC6NXA/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "41a02818c5eb6616a0b16369dd85aa7b176879ca51bf00986eb19cb72c22db11"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/B4Q2BPF73ORO3ISJPWWMNUB5MPAPBOA47ZBFZ6XIMXOQ7QRC6NXA/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1120,
+      "sha256": "b85f32ff1d85a986a79de6a58e72adb2cb4bd1588f6ef0ef62cc196405a08dd4"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/C65ZPACI4HGAWUVPZP6C3UF2GTI3OB53TU2D4EWTJJBEV5OOBWSA/__grp__triton_poi_fused_mul_0.json": {
+      "size": 781,
+      "sha256": "099a82e8281090c3aebf9eedb1519204cac78fddc962954cc9144776c626a997"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/C65ZPACI4HGAWUVPZP6C3UF2GTI3OB53TU2D4EWTJJBEV5OOBWSA/triton_poi_fused_mul_0.json": {
+      "size": 1053,
+      "sha256": "cedb1b99cb9ec2963d741adbc5f3145513348d9b8621e7ca94cd6abbc28c9d4d"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/CEALG444YJU2QX7TOPMJK3Q47BQQ2FNV6NEF3HPOMYZMFTWB5TWQ/__grp__w8a8_block_static_fp8_matmul_kernel.json": {
+      "size": 885,
+      "sha256": "6e455a30180277ef356c005cd5f81c9c8a3fc4a4643cca2fc3b8912f0762c991"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/CEALG444YJU2QX7TOPMJK3Q47BQQ2FNV6NEF3HPOMYZMFTWB5TWQ/w8a8_block_static_fp8_matmul_kernel.json": {
+      "size": 1130,
+      "sha256": "011cf45c940bf71765bde4601836ca5c62dae9c06448a9fa5f996a27136ffbed"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/CKFUPPQAIK4MNJ5APBMYWOFPG5PH2LOQ4457TXLKUOJIU2KGMDBQ/__grp__w8a8_tensor_dynamic_fp8_matmul_kernel.json": {
+      "size": 901,
+      "sha256": "13c82a8e90e5e4d966403233510e88b069d58e4eadb1acbe6f741f04a4c48938"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/CKFUPPQAIK4MNJ5APBMYWOFPG5PH2LOQ4457TXLKUOJIU2KGMDBQ/w8a8_tensor_dynamic_fp8_matmul_kernel.json": {
+      "size": 1117,
+      "sha256": "6d3d3a2e1d1accaafff258495cc5211aa54ebcb8b2e52a750acc648b980439d8"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/CY5X5ZT5KBNH6B43A3VPGTDUGB36LXVYN5O3WB7DDYYJ3S6I2OHA/__grp___fp8_act_quant_kernel.json": {
+      "size": 773,
+      "sha256": "6ea64c1135228b1cafc90ddf801736892da7f87fee4cd33c36ce03c924fcdfda"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/CY5X5ZT5KBNH6B43A3VPGTDUGB36LXVYN5O3WB7DDYYJ3S6I2OHA/_fp8_act_quant_kernel.json": {
+      "size": 1047,
+      "sha256": "18dfda2b82f4c7e2dd79379eacb252c2f7825e4880e0653822da0aace71fb6c5"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/EA2LJK6MXS4IMGV6P3YJAC7KNAPBJSX5ANLDUSUBOPOF36RTATMQ/__grp___fp8_act_quant_kernel.json": {
+      "size": 773,
+      "sha256": "8147b050066cb81f504af218c62bb90fcb30da0df1d7bf84494cefca5e797a98"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/EA2LJK6MXS4IMGV6P3YJAC7KNAPBJSX5ANLDUSUBOPOF36RTATMQ/_fp8_act_quant_kernel.json": {
+      "size": 1046,
+      "sha256": "05ae6e5dfd92f1e0e201b94f124f03777b76e69ca729d6288cd99ccd458d0556"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/F6HJ7Y3ADV6QUZQSLVTUIPSA46VOPCGUJLOEKRF4JGAZRRE2X7MQ/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "2a890ba06395ab21469fdbc511f12fe5b03a67b522097d1784884188bc828706"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/F6HJ7Y3ADV6QUZQSLVTUIPSA46VOPCGUJLOEKRF4JGAZRRE2X7MQ/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1125,
+      "sha256": "d6a9376ae0fde36b18662032f879c564e9c1a203c0bca2910a5c495eaf19ac3c"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/FG6NTOHY3CMAYL2Q6RCEMWQJPOCZN6QP4SW6HILSDB5QICKLZ5HA/__grp__w8a8_block_static_fp8_matmul_kernel.json": {
+      "size": 885,
+      "sha256": "fd15900b20b7d8c352b073d084ab664dda3283b08397998d86a002aacbd42979"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/FG6NTOHY3CMAYL2Q6RCEMWQJPOCZN6QP4SW6HILSDB5QICKLZ5HA/w8a8_block_static_fp8_matmul_kernel.json": {
+      "size": 1130,
+      "sha256": "17386633657a742c6da6e8305c817f588f740dde90155137d10165c78c65e5fd"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/JQ52SK2ZFE6JKJ5OJF5V6LGWXI2GRXCT5DLYYY3IKQBRXTE3CERQ/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "9651da4dfb424483c17a3012a945845776c758a65f00d5578ddbb13bb42f3c5a"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/JQ52SK2ZFE6JKJ5OJF5V6LGWXI2GRXCT5DLYYY3IKQBRXTE3CERQ/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1124,
+      "sha256": "7cac32ff36d5bc69d122c8589a6d63aba279d2221ef07f1a46a4c302d41fccd4"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/JWW5HV73DDI6WIGUF5NPUZFBG73IYIC3TLDQU54XKBXZA65VZWEQ/__grp___fp8_act_quant_kernel.json": {
+      "size": 773,
+      "sha256": "d3c1ce56afa0a38b2675c18c98857aecba2fd30a03be372934738e343d4240ad"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/JWW5HV73DDI6WIGUF5NPUZFBG73IYIC3TLDQU54XKBXZA65VZWEQ/_fp8_act_quant_kernel.json": {
+      "size": 1047,
+      "sha256": "4c00e6e76a4941a0f141d11f8cd4dd5cc62c55d08e44789dd6b2eec185a1aaf7"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/K643XF5GZ5NE7EIIDB5CXNVDLIGQU5GUCO3K4KAFFA5GHYVREXGA/__grp___copy_kernel.json": {
+      "size": 701,
+      "sha256": "1314886cd17630da7856d0d66b011852d7c87b282aa38403af0ce22514a6542c"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/K643XF5GZ5NE7EIIDB5CXNVDLIGQU5GUCO3K4KAFFA5GHYVREXGA/_copy_kernel.json": {
+      "size": 1025,
+      "sha256": "bf067975c0649120455aa8224a86774e6872ae15fc3586c6a87e27c4d22b185d"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/M4KDJ2O5KPJOAW6HOXZSWIQMLEGQ3EFI4A4DFIYHXZ5V2PIR4WGQ/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "4804a32a33745d84a76f3911b1ac7fe3127a8d47925c61c76cedf90f4279f22c"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/M4KDJ2O5KPJOAW6HOXZSWIQMLEGQ3EFI4A4DFIYHXZ5V2PIR4WGQ/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1125,
+      "sha256": "5d6129e4113592afc15e98f502793faa7351234114bc80f60ab5717da2c7d863"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/NZGW4HDVOI3ZRFUQ2AV4C5VT7NQ5ZIMOQWLYP5UC3VXNPWQ3A2LQ/__grp__w8a8_tensor_dynamic_fp8_matmul_kernel.json": {
+      "size": 901,
+      "sha256": "ec37962583507e34fb31ef5f0fd1556172a471c680d7a31b2e468e53e3381426"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/NZGW4HDVOI3ZRFUQ2AV4C5VT7NQ5ZIMOQWLYP5UC3VXNPWQ3A2LQ/w8a8_tensor_dynamic_fp8_matmul_kernel.json": {
+      "size": 1117,
+      "sha256": "982a842ba388b1fffd4226b8ae2e803a876945c38d59906705e76014b724e247"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/P3H2A56XP2ZU5XHGDQIIUA544BNC36ZVGLPB6LL7FGNJS2ZK3ZXA/__grp___fp8_act_quant_kernel.json": {
+      "size": 773,
+      "sha256": "13545506efab5a5db0344dc5ee994760c0e2b55af3b64ae5a93376a32cc059b2"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/P3H2A56XP2ZU5XHGDQIIUA544BNC36ZVGLPB6LL7FGNJS2ZK3ZXA/_fp8_act_quant_kernel.json": {
+      "size": 1047,
+      "sha256": "44f31722a7918fe30b23626ec23d32da5dac97385346a041fe74e8ea94a5d4b8"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/R7VSK7WVFURJPUH6ERK36BTZ6LA25Z4LY5RQUWU4MJMBUZE5UCAQ/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "7a3ef1c7597b14e8d535664ed6a7d56c1ba4257ce399e0752aa8adb22eaa4fb2"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/R7VSK7WVFURJPUH6ERK36BTZ6LA25Z4LY5RQUWU4MJMBUZE5UCAQ/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1125,
+      "sha256": "6949acc34ccd418fd4e140364323ec3f418406973252be3a77fa0f76decaa8e3"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/SI6WR7CQ6X6MJFQJPIFALZUG54B5EUWXEVSD6RGZBQK4HY26ZCBA/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "89e24d1e940e541a9bb065ac30f41d9ba9fc63eeaccc8356084a4bd69381a772"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/SI6WR7CQ6X6MJFQJPIFALZUG54B5EUWXEVSD6RGZBQK4HY26ZCBA/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1125,
+      "sha256": "6a6cdfe9ffa7271261f3cd82cc89d3c69ebc2ea0be3f6c075efd4111aa6e0921"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/STD36W3JNZ2RME3JEQDPCUJ24BX2RI4TXVHY5GEJU4NSCJ63RIHQ/__grp___copy_kernel.json": {
+      "size": 701,
+      "sha256": "61b2a010e5c8331574390e2a2075e0357d36d5a7815b1fab437a62bc287a2d2d"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/STD36W3JNZ2RME3JEQDPCUJ24BX2RI4TXVHY5GEJU4NSCJ63RIHQ/_copy_kernel.json": {
+      "size": 1025,
+      "sha256": "e273c43caf5ac3426c913b3c71c58518798e633a1feb6cc0e1fbf517e23d0842"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/TKSJ4AJ3IHY6IVCWXFPRQ7YRIPMO4HKGA3NNRDIQYBEWS64ZKEDQ/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "a97c8e7996b93eecc4784c05402c927bdd50cef57a42e11730faf10b580eafe7"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/TKSJ4AJ3IHY6IVCWXFPRQ7YRIPMO4HKGA3NNRDIQYBEWS64ZKEDQ/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1125,
+      "sha256": "9df7dbfb25a823a63d9dba48989eb239ce53381d079836de1a027bed84823075"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/VMSBGWUMGHZTWEIRO3WOE4LXSYTJ26X2V2BNJJD4Q4ZCLBRKCC5Q/__grp__w8a8_tensor_dynamic_fp8_matmul_kernel.json": {
+      "size": 901,
+      "sha256": "d9d245982f2486815cc5336ab0d4246b766b66dd631659d50f335fd5b20e1567"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/VMSBGWUMGHZTWEIRO3WOE4LXSYTJ26X2V2BNJJD4Q4ZCLBRKCC5Q/w8a8_tensor_dynamic_fp8_matmul_kernel.json": {
+      "size": 1117,
+      "sha256": "491d89bc8e194d33e93e1a4a57493ae8627084abcf571d0d88828d6a3491de8e"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/VT6JKLIXYYMAMDU3W7VQVSRLC7FXPQSK4NLCVYYBRP23XYARV7WQ/__grp__w8a8_block_static_fp8_matmul_kernel.json": {
+      "size": 885,
+      "sha256": "6e67b7ddd9030e868fc0a867643d6d87b2d4780ed5e122ba671bd9d5dc346b38"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/VT6JKLIXYYMAMDU3W7VQVSRLC7FXPQSK4NLCVYYBRP23XYARV7WQ/w8a8_block_static_fp8_matmul_kernel.json": {
+      "size": 1130,
+      "sha256": "d7e8a0bb44d5ea85696808f2d1a93d6b9d99afb450bc9ac89a3fd79d75272d9f"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/VXQBHRSJW6HJMOPS62KAUCNNRBJ3LQOMSBDBSV7SETLFG3N75HIQ/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "0be0e4ffd7697018c38f40c5b4b1509f051f13b2169a1abab9dea23d3085218d"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/VXQBHRSJW6HJMOPS62KAUCNNRBJ3LQOMSBDBSV7SETLFG3N75HIQ/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1124,
+      "sha256": "631e5518770092551a2f65eae42c0676194eb4ccba8f610acfd928451c5379a2"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/X7DJNXPIR547KLMD565HLY4HTWPMWMCF7VFIIGZV2OTCEHRO32EQ/__grp___fp8_act_quant_kernel.json": {
+      "size": 773,
+      "sha256": "c1d00618d3e9ab63be821c7516e0b91f752804192f0031113a2d6f0a740f10af"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/X7DJNXPIR547KLMD565HLY4HTWPMWMCF7VFIIGZV2OTCEHRO32EQ/_fp8_act_quant_kernel.json": {
+      "size": 1046,
+      "sha256": "8a7898bd52357222da5552ba94bf63ee90f56bbe997fc9f4916c320e8a292005"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/XPADRO5PEJJM6OY47OSNGMOIOTEVOSMO7TGA5SNAN3RWG6NQP6JA/__grp__triton_poi_fused_mul_0.json": {
+      "size": 781,
+      "sha256": "060e5b1d9cb1baf52e41db85ef60166c3db23e56c9d9013f96a1e005c709cd4f"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/XPADRO5PEJJM6OY47OSNGMOIOTEVOSMO7TGA5SNAN3RWG6NQP6JA/triton_poi_fused_mul_0.json": {
+      "size": 1053,
+      "sha256": "5eeca8e1a436248aa088e6f33a2530f12c7ae67d0827aaa4fb9376a15354a831"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/ZBLBTF6UAAAWQXB66GR5GFCL3MBCWT6LMXIXW3VRWG6ZJK2AJ4KA/__grp__w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 893,
+      "sha256": "50dd2935d5031314af7b96fc583bf789ff23989188b33087d5341f7f880133bd"
+    },
+    "out/s2-fp8-hub/hub/triton-cache/ZBLBTF6UAAAWQXB66GR5GFCL3MBCWT6LMXIXW3VRWG6ZJK2AJ4KA/w8a8_block_dynamic_fp8_matmul_kernel.json": {
+      "size": 1125,
+      "sha256": "c9bdd489bd3206d0885de97aee1ccd65c49d12a613c380860394b110eb91bb48"
+    },
+    "out/s2-fp8-hub/hubv1/report.json": {
+      "size": 5441,
+      "sha256": "9a3b24da4da7ee647a74c7e3ad27170aa75cc62aa54b7531b3f3215b12375fe6"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/2USRP7W7OQGMBXGZWYNSHVOP7Y4B2VV4YUJMLA7KZCOIQ7PIYETA/__grp___fp8_act_quant_kernel.json": {
+      "size": 781,
+      "sha256": "d3d87f35c1163799afc967d72add26e4b2b563f5b1860e4e1deae4e50e037ff7"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/2USRP7W7OQGMBXGZWYNSHVOP7Y4B2VV4YUJMLA7KZCOIQ7PIYETA/_fp8_act_quant_kernel.json": {
+      "size": 1047,
+      "sha256": "14d0911fd084d46f43a8d900d60d7d18764461fca1eeb515d4cd5a85f69edab1"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/2WLGR5WZETQ7MPXDIOKIPSUPNYISOTLBAKMFFNPVQXK35CLTX6VQ/__grp__w8a8_block_fp8_matmul_kernel.json": {
+      "size": 837,
+      "sha256": "dc344a970f4cbe0c291fbbf8ebcde4e76aee8fd3cf024d8fb9a35af7408fc7a5"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/2WLGR5WZETQ7MPXDIOKIPSUPNYISOTLBAKMFFNPVQXK35CLTX6VQ/w8a8_block_fp8_matmul_kernel.json": {
+      "size": 1138,
+      "sha256": "e70d34e714ce2f8ca66800a9f456ff64cce93168d8fd4d63ec0b67634b7909cb"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/AMFBWYRHG4YXQOTBCKEBPB6JOUDB2TJ5KRALB7FYA45AXLSIC4CQ/__grp__w8a8_tensor_fp8_matmul_kernel.json": {
+      "size": 845,
+      "sha256": "d16d8b6723d62df74d4f64f23dd5328b33c523b196a732c4d96db53552ed03a5"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/AMFBWYRHG4YXQOTBCKEBPB6JOUDB2TJ5KRALB7FYA45AXLSIC4CQ/w8a8_tensor_fp8_matmul_kernel.json": {
+      "size": 1109,
+      "sha256": "db6aec35e77b2e6187209da6eb4d4781b92211bb32bd087616b84995691454cb"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/IQHX5FQ6ZKIQXBBC5KHIFYKGFLM7CBRWTLJDQVUDL436UQIN2S6Q/__grp__w8a8_block_fp8_matmul_kernel.json": {
+      "size": 837,
+      "sha256": "2106aedf6c4fd7ff51600b11179102de921a3e0b1eecb24d129319f4d1632722"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/IQHX5FQ6ZKIQXBBC5KHIFYKGFLM7CBRWTLJDQVUDL436UQIN2S6Q/w8a8_block_fp8_matmul_kernel.json": {
+      "size": 1138,
+      "sha256": "d8f46d6d492207aa1c4042c08c5095554e3be9d76dc495e379a85822afe9eb38"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/NPRBVIIGJFI4E5RM4TDSOXOMUL2UOJ6MYFOREA75UBMSERPKBQWQ/__grp__w8a8_block_fp8_matmul_kernel.json": {
+      "size": 837,
+      "sha256": "fb8b9375a7a08993551020e71724c2ceb9b881c741288d50aca3e9e847e7ec17"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/NPRBVIIGJFI4E5RM4TDSOXOMUL2UOJ6MYFOREA75UBMSERPKBQWQ/w8a8_block_fp8_matmul_kernel.json": {
+      "size": 1138,
+      "sha256": "067b8665f034cf25715c4d53c8c854ce74d7696e5f3cbae4ceca9353b946cc81"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/RJQ2QEAY7FNWJEWLLIUOWAQOJU3RGPYA4L2DWDZ6IWDFRYBURS4Q/__grp__w8a8_tensor_fp8_matmul_kernel.json": {
+      "size": 845,
+      "sha256": "391a34203931962df7aa142e2c5a4b74c88b0ef17348252b25cef375a540808f"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/RJQ2QEAY7FNWJEWLLIUOWAQOJU3RGPYA4L2DWDZ6IWDFRYBURS4Q/w8a8_tensor_fp8_matmul_kernel.json": {
+      "size": 1109,
+      "sha256": "52b2a103faf9919b92087779447a325cb3ca22507e4402b59eb61a2aaf35e5c7"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/XXA3CBZSEDE4ZFV2TDNZYVCTAK4WU5NJQJGN52C5QER5XGPS2HEA/__grp__w8a8_block_fp8_matmul_kernel.json": {
+      "size": 837,
+      "sha256": "0d339f5bec141341de8e34d74b12908f1c189c39d9406113a5fa7a204d356fe6"
+    },
+    "out/s2-fp8-hub/hubv1/triton-cache/XXA3CBZSEDE4ZFV2TDNZYVCTAK4WU5NJQJGN52C5QER5XGPS2HEA/w8a8_block_fp8_matmul_kernel.json": {
+      "size": 1138,
+      "sha256": "98af0c6e509274574950422a67d548354fbf20e271bcc0c6a08f9259a23b5048"
+    },
+    "out/s2-fp8-hub/report.json": {
+      "size": 202300,
+      "sha256": "f1e35129bcff0b5c2fe2987f86403aa082e2ccf0a383a4e9261a9bbf018c25c2"
+    },
+    "out/s2-fp8-hub/summary.json": {
+      "size": 1249,
+      "sha256": "0f6c1efaabba5a7c59b54cf4f6d276d088944103df320d943cbc100b591f6093"
+    },
+    "out/s2-qwen-fp8/decode/result.json": {
+      "size": 56734,
+      "sha256": "bf3c1f2dc92c7d8f16e2be8c38e0dff81fbd3a1accf14194597ba901bf8246f7"
+    },
+    "out/s2-qwen-fp8/linears/result.json": {
+      "size": 16733,
+      "sha256": "0a6fec39917581d9e1362b8085e49ed7ca2c7b54157658fc6103bb29dbb91a87"
+    },
+    "out/s2-qwen-fp8/report.json": {
+      "size": 158226,
+      "sha256": "2d88f070ea454d4b0013bc76363efcf67ead885c4ac92211e57533f9c3346521"
+    }
+  }
+}

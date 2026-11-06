@@ -1,0 +1,30 @@
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+-- Configuring done (0.4s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/zhongchun/r41-stage1/model-build
+[  7%] Generating tnca_sfu_tables_generated.hpp
+[ 15%] Building CXX object CMakeFiles/tnca-tlm.dir/src/main.cpp.o
+[ 23%] Building CXX object CMakeFiles/tnca-dram-bridge.dir/ramulator/tnca_dram_bridge.cpp.o
+[ 30%] Building CXX object CMakeFiles/tnca-numeric-probe.dir/src/numeric_probe.cpp.o
+[ 38%] Linking CXX executable tnca-numeric-probe
+[ 38%] Built target tnca-numeric-probe
+[ 46%] Linking CXX static library libtnca-dram-bridge.a
+[ 46%] Built target tnca-dram-bridge
+[ 53%] Generating tnca_isa_generated.hpp
+[ 61%] Building CXX object CMakeFiles/tnca-dram-bridge-test.dir/ramulator/bridge_test.cpp.o
+[ 69%] Building CXX object CMakeFiles/tnca-chip.dir/src/chip.cpp.o
+[ 76%] Linking CXX executable tnca-dram-bridge-test
+[ 76%] Built target tnca-dram-bridge-test
+[ 84%] Linking CXX executable tnca-tlm
+[ 84%] Built target tnca-tlm
+[ 92%] Linking CXX executable tnca-chip
+[100%] Built target tnca-chip

@@ -1,14 +1,13 @@
 # R1 completion report and sign-off
 
-The contract is `phase1_tasks_and_acceptance.md`; the audit it answers is
-`production_readiness_audit_2026-09-19.md`. This file is R1-12's deliverable:
+The contract is [phase1_tasks_and_acceptance.md](phase1_tasks_and_acceptance.md); the audit it answers is
+[production_readiness_audit_2026-09-19.md](production_readiness_audit_2026-09-19.md). This file is R1-12's deliverable:
 one row per work package with its owner, the commits that implemented it, the
 case IDs that test it, where the evidence lives, and its status.
 
-## R1 是 ACCEPTED
+## R1 is ACCEPTED
 
-在候选 commit `97c0cf90` 上，两套相互独立的 Linux x86_64 环境各自从同一个干净
-archive bootstrap、各自建自己的 venv 与 `tnca-opt`、各自跑完全套：
+On candidate commit `97c0cf90`, two mutually independent Linux x86_64 environments each bootstrapped from the same clean archive, each built their own venv and `tnca-opt`, and each ran the full test suite:
 
 ```text
 A commit 97c0cf909c47c908be0564fcafa6809c0ec1a677  B commit 97c0cf90...
@@ -23,14 +22,10 @@ profile system-2x2:  d3188d732796426d  in both
   FINAL VERDICT: ACCEPTED
 ```
 
-证据：[`evidence/r1-combined-verdict.json`](evidence/r1-combined-verdict.json)、
-[`evidence/r1-environments.json`](evidence/r1-environments.json)。
+Evidence: [`evidence/r1-combined-verdict.json`](evidence/r1-combined-verdict.json),
+[`evidence/r1-environments.json`](evidence/r1-environments.json).
 
-两个环境**各自**的 `acceptance.json` 都写着 NOT ACCEPTED，这是设计如此而不是
-缺陷：一次 run 无权回答"两套环境是否一致"。R1-09 与 R1-12 由
-`tools/r1/compare_envs.py` 在两份证据之上判定，最终判决是它给出的那一个。
-零字节相同是 iverilog 按对象地址命名符号的结果；`spec/r1_normalization.json`
-事先声明了可去除的三个字段，去除后 19 个产物全部一致。
+Each of the two environments' **individual** `acceptance.json` records NOT ACCEPTED; this is by design rather than a defect: a single run is not entitled to decide whether two environments agree. R1-09 and R1-12 are resolved by `tools/r1/compare_envs.py` across both sets of evidence, and the final verdict is the one it produces. Zero byte-identical built artefacts is the expected consequence of Icarus Verilog naming symbols after object addresses; `spec/r1_normalization.json` declared the three strippable fields in advance, and after normalisation all 19 artefacts agree completely.
 
 **Owner for every work package: the repository maintainer (git `zzczzc20`).**
 This is a single-maintainer project; recording one name twelve times is
@@ -65,19 +60,13 @@ for a given candidate is `acceptance.json` in that run's evidence directory,
 and `make r1-verify-evidence EVIDENCE=<dir>` re-derives it rather than reading
 the verdict out of the file.
 
-## 两条必须继续说明的限制
+## Two continuing limitations that must remain documented
 
-R1 已签收，下面两点不改变判决，但属于必须留在记录里的事实。
+R1 is signed off; the following two points do not change the verdict, but represent facts that must remain on record.
 
-**运行机器低于合同的参考规格。** 4 vCPU 对 8、15 GiB 对 32、58 GiB 可用磁盘
-对 100。锁文件如实记录而不是四舍五入：在更小的机器上跑得更慢，这不等于参考
-规格不必要。
+**The test runner host is below the contract's reference specification.** 4 vCPUs vs. 8, 15 GiB RAM vs. 32, and 58 GiB free disk vs. 100. The lockfile records this accurately rather than rounding up: running slower on a smaller machine does not mean the reference specification is unnecessary.
 
-**XLS 现在在环境内本地运行，从按 checksum 固定的发行包解出。**
-`tools/xls/fetch_xls.sh` 在解包前校验 sha256，`R1_STRICT=1` 直接拒绝 ssh
-runner。两套环境的 `make r1-check-generated R1_XLS=1` 都报告
-`PASS: rtl/gen matches the DSLX sources`，即受控 RTL 确实由 DSLX 重新生成而
-不是被信任。
+**XLS now runs locally inside the environment, extracted from a release archive pinned by checksum.** `tools/xls/fetch_xls.sh` verifies the sha256 checksum before extracting, and `R1_STRICT=1` outright rejects the ssh runner. In both environments, `make r1-check-generated R1_XLS=1` reported `PASS: rtl/gen matches the DSLX sources`, proving that controlled RTL is genuinely regenerated from DSLX sources rather than trusted.
 
 ## Found during R1, outside F01-F04
 
@@ -104,5 +93,5 @@ marked "not applicable".
 - `t.st.async` execution (the engine has no vector read port)
 - general CFG in the MLIR verifier -- a frozen, stated boundary
 - `tnca_vector_fpu` synthesis, which yosys did not finish; see
-  `doc/synthesis.md`
-- the XLS regeneration path, which still needs a host
+  [synthesis.md](synthesis.md)
+- the XLS regeneration path on non-Linux development platforms (which still requires an SSH host; rejected under `R1_STRICT=1`)

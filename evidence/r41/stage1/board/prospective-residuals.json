@@ -1,0 +1,172 @@
+{
+  "schema": "tnca-prediction-residuals/1",
+  "predictions": [
+    {
+      "path": "evidence/r41/stage1/kickoff/prospective-prediction-v2.json",
+      "sha256": "eff75a74abb9e7d5a49e2375313343ade18d3a922b9651e7622f4c5eeccd7766",
+      "sealed_before_board_utc": "2026-10-21T10:55:14.453676+00:00",
+      "software_tree": "files:8c7139023d76d8572a82faef65312ce03bb439def8475792de826f44acb956ee"
+    }
+  ],
+  "board": [
+    {
+      "path": "out/board-prospective/prospective/formal.jsonl",
+      "sha256": "d0f64ffbbc7307ed6e710a40f1bbfa7ff5a26423a5c5d2fd1e7e845a31c5a345"
+    }
+  ],
+  "board_records_used": 2,
+  "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+  "clock_hz": 90000000,
+  "rows": [
+    {
+      "point": "op.matmul/medium/fp16-m128-k192-n128",
+      "arm": "candidate",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "3",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,32,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "2",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "resident",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          894322,
+          898386,
+          890012
+        ],
+        "serial_grid_samples": [
+          894320,
+          898384,
+          890010
+        ],
+        "graph_makespan_median": 894322,
+        "serial_grid_median": 894320,
+        "programs": [
+          [
+            "triton_tem_fused_mm_0",
+            "e21cb10f3015714c670366d0f4efdd4bda9c741b290916075496e9797709256d"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 911645,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "e18fe818b698e573cba738a361617e6b327f747f273add73bc72d7138a0f95ca",
+        "residual": 0.01936998083464345,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 918103,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "adc652d054b602b0ad62d8906ba6aa45cd13c4a87338b26e57c6e6469da4f372",
+        "residual": 0.02659109358821543,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    },
+    {
+      "point": "op.matmul/medium/fp16-m128-k192-n128",
+      "arm": "control",
+      "configuration": {
+        "TNCA_ACTIVE_CORES": "3",
+        "TNCA_BANK_ALLOC": "0",
+        "TNCA_GEMM_TILE": "16,16,16",
+        "TNCA_MAX_BLOCK": "16",
+        "TNCA_PIPELINE": "2",
+        "TNCA_REDUCTION_ROWS": "1",
+        "TNCA_RTL_MEM_PORTS": "1",
+        "TNCA_RTL_OUTSTANDING": "1",
+        "TNCA_SDPA": "decomposed",
+        "TNCA_SUBMIT": "single",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TRANSFER_POLICY": "resident",
+        "TNCA_TUNE": "0",
+        "TNCA_WINDOW_REUSE": "0"
+      },
+      "board": {
+        "records": 1,
+        "graph_makespan_samples": [
+          297079,
+          306357,
+          304701
+        ],
+        "serial_grid_samples": [
+          297077,
+          306355,
+          304699
+        ],
+        "graph_makespan_median": 304701,
+        "serial_grid_median": 304699,
+        "programs": [
+          [
+            "triton_tem_fused_mm_0",
+            "4376071663851e22598f81392ba9483309477059123eddd2bfe5de3dcdf2e4f9"
+          ]
+        ],
+        "software_trees": [
+          "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a"
+        ]
+      },
+      "fast": {
+        "model_graph_cycles": 295176,
+        "model_timing_status": "uncalibrated",
+        "record_sha256": "3517c210b3c318c7bf649cbfc9018a75c90bb9f1484395cfb09aabe68ec67bb8",
+        "residual": -0.031260153396280285,
+        "qualified": true,
+        "status": "residual-recorded"
+      },
+      "slow": {
+        "model_graph_cycles": 295965,
+        "model_timing_status": "inconclusive-fixed-point",
+        "record_sha256": "989de23029f9c902ebad3bef999f3dea4d790ca0689d16ee4ee4e5ef5aa90a69",
+        "residual": -0.028670729666131715,
+        "qualified": false,
+        "status": "residual-recorded-inconclusive-prediction"
+      },
+      "status": "compared"
+    }
+  ],
+  "summary": {
+    "fast": {
+      "qualified_residuals": 2,
+      "median_abs": 0.025315067115461866,
+      "max_abs": 0.031260153396280285,
+      "not_comparable": 0,
+      "inconclusive": 0,
+      "not_run": 0
+    },
+    "slow": {
+      "qualified_residuals": 0,
+      "median_abs": null,
+      "max_abs": null,
+      "not_comparable": 0,
+      "inconclusive": 2,
+      "not_run": 0
+    }
+  },
+  "status": "residuals-recorded",
+  "result": "2 configurations; 0 without a board record; qualified residuals fast 2, slow 0",
+  "residual": {
+    "fast_median_abs": 0.025315067115461866,
+    "slow_median_abs": null,
+    "definition": "(model graph cycles - board graph makespan median) / board"
+  },
+  "conclusion": "prospective uncalibrated residuals; they validate, never calibrate, the model, and none of these points may enter a later fit as unseen holdout",
+  "next_step": "compare fast and slow residuals against their simulator cost; seal new predictions before any further board run of changed software",
+  "performance_gate": "not-measured"
+}

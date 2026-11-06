@@ -1,0 +1,268 @@
+WARNING: Default location for XILINX_HLS not found
+
+****** Vivado v2023.2 (64-bit)
+  **** SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+  **** IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+  **** SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source flow/fpga/package_xo.tcl
+# set ROOT [file normalize [lindex $::argv 0]]
+# set OUT  [file normalize [lindex $::argv 1]]
+# set PART    [expr {[llength $::argv] > 2 ? [lindex $::argv 2] : "xcu50-fsvh2104-2-e"}]
+# set VARIANT [expr {[llength $::argv] > 3 ? [lindex $::argv 3] : ""}]
+# if {$VARIANT eq "hbm"} {
+#     set TOP     tnca_hbm_xo
+#     set KSRC    kernel_hbm.xml
+#     set BUSIFS  s_axi_tnca:m_axi_hbm
+# } elseif {$VARIANT eq "multicore-hbm"} {
+#     set TOP     tnca_multicore_hbm_xo
+#     set KSRC    kernel_multicore_hbm.xml
+#     set BUSIFS  s_axi_tnca:m_axi_hbm0:m_axi_hbm1:m_axi_hbm2
+# } elseif {$VARIANT eq ""} {
+#     set TOP     tnca_u50_xo
+#     set KSRC    kernel.xml
+#     set BUSIFS  s_axi_tnca
+# } else {
+#     puts "TNCA_PKG_ERROR unknown variant '$VARIANT' (none, hbm, multicore-hbm)"
+#     exit 2
+# }
+# puts "TNCA_PKG_VARIANT=[expr {$VARIANT eq {} ? {onchip} : $VARIANT}] TOP=$TOP"
+TNCA_PKG_VARIANT=multicore-hbm TOP=tnca_multicore_hbm_xo
+# set VENDOR  tnca.com
+# set LIB     kernel
+# set NAME    tnca_u50
+# set VERSION 1.0
+# set AP_CLK_HZ 100000000
+# set IPDIR  $OUT/ip_repo/tnca_com_kernel_${NAME}_1_0
+# set KXML   $OUT/kernel.xml
+# set XO     $OUT/${NAME}.xo
+# file mkdir $OUT
+# file copy -force $ROOT/fpga/$KSRC $KXML
+# set RTL [list]
+# foreach d {common core gen nuca noc tile fpga} {
+#     foreach f [lsort [glob -nocomplain $ROOT/rtl/$d/*.v]] {
+#         lappend RTL $f
+#     }
+# }
+# foreach f [lsort [glob -nocomplain $ROOT/rtl/*.v]] {
+#     lappend RTL $f
+# }
+# lappend RTL $ROOT/rtl/board/$TOP.v
+# set INCS [list $ROOT/rtl/common $ROOT/rtl/noc]
+# set HEADERS [list]
+# foreach d $INCS {
+#     foreach f [lsort [glob -nocomplain $d/*.vh]] {lappend HEADERS $f}
+# }
+# puts "TNCA_PKG_ROOT=$ROOT"
+TNCA_PKG_ROOT=/home/vivado/r41res/g4s4_64e3c71d7f39/src
+# puts "TNCA_PKG_FILES=[llength $RTL]"
+TNCA_PKG_FILES=85
+# puts "TNCA_PKG_HEADERS=[llength $HEADERS]"
+TNCA_PKG_HEADERS=6
+# create_project -force tnca_xo $OUT/proj -part $PART
+# add_files -norecurse $RTL
+# add_files -norecurse $HEADERS
+# set_property IS_GLOBAL_INCLUDE false [get_files $HEADERS]
+# set_property FILE_TYPE SystemVerilog [get_files $RTL]
+# foreach d $INCS {
+#     set_property include_dirs $INCS [current_fileset]
+# }
+# add_files -fileset constrs_1 -norecurse $ROOT/flow/fpga/ooc.xdc
+# set_property USED_IN {synthesis out_of_context} [get_files $ROOT/flow/fpga/ooc.xdc]
+# set_property top $TOP [current_fileset]
+# update_compile_order -fileset sources_1
+# ipx::package_project -root_dir $IPDIR -vendor $VENDOR -library $LIB \
+#     -taxonomy /KernelIP -import_files
+WARNING: [IP_Flow 19-4656] Synthesis file group is packaged with a Dependency property value '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/common' although it may not be recognized as a synthesis -include_dir property after IP delivery.
+WARNING: [IP_Flow 19-4656] Synthesis file group is packaged with a Dependency property value '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/noc' although it may not be recognized as a synthesis -include_dir property after IP delivery.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/core/tnca_operand_collector.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/core/tnca_pmac_lane.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/gen/tnca_cvt_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/gen/tnca_fdp_f2_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/gen/tnca_fdp_v1_f1_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/gen/tnca_fdp_v2d_f1_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/gen/tnca_fdp_v2l_f1_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/gen/tnca_fdp_v3_f1_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/gen/tnca_fdp_v3_f2_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/gen/tnca_fma_alignp_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/gen/tnca_narrow_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/gen/tnca_widen_pair_xls.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/fpga/tnca_axi_bridge.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/fpga/tnca_axi_bridge_lb.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/fpga/tnca_axi_line_ram.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/fpga/tnca_fpga_mem.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/fpga/tnca_fpga_top.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/fpga/tnca_mmio.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/fpga/tnca_u50_top.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/tnca_shell.v'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/common/tnca_perf_count.vh'.
+WARNING: [IP_Flow 19-3833] Unreferenced file from the top module is not packaged: '/home/vivado/r41res/g4s4_64e3c71d7f39/src/rtl/common/tnca_perf_sel.vh'.
+WARNING: [IP_Flow 19-5101] Packaging a component with a SystemVerilog top file is not fully supported. Please refer to UG1118 'Creating and Packaging Custom IP'.
+INFO: [IP_Flow 19-1842] HDL Parser: Found include file "src/tnca_defs.vh" from the top-level HDL file.
+INFO: [IP_Flow 19-1842] HDL Parser: Found include file "src/tnca_noc_pkg.vh" from the top-level HDL file.
+INFO: [IP_Flow 19-1842] HDL Parser: Found include file "src/tnca_amo.vh" from the top-level HDL file.
+INFO: [IP_Flow 19-1842] HDL Parser: Found include file "src/tnca_dco_owner_registered.vh" from the top-level HDL file.
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1704] No user IP repositories specified
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/home/vivado/Xilinx/Vivado/2023.2/data/ip'.
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_hbm0' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_hbm1' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'm_axi_hbm2' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 's_axi_tnca' of definition 'xilinx.com:interface:aximm:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'ap_rst_n' of definition 'xilinx.com:signal:reset:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-5107] Inferred bus interface 'ap_clk' of definition 'xilinx.com:signal:clock:1.0' (from Xilinx Repository).
+INFO: [IP_Flow 19-4728] Bus Interface 'ap_rst_n': Added interface parameter 'POLARITY' with value 'ACTIVE_LOW'.
+INFO: [IP_Flow 19-4728] Bus Interface 'ap_clk': Added interface parameter 'ASSOCIATED_RESET' with value 'ap_rst_n'.
+INFO: [IP_Flow 19-818] Not transferring value dependency attribute "((spirit:decode(id('MODELPARAM_VALUE.AXI_OUT_N')) > 1) ? spirit:ceil(spirit:log(2,spirit:decode(id('MODELPARAM_VALUE.AXI_OUT_N')))) : 1)" into user parameter "AXI_ID_W".
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_hbm0': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_hbm1': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 'm_axi_hbm2': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-3158] Bus Interface 's_axi_tnca': FREQ_HZ bus parameter missing from AXI interface when interface is not associated to a clock.
+WARNING: [IP_Flow 19-5661] Bus Interface 'ap_clk' does not have any bus interfaces associated with it.
+WARNING: [IP_Flow 19-11770] Clock interface 'ap_clk' has no FREQ_HZ parameter.
+INFO: [IP_Flow 19-2181] Payment Required is not set for this core.
+INFO: [IP_Flow 19-2187] The Product Guide file is missing.
+# set core [ipx::current_core]
+# set_property name $NAME $core
+# set_property version $VERSION $core
+# set clk_if [ipx::get_bus_interfaces ap_clk -of_objects $core]
+# proc tnca_busparam {busif name value {resolve ""}} {
+#     set p [ipx::get_bus_parameters $name -of_objects $busif]
+#     if {[llength $p] == 0} {
+#         set p [ipx::add_bus_parameter $name $busif]
+#         puts "TNCA_PKG_PARAM $name: created"
+#     } else {
+#         puts "TNCA_PKG_PARAM $name: already present"
+#     }
+#     if {[catch {set_property value $value $p} why]} {
+#         puts "TNCA_PKG_PARAM $name: value refused -- $why"
+#         return
+#     }
+#     puts "TNCA_PKG_PARAM $name: value = [get_property value $p]"
+#     if {$resolve ne ""} {
+#         if {[catch {set_property value_resolve_type $resolve $p} why]} {
+#             puts "TNCA_PKG_PARAM $name: resolve type refused -- $why"
+#         } else {
+#             puts "TNCA_PKG_PARAM $name: resolve = [get_property value_resolve_type $p]"
+#         }
+#     }
+# }
+# tnca_busparam $clk_if ASSOCIATED_BUSIF $BUSIFS
+TNCA_PKG_PARAM ASSOCIATED_BUSIF: created
+TNCA_PKG_PARAM ASSOCIATED_BUSIF: value = s_axi_tnca:m_axi_hbm0:m_axi_hbm1:m_axi_hbm2
+# if {$VARIANT eq "multicore-hbm"} {
+#     tnca_busparam $clk_if ASSOCIATED_RESET ap_rst_n
+#     set reset_if [ipx::get_bus_interfaces ap_rst_n -of_objects $core]
+#     if {[llength $reset_if] != 1} {error "multicore HBM reset interface missing"}
+#     tnca_busparam $reset_if POLARITY ACTIVE_LOW
+#     foreach bus {s_axi_tnca m_axi_hbm0 m_axi_hbm1 m_axi_hbm2} {
+#         if {[llength [ipx::get_bus_interfaces $bus -of_objects $core]] != 1} {
+#             error "multicore HBM interface $bus missing"
+#         }
+#     }
+# }
+TNCA_PKG_PARAM ASSOCIATED_RESET: already present
+TNCA_PKG_PARAM ASSOCIATED_RESET: value = ap_rst_n
+TNCA_PKG_PARAM POLARITY: already present
+TNCA_PKG_PARAM POLARITY: value = ACTIVE_LOW
+# tnca_busparam $clk_if FREQ_HZ $AP_CLK_HZ user
+TNCA_PKG_PARAM FREQ_HZ: created
+TNCA_PKG_PARAM FREQ_HZ: value = 100000000
+TNCA_PKG_PARAM FREQ_HZ: resolve = user
+# if {[info exists ::env(TNCA_IMAGE_CONFIG)]} {
+#     source $::env(TNCA_IMAGE_CONFIG)
+#     dict for {name value} $TNCA_IMAGE_PARAMS {
+#         set up [ipx::get_user_parameters $name -of_objects $core]
+#         set mp [ipx::get_hdl_parameters $name -of_objects $core]
+#         if {[llength $up] != 1 || [llength $mp] != 1} {
+#             error "TNCA_IMAGE_CONFIG: parameter $name is not exposed by $TOP"
+#         }
+#         set_property value $value $up
+#         set_property value $value $mp
+#         puts "TNCA_IMAGE_PARAM $name=$value"
+#     }
+# }
+## set TNCA_IMAGE_PARAMS [dict create AXI_DATA_W 256 AXI_ID_W 5 AXI_LINE_LUTRAM 1 BAR_EPOCH_W 38 BAR_N 8 BAR_W 3 AXI_OUT_N 32 CACHE_MAINTENANCE 1 CODE_LINK_STAGES 2 DCO_LOCAL_REPLICAS 1 DCO_REGISTERED_RANGES 1 DCO_REGISTER_WRITES 1 DCO_TLW_PIPE_STAGES 2 DISPATCH_STAGES 2 FE_NOBUBBLE 1 FPU_OVERLAP 1 HAS_ATOMICS 1 HAS_SFU 1 HAS_SYS_ATOMICS 0 HAS_TENSOR_XPOSE 2 LINK_STAGES 2 LSU_INFLIGHT 2 MEMORY_CONTROLS 1 MEM_HOME_STAGES 2 MEM_PORTS 3 MTX_ABUF 1 PHYS_ADDR_W 35 NOC_LINK_STAGES 2 NUCA_CACHE_DATA_PIPELINE 1 NUCA_REGISTER_VICTIM_RANK 1 NUCA_REGISTER_VICTIM_SELECT 1 NUCA_SHARED_DATA_READ 2 NUM_RCTX 2 RCTX_SWITCH 2 RCTX_W 1 PHYS_VREGS 128 PHYS_W 7 RPAIR 1 RSLICE 1 SETS 32 SET_W 5 USE_BANKED_VRF 1 VREGS_PER_RCTX 64 VRF_BYPASS 1 VRF_PREFETCH 1 WAYS 8 WAY_W 3 HYBRID_LSU 1 HOME_BACKGROUND_READS 1 HOME_LINE_WRITE_NOFILL 1 HOME_LINE_PIPE 1 HOME_MSHR_N 32 LINE_SLOTS 32 AXI_PIPELINED_ISSUE 1 HBM_STRIPED 1]
+TNCA_IMAGE_PARAM AXI_DATA_W=256
+TNCA_IMAGE_PARAM AXI_ID_W=5
+TNCA_IMAGE_PARAM AXI_LINE_LUTRAM=1
+TNCA_IMAGE_PARAM BAR_EPOCH_W=38
+TNCA_IMAGE_PARAM BAR_N=8
+TNCA_IMAGE_PARAM BAR_W=3
+TNCA_IMAGE_PARAM AXI_OUT_N=32
+TNCA_IMAGE_PARAM CACHE_MAINTENANCE=1
+TNCA_IMAGE_PARAM CODE_LINK_STAGES=2
+TNCA_IMAGE_PARAM DCO_LOCAL_REPLICAS=1
+TNCA_IMAGE_PARAM DCO_REGISTERED_RANGES=1
+TNCA_IMAGE_PARAM DCO_REGISTER_WRITES=1
+TNCA_IMAGE_PARAM DCO_TLW_PIPE_STAGES=2
+TNCA_IMAGE_PARAM DISPATCH_STAGES=2
+TNCA_IMAGE_PARAM FE_NOBUBBLE=1
+TNCA_IMAGE_PARAM FPU_OVERLAP=1
+TNCA_IMAGE_PARAM HAS_ATOMICS=1
+TNCA_IMAGE_PARAM HAS_SFU=1
+TNCA_IMAGE_PARAM HAS_SYS_ATOMICS=0
+TNCA_IMAGE_PARAM HAS_TENSOR_XPOSE=2
+TNCA_IMAGE_PARAM LINK_STAGES=2
+TNCA_IMAGE_PARAM LSU_INFLIGHT=2
+TNCA_IMAGE_PARAM MEMORY_CONTROLS=1
+TNCA_IMAGE_PARAM MEM_HOME_STAGES=2
+TNCA_IMAGE_PARAM MEM_PORTS=3
+TNCA_IMAGE_PARAM MTX_ABUF=1
+TNCA_IMAGE_PARAM PHYS_ADDR_W=35
+TNCA_IMAGE_PARAM NOC_LINK_STAGES=2
+TNCA_IMAGE_PARAM NUCA_CACHE_DATA_PIPELINE=1
+TNCA_IMAGE_PARAM NUCA_REGISTER_VICTIM_RANK=1
+TNCA_IMAGE_PARAM NUCA_REGISTER_VICTIM_SELECT=1
+TNCA_IMAGE_PARAM NUCA_SHARED_DATA_READ=2
+TNCA_IMAGE_PARAM NUM_RCTX=2
+TNCA_IMAGE_PARAM RCTX_SWITCH=2
+TNCA_IMAGE_PARAM RCTX_W=1
+TNCA_IMAGE_PARAM PHYS_VREGS=128
+TNCA_IMAGE_PARAM PHYS_W=7
+TNCA_IMAGE_PARAM RPAIR=1
+TNCA_IMAGE_PARAM RSLICE=1
+TNCA_IMAGE_PARAM SETS=32
+TNCA_IMAGE_PARAM SET_W=5
+TNCA_IMAGE_PARAM USE_BANKED_VRF=1
+TNCA_IMAGE_PARAM VREGS_PER_RCTX=64
+TNCA_IMAGE_PARAM VRF_BYPASS=1
+TNCA_IMAGE_PARAM VRF_PREFETCH=1
+TNCA_IMAGE_PARAM WAYS=8
+TNCA_IMAGE_PARAM WAY_W=3
+TNCA_IMAGE_PARAM HYBRID_LSU=1
+TNCA_IMAGE_PARAM HOME_BACKGROUND_READS=1
+TNCA_IMAGE_PARAM HOME_LINE_WRITE_NOFILL=1
+TNCA_IMAGE_PARAM HOME_LINE_PIPE=1
+TNCA_IMAGE_PARAM HOME_MSHR_N=32
+TNCA_IMAGE_PARAM LINE_SLOTS=32
+TNCA_IMAGE_PARAM AXI_PIPELINED_ISSUE=1
+TNCA_IMAGE_PARAM HBM_STRIPED=1
+# ipx::create_xgui_files $core
+# ipx::update_checksums $core
+# ipx::save_core $core
+# puts "TNCA_PKG_IP=$IPDIR"
+TNCA_PKG_IP=/home/vivado/r41res/g4run2_pkg/xo/ip_repo/tnca_com_kernel_tnca_u50_1_0
+# set fh [open $IPDIR/component.xml r]
+# set xml [read $fh]
+# close $fh
+# foreach {tag id} {ASSOC ASSOCIATED_BUSIF FREQ FREQ_HZ} {
+#     if {[regexp "BUSIFPARAM_VALUE\\.AP_CLK\\.$id\">(\[^<\]*)" $xml -> v]} {
+#         puts "TNCA_PKG_XML_$tag=$v"
+#     } else {
+#         puts "TNCA_PKG_XML_$tag=NOT IN component.xml"
+#     }
+# }
+TNCA_PKG_XML_ASSOC=s_axi_tnca:m_axi_hbm0:m_axi_hbm1:m_axi_hbm2
+TNCA_PKG_XML_FREQ=100000000
+# package_xo -kernel_xml $KXML -kernel_name $NAME \
+#     -ip_directory $IPDIR -xo_path $XO -force
+WARNING: [Vivado 12-4404] The CPU emulation flow in v++ is only supported when using a packaged XO file that contains C-model files, none were found.
+# set variant_file [open $OUT/tnca_variant.txt w]
+# puts $variant_file $VARIANT
+# close $variant_file
+# puts "TNCA_PKG_DONE=$XO"
+TNCA_PKG_DONE=/home/vivado/r41res/g4run2_pkg/xo/tnca_u50.xo
+INFO: [Common 17-206] Exiting Vivado at Thu Oct 29 01:58:18 2026...

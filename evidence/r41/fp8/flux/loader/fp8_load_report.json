@@ -1,0 +1,1011 @@
+{
+ "checkpoint_keys": 309,
+ "quantized_layers": 80,
+ "formats": [
+  "float8_e4m3fn"
+ ],
+ "fp8_linears": 100,
+ "mapping": {
+  "single_transformer_blocks.0.attn.to_out.weight": {
+   "source": "single_blocks.0.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00116729736328125,
+   "input_scale": 0.15000000596046448
+  },
+  "single_transformer_blocks.0.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.0.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.001007080078125,
+   "input_scale": 0.16473214328289032
+  },
+  "single_transformer_blocks.1.attn.to_out.weight": {
+   "source": "single_blocks.1.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000751495361328125,
+   "input_scale": 0.17008928954601288
+  },
+  "single_transformer_blocks.1.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.1.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00087738037109375,
+   "input_scale": 0.16205357015132904
+  },
+  "single_transformer_blocks.10.attn.to_out.weight": {
+   "source": "single_blocks.10.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00096893310546875,
+   "input_scale": 0.10245535522699356
+  },
+  "single_transformer_blocks.10.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.10.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000774383544921875,
+   "input_scale": 0.1607142835855484
+  },
+  "single_transformer_blocks.11.attn.to_out.weight": {
+   "source": "single_blocks.11.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000743865966796875,
+   "input_scale": 0.1473214328289032
+  },
+  "single_transformer_blocks.11.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.11.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000885009765625,
+   "input_scale": 0.1607142835855484
+  },
+  "single_transformer_blocks.12.attn.to_out.weight": {
+   "source": "single_blocks.12.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000614166259765625,
+   "input_scale": 0.15669642388820648
+  },
+  "single_transformer_blocks.12.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.12.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00119781494140625,
+   "input_scale": 0.16004464030265808
+  },
+  "single_transformer_blocks.13.attn.to_out.weight": {
+   "source": "single_blocks.13.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00089263916015625,
+   "input_scale": 0.1372767835855484
+  },
+  "single_transformer_blocks.13.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.13.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000827789306640625,
+   "input_scale": 0.16004464030265808
+  },
+  "single_transformer_blocks.14.attn.to_out.weight": {
+   "source": "single_blocks.14.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000652313232421875,
+   "input_scale": 0.19285714626312256
+  },
+  "single_transformer_blocks.14.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.14.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00090789794921875,
+   "input_scale": 0.15803571045398712
+  },
+  "single_transformer_blocks.15.attn.to_out.weight": {
+   "source": "single_blocks.15.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000934600830078125,
+   "input_scale": 0.2678571343421936
+  },
+  "single_transformer_blocks.15.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.15.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0012664794921875,
+   "input_scale": 0.15535713732242584
+  },
+  "single_transformer_blocks.16.attn.to_out.weight": {
+   "source": "single_blocks.16.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0012664794921875,
+   "input_scale": 0.12187500298023224
+  },
+  "single_transformer_blocks.16.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.16.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000957489013671875,
+   "input_scale": 0.1540178507566452
+  },
+  "single_transformer_blocks.17.attn.to_out.weight": {
+   "source": "single_blocks.17.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00150299072265625,
+   "input_scale": 0.15669642388820648
+  },
+  "single_transformer_blocks.17.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.17.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0009765625,
+   "input_scale": 0.15133929252624512
+  },
+  "single_transformer_blocks.18.attn.to_out.weight": {
+   "source": "single_blocks.18.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.002044677734375,
+   "input_scale": 0.3348214328289032
+  },
+  "single_transformer_blocks.18.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.18.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00121307373046875,
+   "input_scale": 0.14933036267757416
+  },
+  "single_transformer_blocks.19.attn.to_out.weight": {
+   "source": "single_blocks.19.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000926971435546875,
+   "input_scale": 0.9589285850524902
+  },
+  "single_transformer_blocks.19.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.19.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0015411376953125,
+   "input_scale": 0.1473214328289032
+  },
+  "single_transformer_blocks.2.attn.to_out.weight": {
+   "source": "single_blocks.2.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00080108642578125,
+   "input_scale": 0.1506696492433548
+  },
+  "single_transformer_blocks.2.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.2.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00101470947265625,
+   "input_scale": 0.16138392686843872
+  },
+  "single_transformer_blocks.3.attn.to_out.weight": {
+   "source": "single_blocks.3.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.001068115234375,
+   "input_scale": 0.12857143580913544
+  },
+  "single_transformer_blocks.3.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.3.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0014190673828125,
+   "input_scale": 0.1607142835855484
+  },
+  "single_transformer_blocks.4.attn.to_out.weight": {
+   "source": "single_blocks.4.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00098419189453125,
+   "input_scale": 0.2209821492433548
+  },
+  "single_transformer_blocks.4.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.4.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.001068115234375,
+   "input_scale": 0.16004464030265808
+  },
+  "single_transformer_blocks.5.attn.to_out.weight": {
+   "source": "single_blocks.5.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00141143798828125,
+   "input_scale": 0.23035714030265808
+  },
+  "single_transformer_blocks.5.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.5.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0012969970703125,
+   "input_scale": 0.16004464030265808
+  },
+  "single_transformer_blocks.6.attn.to_out.weight": {
+   "source": "single_blocks.6.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000732421875,
+   "input_scale": 0.13995535671710968
+  },
+  "single_transformer_blocks.6.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.6.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000949859619140625,
+   "input_scale": 0.15803571045398712
+  },
+  "single_transformer_blocks.7.attn.to_out.weight": {
+   "source": "single_blocks.7.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00079345703125,
+   "input_scale": 0.18348214030265808
+  },
+  "single_transformer_blocks.7.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.7.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00118255615234375,
+   "input_scale": 0.15937499701976776
+  },
+  "single_transformer_blocks.8.attn.to_out.weight": {
+   "source": "single_blocks.8.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00075531005859375,
+   "input_scale": 0.2075892835855484
+  },
+  "single_transformer_blocks.8.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.8.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00104522705078125,
+   "input_scale": 0.1607142835855484
+  },
+  "single_transformer_blocks.9.attn.to_out.weight": {
+   "source": "single_blocks.9.linear2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.002166748046875,
+   "input_scale": 0.12455356866121292
+  },
+  "single_transformer_blocks.9.attn.to_qkv_mlp_proj.weight": {
+   "source": "single_blocks.9.linear1",
+   "rows": [
+    0,
+    27648
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00135040283203125,
+   "input_scale": 0.16004464030265808
+  },
+  "transformer_blocks.0.attn.add_k_proj.weight": {
+   "source": "double_blocks.0.txt_attn.qkv",
+   "rows": [
+    3072,
+    6144
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000934600830078125,
+   "input_scale": 0.09308035671710968
+  },
+  "transformer_blocks.0.attn.add_q_proj.weight": {
+   "source": "double_blocks.0.txt_attn.qkv",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000934600830078125,
+   "input_scale": 0.09308035671710968
+  },
+  "transformer_blocks.0.attn.add_v_proj.weight": {
+   "source": "double_blocks.0.txt_attn.qkv",
+   "rows": [
+    6144,
+    9216
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000934600830078125,
+   "input_scale": 0.09308035671710968
+  },
+  "transformer_blocks.0.attn.to_add_out.weight": {
+   "source": "double_blocks.0.txt_attn.proj",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000732421875,
+   "input_scale": 0.0904017835855484
+  },
+  "transformer_blocks.0.attn.to_k.weight": {
+   "source": "double_blocks.0.img_attn.qkv",
+   "rows": [
+    3072,
+    6144
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000972747802734375,
+   "input_scale": 0.3120535612106323
+  },
+  "transformer_blocks.0.attn.to_out.0.weight": {
+   "source": "double_blocks.0.img_attn.proj",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000591278076171875,
+   "input_scale": 0.12455356866121292
+  },
+  "transformer_blocks.0.attn.to_q.weight": {
+   "source": "double_blocks.0.img_attn.qkv",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000972747802734375,
+   "input_scale": 0.3120535612106323
+  },
+  "transformer_blocks.0.attn.to_v.weight": {
+   "source": "double_blocks.0.img_attn.qkv",
+   "rows": [
+    6144,
+    9216
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000972747802734375,
+   "input_scale": 0.3120535612106323
+  },
+  "transformer_blocks.0.ff.linear_in.weight": {
+   "source": "double_blocks.0.img_mlp.0",
+   "rows": [
+    0,
+    18432
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000823974609375,
+   "input_scale": 0.0301339291036129
+  },
+  "transformer_blocks.0.ff.linear_out.weight": {
+   "source": "double_blocks.0.img_mlp.2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00151824951171875,
+   "input_scale": 0.27991071343421936
+  },
+  "transformer_blocks.0.ff_context.linear_in.weight": {
+   "source": "double_blocks.0.txt_mlp.0",
+   "rows": [
+    0,
+    18432
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0004596710205078125,
+   "input_scale": 0.02410714328289032
+  },
+  "transformer_blocks.0.ff_context.linear_out.weight": {
+   "source": "double_blocks.0.txt_mlp.2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000537872314453125,
+   "input_scale": 0.7607142925262451
+  },
+  "transformer_blocks.1.attn.add_k_proj.weight": {
+   "source": "double_blocks.1.txt_attn.qkv",
+   "rows": [
+    3072,
+    6144
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000614166259765625,
+   "input_scale": 0.10781250149011612
+  },
+  "transformer_blocks.1.attn.add_q_proj.weight": {
+   "source": "double_blocks.1.txt_attn.qkv",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000614166259765625,
+   "input_scale": 0.10781250149011612
+  },
+  "transformer_blocks.1.attn.add_v_proj.weight": {
+   "source": "double_blocks.1.txt_attn.qkv",
+   "rows": [
+    6144,
+    9216
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000614166259765625,
+   "input_scale": 0.10781250149011612
+  },
+  "transformer_blocks.1.attn.to_add_out.weight": {
+   "source": "double_blocks.1.txt_attn.proj",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000385284423828125,
+   "input_scale": 0.11651785671710968
+  },
+  "transformer_blocks.1.attn.to_k.weight": {
+   "source": "double_blocks.1.img_attn.qkv",
+   "rows": [
+    3072,
+    6144
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0013427734375,
+   "input_scale": 0.21964286267757416
+  },
+  "transformer_blocks.1.attn.to_out.0.weight": {
+   "source": "double_blocks.1.img_attn.proj",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00058746337890625,
+   "input_scale": 0.08337053656578064
+  },
+  "transformer_blocks.1.attn.to_q.weight": {
+   "source": "double_blocks.1.img_attn.qkv",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0013427734375,
+   "input_scale": 0.21964286267757416
+  },
+  "transformer_blocks.1.attn.to_v.weight": {
+   "source": "double_blocks.1.img_attn.qkv",
+   "rows": [
+    6144,
+    9216
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0013427734375,
+   "input_scale": 0.21964286267757416
+  },
+  "transformer_blocks.1.ff.linear_in.weight": {
+   "source": "double_blocks.1.img_mlp.0",
+   "rows": [
+    0,
+    18432
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00102996826171875,
+   "input_scale": 0.02645089291036129
+  },
+  "transformer_blocks.1.ff.linear_out.weight": {
+   "source": "double_blocks.1.img_mlp.2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00091552734375,
+   "input_scale": 0.25580358505249023
+  },
+  "transformer_blocks.1.ff_context.linear_in.weight": {
+   "source": "double_blocks.1.txt_mlp.0",
+   "rows": [
+    0,
+    18432
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000614166259765625,
+   "input_scale": 0.02410714328289032
+  },
+  "transformer_blocks.1.ff_context.linear_out.weight": {
+   "source": "double_blocks.1.txt_mlp.2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00107574462890625,
+   "input_scale": 0.6267856955528259
+  },
+  "transformer_blocks.2.attn.add_k_proj.weight": {
+   "source": "double_blocks.2.txt_attn.qkv",
+   "rows": [
+    3072,
+    6144
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0004825592041015625,
+   "input_scale": 0.12187500298023224
+  },
+  "transformer_blocks.2.attn.add_q_proj.weight": {
+   "source": "double_blocks.2.txt_attn.qkv",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0004825592041015625,
+   "input_scale": 0.12187500298023224
+  },
+  "transformer_blocks.2.attn.add_v_proj.weight": {
+   "source": "double_blocks.2.txt_attn.qkv",
+   "rows": [
+    6144,
+    9216
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0004825592041015625,
+   "input_scale": 0.12187500298023224
+  },
+  "transformer_blocks.2.attn.to_add_out.weight": {
+   "source": "double_blocks.2.txt_attn.proj",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0004253387451171875,
+   "input_scale": 0.16339285671710968
+  },
+  "transformer_blocks.2.attn.to_k.weight": {
+   "source": "double_blocks.2.img_attn.qkv",
+   "rows": [
+    3072,
+    6144
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0010223388671875,
+   "input_scale": 0.19151785969734192
+  },
+  "transformer_blocks.2.attn.to_out.0.weight": {
+   "source": "double_blocks.2.img_attn.proj",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0003833770751953125,
+   "input_scale": 0.1104910746216774
+  },
+  "transformer_blocks.2.attn.to_q.weight": {
+   "source": "double_blocks.2.img_attn.qkv",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0010223388671875,
+   "input_scale": 0.19151785969734192
+  },
+  "transformer_blocks.2.attn.to_v.weight": {
+   "source": "double_blocks.2.img_attn.qkv",
+   "rows": [
+    6144,
+    9216
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0010223388671875,
+   "input_scale": 0.19151785969734192
+  },
+  "transformer_blocks.2.ff.linear_in.weight": {
+   "source": "double_blocks.2.img_mlp.0",
+   "rows": [
+    0,
+    18432
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00095367431640625,
+   "input_scale": 0.0226004458963871
+  },
+  "transformer_blocks.2.ff.linear_out.weight": {
+   "source": "double_blocks.2.img_mlp.2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000629425048828125,
+   "input_scale": 0.23571428656578064
+  },
+  "transformer_blocks.2.ff_context.linear_in.weight": {
+   "source": "double_blocks.2.txt_mlp.0",
+   "rows": [
+    0,
+    18432
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00051116943359375,
+   "input_scale": 0.02678571455180645
+  },
+  "transformer_blocks.2.ff_context.linear_out.weight": {
+   "source": "double_blocks.2.txt_mlp.2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000911712646484375,
+   "input_scale": 1.8857142925262451
+  },
+  "transformer_blocks.3.attn.add_k_proj.weight": {
+   "source": "double_blocks.3.txt_attn.qkv",
+   "rows": [
+    3072,
+    6144
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00104522705078125,
+   "input_scale": 0.11919642984867096
+  },
+  "transformer_blocks.3.attn.add_q_proj.weight": {
+   "source": "double_blocks.3.txt_attn.qkv",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00104522705078125,
+   "input_scale": 0.11919642984867096
+  },
+  "transformer_blocks.3.attn.add_v_proj.weight": {
+   "source": "double_blocks.3.txt_attn.qkv",
+   "rows": [
+    6144,
+    9216
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00104522705078125,
+   "input_scale": 0.11919642984867096
+  },
+  "transformer_blocks.3.attn.to_add_out.weight": {
+   "source": "double_blocks.3.txt_attn.proj",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.0004520416259765625,
+   "input_scale": 0.21160714328289032
+  },
+  "transformer_blocks.3.attn.to_k.weight": {
+   "source": "double_blocks.3.img_attn.qkv",
+   "rows": [
+    3072,
+    6144
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00098419189453125,
+   "input_scale": 0.1674107164144516
+  },
+  "transformer_blocks.3.attn.to_out.0.weight": {
+   "source": "double_blocks.3.img_attn.proj",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000537872314453125,
+   "input_scale": 0.19017857313156128
+  },
+  "transformer_blocks.3.attn.to_q.weight": {
+   "source": "double_blocks.3.img_attn.qkv",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00098419189453125,
+   "input_scale": 0.1674107164144516
+  },
+  "transformer_blocks.3.attn.to_v.weight": {
+   "source": "double_blocks.3.img_attn.qkv",
+   "rows": [
+    6144,
+    9216
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00098419189453125,
+   "input_scale": 0.1674107164144516
+  },
+  "transformer_blocks.3.ff.linear_in.weight": {
+   "source": "double_blocks.3.img_mlp.0",
+   "rows": [
+    0,
+    18432
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000640869140625,
+   "input_scale": 0.02494419552385807
+  },
+  "transformer_blocks.3.ff.linear_out.weight": {
+   "source": "double_blocks.3.img_mlp.2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000667572021484375,
+   "input_scale": 0.36964285373687744
+  },
+  "transformer_blocks.3.ff_context.linear_in.weight": {
+   "source": "double_blocks.3.txt_mlp.0",
+   "rows": [
+    0,
+    18432
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000560760498046875,
+   "input_scale": 0.04620535671710968
+  },
+  "transformer_blocks.3.ff_context.linear_out.weight": {
+   "source": "double_blocks.3.txt_mlp.2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000732421875,
+   "input_scale": 11.571428298950195
+  },
+  "transformer_blocks.4.attn.add_k_proj.weight": {
+   "source": "double_blocks.4.txt_attn.qkv",
+   "rows": [
+    3072,
+    6144
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000782012939453125,
+   "input_scale": 0.2919642925262451
+  },
+  "transformer_blocks.4.attn.add_q_proj.weight": {
+   "source": "double_blocks.4.txt_attn.qkv",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000782012939453125,
+   "input_scale": 0.2919642925262451
+  },
+  "transformer_blocks.4.attn.add_v_proj.weight": {
+   "source": "double_blocks.4.txt_attn.qkv",
+   "rows": [
+    6144,
+    9216
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000782012939453125,
+   "input_scale": 0.2919642925262451
+  },
+  "transformer_blocks.4.attn.to_add_out.weight": {
+   "source": "double_blocks.4.txt_attn.proj",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00049591064453125,
+   "input_scale": 0.35357141494750977
+  },
+  "transformer_blocks.4.attn.to_k.weight": {
+   "source": "double_blocks.4.img_attn.qkv",
+   "rows": [
+    3072,
+    6144
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000881195068359375,
+   "input_scale": 0.16808035969734192
+  },
+  "transformer_blocks.4.attn.to_out.0.weight": {
+   "source": "double_blocks.4.img_attn.proj",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000537872314453125,
+   "input_scale": 0.15937499701976776
+  },
+  "transformer_blocks.4.attn.to_q.weight": {
+   "source": "double_blocks.4.img_attn.qkv",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000881195068359375,
+   "input_scale": 0.16808035969734192
+  },
+  "transformer_blocks.4.attn.to_v.weight": {
+   "source": "double_blocks.4.img_attn.qkv",
+   "rows": [
+    6144,
+    9216
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000881195068359375,
+   "input_scale": 0.16808035969734192
+  },
+  "transformer_blocks.4.ff.linear_in.weight": {
+   "source": "double_blocks.4.img_mlp.0",
+   "rows": [
+    0,
+    18432
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000751495361328125,
+   "input_scale": 0.02511160634458065
+  },
+  "transformer_blocks.4.ff.linear_out.weight": {
+   "source": "double_blocks.4.img_mlp.2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.00064849853515625,
+   "input_scale": 0.3910714387893677
+  },
+  "transformer_blocks.4.ff_context.linear_in.weight": {
+   "source": "double_blocks.4.txt_mlp.0",
+   "rows": [
+    0,
+    18432
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000896453857421875,
+   "input_scale": 0.1741071492433548
+  },
+  "transformer_blocks.4.ff_context.linear_out.weight": {
+   "source": "double_blocks.4.txt_mlp.2",
+   "rows": [
+    0,
+    3072
+   ],
+   "contiguous": true,
+   "weight_scale": 0.000728607177734375,
+   "input_scale": 9.899999618530273
+  }
+ },
+ "model_dtype": "torch.bfloat16"
+}

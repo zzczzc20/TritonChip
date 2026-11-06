@@ -31,7 +31,8 @@ module tnca_fpu_multi #(
     // select, and with the widening and the FMA's first stage behind it that
     // was the device's worst path after R38's first timing pass (10.2 ns
     // post-synthesis, U280). With it, the unit's latency is LAT + 1.
-    parameter IN_REG = 0
+    parameter IN_REG = 0,
+    parameter IMPL   = 0            // tnca_fp32_fma IMPL (R41 G2 FMA rebuild)
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -75,7 +76,7 @@ module tnca_fpu_multi #(
         end
     endgenerate
 
-    tnca_fp32_fma #(.LAT(LAT)) u_fma (
+    tnca_fp32_fma #(.LAT(LAT), .IMPL(IMPL)) u_fma (
         .clk(clk), .rst_n(rst_n),
         .a(fa), .b(fb), .c(fc),
         .sub_c(f_sub), .mul_only(f_mul), .ftz(f_ftz),

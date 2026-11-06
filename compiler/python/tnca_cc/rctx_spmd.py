@@ -291,3 +291,31 @@ def _own_scratch(ops, bases, slot, nbytes, tag, pair=False):
                 Op('sbin', [base], [raw, off],
                    {'op': 'add', 'comment': "this context's own scratch"})]
     return out
+
+
+def publish_scratch_maps(kernel):
+    """A fence before every snapshot of a TensorMap the kernel wrote since the
+    last fence, in every role -- with or without the program loop above.
+
+    The LSU writes a map and the transfer engine snapshots it; they are
+    independent requesters, so without the fence the snapshot can read words
+    the stores have not written yet. `apply` already publishes the maps it
+    moves; a kernel it does not wrap (not eligible, or not asked) had no fence
+    at all, which only a slow word-by-word snapshot hid (R41 G4: the line-wide
+    snapshot read a stale rank/dtype word). Returns the fences added."""
+    added = 0
+    for role in kernel.roles:
+        maps = {id(op.operands[0]) for op in role.region.ops if op.kind == 'desc_snapshot'}
+        written, out = set(), []
+        for op in role.region.ops:
+            if op.kind == 'fence':
+                written.clear()
+            elif op.kind == 'sstore' and op.operands and id(op.operands[0]) in maps:
+                written.add(id(op.operands[0]))
+            elif op.kind == 'desc_snapshot' and id(op.operands[0]) in written:
+                out.append(Op('fence', [], [], {'order': 'release', 'scope': 'device'}))
+                written.clear()
+                added += 1
+            out.append(op)
+        role.region.ops = out
+    return added

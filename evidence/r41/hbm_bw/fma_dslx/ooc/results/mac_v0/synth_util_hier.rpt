@@ -1,0 +1,35 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Thu Oct 29 15:57:57 2026
+| Host         : ee4e138 running 64-bit Ubuntu 24.04.5 LTS
+| Command      : report_utilization -hierarchical -file /home/vivado/fmax/runs/mac_v0/synth_util_hier.rpt
+| Design       : mac_ooc_v0_rw
+| Device       : xcu280-fsvh2892-2L-e
+| Speed File   : -2L
+| Design State : Synthesized
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++-------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
+|      Instance     |       Module       | Total LUTs | Logic LUTs | LUTRAMs | SRLs | FFs | RAMB36 | RAMB18 | URAM | DSP Blocks |
++-------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
+| mac_ooc_v0_rw     |              (top) |       2830 |       2830 |       0 |    0 | 405 |      0 |      0 |    0 |          2 |
+|   (mac_ooc_v0_rw) |              (top) |          0 |          0 |       0 |    0 | 134 |      0 |      0 |    0 |          0 |
+|   u_dut           |         mac_ooc_v0 |       2830 |       2830 |       0 |    0 | 271 |      0 |      0 |    0 |          2 |
+|     u             |     tnca_fpu_multi |       2830 |       2830 |       0 |    0 | 271 |      0 |      0 |    0 |          2 |
+|       u_fma       |      tnca_fp32_fma |       2830 |       2830 |       0 |    0 | 271 |      0 |      0 |    0 |          2 |
+|         (u_fma)   |      tnca_fp32_fma |       1701 |       1701 |       0 |    0 | 271 |      0 |      0 |    0 |          0 |
+|         g_l2.u_s0 | tnca_fma_align_xls |        771 |        771 |       0 |    0 |   0 |      0 |      0 |    0 |          2 |
+|         g_l2.u_s2 | tnca_fma_round_xls |        358 |        358 |       0 |    0 |   0 |      0 |      0 |    0 |          0 |
++-------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
+
+

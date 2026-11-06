@@ -5,6 +5,22 @@ nothing touched the card. The FPGA host was used read-only: reports and logs
 were copied, and `ps`/`free` were run. The machine-readable form is
 [`plan.json`](plan.json).
 
+**Implementation status (2026-10-19, branch `r40-final-image`).**
+- M1-M4 are implemented and simulation-verified. See
+  [`../final_image_candidate/README.md`](../final_image_candidate/README.md).
+- Pending: the Vivado runs (unit OOC, kernel synthesis, cross-SLR audit,
+  census). They wait for at least 30 GB free on the FPGA host and no running
+  board measurement.
+- C1 is still decided by the launch rule in §2.5.
+
+**Decision (2026-10-20): deferred to R41.** The routed census
+([`../final_image_candidate/census/README.md`](../final_image_candidate/census/README.md))
+leaves 12,799 failing endpoints behind the M1–M3 cone: WNS -0.919 ns, 753
+families. The §2.5 launch rule is not met, and the expected link result is about
+91 MHz. The user chose not to run the R40 link: R40 v3 closes on image a88ebdf5
+at 90 MHz. M1–M4 and the census frontier start R41's new image, which is built
+together with the frequency work.
+
 ## 0. Summary
 
 **What fails at 100 MHz.** Every reported failing path of attempt 3 (54249f7f,

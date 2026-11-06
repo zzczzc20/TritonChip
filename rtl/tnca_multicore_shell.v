@@ -6,6 +6,7 @@ module tnca_multicore_shell #(
  parameter DCO_REGISTERED_RANGES=0,
     parameter NUCA_REGISTER_VICTIM_SELECT = 0,
     parameter NUCA_CACHE_DATA_PIPELINE = 0,
+    parameter NUCA_SHARED_DATA_READ = 0,   // R41 G2: one LUTRAM read port per slice line array
     parameter NUCA_REGISTER_VICTIM_RANK = 0,
     parameter DCO_TLW_PIPE_STAGES = 0,
     parameter DCO_REGISTER_WRITES = 0,
@@ -13,9 +14,10 @@ module tnca_multicore_shell #(
  parameter NX=3,NY=1,N=NX*NY,CODE_WORDS=16384,CODE_LINK_STAGES=0,MEM_PORTS=1,NOC_LINK_STAGES=0,DISPATCH_STAGES=0,MEM_HOME_STAGES=0,
  parameter SRC_W=(N>4?$clog2(N):2),
  parameter NUM_RCTX=4,RCTX_W=2,PHYS_VREGS=256,PHYS_W=8,
- parameter VREGS_PER_RCTX=64,AUTO_VBASE=1,
+ parameter VREGS_PER_RCTX=64,ACC_N=16,ACC_W=4,BAR_N=32,BAR_W=5,BAR_EPOCH_W=48,FMA_IMPL=0,MAC_DP=0,MAC_CUTS=29,PHYS_ADDR_W=64,AUTO_VBASE=1,
  parameter HAS_SFU=1,HAS_ATOMICS=1,HAS_SYS_ATOMICS=0,USE_BANKED_VRF=1,VRF_BYPASS=1,FE_NOBUBBLE=1,
- parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,LSU_INFLIGHT=2,
+ parameter VRF_PREFETCH=1,RCTX_SWITCH=2,MTX_ABUF=1,MTX_VRF_REG=0,LSU_INFLIGHT=2,
+ parameter HYBRID_LSU=0,SFU_LANES=1,HOME_BACKGROUND_READS=0,HOME_LINE_WRITE_NOFILL=0,HOME_LINE_PIPE=0,TENSOR_LINE=0,HOME_MSHR_N=8,LINE_SLOTS=8,MEM_TAG_W=(HOME_MSHR_N>1?$clog2(HOME_MSHR_N):1),
  parameter FPU_OVERLAP=1,RSLICE=1,RPAIR=1,HAS_TENSOR_XPOSE=1,
  parameter SETS=64,SET_W=6,WAYS=8,WAY_W=3,PLATFORM_FAULT=0,CACHE_MAINTENANCE=0
 )(
@@ -42,18 +44,21 @@ module tnca_multicore_shell #(
  output wire [N*64-1:0] fault_pc,output wire [N*24-1:0] fault_detail,
  output wire [MEM_PORTS-1:0] ports_req_valid,input wire [MEM_PORTS-1:0] ports_req_ready,
  output wire [MEM_PORTS*64-1:0] ports_req_addr,output wire [MEM_PORTS-1:0] ports_req_we,
- output wire [MEM_PORTS*512-1:0] ports_req_wdata,output wire [MEM_PORTS*3-1:0] ports_req_tag,
+ output wire [MEM_PORTS*512-1:0] ports_req_wdata,output wire [MEM_PORTS*MEM_TAG_W-1:0] ports_req_tag,
  output wire [MEM_PORTS*SRC_W-1:0] ports_req_src,
- input wire [MEM_PORTS-1:0] ports_rsp_valid,input wire [MEM_PORTS*3-1:0] ports_rsp_tag,
+ input wire [MEM_PORTS-1:0] ports_rsp_valid,input wire [MEM_PORTS*MEM_TAG_W-1:0] ports_rsp_tag,
  input wire [MEM_PORTS*SRC_W-1:0] ports_rsp_src,input wire [MEM_PORTS*512-1:0] ports_rsp_rdata,
  output wire [MEM_PORTS-1:0] memory_protocol_fault,
  output wire [MEM_PORTS*64-1:0] memory_reads,memory_writes,
  output wire mem_req_valid,input wire mem_req_ready,output wire [63:0] mem_req_addr,
  output wire mem_req_we,output wire [511:0] mem_req_wdata,
- output wire [2:0] mem_req_tag,output wire [SRC_W-1:0] mem_req_src,
- input wire mem_rsp_valid,input wire [2:0] mem_rsp_tag,
+ output wire [MEM_TAG_W-1:0] mem_req_tag,output wire [SRC_W-1:0] mem_req_src,
+ input wire mem_rsp_valid,input wire [MEM_TAG_W-1:0] mem_rsp_tag,
  input wire [SRC_W-1:0] mem_rsp_src,input wire [511:0] mem_rsp_rdata
 );
+ // R41 G4: the core port tag: a client bit, a path bit and the line LSU's
+ // slots when they exceed the delivered eight (5 bits on the delivered machine).
+ localparam PORT_TAG_W = (HYBRID_LSU && LINE_SLOTS > 8) ? 2+$clog2(LINE_SLOTS) : 5;
  localparam CODE_BYTES=CODE_WORDS*8;
  wire [N*64-1:0] ia, insn;
  wire [NUM_RCTX*PHYS_W-1:0] effective_vbase;
@@ -168,12 +173,12 @@ module tnca_multicore_shell #(
    if(host_valid && host_ready && bad_host_addr)bad_host_pending<=1;
   end
  end
- tnca_top #(.CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK), .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .DCO_REGISTER_WRITES(DCO_REGISTER_WRITES), .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),.NX(NX),.NY(NY),.MEM_PORTS(MEM_PORTS),.GLOBAL_GRID(1),.HOST_ACCESS(1),.MEM_SRC_W(SRC_W),.NOC_LINK_STAGES(NOC_LINK_STAGES),.DISPATCH_STAGES(DISPATCH_STAGES),.MEM_HOME_STAGES(MEM_HOME_STAGES),
+ tnca_top #(.CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK), .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .DCO_REGISTER_WRITES(DCO_REGISTER_WRITES), .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),.NX(NX),.NY(NY),.MEM_PORTS(MEM_PORTS),.GLOBAL_GRID(1),.HOST_ACCESS(1),.MEM_SRC_W(SRC_W),.NOC_LINK_STAGES(NOC_LINK_STAGES),.DISPATCH_STAGES(DISPATCH_STAGES),.MEM_HOME_STAGES(MEM_HOME_STAGES),
   .NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
-  .VREGS_PER_RCTX(VREGS_PER_RCTX),
+  .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .PHYS_ADDR_W(PHYS_ADDR_W),
   .HAS_SFU(HAS_SFU),.HAS_ATOMICS(HAS_ATOMICS),.HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),.USE_BANKED_VRF(USE_BANKED_VRF),.VRF_BYPASS(VRF_BYPASS),
   .FE_NOBUBBLE(FE_NOBUBBLE),.VRF_PREFETCH(VRF_PREFETCH),.RCTX_SWITCH(RCTX_SWITCH),
-  .MTX_ABUF(MTX_ABUF),.LSU_INFLIGHT(LSU_INFLIGHT),.FPU_OVERLAP(FPU_OVERLAP),
+  .MTX_ABUF(MTX_ABUF),.MTX_VRF_REG(MTX_VRF_REG),.LSU_INFLIGHT(LSU_INFLIGHT),.HYBRID_LSU(HYBRID_LSU),.SFU_LANES(SFU_LANES),.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.HOME_LINE_PIPE(HOME_LINE_PIPE),.TENSOR_LINE(TENSOR_LINE),.LSU_TAG_W(PORT_TAG_W),.NOC_PAYLOAD_W(HYBRID_LSU ? 720+PORT_TAG_W-5 : 216),.MSHR_N(HOME_MSHR_N),.MSHR_W(MEM_TAG_W),.TARGET_N(HOME_MSHR_N>8?2*HOME_MSHR_N:16),.TARGET_W(HOME_MSHR_N>8?MEM_TAG_W+1:4),.RQ_N(HOME_MSHR_N>8?16:8),.RQ_W(HOME_MSHR_N>8?4:3),.FPU_OVERLAP(FPU_OVERLAP),
   .RSLICE(RSLICE),.RPAIR(RPAIR),.HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
   .SETS(SETS),.SET_W(SET_W),.WAYS(WAYS),.WAY_W(WAY_W)) u_system (
   .ports_req_valid(ports_req_valid),.ports_req_ready(ports_req_ready),.ports_req_addr(ports_req_addr),

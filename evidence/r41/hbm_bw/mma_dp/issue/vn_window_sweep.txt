@@ -1,0 +1,23 @@
+== swin=0 vwin=0: 4 shapes compiled; 
+w8a8_block_dynamic_fp8_matmul_kernel: loop for_26..endfor_27: 8928 instructions, 32 matrix commands
+    scalar/predicate/control             2732  30.6 %
+    vector fp                            2314  25.9 %
+    vector int/move/shuffle              1972  22.1 %
+    vector or transfer load/store        1358  15.2 %
+    matrix/accumulator/barrier            552   6.2 %
+== swin=32 vwin=0: 4 shapes compiled; 
+w8a8_block_dynamic_fp8_matmul_kernel: loop for_26..endfor_27: 8828 instructions, 32 matrix commands
+    scalar/predicate/control             2632  29.8 %
+    vector fp                            2314  26.2 %
+    vector int/move/shuffle              1972  22.3 %
+    vector or transfer load/store        1358  15.4 %
+    matrix/accumulator/barrier            552   6.3 %
+== swin=400 vwin=0: 0 shapes compiled; out of scalar registers while compili
+== swin=64 vwin=8: 4 shapes compiled; 
+w8a8_block_dynamic_fp8_matmul_kernel: loop for_26..endfor_27: 8666 instructions, 32 matrix commands
+    scalar/predicate/control             2540  29.3 %
+    vector fp                            2314  26.7 %
+    vector int/move/shuffle              1902  21.9 %
+    vector or transfer load/store        1358  15.7 %
+    matrix/accumulator/barrier            552   6.4 %
+== swin=400 vwin=24: 0 shapes compiled; out of scalar registers while compili

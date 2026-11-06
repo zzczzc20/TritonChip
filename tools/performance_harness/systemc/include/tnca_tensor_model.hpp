@@ -57,7 +57,9 @@ struct TensorMapModel {
         return {valid,address+byte,static_cast<unsigned char>(fill(bytes)>>(byte*8))};
     }
     void check_transpose(unsigned bytes,bool store,const std::array<u64,5>& origin)const{
-        arch(!store && rank==2 && bytes==2,4,"DESCRIPTOR_FAULT: transposed transfer kind/rank/size");
+        // 16-bit, and 1-byte since R41 X8 (tnca_tensor.v HAS_XPOSE=2); the
+        // compiler emits a 1-byte one only on a tensor_transpose_8bit target.
+        arch(!store && rank==2 && (bytes==2 || bytes==1),4,"DESCRIPTOR_FAULT: transposed transfer kind/rank/size");
         require((block[0]==4 || block[0]==8 || block[0]==16) && base%8==0 && stride[0]%8==0 &&
                 !(origin[1]>>63) && (origin[1]*bytes)%8==0,"DESCRIPTOR_FAULT: transposed transfer geometry");
     }

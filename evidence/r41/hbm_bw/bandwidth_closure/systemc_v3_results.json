@@ -1,0 +1,33 @@
+{
+  "evidence": "native-SystemC-uncalibrated",
+  "rows": [
+    {
+      "variant": "baseline",
+      "configuration": {},
+      "cycles": 50888,
+      "logical_bytes": 147456,
+      "logical_gb_per_s_at_100mhz": 0.2897657601006131,
+      "board_measured": false
+    },
+    {
+      "variant": "v3_eight_services",
+      "configuration": {
+        "tl_core_beat_bytes": "64",
+        "tl_noc_payload_bytes": "64",
+        "tl_lsu_units": "8",
+        "tl_lsu_shared_issue": "0",
+        "tl_memory_lanes": "8",
+        "lsu_beat_slots": "2",
+        "outlets": "32",
+        "active_outlets": "32"
+      },
+      "cycles": 10105,
+      "logical_bytes": 147456,
+      "logical_gb_per_s_at_100mhz": 1.4592380009896093,
+      "board_measured": false
+    }
+  ],
+  "predicted_stream_add_speedup": 5.035922810489857,
+  "meets_50gbps": false,
+  "meets_5x": true
+}

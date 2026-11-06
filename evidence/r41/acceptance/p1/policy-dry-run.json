@@ -1,0 +1,208 @@
+{
+  "batch": "policy",
+  "sampling": "device-rule",
+  "configurations": 15,
+  "first_stage": [
+    [
+      "op.matmul/medium/fp16-m128-k192-n128@full",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/medium/fp16-m128-k192-n128@no-index",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/medium/fp16-m128-k192-n128@no-schedule",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/medium/fp16-m128-k192-n128@no-sparse",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/medium/fp16-m128-k192-n128@no-index-no-schedule",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/medium/fp16-n49152@full",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/medium/fp16-n49152@no-index",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/medium/fp16-n49152@no-schedule",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/medium/fp16-n49152@no-sparse",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/medium/fp16-n49152@no-index-no-schedule",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/medium/fp16-t128-d128@full",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/medium/fp16-t128-d128@no-index",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/medium/fp16-t128-d128@no-schedule",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/medium/fp16-t128-d128@no-sparse",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/medium/fp16-t128-d128@no-index-no-schedule",
+      "q",
+      0,
+      1
+    ]
+  ],
+  "estimate": {
+    "expected_board_hours": 0.113,
+    "runs": [
+      {
+        "config": "op.matmul/medium/fp16-m128-k192-n128@full",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.matmul/medium/fp16-m128-k192-n128@no-index",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.matmul/medium/fp16-m128-k192-n128@no-schedule",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.matmul/medium/fp16-m128-k192-n128@no-sparse",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.matmul/medium/fp16-m128-k192-n128@no-index-no-schedule",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.add/medium/fp16-n49152@full",
+        "runs": 2,
+        "seconds": 25.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.002
+      },
+      {
+        "config": "op.add/medium/fp16-n49152@no-index",
+        "runs": 2,
+        "seconds": 25.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.002
+      },
+      {
+        "config": "op.add/medium/fp16-n49152@no-schedule",
+        "runs": 2,
+        "seconds": 25.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.002
+      },
+      {
+        "config": "op.add/medium/fp16-n49152@no-sparse",
+        "runs": 2,
+        "seconds": 25.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.002
+      },
+      {
+        "config": "op.add/medium/fp16-n49152@no-index-no-schedule",
+        "runs": 2,
+        "seconds": 25.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.002
+      },
+      {
+        "config": "model.mlp/medium/fp16-t128-d128@full",
+        "runs": 2,
+        "seconds": 29.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0144
+      },
+      {
+        "config": "model.mlp/medium/fp16-t128-d128@no-index",
+        "runs": 2,
+        "seconds": 29.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0144
+      },
+      {
+        "config": "model.mlp/medium/fp16-t128-d128@no-schedule",
+        "runs": 2,
+        "seconds": 29.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0144
+      },
+      {
+        "config": "model.mlp/medium/fp16-t128-d128@no-sparse",
+        "runs": 2,
+        "seconds": 29.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0144
+      },
+      {
+        "config": "model.mlp/medium/fp16-t128-d128@no-index-no-schedule",
+        "runs": 2,
+        "seconds": 29.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0144
+      }
+    ],
+    "method": "per-process wall seconds of the nearest reference record (R40 fe1b board runs); short configurations add one formal process; extra timed calls add their device time"
+  }
+}

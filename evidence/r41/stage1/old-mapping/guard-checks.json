@@ -1,0 +1,81 @@
+{
+  "status": "pass",
+  "preparation_script_sha256": "8f1c7195495a3453063accc63550e88c1765d9fa08471da1f34aab4c40dfc7d5",
+  "checks": [
+    {
+      "name": "nested-destination",
+      "command": [
+        "/usr/bin/python3",
+        "/home/zhongchun/prepare_old_mapping_control.py",
+        "--source",
+        "/home/zhongchun/r41s1-archive-25094197f6e6",
+        "--destination",
+        "/home/zhongchun/r41s1-archive-25094197f6e6/must-not-create",
+        "--report",
+        "/home/zhongchun/r41s1-old-mapping-control-v1-proof/unused.json"
+      ],
+      "returncode": 1,
+      "stderr": "Traceback (most recent call last):\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 97, in <module>\n    if __name__=='__main__':main()\n                            ^^^^^^\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 94, in main\n    print(json.dumps(prepare(args.source,args.destination,args.report),indent=2))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 44, in prepare\n    raise ValueError('diagnostic destination must be outside the frozen source tree')\nValueError: diagnostic destination must be outside the frozen source tree\n"
+    },
+    {
+      "name": "nested-report",
+      "command": [
+        "/usr/bin/python3",
+        "/home/zhongchun/prepare_old_mapping_control.py",
+        "--source",
+        "/home/zhongchun/r41s1-archive-25094197f6e6",
+        "--destination",
+        "/home/zhongchun/r41s1-must-not-create",
+        "--report",
+        "/home/zhongchun/r41s1-archive-25094197f6e6/compiler/must-not-create.json"
+      ],
+      "returncode": 1,
+      "stderr": "Traceback (most recent call last):\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 97, in <module>\n    if __name__=='__main__':main()\n                            ^^^^^^\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 94, in main\n    print(json.dumps(prepare(args.source,args.destination,args.report),indent=2))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 46, in prepare\n    raise ValueError('preparation report must be outside both product source trees')\nValueError: preparation report must be outside both product source trees\n"
+    },
+    {
+      "name": "existing-report",
+      "command": [
+        "/usr/bin/python3",
+        "/home/zhongchun/prepare_old_mapping_control.py",
+        "--source",
+        "/home/zhongchun/r41s1-archive-25094197f6e6",
+        "--destination",
+        "/home/zhongchun/r41s1-must-not-create",
+        "--report",
+        "/home/zhongchun/r41s1-old-mapping-control-v1-proof/preparation.json"
+      ],
+      "returncode": 1,
+      "stderr": "Traceback (most recent call last):\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 97, in <module>\n    if __name__=='__main__':main()\n                            ^^^^^^\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 94, in main\n    print(json.dumps(prepare(args.source,args.destination,args.report),indent=2))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 48, in prepare\n    raise ValueError('preparation report already exists; preserve the previous evidence')\nValueError: preparation report already exists; preserve the previous evidence\n"
+    },
+    {
+      "name": "existing-destination",
+      "command": [
+        "/usr/bin/python3",
+        "/home/zhongchun/prepare_old_mapping_control.py",
+        "--source",
+        "/home/zhongchun/r41s1-archive-25094197f6e6",
+        "--destination",
+        "/home/zhongchun/r41s1-old-mapping-control-v1",
+        "--report",
+        "/home/zhongchun/r41s1-old-mapping-control-v1-proof/unused.json"
+      ],
+      "returncode": 1,
+      "stderr": "Traceback (most recent call last):\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 97, in <module>\n    if __name__=='__main__':main()\n                            ^^^^^^\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 94, in main\n    print(json.dumps(prepare(args.source,args.destination,args.report),indent=2))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 50, in prepare\n    raise ValueError('diagnostic destination already exists; inspect it instead of overwriting')\nValueError: diagnostic destination already exists; inspect it instead of overwriting\n"
+    },
+    {
+      "name": "changed-source",
+      "command": [
+        "/usr/bin/python3",
+        "/home/zhongchun/prepare_old_mapping_control.py",
+        "--source",
+        "/home/zhongchun/r41s1-old-mapping-control-v1",
+        "--destination",
+        "/home/zhongchun/r41s1-must-not-create",
+        "--report",
+        "/home/zhongchun/r41s1-old-mapping-control-v1-proof/unused.json"
+      ],
+      "returncode": 1,
+      "stderr": "Traceback (most recent call last):\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 97, in <module>\n    if __name__=='__main__':main()\n                            ^^^^^^\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 94, in main\n    print(json.dumps(prepare(args.source,args.destination,args.report),indent=2))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/prepare_old_mapping_control.py\", line 54, in prepare\n    raise ValueError('source is not the exact frozen Stage 1 product')\nValueError: source is not the exact frozen Stage 1 product\n"
+    }
+  ]
+}

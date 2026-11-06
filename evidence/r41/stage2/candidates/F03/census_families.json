@@ -1,0 +1,155 @@
+{
+ "F03 red_busy->VFPU p0 (all)": {
+  "endpoints": 1172,
+  "tns": -244.881,
+  "worst_slack": -0.919,
+  "worst_datapath": 10.879,
+  "levels": 23,
+  "start": "u_vfpu/red_busy_reg/C",
+  "end": "u_vfpu/g_fma[5].u_fma/g_l2.u_xls/p0_small_wins_reg_rep__1/D"
+ },
+ "F03 red_busy->p0_small_wins": {
+  "endpoints": 142,
+  "tns": -54.732,
+  "worst_slack": -0.919,
+  "worst_datapath": 10.879,
+  "levels": 23,
+  "start": "u_vfpu/red_busy_reg/C",
+  "end": "u_vfpu/g_fma[5].u_fma/g_l2.u_xls/p0_small_wins_reg_rep__1/D"
+ },
+ "F03 red_busy->p0_res_sign_mag": {
+  "endpoints": 27,
+  "tns": -12.68,
+  "worst_slack": -0.912,
+  "worst_datapath": 10.904,
+  "levels": 23,
+  "start": "u_vfpu/red_busy_reg/C",
+  "end": "u_vfpu/g_fma[2].u_fma/g_l2.u_xls/p0_res_sign_mag_reg/D"
+ },
+ "F03 red_busy->p0_sub_671": {
+  "endpoints": 1001,
+  "tns": -177.361,
+  "worst_slack": -0.691,
+  "worst_datapath": 10.764,
+  "levels": 29,
+  "start": "u_vfpu/red_busy_reg/C",
+  "end": "u_vfpu/g_fma[15].u_fma/g_l2.u_xls/p0_sub_671_reg[80]/D"
+ },
+ "F03-adj x_va/x_vb->VFPU p0": {
+  "endpoints": 308,
+  "tns": -63.933,
+  "worst_slack": -0.813,
+  "worst_datapath": 10.387,
+  "levels": 23,
+  "start": "g_vrf_banked.x_va_q_reg[39]/C",
+  "end": "u_vfpu/g_fma[1].u_fma/g_l2.u_xls/p0_small_wins_reg_rep__3/D"
+ },
+ "F03-adj x_fpctl->VFPU p0": {
+  "endpoints": 153,
+  "tns": -30.017,
+  "worst_slack": -0.874,
+  "worst_datapath": 10.581,
+  "levels": 22,
+  "start": "x_fpctl_reg[4]/C",
+  "end": "u_vfpu/g_fma[0].u_fma/g_l2.u_xls/p0_small_wins_reg_rep__0/D"
+ },
+ "F08 VFPU p0->p1": {
+  "endpoints": 95,
+  "tns": -32.863,
+  "worst_slack": -0.895,
+  "worst_datapath": 11.132,
+  "levels": 28,
+  "start": "u_vfpu/g_fma[5].u_fma/g_l2.u_xls/p0_sticky_al_reg/C",
+  "end": "u_vfpu/g_fma[5].u_fma/g_l2.u_xls/p1_sh_mag_reg[10]/D"
+ },
+ "F08 VFPU p0_sticky_al->p1_sh_mag": {
+  "endpoints": 62,
+  "tns": -26.943,
+  "worst_slack": -0.895,
+  "worst_datapath": 11.132,
+  "levels": 28,
+  "start": "u_vfpu/g_fma[5].u_fma/g_l2.u_xls/p0_sticky_al_reg/C",
+  "end": "u_vfpu/g_fma[5].u_fma/g_l2.u_xls/p1_sh_mag_reg[10]/D"
+ },
+ "F08 MTX p0->p1": {
+  "endpoints": 45,
+  "tns": -10.004,
+  "worst_slack": -0.638,
+  "worst_datapath": 10.526,
+  "levels": 32,
+  "start": "u_mtx/g_mac[6].u_mac/u_fma/g_l2.u_xls/p0_sub_671_reg[12]/C",
+  "end": "u_mtx/g_mac[6].u_mac/u_fma/g_l2.u_xls/p1_sh_mag_reg[11]/D"
+ },
+ "F09 MTX p1_sh_mag->lane_mem": {
+  "endpoints": 684,
+  "tns": -223.921,
+  "worst_slack": -0.871,
+  "worst_datapath": 10.394,
+  "levels": 27,
+  "start": "u_mtx/g_mac[3].u_mac/u_fma/g_l2.u_xls/p1_sh_mag_reg[0]/C",
+  "end": "u_mtx/u_acc/g_rd[3].lane_mem_reg_0_63_7_13/RAMF/I"
+ },
+ "F09 MTX p1->lane_mem (all)": {
+  "endpoints": 684,
+  "tns": -223.921,
+  "worst_slack": -0.871,
+  "worst_datapath": 10.394,
+  "levels": 27,
+  "start": "u_mtx/g_mac[3].u_mac/u_fma/g_l2.u_xls/p1_sh_mag_reg[0]/C",
+  "end": "u_mtx/u_acc/g_rd[3].lane_mem_reg_0_63_7_13/RAMF/I"
+ },
+ "F09-adj VFPU p1_sh_mag->w_vdata": {
+  "endpoints": 92,
+  "tns": -26.507,
+  "worst_slack": -0.878,
+  "worst_datapath": 10.72,
+  "levels": 28,
+  "start": "u_vfpu/g_fma[0].u_fma/g_l2.u_xls/p1_sh_mag_reg[0]/C",
+  "end": "w_vdata_reg[2]/D"
+ },
+ "F09-adj VFPU p1->acc (reduction)": {
+  "endpoints": 19,
+  "tns": -3.047,
+  "worst_slack": -0.455,
+  "worst_datapath": 10.218,
+  "levels": 28,
+  "start": "u_vfpu/g_fma[1].u_fma/g_l2.u_xls/p1_sh_mag_reg[0]/C",
+  "end": "u_vfpu/acc_reg[1][0]/D"
+ },
+ "F09-adj VFPU p1->any": {
+  "endpoints": 111,
+  "tns": -29.554,
+  "worst_slack": -0.878,
+  "worst_datapath": 10.72,
+  "levels": 28,
+  "start": "u_vfpu/g_fma[0].u_fma/g_l2.u_xls/p1_sh_mag_reg[0]/C",
+  "end": "w_vdata_reg[2]/D"
+ },
+ "MTX a_q->p0 (stage 0)": {
+  "endpoints": 99,
+  "tns": -16.707,
+  "worst_slack": -0.712,
+  "worst_datapath": 10.767,
+  "levels": 21,
+  "start": "u_mtx/g_mac[1].u_mac/g_in_reg.a_q_reg[21]/C",
+  "end": "u_mtx/g_mac[1].u_mac/u_fma/g_l2.u_xls/p0_small_wins_reg_rep__0/D"
+ },
+ "VFPU cvt->dly_v": {
+  "endpoints": 47,
+  "tns": -13.458,
+  "worst_slack": -0.748,
+  "worst_datapath": 10.563,
+  "levels": 4,
+  "start": "u_vfpu/cvt_mod_reg[3]_rep__0/C",
+  "end": "u_vfpu/dly_v_reg[1][104]/D"
+ },
+ "VFPU x_va->dly_v": {
+  "endpoints": 72,
+  "tns": -18.708,
+  "worst_slack": -0.74,
+  "worst_datapath": 10.242,
+  "levels": 24,
+  "start": "g_vrf_banked.x_va_q_reg[441]/C",
+  "end": "u_vfpu/dly_v_reg[0][441]/D"
+ }
+}

@@ -1,0 +1,67 @@
+{
+  "schema": "tnca-r41-holdout/1",
+  "status": "sealed-before-R41-policy-development",
+  "use": "final policy evaluation only; never fitting or candidate development",
+  "legacy_inventory": "spec/r40/suites/R40-09.holdout.json",
+  "legacy_status": "historical results retained; do not treat previously diagnosed points as unseen",
+  "points": [
+    {
+      "id": "H41-mm",
+      "operation": "matmul",
+      "shape": [
+        19,
+        47,
+        37
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261020,
+      "reference": "independent eager CPU torch float32 from the same rounded input tensors",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "sha256": "cc2d5752cba8d6eac6c583c1a19b3d3c3660243157be621cf4f816db49c4b258"
+    },
+    {
+      "id": "H41-linear",
+      "operation": "linear",
+      "shape": [
+        23,
+        61,
+        43
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261020,
+      "reference": "independent eager CPU torch float32 from the same rounded input tensors",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "sha256": "c95b0a3477f2c0f2fb2e755fcf8978316bda0ab8d38d5ee535ffdb52370a5163"
+    },
+    {
+      "id": "H41-softmax",
+      "operation": "softmax",
+      "shape": [
+        7,
+        113
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261020,
+      "reference": "independent eager CPU torch float32 from the same rounded input tensors",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "sha256": "983e58a7c20f32fb033037ae127e4db8cfd092afea2f48ffd7bcaecd869cf8fc"
+    },
+    {
+      "id": "H41-rmsnorm",
+      "operation": "rmsnorm",
+      "shape": [
+        11,
+        79
+      ],
+      "dtype": "bfloat16",
+      "seed": 20261020,
+      "reference": "independent eager CPU torch float32 from the same rounded input tensors",
+      "rtol": 0.02,
+      "atol": 0.02,
+      "sha256": "48cea7ce704914e5632ea05ffa3fe68f9d831ddbf88ba745ebf83a6bbd287ed2"
+    }
+  ]
+}

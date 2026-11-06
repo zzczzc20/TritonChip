@@ -1,0 +1,19 @@
+MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=1 id=13 status=2 cycles=1698
+MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=45862
+MULTICORE SHELL GRID PASS N=1 id=12 status=0 cycles=82604
+AXI OUTLET TRAFFIC port=0 reads=171 writes=57
+MULTICORE SHELL GRID PASS N=1 id=14 status=1 cycles=89244
+FATAL: tb/fpga/tb_multicore_axi.v:211: delayed B did not exercise global drain
+       Time: 892440000  Scope: tb_multicore_axi
+Traceback (most recent call last):
+  File "/home/zhongchun/r41-hbmbw/tools/r40/multicore_axi_tests.py", line 51, in <module>
+    if __name__ == '__main__':
+        ^^^^^^
+  File "/home/zhongchun/r41-hbmbw/tools/r40/multicore_axi_tests.py", line 46, in main
+    subprocess.run(command, cwd=ROOT, check=True, timeout=180)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['vvp', '/tmp/r40-multicore-axi-48dynu4r/axi-1-1-0.vvp', '+hex=/tmp/r40-multicore-axi-48dynu4r/grid.hex']' returned non-zero exit status 1.

@@ -1,0 +1,17 @@
+{
+  "schema": "tnca-experiment-spec/1",
+  "id": "r41-barrier-ordering-safety-audit",
+  "allowed_hosts": ["gx10-6646"],
+  "hypothesis": "Conservative device fences preserve ordinary memory ordering while cross-role and asynchronous ownership still require their explicit mbarriers.",
+  "competing_explanations": ["debug_barrier disappears under lowering or scheduling", "aliasing lets a load move before its store", "fence incorrectly releases asynchronous window ownership", "a fence supplies another role's release"],
+  "expected_observations": ["store/reload and alias cases pass on fast, delayed and reordered RTL memories", "async read/write ownership negatives are refused until the actual token wait", "the valid two-role pipeline preserves both tiles' packed data", "replacing release by fence times out as an intentional negative"],
+  "sources": ["compiler/python", "compiler/targets", "compiler/test", "rtl", "tb", "tools/asm", "tools/model", "isa", "spec/r39_sched_model.json", "tools/performance_harness/test_barrier_ordering.py", "spec/r41/stage1/experiments/barrier-ordering.json"],
+  "env": {
+    "PATH": "{home}/tc_env/bin:/usr/local/bin:/usr/bin:/bin",
+    "PYTHONPATH": "{root}/compiler/python:{root}/compiler/test:{root}/tools/model:{root}/tools/asm",
+    "OMP_NUM_THREADS": "2", "MKL_NUM_THREADS": "2", "R41_ORDERING_OUT": "{out}/programs"
+  },
+  "steps": [
+    {"id": "ordinary-role-and-async-ordering", "kind": "rtl", "argv": ["{python}", "tools/performance_harness/test_barrier_ordering.py", "-v"], "timeout_seconds": 180, "inputs": ["{root}/sim/build/tb_core.vvp", "{root}/sim/build/tb_core_slow.vvp", "{root}/sim/build/tb_core_ooo.vvp"], "outputs": ["{out}/programs"]}
+  ]
+}

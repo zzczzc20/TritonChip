@@ -1,0 +1,34 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "qwen-layers",
+ "experiments": [
+  {
+   "id": "r2-s2-qwen-fp8",
+   "manifest": "spec/r41/run2/board/r2-s2-qwen-fp8.json",
+   "sha256": "8b5a58bba1b2ced4972089bdc9e2666423be1cc3f0a9af651c51fbece5e7f6db",
+   "checks": [
+    {
+     "path": "linears/result.json",
+     "field": [
+      "total"
+     ],
+     "equals": 14
+    },
+    {
+     "path": "linears/result.json",
+     "field": [
+      "passed"
+     ],
+     "equals": 14
+    },
+    {
+     "path": "decode/result.json",
+     "field": [
+      "pass"
+     ],
+     "equals": true
+    }
+   ]
+  }
+ ]
+}

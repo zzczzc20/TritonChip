@@ -1,0 +1,1555 @@
+{
+  "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a",
+  "formal_records_validated": {
+    "out/board-anchors/anchors/formal.jsonl": 9,
+    "out/board-gemm-tile/gemm/formal.jsonl": 18,
+    "out/board-prospective/prospective/formal.jsonl": 2,
+    "out/board-tune-qualification/tune-first/formal.jsonl": 3,
+    "out/board-tune-qualification/tune-rerun/formal.jsonl": 3
+  },
+  "residual_definition": "(model - measured board graph median) / board",
+  "ratio_definition": "candidate/control; ratio residual = model ratio / board ratio - 1",
+  "prediction_sets": {
+    "gemm-tile": {
+      "summary": {
+        "fast": {
+          "qualified_residuals": 18,
+          "median_abs": 0.06443217966828996,
+          "max_abs": 0.21954838770486254,
+          "not_comparable": 0,
+          "inconclusive": 0,
+          "not_run": 0
+        },
+        "slow": {
+          "qualified_residuals": 0,
+          "median_abs": null,
+          "max_abs": null,
+          "not_comparable": 0,
+          "inconclusive": 16,
+          "not_run": 2
+        }
+      },
+      "fast_p95_abs_nearest_rank": 0.21954838770486254,
+      "ratios": [
+        {
+          "point": "model.mlp/medium/fp16-t128-d128",
+          "board_candidate_control": 3.246393832240319,
+          "model_candidate_control": 2.8612724407608523,
+          "ratio_residual": -0.1186305209351931,
+          "ranking_inversion": false,
+          "false_gain": false
+        },
+        {
+          "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+          "board_candidate_control": 0.9269946265463151,
+          "model_candidate_control": 0.9251188636743655,
+          "ratio_residual": -0.0020234883981347096,
+          "ranking_inversion": false,
+          "false_gain": false
+        },
+        {
+          "point": "op.gemv/hbm/fp16-k4096-n11008",
+          "board_candidate_control": 5.2996176712238,
+          "model_candidate_control": 6.383879769378372,
+          "ratio_residual": 0.20459251316221683,
+          "ranking_inversion": false,
+          "false_gain": false
+        },
+        {
+          "point": "op.gemv/medium/fp16-k320-n448",
+          "board_candidate_control": 3.2973828262229645,
+          "model_candidate_control": 3.086975953306587,
+          "ratio_residual": -0.06381026529376066,
+          "ranking_inversion": false,
+          "false_gain": false
+        },
+        {
+          "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+          "board_candidate_control": 8.634440251653983,
+          "model_candidate_control": 7.65445612216218,
+          "ratio_residual": -0.11349712325637795,
+          "ranking_inversion": false,
+          "false_gain": false
+        },
+        {
+          "point": "op.linear/medium/fp16-m128-k320-n256",
+          "board_candidate_control": 5.470771997625996,
+          "model_candidate_control": 5.1019208889833045,
+          "ratio_residual": -0.06742213142912046,
+          "ranking_inversion": false,
+          "false_gain": false
+        },
+        {
+          "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+          "board_candidate_control": 3.0402480139603116,
+          "model_candidate_control": 3.038133689748392,
+          "ratio_residual": -0.0006954446486638899,
+          "ranking_inversion": false,
+          "false_gain": false
+        },
+        {
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "board_candidate_control": 3.1233959983010493,
+          "model_candidate_control": 3.0285757141184733,
+          "ratio_residual": -0.030358073146713682,
+          "ranking_inversion": false,
+          "false_gain": false
+        },
+        {
+          "point": "op.matmul/medium/fp32-m128-k192-n128",
+          "board_candidate_control": 1.748165629742513,
+          "model_candidate_control": 1.6010548898266173,
+          "ratio_residual": -0.08415148851631615,
+          "ranking_inversion": false,
+          "false_gain": false
+        }
+      ],
+      "simulator_costs": [
+        {
+          "point": "model.mlp/medium/fp16-t128-d128",
+          "arm": "candidate",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 19.27,
+            "child_wall_s": 15.423,
+            "model_launch_host_s": 4.115488,
+            "model_transfer_host_s": 0.046656
+          }
+        },
+        {
+          "point": "model.mlp/medium/fp16-t128-d128",
+          "arm": "candidate",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 35.8,
+            "child_wall_s": 32.301,
+            "model_launch_host_s": 22.652166,
+            "model_transfer_host_s": 0.06282599999999999
+          }
+        },
+        {
+          "point": "model.mlp/medium/fp16-t128-d128",
+          "arm": "control",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 10.68,
+            "child_wall_s": 6.653,
+            "model_launch_host_s": 1.004666,
+            "model_transfer_host_s": 0.033041
+          }
+        },
+        {
+          "point": "model.mlp/medium/fp16-t128-d128",
+          "arm": "control",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 14.92,
+            "child_wall_s": 10.959,
+            "model_launch_host_s": 4.575372,
+            "model_transfer_host_s": 0.10128400000000001
+          }
+        },
+        {
+          "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+          "arm": "candidate",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 10.32,
+            "child_wall_s": 6.913,
+            "model_launch_host_s": 1.030864,
+            "model_transfer_host_s": 0.046798000000000006
+          }
+        },
+        {
+          "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+          "arm": "candidate",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 13.09,
+            "child_wall_s": 10.129,
+            "model_launch_host_s": 4.914058,
+            "model_transfer_host_s": 0.064373
+          }
+        },
+        {
+          "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+          "arm": "control",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 10.14,
+            "child_wall_s": 6.269,
+            "model_launch_host_s": 1.317555,
+            "model_transfer_host_s": 0.032137
+          }
+        },
+        {
+          "point": "op.bmm/medium/fp16-b16-m64-k32-n64",
+          "arm": "control",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 13.35,
+            "child_wall_s": 10.155,
+            "model_launch_host_s": 4.963743,
+            "model_transfer_host_s": 0.069328
+          }
+        },
+        {
+          "point": "op.gemv/hbm/fp16-k4096-n11008",
+          "arm": "candidate",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 76.81,
+            "child_wall_s": 74.313,
+            "model_launch_host_s": 67.955218,
+            "model_transfer_host_s": 1.507069
+          }
+        },
+        {
+          "point": "op.gemv/hbm/fp16-k4096-n11008",
+          "arm": "candidate",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 475.0,
+            "child_wall_s": 472.213,
+            "model_launch_host_s": 465.875217,
+            "model_transfer_host_s": 1.799322
+          }
+        },
+        {
+          "point": "op.gemv/hbm/fp16-k4096-n11008",
+          "arm": "control",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 50.39,
+            "child_wall_s": 47.129,
+            "model_launch_host_s": 22.079602,
+            "model_transfer_host_s": 1.61558
+          }
+        },
+        {
+          "point": "op.gemv/hbm/fp16-k4096-n11008",
+          "arm": "control",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 89.68,
+            "child_wall_s": 87.039,
+            "model_launch_host_s": 80.488589,
+            "model_transfer_host_s": 1.581909
+          }
+        },
+        {
+          "point": "op.gemv/medium/fp16-k320-n448",
+          "arm": "candidate",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 9.16,
+            "child_wall_s": 5.525,
+            "model_launch_host_s": 0.658825,
+            "model_transfer_host_s": 0.051485
+          }
+        },
+        {
+          "point": "op.gemv/medium/fp16-k320-n448",
+          "arm": "candidate",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 11.23,
+            "child_wall_s": 8.332,
+            "model_launch_host_s": 3.108547,
+            "model_transfer_host_s": 0.101411
+          }
+        },
+        {
+          "point": "op.gemv/medium/fp16-k320-n448",
+          "arm": "control",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 7.93,
+            "child_wall_s": 4.29,
+            "model_launch_host_s": 0.183137,
+            "model_transfer_host_s": 0.06883
+          }
+        },
+        {
+          "point": "op.gemv/medium/fp16-k320-n448",
+          "arm": "control",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 9.69,
+            "child_wall_s": 6.313,
+            "model_launch_host_s": 1.364214,
+            "model_transfer_host_s": 0.071969
+          }
+        },
+        {
+          "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+          "arm": "candidate",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 2155.86,
+            "child_wall_s": 2153.267,
+            "model_launch_host_s": 2145.630087,
+            "model_transfer_host_s": 2.087713
+          }
+        },
+        {
+          "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+          "arm": "candidate",
+          "path": "slow",
+          "status": "not-run",
+          "simulator": null
+        },
+        {
+          "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+          "arm": "control",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 466.23,
+            "child_wall_s": 463.625,
+            "model_launch_host_s": 437.461126,
+            "model_transfer_host_s": 1.9099840000000001
+          }
+        },
+        {
+          "point": "op.linear/hbm/fp16-m512-k4096-n11008",
+          "arm": "control",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 2164.2,
+            "child_wall_s": 2162.673,
+            "model_launch_host_s": 2157.763624,
+            "model_transfer_host_s": 1.055771
+          }
+        },
+        {
+          "point": "op.linear/medium/fp16-m128-k320-n256",
+          "arm": "candidate",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 10.89,
+            "child_wall_s": 7.513,
+            "model_launch_host_s": 2.174874,
+            "model_transfer_host_s": 0.043462
+          }
+        },
+        {
+          "point": "op.linear/medium/fp16-m128-k320-n256",
+          "arm": "candidate",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 18.83,
+            "child_wall_s": 15.201,
+            "model_launch_host_s": 10.165429,
+            "model_transfer_host_s": 0.08974199999999999
+          }
+        },
+        {
+          "point": "op.linear/medium/fp16-m128-k320-n256",
+          "arm": "control",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 8.56,
+            "child_wall_s": 4.544,
+            "model_launch_host_s": 0.430606,
+            "model_transfer_host_s": 0.067077
+          }
+        },
+        {
+          "point": "op.linear/medium/fp16-m128-k320-n256",
+          "arm": "control",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 9.62,
+            "child_wall_s": 7.159,
+            "model_launch_host_s": 2.719887,
+            "model_transfer_host_s": 0.07016700000000001
+          }
+        },
+        {
+          "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+          "arm": "candidate",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 3399.49,
+            "child_wall_s": 3397.933,
+            "model_launch_host_s": 3390.131078,
+            "model_transfer_host_s": 1.548825
+          }
+        },
+        {
+          "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+          "arm": "candidate",
+          "path": "slow",
+          "status": "not-run",
+          "simulator": null
+        },
+        {
+          "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+          "arm": "control",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 1246.64,
+            "child_wall_s": 1243.678,
+            "model_launch_host_s": 1232.885563,
+            "model_transfer_host_s": 2.3197200000000002
+          }
+        },
+        {
+          "point": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+          "arm": "control",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 5173.72,
+            "child_wall_s": 5171.726,
+            "model_launch_host_s": 5163.680961,
+            "model_transfer_host_s": 1.594728
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "arm": "candidate",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 9.92,
+            "child_wall_s": 5.705,
+            "model_launch_host_s": 0.491474,
+            "model_transfer_host_s": 0.059484999999999996
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "arm": "candidate",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 10.46,
+            "child_wall_s": 7.008,
+            "model_launch_host_s": 2.208909,
+            "model_transfer_host_s": 0.088169
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "arm": "control",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 8.25,
+            "child_wall_s": 4.589,
+            "model_launch_host_s": 0.186577,
+            "model_transfer_host_s": 0.028205
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "arm": "control",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 8.92,
+            "child_wall_s": 5.697,
+            "model_launch_host_s": 1.299023,
+            "model_transfer_host_s": 0.097499
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp32-m128-k192-n128",
+          "arm": "candidate",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 7.72,
+            "child_wall_s": 5.147,
+            "model_launch_host_s": 0.531154,
+            "model_transfer_host_s": 0.0065650000000000005
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp32-m128-k192-n128",
+          "arm": "candidate",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 11.13,
+            "child_wall_s": 8.152,
+            "model_launch_host_s": 2.668091,
+            "model_transfer_host_s": 0.00876
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp32-m128-k192-n128",
+          "arm": "control",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 8.9,
+            "child_wall_s": 5.568,
+            "model_launch_host_s": 0.533832,
+            "model_transfer_host_s": 0.033564000000000004
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp32-m128-k192-n128",
+          "arm": "control",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 10.28,
+            "child_wall_s": 7.45,
+            "model_launch_host_s": 2.514422,
+            "model_transfer_host_s": 0.070451
+          }
+        }
+      ]
+    },
+    "prospective": {
+      "summary": {
+        "fast": {
+          "qualified_residuals": 2,
+          "median_abs": 0.025315067115461866,
+          "max_abs": 0.031260153396280285,
+          "not_comparable": 0,
+          "inconclusive": 0,
+          "not_run": 0
+        },
+        "slow": {
+          "qualified_residuals": 0,
+          "median_abs": null,
+          "max_abs": null,
+          "not_comparable": 0,
+          "inconclusive": 2,
+          "not_run": 0
+        }
+      },
+      "fast_p95_abs_nearest_rank": 0.031260153396280285,
+      "ratios": [
+        {
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "board_candidate_control": 2.9350806200176565,
+          "model_candidate_control": 3.0884794156706508,
+          "ratio_residual": 0.05226391214155868,
+          "ranking_inversion": false,
+          "false_gain": false
+        }
+      ],
+      "simulator_costs": [
+        {
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "arm": "candidate",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 25.15,
+            "child_wall_s": 22.467,
+            "model_launch_host_s": 0.312567,
+            "model_transfer_host_s": 0.00268
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "arm": "candidate",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 7.95,
+            "child_wall_s": 5.375,
+            "model_launch_host_s": 1.794893,
+            "model_transfer_host_s": 0.0030139999999999998
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "arm": "control",
+          "path": "fast",
+          "status": "sealed",
+          "simulator": {
+            "process_wall_s": 5.97,
+            "child_wall_s": 3.477,
+            "model_launch_host_s": 0.12059,
+            "model_transfer_host_s": 0.00257
+          }
+        },
+        {
+          "point": "op.matmul/medium/fp16-m128-k192-n128",
+          "arm": "control",
+          "path": "slow",
+          "status": "sealed-inconclusive-fixed-point",
+          "simulator": {
+            "process_wall_s": 6.71,
+            "child_wall_s": 4.229,
+            "model_launch_host_s": 0.85914,
+            "model_transfer_host_s": 0.0027530000000000002
+          }
+        }
+      ]
+    }
+  },
+  "anchors": {
+    "op.add/hbm/fp16-n67108864": {
+      "device-cycles-serial-grid": {
+        "median": 243997720,
+        "range_over_median": 0.00034758931353948716
+      },
+      "device-graph-makespan": {
+        "median": 243997722,
+        "range_over_median": 0.00034758931069036784
+      }
+    },
+    "op.matmul/medium/fp16-m128-k192-n128": {
+      "device-cycles-serial-grid": {
+        "median": 231745,
+        "range_over_median": 0.015430753630067531
+      },
+      "device-graph-makespan": {
+        "median": 231747,
+        "range_over_median": 0.015430620461106293
+      }
+    },
+    "model.llama_decode/hbm/fp16-b1-p512": {
+      "device-cycles-serial-grid": {
+        "median": 170603213,
+        "range_over_median": 0.00017507876595501164
+      },
+      "device-graph-makespan": {
+        "median": 204863817,
+        "range_over_median": 0.006142143685627023
+      }
+    }
+  },
+  "memory": [
+    {
+      "label": "board-p1o1",
+      "device_cycles": 17000,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 333,
+          "write_lines": 110
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ]
+    },
+    {
+      "label": "board-p1o8",
+      "device_cycles": 15842,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 339,
+          "write_lines": 100
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ]
+    },
+    {
+      "label": "board-p3o8",
+      "device_cycles": 15836,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 113,
+          "write_lines": 32
+        },
+        {
+          "port": 1,
+          "read_lines": 107,
+          "write_lines": 32
+        },
+        {
+          "port": 2,
+          "read_lines": 117,
+          "write_lines": 35
+        }
+      ]
+    },
+    {
+      "label": "board-p1o1",
+      "device_cycles": 17147,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 339,
+          "write_lines": 100
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ]
+    },
+    {
+      "label": "board-p1o8",
+      "device_cycles": 15870,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 337,
+          "write_lines": 99
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ]
+    },
+    {
+      "label": "board-p3o8",
+      "device_cycles": 15824,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 113,
+          "write_lines": 32
+        },
+        {
+          "port": 1,
+          "read_lines": 111,
+          "write_lines": 34
+        },
+        {
+          "port": 2,
+          "read_lines": 115,
+          "write_lines": 34
+        }
+      ]
+    },
+    {
+      "label": "board-p1o1",
+      "device_cycles": 16984,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 340,
+          "write_lines": 98
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ]
+    },
+    {
+      "label": "board-p1o8",
+      "device_cycles": 15908,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 343,
+          "write_lines": 102
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ]
+    },
+    {
+      "label": "board-p3o8",
+      "device_cycles": 16011,
+      "actual_input_values_equal": true,
+      "same_shader_as_domain_baseline": true,
+      "bindings_equal_to_domain_baseline": true,
+      "actual_outlet_line_deltas": [
+        {
+          "port": 0,
+          "read_lines": 113,
+          "write_lines": 32
+        },
+        {
+          "port": 1,
+          "read_lines": 111,
+          "write_lines": 34
+        },
+        {
+          "port": 2,
+          "read_lines": 117,
+          "write_lines": 35
+        }
+      ]
+    }
+  ],
+  "pipeline": [
+    {
+      "label": "board-baseline",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3816,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 124660,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 4394,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 123920,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3886,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 125446,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 4457,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 122774,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3219,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 123184,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3814,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 120949,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3275,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 127726,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3655,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": false,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 128103,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": false,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3843,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 124848,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 4394,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 123656,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3882,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 125536,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 4478,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 122925,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3219,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 123229,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3810,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 120929,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3237,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 127595,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3646,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": false,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 128584,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": false,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3847,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 124590,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 4419,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-baseline",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 123945,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3884,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 125395,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 4484,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage1",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 122950,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3269,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 123201,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3784,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage2",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 120992,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "mm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3248,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "mm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 127634,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": true,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "addmm",
+      "shape": [
+        16,
+        16,
+        48
+      ],
+      "device_cycles": 3650,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": false,
+      "actual_input_values_equal": true
+    },
+    {
+      "label": "board-stage3",
+      "graph": "addmm",
+      "shape": [
+        17,
+        31,
+        65
+      ],
+      "device_cycles": 129411,
+      "reference_status": "pass",
+      "bindings_equal_to_baseline": false,
+      "actual_input_values_equal": true
+    }
+  ],
+  "tuning": {
+    "schema": "tnca-tune-board-qualification/1",
+    "status": "tuning-board-qualified",
+    "problems": [],
+    "summary": {
+      "first_pass_rows": 3,
+      "rerun_rows": 3,
+      "ranked_kernels": 3,
+      "selected_first": 3,
+      "cache_hits": 3,
+      "first_statuses": [
+        "selected",
+        "selected",
+        "selected"
+      ],
+      "conservative_reasons": []
+    },
+    "knobs": {
+      "TNCA_TUNE": "1",
+      "TNCA_MAX_BLOCK": "32",
+      "TNCA_TUNE_CANDIDATES": "4"
+    },
+    "max_candidates": 4,
+    "max_seconds": 600.0,
+    "result": "3 kernels ranked on device endpoints; 3/3 selections reused from cache",
+    "residual": null,
+    "conclusion": "physical selection, cache reuse and sample isolation qualified on this image",
+    "next_step": "deadline-expiry poison/recovery check",
+    "performance_gate": "not-measured"
+  },
+  "deadline": {
+    "schema": "tnca-tune-deadline-expiry/1",
+    "status": "poison-and-recovery-pass",
+    "elements": 33554432,
+    "performance_gate": "not-measured",
+    "software_tree": "files:6da4bd71b87e435e878a2b17bc83169912294ca197528b0b5cbdc4ff66154b5a",
+    "backend": "fpga-u280-multicore",
+    "clock_hz": 90000000,
+    "graph_cycles": 159082080,
+    "scope_wall_seconds": 0.8837893333333333,
+    "scope_deadline_cycles": 19885260,
+    "epoch_before": 0,
+    "limits_before": [
+      200000000000,
+      200000000000,
+      28800.0
+    ],
+    "forced_error": "TNCALaunchError: triton_poi_fused_add_mul_0: [DEVICE_LOST] physical grid deadline expired; epoch must be recovered",
+    "expiry": "other",
+    "poisoned": true,
+    "epoch_after_expiry": 0,
+    "limits_after": [
+      200000000000,
+      200000000000,
+      28800.0
+    ],
+    "epoch_after_recovery": 1,
+    "stale_handle_refusal": "RuntimeError: tnca: storage belongs to a stale session or recovery epoch",
+    "problems": [],
+    "recovered_output_sha256": "ec8e7d3c4cfafc4ccb3b6956e4117453a6fbfe569ec0f6cb82b0c26d235afadc",
+    "result": "other expiry after 19885260 of 159082080 cycles",
+    "residual": null,
+    "conclusion": "device deadline poisons the Session; explicit recovery restores correct execution",
+    "next_step": "none"
+  }
+}

@@ -1,0 +1,4 @@
+op.add/membound/fp16-small-strided-r32-c1024 pass [168017] [168022]
+op.exp/membound/fp16-small-contig-r32-c1024 pass [131378] [131383]
+op.silu/membound/fp16-small-contig-r32-c1024 pass [152435] [152440]
+done

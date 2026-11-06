@@ -1,0 +1,30 @@
+{
+  "status": "pass",
+  "validator_sha256": "20aaed12e9646e1fc6fd39a4f27f20b41c7bfc484010800197e46019436f71ba",
+  "checks": [
+    {
+      "mutation": "source",
+      "refused": "numerical completion and correct source identity required"
+    },
+    {
+      "mutation": "input",
+      "refused": "actual input values, shape or numerical acceptance changed"
+    },
+    {
+      "mutation": "loop",
+      "refused": "legacy K-loop traffic was not reproduced and removed"
+    },
+    {
+      "mutation": "population",
+      "refused": "exact mm/addmm cohort required"
+    },
+    {
+      "mutation": "numeric",
+      "refused": "registered shape and per-graph numerical pass required"
+    },
+    {
+      "mutation": "dtype",
+      "refused": "registered tile width and input dtype required"
+    }
+  ]
+}

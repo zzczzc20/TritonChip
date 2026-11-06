@@ -1,0 +1,356 @@
+#!/usr/bin/env python3
+"""Count real loader calls, not artifact aliases, without opening a device."""
+from pathlib import Path
+import tempfile
+import types
+import unittest
+from unittest import mock
+
+import triton  # Discover the TNCA plugin before importing its driver.
+from tnca.errors import BufferBusy, BufferError, CapabilityError
+from tnca.triton_backend import driver
+
+
+class FakeSession:
+    def __init__(self, capacity=1):
+        self.id, self.epoch = 301, 0
+        self.capacity, self.require_empty = capacity, set()
+        self.resident = []
+
+    def load(self, path):
+        if len(self.resident) >= self.capacity or (path in self.require_empty and self.resident):
+            raise BufferError('overlaps the device heap')
+        module = types.SimpleNamespace(path=path, params=[('x', 'i32')], epoch=self.epoch,
+                                       alive=True, code_addr=0, code_size=64)
+        self.resident.append(module)
+        return module
+
+    def unload(self, module):
+        module.alive = False
+        self.resident.remove(module)
+
+    def drain(self):
+        pass
+
+
+class CodeLoadTests(unittest.TestCase):
+    def test_executable_cache_hit_checks_file_state_once(self):
+        import os
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'kernel.tnca'
+            path.write_text('already validated')
+            stamp = driver._file_stamp(os.stat(path))
+            with mock.patch.object(driver, '_executable_hashes', {str(path): (stamp, 'identity')}), \
+                 mock.patch.object(driver.os, 'stat', wraps=os.stat) as stat_file:
+                self.assertEqual(driver._executable_info(str(path)), ('identity', None))
+            stat_file.assert_called_once_with(str(path))
+
+    def test_opt_in_eviction_waits_only_when_all_candidates_are_busy(self):
+        import threading
+        from contextlib import ExitStack
+        class QueuedSession(FakeSession):
+            def __init__(self):
+                super().__init__(capacity=2)
+                self.backend_name = 'fpga-u280-multicore'
+                self.dev = types.SimpleNamespace(_io_lock=threading.RLock(), serialized_code_uploads=True)
+                self.busy = set()
+                self.drains, self.module_waits = 0, 0
+            def unload(self, module, *, allow_unrelated_tasks=False):
+                if self.busy and (not allow_unrelated_tasks or id(module) in self.busy):
+                    raise BufferBusy('module is in queued work')
+                return super().unload(module)
+            def drain(self):
+                self.drains += 1
+                self.busy.clear()
+            def wait_for_module(self, module):
+                self.module_waits += 1
+                self.busy.discard(id(module))
+        for all_busy, require_empty in ((False, False), (True, False), (True, True)):
+            with self.subTest(all_busy=all_busy, require_empty=require_empty), \
+                    tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+                for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable', '_module_views',
+                             '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                    stack.enter_context(mock.patch.object(driver, name, {}))
+                stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+                stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+                stack.enter_context(mock.patch.dict('os.environ', {'TNCA_DECODE_CODE_EVICT_ASYNC': '1'}))
+                paths = [Path(directory) / name for name in ('a', 'b', 'c')]
+                for path in paths:
+                    path.write_text(path.name)
+                session = QueuedSession()
+                first, second = [driver._load(session, str(path))[1] for path in paths[:2]]
+                session.busy = {id(first), id(second)} if all_busy else {id(first)}
+                if require_empty:
+                    session.require_empty.add(str(paths[2]))
+                driver._load(session, str(paths[2]))
+                self.assertEqual(session.module_waits, int(all_busy))
+                self.assertEqual(session.drains, int(require_empty))
+                self.assertEqual(first.alive, not all_busy)
+                self.assertEqual(second.alive, all_busy and not require_empty)
+
+    def test_unrelated_work_cannot_free_code_referenced_by_a_view(self):
+        import threading
+        from tnca.runtime import Session
+        session = object.__new__(Session)
+        session._lock, session.closed, session.poisoned = threading.RLock(), False, False
+        session.dev = types.SimpleNamespace(serialized_code_uploads=True)
+        session.epoch, session._code = 7, mock.Mock()
+        first = types.SimpleNamespace(epoch=7, alive=True, code_addr=64, code_size=64, params=[], name='a')
+        second = types.SimpleNamespace(epoch=7, alive=True, code_addr=128, code_size=64, params=[], name='b')
+        view = driver._ModuleView(first, 'first', {'identity': {'kernel_name': 'a'}})
+        session._modules = [first, second]
+        blocker = types.SimpleNamespace(_task={'module': view}, terminal=False)
+        last_blocker = types.SimpleNamespace(_task={'module': first}, terminal=False)
+        unrelated = types.SimpleNamespace(_task={'module': second}, terminal=False)
+        session._active_events = {1: blocker, 2: unrelated, 3: last_blocker}
+        session.wait = mock.Mock()
+        session.wait_for_module(view)
+        session.wait.assert_called_once_with(last_blocker, None)
+        session._active_events.pop(2)
+        with self.assertRaises(BufferBusy):
+            session.unload(second)
+        session.dev.serialized_code_uploads = False
+        with self.assertRaises(CapabilityError):
+            session.unload(second, allow_unrelated_tasks=True)
+        session.dev.serialized_code_uploads = True
+        with self.assertRaises(BufferBusy):
+            session.unload(first, allow_unrelated_tasks=True)
+        self.assertTrue(session.unload(second, allow_unrelated_tasks=True))
+        self.assertTrue(first.alive)
+        self.assertFalse(second.alive)
+
+    def test_resident_hits_touch_only_the_allocation_aliases(self):
+        from contextlib import ExitStack
+        class NoFullScan(dict):
+            def items(self):
+                raise AssertionError('resident hit scanned every loaded kernel')
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            for name in ('_module_views', '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                stack.enter_context(mock.patch.object(driver, name, {}))
+            for name in ('_loaded_by_artifact', '_loaded_by_executable'):
+                stack.enter_context(mock.patch.object(driver, name, NoFullScan()))
+            stack.enter_context(mock.patch.object(driver, '_loaded', NoFullScan()))
+            stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+            stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+            a, alias, b, c = [Path(directory) / name for name in ('a', 'alias', 'b', 'c')]
+            a.write_text('shared'); alias.write_text('shared')
+            b.write_text('different'); c.write_text('third')
+            session = FakeSession(capacity=2)
+            first = driver._load(session, str(a))[1]
+            self.assertIs(driver._load(session, str(alias))[1], first)
+            other = driver._load(session, str(b))[1]
+            self.assertIs(driver._load(session, str(a))[1], first)
+            paths = [key[2] for key in driver._loaded]
+            self.assertEqual(paths, [str(b), str(a), str(alias)])
+            driver._load(session, str(c))
+            self.assertFalse(other.alive)
+            self.assertTrue(first.alive)
+            self.assertEqual((driver.loaded, driver.evicted), (3, 1))
+
+    def test_releasing_a_view_releases_one_allocation_and_invalidates_views(self):
+        import threading
+        from tnca.runtime import Session
+        session = object.__new__(Session)
+        session._lock = threading.RLock()
+        session.closed = session.poisoned = False
+        session.epoch = 7
+        session._active_events = {}
+        session._code = mock.Mock()
+        resident = types.SimpleNamespace(epoch=7, alive=True, code_addr=64,
+                                         code_size=128, params=[], name='kernel')
+        session._modules = [resident]
+        first = driver._ModuleView(resident, 'first', {'identity': {'kernel_name': 'kernel'}})
+        second = driver._ModuleView(resident, 'second', {'identity': {'kernel_name': 'kernel'}})
+        self.assertTrue(session.unload(first))
+        self.assertFalse(first.alive)
+        self.assertFalse(second.alive)
+        self.assertFalse(session.unload(second))
+        session._code.release.assert_called_once_with(64, 128)
+
+    def test_replaced_artifact_at_same_path_does_not_reuse_old_code(self):
+        from contextlib import ExitStack
+        from tnca import artifact
+
+        def load_manifest(path):
+            content = Path(path).read_text()
+            return (dict(identity=dict(kernel_name='replace', source_hash=content),
+                         code=dict(segments=[dict(name='text', sha256=content)]),
+                         parameters=dict(signature=['x']), resources={}, execution={}),
+                    {'text': content.encode()})
+
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable',
+                         '_module_views', '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                stack.enter_context(mock.patch.object(driver, name, {}))
+            stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+            stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+            stack.enter_context(mock.patch.object(artifact, 'load', side_effect=load_manifest))
+            stack.enter_context(mock.patch.object(artifact, 'read_header',
+                                  side_effect=lambda path: (load_manifest(path)[0], 0)))
+            path = Path(directory) / 'kernel.tnca'
+            path.write_text('old')
+            session = FakeSession()
+            old = driver._load(session, str(path))[1]
+            path.write_text('new, different code')
+            new = driver._load(session, str(path))[1]
+            self.assertIsNot(old, new)
+            self.assertFalse(old.alive)
+            self.assertEqual(driver.loaded, 2)
+
+    def test_verified_equivalent_code_shares_allocation_and_keeps_provenance(self):
+        from contextlib import ExitStack
+        from tnca import artifact
+
+        def manifest(path):
+            name = Path(path).name
+            kernel_name = 'matmul_alias' if name == 'b' else 'matmul'
+            return dict(identity=dict(kernel_name=kernel_name, abi_version=[1, 0], source_hash=name),
+                        code=dict(segments=[dict(name='text', sha256='identical-code')]),
+                        parameters=dict(signature=['different' if name == 'c' else 'x']),
+                        resources=dict(scratch_bytes=0), execution=dict(roles=1),
+                        optional_metadata=dict(provenance=dict(source=name)), manifest_hash=name)
+
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable',
+                         '_module_views', '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                stack.enter_context(mock.patch.object(driver, name, {}))
+            stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+            stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+            verified = stack.enter_context(mock.patch.object(artifact, 'load',
+                                  side_effect=lambda path: (manifest(path), {'text': b'same'})))
+            stack.enter_context(mock.patch.object(artifact, 'read_header',
+                                  side_effect=lambda path: (manifest(path), 0)))
+            a, b, c = [Path(directory) / name for name in ('a', 'b', 'c')]
+            for path in (a, b, c):
+                path.write_text(path.name)
+            session = FakeSession()
+            original = driver._load(session, str(a))[1]
+            view = driver._load(session, str(b))[1]
+            self.assertEqual(driver.loaded, 1)
+            verified.assert_called_once_with(str(b))
+            self.assertEqual(view.code_addr, original.code_addr)
+            self.assertEqual(view.path, str(b))
+            self.assertEqual(view.name, 'matmul_alias')
+            self.assertEqual(view.manifest['identity']['source_hash'], 'b')
+            self.assertIs(driver._load(session, str(b))[1], view)
+            driver._load(session, str(c))  # Different argument contract cannot alias.
+            self.assertFalse(view.alive)
+            self.assertEqual((driver.loaded, driver.evicted), (2, 1))
+            driver._load(session, str(b))
+            self.assertEqual(driver.loaded, 3)
+
+    def test_explicitly_unloaded_module_does_not_remain_a_cache_hit(self):
+        from contextlib import ExitStack
+        from tnca import artifact
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable',
+                         '_module_views', '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                stack.enter_context(mock.patch.object(driver, name, {}))
+            stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+            stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+            manifest = dict(identity=dict(kernel_name='matmul', source_hash='source'),
+                            code=dict(segments=[dict(name='text', sha256='same')]),
+                            parameters=dict(signature=['x']), resources={}, execution={})
+            stack.enter_context(mock.patch.object(artifact, 'read_header', return_value=(manifest, 0)))
+            stack.enter_context(mock.patch.object(artifact, 'load', return_value=(manifest, {'text': b'same'})))
+            first, alias = [Path(directory) / name for name in ('first', 'alias')]
+            first.write_text('first'); alias.write_text('alias')
+            session = FakeSession()
+            resident = driver._load(session, str(first))[1]
+            old_view = driver._load(session, str(alias))[1]
+            session.unload(resident)
+            replacement = driver._load(session, str(alias))[1]
+            self.assertFalse(old_view.alive)
+            self.assertTrue(replacement.alive)
+            self.assertIsNot(replacement, resident)
+            self.assertEqual(driver.loaded, 2)
+
+    def test_a_corrupt_equivalent_candidate_never_uses_resident_code(self):
+        from contextlib import ExitStack
+        from tnca import artifact
+        from tnca.errors import ArtifactError
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable',
+                         '_module_views', '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                stack.enter_context(mock.patch.object(driver, name, {}))
+            stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+            stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+            manifest = dict(identity=dict(kernel_name='matmul', source_hash='first'),
+                            code=dict(segments=[dict(name='text', sha256='same')]),
+                            parameters=dict(signature=['x']), resources={}, execution={})
+            stack.enter_context(mock.patch.object(artifact, 'read_header', return_value=(manifest, 0)))
+            stack.enter_context(mock.patch.object(artifact, 'load', side_effect=ArtifactError('corrupt segment')))
+            first, corrupt = [Path(directory) / name for name in ('first', 'corrupt')]
+            first.write_text('first'); corrupt.write_text('corrupt')
+            session = FakeSession()
+            original = driver._load(session, str(first))[1]
+            with self.assertRaisesRegex(ArtifactError, 'corrupt segment'):
+                driver._load(session, str(corrupt))
+            self.assertTrue(original.alive)
+            self.assertEqual(driver.loaded, 1)
+            self.assertEqual(len(driver._loaded), 1)
+
+    def test_replacing_candidate_during_verification_rejects_alias(self):
+        from contextlib import ExitStack
+        from tnca import artifact
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            for name in ('_loaded', '_loaded_by_artifact', '_loaded_by_executable',
+                         '_module_views', '_artifact_hashes', '_artifact_stats', '_executable_hashes'):
+                stack.enter_context(mock.patch.object(driver, name, {}))
+            stack.enter_context(mock.patch.object(driver, 'loaded', 0))
+            stack.enter_context(mock.patch.object(driver, 'evicted', 0))
+            manifest = dict(identity=dict(kernel_name='matmul', source_hash='first'),
+                            code=dict(segments=[dict(name='text', sha256='same')]),
+                            parameters=dict(signature=['x']), resources={}, execution={})
+            stack.enter_context(mock.patch.object(artifact, 'read_header', return_value=(manifest, 0)))
+            def replace_during_load(path):
+                Path(path).write_text('changed while verifying the artifact')
+                return manifest, {'text': b'same'}
+            stack.enter_context(mock.patch.object(artifact, 'load', side_effect=replace_during_load))
+            first, other = [Path(directory) / name for name in ('first', 'other')]
+            first.write_text('first'); other.write_text('other')
+            session = FakeSession()
+            driver._load(session, str(first))
+            with self.assertRaisesRegex(driver.TNCALaunchError, 'changed during'):
+                driver._load(session, str(other))
+            self.assertEqual(driver.loaded, 1)
+            self.assertEqual(len(driver._loaded), 1)
+
+    def test_reuse_and_aliases_do_not_count_as_loads(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(driver, '_loaded', {}), \
+                mock.patch.object(driver, '_loaded_by_artifact', {}), \
+                mock.patch.object(driver, '_artifact_hashes', {}), \
+                mock.patch.object(driver, 'loaded', 0), mock.patch.object(driver, 'evicted', 0):
+            a, alias, b = [Path(directory) / name for name in ('a', 'alias', 'b')]
+            a.write_text('a'); alias.write_text('a'); b.write_text('b')
+            session = FakeSession()
+            first = driver._load(session, str(a))[1]
+            self.assertIs(first, driver._load(session, str(alias))[1])
+            self.assertIs(first, driver._load(session, str(a))[1])
+            self.assertEqual(driver.loaded, 1)
+            driver._load(session, str(b))
+            self.assertEqual((driver.loaded, driver.evicted), (2, 1))
+            driver._load(session, str(a))
+            self.assertEqual((driver.loaded, driver.evicted), (3, 2))
+
+    def test_eviction_skips_deleted_aliases_when_multiple_modules_must_leave(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(driver, '_loaded', {}), \
+                mock.patch.object(driver, '_loaded_by_artifact', {}), \
+                mock.patch.object(driver, '_artifact_hashes', {}), \
+                mock.patch.object(driver, 'loaded', 0), mock.patch.object(driver, 'evicted', 0):
+            a, alias, b, c = [Path(directory) / name for name in ('a', 'alias', 'b', 'c')]
+            a.write_text('a'); alias.write_text('a'); b.write_text('b'); c.write_text('c')
+            session = FakeSession(capacity=2)
+            session.require_empty.add(str(c))
+            driver._load(session, str(a))
+            driver._load(session, str(alias))
+            driver._load(session, str(b))
+            driver._load(session, str(c))
+            self.assertEqual((driver.loaded, driver.evicted), (3, 2))
+            self.assertEqual([module.path for module in session.resident], [str(c)])
+
+
+if __name__ == '__main__':
+    unittest.main()

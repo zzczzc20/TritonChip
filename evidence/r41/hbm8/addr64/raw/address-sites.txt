@@ -1,0 +1,797 @@
+compiler/python/tnca_cc/wide.py:9:embedding's token id is `[1, 1]` and the row of addresses it selects is
+compiler/python/tnca_cc/wide.py:14:A 64-bit offset meets a pointer only through a CHECKED narrowing: device
+compiler/python/tnca_cc/wide.py:15:addresses are far below 2**31 elements, so the offset becomes the 32-bit
+compiler/python/tnca_cc/wide.py:18:into an address that happens to exist.
+compiler/python/tnca_cc/wide.py:23:storage over 2 GiB) addresses past it, so there a 1-D pointer's 64-bit
+compiler/python/tnca_cc/wide.py:24:offset is not narrowed. When the offset is a lane-invariant 64-bit value
+compiler/python/tnca_cc/wide.py:25:plus a 32-bit lane term (`xoffset + arange`, plus constants: the affine
+compiler/python/tnca_cc/wide.py:27:scalar address and the lane term stays the access's lane offset. Otherwise
+compiler/python/tnca_cc/wide.py:28:every lane's address is formed in 64-bit scalar registers and the access
+compiler/python/tnca_cc/wide.py:32:#: TRAP_USER code for a 64-bit offset that does not fit a 32-bit gather index.
+compiler/python/tnca_cc/wide.py:100:            # Another offset onto per-lane 64-bit offsets: summed per lane.
+compiler/python/tnca_cc/wide.py:111:            raise Unsupported(f'{name} through a pointer with per-lane 64-bit offsets')
+compiler/python/tnca_cc/wide.py:328:    base = imp._add_dynamic(b.const(aff.const + row * aff.row_stride), aff, 1)
+compiler/python/tnca_cc/wide.py:331:        v = base if col * aff.col_stride == 0 else b.sbini('add', base, col * aff.col_stride)
+compiler/python/tnca_cc/wide.py:338:    """Keep affine i64 tile indices symbolic until an address/data consumer.
+compiler/python/tnca_cc/wide.py:342:    and bounded local row/column strides; data consumers materialize one row.
+compiler/python/tnca_cc/wide.py:372:        span = abs(aff.row_stride) * (dims[0] - 1) + abs(aff.col_stride) * (dims[1] - 1)
+compiler/python/tnca_cc/wide.py:374:            raise Unsupported('64-bit affine tile spans more than signed i32 local offsets')
+compiler/python/tnca_cc/wide.py:383:        imp._ptr2d[dst.id()] = (label, typ, Affine2D(aff.row_stride, aff.col_stride))
+compiler/python/tnca_cc/wide.py:395:            if f is not None and f[1] is not None and imp._offsets.get(f[1].id(), (None,))[0] == 'arange':
+compiler/python/tnca_cc/wide.py:400:                    aff.row_stride = 1
+compiler/python/tnca_cc/wide.py:402:                    aff.col_stride = 1
+compiler/python/tnca_cc/wide.py:410:                    if not (y.row_stride or y.col_stride or y.dynamic):
+compiler/python/tnca_cc/wide.py:428:    to(tl.int64)` (pointwise and reduction kernels' xoffset, the templates'
+compiler/python/tnca_cc/wide.py:445:    """A synthetic element offset on a pointer's chain (frontend._address)."""
+compiler/python/tnca_cc/wide.py:450:        self._id = ('addr64-term', _Term._count)
+compiler/python/tnca_cc/wide.py:503:        kind = imp._offsets.get(src.id(), (None, None))[0]
+compiler/python/tnca_cc/wide.py:537:    """`base + offs` for a 64-bit offset in an index64 kernel, without
+compiler/python/tnca_cc/wide.py:559:        imp._offsets[dst.id()] = ('ptr', None)
+compiler/python/tnca_cc/wide.py:569:    """A 2-D pointer plus a tile of 64-bit offsets (one (lo, hi) pair per
+compiler/python/tnca_cc/wide.py:570:    row) in an index64 kernel. The offset of element [0, 0] joins the base
+compiler/python/tnca_cc/wide.py:571:    address in 64 bits; each element's offset from it is the 32-bit gather
+compiler/python/tnca_cc/wide.py:572:    index the tile is addressed by, checked to fit (a tile spanning 2**31
+compiler/python/tnca_cc/wide.py:600:    if isinstance(acc, Affine2D) and not (acc.row_stride or acc.col_stride or acc.const
+compiler/python/tnca_cc/wide.py:604:        left, right = imp._offset_row(acc), imp._offset_row(residual)
+compiler/python/tnca_cc/wide.py:632:    offsets: each lane's address is base + offset * size in scalar
+compiler/python/tnca_cc/wide.py:638:    addr, _size, elem, kind, _index = imp._address(base)
+compiler/python/tnca_cc/wide.py:640:        raise Unsupported('per-lane 64-bit offsets on a pointer that already varies by lane')
+compiler/python/tnca_cc/wide.py:677:        at = b.sbin('add', addr, off, comment=f'lane {i}: a 64-bit address')
+compiler/python/tnca_cc/wide.py:709:    """(base address, 32-bit word index vector, mask) for an access of
+compiler/python/tnca_cc/wide.py:716:        # A one-row 2-D pointer: its element offsets are row 0 of its index.
+compiler/python/tnca_cc/wide.py:718:        addr = imp._arg_value(name)
+compiler/python/tnca_cc/wide.py:719:        idx = imp._offset_row(aff)(0)
+compiler/python/tnca_cc/wide.py:726:        addr, _size, _elem, kind, index = imp._address(ptr)
+compiler/python/tnca_cc/wide.py:736:    return addr, b.vbin('shl', idx, b.vmovi(1)), mask
+compiler/python/tnca_cc/wide.py:742:    addr, widx, mask = _words(imp, operands[0], mask_value, shape)
+compiler/python/tnca_cc/wide.py:744:    lo = b.gather(addr, widx, mask=mask, other=other & 0xFFFFFFFF, dtype='i32', size='w')
+compiler/python/tnca_cc/wide.py:745:    hi = b.gather(b.sbini('add', addr, 4), widx, mask=mask,
+compiler/python/tnca_cc/wide.py:755:    addr, widx, mask = _words(imp, operands[0], mask_value, shape)
+compiler/python/tnca_cc/wide.py:765:    b.scatter(addr, widx, lo, mask=mask, size='w')
+compiler/python/tnca_cc/wide.py:766:    b.scatter(b.sbini('add', addr, 4), widx, hi, mask=mask, size='w')
+compiler/python/tnca_cc/wide.py:804:    Narrowing of address offsets still checks every high word before the
+compiler/python/tnca_cc/wide.py:860:                    base, pointee, offset = imp._ptr2d[v.id()]
+compiler/python/tnca_cc/wide.py:861:                    index = imp._offset_row(offset)(use_row)
+compiler/python/tnca_cc/tiles.py:30:    index(row, col) = row_stride * row + col_stride * col + constant
+compiler/python/tnca_cc/tiles.py:33:`col_stride` is 1, which is not an arbitrary restriction: ISA sec 9E.2
+compiler/python/tnca_cc/tiles.py:34:refuses a descriptor whose `byte_stride[1]` is not `sizeof(dtype)`,
+compiler/python/tnca_cc/tiles.py:60:def tensormap_words(*, base, extents, byte_strides, block_shape, dtype,
+compiler/python/tnca_cc/tiles.py:65:    sec 9D.3 is explicit that nothing there may change an address, a
+compiler/python/tnca_cc/tiles.py:69:    rank = len(extents)
+compiler/python/tnca_cc/tiles.py:70:    if rank != len(byte_strides) or rank != len(block_shape):
+compiler/python/tnca_cc/tiles.py:72:                        'extents, strides and block shape')
+compiler/python/tnca_cc/tiles.py:80:    for i, e in enumerate(extents):              # bytes 8-47
+compiler/python/tnca_cc/tiles.py:82:    for i, sbytes in enumerate(byte_strides):    # bytes 48-87
+compiler/python/tnca_cc/tiles.py:96:def check_geometry(*, byte_strides, block_shape, elem_bytes, base=None):
+compiler/python/tnca_cc/tiles.py:110:    if byte_strides[-1] != elem_bytes:
+compiler/python/tnca_cc/tiles.py:112:            f"a tile whose innermost stride is {byte_strides[-1]} bytes and "
+compiler/python/tnca_cc/tiles.py:121:    for s in byte_strides[:-1]:
+compiler/python/tnca_cc/tiles.py:124:                f"a stride of {s} bytes: ISA sec 9E.2 -- rows after the first "
+compiler/python/tnca_cc/tiles.py:133:    """`row_stride*row + col_stride*col + constant`, in ELEMENTS.
+compiler/python/tnca_cc/tiles.py:136:    apart because a compile-time offset folds into the descriptor's
+compiler/python/tnca_cc/tiles.py:140:    __slots__ = ('row_stride', 'col_stride', 'const', 'dynamic')
+compiler/python/tnca_cc/tiles.py:142:    def __init__(self, row_stride=0, col_stride=0, const=0, dynamic=None):
+compiler/python/tnca_cc/tiles.py:143:        self.row_stride = row_stride
+compiler/python/tnca_cc/tiles.py:144:        self.col_stride = col_stride
+compiler/python/tnca_cc/tiles.py:146:        # Scalar Values added to the offset whose size is not known here.
+compiler/python/tnca_cc/tiles.py:160:        point the base address is computed.
+compiler/python/tnca_cc/tiles.py:162:        return Affine2D(self.row_stride * k, self.col_stride * k,
+compiler/python/tnca_cc/tiles.py:167:        return Affine2D(self.row_stride + other.row_stride,
+compiler/python/tnca_cc/tiles.py:168:                        self.col_stride + other.col_stride,
+compiler/python/tnca_cc/tiles.py:173:        return (f"Affine2D(row*{self.row_stride} + col*{self.col_stride} + "
+compiler/python/tnca_cc/rctx_spmd.py:26:kernel whose counts fit a slice is eligible, and its scratch is offset by
+compiler/python/tnca_cc/rctx_spmd.py:128:    `scratch_slot` is the byte offset in the argument block of the scratch
+compiler/python/tnca_cc/rctx_spmd.py:131:    dominate -- is offset here by ROLE_ID * scratch_bytes, so each context
+compiler/python/tnca_cc/rctx_spmd.py:158:    left = {}                      # map address -> its stores still in the body
+compiler/python/tnca_cc/rctx_spmd.py:267:def _own_scratch(ops, bases, slot, nbytes, tag, pair=False):
+compiler/python/tnca_cc/rctx_spmd.py:269:    one of the `bases`, the arg_base values), the base plus ROLE_ID * nbytes
+compiler/python/tnca_cc/rctx_spmd.py:275:        if not (op.kind == 'sload' and op.attrs.get('offset') == slot
+compiler/python/tnca_cc/rctx_spmd.py:289:        out += [Op('const', [size], [], {'value': nbytes}),
+python/tnca/tensor.py:11:    Shape and strides are in elements, dimension 0 outermost. ``buffer`` is a
+python/tnca/tensor.py:12:    Session buffer or ``(buffer, byte_offset)``. The runtime snapshots the
+python/tnca/tensor.py:20:    alignment rules (16-byte base and strides, 16-byte block rows) are not
+python/tnca/tensor.py:26:    strides: tuple
+python/tnca/tensor.py:42:        for name in ('shape', 'strides', 'block_shape'):
+python/tnca/tensor.py:45:        if not 1 <= rank <= 5 or len(self.strides) != rank or len(self.block_shape) != rank:
+python/tnca/tensor.py:47:        if any(type(x) is not int or x <= 0 for x in self.shape + self.strides + self.block_shape):
+python/tnca/tensor.py:48:            raise ArgumentError('tensor descriptor dimensions and strides must be positive integers')
+python/tnca/tensor.py:59:    def pack(self, address, available):
+python/tnca/tensor.py:61:        needed = (1 + sum((d-1)*s for d, s in zip(self.shape, self.strides))) * size
+python/tnca/tensor.py:64:        if any(s*size >= 1 << 63 for s in self.strides):
+python/tnca/tensor.py:65:            raise ArgumentError('tensor descriptor byte stride exceeds signed i64')
+python/tnca/tensor.py:67:        struct.pack_into('<Q', data, 0, address)
+python/tnca/tensor.py:68:        for i, (extent, stride, block) in enumerate(zip(self.shape, self.strides, self.block_shape)):
+python/tnca/tensor.py:69:            struct.pack_into('<Q', data, 8+8*i, extent)
+python/tnca/tensor.py:70:            struct.pack_into('<q', data, 48+8*i, stride*size)
+python/tnca/backend.py:48:#: The device's word. A transfer is addressed in bytes and moved in
+python/tnca/backend.py:49:#: words, so an address that is not a multiple of this one cannot be
+python/tnca/backend.py:54:def check_transfer(addr, nbytes, *, what='transfer'):
+python/tnca/backend.py:64:    if int(addr) < 0:
+python/tnca/backend.py:65:        raise TncaError(f"{what} address {addr} is negative",
+python/tnca/backend.py:67:    if int(addr) % WORD:
+python/tnca/backend.py:69:            f"{what} address {addr:#x} is not {WORD}-byte aligned",
+python/tnca/backend.py:71:    if int(nbytes) <= 0:
+python/tnca/backend.py:72:        raise TncaError(f"a {what} of {nbytes} byte(s)",
+python/tnca/backend.py:112:    def upload(self, addr, data):
+python/tnca/backend.py:116:    def download(self, addr, nbytes):
+python/tnca/triton_backend/driver.py:11:device buffer, passes (buffer, storage_offset) for every tensor viewing it,
+python/tnca/triton_backend/driver.py:204:            # exactly as below -- the capacity question a board asks.
+python/tnca/triton_backend/driver.py:209:                    storages[st.data_ptr()] = st.nbytes()
+python/tnca/triton_backend/driver.py:212:                    storages[st.data_ptr()] = st.nbytes()
+python/tnca/triton_backend/driver.py:322:                # buffer and byte offset are the argument; nothing is copied.
+python/tnca/triton_backend/driver.py:326:                from tnca.torch_device import MEMORY, storage_address
+python/tnca/triton_backend/driver.py:327:                buf, base_off = MEMORY.locate(storage_address(v))
+python/tnca/triton_backend/driver.py:330:                off = base_off + v.storage_offset() * v.element_size()
+python/tnca/triton_backend/driver.py:335:                    # aliases bind to that same buffer with their own offset.
+python/tnca/triton_backend/driver.py:345:                    moved['resident_bytes'] = moved.get('resident_bytes', 0) + v.untyped_storage().nbytes()
+python/tnca/triton_backend/driver.py:353:                n = st.nbytes()
+python/tnca/triton_backend/driver.py:369:            off = guard + v.storage_offset() * v.element_size()
+python/tnca/triton_backend/driver.py:391:                    bound[name] = TD(device_ref(name, v.base), list(v.shape), list(v.strides),
+python/tnca/triton_backend/driver.py:515:                'unloaded (capacity-exceeded: code region)') from e
+python/tnca/triton_backend/driver.py:560:        # TNCA has addressable global scratch, not CUDA shared memory.
+python/tnca/torch_device/copy.py:1:"""Same-device tensor copies execute on TNCA, including strided copyback."""
+python/tnca/torch_device/copy.py:16:    stride = tl.num_programs(0) * BLOCK
+python/tnca/torch_device/copy.py:17:    for block in range(tl.cdiv(N, stride)):
+python/tnca/torch_device/copy.py:24:# and offsets from each argument's own address); a longer copy is a sequence
+python/tnca/torch_device/copy.py:25:# of launches whose arguments are 64-bit buffer offsets.
+python/tnca/torch_device/copy.py:29:def copy_storage(memory, dst, src, nbytes):
+python/tnca/torch_device/copy.py:31:    if not nbytes or dst == src:
+python/tnca/torch_device/copy.py:33:    if nbytes < 0:
+python/tnca/torch_device/copy.py:38:    source, source_offset = memory.locate(src)
+python/tnca/torch_device/copy.py:39:    destination, destination_offset = memory.locate(dst)
+python/tnca/torch_device/copy.py:53:        for done in range(0, nbytes, MAX_SPAN):
+python/tnca/torch_device/copy.py:54:            n = min(MAX_SPAN, nbytes - done)
+python/tnca/torch_device/copy.py:55:            event = session.submit(module, {'SRC': (source, source_offset + done),
+python/tnca/torch_device/copy.py:56:                'DST': (destination, destination_offset + done), 'N': n},
+python/tnca/torch_device/copy.py:78:            src_offset = element
+python/tnca/torch_device/copy.py:79:            dst_offset = element
+python/tnca/torch_device/copy.py:82:            src_offset = tl.full((BLOCK,), 0, tl.int32)
+python/tnca/torch_device/copy.py:83:            dst_offset = tl.full((BLOCK,), 0, tl.int32)
+python/tnca/torch_device/copy.py:87:                src_offset += coordinate * SRC_STRIDES[axis]
+python/tnca/torch_device/copy.py:88:                dst_offset += coordinate * DST_STRIDES[axis]
+python/tnca/torch_device/copy.py:92:            value = tl.load(src_bytes + src_offset * BYTES + byte, mask, other=0)
+python/tnca/torch_device/copy.py:93:            tl.store(dst_bytes + dst_offset * BYTES + byte, value, mask)
+python/tnca/torch_device/copy.py:95:            value = tl.load(SRC + src_offset, mask, other=0)
+python/tnca/torch_device/copy.py:96:            tl.store(DST + dst_offset, value.to(DST.dtype.element_ty), mask)
+python/tnca/torch_device/copy.py:101:    from . import storage_address, _span
+python/tnca/torch_device/copy.py:108:    source_strides = (0,) * (dst.ndim - src.ndim) + tuple(src.stride())
+python/tnca/torch_device/copy.py:111:    source_strides = tuple(0 if n == 1 else s for n, s in zip(source_shape, source_strides))
+python/tnca/torch_device/copy.py:114:    if any(n > 1 and s == 0 for n, s in zip(shape, dst.stride())):
+python/tnca/torch_device/copy.py:116:    if storage_address(src) == storage_address(dst):
+python/tnca/torch_device/copy.py:118:                tuple(src.shape) == shape and tuple(src.stride()) == tuple(dst.stride())):
+python/tnca/torch_device/copy.py:131:    source_extent = src.element_size() * (1 + sum((n - 1) * s
+python/tnca/torch_device/copy.py:132:                                                  for s, n in zip(source_strides, shape)))
+python/tnca/torch_device/copy.py:133:    destination_extent = dst.element_size() * (1 + sum((n - 1) * s
+python/tnca/torch_device/copy.py:134:                                                       for s, n in zip(dst.stride(), shape)))
+python/tnca/torch_device/copy.py:135:    if max(count, source_extent, destination_extent) > MAX_SPAN:
+python/tnca/torch_device/copy.py:138:        # 64-bit storage offset the launcher passes as its buffer offset.
+python/tnca/torch_device/copy.py:141:                  key=lambda d: (shape[d] - 1) * max(source.stride(d), dst.stride(d)))
+python/tnca/torch_device/copy.py:155:                src, dst, count, shape, source_strides, tuple(dst.stride()),
+python/tnca/abi.py:17:  - a pointer argument is a handle plus an offset until the runtime resolves
+python/tnca/abi.py:18:    it. This module never invents an address.
+python/tnca/abi.py:43:# A pointer argument is (handle, byte_offset) at the API and an address on the
+python/tnca/abi.py:53:    slots we would place at the wrong offset, and guessing is the one thing a
+python/tnca/abi.py:76:def offset_of(index):
+python/tnca/abi.py:114:                f"(buffer_handle, byte_offset), got {type(value).__name__}",
+python/tnca/abi.py:115:                remedy='pass a handle from this session, never a host address')
+python/tnca/abi.py:116:        _handle, offset = value
+python/tnca/abi.py:117:        if isinstance(offset, bool) or not isinstance(offset, int):
+python/tnca/abi.py:119:                f"parameter {name!r}: byte offset must be an integer, got "
+python/tnca/abi.py:120:                f"{type(offset).__name__}")
+python/tnca/abi.py:121:        if offset < 0:
+python/tnca/abi.py:123:                f"parameter {name!r}: negative byte offset {offset}")
+python/tnca/abi.py:204:    device address by this point, not a handle).
+python/tnca/abi.py:225:                    "handle to a device address before encoding")
+python/tnca/abi.py:229:                    f"integer address, got {type(value).__name__}")
+python/tnca/abi.py:232:                    f"parameter {name!r}: address {value} is outside 64 bits")
+python/tnca/abi.py:249:        raw = blob[offset_of(i):offset_of(i) + SLOT_BYTES]
+python/tnca/abi.py:254:                f"parameter {name!r} at offset {offset_of(i)}: {e.message}",
+python/tnca/abi.py:266:                         offset=offset_of(i), slot_bytes=SLOT_BYTES,
+python/tnca/transport.py:221:    def _put_payload(self, addr, words):
+python/tnca/transport.py:222:        """Payload out: `words`, to be placed at `addr`.
+python/tnca/transport.py:224:        The address is carried here and not remembered by the caller,
+python/tnca/transport.py:225:        because the two mediums address payload differently -- a file holds
+python/tnca/transport.py:228:        the address would be a medium that could only ever fill location
+python/tnca/transport.py:235:    def _get_payload(self, addr, nwords):
+python/tnca/transport.py:236:        """Payload in: `nwords` words, read from `addr`."""
+python/tnca/transport.py:334:    def upload(self, addr, data):
+python/tnca/transport.py:336:        _backend.check_transfer(addr, len(data), what='upload')
+python/tnca/transport.py:339:        self._put_payload(addr, [int.from_bytes(padded[i * WORD:(i + 1) * WORD],
+python/tnca/transport.py:341:        return self.request(OP_UPLOAD, addr, n)
+python/tnca/transport.py:344:    def download(self, addr, nbytes):
+python/tnca/transport.py:345:        _backend.check_transfer(addr, nbytes, what='download')
+python/tnca/transport.py:346:        words = (nbytes + WORD - 1) // WORD
+python/tnca/transport.py:347:        reply = self.request(OP_DOWNLOAD, addr, words)
+python/tnca/transport.py:355:            out = self._get_payload(addr, words)
+python/tnca/transport.py:370:        return reply, bytes(out[:nbytes])
+python/tnca/transport.py:412:    def launch_grid(self, pc, arg_base, grid, *, arg_stride=0,
+python/tnca/transport.py:418:        pc, arg_base, arg_stride, role_mask = map(operator.index,
+python/tnca/transport.py:419:                                                (pc, arg_base, arg_stride, role_mask))
+python/tnca/transport.py:420:        if any(v < 0 or v > 0xFFFFFFFFFFFFFFFF or v % 8 for v in (pc, arg_base, arg_stride)):
+python/tnca/transport.py:421:            raise ValueError('PC, argument base and stride must be aligned uint64 values')
+python/tnca/transport.py:442:                            gx | (gy << 32), gz | (mask << 32), arg_stride,
+compiler/python/tnca_cc/frontend.py:19:            64-bit tensor pointer, gather offsets past signed 32-bit, an
+compiler/python/tnca_cc/frontend.py:116:    that needs the base and the row stride that went INTO the map, not
+compiler/python/tnca_cc/frontend.py:120:    __slots__ = ('value', 'base', 'byte_strides', 'block', 'elem', 'address', 'extents',
+compiler/python/tnca_cc/frontend.py:123:    def __init__(self, value, *, base, byte_strides, block, elem, address=None, extents=None,
+compiler/python/tnca_cc/frontend.py:127:        self.byte_strides = list(byte_strides)
+compiler/python/tnca_cc/frontend.py:130:        self.address = address
+compiler/python/tnca_cc/frontend.py:131:        self.extents = extents
+compiler/python/tnca_cc/frontend.py:152:    def __init__(self, target, name='kernel', scratch_addr=None,
+compiler/python/tnca_cc/frontend.py:153:                 scratch_stride=None, index_opt=False, sparse_maps=False):
+compiler/python/tnca_cc/frontend.py:165:        # others'. `scratch_stride` gives program x its own,
+compiler/python/tnca_cc/frontend.py:166:        # scratch_addr + pid.x * scratch_stride.
+compiler/python/tnca_cc/frontend.py:167:        self.scratch_stride = scratch_stride
+compiler/python/tnca_cc/frontend.py:169:        # TensorMaps and its repacks. In dynamic mode the address
+compiler/python/tnca_cc/frontend.py:173:        self.scratch_addr = scratch_addr
+compiler/python/tnca_cc/frontend.py:182:        # TTIR pointer id -> the offsets added to it, oldest first. The
+compiler/python/tnca_cc/frontend.py:183:        # offset table alone cannot say which pointer an offset belonged
+compiler/python/tnca_cc/frontend.py:200:        self._offsets = {}  # TTIR value id -> our offset Value (elements)
+compiler/python/tnca_cc/frontend.py:205:        self._byte_offsets = {}   # (offset value, shift) -> byte offset Value
+compiler/python/tnca_cc/frontend.py:236:        for (an address for a pointer, an integer for an i32). `param_names`
+compiler/python/tnca_cc/frontend.py:249:        addresses and scalars (R2-06 ABI-02).
+compiler/python/tnca_cc/frontend.py:363:                        ('_scalar_cache', '_fconst_cache', '_byte_offsets')}
+compiler/python/tnca_cc/frontend.py:540:                 ('_scalar_cache', '_fconst_cache', '_byte_offsets')}
+compiler/python/tnca_cc/frontend.py:605:        With results -- Inductor's Welford reduction, `if roffset == 0`
+compiler/python/tnca_cc/frontend.py:620:            caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
+compiler/python/tnca_cc/frontend.py:694:                name, pelem, offset = self._ptr2d[src.id()]
+compiler/python/tnca_cc/frontend.py:695:                val = self._materialise(self._offset_row(offset), shape[0], shape[1], 'i32')
+compiler/python/tnca_cc/frontend.py:736:                init = self._address(src)[0] if pointer else self._value(src)
+compiler/python/tnca_cc/frontend.py:753:        caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
+compiler/python/tnca_cc/frontend.py:775:                            get = self._offset_row(self._ptr2d[src.id()][2])
+compiler/python/tnca_cc/frontend.py:785:                        v = self._address(src)[0] if _pointee(elem) else self._value(src)
+compiler/python/tnca_cc/frontend.py:1005:        that for the same address from the same context, so the barrier
+compiler/python/tnca_cc/frontend.py:1028:            name, _, offset = self._ptr2d[ptr.id()]
+compiler/python/tnca_cc/frontend.py:1030:            get_index = self._offset_row(offset)
+compiler/python/tnca_cc/frontend.py:1035:            base, _, _, address_kind, index = self._address(ptr)
+compiler/python/tnca_cc/frontend.py:1036:            if address_kind == 'contiguous':
+compiler/python/tnca_cc/frontend.py:1038:            elif address_kind == 'broadcast':
+compiler/python/tnca_cc/frontend.py:1047:            values, offsets, pred = get_value(r), get_index(r), get_mask(r)
+compiler/python/tnca_cc/frontend.py:1057:                off = self.b.vextract(offsets, c)
+compiler/python/tnca_cc/frontend.py:1060:                addr = self.b.sbin('add', base, self.b.sbini('mul', off, esize))
+compiler/python/tnca_cc/frontend.py:1063:                    got = self._atomic_fadd(addr, v, elem, sem, scope, size, f'{r},{c}')
+compiler/python/tnca_cc/frontend.py:1065:                    got = self.b.atomic(self._ATOMIC_OP[kind], addr, v, size=size,
+compiler/python/tnca_cc/frontend.py:1080:    def _atomic_fadd(self, addr, value, elem, sem, scope, size, label):
+compiler/python/tnca_cc/frontend.py:1093:        old = self.b.sload(addr, size=size, dtype=elem,
+compiler/python/tnca_cc/frontend.py:1101:        got = self.b.atomic_cas(addr, old, new, size=size, order=sem,
+compiler/python/tnca_cc/frontend.py:1348:        # strides. Keep the host-facing descriptor record together until this
+compiler/python/tnca_cc/frontend.py:1364:                    record = dict(address=record, shape=[0]*rank, strides=[0]*rank)
+compiler/python/tnca_cc/frontend.py:1368:                        descriptor_fields[f'{name}.stride{j}'] = (slot, 48+8*j, size)
+compiler/python/tnca_cc/frontend.py:1371:                                      "address, shape and strides")
+compiler/python/tnca_cc/frontend.py:1374:                names += [f'{name}.stride{i}' for i in range(rank)]
+compiler/python/tnca_cc/frontend.py:1375:                values = [record['address']] + list(record['shape']) + list(record['strides'])
+compiler/python/tnca_cc/frontend.py:1430:                    slot, offset, size = descriptor_fields[name]
+compiler/python/tnca_cc/frontend.py:1431:                    address = self.b.sload(arg_base, offset=8*slot, size='d')
+compiler/python/tnca_cc/frontend.py:1432:                    v = self.b.sload(address, offset=offset, size='d')
+compiler/python/tnca_cc/frontend.py:1456:                    byte_strides=[self.b.sload(v, offset=48 + 8*j, size='d')
+compiler/python/tnca_cc/frontend.py:1458:                    block=block, elem=elem, address=v, host=True)
+compiler/python/tnca_cc/frontend.py:1494:        parameters from the block at ARG_BASE. Embedding an address or a
+compiler/python/tnca_cc/frontend.py:1510:        return self.b.sload(arg_base, offset=8 * index, size=size,
+compiler/python/tnca_cc/frontend.py:1524:        it has to be an address or an integer -- there is no instruction that
+compiler/python/tnca_cc/frontend.py:1554:                         'address or an integer, never a float or an object'
+compiler/python/tnca_cc/frontend.py:1557:                remedy=('pass an integer address for a pointer and an '
+compiler/python/tnca_cc/frontend.py:1565:                because='a negative address is not one',
+compiler/python/tnca_cc/frontend.py:1691:            # row stride in every `A[m, k]` -- or the zero accumulator
+compiler/python/tnca_cc/frontend.py:1756:        self._offsets[rid] = ('arange' if not start else 'indexed', None)
+compiler/python/tnca_cc/frontend.py:1759:            self._offsets[rid] = ('contiguous', rid)
+compiler/python/tnca_cc/frontend.py:1775:                    address, _, _, kind, _ = self._address(src)
+compiler/python/tnca_cc/frontend.py:1780:                    self._args[len(self._args)] = (name, address)
+compiler/python/tnca_cc/frontend.py:1822:                        'a term of the index it is addressed by')
+compiler/python/tnca_cc/frontend.py:1826:            # base with a bounded offset rather than materialising 16 pointers.
+compiler/python/tnca_cc/frontend.py:1844:        self._offsets[rid] = ('uniform', src.id())
+compiler/python/tnca_cc/frontend.py:1853:                'a pointer that is not a uniform base plus an offset',
+compiler/python/tnca_cc/frontend.py:1854:                because='sec 12 asks for uniform base + bounded offset to be '
+compiler/python/tnca_cc/frontend.py:1856:                        'per-lane addressing',
+compiler/python/tnca_cc/frontend.py:1859:        self._offsets[rid] = ('ptr', offs.id())
+compiler/python/tnca_cc/frontend.py:1860:        # The offsets this pointer accumulated, oldest first. Kept
+compiler/python/tnca_cc/frontend.py:1861:        # explicitly because the offset table alone cannot say which
+compiler/python/tnca_cc/frontend.py:1862:        # pointer an offset belonged to.
+compiler/python/tnca_cc/frontend.py:1864:        # The TTIR values, not their ids: an offset can be a constant
+compiler/python/tnca_cc/frontend.py:1870:        # A scalar pointer is also an address in its own right: Inductor
+compiler/python/tnca_cc/frontend.py:1874:        # address is computed when something asks for it (_value), so a
+compiler/python/tnca_cc/frontend.py:1979:        kind, key = self._offsets.get(a.id(), (None, None))
+compiler/python/tnca_cc/frontend.py:1995:            self._offsets[rid] = ('contiguous', rid)
+compiler/python/tnca_cc/frontend.py:1999:            self._offsets[rid] = ('uniform', rid)
+compiler/python/tnca_cc/frontend.py:2288:            # A dense splat of one integer, which is a constant offset in
+compiler/python/tnca_cc/frontend.py:2310:        kind, key = self._offsets.get(src.id(), (None, None))
+compiler/python/tnca_cc/frontend.py:2317:                Affine2D(row_stride=1, dynamic=dyn) if axis == 1
+compiler/python/tnca_cc/frontend.py:2318:                else Affine2D(col_stride=1, dynamic=dyn))
+compiler/python/tnca_cc/frontend.py:2354:            Affine2D(row_stride=1) if axis == 1 else Affine2D(col_stride=1))
+compiler/python/tnca_cc/frontend.py:2365:            # dimension (the row's offset, its mask, its reduced value).
+compiler/python/tnca_cc/frontend.py:2366:            kind, key = self._offsets.get(src.id(), (None, None))
+compiler/python/tnca_cc/frontend.py:2368:                self._offsets[rid] = ('uniform', key)
+compiler/python/tnca_cc/frontend.py:2374:                self._offsets[rid] = ('uniform', rid)
+compiler/python/tnca_cc/frontend.py:2436:            name, elem, offset = self._ptr2d[src.id()]
+compiler/python/tnca_cc/frontend.py:2438:            if (isinstance(offset, Tile) and offset.cols == 1 and shape[1] > 1
+compiler/python/tnca_cc/frontend.py:2439:                    and not offset.replicated):
+compiler/python/tnca_cc/frontend.py:2440:                # An [R, 1] offset tile (a 64-bit offset narrowed or rebased
+compiler/python/tnca_cc/frontend.py:2441:                # by wide.py) holds each row's offset in lane 0 only. The
+compiler/python/tnca_cc/frontend.py:2442:                # broadcast pointer addresses every column of the row from
+compiler/python/tnca_cc/frontend.py:2443:                # it, so the row's offset goes to every lane, as a data
+compiler/python/tnca_cc/frontend.py:2445:                get = self._tile_row_getter(offset)
+compiler/python/tnca_cc/frontend.py:2446:                offset = Tile('lazy', lambda r: self.b.splat(self.b.vextract(get(r), 0), dtype='i32'),
+compiler/python/tnca_cc/frontend.py:2447:                              offset.rows, shape[1], 'i32', replicated=True)
+compiler/python/tnca_cc/frontend.py:2448:            self._ptr2d[rid] = (name, elem, offset)
+compiler/python/tnca_cc/frontend.py:2484:                if (y.row_stride, y.col_stride, y.dynamic) == (0, 0, []):
+compiler/python/tnca_cc/frontend.py:2499:        offset_tile = self._tiles.get(offs.id())
+compiler/python/tnca_cc/frontend.py:2500:        if aff is None and offset_tile is None:
+compiler/python/tnca_cc/frontend.py:2519:                shape = (offset_tile.rows, offset_tile.cols)
+compiler/python/tnca_cc/frontend.py:2520:            left, right = self._offset_row(acc), self._offset_row(aff or offset_tile)
+compiler/python/tnca_cc/frontend.py:2528:        """Fold the index's runtime terms into a byte address.
+compiler/python/tnca_cc/frontend.py:2551:                and isinstance(aff, Affine2D) and aff.col_stride == 1
+compiler/python/tnca_cc/frontend.py:2552:                and aff.row_stride >= 0 and shape[1] == self.target.vlen)
+compiler/python/tnca_cc/frontend.py:2567:        stride = aff.row_stride * esize
+compiler/python/tnca_cc/frontend.py:2572:            at = base if r == 0 or not stride else self.b.sbini('add', base, r * stride,
+compiler/python/tnca_cc/frontend.py:2585:        stride = aff.row_stride * esize
+compiler/python/tnca_cc/frontend.py:2592:            at = base if r == 0 or not stride else self.b.sbini('add', base, r * stride,
+compiler/python/tnca_cc/frontend.py:2600:        ISA sec 9.1 gives lane i of a vector load the address
+compiler/python/tnca_cc/frontend.py:2607:        if aff.col_stride != 1:
+compiler/python/tnca_cc/frontend.py:2609:                f"a tile whose columns are {aff.col_stride} elements apart",
+compiler/python/tnca_cc/frontend.py:2624:        stride = aff.row_stride * esize
+compiler/python/tnca_cc/frontend.py:2627:            at = base if r == 0 else self.b.sbini('add', base, r * stride,
+compiler/python/tnca_cc/frontend.py:2643:        coordinate [0, 0] and the extents describe exactly the tile. A
+compiler/python/tnca_cc/frontend.py:2644:        coordinate would have had to be divided by the row stride to be
+compiler/python/tnca_cc/frontend.py:2645:        recovered, and a division that is only correct when the offset
+compiler/python/tnca_cc/frontend.py:2648:        if aff.col_stride != 1:
+compiler/python/tnca_cc/frontend.py:2650:                f"a tile whose columns are {aff.col_stride} elements apart",
+compiler/python/tnca_cc/frontend.py:2652:                        'stride is not one element: the transfer engine '
+compiler/python/tnca_cc/frontend.py:2656:        if aff.row_stride <= 0:
+compiler/python/tnca_cc/frontend.py:2658:                f"a tile with a row stride of {aff.row_stride}",
+compiler/python/tnca_cc/frontend.py:2659:                because='a TensorMap addresses rows forward from its base')
+compiler/python/tnca_cc/frontend.py:2670:            base=base, elem=elem, extents=list(block),
+compiler/python/tnca_cc/frontend.py:2671:            byte_strides=[aff.row_stride * esize, esize],
+compiler/python/tnca_cc/frontend.py:2680:        """(argument, byte offset) when every link of pointer `pid`'s chain is
+compiler/python/tnca_cc/frontend.py:2686:            if known is None or self._offsets.get(value.id()) is not None:
+compiler/python/tnca_cc/frontend.py:2702:        the row stride moves rows, one with coefficient 1 moves columns.
+compiler/python/tnca_cc/frontend.py:2703:        Exact, with no division of an offset that might not be a multiple.
+compiler/python/tnca_cc/frontend.py:2706:        if aff.col_stride != 1 or aff.row_stride <= 1 or not aff.dynamic:
+compiler/python/tnca_cc/frontend.py:2718:            if c % aff.row_stride == 0:
+compiler/python/tnca_cc/frontend.py:2719:                rows.append((v, c // aff.row_stride))
+compiler/python/tnca_cc/frontend.py:2724:        key = (origin, elem, aff.row_stride, aff.const, tuple(block))
+compiler/python/tnca_cc/frontend.py:2729:            caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
+compiler/python/tnca_cc/frontend.py:2739:                                    comment=f"the pointer's constant offset ({origin[1]} bytes)")
+compiler/python/tnca_cc/frontend.py:2744:                base=base, elem=elem, extents=[self._OPEN_EXTENT] * 2,
+compiler/python/tnca_cc/frontend.py:2745:                byte_strides=[aff.row_stride * esize, esize],
+compiler/python/tnca_cc/frontend.py:2788:        frozen offsets in spec/r2_abi_v1.json are `8 * index` in
+compiler/python/tnca_cc/frontend.py:2795:                if self.scratch_addr is None:
+compiler/python/tnca_cc/frontend.py:2798:                        'arguments and given no scratch address',
+compiler/python/tnca_cc/frontend.py:2802:                        remedy='pass scratch_addr, or compile with dynamic '
+compiler/python/tnca_cc/frontend.py:2804:                self._scratch = self.b.const(self.scratch_addr)
+compiler/python/tnca_cc/frontend.py:2805:                if self.scratch_stride:
+compiler/python/tnca_cc/frontend.py:2809:                                    self.b.const(self.scratch_stride)),
+compiler/python/tnca_cc/frontend.py:2813:                self.b.special('arg_base'), offset=8 * self.argument_slots,
+compiler/python/tnca_cc/frontend.py:2816:                        'arguments (ABI v1 offsets are unchanged)')
+compiler/python/tnca_cc/frontend.py:2819:    def _spill_region(self, nbytes):
+compiler/python/tnca_cc/frontend.py:2820:        """Reserve scratch for a repack, and return its address.
+compiler/python/tnca_cc/frontend.py:2833:                            self._take_scratch(nbytes),
+compiler/python/tnca_cc/frontend.py:2834:                            comment=f"{nbytes} bytes of repack scratch")
+compiler/python/tnca_cc/frontend.py:2836:    def _take_scratch(self, nbytes):
+compiler/python/tnca_cc/frontend.py:2837:        """Hand out `nbytes` of scratch, once. Returns the offset.
+compiler/python/tnca_cc/frontend.py:2849:        self.scratch_used += (nbytes + 7) & ~7
+compiler/python/tnca_cc/frontend.py:2867:        addr = self._spill_region(nrows * cols * esize)
+compiler/python/tnca_cc/frontend.py:2876:            at = addr if r == 0 else self.b.sbini('add', addr, r * row_bytes,
+compiler/python/tnca_cc/frontend.py:2886:                at = addr if i == 0 else self.b.sbini(
+compiler/python/tnca_cc/frontend.py:2887:                    'add', addr, i * self.target.vlen * 4)
+compiler/python/tnca_cc/frontend.py:2891:            base=addr, elem=out_dtype, extents=[nrows, cols],
+compiler/python/tnca_cc/frontend.py:2892:            byte_strides=[row_bytes, esize], block_shape=[nrows, cols],
+compiler/python/tnca_cc/frontend.py:2936:    def _build_descriptor(self, *, base, elem, extents, byte_strides,
+compiler/python/tnca_cc/frontend.py:2943:        address rather than a fault. An extent or stride that is a
+compiler/python/tnca_cc/frontend.py:2953:                check_geometry(byte_strides=byte_strides,
+compiler/python/tnca_cc/frontend.py:2962:        addr = self.b.sbini('add', self._scratch_base(),
+compiler/python/tnca_cc/frontend.py:2967:        words = tensormap_words(base=0, extents=[literal(e) for e in extents],
+compiler/python/tnca_cc/frontend.py:2968:                                byte_strides=[literal(s) for s in byte_strides],
+compiler/python/tnca_cc/frontend.py:2970:        runtime = {1 + i: e for i, e in enumerate(extents) if not isinstance(e, int)}
+compiler/python/tnca_cc/frontend.py:2971:        runtime.update({6 + i: s for i, s in enumerate(byte_strides)
+compiler/python/tnca_cc/frontend.py:2976:                # The base address is a register, not a literal: it came
+compiler/python/tnca_cc/frontend.py:2978:                self.b.sstore(addr, base, offset=0, size='d')
+compiler/python/tnca_cc/frontend.py:2981:                self.b.sstore(addr, runtime[i], offset=i * 8, size='d')
+compiler/python/tnca_cc/frontend.py:2985:            self.b.sstore(addr, zero if word == 0 else self.b.const(word),
+compiler/python/tnca_cc/frontend.py:2986:                          offset=i * 8, size='d')
+compiler/python/tnca_cc/frontend.py:2987:        return _Descriptor(self.b.descriptor(addr, name=f"d{slot}"),
+compiler/python/tnca_cc/frontend.py:2988:                           base=base, byte_strides=byte_strides,
+compiler/python/tnca_cc/frontend.py:2989:                           block=list(block_shape), elem=elem, address=addr, extents=extents,
+compiler/python/tnca_cc/frontend.py:3112:    def _scaled_address(self, base, index, stride):
+compiler/python/tnca_cc/frontend.py:3114:        offset = (self.b.sbini('mul', index, stride) if isinstance(stride, int)
+compiler/python/tnca_cc/frontend.py:3115:                  else self.b.sbin('mul', index, stride))
+compiler/python/tnca_cc/frontend.py:3116:        return self.b.sbin('add', base, offset)
+compiler/python/tnca_cc/frontend.py:3120:        for coord, stride in zip(coords, d.byte_strides):
+compiler/python/tnca_cc/frontend.py:3121:            base = self._scaled_address(base, coord, stride)
+compiler/python/tnca_cc/frontend.py:3184:    def _drain_tile(self, tile, base, row_stride_bytes, dst_elem, get_mask=None):
+compiler/python/tnca_cc/frontend.py:3211:            addr = base if r == 0 else self._scaled_address(base, r, row_stride_bytes)
+compiler/python/tnca_cc/frontend.py:3212:            self.b.store(addr, v, size=size, mask=get_mask(r) if get_mask else None)
+compiler/python/tnca_cc/frontend.py:3219:            # subsequent stores alias its address.
+compiler/python/tnca_cc/frontend.py:3295:        `row_stride` apart -- and ISA sec 9.1's `v.ld.gather` addresses
+compiler/python/tnca_cc/frontend.py:3342:            addr = self._spill_region(tile.rows * tile.cols * esize)
+compiler/python/tnca_cc/frontend.py:3343:            self._drain_tile(tile, addr, tile.cols * esize, elem)
+compiler/python/tnca_cc/frontend.py:3345:            desc = _Descriptor(None, base=addr, byte_strides=[tile.cols*esize, esize],
+compiler/python/tnca_cc/frontend.py:3354:        stride = desc.byte_strides[-2]
+compiler/python/tnca_cc/frontend.py:3355:        row_elems = (self.b.const(stride // esize) if isinstance(stride, int)
+compiler/python/tnca_cc/frontend.py:3356:                     else self.b.sbini('lshr', stride, esize.bit_length() - 1))
+compiler/python/tnca_cc/frontend.py:3612:            addr = self._spill_region(tile.rows * tile.cols * esize)
+compiler/python/tnca_cc/frontend.py:3619:                    offset = (r * tile.cols + column * self.target.vlen) * esize
+compiler/python/tnca_cc/frontend.py:3620:                    at = addr if offset == 0 else self.b.sbini('add', addr, offset)
+compiler/python/tnca_cc/frontend.py:3623:            desc = self._build_descriptor(base=addr, elem=tile.dtype,
+compiler/python/tnca_cc/frontend.py:3624:                extents=[tile.rows, tile.cols], byte_strides=[tile.cols * esize, esize],
+compiler/python/tnca_cc/frontend.py:3770:            # `_affine_row`: lane i is col_stride * i plus the row's base.
+compiler/python/tnca_cc/frontend.py:3771:            return aff.col_stride == 0
+compiler/python/tnca_cc/frontend.py:3788:        base = self.b.const(aff.const + aff.row_stride * r)
+compiler/python/tnca_cc/frontend.py:3791:                           self.b.splat(self.b.const(aff.col_stride)), dtype='i32')
+compiler/python/tnca_cc/frontend.py:3797:        once per stride; a row that does not vary across lanes is one
+compiler/python/tnca_cc/frontend.py:3799:        mask and address were five hundred instructions."""
+compiler/python/tnca_cc/frontend.py:3805:        if aff.row_stride == 0:
+compiler/python/tnca_cc/frontend.py:3810:        k = aff.const + aff.row_stride * r
+compiler/python/tnca_cc/frontend.py:3815:        if aff.col_stride == 0:
+compiler/python/tnca_cc/frontend.py:3817:            if aff.row_stride == 0:
+compiler/python/tnca_cc/frontend.py:3820:        lane_key = ('lanes', aff.col_stride)
+compiler/python/tnca_cc/frontend.py:3823:            lanes = self.b.arange() if aff.col_stride == 1 else self.b.vbin(
+compiler/python/tnca_cc/frontend.py:3824:                'mul', self.b.arange(), self.b.splat(self.b.const(aff.col_stride)), dtype='i32')
+compiler/python/tnca_cc/frontend.py:3830:        if aff.row_stride == 0:
+compiler/python/tnca_cc/frontend.py:3834:    def _offset_row(self, offset):
+compiler/python/tnca_cc/frontend.py:3835:        if isinstance(offset, Affine2D):
+compiler/python/tnca_cc/frontend.py:3836:            return lambda r: self._affine_row(offset, r)
+compiler/python/tnca_cc/frontend.py:3837:        get = self._tile_row_getter(offset)
+compiler/python/tnca_cc/frontend.py:3838:        # A pointer broadcast keeps its accumulated offset tile. A 1xN
+compiler/python/tnca_cc/frontend.py:3839:        # offset therefore repeats row zero when a later addptr makes MxN.
+compiler/python/tnca_cc/frontend.py:3840:        return (lambda r: get(0)) if offset.rows == 1 else get
+compiler/python/tnca_cc/frontend.py:3891:                at = self._scaled_address(base, r, desc.byte_strides[-2])
+compiler/python/tnca_cc/frontend.py:3934:            offset = self._take_scratch(rows * self.target.vlen * 4)
+compiler/python/tnca_cc/frontend.py:3935:            addr = self.b.sbini('add', self._scratch_base(), offset)
+compiler/python/tnca_cc/frontend.py:3937:                at = addr if r == 0 else self.b.sbini('add', addr, r * self.target.vlen * 4)
+compiler/python/tnca_cc/frontend.py:3940:            return Tile('spilled', offset, rows, cols, elem)
+compiler/python/tnca_cc/frontend.py:4267:            left, right = self._address(a), self._address(b)
+compiler/python/tnca_cc/frontend.py:4358:                    # tracked so an address built from it stays contiguous.
+compiler/python/tnca_cc/frontend.py:4361:                    self._offsets[rid] = ('uniform', rid)
+compiler/python/tnca_cc/frontend.py:4375:        ka = self._offsets.get(a.id(), (None, None))[0]
+compiler/python/tnca_cc/frontend.py:4376:        kb = self._offsets.get(b.id(), (None, None))[0]
+compiler/python/tnca_cc/frontend.py:4379:            self._offsets[rid] = ('contiguous', self._offsets[uni.id()][1])
+compiler/python/tnca_cc/frontend.py:4384:            total = self.b.sbin('add', self._key_scalar(self._offsets[con.id()][1]),
+compiler/python/tnca_cc/frontend.py:4385:                                self._key_scalar(self._offsets[uni.id()][1]))
+compiler/python/tnca_cc/frontend.py:4387:            self._offsets[rid] = ('contiguous', rid)
+compiler/python/tnca_cc/frontend.py:4441:    def _address(self, ptr_value):
+compiler/python/tnca_cc/frontend.py:4442:        """A scalar byte address for a recognised uniform-base access.
+compiler/python/tnca_cc/frontend.py:4444:        Returns (address, size suffix, element type, kind, index) where
+compiler/python/tnca_cc/frontend.py:4461:                        'offset; a pointer built some other way would '
+compiler/python/tnca_cc/frontend.py:4462:                        'need per-lane addressing',
+compiler/python/tnca_cc/frontend.py:4469:        # Every offset added to this pointer, oldest first.
+compiler/python/tnca_cc/frontend.py:4481:            okind, ouni = self._offsets.get(off, (None, None))
+compiler/python/tnca_cc/frontend.py:4486:                # and folding it into the address beats materialising a
+compiler/python/tnca_cc/frontend.py:4495:                # scalar address and let the arange be the lane term.
+compiler/python/tnca_cc/frontend.py:4505:                # A general per-lane offset, in elements: ISA sec 9.1
+compiler/python/tnca_cc/frontend.py:4510:        # A gather's address is `Sa + Vb[i]*sz`, so a scalar offset and a
+compiler/python/tnca_cc/frontend.py:4511:        # per-lane offset on the same pointer are not in conflict: the
+compiler/python/tnca_cc/frontend.py:4517:        addr = self._arg_value(name)
+compiler/python/tnca_cc/frontend.py:4519:            addr = self.b.sbini(
+compiler/python/tnca_cc/frontend.py:4520:                'add', addr, const_elems * esize,
+compiler/python/tnca_cc/frontend.py:4521:                comment=f"&{name}[{const_elems}] (a constant offset, "
+compiler/python/tnca_cc/frontend.py:4527:                                    comment='the offsets add up')
+compiler/python/tnca_cc/frontend.py:4530:            # offset, so this is computed once rather than once per
+compiler/python/tnca_cc/frontend.py:4534:            byte = self._byte_offsets.get(key)
+compiler/python/tnca_cc/frontend.py:4538:                    comment=f"element offset -> bytes (x{esize})")
+compiler/python/tnca_cc/frontend.py:4539:                self._byte_offsets[key] = byte
+compiler/python/tnca_cc/frontend.py:4540:            addr = self.b.sbin('add', addr, byte, comment=f"&{name}[...]")
+compiler/python/tnca_cc/frontend.py:4551:                                    comment='per-lane offsets add up, in '
+compiler/python/tnca_cc/frontend.py:4553:            return addr, _SIZE_SUFFIX[esize], elem, 'indexed', index
+compiler/python/tnca_cc/frontend.py:4559:            return addr, _SIZE_SUFFIX[esize], elem, 'broadcast', None
+compiler/python/tnca_cc/frontend.py:4561:        return addr, _SIZE_SUFFIX[esize], elem, 'contiguous', None
+compiler/python/tnca_cc/frontend.py:4573:        base + c*S + r`, row stride S, contiguous -- and ISA sec 9E mod[5]
+compiler/python/tnca_cc/frontend.py:4585:                or aff.row_stride != 1 or aff.col_stride <= 1
+compiler/python/tnca_cc/frontend.py:4588:        u = Affine2D(row_stride=aff.col_stride, col_stride=1, const=aff.const,
+compiler/python/tnca_cc/frontend.py:4615:        a per-lane offset it cannot handle.
+compiler/python/tnca_cc/frontend.py:4650:                    or aff.col_stride != 1 or shape2d[1] != self.target.vlen):
+compiler/python/tnca_cc/frontend.py:4652:                get_index = self._offset_row(aff)
+compiler/python/tnca_cc/frontend.py:4682:            if aff.row_stride == 0:
+compiler/python/tnca_cc/frontend.py:4718:        addr, size, elem, kind, index = self._address(ptr)
+compiler/python/tnca_cc/frontend.py:4728:                # Gather the same address in active lanes only. This also
+compiler/python/tnca_cc/frontend.py:4730:                value = self.b.gather(addr, self.b.vmovi(0), mask=mask,
+compiler/python/tnca_cc/frontend.py:4736:                addr, size=_load_suffix(size, elem), dtype=elem,
+compiler/python/tnca_cc/frontend.py:4743:                self._v[rid] = self.b.gather(addr, self.b.vmovi(0), mask=mask,
+compiler/python/tnca_cc/frontend.py:4747:                self.b.sload(addr, size=_load_suffix(size, elem), dtype=elem,
+compiler/python/tnca_cc/frontend.py:4751:            self._v[rid] = self.b.load(addr, mask=mask, other=other,
+compiler/python/tnca_cc/frontend.py:4756:            self._v[rid] = self.b.gather(addr, index, mask=mask, other=other,
+compiler/python/tnca_cc/frontend.py:4775:                    or aff.col_stride != 1 or shape2d[1] != self.target.vlen):
+compiler/python/tnca_cc/frontend.py:4777:                get_index, get = self._offset_row(aff), self._tile_row_getter(tile)
+compiler/python/tnca_cc/frontend.py:4791:                if aff.col_stride != 1:
+compiler/python/tnca_cc/frontend.py:4793:                        f"a 2-D store whose columns are {aff.col_stride} "
+compiler/python/tnca_cc/frontend.py:4802:                self._drain_tile(tile, base, aff.row_stride * esize,
+compiler/python/tnca_cc/frontend.py:4813:        addr, size, elem, kind, index = self._address(ptr)
+compiler/python/tnca_cc/frontend.py:4826:                self.b.store(addr, v, size=size, mask=self._lane0(),
+compiler/python/tnca_cc/frontend.py:4829:            self.b.sstore(addr, v, size=size)
+compiler/python/tnca_cc/frontend.py:4833:            self.b.store(addr, self._value(value), mask=mask, size=size)
+compiler/python/tnca_cc/frontend.py:4839:                because='every lane would write the same address, and '
+compiler/python/tnca_cc/frontend.py:4842:                       'offset')
+compiler/python/tnca_cc/frontend.py:4844:            self.b.store(addr, self._value(value), mask=mask, size=size)
+compiler/python/tnca_cc/frontend.py:4847:            self.b.scatter(addr, index, self._value(value), mask=mask,
+compiler/python/tnca_cc/frontend.py:4863:        """The scalar an `_offsets` 'uniform' or 'contiguous' entry names."""
+compiler/python/tnca_cc/frontend.py:4885:        x dimension address their row that way).
+compiler/python/tnca_cc/frontend.py:4887:        kind, key = self._offsets.get(x.id(), (None, None))
+compiler/python/tnca_cc/frontend.py:4897:        """`p + k` for a scalar pointer `p` and a scalar offset `k` in
+compiler/python/tnca_cc/frontend.py:4898:        elements, as a byte address; None if either is not a scalar."""
+python/tnca/torch_device/__init__.py:11:address, from a buffer this module allocates in the TNCA runtime's heap
+python/tnca/torch_device/__init__.py:13:view tensors of it -- empty, empty_strided, as_strided, view, _reshape_alias,
+python/tnca/torch_device/__init__.py:18:             `_copy_from_and_resize`), any strides and dtypes: the span of
+python/tnca/torch_device/__init__.py:19:             the storage a strided tensor covers is staged on the host, so a
+python/tnca/torch_device/__init__.py:29:so a kernel's argument is the tensor's own buffer and offset. `torch.tnca`
+python/tnca/torch_device/__init__.py:48:# (torch.OutOfMemoryError, capacity-exceeded).
+python/tnca/torch_device/__init__.py:58:    """Device address -> runtime Buffer, for every live storage."""
+python/tnca/torch_device/__init__.py:61:        self.buffers = {}            # address -> Buffer
+python/tnca/torch_device/__init__.py:78:    def alloc(self, nbytes, index=0):
+python/tnca/torch_device/__init__.py:82:        nbytes = (int(nbytes) + WORD - 1) // WORD * WORD
+python/tnca/torch_device/__init__.py:86:                free = sum(size for _addr, size in heap.free_list) + (heap.limit - heap.next)
+python/tnca/torch_device/__init__.py:87:                if free - nbytes >= LAUNCH_RESERVE:
+python/tnca/torch_device/__init__.py:88:                    buf = s.allocate(nbytes, name=f'storage@{len(self.buffers)}')
+python/tnca/torch_device/__init__.py:93:                    raise _BE(f'out of device memory: a {nbytes}-byte storage would leave '
+python/tnca/torch_device/__init__.py:94:                              f'{free - nbytes} of the heap\'s free bytes, less than the '
+python/tnca/torch_device/__init__.py:102:        self.buffers[buf.addr] = buf
+python/tnca/torch_device/__init__.py:109:        return buf.addr, token
+python/tnca/torch_device/__init__.py:111:    def free(self, addr, token, index=0):
+python/tnca/torch_device/__init__.py:116:        if self.buffers.get(addr) is buf:
+python/tnca/torch_device/__init__.py:117:            self.buffers.pop(addr)
+python/tnca/torch_device/__init__.py:133:    def locate(self, addr):
+python/tnca/torch_device/__init__.py:134:        """(Buffer, byte offset) of a device address inside a live storage."""
+python/tnca/torch_device/__init__.py:136:            if base <= addr < base + max(buf.size, 1):
+python/tnca/torch_device/__init__.py:137:                return buf, addr - base
+python/tnca/torch_device/__init__.py:138:        raise RuntimeError(f'tnca: address {addr:#x} is in no live storage')
+python/tnca/torch_device/__init__.py:140:    def write(self, addr, data):
+python/tnca/torch_device/__init__.py:141:        """Bytes to the device at any address: the words at either end that
+python/tnca/torch_device/__init__.py:143:        so no byte outside [addr, addr + len) changes."""
+python/tnca/torch_device/__init__.py:146:        a0 = addr - addr % WORD
+python/tnca/torch_device/__init__.py:147:        a1 = -(-(addr + len(data)) // WORD) * WORD
+python/tnca/torch_device/__init__.py:148:        if a0 != addr or a1 != addr + len(data):
+python/tnca/torch_device/__init__.py:150:            word[addr - a0:addr - a0 + len(data)] = data
+python/tnca/torch_device/__init__.py:155:    def read(self, addr, nbytes):
+python/tnca/torch_device/__init__.py:156:        """Bytes from the device at any address (transfers are word-aligned)."""
+python/tnca/torch_device/__init__.py:158:        a0 = addr - addr % WORD
+python/tnca/torch_device/__init__.py:160:        data = self.session().download(buf, nbytes + (addr - a0), off)
+python/tnca/torch_device/__init__.py:161:        return data[addr - a0:]
+python/tnca/torch_device/__init__.py:163:    def copy(self, dst, src, nbytes):
+python/tnca/torch_device/__init__.py:166:        copy_storage(self, dst, src, nbytes)
+python/tnca/torch_device/__init__.py:179:def storage_address(t):
+python/tnca/torch_device/__init__.py:180:    """The device address of a tnca tensor's storage (its base)."""
+python/tnca/torch_device/__init__.py:181:    return _ext.storage_address(t)
+python/tnca/torch_device/__init__.py:184:# ---- staging: a strided tensor's span ---------------------------------------
+python/tnca/torch_device/__init__.py:186:    """(first byte address, byte length, lowest element offset) of the storage
+python/tnca/torch_device/__init__.py:189:    for size, stride in zip(t.shape, t.stride()):
+python/tnca/torch_device/__init__.py:190:        ext = (size - 1) * stride
+python/tnca/torch_device/__init__.py:196:    base = storage_address(t) + (t.storage_offset() + lo) * item
+python/tnca/torch_device/__init__.py:204:    return flat, flat.view(t.dtype).as_strided(t.shape, t.stride(), -lo)
+python/tnca/torch_device/__init__.py:224:        # Those bytes lie beyond Storage.nbytes(), so no valid alias names
+python/tnca/torch_device/__init__.py:226:        if dst.storage_offset() == 0 and n == dst.untyped_storage().nbytes():
+python/tnca/torch_device/__init__.py:234:    dense, extent = True, 1
+python/tnca/torch_device/__init__.py:235:    for stride, size in sorted((stride, size) for size, stride in
+python/tnca/torch_device/__init__.py:236:                               zip(dst.shape, dst.stride()) if size > 1):
+python/tnca/torch_device/__init__.py:237:        if stride != extent:
+python/tnca/torch_device/__init__.py:240:        extent *= size
+python/tnca/torch_device/__init__.py:245:        view = flat.view(dst.dtype).as_strided(dst.shape, dst.stride(), -lo)
+compiler/python/tnca_cc/descriptors.py:9:  bounds when 0 <= coordinate + index < extent in every dimension;
+compiler/python/tnca_cc/descriptors.py:26:                        whose base or stride is not 8-byte aligned).
+compiler/python/tnca_cc/descriptors.py:84:    """`tl.make_tensor_descriptor(base, shape, strides, block_shape,
+compiler/python/tnca_cc/descriptors.py:85:    padding_option)`, any rank 1-5, shapes and strides constant or not."""
+compiler/python/tnca_cc/descriptors.py:95:    extents, strides = [], []
+compiler/python/tnca_cc/descriptors.py:98:        extents.append(k if k is not None else imp._value(op.get_operand(1 + i)))
+compiler/python/tnca_cc/descriptors.py:102:            strides.append(k * es)
+compiler/python/tnca_cc/descriptors.py:105:            strides.append(s if es == 1 else
+compiler/python/tnca_cc/descriptors.py:107:                                       comment='stride in bytes'))
+compiler/python/tnca_cc/descriptors.py:117:        base=imp._value(ptr), elem=elem, extents=extents, byte_strides=strides,
+compiler/python/tnca_cc/descriptors.py:126:def extents_of(imp, d):
+compiler/python/tnca_cc/descriptors.py:127:    if d.extents is not None:
+compiler/python/tnca_cc/descriptors.py:128:        return d.extents
+compiler/python/tnca_cc/descriptors.py:129:    return [imp.b.sload(d.address, offset=8 + 8 * i, size='d')
+compiler/python/tnca_cc/descriptors.py:134:    """base + sum(coord * byte_stride): the address of box element 0."""
+compiler/python/tnca_cc/descriptors.py:149:def row_address(imp, d, base, at):
+compiler/python/tnca_cc/descriptors.py:150:    addr = base
+compiler/python/tnca_cc/descriptors.py:151:    for i, stride in zip(at, d.byte_strides[:-1]):
+compiler/python/tnca_cc/descriptors.py:153:            addr = imp._scaled_address(addr, i, stride)
+compiler/python/tnca_cc/descriptors.py:154:    return addr
+compiler/python/tnca_cc/descriptors.py:162:def in_bounds(imp, pos, extent):
+compiler/python/tnca_cc/descriptors.py:163:    """0 <= pos < extent, as a predicate (pos a vector)."""
+compiler/python/tnca_cc/descriptors.py:166:                  b.vcmp('lt', pos, b.splat(as_value(imp, extent))))
+compiler/python/tnca_cc/descriptors.py:169:def row_mask(imp, d, coords, extents, at, inner):
+compiler/python/tnca_cc/descriptors.py:173:    for c, i, e in zip(coords[:-1], at, extents[:-1]):
+compiler/python/tnca_cc/descriptors.py:179:def inner_mask(imp, coords, extents):
+compiler/python/tnca_cc/descriptors.py:180:    return in_bounds(imp, lane_positions(imp, coords[-1]), extents[-1])
+compiler/python/tnca_cc/descriptors.py:190:        word = imp.b.sload(d.address, offset=104, size='d')
+compiler/python/tnca_cc/descriptors.py:239:def gather_plan(imp, d, coords, extents):
+compiler/python/tnca_cc/descriptors.py:240:    """Per-lane element offsets from the descriptor base, and the lanes that
+compiler/python/tnca_cc/descriptors.py:245:    offset, mask = None, None
+compiler/python/tnca_cc/descriptors.py:246:    for dim, (c, e, s) in enumerate(zip(coords, extents, d.byte_strides)):
+compiler/python/tnca_cc/descriptors.py:253:        offset = term if offset is None else b.vbin('add', offset, term, dtype='i32')
+compiler/python/tnca_cc/descriptors.py:254:    return offset, imp._shape_mask(count, mask)
+compiler/python/tnca_cc/descriptors.py:258:    """Can an in-bounds absolute element offset exceed a gather's i32?"""
+compiler/python/tnca_cc/descriptors.py:259:    es = d.byte_strides[-1]
+compiler/python/tnca_cc/descriptors.py:260:    return (d.extents is None or not isinstance(es, int) or es <= 0 or
+compiler/python/tnca_cc/descriptors.py:261:            any(not isinstance(x, int) for x in (*d.extents, *d.byte_strides)) or
+compiler/python/tnca_cc/descriptors.py:262:            any(s < 0 for s in d.byte_strides) or
+compiler/python/tnca_cc/descriptors.py:263:            sum((e - 1) * s for e, s in zip(d.extents, d.byte_strides)) // es >= (1 << 31))
+compiler/python/tnca_cc/descriptors.py:266:def _scalar_box(imp, d, coords, extents, *, value=None, other=0):
+compiler/python/tnca_cc/descriptors.py:267:    """A small descriptor box with exact scalar addresses, one lane at a time.
+compiler/python/tnca_cc/descriptors.py:269:    A small block need not have a small absolute offset (nor a small outer
+compiler/python/tnca_cc/descriptors.py:270:    stride). Never multiply descriptor coordinates in 32-bit vector lanes.
+compiler/python/tnca_cc/descriptors.py:286:        addr, valid = d.base, b.const(1)
+compiler/python/tnca_cc/descriptors.py:287:        for c, i, e, stride in zip(coords, reversed(at), extents, d.byte_strides):
+compiler/python/tnca_cc/descriptors.py:289:            extent = b.const(e) if isinstance(e, int) else e
+compiler/python/tnca_cc/descriptors.py:290:            ok = b.sbin('and', b.scmp('ge', pos, b.const(0)), b.scmp('lt', pos, extent))
+compiler/python/tnca_cc/descriptors.py:292:            addr = imp._scaled_address(addr, pos, stride)
+compiler/python/tnca_cc/descriptors.py:297:            v = b.gather(addr, zero, mask=mask, other=other, dtype=d.elem, size=sfx)
+compiler/python/tnca_cc/descriptors.py:300:            b.scatter(addr, zero, value, mask=mask, size=sfx)
+compiler/python/tnca_cc/descriptors.py:388:    extents = extents_of(imp, d)
+compiler/python/tnca_cc/descriptors.py:392:    inner = inner_mask(imp, coords, extents)
+compiler/python/tnca_cc/descriptors.py:397:        mask = row_mask(imp, d, coords, extents, [0] * (len(block) - 1), inner)
+compiler/python/tnca_cc/descriptors.py:414:            v, mask = _scalar_box(imp, d, coords, extents, other=imm)
+compiler/python/tnca_cc/descriptors.py:418:        offset, mask = gather_plan(imp, d, coords, extents)
+compiler/python/tnca_cc/descriptors.py:419:        v = imp.b.gather(d.base, offset, mask=mask, other=imm, dtype=d.elem, size=sfx)
+compiler/python/tnca_cc/descriptors.py:428:            tile.desc = None      # rows are not one stride apart
+compiler/python/tnca_cc/descriptors.py:434:        mask = row_mask(imp, d, coords, extents, at, inner)
+compiler/python/tnca_cc/descriptors.py:435:        v = imp.b.load(row_address(imp, d, base, at), mask=mask, other=imm,
+compiler/python/tnca_cc/descriptors.py:489:    extents = extents_of(imp, d)
+compiler/python/tnca_cc/descriptors.py:499:    inner = inner_mask(imp, coords, extents)
+compiler/python/tnca_cc/descriptors.py:503:            mask = row_mask(imp, d, coords, extents, [0] * (len(block) - 1), inner)
+compiler/python/tnca_cc/descriptors.py:508:            _scalar_box(imp, d, coords, extents, value=v)
+compiler/python/tnca_cc/descriptors.py:510:        offset, mask = gather_plan(imp, d, coords, extents)
+compiler/python/tnca_cc/descriptors.py:511:        imp.b.scatter(d.base, offset, v, mask=mask, size=sfx)
+compiler/python/tnca_cc/descriptors.py:528:        imp.b.store(row_address(imp, d, base, at), v,
+compiler/python/tnca_cc/descriptors.py:529:                    mask=row_mask(imp, d, coords, extents, at, inner), size=sfx)
+compiler/python/tnca_cc/descriptors.py:533:    """`desc.atomic_add/min/max/and/or/xor(offsets, value)`: one atomic per
+compiler/python/tnca_cc/descriptors.py:552:    extents = extents_of(imp, d)
+compiler/python/tnca_cc/descriptors.py:554:    inner = inner_mask(imp, coords, extents)
+compiler/python/tnca_cc/descriptors.py:563:        mask = row_mask(imp, d, coords, extents, at, inner)
+compiler/python/tnca_cc/descriptors.py:570:        addr0 = row_address(imp, d, base, at)
+compiler/python/tnca_cc/descriptors.py:575:            addr = addr0 if c == 0 else b.sbini('add', addr0, c * es)
+compiler/python/tnca_cc/descriptors.py:578:                imp._atomic_fadd(addr, v, elem, 'relaxed', 'device', size, f'd{r},{c}')
+compiler/python/tnca_cc/descriptors.py:580:                b.atomic(kind, addr, v, size=size, order='relaxed', scope='device',
+compiler/python/tnca_cc/descriptors.py:595:    # By type, not position: the row offsets are a 1-D tensor, the value
+compiler/python/tnca_cc/descriptors.py:596:    # (scatter only) a 2-D one, the column offset a scalar.
+compiler/python/tnca_cc/descriptors.py:619:                           because='the row offsets and each row are one register')
+compiler/python/tnca_cc/descriptors.py:620:    extents = extents_of(imp, d)
+compiler/python/tnca_cc/descriptors.py:624:    inner = in_bounds(imp, lane_positions(imp, y), extents[1])
+compiler/python/tnca_cc/descriptors.py:625:    col0 = imp._scaled_address(d.base, y, d.byte_strides[1])
+compiler/python/tnca_cc/descriptors.py:629:        ok = in_bounds(imp, b.splat(x), extents[0])
+compiler/python/tnca_cc/descriptors.py:631:        v = b.load(imp._scaled_address(col0, x, d.byte_strides[0]), mask=mask,
+compiler/python/tnca_cc/descriptors.py:640:    extents = extents_of(imp, d)
+compiler/python/tnca_cc/descriptors.py:643:    inner = in_bounds(imp, lane_positions(imp, y), extents[1])
+compiler/python/tnca_cc/descriptors.py:644:    col0 = imp._scaled_address(d.base, y, d.byte_strides[1])
+compiler/python/tnca_cc/descriptors.py:648:        ok = in_bounds(imp, b.splat(x), extents[0])
+compiler/python/tnca_cc/descriptors.py:652:        b.store(imp._scaled_address(col0, x, d.byte_strides[0]), v,
+python/tnca/torch_device/csrc/tnca_device.cpp:5:// DEVICE address -- memory the TNCA runtime allocated in the device heap,
+python/tnca/torch_device/csrc/tnca_device.cpp:7:// tensor of that storage (empty, empty_strided), view it (as_strided, view,
+python/tnca/torch_device/csrc/tnca_device.cpp:8:// _reshape_alias, set_) and resize it. They touch sizes, strides, offsets and
+python/tnca/torch_device/csrc/tnca_device.cpp:15:// alloc(nbytes, device) -> (address, token), free(address, token). The address is the
+python/tnca/torch_device/csrc/tnca_device.cpp:19:// memcpys a device address.
+python/tnca/torch_device/csrc/tnca_device.cpp:28:#include <ATen/ops/as_strided_native.h>
+python/tnca/torch_device/csrc/tnca_device.cpp:59:  uint64_t addr;
+python/tnca/torch_device/csrc/tnca_device.cpp:70:    (*g_free)(ctx->addr, ctx->token);
+python/tnca/torch_device/csrc/tnca_device.cpp:79:  c10::DataPtr allocate(size_t nbytes) override {
+python/tnca/torch_device/csrc/tnca_device.cpp:81:    if (nbytes == 0) {
+python/tnca/torch_device/csrc/tnca_device.cpp:86:    uint64_t addr = 0;
+python/tnca/torch_device/csrc/tnca_device.cpp:92:        py::tuple allocation = (*g_alloc)(nbytes, static_cast<int>(dev)).cast<py::tuple>();
+python/tnca/torch_device/csrc/tnca_device.cpp:93:        addr = allocation[0].cast<uint64_t>();
+python/tnca/torch_device/csrc/tnca_device.cpp:104:    TORCH_CHECK(addr != 0, "tnca: the runtime returned device address 0");
+python/tnca/torch_device/csrc/tnca_device.cpp:105:    void* p = reinterpret_cast<void*>(addr);
+python/tnca/torch_device/csrc/tnca_device.cpp:106:    return {p, new StorageContext{addr, token}, &raw_free, device_of(dev)};
+python/tnca/torch_device/csrc/tnca_device.cpp:109:    // Context is an allocation token, not the address. Raw allocate/free
+python/tnca/torch_device/csrc/tnca_device.cpp:113:  void copy_data(void* dest, const void* src, std::size_t count) const override {
+python/tnca/torch_device/csrc/tnca_device.cpp:174:  TORCH_CHECK(!layout || *layout == at::kStrided, "tnca: only strided tensors");
+python/tnca/torch_device/csrc/tnca_device.cpp:180:at::Tensor empty_strided(at::IntArrayRef size, at::IntArrayRef stride,
+python/tnca/torch_device/csrc/tnca_device.cpp:183:  TORCH_CHECK(!layout || *layout == at::kStrided, "tnca: only strided tensors");
+python/tnca/torch_device/csrc/tnca_device.cpp:185:  return at::detail::empty_strided_generic(size, stride, &g_allocator, kKeys,
+python/tnca/torch_device/csrc/tnca_device.cpp:189:at::Tensor as_strided(const at::Tensor& self, at::IntArrayRef size, at::IntArrayRef stride,
+python/tnca/torch_device/csrc/tnca_device.cpp:190:                      std::optional<int64_t> storage_offset) {
+python/tnca/torch_device/csrc/tnca_device.cpp:191:  return at::native::as_strided_tensorimpl(self, size, stride, storage_offset);
+python/tnca/torch_device/csrc/tnca_device.cpp:199:                         c10::SymIntArrayRef stride) {
+python/tnca/torch_device/csrc/tnca_device.cpp:201:                                    C10_AS_INTARRAYREF_SLOW(stride));
+python/tnca/torch_device/csrc/tnca_device.cpp:206:static void grow_storage(const c10::Storage& storage, size_t nbytes) {
+python/tnca/torch_device/csrc/tnca_device.cpp:207:  if (nbytes <= storage.nbytes()) {
+python/tnca/torch_device/csrc/tnca_device.cpp:216:  c10::DataPtr fresh = g_allocator.allocate(nbytes);
+python/tnca/torch_device/csrc/tnca_device.cpp:217:  if (storage.nbytes() > 0 && storage.data() != nullptr) {
+python/tnca/torch_device/csrc/tnca_device.cpp:218:    g_allocator.copy_data(fresh.get(), storage.data(), storage.nbytes());
+python/tnca/torch_device/csrc/tnca_device.cpp:221:  storage.unsafeGetStorageImpl()->set_nbytes(nbytes);
+python/tnca/torch_device/csrc/tnca_device.cpp:230:    impl->empty_tensor_restride(*memory_format);
+python/tnca/torch_device/csrc/tnca_device.cpp:234:    size_t need = at::detail::computeStorageNbytes(size, impl->strides(), self.dtype().itemsize(),
+python/tnca/torch_device/csrc/tnca_device.cpp:235:                                                   impl->storage_offset());
+python/tnca/torch_device/csrc/tnca_device.cpp:245:at::Tensor& set_source_storage_offset(at::Tensor& self, at::Storage source,
+python/tnca/torch_device/csrc/tnca_device.cpp:246:                                      c10::SymInt storage_offset, c10::SymIntArrayRef size,
+python/tnca/torch_device/csrc/tnca_device.cpp:247:                                      c10::SymIntArrayRef stride) {
+python/tnca/torch_device/csrc/tnca_device.cpp:249:  // rather than by the CPU's resize (which would memcpy device addresses).
+python/tnca/torch_device/csrc/tnca_device.cpp:250:  auto off = storage_offset.expect_int();
+python/tnca/torch_device/csrc/tnca_device.cpp:252:  auto st = C10_AS_INTARRAYREF_SLOW(stride);
+python/tnca/torch_device/csrc/tnca_device.cpp:254:  self.unsafeGetTensorImpl()->set_storage_offset(off);
+python/tnca/torch_device/csrc/tnca_device.cpp:257:  self.unsafeGetTensorImpl()->set_sizes_and_strides(sz, st_opt ? *st_opt : c10::contiguous_strides(sz));
+python/tnca/torch_device/csrc/tnca_device.cpp:258:  size_t need = at::detail::computeStorageNbytes(sz, self.strides(), self.dtype().itemsize(), off);
+python/tnca/torch_device/csrc/tnca_device.cpp:287:  m.impl("empty_strided", empty_strided);
+python/tnca/torch_device/csrc/tnca_device.cpp:288:  m.impl("as_strided", as_strided);
+python/tnca/torch_device/csrc/tnca_device.cpp:293:  m.impl("set_.source_Storage_storage_offset", set_source_storage_offset);
+python/tnca/torch_device/csrc/tnca_device.cpp:317:static uint64_t storage_address(const at::Tensor& t) {
+python/tnca/torch_device/csrc/tnca_device.cpp:333:        "alloc(nbytes, device) -> (address, token); free(address, token); copy(dst, src, nbytes); validate(token)");
+python/tnca/torch_device/csrc/tnca_device.cpp:336:  m.def("storage_address", &tnca::storage_address,
+python/tnca/torch_device/csrc/tnca_device.cpp:337:        "the device address of a tnca tensor's storage (its base, not data_ptr)");
+python/tnca/runtime.py:6:One session owns one device, one address space, one queue and one event table.
+python/tnca/runtime.py:69:    __slots__ = ('id', 'addr', 'size', 'reserved', 'session_id', 'epoch',
+python/tnca/runtime.py:72:    def __init__(self, bid, addr, size, session_id, epoch, name=None,
+python/tnca/runtime.py:75:        self.addr = addr
+python/tnca/runtime.py:92:        return (f"<Buffer {self.name} {self.size}B @{self.addr:#x}"
+python/tnca/runtime.py:169:    def __init__(self, path, manifest, code_addr, params, epoch):
+python/tnca/runtime.py:172:        self.code_addr = code_addr
+python/tnca/runtime.py:180:        return f"<Module {self.name!r} @{self.code_addr:#x}>"
+python/tnca/runtime.py:184:    """A first-fit allocator over the device's address space.
+python/tnca/runtime.py:186:    Freed blocks are reused, first fit by address, and a freed block is
+python/tnca/runtime.py:190:    its address out of circulation.
+python/tnca/runtime.py:211:            raise ValueError('invalid or overlapping reserved address ranges')
+python/tnca/runtime.py:219:        return self.next - self.base - excluded - sum(size for _addr, size in self.free_list)
+python/tnca/runtime.py:222:    def capacity(self):
+python/tnca/runtime.py:229:                remedy='a zero-byte buffer has no address that means '
+python/tnca/runtime.py:232:        for i, (addr, blocksize) in enumerate(self.free_list):
+python/tnca/runtime.py:233:            aligned = (addr + align - 1) // align * align
+python/tnca/runtime.py:234:            prefix = aligned - addr
+python/tnca/runtime.py:237:                # stays in address order and release() can merge neighbours.
+python/tnca/runtime.py:240:                    rest.append((addr, prefix))
+python/tnca/runtime.py:246:        addr = (self.next + align - 1) // align * align
+python/tnca/runtime.py:251:            if addr < hi and addr + need > lo:
+python/tnca/runtime.py:252:                addr = (hi + align - 1) // align * align
+python/tnca/runtime.py:253:        if addr + need > self.limit:
+python/tnca/runtime.py:256:                f"{self.limit - addr} remain",
+python/tnca/runtime.py:262:            if lo >= addr:
+python/tnca/runtime.py:266:            cursor = min(addr, hi)
+python/tnca/runtime.py:267:        if addr > cursor:
+python/tnca/runtime.py:270:            self.free_list.append((cursor, addr - cursor))
+python/tnca/runtime.py:271:        self.next = addr + need
+python/tnca/runtime.py:273:        return addr, need
+python/tnca/runtime.py:275:    def release(self, addr, size):
+python/tnca/runtime.py:277:        for a, n in sorted(self.free_list + [(addr, size)]):
+python/tnca/runtime.py:327:    """One device, one address space, one queue."""
+python/tnca/runtime.py:504:            return dict(epoch=self.epoch, heap_capacity_bytes=self._heap.capacity,
+python/tnca/runtime.py:515:    def allocate(self, nbytes, *, name=None):
+python/tnca/runtime.py:518:            addr, size = self._heap.alloc(nbytes)
+python/tnca/runtime.py:520:            buf = Buffer(self._next_buffer, addr, nbytes, self.id,
+python/tnca/runtime.py:546:    def upload(self, buf, data, offset=0):
+python/tnca/runtime.py:550:            if offset < 0 or offset + len(data) > buf.size:
+python/tnca/runtime.py:552:                    f"upload of {len(data)} bytes at offset {offset} runs "
+python/tnca/runtime.py:554:            reply = self.dev.upload(buf.addr + offset, data)
+python/tnca/runtime.py:561:    def download(self, buf, nbytes=None, offset=0):
+python/tnca/runtime.py:567:            nbytes = buf.size - offset if nbytes is None else nbytes
+python/tnca/runtime.py:568:            if nbytes < 0 or offset < 0 or offset + nbytes > buf.size:
+python/tnca/runtime.py:570:                    f"download of {nbytes} bytes at offset {offset} runs "
+python/tnca/runtime.py:572:            reply, data = self.dev.download(buf.addr + offset, nbytes)
+python/tnca/runtime.py:583:            self._heap.release(buf.addr, buf.reserved)
+python/tnca/runtime.py:599:                self._heap.release(buf.addr, buf.reserved)
+python/tnca/runtime.py:669:                addr, size = self._code.alloc(len(code), align=64)
+python/tnca/runtime.py:673:            reply = self.dev.upload(addr, code)
+python/tnca/runtime.py:675:                self._code.release(addr, size)
+python/tnca/runtime.py:678:            mod = Module(path, man, addr, params, self.epoch)
+python/tnca/runtime.py:696:            self._code.release(module.code_addr, module.code_size)
+python/tnca/runtime.py:799:                    buf, offset = value.buffer if isinstance(value.buffer, tuple) else (value.buffer, 0)
+python/tnca/runtime.py:800:                    maps.append((name, value.pack(resolved[name], buf.size-offset)))
+python/tnca/runtime.py:805:            arg_stride = (arg_size + 255) // 256 * 256 if self.physical_grid else 0
+python/tnca/runtime.py:806:            arg_addr, reserved = self._heap.alloc(arg_stride * self._physical_core_count
+python/tnca/runtime.py:814:                offset = map_start + 256*i
+python/tnca/runtime.py:815:                resolved[name] = arg_addr + offset
+python/tnca/runtime.py:816:                block[offset:offset+256] = data
+python/tnca/runtime.py:819:                struct.pack_into('<Q', block, abi.block_size(len(module.params)), arg_addr+scratch_start)
+python/tnca/runtime.py:822:                table = bytearray(arg_stride * self._physical_core_count)
+python/tnca/runtime.py:825:                    core_base = arg_addr + core * arg_stride
+python/tnca/runtime.py:832:                    table[core*arg_stride:core*arg_stride+len(core_block)] = core_block
+python/tnca/runtime.py:835:            task = dict(event=ev, module=module, block=block, arg_stride=arg_stride,
+python/tnca/runtime.py:836:                        arg_addr=arg_addr, allocation=(arg_addr, reserved), grid=(gx, gy, gz),
+python/tnca/runtime.py:871:                buf, offset = (value if isinstance(value, tuple)
+python/tnca/runtime.py:878:                               'address is not a device address')
+python/tnca/runtime.py:884:                if isinstance(offset, bool) or not isinstance(offset, int) \
+python/tnca/runtime.py:885:                        or offset < 0 or offset >= buf.size:
+python/tnca/runtime.py:887:                        f"{name!r}: byte offset {offset} is outside "
+python/tnca/runtime.py:889:                out[name] = buf.addr + offset
+python/tnca/runtime.py:891:                spans.append((name, buf.addr + offset,
+python/tnca/runtime.py:892:                              buf.addr + buf.size, buf))
+python/tnca/runtime.py:971:                self.dev.upload(task['arg_addr'], task['block'])
+python/tnca/runtime.py:1021:                reply = self.dev.launch(task['module'].code_addr,
+python/tnca/runtime.py:1022:                                        task['arg_addr'], role_mask=mask,
+python/tnca/runtime.py:1087:        reply = self.dev.launch_grid(task['module'].code_addr, task['arg_addr'], task['grid'],
+python/tnca/runtime.py:1088:                                     arg_stride=task['arg_stride'], active_cores=self.active_cores,
+python/tnca/runtime.py:1124:                self._heap.release(buf.addr, buf.reserved)
+compiler/python/tnca_cc/codegen.py:794:        # indices, not byte offsets.
+compiler/python/tnca_cc/codegen.py:811:                    f"[s{base.reg}, #{op.attrs['offset']}]",
+compiler/python/tnca_cc/codegen.py:817:                    f"[s{base.reg}, #{op.attrs['offset']}]", f"s{value.reg}",
+compiler/python/tnca_cc/codegen.py:836:        addr, value = op.operands
+compiler/python/tnca_cc/codegen.py:848:                    f"[s{addr.reg}]", f"s{value.reg}")
+compiler/python/tnca_cc/codegen.py:851:        addr, expect, desired = op.operands
+compiler/python/tnca_cc/codegen.py:856:                    f"[s{addr.reg}]", f"s{expect.reg}", f"s{desired.reg}")
+compiler/python/tnca_cc/codegen.py:932:        v.reg = window.reg + op.attrs['offset']
+compiler/python/tnca_cc/codegen.py:938:        dst = window.reg + op.attrs['offset']
+compiler/python/tnca_cc/codegen.py:943:        addr = op.operands[0]
+compiler/python/tnca_cc/codegen.py:946:        self._emit('td.load', f"d{d.reg}", f"[s{addr.reg}]",

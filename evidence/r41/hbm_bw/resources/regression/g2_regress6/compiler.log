@@ -1,0 +1,28 @@
+wrote isa/tnca-isa-v0.1.json: 169 instructions, 20 majors, 25 special registers
+  note: described but unused operand kinds: ['wa']
+wrote compiler/targets/tnca-sim-v0.1.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-4rctx.json: 4 RCTX, 32 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-2x2.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v2.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v3.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v4.json: 4 RCTX, 64 logical vregs each, 256 physical
+wrote compiler/targets/tnca-sim-vrf-v5.json: 4 RCTX, 64 logical vregs each, 256 physical
+wrote compiler/targets/tnca-sim-vrf-v5-x8.json: 4 RCTX, 64 logical vregs each, 256 physical
+wrote compiler/targets/tnca-sim-xpose-v1.json: 2 RCTX, 64 logical vregs each, 128 physical
+wrote compiler/targets/tnca-sim-vrf-v5-x8-g2.json: 2 RCTX, 64 logical vregs each, 128 physical
+PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+  up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+  up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+  up to date: doc/isa/opcode-map.md
+PASS: all generated ISA files match the schema
+  up to date: doc/support_matrix.md
+PASS: target descriptions match the RTL parameters
+checked 218 shared constants against /home/zhongchun/r41bw_res_41661b75e0e3/rtl/common/tnca_defs.vh
+PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+  compiler-unit          PASS   157 tests, 52 skipped
+  compiler-ir            SKIP   FileCheck not found at /home/zhongchun/.triton/llvm/llvm-macos-arm64/bin/FileCheck
+
+real	0m3.918s
+user	0m3.777s
+sys	0m0.113s

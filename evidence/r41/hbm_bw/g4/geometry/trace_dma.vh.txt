@@ -1,0 +1,4 @@
+`ifdef TNCA_HOME_PIPE_TRACE
+always @(posedge dma_write) if (dma_line==32'h425) $display("DMT t=%0t WRITE off=%h wide=%0d word=%h", $time, dma_offset, dma_wide, dma_word);
+always @(dma_offset) begin #1; if (dma_line==32'h425 && !dma_write) $display("DMT t=%0t ACCESS off=%h port=%0d views=%h", $time, dma_offset, dma_port, dma_read_word); end
+`endif

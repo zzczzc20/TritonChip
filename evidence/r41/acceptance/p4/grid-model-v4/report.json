@@ -1,0 +1,90 @@
+{
+  "schema": "tnca-r41-grid-admission/1",
+  "status": "pass",
+  "requested_programs": 6144,
+  "checks": [
+    {
+      "name": "opt-in-required",
+      "status": "pass",
+      "base_limit": 4096,
+      "requested": 6144,
+      "error": "[ADMISSION_REFUSED] 6144 programs exceeds the 4096 limit\n  at: grid_admission grid 6144x1x1\n  grid: [6144, 1, 1]\n  limit: 4096\n  requested: 6144\n  try: large grids require large_grid=True and an image advertising the R40 GRID_CAP extension"
+    },
+    {
+      "name": "bounded-queue-overflow",
+      "status": "pass",
+      "queue_limit": 8,
+      "admitted_dependent": 7,
+      "error": "[QUEUE_FULL] 8 tasks are already unfinished\n  limit: 8\n  try: wait for one to finish; this does not block and does not discard an older task"
+    },
+    {
+      "name": "exact-grid-and-drain",
+      "status": "pass",
+      "unique_program_ids": 6144,
+      "completion_atomics": 6151,
+      "output_sha256": "769d80f055d3e47719652bdee37b6a71faff348db0c5e46ead273b822875726d"
+    },
+    {
+      "name": "advertised-capacity-refusal",
+      "status": "pass",
+      "advertised_limit": 16777216,
+      "requested": 16777217,
+      "error": "[ADMISSION_REFUSED] 16777217 programs exceeds the 16777216 limit\n  at: grid_admission grid 16777217x1x1\n  grid: [16777217, 1, 1]\n  limit: 16777216\n  requested: 16777217\n  try: large grids require large_grid=True and an image advertising the R40 GRID_CAP extension"
+    }
+  ],
+  "events": [
+    {
+      "job_id": 1,
+      "state": "SUCCEEDED",
+      "device_cycles": 337920
+    },
+    {
+      "job_id": 2,
+      "state": "SUCCEEDED",
+      "device_cycles": 55
+    },
+    {
+      "job_id": 3,
+      "state": "SUCCEEDED",
+      "device_cycles": 55
+    },
+    {
+      "job_id": 4,
+      "state": "SUCCEEDED",
+      "device_cycles": 55
+    },
+    {
+      "job_id": 5,
+      "state": "SUCCEEDED",
+      "device_cycles": 55
+    },
+    {
+      "job_id": 6,
+      "state": "SUCCEEDED",
+      "device_cycles": 55
+    },
+    {
+      "job_id": 7,
+      "state": "SUCCEEDED",
+      "device_cycles": 55
+    },
+    {
+      "job_id": 8,
+      "state": "SUCCEEDED",
+      "device_cycles": 55
+    }
+  ],
+  "board_acceptance": "not-measured",
+  "backend": "sim-file",
+  "software_tree": "files:8e086d10687c704cf58d3a9b6e880b4ce1c59d0a687f2255b5a32eced510b8d4",
+  "artifact_sha256": "0b3347c240bbe83512d8d2acb70593831bbc5e5f1951c6516cbfb45a485a96d8",
+  "memory_stats": {
+    "epoch": 0,
+    "heap_capacity_bytes": 393216,
+    "heap_reserved_ranges": [],
+    "heap_allocated_bytes": 49216,
+    "heap_peak_bytes": 51264,
+    "code_allocated_bytes": 192,
+    "code_peak_bytes": 192
+  }
+}

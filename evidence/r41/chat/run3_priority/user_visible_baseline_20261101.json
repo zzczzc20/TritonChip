@@ -1,0 +1,114 @@
+{
+  "schema": "r41-user-visible-baseline/1",
+  "domain": "recorded run-2 board",
+  "rows": [
+    {
+      "model": "Qwen3-VL-2B-FP8",
+      "case": "script-turn-1",
+      "returned_token_ids": 2,
+      "includes_end_markers": true,
+      "warmup_seconds": 207.58276189499884,
+      "prefill_seconds": 477.3567802280013,
+      "decode_seconds": 1509.0551935068506,
+      "decode_steps": 31,
+      "output_retrieval_seconds": 2.5737153200025205,
+      "measured_wall_sum_seconds": 2196.5684509498533,
+      "returned_token_ids_per_measured_wall_sum": 0.0009105111198037776,
+      "non_device_fraction": 0.5211218479553117
+    },
+    {
+      "model": "Qwen3-VL-2B-FP8",
+      "case": "script-turn-2",
+      "returned_token_ids": 3,
+      "includes_end_markers": true,
+      "warmup_seconds": 0.0,
+      "prefill_seconds": 455.7652571790095,
+      "decode_seconds": 2100.215528647008,
+      "decode_steps": 31,
+      "output_retrieval_seconds": 4.939997070992831,
+      "measured_wall_sum_seconds": 2560.92078289701,
+      "returned_token_ids_per_measured_wall_sum": 0.0011714536505913653,
+      "non_device_fraction": 0.6559059700622456
+    },
+    {
+      "model": "Qwen3-VL-2B-FP8",
+      "case": "script-turn-3",
+      "returned_token_ids": 12,
+      "includes_end_markers": true,
+      "warmup_seconds": 0.0,
+      "prefill_seconds": 168.97823480999796,
+      "decode_seconds": 2650.793960500043,
+      "decode_steps": 31,
+      "output_retrieval_seconds": 11.160970216005808,
+      "measured_wall_sum_seconds": 2830.9331655260467,
+      "returned_token_ids_per_measured_wall_sum": 0.004238884953601562,
+      "non_device_fraction": 0.7274299615222817
+    },
+    {
+      "model": "Qwen3.5-4B-FP8",
+      "case": "fact",
+      "returned_token_ids": 4,
+      "includes_end_markers": true,
+      "warmup_seconds": 1434.386631106987,
+      "prefill_seconds": 724.9851944030088,
+      "decode_seconds": 850.8144510429993,
+      "decode_steps": 11,
+      "output_retrieval_seconds": 1.8018928839883301,
+      "measured_wall_sum_seconds": 3011.9881694369833,
+      "returned_token_ids_per_measured_wall_sum": 0.0013280264645752912,
+      "non_device_fraction": 0.5050144070381852
+    },
+    {
+      "model": "Qwen3.5-4B-FP8",
+      "case": "arith",
+      "returned_token_ids": 5,
+      "includes_end_markers": true,
+      "warmup_seconds": 0.0,
+      "prefill_seconds": 958.4032842039887,
+      "decode_seconds": 1062.5326634799712,
+      "decode_steps": 11,
+      "output_retrieval_seconds": 3.2318264420027845,
+      "measured_wall_sum_seconds": 2024.1677741259628,
+      "returned_token_ids_per_measured_wall_sum": 0.0024701509745944867,
+      "non_device_fraction": 0.6035051215270792
+    },
+    {
+      "model": "Qwen3.5-4B-FP8",
+      "case": "reason",
+      "returned_token_ids": 4,
+      "includes_end_markers": true,
+      "warmup_seconds": 0.0,
+      "prefill_seconds": 1456.433707685006,
+      "decode_seconds": 1331.162417293992,
+      "decode_steps": 11,
+      "output_retrieval_seconds": 4.717935916007264,
+      "measured_wall_sum_seconds": 2792.3140608950052,
+      "returned_token_ids_per_measured_wall_sum": 0.0014325036198535282,
+      "non_device_fraction": 0.6838900705404559
+    },
+    {
+      "model": "Qwen3.5-4B-FP8",
+      "case": "instruct",
+      "returned_token_ids": 4,
+      "includes_end_markers": true,
+      "warmup_seconds": 0.0,
+      "prefill_seconds": 1125.6198380200076,
+      "decode_seconds": 1528.803091169073,
+      "decode_steps": 11,
+      "output_retrieval_seconds": 5.97526822600048,
+      "measured_wall_sum_seconds": 2660.398197415081,
+      "returned_token_ids_per_measured_wall_sum": 0.0015035343219998098,
+      "non_device_fraction": 0.724605700059094
+    }
+  ],
+  "method": "sum recorded first-run warmup, prefill and decode generation wall, and output retrieval; token IDs include end markers",
+  "limitations": [
+    "Input preparation, tokenization, model loading and gaps between recorded spans were not timed; this is not an exact prompt-to-last-token wall clock.",
+    "Warmup can contain device work and is not a pure compiler timer.",
+    "Decode counts include work after EOS; recorded returned IDs include end markers."
+  ],
+  "source_sha256": {
+    "evidence/r41/chat/run3_priority/vl_nohost_v5_script.json": "5e8df8b4568bb0c18c316c828d5059685b8cf6c44dd7ac532a6cfb8d022694c6",
+    "evidence/r41/chat/run3_priority/q35_nohost_v6_four_prompts_timeout.json": "3e1442a0b646c4bfa205e12116519b96413627c27351c0f5bd1a6d94cbd7f93e"
+  }
+}

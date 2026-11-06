@@ -1,0 +1,2393 @@
+{
+  "schema": "tnca-fragment-case/1",
+  "status": "functional-pass",
+  "execution": "torch.compile(backend=inductor,fullgraph=True) on tnca",
+  "evidence": "development-only",
+  "columns": 32,
+  "dtype": "float16",
+  "strided": false,
+  "rows": [
+    {
+      "graph": "mm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "strides": [
+        [
+          33,
+          1
+        ],
+        [
+          65,
+          1
+        ]
+      ],
+      "status": "pass",
+      "max_abs_error": 6.039440631866455e-05,
+      "rtol": 0.002,
+      "atol": 0.002,
+      "resident_host_wall_seconds": 0.02318352647125721,
+      "device_cycles": 139862,
+      "launches": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "grid": [
+            6,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "734afc3ece1bdb0c06efe2487e5aeead100c699579f27e72ccbe2ecc48ffdafd",
+          "artifact_path": "/tmp/tnca-triton-otldvfy1/triton_tem_fused_mm_0-559ce9ca4a66666a.tnca",
+          "device_cycles": 139862,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 4.7e-05,
+            "run": 0.022639,
+            "download": 0.000123
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 7622
+        }
+      ],
+      "artifacts": [
+        {
+          "code_sha256": "250081fc10aa8979eae4f00208519d2cc09d809342628808774c221d886061f3",
+          "code_bytes": 15928,
+          "manifest_resources": {
+            "accumulators": 2,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 15,
+              "role1": 15
+            },
+            "scratch_bytes": 14592,
+            "shared_windows": []
+          },
+          "plan": {
+            "allocated_resources": {
+              "accumulators_used": 2,
+              "assembly_instructions": 1967,
+              "async_commands_issued": 6,
+              "barriers_used": 5,
+              "code_bytes": 15928,
+              "commands_outstanding_peak": "unknown",
+              "descriptors_used": 3,
+              "dma_expansion": "unknown",
+              "limits": {
+                "accumulators": 16,
+                "barriers": 32,
+                "descriptors": 16,
+                "vector_regs": 64
+              },
+              "machine_instructions": 1991,
+              "measured_from": "emitted assembly and machine code",
+              "scalar_regs_used": 28,
+              "scratch_bytes": 14592,
+              "vector_regs_used": 15,
+              "windows_used": 3
+            },
+            "bank_allocation": {},
+            "dynamic_counts": "require native execution",
+            "layout": {},
+            "logical_gemm_tiles": [
+              [
+                16,
+                32,
+                16
+              ]
+            ],
+            "mma_retiles": [],
+            "overlap": "not inferred from command admission",
+            "roles": [
+              {
+                "command_dependencies": [
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1293,
+                    "tokens": [
+                      "fill0",
+                      "t1048"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1295,
+                    "tokens": [
+                      "t1048",
+                      "e1049"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1296,
+                    "tokens": [
+                      "t1048"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1381,
+                    "tokens": [
+                      "fill1",
+                      "t1107"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1383,
+                    "tokens": [
+                      "t1107",
+                      "e1108"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1384,
+                    "tokens": [
+                      "t1107"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1385,
+                    "tokens": [
+                      "mma2",
+                      "t1109"
+                    ]
+                  },
+                  {
+                    "kind": "mma_async",
+                    "position": 1387,
+                    "tokens": [
+                      "t1109",
+                      "e1110"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1388,
+                    "tokens": [
+                      "t1109"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1473,
+                    "tokens": [
+                      "fill3",
+                      "t1168"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1475,
+                    "tokens": [
+                      "t1168",
+                      "e1169"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1476,
+                    "tokens": [
+                      "t1168"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1477,
+                    "tokens": [
+                      "mma4",
+                      "t1170"
+                    ]
+                  },
+                  {
+                    "kind": "mma_async",
+                    "position": 1479,
+                    "tokens": [
+                      "t1170",
+                      "e1171"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1480,
+                    "tokens": [
+                      "t1170"
+                    ]
+                  }
+                ],
+                "loops": [
+                  {
+                    "end": 84,
+                    "label": "sdiv_2",
+                    "start": 64,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 156,
+                    "label": "sdiv_4",
+                    "start": 136,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 216,
+                    "label": "idiv_5",
+                    "start": 196,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 251,
+                    "label": "idiv_6",
+                    "start": 231,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 286,
+                    "label": "idiv_7",
+                    "start": 266,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 1484,
+                    "label": "for_8",
+                    "start": 294,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 2
+                  }
+                ],
+                "role": 0,
+                "shared_use_intervals": [
+                  {
+                    "first": 293,
+                    "kind": "acc",
+                    "last": 1677,
+                    "name": "acc1"
+                  },
+                  {
+                    "first": 1472,
+                    "kind": "window",
+                    "last": 1479,
+                    "name": "w2"
+                  },
+                  {
+                    "first": 1380,
+                    "kind": "window",
+                    "last": 1387,
+                    "name": "w1"
+                  },
+                  {
+                    "first": 1292,
+                    "kind": "window",
+                    "last": 1479,
+                    "name": "w0"
+                  },
+                  {
+                    "first": 290,
+                    "kind": "acc",
+                    "last": 1574,
+                    "name": "acc0"
+                  }
+                ],
+                "static_op_counts": {
+                  "acc_read": 32,
+                  "acc_zero": 2,
+                  "arange": 5,
+                  "assign": 20,
+                  "barrier_arm": 5,
+                  "barrier_wait": 5,
+                  "branch_nz": 10,
+                  "comment": 12,
+                  "const": 127,
+                  "desc_snapshot": 3,
+                  "dma_load": 3,
+                  "exit": 1,
+                  "fence": 15,
+                  "gather": 48,
+                  "label": 11,
+                  "load": 192,
+                  "mma_async": 2,
+                  "num_programs": 1,
+                  "pbin": 35,
+                  "program_id": 1,
+                  "sbin": 83,
+                  "sbini": 554,
+                  "scmp": 19,
+                  "sload": 5,
+                  "special": 6,
+                  "splat": 134,
+                  "sstore": 21,
+                  "store": 272,
+                  "vbin": 149,
+                  "vcmp": 81,
+                  "vcvt": 32,
+                  "vextract": 16,
+                  "vmovi": 16,
+                  "vselect": 15,
+                  "window_def": 3
+                }
+              }
+            ],
+            "schema": "tnca-execution-resources/1",
+            "scope": "static emitted IR",
+            "selection_notes": {},
+            "valid_and_padding_macs": "require logical tile and runtime valid masks",
+            "window_lifetime": {}
+          }
+        }
+      ],
+      "model_counter_deltas": {
+        "0": {
+          "chip_grid_launches": 1,
+          "chip_host_gap_cycles": 798707,
+          "chip_single_launches": 0,
+          "core_0_arrive_drain_cycles": 0,
+          "core_0_barrier_sleep_cycles": 7116,
+          "core_0_branch_refetch_cycles": 990,
+          "core_0_class_a_vread": 64,
+          "core_0_class_barrier": 60,
+          "core_0_class_branch": 212,
+          "core_0_class_cvt": 64,
+          "core_0_class_desc": 36,
+          "core_0_class_exit": 2,
+          "core_0_class_extract": 96,
+          "core_0_class_fence": 82,
+          "core_0_class_lsu": 2828,
+          "core_0_class_m_zero": 4,
+          "core_0_class_mma": 12,
+          "core_0_class_pred": 256,
+          "core_0_class_salu": 4228,
+          "core_0_class_special": 24,
+          "core_0_class_vint": 4640,
+          "core_0_class_xfer": 18,
+          "core_0_context_park_cycles": 15355,
+          "core_0_dependency_wait_cycles": 112104,
+          "core_0_dma_admission_wait_cycles": 10818,
+          "core_0_dma_commands_completed": 18,
+          "core_0_dma_commands_issued": 18,
+          "core_0_dma_descriptor_snapshots": 18,
+          "core_0_dma_peak_tags": 0,
+          "core_0_dma_read_words": 1728,
+          "core_0_fence_drain_cycles": 10328,
+          "core_0_instructions": 12626,
+          "core_0_issue_queue_cycles": 22973,
+          "core_0_issue_service_cycles": 12626,
+          "core_0_lsu_wait_cycles": 94031,
+          "core_0_matrix_engine_busy_cycles": 3788,
+          "core_0_matrix_engine_commands": 16,
+          "core_0_matrix_engine_wait_cycles": 1056,
+          "core_0_memory_port_queue_cycles": 1967,
+          "core_0_memory_port_service_cycles": 20668,
+          "core_0_mma_commands": 12,
+          "core_0_pipeline_freeze_cycles": 104544,
+          "core_0_programs_completed": 1,
+          "core_0_programs_issued": 1,
+          "core_0_role_0_completed": 1,
+          "core_0_role_0_issued": 1,
+          "core_0_role_1_completed": 1,
+          "core_0_role_1_issued": 1,
+          "core_0_role_2_completed": 0,
+          "core_0_role_2_issued": 0,
+          "core_0_role_3_completed": 0,
+          "core_0_role_3_issued": 0,
+          "core_0_sfu_queue_cycles": 0,
+          "core_0_vrf_bank_conflict_cycles": 185,
+          "core_1_arrive_drain_cycles": 0,
+          "core_1_barrier_sleep_cycles": 6481,
+          "core_1_branch_refetch_cycles": 990,
+          "core_1_class_a_vread": 64,
+          "core_1_class_barrier": 60,
+          "core_1_class_branch": 212,
+          "core_1_class_cvt": 64,
+          "core_1_class_desc": 36,
+          "core_1_class_exit": 2,
+          "core_1_class_extract": 96,
+          "core_1_class_fence": 82,
+          "core_1_class_lsu": 2828,
+          "core_1_class_m_zero": 4,
+          "core_1_class_mma": 12,
+          "core_1_class_pred": 256,
+          "core_1_class_salu": 4228,
+          "core_1_class_special": 24,
+          "core_1_class_vint": 4640,
+          "core_1_class_xfer": 18,
+          "core_1_context_park_cycles": 15475,
+          "core_1_dependency_wait_cycles": 115250,
+          "core_1_dma_admission_wait_cycles": 8480,
+          "core_1_dma_commands_completed": 18,
+          "core_1_dma_commands_issued": 18,
+          "core_1_dma_descriptor_snapshots": 18,
+          "core_1_dma_peak_tags": 0,
+          "core_1_dma_read_words": 1728,
+          "core_1_fence_drain_cycles": 11123,
+          "core_1_instructions": 12626,
+          "core_1_issue_queue_cycles": 23105,
+          "core_1_issue_service_cycles": 12626,
+          "core_1_lsu_wait_cycles": 91827,
+          "core_1_matrix_engine_busy_cycles": 3788,
+          "core_1_matrix_engine_commands": 16,
+          "core_1_matrix_engine_wait_cycles": 1230,
+          "core_1_memory_port_queue_cycles": 1666,
+          "core_1_memory_port_service_cycles": 20412,
+          "core_1_mma_commands": 12,
+          "core_1_pipeline_freeze_cycles": 103161,
+          "core_1_programs_completed": 1,
+          "core_1_programs_issued": 1,
+          "core_1_role_0_completed": 1,
+          "core_1_role_0_issued": 1,
+          "core_1_role_1_completed": 1,
+          "core_1_role_1_issued": 1,
+          "core_1_role_2_completed": 0,
+          "core_1_role_2_issued": 0,
+          "core_1_role_3_completed": 0,
+          "core_1_role_3_issued": 0,
+          "core_1_sfu_queue_cycles": 0,
+          "core_1_vrf_bank_conflict_cycles": 211,
+          "core_2_arrive_drain_cycles": 0,
+          "core_2_barrier_sleep_cycles": 7305,
+          "core_2_branch_refetch_cycles": 990,
+          "core_2_class_a_vread": 64,
+          "core_2_class_barrier": 60,
+          "core_2_class_branch": 212,
+          "core_2_class_cvt": 64,
+          "core_2_class_desc": 36,
+          "core_2_class_exit": 2,
+          "core_2_class_extract": 96,
+          "core_2_class_fence": 82,
+          "core_2_class_lsu": 2828,
+          "core_2_class_m_zero": 4,
+          "core_2_class_mma": 12,
+          "core_2_class_pred": 256,
+          "core_2_class_salu": 4228,
+          "core_2_class_special": 24,
+          "core_2_class_vint": 4640,
+          "core_2_class_xfer": 18,
+          "core_2_context_park_cycles": 14870,
+          "core_2_dependency_wait_cycles": 111336,
+          "core_2_dma_admission_wait_cycles": 10964,
+          "core_2_dma_commands_completed": 18,
+          "core_2_dma_commands_issued": 18,
+          "core_2_dma_descriptor_snapshots": 18,
+          "core_2_dma_peak_tags": 0,
+          "core_2_dma_read_words": 1728,
+          "core_2_fence_drain_cycles": 9921,
+          "core_2_instructions": 12626,
+          "core_2_issue_queue_cycles": 24004,
+          "core_2_issue_service_cycles": 12626,
+          "core_2_lsu_wait_cycles": 90704,
+          "core_2_matrix_engine_busy_cycles": 3788,
+          "core_2_matrix_engine_commands": 16,
+          "core_2_matrix_engine_wait_cycles": 970,
+          "core_2_memory_port_queue_cycles": 1808,
+          "core_2_memory_port_service_cycles": 20395,
+          "core_2_mma_commands": 12,
+          "core_2_pipeline_freeze_cycles": 100758,
+          "core_2_programs_completed": 1,
+          "core_2_programs_issued": 1,
+          "core_2_role_0_completed": 1,
+          "core_2_role_0_issued": 1,
+          "core_2_role_1_completed": 1,
+          "core_2_role_1_issued": 1,
+          "core_2_role_2_completed": 0,
+          "core_2_role_2_issued": 0,
+          "core_2_role_3_completed": 0,
+          "core_2_role_3_issued": 0,
+          "core_2_sfu_queue_cycles": 0,
+          "core_2_vrf_bank_conflict_cycles": 133,
+          "home_0_engine_queue_cycles": 999452,
+          "home_0_engine_service_cycles": 97886,
+          "home_0_evictions": 1324,
+          "home_0_hits": 11376,
+          "home_0_merges": 8010,
+          "home_0_misses": 1324,
+          "home_0_peak_mshrs": 0,
+          "home_0_resolution_cycles": 938429,
+          "home_0_writebacks": 1229,
+          "home_1_engine_queue_cycles": 1006148,
+          "home_1_engine_service_cycles": 95522,
+          "home_1_evictions": 1281,
+          "home_1_hits": 11362,
+          "home_1_merges": 7703,
+          "home_1_misses": 1281,
+          "home_1_peak_mshrs": 0,
+          "home_1_resolution_cycles": 934865,
+          "home_1_writebacks": 1204,
+          "home_2_engine_queue_cycles": 953763,
+          "home_2_engine_service_cycles": 96335,
+          "home_2_evictions": 1293,
+          "home_2_hits": 11253,
+          "home_2_merges": 7873,
+          "home_2_misses": 1293,
+          "home_2_peak_mshrs": 1,
+          "home_2_resolution_cycles": 927427,
+          "home_2_writebacks": 1204,
+          "link_0_1_bytes": 656112,
+          "link_0_1_queue_cycles": 0,
+          "link_0_1_service_cycles": 27352,
+          "link_1_0_bytes": 656784,
+          "link_1_0_queue_cycles": 2988,
+          "link_1_0_service_cycles": 27352,
+          "link_1_2_bytes": 653712,
+          "link_1_2_queue_cycles": 2399,
+          "link_1_2_service_cycles": 27230,
+          "link_2_1_bytes": 653328,
+          "link_2_1_queue_cycles": 0,
+          "link_2_1_service_cycles": 27230,
+          "outlet_0_peak_outstanding": 0,
+          "outlet_0_queue_cycles": 1220,
+          "outlet_0_reads": 1324,
+          "outlet_0_service_cycles": 6335,
+          "outlet_0_wait_cycles": 0,
+          "outlet_0_writes": 1229,
+          "outlet_1_peak_outstanding": 1,
+          "outlet_1_queue_cycles": 1199,
+          "outlet_1_reads": 1281,
+          "outlet_1_service_cycles": 6174,
+          "outlet_1_wait_cycles": 0,
+          "outlet_1_writes": 1204,
+          "outlet_2_peak_outstanding": 1,
+          "outlet_2_queue_cycles": 1191,
+          "outlet_2_reads": 1293,
+          "outlet_2_service_cycles": 6198,
+          "outlet_2_wait_cycles": 0,
+          "outlet_2_writes": 1204,
+          "pc_0_bytes": 482240
+        }
+      }
+    },
+    {
+      "graph": "mm",
+      "shape": [
+        33,
+        31,
+        65
+      ],
+      "strides": [
+        [
+          65,
+          1
+        ],
+        [
+          31,
+          1
+        ]
+      ],
+      "status": "pass",
+      "max_abs_error": 0.0001150965690612793,
+      "rtol": 0.002,
+      "atol": 0.002,
+      "resident_host_wall_seconds": 0.01714594941586256,
+      "device_cycles": 131158,
+      "launches": [
+        {
+          "kernel": "triton_tem_fused_mm_0",
+          "grid": [
+            3,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "b5004c0e88b9a068847e08fdf4a835a3e8b7b5de7630067e4667496b7abda7e5",
+          "artifact_path": "/tmp/tnca-triton-otldvfy1/triton_tem_fused_mm_0-60f275df299a2b50.tnca",
+          "device_cycles": 131158,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 2.9e-05,
+            "run": 0.016627,
+            "download": 0.00012
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 10366
+        }
+      ],
+      "artifacts": [
+        {
+          "code_sha256": "d002d6340e6846b84789a73501ea9708a041e2e5bac2eccbbc70a948c79bf498",
+          "code_bytes": 15504,
+          "manifest_resources": {
+            "accumulators": 2,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 15,
+              "role1": 15
+            },
+            "scratch_bytes": 14592,
+            "shared_windows": []
+          },
+          "plan": {
+            "allocated_resources": {
+              "accumulators_used": 2,
+              "assembly_instructions": 1920,
+              "async_commands_issued": 6,
+              "barriers_used": 5,
+              "code_bytes": 15504,
+              "commands_outstanding_peak": "unknown",
+              "descriptors_used": 3,
+              "dma_expansion": "unknown",
+              "limits": {
+                "accumulators": 16,
+                "barriers": 32,
+                "descriptors": 16,
+                "vector_regs": 64
+              },
+              "machine_instructions": 1938,
+              "measured_from": "emitted assembly and machine code",
+              "scalar_regs_used": 28,
+              "scratch_bytes": 14592,
+              "vector_regs_used": 15,
+              "windows_used": 3
+            },
+            "bank_allocation": {},
+            "dynamic_counts": "require native execution",
+            "layout": {},
+            "logical_gemm_tiles": [
+              [
+                16,
+                32,
+                16
+              ]
+            ],
+            "mma_retiles": [],
+            "overlap": "not inferred from command admission",
+            "roles": [
+              {
+                "command_dependencies": [
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1246,
+                    "tokens": [
+                      "fill0",
+                      "t1001"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1248,
+                    "tokens": [
+                      "t1001",
+                      "e1002"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1249,
+                    "tokens": [
+                      "t1001"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1334,
+                    "tokens": [
+                      "fill1",
+                      "t1060"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1336,
+                    "tokens": [
+                      "t1060",
+                      "e1061"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1337,
+                    "tokens": [
+                      "t1060"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1338,
+                    "tokens": [
+                      "mma2",
+                      "t1062"
+                    ]
+                  },
+                  {
+                    "kind": "mma_async",
+                    "position": 1340,
+                    "tokens": [
+                      "t1062",
+                      "e1063"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1341,
+                    "tokens": [
+                      "t1062"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1426,
+                    "tokens": [
+                      "fill3",
+                      "t1121"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1428,
+                    "tokens": [
+                      "t1121",
+                      "e1122"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1429,
+                    "tokens": [
+                      "t1121"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1430,
+                    "tokens": [
+                      "mma4",
+                      "t1123"
+                    ]
+                  },
+                  {
+                    "kind": "mma_async",
+                    "position": 1432,
+                    "tokens": [
+                      "t1123",
+                      "e1124"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1433,
+                    "tokens": [
+                      "t1123"
+                    ]
+                  }
+                ],
+                "loops": [
+                  {
+                    "end": 59,
+                    "label": "sdiv_2",
+                    "start": 39,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 109,
+                    "label": "sdiv_4",
+                    "start": 89,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 168,
+                    "label": "idiv_5",
+                    "start": 148,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 203,
+                    "label": "idiv_6",
+                    "start": 183,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 238,
+                    "label": "idiv_7",
+                    "start": 218,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 1437,
+                    "label": "for_8",
+                    "start": 247,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 2
+                  }
+                ],
+                "role": 0,
+                "shared_use_intervals": [
+                  {
+                    "first": 1245,
+                    "kind": "window",
+                    "last": 1432,
+                    "name": "w0"
+                  },
+                  {
+                    "first": 244,
+                    "kind": "acc",
+                    "last": 1527,
+                    "name": "acc0"
+                  },
+                  {
+                    "first": 1425,
+                    "kind": "window",
+                    "last": 1432,
+                    "name": "w2"
+                  },
+                  {
+                    "first": 1333,
+                    "kind": "window",
+                    "last": 1340,
+                    "name": "w1"
+                  },
+                  {
+                    "first": 246,
+                    "kind": "acc",
+                    "last": 1630,
+                    "name": "acc1"
+                  }
+                ],
+                "static_op_counts": {
+                  "acc_read": 32,
+                  "acc_zero": 2,
+                  "arange": 5,
+                  "assign": 20,
+                  "barrier_arm": 5,
+                  "barrier_wait": 5,
+                  "branch_nz": 10,
+                  "comment": 12,
+                  "const": 117,
+                  "desc_snapshot": 3,
+                  "dma_load": 3,
+                  "exit": 1,
+                  "fence": 15,
+                  "gather": 48,
+                  "label": 11,
+                  "load": 192,
+                  "mma_async": 2,
+                  "num_programs": 1,
+                  "pbin": 35,
+                  "program_id": 1,
+                  "sbin": 58,
+                  "sbini": 546,
+                  "scmp": 15,
+                  "sload": 5,
+                  "special": 6,
+                  "splat": 134,
+                  "sstore": 21,
+                  "store": 272,
+                  "vbin": 149,
+                  "vcmp": 81,
+                  "vcvt": 32,
+                  "vextract": 16,
+                  "vmovi": 16,
+                  "vselect": 15,
+                  "window_def": 3
+                }
+              }
+            ],
+            "schema": "tnca-execution-resources/1",
+            "scope": "static emitted IR",
+            "selection_notes": {},
+            "valid_and_padding_macs": "require logical tile and runtime valid masks",
+            "window_lifetime": {}
+          }
+        }
+      ],
+      "model_counter_deltas": {
+        "0": {
+          "chip_grid_launches": 1,
+          "chip_host_gap_cycles": 797995,
+          "chip_single_launches": 0,
+          "core_0_arrive_drain_cycles": 0,
+          "core_0_barrier_sleep_cycles": 11391,
+          "core_0_branch_refetch_cycles": 1010,
+          "core_0_class_a_vread": 64,
+          "core_0_class_barrier": 100,
+          "core_0_class_branch": 220,
+          "core_0_class_cvt": 64,
+          "core_0_class_desc": 60,
+          "core_0_class_exit": 2,
+          "core_0_class_extract": 160,
+          "core_0_class_fence": 134,
+          "core_0_class_lsu": 4580,
+          "core_0_class_m_zero": 4,
+          "core_0_class_mma": 20,
+          "core_0_class_pred": 256,
+          "core_0_class_salu": 6042,
+          "core_0_class_special": 32,
+          "core_0_class_vint": 5768,
+          "core_0_class_xfer": 30,
+          "core_0_context_park_cycles": 23010,
+          "core_0_dependency_wait_cycles": 117173,
+          "core_0_dma_admission_wait_cycles": 14690,
+          "core_0_dma_commands_completed": 30,
+          "core_0_dma_commands_issued": 30,
+          "core_0_dma_descriptor_snapshots": 30,
+          "core_0_dma_peak_tags": 0,
+          "core_0_dma_read_words": 2880,
+          "core_0_fence_drain_cycles": 7178,
+          "core_0_instructions": 17536,
+          "core_0_issue_queue_cycles": 19516,
+          "core_0_issue_service_cycles": 17536,
+          "core_0_lsu_wait_cycles": 58967,
+          "core_0_matrix_engine_busy_cycles": 6268,
+          "core_0_matrix_engine_commands": 24,
+          "core_0_matrix_engine_wait_cycles": 1760,
+          "core_0_memory_port_queue_cycles": 1832,
+          "core_0_memory_port_service_cycles": 33918,
+          "core_0_mma_commands": 20,
+          "core_0_pipeline_freeze_cycles": 66244,
+          "core_0_programs_completed": 1,
+          "core_0_programs_issued": 1,
+          "core_0_role_0_completed": 1,
+          "core_0_role_0_issued": 1,
+          "core_0_role_1_completed": 1,
+          "core_0_role_1_issued": 1,
+          "core_0_role_2_completed": 0,
+          "core_0_role_2_issued": 0,
+          "core_0_role_3_completed": 0,
+          "core_0_role_3_issued": 0,
+          "core_0_sfu_queue_cycles": 0,
+          "core_0_vrf_bank_conflict_cycles": 99,
+          "core_1_arrive_drain_cycles": 0,
+          "core_1_barrier_sleep_cycles": 5453,
+          "core_1_branch_refetch_cycles": 510,
+          "core_1_class_a_vread": 32,
+          "core_1_class_barrier": 50,
+          "core_1_class_branch": 111,
+          "core_1_class_cvt": 32,
+          "core_1_class_desc": 30,
+          "core_1_class_exit": 2,
+          "core_1_class_extract": 80,
+          "core_1_class_fence": 67,
+          "core_1_class_lsu": 2290,
+          "core_1_class_m_zero": 2,
+          "core_1_class_mma": 10,
+          "core_1_class_pred": 128,
+          "core_1_class_salu": 3023,
+          "core_1_class_special": 19,
+          "core_1_class_vint": 2884,
+          "core_1_class_xfer": 15,
+          "core_1_context_park_cycles": 0,
+          "core_1_dependency_wait_cycles": 58555,
+          "core_1_dma_admission_wait_cycles": 0,
+          "core_1_dma_commands_completed": 15,
+          "core_1_dma_commands_issued": 15,
+          "core_1_dma_descriptor_snapshots": 15,
+          "core_1_dma_peak_tags": 0,
+          "core_1_dma_read_words": 1440,
+          "core_1_fence_drain_cycles": 2782,
+          "core_1_instructions": 8775,
+          "core_1_issue_queue_cycles": 1065,
+          "core_1_issue_service_cycles": 8775,
+          "core_1_lsu_wait_cycles": 10326,
+          "core_1_matrix_engine_busy_cycles": 3134,
+          "core_1_matrix_engine_commands": 12,
+          "core_1_matrix_engine_wait_cycles": 16,
+          "core_1_memory_port_queue_cycles": 0,
+          "core_1_memory_port_service_cycles": 16815,
+          "core_1_mma_commands": 10,
+          "core_1_pipeline_freeze_cycles": 13173,
+          "core_1_programs_completed": 1,
+          "core_1_programs_issued": 1,
+          "core_1_role_0_completed": 1,
+          "core_1_role_0_issued": 1,
+          "core_1_role_1_completed": 1,
+          "core_1_role_1_issued": 1,
+          "core_1_role_2_completed": 0,
+          "core_1_role_2_issued": 0,
+          "core_1_role_3_completed": 0,
+          "core_1_role_3_issued": 0,
+          "core_1_sfu_queue_cycles": 0,
+          "core_1_vrf_bank_conflict_cycles": 65,
+          "core_2_arrive_drain_cycles": 0,
+          "core_2_barrier_sleep_cycles": 0,
+          "core_2_branch_refetch_cycles": 0,
+          "core_2_class_a_vread": 0,
+          "core_2_class_barrier": 0,
+          "core_2_class_branch": 0,
+          "core_2_class_cvt": 0,
+          "core_2_class_desc": 0,
+          "core_2_class_exit": 0,
+          "core_2_class_extract": 0,
+          "core_2_class_fence": 0,
+          "core_2_class_lsu": 0,
+          "core_2_class_m_zero": 0,
+          "core_2_class_mma": 0,
+          "core_2_class_pred": 0,
+          "core_2_class_salu": 0,
+          "core_2_class_special": 0,
+          "core_2_class_vint": 0,
+          "core_2_class_xfer": 0,
+          "core_2_context_park_cycles": 0,
+          "core_2_dependency_wait_cycles": 0,
+          "core_2_dma_admission_wait_cycles": 0,
+          "core_2_dma_commands_completed": 0,
+          "core_2_dma_commands_issued": 0,
+          "core_2_dma_descriptor_snapshots": 0,
+          "core_2_dma_peak_tags": 0,
+          "core_2_dma_read_words": 0,
+          "core_2_fence_drain_cycles": 0,
+          "core_2_instructions": 0,
+          "core_2_issue_queue_cycles": 0,
+          "core_2_issue_service_cycles": 0,
+          "core_2_lsu_wait_cycles": 0,
+          "core_2_matrix_engine_busy_cycles": 0,
+          "core_2_matrix_engine_commands": 0,
+          "core_2_matrix_engine_wait_cycles": 0,
+          "core_2_memory_port_queue_cycles": 0,
+          "core_2_memory_port_service_cycles": 0,
+          "core_2_mma_commands": 0,
+          "core_2_pipeline_freeze_cycles": 0,
+          "core_2_programs_completed": 0,
+          "core_2_programs_issued": 0,
+          "core_2_role_0_completed": 0,
+          "core_2_role_0_issued": 0,
+          "core_2_role_1_completed": 0,
+          "core_2_role_1_issued": 0,
+          "core_2_role_2_completed": 0,
+          "core_2_role_2_issued": 0,
+          "core_2_role_3_completed": 0,
+          "core_2_role_3_issued": 0,
+          "core_2_sfu_queue_cycles": 0,
+          "core_2_vrf_bank_conflict_cycles": 0,
+          "home_0_engine_queue_cycles": 226358,
+          "home_0_engine_service_cycles": 56257,
+          "home_0_evictions": 201,
+          "home_0_hits": 15717,
+          "home_0_merges": 1125,
+          "home_0_misses": 201,
+          "home_0_peak_mshrs": 0,
+          "home_0_resolution_cycles": 88486,
+          "home_0_writebacks": 173,
+          "home_1_engine_queue_cycles": 237871,
+          "home_1_engine_service_cycles": 56323,
+          "home_1_evictions": 215,
+          "home_1_hits": 15635,
+          "home_1_merges": 1153,
+          "home_1_misses": 215,
+          "home_1_peak_mshrs": 0,
+          "home_1_resolution_cycles": 93100,
+          "home_1_writebacks": 175,
+          "home_2_engine_queue_cycles": 220782,
+          "home_2_engine_service_cycles": 55112,
+          "home_2_evictions": 198,
+          "home_2_hits": 15374,
+          "home_2_merges": 1115,
+          "home_2_misses": 198,
+          "home_2_peak_mshrs": 0,
+          "home_2_resolution_cycles": 85379,
+          "home_2_writebacks": 160,
+          "link_0_1_bytes": 813360,
+          "link_0_1_queue_cycles": 0,
+          "link_0_1_service_cycles": 28265,
+          "link_1_0_bytes": 543360,
+          "link_1_0_queue_cycles": 669,
+          "link_1_0_service_cycles": 28265,
+          "link_1_2_bytes": 533984,
+          "link_1_2_queue_cycles": 3719,
+          "link_1_2_service_cycles": 16687,
+          "link_2_1_bytes": 266992,
+          "link_2_1_queue_cycles": 0,
+          "link_2_1_service_cycles": 16687,
+          "outlet_0_peak_outstanding": 0,
+          "outlet_0_queue_cycles": 172,
+          "outlet_0_reads": 201,
+          "outlet_0_service_cycles": 921,
+          "outlet_0_wait_cycles": 0,
+          "outlet_0_writes": 173,
+          "outlet_1_peak_outstanding": 0,
+          "outlet_1_queue_cycles": 175,
+          "outlet_1_reads": 215,
+          "outlet_1_service_cycles": 955,
+          "outlet_1_wait_cycles": 0,
+          "outlet_1_writes": 175,
+          "outlet_2_peak_outstanding": 0,
+          "outlet_2_queue_cycles": 159,
+          "outlet_2_reads": 198,
+          "outlet_2_service_cycles": 876,
+          "outlet_2_wait_cycles": 0,
+          "outlet_2_writes": 160,
+          "pc_0_bytes": 71808
+        }
+      }
+    },
+    {
+      "graph": "addmm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "strides": [
+        [
+          33,
+          1
+        ],
+        [
+          65,
+          1
+        ]
+      ],
+      "status": "pass",
+      "max_abs_error": 0.00011777877807617188,
+      "rtol": 0.002,
+      "atol": 0.002,
+      "resident_host_wall_seconds": 0.02546539530158043,
+      "device_cycles": 150182,
+      "launches": [
+        {
+          "kernel": "triton_tem_fused_addmm_0",
+          "grid": [
+            6,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "133c39b153d1008a04cb3d5ee0165e5a0c0f5f421594c94aa72e2a1f11605f2c",
+          "artifact_path": "/tmp/tnca-triton-otldvfy1/triton_tem_fused_addmm_0-2226e99b4c527823.tnca",
+          "device_cycles": 150182,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 4.3e-05,
+            "run": 0.025016,
+            "download": 0.000119
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 7752
+        }
+      ],
+      "artifacts": [
+        {
+          "code_sha256": "6ae72c09f35c0dc75770adb77a01e2b1199f0105e8bd3eb1c105b51f5481bcd5",
+          "code_bytes": 21088,
+          "manifest_resources": {
+            "accumulators": 6,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 15,
+              "role1": 15
+            },
+            "scratch_bytes": 16640,
+            "shared_windows": []
+          },
+          "plan": {
+            "allocated_resources": {
+              "accumulators_used": 6,
+              "assembly_instructions": 2612,
+              "async_commands_issued": 6,
+              "barriers_used": 5,
+              "code_bytes": 21088,
+              "commands_outstanding_peak": "unknown",
+              "descriptors_used": 3,
+              "dma_expansion": "unknown",
+              "limits": {
+                "accumulators": 16,
+                "barriers": 32,
+                "descriptors": 16,
+                "vector_regs": 64
+              },
+              "machine_instructions": 2636,
+              "measured_from": "emitted assembly and machine code",
+              "scalar_regs_used": 29,
+              "scratch_bytes": 16640,
+              "vector_regs_used": 15,
+              "windows_used": 3
+            },
+            "bank_allocation": {},
+            "dynamic_counts": "require native execution",
+            "layout": {},
+            "logical_gemm_tiles": [
+              [
+                16,
+                32,
+                16
+              ]
+            ],
+            "mma_retiles": [],
+            "overlap": "not inferred from command admission",
+            "roles": [
+              {
+                "command_dependencies": [
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1294,
+                    "tokens": [
+                      "fill0",
+                      "t1049"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1296,
+                    "tokens": [
+                      "t1049",
+                      "e1050"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1297,
+                    "tokens": [
+                      "t1049"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1382,
+                    "tokens": [
+                      "fill1",
+                      "t1108"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1384,
+                    "tokens": [
+                      "t1108",
+                      "e1109"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1385,
+                    "tokens": [
+                      "t1108"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1386,
+                    "tokens": [
+                      "mma2",
+                      "t1110"
+                    ]
+                  },
+                  {
+                    "kind": "mma_async",
+                    "position": 1388,
+                    "tokens": [
+                      "t1110",
+                      "e1111"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1389,
+                    "tokens": [
+                      "t1110"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1474,
+                    "tokens": [
+                      "fill3",
+                      "t1169"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1476,
+                    "tokens": [
+                      "t1169",
+                      "e1170"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1477,
+                    "tokens": [
+                      "t1169"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1478,
+                    "tokens": [
+                      "mma4",
+                      "t1171"
+                    ]
+                  },
+                  {
+                    "kind": "mma_async",
+                    "position": 1480,
+                    "tokens": [
+                      "t1171",
+                      "e1172"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1481,
+                    "tokens": [
+                      "t1171"
+                    ]
+                  }
+                ],
+                "loops": [
+                  {
+                    "end": 85,
+                    "label": "sdiv_2",
+                    "start": 65,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 157,
+                    "label": "sdiv_4",
+                    "start": 137,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 217,
+                    "label": "idiv_5",
+                    "start": 197,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 252,
+                    "label": "idiv_6",
+                    "start": 232,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 287,
+                    "label": "idiv_7",
+                    "start": 267,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 1485,
+                    "label": "for_8",
+                    "start": 295,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 2
+                  }
+                ],
+                "role": 0,
+                "shared_use_intervals": [
+                  {
+                    "first": 1293,
+                    "kind": "window",
+                    "last": 1480,
+                    "name": "w0"
+                  },
+                  {
+                    "first": 294,
+                    "kind": "acc",
+                    "last": 2131,
+                    "name": "acc1"
+                  },
+                  {
+                    "first": 1755,
+                    "kind": "acc",
+                    "last": 2020,
+                    "name": "acc2"
+                  },
+                  {
+                    "first": 291,
+                    "kind": "acc",
+                    "last": 2019,
+                    "name": "acc0"
+                  },
+                  {
+                    "first": 1919,
+                    "kind": "acc",
+                    "last": 2213,
+                    "name": "acc4"
+                  },
+                  {
+                    "first": 1836,
+                    "kind": "acc",
+                    "last": 2132,
+                    "name": "acc3"
+                  },
+                  {
+                    "first": 1473,
+                    "kind": "window",
+                    "last": 1480,
+                    "name": "w2"
+                  },
+                  {
+                    "first": 1381,
+                    "kind": "window",
+                    "last": 1388,
+                    "name": "w1"
+                  },
+                  {
+                    "first": 2032,
+                    "kind": "acc",
+                    "last": 2310,
+                    "name": "acc5"
+                  }
+                ],
+                "static_op_counts": {
+                  "acc_read": 96,
+                  "acc_write": 64,
+                  "acc_zero": 2,
+                  "arange": 5,
+                  "assign": 20,
+                  "barrier_arm": 5,
+                  "barrier_wait": 5,
+                  "branch_nz": 10,
+                  "comment": 18,
+                  "const": 255,
+                  "desc_snapshot": 3,
+                  "dma_load": 3,
+                  "exit": 1,
+                  "fence": 17,
+                  "gather": 48,
+                  "label": 11,
+                  "load": 256,
+                  "mma_async": 2,
+                  "num_programs": 1,
+                  "pbin": 67,
+                  "program_id": 1,
+                  "sbin": 85,
+                  "sbini": 650,
+                  "scmp": 19,
+                  "sload": 6,
+                  "special": 6,
+                  "splat": 166,
+                  "sstore": 21,
+                  "store": 304,
+                  "vbin": 181,
+                  "vcmp": 113,
+                  "vcvt": 64,
+                  "vextract": 16,
+                  "vmovi": 16,
+                  "vselect": 15,
+                  "window_def": 3
+                }
+              }
+            ],
+            "schema": "tnca-execution-resources/1",
+            "scope": "static emitted IR",
+            "selection_notes": {},
+            "valid_and_padding_macs": "require logical tile and runtime valid masks",
+            "window_lifetime": {}
+          }
+        }
+      ],
+      "model_counter_deltas": {
+        "0": {
+          "chip_grid_launches": 1,
+          "chip_host_gap_cycles": 852083,
+          "chip_single_launches": 0,
+          "core_0_arrive_drain_cycles": 0,
+          "core_0_barrier_sleep_cycles": 7064,
+          "core_0_branch_refetch_cycles": 990,
+          "core_0_class_a_row": 128,
+          "core_0_class_a_vread": 192,
+          "core_0_class_barrier": 60,
+          "core_0_class_branch": 212,
+          "core_0_class_cvt": 128,
+          "core_0_class_desc": 36,
+          "core_0_class_exit": 2,
+          "core_0_class_extract": 96,
+          "core_0_class_fence": 86,
+          "core_0_class_lsu": 3022,
+          "core_0_class_m_zero": 4,
+          "core_0_class_mma": 12,
+          "core_0_class_pred": 320,
+          "core_0_class_salu": 4680,
+          "core_0_class_special": 24,
+          "core_0_class_vfp": 64,
+          "core_0_class_vint": 4832,
+          "core_0_class_xfer": 18,
+          "core_0_context_park_cycles": 15645,
+          "core_0_dependency_wait_cycles": 124112,
+          "core_0_dma_admission_wait_cycles": 11188,
+          "core_0_dma_commands_completed": 18,
+          "core_0_dma_commands_issued": 18,
+          "core_0_dma_descriptor_snapshots": 18,
+          "core_0_dma_peak_tags": 0,
+          "core_0_dma_read_words": 1728,
+          "core_0_fence_drain_cycles": 10316,
+          "core_0_instructions": 13916,
+          "core_0_issue_queue_cycles": 25874,
+          "core_0_issue_service_cycles": 13916,
+          "core_0_lsu_wait_cycles": 98560,
+          "core_0_matrix_engine_busy_cycles": 4044,
+          "core_0_matrix_engine_commands": 144,
+          "core_0_matrix_engine_wait_cycles": 879,
+          "core_0_memory_port_queue_cycles": 1992,
+          "core_0_memory_port_service_cycles": 21950,
+          "core_0_mma_commands": 12,
+          "core_0_pipeline_freeze_cycles": 108988,
+          "core_0_programs_completed": 1,
+          "core_0_programs_issued": 1,
+          "core_0_role_0_completed": 1,
+          "core_0_role_0_issued": 1,
+          "core_0_role_1_completed": 1,
+          "core_0_role_1_issued": 1,
+          "core_0_role_2_completed": 0,
+          "core_0_role_2_issued": 0,
+          "core_0_role_3_completed": 0,
+          "core_0_role_3_issued": 0,
+          "core_0_sfu_queue_cycles": 0,
+          "core_0_vrf_bank_conflict_cycles": 112,
+          "core_1_arrive_drain_cycles": 0,
+          "core_1_barrier_sleep_cycles": 6423,
+          "core_1_branch_refetch_cycles": 990,
+          "core_1_class_a_row": 128,
+          "core_1_class_a_vread": 192,
+          "core_1_class_barrier": 60,
+          "core_1_class_branch": 212,
+          "core_1_class_cvt": 128,
+          "core_1_class_desc": 36,
+          "core_1_class_exit": 2,
+          "core_1_class_extract": 96,
+          "core_1_class_fence": 86,
+          "core_1_class_lsu": 3022,
+          "core_1_class_m_zero": 4,
+          "core_1_class_mma": 12,
+          "core_1_class_pred": 320,
+          "core_1_class_salu": 4680,
+          "core_1_class_special": 24,
+          "core_1_class_vfp": 64,
+          "core_1_class_vint": 4832,
+          "core_1_class_xfer": 18,
+          "core_1_context_park_cycles": 15950,
+          "core_1_dependency_wait_cycles": 124730,
+          "core_1_dma_admission_wait_cycles": 9477,
+          "core_1_dma_commands_completed": 18,
+          "core_1_dma_commands_issued": 18,
+          "core_1_dma_descriptor_snapshots": 18,
+          "core_1_dma_peak_tags": 0,
+          "core_1_dma_read_words": 1728,
+          "core_1_fence_drain_cycles": 11516,
+          "core_1_instructions": 13916,
+          "core_1_issue_queue_cycles": 26379,
+          "core_1_issue_service_cycles": 13916,
+          "core_1_lsu_wait_cycles": 95540,
+          "core_1_matrix_engine_busy_cycles": 4044,
+          "core_1_matrix_engine_commands": 144,
+          "core_1_matrix_engine_wait_cycles": 1135,
+          "core_1_memory_port_queue_cycles": 1773,
+          "core_1_memory_port_service_cycles": 21462,
+          "core_1_mma_commands": 12,
+          "core_1_pipeline_freeze_cycles": 107240,
+          "core_1_programs_completed": 1,
+          "core_1_programs_issued": 1,
+          "core_1_role_0_completed": 1,
+          "core_1_role_0_issued": 1,
+          "core_1_role_1_completed": 1,
+          "core_1_role_1_issued": 1,
+          "core_1_role_2_completed": 0,
+          "core_1_role_2_issued": 0,
+          "core_1_role_3_completed": 0,
+          "core_1_role_3_issued": 0,
+          "core_1_sfu_queue_cycles": 0,
+          "core_1_vrf_bank_conflict_cycles": 184,
+          "core_2_arrive_drain_cycles": 0,
+          "core_2_barrier_sleep_cycles": 7318,
+          "core_2_branch_refetch_cycles": 990,
+          "core_2_class_a_row": 128,
+          "core_2_class_a_vread": 192,
+          "core_2_class_barrier": 60,
+          "core_2_class_branch": 212,
+          "core_2_class_cvt": 128,
+          "core_2_class_desc": 36,
+          "core_2_class_exit": 2,
+          "core_2_class_extract": 96,
+          "core_2_class_fence": 86,
+          "core_2_class_lsu": 3022,
+          "core_2_class_m_zero": 4,
+          "core_2_class_mma": 12,
+          "core_2_class_pred": 320,
+          "core_2_class_salu": 4680,
+          "core_2_class_special": 24,
+          "core_2_class_vfp": 64,
+          "core_2_class_vint": 4832,
+          "core_2_class_xfer": 18,
+          "core_2_context_park_cycles": 15270,
+          "core_2_dependency_wait_cycles": 117473,
+          "core_2_dma_admission_wait_cycles": 10789,
+          "core_2_dma_commands_completed": 18,
+          "core_2_dma_commands_issued": 18,
+          "core_2_dma_descriptor_snapshots": 18,
+          "core_2_dma_peak_tags": 0,
+          "core_2_dma_read_words": 1728,
+          "core_2_fence_drain_cycles": 10221,
+          "core_2_instructions": 13916,
+          "core_2_issue_queue_cycles": 28708,
+          "core_2_issue_service_cycles": 13916,
+          "core_2_lsu_wait_cycles": 96418,
+          "core_2_matrix_engine_busy_cycles": 4044,
+          "core_2_matrix_engine_commands": 144,
+          "core_2_matrix_engine_wait_cycles": 912,
+          "core_2_memory_port_queue_cycles": 1766,
+          "core_2_memory_port_service_cycles": 21430,
+          "core_2_mma_commands": 12,
+          "core_2_pipeline_freeze_cycles": 106769,
+          "core_2_programs_completed": 1,
+          "core_2_programs_issued": 1,
+          "core_2_role_0_completed": 1,
+          "core_2_role_0_issued": 1,
+          "core_2_role_1_completed": 1,
+          "core_2_role_1_issued": 1,
+          "core_2_role_2_completed": 0,
+          "core_2_role_2_issued": 0,
+          "core_2_role_3_completed": 0,
+          "core_2_role_3_issued": 0,
+          "core_2_sfu_queue_cycles": 0,
+          "core_2_vrf_bank_conflict_cycles": 130,
+          "home_0_engine_queue_cycles": 1172343,
+          "home_0_engine_service_cycles": 103392,
+          "home_0_evictions": 1376,
+          "home_0_hits": 12220,
+          "home_0_merges": 8400,
+          "home_0_misses": 1376,
+          "home_0_peak_mshrs": 1,
+          "home_0_resolution_cycles": 1092840,
+          "home_0_writebacks": 1286,
+          "home_1_engine_queue_cycles": 1029290,
+          "home_1_engine_service_cycles": 102489,
+          "home_1_evictions": 1398,
+          "home_1_hits": 11627,
+          "home_1_merges": 8514,
+          "home_1_misses": 1398,
+          "home_1_peak_mshrs": 0,
+          "home_1_resolution_cycles": 983788,
+          "home_1_writebacks": 1272,
+          "home_2_engine_queue_cycles": 967242,
+          "home_2_engine_service_cycles": 101197,
+          "home_2_evictions": 1368,
+          "home_2_hits": 11549,
+          "home_2_merges": 8390,
+          "home_2_misses": 1368,
+          "home_2_peak_mshrs": 0,
+          "home_2_resolution_cycles": 933629,
+          "home_2_writebacks": 1265,
+          "link_0_1_bytes": 691024,
+          "link_0_1_queue_cycles": 0,
+          "link_0_1_service_cycles": 28808,
+          "link_1_0_bytes": 691760,
+          "link_1_0_queue_cycles": 2282,
+          "link_1_0_service_cycles": 28808,
+          "link_1_2_bytes": 685440,
+          "link_1_2_queue_cycles": 2398,
+          "link_1_2_service_cycles": 28601,
+          "link_2_1_bytes": 687408,
+          "link_2_1_queue_cycles": 0,
+          "link_2_1_service_cycles": 28601,
+          "outlet_0_peak_outstanding": 0,
+          "outlet_0_queue_cycles": 1278,
+          "outlet_0_reads": 1376,
+          "outlet_0_service_cycles": 6610,
+          "outlet_0_wait_cycles": 0,
+          "outlet_0_writes": 1286,
+          "outlet_1_peak_outstanding": 0,
+          "outlet_1_queue_cycles": 1258,
+          "outlet_1_reads": 1398,
+          "outlet_1_service_cycles": 6612,
+          "outlet_1_wait_cycles": 0,
+          "outlet_1_writes": 1272,
+          "outlet_2_peak_outstanding": 0,
+          "outlet_2_queue_cycles": 1251,
+          "outlet_2_reads": 1368,
+          "outlet_2_service_cycles": 6531,
+          "outlet_2_wait_cycles": 0,
+          "outlet_2_writes": 1265,
+          "pc_0_bytes": 509760
+        }
+      }
+    },
+    {
+      "graph": "addmm",
+      "shape": [
+        33,
+        31,
+        65
+      ],
+      "strides": [
+        [
+          65,
+          1
+        ],
+        [
+          31,
+          1
+        ]
+      ],
+      "status": "pass",
+      "max_abs_error": 0.00011619925498962402,
+      "rtol": 0.002,
+      "atol": 0.002,
+      "resident_host_wall_seconds": 0.018279949203133583,
+      "device_cycles": 139874,
+      "launches": [
+        {
+          "kernel": "triton_tem_fused_addmm_0",
+          "grid": [
+            3,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "3212d349c897ac283c559e3899b770348435a78b536aac304cf8fb7eb7001dab",
+          "artifact_path": "/tmp/tnca-triton-otldvfy1/triton_tem_fused_addmm_0-3dbf592bdfe25656.tnca",
+          "device_cycles": 139874,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 5.2e-05,
+            "run": 0.017767,
+            "download": 0.000112
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 10428
+        }
+      ],
+      "artifacts": [
+        {
+          "code_sha256": "840e246eaf3a7cb2aea03d8eb00ad3d416b968dc2a65710dafeaa1176e4e31e1",
+          "code_bytes": 20664,
+          "manifest_resources": {
+            "accumulators": 6,
+            "barriers": 5,
+            "commands_outstanding": "unknown",
+            "descriptors": 3,
+            "rf_private_per_role": {
+              "role0": 15,
+              "role1": 15
+            },
+            "scratch_bytes": 16640,
+            "shared_windows": []
+          },
+          "plan": {
+            "allocated_resources": {
+              "accumulators_used": 6,
+              "assembly_instructions": 2565,
+              "async_commands_issued": 6,
+              "barriers_used": 5,
+              "code_bytes": 20664,
+              "commands_outstanding_peak": "unknown",
+              "descriptors_used": 3,
+              "dma_expansion": "unknown",
+              "limits": {
+                "accumulators": 16,
+                "barriers": 32,
+                "descriptors": 16,
+                "vector_regs": 64
+              },
+              "machine_instructions": 2583,
+              "measured_from": "emitted assembly and machine code",
+              "scalar_regs_used": 29,
+              "scratch_bytes": 16640,
+              "vector_regs_used": 15,
+              "windows_used": 3
+            },
+            "bank_allocation": {},
+            "dynamic_counts": "require native execution",
+            "layout": {},
+            "logical_gemm_tiles": [
+              [
+                16,
+                32,
+                16
+              ]
+            ],
+            "mma_retiles": [],
+            "overlap": "not inferred from command admission",
+            "roles": [
+              {
+                "command_dependencies": [
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1247,
+                    "tokens": [
+                      "fill0",
+                      "t1002"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1249,
+                    "tokens": [
+                      "t1002",
+                      "e1003"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1250,
+                    "tokens": [
+                      "t1002"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1335,
+                    "tokens": [
+                      "fill1",
+                      "t1061"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1337,
+                    "tokens": [
+                      "t1061",
+                      "e1062"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1338,
+                    "tokens": [
+                      "t1061"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1339,
+                    "tokens": [
+                      "mma2",
+                      "t1063"
+                    ]
+                  },
+                  {
+                    "kind": "mma_async",
+                    "position": 1341,
+                    "tokens": [
+                      "t1063",
+                      "e1064"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1342,
+                    "tokens": [
+                      "t1063"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1427,
+                    "tokens": [
+                      "fill3",
+                      "t1122"
+                    ]
+                  },
+                  {
+                    "kind": "dma_load",
+                    "position": 1429,
+                    "tokens": [
+                      "t1122",
+                      "e1123"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1430,
+                    "tokens": [
+                      "t1122"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_arm",
+                    "position": 1431,
+                    "tokens": [
+                      "mma4",
+                      "t1124"
+                    ]
+                  },
+                  {
+                    "kind": "mma_async",
+                    "position": 1433,
+                    "tokens": [
+                      "t1124",
+                      "e1125"
+                    ]
+                  },
+                  {
+                    "kind": "barrier_wait",
+                    "position": 1434,
+                    "tokens": [
+                      "t1124"
+                    ]
+                  }
+                ],
+                "loops": [
+                  {
+                    "end": 60,
+                    "label": "sdiv_2",
+                    "start": 40,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 110,
+                    "label": "sdiv_4",
+                    "start": 90,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 169,
+                    "label": "idiv_5",
+                    "start": 149,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 204,
+                    "label": "idiv_6",
+                    "start": 184,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 239,
+                    "label": "idiv_7",
+                    "start": 219,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 0
+                  },
+                  {
+                    "end": 1438,
+                    "label": "for_8",
+                    "start": 248,
+                    "static_acc_reads": 0,
+                    "static_acc_writes": 0,
+                    "static_acc_zeros": 0,
+                    "static_mma_commands": 2
+                  }
+                ],
+                "role": 0,
+                "shared_use_intervals": [
+                  {
+                    "first": 1334,
+                    "kind": "window",
+                    "last": 1341,
+                    "name": "w1"
+                  },
+                  {
+                    "first": 1708,
+                    "kind": "acc",
+                    "last": 1973,
+                    "name": "acc2"
+                  },
+                  {
+                    "first": 247,
+                    "kind": "acc",
+                    "last": 2084,
+                    "name": "acc1"
+                  },
+                  {
+                    "first": 1872,
+                    "kind": "acc",
+                    "last": 2166,
+                    "name": "acc4"
+                  },
+                  {
+                    "first": 245,
+                    "kind": "acc",
+                    "last": 1972,
+                    "name": "acc0"
+                  },
+                  {
+                    "first": 1246,
+                    "kind": "window",
+                    "last": 1433,
+                    "name": "w0"
+                  },
+                  {
+                    "first": 1789,
+                    "kind": "acc",
+                    "last": 2085,
+                    "name": "acc3"
+                  },
+                  {
+                    "first": 1985,
+                    "kind": "acc",
+                    "last": 2263,
+                    "name": "acc5"
+                  },
+                  {
+                    "first": 1426,
+                    "kind": "window",
+                    "last": 1433,
+                    "name": "w2"
+                  }
+                ],
+                "static_op_counts": {
+                  "acc_read": 96,
+                  "acc_write": 64,
+                  "acc_zero": 2,
+                  "arange": 5,
+                  "assign": 20,
+                  "barrier_arm": 5,
+                  "barrier_wait": 5,
+                  "branch_nz": 10,
+                  "comment": 18,
+                  "const": 245,
+                  "desc_snapshot": 3,
+                  "dma_load": 3,
+                  "exit": 1,
+                  "fence": 17,
+                  "gather": 48,
+                  "label": 11,
+                  "load": 256,
+                  "mma_async": 2,
+                  "num_programs": 1,
+                  "pbin": 67,
+                  "program_id": 1,
+                  "sbin": 60,
+                  "sbini": 642,
+                  "scmp": 15,
+                  "sload": 6,
+                  "special": 6,
+                  "splat": 166,
+                  "sstore": 21,
+                  "store": 304,
+                  "vbin": 181,
+                  "vcmp": 113,
+                  "vcvt": 64,
+                  "vextract": 16,
+                  "vmovi": 16,
+                  "vselect": 15,
+                  "window_def": 3
+                }
+              }
+            ],
+            "schema": "tnca-execution-resources/1",
+            "scope": "static emitted IR",
+            "selection_notes": {},
+            "valid_and_padding_macs": "require logical tile and runtime valid masks",
+            "window_lifetime": {}
+          }
+        }
+      ],
+      "model_counter_deltas": {
+        "0": {
+          "chip_grid_launches": 1,
+          "chip_host_gap_cycles": 851371,
+          "chip_single_launches": 0,
+          "core_0_arrive_drain_cycles": 0,
+          "core_0_barrier_sleep_cycles": 11429,
+          "core_0_branch_refetch_cycles": 1010,
+          "core_0_class_a_row": 128,
+          "core_0_class_a_vread": 192,
+          "core_0_class_barrier": 100,
+          "core_0_class_branch": 220,
+          "core_0_class_cvt": 128,
+          "core_0_class_desc": 60,
+          "core_0_class_exit": 2,
+          "core_0_class_extract": 160,
+          "core_0_class_fence": 138,
+          "core_0_class_lsu": 4774,
+          "core_0_class_m_zero": 4,
+          "core_0_class_mma": 20,
+          "core_0_class_pred": 320,
+          "core_0_class_salu": 6494,
+          "core_0_class_special": 32,
+          "core_0_class_vfp": 64,
+          "core_0_class_vint": 5960,
+          "core_0_class_xfer": 30,
+          "core_0_context_park_cycles": 24310,
+          "core_0_dependency_wait_cycles": 127284,
+          "core_0_dma_admission_wait_cycles": 14295,
+          "core_0_dma_commands_completed": 30,
+          "core_0_dma_commands_issued": 30,
+          "core_0_dma_descriptor_snapshots": 30,
+          "core_0_dma_peak_tags": 0,
+          "core_0_dma_read_words": 2880,
+          "core_0_fence_drain_cycles": 8205,
+          "core_0_instructions": 18826,
+          "core_0_issue_queue_cycles": 21280,
+          "core_0_issue_service_cycles": 18826,
+          "core_0_lsu_wait_cycles": 63107,
+          "core_0_matrix_engine_busy_cycles": 6524,
+          "core_0_matrix_engine_commands": 152,
+          "core_0_matrix_engine_wait_cycles": 1432,
+          "core_0_memory_port_queue_cycles": 2122,
+          "core_0_memory_port_service_cycles": 35200,
+          "core_0_mma_commands": 20,
+          "core_0_pipeline_freeze_cycles": 71421,
+          "core_0_programs_completed": 1,
+          "core_0_programs_issued": 1,
+          "core_0_role_0_completed": 1,
+          "core_0_role_0_issued": 1,
+          "core_0_role_1_completed": 1,
+          "core_0_role_1_issued": 1,
+          "core_0_role_2_completed": 0,
+          "core_0_role_2_issued": 0,
+          "core_0_role_3_completed": 0,
+          "core_0_role_3_issued": 0,
+          "core_0_sfu_queue_cycles": 0,
+          "core_0_vrf_bank_conflict_cycles": 109,
+          "core_1_arrive_drain_cycles": 0,
+          "core_1_barrier_sleep_cycles": 5411,
+          "core_1_branch_refetch_cycles": 510,
+          "core_1_class_a_row": 64,
+          "core_1_class_a_vread": 96,
+          "core_1_class_barrier": 50,
+          "core_1_class_branch": 111,
+          "core_1_class_cvt": 64,
+          "core_1_class_desc": 30,
+          "core_1_class_exit": 2,
+          "core_1_class_extract": 80,
+          "core_1_class_fence": 69,
+          "core_1_class_lsu": 2387,
+          "core_1_class_m_zero": 2,
+          "core_1_class_mma": 10,
+          "core_1_class_pred": 160,
+          "core_1_class_salu": 3249,
+          "core_1_class_special": 19,
+          "core_1_class_vfp": 32,
+          "core_1_class_vint": 2980,
+          "core_1_class_xfer": 15,
+          "core_1_context_park_cycles": 0,
+          "core_1_dependency_wait_cycles": 62219,
+          "core_1_dma_admission_wait_cycles": 0,
+          "core_1_dma_commands_completed": 15,
+          "core_1_dma_commands_issued": 15,
+          "core_1_dma_descriptor_snapshots": 15,
+          "core_1_dma_peak_tags": 0,
+          "core_1_dma_read_words": 1440,
+          "core_1_fence_drain_cycles": 3243,
+          "core_1_instructions": 9420,
+          "core_1_issue_queue_cycles": 1100,
+          "core_1_issue_service_cycles": 9420,
+          "core_1_lsu_wait_cycles": 12326,
+          "core_1_matrix_engine_busy_cycles": 3262,
+          "core_1_matrix_engine_commands": 76,
+          "core_1_matrix_engine_wait_cycles": 49,
+          "core_1_memory_port_queue_cycles": 0,
+          "core_1_memory_port_service_cycles": 17336,
+          "core_1_mma_commands": 10,
+          "core_1_pipeline_freeze_cycles": 15634,
+          "core_1_programs_completed": 1,
+          "core_1_programs_issued": 1,
+          "core_1_role_0_completed": 1,
+          "core_1_role_0_issued": 1,
+          "core_1_role_1_completed": 1,
+          "core_1_role_1_issued": 1,
+          "core_1_role_2_completed": 0,
+          "core_1_role_2_issued": 0,
+          "core_1_role_3_completed": 0,
+          "core_1_role_3_issued": 0,
+          "core_1_sfu_queue_cycles": 0,
+          "core_1_vrf_bank_conflict_cycles": 65,
+          "core_2_arrive_drain_cycles": 0,
+          "core_2_barrier_sleep_cycles": 0,
+          "core_2_branch_refetch_cycles": 0,
+          "core_2_class_a_row": 0,
+          "core_2_class_a_vread": 0,
+          "core_2_class_barrier": 0,
+          "core_2_class_branch": 0,
+          "core_2_class_cvt": 0,
+          "core_2_class_desc": 0,
+          "core_2_class_exit": 0,
+          "core_2_class_extract": 0,
+          "core_2_class_fence": 0,
+          "core_2_class_lsu": 0,
+          "core_2_class_m_zero": 0,
+          "core_2_class_mma": 0,
+          "core_2_class_pred": 0,
+          "core_2_class_salu": 0,
+          "core_2_class_special": 0,
+          "core_2_class_vfp": 0,
+          "core_2_class_vint": 0,
+          "core_2_class_xfer": 0,
+          "core_2_context_park_cycles": 0,
+          "core_2_dependency_wait_cycles": 0,
+          "core_2_dma_admission_wait_cycles": 0,
+          "core_2_dma_commands_completed": 0,
+          "core_2_dma_commands_issued": 0,
+          "core_2_dma_descriptor_snapshots": 0,
+          "core_2_dma_peak_tags": 0,
+          "core_2_dma_read_words": 0,
+          "core_2_fence_drain_cycles": 0,
+          "core_2_instructions": 0,
+          "core_2_issue_queue_cycles": 0,
+          "core_2_issue_service_cycles": 0,
+          "core_2_lsu_wait_cycles": 0,
+          "core_2_matrix_engine_busy_cycles": 0,
+          "core_2_matrix_engine_commands": 0,
+          "core_2_matrix_engine_wait_cycles": 0,
+          "core_2_memory_port_queue_cycles": 0,
+          "core_2_memory_port_service_cycles": 0,
+          "core_2_mma_commands": 0,
+          "core_2_pipeline_freeze_cycles": 0,
+          "core_2_programs_completed": 0,
+          "core_2_programs_issued": 0,
+          "core_2_role_0_completed": 0,
+          "core_2_role_0_issued": 0,
+          "core_2_role_1_completed": 0,
+          "core_2_role_1_issued": 0,
+          "core_2_role_2_completed": 0,
+          "core_2_role_2_issued": 0,
+          "core_2_role_3_completed": 0,
+          "core_2_role_3_issued": 0,
+          "core_2_sfu_queue_cycles": 0,
+          "core_2_vrf_bank_conflict_cycles": 0,
+          "home_0_engine_queue_cycles": 254923,
+          "home_0_engine_service_cycles": 61007,
+          "home_0_evictions": 317,
+          "home_0_hits": 15503,
+          "home_0_merges": 1800,
+          "home_0_misses": 317,
+          "home_0_peak_mshrs": 0,
+          "home_0_resolution_cycles": 138906,
+          "home_0_writebacks": 264,
+          "home_1_engine_queue_cycles": 247575,
+          "home_1_engine_service_cycles": 60368,
+          "home_1_evictions": 302,
+          "home_1_hits": 15528,
+          "home_1_merges": 1710,
+          "home_1_misses": 302,
+          "home_1_peak_mshrs": 0,
+          "home_1_resolution_cycles": 133180,
+          "home_1_writebacks": 252,
+          "home_2_engine_queue_cycles": 248650,
+          "home_2_engine_service_cycles": 59775,
+          "home_2_evictions": 301,
+          "home_2_hits": 15395,
+          "home_2_merges": 1680,
+          "home_2_misses": 301,
+          "home_2_peak_mshrs": 0,
+          "home_2_resolution_cycles": 133048,
+          "home_2_writebacks": 250,
+          "link_0_1_bytes": 842544,
+          "link_0_1_queue_cycles": 0,
+          "link_0_1_service_cycles": 29246,
+          "link_1_0_bytes": 561264,
+          "link_1_0_queue_cycles": 773,
+          "link_1_0_service_cycles": 29246,
+          "link_1_2_bytes": 556032,
+          "link_1_2_queue_cycles": 3591,
+          "link_1_2_service_cycles": 17376,
+          "link_2_1_bytes": 278016,
+          "link_2_1_queue_cycles": 0,
+          "link_2_1_service_cycles": 17376,
+          "outlet_0_peak_outstanding": 0,
+          "outlet_0_queue_cycles": 263,
+          "outlet_0_reads": 317,
+          "outlet_0_service_cycles": 1426,
+          "outlet_0_wait_cycles": 0,
+          "outlet_0_writes": 264,
+          "outlet_1_peak_outstanding": 0,
+          "outlet_1_queue_cycles": 250,
+          "outlet_1_reads": 302,
+          "outlet_1_service_cycles": 1360,
+          "outlet_1_wait_cycles": 0,
+          "outlet_1_writes": 252,
+          "outlet_2_peak_outstanding": 0,
+          "outlet_2_queue_cycles": 250,
+          "outlet_2_reads": 301,
+          "outlet_2_service_cycles": 1352,
+          "outlet_2_wait_cycles": 0,
+          "outlet_2_writes": 250,
+          "pc_0_bytes": 107904
+        }
+      }
+    }
+  ],
+  "software_tree": "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045",
+  "backend": "systemc-tlm-grid",
+  "toolchain": {
+    "torch": "2.14.0+cu130",
+    "triton": "3.8.0"
+  },
+  "knobs": {
+    "TNCA_BACKEND": "systemc-tlm-grid",
+    "TNCA_DEADLINE": "200000000",
+    "TNCA_GEMM_TILE": "16,32,16",
+    "TNCA_HOST_TIMEOUT": "600",
+    "TNCA_INDEX_OPT": "1",
+    "TNCA_PROFILE": "core-vrf-sync-v5",
+    "TNCA_TENSOR_DESCRIPTORS": "1",
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41-stage1/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41-stage1/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MEMORY_BYTES": "16777216",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41-stage1/runs/residency-fp16-model",
+    "TNCA_TORCH_DEVICE": "native"
+  }
+}

@@ -1,0 +1,46 @@
+# bf6fd2b + narrowed [R,1] broadcast (files:8c713902...), GB10 gx10-6646, 2026-10-21T10:16:57Z; RTL bench sim/build/tb_core.vvp
+## compiler/test/test_column_broadcast.py (Triton env)
+test_loaded_column_keeps_lane0_broadcast (__main__.ColumnBroadcastTests.test_loaded_column_keeps_lane0_broadcast) ... ok
+test_loaded_column_without_the_copy_is_wrong_on_rtl (__main__.ColumnBroadcastTests.test_loaded_column_without_the_copy_is_wrong_on_rtl) ... ok
+test_replicated_rows_are_renamed (__main__.ColumnBroadcastTests.test_replicated_rows_are_renamed) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 33.299s
+
+OK
+exit 0
+## compiler/test/test_predicate_spill.py (Triton env)
+test_no_change_below_capacity (__main__.PredicateSpillTests.test_no_change_below_capacity) ... ok
+test_preserve_mutable_predicate_destinations (__main__.PredicateSpillTests.test_preserve_mutable_predicate_destinations) ... ok
+test_pressure_is_relieved_and_every_lane_is_correct_on_rtl (__main__.PredicateSpillTests.test_pressure_is_relieved_and_every_lane_is_correct_on_rtl) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 3.268s
+
+OK
+exit 0
+## compiler/test/test_fragment_residency.py (Triton env)
+test_insufficient_accumulators_are_rejected_before_execution (__main__.FragmentResidencyTests.test_insufficient_accumulators_are_rejected_before_execution) ... ok
+test_live_old_accumulator_is_not_overwritten (__main__.FragmentResidencyTests.test_live_old_accumulator_is_not_overwritten) ... ok
+test_two_fragments_remain_resident_across_k (__main__.FragmentResidencyTests.test_two_fragments_remain_resident_across_k) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.113s
+
+OK
+exit 0
+## compiler/test/test_execution_resources.py (Triton env)
+test_binary32_dot_is_not_counted_as_mma (__main__.ExecutionResourcePlanTests.test_binary32_dot_is_not_counted_as_mma) ... ok
+test_descriptor_and_pointer_transfers (__main__.ExecutionResourcePlanTests.test_descriptor_and_pointer_transfers) ... ok
+test_fragments_and_macs_for_full_wide_tail_and_masked_shapes (__main__.ExecutionResourcePlanTests.test_fragments_and_macs_for_full_wide_tail_and_masked_shapes) ... ok
+test_live_old_accumulator_round_trips_are_counted (__main__.ExecutionResourcePlanTests.test_live_old_accumulator_round_trips_are_counted) ... ok
+test_refusals_carry_their_reason (__main__.ExecutionResourcePlanTests.test_refusals_carry_their_reason) ... ok
+test_resident_k_loop_has_no_accumulator_round_trips (__main__.ExecutionResourcePlanTests.test_resident_k_loop_has_no_accumulator_round_trips) ... ok
+test_resources_admission_and_tuning_read_the_plan (__main__.ExecutionResourcePlanTests.test_resources_admission_and_tuning_read_the_plan) ... ok
+test_unstated_extents_stay_unknown (__main__.ExecutionResourcePlanTests.test_unstated_extents_stay_unknown) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 1.843s
+
+OK
+exit 0

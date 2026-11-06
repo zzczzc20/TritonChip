@@ -1,0 +1,29 @@
+{
+  "schema": "tnca-experiment-spec/1",
+  "id": "r41-public-inductor-tuning-functional",
+  "allowed_hosts": ["gx10-6646"],
+  "hypothesis": "TNCA_TUNE enters the public Inductor runtime, measures bounded legal retiles using device endpoints, and preserves conservative execution in an unqualified model domain.",
+  "competing_explanations": ["only a standalone policy helper is exercised", "a compiler child survives timeout", "host wait expiry is mistaken for cancellation", "tuning samples leak into formal execution", "a model wall clock ranks candidates"],
+  "expected_observations": ["generated candidates compile and execute on the common launcher", "timed-out workers and descendants terminate", "scope limits restore and undrainable work poisons the Session", "SystemC uses the baseline", "the MMIO RTL public path measures two actual configurations and isolates their launches"],
+  "sources": ["python/tnca", "compiler/python", "compiler/targets", "rtl", "tb", "tools/asm", "isa", "tools/performance_harness/test_inductor_tuning_compile.py", "tools/performance_harness/test_inductor_tuning_public.py", "tools/performance_harness/test_measurement_scope.py", "tools/performance_harness/experiment.py", "tools/performance_harness/systemc/tlm_backend.py", "spec/r41/stage1/experiments/public-tuning.json"],
+  "env": {
+    "PATH": "{home}/tc_env/bin:/usr/local/bin:/usr/bin:/bin",
+    "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm:{root}/tools/performance_harness/systemc",
+    "OMP_NUM_THREADS": "2", "MKL_NUM_THREADS": "2",
+    "TNCA_BACKEND": "systemc-tlm-grid",
+    "TNCA_TLM_BINARY": "{home}/r41-stage1/runs/harness-smoke-v3/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MEMORY_BYTES": "16777216",
+    "TNCA_HOST_TIMEOUT": "300", "TNCA_DEADLINE": "5000000",
+    "TNCA_TENSOR_DESCRIPTORS": "1", "TNCA_TORCH_DEVICE": "native", "TNCA_PROFILE": "core-vrf-sync-v5",
+    "R41_TUNE_TEST_OUT": "{out}/compiler",
+    "TRITON_CACHE_DIR": "{out}/triton-cache", "TORCHINDUCTOR_CACHE_DIR": "{out}/inductor-cache"
+  },
+  "steps": [
+    {"id": "measurement-scope", "kind": "compile", "argv": ["{python}", "tools/performance_harness/test_measurement_scope.py", "-v"], "timeout_seconds": 30},
+    {"id": "isolated-compiler", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/test_inductor_tuning_compile.py", "-v"], "timeout_seconds": 180, "inputs": ["{home}/r41-stage1/runs/harness-smoke-v3/model-build/tnca-chip"]},
+    {"id": "public-conservative-domain", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/test_inductor_tuning_public.py", "--out", "{out}/model-public"], "timeout_seconds": 180, "inputs": ["{home}/r41-stage1/runs/harness-smoke-v3/model-build/tnca-chip"], "outputs": ["{out}/model-public/report.json"]},
+    {"id": "public-rtl-device-events", "kind": "rtl", "argv": ["{python}", "tools/performance_harness/test_inductor_tuning_public.py", "--functional-rtl", "--out", "{out}/rtl-public"], "timeout_seconds": 600, "env": {"TNCA_BACKEND": "fpga-multicore-sim", "TNCA_BACKEND_ARGS": "{\"core_count\":3,\"memory_ports\":3,\"maintenance\":true,\"hbm_dma\":true,\"device_clock\":true}"}, "outputs": ["{out}/rtl-public/report.json"]},
+    {"id": "public-rtl-wide-retile", "kind": "rtl", "argv": ["{python}", "tools/performance_harness/test_inductor_tuning_public.py", "--functional-rtl", "--max-block", "32", "--out", "{out}/rtl-public-wide"], "timeout_seconds": 600, "env": {"TNCA_BACKEND": "fpga-multicore-sim", "TNCA_BACKEND_ARGS": "{\"core_count\":3,\"memory_ports\":3,\"maintenance\":true,\"hbm_dma\":true,\"device_clock\":true}"}, "outputs": ["{out}/rtl-public-wide/report.json"]}
+  ]
+}

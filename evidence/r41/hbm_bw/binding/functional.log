@@ -1,0 +1,6 @@
+Stream CU binding metadata matches
+STREAM BINDING FILL PASS pc=0 lines=17
+STREAM BINDING FILL PASS pc=31 lines=3
+STREAM BINDING AXI-LITE/PC0/PC31 PASS
+/tmp/tnca-stream-binding-mb4rt5tg/tb.v:1095: $finish called at 6070000 (1ps)
+STREAM CU BINDING FUNCTIONAL PASS

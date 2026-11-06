@@ -1,0 +1,60 @@
+{
+  "host": "gx10-6646:/home/zhongchun/r41-accept-p0",
+  "archive_sha256": "e1c97e5921143103a3ec7794a11a601b3ba39388cb3109fa32336c4b571fe82e",
+  "members": {
+    "checkpoint.json": {
+      "size": 1680,
+      "sha256": "103a9b97bb6475e4115cd49ea4cbb150520e8f52a678792475e285736b7ffb44"
+    },
+    "cross-validation-v5.json": {
+      "size": 227626,
+      "sha256": "a8ad536a59c8e4b128b3266046f7fddb383207009b9890e8490fb77a49178c51"
+    },
+    "bf16-v5/report.json": {
+      "size": 227811,
+      "sha256": "5eeed0b3ee6d806be123ea63ce7de9d8286e6d144b955c2986b72f179a8c4b1d"
+    },
+    "fp32-v5/report.json": {
+      "size": 227131,
+      "sha256": "12b1e359b29c7097287cded67bac28c165b50164bfabf17bed2e618495e11afc"
+    },
+    "fetch.log": {
+      "size": 2708,
+      "sha256": "9fc2dd36912b60eab2a7ca2d8a27a236a81ddf3461f1e6a830d54065116069cb"
+    },
+    "bf16.log": {
+      "size": 3887,
+      "sha256": "9e7214e06abf1a2307fe239d8c881218e155472e2e7703c83aa9a725dbdf75c7"
+    },
+    "bf16-v2.log": {
+      "size": 575,
+      "sha256": "420108e20160c2ed20311f32013f693436137beba35761ad5fab266fadc86b77"
+    },
+    "bf16-v3.log": {
+      "size": 533,
+      "sha256": "91445cf6c50177649b52f5a45d18415263d3a96991aace1cf306a8b661ad08d3"
+    },
+    "bf16-v4.log": {
+      "size": 1388,
+      "sha256": "70b8bf89f9840f511b9fecfe5f9ac8eb41d94b23aa7ca9e8ba7d0e8334be37c1"
+    },
+    "fp32-v4.log": {
+      "size": 1395,
+      "sha256": "f14cf473d25951ea5c4e668208cd0bc381e0baa088ee13b51dd67d2c5f2a061c"
+    },
+    "bf16-v5.log": {
+      "size": 1389,
+      "sha256": "5b921263c317d13a8be2571fe57a4ad3e8a3dc880b96bfcfc664320114b8c255"
+    },
+    "fp32-v5.log": {
+      "size": 1396,
+      "sha256": "a693fc02a1a26251c964eb8cf25720d215ba667fd7fd386394947271ea542d6e"
+    },
+    "compare-v5.log": {
+      "size": 827,
+      "sha256": "6ee5fa6cbea2dda1e9b47114691000dd0ac20e246b8199012fd37aa26789392b"
+    }
+  },
+  "tensor_artifacts": "Complete step safetensors stay on GB10 under bf16-v5 and fp32-v5; every hash is in the archived reports",
+  "failed_attempts": "v1 meta rotary buffers, v2/v3 constructor mismatch; v4 omitted dict-valued cache states and is superseded by v5"
+}

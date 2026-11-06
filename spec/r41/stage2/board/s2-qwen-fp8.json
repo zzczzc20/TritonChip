@@ -1,0 +1,195 @@
+{
+ "schema": "tnca-experiment-spec/1",
+ "id": "s2-qwen-fp8",
+ "allowed_hosts": [
+  "acf3019"
+ ],
+ "hypothesis": "Qwen3-VL-2B-Instruct-FP8 layer 13: its seven FP8Linear modules (official Hub-kernel route, M = prefill and M = 1) and the decoder pair 13-14 with device KV cache over 4 decode steps reproduce the simulator results on the run-1 image (bitwise to the TNCA-order re-derivation; decode against the CPU W8A8 model run).",
+ "competing_explanations": [
+  "the 100 MHz image or the X8 transfer engine changes an FP8 result the simulators gave (bitwise compare to the per-K / blockwise references)",
+  "the board runtime path (HBM DMA, 3-core launch map) differs from the simulator stand-ins",
+  "a kernel falls back to the gather path, so X8 is not exercised (asm census)",
+  "host memory or wall time of the model load (RSS limit 22 GiB)"
+ ],
+ "expected_counter_changes": [
+  "t.ld.async.b.t in the FP8 dot kernels (X8 dot, evidence/r41/fp8/models_tnca)"
+ ],
+ "expected_observations": [
+  "linears: 14/14 (7 modules x 2 M) pass",
+  "decode: 4/4 steps within the recorded floors"
+ ],
+ "board": {
+  "image": "{home}/tnca_images/r41s2_run1_c9f25787494a/tnca_u280.xclbin",
+  "image_sha256": "30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de",
+  "image_uuid": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+  "clock_evidence": "{home}/tnca_build/r41s2_run1_c9f25787494a/r41s2-board/qualified_clock.json",
+  "clock_hz": 100000000,
+  "device": "0000:04:00.1",
+  "mgmt_device": "0000:04:00.0",
+  "backend": "fpga-u280-multicore",
+  "backend_args": {
+   "xclbin": "{home}/tnca_images/r41s2_run1_c9f25787494a/tnca_u280.xclbin",
+   "image_profile": "core-vrf-sync-v5-x8",
+   "core_count": 3,
+   "memory_ports": 3,
+   "hbm_dma": true,
+   "hbm_bytes": 8589934592,
+   "device_clock": true
+  },
+  "profile": "core-vrf-sync-v5-x8",
+  "transport": {
+   "deadline_cycles": 200000000000,
+   "host_timeout_seconds": 28800,
+   "source": "evidence/r40/v3/campaign_fe1b/campaign.json transport"
+  },
+  "memory_map": {
+   "window_base": 0,
+   "window_bytes": 8589934592,
+   "local_limit": 131072,
+   "bank": "MBG[0:31]",
+   "physical_pcs": "PC0-PC31",
+   "source": "evidence/r41/stage2/board/xclbin_hbm_map.json",
+   "source_sha256": "c459cd14ac521d03b9bc67a26f6a191d7dc8c958d57fea40a369db9f0a12d852"
+  },
+  "image_source": {
+   "commit": "c9f25787494a8414f9ab19e03bea6fb3fa794d20",
+   "branch": "r41s2-t2",
+   "record": "evidence/r41/stage2/board/image_source.json",
+   "parameters": "evidence/r41/stage2/integration/image.json",
+   "run": "evidence/r41/stage2/run1/README.md"
+  },
+  "load_policy": "loaded only by evidence/r41/stage2/board/launches/board_queue.sh after the Stage 1 and hbm8 queues finished and the card was idle 15 consecutive minutes (user authorization for this image only); every fpga step probes the loaded UUID, the 100 MHz clock counter and kdsstat first and refuses otherwise; the clock evidence is captured after that load"
+ },
+ "sources": [
+  "tools/performance_harness",
+  "archbench",
+  "python/tnca",
+  "compiler/python",
+  "compiler/targets",
+  "tools/asm",
+  "isa",
+  "evidence/r41/stage2/board/xclbin_hbm_map.json",
+  "evidence/r41/stage2/board/image_source.json",
+  "tools/models",
+  "spec/r41/stage2/board/s2-qwen-fp8.json"
+ ],
+ "env": {
+  "MAX_JOBS": "1",
+  "OMP_NUM_THREADS": "1",
+  "MKL_NUM_THREADS": "1",
+  "CUDA_VISIBLE_DEVICES": "",
+  "PYTHONFAULTHANDLER": "1",
+  "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm",
+  "TRITON_CACHE_DIR": "{out}/caches/triton",
+  "TORCHINDUCTOR_CACHE_DIR": "{out}/caches/inductor",
+  "TORCH_EXTENSIONS_DIR": "{out}/caches/torch-extensions"
+ },
+ "registration": {
+  "status": "registered-not-run",
+  "registered_utc": "2026-10-23",
+  "contract": "doc/r41_tasks_and_acceptance.md S2-01 (S2-04/S2-05 board items)",
+  "launch": "evidence/r41/stage2/board/launches/board_queue.sh",
+  "generator": "tools/performance_harness/stage2_board.py",
+  "expected_board_hours": 0.7,
+  "tool": "tools/models/qwen_tnca_layers.py",
+  "simulator_wall": "SystemC/TLM: linears 1.5-75 s per module, decode pair 6.6 min",
+  "inputs": "{home}/r41s2_fp8_inputs (HF snapshot, snapview, CPU reference ref_fp8, staged from GB10)",
+  "reference": "evidence/r41/fp8/models_tnca/README.md"
+ },
+ "steps": [
+  {
+   "id": "linears",
+   "kind": "fpga",
+   "timeout_seconds": 10800,
+   "env": {
+    "TNCA_BACKEND": "fpga-u280-multicore",
+    "TNCA_BACKEND_ARGS": "{\"xclbin\":\"{home}/tnca_images/r41s2_run1_c9f25787494a/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":8589934592,\"device_clock\":true}",
+    "TNCA_PROFILE": "core-vrf-sync-v5-x8",
+    "TNCA_OPERATING_CLOCK_EVIDENCE": "{home}/tnca_build/r41s2_run1_c9f25787494a/r41s2-board/qualified_clock.json",
+    "TNCA_DEADLINE": "200000000000",
+    "TNCA_HOST_TIMEOUT": "28800",
+    "TNCA_DUMP_DIR": "{out}/linears/dump",
+    "TNCA_IEEE_DIV": "1",
+    "HF_HOME": "{home}/r41s2_fp8_inputs/hf",
+    "HF_HUB_OFFLINE": "1",
+    "QWEN_FP8_VIEW_DIR": "{home}/r41s2_fp8_inputs/snapview",
+    "TNCA_INDEX_OPT": "1",
+    "TNCA_TRITON": "1",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_KERNEL_DUMP": "1"
+   },
+   "argv": [
+    "{home}/r41s2_fp8env/bin/python",
+    "-I",
+    "-u",
+    "{root}/tools/models/qwen_tnca_layers.py",
+    "linears",
+    "--model",
+    "vl",
+    "--teacher-force",
+    "{home}/r41s2_fp8_inputs/qwen/vl/ref_fp8",
+    "--modules",
+    "^model.language_model.layers.13.(self_attn.(q|k|v|o)_proj|mlp.(gate|up|down)_proj)$",
+    "--tnca-tree",
+    "{root}",
+    "--threads",
+    "4",
+    "--out",
+    "{out}/linears/result.json"
+   ],
+   "timing_boundary": "functional: bitwise/tolerance comparisons in the tool report; device cycles recorded per launch, diagnostic only, no performance gate",
+   "cache_state": "fresh process and session per step; experiment-local Triton/Inductor/extension caches under {out}/caches",
+   "outputs": [
+    "{out}/linears/result.json"
+   ]
+  },
+  {
+   "id": "decode",
+   "kind": "fpga",
+   "timeout_seconds": 10800,
+   "env": {
+    "TNCA_BACKEND": "fpga-u280-multicore",
+    "TNCA_BACKEND_ARGS": "{\"xclbin\":\"{home}/tnca_images/r41s2_run1_c9f25787494a/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":8589934592,\"device_clock\":true}",
+    "TNCA_PROFILE": "core-vrf-sync-v5-x8",
+    "TNCA_OPERATING_CLOCK_EVIDENCE": "{home}/tnca_build/r41s2_run1_c9f25787494a/r41s2-board/qualified_clock.json",
+    "TNCA_DEADLINE": "200000000000",
+    "TNCA_HOST_TIMEOUT": "28800",
+    "TNCA_DUMP_DIR": "{out}/decode/dump",
+    "TNCA_IEEE_DIV": "1",
+    "HF_HOME": "{home}/r41s2_fp8_inputs/hf",
+    "HF_HUB_OFFLINE": "1",
+    "QWEN_FP8_VIEW_DIR": "{home}/r41s2_fp8_inputs/snapview",
+    "TNCA_INDEX_OPT": "1",
+    "TNCA_TRITON": "1",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_KERNEL_DUMP": "1"
+   },
+   "argv": [
+    "{home}/r41s2_fp8env/bin/python",
+    "-I",
+    "-u",
+    "{root}/tools/models/qwen_tnca_layers.py",
+    "decode",
+    "--model",
+    "vl",
+    "--index",
+    "13",
+    "--bucket",
+    "32",
+    "--steps",
+    "4",
+    "--tnca-tree",
+    "{root}",
+    "--threads",
+    "4",
+    "--out",
+    "{out}/decode/result.json"
+   ],
+   "timing_boundary": "functional: bitwise/tolerance comparisons in the tool report; device cycles recorded per launch, diagnostic only, no performance gate",
+   "cache_state": "fresh process and session per step; experiment-local Triton/Inductor/extension caches under {out}/caches",
+   "outputs": [
+    "{out}/decode/result.json"
+   ]
+  }
+ ]
+}

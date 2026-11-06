@@ -1,0 +1,133 @@
+{
+  "schema": "r41-q35-author-near-tie-rescore/1",
+  "decision_date": "2026-11-01",
+  "scope": "separate rescore of recorded outputs from original four-prompt run and a segmented multi-turn run",
+  "original_run": "timeout after four passed prompts; unchanged",
+  "original_multiturn": "failed under then-registered containment rule; unchanged",
+  "source_sha256": {
+    "evidence/r41/chat/run3_priority/q35_nohost_v6_four_prompts_timeout.json": "3e1442a0b646c4bfa205e12116519b96413627c27351c0f5bd1a6d94cbd7f93e",
+    "evidence/r41/chat/run3_priority/q35_multiturn_segment_failed_20261031.json": "920dfc3ca07c155c6f4793b5567d2df670b5c580e7652e52e4c3b41c4d8cb7b8",
+    "evidence/r41/chat/quality-ref/q35.json": "65757995f574afa88f4d01d4db6d0df8f4fe785b2796944c1bf0c8d1eb85f563",
+    "evidence/r41/chat/run3_priority/q35_multiturn_tlm_grouped_20261101.tgz": "a0d4fb9d8c439cc44f534f1f8c4739fe52352a5dc5e1f54152e17bf05b627f2e",
+    "evidence/r41/chat/run3_priority/q35_multiturn_segment_failed_20261031.tgz": "ec45d39d11e4348f93258dc00f28f59fdf7e3319a7445965fc63decd6655edfc"
+  },
+  "first_four": [
+    {
+      "id": "fact",
+      "content_pass": true,
+      "first_token": 57590,
+      "cpu_top1": 57590,
+      "first_token_rule": "equal to CPU greedy top token",
+      "old_pass": true,
+      "new_pass": true
+    },
+    {
+      "id": "arith",
+      "content_pass": true,
+      "first_token": 19,
+      "cpu_top1": 19,
+      "first_token_rule": "equal to CPU greedy top token",
+      "old_pass": true,
+      "new_pass": true
+    },
+    {
+      "id": "reason",
+      "content_pass": true,
+      "first_token": 31318,
+      "cpu_top1": 31318,
+      "first_token_rule": "equal to CPU greedy top token",
+      "old_pass": true,
+      "new_pass": true
+    },
+    {
+      "id": "instruct",
+      "content_pass": true,
+      "first_token": 3793,
+      "cpu_top1": 3793,
+      "first_token_rule": "equal to CPU greedy top token",
+      "old_pass": true,
+      "new_pass": true
+    }
+  ],
+  "multiturn": {
+    "old_pass": false,
+    "new_pass": true,
+    "turns": [
+      {
+        "index": 0,
+        "text": "I have remembered your name, Alice.\n",
+        "content_pass": true,
+        "first_token": 40,
+        "cpu_top5": [
+          {
+            "id": 9419,
+            "text": "Hello",
+            "logit": 22.0
+          },
+          {
+            "id": 40,
+            "text": "I",
+            "logit": 21.875
+          },
+          {
+            "id": 59605,
+            "text": "Alice",
+            "logit": 19.375
+          },
+          {
+            "id": 43478,
+            "text": "Nice",
+            "logit": 19.125
+          },
+          {
+            "id": 7525,
+            "text": "Your",
+            "logit": 18.75
+          }
+        ],
+        "first_token_rule": "in CPU reference top five",
+        "first_token_pass": true,
+        "old_score": {
+          "passed": false,
+          "required_keywords": [],
+          "keywords_missing_in_reference": [],
+          "keywords_ok": true,
+          "containment": false,
+          "tokens_equal": false,
+          "common_prefix_tokens": 0,
+          "device_tokens": 11,
+          "reference_tokens": 12
+        },
+        "new_pass": true
+      },
+      {
+        "index": 1,
+        "text": "Alice\n",
+        "content_pass": true,
+        "first_token": 59605,
+        "cpu_top1": 59605,
+        "first_token_rule": "equal to CPU greedy top token",
+        "first_token_pass": true,
+        "old_score": {
+          "passed": true,
+          "required_keywords": [
+            "alice"
+          ],
+          "keywords_missing_in_reference": [],
+          "keywords_ok": true,
+          "containment": true,
+          "tokens_equal": true,
+          "common_prefix_tokens": 4,
+          "device_tokens": 4,
+          "reference_tokens": 4
+        },
+        "new_pass": true
+      }
+    ]
+  },
+  "combined_rescore_pass": true,
+  "limitations": [
+    "Separate sessions; not a replacement for the original timeout or old-rule failure.",
+    "Board logits were not captured; first-turn test uses CPU top-five membership, not a claimed board logit gap."
+  ]
+}

@@ -282,15 +282,22 @@ class Builder:
         self._emit('vfms', [v], [a, b, c], comment=comment)
         return v
 
-    def vcvt(self, src, dst, a, comment=None):
+    def vcvt(self, src, dst, a, comment=None, *, preserve_fp8_nan_sign=False):
         """A numeric conversion (ISA sec 8.4).
 
         `src` and `dst` are the ISA's own format names, in the ISA's own
         order: `vcvt('s32', 'f32', x)` is `vf.cvt.s32.f32`, widening a
-        signed integer to binary32.
+        signed integer to binary32. Signed FP8 narrowing additionally keeps
+        the source sign on NaNs; it is defined only for binary32 input.
         """
+        if preserve_fp8_nan_sign:
+            if src != 'f32' or dst not in ('f8E4M3FN', 'f8E5M2'):
+                raise Diagnostic('signed FP8 narrowing requires an f32 source')
         v = self._value(VECTOR, dst, hint='c')
-        self._emit('vcvt', [v], [a], src=src, dst=dst, comment=comment)
+        attrs = dict(src=src, dst=dst, comment=comment)
+        if preserve_fp8_nan_sign:
+            attrs['preserve_fp8_nan_sign'] = True
+        self._emit('vcvt', [v], [a], **attrs)
         return v
 
     def vextract(self, v, lane, dtype=None):
@@ -357,7 +364,7 @@ class Builder:
         return v
 
     # ---- memory -----------------------------------------------------------
-    def load(self, base, *, mask=None, other=0, dtype='f32', size='w'):
+    def load(self, base, *, mask=None, other=0, dtype='f32', size='w', offset=0):
         """A contiguous vector load.
 
         ISA sec 9.1 gives lane i the address base + i*sz, so a contiguous
@@ -365,12 +372,20 @@ class Builder:
         a predicated load leaves masked-off lanes holding whatever was there.
         """
         v = self._value(VECTOR, dtype, hint='ld')
-        self._emit('load', [v], [base], mask=mask, other=other, size=size)
+        if offset:
+            # `[Sa, #imm16]` (ISA 0x10): a byte offset folded into the access.
+            self._emit('load', [v], [base], mask=mask, other=other, size=size, offset=offset)
+        else:
+            self._emit('load', [v], [base], mask=mask, other=other, size=size)
         return v
 
-    def store(self, base, value, *, mask=None, size='w', comment=None):
-        self._emit('store', [], [base, value], mask=mask, size=size,
-                   comment=comment)
+    def store(self, base, value, *, mask=None, size='w', comment=None, offset=0):
+        if offset:
+            self._emit('store', [], [base, value], mask=mask, size=size,
+                       comment=comment, offset=offset)
+        else:
+            self._emit('store', [], [base, value], mask=mask, size=size,
+                       comment=comment)
 
     def gather(self, base, index, *, mask=None, other=0, dtype='f32',
                size='w'):

@@ -1,0 +1,152 @@
+{
+  "current_widths_with_four_cycle_home": {
+    "schema": "tnca-resource-screen/1",
+    "identity": {
+      "software_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "config_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "image_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "contract_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "clock_hz": 100000000,
+      "backend": "r41-unbuilt-bandwidth-hypothesis"
+    },
+    "demand": {
+      "core_lsu": {
+        "work": 1000000000,
+        "unit": "byte",
+        "source": "one GB of useful streaming traffic"
+      },
+      "noc_payload": {
+        "work": 1000000000,
+        "unit": "byte",
+        "source": "every LSU byte crosses the NoC once"
+      },
+      "home_service": {
+        "work": 1000000000,
+        "unit": "byte",
+        "source": "every streaming byte crosses a home once"
+      },
+      "axi_hbm": {
+        "work": 1000000000,
+        "unit": "byte",
+        "source": "every streaming byte crosses HBM once"
+      }
+    },
+    "candidate": {
+      "core_lsu": {
+        "per_cycle": 192,
+        "unit": "byte",
+        "source": "three 512-bit core ports at 100 MHz"
+      },
+      "noc_payload": {
+        "per_cycle": 192,
+        "unit": "byte",
+        "source": "three 512-bit NoC payloads at 100 MHz"
+      },
+      "home_service": {
+        "per_cycle": 48,
+        "unit": "byte",
+        "source": "three 64-byte homes with four-cycle miss occupancy"
+      },
+      "axi_hbm": {
+        "per_cycle": 2048,
+        "unit": "byte",
+        "source": "32 independent 512-bit stream outlets at 100 MHz"
+      }
+    },
+    "lower_bound_cycles": 20833333.333333332,
+    "resource_lower_bounds": {
+      "core_lsu": 5208333.333333333,
+      "noc_payload": 5208333.333333333,
+      "home_service": 20833333.333333332,
+      "axi_hbm": 488281.25
+    },
+    "limiting_resources": [
+      "home_service",
+      "core_lsu",
+      "noc_payload",
+      "axi_hbm"
+    ],
+    "decision": "reject-impossible-budget",
+    "cycle_budget": 1000000,
+    "predicted_cycles": null,
+    "predicted_speedup": null,
+    "placement": "not-measured",
+    "timing": "not-measured",
+    "uncertainty": "one-sided optimistic bound; omitted bottlenecks can only worsen it"
+  },
+  "eight_line_services_per_core": {
+    "schema": "tnca-resource-screen/1",
+    "identity": {
+      "software_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "config_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "image_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "contract_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "clock_hz": 100000000,
+      "backend": "r41-unbuilt-bandwidth-hypothesis"
+    },
+    "demand": {
+      "core_lsu": {
+        "work": 1000000000,
+        "unit": "byte",
+        "source": "one GB of useful streaming traffic"
+      },
+      "noc_payload": {
+        "work": 1000000000,
+        "unit": "byte",
+        "source": "every LSU byte crosses the NoC once"
+      },
+      "home_service": {
+        "work": 1000000000,
+        "unit": "byte",
+        "source": "every streaming byte crosses a home once"
+      },
+      "axi_hbm": {
+        "work": 1000000000,
+        "unit": "byte",
+        "source": "every streaming byte crosses HBM once"
+      }
+    },
+    "candidate": {
+      "core_lsu": {
+        "per_cycle": 1536,
+        "unit": "byte",
+        "source": "eight independent 64-byte services per core per cycle"
+      },
+      "noc_payload": {
+        "per_cycle": 1536,
+        "unit": "byte",
+        "source": "eight 64-byte payload services per core per cycle"
+      },
+      "home_service": {
+        "per_cycle": 1536,
+        "unit": "byte",
+        "source": "eight independently banked 64-byte home services per core per cycle"
+      },
+      "axi_hbm": {
+        "per_cycle": 2048,
+        "unit": "byte",
+        "source": "32 independent 512-bit stream outlets at 100 MHz"
+      }
+    },
+    "lower_bound_cycles": 651041.6666666666,
+    "resource_lower_bounds": {
+      "core_lsu": 651041.6666666666,
+      "noc_payload": 651041.6666666666,
+      "home_service": 651041.6666666666,
+      "axi_hbm": 488281.25
+    },
+    "limiting_resources": [
+      "core_lsu",
+      "noc_payload",
+      "home_service",
+      "axi_hbm"
+    ],
+    "decision": "needs-rtl-and-calibration",
+    "cycle_budget": 1000000,
+    "predicted_cycles": null,
+    "predicted_speedup": null,
+    "placement": "not-measured",
+    "timing": "not-measured",
+    "uncertainty": "one-sided optimistic bound; omitted bottlenecks can only worsen it"
+  }
+}

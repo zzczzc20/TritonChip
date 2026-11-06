@@ -1,0 +1,5 @@
+single8 alt_a 0 alt_b 0: 4 slots x 65536 pairs, 786432 lane results checked, 0 mismatches
+single8 alt_a 1 alt_b 0: 4 slots x 65536 pairs, 524288 lane results checked, 0 mismatches
+single8 alt_a 0 alt_b 1: 4 slots x 65536 pairs, 524288 lane results checked, 0 mismatches
+single8 alt_a 1 alt_b 1: 4 slots x 65536 pairs, 524288 lane results checked, 0 mismatches
+single8: checked V1 1048576 V2L 1048576 V2D 1048576 V3 262144, 0 mismatches: PASS

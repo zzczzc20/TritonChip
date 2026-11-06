@@ -1,0 +1,447 @@
+{
+ "schema": "tnca-r41s2-screen-families/1",
+ "margin_ns": 1.4,
+ "screens": {
+  "t2r5_tile1_SLR1": {
+   "total": {
+    "paths_below_margin": 252,
+    "failing": 0,
+    "tns_ns": 0.0,
+    "worst_slack_ns": 0.896
+   },
+   "owners": {
+    "F03/F08 (VFPU, FMA)": {
+     "families": 2,
+     "paths_below_margin": 145,
+     "failing": 0,
+     "worst_slack_ns": 0.896
+    },
+    "F01 (stall, front end)": {
+     "families": 2,
+     "paths_below_margin": 89,
+     "failing": 0,
+     "worst_slack_ns": 1.067
+    },
+    "F09 (MTX, accumulator)": {
+     "families": 3,
+     "paths_below_margin": 7,
+     "failing": 0,
+     "worst_slack_ns": 1.259
+    },
+    "transfer engine (u_txf; X8 edits it)": {
+     "families": 2,
+     "paths_below_margin": 2,
+     "failing": 0,
+     "worst_slack_ns": 1.322
+    },
+    "F07 (NUCA slice)": {
+     "families": 8,
+     "paths_below_margin": 8,
+     "failing": 0,
+     "worst_slack_ns": 1.325
+    },
+    "F04 (writeback)": {
+     "families": 1,
+     "paths_below_margin": 1,
+     "failing": 0,
+     "worst_slack_ns": 1.384
+    }
+   },
+   "families": [
+    {
+     "source_family": "u_core/g_vrf_banked.of_d1_reg[*]",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.s0_q_reg[*]",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 73,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.896,
+     "worst_levels": 17,
+     "worst_delay_ns": 9.087,
+     "worst_route_ns": 5.879,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/x_rctx_reg[*]",
+     "destination_family": "u_core/f_pc_reg[*][*]",
+     "owner": "F01 (stall, front end)",
+     "paths_below_margin": 75,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.067,
+     "worst_levels": 12,
+     "worst_delay_ns": 8.829,
+     "worst_route_ns": 7.904,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.of_d0_reg[*]",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.s0_q_reg[*]",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 72,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.133,
+     "worst_levels": 15,
+     "worst_delay_ns": 8.847,
+     "worst_route_ns": 5.821,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/x_rctx_reg[*]",
+     "destination_family": "u_core/f_detail_reg[*][*]",
+     "owner": "F01 (stall, front end)",
+     "paths_below_margin": 14,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.247,
+     "worst_levels": 12,
+     "worst_delay_ns": 8.648,
+     "worst_route_ns": 7.723,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/s1_vld_reg[*]",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.a_q_reg[*]",
+     "owner": "F09 (MTX, accumulator)",
+     "paths_below_margin": 3,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.259,
+     "worst_levels": 15,
+     "worst_delay_ns": 8.722,
+     "worst_route_ns": 7.486,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/mem_reg_7",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.a_q_reg[*]",
+     "owner": "F09 (MTX, accumulator)",
+     "paths_below_margin": 3,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.286,
+     "worst_levels": 15,
+     "worst_delay_ns": 8.649,
+     "worst_route_ns": 6.275,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_txf/t_desc_reg[*]_rep",
+     "destination_family": "u_core/u_txf/t_b2_reg[*]",
+     "owner": "transfer engine (u_txf; X8 edits it)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.322,
+     "worst_levels": 3,
+     "worst_delay_ns": 8.658,
+     "worst_route_ns": 8.16,
+     "a3": null
+    },
+    {
+     "source_family": "u_slice/cur_ms_reg[*]_rep",
+     "destination_family": "u_slice/data_mem_reg_r3_192_255_224_230/RAMD",
+     "owner": "F07 (NUCA slice)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.325,
+     "worst_levels": 16,
+     "worst_delay_ns": 8.596,
+     "worst_route_ns": 6.919,
+     "a3": null
+    },
+    {
+     "source_family": "u_slice/cur_ms_reg[*]_rep",
+     "destination_family": "u_slice/data_mem_reg_r2_128_191_224_230/RAMD",
+     "owner": "F07 (NUCA slice)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.328,
+     "worst_levels": 16,
+     "worst_delay_ns": 8.592,
+     "worst_route_ns": 6.915,
+     "a3": null
+    },
+    {
+     "source_family": "u_slice/cur_ms_reg[*]_rep",
+     "destination_family": "u_slice/data_mem_reg_r3_128_191_224_230/RAMD",
+     "owner": "F07 (NUCA slice)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.332,
+     "worst_levels": 16,
+     "worst_delay_ns": 8.589,
+     "worst_route_ns": 6.912,
+     "a3": null
+    },
+    {
+     "source_family": "u_slice/cur_ms_reg[*]_rep",
+     "destination_family": "u_slice/data_mem_reg_r2_64_127_224_230/RAMD",
+     "owner": "F07 (NUCA slice)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.368,
+     "worst_levels": 16,
+     "worst_delay_ns": 8.553,
+     "worst_route_ns": 6.876,
+     "a3": null
+    },
+    {
+     "source_family": "u_slice/cur_ms_reg[*]_rep",
+     "destination_family": "u_slice/data_mem_reg_r3_0_63_224_230/RAMD",
+     "owner": "F07 (NUCA slice)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.371,
+     "worst_levels": 16,
+     "worst_delay_ns": 8.55,
+     "worst_route_ns": 6.873,
+     "a3": null
+    },
+    {
+     "source_family": "u_slice/cur_ms_reg[*]_rep",
+     "destination_family": "u_slice/data_mem_reg_r2_0_63_287_293/RAME",
+     "owner": "F07 (NUCA slice)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.377,
+     "worst_levels": 16,
+     "worst_delay_ns": 8.545,
+     "worst_route_ns": 6.941,
+     "a3": null
+    },
+    {
+     "source_family": "u_slice/cur_ms_reg[*]_rep",
+     "destination_family": "u_slice/data_mem_reg_r2_192_255_224_230/RAMD",
+     "owner": "F07 (NUCA slice)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.38,
+     "worst_levels": 16,
+     "worst_delay_ns": 8.541,
+     "worst_route_ns": 6.864,
+     "a3": null
+    },
+    {
+     "source_family": "u_slice/cur_ms_reg[*]_rep",
+     "destination_family": "u_slice/data_mem_reg_r2_0_63_224_230/RAMD",
+     "owner": "F07 (NUCA slice)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.381,
+     "worst_levels": 16,
+     "worst_delay_ns": 8.54,
+     "worst_route_ns": 6.863,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_sdata_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.384,
+     "worst_levels": 11,
+     "worst_delay_ns": 8.598,
+     "worst_route_ns": 7.583,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_txf/t_desc_reg[*]_rep",
+     "destination_family": "u_core/u_txf/t_e2_reg[*]",
+     "owner": "transfer engine (u_txf; X8 edits it)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.385,
+     "worst_levels": 3,
+     "worst_delay_ns": 8.595,
+     "worst_route_ns": 8.075,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/mem_reg_6",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.a_q_reg[*]",
+     "owner": "F09 (MTX, accumulator)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.392,
+     "worst_levels": 15,
+     "worst_delay_ns": 8.542,
+     "worst_route_ns": 6.397,
+     "a3": null
+    }
+   ]
+  },
+  "t2r5_tile0_SLR0": {
+   "total": {
+    "paths_below_margin": 366,
+    "failing": 0,
+    "tns_ns": 0.0,
+    "worst_slack_ns": 0.973
+   },
+   "owners": {
+    "F09 (MTX, accumulator)": {
+     "families": 2,
+     "paths_below_margin": 38,
+     "failing": 0,
+     "worst_slack_ns": 0.973
+    },
+    "F03/F08 (VFPU, FMA)": {
+     "families": 3,
+     "paths_below_margin": 323,
+     "failing": 0,
+     "worst_slack_ns": 1.006
+    },
+    "F04 (writeback)": {
+     "families": 2,
+     "paths_below_margin": 3,
+     "failing": 0,
+     "worst_slack_ns": 1.099
+    },
+    "other core": {
+     "families": 1,
+     "paths_below_margin": 1,
+     "failing": 0,
+     "worst_slack_ns": 1.37
+    },
+    "F01 (stall, front end)": {
+     "families": 1,
+     "paths_below_margin": 1,
+     "failing": 0,
+     "worst_slack_ns": 1.37
+    }
+   },
+   "families": [
+    {
+     "source_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/s1_vld_reg[*]",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.a_q_reg[*]",
+     "owner": "F09 (MTX, accumulator)",
+     "paths_below_margin": 35,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 0.973,
+     "worst_levels": 15,
+     "worst_delay_ns": 9.008,
+     "worst_route_ns": 7.408,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.of_d1_reg[*]",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.s0_q_reg[*]",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 242,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.006,
+     "worst_levels": 17,
+     "worst_delay_ns": 8.975,
+     "worst_route_ns": 5.604,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/x_imm_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.099,
+     "worst_levels": 10,
+     "worst_delay_ns": 8.882,
+     "worst_route_ns": 7.815,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.of_d0_reg[*]",
+     "destination_family": "u_core/u_vfpu/g_fma[*].u_fma/g_l2.s0_q_reg[*]",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 73,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.15,
+     "worst_levels": 15,
+     "worst_delay_ns": 8.83,
+     "worst_route_ns": 5.709,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/u_vfpu/cvt_fn_reg[*]",
+     "destination_family": "u_core/u_vfpu/dly_v_reg[*][*]",
+     "owner": "F03/F08 (VFPU, FMA)",
+     "paths_below_margin": 8,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.226,
+     "worst_levels": 17,
+     "worst_delay_ns": 8.756,
+     "worst_route_ns": 7.147,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.u_vrf/g_bank[*].u_bank/mem_reg_7",
+     "destination_family": "u_core/u_mtx/g_mac[*].u_mac/g_in_reg.a_q_reg[*]",
+     "owner": "F09 (MTX, accumulator)",
+     "paths_below_margin": 3,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.233,
+     "worst_levels": 15,
+     "worst_delay_ns": 8.701,
+     "worst_route_ns": 6.599,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/g_vrf_banked.of_d0_reg[*]",
+     "destination_family": "u_core/w_vdata_reg[*]",
+     "owner": "F04 (writeback)",
+     "paths_below_margin": 2,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.309,
+     "worst_levels": 11,
+     "worst_delay_ns": 8.674,
+     "worst_route_ns": 7.703,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/r_func_reg[*]",
+     "destination_family": "u_core/x_fpctl_reg[*]_replica_1",
+     "owner": "other core",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.37,
+     "worst_levels": 11,
+     "worst_delay_ns": 8.525,
+     "worst_route_ns": 7.486,
+     "a3": null
+    },
+    {
+     "source_family": "u_core/w_sdata_reg[*]",
+     "destination_family": "u_core/f_pc_reg[*][*]",
+     "owner": "F01 (stall, front end)",
+     "paths_below_margin": 1,
+     "failing": 0,
+     "tns_ns": 0.0,
+     "worst_slack_ns": 1.37,
+     "worst_levels": 9,
+     "worst_delay_ns": 8.525,
+     "worst_route_ns": 7.493,
+     "a3": null
+    }
+   ]
+  }
+ }
+}

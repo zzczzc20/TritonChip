@@ -1,0 +1,247 @@
+{
+  "batch": "fixed",
+  "sampling": "device-rule",
+  "configurations": 18,
+  "first_stage": [
+    [
+      "model.mlp/medium/fp16-t128-d128@control",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/medium/fp16-t128-d128@candidate",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.bmm/medium/fp16-b16-m64-k32-n64@candidate",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.bmm/medium/fp16-b16-m64-k32-n64@control",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gemv/hbm/fp16-k4096-n11008@control",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gemv/hbm/fp16-k4096-n11008@candidate",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gemv/medium/fp16-k320-n448@candidate",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.gemv/medium/fp16-k320-n448@control",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.linear/hbm/fp16-m512-k4096-n11008@control",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.linear/hbm/fp16-m512-k4096-n11008@candidate",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.linear/medium/fp16-m128-k320-n256@control",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.linear/medium/fp16-m128-k320-n256@candidate",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/hbm/fp16-m4096-k4096-n4096@control",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/hbm/fp16-m4096-k4096-n4096@candidate",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/medium/fp16-m128-k192-n128@candidate",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/medium/fp16-m128-k192-n128@control",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/medium/fp32-m128-k192-n128@candidate",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.matmul/medium/fp32-m128-k192-n128@control",
+      "q",
+      0,
+      1
+    ]
+  ],
+  "estimate": {
+    "expected_board_hours": 0.264,
+    "runs": [
+      {
+        "config": "model.mlp/medium/fp16-t128-d128@control",
+        "runs": 2,
+        "seconds": 29.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0144
+      },
+      {
+        "config": "model.mlp/medium/fp16-t128-d128@candidate",
+        "runs": 2,
+        "seconds": 29.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0144
+      },
+      {
+        "config": "op.bmm/medium/fp16-b16-m64-k32-n64@candidate",
+        "runs": 2,
+        "seconds": 29.3,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.038
+      },
+      {
+        "config": "op.bmm/medium/fp16-b16-m64-k32-n64@control",
+        "runs": 2,
+        "seconds": 29.3,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.038
+      },
+      {
+        "config": "op.gemv/hbm/fp16-k4096-n11008@control",
+        "runs": 2,
+        "seconds": 55.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.8783
+      },
+      {
+        "config": "op.gemv/hbm/fp16-k4096-n11008@candidate",
+        "runs": 2,
+        "seconds": 55.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.8783
+      },
+      {
+        "config": "op.gemv/medium/fp16-k320-n448@candidate",
+        "runs": 2,
+        "seconds": 27.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0031
+      },
+      {
+        "config": "op.gemv/medium/fp16-k320-n448@control",
+        "runs": 2,
+        "seconds": 27.0,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0031
+      },
+      {
+        "config": "op.linear/hbm/fp16-m512-k4096-n11008@control",
+        "runs": 1,
+        "seconds": 85.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 19.6084
+      },
+      {
+        "config": "op.linear/hbm/fp16-m512-k4096-n11008@candidate",
+        "runs": 1,
+        "seconds": 85.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 19.6084
+      },
+      {
+        "config": "op.linear/medium/fp16-m128-k320-n256@control",
+        "runs": 2,
+        "seconds": 26.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0074
+      },
+      {
+        "config": "op.linear/medium/fp16-m128-k320-n256@candidate",
+        "runs": 2,
+        "seconds": 26.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0074
+      },
+      {
+        "config": "op.matmul/hbm/fp16-m4096-k4096-n4096@control",
+        "runs": 1,
+        "seconds": 167.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 47.2359
+      },
+      {
+        "config": "op.matmul/hbm/fp16-m4096-k4096-n4096@candidate",
+        "runs": 1,
+        "seconds": 167.8,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 47.2359
+      },
+      {
+        "config": "op.matmul/medium/fp16-m128-k192-n128@candidate",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.matmul/medium/fp16-m128-k192-n128@control",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.matmul/medium/fp32-m128-k192-n128@candidate",
+        "runs": 2,
+        "seconds": 28.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0074
+      },
+      {
+        "config": "op.matmul/medium/fp32-m128-k192-n128@control",
+        "runs": 2,
+        "seconds": 28.4,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0074
+      }
+    ],
+    "method": "per-process wall seconds of the nearest reference record (R40 fe1b board runs); short configurations add one formal process; extra timed calls add their device time"
+  }
+}

@@ -334,11 +334,23 @@ class Transport(_backend.Backend):
     def upload(self, addr, data):
         """Bytes into device memory, through the device's memory system."""
         _backend.check_transfer(addr, len(data), what='upload')
-        padded = bytes(data) + b'\x00' * (-len(data) % WORD)
-        n = len(padded) // WORD
-        self._put_payload(addr, [int.from_bytes(padded[i * WORD:(i + 1) * WORD],
-                                                'little') for i in range(n)])
+        data = memoryview(data).cast('B')
+        if len(data) % WORD:
+            data = memoryview(bytes(data) + b'\x00' * (-len(data) % WORD))
+        n = len(data) // WORD
+        self._put_payload_bytes(addr, data)
         return self.request(OP_UPLOAD, addr, n)
+
+    def _put_payload_bytes(self, addr, data):
+        """Payload out as whole little-endian words in a bytes-like object.
+
+        The default hands `_put_payload` one integer per word, which is what
+        every medium accepts. A medium with a bulk path (a DMA window)
+        overrides this to move the bytes without building that list: a list
+        of Python integers costs about five times the payload in host memory.
+        """
+        self._put_payload(addr, [int.from_bytes(data[i * WORD:(i + 1) * WORD], 'little')
+                                 for i in range(len(data) // WORD)])
 
     @serialized_io
     def download(self, addr, nbytes):

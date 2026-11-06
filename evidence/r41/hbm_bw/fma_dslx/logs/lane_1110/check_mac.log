@@ -1,0 +1,15 @@
+dump_0.txt: lines 2000000 fail 0 ro_visible 0 nan 37621 inf 130151 zero 2 sub 3
+dump_10.txt: lines 2000000 fail 0 ro_visible 379 nan 80750 inf 163700 zero 204 sub 1152
+dump_11.txt: lines 2000000 fail 0 ro_visible 0 nan 54107 inf 138419 zero 48998 sub 51240
+dump_12.txt: lines 2000000 fail 0 ro_visible 579319 nan 0 inf 482391 zero 61669 sub 0
+dump_13.txt: lines 2000000 fail 0 ro_visible 285279 nan 368 inf 56333 zero 280830 sub 6710
+dump_14.txt: lines 2000000 fail 0 ro_visible 179 nan 220919 inf 340148 zero 3154 sub 31709
+dump_15.txt: lines 2000000 fail 0 ro_visible 110 nan 712933 inf 345073 zero 8904 sub 19891
+dump_16.txt: lines 2000000 fail 0 ro_visible 1 nan 0 inf 0 zero 70185 sub 245460
+dump_1.txt: lines 2000000 fail 0 ro_visible 0 nan 0 inf 0 zero 294832 sub 82788
+dump_2.txt: lines 2000000 fail 0 ro_visible 0 nan 7 inf 0 zero 587933 sub 10
+dump_3.txt: lines 2000000 fail 0 ro_visible 0 nan 1349409 inf 43075 zero 376 sub 292
+dump_4.txt: lines 2000000 fail 0 ro_visible 0 nan 37076 inf 130917 zero 66 sub 47
+dump_5.txt: lines 2000000 fail 0 ro_visible 0 nan 37110 inf 130382 zero 1137 sub 895
+TOTAL: lines 26000000 fail 0 ro_visible 865267 nan 2530300 inf 1960589 zero 1358290 sub 440197
+check_mac: PASS

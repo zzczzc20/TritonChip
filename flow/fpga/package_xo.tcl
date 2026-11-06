@@ -104,6 +104,20 @@ set XO     $OUT/${NAME}.xo
 file mkdir $OUT
 file copy -force $ROOT/fpga/$KSRC $KXML
 
+# R41 G4: the kernel.xml's m_axi data width follows the image's AXI_DATA_W
+# (256 in the file and by default; 512 = one beat a line). Without an image
+# configuration, or without the parameter, the file is copied unchanged.
+if {[info exists ::env(TNCA_IMAGE_CONFIG)]} {
+    source $::env(TNCA_IMAGE_CONFIG)
+    if {[dict exists $TNCA_IMAGE_PARAMS AXI_DATA_W]} {
+        set axi_w [dict get $TNCA_IMAGE_PARAMS AXI_DATA_W]
+        set fh [open $KXML r]; set kx [read $fh]; close $fh
+        set nports [regsub -all {(<port name="m_axi_hbm[0-9]+" mode="master"[^>]*dataWidth=")[0-9]+(")} $kx "\\1${axi_w}\\2" kx]
+        set fh [open $KXML w]; puts -nonewline $fh $kx; close $fh
+        puts "TNCA_KERNEL_XML m_axi dataWidth=$axi_w ports=$nports"
+    }
+}
+
 #------------------------------------------------------------------------------
 # The RTL, named rather than globbed
 #

@@ -1,0 +1,103 @@
+{
+ "a": "/home/zhongchun/flux-work/out/tf_fp8_inductor",
+ "b": "/home/zhongchun/flux-work/out/ref_fp8",
+ "tensors": {
+  "attention_mask": {
+   "equal": true
+  },
+  "final_latents_packed": {
+   "bitwise_equal": false,
+   "max_abs": 0.82421875,
+   "rel_l2": 0.062048141954367975,
+   "cosine": 0.9980791145619705
+  },
+  "final_latents_vae": {
+   "bitwise_equal": true,
+   "max_abs": 0.0,
+   "rel_l2": 0.0,
+   "cosine": 1.0
+  },
+  "image_decoded": {
+   "bitwise_equal": false,
+   "max_abs": 0.03125,
+   "rel_l2": 0.00364483088396911,
+   "cosine": 0.9999941767292293
+  },
+  "image_pt": {
+   "bitwise_equal": false,
+   "max_abs": 0.015625,
+   "rel_l2": 0.0020867892765693737,
+   "cosine": 0.9999979988020338,
+   "psnr_db": 56.083750040256895
+  },
+  "input_ids": {
+   "equal": true
+  },
+  "latent_ids": {
+   "equal": true
+  },
+  "latents_init": {
+   "bitwise_equal": true,
+   "max_abs": 0.0,
+   "rel_l2": 0.0,
+   "cosine": 1.0
+  },
+  "prompt_embeds": {
+   "bitwise_equal": false,
+   "max_abs": 122.5,
+   "rel_l2": 0.018208893790266238,
+   "cosine": 0.9998342133267972
+  },
+  "step0_latents": {
+   "bitwise_equal": false,
+   "max_abs": 0.03125,
+   "rel_l2": 0.0045737470202097934,
+   "cosine": 0.9999895413039713
+  },
+  "step0_noise_pred": {
+   "bitwise_equal": false,
+   "max_abs": 0.69921875,
+   "rel_l2": 0.055740894878168176,
+   "cosine": 0.9984453076469976
+  },
+  "step1_latents": {
+   "bitwise_equal": false,
+   "max_abs": 0.1875,
+   "rel_l2": 0.01317100531004219,
+   "cosine": 0.999913278839229
+  },
+  "step1_noise_pred": {
+   "bitwise_equal": false,
+   "max_abs": 2.4296875,
+   "rel_l2": 0.11972682276984209,
+   "cosine": 0.9928183128458864
+  },
+  "step2_latents": {
+   "bitwise_equal": false,
+   "max_abs": 0.322265625,
+   "rel_l2": 0.025300144984116996,
+   "cosine": 0.9996799074035428
+  },
+  "step2_noise_pred": {
+   "bitwise_equal": false,
+   "max_abs": 1.857421875,
+   "rel_l2": 0.0886360118929478,
+   "cosine": 0.9960670012183154
+  },
+  "step3_latents": {
+   "bitwise_equal": false,
+   "max_abs": 0.82421875,
+   "rel_l2": 0.062048141954367975,
+   "cosine": 0.9980791145619705
+  },
+  "step3_noise_pred": {
+   "bitwise_equal": false,
+   "max_abs": 1.173828125,
+   "rel_l2": 0.06762226441471653,
+   "cosine": 0.9977125850216451
+  },
+  "text_ids": {
+   "equal": true
+  }
+ }
+}

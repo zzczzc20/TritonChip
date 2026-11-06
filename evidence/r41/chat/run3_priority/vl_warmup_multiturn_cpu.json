@@ -1,0 +1,57 @@
+{
+  "schema": "r41-vl-cpu-warmup-multiturn/1",
+  "domain": "full-checkpoint CPU diagnostic, not board/TLM",
+  "prompts": [
+    "My name is Alice. Please remember it and reply with one short sentence.",
+    "What is my name? Answer with one word."
+  ],
+  "paths": {
+    "baseline": [
+      {
+        "text": "Got it, Alice!",
+        "tokens": [
+          32462,
+          432,
+          11,
+          29405,
+          0,
+          151645
+        ],
+        "status": "pass"
+      },
+      {
+        "text": "Alice.",
+        "tokens": [
+          61686,
+          13,
+          151645
+        ],
+        "status": "pass"
+      }
+    ],
+    "warmup": [
+      {
+        "text": "Got it, Alice!",
+        "tokens": [
+          32462,
+          432,
+          11,
+          29405,
+          0,
+          151645
+        ],
+        "status": "pass"
+      },
+      {
+        "text": "Alice.",
+        "tokens": [
+          61686,
+          13,
+          151645
+        ],
+        "status": "pass"
+      }
+    ]
+  },
+  "equal": true
+}

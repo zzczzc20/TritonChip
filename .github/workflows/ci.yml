@@ -45,6 +45,9 @@ jobs:
         with:
           fetch-depth: 0  # the shipped agent task pins an ancestor commit
 
+      - name: Frozen R40 contracts retain their original bytes
+        run: python3 tools/r40/contract_v3.py
+
       - name: Toolchain
         run: |
           set -euo pipefail
@@ -78,6 +81,11 @@ jobs:
           make r40-grid-dispatch
           make r40-coherent-host
           make r40-multicore-shell
+
+      # R41 F10: the LSU pair's registered request boundary against the R40
+      # combinational port, as a miter under back-pressure and reordering.
+      - name: R41 LSU registered request boundary
+        run: make lsu-reqreg
 
       - name: R40 registered tensor ranges and complete requester identity
         run: |
@@ -139,6 +147,7 @@ jobs:
         run: |
           python3 tools/r38/gen_counters.py --check
           python3 tools/r38/evidence_tests.py
+          python3 tools/r38/test_cycle_exception.py
           python3 tools/r40/resources_tests.py
 
       - name: Build tnca-opt against the distribution MLIR
@@ -162,6 +171,7 @@ jobs:
         run: |
           python3 -m unittest discover -s tools/tritonchip_agent_harness/tests -p 'test_*.py'
           python3 -m unittest discover -s tools/tritonchip_fpga_harness/tests -p 'test_*.py'
+          python3 tools/r41/chat_speed/test_interactive_idle.py
 
       # R3's performance model: six graphs whose cycle counts are worked out
       # by hand in the test, and exact agreement required. No RTL, no
@@ -550,6 +560,10 @@ jobs:
     name: "R40 multicore MMIO (${{ matrix.lane }})"
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    # The locked PyPI Torch dependencies fill the runner when pip caches a
+    # second copy of their downloads; retain the lock without that cache.
+    env:
+      PIP_NO_CACHE_DIR: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -576,10 +590,6 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             iverilog yosys build-essential cmake ninja-build python3 python3-venv \
             libmlir-20-dev mlir-20-tools llvm-20-dev
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ hashFiles('spec/r1_toolchain.lock.json') }}
       - name: Locked Torch, Triton and plugin
         run: |
           set -euo pipefail

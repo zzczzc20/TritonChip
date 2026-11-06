@@ -1,0 +1,13 @@
+{
+  "recorded_cgroup_peak_bytes": {
+    "r41s2-int-audit.service": 7722332160,
+    "r41s2-int-audit-native.service": 1122627584,
+    "r41s2-int-audit-native-int.service": 1124429824,
+    "r41s2-int-audit-base-pair.service": 1123307520,
+    "r41s2-int-audit-int-pair.service": 1125814272,
+    "r41s2-int-audit-base-ports.service": 1122525184,
+    "r41s2-int-audit-int-ports.service": 1124265984
+  },
+  "sum_of_recorded_peaks_bytes": 14465302528,
+  "note": "Sum of recorded lane peaks is conservative: peaks occurred at different times; cgroup memory includes more than process RSS."
+}

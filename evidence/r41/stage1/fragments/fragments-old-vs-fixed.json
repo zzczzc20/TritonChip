@@ -1,0 +1,126 @@
+{
+  "schema": "tnca-fragment-comparison/1",
+  "evidence": "model-prediction-uncalibrated",
+  "performance_acceptance": "not-measured",
+  "control": {
+    "report_sha256": "8fa6c30212619c7a0bb4e46085b65324c0750a1843b6baab1435215a0b338ae7",
+    "software_tree": "files:c6750cbb1721e0a456486988e2facb0b9cbbcee56d06164b28ecbbd76ae3e8a9",
+    "columns": 32
+  },
+  "candidate": {
+    "report_sha256": "9f619338cf273a87a08111b159e1b46eb5f9e56df3a07a34259784c6cbb59d23",
+    "software_tree": "files:d3bd626eb8344db63bb118fe0003b67a33253db99f3060775ba228bbb187c045",
+    "columns": 32
+  },
+  "models": [
+    {
+      "binary_sha256": "9793a0c4f321bbca429a0faa0cd52dc1378d91aad14c97d8891113ffd99639c8",
+      "config_sha256": "749f0c09e0a036976677f9584f0985e1ac92c083f28a9a39f860daa94aa6c0f3",
+      "calibration": "not-measured",
+      "execution": "native SystemC/TLM-2.0 model, no RTL",
+      "dram_path": "fast"
+    }
+  ],
+  "rows": [
+    {
+      "graph": "mm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "control_cycles": 143626,
+      "candidate_cycles": 139862,
+      "predicted_speedup": 1.0269122420671806,
+      "control_counts": {
+        "_class_a_vread": 2496,
+        "_class_a_row": 1728,
+        "_instructions": 46554,
+        "_mma_commands": 36
+      },
+      "candidate_counts": {
+        "_class_a_vread": 192,
+        "_class_a_row": 0,
+        "_instructions": 37878,
+        "_mma_commands": 36
+      },
+      "control_code_bytes": 19784,
+      "candidate_code_bytes": 15928
+    },
+    {
+      "graph": "mm",
+      "shape": [
+        33,
+        31,
+        65
+      ],
+      "control_cycles": 138790,
+      "candidate_cycles": 131158,
+      "predicted_speedup": 1.058189359398588,
+      "control_counts": {
+        "_class_a_vread": 2016,
+        "_class_a_row": 1440,
+        "_instructions": 33541,
+        "_mma_commands": 30
+      },
+      "candidate_counts": {
+        "_class_a_vread": 96,
+        "_class_a_row": 0,
+        "_instructions": 26311,
+        "_mma_commands": 30
+      },
+      "control_code_bytes": 19360,
+      "candidate_code_bytes": 15504
+    },
+    {
+      "graph": "addmm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "control_cycles": 166196,
+      "candidate_cycles": 150182,
+      "predicted_speedup": 1.1066306215125647,
+      "control_counts": {
+        "_class_a_vread": 2496,
+        "_class_a_row": 1728,
+        "_instructions": 50448,
+        "_mma_commands": 36
+      },
+      "candidate_counts": {
+        "_class_a_vread": 576,
+        "_class_a_row": 384,
+        "_instructions": 41748,
+        "_mma_commands": 36
+      },
+      "control_code_bytes": 24976,
+      "candidate_code_bytes": 21088
+    },
+    {
+      "graph": "addmm",
+      "shape": [
+        33,
+        31,
+        65
+      ],
+      "control_cycles": 159237,
+      "candidate_cycles": 139874,
+      "predicted_speedup": 1.1384317314154166,
+      "control_counts": {
+        "_class_a_vread": 2016,
+        "_class_a_row": 1440,
+        "_instructions": 35488,
+        "_mma_commands": 30
+      },
+      "candidate_counts": {
+        "_class_a_vread": 288,
+        "_class_a_row": 192,
+        "_instructions": 28246,
+        "_mma_commands": 30
+      },
+      "control_code_bytes": 24552,
+      "candidate_code_bytes": 20664
+    }
+  ]
+}

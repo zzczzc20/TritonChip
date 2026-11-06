@@ -1,0 +1,148 @@
+[
+ {
+  "path": "wip/sim/alias-img54-b0/report.json",
+  "status": "functional-pass",
+  "checks": 35,
+  "failed_checks": [],
+  "error": null,
+  "wall_seconds": 615.1
+ },
+ {
+  "path": "wip/sim/alias-img54-b4g/report.json",
+  "status": "failed-preserved",
+  "checks": 35,
+  "failed_checks": [],
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 680, in main\n    raise ValueError('software changed during the case')\nValueError: software changed during the case\n",
+  "wall_seconds": 688.7
+ },
+ {
+  "path": "wip/sim/bigoffset-img54-b0/report.json",
+  "status": "functional-pass",
+  "checks": 5,
+  "failed_checks": [],
+  "error": null,
+  "wall_seconds": 378.5
+ },
+ {
+  "path": "wip/sim/clamp-img54-b0/report.json",
+  "status": "functional-pass",
+  "checks": 2,
+  "failed_checks": [],
+  "error": null,
+  "wall_seconds": 13.7
+ },
+ {
+  "path": "wip/sim/crossing-frozen-b0/report.json",
+  "status": "failed-preserved",
+  "checks": 16,
+  "failed_checks": [],
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 680, in main\n    raise ValueError('software changed during the case')\nValueError: software changed during the case\n",
+  "wall_seconds": 733.6
+ },
+ {
+  "path": "wip/sim/crossing-img54-b0/report.json",
+  "status": "functional-pass",
+  "checks": 16,
+  "failed_checks": [],
+  "error": null,
+  "wall_seconds": 373.6
+ },
+ {
+  "path": "wip/sim/crossing-img54-b4g/report.json",
+  "status": "failed-preserved",
+  "checks": 16,
+  "failed_checks": [],
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 680, in main\n    raise ValueError('software changed during the case')\nValueError: software changed during the case\n",
+  "wall_seconds": 583.2
+ },
+ {
+  "path": "wip/sim/dma-img54-b0/report.json",
+  "status": "functional-pass",
+  "checks": 5,
+  "failed_checks": [],
+  "error": null,
+  "wall_seconds": 303.2
+ },
+ {
+  "path": "wip/sim/failed/alias-img54-b0-try1/report.json",
+  "status": "failed-preserved",
+  "checks": 23,
+  "failed_checks": [],
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py\", line 2038, in _compile\n    raise_unimplemented_cache_limit_exceeded()\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py\", line 2022, in raise_unimplemented_cache_limit_exceeded\n    unimplemented(\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/exc.py\", line 775, in unimplemented\n    raise Unsupported(msg, gb_type, skip_frame)\ntorch._dynamo.exc.Unsupported: Dynamo recompile limit exceeded\n  Explanation: Dynamo attempted to recompile the code object too many times, exceeding the recompile_limit cache size limit (currently set to 8). Excessive recompilations can degrade performance due to the compilation overhead of each recompilation.\n  Hint: To monitor recompilations, enable TORCH_LOGS=recompiles. If recompilations are expected, consider increasing torch._dynamo.config.recompile_limit to an appropriate value.\n  Hint: See https://docs.pytorch.org/docs/main/user_guide/torch_compiler/compile/programming_model.recompilation.html for tips on dealing with recompilations.\n\n  Developer debug context: Limit type: recompile_limit\n\n For more details about this graph break, please visit: https://meta-pytorch.github.io/compile-graph-break-site/gb/gb0039.html\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 665, in main\n    local_limit=hex(c.window['local_limit']))\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 390, in case_alias\n    for i, (name, x) in enumerate(xs):\n               ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 223, in run\n    torch = self.torch\n              ^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py\", line 1261, in compile_wrapper\n    result = fn(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py\", line 2649, in __call__\n    result = self._torchdynamo_orig_backend(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py\", line 778, in __call__\n    result = _compile(\n             ^^^^^^^^^\n  File \"/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/torch/_dynamo/convert_frame.py\", line 2045, in _compile\n    raise FailOnRecompileLimitHit(\ntorch._dynamo.exc.FailOnRecompileLimitHit: Hard failure due to fullgraph=True\n",
+  "wall_seconds": 415.9
+ },
+ {
+  "path": "wip/sim/failed/crossing-img54-b0/report.json",
+  "status": "failed-preserved",
+  "checks": 3,
+  "failed_checks": [],
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 665, in main\n    globals()['case_' + args.case](c, report)\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 347, in case_crossing\n    ys = [(name, c.place(name, addr, nbytes)) for name, addr, nbytes in placements]\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 209, in place\n    self.held.append(torch.empty(fill, dtype=torch.uint8, device='tnca'))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntorch.OutOfMemoryError: tnca: BufferError: [BUFFER_INVALID] out of device memory: a 4294964224-byte storage would leave 2048 of the heap's free bytes, less than the 32768 kept for launches\n\nAt:\n  /home/zhongchun/r41-hbm8/python/tnca/torch_device/__init__.py(93): alloc\n  /home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py(209): place\n  /home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py(347): case_crossing\n  /home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py(665): main\n  /home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py(688): <module>\n\n",
+  "wall_seconds": 10.3
+ },
+ {
+  "path": "wip/sim/failed/dma-img54-b0/report.json",
+  "status": "failed-preserved",
+  "checks": 2,
+  "failed_checks": [],
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 665, in main\n    globals()['case_' + args.case](c, report)\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 440, in case_dma\n    src = c.place(*placements[1], dtype=torch.float32)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 209, in place\n    self.held.append(torch.empty(fill, dtype=torch.uint8, device='tnca'))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntorch.OutOfMemoryError: tnca: BufferError: [BUFFER_INVALID] out of device memory: a 2147450880-byte storage would leave 16384 of the heap's free bytes, less than the 32768 kept for launches\n\nAt:\n  /home/zhongchun/r41-hbm8/python/tnca/torch_device/__init__.py(93): alloc\n  /home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py(209): place\n  /home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py(440): case_dma\n  /home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py(665): main\n  /home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py(688): <module>\n\n",
+  "wall_seconds": 10.1
+ },
+ {
+  "path": "wip/sim/failed/samples-img54-b0-try1/report.json",
+  "status": "failed-preserved",
+  "checks": 74,
+  "failed_checks": [
+   "three-cores-each-launch"
+  ],
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 665, in main\n    local_limit=hex(c.window['local_limit']))\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 335, in case_samples\n    bad = [p['name'] for p in probes if not torch.equal(p['x'].cpu(), p['h'] + 1)]\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 194, in check\n    if not ok:\n        ^^^^^^^\nAssertionError: three-cores-each-launch: {\"cores\": [[{\"core\": 0, \"issued\": 4, \"completed\": 4}, {\"core\": 1, \"issued\": 4, \"completed\": 4}, {\"core\": 2, \"issued\": 0, \"completed\": 0}], [{\"core\": 0, \"issued\": 4, \"completed\": 4}, {\"core\": 1, \"issued\": 4, \"completed\": 4}, {\"core\": 2, \"issued\": 0, \"completed\": 0}], [{\"core\": 0, \"issued\": 4, \"completed\": 4}, {\"core\": 1, \"issued\": 4, \"completed\": 4}, {\"core\": 2, \"issued\": 0, \"completed\": 0}]]}\n",
+  "wall_seconds": 622.2
+ },
+ {
+  "path": "wip/sim/negatives-img54-b0/report.json",
+  "status": "functional-pass",
+  "checks": 9,
+  "failed_checks": [],
+  "error": null,
+  "wall_seconds": 18.4
+ },
+ {
+  "path": "wip/sim/samples-frozen-b0/report.json",
+  "status": "failed-preserved",
+  "checks": 75,
+  "failed_checks": [],
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 680, in main\n    raise ValueError('software changed during the case')\nValueError: software changed during the case\n",
+  "wall_seconds": 836.5
+ },
+ {
+  "path": "wip/sim/samples-img54-b0/report.json",
+  "status": "functional-pass",
+  "checks": 75,
+  "failed_checks": [],
+  "error": null,
+  "wall_seconds": 752.1
+ },
+ {
+  "path": "wip/sim/samples-img54-b4g/report.json",
+  "status": "failed-preserved",
+  "checks": 75,
+  "failed_checks": [],
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r41-hbm8/tools/performance_harness/hbm8_case.py\", line 680, in main\n    raise ValueError('software changed during the case')\nValueError: software changed during the case\n",
+  "wall_seconds": 905.4
+ },
+ {
+  "path": "wip/sim/stream-img54-b0/report.json",
+  "status": "functional-pass",
+  "checks": 6,
+  "failed_checks": [],
+  "error": null,
+  "wall_seconds": 348.9
+ },
+ {
+  "path": "wip/sim/window-img54-b0/report.json",
+  "status": "functional-pass",
+  "checks": 9,
+  "failed_checks": [],
+  "error": null,
+  "wall_seconds": 51.4
+ }
+]

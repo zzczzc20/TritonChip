@@ -24,8 +24,16 @@ set rtl    [lindex $::argv 4]
 set files  [lrange $::argv 5 end]
 
 file mkdir $out
+# OOC_SV=1 reads the sources as SystemVerilog, as the board build does
+# (flow/fpga/package_xo.tcl, synth_r40_multicore.tcl); plain Verilog
+# refuses loop-variable declarations that the product RTL uses.
+set sv [expr {[info exists ::env(OOC_SV)] && $::env(OOC_SV)}]
 foreach f $files {
-    read_verilog [file join $rtl $f]
+    if {$sv} {
+        read_verilog -sv [file join $rtl $f]
+    } else {
+        read_verilog [file join $rtl $f]
+    }
 }
 set_param general.maxThreads 8
 # Parameters of the top, as NAME=VALUE pairs in OOC_GENERICS (e.g.

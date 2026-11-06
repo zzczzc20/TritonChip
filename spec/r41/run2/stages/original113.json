@@ -1,0 +1,27 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "original113",
+ "experiments": [
+  {
+   "id": "r2-s2-original-suite",
+   "manifest": "spec/r41/run2/board/r2-s2-original-suite.json",
+   "sha256": "b4ecc410ce530beab8c2990d5754d6948417cbe77eb29c6f483bbc5bf485bc46",
+   "checks": [
+    {
+     "path": "original/batch.json",
+     "field": [
+      "status"
+     ],
+     "equals": "complete"
+    },
+    {
+     "path": "original/batch.json",
+     "field": [
+      "configurations"
+     ],
+     "equals": 113
+    }
+   ]
+  }
+ ]
+}

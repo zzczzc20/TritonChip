@@ -1,0 +1,10 @@
+commit d33456aeb8ff87717f9f85727f92e520b3922f33 start 2026-10-28T08:42:34Z host gx10-6646
+== image_geometry_base: python3 tools/r40/image_geometry_tests.py --image-tcl images/image.tcl
+image_geometry_base exit 0
+== image_geometry_shared_read: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_shared_read.tcl
+image_geometry_shared_read exit 0
+== image_geometry_line_lutram: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_line_lutram.tcl
+image_geometry_line_lutram exit 0
+== image_geometry_c1_c2: python3 tools/r40/image_geometry_tests.py --image-tcl images/image_c1_c2.tcl
+image_geometry_c1_c2 exit 0
+end 2026-10-28T09:12:42Z

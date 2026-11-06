@@ -1,8 +1,14 @@
 // Test-only full-line AXI slave with independent stalls and interleaved IDs.
+// The window starts at WIN_BASE (the stand-in BO address). Dense (default):
+// LINES consecutive lines. SPARSE=1: only the ranges of the SPARSE_MAP file
+// (tnca_sparse_map.vh) are backed, LINES is their total, and an access to any
+// other window line is fatal; this lets an 8 GiB window be simulated.
 `timescale 1ns/1ps
 module tnca_axi_line_model #(
  parameter DATA_W=256,OUT_N=8,MODE=0,LINES=2048,LATENCY=25,WRITE_DELAY=15,
- parameter ID_W=(OUT_N>1?$clog2(OUT_N):1)
+ parameter ID_W=(OUT_N>1?$clog2(OUT_N):1),
+ parameter [63:0] WIN_BASE=64'h100000000,
+ parameter SPARSE=0,parameter SPARSE_MAP="none"
 )(
  input wire clk,rst_n,
  input wire m_awvalid,m_wvalid,m_arvalid,m_wlast,m_rready,m_bready,
@@ -17,6 +23,21 @@ module tnca_axi_line_model #(
  localparam BEATS=512/DATA_W;
  reg [511:0] memory[0:LINES-1];
  initial for(integer init_line=0;init_line<LINES;init_line=init_line+1)memory[init_line]=0;
+`include "tb/common/tnca_sparse_map.vh"
+ initial if(SPARSE)begin
+  sparse_load(SPARSE_MAP);
+  if(sparse_total>LINES)$fatal(1,"sparse map needs %0d lines, model has %0d",sparse_total,LINES);
+ end
+ // Compact line index of a window byte address, or -1 outside the backing.
+ function integer line_index;
+  input [63:0] a;
+  begin
+   if(a<WIN_BASE || a[5:0]!=0)line_index=-1;
+   else if(SPARSE)line_index=sparse_index((a-WIN_BASE)>>6);
+   else if((a-WIN_BASE)/64>=LINES)line_index=-1;
+   else line_index=(a-WIN_BASE)/64;
+  end
+ endfunction
  reg [OUT_N-1:0] reads=0,writes=0;
  reg [511:0] write_data[0:OUT_N-1];
  integer location[0:OUT_N-1],beat[0:OUT_N-1],due[0:OUT_N-1];
@@ -44,14 +65,14 @@ module tnca_axi_line_model #(
    if(m_arvalid && m_arready)begin
     if(m_arlen!=BEATS-1 || m_arsize!=$clog2(DATA_W/8) || m_arburst!=1)$fatal(1,"read geometry");
     if(reads[m_arid] || writes[m_arid])$fatal(1,"ID reused before completion");
-    if(m_araddr<64'h100000000 || m_araddr[5:0] || (m_araddr-64'h100000000)/64>=LINES)$fatal(1,"read outside model window");
-    reads[m_arid]=1;location[m_arid]=(m_araddr-64'h100000000)/64;
+    if(line_index(m_araddr)<0)$fatal(1,"read outside model window: %h",m_araddr);
+    reads[m_arid]=1;location[m_arid]=line_index(m_araddr);
     beat[m_arid]=0;due[m_arid]=cycle+LATENCY+(m_arid*11)%31;
    end
    if(m_awvalid && m_awready)begin
     if(aw_have || m_awlen!=BEATS-1 || m_awsize!=$clog2(DATA_W/8) || m_awburst!=1)$fatal(1,"write geometry/order");
-    if(m_awaddr<64'h100000000 || m_awaddr[5:0] || (m_awaddr-64'h100000000)/64>=LINES)$fatal(1,"write outside model window");
-    aw_have=1;aw_slot=m_awid;aw_line=(m_awaddr-64'h100000000)/64;
+    if(line_index(m_awaddr)<0)$fatal(1,"write outside model window: %h",m_awaddr);
+    aw_have=1;aw_slot=m_awid;aw_line=line_index(m_awaddr);
    end
    if(m_wvalid && m_wready)begin
     if(m_wstrb!=={DATA_W/8{1'b1}} || m_wlast!=(wcount==BEATS-1))$fatal(1,"write beat geometry");

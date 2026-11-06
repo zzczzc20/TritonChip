@@ -1,0 +1,64 @@
+{
+  "schema": "tnca-r41-grid-admission/1",
+  "status": "running",
+  "requested_programs": 6144,
+  "checks": [
+    {
+      "name": "opt-in-required",
+      "status": "pass",
+      "base_limit": 16777216,
+      "requested": 16777217,
+      "error": "[ADMISSION_REFUSED] 16777217 programs exceeds the 16777216 limit\n  at: grid_admission grid 16777217x1x1\n  grid: [16777217, 1, 1]\n  limit: 16777216\n  requested: 16777217\n  try: large grids require large_grid=True and an image advertising the R40 GRID_CAP extension"
+    },
+    {
+      "name": "bounded-queue-overflow",
+      "status": "pass",
+      "queue_limit": 8,
+      "admitted_dependent": 7,
+      "error": "[QUEUE_FULL] 8 tasks are already unfinished\n  limit: 8\n  try: wait for one to finish; this does not block and does not discard an older task"
+    }
+  ],
+  "events": [
+    {
+      "job_id": 1,
+      "state": "SUCCEEDED",
+      "device_cycles": 196431
+    },
+    {
+      "job_id": 2,
+      "state": "SUCCEEDED",
+      "device_cycles": 171
+    },
+    {
+      "job_id": 3,
+      "state": "SUCCEEDED",
+      "device_cycles": 270
+    },
+    {
+      "job_id": 4,
+      "state": "SUCCEEDED",
+      "device_cycles": 265
+    },
+    {
+      "job_id": 5,
+      "state": "SUCCEEDED",
+      "device_cycles": 78
+    },
+    {
+      "job_id": 6,
+      "state": "SUCCEEDED",
+      "device_cycles": 78
+    },
+    {
+      "job_id": 7,
+      "state": "SUCCEEDED",
+      "device_cycles": 266
+    },
+    {
+      "job_id": 8,
+      "state": "SUCCEEDED",
+      "device_cycles": 267
+    }
+  ],
+  "board_acceptance": "not-measured"
+}

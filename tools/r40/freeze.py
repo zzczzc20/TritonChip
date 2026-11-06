@@ -394,7 +394,7 @@ def frozen_checks(out, S):
     checks = []
     from archbench import suite as _suite
     for tier in registry.TIERS:
-        f = ROOT / 'archbench' / 'suites' / f'{tier}.json'
+        f = _suite.path(tier)
         ok = f.exists() and json.loads(f.read_text())['sha256'] == _suite.build(tier)['sha256']
         checks.append(dict(name=f'archbench suite {tier}', ok=ok))
     sys.path.insert(0, str(Path(__file__).resolve().parent))

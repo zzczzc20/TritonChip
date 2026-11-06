@@ -1,0 +1,514 @@
+runtime-fault      op.cast/membound/fp16-to-fp32-small-contig-r32-c1024       time=None eta=None err=None [138.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp16-to-bf16-small-contig-r32-c1024       time=None eta=None err=None [245.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.clone/membound/fp16-small-contig-r32-c1024              time=None eta=None err=None [246.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.add/membound/fp16-small-contig-r32-c1024                time=None eta=None err=None [262.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.copy/membound/fp16-small-contig-r32-c1024               time=None eta=None err=None [270.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.gelu/membound/fp16-small-contig-r32-c1024               time=None eta=None err=None [162.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.exp/membound/fp16-small-contig-r32-c1024                time=None eta=None err=None [234.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.div/membound/fp16-small-contig-r32-c1024                time=None eta=None err=None [316.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.layernorm/membound/fp16-small-contig-r32-c1024          time=None eta=None err=None [215.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.max/membound/fp16-small-contig-r32-c1024                time=None eta=None err=None [201.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mean/membound/fp16-small-contig-r32-c1024               time=None eta=None err=None [172.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.rmsnorm/membound/fp16-small-contig-r32-c1024            time=None eta=None err=None [148.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sigmoid/membound/fp16-small-contig-r32-c1024            time=None eta=None err=None [152.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.relu/membound/fp16-small-contig-r32-c1024               time=None eta=None err=None [237.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mul/membound/fp16-small-contig-r32-c1024                time=None eta=None err=None [339.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.softmax/membound/fp16-small-contig-r32-c1024            time=None eta=None err=None [136.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.silu/membound/fp16-small-contig-r32-c1024               time=None eta=None err=None [218.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sum/membound/fp16-small-contig-r32-c1024                time=None eta=None err=None [150.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sub/membound/fp16-small-contig-r32-c1024                time=None eta=None err=None [317.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp16-to-bf16-small-strided-r32-c1024      time=None eta=None err=None [318.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp16-to-fp32-small-strided-r32-c1024      time=None eta=None err=None [327.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.clone/membound/fp16-small-strided-r32-c1024             time=None eta=None err=None [363.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.copy/membound/fp16-small-strided-r32-c1024              time=None eta=None err=None [393.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.exp/membound/fp16-small-strided-r32-c1024               time=None eta=None err=None [261.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.add/membound/fp16-small-strided-r32-c1024               time=None eta=None err=None [886.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.layernorm/membound/fp16-small-strided-r32-c1024         time=None eta=None err=None [274.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.max/membound/fp16-small-strided-r32-c1024               time=None eta=None err=None [259.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.gelu/membound/fp16-small-strided-r32-c1024              time=None eta=None err=None [405.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.div/membound/fp16-small-strided-r32-c1024               time=None eta=None err=None [780.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mean/membound/fp16-small-strided-r32-c1024              time=None eta=None err=None [266.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.relu/membound/fp16-small-strided-r32-c1024              time=None eta=None err=None [355.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.rmsnorm/membound/fp16-small-strided-r32-c1024           time=None eta=None err=None [335.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sigmoid/membound/fp16-small-strided-r32-c1024           time=None eta=None err=None [378.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.silu/membound/fp16-small-strided-r32-c1024              time=None eta=None err=None [280.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.softmax/membound/fp16-small-strided-r32-c1024           time=None eta=None err=None [301.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mul/membound/fp16-small-strided-r32-c1024               time=None eta=None err=None [794.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp16-to-bf16-small-broadcast-r32-c1024    time=None eta=None err=None [12.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp16-to-fp32-small-broadcast-r32-c1024    time=None eta=None err=None [11.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.clone/membound/fp16-small-broadcast-r32-c1024           time=None eta=None err=None [12.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.add/membound/fp16-small-broadcast-r32-c1024             time=None eta=None err=None [157.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.copy/membound/fp16-small-broadcast-r32-c1024            time=None eta=None err=None [142.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.exp/membound/fp16-small-broadcast-r32-c1024             time=None eta=None err=None [12.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.gelu/membound/fp16-small-broadcast-r32-c1024            time=None eta=None err=None [12.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.div/membound/fp16-small-broadcast-r32-c1024             time=None eta=None err=None [149.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.layernorm/membound/fp16-small-broadcast-r32-c1024       time=None eta=None err=None [20.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.max/membound/fp16-small-broadcast-r32-c1024             time=None eta=None err=None [12.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mean/membound/fp16-small-broadcast-r32-c1024            time=None eta=None err=None [12.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.relu/membound/fp16-small-broadcast-r32-c1024            time=None eta=None err=None [11.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.rmsnorm/membound/fp16-small-broadcast-r32-c1024         time=None eta=None err=None [16.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sigmoid/membound/fp16-small-broadcast-r32-c1024         time=None eta=None err=None [11.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.silu/membound/fp16-small-broadcast-r32-c1024            time=None eta=None err=None [12.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.softmax/membound/fp16-small-broadcast-r32-c1024         time=None eta=None err=None [11.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sum/membound/fp16-small-strided-r32-c1024               time=None eta=None err=None [444.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sum/membound/fp16-small-broadcast-r32-c1024             time=None eta=None err=None [11.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sub/membound/fp16-small-broadcast-r32-c1024             time=None eta=None err=None [141.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mul/membound/fp16-small-broadcast-r32-c1024             time=None eta=None err=None [230.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.add/membound/fp32-small-contig-r16-c1024                time=None eta=None err=None [354.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sub/membound/fp16-small-strided-r32-c1024               time=None eta=None err=None [837.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp32-to-bf16-small-contig-r32-c1024       time=None eta=None err=None [276.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp32-to-fp16-small-contig-r32-c1024       time=None eta=None err=None [292.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.clone/membound/fp32-small-contig-r16-c1024              time=None eta=None err=None [209.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.exp/membound/fp32-small-contig-r16-c1024                time=None eta=None err=None [127.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.copy/membound/fp32-small-contig-r16-c1024               time=None eta=None err=None [301.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.layernorm/membound/fp32-small-contig-r16-c1024          time=None eta=None err=None [151.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.gelu/membound/fp32-small-contig-r16-c1024               time=None eta=None err=None [163.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.div/membound/fp32-small-contig-r16-c1024                time=None eta=None err=None [438.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.max/membound/fp32-small-contig-r16-c1024                time=None eta=None err=None [186.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mean/membound/fp32-small-contig-r16-c1024               time=None eta=None err=None [145.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.rmsnorm/membound/fp32-small-contig-r16-c1024            time=None eta=None err=None [135.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sigmoid/membound/fp32-small-contig-r16-c1024            time=None eta=None err=None [137.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.relu/membound/fp32-small-contig-r16-c1024               time=None eta=None err=None [212.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mul/membound/fp32-small-contig-r16-c1024                time=None eta=None err=None [365.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.silu/membound/fp32-small-contig-r16-c1024               time=None eta=None err=None [140.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.softmax/membound/fp32-small-contig-r16-c1024            time=None eta=None err=None [180.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sum/membound/fp32-small-contig-r16-c1024                time=None eta=None err=None [165.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/bf16-to-fp16-small-contig-r32-c1024       time=None eta=None err=None [129.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.add/membound/bf16-small-contig-r32-c1024                time=None eta=None err=None [283.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sub/membound/fp32-small-contig-r16-c1024                time=None eta=None err=None [368.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/bf16-to-fp32-small-contig-r32-c1024       time=None eta=None err=None [199.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.clone/membound/bf16-small-contig-r32-c1024              time=None eta=None err=None [245.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.exp/membound/bf16-small-contig-r32-c1024                time=None eta=None err=None [248.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.copy/membound/bf16-small-contig-r32-c1024               time=None eta=None err=None [318.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.div/membound/bf16-small-contig-r32-c1024                time=None eta=None err=None [353.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.gelu/membound/bf16-small-contig-r32-c1024               time=None eta=None err=None [243.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.layernorm/membound/bf16-small-contig-r32-c1024          time=None eta=None err=None [133.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.max/membound/bf16-small-contig-r32-c1024                time=None eta=None err=None [204.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mean/membound/bf16-small-contig-r32-c1024               time=None eta=None err=None [215.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.relu/membound/bf16-small-contig-r32-c1024               time=None eta=None err=None [164.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mul/membound/bf16-small-contig-r32-c1024                time=None eta=None err=None [285.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.rmsnorm/membound/bf16-small-contig-r32-c1024            time=None eta=None err=None [198.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.silu/membound/bf16-small-contig-r32-c1024               time=None eta=None err=None [124.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sigmoid/membound/bf16-small-contig-r32-c1024            time=None eta=None err=None [155.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sum/membound/bf16-small-contig-r32-c1024                time=None eta=None err=None [123.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.softmax/membound/bf16-small-contig-r32-c1024            time=None eta=None err=None [202.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.add/membound/bf16-small-broadcast-r32-c1024             time=None eta=None err=None [149.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.add/membound/fp32-small-broadcast-r16-c1024             time=None eta=None err=None [247.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/bf16-to-fp16-small-broadcast-r32-c1024    time=None eta=None err=None [12.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sub/membound/bf16-small-contig-r32-c1024                time=None eta=None err=None [422.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/bf16-to-fp32-small-broadcast-r32-c1024    time=None eta=None err=None [12.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.add/membound/fp32-small-strided-r16-c1024               time=None eta=None err=None [501.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp32-to-bf16-small-broadcast-r32-c1024    time=None eta=None err=None [14.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/bf16-to-fp32-small-strided-r32-c1024      time=None eta=None err=None [251.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp32-to-fp16-small-broadcast-r32-c1024    time=None eta=None err=None [15.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/bf16-to-fp16-small-strided-r32-c1024      time=None eta=None err=None [352.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.add/membound/bf16-small-strided-r32-c1024               time=None eta=None err=None [653.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.clone/membound/bf16-small-broadcast-r32-c1024           time=None eta=None err=None [12.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.clone/membound/fp32-small-broadcast-r16-c1024           time=None eta=None err=None [15.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.clone/membound/bf16-small-strided-r32-c1024             time=None eta=None err=None [253.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.clone/membound/fp32-small-strided-r16-c1024             time=None eta=None err=None [243.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.copy/membound/bf16-small-broadcast-r32-c1024            time=None eta=None err=None [230.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp32-to-bf16-small-strided-r32-c1024      time=None eta=None err=None [639.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.copy/membound/bf16-small-strided-r32-c1024              time=None eta=None err=None [361.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.copy/membound/fp32-small-broadcast-r16-c1024            time=None eta=None err=None [213.4s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.div/membound/bf16-small-broadcast-r32-c1024             time=None eta=None err=None [123.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.cast/membound/fp32-to-fp16-small-strided-r32-c1024      time=None eta=None err=None [899.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.copy/membound/fp32-small-strided-r16-c1024              time=None eta=None err=None [375.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.exp/membound/bf16-small-broadcast-r32-c1024             time=None eta=None err=None [11.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.div/membound/fp32-small-broadcast-r16-c1024             time=None eta=None err=None [191.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.exp/membound/fp32-small-broadcast-r16-c1024             time=None eta=None err=None [14.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.exp/membound/bf16-small-strided-r32-c1024               time=None eta=None err=None [236.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.gelu/membound/bf16-small-broadcast-r32-c1024            time=None eta=None err=None [11.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.exp/membound/fp32-small-strided-r16-c1024               time=None eta=None err=None [252.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.gelu/membound/fp32-small-broadcast-r16-c1024            time=None eta=None err=None [16.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.gelu/membound/bf16-small-strided-r32-c1024              time=None eta=None err=None [252.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.layernorm/membound/bf16-small-broadcast-r32-c1024       time=None eta=None err=None [19.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.gelu/membound/fp32-small-strided-r16-c1024              time=None eta=None err=None [258.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.layernorm/membound/fp32-small-broadcast-r16-c1024       time=None eta=None err=None [30.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.div/membound/bf16-small-strided-r32-c1024               time=None eta=None err=None [870.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.max/membound/bf16-small-broadcast-r32-c1024             time=None eta=None err=None [12.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.div/membound/fp32-small-strided-r16-c1024               time=None eta=None err=None [814.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.max/membound/fp32-small-broadcast-r16-c1024             time=None eta=None err=None [15.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.layernorm/membound/bf16-small-strided-r32-c1024         time=None eta=None err=None [309.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mean/membound/bf16-small-broadcast-r32-c1024            time=None eta=None err=None [10.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.layernorm/membound/fp32-small-strided-r16-c1024         time=None eta=None err=None [363.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      31 launches for 5 in the wrapper (autotuning?)
+runtime-fault      op.mean/membound/fp32-small-broadcast-r16-c1024            time=None eta=None err=None [15.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.max/membound/bf16-small-strided-r32-c1024               time=None eta=None err=None [323.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.max/membound/fp32-small-strided-r16-c1024               time=None eta=None err=None [360.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      28 launches for 2 in the wrapper (autotuning?)
+runtime-fault      op.mul/membound/bf16-small-broadcast-r32-c1024             time=None eta=None err=None [162.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mean/membound/bf16-small-strided-r32-c1024              time=None eta=None err=None [340.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mean/membound/fp32-small-strided-r16-c1024              time=None eta=None err=None [277.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      28 launches for 2 in the wrapper (autotuning?)
+runtime-fault      op.relu/membound/bf16-small-broadcast-r32-c1024            time=None eta=None err=None [11.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mul/membound/fp32-small-broadcast-r16-c1024             time=None eta=None err=None [150.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.relu/membound/fp32-small-broadcast-r16-c1024            time=None eta=None err=None [15.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.relu/membound/fp32-small-strided-r16-c1024              time=None eta=None err=None [242.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.rmsnorm/membound/bf16-small-broadcast-r32-c1024         time=None eta=None err=None [14.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mul/membound/fp32-small-strided-r16-c1024               time=None eta=None err=None [478.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.rmsnorm/membound/fp32-small-broadcast-r16-c1024         time=None eta=None err=None [21.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.relu/membound/bf16-small-strided-r32-c1024              time=None eta=None err=None [432.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sigmoid/membound/bf16-small-broadcast-r32-c1024         time=None eta=None err=None [11.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.rmsnorm/membound/fp32-small-strided-r16-c1024           time=None eta=None err=None [246.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      29 launches for 3 in the wrapper (autotuning?)
+runtime-fault      op.rmsnorm/membound/bf16-small-strided-r32-c1024           time=None eta=None err=None [372.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sigmoid/membound/fp32-small-broadcast-r16-c1024         time=None eta=None err=None [14.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.silu/membound/bf16-small-broadcast-r32-c1024            time=None eta=None err=None [12.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sigmoid/membound/bf16-small-strided-r32-c1024           time=None eta=None err=None [268.7s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.mul/membound/bf16-small-strided-r32-c1024               time=None eta=None err=None [885.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.silu/membound/fp32-small-broadcast-r16-c1024            time=None eta=None err=None [23.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.softmax/membound/bf16-small-broadcast-r32-c1024         time=None eta=None err=None [11.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.silu/membound/fp32-small-strided-r16-c1024              time=None eta=None err=None [261.9s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.softmax/membound/bf16-small-strided-r32-c1024           time=None eta=None err=None [244.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.softmax/membound/fp32-small-broadcast-r16-c1024         time=None eta=None err=None [18.5s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sigmoid/membound/fp32-small-strided-r16-c1024           time=None eta=None err=None [424.1s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.silu/membound/bf16-small-strided-r32-c1024              time=None eta=None err=None [446.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sub/membound/bf16-small-broadcast-r32-c1024             time=None eta=None err=None [159.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sub/membound/fp32-small-broadcast-r16-c1024             time=None eta=None err=None [139.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sum/membound/bf16-small-broadcast-r32-c1024             time=None eta=None err=None [11.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.softmax/membound/fp32-small-strided-r16-c1024           time=None eta=None err=None [321.0s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      29 launches for 3 in the wrapper (autotuning?)
+runtime-fault      op.sum/membound/fp32-small-broadcast-r16-c1024             time=None eta=None err=None [15.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sum/membound/fp32-small-strided-r16-c1024               time=None eta=None err=None [231.3s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      28 launches for 2 in the wrapper (autotuning?)
+runtime-fault      op.sub/membound/fp32-small-strided-r16-c1024               time=None eta=None err=None [584.2s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sum/membound/bf16-small-strided-r32-c1024               time=None eta=None err=None [466.8s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+runtime-fault      op.sub/membound/bf16-small-strided-r32-c1024               time=None eta=None err=None [684.6s]
+      compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched
+      27 launches for 1 in the wrapper (autotuning?)
+0/171 compile in 10079s -> /home/zhongchun/r41-bwlink-runs/census/small.jsonl

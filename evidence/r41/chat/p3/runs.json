@@ -1,0 +1,203 @@
+{
+ "schema": "r41-p3-run-record/1",
+ "common": {
+  "host": "GB10 (zhongchun)",
+  "python": "~/flux-venv/bin/python (torch 2.14.0+cu130, no GPU)",
+  "hf_home": "~/flux-hf",
+  "tlm_binary": "~/r41-p3/build-tlm/tnca-chip",
+  "tlm_binary_sha256": "276a8f1246289f05499da3857e4968e5dea58228a2a8cca8bc58be268118caea",
+  "tlm_binary_source": "cmake build of tools/performance_harness/systemc from the d8a1ae8 tree, 2026-10-28"
+ },
+ "runs": [
+  {
+   "name": "x8ctl-v1",
+   "domain": "TLM",
+   "launcher": "tlmrun.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "d8a1ae8 tree before the chat.py session changes (compiler, runtime and harness identical to d8a1ae8)",
+   "settings": "non-default: TNCA_IEEE_DIV=1 TNCA_TORCH_DEVICE=native",
+   "command": "python tools/performance_harness/fp8_kernels_cases.py --out OUT --group transformers",
+   "archive": "cpu-and-x8ctl-tlm.tgz"
+  },
+  {
+   "name": "x8rtl-v1.nosim",
+   "domain": "RTL (failed before running: no X8 simulator built)",
+   "launcher": "rtlrun.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "tree of commit d8a1ae8 (rsync of the worktree before commit; identical content)",
+   "command": "python tools/performance_harness/fp8_kernels_cases.py --out OUT --group transformers --quick",
+   "archive": "cpu-and-x8ctl-tlm.tgz"
+  },
+  {
+   "name": "cpu-smoke/*",
+   "domain": "CPU",
+   "source": "vl-2img, vision-split and q35-repl: the d8a1ae8 tree before its text-continuation patch; vl-full-repl and q35-full-repl: d8a1ae8; vl-script: d8a1ae8 plus the --script patch (4b0eb91)",
+   "command": "see the *.log heads; chat.py --device cpu, vision_split_check.py",
+   "archive": "cpu-and-x8ctl-tlm.tgz"
+  },
+  {
+   "name": "tlm-vl-sess-v1",
+   "domain": "TLM",
+   "launcher": "tlmrun.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "tree of commit d8a1ae8 (rsync of the worktree before commit; identical content)",
+   "settings": "non-default: TNCA_IEEE_DIV=1 TNCA_TORCH_DEVICE=native",
+   "command": "chat.py --model vl --device tnca --layers 1 --prompt \"Say hi.\" --new-tokens 3 --check-tokens 2 --bucket 64 --prefill-chunk 5 --session-check \"Say no.\"",
+   "archive": "tlm-vl-session-default.tgz"
+  },
+  {
+   "name": "tlm-vl-default-v1",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "tree of commit d8a1ae8 (rsync of the worktree before commit; identical content)",
+   "settings": "default TNCA settings",
+   "command": "chat.py --model vl --device tnca --layers 1 --prompt \"Say hi.\" --new-tokens 3 --check-tokens 2 --bucket 64",
+   "archive": "tlm-vl-session-default.tgz"
+  },
+  {
+   "name": "tlm-q35-sess-v1",
+   "domain": "TLM",
+   "launcher": "tlmrun.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "tree of commit d8a1ae8 (rsync of the worktree before commit; identical content)",
+   "settings": "non-default: TNCA_IEEE_DIV=1 TNCA_TORCH_DEVICE=native",
+   "command": "chat.py --model q35 --device tnca --layers 4 --prompt \"Say hi.\" --new-tokens 3 --check-tokens 2 --bucket 64 --prefill-chunk 7 --session-check \"Say no.\"",
+   "archive": "tlm-q35-and-vl-images.tgz"
+  },
+  {
+   "name": "tlm-q35-default-v1",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "d8a1ae8 plus the --script patch later committed in 4b0eb91; chat.py still applied the withdrawn floor-based allowance, so each report's own 'status'/'passed' must be re-judged under the fixed 0.05 gate (done in doc/r41_chat.md)",
+   "settings": "default TNCA settings",
+   "command": "chat.py --model q35 --device tnca --layers 4 --prompt \"Say hi.\" --new-tokens 3 --check-tokens 2 --bucket 64",
+   "archive": "tlm-q35-and-vl-images.tgz"
+  },
+  {
+   "name": "tlm-vl-2img-default-v1",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "d8a1ae8 plus the --script patch later committed in 4b0eb91; chat.py still applied the withdrawn floor-based allowance, so each report's own 'status'/'passed' must be re-judged under the fixed 0.05 gate (done in doc/r41_chat.md)",
+   "settings": "default TNCA settings",
+   "command": "chat.py --model vl --device tnca --layers 1 --prompt \"Compare the two pictures.\" --image spec/r41/chat/shapes.png --image spec/r41/chat/shapes-rot90.png --new-tokens 2 --check-tokens 2 --bucket 192",
+   "archive": "tlm-q35-and-vl-images.tgz"
+  },
+  {
+   "name": "tlm-vl-default-v2",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "the commit that adds logits_download_bytes (this commit's chat.py), fixed 0.05 gate",
+   "settings": "default TNCA settings",
+   "command": "chat.py --model vl --device tnca --layers 1 --prompt \"Say hi.\" --new-tokens 4 --check-tokens 2 --bucket 64",
+   "archive": "tlm-vl-default-v2.tgz"
+  },
+  {
+   "name": "lmhead-diag",
+   "domain": "CPU",
+   "source": "0a8d8db plus the changes committed with these archives (loader, upload path, quality runner, gate option)",
+   "command": "inline inspection of lm_head after qwen_fp8_lib.load_model; chat.py --model q35 --device cpu --layers 4 --new-tokens 3 from the 0a8d8db tree (base) and the new tree (new), logits compared bitwise",
+   "archive": "lmhead-and-memory-diag.tgz"
+  },
+  {
+   "name": "mem-diag/q35-cpu-full",
+   "domain": "CPU",
+   "source": "0a8d8db plus the changes committed with these archives (loader, upload path, quality runner, gate option)",
+   "command": "/usr/bin/time -v chat.py --model q35 --device cpu --prompt 'Say hi.' --new-tokens 2 --check-tokens 2 --threads 4",
+   "archive": "lmhead-and-memory-diag.tgz"
+  },
+  {
+   "name": "upload-tests",
+   "domain": "unit tests and RTL simulation (multicore MMIO stand-in)",
+   "source": "0a8d8db plus the changes committed with these archives (loader, upload path, quality runner, gate option)",
+   "python": "~/tc_env/torchenv/bin/python",
+   "command": "tools/r40/{host_copy,multicore_mmio,dma_handoff_guard,io_concurrency,memory_control_host,multicore_dma}_tests.py, tools/r41/hbm_layout_tests.py, tools/performance_harness/test_hbm8.py, tools/r36/backend_tests.py, tools/r41/upload_path_tests.py --kib 256",
+   "archive": "upload-tests.tgz"
+  },
+  {
+   "name": "quality-ref",
+   "domain": "CPU",
+   "source": "0a8d8db plus the changes committed with these archives (loader, upload path, quality runner, gate option)",
+   "command": "chat_quality.py --model {vl,q35} --device cpu --spec spec/r41/chat/quality-v1.json",
+   "archive": "../quality-ref/"
+  },
+  {
+   "name": "tlm-q35-rule-v1",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "90f1a60",
+   "settings": "default TNCA settings",
+   "command": "chat.py --model q35 --device tnca --layers 4 --prompt \"Say hi.\" --new-tokens 3 --check-tokens 2 --bucket 64 --cpu-floor-multiplier 2 --require-argmax",
+   "archive": "tlm-v3-proofs-1.tgz"
+  },
+  {
+   "name": "quality-ref-vl-l1",
+   "domain": "CPU",
+   "source": "90f1a60",
+   "command": "chat_quality.py --model vl --layers 1 --device cpu --spec spec/r41/chat/quality-v1.json",
+   "archive": "tlm-v3-proofs-1.tgz"
+  },
+  {
+   "name": "tlm-vl-quality-v1",
+   "domain": "TLM (failed: symbolic-shape recompile refused)",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "90f1a60",
+   "settings": "default TNCA settings",
+   "command": "chat_quality.py --model vl --layers 1 --device tnca --spec spec/r41/chat/quality-v1.json --reference quality-ref-vl-l1/quality.json",
+   "archive": "tlm-v3-proofs-1.tgz"
+  },
+  {
+   "name": "x8rtl-v2",
+   "domain": "RTL (Icarus sim-file)",
+   "launcher": "rtlrun.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "d8a1ae8 (compiler/runtime as in d8a1ae8)",
+   "settings": "non-default: TNCA_IEEE_DIV=1 TNCA_TORCH_DEVICE=native",
+   "command": "fp8_kernels_cases.py --out OUT --group transformers --quick",
+   "archive": "tlm-v3-proofs-1.tgz"
+  },
+  {
+   "name": "tlm-vl-shapes-v1",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "8bb123d (static-shape compile)",
+   "settings": "default TNCA settings",
+   "command": "chat.py --model vl --device tnca --layers 1 --prompt \"Say hi.\" --new-tokens 2 --check-tokens 2 --bucket 64 --cpu-floor-multiplier 2 --require-argmax --session-check \"What is the capital of France? Answer with one word.\"",
+   "archive": "tlm-vl-shapes-v1.tgz"
+  },
+  {
+   "name": "tlm-vl-quality-v2",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "8bb123d",
+   "settings": "default TNCA settings",
+   "command": "chat_quality.py --model vl --layers 1 --device tnca --spec spec/r41/chat/quality-v1.json --reference quality-ref-vl-l1/quality.json --prefill-chunk 8 --prompts fact,multiturn --max-new-tokens 2",
+   "archive": "tlm-vl-quality-v2.tgz",
+   "note": "reduced proof; its multiturn turn-2 score compares different conversations (device turn 1 capped at 2 tokens, reference turn 1 had 12), so that score is not a device result"
+  },
+  {
+   "name": "graphcount/{base,new,new-clone,reasons,new-canonical}",
+   "domain": "CPU (torch.compile with the CPU Inductor backend, dynamic=False)",
+   "source": "d7a0185 (base) and the stride fixes of this commit",
+   "command": "python graphcount.py TREE/tools/models (evidence/r41/chat/p3/graphcount.py); 'reasons' with TORCH_LOGS=recompiles",
+   "archive": "graphcount.tgz"
+  },
+  {
+   "name": "tlm-vl-quality-v3",
+   "domain": "TLM",
+   "launcher": "tlmrun-default.sh",
+   "profile": "core-vrf-sync-v5-x8",
+   "source": "51f31e8",
+   "settings": "default TNCA settings",
+   "command": "chat_quality.py --model vl --layers 1 --device tnca --spec spec/r41/chat/quality-v1.json --reference quality-ref-vl-l1/quality.json --prefill-chunk 8 --prompts fact,arith,instruct --max-new-tokens 2",
+   "archive": "tlm-vl-quality-v3.tgz"
+  }
+ ]
+}

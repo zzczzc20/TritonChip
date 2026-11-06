@@ -1,0 +1,42 @@
+{
+  "schema": "tnca-r41-locality-case/1",
+  "status": "failed-preserved",
+  "seed": 4103,
+  "rtol": 0.002,
+  "atol": 0.002,
+  "board_acceptance": "not-measured",
+  "measurement": "native numerical replay plus separately reported metadata scope; CPU reference/download after counter snapshot",
+  "graphs": [
+    {
+      "name": "residual",
+      "inputs": [
+        {
+          "shape": [
+            128
+          ],
+          "stride": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "sha256": "a2fa45f5a892715866a84808ec3c3f5556e467eb753e9e0c9615ff4a0124eee6"
+        },
+        {
+          "shape": [
+            128
+          ],
+          "stride": [
+            1
+          ],
+          "dtype": "torch.float32",
+          "sha256": "03e22577c06d64af12b7af12f7891c343937a01b57793849c57db478a926cfa8"
+        }
+      ],
+      "runs": []
+    }
+  ],
+  "software_tree": "files:57d01dd7b7a38b5038ca2efdd1875e983feabff66983d1542e1d8e7f3cb47909",
+  "torch": "2.14.0+cu130",
+  "triton": "3.8.0",
+  "backend": "fpga-multicore-sim",
+  "error": "Traceback (most recent call last):\n  File \"/home/zhongchun/r41-accept-p2-v2/tools/performance_harness/locality_case.py\", line 40, in main\n    native=[x.to('tnca') for x in host]\n            ^^^^^^^^^^^^\ntorch.OutOfMemoryError: tnca: DependencyFailed: [DEPENDENCY_FAILED] iverilog is not on PATH, so the harness cannot be built\n  try: the pinned version is 12.0; see the Makefile. It is not substituted from elsewhere\n\nAt:\n  /home/zhongchun/r41-accept-p2-v2/python/tnca/backends/u50_sim.py(98): _tools\n  /home/zhongchun/r41-accept-p2-v2/python/tnca/backends/multicore_mmio_sim.py(81): _build\n  /home/zhongchun/r41-accept-p2-v2/python/tnca/backends/u50_sim.py(191): open\n  /home/zhongchun/r41-accept-p2-v2/python/tnca/backends/u50.py(378): start\n  /home/zhongchun/r41-accept-p2-v2/python/tnca/backends/multicore_mmio.py(86): start\n  /home/zhongchun/r41-accept-p2-v2/python/tnca/runtime.py(435): __init__\n  /home/zhongchun/r41-accept-p2-v2/python/tnca/triton_backend/driver.py(88): get\n  /home/zhongchun/r41-accept-p2-v2/python/tnca/torch_device/__init__.py(76): session\n  /home/zhongchun/r41-accept-p2-v2/python/tnca/torch_device/__init__.py(79): alloc\n  /home/zhongchun/r41-accept-p2-v2/tools/performance_harness/locality_case.py(40): main\n  /home/zhongchun/r41-accept-p2-v2/tools/performance_harness/locality_case.py(76): <module>\n\n"
+}

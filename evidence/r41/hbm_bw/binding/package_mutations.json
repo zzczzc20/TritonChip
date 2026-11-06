@@ -1,0 +1,17 @@
+[
+  {
+    "mutation": "data-width",
+    "rejected": true,
+    "reason": "packaged port width differs: m_axi_pc0_wdata"
+  },
+  {
+    "mutation": "clock",
+    "rejected": true,
+    "reason": "stream clock metadata is not 100 MHz"
+  },
+  {
+    "mutation": "reset",
+    "rejected": true,
+    "reason": "stream reset is not active-low"
+  }
+]

@@ -1,0 +1,26 @@
+MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+VECTOR ROUTE core=0 base=0000000000010000 offset=0000000000000000 size=2 indexed=0 mask=0001 eligible=1
+MULTICORE SHELL GRID PASS N=1 id=13 status=2 cycles=1707
+VECTOR ROUTE core=0 base=0000000000010000 offset=0000000000000000 size=2 indexed=0 mask=0001 eligible=1
+VECTOR ROUTE core=0 base=0000000000010008 offset=0000000000000000 size=2 indexed=0 mask=0001 eligible=0
+VECTOR ROUTE core=0 base=0000000000010010 offset=0000000000000000 size=2 indexed=0 mask=0001 eligible=0
+VECTOR ROUTE core=0 base=0000000000010018 offset=0000000000000000 size=2 indexed=0 mask=0001 eligible=0
+VECTOR ROUTE core=0 base=0000000000010020 offset=0000000000000000 size=2 indexed=0 mask=0001 eligible=0
+VECTOR ROUTE core=0 base=0000000000010028 offset=0000000000000000 size=2 indexed=0 mask=0001 eligible=0
+VECTOR ROUTE core=0 base=0000000000010030 offset=0000000000000000 size=2 indexed=0 mask=0001 eligible=0
+VECTOR ROUTE core=0 base=0000000000010038 offset=0000000000000000 size=2 indexed=0 mask=0001 eligible=0
+VECTOR ROUTE core=0 base=0000000000010040 offset=0000000000000000 size=2 indexed=0 mask=0001 eligible=1
+MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=48462
+MEMORY SAMPLE p0=00000000000010070000000000001006000000000000100500000000000010040000000000001003000000000000100200000000000010010000000000001000 p1=000000000000100f000000000000100e000000000000100d000000000000100c000000000000100b000000000000100a00000000000010090000000000001008 p2=00000000000010170000000000001016000000000000101500000000000010140000000000001013000000000000101200000000000010110000000000001010
+HYBRID COUPLED core=0 fast=0 slow=1310 retired=1310
+FATAL: tb/fpga/tb_multicore_axi.v:199: vector grid did not exercise compact LSU
+       Time: 485980000  Scope: tb_multicore_axi.$ivl_for_loop6
+Traceback (most recent call last):
+  File "/home/zhongchun/r41-hbmbw/tools/r40/multicore_axi_tests.py", line 52, in <module>
+    main()
+  File "/home/zhongchun/r41-hbmbw/tools/r40/multicore_axi_tests.py", line 47, in main
+    subprocess.run(['vvp', output, '+hex=' + image] + (['+diagnose'] if args.diagnose else []), cwd=ROOT, check=True, timeout=1200)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['vvp', '/tmp/r40-multicore-axi-yv7v76yy/axi-1-1-0.vvp', '+hex=/tmp/r40-multicore-axi-yv7v76yy/grid.hex', '+diagnose']' returned non-zero exit status 1.

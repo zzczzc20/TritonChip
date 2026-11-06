@@ -40,6 +40,8 @@ module tnca_vector_fpu #(
     parameter ELEN   = 32,
     parameter LW     = 4,            // log2(VLEN)
     parameter FP_LAT = 2,            // tnca_fp32_fma's latency: 2 or 3 (a generated instance each)
+    parameter FMA_IMPL = 0,          // tnca_fp32_fma IMPL (R41 G2 FMA rebuild)
+    parameter SFU_LANES      = 1,          // identical parallel SFU slices
     parameter SFU_LAT = 6,           // must match rtl/gen/tnca_sfu_*_xls.v
     // Follows the core's HAS_SFU. A build with the capability bit clear does
     // not instantiate the slice, so it does not pay ~60 k gates for logic its
@@ -67,7 +69,7 @@ module tnca_vector_fpu #(
     //   [1] func is vf.mul               (operands a, b, +0)
     //   [2] vf.sub or vf.fms             (negate the addend)
     //   [3] vf.mul                       (ignore the addend)
-    //   [4] an FP reduction (is_red_mc)
+    //   [4] an FP reduction (is_red_mc); not read since R41 (red_active)
     input  wire [4:0]               fpctl,
 
     // multi-cycle control (reductions only)
@@ -134,13 +136,20 @@ module tnca_vector_fpu #(
 
     // Keyed on the reduction alone: an SFU pass must not hijack the FMA
     // operands, and `is_multicycle` now covers both families.
-    // Not `start & is_red_mc`: `start` is the core's whole issue decision,
-    // and in front of the operand select it put that logic in series with
-    // the FMA's first stage (8.2 ns post-synthesis). Whenever an FP reduction
-    // sits in X nothing else can be issuing to the FMA array, so selecting the
-    // tree operands on is_red_mc alone changes no result; the capture below
-    // still waits for `start`. fpctl[4] is is_red_mc, registered from R.
-    wire red_active = red_busy | fpctl[4];
+    //
+    // And on red_busy alone, a flop (R41 Stage 2, F03). The fold presents its
+    // first tree level the cycle after `start` -- red_busy is set together
+    // with the capture of `acc` -- and whatever the array computes in the
+    // cycle the reduction itself sits in X is never used: the FMA result of
+    // that slot is not retired (out_from_fma is false for major 0x15), and the
+    // sequencer reads fma_y only at rwait == FP_LAT, FP_LAT cycles after
+    // operands it presented itself. Selecting the tree in that cycle or not
+    // therefore changes no result and no cycle. R40 keyed the select on
+    // red_busy | fpctl[4] (is_red_mc, registered from R; R39 on `start`):
+    // the OR and its ~900-load net stood in front of every lane's operand
+    // select, the head of the census's worst path (red_busy -> FMA stage 0).
+    // fpctl[4] is still driven and is no longer read here.
+    wire red_active = red_busy;
 
     // During a fold the instruction inputs belong to a later instruction, so
     // the rounding mode has to come from the latched copy.
@@ -218,7 +227,16 @@ module tnca_vector_fpu #(
             cvt_x[i] <= a[i];
         cvt_mod <= mod[5:0];
         cvt_fmt <= rst_n && (major == `TNCA_MAJ_CVT) && (func == `TNCA_CVT_FMT);
+        cvt_fn  <= func;
+        cvt_int <= rst_n && (major == `TNCA_MAJ_CVT) && (func != `TNCA_CVT_FMT);
     end
+    // R41 T2 round 5: the int <-> binary32 conversions join the delay line at
+    // stage 1 too, computed from the registered inputs, like vf.cvt.fmt
+    // (tile-0 screen: operand -> cvt -> dly_v[0], +0.690 ns). Same result,
+    // same cycle; the bench check compares it with the stage-0 value.
+    reg  [7:0]     cvt_fn;
+    reg            cvt_int;       // delay stage 0 holds an int <-> f32 vf.cvt
+    reg  [ELEN-1:0] cvt_l [0:VLEN-1];   // computed below, after cvt_int_f
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fcvt
             tnca_cvt_comb_xls u_cvt (
@@ -231,7 +249,7 @@ module tnca_vector_fpu #(
     wire [ELEN-1:0] fma_y [0:VLEN-1];
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fma
-            tnca_fp32_fma #(.LAT(FP_LAT)) u_fma (
+            tnca_fp32_fma #(.LAT(FP_LAT), .IMPL(FMA_IMPL)) u_fma (
                 .clk(clk), .rst_n(rst_n),
                 .a(fa[g]), .b(fb[g]), .c(fc[g]),
                 .sub_c(f_sub), .mul_only(f_mul), .ftz(ftz),
@@ -262,6 +280,109 @@ module tnca_vector_fpu #(
 
     reg [ELEN-1:0] mm  [0:VLEN-1];
     reg            cmpr[0:VLEN-1];
+    // R41 T2 round 5: the int <-> binary32 conversion as a function, so the
+    // same logic runs one stage later from the registered inputs (cvt_l).
+    function [31:0] cvt_int_f;
+        input [31:0] x;
+        input [7:0]  fn;
+        input [2:0]  rm;
+        reg [7:0]  cexp;
+        reg [23:0] cman;
+        reg [63:0] cmag;
+        reg [7:0]  csh;
+        reg        cneg, cuns, rnd_inc;
+        reg [63:0] cfrac_mask, cfrac, chalf;
+        reg [31:0] iv, imag, inorm;
+        reg [7:0]  ish, ie;
+        reg [24:0] iman;
+        reg        ig, ir, isk;
+        integer    kk;
+        begin
+            cvt_int_f = 32'd0;
+            if (fn == `TNCA_CVT_S32_F32 || fn == `TNCA_CVT_U32_F32) begin
+                // integer -> binary32
+                iv   = x;
+                cneg = (fn == `TNCA_CVT_S32_F32) && iv[31];
+                imag = cneg ? (~iv + 32'd1) : iv;
+                if (imag == 32'd0) begin
+                    cvt_int_f = 32'd0;
+                end else begin
+                    ish = 0;
+                    for (kk = 0; kk < 32; kk = kk + 1)
+                        if (imag[kk]) ish = kk[7:0];       // index of the MSB
+                    ie = 127 + ish;
+                    // left-align the magnitude so bit 31 is the MSB
+                    inorm = imag << (31 - ish);
+                    iman  = {1'b0, inorm[31:8]};           // 24 significant bits
+                    ig    = inorm[7];
+                    isk   = |inorm[6:0];
+                    ir    = ig & (isk | iman[0]);
+                    iman  = iman + {24'd0, ir};
+                    if (iman[24]) begin
+                        iman = iman >> 1;
+                        ie   = ie + 1;
+                    end
+                    cvt_int_f = {cneg, ie, iman[22:0]};
+                end
+            end else begin
+                // binary32 -> integer (ISA sec 8.4): round by rm,
+                // saturate out-of-range values to the integer extremes,
+                // NaN -> 0. An unsigned result below zero saturates to 0.
+                cexp = x[30:23];
+                cman = {1'b1, x[22:0]};
+                cneg = x[31];
+                cuns = (fn == `TNCA_CVT_F32_U32);
+                cfrac = 64'd0;
+                if (is_nan32(x)) begin
+                    cvt_int_f = 32'd0;
+                end else if (cexp < 8'd127) begin
+                    // |x| < 1: only the rounding mode can make it +-1
+                    case (rm)
+                    `TNCA_RND_RNE: rnd_inc = (cexp == 8'd126) && (x[22:0] != 23'd0); // |x| > 0.5
+                    `TNCA_RND_RMI: rnd_inc = cneg  && (x[30:0] != 31'd0);
+                    `TNCA_RND_RPI: rnd_inc = !cneg && (x[30:0] != 31'd0);
+                    default:       rnd_inc = 1'b0;                          // toward zero
+                    endcase
+                    cvt_int_f = !rnd_inc ? 32'd0 :
+                             (cneg ? (cuns ? 32'd0 : 32'hffffffff) : 32'd1);
+                end else if (cexp >= (cuns ? 8'd159 : 8'd158)) begin
+                    // |x| >= 2^31 (signed) or 2^32 (unsigned), and infinities
+                    cvt_int_f = cuns ? (cneg ? 32'd0 : 32'hffffffff)
+                                  : (cneg ? 32'h80000000 : 32'h7fffffff);
+                end else begin
+                    // 1 <= |x| < 2^32: |x| = {cman, 8'b0} / 2^csh with
+                    // csh = 158 - cexp in [0, 31], never negative or wrapped.
+                    csh   = 8'd158 - cexp;
+                    cmag  = {32'd0, cman, 8'd0} >> csh[4:0];
+                    cfrac_mask = (64'd1 << csh[4:0]) - 64'd1;
+                    cfrac = {32'd0, cman, 8'd0} & cfrac_mask;
+                    chalf = (csh[4:0] == 5'd0) ? 64'd0 : (64'd1 << (csh[4:0] - 5'd1));
+                    case (rm)
+                    `TNCA_RND_RNE: rnd_inc = (csh[4:0] != 5'd0) &&
+                                             ((cfrac > chalf) || ((cfrac == chalf) && cmag[0]));
+                    `TNCA_RND_RMI: rnd_inc = cneg  && (cfrac != 64'd0);
+                    `TNCA_RND_RPI: rnd_inc = !cneg && (cfrac != 64'd0);
+                    default:       rnd_inc = 1'b0;
+                    endcase
+                    cmag = cmag + {63'd0, rnd_inc};
+                    if (!cuns) begin
+                        // cmag <= 2^31: -2^31 is exact, +2^31 saturates
+                        cvt_int_f = cneg ? (~cmag[31:0] + 32'd1) :
+                                 (cmag > 64'd2147483647) ? 32'h7fffffff : cmag[31:0];
+                    end else begin
+                        cvt_int_f = cneg ? 32'd0 :
+                                 (cmag > 64'd4294967295) ? 32'hffffffff : cmag[31:0];
+                    end
+                end
+            end
+        end
+    endfunction
+
+    integer cl;
+    always @(*)
+        for (cl = 0; cl < VLEN; cl = cl + 1)
+            cvt_l[cl] = cvt_int_f(cvt_x[cl], cvt_fn, cvt_mod[2:0]);
+
     reg [ELEN-1:0] cvt [0:VLEN-1];
     wire [ELEN-1:0] fcvt[0:VLEN-1];
     reg [ELEN-1:0] na  [0:VLEN-1];
@@ -270,12 +391,11 @@ module tnca_vector_fpu #(
     reg unord, eqv, ltv;
 
     // FP -> int, with the rounding mode in mod[2:0]
-    reg signed [63:0] fixv;
     reg [7:0]  cexp;
     reg [23:0] cman;
     reg [63:0] cmag;
     reg [7:0]  csh;
-    reg        cneg, rnd_inc;
+    reg        cneg, cuns, rnd_inc;
     reg [63:0] cfrac_mask;
     reg [63:0] cfrac;
     reg [63:0] chalf;
@@ -339,82 +459,7 @@ module tnca_vector_fpu #(
             endcase
 
             // ---- convert ---------------------------------------------------
-            if (func == `TNCA_CVT_S32_F32 || func == `TNCA_CVT_U32_F32) begin
-                // integer -> binary32
-                iv   = a[i];
-                cneg = (func == `TNCA_CVT_S32_F32) && iv[31];
-                imag = cneg ? (~iv + 32'd1) : iv;
-                if (imag == 32'd0) begin
-                    cvt[i] = 32'd0;
-                end else begin
-                    ish = 0;
-                    for (kk = 0; kk < 32; kk = kk + 1)
-                        if (imag[kk]) ish = kk[7:0];       // index of the MSB
-                    ie = 127 + ish;
-                    // left-align the magnitude so bit 31 is the MSB
-                    inorm = imag << (31 - ish);
-                    iman  = {1'b0, inorm[31:8]};           // 24 significant bits
-                    ig    = inorm[7];
-                    isk   = |inorm[6:0];
-                    ir    = ig & (isk | iman[0]);
-                    iman  = iman + {24'd0, ir};
-                    if (iman[24]) begin
-                        iman = iman >> 1;
-                        ie   = ie + 1;
-                    end
-                    cvt[i] = {cneg, ie, iman[22:0]};
-                end
-            end else begin
-                // binary32 -> integer, saturating; NaN -> 0
-                cexp = a[i][30:23];
-                cman = {1'b1, a[i][22:0]};
-                cneg = a[i][31];
-                if (is_nan32(a[i])) begin
-                    cvt[i] = 32'd0;
-                end else if (cexp < 8'd127) begin
-                    // |x| < 1 : only the rounding mode can make it +-1
-                    cfrac = 64'd0;
-                    case (mod[2:0])
-                    `TNCA_RND_RNE: cvt[i] = ((cexp == 8'd126) && (a[i][22:0] != 23'd0))
-                                            ? (cneg ? 32'hffffffff : 32'd1)
-                                            : ((cexp == 8'd126) ? 32'd0    // 0.5 -> 0 (even)
-                                                                : 32'd0);
-                    `TNCA_RND_RMI: cvt[i] = (cneg && (a[i][30:0] != 31'd0))
-                                            ? 32'hffffffff : 32'd0;
-                    `TNCA_RND_RPI: cvt[i] = (!cneg && (a[i][30:0] != 31'd0))
-                                            ? 32'd1 : 32'd0;
-                    default:       cvt[i] = 32'd0;         // toward zero
-                    endcase
-                end else if (cexp >= 8'd158) begin
-                    // |x| >= 2^31 : saturate
-                    cvt[i] = (func == `TNCA_CVT_F32_S32)
-                             ? (cneg ? 32'h80000000 : 32'h7fffffff)
-                             : (cneg ? 32'd0        : 32'hffffffff);
-                end else begin
-                    csh   = 8'd150 - cexp;                 // right shift of the 24-bit mantissa
-                    cmag  = {40'd0, cman} >> csh;
-                    cfrac_mask = (64'd1 << csh) - 64'd1;
-                    cfrac = {40'd0, cman} & cfrac_mask;
-                    chalf = 64'd1 << (csh - 1);
-                    case (mod[2:0])
-                    `TNCA_RND_RNE: rnd_inc = (cfrac > chalf) ||
-                                             ((cfrac == chalf) && cmag[0]);
-                    `TNCA_RND_RMI: rnd_inc = cneg  && (cfrac != 64'd0);
-                    `TNCA_RND_RPI: rnd_inc = !cneg && (cfrac != 64'd0);
-                    default:       rnd_inc = 1'b0;
-                    endcase
-                    cmag = cmag + {63'd0, rnd_inc};
-                    fixv = cneg ? -$signed(cmag) : $signed(cmag);
-                    if (func == `TNCA_CVT_F32_S32) begin
-                        cvt[i] = (fixv > 64'sd2147483647)  ? 32'h7fffffff :
-                                 (fixv < -64'sd2147483648) ? 32'h80000000 :
-                                 fixv[31:0];
-                    end else begin
-                        cvt[i] = cneg ? 32'd0 :
-                                 (cmag > 64'd4294967295) ? 32'hffffffff : cmag[31:0];
-                    end
-                end
-            end
+            cvt[i] = cvt_int_f(a[i], func, mod[2:0]);
         end
     end
 
@@ -486,7 +531,7 @@ module tnca_vector_fpu #(
 
     generate
         if (HAS_SFU != 0) begin : g_sfu
-            tnca_sfu #(.VLEN(VLEN), .ELEN(ELEN), .LAT(SFU_LAT)) u_sfu (
+            tnca_sfu #(.VLEN(VLEN), .ELEN(ELEN), .LAT(SFU_LAT), .LANES(SFU_LANES)) u_sfu (
                 .clk(clk), .rst_n(rst_n),
                 .start(start & is_sfu_mc), .func(func), .va(va),
                 .busy(sfu_busy), .done(sfu_done), .vres(sfu_vres)
@@ -533,8 +578,7 @@ module tnca_vector_fpu #(
         `TNCA_MAJ_CVT: begin
             // vf.cvt.fmt's result joins at stage 1 (cvt_fmt, below).
             for (i = 0; i < VLEN; i = i + 1)
-                nf_v[i*ELEN +: ELEN] = (func == `TNCA_CVT_FMT) ? {ELEN{1'b0}}
-                                                               : cvt[i];
+                nf_v[i*ELEN +: ELEN] = {ELEN{1'b0}};   // joins at stage 1
         end
         default: ;
         endcase
@@ -568,9 +612,25 @@ module tnca_vector_fpu #(
             if (cvt_fmt)
                 for (i = 0; i < VLEN; i = i + 1)
                     dly_v[1][i*ELEN +: ELEN] <= fcvt[i];
+            if (cvt_int)
+                for (i = 0; i < VLEN; i = i + 1)
+                    dly_v[1][i*ELEN +: ELEN] <= cvt_l[i];
         end
     end
 
+`ifndef SYNTHESIS
+    // R41 T2 round 5: the stage-1 conversion equals the one stage 0 had.
+    reg [VLEN*ELEN-1:0] cvt_ref_q;
+    integer ci;
+    always @(posedge clk) begin
+        for (ci = 0; ci < VLEN; ci = ci + 1)
+            cvt_ref_q[ci*ELEN +: ELEN] <= cvt[ci];
+        for (ci = 0; ci < VLEN; ci = ci + 1)
+            if (rst_n && cvt_int && (cvt_l[ci] !== cvt_ref_q[ci*ELEN +: ELEN]))
+                $display("FAIL tnca_vector_fpu assert @%0t: stage-1 conversion lane %0d %h, stage 0 had %h",
+                         $time, ci, cvt_l[ci], cvt_ref_q[ci*ELEN +: ELEN]);
+    end
+`endif
     wire [7:0] out_maj = dly_maj[FP_LAT-1];
     wire [7:0] out_fn  = dly_fn[FP_LAT-1];
 

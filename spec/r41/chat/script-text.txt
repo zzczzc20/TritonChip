@@ -1,0 +1,4 @@
+What is the capital of France? Answer in one word.
+And of Italy?
+/reset
+Say hi.

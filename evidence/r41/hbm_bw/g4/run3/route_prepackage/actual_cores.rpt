@@ -1,0 +1,10 @@
+schema tnca-r40-actual-core-placement/1
+checkpoint /home/vivado/r41run3/build_8d237223_retry1/xo/tmp/link/vivado/vpl/prj/prj.runs/impl_1/level0_wrapper_routed.dcp
+core 0 primitive_count 385023 placed 384728 unplaced 0 excluded_constants 295 actual_slrs {SLR0} expected SLR0 pass 1
+core 1 primitive_count 382416 placed 382125 unplaced 0 excluded_constants 291 actual_slrs {SLR1} expected SLR1 pass 1
+core 2 primitive_count 382840 placed 382549 unplaced 0 excluded_constants 291 actual_slrs {SLR2} expected SLR2 pass 1
+local_tmu 0 primitive_count 10590 placed 10586 unplaced 0 actual_slrs {SLR0} expected SLR0 pass 1
+local_tmu 1 primitive_count 10590 placed 10586 unplaced 0 actual_slrs {SLR1} expected SLR1 pass 1
+local_tmu 2 primitive_count 10590 placed 10586 unplaced 0 actual_slrs {SLR2} expected SLR2 pass 1
+local_tmu_replica_count 3
+failing_cores {}

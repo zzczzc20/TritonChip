@@ -1,0 +1,484 @@
+{
+ "a": "out/q35/tf_threads4",
+ "b": "out/q35/ref_fp8",
+ "tensors": {
+  "attention_mask": {
+   "equal": true
+  },
+  "decode_logits_step0": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "max_abs": 0.0
+  },
+  "decode_logits_top16_indices": {
+   "equal": true
+  },
+  "decode_logits_top16_values": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999999,
+   "max_abs": 0.0
+  },
+  "generated_tokens": {
+   "equal": true
+  },
+  "image_grid_thw": {
+   "equal": true
+  },
+  "input_ids": {
+   "equal": true
+  },
+  "mm_token_type_ids": {
+   "equal": true
+  },
+  "pixel_values": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999993159,
+   "max_abs": 0.0
+  },
+  "position_ids_prefill": {
+   "equal": true
+  },
+  "prefill_hidden_00": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000024,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_01": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_02": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_03": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_04": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_05": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_06": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_07": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_08": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_09": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999999,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_10": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999999,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_11": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_12": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999999,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_13": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_14": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_15": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_16": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_17": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999999,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_18": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_19": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_20": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_21": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999999,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_22": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_23": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_24": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_25": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999998,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_26": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_27": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999998,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_28": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_29": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_30": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999999,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_31": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "max_abs": 0.0
+  },
+  "prefill_hidden_32": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "prefill_logits_last": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "max_abs": 0.0
+  },
+  "vision_embeds": {
+   "bitwise_equal": true,
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "max_abs": 0.0
+  }
+ },
+ "prefill_hidden_rel_l2": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0
+ ],
+ "tokens": {
+  "a": [
+   357,
+   4145,
+   50717,
+   17498,
+   15963,
+   264,
+   2438,
+   12307,
+   11,
+   264,
+   6105,
+   9057,
+   11,
+   321,
+   264,
+   5983,
+   20837,
+   26899,
+   2272,
+   264,
+   4022,
+   3870,
+   13,
+   248046,
+   198,
+   248044
+  ],
+  "b": [
+   357,
+   4145,
+   50717,
+   17498,
+   15963,
+   264,
+   2438,
+   12307,
+   11,
+   264,
+   6105,
+   9057,
+   11,
+   321,
+   264,
+   5983,
+   20837,
+   26899,
+   2272,
+   264,
+   4022,
+   3870,
+   13,
+   248046,
+   198,
+   248044
+  ],
+  "equal": true,
+  "common_prefix": 26
+ },
+ "prefill_logits": {
+  "rel_l2": 0.0,
+  "cosine": 1.0000000000002083,
+  "bitwise_equal": true,
+  "argmax_agree": 1.0
+ },
+ "decode_logits_per_step": [
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000007,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000007,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000009,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000004,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0000000000000002,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 1.0,
+   "argmax_agree": true
+  },
+  {
+   "rel_l2": 0.0,
+   "cosine": 0.9999999999999999,
+   "argmax_agree": true
+  }
+ ],
+ "decode_logits_max_rel_l2": 0.0
+}

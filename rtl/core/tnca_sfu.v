@@ -44,7 +44,46 @@
 //==============================================================================
 `include "tnca_defs.vh"
 
+// Replicate the identical generated scalar pipelines across lane groups.
+// Every group retains LAT; only the number of serial lane passes changes.
+// The default remains one slice and preserves the original numerical path.
 module tnca_sfu #(
+    parameter VLEN = 16,
+    parameter ELEN = 32,
+    parameter LAT = 6,
+    parameter LANES = 1
+) (
+    input wire clk, rst_n, start,
+    input wire [7:0] func,
+    input wire [VLEN*ELEN-1:0] va,
+    output wire busy, done,
+    output wire [VLEN*ELEN-1:0] vres
+);
+    localparam GROUP = (VLEN + LANES - 1) / LANES;
+    wire [LANES-1:0] group_busy, group_done;
+    assign busy = |group_busy;
+    assign done = &group_done;
+    genvar slice, lane;
+    generate for (slice=0; slice<LANES; slice=slice+1) begin: g_slice
+        wire [GROUP*ELEN-1:0] input_lanes, output_lanes;
+        for (lane=0; lane<GROUP; lane=lane+1) begin: g_lane
+            if (slice*GROUP+lane < VLEN) begin: g_active
+                assign input_lanes[lane*ELEN+:ELEN] = va[(slice*GROUP+lane)*ELEN+:ELEN];
+                assign vres[(slice*GROUP+lane)*ELEN+:ELEN] = output_lanes[lane*ELEN+:ELEN];
+            end else begin: g_padding
+                assign input_lanes[lane*ELEN+:ELEN] = {ELEN{1'b0}};
+            end
+        end
+        tnca_sfu_serial #(.VLEN(GROUP), .ELEN(ELEN), .LAT(LAT)) u_serial (
+            .clk(clk), .rst_n(rst_n), .start(start), .func(func), .va(input_lanes),
+            .busy(group_busy[slice]), .done(group_done[slice]), .vres(output_lanes));
+    end endgenerate
+`ifndef SYNTHESIS
+    initial if (LANES < 1 || LANES > VLEN) $fatal(1, "SFU LANES must be in 1..VLEN");
+`endif
+endmodule
+
+module tnca_sfu_serial #(
     parameter VLEN = 16,
     parameter ELEN = 32,
     // Latency of rtl/gen/tnca_sfu_*_xls.v: stages minus one, because they are

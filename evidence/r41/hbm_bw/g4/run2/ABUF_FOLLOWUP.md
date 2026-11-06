@@ -1,0 +1,9 @@
+# Matrix A-buffer widening: feasibility follow-up
+
+2026-10-29. `doc/engineering_discipline.md` applies. This is an RTL source analysis, not a synthesis, timing, board, or performance result. It does not change the frozen run-2 image.
+
+`rtl/core/tnca_matrix.v` currently stores eight vector registers in `abuf` and selects the buffered path only when an A fragment fits. With the run-2 16-lane, 32-bit vector-register geometry, eight additional entries require 4,096 additional payload bits per core before accounting for selection, control, replication and physical packing. These are RTL structural counts, not measured FF or CLB usage. A wider selection mux may affect timing and must be measured.
+
+Sixteen entries would fit an FP8 K64 or FP16/BF16 K32 A fragment; FP16/BF16 K64 requires 32 entries and remains unbuffered. The current `a_bi` and `abuf[la[2:0]]` address only eight entries, and the command admission condition explicitly excludes FP8 K64 and FP16/BF16 K32. A correct implementation must widen both indexing paths and adjust admission without admitting a fragment larger than the buffer. Existing four-bit `la` can enumerate 0 through 15; boundaries and the last read need directed tests.
+
+The existing uncalibrated TLM measurements in `evidence/r41/hbm_bw/BALANCE.md` show K64 FP8 is slower per MAC than K32 with today's buffer. They do not measure a 16-entry buffer, so they cannot establish its gain. Evaluation requires a corresponding TLM model, bit-exact RTL tests for all formats and K values, resource and timing screens, and the default-code/non-regression gates. Because `1f0a5aff` is already in full implementation, any hardware revision belongs to a later separately budgeted image decision; do not launch another full implementation without reviewing the run-2 result and the remaining five-run budget.

@@ -4,6 +4,7 @@ set root [file normalize [lindex $argv 0]]
 source [file normalize [lindex $argv 1]]
 set out [file normalize [lindex $argv 2]]
 file mkdir $out
+set_param general.maxThreads 4
 set sources [list]
 foreach dir {common core gen nuca noc tile fpga} {
     foreach source [lsort [glob $root/rtl/$dir/*.v]] {lappend sources $source}

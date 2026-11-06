@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/zzhouch/r41run3/runtime_prepared/archbench/run.py", line 216, in <module>
+    sys.exit(main())
+  File "/home/zzhouch/r41run3/runtime_prepared/archbench/run.py", line 167, in main
+    pts = [registry.get(p) for p in args.point]
+  File "/home/zzhouch/r41run3/runtime_prepared/archbench/run.py", line 167, in <listcomp>
+    pts = [registry.get(p) for p in args.point]
+  File "/home/zzhouch/r41run3/runtime_prepared/archbench/registry.py", line 138, in get
+    _load()
+  File "/home/zzhouch/r41run3/runtime_prepared/archbench/registry.py", line 152, in _load
+    from . import ops, models, hbm, membound    # noqa: F401  (registration side effect)
+  File "/home/zzhouch/r41run3/runtime_prepared/archbench/ops.py", line 10, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'

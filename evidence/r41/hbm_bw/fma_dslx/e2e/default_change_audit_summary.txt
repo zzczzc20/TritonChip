@@ -1,0 +1,11 @@
+audit.json {"points": 113, "unchanged": 103, "changed": 10, "not_compared": 0}
+["model.llama_decode/hbm/fp16-b1-p512", "model.llama_decode/large/fp16-b1-p512", "model.llama_decode/medium/fp16-b1-p256", "model.llama_decode/small/fp16-b1-p128", "model.llama_decode/tiny/fp16-b1-p16", "model.llama_prefill/hbm/fp16-b1-s512", "model.llama_prefill/large/fp16-b1-s512", "model.llama_prefill/medium/fp16-b1-s64", "model.llama_prefill/small/fp16-b1-s64", "model.llama_prefill/tiny/fp16-b1-s16"]
+audit_abl.json {"points": 113, "unchanged": 113, "changed": 0, "not_compared": 0}
+[]
+base software_tree files:2d38e37a08567d16c78737ab479869feb4dff125dda604375fb313ab37164487
+exit 0
+head software_tree files:bbf58d5780a9264c8a9531b78ef2f41efaaabff195b7badbdb7da06df28861a7
+exit 0
+abl software_tree files:12e1c5f6617607732d278bb80d632196c055b6c2e4c9faf32a297088fecd3e9b
+exit 0
+attribution: the 10 changed points come from compiler/python/tnca_cc/optimization.py (dominator-scoped value numbering, not mine); ablation base+ISA tables/targets = 113/113 unchanged

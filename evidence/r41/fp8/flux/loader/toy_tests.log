@@ -1,0 +1,7 @@
+PASS test_converter_provenance
+tiny flux2: 16 FP8Linear, emulate rel err 0.00e+00, scaled_mm rel err 0.00e+00
+PASS test_diffusers_official_conversion
+PASS test_metadata_and_identity_mapping
+PASS test_per_row_and_weight_only
+PASS test_refusals
+python exit status: 0

@@ -1,0 +1,83 @@
+PASS: isolated inventory child imports snapshot compiler and scheduler before stale installation
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.027s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.007s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.000s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.016s
+
+OK
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.248s
+
+OK
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.008s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.014s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 2.362s
+
+OK
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.005s
+
+OK
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
+.................
+----------------------------------------------------------------------
+Ran 17 tests in 0.309s
+
+OK
+......
+----------------------------------------------------------------------
+Ran 6 tests in 0.439s
+
+OK
+  building core-vrf-sync-v2 -> /home/zhongchun/.cache/tnca/devices/core-vrf-sync-v2-d8ab4dc2ea14be49-79a804746247/tnca_device_vrf2.vvp
+  built 20407699 bytes
+CODE CACHE EPOCH PASS 6 RTL launches, one-module region, live buffer preserved
+Traceback (most recent call last):
+  File "/home/zhongchun/r41bw_res_18d045c53b8b/tools/r40/bucket_decode_tests.py", line 10, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+make: *** [Makefile:2350: r40-multicore-mmio-checks] Error 1
+
+real	0m6.324s
+user	0m4.827s
+sys	0m0.755s

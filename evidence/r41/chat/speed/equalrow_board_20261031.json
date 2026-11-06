@@ -1,0 +1,139 @@
+{
+  "status": "pass",
+  "scope": "full-checkpoint Qwen3.5 board session at 100 MHz",
+  "report_sha256": "0a98afab2e38b049e2fd12d474654a0045986b2b757c416b11f861b7958e658a",
+  "teacher_passed": true,
+  "persistent_passed": true,
+  "rounds": [
+    {
+      "round": 0,
+      "status": "pass",
+      "text": "Hi there! How",
+      "tokens": [
+        12675,
+        1017,
+        0,
+        2500
+      ],
+      "prefill_tokens_per_second": 0.03509162536643944,
+      "decode_steps_per_second": 0.017919136211911737,
+      "decode_seconds": 167.41878428301425,
+      "decode_device_cycles": 10052258385,
+      "decode_non_device_wall_fraction": 0.39957404253951034,
+      "decode_launches": [
+        725,
+        725,
+        725
+      ],
+      "decode_evictions": [
+        561,
+        559,
+        559
+      ],
+      "decode_host_reads": 0,
+      "decode_steps": 3,
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_roles_covered": true,
+      "compiled_wrapper_fallbacks": {
+        "prefill": [],
+        "decode": [],
+        "selection": []
+      },
+      "model_tensor_placements": {
+        "parameters": {
+          "tnca:0": 924
+        },
+        "buffers": {
+          "tnca:0": 4
+        }
+      }
+    },
+    {
+      "round": 1,
+      "status": "pass",
+      "text": "Understood. I",
+      "tokens": [
+        15771,
+        49942,
+        13,
+        353
+      ],
+      "prefill_tokens_per_second": 0.12444582186183202,
+      "decode_steps_per_second": 0.017766681562116766,
+      "decode_seconds": 168.85539314200287,
+      "decode_device_cycles": 10041112614,
+      "decode_non_device_wall_fraction": 0.4053424988590272,
+      "decode_launches": [
+        725,
+        725,
+        725
+      ],
+      "decode_evictions": [
+        561,
+        559,
+        559
+      ],
+      "decode_host_reads": 0,
+      "decode_steps": 3,
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_roles_covered": true,
+      "compiled_wrapper_fallbacks": {
+        "prefill": [],
+        "decode": [],
+        "selection": []
+      },
+      "model_tensor_placements": {
+        "parameters": {
+          "tnca:0": 924
+        },
+        "buffers": {
+          "tnca:0": 4
+        }
+      }
+    },
+    {
+      "round": 2,
+      "status": "pass",
+      "text": "Hi there! How",
+      "tokens": [
+        12675,
+        1017,
+        0,
+        2500
+      ],
+      "prefill_tokens_per_second": 0.12468876001578065,
+      "decode_steps_per_second": 0.017627522696887707,
+      "decode_seconds": 170.18840659497073,
+      "decode_device_cycles": 10081631536,
+      "decode_non_device_wall_fraction": 0.4076193709250038,
+      "decode_launches": [
+        725,
+        725,
+        725
+      ],
+      "decode_evictions": [
+        561,
+        559,
+        559
+      ],
+      "decode_host_reads": 0,
+      "decode_steps": 3,
+      "cpu_numerical_fallback": false,
+      "compiled_wrapper_roles_covered": true,
+      "compiled_wrapper_fallbacks": {
+        "prefill": [],
+        "decode": [],
+        "selection": []
+      },
+      "model_tensor_placements": {
+        "parameters": {
+          "tnca:0": 924
+        },
+        "buffers": {
+          "tnca:0": 4
+        }
+      }
+    }
+  ],
+  "caveat": "Single board observation; decode rate includes executed steps after EOS; physical code reloads were not recorded."
+}

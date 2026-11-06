@@ -1,0 +1,27 @@
+{
+  "schema": "tnca-experiment-spec/1",
+  "id": "r41-native-model-and-slow-pass-parent-ownership",
+  "allowed_hosts": ["gx10-6646"],
+  "hypothesis": "Killing a real native model owner terminates its active slow pass, and killing either Python frontend owner terminates both model and pass without relying on process-group cleanup.",
+  "competing_explanations": ["only a dummy child is tested", "the pass was never live", "a process-group kill hides absent parent ownership", "server startup or normal native execution regresses"],
+  "expected_observations": ["actual infinite ISA execution holds a live fork pass", "SIGKILL of each owner alone leaves no running native descendant", "normal artifacts and standard native graphs still execute"],
+  "sources": ["tools/performance_harness/systemc", "tools/performance_harness/fragment_case.py", "tools/performance_harness/experiment.py", "python/tnca", "compiler/python", "compiler/targets", "tools/asm", "isa", "xls/tnca_sfu_tables.x", "spec/r41/stage1/experiments/slow-process-lifetime.json"],
+  "env": {
+    "PATH": "{home}/tc_env/bin:/usr/local/bin:/usr/bin:/bin",
+    "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm:{root}/tools/performance_harness/systemc",
+    "OMP_NUM_THREADS": "2", "MKL_NUM_THREADS": "2",
+    "TNCA_BACKEND": "systemc-tlm-grid",
+    "TNCA_TLM_BINARY": "{out}/build/tnca-chip",
+    "TNCA_TLM_CONFIG": "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MEMORY_BYTES": "16777216", "TNCA_HOST_TIMEOUT": "300", "TNCA_DEADLINE": "200000000",
+    "TNCA_TENSOR_DESCRIPTORS": "1", "TNCA_TORCH_DEVICE": "native", "TNCA_PROFILE": "core-vrf-sync-v5"
+  },
+  "steps": [
+    {"id": "configure", "kind": "compile", "argv": ["cmake", "-S", "tools/performance_harness/systemc", "-B", "{out}/build", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_PREFIX_PATH={home}/tc_env/systemc-3.0.2/install", "-DRAMULATOR2_DIR={home}/tc_env/ramulator2"], "timeout_seconds": 120},
+    {"id": "build", "kind": "compile", "argv": ["cmake", "--build", "{out}/build", "-j", "4"], "timeout_seconds": 600, "outputs": ["{out}/build/tnca-chip"]},
+    {"id": "kill-real-owners", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/systemc/test_slow_process_lifetime.py", "--binary", "{out}/build/tnca-chip", "--config", "{root}/tools/performance_harness/systemc/configs/r40-board-m2.cfg", "--out", "{out}/lifetime"], "timeout_seconds": 60, "inputs": ["{out}/build/tnca-chip"], "outputs": ["{out}/lifetime/report.json"]},
+    {"id": "native-artifacts", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/systemc/validate_chip.py", "--binary", "{out}/build/tnca-chip", "--out", "{out}/artifacts"], "timeout_seconds": 300, "inputs": ["{out}/build/tnca-chip"], "outputs": ["{out}/artifacts/validation.json"]},
+    {"id": "native-fast-session", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/fragment_case.py", "--out", "{out}/fast", "--require-resident"], "timeout_seconds": 600, "inputs": ["{out}/build/tnca-chip"], "outputs": ["{out}/fast/report.json"]},
+    {"id": "native-slow-session", "kind": "systemc", "argv": ["{python}", "tools/performance_harness/fragment_case.py", "--out", "{out}/slow", "--require-resident"], "timeout_seconds": 900, "env": {"TNCA_DRAM_PATH": "slow"}, "inputs": ["{out}/build/tnca-chip"], "outputs": ["{out}/slow/report.json"]}
+  ]
+}

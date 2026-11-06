@@ -1,0 +1,102 @@
+{
+  "schema": "r41-hbm-clock-sensitivity/1",
+  "scope": "exploratory generated-clock replacement in routed checkpoint, not packaged-image timing signoff; recreated original differs 1 ps in WNS",
+  "original_report_sha256": "c16e5d95a30ef8f631688eca8cd58696e4f2317c5c8f49177790cf61fcab751e",
+  "archive_sha256": "8352d08270effb124a1dd03b49bfc19e8bf50c1832d3d49c8b17e869112b2bf7",
+  "vivado_process_exit": "unavailable: launcher trap failed; log has both completion markers and no Vivado ERROR lines",
+  "reports": {
+    "original450": {
+      "design": {
+        "wns": -0.085,
+        "tns": -0.856,
+        "setup_failing": 22,
+        "setup_endpoints": 1594718,
+        "whs": 0.0,
+        "ths": 0.0,
+        "hold_failing": 0,
+        "hold_endpoints": 1592867
+      },
+      "kernel": {
+        "wns": 0.111,
+        "tns": 0.0,
+        "setup_failing": 0,
+        "whs": 0.001,
+        "ths": 0.0,
+        "hold_failing": 0
+      },
+      "hbm": {
+        "wns": -0.085,
+        "tns": -0.856,
+        "setup_failing": 22,
+        "whs": 0.0,
+        "ths": 0.0,
+        "hold_failing": 0
+      },
+      "no_clock_zero": true,
+      "unconstrained_internal_zero": true,
+      "generated_clock_zero": true
+    },
+    "recreated450": {
+      "design": {
+        "wns": -0.086,
+        "tns": -0.86,
+        "setup_failing": 22,
+        "setup_endpoints": 1594718,
+        "whs": 0.0,
+        "ths": 0.0,
+        "hold_failing": 0,
+        "hold_endpoints": 1592867
+      },
+      "kernel": {
+        "wns": 0.111,
+        "tns": 0.0,
+        "setup_failing": 0,
+        "whs": 0.001,
+        "ths": 0.0,
+        "hold_failing": 0
+      },
+      "hbm": {
+        "wns": -0.086,
+        "tns": -0.86,
+        "setup_failing": 22,
+        "whs": 0.0,
+        "ths": 0.0,
+        "hold_failing": 0
+      },
+      "no_clock_zero": true,
+      "unconstrained_internal_zero": true,
+      "generated_clock_zero": true
+    },
+    "exploratory433p4": {
+      "design": {
+        "wns": -0.001,
+        "tns": -0.001,
+        "setup_failing": 1,
+        "setup_endpoints": 1594718,
+        "whs": 0.0,
+        "ths": 0.0,
+        "hold_failing": 0,
+        "hold_endpoints": 1592867
+      },
+      "kernel": {
+        "wns": 0.111,
+        "tns": 0.0,
+        "setup_failing": 0,
+        "whs": 0.001,
+        "ths": 0.0,
+        "hold_failing": 0
+      },
+      "hbm": {
+        "wns": -0.001,
+        "tns": -0.001,
+        "setup_failing": 1,
+        "whs": 0.0,
+        "ths": 0.0,
+        "hold_failing": 0
+      },
+      "no_clock_zero": true,
+      "unconstrained_internal_zero": true,
+      "generated_clock_zero": true
+    }
+  }
+}

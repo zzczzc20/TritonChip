@@ -1,0 +1,522 @@
+{
+ "schema": "tnca-r41-hbm8-case/1",
+ "case": "stream",
+ "mode": "board",
+ "status": "functional-pass",
+ "requested_hbm_bytes": 8589934592,
+ "performance_gate": "not-measured",
+ "backend_args": {
+  "xclbin": "/home/zzhouch/r41run3/tnca_u280.xclbin",
+  "image_profile": "core-vrf-sync-v5-x8-g2c4-dp",
+  "core_count": 3,
+  "memory_ports": 3,
+  "hbm_dma": true,
+  "hbm_bytes": 8589934592,
+  "device_clock": true
+ },
+ "backend": "fpga-u280-multicore",
+ "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+ "torch": "2.14.0+cpu",
+ "triton": "3.8.0",
+ "knobs": {
+  "TNCA_ACTIVE_CORES": "3",
+  "TNCA_BACKEND": "fpga-u280-multicore",
+  "TNCA_BACKEND_ARGS": "{\"xclbin\":\"/home/zzhouch/r41run3/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5-x8-g2c4-dp\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":8589934592,\"device_clock\":true}",
+  "TNCA_DEADLINE": "200000000000",
+  "TNCA_HOST_TIMEOUT": "28800",
+  "TNCA_MAX_BLOCK": "16",
+  "TNCA_OPERATING_CLOCK_EVIDENCE": "/home/zzhouch/r41run3/qualified_clock.json",
+  "TNCA_PROFILE": "core-vrf-sync-v5-x8-g2c4-dp",
+  "TNCA_RCTX_SPMD": "1",
+  "TNCA_TENSOR_DESCRIPTORS": "1",
+  "TNCA_TORCH_DEVICE": "native",
+  "TNCA_TRITON": "1",
+  "TNCA_TUNE": "0"
+ },
+ "window": {
+  "base": "0x0",
+  "size": 8589934592,
+  "local_limit": "0x20000"
+ },
+ "stream": {
+  "start": "0x7fff1000",
+  "end": "0x10fff1000",
+  "bytes": 2415919104,
+  "physical_start": "0x7ffd1000",
+  "physical_end": "0x10ffd1000",
+  "host_upload_seconds": 51.308,
+  "host_download_seconds": 30.638,
+  "device_read_bytes_per_cycle": 4.388632300874655,
+  "launch": {
+   "label": "row-sum",
+   "launches": 27,
+   "kernels": [
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "triton_red_fused_sum_view_0"
+   ],
+   "grids": [
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     36864,
+     1,
+     1
+    ]
+   ],
+   "device_cycles": 550755569,
+   "last_launch_cores": [
+    {
+     "core": 0,
+     "issued": 12252,
+     "completed": 12252
+    },
+    {
+     "core": 1,
+     "issued": 12360,
+     "completed": 12360
+    },
+    {
+     "core": 2,
+     "issued": 12252,
+     "completed": 12252
+    }
+   ],
+   "peak_active": 3,
+   "outlets": [
+    {
+     "port": 0,
+     "read_lines": 12687229,
+     "write_lines": 2903
+    },
+    {
+     "port": 1,
+     "read_lines": 12539705,
+     "write_lines": 2872
+    },
+    {
+     "port": 2,
+     "read_lines": 12539686,
+     "write_lines": 2860
+    }
+   ],
+   "upload_bytes": 0,
+   "download_bytes": 0
+  },
+  "performance_status": "diagnostic-only"
+ },
+ "checks": [
+  {
+   "name": "window-geometry",
+   "ok": true,
+   "window": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000"
+   }
+  },
+  {
+   "name": "placed:stream",
+   "ok": true,
+   "got": "0x7fff1000"
+  },
+  {
+   "name": "streaming-read-exact",
+   "ok": true,
+   "max_abs": 0.0
+  },
+  {
+   "name": "dma-out-whole-storage",
+   "ok": true,
+   "bad": []
+  },
+  {
+   "name": "three-cores",
+   "ok": true
+  },
+  {
+   "name": "outlets-carried-the-storage",
+   "ok": true,
+   "read_lines": 37766620
+  },
+  {
+   "name": "single-storage-over-2GiB",
+   "ok": true
+  },
+  {
+   "name": "final-axi-status-clear",
+   "ok": true,
+   "status": {
+    "error": false,
+    "stray": false
+   }
+  }
+ ],
+ "launches": [
+  {
+   "label": "row-sum",
+   "launches": 27,
+   "kernels": [
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "_copy_kernel",
+    "triton_red_fused_sum_view_0"
+   ],
+   "grids": [
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     36864,
+     1,
+     1
+    ]
+   ],
+   "device_cycles": 550755569,
+   "last_launch_cores": [
+    {
+     "core": 0,
+     "issued": 12252,
+     "completed": 12252
+    },
+    {
+     "core": 1,
+     "issued": 12360,
+     "completed": 12360
+    },
+    {
+     "core": 2,
+     "issued": 12252,
+     "completed": 12252
+    }
+   ],
+   "peak_active": 3,
+   "outlets": [
+    {
+     "port": 0,
+     "read_lines": 12687229,
+     "write_lines": 2903
+    },
+    {
+     "port": 1,
+     "read_lines": 12539705,
+     "write_lines": 2872
+    },
+    {
+     "port": 2,
+     "read_lines": 12539686,
+     "write_lines": 2860
+    }
+   ],
+   "upload_bytes": 0,
+   "download_bytes": 0
+  }
+ ],
+ "axi_status_at_end": {
+  "error": false,
+  "stray": false
+ },
+ "wall_seconds": 98.3
+}

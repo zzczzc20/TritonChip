@@ -1,0 +1,72 @@
+{
+  "schema": "tnca-run2-stage/1",
+  "status": "pass",
+  "experiments": [
+    {
+      "id": "r3-membound-large-1-default",
+      "manifest_sha256": "a0241db4c86e371970f9571eb6f8a2ea9027ced4d9f7bf74265263957bbf23c3",
+      "report_sha256": "ad03463bcc7b7713fefc569c87acbb23271177609387d6f172bb17b8e7bad333",
+      "checks": [
+        {
+          "path": "/home/zzhouch/r41run3/queue_resume_2/results/membound-default/r3-membound-large-1-default/membound_large_1/batch.json",
+          "sha256": "8f0f4be5657bad2122481830e599b721dd44289c655c2e6010c3f5afd2410d7a"
+        }
+      ]
+    },
+    {
+      "id": "r3-membound-large-2-default",
+      "manifest_sha256": "ae6a540aebfc8df023827160669b14ad9d0616dfa52877238dc7fdfb7df7cfa5",
+      "report_sha256": "01670f3fa3fadc1559f57d6408f0c39176ba2b6bb1693c25dae2942ec71c4b26",
+      "checks": [
+        {
+          "path": "/home/zzhouch/r41run3/queue_resume_2/results/membound-default/r3-membound-large-2-default/membound_large_2/batch.json",
+          "sha256": "621aba3e0d3376aec48d5d3a5a564badfbd77e10e563d9ed8c292621cce7181d"
+        }
+      ]
+    },
+    {
+      "id": "r3-membound-medium-1-default",
+      "manifest_sha256": "bdeea05573664e1270a6ca616e2e77b51849cb21279bf5819df95e0331b5c67d",
+      "report_sha256": "221234927679b3bbd81462e4b96f659d89ffde4a1e309bac2f7c04a26402225a",
+      "checks": [
+        {
+          "path": "/home/zzhouch/r41run3/queue_resume_2/results/membound-default/r3-membound-medium-1-default/membound_medium_1/batch.json",
+          "sha256": "8f7b532c276802497b48b8c75309f33bbfe4790c18e8625a587d375435b95436"
+        }
+      ]
+    },
+    {
+      "id": "r3-membound-medium-2-default",
+      "manifest_sha256": "461f797ff97bf308f2b826fc94e556794a7d1d8d1ee590c990975cee3de51194",
+      "report_sha256": "96b35d88cc61309d968169d7f6d03c8ab377b10e6ad75b024db981b9504fa398",
+      "checks": [
+        {
+          "path": "/home/zzhouch/r41run3/queue_resume_2/results/membound-default/r3-membound-medium-2-default/membound_medium_2/batch.json",
+          "sha256": "d6ede59d4d148e8e2e8110e6d3004ae08c31419ce27c0c4feb2cde3121067e20"
+        }
+      ]
+    },
+    {
+      "id": "r3-membound-small-1-default",
+      "manifest_sha256": "9e6d04075159c9bb42f5f449a139ab7d98e28db1cabef461403d4ca4c83474be",
+      "report_sha256": "120a7810b4ad07d2c6ed235657b33368b33babb6d7ca03110fac19b6f0b8aca7",
+      "checks": [
+        {
+          "path": "/home/zzhouch/r41run3/queue_resume_2/results/membound-default/r3-membound-small-1-default/membound_small_1/batch.json",
+          "sha256": "6393dccbdf9fef4926664d78a89e9bb214a7c4b6cadf4785b1640c137c440327"
+        }
+      ]
+    },
+    {
+      "id": "r3-membound-small-2-default",
+      "manifest_sha256": "80e6ee40fb52ff041e8ce6713e61c1073e0478586490b3d34b180f1bd502548f",
+      "report_sha256": "461fe296711847e14a2bf37a563db063170671d497f11ae8f411a72846876f13",
+      "checks": [
+        {
+          "path": "/home/zzhouch/r41run3/queue_resume_2/results/membound-default/r3-membound-small-2-default/membound_small_2/batch.json",
+          "sha256": "a6224ff82e6cff718febae82724e7c3e8a712a41c2057425787072eac1a5dc89"
+        }
+      ]
+    }
+  ]
+}

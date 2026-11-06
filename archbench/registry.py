@@ -25,12 +25,18 @@ Tiers say where a point can be measured, not how important it is:
             architecture's whole NUCA -- for streaming, GEMM, transpose and
             gather (archbench/hbm.py); capacity-exceeded until TNCA has HBM.
             R40's HBM suite is these and every point of the other tiers
+    membound
+            R41: the registered memory-bound bandwidth suite (archbench/
+            membound.py, frozen as archbench/suites/r41_membound.json):
+            copy, element-wise, casts, reductions and normalisations in
+            fp32/fp16/bf16, small to 64 MiB-per-tensor sizes, contiguous,
+            strided and broadcast layouts
 """
 from dataclasses import dataclass, field
 import hashlib
 import json
 
-TIERS = ('tiny', 'small', 'medium', 'large', 'hbm')
+TIERS = ('tiny', 'small', 'medium', 'large', 'hbm', 'membound')
 
 # Relative tolerance on max|got - ref| / max(max|ref|, 1), by the dtype the
 # point computes in. The reference is eager PyTorch in float32 on the CPU
@@ -143,4 +149,4 @@ def _load():
     global _loaded
     if not _loaded:
         _loaded = True
-        from . import ops, models, hbm    # noqa: F401  (registration side effect)
+        from . import ops, models, hbm, membound    # noqa: F401  (registration side effect)

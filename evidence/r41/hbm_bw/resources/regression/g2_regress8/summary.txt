@@ -1,0 +1,6 @@
+commit 18d045c53b8bbf248aeb8a550e724fa0158225b4 start 2026-10-28T14:29:45Z host gx10-6646
+== mmio_checks: make r40-multicore-mmio-checks
+mmio_checks exit 2
+== compiler: env TNCA_LLVM=/home/zhongchun/tc_env/root/usr/lib/llvm-20 make compiler PYTHON=/home/zhongchun/tc_env/torchenv/bin/python
+compiler exit 2
+end 2026-10-28T14:29:54Z

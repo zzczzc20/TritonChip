@@ -1,0 +1,703 @@
+{
+  "schema": "r41-membound-partial-logical-rate/1",
+  "scope": "99-point first large batch only; declared logical read+write bytes divided by serial-grid device time; not physical HBM throughput and not the full 513-point suite",
+  "source_archive_sha256": "7be23920fe4294564fafed3a8a83506413bae0f413b61a72f0e40949739935b2",
+  "points": 99,
+  "median_gb_s": 0.13356766087291458,
+  "max_gb_s": 0.5443509030813491,
+  "rows": [
+    {
+      "point": "op.add/membound/bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 134219776,
+      "cycles": 103345348,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.12987500511392153
+    },
+    {
+      "point": "op.add/membound/bf16-large-contig-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 85944119,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.23425290100419788
+    },
+    {
+      "point": "op.add/membound/bf16-large-strided-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 154306196,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.1304721373599282
+    },
+    {
+      "point": "op.add/membound/fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 134219776,
+      "cycles": 103356360,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.1298611677114016
+    },
+    {
+      "point": "op.add/membound/fp16-large-contig-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 85942076,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.23425846962319133
+    },
+    {
+      "point": "op.add/membound/fp16-large-strided-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 154314551,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.13046507325158208
+    },
+    {
+      "point": "op.add/membound/fp32-large-broadcast-r16384-c1024",
+      "logical_bytes": 134221824,
+      "cycles": 53189315,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.25234734457475155
+    },
+    {
+      "point": "op.add/membound/fp32-large-contig-r16384-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 44840911,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.44897970962275946
+    },
+    {
+      "point": "op.add/membound/fp32-large-strided-r16384-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 113926556,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.17671612227091285
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67110912,
+      "cycles": 76370253,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.08787572302529886
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp16-large-contig-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 58914311,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.22781854819620992
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp16-large-strided-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 100477261,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.13358020179312013
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp32-large-broadcast-r32768-c1024",
+      "logical_bytes": 134219776,
+      "cycles": 69731339,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.19248128305696238
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp32-large-contig-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 59976647,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.3356749702930209
+    },
+    {
+      "point": "op.cast/membound/bf16-to-fp32-large-strided-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 82970343,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.24264886068989736
+    },
+    {
+      "point": "op.cast/membound/fp16-to-bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67110912,
+      "cycles": 76368581,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.0878776469606002
+    },
+    {
+      "point": "op.cast/membound/fp16-to-bf16-large-contig-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 58912352,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.22782612379828257
+    },
+    {
+      "point": "op.cast/membound/fp16-to-bf16-large-strided-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 100491439,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.13356135541058378
+    },
+    {
+      "point": "op.cast/membound/fp16-to-fp32-large-broadcast-r32768-c1024",
+      "logical_bytes": 134219776,
+      "cycles": 69731335,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.19248129409827017
+    },
+    {
+      "point": "op.cast/membound/fp16-to-fp32-large-contig-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 59976542,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.33567555795397475
+    },
+    {
+      "point": "op.cast/membound/fp16-to-fp32-large-strided-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 82972125,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.24264364929788165
+    },
+    {
+      "point": "op.cast/membound/fp32-to-bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67112960,
+      "cycles": 74849255,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.08966416566203632
+    },
+    {
+      "point": "op.cast/membound/fp32-to-bf16-large-contig-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 66247685,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.3038998147633385
+    },
+    {
+      "point": "op.cast/membound/fp32-to-bf16-large-strided-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 131898134,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.152637938001458
+    },
+    {
+      "point": "op.cast/membound/fp32-to-fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67112960,
+      "cycles": 74847851,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.08966584758726072
+    },
+    {
+      "point": "op.cast/membound/fp32-to-fp16-large-contig-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 66249330,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.3038922687972844
+    },
+    {
+      "point": "op.cast/membound/fp32-to-fp16-large-strided-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 131901795,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.15263370145948357
+    },
+    {
+      "point": "op.clone/membound/bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67110912,
+      "cycles": 74821349,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.08969487037717003
+    },
+    {
+      "point": "op.clone/membound/bf16-large-contig-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 55432382,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.24212873984018943
+    },
+    {
+      "point": "op.clone/membound/bf16-large-strided-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 100480853,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.13357542655415156
+    },
+    {
+      "point": "op.clone/membound/fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67110912,
+      "cycles": 74821342,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.08969487876868074
+    },
+    {
+      "point": "op.clone/membound/fp16-large-contig-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 55434011,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.2421216245744873
+    },
+    {
+      "point": "op.clone/membound/fp16-large-strided-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 100484481,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.13357060380298924
+    },
+    {
+      "point": "op.clone/membound/fp32-large-broadcast-r16384-c1024",
+      "logical_bytes": 67112960,
+      "cycles": 34314780,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.19558033010848389
+    },
+    {
+      "point": "op.clone/membound/fp32-large-contig-r16384-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 24656472,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.5443509030813491
+    },
+    {
+      "point": "op.clone/membound/fp32-large-strided-r16384-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 66416531,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.20208482132257105
+    },
+    {
+      "point": "op.copy/membound/bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67110912,
+      "cycles": 74801008,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.0897192615372242
+    },
+    {
+      "point": "op.copy/membound/bf16-large-contig-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 55433107,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.2421255730803615
+    },
+    {
+      "point": "op.copy/membound/bf16-large-strided-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 100486695,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.13356766087291458
+    },
+    {
+      "point": "op.copy/membound/fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67110912,
+      "cycles": 74804799,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.08971471469363884
+    },
+    {
+      "point": "op.copy/membound/fp16-large-contig-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 55432529,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.24212809774563956
+    },
+    {
+      "point": "op.copy/membound/fp16-large-strided-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 100491167,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.13356171692184649
+    },
+    {
+      "point": "op.copy/membound/fp32-large-broadcast-r16384-c1024",
+      "logical_bytes": 67112960,
+      "cycles": 34302540,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.19565011803790622
+    },
+    {
+      "point": "op.copy/membound/fp32-large-contig-r16384-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 24656683,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.5443462447888875
+    },
+    {
+      "point": "op.copy/membound/fp32-large-strided-r16384-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 66419285,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.20207644210563241
+    },
+    {
+      "point": "op.div/membound/bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 134219776,
+      "cycles": 116166434,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.11554092811353751
+    },
+    {
+      "point": "op.div/membound/bf16-large-contig-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 101016282,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.19930113048508358
+    },
+    {
+      "point": "op.div/membound/bf16-large-strided-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 168853440,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.11923156081392242
+    },
+    {
+      "point": "op.div/membound/fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 134219776,
+      "cycles": 116169814,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.11553756641118493
+    },
+    {
+      "point": "op.div/membound/fp16-large-contig-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 101019675,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.1992944364550767
+    },
+    {
+      "point": "op.div/membound/fp16-large-strided-r32768-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 168838992,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.11924176377456695
+    },
+    {
+      "point": "op.div/membound/fp32-large-broadcast-r16384-c1024",
+      "logical_bytes": 134221824,
+      "cycles": 61700692,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.21753698321568257
+    },
+    {
+      "point": "op.div/membound/fp32-large-contig-r16384-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 54402927,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.3700657356174972
+    },
+    {
+      "point": "op.div/membound/fp32-large-strided-r16384-c1024",
+      "logical_bytes": 201326592,
+      "cycles": 115427594,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.1744180789214059
+    },
+    {
+      "point": "op.exp/membound/bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67110912,
+      "cycles": 93415559,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.07184125719356879
+    },
+    {
+      "point": "op.exp/membound/bf16-large-contig-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 86420198,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.15530828568571436
+    },
+    {
+      "point": "op.exp/membound/bf16-large-strided-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 110164220,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.1218342289356744
+    },
+    {
+      "point": "op.exp/membound/fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67110912,
+      "cycles": 93417146,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.07184003673158672
+    },
+    {
+      "point": "op.exp/membound/fp16-large-contig-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 86416508,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.15531491737666603
+    },
+    {
+      "point": "op.exp/membound/fp16-large-strided-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 110157010,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.12184220323336663
+    },
+    {
+      "point": "op.exp/membound/fp32-large-broadcast-r16384-c1024",
+      "logical_bytes": 67112960,
+      "cycles": 42678172,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.15725359558511548
+    },
+    {
+      "point": "op.exp/membound/fp32-large-contig-r16384-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 39151799,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.3428136929288996
+    },
+    {
+      "point": "op.exp/membound/fp32-large-strided-r16384-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 70545803,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.19025614890229545
+    },
+    {
+      "point": "op.gelu/membound/bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67110912,
+      "cycles": 267664014,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.02507281834307394
+    },
+    {
+      "point": "op.gelu/membound/bf16-large-contig-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 250619999,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.05355427680773393
+    },
+    {
+      "point": "op.gelu/membound/bf16-large-strided-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 280520182,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.047846014872470026
+    },
+    {
+      "point": "op.gelu/membound/fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67110912,
+      "cycles": 267667316,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.025072509039542206
+    },
+    {
+      "point": "op.gelu/membound/fp16-large-contig-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 250621155,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.05355402978651184
+    },
+    {
+      "point": "op.gelu/membound/fp16-large-strided-r32768-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 280514801,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.047846932682885424
+    },
+    {
+      "point": "op.gelu/membound/fp32-large-broadcast-r16384-c1024",
+      "logical_bytes": 67112960,
+      "cycles": 129638247,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.05176941338924461
+    },
+    {
+      "point": "op.gelu/membound/fp32-large-contig-r16384-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 120453430,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.1114270701963406
+    },
+    {
+      "point": "op.gelu/membound/fp32-large-strided-r16384-c1024",
+      "logical_bytes": 134217728,
+      "cycles": 150744534,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.08903654708966097
+    },
+    {
+      "point": "op.layernorm/membound/bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67115008,
+      "cycles": 116032694,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.057841463200018435
+    },
+    {
+      "point": "op.layernorm/membound/bf16-large-contig-r32768-c1024",
+      "logical_bytes": 134221824,
+      "cycles": 128593305,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.10437699225476785
+    },
+    {
+      "point": "op.layernorm/membound/bf16-large-strided-r32768-c1024",
+      "logical_bytes": 134221824,
+      "cycles": 176850851,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.07589549229819652
+    },
+    {
+      "point": "op.layernorm/membound/fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67115008,
+      "cycles": 116025571,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.0578450141822616
+    },
+    {
+      "point": "op.layernorm/membound/fp16-large-contig-r32768-c1024",
+      "logical_bytes": 134221824,
+      "cycles": 128605784,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.10436686424616796
+    },
+    {
+      "point": "op.layernorm/membound/fp16-large-strided-r32768-c1024",
+      "logical_bytes": 134221824,
+      "cycles": 175920019,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.07629707225077095
+    },
+    {
+      "point": "op.layernorm/membound/fp32-large-broadcast-r16384-c1024",
+      "logical_bytes": 67121152,
+      "cycles": 54695358,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.12271818752882101
+    },
+    {
+      "point": "op.layernorm/membound/fp32-large-contig-r16384-c1024",
+      "logical_bytes": 134225920,
+      "cycles": 63256472,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.2121931808021162
+    },
+    {
+      "point": "op.layernorm/membound/fp32-large-strided-r16384-c1024",
+      "logical_bytes": 134225920,
+      "cycles": 156000728,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.0860418548816003
+    },
+    {
+      "point": "op.max/membound/bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67584,
+      "cycles": 19629455,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.0003442989120176795
+    },
+    {
+      "point": "op.max/membound/bf16-large-contig-r32768-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 27624429,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.2431702751213428
+    },
+    {
+      "point": "op.max/membound/bf16-large-strided-r32768-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 50333918,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.13345752261924057
+    },
+    {
+      "point": "op.max/membound/fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67584,
+      "cycles": 19628922,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.0003443082610445953
+    },
+    {
+      "point": "op.max/membound/fp16-large-contig-r32768-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 27624097,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.24317319766144752
+    },
+    {
+      "point": "op.max/membound/fp16-large-strided-r32768-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 50327692,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.1334740325465352
+    },
+    {
+      "point": "op.max/membound/fp32-large-broadcast-r16384-c1024",
+      "logical_bytes": 69632,
+      "cycles": 9185614,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.0007580549324193245
+    },
+    {
+      "point": "op.max/membound/fp32-large-contig-r16384-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 15451263,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.43475022074247266
+    },
+    {
+      "point": "op.max/membound/fp32-large-strided-r16384-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 44738092,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.15015034615244657
+    },
+    {
+      "point": "op.mean/membound/bf16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67584,
+      "cycles": 19895461,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.00033969557176885724
+    },
+    {
+      "point": "op.mean/membound/bf16-large-contig-r32768-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 27889667,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.24085766244537807
+    },
+    {
+      "point": "op.mean/membound/bf16-large-strided-r32768-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 50500444,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.13301744436147928
+    },
+    {
+      "point": "op.mean/membound/fp16-large-broadcast-r32768-c1024",
+      "logical_bytes": 67584,
+      "cycles": 19896607,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.0003396760060647526
+    },
+    {
+      "point": "op.mean/membound/fp16-large-contig-r32768-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 27889657,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.24085774880630478
+    },
+    {
+      "point": "op.mean/membound/fp16-large-strided-r32768-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 50521828,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.13296114305286025
+    },
+    {
+      "point": "op.mean/membound/fp32-large-broadcast-r16384-c1024",
+      "logical_bytes": 69632,
+      "cycles": 9318243,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.000747265337467589
+    },
+    {
+      "point": "op.mean/membound/fp32-large-contig-r16384-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 15585186,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.4310144261351773
+    },
+    {
+      "point": "op.mean/membound/fp32-large-strided-r16384-c1024",
+      "logical_bytes": 67174400,
+      "cycles": 44767551,
+      "clock_hz": 100000000,
+      "effective_logical_gb_s": 0.15005154067954263
+    }
+  ]
+}

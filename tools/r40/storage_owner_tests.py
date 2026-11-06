@@ -21,7 +21,8 @@ def sessions_class():
     # Triton installation or contacting a device for a destructor regression.
     path=ROOT/'python/tnca/triton_backend/driver.py';module=ast.parse(path.read_text())
     node=next(n for n in module.body if isinstance(n,ast.ClassDef) and n.name=='_Sessions')
-    namespace=dict(threading=threading,json=json,os=os,backend_choice=lambda:('fpga-u280-multicore',{}))
+    namespace=dict(threading=threading,json=json,os=os,
+        backend_choice=lambda:('fpga-u280-multicore',json.loads(os.environ.get('TNCA_BACKEND_ARGS','{}'))))
     exec(compile(ast.Module(body=[node],type_ignores=[]),str(path),'exec'),namespace)
     return namespace['_Sessions']
 
@@ -61,6 +62,15 @@ class StorageOwnerTests(unittest.TestCase):
         cls.open[key]=old
         with patch.dict(os.environ,{},clear=True),patch('tnca.runtime.Session',side_effect=AssertionError('new device opened')):
             self.assertIs(cls.get('profile'),old)
+
+    def test_backend_timeout_is_not_passed_twice(self):
+        cls=sessions_class();cls.open={};self.addCleanup(cls.open.clear)
+        env={'TNCA_BACKEND_ARGS':'{"host_timeout": 17, "deadline_cycles": 23}'}
+        with patch.dict(os.environ,env,clear=True),patch('tnca.runtime.Session') as session:
+            session.return_value=SimpleNamespace(closed=False)
+            self.assertIs(cls.get('profile'),session.return_value)
+        session.assert_called_once_with(profile='profile',counters=False,
+            backend='fpga-u280-multicore',host_timeout=17,deadline_cycles=23)
 
 
 if __name__=='__main__':unittest.main()

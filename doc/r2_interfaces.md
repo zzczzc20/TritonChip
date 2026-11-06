@@ -42,10 +42,10 @@ twenty things to fix per change and no list of them.
 |---|---|---|
 | `tnca_cc.frontend.TTIRImporter` | Triton source → TNCA IR | `adapters.r1.import_ttir` |
 | `tnca_cc.codegen.CodeGen` | TNCA IR → assembly, with the R1 safety checks | `adapters.r1.emit` |
-| `tnca_cc.target.TargetInfo` | capabilities and resource budgets | `adapters.r1.target_for` |
-| `tools/asm/tnca_asm.py` | assembly → machine code | `adapters.r1.assemble` |
-| `tools/r1/profiles.py` | profile spec, config hash | `adapters.r1.profile` |
-| `tnca_cc.gemm`, `tnca_cc.pipeline` | the TNCA IR second input | `adapters.r1.tnca_ir_program` |
+| `tnca_cc.target.TargetInfo` | capabilities and resource budgets | `adapters.r1.target_for`, `adapters.r1.require_capabilities` |
+| `tools/asm/tnca_asm.py` (`tnca_asm`) | assembly → machine code | `adapters.r1.assemble` |
+| `spec/r1_profiles.json` (via `tnca.profiles`) | profile spec, config hash (replaces `tools/r1/profiles.py`) | `adapters.r1.profile` |
+| `tnca_cc.ir.make_kernel`, `tnca_cc.ir.Builder` | the TNCA IR second input (kernel & builder) | `adapters.r1.new_kernel` |
 
 The adapter records which R1 entry points it calls and their versions, and
 that record goes into the manifest. An artifact therefore says which compiler

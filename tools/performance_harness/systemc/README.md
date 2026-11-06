@@ -18,6 +18,16 @@ is an R40 performance result, and the model is not qualified as a
 complete-chip timing reference. Do not bypass refusals or substitute a memory
 replay for a complete-chip experiment.
 
+The native Session backend defaults to `TNCA_TLM_HOST_HANDOFF=coherent-direct`,
+the historical zero-time coherent host window. For structural DMA-boundary
+diagnostics, `dma-maintenance` issues native maintenance before every host
+transfer containing an AXI portion; local/register-only transfers skip it.
+This mode requires `TNCA_DRAM_MAP` and zero `host_launch_cycles`,
+`host_transfer_cycles` and `host_transfer_cycles_per_kib` in the chosen profile,
+so opaque fitted host costs cannot double-count the explicit maintenance.
+Identity records the policy; counter snapshots include `host_dma_handoffs`.
+It is a device-service-only diagnostic, not a calibrated host-latency model.
+
 **M2 (board calibration): uncalibrated by doc/r40_tasks_and_acceptance.md
 sec 3.4.** With the RTL-structured board configuration
 (`configs/r40-board-m2.cfg`) fitted on the R40-04 calibration split only, the
@@ -163,6 +173,81 @@ directional.py --dataset D --predictions predictions.jsonl --fidelity fidelity.j
 (no steady call) and a multi-launch graph on one steady call;
 `--untimed-cold` runs that cold call untimed. `--env KEY=VALUE` sets a
 runtime knob for every run (e.g. `TNCA_RTL_MEM_PORTS=3`).
+
+## DRAM paths: fast and slow (M3)
+
+The memory model asks one interface for every line that reaches the HBM side
+(`include/tnca_dram.hpp`: `DramPath::complete(DramRequest{port, address,
+write, arrival})` returns the completion cycle):
+
+- **fast** (`dram_path=0`, the default): the M2 latency model,
+  `hbm_latency_cycles` (+ the second beat) for a read and
+  `tl_hbm_write_latency_cycles` for a write. This DRAM latency rule is
+  unchanged from M2; the separately documented maintenance-drain correction
+  can change completion cycles when older outlet transactions remain active.
+- **slow** (`dram_path=1`, `configs/r40-board-m3.cfg`): Ramulator2 HBM2, one
+  FR-FCFS open-page controller with refresh per pseudo channel
+  (`ramulator/hbm2_u280_pc.py` lists every assumption). Each timed command
+  (launch or flush) is solved as a fixed point: a forked copy-on-write child
+  runs the command reading per-request latencies from a table and logs its
+  DRAM requests; the parent replays them through Ramulator2
+  (`ramulator/tnca_dram_bridge.cpp`) and rebuilds the table
+  (`dram_fixed_cycles` + the Ramulator2 latency); after at most
+  `dram_max_passes` children, or once request keys, per-request latencies and
+  makespans agree within `dram_tolerance_ppm`, the command runs for real using
+  the last observed table. Final execution must reproduce that pass.
+  Unconverged numerical execution is labelled `inconclusive-fixed-point`
+  and excluded by `predictions.py`. A failed child explicitly refuses the
+  prediction. Untimed commands (`T 0`)
+  run once. Per command: `<model dir>/dram_fixed_point.jsonl` (passes,
+  residual, requests, row hits/misses/conflicts, refreshes, time); totals in
+  the `dram_*` counters; path, Ramulator2 commit and config sha256 in
+  `summary.json`.
+
+Switch with the config key or the environment (the environment wins):
+
+```sh
+TNCA_DRAM_PATH=slow tnca-chip --serve configs/r40-board-m2.cfg ...      # slow path on any config
+run_graphs.py ... --config configs/r40-board-m3.cfg                       # slow (dram_path=1)
+run_graphs.py ... --config configs/r40-board-m3.cfg --dram-path fast      # the M2 fast path
+```
+
+`TNCA_DRAM_MAP=/absolute/path/map.txt` supplies an explicit AXI BO/physical-PC
+map to either path. `dram_address_map.py` derives it from image-bound actual
+allocation evidence; `spec/r41/stage1/experiments/physical-dram-map.json` gives the recorded
+B40 example. The model subtracts the actual local address limit, adds the
+BO physical base and looks up the physical PC tag/range. Its PC byte counters
+use the same translation. SRAM, gaps, overlaps and unsupported geometry
+refuse. A new BO allocation requires its own map. Without this input the
+model labels its legacy map `synthetic-logical`. With a map, the model
+window (`memory_bytes`, the local region plus AXI addresses) is checked
+against the BO top (`local limit + BO size`) instead of the contiguous
+logical PC map, so an 8 GiB BO over PC0-PC31 runs with
+`memory_bytes=8590065664`; a window one line past the BO refuses.
+`--plan-bo-bytes N` exports a planned larger BO from a recorded window's
+connected memory group; it is marked planned, not measured, and must be
+replaced by an audit of the board's actual allocation
+(`evidence/r41/hbm8/tlm/`). Backend and standalone
+identities record mapping hashes. This does not establish bank/row mapping
+or controller equivalence; both remain unverified for the physical platform.
+
+The slow path needs a binary configured with the pinned Ramulator2 checkout:
+
+```sh
+git clone https://github.com/CMU-SAFARI/ramulator2 && git -C ramulator2 checkout $(cat ramulator/PIN)
+cmake -S ramulator2 -B ramulator2/build_lib -DCMAKE_BUILD_TYPE=Release -DRAMULATOR_PYTHON_BINDINGS=OFF
+cmake --build ramulator2/build_lib --parallel 4      # libramulator.so in the checkout root
+cmake -S . -B build -DCMAKE_PREFIX_PATH=SYSTEMC -DRAMULATOR2_DIR=$PWD/ramulator2 && cmake --build build
+build/tnca-dram-bridge-test ramulator/hbm2_u280_pc.yaml   # bridge unit tests
+```
+
+Without `RAMULATOR2_DIR` the binary has only the fast path and refuses
+`dram_path=1`. Configure refuses a checkout that is not the pinned commit or
+has local changes. `ramulator/hbm2_u280_pc.yaml` (committed) is exported
+from `hbm2_u280_pc.py` by `python3 -m ramulator export`, which needs a build
+with Python bindings; that build runs Ramulator2's code generator, which
+rewrites (reformats) its generated DRAM sources, so do it in a separate
+checkout and build the library above from the pristine pin.
 
 ## Numeric authority: offline RTL oracles
 

@@ -1,0 +1,28 @@
+# make compiler: bf6fd2b + narrowed [R,1] broadcast (software tree files:8c713902..., before the tnca-opt binary and tb_core.vvp were added), GB10 gx10-6646, 2026-10-21T10:15:13Z
+# tnca-opt built against Ubuntu LLVM/MLIR 20.1.2 at /home/zhongchun/tc_env/root/usr/lib/llvm-20
+## PYTHON=/home/zhongchun/tc_env/tritonenv/bin/python (Triton 3.8.0)
+PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+  up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+  up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+  up to date: doc/isa/opcode-map.md
+PASS: all generated ISA files match the schema
+  up to date: doc/support_matrix.md
+PASS: target descriptions match the RTL parameters
+checked 218 shared constants against /home/zhongchun/r41s1-narrow-mlir/rtl/common/tnca_defs.vh
+PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+  compiler-unit          PASS   113 tests
+  compiler-ir            PASS   6 file(s), 6 RUN case(s)
+exit 0
+## default PYTHON=python3 (no Triton; Triton-dependent unit tests skip)
+PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+  up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+  up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+  up to date: doc/isa/opcode-map.md
+PASS: all generated ISA files match the schema
+  up to date: doc/support_matrix.md
+PASS: target descriptions match the RTL parameters
+checked 218 shared constants against /home/zhongchun/r41s1-narrow-mlir/rtl/common/tnca_defs.vh
+PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+  compiler-unit          PASS   113 tests, 19 skipped
+  compiler-ir            PASS   6 file(s), 6 RUN case(s)
+exit 0

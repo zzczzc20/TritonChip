@@ -1,0 +1,4 @@
+Oct 27 07:10:50 gx10-6646 systemd[2282]: Started r41-p4-grid-preflight-v1.service - /usr/bin/taskset -c 0-5 timeout 900 env PATH=/home/zhongchun/tc_env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin PYTHONPATH=/home/zhongchun/r41-p4-v3:/home/zhongchun/r41-p4-v3/python:/home/zhongchun/r41-p4-v3/compiler/python:/home/zhongchun/r41-p4-v3/tools/asm TNCA_BACKEND=fpga-multicore-sim TNCA_PROFILE=core-vrf-sync-v5 TNCA_HOST_TIMEOUT=600 TNCA_DEADLINE=5000000 /home/zhongchun/tc_env/torchenv/bin/python -u /home/zhongchun/r41-p4-v3/tools/r40/grid_admission_case.py --programs 6144 --out /home/zhongchun/r41-p4/grid-preflight-v1.
+Oct 27 07:25:50 gx10-6646 systemd[2282]: r41-p4-grid-preflight-v1.service: Main process exited, code=exited, status=124/n/a
+Oct 27 07:25:50 gx10-6646 systemd[2282]: r41-p4-grid-preflight-v1.service: Failed with result 'exit-code'.
+Oct 27 07:25:50 gx10-6646 systemd[2282]: r41-p4-grid-preflight-v1.service: Consumed 15min 24.501s CPU time.

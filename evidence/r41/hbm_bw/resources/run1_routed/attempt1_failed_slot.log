@@ -1,0 +1,12 @@
+2026-10-28T07:57:08Z slot 0 start (avail 19 GB): vivado -mode batch -nojournal -log /home/zzhouch/r41bw_res/hier_run1.log -source /home/zzhouch/r41bw_res/hier_run1.tcl -tclargs /home/zzhouch/tnca_images/r41s2_run1_c9f25787494a/level0_wrapper_routed.dcp /home/zzhouch/r41bw_res/out
+
+****** Vivado v2023.2 (64-bit)
+  **** SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+  **** IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+  **** SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source /home/zzhouch/r41bw_res/hier_run1.tcl
+INFO: [Common 17-206] Exiting Vivado at Wed Oct 28 15:57:31 2026...
+2026-10-28T07:57:31Z slot 0 end exit 0

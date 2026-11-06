@@ -1,0 +1,21 @@
+{
+  "schema": "tnca-r38-cycle-exception/1",
+  "scope": {
+    "profile": "core-sim",
+    "level": 2,
+    "cases": [
+      "matmul_fp32_fp16_fp8/e4m3",
+      "matmul_fp32_fp16_fp8/e5m2"
+    ],
+    "frozen_cycles": 10897,
+    "allowed_extra_cycles": 1
+  },
+  "reason": "Preserve the source sign of negative NaNs when narrowing FP32 to FP8.",
+  "authority": {
+    "date_utc": "2026-11-04",
+    "source": "Author's instruction in the current conversation",
+    "quote": "作者决策：那 2 个比冻结基线慢 1 周期的 FP8 用例，门禁可以放宽。"
+  },
+  "observed_domain": "RTL simulation, not FPGA measurement",
+  "recorded_ci": "https://github.com/zzczzc20/TritonChip/actions/runs/41806632056/job/126495322556"
+}

@@ -75,6 +75,11 @@ applies.
 
 ## 3. There is no `dtype` code for a 32-bit integer
 
+**Closed by R38.** ISA sec 9D.3 allocated code `5` for INT32 (along with
+`4` for INT16, `6` for INT64, etc.), and `tnca_tensor.v` decodes `8'd5`
+(`dtype_lg = 2`, 4 bytes). The record below is the state before that
+change.
+
 **ISA sec 9D.3** — "`dtype`: `0` = FP16, `1` = BF16, `2` = FP32, `3` =
 INT8, others reserved."
 

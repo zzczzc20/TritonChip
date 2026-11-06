@@ -13,6 +13,10 @@
 // once. Data are functional in the backing store at issue time, which race-
 // free programs cannot distinguish. Every constant is a configuration key.
 #include "tnca_model.hpp"
+#include "tnca_dram.hpp"
+#include "tnca_dram_map.hpp"
+#include <memory>
+#include <set>
 #include <unordered_map>
 #include <cstdio>
 #include <cstdlib>
@@ -40,19 +44,33 @@ struct Timeline {
     }
 };
 
+struct ParallelTimeline {
+    std::vector<Timeline> lanes;
+    explicit ParallelTimeline(unsigned n=1):lanes(n){}
+    void counters(u64 *service,u64 *queue){for(auto& lane:lanes){lane.service=service;lane.queue=queue;}}
+    u64 reserve(u64 t,u64 d,u64 now){
+        unsigned best=0;u64 end=UINT64_MAX;
+        for(unsigned i=0;i<lanes.size();++i){u64 candidate=lanes[i].busy.empty()?0:lanes[i].busy.rbegin()->second;
+            if(candidate<end){end=candidate;best=i;}}
+        return lanes[best].reserve(t,d,now);
+    }
+};
+
 struct TimelineMemory {
     const Config& c;Context& x;Store& store;
     struct Tag {u64 address=0,ready=0;bool valid=false,dirty=false;};
     struct Home {
-        std::vector<Tag> tags;std::vector<unsigned> rr;std::vector<u64> fills;Timeline engine;
+        std::vector<Tag> tags;std::vector<unsigned> rr;std::vector<u64> fills;ParallelTimeline engine;
         std::array<u64*,11> slots{};
     };
     std::vector<Home> homes;
     struct Outlet {Timeline issue;std::vector<u64> inflight;u64 *reads=nullptr,*writes=nullptr,*peak=nullptr,*waited=nullptr;unsigned peak_n=0;};
     std::vector<Outlet> outlets;std::vector<u64*> pc_bytes;
-    std::map<std::tuple<unsigned,unsigned,unsigned>,Timeline> links;std::map<std::tuple<unsigned,unsigned,unsigned>,u64*> link_bytes;
+    std::map<std::tuple<unsigned,unsigned,unsigned>,ParallelTimeline> links;std::map<std::tuple<unsigned,unsigned,unsigned>,u64*> link_bytes;
     unsigned nx,ways;u64 hop,inject,eject,hit_occ,hit_lat,miss_occ,mreq_occ,fill_occ,wake_occ,wb_occ,to_outlet,from_outlet,
         read_issue,write_issue,beats_extra,latency,write_latency,mshrs,active_outlets,noutlets,outstanding,base,pc_first,pc_size;
+    FastDram fast_dram{c};DramPath* dram=&fast_dram; // Model points it at the slow path when selected
+    const DramAddressMap* physical_map=nullptr;
     TimelineMemory(const Config& cfg,Context& ctx,Store& backing):c(cfg),x(ctx),store(backing){
         auto g=[&](const char* k){return c.get(k);};
         nx=unsigned(g("nx"));ways=unsigned(g("ways"));
@@ -67,8 +85,9 @@ struct TimelineMemory {
         homes.resize(c.cores());
         for(unsigned h=0;h<homes.size();++h){
             homes[h].tags.resize(size_t(g("sets"))*ways);homes[h].rr.assign(g("sets"),0);
-            homes[h].engine.service=&x.counts["home_"+std::to_string(h)+"_engine_service_cycles"];
-            homes[h].engine.queue=&x.counts["home_"+std::to_string(h)+"_engine_queue_cycles"];
+            homes[h].engine=ParallelTimeline(c.get_or("tl_memory_lanes",1));
+            homes[h].engine.counters(&x.counts["home_"+std::to_string(h)+"_engine_service_cycles"],
+                                     &x.counts["home_"+std::to_string(h)+"_engine_queue_cycles"]);
         }
         outlets.resize(noutlets);
         for(unsigned p=0;p<noutlets;++p){auto k="outlet_"+std::to_string(p);
@@ -92,7 +111,8 @@ struct TimelineMemory {
             auto it=links.find(key);
             if(it==links.end()){
                 auto k="link_"+std::to_string(from)+"_"+std::to_string(next);
-                it=links.emplace(key,Timeline{}).first;it->second.service=&x.counts[k+"_service_cycles"];it->second.queue=&x.counts[k+"_queue_cycles"];
+                it=links.emplace(key,ParallelTimeline(c.get_or("tl_memory_lanes",1))).first;
+                it->second.counters(&x.counts[k+"_service_cycles"],&x.counts[k+"_queue_cycles"]);
                 link_bytes[key]=&x.counts[k+"_bytes"];
             }
             t=it->second.reserve(t,1,now)+hop;*link_bytes[key]+=bytes;from=next;
@@ -103,22 +123,29 @@ struct TimelineMemory {
     // `outstanding` lines are active, a 2/3-cycle issue stage, then the
     // read data (latency + second beat) or the write response.
     u64 line(unsigned home,u64 address,bool write,u64 t,u64 now){
-        unsigned port=active_outlets==1?0:unsigned(home%noutlets);auto& o=outlets[port];
+        u64 stripe=c.get_or("tl_pc_stripe_bytes",0);
+        unsigned pc=physical_map?physical_map->translate(address).pc:(stripe?pc_first+unsigned(((address-base)/stripe)%c.get("pc_count")):unsigned(pc_first+(address-base)/pc_size));
+        unsigned port=active_outlets==1?0:(noutlets>c.cores()?pc%noutlets:unsigned(home%noutlets));auto& o=outlets[port];
         auto& f=o.inflight;f.erase(std::remove_if(f.begin(),f.end(),[t](u64 d){return d<=t;}),f.end());
         u64 arrival=t;
         while(f.size()>=outstanding){auto m=std::min_element(f.begin(),f.end());t=std::max(t,*m);f.erase(m);}
         *o.waited+=t-arrival;
         u64 issue=write?write_issue:read_issue;
         u64 b=o.issue.reserve(t,issue,now);
-        u64 done=write?b+issue+write_latency:b+issue+latency+beats_extra;
-        unsigned pc=unsigned(pc_first+(address-base)/pc_size);
+        // The HBM side receives the line after the issue stage (dram_path).
+        u64 done=dram->complete(DramRequest{port,address,write,b+issue});
         if(pc<pc_bytes.size()){if(!pc_bytes[pc])pc_bytes[pc]=&x.counts["pc_"+std::to_string(pc)+"_bytes"];*pc_bytes[pc]+=64;}
         f.push_back(done);o.peak_n=std::max<unsigned>(o.peak_n,unsigned(f.size()));*o.peak=o.peak_n;
         ++*(write?o.writes:o.reads);
         return done;
     }
+    bool present(unsigned h,u64 a){
+        auto& H=homes[h];u64 lineaddr=a&~63ULL;unsigned b=c.set(a)*ways;
+        for(unsigned w=0;w<ways;++w)if(H.tags[b+w].valid && H.tags[b+w].address==lineaddr)return true;
+        return false;
+    }
     // Home slice (tnca_nuca_slice.v); returns the cycle its response leaves.
-    u64 slice(unsigned h,u64 a,bool write,u64 t,u64 now){
+    u64 slice(unsigned h,u64 a,bool write,u64 t,u64 now,bool full=false){
         auto& H=homes[h];u64 lineaddr=a&~63ULL;
         unsigned s=c.set(a),b=s*ways;Tag* hit=nullptr;
         for(unsigned w=0;w<ways;++w){auto& g=H.tags[b+w];if(g.valid && g.address==lineaddr){hit=&g;break;}}
@@ -153,6 +180,15 @@ struct TimelineMemory {
                 line(h,victim->address,true,st+to_outlet,now);
             }
         }
+        if(full && write && c.get_or("tl_full_line_nofill",0)){
+            // HOME_LINE_WRITE_NOFILL: a store of the whole line allocates over the
+            // (written-back) victim without reading memory and without an MSHR.
+            u64 inst=c.get_or("tl_slice_install_occupancy",fill_occ); // default: as a fill
+            u64 wake=H.engine.reserve(st,inst,now)+inst;
+            victim->address=lineaddr;victim->valid=true;victim->dirty=true;victim->ready=wake;
+            ++x.counts["home_"+std::to_string(h)+"_nofill_installs"];
+            hc(h,9)+=wake-arrival;return wake;
+        }
         u64 mreq=H.engine.reserve(st,mreq_occ,now)+mreq_occ;
         u64 data=line(h,lineaddr,false,mreq+to_outlet,now)+from_outlet;
         u64 fill=H.engine.reserve(data,fill_occ,now)+fill_occ;
@@ -176,6 +212,46 @@ struct TimelineMemory {
         {static u64 lo=0,hi=0;static bool init=false;if(!init){init=true;if(const char* w=std::getenv("TLM_DEBUG_WATCH")){lo=std::strtoull(w,nullptr,0);const char* c=std::strchr(w,',');hi=lo+(c?std::strtoull(c+1,nullptr,0):0);}}
          if(a+8>lo && a<hi)std::fprintf(stderr,"WATCH core %u t %llu now %llu %s a %llx data %016llx be %x old %016llx\n",core,(unsigned long long)t,(unsigned long long)now,write?"W":"R",(unsigned long long)a,(unsigned long long)data,be,(unsigned long long)old);}
         result=old;
+        return r;
+    }
+    // Exploratory wide coalesced request: one aligned region, one cache service,
+    // and explicit serialization when the receiving NoC is narrower. Functional
+    // words remain exact 64-bit values; this does not widen arithmetic or atomics.
+    struct WideWord {u64 address,data;unsigned be;u64 result=0;};
+    u64 wide(unsigned core,std::vector<WideWord>& words,bool write,u64 t){
+        require(!words.empty(),"empty wide request");
+        u64 width=c.get_or("tl_core_beat_bytes",8),payload=c.get_or("tl_noc_payload_bytes",8);
+        u64 region=words.front().address&~(width-1),now=x.now();
+        for(auto& w:words){require((w.address&7)==0 && (w.address&~(width-1))==region,"wide request crosses region");x.c.address(w.address,8);}
+        unsigned h=x.c.home(region);
+        // The historical model treats fixed headers as one flit. Extra useful
+        // data occupies additional link cycles; retain that exact baseline.
+        u64 req_data=write?width:8,rsp_data=write?8:width;
+        auto transfer=[&](unsigned from,unsigned to,unsigned vn,u64 data,u64 at){
+            u64 n=(data+payload-1)/payload;
+            u64 last=at;
+            for(u64 i=0;i<n;++i)last=std::max(last,route(from,to,vn,std::min(payload,data-i*payload),at+i,now));
+            return last;
+        };
+        bool full=false;
+        if(write && width==64 && words.size()==8){std::set<u64> seen;full=true;
+            for(auto& w:words){full=full && w.be==255;seen.insert(w.address);}full=full && seen.size()==8;}
+        u64 r=transfer(core,h,0,req_data,t+inject);
+        r=slice(h,region,write,r,now,full);
+        if(!write)for(u64 i=1;i<c.get_or("tl_prefetch_lines",0);++i){
+            u64 address=region+i*64;
+            if(address<c.get("memory_base") || address>=c.get("memory_base")+c.get("memory_bytes"))break;
+            unsigned ph=x.c.home(address);
+            if(present(ph,address))continue;
+            u64 request=transfer(core,ph,0,8,r);
+            slice(ph,address,false,request,now);
+            x.counts["prefetch_lines"]++;
+        }
+        r=transfer(h,core,1,rsp_data,r+eject);
+        for(auto& w:words){auto& l=store[w.address&~63ULL];unsigned off=unsigned(w.address&63);w.result=0;
+            for(unsigned b=0;b<8;++b)w.result|=u64(l[off+b])<<(8*b);
+            if(write)for(unsigned b=0;b<8;++b)if(w.be&(1U<<b))l[off+b]=static_cast<unsigned char>(w.data>>(8*b));}
+        x.counts["wide_requests"]++;x.counts["wide_word_components"]+=words.size();
         return r;
     }
     // The functional effect alone (untimed mode): no timing state changes,
@@ -207,6 +283,10 @@ struct TimelineMemory {
             }
             ++hc(h,10);homes[h].fills.clear();
         }
+        // An evicted dirty line can already have left the cache while its
+        // accepted outlet write still awaits completion. Maintenance must
+        // drain those older transactions as well as the writes above.
+        for(const auto& outlet:outlets)for(u64 completion:outlet.inflight)done=std::max(done,completion);
         return done;
     }
 };

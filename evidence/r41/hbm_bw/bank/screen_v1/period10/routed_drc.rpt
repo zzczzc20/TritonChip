@@ -1,0 +1,284 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Mon Oct 26 16:28:51 2026
+| Host         : acf3019 running 64-bit Ubuntu 22.04.5 LTS
+| Command      : report_drc -file /home/zzhouch/r41_hbmbw_bank_v1/period10/routed_drc.rpt
+| Design       : tnca_stream_bank
+| Device       : xcu280-fsvh2892-2L-e
+| Speed File   : -2L
+| Design State : Fully Routed
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Report DRC
+
+Table of Contents
+-----------------
+1. REPORT SUMMARY
+2. REPORT DETAILS
+
+1. REPORT SUMMARY
+-----------------
+            Netlist: tnca_stream_bank
+          Floorplan: design_1
+      Design limits: <entire design considered>
+           Ruledeck: default
+             Max violations: <unlimited>
+             Violations found: 48
++-----------+----------+-------------------------+------------+
+| Rule      | Severity | Description             | Violations |
++-----------+----------+-------------------------+------------+
+| RTSTAT-10 | Warning  | No routable loads       | 1          |
+| CHECK-2   | Advisory | Report rule not checked | 47         |
++-----------+----------+-------------------------+------------+
+
+2. REPORT DETAILS
+-----------------
+RTSTAT-10#1 Warning
+No routable loads  
+18816 net(s) have no routable loads. The problem bus(es) and/or net(s) are g_lane[10].lane/m_araddr[27:0], g_lane[12].lane/m_araddr[27:0],
+g_lane[17].lane/m_araddr[27:0], g_lane[1].lane/m_araddr[27:0],
+g_lane[20].lane/m_araddr[27:0], g_lane[21].lane/m_araddr[27:0],
+g_lane[22].lane/m_araddr[27:0], g_lane[23].lane/m_araddr[27:0],
+g_lane[24].lane/m_araddr[27:0], g_lane[29].lane/m_araddr[27:0],
+g_lane[2].lane/m_araddr[27:0], g_lane[30].lane/m_araddr[27:0],
+g_lane[3].lane/m_araddr[27:0], g_lane[6].lane/m_araddr[27:0],
+g_lane[9].lane/m_araddr[27:0] (the first 15 of 225 listed).
+Related violations: <none>
+
+CHECK-2#1 Advisory
+Report rule not checked  
+BGIVC-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#2 Advisory
+Report rule not checked  
+BIIVRC-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#3 Advisory
+Report rule not checked  
+BISLIM-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#4 Advisory
+Report rule not checked  
+BIVB-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#5 Advisory
+Report rule not checked  
+BIVC-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#6 Advisory
+Report rule not checked  
+BIVR-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#7 Advisory
+Report rule not checked  
+BIVRU-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#8 Advisory
+Report rule not checked  
+BIVT-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#9 Advisory
+Report rule not checked  
+CFGM-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#10 Advisory
+Report rule not checked  
+DCIC-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#11 Advisory
+Report rule not checked  
+DCIC-2 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#12 Advisory
+Report rule not checked  
+DCIC-3 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#13 Advisory
+Report rule not checked  
+DCICIOSTD-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#14 Advisory
+Report rule not checked  
+DCICIOSTD-2 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#15 Advisory
+Report rule not checked  
+DCICIOSTD-3 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#16 Advisory
+Report rule not checked  
+DCICPC-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#17 Advisory
+Report rule not checked  
+DCIP-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#18 Advisory
+Report rule not checked  
+DCIP-2 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#19 Advisory
+Report rule not checked  
+DIFFISTD-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#20 Advisory
+Report rule not checked  
+DIFFISTDDrv-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#21 Advisory
+Report rule not checked  
+DIFFISTDSlew-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#22 Advisory
+Report rule not checked  
+IOBUSSLRC-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#23 Advisory
+Report rule not checked  
+IOCNT-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#24 Advisory
+Report rule not checked  
+IOCNT-2 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#25 Advisory
+Report rule not checked  
+IOCTMGT-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#26 Advisory
+Report rule not checked  
+IODIR-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#27 Advisory
+Report rule not checked  
+IOPCBUFG-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#28 Advisory
+Report rule not checked  
+IOPCMGT-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#29 Advisory
+Report rule not checked  
+IOPCMGT-2 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#30 Advisory
+Report rule not checked  
+IOPCPR-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#31 Advisory
+Report rule not checked  
+IOPCPR-2 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#32 Advisory
+Report rule not checked  
+IOPCSLR-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#33 Advisory
+Report rule not checked  
+IOPCSLR-2 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#34 Advisory
+Report rule not checked  
+IOPL-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#35 Advisory
+Report rule not checked  
+IOPL-2 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#36 Advisory
+Report rule not checked  
+IOPL-3 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#37 Advisory
+Report rule not checked  
+IOPL-4 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#38 Advisory
+Report rule not checked  
+IOPL-5 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#39 Advisory
+Report rule not checked  
+IOPL-6 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#40 Advisory
+Report rule not checked  
+IOPL-7 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#41 Advisory
+Report rule not checked  
+LVDS-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#42 Advisory
+Report rule not checked  
+PORTPROP-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#43 Advisory
+Report rule not checked  
+PORTPROP-3 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#44 Advisory
+Report rule not checked  
+PORTPROP-4 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#45 Advisory
+Report rule not checked  
+PORTPROP-5 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#46 Advisory
+Report rule not checked  
+VCCAUX1-1 rule not checked: Too many IO ports
+Related violations: <none>
+
+CHECK-2#47 Advisory
+Report rule not checked  
+VCCAUX1-2 rule not checked: Too many IO ports
+Related violations: <none>
+
+

@@ -1,209 +1,164 @@
-# Phase 3.5 状态：复用上游编译基础设施，交付可观测的编译优化
+# Phase 3.5 Status: Reusing Upstream Infrastructure and Delivering Observable Compiler Optimizations
 
-合同：[phase3_5_tasks_and_acceptance.md](phase3_5_tasks_and_acceptance.md) v1.0。
-签收名 `R35_COMPILER_ACCEPTED`。**当前 NOT ACCEPTED，差一条。**
+Contract: [phase3_5_tasks_and_acceptance.md](phase3_5_tasks_and_acceptance.md) v1.0.
+Sign-off identifier: `R35_COMPILER_ACCEPTED`. **Currently NOT ACCEPTED (one criterion remaining).**
 
-在锁定的 Linux 主环境（`Linux-6.17.0-1019-aws-x86_64`、Triton 3.8.0）于
-commit `0e7c34795cd6`、干净工作树上跑完整 gate，run id `1789956010-0e7c34795cd6`，
-记录见 [`doc/evidence/r35/acceptance-linux.json`](evidence/r35/acceptance-linux.json)：
+Full gate execution on the locked Linux primary environment (`Linux-6.17.0-1019-aws-x86_64`, Triton 3.8.0) at commit `0e7c34795cd6` on a clean working tree (run ID `1789956010-0e7c34795cd6`, recorded in [`doc/evidence/r35/acceptance-linux.json`](evidence/r35/acceptance-linux.json)):
 
-| 包 | 结果 |
+| Package | Result |
 |---|---|
-| R35-01 plan / R35-02 upstream / R35-03 layout | 3/3、3/3、3/3 |
-| R35-04 opt | **2/3 — R35-OPT-02 未成立** |
-| R35-05 alloc / R35-06 safety / R35-07 perf | 3/3、3/3、3/3 |
-| R35-08 package / R35-09 release | 3/3、3/3 |
+| R35-01 plan / R35-02 upstream / R35-03 layout | 3/3, 3/3, 3/3 |
+| R35-04 opt | **2/3 — R35-OPT-02 not satisfied** |
+| R35-05 alloc / R35-06 safety / R35-07 perf | 3/3, 3/3, 3/3 |
+| R35-08 package / R35-09 release | 3/3, 3/3 |
 
-**26/27。**verifier 独立复核同一份证据、不读它的 `verdict` 与 `passed` 字段，
-从冻结清单和原始结果重算，得到同一个结论：27 条标准全部找得到、摘要与原始结果
-逐条一致、收益从**原始周期**重算为 3 个 winner 与 1 个 LL 归因、0 个退化、
-总周期 5097 → 4811，唯一打开的是 R35-OPT-02。
+**26/27.** The verifier independently re-evaluates the same evidence without trusting its `verdict` or `passed` fields, recomputing from the frozen inventory and raw results to reach the same conclusion: all 27 criteria are present, summaries match raw results line by line, gains recomputed from **raw cycles** yield 3 winners and 1 LL attribution, 0 regressions, and total cycles drop from 5097 to 4811, with only R35-OPT-02 remaining open.
 
-前置已成立：R3 v2 于 commit `33dbb375828e` 在锁定 Linux 上签收
-`R3_V2_CORE_VRF_ACCEPTED`（见 [`doc/evidence/r3v2/acceptance-linux.json`](evidence/r3v2/acceptance-linux.json)），
-本阶段的全部主收益都在它签收的 `core-vrf-sync-v1` 上测。
+Precondition satisfied: R3 v2 signed off `R3_V2_CORE_VRF_ACCEPTED` at commit `33dbb375828e` on locked Linux (see [`doc/evidence/r3v2/acceptance-linux.json`](evidence/r3v2/acceptance-linux.json)). All primary gains for this phase are measured on its accepted `core-vrf-sync-v1` profile.
 
-## G0 的第一件事：先证明机会存在
+## G0 First Step: Demonstrating That Opportunity Exists
 
-合同 6.3 写得很清楚，5% 和 3% 是**待达到的阶段目标，不是已测加速**。所以在
-承诺任何百分比之前，`tools/r35/scout.py` 读产品编译器**当前真正发射的机器码**，
-按名字数出哪些字是可以不花的，并且每一项都写出去掉它的机制和今天卡在哪里。
+Section 6.3 explicitly states that 5% and 3% are **phase targets to be met, not measured speedups**. Before promising any percentage, `tools/r35/scout.py` reads the **machine code currently emitted** by the product compiler, counts by name instructions that can be eliminated, and specifies the removal mechanism and current blocking factors for each.
 
-在 `core-vrf-sync-v1` 上，冻结 workload 中能编出来的四个：
+On `core-vrf-sync-v1`, across the four frozen workloads that compile:
 
-| workload | 发射字数 | 机会 | 点位 | 可省字数 |
+| Workload | Emitted Words | Opportunity | Sites | Possible Savings |
 |---|---:|---|---:|---:|
-| L01 masked AXPY | 30 | 宽常量 | 1 | 3 |
-| | | 乘 2 的幂 | 1 | 4 |
-| | | masked load 的 `other=0` 死值 | 2 | **unknown** |
-| L04 masked reduction | 22 | 宽常量 | 2 | 6 |
-| | | masked load 的 `other=0` 死值 | 1 | **unknown** |
-| L05 FP16 GEMM k16 | 156 | 宽常量 | 23 | 69 |
-| L06 FP16 GEMM k32 | 183 | 宽常量 | 27 | 81 |
+| L01 masked AXPY | 30 | Wide constants | 1 | 3 |
+| | | Multiply by power of two | 1 | 4 |
+| | | Masked load `other=0` dead value | 2 | **unknown** |
+| L04 masked reduction | 22 | Wide constants | 2 | 6 |
+| | | Masked load `other=0` dead value | 1 | **unknown** |
+| L05 FP16 GEMM k16 | 156 | Wide constants | 23 | 69 |
+| L06 FP16 GEMM k32 | 183 | Wide constants | 27 | 81 |
 
-合计 391 字里有 **163 字是有名字、有机制的浪费，占 42%**。
+Across 391 total emitted words, **163 words represent identifiable, mechanised waste (42%)**.
 
-三条机制分别是：
+The three mechanisms are:
 
-- **宽常量**：`.li` 永远发四个字（`movz` + 三个 `movk`）。这是汇编器**故意**的：
-  伪指令必须在展开前就能精确定长，否则分支目标会错。所以要改的不是 `.li`，
-  而是编译器——一个装得下 16 位的常量应该直接发 `s.movz`，一个字。GEMM 的
-  结果排空循环每行都为一个 0…15 的行号花四个字，这一项就占了它 44%。
-- **乘 2 的幂**：`arith.muli %pid, 16` 现在原样落到 `.li` + `s.mul`，五个字。
-  上游 canonicalization 会把它变成移位，常量随即没有用户。
-- **masked load 的 `other=0`**：这一项**记 unknown，不记成收益**。它要的是一个
-  mask 感知的活跃性事实，外加一个安全论证——未被观测的 lane 不会 fault、也不会
-  影响被观测 lane 的浮点结果。合同 7 的 R35-OPT-03 管这件事，没证明之前它不是收益。
+- **Wide constants**: `.li` always emits four words (`movz` + three `movk`s). This is **by design** in the assembler: pseudo-instructions must be deterministically sized before expansion to avoid moving branch targets. The fix belongs in the compiler, not `.li`: a constant fitting within 16 bits should be emitted directly as a single-word `s.movz`. In GEMM, the epilogue drain loop spends four words per row for row indices 0..15, accounting for 44% of its wide constants.
+- **Multiply by power of two**: `arith.muli %pid, 16` currently lowers directly to `.li` + `s.mul` (five words). Lowering constant power-of-two multiplication to a shift leaves the constant unused; this belongs in TNCA's own lowering because upstream canonicalization was measured on this module and does not perform it.
+- **Masked load `other=0`**: Recorded as **unknown, not counted as savings**. It requires a mask-aware liveness fact plus a safety proof that unobserved lanes cannot fault or affect floating-point results in observed lanes. Governed by §7 R35-OPT-03; until proven, it is not a gain.
 
-上游那一侧也确实有活干：真实 Triton 源编出的 TTIR 里有 **6 个 `arith.constant`、
-只有 3 个不同值**，`16 : i32`、`0.0 : f32` 和 `dense<0.0> : tensor<16xf32>` 各重复一次。
-这正是 R35-OPT-01 要的正例——重复纯值出现在真实源里，不是为了喂给 CSE 才写的测试。
+Upstream inspection confirms real optimization opportunities: TTIR generated from real Triton source contains **6 `arith.constant` ops with only 3 distinct values**, with `16 : i32`, `0.0 : f32`, and `dense<0.0> : tensor<16xf32>` each duplicated once. This provides the exact positive test case required by R35-OPT-01 — duplicate pure values in real source, rather than synthetic tests constructed to feed CSE.
 
-今天卡在哪里，也照实记：
+Baseline bottlenecks at G0:
 
-- 产品路径是 TTIR → Python TNCA IR → codegen，**没有任何 MLIR pass 跑在上面**。
-- `opt_level` 0..2 在 `python/tnca/aot.py` 里明确标着 reserved，不改变 emission。
-- LinearLayout **一次都没有被调用**，现在没有任何布局计算可谈"复用"。
+- The product path is TTIR → Python TNCA IR → codegen, with **no MLIR passes executed on it**.
+- `opt_level` 0..2 in `python/tnca/aot.py` was marked reserved and did not alter emission.
+- LinearLayout was **never invoked**; no layout computations existed to reuse.
 
-## O0/O1 已经能跑，收益已经实测
+## O0 and O1 Are Functional and Measured
 
-`opt_level` 不再是 reserved：
+`opt_level` is no longer reserved:
 
-| 模式 | 现在真的做什么 |
+| Mode | Actual Behavior |
 |---|---|
-| B0 | 冻结的既有行为。不动 |
-| O0 | 新 driver 的兼容路径。四个 workload 上机器码与 B0 **逐字节相同** |
-| O1 | 锁定上游 canonicalizer + CSE 跑在**产品即将导入的那个 module 上**（就地，所以优化后的 module 就是发射输入）；常量按能装下的最小形式下降；TNCA IR 源走 §4.1 的桥 |
-| O2 | 未实现 |
+| B0 | Frozen baseline behavior. Unchanged. |
+| O0 | Compatibility path in the new driver. Emits code **byte-for-byte identical** to B0 across all four workloads. |
+| O1 | Locked upstream canonicalizer + CSE run in-place on the **module about to be imported** (so the optimized module serves as emission input); constants lower to their narrowest correct form; TNCA IR sources traverse the §4.1 bridge. |
+| O2 | Layout algebra and bank-aware allocation (see below). |
 
-上游确实在跑，不是被调用了然后丢掉：真实 Triton AXPY 的 TTIR 从 24 个值操作
-降到 20，去掉四个 `arith.constant`；TNCA IR 那条桥把 GEMM 每个 descriptor 重复
-生成的传输坐标合并掉。**判等是上游做的**——桥把纯标量森林发成一个把每个值都
-return 出来的 `tt.func`，CSE 合并之后读 return 列表，两个被证明相等的值会以
-同一个 SSA 名字回来。第一版在 Python 里自己算等价类、只拿上游跑个 diff，那正是
-§4.2 禁止的"悄悄替代实现"，而且更弱：上游会把 `16 + 0` 折成 `16`，于是这样算出来
-的两个值直接塌到那个常量上，结构化 key 匹配则看不出来。
+Upstream passes actively transform IR: real Triton AXPY TTIR drops from 24 value operations to 20, eliminating four `arith.constant`s. The TNCA IR bridge deduplicates repeated coordinate calculations generated per descriptor in GEMM. **Equivalence is determined by upstream**: the bridge emits a pure scalar forest inside a `tt.func` returning all values, and after CSE reads the return list; two values proven equivalent return with identical SSA names. Python-side value numbering with simple upstream diffing was rejected per §4.2 as a covert replacement; upstream folds `16 + 0` to `16`, collapsing values to constants in ways structural key matching misses.
 
-在 R3 v2 签收的硬件上实测，四个都对独立 oracle 正确：
+Measured on R3 v2 accepted hardware, all four pass against independent oracles:
 
-| case | B0 周期 | B0 字数 | O1 周期 | O1 字数 | 省下 | §6.3 门槛 |
+| Case | B0 Cycles | B0 Words | O1 Cycles | O1 Words | Saved | §6.3 Threshold |
 |---|---:|---:|---:|---:|---:|---:|
 | L01 masked AXPY | 228 | 30 | 218 | 27 | **+10** | 12 |
 | L04 masked reduction | 74 | 22 | 69 | 16 | **+5** | 8 |
 | L05 FP16 GEMM k16 | 1215 | 156 | 1191 | 83 | **+24** | 60 |
 | L06 FP16 GEMM k32 | 3241 | 183 | 3168 | 95 | **+73** | 162 |
 
-**四个都是真实收益，四个都没达到 `max(8 cycles, 5%)`。** L01 差 2 个周期，
-L04 差 3 个。照实记：§6.3 明确禁止靠移动门槛去够到它。
+**All four represent genuine gains; none individually reach `max(8 cycles, 5%)`.** L01 falls 2 cycles short; L04 falls 3 cycles short. Per §6.3, shifting thresholds to meet criteria is explicitly prohibited.
 
-两条值得记住的发现：
+Two key observations:
 
-- **从一个本来就在 stall 的周期里拿掉一条指令，等于没拿掉。** L05 少了 47% 的字，
-  只换来 2% 的周期。这个形状的 stall 分解是 538 里有 **422 是 LSU**，另外 matrix
-  为 VRF 读等了 **544** 次。O2 必须去缩短核**在等什么**，而不是它等的时候在发什么。
-- **一次测量里 C05 少了 7 条指令却慢了 12 个周期**：把坐标合并之后活跃区间变长了。
-  没有成本模型的 CSE 不是免费的——这正是 R35-ALLOC-01 存在的理由。
+- **Removing an instruction from an already stalled cycle yields zero cycle reduction.** L05 eliminated 47% of its static words but gained only 2% in cycles. In this profile, 422 of 538 stall cycles are LSU stalls, and the matrix unit stalled 544 times waiting for VRF reads. O2 must address **what the core is waiting on**, not merely what is emitted while waiting.
+- **In one measurement, C05 eliminated 7 instructions but slowed down by 12 cycles**: merging coordinates extended variable live ranges. CSE without a register cost model is not free, motivating R35-ALLOC-01.
 
-还有一个自己的错误一并记下：门槛计算里用了 `int()` 而不是 `ceil()`，
-把 L01 的门槛从 12 算成了 11——往对自己有利的方向偏了一个周期。已修。
+Harness fix note: threshold calculation previously used `int()` instead of `ceil()`, which rounded the L01 threshold from 12 down to 11 in its own favor. This has been corrected.
 
-## 逐条标准
+## Criterion-by-Criterion Status
 
-27 条里 **26 条已成立**，剩下的 1 条有明确的、写下来的阻塞。
+Of the 27 criteria, **26 are satisfied**, with exactly 1 documented blocker.
 
-**因此现在的状态是 `OPTIMIZATION_DELIVERED`——不是 `R35_COMPILER_ACCEPTED`。**
-§8 说得很清楚：27 条标准全部成立才输出签收名。R35-OPT-02 没有成立，所以不签收。
-它没有成立的原因不是没做，而是**锁定的 wheel 根本没有导出 AxisInfo**，而在
-Python 里自己推导同样的事实正是 §4.2 明令禁止的"悄悄替代实现"。
+**The current status is therefore `OPTIMIZATION_DELIVERED` — not `R35_COMPILER_ACCEPTED`.**
+Per §8, sign-off is only granted when all 27 criteria pass. R35-OPT-02 is not verified. This is not due to omission: **the locked wheel does not export AxisInfo**, and deriving equivalent facts in Python is strictly prohibited by §4.2 as a covert replacement.
 
-| 包 | 标准 | 状态 | 依据 |
+| Package | Criterion | Status | Evidence |
 |---|---|---|---|
-| R35-01 | BASE-01 | **PASS** | 六个 workload、23 次 launch、47 次 RTL 上限、27 条标准、8 个变异各有 detector，冻结在 `spec/r35_*.json` |
-| R35-01 | BASE-02 | **PASS** | 十种畸形各自被按名字拒绝，全在启动 RTL 之前（尺寸事后放大、删 workload、消融对象不再消融、主比较缩短、总数改成配合短矩阵、门槛调低、去掉不退化条件、预算放大、删标准、变异没有 detector） |
-| R35-01 | BASE-03 | **PASS** | R3 v2 前置核对无误；**O0 与 B0 逐字节相同**（L01 30 字、L03 63 字、L04 22 字） |
-| R35-02 | UP-01 | **PASS（锁定环境）** | 上游来自 `site-packages` 的 wheel，`linear_layout` 与 `passes.common` 都是导出符号，布局类是 `triton._C.libtriton.linear_layout.LinearLayout`。**本机失败且应当失败**：这台机器装的是指向 `~/src/triton` 的 editable install，R1-09 与 §4.2 都禁止依赖维护者的源码路径 |
-| R35-02 | UP-02 | **PASS** | 版本不符、无法解析的 module、空 module、上游会直接中止进程的畸形 basis，各自稳定报错；O2 与 O2-no-LL 是两次不同的编译（cache key 不同）——消融是请求，不是退路 |
-| R35-02 | UP-03 | **PASS** | **改掉上游的答案，代码必须跟着变**：告诉桥"没有任何值等价"，GEMM 从 83 字变回 87；把 rename 判决改掉，L03 从 9 字变成 58。只调用不使用会在这里露馅 |
-| R35-03 | LL-01 | **PASS** | 354 次逐元素比对，对照一份**完全不调用 LinearLayout** 的 Python 枚举；三个 seed、每 seed 十二种形状；对照组是恒等映射，在 16 个位置里有 12 个不一致（四个不动点当然一致） |
-| R35-03 | LL-02 | **PASS** | 置换覆盖 16/16、重数 1；broadcast 覆盖 4/4、重数 2、不可逆且**求逆被拒绝**；非 2 的幂边界被拒；维度对不上的 compose 在到达上游**之前**被拒（上游对此是直接结束进程）；布局维度里没有 role/warp |
-| R35-03 | LL-03 | **PASS** | §3.2 三类判决齐全：rename / 真实指令 / 拒绝；转换发射 `v.iota v.movi v.lshri v.andi v.sub v.xor v.permute`，每一条都在 `isa/tnca-isa-v0.1.json` 里；不造 SMEM、不造不存在的 lane 交换 |
-| R35-04 | OPT-01 | **PASS** | 上游 canonicalize/CSE 在产品路径上把真实 Triton kernel 的 TTIR 从 24 个值操作降到 20，去掉四个 `arith.constant`，而且去掉的正是前端自己产生的重复；机器码 30 字→24 字；输入与优化后 IR 都 dump 得出来 |
-| R35-04 | OPT-02 | **NOT VERIFIED（有明确阻塞）** | 锁定 wheel 的 `libtriton.passes.analysis` 只导出 `allocation` 和 `membar`，**根本没有 AxisInfo**。§2 要求复用锁定版本的分析；在 Python 里自己推导同样的事实正是 §4.2 禁止的"悄悄替代实现"，所以没有做。路线是 §4.2 说的独立工具，对着 Triton **自己**的 pinned LLVM 构建（`compiler/pin/toolchain.json` 两个 revision 都记着），因为 `tnca-opt` 链的是发行版 MLIR 20，两套 LLVM 不能在一个进程里相遇。**同时：产品里没有任何地方声称对齐或连续性事实**，这一条是查过的，不是声明的 |
-| R35-04 | OPT-03 | **PASS** | 每个有副作用的操作在每个 pass 之后**顺序不变**（GEMM 42 个、reduction 3 个、view 3 个）；NaN、±Inf、−0.0、subnormal 走一遍 masked AXPY，B0 与 O2 **逐字节相同**（按字节比，因为 −0.0 == 0.0 且 NaN != NaN 都能放过真实差异）；pass 流水正好是 `['canonicalize','cse']`，没有开 reassociation 或 contraction |
-| R35-05 | ALLOC-01 | **PASS** | 成本模型从 R3 v2 的冻结合同读几何（4 bank、128 物理寄存器、每 bank 每拍 1 次读、低 2 位选 bank），跑在**分配之后**的物理寄存器号上，拿不到任何布局——这是确保它没有从布局上读 bank 行为的唯一办法（§3.1）。对着**硬件**校验而不是对着自己：t29_vrfbank 在已验收的核上报 47 次请求、35 次接受、12 次拒绝，每次拒绝就是模型数的那一个额外周期。定向例：v0/v4/v8 同在 bank 0，2 个额外周期；v1/v2/v3 分属三个 bank，0 个。纯 rename 0 次 move，物化版 2 次 `v.permute` 全部计费 |
-| R35-05 | ALLOC-02 | **PASS** | GEMM 从 B0 到 O2 没有任何资源增长；两边都没有 spill/reload（目标没有 scratchpad 可溢出，要有也得凭空造）；ownership checker 没有关闭开关 |
-| R35-05 | SCHED-01 | **PASS** | **不做任何重排**，所以 def-use、内存/副作用、控制、累加顺序和异步资源边全部按构造成立——而且是查过的：每个 pass 前后比对 op 顺序，只允许删除改变它。§7 允许在收益未知时保留合法 baseline |
-| R35-06 | SAFE-01 | **PASS** | 五个继承套件全过；ownership verifier 在 B0/O0/O1/O2 每一级都跑 |
-| R35-06 | SAFE-02 | **PASS** | 每个 pass 都有正例与**边界负例**：乘 16/1 变移位、乘 12/3 不变；对常量比较折叠 2 处、对**动态**值 0 处；`other` 在无人观测时去掉、在 gather 逐 lane 读时保留；lane-0 广播存储收窄、全宽存储不动；动态 alpha 在 O2 仍从参数缓冲区加载；**把每个名字都改掉的同一个 kernel 编出同样的 24 个字** |
-| R35-06 | MUT-01 | **PASS** | **八个变异全部被合同指定的 checker 抓住**，全部注入隔离副本，候选源码哈希不变 |
-| R35-07 | PERF-01 | **PASS** | 六个 workload 全部按 §6.3 的 C 读设备周期（不是 host wall、不是模型预测），全部对独立 oracle 校验 |
-| R35-07 | PERF-02 | **PASS** | §6.3 五条同时成立，见下 |
-| R35-07 | PERF-03 | **PASS** | 30 次 launch（上限 47）、76 秒（上限 2400）、14,906 周期（上限 1,500,000）；不做候选搜索，所以 8/48 的上限根本没接近 |
-| R35-08 | PKG-01 | **PASS** | B0/O0/O1/O2 都能编；L01 在 O2 上三次动态发射共一个 artifact、一个 session、一个设备进程，首编译后编译器调用 **0** 次、code hash 恒定 |
-| R35-08 | PKG-02 | **PASS** | 五种模式五个不同的 cache key；`debug`/`dump_dir` 不改变它；同一请求重编确定；损坏的缓存条目被拒；**runtime-only 加载既不 import triton 也不 import 编译器** |
-| R35-08 | OBS-01 | **PASS** | dump 出输入 IR、优化后 IR、TNCA IR、汇编、hex；dump 与 debug 不改变代码；manifest 记录每个 pass 做了多少；GEMM 的 `source_kind` 是 `tnca-ir`，没有被伪标成 Triton，也没有它从来没有过的 `.ttir` |
-| R35-09 | REG-01 | **PASS** | 冻结影响范围 13 个 case 全过、0 skip，含旧的 core-4r 与 system 路径——它们在里面是因为**共享编译器改动会波及它们**，不是因为这个阶段在上面测什么 |
-| R35-09 | EV-01 | **PASS** | 从**被度量的地方**报告，不是自证：变异套件种下一份完整、可接受的证据，再把一个又慢又错的 case 藏在伪造的 PASS 后面。verifier 接受前者、拒绝后者，并说出两个理由（L06 明显更慢；总周期上升） |
-| R35-09 | REL-01 | **PASS** | 第二环境 macOS/arm64 对主环境 Linux/x86_64：7 个检查两边**判决完全一致**；**L03 三种模式逐字节、逐周期相同**（215/61/208 周期，63/9/58 字）。L06 的周期**不做跨机比较**并写明原因——它的内存模型会重排，在一台机器上就有 26 周期的跨度；它的**代码和正确性**是比的 |
+| R35-01 | BASE-01 | **PASS** | Six workloads, 23 launches, 47 RTL upper bound, 27 criteria, 8 mutations each with detector, frozen in `spec/r35_*.json`. |
+| R35-01 | BASE-02 | **PASS** | Ten malformations rejected by name before RTL launches (resizing after the fact, dropping workloads, no longer ablating ablation targets, shortening primary comparison, changing totals to fit short matrices, lowering thresholds, removing non-regression condition, inflating budget, deleting criteria, mutations without detector). |
+| R35-01 | BASE-03 | **PASS** | R3 v2 precondition verified; **O0 and B0 are byte-for-byte identical** (L01 30 words, L03 63 words, L04 22 words). |
+| R35-02 | UP-01 | **PASS (locked env)** | Upstream imported from `site-packages` wheel; `linear_layout` and `passes.common` are exported symbols; layout class is `triton._C.libtriton.linear_layout.LinearLayout`. Local host fails as expected: editable install pointing to `~/src/triton` is rejected per R1-09 and §4.2. |
+| R35-02 | UP-02 | **PASS** | Version mismatch, unparseable module, empty module, and malformed basis that aborts upstream each rejected cleanly; O2 and O2-no-LL are two separate compilations with distinct cache keys — ablation is a request, not a fallback. |
+| R35-02 | UP-03 | **PASS** | **Changing upstream answers changes emitted code**: disabling value equivalence in the bridge reverts GEMM from 83 to 87 words; modifying the rename verdict changes L03 from 9 to 58 words. |
+| R35-03 | LL-01 | **PASS** | 354 element-by-element comparisons against an independent Python enumeration that never calls LinearLayout; three seeds, twelve shapes per seed; identity mapping control group shows 12 mismatches across 16 positions (4 fixed points match). |
+| R35-03 | LL-02 | **PASS** | Permutation coverage 16/16, multiplicity 1; broadcast coverage 4/4, multiplicity 2, non-invertible with inversion rejected; non-power-of-two boundaries rejected; dimension-mismatched compose rejected before reaching upstream (which would abort); layout dimensions exclude role/warp. |
+| R35-03 | LL-03 | **PASS** | §3.2 three verdict classes complete: rename / real instruction / refuse; conversions emit `v.iota v.movi v.lshri v.andi v.sub v.xor v.permute`, all defined in `isa/tnca-isa-v0.1.json`; no phantom SMEM or invalid lane swaps. |
+| R35-04 | OPT-01 | **PASS** | Upstream canonicalize/CSE on product path reduces real Triton TTIR from 24 value ops to 20, eliminating four frontend `arith.constant` duplicates; machine code drops from 30 to 24 words; input and optimized IR are dumpable. |
+| R35-04 | OPT-02 | **NOT VERIFIED (blocked)** | Pinned wheel's `libtriton.passes.analysis` only exports `allocation` and `membar`, **lacking AxisInfo entirely**. §2 requires reusing the locked analysis; Python reimplementation is forbidden per §4.2. Planned path is a standalone tool built against Triton's own pinned LLVM (`compiler/pin/toolchain.json`), separating it from `tnca-opt` (linked against distro MLIR 20). No compiler component currently claims alignment or contiguity facts. |
+| R35-04 | OPT-03 | **PASS** | Effectful operations preserve relative order across all passes (GEMM 42, reduction 3, view 3); NaN, ±Inf, −0.0, and subnormals through masked AXPY are byte-for-byte identical between B0 and O2; pass pipeline is strictly `['canonicalize', 'cse']` without reassociation or contraction. |
+| R35-05 | ALLOC-01 | **PASS** | Cost model reads geometry from R3 v2 frozen contract (4 banks, 128 physical registers, 1 read per bank per cycle, low 2 bits select bank); operates on post-allocation physical registers without layout access (§3.1). Validated against hardware: t29_vrfbank on accepted core reports 47 requests, 35 accepted, 12 refused (each refusal matches one modeled cycle). Directed cases: v0/v4/v8 in bank 0 add 2 cycles; v1/v2/v3 across 3 banks add 0 cycles. Rename costs 0 moves; materialized version charges 2 `v.permute`s. |
+| R35-05 | ALLOC-02 | **PASS** | GEMM shows zero resource growth from B0 to O2; neither side spills or reloads (no scratchpad exists); ownership checker cannot be bypassed. |
+| R35-05 | SCHED-01 | **PASS** | **No reordering performed**; def-use, memory/effects, control, accumulation order, and async resource edges hold by construction, verified by checking op order across passes (only deletions allowed). §7 permits retaining a legal baseline when gain is unknown. |
+| R35-06 | SAFE-01 | **PASS** | Five inherited test suites pass; ownership verifier runs at B0/O0/O1/O2. |
+| R35-06 | SAFE-02 | **PASS** | Every pass includes positive and negative boundary cases: multiply by 16/1 becomes shift, multiply by 12/3 unchanged; constant comparison folded in 2 places, dynamic values in 0; `other` eliminated when unobserved, preserved during gather; lane-0 broadcast store narrowed, full-width store unchanged; dynamic alpha in O2 loaded from parameter buffer; renaming all identifiers produces identical 24 words. |
+| R35-06 | MUT-01 | **PASS** | **All eight mutations caught by designated checkers**; all injected into isolated copies; candidate source hashes unmodified. |
+| R35-07 | PERF-01 | **PASS** | All six workloads read device cycles per §6.3 C (not host wall clock, not model predictions), verified against independent oracles. |
+| R35-07 | PERF-02 | **PASS** | All five conditions of §6.3 satisfied simultaneously (see below). |
+| R35-07 | PERF-03 | **PASS** | 30 launches (upper bound 47), 104 seconds (bound 2400), 14,861 cycles (bound 1,500,000); no candidate search performed, well within budget. |
+| R35-08 | PKG-01 | **PASS** | B0/O0/O1/O2 compile; L01 under O2 across three dynamic launches shares 1 artifact, 1 session, 1 device process; zero compiler calls after initial compilation, constant code hash. |
+| R35-08 | PKG-02 | **PASS** | Five modes produce five distinct cache keys; `debug`/`dump_dir` do not alter key; compilation is deterministic; corrupted cache entries rejected; runtime-only load imports neither triton nor compiler. |
+| R35-08 | OBS-01 | **PASS** | Dumps input IR, optimized IR, TNCA IR, assembly, and hex; dump and debug options do not change code; manifest records pass counts; GEMM `source_kind` is `tnca-ir`, not mislabeled as Triton, with no phantom `.ttir`. |
+| R35-09 | REG-01 | **PASS** | Frozen impact scope of 13 cases all pass, 0 skipped, including legacy core-4r and system paths (included to detect collateral regressions from shared compiler changes). |
+| R35-09 | EV-01 | **PASS** | Reported from measured source: mutation suite seeds complete acceptable evidence, then hides a slow/broken case behind a forged PASS. Verifier accepts honest evidence, rejects forged evidence with two explicit reasons (L06 noticeably slower, total cycles increased). |
+| R35-09 | REL-01 | **PASS** | Second environment macOS/arm64 agrees with primary Linux/x86_64 across all 7 checks; **L03 across three modes is byte-for-byte and cycle-for-cycle identical** (215/61/208 cycles, 63/9/58 words). L06 cycles are excluded from cross-machine comparison due to memory model reordering spread (28 cycles on Linux); its code and correctness are verified. |
 
-## §6.3 的五条，现在都成立
+## All Five Conditions of §6.3 Are Satisfied
 
-| case | B0 周期 | B0 字 | O2 周期 | O2 字 | 省下 | 门槛 | |
+| Case | B0 Cycles | B0 Words | O2 Cycles | O2 Words | Saved | Gate Threshold | Result |
 |---|---:|---:|---:|---:|---:|---:|---|
-| L01 masked AXPY | 228 | 30 | 206 | 24 | **+22** | 12 | 达标 |
-| L02 双输出共享中间值 | 130 | 21 | 129 | 19 | +1 | 8 | |
-| L03 布局组合 | 215 | 63 | **61** | 9 | **+154** | 11 | 达标 |
-| L04 masked reduction | 74 | 22 | 63 | 9 | **+11** | 8 | 达标 |
+| L01 masked AXPY | 228 | 30 | 206 | 24 | **+22** | 12 | Meets gate |
+| L02 two-output shared intermediate | 130 | 21 | 129 | 19 | +1 | 8 | |
+| L03 layout composition | 215 | 63 | **61** | 9 | **+154** | 11 | Meets gate |
+| L04 masked reduction | 74 | 22 | 63 | 9 | **+11** | 8 | Meets gate |
 | L05 FP16 GEMM k16 | 1215 | 156 | 1191 | 83 | +24 | 61 | |
-| L06 FP16 GEMM k32 | 3241 | 183 | 3165 | 95 | +76 ±54 | 163 | |
+| L06 FP16 GEMM k32 | 3235 | 183 | 3161 | 95 | +74 (±28) | 162 | |
 
-1. **六项全部正确** ✓ 每一项都对独立 oracle 通过。
-2. **至少两项实测收益** ✓ 三项达标（L01、L03、L04），且其中两项不是布局微例 L03。
-3. **至少一项 LL 因果证据** ✓ L03：O2-no-LL 208 → O2 61，**+147 周期（70.7%）**，门槛 7。匹配证据是 copy 指令：两次置换共 49 个字消失。
-4. **无明显退化** ✓ 六项没有一项变慢，总周期下降。
-5. **收益来源可解释** ✓ 每一项都能对上动态指令数的下降；L03 对上的是被消掉的置换本身。
+1. **All six workloads correct** ✓ Each passes against its independent oracle.
+2. **At least two workloads show measured gains meeting the gate** ✓ Three meet the gate (L01, L03, L04), two of which are not the layout micro-benchmark L03.
+3. **At least one workload shows causal LL attribution** ✓ L03: O2-no-LL 208 → O2 61, **+147 cycles (70.7%)**, threshold 7. Matching evidence is copy instruction elimination: two permutations totaling 49 words disappear.
+4. **No meaningful regressions** ✓ None of the six workloads slowed down; total cycles decreased (5097 → 4811).
+5. **Gain sources explainable** ✓ Every gain correlates with dynamic instruction count reduction; L03 correlates directly with eliminating permutations.
 
-**关于 L03 的 71.6% 必须说清楚**：布局 view 是这个阶段**新引入**的操作，B0 是它未经优化的下降路径，不是某个已经发布过的编译器做过的事。这个数字是对着"把 view 物化出来"测的，而物化正是任何没有布局代数的下降都必须做的事。消融给出的是同一件事的诚实版本：154 个周期里有 147 个是代数的功劳。
+**Regarding L03's 71.6% cycle reduction (154 cycles saved)**: layout `view` is a newly introduced operation in this phase. B0 is its unoptimized lowering path, not behavior from a previously released compiler. This number is measured against "materializing the view", which any lowering lacking layout algebra must do. The ablation gives the honest version of the same fact: 147 of the 154 cycles are attributable to the algebra (O2-no-LL 208 vs O2 61).
 
-## 两个关于测量本身的发现
+## Two Findings Regarding Measurement
 
-- **共享临时目录会污染测量。** L06 单独测是 3241 周期，跟在 L05 后面测是 3221——20 个周期的差，比这张表里好几项收益都大。现在每次测量都有自己的解释器**和**自己的目录。
-- **slow-reorder 内存模型不是确定性的。** 同一个程序读五次得到 3142、3168、3165、3168、3165，跨度 26 周期；fast 模型下 L05 读三次都是 1191。所以 L06 按五次重复报中位数并带上跨度，**收益不超过自身跨度的一律记为 NOT SHOWN**。
+- **Shared temporary directories pollute measurements**: L06 measured in isolation ran in 3241 cycles; measured immediately following L05 it ran in 3221 cycles — a 20-cycle shift, larger than several reported gains in the table. Each measurement now uses its own interpreter process and isolated temporary directory.
+- **The slow-reorder memory model is non-deterministic**: The same program read five times produced 3141, 3141, 3161, 3161, 3169 (spread of 28 cycles; B0 spread 20 cycles across [3221, 3235, 3235, 3235, 3241]); under the fast model L05 read three times is consistently 1191. Thus L06 reports median across 5 repetitions with spread, and gains not exceeding its own spread are marked NOT SHOWN.
 
+## Eight Mutations, Each Caught by Designated Checkers
 
-## 八个变异，各自被指定的 checker 抓住
-
-| | 变异 | 抓住它的 |
+| Mutation ID | What Was Mutated | Caught By |
 |---|---|---|
-| N01 | 错的 LinearLayout basis | R35-LL-01 |
-| N02 | 覆盖检查被架空 | R35-LL-02 |
-| N03 | 有副作用的操作被标成 pure | R35-OPT-03 |
-| N04 | 异步值提前释放 | R35-SAFE-01 |
-| N05 | 成本模型忽略 bank | R35-ALLOC-01 |
-| N06 | 优化级别不进 cache key | R35-PKG-02 |
-| N07 | 把模型周期当实测 | R35-PERF-01 |
-| N08 | 伪造 PASS 藏起慢 case | R35-EV-01 |
+| N01 | Wrong LinearLayout basis | R35-LL-01 |
+| N02 | Tail-mask coverage check defeated | R35-LL-02 |
+| N03 | Effectful operation marked pure | R35-OPT-03 |
+| N04 | Async value released early | R35-SAFE-01 |
+| N05 | Bank ignored in cost model | R35-ALLOC-01 |
+| N06 | Opt level left out of cache key | R35-PKG-02 |
+| N07 | Model cycle passed off as measured | R35-PERF-01 |
+| N08 | Forged PASS hiding slow case | R35-EV-01 |
 
-其中四个在能说明任何问题之前必须先修好，每一次修都是一个发现：
+Four mutations revealed findings during development that required fixes:
 
-- **N01** 原来让所有 basis 行都映到 `row`，而那张布局根本覆盖不了输出——上游对此
-  的回答是打印 `LLVM ERROR` 然后**结束进程**。checker 一个字都没输出，什么也没检出。
-  §7 说 build failure 不算检出，SIGABRT 比那还不如。现在它换成交换两行：仍然是双射，
-  上游毫无意见，只是不再是转置。
-  这同时暴露了一个真实缺口：adapter 防住了 `compose` 的中止，没防住 `from_bases`。
-  现在它在调用前算 basis 行在 GF(2) 上的秩，拒绝张不满的布局——位向量消元，是算术，
-  不是对上游任何判断的第二意见。
-- **N02** 把覆盖报告架空之后，LL-02 的每一条断言**依然成立**，因为它们全都是关于
-  "确实覆盖了的"布局。现在 LL-02 还检查一张只盖住一半输出的布局，并要求它被看出来。
-- **N07** 把设备周期换成常数，而 PERF-01 原本没有任何办法注意到。现在它拿读数去对
-  一件设备无法违反的事：顺序核对直线 kernel 的每一个字至少取一次，所以 C 至少等于
-  静态字数。低于这个数的读数不是这台机器给的。
-- **N04** 的 detector 是 SAFE-01，而在一次性副本里重跑五个继承套件测的是那个副本：
-  一次未经改动的 baseline 里有一个套件超时，所有计数器全零——那是一个没能造出自己
-  bench 的 lab，和代码无关。SAFE-01 因此有了一个 `--no-inherited`，**只给变异套件用**
-  并写明理由；继承套件由 REG-01 在真实树上跑，那才是它们有意义的地方。
+- **N01**: Originally mapped all basis rows to `row`, which failed to cover the output. Upstream printed `LLVM ERROR` and aborted the process (`SIGABRT`). The checker printed nothing and caught nothing. §7 states a build failure does not count as detection, and SIGABRT is even worse. It was modified to swap two rows: still bijective and accepted by upstream, but no longer a transpose.
+  This also exposed a real gap: the adapter guarded against aborts in `compose`, but not in `from_bases`. The adapter now calculates the rank of basis rows over GF(2) before calling upstream, rejecting under-ranked layouts (Gaussian elimination over bit vectors is arithmetic, not a second opinion on upstream logic).
+- **N02**: After defeating the coverage report, all assertions in LL-02 still held because they only queried layouts that truly covered the output. LL-02 now tests a layout covering only half the output and asserts that it is flagged.
+- **N07**: Replaced device cycles with a constant, which PERF-01 initially had no way to detect. PERF-01 now checks against a physical invariant: sequential execution of a straight-line kernel fetches every instruction at least once, so C must be at least equal to static word count. Readings below this cannot come from the hardware.
+- **N04**: Designated detector is SAFE-01. Re-running the five inherited suites in disposable scratch copies tested that copy's environment: an unmodified baseline had one suite time out with all counters at zero because a lab failed to build its own bench, unrelated to code changes. SAFE-01 added `--no-inherited`, strictly for mutation testing with documented rationale; inherited suites run under REG-01 on the clean tree where they belong.
 
-另外两个是我自己的 harness bug，都在悄悄削弱东西：`perf.py` 的 `--only` 过滤的是
-**workload** 而别的 checker 过滤的是 case，于是 `--only R35-PERF-01` 什么都没匹配上、
-报告 0 个 winner——读起来像失败，把被问的事情盖掉了。变异 lab 原本**全局**携带预建
-bench，于是没要 bench 的 lab 拿到一个半满的 `sim/build` 和一张不再描述这棵树的依赖图。
+Two harness bugs were also fixed: `perf.py`'s `--only` filtered on *workload* while other checkers filtered on *case*, so `--only R35-PERF-01` matched nothing and reported 0 winners (masking the test subject). Mutation labs originally carried prebuilt benches globally, giving unbenchmarked labs a half-populated `sim/build` and a stale dependency graph.

@@ -11,25 +11,29 @@ Every row is one of:
 * **Deferred** — not yet built; the stage it belongs to is named.
 * **Deviation** — built differently from the document, with the reason.
 
-Deviations are listed in full. There are three, all Stage-1 simplifications
-with a named replacement, and none of them changes the ISA or the semantics the
-later stages depend on.
+Deviations are listed in full: the three Stage-1 simplifications (D1–D3) and
+the Stage-2 transfer engine constraint (D4). None of them changes the ISA or the
+semantics that later stages depend on.
 
-Audited against the Stage-2 + Stage-3 tree: matrix unit, TensorMap and
-transfer engine on a 2x2 mesh over four NUCA slices. Re-run this audit whenever
-a stage closes.
+Audited against the Stage-2 + Stage-3 baseline across the three verified profiles
+(`core-4r`, `core-sim`, `system-2x2`): matrix unit, TensorMap, and transfer
+engine on a 2x2 mesh over four NUCA slices. Re-run this audit whenever a stage
+closes.
 
-This file is about *principles*. For instruction-level support --
-what the ISA defines, what each profile implements, what the compiler can
-emit and what has executed on the whole machine, as four separate columns --
-see [`support_matrix.md`](support_matrix.md), which is generated from those
-sources rather than written. The acceptance contract these are checked
-against is [`phase1_tasks_and_acceptance.md`](phase1_tasks_and_acceptance.md);
-[`r1_status.md`](r1_status.md) says where it stands.
+This file is about *principles*. For instruction-level support — what the ISA
+defines, what each profile implements, what the compiler can emit, and what has
+executed on the whole machine (`system-2x2`), as four separate columns — see
+[`support_matrix.md`](support_matrix.md), which is generated from those sources
+rather than written. The acceptance contract these are checked against is
+[`phase1_tasks_and_acceptance.md`](phase1_tasks_and_acceptance.md) (enforced via
+strict entry points: `make r1-doctor`, `make r1-check-generated`,
+`make r1-gate-selftest`, `make r1-acceptance`, and `make r1-verify-evidence`);
+[`r1_status.md`](r1_status.md) documents verified evidence and acceptance status
+(R1 ACCEPTED).
 
 ---
 
-## The twelve frozen decisions (§"最后：我会优先冻结的十二个决定")
+## The twelve frozen decisions (§"Twelve Decisions to Freeze First")
 
 | # | Decision | Status | Evidence |
 |---:|---|---|---|
@@ -43,7 +47,7 @@ against is [`phase1_tasks_and_acceptance.md`](phase1_tasks_and_acceptance.md);
 | 8 | Throttle admission of new transactions, never completion or resource release | **Held** | `tnca_core`'s stall logic throttles only the front end (`stall_front`), which holds F/D/R and inserts a bubble into X. It never freezes X, the LSU or the FP sequencer. Out-of-band completions take the write port by *causing* a front-end stall, so a completion can never be starved for more than one cycle — the release path has strict priority over new work. |
 | 9 | Manage MSHR entry, target, return, RF and writeback credits separately | **Partly held (Stage 4 completes it)** | MSHR entries and targets are now genuinely separate resources with separate exhaustion paths and separate counters, and running out of one does not look like running out of the other — which is the distinction §9.1 exists to make. The return path is reserved before a request is issued (the LSU's beat table), and the writeback buffer is a per-MSHR reservation taken at allocation. What is still missing is the *budget* half: `new_miss_credit` and `merge_credit` as throttled quantities with the fast and slow control loops of §9.5. That is Stage 4, and deliberately so — §21 says to build the baseline first. |
 | 10 | Both "ready" and "free" events belong in the ISA and the compiler's lifetime model | **Held** | The mbarrier carries arrivals and operations as separate counts so one generation can mean more than "the data arrived" (§13.1), and `t11_matrix` uses a producer arrival plus two transfer completions in one generation. The *source-reusable* event is now expressed too: `m.mma.async` with `mod[4]` signals a second completion, on a second barrier, when it has read its fragments for the last time — earlier than the result by `FMA_LAT` cycles. `t25_mmasf` proves the two are distinct by destroying both fragments the moment source-free fires and checking the product anyway; moving the signal to the command accept turns it red. The conservative proxy §13.1 permitted for a first version is no longer needed. |
-| 11 | Build the backend from TTIR and early layout analysis, not from shared-memory TTGIR lowering | **Held for the path that exists** | The frontend walks **TTIR** and nothing else — there is no TTGIR step and no shared-memory assumption anywhere in it, which is the half of this decision that can be checked before the MLIR dialect exists. `make e2e` runs a `@triton.jit` kernel through it onto the four-tile machine as a grid and checks the numbers in Python. What is still Stage 5 is the *layout analysis*: the lowering handles one element per lane and refuses anything wider (`test_unsupported_block_is_refused`), rather than choosing a layout. |
+| 11 | Build the backend from TTIR and early layout analysis, not from shared-memory TTGIR lowering | **Held for the path that exists** | The frontend walks **TTIR** and lowers through the dedicated `tnca` MLIR dialect (`tnca-opt`) without any TTGIR step or shared-memory assumption. `make e2e` runs a `@triton.jit` kernel through it onto the four-tile machine as a grid and checks the numbers in Python. What remains deferred to later stages is arbitrary layout analysis: the lowering handles one element per lane and strictly refuses wider unsupported blocks (`test_unsupported_block_is_refused`). |
 | 12 | Finish a small verifiable system before scaling the mesh and the dynamic control | **Held** | The order was exactly §21's: ISA and memory semantics on one core, then pipelining, then multiple outstanding transactions, then one slice, then the mesh, then 2×2 — each with its own test before the next was started. No adaptive policy has been added yet, which is the point: Stage 4 measures each mechanism against this baseline one at a time. |
 
 ---
@@ -62,13 +66,13 @@ software, and they cannot hold data across instructions.
 
 ### §1.2 — The matrix array must not depend on remote-cache supply per cycle
 
-**Held by construction**, and now for a concrete reason rather than an abstract
-one. There is no matrix unit yet, but the cost the principle is about is now
-measurable: a NUCA hit costs a mesh traversal each way plus the slice's request
-buffer, tag lookup and data access. In the 2×2 run, 1,792 of 2,048 requests went
-to a remote slice. Feeding a matrix array from that path per cycle was never
-going to work, which is why §1.2 asks for the transfer to land in registers
-first.
+**Held.** `tnca_matrix` reads its fragments directly from the vector register
+file over dedicated read ports and never touches memory. The cost it avoids is
+concrete and measurable: a NUCA hit costs a mesh traversal each way plus the
+slice's request buffer, tag lookup and data access. In the 2×2 run, 1,792 of
+2,048 requests went to a remote slice. Feeding a matrix array cycle-by-cycle
+from that path was never going to work, which is why §1.2 requires the transfer
+to land in registers first.
 
 ### §1.3 — "≤4 threads" means four vector control contexts
 
@@ -129,6 +133,13 @@ written down:
   differ by one parameter in one widening step and share every other gate --
   unlike FP16 and BF16, where an implementation could plausibly build one
   exponent range and not the other.
+* `CAPABILITY0.MATRIX_DP` (bit 12, ISA sec 9C.4) is set only where `m.mma.dp.async`
+  executes. The assembler, disassembler and compiler know the opcode; a target
+  without the capability is lowered exactly as before, because the compiler's
+  only input to the choice is that capability and the operand formats. The
+  SystemC/TLM model (profile key `mtx_dp`, default off) executes it with the
+  exact group arithmetic of sec 9C.4, validated against `tools/model/fdp.py`.
+  No RTL image has the bit yet; model results are model results.
 * Major `0x21` (atomics) decoded as illegal until the home slice existed to
   execute them at. It does now, so `CAPABILITY0.ATOMICS_DEVICE` reads 1 and the
   family runs — `t22_atomic` checks every operation at both widths, and
@@ -193,46 +204,6 @@ coalescing is real, and the NUCA slice behind it is fully non-blocking, so the
 memory-level parallelism that Stage 3 was about exists — between cores and
 within a vector access, not between two consecutive scalar loads on one core.
 
-### D4 — The transfer engine handles rank 1 and 2, and only aligned rows
-
-**Document:** §7.2 specifies rank 1 to 5 in hardware, with the compiler
-flattening what it can.
-
-**Built:** `tnca_tensor` executes rank 1 and 2. A tile row must also be a whole
-number of 8-byte units with an 8-byte-aligned source. Both conditions are
-checked before a single transaction is issued, and a violation raises
-`DESCRIPTOR_FAULT`.
-
-*This paragraph described a check that did not exist.* Only the row **size**
-was tested; nothing tested where each row **started**. A 13-element FP16 row
-is 26 bytes, so every row after the first began two bytes off, and the engine
-returned shifted data while raising nothing. Found by compiling a GEMM with an
-N tail — milestone C2, which `compiler_overview.md` §15 says is where the
-tile/fragment mismatch should surface. Now checked, documented in ISA §9E.2,
-and tested by `t17_descfault`.
-
-**Why:** rank 3 to 5 is more coordinate arithmetic, not a different mechanism,
-and the alignment restriction is what lets a returned 8-byte unit land in a
-window register through the existing lane write enables rather than needing
-byte-granular writes.
-
-**This is the one Stage-2 item still open.** The rest of Stage 1, 2 and 3 is
-closed: synchronous instruction fetch (D1), atomics and fences at the home
-slice, the SFU, the five-format datapath, and `m.mma.async`'s second
-completion event. Rank 3–5 needs a coordinate read the core cannot do in one
-cycle — a transfer takes one coordinate per descriptor rank from consecutive
-scalar registers (§9E), and the register file has four read ports — so it is a
-port and a small sequencer, not a rewrite. It is named here rather than
-quietly left off the list.
-
-**Why it is a fault and not an approximation:** this is §1.6 applied to a
-geometry rather than to an instruction. A transfer that quietly did something
-near enough would make a wrong answer look like a right one, which is the single
-failure mode a capability model exists to prevent. `TENSOR_MAX_RANK` reports the
-limit so software can ask rather than discover.
-
-**Replacement:** rank 3–5 and byte-granular window writes, together.
-
 ### D3 — The execute-stage units are combinational
 
 **Document:** §6.2 warns against treating an arithmetic-resource ceiling as
@@ -258,7 +229,47 @@ core is already shaped for it — a per-unit latency and an out-of-band completi
 path exist — so the addition is a writeback reservation shift register.
 
 **Status: done.** The FMA is a 2-stage pipeline and the multiplier a 3-stage
-one; see `synthesis.md`. The integer vector unit remains combinational.
+one; see [`synthesis.md`](synthesis.md). The integer vector unit remains combinational.
+
+### D4 — The transfer engine handles rank 1 and 2, and only aligned rows
+
+**Document:** §7.2 specifies rank 1 to 5 in hardware, with the compiler
+flattening what it can.
+
+**Built:** `tnca_tensor` executes rank 1 and 2. A tile row must also be a whole
+number of 8-byte units with an 8-byte-aligned source. Both conditions are
+checked before a single transaction is issued, and a violation raises
+`DESCRIPTOR_FAULT`.
+
+*This paragraph described a check that did not exist.* Only the row **size**
+was tested; nothing tested where each row **started**. A 13-element FP16 row
+is 26 bytes, so every row after the first began two bytes off, and the engine
+returned shifted data while raising nothing. Found by compiling a GEMM with an
+N tail — milestone C2, which [`design/tnca_v1_compiler_draft.md`](design/tnca_v1_compiler_draft.md) §15
+(formerly `compiler_overview.md`) says is where the tile/fragment mismatch should
+surface. Now checked, documented in ISA §9E.2, and tested by `t17_descfault`.
+
+**Why:** rank 3 to 5 is more coordinate arithmetic, not a different mechanism,
+and the alignment restriction is what lets a returned 8-byte unit land in a
+window register through the existing lane write enables rather than needing
+byte-granular writes.
+
+**This is the one Stage-2 item still open.** The rest of Stage 1, 2 and 3 is
+closed: synchronous instruction fetch (D1), atomics and fences at the home
+slice, the SFU, the five-format datapath, and `m.mma.async`'s second
+completion event. Rank 3–5 needs a coordinate read the core cannot do in one
+cycle — a transfer takes one coordinate per descriptor rank from consecutive
+scalar registers (§9E), and the register file has four read ports — so it is a
+port and a small sequencer, not a rewrite. It is named here rather than
+quietly left off the list.
+
+**Why it is a fault and not an approximation:** this is §1.6 applied to a
+geometry rather than to an instruction. A transfer that quietly did something
+near enough would make a wrong answer look like a right one, which is the single
+failure mode a capability model exists to prevent. `TENSOR_MAX_RANK` reports the
+limit so software can ask rather than discover.
+
+**Replacement:** rank 3–5 and byte-granular window writes, together.
 
 ---
 
@@ -303,8 +314,8 @@ that a simpler reading would have skipped:
    That rule is what kept Google XLS's `apfloat` out of the binary32 FMA.
    `apfloat::add(1e-45, 0.0)` returns `0.0`: the library flushes subnormals, a
    defensible choice for ML kernels and an impermissible one here. The SFU is
-   the mirror image — §8.8 *requires* the flush — so the SFU is generated from
-   DSLX and the FMA is not. doc/xls.md has the measurement and the reasoning.
+   the mirror image — ISA §8.8 *requires* the flush — so the SFU is generated from
+   DSLX and the FMA is not. [`xls.md`](xls.md) has the measurement and the reasoning.
 
 5. **§10.5 and §13.4, forward progress.** A trap stops one role and wakes the
    rest; it never becomes a hang. `t05_fault` tests exactly that, including
@@ -325,9 +336,9 @@ that a simpler reading would have skipped:
    way. It took a program that *acted* on the value to find it.
 
 7. **The compiler plan found three more.** Building
-   [`compiler_overview.md`](design/tnca_v1_compiler_draft.md)'s milestone C0 against the
-   hardware exposed things no RTL test was asking about, because they are only
-   wrong from a compiler's point of view:
+   [`design/tnca_v1_compiler_draft.md`](design/tnca_v1_compiler_draft.md)'s milestone C0
+   (formerly `compiler_overview.md`) against the hardware exposed things no RTL
+   test was asking about, because they are only wrong from a compiler's point of view:
 
    - `CAPABILITY0.TENSOR_DMA` read 0 while the transfer engine executed TXFER
      normally. ISA §11 makes a clear bit a promise of `ILLEGAL_INSTRUCTION`, so
@@ -347,7 +358,7 @@ that a simpler reading would have skipped:
      is precisely the implicit wide register read §13.4 of the compiler plan
      warns cannot be inferred from the explicit operand fields.
 
-7. **Milestone C2 found two more in the transfer engine.** Compiling a GEMM
+8. **Milestone C2 found two more in the transfer engine.** Compiling a GEMM
    with an N tail needs a 13-element row, and that exposed both:
 
    - The source alignment requirement was documented in three places and
@@ -361,7 +372,7 @@ that a simpler reading would have skipped:
      retired and whatever sits in the execute stage by then is the wrong
      answer.
 
-8. **Milestone C3 found two more, in how a failure travels.** The two-role
+9. **Milestone C3 found two more, in how a failure travels.** The two-role
    pipeline's error-propagation case: the producer's transfer faults, and the
    consumer is asleep on the barrier it was counted against.
 
@@ -383,7 +394,7 @@ that a simpler reading would have skipped:
    architecture's promise that a trap "must never turn into a silent hang"
    holds only for synchronous faults.
 
-9. **Milestone C4 found a control bug that needed two Role Contexts to see.**
+10. **Milestone C4 found a control bug that needed two Role Contexts to see.**
    A taken branch failed to squash a younger instruction of the same context
    when the front end was stalled, so the instruction after the branch
    executed anyway. In the case that exposed it, a `trap` placed immediately
@@ -402,7 +413,7 @@ that a simpler reading would have skipped:
    in isolation. Only instrumenting the branch condition showed the branch
    being taken and the next instruction retiring anyway.
 
-10. **Milestone C4 also found a missing piece of the launch contract.** The
+11. **Milestone C4 also found a missing piece of the launch contract.** The
     compiler's two-role kernels began with a memory-flag handshake: role 0
     initialised the barriers and wrote a flag, and the other roles polled it.
     Under a slow memory model the compiled GEMM deadlocked — the consumer's
@@ -422,7 +433,7 @@ that a simpler reading would have skipped:
     instruction. Now ISA §9A.7, and the generated code emits neither the flag
     nor `mb.init`.
 
-11. **Milestone C4's loop cloning found a livelock in `mb.wait`.** Two
+12. **Milestone C4's loop cloning found a livelock in `mb.wait`.** Two
     predicates decide what a wait does: one whether to sleep, one whether to
     wake. They disagreed. The sleep test required the barrier to have been
     armed at least once; the wake test did not. A wait on generation 0 — the
@@ -441,7 +452,7 @@ that a simpler reading would have skipped:
     ago — the case the `>=` comparison exists for, which `armed` would have
     broken as soon as a barrier were re-initialised.
 
-12. **Milestone C4 found the two asynchronous engines sharing one completion
+13. **Milestone C4 found the two asynchronous engines sharing one completion
     port.** The core wired both into a single `opdone_en`, with
     `opdone_bar = mtx_done ? mtx_done_bar : txf_done_bar`. When the matrix
     unit and the transfer engine finished in the same cycle, the matrix won

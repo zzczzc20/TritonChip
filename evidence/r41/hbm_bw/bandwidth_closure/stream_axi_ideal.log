@@ -1,0 +1,15 @@
+STREAM COMMAND PASS mode=2 lines=0 status=0 cycles=1 read_lines=0 write_lines=0 sum=00000000
+STREAM COMMAND PASS mode=0 lines=1 status=0 cycles=50 read_lines=1 write_lines=1 sum=00000000
+STREAM COMMAND PASS mode=0 lines=130 status=0 cycles=179 read_lines=130 write_lines=130 sum=00000000
+STREAM COMMAND PASS mode=0 lines=1024 status=0 cycles=1073 read_lines=1024 write_lines=1024 sum=00000000
+STREAM COMMAND PASS mode=1 lines=511 status=0 cycles=534 read_lines=0 write_lines=511 sum=00000000
+STREAM COMMAND PASS mode=2 lines=1024 status=0 cycles=1056 read_lines=1024 write_lines=0 sum=ebc38fe8
+STREAM COMMAND PASS mode=2 lines=1025 status=0 cycles=1057 read_lines=1025 write_lines=0 sum=af028c88
+STREAM COMMAND PASS mode=1 lines=0 status=0 cycles=1 read_lines=0 write_lines=0 sum=00000000
+STREAM COMMAND PASS mode=0 lines=2 status=3 cycles=0 read_lines=0 write_lines=0 sum=00000000
+STREAM COMMAND PASS mode=0 lines=4194305 status=3 cycles=0 read_lines=0 write_lines=0 sum=00000000
+STREAM COMMAND PASS mode=2 lines=2 status=3 cycles=0 read_lines=0 write_lines=0 sum=00000000
+STREAM COMMAND PASS mode=3 lines=1 status=3 cycles=0 read_lines=0 write_lines=0 sum=00000000
+STREAM COMMAND PASS mode=1 lines=1 status=3 cycles=0 read_lines=0 write_lines=0 sum=00000000
+STREAM AXI PASS stall=0 error=0 pc_base=0000000100000000 tests=14 peak_credits=128 peak_buffered=0
+tb/fpga/tb_stream_axi.v:164: $finish called at 40420000 (1ps)

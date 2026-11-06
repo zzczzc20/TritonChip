@@ -157,6 +157,10 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
     """
     r1 = _r1()
     try:
+        from tnca_cc.predicate_spill import spill
+        predicate_plan = spill(kernel, target)
+        if prov is not None and predicate_plan['predicates']:
+            prov.record('predicate_spills', predicate_plan)
         cg = r1['CodeGen'](kernel, target, check_protocol=check_protocol,
                            opt_level=opt_level, bank_alloc=bank_alloc, window_reuse=window_reuse)
         if len(kernel.roles) > 1:
@@ -168,6 +172,16 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
             cg.assign_shared()
             cg.run()
             text = None
+        # Verify the allocated IDs as well as the pre-allocation resource
+        # counts: sliced launches address only the issuing program's slice.
+        entries = prov.entries if prov is not None else {}
+        slices = (entries.get('rctx_roles_pairs', 1) if entries.get('rctx_roles')
+                  else entries.get('rctx_spmd', 1) if entries.get('rctx_slice') else 1)
+        limit = target.num_barriers // slices
+        for barrier in cg.kernel.barriers:
+            if barrier.reg is None or not 0 <= barrier.reg < limit:
+                raise r1['Diagnostic'](
+                    f'allocated barrier index {barrier.reg} outside slice of {limit}')
     except r1['Unsupported'] as d:
         raise UnsupportedError(str(d).splitlines()[0],
                                where='code generation',
@@ -182,6 +196,8 @@ def emit(kernel, target, *, prov=None, check_protocol=True,
         prov.record('codegen', 'tnca_cc.codegen.CodeGen')
         prov.record('ownership_check', 'unconditional')
         prov.record('assembly_sha256', _sha(text))
+        from tnca_cc.execution_resources import describe
+        prov.record('execution_resources', describe(kernel))
         if bank_alloc:
             from tnca_cc.bankcost import conflicts
             cost = conflicts(text, cg.bank_banks)
@@ -223,7 +239,8 @@ def assemble(asm_text, *, prov=None):
 
 def import_ttir(module, func_name, arg_values, *, param_names, target,
                 prov=None, dynamic_args=True, index_opt=False, sparse_maps=False,
-                window_reuse=False, packed_window_unpack=False):
+                window_reuse=False, packed_window_unpack=False, large_tiles=False,
+                ieee_div=False, tiled_pointwise=0, tiled_groups_cap=0):
     """A Triton TTIR module -> TNCA IR, through R1's importer.
 
     `dynamic_args` defaults to TRUE here, and that is the difference between
@@ -237,11 +254,18 @@ def import_ttir(module, func_name, arg_values, *, param_names, target,
                              sparse_maps=sparse_maps)
     imp._window_reuse = bool(window_reuse)
     imp._packed_window_unpack = bool(packed_window_unpack)
+    imp.large_tiles = bool(large_tiles)
+    imp.ieee_div = bool(ieee_div)
+    imp.tiled_pointwise = int(tiled_pointwise)
+    imp.tiled_groups_cap = int(tiled_groups_cap)
     try:
         kernel, builder = imp.run(module, func_name, arg_values,
                                   param_names=param_names,
                                   dynamic_args=dynamic_args)
     except r1['Unsupported'] as d:
+        if os.environ.get('TNCA_DEBUG_IMPORT'):
+            import traceback
+            traceback.print_exc()
         raise UnsupportedError(str(d).splitlines()[0],
                                where=f"TTIR function {func_name!r}",
                                detail={'diagnostic': str(d)})
@@ -250,6 +274,14 @@ def import_ttir(module, func_name, arg_values, *, param_names, target,
                            where=f"TTIR function {func_name!r}",
                            detail={'diagnostic': str(d)})
     if prov is not None:
+        # The logical dot sites and their constant extents, for the
+        # execution resource plan. Inspection only; the kernel is lowered.
+        from tnca_cc.execution_resources import gemm_sites_or_error
+        prov.record('gemm_sites', gemm_sites_or_error(imp))
+        broadcasts = getattr(imp, '_column_broadcasts', None)
+        if broadcasts and any(broadcasts.values()):
+            # [R, 1] -> [R, C]: lane 0 copied, or proven-replicated rows renamed.
+            prov.record('column_broadcasts', dict(broadcasts))
         prov.record('frontend', 'tnca_cc.frontend.TTIRImporter')
         prov.record('bound_parameters', list(imp.arg_names))
         prov.record('argument_binding',

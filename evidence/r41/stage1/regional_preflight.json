@@ -1,0 +1,236 @@
+{
+ "schema": "tnca-r41-regional-preflight/1",
+ "inputs": {
+  "evidence/r41/stage1/kickoff/frequency-preflight-v2-evidence.tgz": "fb2d829911df9c41e7b1bb3f68223c6d73843e3935897a0a474d13a41bf29ecb",
+  "evidence/r40/v3/final_image_candidate/ooc_units/units_reports.tgz": "b72d2bc9de588a9d8a566b67fd3a94ba6e61128aa1db9df2fa1cbf3fb7d80acf",
+  "evidence/r41/stage1/f07_ooc/f07-ooc-evidence.tgz": "df2dd0e172db79a81443255507b01bbcd1c602f721a3bf2f2da0c0b632f53dee"
+ },
+ "placement": {
+  "tnca_vector_fpu": {
+   "SLR0": 1,
+   "SLR1": 1,
+   "SLR2": 1
+  },
+  "tnca_line_axi": {
+   "SLR0": 3,
+   "SLR1": 0,
+   "SLR2": 0
+  },
+  "tnca_memory_mode": {
+   "SLR0": 0,
+   "SLR1": 1,
+   "SLR2": 0
+  },
+  "tnca_multicore_mmio": {
+   "SLR0": 0,
+   "SLR1": 1,
+   "SLR2": 0
+  },
+  "tnca_idle_host_mux": {
+   "SLR0": 1,
+   "SLR1": 0,
+   "SLR2": 0
+  },
+  "tnca_nuca_slice": {
+   "SLR0": 1,
+   "SLR1": 1,
+   "SLR2": 1
+  }
+ },
+ "units": {
+  "tnca_vector_fpu": {
+   "source": "m1_m4_units",
+   "old": {
+    "luts": 62534,
+    "registers": 9673
+   },
+   "new": {
+    "luts": 62755,
+    "registers": 9677
+   },
+   "delta": {
+    "luts": 221,
+    "registers": 4
+   },
+   "instances": {
+    "SLR0": 1,
+    "SLR1": 1,
+    "SLR2": 1
+   }
+  },
+  "tnca_line_axi": {
+   "source": "m1_m4_units",
+   "old": {
+    "luts": 7852,
+    "registers": 5993
+   },
+   "new": {
+    "luts": 7634,
+    "registers": 6131
+   },
+   "delta": {
+    "luts": -218,
+    "registers": 138
+   },
+   "instances": {
+    "SLR0": 3,
+    "SLR1": 0,
+    "SLR2": 0
+   }
+  },
+  "tnca_memory_mode": {
+   "source": "m1_m4_units",
+   "old": {
+    "luts": 2775,
+    "registers": 6
+   },
+   "new": {
+    "luts": 2776,
+    "registers": 9
+   },
+   "delta": {
+    "luts": 1,
+    "registers": 3
+   },
+   "instances": {
+    "SLR0": 0,
+    "SLR1": 1,
+    "SLR2": 0
+   }
+  },
+  "tnca_multicore_mmio": {
+   "source": "m1_m4_units",
+   "old": {
+    "luts": 1805,
+    "registers": 2144
+   },
+   "new": {
+    "luts": 1866,
+    "registers": 2146
+   },
+   "delta": {
+    "luts": 61,
+    "registers": 2
+   },
+   "instances": {
+    "SLR0": 0,
+    "SLR1": 1,
+    "SLR2": 0
+   }
+  },
+  "tnca_idle_host_mux": {
+   "source": "m1_m4_units",
+   "old": {
+    "luts": 223,
+    "registers": 2
+   },
+   "new": {
+    "luts": 221,
+    "registers": 3
+   },
+   "delta": {
+    "luts": -2,
+    "registers": 1
+   },
+   "instances": {
+    "SLR0": 1,
+    "SLR1": 0,
+    "SLR2": 0
+   }
+  },
+  "tnca_nuca_slice": {
+   "source": "f07",
+   "old": {
+    "luts": 30211,
+    "registers": 4692
+   },
+   "new": {
+    "luts": 30785,
+    "registers": 4997
+   },
+   "delta": {
+    "luts": 574,
+    "registers": 305
+   },
+   "instances": {
+    "SLR0": 1,
+    "SLR1": 1,
+    "SLR2": 1
+   }
+  }
+ },
+ "slr": {
+  "SLR0": {
+   "a3_routed": {
+    "luts": 322934,
+    "lut_percent": 73.45,
+    "registers": 159717,
+    "register_percent": 18.16,
+    "clb_packing_percent": 95.24
+   },
+   "delta": {
+    "luts": 139,
+    "registers": 724
+   },
+   "estimate": {
+    "luts": 323073,
+    "lut_percent": 73.482,
+    "registers": 160441,
+    "register_percent": 18.242,
+    "clb_packing_percent_scaled": 95.281
+   }
+  },
+  "SLR1": {
+   "a3_routed": {
+    "luts": 325056,
+    "lut_percent": 75.24,
+    "registers": 144350,
+    "register_percent": 16.71,
+    "clb_packing_percent": 88.39
+   },
+   "delta": {
+    "luts": 857,
+    "registers": 314
+   },
+   "estimate": {
+    "luts": 325913,
+    "lut_percent": 75.438,
+    "registers": 144664,
+    "register_percent": 16.746,
+    "clb_packing_percent_scaled": 88.623
+   }
+  },
+  "SLR2": {
+   "a3_routed": {
+    "luts": 281718,
+    "lut_percent": 65.21,
+    "registers": 105429,
+    "register_percent": 12.2,
+    "clb_packing_percent": 85.41
+   },
+   "delta": {
+    "luts": 795,
+    "registers": 309
+   },
+   "estimate": {
+    "luts": 282513,
+    "lut_percent": 65.394,
+    "registers": 105738,
+    "register_percent": 12.236,
+    "clb_packing_percent_scaled": 85.651
+   }
+  }
+ },
+ "not_implemented_candidates": [
+  "F01",
+  "F02",
+  "F03",
+  "F04",
+  "F05",
+  "F06",
+  "F08",
+  "F09",
+  "F10"
+ ],
+ "boundary": "unit synthesis deltas added to A3 routed counts; not a placed, packed or routed result; CLB packing scaled linearly with LUTs, which understates packing nonlinearity; F01-F06 and F08-F10 have no implementation and no estimate"
+}

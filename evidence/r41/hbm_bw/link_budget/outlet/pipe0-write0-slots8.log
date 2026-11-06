@@ -1,0 +1,3 @@
+LINE STREAM MEASURE pipeline=0 write=0 slots=8 delay=16 lines=256 issue_span=572 cycles=591
+FATAL: tb/fpga/tb_line_axi_stream.v:77: issue throughput
+       Time: 5950000  Scope: tb_line_axi_stream

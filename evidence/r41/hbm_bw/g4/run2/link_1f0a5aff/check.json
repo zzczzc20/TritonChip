@@ -1,0 +1,80 @@
+{
+ "design": {
+  "wns": -0.045,
+  "tns": -0.046,
+  "setup_failing": 2,
+  "setup_endpoints": 1596740,
+  "whs": 0.001,
+  "ths": 0.0,
+  "hold_failing": 0,
+  "hold_endpoints": 1594889
+ },
+ "kernel": {
+  "wns": 0.038,
+  "tns": 0.0,
+  "setup_failing": 0,
+  "whs": 0.001,
+  "ths": 0.0,
+  "hold_failing": 0
+ },
+ "route": {
+  "routable": 1275538,
+  "fully_routed": 1275538,
+  "errors": 0,
+  "unrouted": null
+ },
+ "slr": {
+  "CLB": {
+   "SLR0": 52522,
+   "SLR1": 48956,
+   "SLR2": 47553,
+   "SLR0_pct": 95.56,
+   "SLR1_pct": 90.66,
+   "SLR2_pct": 88.06
+  },
+  "CLB LUTs": {
+   "SLR0": 321910,
+   "SLR1": 332407,
+   "SLR2": 285409,
+   "SLR0_pct": 73.21,
+   "SLR1_pct": 76.95,
+   "SLR2_pct": 66.07
+  },
+  "CLB Registers": {
+   "SLR0": 161857,
+   "SLR1": 145495,
+   "SLR2": 106239,
+   "SLR0_pct": 18.41,
+   "SLR1_pct": 16.84,
+   "SLR2_pct": 12.3
+  },
+  "SLL_SLR1_SLR0": {
+   "used": 15764,
+   "available": 23040,
+   "pct": 68.42
+  },
+  "SLL_SLR2_SLR1": {
+   "used": 9800,
+   "available": 23040,
+   "pct": 42.53
+  }
+ },
+ "cdc_critical": {
+  "CDC-7": 13,
+  "CDC-10": 7,
+  "CDC-11": 32,
+  "CDC-13": 4
+ },
+ "kernel_endpoints_below_0p5ns": 1675,
+ "slr0_vs_estimate": "inside the G4 estimate 95.5 +/- 2.5 % (routed 95.56 %)",
+ "screens": {
+  "tile0_wns_ns": 0.6,
+  "tile1_wns_ns": 0.641,
+  "tile0_clb": 43345,
+  "tile1_clb": 42369
+ },
+ "verdict": "FAIL",
+ "failures": [
+  "design setup WNS -0.045 ns, 2 failing endpoints"
+ ]
+}

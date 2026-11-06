@@ -1,0 +1,72 @@
+{
+ "schema": "tnca-r41-hbm8-summary/1",
+ "group": "board-hbm8-big",
+ "cases": {
+  "bigoffset": {
+   "status": "functional-pass",
+   "mode": "board",
+   "backend": "fpga-u280-multicore",
+   "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+   "window": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000"
+   },
+   "checks_passed": 6,
+   "checks_failed": [],
+   "launches": 2,
+   "cores_all_three": true,
+   "outlet_lines": [
+    68,
+    63,
+    66
+   ],
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "error": null
+  },
+  "stream": {
+   "status": "functional-pass",
+   "mode": "board",
+   "backend": "fpga-u280-multicore",
+   "software_tree": "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f",
+   "window": {
+    "base": "0x0",
+    "size": 8589934592,
+    "local_limit": "0x20000"
+   },
+   "checks_passed": 8,
+   "checks_failed": [],
+   "launches": 1,
+   "cores_all_three": true,
+   "outlet_lines": [
+    12690132,
+    12542577,
+    12542546
+   ],
+   "axi_status_at_end": {
+    "error": false,
+    "stray": false
+   },
+   "error": null
+  }
+ },
+ "passed": [
+  "bigoffset",
+  "stream"
+ ],
+ "not_passed": [],
+ "software_trees": [
+  "files:e7b332afffab71a7559a42e3b22fe11572758814fb514c9027e22fd64045ca4f"
+ ],
+ "mode": "board",
+ "qualified": true,
+ "qualification_problems": [],
+ "result": "2/2 cases functional-pass",
+ "residual": "none",
+ "conclusion": "board-hbm8-big: every registered case passed in board on one software tree",
+ "next_step": "record the board result in evidence/r41/hbm8/README.md",
+ "performance_gate": "not-measured"
+}

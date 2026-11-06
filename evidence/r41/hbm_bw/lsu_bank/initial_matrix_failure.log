@@ -1,0 +1,16 @@
+LSU BANK CAPACITY units=2 peak=2
+LSU BANK MITER PASS seed=1 accesses=600 requests=1606 stall=30% cycles REQ_REG=0 15444 REQ_REG=1 15679
+tb/core/tb_lsu_bank.v:285: $finish called at 156790000 (1ps)
+FATAL: tb/core/tb_lsu_bank.v:196: dut1: completion for no outstanding access
+       Time: 19945000  Scope: tb_lsu_bank
+Traceback (most recent call last):
+  File "/home/ubuntu/TritonChip-hbmbw/tools/r41/lsu_bank_tests.py", line 26, in <module>
+    main()
+    ~~~~^^
+  File "/home/ubuntu/TritonChip-hbmbw/tools/r41/lsu_bank_tests.py", line 21, in main
+    subprocess.run(['vvp', binary], cwd=ROOT, check=True, timeout=120)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['vvp', '/tmp/tnca-lsu-bank-8mj92kb9/bank.vvp']' returned non-zero exit status 1.

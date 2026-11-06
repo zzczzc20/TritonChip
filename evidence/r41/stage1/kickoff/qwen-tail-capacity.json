@@ -1,0 +1,50 @@
+{
+  "schema": "tnca-language-capacity-estimate/1",
+  "repository": "Qwen/Qwen3.5-2B",
+  "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+  "geometry": {
+    "batch": 1,
+    "prefill": 129,
+    "decode": 4,
+    "kv_slots": 133,
+    "linear_layers": 18,
+    "full_attention_layers": 6
+  },
+  "language_distinct_weight_bytes": 3763655360,
+  "state_bytes": {
+    "recurrent_fp32": 18874368,
+    "conv_bf16": 884736,
+    "full_attention_kv_bf16": 1634304
+  },
+  "weights_plus_state_bytes": 3785048768,
+  "exposed_window_bytes": 4294967296,
+  "remaining_before_runtime_and_activations_bytes": 509918528,
+  "analytical_individual_buffer_bytes": {
+    "hidden_bf16": 528384,
+    "one_mlp_expansion_bf16": 1585152,
+    "one_attention_score_fp32": 549024,
+    "full_prefill_logits_bf16": 64066560,
+    "last_token_logits_fp32": 993280
+  },
+  "largest_storage": {
+    "name": "model.language_model.embed_tokens.weight",
+    "bytes": 1017118720
+  },
+  "extra_copy_of_largest_weight_would_fit_base": false,
+  "verdict": "not-measured: state formula and individual buffers do not bound runtime peak",
+  "exclusions": [
+    "allocator alignment/fragmentation and reserved address ranges",
+    "code, argument tables, descriptors and repack scratch",
+    "simultaneous live activation/cast/transpose buffers",
+    "temporary or duplicate weight packing",
+    "chunked recurrence solve/mask intermediates and cache recording/rollback"
+  ],
+  "assumptions": [
+    "single resident copy of each checkpoint storage",
+    "tied embedding and output projection remain one storage",
+    "conv cache retains K values per channel as in pinned official cache",
+    "no offload, cache history recording or speculative rollback",
+    "KV cache reserves prefill+decode slots; BF16 K/V and FP32 recurrent state"
+  ],
+  "inventory_sha256": "e3ed497b69aba722451d3fdb27608c762a0992a1bfab79acf329f659201bfe3a"
+}

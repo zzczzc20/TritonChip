@@ -1,0 +1,1532 @@
+{
+  "schema": "r41-p1-observations/1",
+  "model_numeric_rows": 32,
+  "rtl_numeric_rows": 8,
+  "sensitivity_numeric_rows": 32,
+  "default_audit": {
+    "points": 113,
+    "changed": 0
+  },
+  "pairs": [
+    {
+      "dtype": "float16",
+      "strided": false,
+      "graph": "mm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 60369,
+      "wide_cycles": 71727,
+      "wide_over_narrow": 1.188142921035631
+    },
+    {
+      "dtype": "float16",
+      "strided": false,
+      "graph": "mm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 176273,
+      "wide_cycles": 141309,
+      "wide_over_narrow": 0.8016485791925025
+    },
+    {
+      "dtype": "float16",
+      "strided": false,
+      "graph": "addmm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 63674,
+      "wide_cycles": 73493,
+      "wide_over_narrow": 1.1542073687847474
+    },
+    {
+      "dtype": "float16",
+      "strided": false,
+      "graph": "addmm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 182986,
+      "wide_cycles": 153936,
+      "wide_over_narrow": 0.8412446853857672
+    },
+    {
+      "dtype": "float16",
+      "strided": true,
+      "graph": "mm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 64557,
+      "wide_cycles": 74188,
+      "wide_over_narrow": 1.1491859906749073
+    },
+    {
+      "dtype": "float16",
+      "strided": true,
+      "graph": "mm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 182408,
+      "wide_cycles": 134045,
+      "wide_over_narrow": 0.7348636024735757
+    },
+    {
+      "dtype": "float16",
+      "strided": true,
+      "graph": "addmm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 66961,
+      "wide_cycles": 80334,
+      "wide_over_narrow": 1.199713265930915
+    },
+    {
+      "dtype": "float16",
+      "strided": true,
+      "graph": "addmm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 188487,
+      "wide_cycles": 141071,
+      "wide_over_narrow": 0.7484388843792941
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": false,
+      "graph": "mm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 60369,
+      "wide_cycles": 71727,
+      "wide_over_narrow": 1.188142921035631
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": false,
+      "graph": "mm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 176273,
+      "wide_cycles": 141309,
+      "wide_over_narrow": 0.8016485791925025
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": false,
+      "graph": "addmm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 63674,
+      "wide_cycles": 73493,
+      "wide_over_narrow": 1.1542073687847474
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": false,
+      "graph": "addmm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 182986,
+      "wide_cycles": 153936,
+      "wide_over_narrow": 0.8412446853857672
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": true,
+      "graph": "mm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 64557,
+      "wide_cycles": 74188,
+      "wide_over_narrow": 1.1491859906749073
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": true,
+      "graph": "mm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 182408,
+      "wide_cycles": 134045,
+      "wide_over_narrow": 0.7348636024735757
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": true,
+      "graph": "addmm",
+      "shape": [
+        17,
+        65,
+        33
+      ],
+      "narrow_cycles": 66961,
+      "wide_cycles": 80334,
+      "wide_over_narrow": 1.199713265930915
+    },
+    {
+      "dtype": "bfloat16",
+      "strided": true,
+      "graph": "addmm",
+      "shape": [
+        128,
+        128,
+        192
+      ],
+      "narrow_cycles": 188487,
+      "wide_cycles": 141071,
+      "wide_over_narrow": 0.7484388843792941
+    }
+  ],
+  "sensitivity": {
+    "sensitivity/F04-F05-writeback/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73915
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141221
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73397
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 154162
+      }
+    ],
+    "sensitivity/F03-F08-F09-fma/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73162
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141164
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 75471
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153368
+      }
+    ],
+    "sensitivity/F10-lsu/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71850
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141026
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71374
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153130
+      }
+    ],
+    "sensitivity/base/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71727
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141309
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73493
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153936
+      }
+    ],
+    "sensitivity/F06-dispatch/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71731
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141047
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73497
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153246
+      }
+    ],
+    "sensitivity/F01-F02-core/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71539
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141069
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 74133
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153658
+      }
+    ],
+    "sensitivity/F07-slice/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 79786
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 151653
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 81947
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 165596
+      }
+    ],
+    "sensitivity/T2-transfer/case/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73883
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 140864
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 72993
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153674
+      }
+    ]
+  },
+  "limitations": [
+    "Uncalibrated SystemC sensitivity parameters are hypotheses, not hardware ablations or board results. Some perturbations are nonmonotonic; no causal throughput attribution is inferred.",
+    "RTL regression covers four small dtype/layout configurations, not the full model or original suite.",
+    "Prior board failures remain failures until matched remeasurement; tail wide fragments remain slower in the model."
+  ],
+  "memory_service": {
+    "service-current/1-1/report.json": {
+      "cycles": 20250,
+      "outlets": [
+        {
+          "port": 0,
+          "read_lines": 337,
+          "write_lines": 98
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_identity": {
+        "backend": "systemc-tlm-grid",
+        "binary": "/home/zhongchun/r41-accept-p1/model-build/tnca-chip",
+        "binary_sha256": "c35332ee0e8abe9c7a45723e1393b8aacea9d9dc48293c6b5d0fa9e3eb4e14ec",
+        "config": {
+          "nx": "3",
+          "ny": "1",
+          "sets": "32",
+          "ways": "8",
+          "full_line_tag": "1",
+          "mshrs": "8",
+          "targets": "16",
+          "outlets": "3",
+          "active_outlets": "1",
+          "outstanding": "1",
+          "core_window": "32",
+          "clock_hz": "100000000",
+          "memory_base": "0",
+          "memory_bytes": "8589934592",
+          "pc_bytes": "268435456",
+          "pc_count": "32",
+          "pc_first": "0",
+          "lookup_cycles": "3",
+          "service_cycles": "1",
+          "noc_stages": "2",
+          "noc_bytes_per_cycle": "16",
+          "hbm_latency_cycles": "40",
+          "hbm_bytes_per_cycle": "32",
+          "outlet_issue_cycles": "1",
+          "trace_events": "100000",
+          "dma_queue": "1",
+          "dma_unit_slots": "8",
+          "dma_outstanding": "16",
+          "dma_setup_cycles": "8",
+          "dma_rf_cycles": "1",
+          "issue_cycles": "1",
+          "scalar_latency": "2",
+          "scalar_mul_latency": "5",
+          "vector_int_latency": "3",
+          "vector_fp_latency": "5",
+          "convert_latency": "5",
+          "compare_latency": "1",
+          "predicate_latency": "2",
+          "shuffle_latency": "3",
+          "reduction_latency": "3",
+          "fp_reduction_latency": "12",
+          "sfu_occupancy": "24",
+          "sfu_latency": "28",
+          "load_latency": "1",
+          "lsu_slots": "2",
+          "lsu_beat_slots": "8",
+          "barrier_latency": "2",
+          "acc_read_latency": "3",
+          "mtx_abuf": "1",
+          "mtx_rf_read_cycles": "1",
+          "mtx_mac_cycles": "1",
+          "mtx_mac_unbuffered_cycles": "2",
+          "mtx_pipe_cycles": "3",
+          "mtx_complete_cycles": "1",
+          "mtx_zero_cycles": "16",
+          "mtx_row_cycles": "1",
+          "launch_cycles": "8",
+          "dispatch_cycles": "2",
+          "host_launch_cycles": "0",
+          "host_transfer_cycles": "0",
+          "host_transfer_cycles_per_kib": "0",
+          "memory_model": "0",
+          "tl_noc_inject_cycles": "1",
+          "tl_noc_eject_cycles": "2",
+          "tl_slice_hit_occupancy": "3",
+          "tl_slice_hit_latency": "4",
+          "tl_slice_miss_occupancy": "4",
+          "tl_slice_mreq_occupancy": "2",
+          "tl_slice_fill_occupancy": "2",
+          "tl_slice_wake_occupancy": "2",
+          "tl_slice_writeback_occupancy": "2",
+          "tl_slice_to_outlet_cycles": "4",
+          "tl_outlet_to_slice_cycles": "5",
+          "tl_outlet_read_issue_cycles": "2",
+          "tl_outlet_write_issue_cycles": "3",
+          "tl_outlet_beat_cycles": "1",
+          "tl_hbm_write_latency_cycles": "40",
+          "core_pipeline": "0",
+          "branch_taken_cycles": "4",
+          "park_refetch_cycles": "5",
+          "vrf_banks": "4",
+          "vrf_bank_conflict_cycles": "1",
+          "lsu_setup_cycles": "1",
+          "lsu_vector_load_extra": "1",
+          "lsu_complete_cycles": "3",
+          "lsu_writeback_cycles": "1",
+          "fp_compare_latency": "4",
+          "shuffle_scalar_latency": "1",
+          "reduction_vector_extra": "2",
+          "dma_store_register_cycles": "3",
+          "dma_drain_cycles": "2",
+          "vrf_prefetch": "0",
+          "fp_reduction_vector_extra": "1",
+          "time_quantum": "0",
+          "dram_path": "0",
+          "dram_fixed_cycles": "20",
+          "dram_clock_ratio": "10",
+          "dram_max_passes": "3",
+          "dram_tolerance_ppm": "5000"
+        },
+        "config_sha256": "800dbbeb3dd6dd258f0625e82057da13358aca534443412f4cf1b4e53b18ca80",
+        "model_dir": "/home/zhongchun/r41-accept-p1/service-current/1-1-model/model-577749-vw2xu0mf",
+        "calibration": "not-measured",
+        "execution": "native SystemC/TLM-2.0 model, no RTL",
+        "dram_path": "fast",
+        "address_map": {
+          "domain": "synthetic-logical"
+        },
+        "bank_row_mapping": "unverified",
+        "host_handoff_policy": "coherent-direct",
+        "host_handoff_scope": "zero-time coherent host access; no cache maintenance",
+        "untimed_cold_call": false
+      },
+      "counter_delta": {
+        "chip_grid_launches": 1,
+        "chip_host_gap_cycles": 0,
+        "chip_single_launches": 0,
+        "core_0_arrive_drain_cycles": 0,
+        "core_0_barrier_sleep_cycles": 0,
+        "core_0_branch_refetch_cycles": 0,
+        "core_0_class_branch": 80,
+        "core_0_class_exit": 80,
+        "core_0_class_lsu": 480,
+        "core_0_class_salu": 880,
+        "core_0_class_special": 320,
+        "core_0_class_vfp": 160,
+        "core_0_class_vint": 480,
+        "core_0_context_park_cycles": 0,
+        "core_0_dependency_wait_cycles": 575,
+        "core_0_fence_drain_cycles": 0,
+        "core_0_instructions": 2480,
+        "core_0_issue_queue_cycles": 3334,
+        "core_0_issue_service_cycles": 2480,
+        "core_0_lsu_wait_cycles": 42768,
+        "core_0_matrix_engine_busy_cycles": 0,
+        "core_0_matrix_engine_commands": 0,
+        "core_0_matrix_engine_wait_cycles": 0,
+        "core_0_memory_port_queue_cycles": 0,
+        "core_0_memory_port_service_cycles": 0,
+        "core_0_mma_commands": 0,
+        "core_0_pipeline_freeze_cycles": 0,
+        "core_0_programs_completed": 20,
+        "core_0_programs_issued": 20,
+        "core_0_role_0_completed": 20,
+        "core_0_role_0_issued": 20,
+        "core_0_role_1_completed": 20,
+        "core_0_role_1_issued": 20,
+        "core_0_role_2_completed": 20,
+        "core_0_role_2_issued": 20,
+        "core_0_role_3_completed": 20,
+        "core_0_role_3_issued": 20,
+        "core_0_sfu_queue_cycles": 0,
+        "core_0_vrf_bank_conflict_cycles": 0,
+        "core_1_arrive_drain_cycles": 0,
+        "core_1_barrier_sleep_cycles": 0,
+        "core_1_branch_refetch_cycles": 0,
+        "core_1_class_branch": 96,
+        "core_1_class_exit": 96,
+        "core_1_class_lsu": 576,
+        "core_1_class_salu": 1056,
+        "core_1_class_special": 384,
+        "core_1_class_vfp": 192,
+        "core_1_class_vint": 576,
+        "core_1_context_park_cycles": 0,
+        "core_1_dependency_wait_cycles": 582,
+        "core_1_fence_drain_cycles": 0,
+        "core_1_instructions": 2976,
+        "core_1_issue_queue_cycles": 5876,
+        "core_1_issue_service_cycles": 2976,
+        "core_1_lsu_wait_cycles": 38362,
+        "core_1_matrix_engine_busy_cycles": 0,
+        "core_1_matrix_engine_commands": 0,
+        "core_1_matrix_engine_wait_cycles": 0,
+        "core_1_memory_port_queue_cycles": 0,
+        "core_1_memory_port_service_cycles": 0,
+        "core_1_mma_commands": 0,
+        "core_1_pipeline_freeze_cycles": 0,
+        "core_1_programs_completed": 24,
+        "core_1_programs_issued": 24,
+        "core_1_role_0_completed": 24,
+        "core_1_role_0_issued": 24,
+        "core_1_role_1_completed": 24,
+        "core_1_role_1_issued": 24,
+        "core_1_role_2_completed": 24,
+        "core_1_role_2_issued": 24,
+        "core_1_role_3_completed": 24,
+        "core_1_role_3_issued": 24,
+        "core_1_sfu_queue_cycles": 0,
+        "core_1_vrf_bank_conflict_cycles": 0,
+        "core_2_arrive_drain_cycles": 0,
+        "core_2_barrier_sleep_cycles": 0,
+        "core_2_branch_refetch_cycles": 0,
+        "core_2_class_branch": 84,
+        "core_2_class_exit": 84,
+        "core_2_class_lsu": 486,
+        "core_2_class_salu": 897,
+        "core_2_class_special": 333,
+        "core_2_class_vfp": 162,
+        "core_2_class_vint": 486,
+        "core_2_context_park_cycles": 0,
+        "core_2_dependency_wait_cycles": 580,
+        "core_2_fence_drain_cycles": 0,
+        "core_2_instructions": 2532,
+        "core_2_issue_queue_cycles": 3335,
+        "core_2_issue_service_cycles": 2532,
+        "core_2_lsu_wait_cycles": 42782,
+        "core_2_matrix_engine_busy_cycles": 0,
+        "core_2_matrix_engine_commands": 0,
+        "core_2_matrix_engine_wait_cycles": 0,
+        "core_2_memory_port_queue_cycles": 0,
+        "core_2_memory_port_service_cycles": 0,
+        "core_2_mma_commands": 0,
+        "core_2_pipeline_freeze_cycles": 0,
+        "core_2_programs_completed": 21,
+        "core_2_programs_issued": 21,
+        "core_2_role_0_completed": 21,
+        "core_2_role_0_issued": 21,
+        "core_2_role_1_completed": 21,
+        "core_2_role_1_issued": 21,
+        "core_2_role_2_completed": 21,
+        "core_2_role_2_issued": 21,
+        "core_2_role_3_completed": 21,
+        "core_2_role_3_issued": 21,
+        "core_2_sfu_queue_cycles": 0,
+        "core_2_vrf_bank_conflict_cycles": 0,
+        "home_0_engine_queue_cycles": 1209,
+        "home_0_engine_service_cycles": 2301,
+        "home_0_evictions": 111,
+        "home_0_hits": 1402,
+        "home_0_merges": 785,
+        "home_0_misses": 114,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 105618,
+        "home_0_target_full_events": 204,
+        "home_0_writebacks": 34,
+        "home_1_engine_queue_cycles": 1737,
+        "home_1_engine_service_cycles": 2336,
+        "home_1_evictions": 97,
+        "home_1_hits": 1518,
+        "home_1_merges": 715,
+        "home_1_misses": 103,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 90375,
+        "home_1_target_full_events": 60,
+        "home_1_writebacks": 29,
+        "home_2_engine_queue_cycles": 1315,
+        "home_2_engine_service_cycles": 2281,
+        "home_2_evictions": 114,
+        "home_2_hits": 1334,
+        "home_2_merges": 827,
+        "home_2_misses": 120,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 105319,
+        "home_2_target_full_events": 180,
+        "home_2_writebacks": 35,
+        "link_0_1_bytes": 74064,
+        "link_0_1_queue_cycles": 11022,
+        "link_0_1_service_cycles": 4629,
+        "link_1_0_bytes": 76320,
+        "link_1_0_queue_cycles": 7924,
+        "link_1_0_service_cycles": 4770,
+        "link_1_2_bytes": 71888,
+        "link_1_2_queue_cycles": 7311,
+        "link_1_2_service_cycles": 4493,
+        "link_2_1_bytes": 70048,
+        "link_2_1_queue_cycles": 10328,
+        "link_2_1_service_cycles": 4378,
+        "outlet_0_peak_outstanding": 0,
+        "outlet_0_queue_cycles": 0,
+        "outlet_0_reads": 337,
+        "outlet_0_service_cycles": 435,
+        "outlet_0_wait_cycles": 21057,
+        "outlet_0_writes": 98,
+        "pc_0_bytes": 27840,
+        "pc_0_queue_cycles": 0,
+        "pc_0_service_cycles": 870,
+        "host_dma_handoffs": 0
+      }
+    },
+    "service-current/1-8/report.json": {
+      "cycles": 13520,
+      "outlets": [
+        {
+          "port": 0,
+          "read_lines": 333,
+          "write_lines": 99
+        },
+        {
+          "port": 1,
+          "read_lines": 0,
+          "write_lines": 0
+        },
+        {
+          "port": 2,
+          "read_lines": 0,
+          "write_lines": 0
+        }
+      ],
+      "model_identity": {
+        "backend": "systemc-tlm-grid",
+        "binary": "/home/zhongchun/r41-accept-p1/model-build/tnca-chip",
+        "binary_sha256": "c35332ee0e8abe9c7a45723e1393b8aacea9d9dc48293c6b5d0fa9e3eb4e14ec",
+        "config": {
+          "nx": "3",
+          "ny": "1",
+          "sets": "32",
+          "ways": "8",
+          "full_line_tag": "1",
+          "mshrs": "8",
+          "targets": "16",
+          "outlets": "3",
+          "active_outlets": "1",
+          "outstanding": "8",
+          "core_window": "32",
+          "clock_hz": "100000000",
+          "memory_base": "0",
+          "memory_bytes": "8589934592",
+          "pc_bytes": "268435456",
+          "pc_count": "32",
+          "pc_first": "0",
+          "lookup_cycles": "3",
+          "service_cycles": "1",
+          "noc_stages": "2",
+          "noc_bytes_per_cycle": "16",
+          "hbm_latency_cycles": "40",
+          "hbm_bytes_per_cycle": "32",
+          "outlet_issue_cycles": "1",
+          "trace_events": "100000",
+          "dma_queue": "1",
+          "dma_unit_slots": "8",
+          "dma_outstanding": "16",
+          "dma_setup_cycles": "8",
+          "dma_rf_cycles": "1",
+          "issue_cycles": "1",
+          "scalar_latency": "2",
+          "scalar_mul_latency": "5",
+          "vector_int_latency": "3",
+          "vector_fp_latency": "5",
+          "convert_latency": "5",
+          "compare_latency": "1",
+          "predicate_latency": "2",
+          "shuffle_latency": "3",
+          "reduction_latency": "3",
+          "fp_reduction_latency": "12",
+          "sfu_occupancy": "24",
+          "sfu_latency": "28",
+          "load_latency": "1",
+          "lsu_slots": "2",
+          "lsu_beat_slots": "8",
+          "barrier_latency": "2",
+          "acc_read_latency": "3",
+          "mtx_abuf": "1",
+          "mtx_rf_read_cycles": "1",
+          "mtx_mac_cycles": "1",
+          "mtx_mac_unbuffered_cycles": "2",
+          "mtx_pipe_cycles": "3",
+          "mtx_complete_cycles": "1",
+          "mtx_zero_cycles": "16",
+          "mtx_row_cycles": "1",
+          "launch_cycles": "8",
+          "dispatch_cycles": "2",
+          "host_launch_cycles": "0",
+          "host_transfer_cycles": "0",
+          "host_transfer_cycles_per_kib": "0",
+          "memory_model": "0",
+          "tl_noc_inject_cycles": "1",
+          "tl_noc_eject_cycles": "2",
+          "tl_slice_hit_occupancy": "3",
+          "tl_slice_hit_latency": "4",
+          "tl_slice_miss_occupancy": "4",
+          "tl_slice_mreq_occupancy": "2",
+          "tl_slice_fill_occupancy": "2",
+          "tl_slice_wake_occupancy": "2",
+          "tl_slice_writeback_occupancy": "2",
+          "tl_slice_to_outlet_cycles": "4",
+          "tl_outlet_to_slice_cycles": "5",
+          "tl_outlet_read_issue_cycles": "2",
+          "tl_outlet_write_issue_cycles": "3",
+          "tl_outlet_beat_cycles": "1",
+          "tl_hbm_write_latency_cycles": "40",
+          "core_pipeline": "0",
+          "branch_taken_cycles": "4",
+          "park_refetch_cycles": "5",
+          "vrf_banks": "4",
+          "vrf_bank_conflict_cycles": "1",
+          "lsu_setup_cycles": "1",
+          "lsu_vector_load_extra": "1",
+          "lsu_complete_cycles": "3",
+          "lsu_writeback_cycles": "1",
+          "fp_compare_latency": "4",
+          "shuffle_scalar_latency": "1",
+          "reduction_vector_extra": "2",
+          "dma_store_register_cycles": "3",
+          "dma_drain_cycles": "2",
+          "vrf_prefetch": "0",
+          "fp_reduction_vector_extra": "1",
+          "time_quantum": "0",
+          "dram_path": "0",
+          "dram_fixed_cycles": "20",
+          "dram_clock_ratio": "10",
+          "dram_max_passes": "3",
+          "dram_tolerance_ppm": "5000"
+        },
+        "config_sha256": "65de37227db4885b19f387c4fdfb4144daae95b0e4088f91103d470e2144cb37",
+        "model_dir": "/home/zhongchun/r41-accept-p1/service-current/1-8-model/model-577781-fmzrg835",
+        "calibration": "not-measured",
+        "execution": "native SystemC/TLM-2.0 model, no RTL",
+        "dram_path": "fast",
+        "address_map": {
+          "domain": "synthetic-logical"
+        },
+        "bank_row_mapping": "unverified",
+        "host_handoff_policy": "coherent-direct",
+        "host_handoff_scope": "zero-time coherent host access; no cache maintenance",
+        "untimed_cold_call": false
+      },
+      "counter_delta": {
+        "chip_grid_launches": 1,
+        "chip_host_gap_cycles": 0,
+        "chip_single_launches": 0,
+        "core_0_arrive_drain_cycles": 0,
+        "core_0_barrier_sleep_cycles": 0,
+        "core_0_branch_refetch_cycles": 0,
+        "core_0_class_branch": 80,
+        "core_0_class_exit": 80,
+        "core_0_class_lsu": 480,
+        "core_0_class_salu": 880,
+        "core_0_class_special": 320,
+        "core_0_class_vfp": 160,
+        "core_0_class_vint": 480,
+        "core_0_context_park_cycles": 0,
+        "core_0_dependency_wait_cycles": 602,
+        "core_0_fence_drain_cycles": 0,
+        "core_0_instructions": 2480,
+        "core_0_issue_queue_cycles": 3138,
+        "core_0_issue_service_cycles": 2480,
+        "core_0_lsu_wait_cycles": 29918,
+        "core_0_matrix_engine_busy_cycles": 0,
+        "core_0_matrix_engine_commands": 0,
+        "core_0_matrix_engine_wait_cycles": 0,
+        "core_0_memory_port_queue_cycles": 0,
+        "core_0_memory_port_service_cycles": 0,
+        "core_0_mma_commands": 0,
+        "core_0_pipeline_freeze_cycles": 0,
+        "core_0_programs_completed": 20,
+        "core_0_programs_issued": 20,
+        "core_0_role_0_completed": 20,
+        "core_0_role_0_issued": 20,
+        "core_0_role_1_completed": 20,
+        "core_0_role_1_issued": 20,
+        "core_0_role_2_completed": 20,
+        "core_0_role_2_issued": 20,
+        "core_0_role_3_completed": 20,
+        "core_0_role_3_issued": 20,
+        "core_0_sfu_queue_cycles": 0,
+        "core_0_vrf_bank_conflict_cycles": 0,
+        "core_1_arrive_drain_cycles": 0,
+        "core_1_barrier_sleep_cycles": 0,
+        "core_1_branch_refetch_cycles": 0,
+        "core_1_class_branch": 100,
+        "core_1_class_exit": 100,
+        "core_1_class_lsu": 582,
+        "core_1_class_salu": 1073,
+        "core_1_class_special": 397,
+        "core_1_class_vfp": 194,
+        "core_1_class_vint": 582,
+        "core_1_context_park_cycles": 0,
+        "core_1_dependency_wait_cycles": 587,
+        "core_1_fence_drain_cycles": 0,
+        "core_1_instructions": 3028,
+        "core_1_issue_queue_cycles": 5961,
+        "core_1_issue_service_cycles": 3028,
+        "core_1_lsu_wait_cycles": 25806,
+        "core_1_matrix_engine_busy_cycles": 0,
+        "core_1_matrix_engine_commands": 0,
+        "core_1_matrix_engine_wait_cycles": 0,
+        "core_1_memory_port_queue_cycles": 0,
+        "core_1_memory_port_service_cycles": 0,
+        "core_1_mma_commands": 0,
+        "core_1_pipeline_freeze_cycles": 0,
+        "core_1_programs_completed": 25,
+        "core_1_programs_issued": 25,
+        "core_1_role_0_completed": 25,
+        "core_1_role_0_issued": 25,
+        "core_1_role_1_completed": 25,
+        "core_1_role_1_issued": 25,
+        "core_1_role_2_completed": 25,
+        "core_1_role_2_issued": 25,
+        "core_1_role_3_completed": 25,
+        "core_1_role_3_issued": 25,
+        "core_1_sfu_queue_cycles": 0,
+        "core_1_vrf_bank_conflict_cycles": 0,
+        "core_2_arrive_drain_cycles": 0,
+        "core_2_barrier_sleep_cycles": 0,
+        "core_2_branch_refetch_cycles": 0,
+        "core_2_class_branch": 80,
+        "core_2_class_exit": 80,
+        "core_2_class_lsu": 480,
+        "core_2_class_salu": 880,
+        "core_2_class_special": 320,
+        "core_2_class_vfp": 160,
+        "core_2_class_vint": 480,
+        "core_2_context_park_cycles": 0,
+        "core_2_dependency_wait_cycles": 580,
+        "core_2_fence_drain_cycles": 0,
+        "core_2_instructions": 2480,
+        "core_2_issue_queue_cycles": 3242,
+        "core_2_issue_service_cycles": 2480,
+        "core_2_lsu_wait_cycles": 31308,
+        "core_2_matrix_engine_busy_cycles": 0,
+        "core_2_matrix_engine_commands": 0,
+        "core_2_matrix_engine_wait_cycles": 0,
+        "core_2_memory_port_queue_cycles": 0,
+        "core_2_memory_port_service_cycles": 0,
+        "core_2_mma_commands": 0,
+        "core_2_pipeline_freeze_cycles": 0,
+        "core_2_programs_completed": 20,
+        "core_2_programs_issued": 20,
+        "core_2_role_0_completed": 20,
+        "core_2_role_0_issued": 20,
+        "core_2_role_1_completed": 20,
+        "core_2_role_1_issued": 20,
+        "core_2_role_2_completed": 20,
+        "core_2_role_2_issued": 20,
+        "core_2_role_3_completed": 20,
+        "core_2_role_3_issued": 20,
+        "core_2_sfu_queue_cycles": 0,
+        "core_2_vrf_bank_conflict_cycles": 0,
+        "home_0_engine_queue_cycles": 1184,
+        "home_0_engine_service_cycles": 2298,
+        "home_0_evictions": 111,
+        "home_0_hits": 1401,
+        "home_0_merges": 783,
+        "home_0_misses": 114,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 44327,
+        "home_0_target_full_events": 52,
+        "home_0_writebacks": 34,
+        "home_1_engine_queue_cycles": 1869,
+        "home_1_engine_service_cycles": 2339,
+        "home_1_evictions": 96,
+        "home_1_hits": 1529,
+        "home_1_merges": 708,
+        "home_1_misses": 102,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 40255,
+        "home_1_target_full_events": 61,
+        "home_1_writebacks": 30,
+        "home_2_engine_queue_cycles": 1398,
+        "home_2_engine_service_cycles": 2281,
+        "home_2_evictions": 111,
+        "home_2_hits": 1358,
+        "home_2_merges": 806,
+        "home_2_misses": 117,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 45487,
+        "home_2_target_full_events": 30,
+        "home_2_writebacks": 35,
+        "link_0_1_bytes": 78624,
+        "link_0_1_queue_cycles": 13672,
+        "link_0_1_service_cycles": 4914,
+        "link_1_0_bytes": 80832,
+        "link_1_0_queue_cycles": 8858,
+        "link_1_0_service_cycles": 5052,
+        "link_1_2_bytes": 75296,
+        "link_1_2_queue_cycles": 9248,
+        "link_1_2_service_cycles": 4706,
+        "link_2_1_bytes": 73360,
+        "link_2_1_queue_cycles": 11007,
+        "link_2_1_service_cycles": 4585,
+        "outlet_0_peak_outstanding": 0,
+        "outlet_0_queue_cycles": 3,
+        "outlet_0_reads": 333,
+        "outlet_0_service_cycles": 432,
+        "outlet_0_wait_cycles": 0,
+        "outlet_0_writes": 99,
+        "pc_0_bytes": 27648,
+        "pc_0_queue_cycles": 9,
+        "pc_0_service_cycles": 864,
+        "host_dma_handoffs": 0
+      }
+    },
+    "service-current/3-8/report.json": {
+      "cycles": 13532,
+      "outlets": [
+        {
+          "port": 0,
+          "read_lines": 114,
+          "write_lines": 34
+        },
+        {
+          "port": 1,
+          "read_lines": 102,
+          "write_lines": 30
+        },
+        {
+          "port": 2,
+          "read_lines": 117,
+          "write_lines": 35
+        }
+      ],
+      "model_identity": {
+        "backend": "systemc-tlm-grid",
+        "binary": "/home/zhongchun/r41-accept-p1/model-build/tnca-chip",
+        "binary_sha256": "c35332ee0e8abe9c7a45723e1393b8aacea9d9dc48293c6b5d0fa9e3eb4e14ec",
+        "config": {
+          "nx": "3",
+          "ny": "1",
+          "sets": "32",
+          "ways": "8",
+          "full_line_tag": "1",
+          "mshrs": "8",
+          "targets": "16",
+          "outlets": "3",
+          "active_outlets": "3",
+          "outstanding": "8",
+          "core_window": "32",
+          "clock_hz": "100000000",
+          "memory_base": "0",
+          "memory_bytes": "8589934592",
+          "pc_bytes": "268435456",
+          "pc_count": "32",
+          "pc_first": "0",
+          "lookup_cycles": "3",
+          "service_cycles": "1",
+          "noc_stages": "2",
+          "noc_bytes_per_cycle": "16",
+          "hbm_latency_cycles": "40",
+          "hbm_bytes_per_cycle": "32",
+          "outlet_issue_cycles": "1",
+          "trace_events": "100000",
+          "dma_queue": "1",
+          "dma_unit_slots": "8",
+          "dma_outstanding": "16",
+          "dma_setup_cycles": "8",
+          "dma_rf_cycles": "1",
+          "issue_cycles": "1",
+          "scalar_latency": "2",
+          "scalar_mul_latency": "5",
+          "vector_int_latency": "3",
+          "vector_fp_latency": "5",
+          "convert_latency": "5",
+          "compare_latency": "1",
+          "predicate_latency": "2",
+          "shuffle_latency": "3",
+          "reduction_latency": "3",
+          "fp_reduction_latency": "12",
+          "sfu_occupancy": "24",
+          "sfu_latency": "28",
+          "load_latency": "1",
+          "lsu_slots": "2",
+          "lsu_beat_slots": "8",
+          "barrier_latency": "2",
+          "acc_read_latency": "3",
+          "mtx_abuf": "1",
+          "mtx_rf_read_cycles": "1",
+          "mtx_mac_cycles": "1",
+          "mtx_mac_unbuffered_cycles": "2",
+          "mtx_pipe_cycles": "3",
+          "mtx_complete_cycles": "1",
+          "mtx_zero_cycles": "16",
+          "mtx_row_cycles": "1",
+          "launch_cycles": "8",
+          "dispatch_cycles": "2",
+          "host_launch_cycles": "0",
+          "host_transfer_cycles": "0",
+          "host_transfer_cycles_per_kib": "0",
+          "memory_model": "0",
+          "tl_noc_inject_cycles": "1",
+          "tl_noc_eject_cycles": "2",
+          "tl_slice_hit_occupancy": "3",
+          "tl_slice_hit_latency": "4",
+          "tl_slice_miss_occupancy": "4",
+          "tl_slice_mreq_occupancy": "2",
+          "tl_slice_fill_occupancy": "2",
+          "tl_slice_wake_occupancy": "2",
+          "tl_slice_writeback_occupancy": "2",
+          "tl_slice_to_outlet_cycles": "4",
+          "tl_outlet_to_slice_cycles": "5",
+          "tl_outlet_read_issue_cycles": "2",
+          "tl_outlet_write_issue_cycles": "3",
+          "tl_outlet_beat_cycles": "1",
+          "tl_hbm_write_latency_cycles": "40",
+          "core_pipeline": "0",
+          "branch_taken_cycles": "4",
+          "park_refetch_cycles": "5",
+          "vrf_banks": "4",
+          "vrf_bank_conflict_cycles": "1",
+          "lsu_setup_cycles": "1",
+          "lsu_vector_load_extra": "1",
+          "lsu_complete_cycles": "3",
+          "lsu_writeback_cycles": "1",
+          "fp_compare_latency": "4",
+          "shuffle_scalar_latency": "1",
+          "reduction_vector_extra": "2",
+          "dma_store_register_cycles": "3",
+          "dma_drain_cycles": "2",
+          "vrf_prefetch": "0",
+          "fp_reduction_vector_extra": "1",
+          "time_quantum": "0",
+          "dram_path": "0",
+          "dram_fixed_cycles": "20",
+          "dram_clock_ratio": "10",
+          "dram_max_passes": "3",
+          "dram_tolerance_ppm": "5000"
+        },
+        "config_sha256": "7f056091354c33389b49980bb83d117ddafc532cf2ab562e77be4beeadb3aee7",
+        "model_dir": "/home/zhongchun/r41-accept-p1/service-current/3-8-model/model-577825-5lu7i06h",
+        "calibration": "not-measured",
+        "execution": "native SystemC/TLM-2.0 model, no RTL",
+        "dram_path": "fast",
+        "address_map": {
+          "domain": "synthetic-logical"
+        },
+        "bank_row_mapping": "unverified",
+        "host_handoff_policy": "coherent-direct",
+        "host_handoff_scope": "zero-time coherent host access; no cache maintenance",
+        "untimed_cold_call": false
+      },
+      "counter_delta": {
+        "chip_grid_launches": 1,
+        "chip_host_gap_cycles": 0,
+        "chip_single_launches": 0,
+        "core_0_arrive_drain_cycles": 0,
+        "core_0_barrier_sleep_cycles": 0,
+        "core_0_branch_refetch_cycles": 0,
+        "core_0_class_branch": 80,
+        "core_0_class_exit": 80,
+        "core_0_class_lsu": 480,
+        "core_0_class_salu": 880,
+        "core_0_class_special": 320,
+        "core_0_class_vfp": 160,
+        "core_0_class_vint": 480,
+        "core_0_context_park_cycles": 0,
+        "core_0_dependency_wait_cycles": 602,
+        "core_0_fence_drain_cycles": 0,
+        "core_0_instructions": 2480,
+        "core_0_issue_queue_cycles": 3143,
+        "core_0_issue_service_cycles": 2480,
+        "core_0_lsu_wait_cycles": 29936,
+        "core_0_matrix_engine_busy_cycles": 0,
+        "core_0_matrix_engine_commands": 0,
+        "core_0_matrix_engine_wait_cycles": 0,
+        "core_0_memory_port_queue_cycles": 0,
+        "core_0_memory_port_service_cycles": 0,
+        "core_0_mma_commands": 0,
+        "core_0_pipeline_freeze_cycles": 0,
+        "core_0_programs_completed": 20,
+        "core_0_programs_issued": 20,
+        "core_0_role_0_completed": 20,
+        "core_0_role_0_issued": 20,
+        "core_0_role_1_completed": 20,
+        "core_0_role_1_issued": 20,
+        "core_0_role_2_completed": 20,
+        "core_0_role_2_issued": 20,
+        "core_0_role_3_completed": 20,
+        "core_0_role_3_issued": 20,
+        "core_0_sfu_queue_cycles": 0,
+        "core_0_vrf_bank_conflict_cycles": 0,
+        "core_1_arrive_drain_cycles": 0,
+        "core_1_barrier_sleep_cycles": 0,
+        "core_1_branch_refetch_cycles": 0,
+        "core_1_class_branch": 100,
+        "core_1_class_exit": 100,
+        "core_1_class_lsu": 582,
+        "core_1_class_salu": 1073,
+        "core_1_class_special": 397,
+        "core_1_class_vfp": 194,
+        "core_1_class_vint": 582,
+        "core_1_context_park_cycles": 0,
+        "core_1_dependency_wait_cycles": 587,
+        "core_1_fence_drain_cycles": 0,
+        "core_1_instructions": 3028,
+        "core_1_issue_queue_cycles": 5960,
+        "core_1_issue_service_cycles": 3028,
+        "core_1_lsu_wait_cycles": 25904,
+        "core_1_matrix_engine_busy_cycles": 0,
+        "core_1_matrix_engine_commands": 0,
+        "core_1_matrix_engine_wait_cycles": 0,
+        "core_1_memory_port_queue_cycles": 0,
+        "core_1_memory_port_service_cycles": 0,
+        "core_1_mma_commands": 0,
+        "core_1_pipeline_freeze_cycles": 0,
+        "core_1_programs_completed": 25,
+        "core_1_programs_issued": 25,
+        "core_1_role_0_completed": 25,
+        "core_1_role_0_issued": 25,
+        "core_1_role_1_completed": 25,
+        "core_1_role_1_issued": 25,
+        "core_1_role_2_completed": 25,
+        "core_1_role_2_issued": 25,
+        "core_1_role_3_completed": 25,
+        "core_1_role_3_issued": 25,
+        "core_1_sfu_queue_cycles": 0,
+        "core_1_vrf_bank_conflict_cycles": 0,
+        "core_2_arrive_drain_cycles": 0,
+        "core_2_barrier_sleep_cycles": 0,
+        "core_2_branch_refetch_cycles": 0,
+        "core_2_class_branch": 80,
+        "core_2_class_exit": 80,
+        "core_2_class_lsu": 480,
+        "core_2_class_salu": 880,
+        "core_2_class_special": 320,
+        "core_2_class_vfp": 160,
+        "core_2_class_vint": 480,
+        "core_2_context_park_cycles": 0,
+        "core_2_dependency_wait_cycles": 572,
+        "core_2_fence_drain_cycles": 0,
+        "core_2_instructions": 2480,
+        "core_2_issue_queue_cycles": 3259,
+        "core_2_issue_service_cycles": 2480,
+        "core_2_lsu_wait_cycles": 31310,
+        "core_2_matrix_engine_busy_cycles": 0,
+        "core_2_matrix_engine_commands": 0,
+        "core_2_matrix_engine_wait_cycles": 0,
+        "core_2_memory_port_queue_cycles": 0,
+        "core_2_memory_port_service_cycles": 0,
+        "core_2_mma_commands": 0,
+        "core_2_pipeline_freeze_cycles": 0,
+        "core_2_programs_completed": 20,
+        "core_2_programs_issued": 20,
+        "core_2_role_0_completed": 20,
+        "core_2_role_0_issued": 20,
+        "core_2_role_1_completed": 20,
+        "core_2_role_1_issued": 20,
+        "core_2_role_2_completed": 20,
+        "core_2_role_2_issued": 20,
+        "core_2_role_3_completed": 20,
+        "core_2_role_3_issued": 20,
+        "core_2_sfu_queue_cycles": 0,
+        "core_2_vrf_bank_conflict_cycles": 0,
+        "home_0_engine_queue_cycles": 1214,
+        "home_0_engine_service_cycles": 2298,
+        "home_0_evictions": 111,
+        "home_0_hits": 1401,
+        "home_0_merges": 783,
+        "home_0_misses": 114,
+        "home_0_peak_mshrs": 0,
+        "home_0_resolution_cycles": 44354,
+        "home_0_target_full_events": 52,
+        "home_0_writebacks": 34,
+        "home_1_engine_queue_cycles": 1868,
+        "home_1_engine_service_cycles": 2339,
+        "home_1_evictions": 96,
+        "home_1_hits": 1529,
+        "home_1_merges": 708,
+        "home_1_misses": 102,
+        "home_1_peak_mshrs": 0,
+        "home_1_resolution_cycles": 40245,
+        "home_1_target_full_events": 61,
+        "home_1_writebacks": 30,
+        "home_2_engine_queue_cycles": 1398,
+        "home_2_engine_service_cycles": 2281,
+        "home_2_evictions": 111,
+        "home_2_hits": 1358,
+        "home_2_merges": 806,
+        "home_2_misses": 117,
+        "home_2_peak_mshrs": 0,
+        "home_2_resolution_cycles": 45480,
+        "home_2_target_full_events": 30,
+        "home_2_writebacks": 35,
+        "link_0_1_bytes": 78624,
+        "link_0_1_queue_cycles": 13674,
+        "link_0_1_service_cycles": 4914,
+        "link_1_0_bytes": 80832,
+        "link_1_0_queue_cycles": 8973,
+        "link_1_0_service_cycles": 5052,
+        "link_1_2_bytes": 75296,
+        "link_1_2_queue_cycles": 9320,
+        "link_1_2_service_cycles": 4706,
+        "link_2_1_bytes": 73360,
+        "link_2_1_queue_cycles": 11132,
+        "link_2_1_service_cycles": 4585,
+        "outlet_0_peak_outstanding": 0,
+        "outlet_0_queue_cycles": 0,
+        "outlet_0_reads": 114,
+        "outlet_0_service_cycles": 148,
+        "outlet_0_wait_cycles": 0,
+        "outlet_0_writes": 34,
+        "outlet_1_peak_outstanding": 0,
+        "outlet_1_queue_cycles": 1,
+        "outlet_1_reads": 102,
+        "outlet_1_service_cycles": 132,
+        "outlet_1_wait_cycles": 0,
+        "outlet_1_writes": 30,
+        "outlet_2_peak_outstanding": 0,
+        "outlet_2_queue_cycles": 0,
+        "outlet_2_reads": 117,
+        "outlet_2_service_cycles": 152,
+        "outlet_2_wait_cycles": 0,
+        "outlet_2_writes": 35,
+        "pc_0_bytes": 27648,
+        "pc_0_queue_cycles": 10,
+        "pc_0_service_cycles": 864,
+        "host_dma_handoffs": 0
+      }
+    }
+  },
+  "transfer_queue": {
+    "transfer-queue/queue-2/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 72353
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141126
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73196
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153249
+      }
+    ],
+    "transfer-queue/queue-1/report.json": [
+      {
+        "graph": "mm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 71727
+      },
+      {
+        "graph": "mm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 141309
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          17,
+          65,
+          33
+        ],
+        "cycles": 73493
+      },
+      {
+        "graph": "addmm",
+        "shape": [
+          128,
+          128,
+          192
+        ],
+        "cycles": 153936
+      }
+    ]
+  }
+}

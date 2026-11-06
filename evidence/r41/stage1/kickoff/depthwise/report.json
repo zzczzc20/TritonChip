@@ -1,0 +1,80 @@
+{
+  "schema": "tnca-primitive-feasibility/1",
+  "status": "functional-pass",
+  "cases": [
+    {
+      "name": "depthwise",
+      "shapes": [
+        [
+          1,
+          8,
+          7
+        ],
+        [
+          8,
+          1,
+          4
+        ]
+      ],
+      "dtype": "torch.bfloat16",
+      "rtol": 0.002,
+      "atol": 0.002,
+      "status": "pass",
+      "cold_compile_and_execute_seconds": 1.5405956096947193,
+      "output_sha256": [
+        "c1397b31de61ca911aca9fe18ddeadf5b54fc09fd803dc69dc47ffd168dc348a"
+      ],
+      "launches": [
+        {
+          "kernel": "triton_poi_fused_convolution_0",
+          "grid": [
+            5,
+            1,
+            1
+          ],
+          "profile": "core-vrf-sync-v5",
+          "backend": "systemc-tlm-grid",
+          "stream_id": 0,
+          "artifact": "eacde045b5d372f2b30f6b6aae1a32d68e2529ef7e6c7e27b9ac9802a6bca78f",
+          "artifact_path": "/tmp/tnca-triton-et9ogpkg/triton_poi_fused_convolution_0-6c5eb7cfcad48265.tnca",
+          "device_cycles": 11120,
+          "program_cycles": [],
+          "device_timing": null,
+          "counters": null,
+          "host_seconds": {
+            "upload": 3.1e-05,
+            "run": 0.00277,
+            "download": 4.9e-05
+          },
+          "upload_bytes": 0,
+          "download_bytes": 0,
+          "resident_bytes": 336
+        }
+      ],
+      "device_cycles": 11120,
+      "code_bytes": [
+        11864
+      ],
+      "host_max_rss_kib_cumulative": 778912
+    }
+  ],
+  "scope": "representative primitives; not complete model execution",
+  "execution": "torch.compile(backend=inductor,fullgraph=True) on tnca",
+  "software_tree": "files:aa9700c924caea9a6d346a160689a5816150efcda7fb5281497ad4c1f6f2debe",
+  "toolchain": {
+    "torch": "2.14.0+cu130",
+    "triton": "3.8.0"
+  },
+  "knobs": {
+    "TNCA_BACKEND": "systemc-tlm-grid",
+    "TNCA_DEADLINE": "200000000",
+    "TNCA_HOST_TIMEOUT": "600",
+    "TNCA_PROFILE": "core-vrf-sync-v5",
+    "TNCA_TENSOR_DESCRIPTORS": "1",
+    "TNCA_TLM_BINARY": "/home/zhongchun/r41-stage1/model-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r41-stage1/src/tools/performance_harness/systemc/configs/r40-board-m2.cfg",
+    "TNCA_TLM_MEMORY_BYTES": "33554432",
+    "TNCA_TLM_OUT": "/home/zhongchun/r41-stage1/runs/depthwise-model",
+    "TNCA_TORCH_DEVICE": "native"
+  }
+}

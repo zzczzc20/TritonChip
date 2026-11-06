@@ -18,7 +18,8 @@ flow/fpga/link.sh <build-dir>
 
 The first builds a Vivado IP out of the same RTL the repository lints and
 simulates, and wraps it into `<build-dir>/tnca_u50.xo`. The second hands that
-`.xo` to `v++ -l -t hw` and produces `<build-dir>/tnca_u50.xclbin`.
+`.xo` to `v++ -l -t hw` and produces `<build-dir>/tnca_u50.xclbin` (or
+`<build-dir>/tnca_u280.xclbin` when `TNCA_BOARD=u280`).
 
 They are two steps rather than one because `package_xo` takes an
 `-ip_directory`, and an IP is a thing that has to exist before it can be
@@ -48,7 +49,7 @@ Those two frequencies are the clocks' **power-on defaults**, not the set of
 values the shell can produce. That set is declared by the clocking IP the shell
 is built from -- `shell_ucs_subsystem_v3_0`, unpacked from the platform's
 `hw.xsa`, whose `component.xml` gives `FREQ_HZ_KERNEL_CLOCK_00` a
-`minimum="10" maximum="650"` in MHz. 150 is inside that range.
+`minimum="10" maximum="650"` in MHz. 100 is inside that range (as was 150).
 
 **This build asks for 100 MHz and the device runs on it undivided.**
 `link.sh` passes `--kernel_frequency 0:100`, `ooc.xdc` constrains 10 ns,
@@ -63,7 +64,7 @@ How it got here:
 `link.sh` still checks the resulting frequency rather than assuming it -- `v++`
 can lower a kernel clock on its own and still report success
 (`AUTO-FREQ-SCALING-04`, quoted in `link.sh`). That check is not in tension with
-naming 150 here: it exists so that 150 is what actually reaches the `.xclbin`,
+naming 100 here: it exists so that 100 is what actually reaches the `.xclbin`,
 not so that nobody ever writes a number down.
 
 ## The measurements
@@ -91,7 +92,7 @@ bound either. What can be said without overreach:
 - At 300 MHz the design fails, and by a lot: 95% of endpoints.
 - The device logic routed under a 40 ns constraint with 14.75 ns of slack.
 
-The 40 ns run was directed on 2026-09-24 as "我们先用25mhz试一下吧" -- a bring-up
+The 40 ns run was directed on 2026-09-24 as "let's try 25 MHz first" -- a bring-up
 measurement. The 3.333 ns script was left in place untouched so the two can be
 compared. **Neither run took part in a link**: both are out-of-context
 measurements of `tnca_fpga_top` alone, taken before the adapter existed.
@@ -309,10 +310,10 @@ Not by reaching for a smaller number in one place. `ooc.xdc`, `package_xo.tcl`,
 `link.sh` and the divider comment in `rtl/board/tnca_u50_xo.v` all carry the
 frequency, and `link.sh` checks the result against them; a link that closed at a
 clock only one of those files mentions is a different design from the one anyone
-measured. 150 MHz is itself a lowering, chosen and recorded deliberately -- see
-the header of `link.sh` for the argument. Going below it is a second such
-decision, and it gets made the same way: with the report in hand, and the number
-moved in all four places at once.
+measured. 100 MHz is now the default, and 150 MHz with `DEV_DIV = 2` (75 MHz device) is
+the measured fallback. Moving the frequency is a deliberate decision, made the
+same way: with the report in hand, and the number moved in all four places at
+once.
 
 ## Since this image: the r38 merge (2026-10-07)
 
@@ -383,6 +384,8 @@ cannot close at the clock it named still fails, because the tool moving the
 clock is still refused; naming a lower clock is a decision recorded with the
 target, never a retry.
 
+
+## R40 multicore HBM packaging
 
 R40 three-core HBM packaging uses `multicore-hbm`,
 `rtl/board/tnca_multicore_hbm_xo.v`, and `fpga/kernel_multicore_hbm.xml`.

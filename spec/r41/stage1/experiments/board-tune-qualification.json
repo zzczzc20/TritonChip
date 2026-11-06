@@ -1,0 +1,441 @@
+{
+  "schema": "tnca-experiment-spec/1",
+  "id": "board-tune-qualification",
+  "allowed_hosts": [
+    "acf3019"
+  ],
+  "hypothesis": "The public TNCA_TUNE path selects among at most four legal pointwise retiles on qualified physical device endpoints within the 600 s graph budget, reuses the persistent selection in a new process without measuring again, keeps tuning samples out of formal samples, and a forced device deadline in a bounded measurement scope poisons the Session until explicit recovery restores correct execution.",
+  "competing_explanations": [
+    "tuning silently retains the baseline because image/clock/memory-map identity is unavailable",
+    "cache key misses across processes (placements or identity not reproducible)",
+    "tuning launches leak into the formal timed calls",
+    "a host wait expiry is treated as cancellation, or recovery reuses stale handles"
+  ],
+  "expected_counter_changes": [
+    "first pass: per kernel <= 4 compiled candidates, 3 device samples each, cache_hit false",
+    "rerun: cache_hit true with the same winner and no candidate measurement",
+    "formal launches per timed call equal the generated graph launches",
+    "deadline check: DeviceLost with poisoned Session, unchanged epoch, restored limits; epoch+1 after recover"
+  ],
+  "expected_observations": [
+    "3 short pointwise R40-09.tune points pass in both passes; check report tuning-board-qualified; deadline-expiry report poison-and-recovery-pass"
+  ],
+  "plan": "spec/r41/stage1/plan.json",
+  "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+  "measurement": {
+    "long_device_tasks": {
+      "qualification_samples": 1,
+      "short_threshold_seconds": 1,
+      "short_timed_samples": 3,
+      "long_timed_samples": 1,
+      "anchor_stability_samples": 3
+    },
+    "host_latency": {
+      "warmup": 5,
+      "timed": 30,
+      "blocks": 3,
+      "order": "interleaved seeded A/B"
+    },
+    "borderline_device_recheck": {
+      "additional_samples_per_arm": 3,
+      "max_recheck_blocks": 2
+    },
+    "bootstrap": {
+      "resamples": 2000,
+      "seed": 20261020,
+      "alpha": 0.05
+    },
+    "overall_nonregression_budget": 0.05,
+    "report_point_regression_above": 0.05,
+    "confirmed_new_default_regression_block": 0.1
+  },
+  "suites": [
+    {
+      "path": "spec/r40/suites/existing.json",
+      "sha256": "f3e4ba5f3a346d45d3289b4b58f380d0103f4a5edfe6c88abd6b136868154a0f"
+    },
+    {
+      "path": "spec/r40/suites/large.json",
+      "sha256": "9279cf341d9c631f103a15abdbff1d6d932329fbc0a0336352bbac8b22b223bf"
+    },
+    {
+      "path": "spec/r40/suites/hbm-tier.json",
+      "sha256": "a36483591c755273db172d11455301e8a9a164932340a5827fccd0f5703d5d6f"
+    },
+    {
+      "path": "spec/r40/suites/hbm.json",
+      "sha256": "7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd"
+    },
+    {
+      "path": "spec/r40/suites/R40-03.gemm-reuse.json",
+      "sha256": "2ae243782413f4970616dfef3e02aca60e8f8f34907d18cf2ea4a6ac48807c3f"
+    },
+    {
+      "path": "spec/r40/suites/R40-09.tune.json",
+      "sha256": "2e5a0c346123f6cd2fe896baa176be3dc2138d6bd4e189b62564ae67f1347484"
+    }
+  ],
+  "board": {
+    "image": "{home}/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+    "image_sha256": "a88ebdf59cfbbb2001ebd5b1b2c739c5d8cd33931f1e9202f18cac07c4c83083",
+    "image_uuid": "1bada9db-78f3-5bc8-7ba6-cce062e7ade8",
+    "clock_evidence": "{home}/tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json",
+    "clock_evidence_sha256": "8ad4b3bd30a3f5fe8819fe59ef8ad160fd0de1478aaa506dc33d82785fb9f487",
+    "clock_hz": 90000000,
+    "device": "0000:04:00.1",
+    "mgmt_device": "0000:04:00.0",
+    "backend": "fpga-u280-multicore",
+    "backend_args": {
+      "xclbin": "{home}/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin",
+      "image_profile": "core-vrf-sync-v5",
+      "core_count": 3,
+      "memory_ports": 3,
+      "hbm_dma": true,
+      "hbm_bytes": 4294967296,
+      "device_clock": true
+    },
+    "profile": "core-vrf-sync-v5",
+    "transport": {
+      "deadline_cycles": 200000000000,
+      "host_timeout_seconds": 28800,
+      "source": "evidence/r40/v3/campaign_fe1b/campaign.json transport"
+    },
+    "memory_map": {
+      "window_base": 0,
+      "window_bytes": 4294967296,
+      "local_limit": 131072,
+      "bank": "MBG[0:31]",
+      "physical_pcs": "PC0-PC15",
+      "exported_map_sha256": "a1019970fe9548fda5e9b7e44442a14f1a886decd397f472c498dd15f5970bc2",
+      "source": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/window_samples.json",
+      "source_sha256": "fa36cf03ec9f9424bb73a855c0692abb92959878aa808cff4018cecb4637b5a0"
+    },
+    "load_policy": "the user authorized loading B40 image a88ebdf5 only while the shared card is idle; every fpga step probes the loaded UUID, the clock counter and kdsstat first and refuses otherwise"
+  },
+  "estimates": [
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_tiny.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_small.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/native/u280_medium.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/large24.jsonl"
+    },
+    {
+      "records": "evidence/r40/v3/R40-04.hbm/board_run_fe1b/hbm14.jsonl"
+    },
+    {
+      "campaign": "evidence/r40/v3/campaign_fe1b/campaign.json",
+      "state": "evidence/r40/v3/campaign_fe1b/state.json"
+    }
+  ],
+  "sources": [
+    "tools/performance_harness",
+    "archbench",
+    "python/tnca",
+    "compiler/python",
+    "compiler/targets",
+    "tools/asm",
+    "isa",
+    "spec/r40/suites",
+    "spec/r41",
+    "doc/r41_tasks_and_acceptance.md",
+    "spec/r41/stage1/experiments/board-tune-qualification.json"
+  ],
+  "env": {
+    "MAX_JOBS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "CUDA_VISIBLE_DEVICES": "",
+    "PYTHONFAULTHANDLER": "1",
+    "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm",
+    "TRITON_CACHE_DIR": "{out}/caches/triton",
+    "TORCHINDUCTOR_CACHE_DIR": "{out}/caches/inductor",
+    "TORCH_EXTENSIONS_DIR": "{out}/caches/torch-extensions"
+  },
+  "registration": {
+    "status": "registered-not-run",
+    "registered_utc": "2026-10-21",
+    "points": [
+      "op.add/medium/fp16-n49152",
+      "op.gelu_tanh/medium/fp16-n65536",
+      "op.swiglu/medium/fp16-n49152"
+    ],
+    "selection": "pointwise points of spec/r40/suites/R40-09.tune.json that ran <= 1 s on fe1b (2.0-3.1 ms)",
+    "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident",
+      "TNCA_TUNE": "1",
+      "TNCA_MAX_BLOCK": "32",
+      "TNCA_TUNE_CANDIDATES": "4",
+      "TNCA_TUNE_SECONDS": "600",
+      "TNCA_TUNE_DIR": "{tune_dir}"
+    },
+    "sampling_rule": "fixed: 0 warm-up, 3 timed calls (short_timed_samples) per process; tuning occurs in the untimed cold call",
+    "deadline_check": "tools/performance_harness/tune_board_qualification.py deadline-expiry: (a+b)*0.5 fp32, 2^25 elements; scope device deadline = 1/8 of measured graph cycles",
+    "expected_board_hours_bound": 0.572,
+    "expected_board_hours": 0.072,
+    "expected_board_hours_by_batch": {
+      "tune-first": 0.011,
+      "tune-rerun": 0.011
+    },
+    "estimate_method": "board_batch.py --dry-run: per-process wall seconds of the nearest R40 fe1b board record (same point and knobs where available); short configurations add one formal process; plus the tuning increment, bounded by 3 graphs x 600 s = 0.50 h, and about 3 min for the deadline-expiry process"
+  },
+  "conclusion_source": "{out}/tune-check.json",
+  "board_batches": {
+    "tune-first": {
+      "sampling": "fixed",
+      "fixed": {
+        "warmup": 0,
+        "timed": 3
+      },
+      "configurations": [
+        {
+          "id": "op.add/medium/fp16-n49152",
+          "point": "op.add/medium/fp16-n49152",
+          "point_sha256": "d93003fba972fe2516663455b54617bf43536590b601707e44b194ff5705ccb7",
+          "knobs": {
+            "TNCA_ACTIVE_CORES": "3",
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TRANSFER_POLICY": "resident",
+            "TNCA_TUNE": "1",
+            "TNCA_MAX_BLOCK": "32",
+            "TNCA_TUNE_CANDIDATES": "4",
+            "TNCA_TUNE_SECONDS": "600",
+            "TNCA_TUNE_DIR": "{tune_dir}"
+          }
+        },
+        {
+          "id": "op.gelu_tanh/medium/fp16-n65536",
+          "point": "op.gelu_tanh/medium/fp16-n65536",
+          "point_sha256": "1838b4f8e12687df2627242ad0c072db36a2920c2e4a712f908b5f67de871882",
+          "knobs": {
+            "TNCA_ACTIVE_CORES": "3",
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TRANSFER_POLICY": "resident",
+            "TNCA_TUNE": "1",
+            "TNCA_MAX_BLOCK": "32",
+            "TNCA_TUNE_CANDIDATES": "4",
+            "TNCA_TUNE_SECONDS": "600",
+            "TNCA_TUNE_DIR": "{tune_dir}"
+          }
+        },
+        {
+          "id": "op.swiglu/medium/fp16-n49152",
+          "point": "op.swiglu/medium/fp16-n49152",
+          "point_sha256": "1e532bfb03b6b67e1c473b66687c94c9c20ee365136c983d1e1a35c393dbb2a3",
+          "knobs": {
+            "TNCA_ACTIVE_CORES": "3",
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TRANSFER_POLICY": "resident",
+            "TNCA_TUNE": "1",
+            "TNCA_MAX_BLOCK": "32",
+            "TNCA_TUNE_CANDIDATES": "4",
+            "TNCA_TUNE_SECONDS": "600",
+            "TNCA_TUNE_DIR": "{tune_dir}"
+          }
+        }
+      ]
+    },
+    "tune-rerun": {
+      "sampling": "fixed",
+      "fixed": {
+        "warmup": 0,
+        "timed": 3
+      },
+      "configurations": [
+        {
+          "id": "op.add/medium/fp16-n49152",
+          "point": "op.add/medium/fp16-n49152",
+          "point_sha256": "d93003fba972fe2516663455b54617bf43536590b601707e44b194ff5705ccb7",
+          "knobs": {
+            "TNCA_ACTIVE_CORES": "3",
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TRANSFER_POLICY": "resident",
+            "TNCA_TUNE": "1",
+            "TNCA_MAX_BLOCK": "32",
+            "TNCA_TUNE_CANDIDATES": "4",
+            "TNCA_TUNE_SECONDS": "600",
+            "TNCA_TUNE_DIR": "{tune_dir}"
+          }
+        },
+        {
+          "id": "op.gelu_tanh/medium/fp16-n65536",
+          "point": "op.gelu_tanh/medium/fp16-n65536",
+          "point_sha256": "1838b4f8e12687df2627242ad0c072db36a2920c2e4a712f908b5f67de871882",
+          "knobs": {
+            "TNCA_ACTIVE_CORES": "3",
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TRANSFER_POLICY": "resident",
+            "TNCA_TUNE": "1",
+            "TNCA_MAX_BLOCK": "32",
+            "TNCA_TUNE_CANDIDATES": "4",
+            "TNCA_TUNE_SECONDS": "600",
+            "TNCA_TUNE_DIR": "{tune_dir}"
+          }
+        },
+        {
+          "id": "op.swiglu/medium/fp16-n49152",
+          "point": "op.swiglu/medium/fp16-n49152",
+          "point_sha256": "1e532bfb03b6b67e1c473b66687c94c9c20ee365136c983d1e1a35c393dbb2a3",
+          "knobs": {
+            "TNCA_ACTIVE_CORES": "3",
+            "TNCA_TORCH_DEVICE": "native",
+            "TNCA_TRANSFER_POLICY": "resident",
+            "TNCA_TUNE": "1",
+            "TNCA_MAX_BLOCK": "32",
+            "TNCA_TUNE_CANDIDATES": "4",
+            "TNCA_TUNE_SECONDS": "600",
+            "TNCA_TUNE_DIR": "{tune_dir}"
+          }
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "id": "tune-first",
+      "kind": "fpga",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/board_batch.py",
+        "--manifest",
+        "spec/r41/stage1/experiments/board-tune-qualification.json",
+        "--batch",
+        "tune-first",
+        "--root",
+        "{root}",
+        "--out",
+        "{out}/tune-first",
+        "--python",
+        "{python}",
+        "--var",
+        "tune_dir={out}/tune"
+      ],
+      "timeout_seconds": 7200,
+      "timing_boundary": "ArchBench protocol 2: cold call untimed; registered warm-up/timed steady calls; device-cycles-serial-grid and device-graph-makespan from first accepted launch to last device completion (MMIO common-clock endpoints); request-latency recorded, not ranked; TNCA_TUNE selection inside the untimed cold call",
+      "cache_state": "fresh experiment-local Triton/Inductor/extension caches under {out}/caches; one ArchBench process per run; empty TNCA_TUNE_DIR {out}/tune",
+      "outputs": [
+        "{out}/tune-first/batch.json",
+        "{out}/tune-first/formal.jsonl"
+      ]
+    },
+    {
+      "id": "inventory",
+      "kind": "compare",
+      "timeout_seconds": 60,
+      "argv": [
+        "{python}",
+        "tools/performance_harness/tune_board_qualification.py",
+        "inventory",
+        "--tune-dir",
+        "{out}/tune",
+        "--out",
+        "{out}/first-pass.json"
+      ],
+      "outputs": [
+        "{out}/first-pass.json"
+      ]
+    },
+    {
+      "id": "tune-rerun",
+      "kind": "fpga",
+      "argv": [
+        "{python}",
+        "tools/performance_harness/board_batch.py",
+        "--manifest",
+        "spec/r41/stage1/experiments/board-tune-qualification.json",
+        "--batch",
+        "tune-rerun",
+        "--root",
+        "{root}",
+        "--out",
+        "{out}/tune-rerun",
+        "--python",
+        "{python}",
+        "--var",
+        "tune_dir={out}/tune"
+      ],
+      "timeout_seconds": 7200,
+      "timing_boundary": "ArchBench protocol 2: cold call untimed; registered warm-up/timed steady calls; device-cycles-serial-grid and device-graph-makespan from first accepted launch to last device completion (MMIO common-clock endpoints); request-latency recorded, not ranked; TNCA_TUNE selection from the persistent cache in the cold call",
+      "cache_state": "fresh experiment-local Triton/Inductor/extension caches under {out}/caches; one ArchBench process per run; TNCA_TUNE_DIR {out}/tune holding the first-pass selections",
+      "outputs": [
+        "{out}/tune-rerun/batch.json",
+        "{out}/tune-rerun/formal.jsonl"
+      ]
+    },
+    {
+      "id": "check",
+      "kind": "compare",
+      "timeout_seconds": 120,
+      "argv": [
+        "{python}",
+        "tools/performance_harness/tune_board_qualification.py",
+        "check",
+        "--tune-dir",
+        "{out}/tune",
+        "--first",
+        "{out}/first-pass.json",
+        "--first-records",
+        "{out}/tune-first/formal.jsonl",
+        "--rerun-records",
+        "{out}/tune-rerun/formal.jsonl",
+        "--knob",
+        "TNCA_TUNE=1",
+        "--knob",
+        "TNCA_MAX_BLOCK=32",
+        "--knob",
+        "TNCA_TUNE_CANDIDATES=4",
+        "--max-candidates",
+        "4",
+        "--max-seconds",
+        "600",
+        "--out",
+        "{out}/tune-check.json"
+      ],
+      "inputs": [
+        "{out}/first-pass.json",
+        "{out}/tune-first/formal.jsonl",
+        "{out}/tune-rerun/formal.jsonl"
+      ],
+      "outputs": [
+        "{out}/tune-check.json"
+      ]
+    },
+    {
+      "id": "deadline-expiry",
+      "kind": "fpga",
+      "timeout_seconds": 1800,
+      "argv": [
+        "{python}",
+        "tools/performance_harness/tune_board_qualification.py",
+        "deadline-expiry",
+        "--out",
+        "{out}/deadline-expiry"
+      ],
+      "env": {
+        "TNCA_BACKEND": "fpga-u280-multicore",
+        "TNCA_BACKEND_ARGS": "{\"xclbin\":\"{home}/tnca_images/r40_attempt03_90mhz_a88ebdf5/tnca_u280.xclbin\",\"image_profile\":\"core-vrf-sync-v5\",\"core_count\":3,\"memory_ports\":3,\"hbm_dma\":true,\"hbm_bytes\":4294967296,\"device_clock\":true}",
+        "TNCA_PROFILE": "core-vrf-sync-v5",
+        "TNCA_OPERATING_CLOCK_EVIDENCE": "{home}/tnca_build/r40_attempt03_conditional_90mhz/qualified_clock.json",
+        "TNCA_DEADLINE": "200000000000",
+        "TNCA_HOST_TIMEOUT": "28800",
+        "TNCA_TENSOR_DESCRIPTORS": "1",
+        "TNCA_TORCH_DEVICE": "native",
+        "TNCA_TUNE": "0",
+        "TNCA_ACTIVE_CORES": "3",
+        "TNCA_TRANSFER_POLICY": "resident"
+      },
+      "timing_boundary": "forced device deadline inside a bounded measurement scope; no timing claim",
+      "cache_state": "fresh experiment-local Triton/Inductor/extension caches under {out}/caches; one check process",
+      "outputs": [
+        "{out}/deadline-expiry/report.json"
+      ]
+    }
+  ]
+}

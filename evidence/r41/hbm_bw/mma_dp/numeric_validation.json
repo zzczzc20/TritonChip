@@ -1,0 +1,152 @@
+{
+  "schema": "tnca-matrix-dp-validation/1",
+  "domain": "SystemC/TLM model arithmetic vs exact Fraction oracle",
+  "status": "passed",
+  "result_1024bit_path": {
+    "checked": 48000,
+    "mismatches": 0,
+    "by_operation": {
+      "1x1": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "1x2": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "1x3": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "1x4": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "2x1": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "2x2": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "2x3": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "2x4": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "3x1": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "3x2": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "3x3": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "3x4": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "4x1": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "4x2": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "4x3": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "4x4": {
+        "pass": 3000,
+        "fail": 0
+      }
+    }
+  },
+  "returncode": 0,
+  "seed": 4129,
+  "vectors_per_pair": 3000,
+  "result": {
+    "checked": 48000,
+    "mismatches": 0,
+    "by_operation": {
+      "1x1": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "1x2": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "1x3": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "1x4": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "2x1": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "2x2": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "2x3": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "2x4": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "3x1": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "3x2": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "3x3": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "3x4": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "4x1": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "4x2": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "4x3": {
+        "pass": 3000,
+        "fail": 0
+      },
+      "4x4": {
+        "pass": 3000,
+        "fail": 0
+      }
+    }
+  },
+  "negative_control": {
+    "corrupted_words": 495,
+    "reported_mismatches": 495
+  }
+}

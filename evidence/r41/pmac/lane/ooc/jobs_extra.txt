@@ -1,0 +1,6 @@
+# V2 with the two 11x11 DP2 products forced into LUTs (use_dsp="no" on their wires; tree ~/r41-pmac-lutmul)
+/home/zzhouch/r41-pmac-lutmul V2LUT_c1110 10 LANE=1 VARIANT=2 DSP2=0 CUTS=14
+/home/zzhouch/r41-pmac-lutmul V2LUT_c1111 10 LANE=1 VARIANT=2 DSP2=0 CUTS=15
+/home/zzhouch/r41-pmac V1_c1100 11.1 LANE=1 VARIANT=1 CUTS=12
+/home/zzhouch/r41-pmac V2D_c1100 11.1 LANE=1 VARIANT=2 DSP2=1 CUTS=12
+/home/zzhouch/r41-pmac V3_c1101 11.1 LANE=1 VARIANT=3 CUTS=13

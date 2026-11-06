@@ -8,7 +8,7 @@ import unittest
 import tempfile
 import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'python'))
-from tnca.autotune import GraphBudget, SharedGraphBudget, PersistentCache, select, identity_key, event_seconds
+from tnca.autotune import DeviceSamples, GraphBudget, SharedGraphBudget, PersistentCache, select, identity_key, event_seconds
 
 
 def identity():
@@ -30,6 +30,39 @@ def shared_admission(path):
 
 
 class PolicyTests(unittest.TestCase):
+    def test_independent_samples_exclude_host_gaps_and_preserve_raw_median(self):
+        samples=[events(9), [dict(events(3)[0],start=1000000,end=1000003)], events(6)]
+        result=self.choose([dict(knobs={'tile':16})],lambda _:DeviceSamples(samples))
+        row=result['rows'][0]
+        self.assertEqual(row['device_records'],samples[2])
+        self.assertEqual(row['seconds'],6/100000000)
+        self.assertEqual(row['sample_range_seconds'],[3/100000000,9/100000000])
+
+    def test_independent_samples_reject_empty_excess_and_changed_session(self):
+        for samples in ([], [events(1)]*17,
+                        [events(1),[dict(events(1)[0],epoch=2)]],
+                        [events(1),[dict(events(1)[0],session_id=3)]]):
+            with self.subTest(samples=samples), self.assertRaises(ValueError):
+                self.choose([dict(knobs={})],lambda _:DeviceSamples(samples))
+
+    def test_uncertainty_retains_baseline_and_cache_preserves_decision(self):
+        base,wide=dict(knobs={'tile':16}),dict(knobs={'tile':32})
+        def run(durations,cache=None,measure=None):
+            return select(identity(),[base,wide],capacities={},capabilities=['mma'],
+                          budget=GraphBudget(),cache=cache,conservative=base,
+                          measure=measure or (lambda c:DeviceSamples([events(n) for n in durations[c==wide]])))
+        cache={}
+        result=run([[100,105,110],[90,95,101]],cache)
+        self.assertEqual(result['selected'],base)
+        self.assertIn('inconclusive',result['decision'])
+        hit=run(None,cache,lambda _:self.fail('cache remeasured'))
+        self.assertTrue(hit['cache_hit'])
+        self.assertEqual(hit['rows'],result['rows'])
+        self.assertEqual(hit['selected'],base)
+        self.assertEqual(run([[100,105,110],[90,95,99]])['selected'],wide)
+        self.assertEqual(run([[100,105,110],[90,95,100]])['selected'],base)
+        self.assertEqual(run([[100],[90]])['selected'],base)
+
     def test_reopening_expired_worker_budget_does_not_reset_time(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'expired.sqlite'

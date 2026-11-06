@@ -1,0 +1,67 @@
+2026-10-26T11:41:36Z slot 0 start (avail 39 GB): vivado -mode batch -source /home/zzhouch/r41_hbmbw_lsu_bank_v1/src/flow/fpga/synth_r41_lsu_bank.tcl -tclargs /home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl /home/zzhouch/r41_hbmbw_lsu_bank_v1/units8_width512 8 512
+
+****** Vivado v2023.2 (64-bit)
+  **** SW Build 4029153 on Fri Oct 13 20:13:54 MDT 2023
+  **** IP Build 4028589 on Sat Oct 14 00:45:43 MDT 2023
+  **** SharedData Build 4025554 on Tue Oct 10 17:18:54 MDT 2023
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source /home/zzhouch/r41_hbmbw_lsu_bank_v1/src/flow/fpga/synth_r41_lsu_bank.tcl
+# if {$argc != 4} {error "usage: synth_r41_lsu_bank.tcl RTL_ROOT OUT UNITS WIDTH"}
+# set rtl [file normalize [lindex $argv 0]]
+# set out [file normalize [lindex $argv 1]]
+# set units [lindex $argv 2]
+# set width [lindex $argv 3]
+# if {$units ni {4 8} || $width ni {64 512}} {error "unsupported LSU screen"}
+# set bytes [expr {$width / 8}]
+# set shift [expr {$width == 512 ? 6 : 3}]
+# file mkdir $out
+# set_param general.maxThreads 4
+current_fileset: Time (s): cpu = 00:00:09 ; elapsed = 00:00:09 . Memory (MB): peak = 1344.352 ; gain = 0.023 ; free physical = 32053 ; free virtual = 43550
+# set_property include_dirs [list [file join $rtl common]] [current_fileset]
+# read_verilog -sv [file join $rtl core/tnca_lsu.v]
+# read_verilog -sv [file join $rtl core/tnca_lsu_bank.v]
+# synth_design -top tnca_lsu_bank -part xcu280-fsvh2892-2L-e -mode out_of_context -generic [list UNITS=$units NUM_BEATS=[expr {16/$units}] BEAT_W=4 MEM_DW=$width MEM_BYTES=$bytes MEM_SHIFT=$shift RCTX_W=2]
+Command: synth_design -top tnca_lsu_bank -part xcu280-fsvh2892-2L-e -mode out_of_context -generic {UNITS=8 NUM_BEATS=2 BEAT_W=4 MEM_DW=512 MEM_BYTES=64 MEM_SHIFT=6 RCTX_W=2}
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xcu280'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xcu280'
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 4 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 2630349
+---------------------------------------------------------------------------------
+Starting Synthesize : Time (s): cpu = 00:00:05 ; elapsed = 00:00:05 . Memory (MB): peak = 1759.887 ; gain = 415.531 ; free physical = 30972 ; free virtual = 42470
+---------------------------------------------------------------------------------
+INFO: [Synth 8-6157] synthesizing module 'tnca_lsu_bank' [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu_bank.v:5]
+	Parameter UNITS bound to: 8 - type: integer 
+	Parameter RCTX_W bound to: 2 - type: integer 
+	Parameter MEM_DW bound to: 512 - type: integer 
+	Parameter MEM_BYTES bound to: 64 - type: integer 
+	Parameter MEM_SHIFT bound to: 6 - type: integer 
+	Parameter NUM_BEATS bound to: 2 - type: integer 
+	Parameter BEAT_W bound to: 4 - type: integer 
+INFO: [Synth 8-6157] synthesizing module 'tnca_lsu' [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:61]
+	Parameter VLEN bound to: 16 - type: integer 
+	Parameter ELEN bound to: 32 - type: integer 
+	Parameter RCTX_W bound to: 2 - type: integer 
+	Parameter MEM_DW bound to: 512 - type: integer 
+	Parameter MEM_BYTES bound to: 64 - type: integer 
+	Parameter MEM_SHIFT bound to: 6 - type: integer 
+	Parameter NUM_BEATS bound to: 2 - type: integer 
+	Parameter BEAT_W bound to: 1 - type: integer 
+	Parameter REQ_REG bound to: 1 - type: integer 
+ERROR: [Synth 8-524] part-select [71:64] out of range of prefix 'lane_rdata' [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:443]
+ERROR: [Synth 8-6156] failed synthesizing module 'tnca_lsu' [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu.v:61]
+ERROR: [Synth 8-196] conditional expression could not be resolved to a constant [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu_bank.v:159]
+ERROR: [Synth 8-6156] failed synthesizing module 'tnca_lsu_bank' [/home/zzhouch/r41_hbmbw_lsu_bank_v1/src/rtl/core/tnca_lsu_bank.v:5]
+---------------------------------------------------------------------------------
+Finished Synthesize : Time (s): cpu = 00:00:07 ; elapsed = 00:00:07 . Memory (MB): peak = 1854.824 ; gain = 510.469 ; free physical = 31231 ; free virtual = 42728
+---------------------------------------------------------------------------------
+synthesize failed
+INFO: [Common 17-83] Releasing license: Synthesis
+7 Infos, 0 Warnings, 0 Critical Warnings and 5 Errors encountered.
+synth_design failed
+ERROR: [Common 17-69] Command failed: Vivado Synthesis failed
+INFO: [Common 17-206] Exiting Vivado at Mon Oct 26 19:42:02 2026...
+2026-10-26T11:42:12Z slot 0 end exit 1

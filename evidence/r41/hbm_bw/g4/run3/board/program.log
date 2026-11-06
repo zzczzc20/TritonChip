@@ -1,0 +1,89 @@
+the .xclbin
+  file   /home/zzhouch/r41run3/tnca_u280.xclbin
+  size   79733394 bytes
+  sha256 791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09
+  [ ok ] parses as an .xclbin
+  [ ok ] platform VBNV xilinx_u280_gen3x16_xdma_1_202211_1
+  [ ok ] interface UUID matches the shell contract
+  xclbin UUID ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3
+
+the device
+  [ ok ] present at 0000:04:00.1
+  [ ok ] live shell interface UUID matches
+  [ ok ] idle: contexts 0, outstanding 0, no client
+  loaded now 01490bbd-d831-23bf-d783-56ec51bd71ce
+
+other loaders
+  [ ok ] no other program/load running
+
+thermal
+  Thermals
+    Temperature    Celcius  
+    ------------------------
+    PCB Top Front  25       
+    PCB Top Rear   23       
+    FPGA           31       
+    FPGA HBM       26       
+  
+  
+  [ ok ] FPGA 31 C, under 85
+  [ ok ] HBM 26 C, under 80
+
+program.sh: all gates pass. Nothing was loaded (--check).
+         to load:  program.sh --go /home/zzhouch/r41run3/tnca_u280.xclbin
+the .xclbin
+  file   /home/zzhouch/r41run3/tnca_u280.xclbin
+  size   79733394 bytes
+  sha256 791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09
+  [ ok ] parses as an .xclbin
+  [ ok ] platform VBNV xilinx_u280_gen3x16_xdma_1_202211_1
+  [ ok ] interface UUID matches the shell contract
+  xclbin UUID ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3
+
+the device
+  [ ok ] present at 0000:04:00.1
+  [ ok ] live shell interface UUID matches
+  [ ok ] idle: contexts 0, outstanding 0, no client
+  loaded now 01490bbd-d831-23bf-d783-56ec51bd71ce
+
+other loaders
+  [ ok ] no other program/load running
+
+thermal
+  Thermals
+    Temperature    Celcius  
+    ------------------------
+    PCB Top Front  25       
+    PCB Top Rear   23       
+    FPGA           31       
+    FPGA HBM       26       
+  
+  
+  [ ok ] FPGA 31 C, under 85
+  [ ok ] HBM 26 C, under 80
+
+
+loader detached (setsid, own session, fds off the terminal)
+  log  /home/zzhouch/r41run3/program.log
+  it will survive this shell dying, which is not a hypothetical here.
+waiting for it to finish (up to 180s)...
+
+--- /home/zzhouch/r41run3/program.log ---
+  === PROGRAM START Sat Oct 31 01:26:59 HKT 2026 ===
+  BDF=0000:04:00.1
+  XCLBIN=/home/zzhouch/r41run3/tnca_u280.xclbin
+  SHA256=791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09
+  REPLACING=01490bbd-d831-23bf-d783-56ec51bd71ce
+  THERMAL= ------------------------------------------------- [0000:04:00.1] : xilinx_u280_gen3x16_xdma_base_1 ------------------------------------------------- Thermals Temperature Celcius ------------------------ PCB Top Front 25 PCB Top Rear 23 FPGA 31 FPGA HBM 26 
+  ---
+  INFO: xbutil program succeeded on 0000:04:00.1
+  EXIT=0 Sat Oct 31 01:27:00 HKT 2026
+------------
+
+HBM, after the load (up to 60s for the sensor to appear)
+  [ ok ] HBM 26 C, under 80 -- the sensor is
+         reading, which is what the load was supposed to
+         make happen. It appeared after 0s.
+
+program.sh: OK -- device now reports xclbin ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3
+         loading is done; running a kernel on it is a separate step.

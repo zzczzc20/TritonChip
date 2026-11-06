@@ -55,6 +55,18 @@ BENCH_NAME = {
     # the architecture is v5's. Its timing is the AXI model's (+axi_* plusargs,
     # TNCA_DEVICE_PLUSARGS).
     'core-vrf-sync-v5/hbm': 'tnca_device_vrf5_hbm.vvp',
+    # R41 X8: v5 with the 1-byte transposed write.
+    'core-vrf-sync-v5-x8': 'tnca_device_vrf5x8.vvp',
+    'core-vrf-sync-v5-x8/slow': 'tnca_device_vrf5x8_slow.vvp',
+    'core-vrf-sync-v5-x8/hbm': 'tnca_device_vrf5x8_hbm.vvp',
+    # R41 G2: v5-x8 with two contexts, eight barriers and 38-bit epochs.
+    'core-vrf-sync-v5-x8-g2': 'tnca_device_vrf5x8g2.vvp',
+    'core-vrf-sync-v5-x8-g2/slow': 'tnca_device_vrf5x8g2_slow.vvp',
+    'core-vrf-sync-v5-x8-g2/hbm': 'tnca_device_vrf5x8g2_hbm.vvp',
+    # R41 G2 cuts with four contexts (the author withdrew the contexts cut, 2026-10-29).
+    'core-vrf-sync-v5-x8-g2c4': 'tnca_device_vrf5x8g2c4.vvp',
+    'core-vrf-sync-v5-x8-g2c4/slow': 'tnca_device_vrf5x8g2c4_slow.vvp',
+    'core-vrf-sync-v5-x8-g2c4/hbm': 'tnca_device_vrf5x8g2c4_hbm.vvp',
 }
 
 # Parameters a profile's device is elaborated with. Both profiles come from

@@ -11,6 +11,95 @@ _lock = threading.RLock()
 _storage_modules = weakref.WeakKeyDictionary()
 
 
+@triton.jit(do_not_specialize=['N'])
+def _zero_storage_kernel(DST, N, BLOCK: tl.constexpr):
+    """Clear device bytes without staging an equally large host tensor."""
+    stride = tl.num_programs(0) * BLOCK
+    destination = DST.to(tl.pointer_type(tl.uint8))
+    for block in range(tl.cdiv(N, stride)):
+        index = (block * tl.num_programs(0) + tl.program_id(0)) * BLOCK + tl.arange(0, BLOCK)
+        tl.store(destination + index, tl.full((BLOCK,), 0, tl.uint8), index < N)
+
+
+def zero_full_storage(tensor):
+    """Queue an all-zero write for an aligned, contiguous whole storage.
+
+    The caller has checked eligibility. The normal native launcher owns
+    code residency and retains the storage until completion, just as for
+    a same-device copy. Numerical data never travels through the host.
+    """
+    from tnca.triton_backend.driver import TNCADriver
+    count = tensor.numel() * tensor.element_size()
+    if not count:
+        return tensor
+    if count > MAX_SPAN:
+        raise ValueError('tnca zero: storage exceeds one launch')
+    block = 128
+    programs = min(triton.cdiv(count, block), 1024)
+    with _lock:
+        previous = triton.runtime.driver.active
+        try:
+            triton.runtime.driver.set_active(TNCADriver())
+            _zero_storage_kernel[(programs,)](tensor, count, block, num_warps=1)
+        finally:
+            triton.runtime.driver.set_active(previous)
+    return tensor
+
+
+@triton.jit
+def _zero_view_kernel(DST, BYTES_PER_HEAD: tl.constexpr, HEADS: tl.constexpr,
+                      BATCH_STRIDE: tl.constexpr, HEAD_STRIDE: tl.constexpr,
+                      BLOCK: tl.constexpr, PROGRAMS_PER_HEAD: tl.constexpr):
+    """Clear contiguous tail rows per head, without per-byte shape division."""
+    destination = DST.to(tl.pointer_type(tl.uint8))
+    pid = tl.program_id(0)
+    group = pid // PROGRAMS_PER_HEAD
+    batch = group // HEADS
+    head = group % HEADS
+    local_pid = pid % PROGRAMS_PER_HEAD
+    base = batch * BATCH_STRIDE + head * HEAD_STRIDE
+    for block in range(tl.cdiv(BYTES_PER_HEAD, BLOCK * PROGRAMS_PER_HEAD)):
+        index = (block * PROGRAMS_PER_HEAD + local_pid) * BLOCK + tl.arange(0, BLOCK)
+        tl.store(destination + base + index, tl.full((BLOCK,), 0, tl.uint8), index < BYTES_PER_HEAD)
+
+
+def zero_view_tensor(tensor):
+    """Queue an exact device-side clear of an aligned, non-overlapping view."""
+    from tnca.triton_backend.driver import TNCADriver
+    item = tensor.element_size()
+    shape, strides = tuple(tensor.shape), tuple(tensor.stride())
+    count = tensor.numel() * item
+    if not count:
+        return tensor
+    if (len(shape) != 4 or strides[-1] != 1 or strides[-2] != shape[-1] or shape[-1] * item % 8
+            or tensor.storage_offset() * item % 8
+            or any(stride * item % 8 for stride in strides[:-1])):
+        raise ValueError('tnca zero: view rows must be word aligned')
+    extent = 1
+    for stride, size in sorted((stride, size) for stride, size in zip(strides, shape) if size > 1):
+        if stride < extent:
+            raise ValueError('tnca zero: view elements overlap')
+        extent += (size - 1) * stride
+    if count > MAX_SPAN or extent * item > MAX_SPAN:
+        raise ValueError('tnca zero: view exceeds one launch')
+    heads_total = shape[0] * shape[1]
+    if heads_total > 1024:
+        raise ValueError('tnca zero: too many cache heads')
+    block = 128
+    bytes_per_head = shape[2] * shape[3] * item
+    programs_per_head = min(triton.cdiv(bytes_per_head, block), 1024 // heads_total)
+    programs = heads_total * programs_per_head
+    with _lock:
+        previous = triton.runtime.driver.active
+        try:
+            triton.runtime.driver.set_active(TNCADriver())
+            _zero_view_kernel[(programs,)](tensor, bytes_per_head, shape[1], strides[0] * item,
+                                           strides[1] * item, block, programs_per_head, num_warps=1)
+        finally:
+            triton.runtime.driver.set_active(previous)
+    return tensor
+
+
 @triton.jit
 def _copy_storage_kernel(SRC, DST, N, BLOCK: tl.constexpr):
     stride = tl.num_programs(0) * BLOCK
@@ -20,12 +109,18 @@ def _copy_storage_kernel(SRC, DST, N, BLOCK: tl.constexpr):
         tl.store(DST + index, value, index < N)
 
 
+# Largest span one copy launch covers. The kernels index in i32 (the count,
+# and offsets from each argument's own address); a longer copy is a sequence
+# of launches whose arguments are 64-bit buffer offsets.
+MAX_SPAN = (1 << 31) - (1 << 20)
+
+
 def copy_storage(memory, dst, src, nbytes):
     """Allocator resize copy: opaque bytes stay on the device."""
     if not nbytes or dst == src:
         return
-    if not 0 < nbytes < (1 << 31):
-        raise RuntimeError('tnca resize copy requires a positive 32-bit byte count')
+    if nbytes < 0:
+        raise RuntimeError('tnca resize copy requires a positive byte count')
     from tnca import aot, device
     memory.synchronize()
     session = memory.session()
@@ -44,19 +139,21 @@ def copy_storage(memory, dst, src, nbytes):
             _storage_modules[session] = (session.epoch, module)
         else:
             module = cached[1]
-        event = session.submit(module, {'SRC': (source, source_offset),
-            'DST': (destination, destination_offset), 'N': nbytes},
-            grid=(min(triton.cdiv(nbytes, 128), 1024), 1, 1))
-        session.wait(event)
-        if not event.ok:
-            raise event.error
+        for done in range(0, nbytes, MAX_SPAN):
+            n = min(MAX_SPAN, nbytes - done)
+            event = session.submit(module, {'SRC': (source, source_offset + done),
+                'DST': (destination, destination_offset + done), 'N': n},
+                grid=(min(triton.cdiv(n, 128), 1024), 1, 1))
+            session.wait(event)
+            if not event.ok:
+                raise event.error
 
 
 @triton.jit
 def _copy_kernel(SRC, DST, COUNT: tl.constexpr, SHAPE: tl.constexpr,
                  SRC_STRIDES: tl.constexpr, DST_STRIDES: tl.constexpr,
                  BYTES: tl.constexpr, RAW: tl.constexpr, CONTIGUOUS: tl.constexpr,
-                 BLOCK: tl.constexpr, PROGRAMS: tl.constexpr):
+                 BLOCK: tl.constexpr, PROGRAMS: tl.constexpr, FP8_SOURCE: tl.constexpr = False):
     pid = tl.program_id(0)
     for block in range(tl.cdiv(COUNT, BLOCK * PROGRAMS)):
         index = (block * PROGRAMS + pid) * BLOCK + tl.arange(0, BLOCK)
@@ -83,6 +180,11 @@ def _copy_kernel(SRC, DST, COUNT: tl.constexpr, SHAPE: tl.constexpr,
             dst_bytes = DST.to(tl.pointer_type(tl.uint8))
             value = tl.load(src_bytes + src_offset * BYTES + byte, mask, other=0)
             tl.store(dst_bytes + dst_offset * BYTES + byte, value, mask)
+        elif FP8_SOURCE:
+            # Triton has no integer -> FP8 cast for `other=0`. A masked-off
+            # lane is never stored, so the load needs no `other` at all.
+            value = tl.load(SRC + src_offset, mask)
+            tl.store(DST + dst_offset, value.to(DST.dtype.element_ty), mask)
         else:
             value = tl.load(SRC + src_offset, mask, other=0)
             tl.store(DST + dst_offset, value.to(DST.dtype.element_ty), mask)
@@ -124,8 +226,18 @@ def copy_tensor(src, dst):
                                                   for s, n in zip(source_strides, shape)))
     destination_extent = dst.element_size() * (1 + sum((n - 1) * s
                                                        for s, n in zip(dst.stride(), shape)))
-    if max(count, source_extent, destination_extent) >= (1 << 31):
-        raise RuntimeError('tnca copy: 64-bit copy indexing is not implemented')
+    if max(count, source_extent, destination_extent) > MAX_SPAN:
+        # Halve the dimension spanning the most bytes until each launch's
+        # count and spans fit its i32 indexing; each part is a view whose
+        # 64-bit storage offset the launcher passes as its buffer offset.
+        source = src.expand(shape) if tuple(src.shape) != shape else src
+        dim = max((d for d, n in enumerate(shape) if n > 1),
+                  key=lambda d: (shape[d] - 1) * max(source.stride(d), dst.stride(d)))
+        half = shape[dim] // 2
+        for part in (slice(0, half), slice(half, shape[dim])):
+            index = (slice(None),) * dim + (part,)
+            copy_tensor(source[index], dst[index])
+        return dst
     contiguous = src.is_contiguous() and dst.is_contiguous() and tuple(src.shape) == shape
     block = 128 if contiguous else 16
     programs = min(triton.cdiv(count, block), 1024)
@@ -136,7 +248,9 @@ def copy_tensor(src, dst):
             _copy_kernel[(programs,)](
                 src, dst, count, shape, source_strides, tuple(dst.stride()),
                 dst.element_size(), raw,
-                contiguous, block, programs, num_warps=1)
+                contiguous, block, programs, num_warps=1,
+                **({'FP8_SOURCE': True} if not raw and src.dtype in
+                   (torch.float8_e4m3fn, torch.float8_e5m2) else {}))
         finally:
             triton.runtime.driver.set_active(previous)
     return dst

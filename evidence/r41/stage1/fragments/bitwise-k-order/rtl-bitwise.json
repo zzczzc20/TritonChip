@@ -1,0 +1,657 @@
+{
+  "schema": "tnca-fragment-bitwise/1",
+  "claim": "16x32 multi-fragment output bits == 16x16 output bits == per-K FP32 FMA reference",
+  "groups": [
+    {
+      "backend": "sim-file",
+      "dtype": "bfloat16",
+      "strided": true,
+      "cancelling_inputs": false,
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2",
+      "narrow": {
+        "report": "bitwise-rtl-final/bfloat16-yes-16/report.json",
+        "report_sha256": "7ff98b53970c68fed15c13934e620e49e659d142be60294e1fba0d8c9805ab84"
+      },
+      "wide": {
+        "report": "bitwise-rtl-final/bfloat16-yes-32/report.json",
+        "report_sha256": "8bc7eb68f599e3c1dfbb8b95e3617e9c0abc74fca7877ac63d5083d6fedce22f"
+      },
+      "rows": [
+        {
+          "graph": "addmm",
+          "shape": [
+            5,
+            40,
+            7
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 200,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "d30e33bd4c442f58a4bde7e1021ae9874ae2397cc08ddf553b92b2e40cb5e621",
+          "reference_bits_sha256": "d30e33bd4c442f58a4bde7e1021ae9874ae2397cc08ddf553b92b2e40cb5e621",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 1105,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "f74364f9316f4b07a1b5bd1777c396289e6f7e380a34031a7c207faf9031e518",
+          "reference_bits_sha256": "f74364f9316f4b07a1b5bd1777c396289e6f7e380a34031a7c207faf9031e518",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            33,
+            31,
+            65
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 1023,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "6f1117f97ef5596b6cbb675831262626adf266d9ff6f6e9ce12773085d59115b",
+          "reference_bits_sha256": "6f1117f97ef5596b6cbb675831262626adf266d9ff6f6e9ce12773085d59115b",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            5,
+            40,
+            7
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 200,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "9cd6979f2573593b66cc8eacebe87dd0ef986aba4cca72f22127b6c34b08fd13",
+          "reference_bits_sha256": "9cd6979f2573593b66cc8eacebe87dd0ef986aba4cca72f22127b6c34b08fd13",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 1105,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "d438eb715cbad449158dfad9a4d80e4126829e8c7f4a3c5e10eea7dc484c59c5",
+          "reference_bits_sha256": "d438eb715cbad449158dfad9a4d80e4126829e8c7f4a3c5e10eea7dc484c59c5",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            33,
+            31,
+            65
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 1023,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "d15f128e7615b410c85d55d6bf8b00ce68514f841d567aab177eac9e047dffa4",
+          "reference_bits_sha256": "d15f128e7615b410c85d55d6bf8b00ce68514f841d567aab177eac9e047dffa4",
+          "status": "bitwise-identical"
+        }
+      ]
+    },
+    {
+      "backend": "sim-file",
+      "dtype": "float16",
+      "strided": false,
+      "cancelling_inputs": false,
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2",
+      "narrow": {
+        "report": "bitwise-rtl-final/float16-no-16/report.json",
+        "report_sha256": "31c8fd050c166b7dac3f2796cfdc89a78d98672860c6a8a42ab27402bffd3e01"
+      },
+      "wide": {
+        "report": "bitwise-rtl-final/float16-no-32/report.json",
+        "report_sha256": "69a8b7b3f8305c0c05a3eef0a12d9219864adc103aec66f8bda9f8b6bf3bbe42"
+      },
+      "rows": [
+        {
+          "graph": "addmm",
+          "shape": [
+            5,
+            40,
+            7
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 200,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "c58cf78859fa00593f55d38ea105a68c7c1307986abcd03d2d93728d9f666a21",
+          "reference_bits_sha256": "c58cf78859fa00593f55d38ea105a68c7c1307986abcd03d2d93728d9f666a21",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 1105,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "38a37d088a01735665edecdfdfdb1b1a5615cac73e2440cbaebef22f3669065b",
+          "reference_bits_sha256": "38a37d088a01735665edecdfdfdb1b1a5615cac73e2440cbaebef22f3669065b",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            33,
+            31,
+            65
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 1023,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "fe68fd0a124bb14e4a757d7b9bbb7942986bc0c035cd985024cb342e16826894",
+          "reference_bits_sha256": "fe68fd0a124bb14e4a757d7b9bbb7942986bc0c035cd985024cb342e16826894",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            5,
+            40,
+            7
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 200,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "adf7563842b17afb5926ea0b979f93e316485bddddd551d6ce1eb484d22e0b76",
+          "reference_bits_sha256": "adf7563842b17afb5926ea0b979f93e316485bddddd551d6ce1eb484d22e0b76",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 1105,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 1
+          },
+          "output_bits_sha256": "ce8d2ee32e91cc01e40957d04bc48e86b6a4b8ee79aafd06923746da70e5c4da",
+          "reference_bits_sha256": "ce8d2ee32e91cc01e40957d04bc48e86b6a4b8ee79aafd06923746da70e5c4da",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            33,
+            31,
+            65
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 1023,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 0
+          },
+          "output_bits_sha256": "90be824742a5a2189685514139dd7391d56b1890e2e1f0787fcd4aaa05723343",
+          "reference_bits_sha256": "90be824742a5a2189685514139dd7391d56b1890e2e1f0787fcd4aaa05723343",
+          "status": "bitwise-identical"
+        }
+      ]
+    },
+    {
+      "backend": "sim-file",
+      "dtype": "float16",
+      "strided": false,
+      "cancelling_inputs": true,
+      "software_tree": "files:a40bc8771387845613c352055327d8de85b2e7c86c0bcc0bb41fe92dfa8248e2",
+      "narrow": {
+        "report": "bitwise-rtl-cancel/float16-no-16/report.json",
+        "report_sha256": "a1220b98369d304536415be63e6e2717243e1235003a8dbdbb8087ff9f49b306"
+      },
+      "wide": {
+        "report": "bitwise-rtl-cancel/float16-no-32/report.json",
+        "report_sha256": "ac241464dfeaf52a565371e02267f0a4e309330339ce37cef8a8189efcc069dc"
+      },
+      "rows": [
+        {
+          "graph": "addmm",
+          "shape": [
+            5,
+            40,
+            7
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 200,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 194
+          },
+          "output_bits_sha256": "f3d1d3d5eb3dea704ff3e3f333b3ed0c8d0c874faa0d4ce78acea2369552c752",
+          "reference_bits_sha256": "f3d1d3d5eb3dea704ff3e3f333b3ed0c8d0c874faa0d4ce78acea2369552c752",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "addmm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 1105,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 828,
+            "reversed_mismatches": 1089
+          },
+          "output_bits_sha256": "90d04cb3ad1baa87bc3d74d57f6faa175237db2fffbd9744a11c33e911899f03",
+          "reference_bits_sha256": "90d04cb3ad1baa87bc3d74d57f6faa175237db2fffbd9744a11c33e911899f03",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            5,
+            40,
+            7
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 200,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 0,
+            "reversed_mismatches": 198
+          },
+          "output_bits_sha256": "5787a0386fd8d449f49027d74881a66e7b8856d71c9fe02673fe63ca54f57e8e",
+          "reference_bits_sha256": "5787a0386fd8d449f49027d74881a66e7b8856d71c9fe02673fe63ca54f57e8e",
+          "status": "bitwise-identical"
+        },
+        {
+          "graph": "mm",
+          "shape": [
+            17,
+            65,
+            33
+          ],
+          "k_multiple_of_16": false,
+          "narrow_tiles": [
+            [
+              16,
+              16,
+              16
+            ]
+          ],
+          "wide_tiles": [
+            [
+              16,
+              32,
+              16
+            ]
+          ],
+          "narrow_vs_wide_bitwise": true,
+          "narrow_vs_reference": true,
+          "wide_vs_reference": true,
+          "narrow_mismatches": 0,
+          "wide_mismatches": 0,
+          "elements": 1105,
+          "cold_and_resident_same": true,
+          "other_k_orders_would_differ": {
+            "blocked16_mismatches": 830,
+            "reversed_mismatches": 1102
+          },
+          "output_bits_sha256": "478ee4bd006e50374fc66e135494313a28298828c85b74b5997754bc035d1c06",
+          "reference_bits_sha256": "478ee4bd006e50374fc66e135494313a28298828c85b74b5997754bc035d1c06",
+          "status": "bitwise-identical"
+        }
+      ]
+    }
+  ],
+  "rows": 16,
+  "failures": [],
+  "order_discrimination": {
+    "rows_where_blocked16_differs": 2,
+    "rows_where_reversed_differs": 5,
+    "note": "a bitwise match discriminates the per-K order only on rows where another order differs"
+  },
+  "status": "bitwise-identical"
+}

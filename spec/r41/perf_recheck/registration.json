@@ -1,0 +1,257 @@
+{
+  "schema": "tnca-r41-regression-recheck-registration/1",
+  "selection_rule": "All matched points in the already published original113 and default memory-bound comparisons whose candidate median cycles exceed the old median by strictly more than 5%; selection fixed before new measurements.",
+  "selection": {
+    "membound_default": {
+      "comparison": "evidence/r41/hbm_bw/g4/run3/board/membound_default_comparison.json",
+      "comparison_sha256": "b88dec9922a64863f99a211aa1ac72e4d90b276726264b75e13895c7d018dc02",
+      "rows": [
+        {
+          "point": "op.add/membound/bf16-large-strided-r32768-c1024",
+          "point_sha256": "5944776c95d21d76556c25605fe8ee50a126b403afa3ca80d566eec2cf24a467",
+          "observed_new_over_old": 1.0941753280674626
+        },
+        {
+          "point": "op.add/membound/bf16-medium-strided-r2048-c1024",
+          "point_sha256": "5beff12cd38da1c1d515b967a76d45fcaa8e42b021f612e23b78959576382a8f",
+          "observed_new_over_old": 1.0886545286405893
+        },
+        {
+          "point": "op.add/membound/bf16-small-strided-r32-c1024",
+          "point_sha256": "8eed757fefbc406eac7aebb1c88f61164ff9f304f5276f378bf638ec6fadd6ec",
+          "observed_new_over_old": 1.0856816478583227
+        },
+        {
+          "point": "op.add/membound/fp16-large-strided-r32768-c1024",
+          "point_sha256": "7928d2f1df3932de80724fa425d4cfeea7c450470a265faaa1d385df161712a5",
+          "observed_new_over_old": 1.0940761772615448
+        },
+        {
+          "point": "op.add/membound/fp16-medium-strided-r2048-c1024",
+          "point_sha256": "32e43e54d5b8c9c87b6e3547989ec8a3127060b1801b9c67e395ed6ccc5f93c6",
+          "observed_new_over_old": 1.0892262472603058
+        },
+        {
+          "point": "op.add/membound/fp16-small-strided-r32-c1024",
+          "point_sha256": "220d6006734007b9641e706054ab60fe1653cb05e3917f38f085f753fc171593",
+          "observed_new_over_old": 1.0831698420310707
+        },
+        {
+          "point": "op.div/membound/bf16-large-strided-r32768-c1024",
+          "point_sha256": "ba8e5b28eac07d994666f18a11790abcba2b9ae2ad9573a336a327b5689b49e6",
+          "observed_new_over_old": 1.124458999567267
+        },
+        {
+          "point": "op.div/membound/bf16-medium-strided-r2048-c1024",
+          "point_sha256": "d6975b1d7e074f883f44f7f27a636895be01484be18b051bbff9d580cd939e0e",
+          "observed_new_over_old": 1.1255399262464827
+        },
+        {
+          "point": "op.div/membound/bf16-small-strided-r32-c1024",
+          "point_sha256": "3d2bc2186632151c7b81ad4103f551dfd67e6f40b42f61169cfa67b7219d0005",
+          "observed_new_over_old": 1.1153272339584852
+        },
+        {
+          "point": "op.div/membound/fp16-large-strided-r32768-c1024",
+          "point_sha256": "16ce237ae9d170c7a671e4011faa34fc48bea47058fda538ff2a3f4ac108cc33",
+          "observed_new_over_old": 1.1243280736187569
+        },
+        {
+          "point": "op.div/membound/fp16-medium-strided-r2048-c1024",
+          "point_sha256": "34243186b07e144ddb3b5a3cf88a8c002590c04f3436d929d2b680c165903d21",
+          "observed_new_over_old": 1.125607458214149
+        },
+        {
+          "point": "op.div/membound/fp16-small-strided-r32-c1024",
+          "point_sha256": "25c80f90e6ed22f84995dac4ec408b939a8b3514ebf171d1d3b19f0cfd2fa414",
+          "observed_new_over_old": 1.1191127026214363
+        },
+        {
+          "point": "op.max/membound/bf16-large-strided-r32768-c1024",
+          "point_sha256": "c123ea1e77c2c1c36c8babac1bf40f5bddc107f657f527f020bd2b40575ed2c7",
+          "observed_new_over_old": 1.0510244884886801
+        },
+        {
+          "point": "op.max/membound/bf16-medium-strided-r2048-c1024",
+          "point_sha256": "27753a2074d650cbb24b1db8a38c42692df4a7878053d8d788dbb3324af836a8",
+          "observed_new_over_old": 1.053340811511495
+        },
+        {
+          "point": "op.max/membound/bf16-small-strided-r32-c1024",
+          "point_sha256": "8aecd75cd8bf8508a4b010f62ebee02637fd3a5177f686267a083932815ec64b",
+          "observed_new_over_old": 1.0733367231196465
+        },
+        {
+          "point": "op.max/membound/fp16-large-strided-r32768-c1024",
+          "point_sha256": "5e32f060e24a157b32c18fb8048e4c50146432173b2a00e92dd575f4cd6cdc4d",
+          "observed_new_over_old": 1.0508644429817462
+        },
+        {
+          "point": "op.max/membound/fp16-medium-strided-r2048-c1024",
+          "point_sha256": "38471fed6537537a2ace4aaa7c90a6eb933b00f7bf26c6b39bd08ff164897f11",
+          "observed_new_over_old": 1.0535920105021
+        },
+        {
+          "point": "op.max/membound/fp16-small-strided-r32-c1024",
+          "point_sha256": "7a437588ded341b9c049ce0c2757b4f16ccc9302d9dbfcdc404b75ec9b56a9f8",
+          "observed_new_over_old": 1.1066624150507205
+        },
+        {
+          "point": "op.mean/membound/bf16-large-strided-r32768-c1024",
+          "point_sha256": "73161830c6e5dd85217d7ac3b3e76935e658e2e31fa7c88d8fd82deead9d9541",
+          "observed_new_over_old": 1.0513285522106923
+        },
+        {
+          "point": "op.mean/membound/bf16-medium-strided-r2048-c1024",
+          "point_sha256": "87fbf7d332b2fc79b8fd267cbc8495074651ed36835f9a6eafa32fce68bfdc0a",
+          "observed_new_over_old": 1.0527719422421673
+        },
+        {
+          "point": "op.mean/membound/bf16-small-strided-r32-c1024",
+          "point_sha256": "3d15cafff050b4df2cc161898629008db80b0933fe2cc7444ee13eb92a3d4312",
+          "observed_new_over_old": 1.0824774598196785
+        },
+        {
+          "point": "op.mean/membound/fp16-large-strided-r32768-c1024",
+          "point_sha256": "16d0375837b081dc909976ea155aebe35bff05aa33076aafe6a4f1dce2764718",
+          "observed_new_over_old": 1.0509587550641606
+        },
+        {
+          "point": "op.mean/membound/fp16-medium-strided-r2048-c1024",
+          "point_sha256": "00ead02d4839aad04054a3375924c62d617b6fdd3e5ace6352e59a0c544a18ae",
+          "observed_new_over_old": 1.0520732569387603
+        },
+        {
+          "point": "op.mean/membound/fp16-small-strided-r32-c1024",
+          "point_sha256": "b12781c75ebf97e9feecf8dc07709bdd728ff6b1d6e74a6cb4841e1343ec8f55",
+          "observed_new_over_old": 1.102470901362571
+        },
+        {
+          "point": "op.mul/membound/bf16-large-strided-r32768-c1024",
+          "point_sha256": "5d660cf86aebe2dd17f506a7a5431951ae2e4d62605f24a4267768391ecad40d",
+          "observed_new_over_old": 1.094353356118628
+        },
+        {
+          "point": "op.mul/membound/bf16-medium-strided-r2048-c1024",
+          "point_sha256": "f9253f885f60312d745d6bcd733d5bdc1d798734dd933b567865f941901020b0",
+          "observed_new_over_old": 1.0888667466797035
+        },
+        {
+          "point": "op.mul/membound/bf16-small-strided-r32-c1024",
+          "point_sha256": "fb3b9326888d15c9adde6734b6ea0517112cdcf5fcab0b1fb94cbb4e53352f73",
+          "observed_new_over_old": 1.0806791900180528
+        },
+        {
+          "point": "op.mul/membound/fp16-large-strided-r32768-c1024",
+          "point_sha256": "a33f0b5e43afaa73c36879cdc8279842ebba5b92c506712eeaa976ef9c5c3766",
+          "observed_new_over_old": 1.0942115004653377
+        },
+        {
+          "point": "op.mul/membound/fp16-medium-strided-r2048-c1024",
+          "point_sha256": "96d0d17331f5e8876d5947bea6861e22d924369ea463ebad8497f97b12fab4c3",
+          "observed_new_over_old": 1.089186010300716
+        },
+        {
+          "point": "op.mul/membound/fp16-small-strided-r32-c1024",
+          "point_sha256": "a72e6fc2be5bb662d61fb6790173b23ce7895dfd1ac94821103fdbe02c7d65a5",
+          "observed_new_over_old": 1.0868972952497504
+        },
+        {
+          "point": "op.sub/membound/bf16-large-strided-r32768-c1024",
+          "point_sha256": "edf46daf95333c5ccdda2a331cf209f11246511156aeae365dc4cfa74709b0b5",
+          "observed_new_over_old": 1.0943436027156257
+        },
+        {
+          "point": "op.sub/membound/bf16-medium-strided-r2048-c1024",
+          "point_sha256": "301930acf2bdf4f8732a0bd77e276f5ec3758549d010aa90230b81e12c1c609c",
+          "observed_new_over_old": 1.0887840025455156
+        },
+        {
+          "point": "op.sub/membound/bf16-small-strided-r32-c1024",
+          "point_sha256": "2627328b7ff683cdacf8edf77e7540b1e8a78982e5c3ce4a01547c3deee62479",
+          "observed_new_over_old": 1.0802034655908048
+        },
+        {
+          "point": "op.sub/membound/fp16-large-strided-r32768-c1024",
+          "point_sha256": "b59a3fd19d08b373989a77c2e173972f67604d1fbd3921a4cc8693777fafb341",
+          "observed_new_over_old": 1.094151430989254
+        },
+        {
+          "point": "op.sub/membound/fp16-medium-strided-r2048-c1024",
+          "point_sha256": "34bb438dcd272e7c3aa96a97e95d7ab715b12f9b2dca5c049612fa0672179269",
+          "observed_new_over_old": 1.0887380275106875
+        },
+        {
+          "point": "op.sub/membound/fp16-small-strided-r32-c1024",
+          "point_sha256": "788adbe23f8dd627f942c9d4400ba83a3108fdecd48ca491e2404e1100da7dab",
+          "observed_new_over_old": 1.0835707226324052
+        },
+        {
+          "point": "op.sum/membound/bf16-medium-strided-r2048-c1024",
+          "point_sha256": "d42eb2bc0457394a7015d0270db66968e85e7f24369a205f3d7982d3f3582e11",
+          "observed_new_over_old": 1.051126920196455
+        },
+        {
+          "point": "op.sum/membound/bf16-small-strided-r32-c1024",
+          "point_sha256": "1aa1915a83e9e8de6ac8afb6b8898245981c2f15c9bb020eb1aefb6e30443294",
+          "observed_new_over_old": 1.0916716358576823
+        },
+        {
+          "point": "op.sum/membound/fp16-small-strided-r32-c1024",
+          "point_sha256": "d37aa3a24c5c5e917a0139b86d74b1a63d00bdf8a5e4d44076dc03739b78307b",
+          "observed_new_over_old": 1.0864078053404962
+        }
+      ]
+    },
+    "original113": {
+      "comparison": "evidence/r41/hbm_bw/g4/run3/board/original113_comparison.json",
+      "comparison_sha256": "c7eb731581b54f5bf5a5669fb501a2605818392c0b29a4b579aa32efdcbf7f56",
+      "rows": [
+        {
+          "point": "op.rope/small/fp16-b1-h4-s64-d32",
+          "point_sha256": "63dc112adfc11a22ec7bd0a0a383c064e6f9ff52c95efc6e3a02a027392558e4",
+          "observed_new_over_old": 1.0908263663766138
+        },
+        {
+          "point": "op.rope/tiny/fp16-b1-h2-s16-d16",
+          "point_sha256": "e5e6096b39bf6df53c6f90eef2aac7a3714f5c590ab1c5d5e6d91fd1703fa7e9",
+          "observed_new_over_old": 1.2031513787281936
+        }
+      ]
+    }
+  },
+  "sampling": "One new block per arm, 0 warmup and 3 timed samples per point in one fresh process; no repeat-until-significant.",
+  "order": [
+    "candidate_membound_default",
+    "candidate_original113",
+    "oldmem_membound_default",
+    "oldoriginal_original113"
+  ],
+  "remaining_block_policy": "A second block is not authorized by this registration; a separate judgment must pre-register it if needed.",
+  "image_switch_policy": "After the clean-archive independent session and candidate rechecks, wait for 900 consecutive seconds of verified candidate UUID and no contexts, outstanding executions or clients; recheck identity and idle immediately before each program.sh check/go; refuse a different image, competing loader or failed safety gate.",
+  "interpretation": "Different software trees and image profiles; comparison tests full-stack behavior and does not isolate an RTL cause. Three correlated samples may not establish a statistical gate.",
+  "manifests": {
+    "candidate_membound_default.json": {
+      "sha256": "836129ef507822b80cf2636ac115538ceee8ff80fb02c452acaf21c07ddf1a60",
+      "configurations": 39,
+      "source_template_sha256": "a0241db4c86e371970f9571eb6f8a2ea9027ced4d9f7bf74265263957bbf23c3"
+    },
+    "candidate_original113.json": {
+      "sha256": "384cb4cac33048b31874b92ebb3a3da9d4d11fcbe107c6d1383fe5b6c3cacfe2",
+      "configurations": 2,
+      "source_template_sha256": "1696ea1b9ce6d00d3c6a39a96477c46f6a5773dad22d8c49c1b65e46c35a4d77"
+    },
+    "oldmem_membound_default.json": {
+      "sha256": "3ae3a2ec547b36c4b4a9fde3b9c9c419a1b9d3a8c2c9932d157cbc9b685e1d7e",
+      "configurations": 39,
+      "source_template_sha256": "5bdca334fa7091697571796a5918ce9f1e7a28bd8438fedaeeee6b760ec2e9e5"
+    },
+    "oldoriginal_original113.json": {
+      "sha256": "3f7243608ec4c00f243ecb3d44eba6576337cf525ea7fd656cebceb8acca0906",
+      "configurations": 2,
+      "source_template_sha256": "aae3c4de48fad32ae497a58309af9160a178f865fd2e59600a0c1a8ad9b0a8e1"
+    }
+  },
+  "waiter_sha256": "547037f5fc6020675ddc738f2d96d92100c479e94a873550ab5362af365721d6",
+  "predecessor": "hash-verified clean archive independent legacy, HBM8 and full Q41-core session"
+}

@@ -1,0 +1,57 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "chat-vl",
+ "experiments": [
+  {
+   "id": "r2-s2-qwen-chat-v3-vl",
+   "manifest": "spec/r41/run2/board/r2-s2-qwen-chat-v3-vl.json",
+   "sha256": "0e1f4b1ffb52a7e30451404c30abee262dea440e64e932463d6d77ebf0c50436",
+   "checks": [
+    {
+     "path": "vl-quality/quality.json",
+     "field": [
+      "status"
+     ],
+     "equals": "pass"
+    },
+    {
+     "path": "vl-quality/quality.json",
+     "field": [
+      "model_scope"
+     ],
+     "equals": "full-checkpoint"
+    },
+    {
+     "path": "vl-quality/quality.json",
+     "field": [
+      "reduced_proof"
+     ],
+     "equals": false
+    },
+    {
+     "path": "vl-quality/quality.json",
+     "field": [
+      "prompts"
+     ],
+     "length_equals": 6
+    },
+    {
+     "path": "vl-session/report.json",
+     "field": [
+      "status"
+     ],
+     "equals": "pass"
+    },
+    {
+     "path": "vl-session/report.json",
+     "field": [
+      "persistent_session_check",
+      "passed"
+     ],
+     "equals": true
+    }
+   ],
+   "budget_seconds": 10800
+  }
+ ]
+}

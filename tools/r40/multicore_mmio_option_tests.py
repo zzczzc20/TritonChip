@@ -60,6 +60,9 @@ def main():
     allocation_link = MulticoreXDMALink(xclbin='unopened-test.xclbin')
     class Allocator:
         def __init__(self): self.calls=[]
+        def read(self, offset):
+            assert offset == 0xb8  # legacy capability must not probe the new register
+            return 0
         def bo_open(self, size, bank): self.calls.append((size,bank));return 0x100000000
     allocator=Allocator();allocation_link._accessor=allocator
     shared=dict(index=32,used=True,size=4096,base=0,tag='HBM[0:31]')

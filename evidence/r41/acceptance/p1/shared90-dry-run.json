@@ -1,0 +1,52 @@
+{
+  "batch": "shared",
+  "sampling": "device-rule",
+  "configurations": 3,
+  "first_stage": [
+    [
+      "op.matmul/medium/fp16-m128-k192-n128",
+      "q",
+      0,
+      1
+    ],
+    [
+      "op.add/medium/fp16-n49152",
+      "q",
+      0,
+      1
+    ],
+    [
+      "model.mlp/medium/fp16-t128-d128",
+      "q",
+      0,
+      1
+    ]
+  ],
+  "estimate": {
+    "expected_board_hours": 0.023,
+    "runs": [
+      {
+        "config": "op.matmul/medium/fp16-m128-k192-n128",
+        "runs": 2,
+        "seconds": 26.2,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0026
+      },
+      {
+        "config": "op.add/medium/fp16-n49152",
+        "runs": 2,
+        "seconds": 25.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.002
+      },
+      {
+        "config": "model.mlp/medium/fp16-t128-d128",
+        "runs": 2,
+        "seconds": 29.6,
+        "source": "same-point-other-configuration",
+        "reference_device_seconds": 0.0144
+      }
+    ],
+    "method": "per-process wall seconds of the nearest reference record (R40 fe1b board runs); short configurations add one formal process; extra timed calls add their device time"
+  }
+}

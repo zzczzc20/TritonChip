@@ -1,0 +1,59 @@
+cd tools/performance_harness && python3 test_experiment.py && python3 test_board_tools.py && python3 test_stage1_acceptance.py && python3 test_stage_contract.py
+.............
+----------------------------------------------------------------------
+Ran 13 tests in 0.978s
+
+OK
+2026-10-30T23:04:20.488178+00:00 OK   op.short__a-s1 0.1 []
+2026-10-30T23:04:20.606092+00:00 OK   op.long__c-s1 10.0 []
+2026-10-30T23:04:20.723974+00:00 OK   op.long__c-s2 10.0 []
+2026-10-30T23:04:20.841610+00:00 OK   op.short__a-s2 0.1 []
+2026-10-30T23:04:20.959228+00:00 OK   op.short__a-s3 0.1 []
+2026-10-30T23:04:21.077161+00:00 OK   op.long__c-s3 10.0 []
+.2026-10-30T23:04:21.206113+00:00 OK   op.short__a-q 0.1 []
+2026-10-30T23:04:21.323985+00:00 OK   op.short__b-q 0.2 []
+2026-10-30T23:04:21.441885+00:00 OK   op.short__a-f3 0.1 []
+2026-10-30T23:04:21.511762+00:00 OK   op.short__b-f3 0.2 []
+2026-10-30T23:04:21.630673+00:00 OK   op.long__c-q 10.0 []
+..2026-10-30T23:04:21.935785+00:00 OK   op.short__b-r001 0.2 []
+2026-10-30T23:04:21.935975+00:00 OK   r001 op.short/b 21232 KiB 
+2026-10-30T23:04:22.103682+00:00 OK   op.short__a-r001 0.1 []
+2026-10-30T23:04:22.103853+00:00 OK   r001 op.short/a 21348 KiB 
+2026-10-30T23:04:22.104113+00:00 OK   r001 fp8_cases/quick/scaled_mm None KiB 
+.2026-10-30T23:04:22.230662+00:00 FAIL op.short__a-q  ['exit 1', 'status fail fallbacks [] []']
+2026-10-30T23:04:22.349364+00:00 FAIL op.short__b-q  ['image ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff']
+2026-10-30T23:04:22.469033+00:00 OK   op.long__c-q 10.0 []
+2026-10-30T23:04:22.609923+00:00 OK   op.short__a-q 0.1 []
+2026-10-30T23:04:22.729572+00:00 OK   op.short__a-f3 0.1 []
+2026-10-30T23:04:22.847853+00:00 FAIL op.short__b-q  ['image ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff']
+.2026-10-30T23:04:22.975041+00:00 OK   op.short__a-q 0.1 []
+2026-10-30T23:04:23.092801+00:00 OK   op.short__b-q 2.0 []
+..2026-10-30T23:04:23.233729+00:00 FAIL op.short__a-t1  ['qualified clock evidence identity']
+2026-10-30T23:04:23.353645+00:00 OK   op.short__a-t1 0.1 []
+...........
+----------------------------------------------------------------------
+Ran 18 tests in 3.809s
+
+OK
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 2.024s
+
+OK
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.361s
+
+OK
+cd tools/performance_harness/systemc && python3 test_run_graphs.py
+{"key": "op.matmul/medium/fp16-m128-k192-n128", "status": "knob-mismatch", "launches": null, "device_cycles": null, "max_rel_err": null, "process_wall_s": 0.0, "model_launch_host_s": null}
+DONE 0 / 1
+{"key": "op.matmul/medium/fp16-m128-k192-n128", "status": "knob-mismatch", "launches": null, "device_cycles": null, "max_rel_err": null, "process_wall_s": 0.0, "model_launch_host_s": null}
+DONE 0 / 1
+...{"key": "op.matmul/medium/fp16-m128-k192-n128", "status": "pass", "launches": null, "device_cycles": null, "max_rel_err": null, "process_wall_s": 0.0, "model_launch_host_s": null}
+DONE 1 / 1
+....
+----------------------------------------------------------------------
+Ran 7 tests in 0.627s
+
+OK

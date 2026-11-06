@@ -15,7 +15,7 @@ This is the TNCA implementation of *DCO: Dynamic Cache Orchestration for LLM Acc
 
 ## 1. What DCO adds
 
-The NUCA slice used to be invalid-first, round-robin, write-allocate with no policy (`architecture_overview.md` §2). DCO adds four mechanisms. Each is enabled by its own bit of the TMU's POLICY register, so each can be measured on its own:
+The NUCA slice used to be invalid-first, round-robin, write-allocate with no policy ([`architecture_overview.md`](architecture_overview.md) §2). DCO adds anti-thrashing replacement alongside four optional mechanisms. Each optional mechanism is enabled by its own bit of the TMU's POLICY register, so each can be measured on its own:
 
 | Mechanism | Paper | What it does here |
 |---|---|---|
@@ -217,7 +217,7 @@ DCO gains nothing here, and priority-based bypass is harmful. In this kernel the
 
   Every read is checked against the shadow. All 27 runs (9 policies × 3 seeds) passed during development.
 - **`make top` and `make e2e`.** The 2×2 system with the TMU in place and POLICY 0.
-- **`compiler/test/test_dco.py`.** The pass's plans for the three benchmark kernels; that registration precedes every load; that the pass refuses a data-dependent loop.
+- **`make dco-compiler` (`compiler/test/test_dco.py`).** The pass's plans for the three benchmark kernels; that registration precedes every load; that the pass refuses a data-dependent loop.
 - **`make dco-bench`.** Every policy must produce bit-identical results, and the first run is also checked against NumPy.
 
 ## 6. Differences from the paper

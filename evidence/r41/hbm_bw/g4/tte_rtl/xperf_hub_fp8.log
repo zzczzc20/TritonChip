@@ -1,0 +1,5 @@
+PASS XPERF transfers=32 fixlat=20 word_engine_cycles=6856 line_engine_cycles=4263 weight_bytes=16384
+PASS XPERF transfers=32 fixlat=60 word_engine_cycles=13256 line_engine_cycles=5583 weight_bytes=16384
+PASS XPERF transfers=32 fixlat=100 word_engine_cycles=19656 line_engine_cycles=6903 weight_bytes=16384
+PASS XRACE=1 
+PASS XRACE=2 XRACE 2: store 40 cycles into the second load; window bytes that differ between the engines: 384 of 512 (both legal: the ISA does not order an unordered store against a command in flight)

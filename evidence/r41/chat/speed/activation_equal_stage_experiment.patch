@@ -1,0 +1,138 @@
+diff --git a/compiler/python/tnca_cc/frontend.py b/compiler/python/tnca_cc/frontend.py
+index 1d034a87..1bfcea8f 100644
+--- a/compiler/python/tnca_cc/frontend.py
++++ b/compiler/python/tnca_cc/frontend.py
+@@ -216,6 +216,7 @@ class TTIRImporter:
+         # for one computed from others rather than splatted from a scalar
+         # the TTIR names: TTIR id -> scalar Value (_uniform_scalar).
+         self._uscalar = {}
++        self._uniform_vectors = set()  # experimental lane-uniform data proofs
+         self._fused_add = {}    # addf result id -> the tile _fuse_dot_add made
+         self._aff_cache = {}    # parts of affine rows, see _affine_row_opt
+         # Facts about scalar values (index_opt): TTIR id -> known non-negative,
+@@ -2594,8 +2595,12 @@ class TTIRImporter:
+             # and then a broadcast of each.
+             _, selem = _parse_type(str(src.get_type()))
+             shape, _ = _parse_type(str(op.get_result(0).get_type()))
+-            self._tiles[op.get_result(0).id()] = self._vector_to_col(
+-                self._value(src), selem, shape[0])
++            col = self._vector_to_col(self._value(src), selem, shape[0])
++            import os as _equal_os
++            if (_equal_os.environ.get('TNCA_X8_EQUAL_A_STAGE') == '1'
++                    and src.id() in self._uniform_vectors):
++                col.equal_rows = True
++            self._tiles[op.get_result(0).id()] = col
+             return
+         if kind != 'arange':
+             inner = self._affine_of(src)
+@@ -2652,7 +2657,7 @@ class TTIRImporter:
+                 # One value per row, stretched across the row.
+                 get = self._tile_row_getter(tile, elem)
+                 self._tiles[rid] = Tile('lazy', get, shape[0], shape[1],
+-                                        elem, replicated=replicated)
++                                        elem, replicated=replicated, equal_rows=tile.equal_rows and self._equal_stage_experimental())
+                 return
+             if tile.cols == 1 and shape[1] > 1 and not replicated:
+                 # A loaded [R, 1] has data only in lane zero of each
+@@ -2669,7 +2674,7 @@ class TTIRImporter:
+                         return self.b.vcmp('ne', self.b.splat(lane), self.b.vmovi(0))
+                     return self.b.splat(self.b.vextract(value, 0, dtype=elem), dtype=elem)
+                 self._tiles[rid] = Tile('lazy', row, shape[0], shape[1], elem,
+-                                        replicated=True)
++                                        replicated=True, equal_rows=tile.equal_rows and self._equal_stage_experimental())
+                 return
+             if tile.cols == 1 and shape[1] > 1:
+                 # Every lane already holds the row's value: the rows are the
+@@ -2677,7 +2682,8 @@ class TTIRImporter:
+                 self._column_broadcasts['replicated'] += 1
+             if tile.rows == shape[0]:
+                 self._tiles[rid] = Tile(tile.kind, tile.handle, shape[0],
+-                                        shape[1], tile.dtype, replicated=replicated)
++                                        shape[1], tile.dtype, replicated=replicated,
++                                        equal_rows=tile.equal_rows and self._equal_stage_experimental())
+                 return
+             if tile.rows == 1:
+                 # `q[None, :]` stretched down the tile: every row is the
+@@ -2685,7 +2691,8 @@ class TTIRImporter:
+                 # rather than copied sixteen times.
+                 get = self._tile_row_getter(tile)
+                 self._tiles[rid] = Tile('lazy', lambda r: get(0), shape[0],
+-                                        shape[1], tile.dtype, replicated=replicated)
++                                        shape[1], tile.dtype, replicated=replicated,
++                                        equal_rows=self._equal_stage_experimental())
+                 return
+             raise Unsupported(
+                 f"a broadcast from {tile.rows} rows to {shape[0]}",
+@@ -3264,19 +3271,30 @@ class TTIRImporter:
+             if j == 0:
+                 # A for this K step, row-major: element (m, k) at m*step + k.
+                 a_addr = self._spill_region(step * vlen)
++                repeated_rows = (_os.environ.get('TNCA_X8_EQUAL_A_STAGE') == '1'
++                                 and self.target.has('matrix_dp') and step <= 64 and 64 % step == 0
++                                 and all(a_parts[rc + c].equal_rows for c in range(step // vlen)))
++                if repeated_rows:
++                    b.comment('experimental X8 A staging: proven equal rows share a packed register')
++                staged_rows = 64 // step if repeated_rows else vlen
+                 for c in range(step // vlen):
+                     part = a_parts[rc + c]
+                     get = self._tile_row_getter(part)
+-                    for r in range(vlen):
+-                        v = get(r)
++                    for r in range(staged_rows):
++                        v = get(0 if repeated_rows else r)
+                         if part.store != ae:
+                             v = b.vcvt(part.store, ae, v)
+                         b.store(b.sbini('add', a_addr, r * step + c * vlen), v, size='b')
+                 b.fence()
+                 a_win = self._window_for(vlen, step, ae)
+-                for i in range(a_win.length):
+-                    b.window_put(a_win, i, b.load(a_addr if i == 0 else b.sbini('add', a_addr, i * 64),
+-                                                  dtype='i32', size='w'))
++                if repeated_rows:
++                    packed = b.load(a_addr, dtype='i32', size='w')
++                    for i in range(a_win.length):
++                        b.window_put(a_win, i, packed)
++                else:
++                    for i in range(a_win.length):
++                        b.window_put(a_win, i, b.load(a_addr if i == 0 else b.sbini('add', a_addr, i * 64),
++                                                      dtype='i32', size='w'))
+                 a_tile = Tile('window', a_win, vlen, step, ae)
+             b_win, tok = pending.pop(idx)
+             b.barrier_wait(tok)
+@@ -4707,6 +4725,24 @@ class TTIRImporter:
+         # A dense constant: one `v.movi` serves every row.
+         return pending is not None and pending[0] == 'tile'
+ 
++    def _equal_stage_experimental(self):
++        import os
++        return self.target.has('matrix_dp') and os.environ.get('TNCA_X8_EQUAL_A_STAGE') == '1'
++
++    def _uniform_lanes_experimental(self, value):
++        """Prove a data vector has the same value in all active lanes."""
++        key = value.id()
++        if key in self._uniform_vectors:
++            return True
++        tile = self._tiles.get(key)
++        if tile is not None and tile.kind == 'col' and tile.equal_rows:
++            return True
++        if self._pending_const.get(key, (None,))[0] in ('scalar', 'vector'):
++            return True
++        original = getattr(value, 'value', value)
++        defining = self._ttir_def(original)
++        return defining is not None and defining.get_name() == 'tt.splat'
++
+     def _equal_rows(self, value):
+         """Conservative proof that all rows of this tile contain equal lanes."""
+         shape, _ = _parse_type(str(value.get_type()))
+@@ -5197,6 +5233,11 @@ class TTIRImporter:
+             self.b, lambda c: self._fconst(c, elem),
+             self._vec(op.get_operand(0), elem),
+             self._vec(op.get_operand(1), elem), dtype=elem)
++        import os as _equal_os
++        if (_equal_os.environ.get('TNCA_X8_EQUAL_A_STAGE') == '1'
++                and all(self._uniform_lanes_experimental(op.get_operand(i))
++                        for i in range(op.get_num_operands()))):
++            self._uniform_vectors.add(op.get_result(0).id())
+ 
+     # ---- conversions ------------------------------------------------------
+     def _convert(self, op, src, dst):

@@ -109,7 +109,7 @@ module tb_tnca_top;
         for(dump_way=0;dump_way<WAYS;dump_way=dump_way+1)begin : g_dump_way
             for(dump_set=0;dump_set<SETS;dump_set=dump_set+1)begin : g_dump_set
                 assign dump_tags[dump_tile*SETS*WAYS+dump_set*WAYS+dump_way] =
-                    dut.g_tile[dump_tile].u_tile.u_slice.g_sync_tags.g_way[dump_way].bank[dump_set];
+                    dut.g_tile[dump_tile].u_tile.g_slice.u_slice.g_sync_tags.g_way[dump_way].bank[dump_set];
             end
         end
     end endgenerate
@@ -343,35 +343,35 @@ module tb_tnca_top;
                 for (dway = 0; dway < WAYS; dway = dway + 1) begin
                     didx = dset*WAYS + dway;
                     if (!dfound && dhome == 0 &&
-                        dut.g_tile[0].u_tile.u_slice.v_bits[didx] &&
+                        dut.g_tile[0].u_tile.g_slice.u_slice.v_bits[didx] &&
                         (dump_tags[0*SETS*WAYS+didx] ==
                          dtag)) begin
                         dfound = 1'b1;
-                        dword  = dut.g_tile[0].u_tile.u_slice.data_mem[didx]
+                        dword  = dut.g_tile[0].u_tile.g_slice.u_slice.data_mem[didx]
                                  [dba[5:3]*64 +: 64];
                     end
                     if (!dfound && dhome == 1 &&
-                        dut.g_tile[1].u_tile.u_slice.v_bits[didx] &&
+                        dut.g_tile[1].u_tile.g_slice.u_slice.v_bits[didx] &&
                         (dump_tags[1*SETS*WAYS+didx] ==
                          dtag)) begin
                         dfound = 1'b1;
-                        dword  = dut.g_tile[1].u_tile.u_slice.data_mem[didx]
+                        dword  = dut.g_tile[1].u_tile.g_slice.u_slice.data_mem[didx]
                                  [dba[5:3]*64 +: 64];
                     end
                     if (!dfound && dhome == 2 &&
-                        dut.g_tile[2].u_tile.u_slice.v_bits[didx] &&
+                        dut.g_tile[2].u_tile.g_slice.u_slice.v_bits[didx] &&
                         (dump_tags[2*SETS*WAYS+didx] ==
                          dtag)) begin
                         dfound = 1'b1;
-                        dword  = dut.g_tile[2].u_tile.u_slice.data_mem[didx]
+                        dword  = dut.g_tile[2].u_tile.g_slice.u_slice.data_mem[didx]
                                  [dba[5:3]*64 +: 64];
                     end
                     if (!dfound && dhome == 3 &&
-                        dut.g_tile[3].u_tile.u_slice.v_bits[didx] &&
+                        dut.g_tile[3].u_tile.g_slice.u_slice.v_bits[didx] &&
                         (dump_tags[3*SETS*WAYS+didx] ==
                          dtag)) begin
                         dfound = 1'b1;
-                        dword  = dut.g_tile[3].u_tile.u_slice.data_mem[didx]
+                        dword  = dut.g_tile[3].u_tile.g_slice.u_slice.data_mem[didx]
                                  [dba[5:3]*64 +: 64];
                     end
                 end

@@ -48,7 +48,13 @@ module tnca_vrf_banked #(
     parameter READ_LATENCY   = 1,
     parameter NUM_PORTS      = 4,   // read requesters presented per cycle
     parameter ZERO_INVALID   = 0,   // 1 = an unwritten lane reads zero
-    parameter NUM_WRITERS    = 1    // how many write clients contend
+    parameter NUM_WRITERS    = 1,   // how many write clients contend
+    // R41 F05: bit p set -- requester p presents its PHYSICAL register on
+    // req_phys, computed a stage earlier from its context's base, instead
+    // of a context and an index to be added up here. The add and the base
+    // select then leave the request path into the bank arbiters. 0 (the
+    // default) builds exactly the module that existed before.
+    parameter PHYS_IN        = 0
 ) (
     input  wire                              clk,
     input  wire                              rst_n,
@@ -62,6 +68,7 @@ module tnca_vrf_banked #(
     input  wire [NUM_PORTS-1:0]              req_valid,
     input  wire [NUM_PORTS*RCTX_W-1:0]       req_rctx,
     input  wire [NUM_PORTS*8-1:0]            req_idx,
+    input  wire [NUM_PORTS*PHYS_W-1:0]       req_phys,     // PHYS_IN ports only
     output wire [NUM_PORTS-1:0]              req_accept,
 
     // ---- read responses, READ_LATENCY cycles after acceptance ------------
@@ -164,17 +171,19 @@ module tnca_vrf_banked #(
     // policy, not fairness -- R3-04 owns fairness, and this module says
     // plainly which request it took so that layer can count the rest as
     // waiting rather than as lost.
-    wire [PHYS_W-1:0] req_phys [0:NUM_PORTS-1];
+    wire [PHYS_W-1:0] req_phys_of [0:NUM_PORTS-1];
     wire [BANK_W-1:0] req_bank [0:NUM_PORTS-1];
     wire [ROW_W-1:0]  req_row  [0:NUM_PORTS-1];
 
     genvar p;
     generate
         for (p = 0; p < NUM_PORTS; p = p + 1) begin : g_decode
-            assign req_phys[p] = phys_of(req_rctx[p*RCTX_W +: RCTX_W],
-                                         req_idx[p*8 +: 8]);
-            assign req_bank[p] = req_phys[p][BANK_W-1:0];
-            assign req_row[p]  = req_phys[p][BANK_W +: ROW_W];
+            assign req_phys_of[p] = ((PHYS_IN >> p) & 1)
+                                  ? req_phys[p*PHYS_W +: PHYS_W]
+                                  : phys_of(req_rctx[p*RCTX_W +: RCTX_W],
+                                            req_idx[p*8 +: 8]);
+            assign req_bank[p] = req_phys_of[p][BANK_W-1:0];
+            assign req_row[p]  = req_phys_of[p][BANK_W +: ROW_W];
         end
     endgenerate
 

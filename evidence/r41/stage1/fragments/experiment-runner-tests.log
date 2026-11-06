@@ -1,0 +1,9 @@
+test_exact_resume_and_changed_output_refusal (__main__.ExperimentTests.test_exact_resume_and_changed_output_refusal) ... ok
+test_failure_is_preserved_without_retry (__main__.ExperimentTests.test_failure_is_preserved_without_retry) ... ok
+test_missing_success_output_is_an_error (__main__.ExperimentTests.test_missing_success_output_is_an_error) ... ok
+test_timeout_terminates_the_actual_worker (__main__.ExperimentTests.test_timeout_terminates_the_actual_worker) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.200s
+
+OK

@@ -1,0 +1,10 @@
+g2 0 op.sum/membound/fp16-small-contig-r32-c1024
+g2 0 op.add/membound/fp16-small-strided-r32-c1024
+g2 0 op.silu/membound/fp16-small-contig-r32-c1024
+g2 0 op.clone/membound/fp16-small-strided-r32-c1024
+g2 0 op.exp/membound/fp16-small-contig-r32-c1024
+s1 0 op.sum/membound/fp16-small-contig-r32-c1024
+s1 0 op.add/membound/fp16-small-strided-r32-c1024
+s1 0 op.silu/membound/fp16-small-contig-r32-c1024
+s1 0 op.clone/membound/fp16-small-strided-r32-c1024
+s1 0 op.exp/membound/fp16-small-contig-r32-c1024

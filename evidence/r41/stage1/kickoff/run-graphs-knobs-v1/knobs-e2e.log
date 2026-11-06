@@ -1,0 +1,2 @@
+{"key": "op.matmul/tiny/fp16-m16-k32-n16", "status": "pass", "launches": 1, "device_cycles": 14128, "max_rel_err": 0.00040886770849252635, "process_wall_s": 25.5, "model_launch_host_s": 0.009346}
+DONE 1 / 1

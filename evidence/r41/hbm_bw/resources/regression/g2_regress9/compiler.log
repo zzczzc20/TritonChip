@@ -1,0 +1,343 @@
+PASS: isa/tnca-isa-v0.1.json is up to date (169 instructions)
+  up to date: compiler/include/tnca/ISA/TNCAOpcodes.inc
+  up to date: compiler/include/tnca/ISA/TNCAInstrInfo.td
+  up to date: doc/isa/opcode-map.md
+PASS: all generated ISA files match the schema
+  up to date: doc/support_matrix.md
+PASS: target descriptions match the RTL parameters
+checked 218 shared constants against /home/zhongchun/r41bw_res_18d045c53b8b/rtl/common/tnca_defs.vh
+PASS: the RTL defines, the assembler tables, the DSLX and the float oracle agree
+  FAIL test_binary32_dot_is_not_counted_as_mma (test_execution_resources.ExecutionResourcePlanTests.test_binary32_dot_is_not_counted_as_mma)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 206, in test_binary32_dot_is_not_counted_as_mma
+        _r, plan = self.compile(f32_dot, dict(A='*fp32', B='*fp32', C='*fp32'), {})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_descriptor_and_pointer_transfers (test_execution_resources.ExecutionResourcePlanTests.test_descriptor_and_pointer_transfers)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 179, in test_descriptor_and_pointer_transfers
+        _r, plan = self.compile(descriptor_gemm, sig, dict(M=17, N=65, K=33, BN=16))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_fragments_and_macs_for_full_wide_tail_and_masked_shapes (test_execution_resources.ExecutionResourcePlanTests.test_fragments_and_macs_for_full_wide_tail_and_masked_shapes) (shape=(32, 32, 32), tile=16)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 127, in test_fragments_and_macs_for_full_wide_tail_and_masked_shapes
+        _result, plan = self.gemm(m, n, k, bn, even)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 119, in gemm
+        return self.compile(template_gemm, GEMM_SIG, dict(M=m, N=n, K=k, BN=bn, EVEN_K=even_k))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_fragments_and_macs_for_full_wide_tail_and_masked_shapes (test_execution_resources.ExecutionResourcePlanTests.test_fragments_and_macs_for_full_wide_tail_and_masked_shapes) (shape=(16, 32, 32), tile=32)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 127, in test_fragments_and_macs_for_full_wide_tail_and_masked_shapes
+        _result, plan = self.gemm(m, n, k, bn, even)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 119, in gemm
+        return self.compile(template_gemm, GEMM_SIG, dict(M=m, N=n, K=k, BN=bn, EVEN_K=even_k))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_fragments_and_macs_for_full_wide_tail_and_masked_shapes (test_execution_resources.ExecutionResourcePlanTests.test_fragments_and_macs_for_full_wide_tail_and_masked_shapes) (shape=(17, 65, 33), tile=32)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 127, in test_fragments_and_macs_for_full_wide_tail_and_masked_shapes
+        _result, plan = self.gemm(m, n, k, bn, even)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 119, in gemm
+        return self.compile(template_gemm, GEMM_SIG, dict(M=m, N=n, K=k, BN=bn, EVEN_K=even_k))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_fragments_and_macs_for_full_wide_tail_and_masked_shapes (test_execution_resources.ExecutionResourcePlanTests.test_fragments_and_macs_for_full_wide_tail_and_masked_shapes) (shape=(20, 24, 40), tile=16)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 127, in test_fragments_and_macs_for_full_wide_tail_and_masked_shapes
+        _result, plan = self.gemm(m, n, k, bn, even)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 119, in gemm
+        return self.compile(template_gemm, GEMM_SIG, dict(M=m, N=n, K=k, BN=bn, EVEN_K=even_k))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_fragments_and_macs_for_full_wide_tail_and_masked_shapes (test_execution_resources.ExecutionResourcePlanTests.test_fragments_and_macs_for_full_wide_tail_and_masked_shapes)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 151, in test_fragments_and_macs_for_full_wide_tail_and_masked_shapes
+        _result, plan = self.gemm(17, 65, 33, 32, False)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 119, in gemm
+        return self.compile(template_gemm, GEMM_SIG, dict(M=m, N=n, K=k, BN=bn, EVEN_K=even_k))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_live_old_accumulator_round_trips_are_counted (test_execution_resources.ExecutionResourcePlanTests.test_live_old_accumulator_round_trips_are_counted)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 168, in test_live_old_accumulator_round_trips_are_counted
+        _r, resident = self.compile(fragment_loop, sig, dict(K=64, N=32, OLD_USE=False), window_reuse=1)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt, window_reuse
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_refusals_carry_their_reason (test_execution_resources.ExecutionResourcePlanTests.test_refusals_carry_their_reason)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 232, in test_refusals_carry_their_reason
+        _r, plan = self.compile(f32_dot, dict(A='*fp32', B='*fp32', C='*fp32'), {}, rctx_roles=1)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt, rctx_roles
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_resident_k_loop_has_no_accumulator_round_trips (test_execution_resources.ExecutionResourcePlanTests.test_resident_k_loop_has_no_accumulator_round_trips) (tile=16)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 159, in test_resident_k_loop_has_no_accumulator_round_trips
+        _result, plan = self.gemm(17, 65, 33, bn, False)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 119, in gemm
+        return self.compile(template_gemm, GEMM_SIG, dict(M=m, N=n, K=k, BN=bn, EVEN_K=even_k))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_resident_k_loop_has_no_accumulator_round_trips (test_execution_resources.ExecutionResourcePlanTests.test_resident_k_loop_has_no_accumulator_round_trips) (tile=32)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 159, in test_resident_k_loop_has_no_accumulator_round_trips
+        _result, plan = self.gemm(17, 65, 33, bn, False)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 119, in gemm
+        return self.compile(template_gemm, GEMM_SIG, dict(M=m, N=n, K=k, BN=bn, EVEN_K=even_k))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_resources_admission_and_tuning_read_the_plan (test_execution_resources.ExecutionResourcePlanTests.test_resources_admission_and_tuning_read_the_plan)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 214, in test_resources_admission_and_tuning_read_the_plan
+        result, plan = self.gemm(17, 65, 33, 32, False)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 119, in gemm
+        return self.compile(template_gemm, GEMM_SIG, dict(M=m, N=n, K=k, BN=bn, EVEN_K=even_k))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_unstated_extents_stay_unknown (test_execution_resources.ExecutionResourcePlanTests.test_unstated_extents_stay_unknown)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 199, in test_unstated_extents_stay_unknown
+        _r, plan = self.compile(runtime_k, dict(A='*fp16', B='*fp16', C='*fp32', K='i32'), {})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_execution_resources.py", line 111, in compile
+        result = aot.compile_aot(fn, signature=signature, constexprs=constexprs,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 383, in compile_aot
+        options = check_options(options)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tritonchip/python/tnca/aot.py", line 242, in check_options
+        raise CompileError(
+    tnca.errors.CompileError: [COMPILE_FAILED] unknown compile option(s): index_opt
+      known: ['alias', 'check_protocol', 'debug', 'dump_dir', 'no_ll', 'opt_level']
+      try: an option this driver does not understand is refused rather than ignored, so a misspelling cannot silently produce a different artifact
+  FAIL test_erf (test_std_math.StdMathTests.test_erf)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_std_math.py", line 230, in test_erf
+        cg, asm = self.compile(k_erf, dict(X='*fp32', O='*fp32'))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_std_math.py", line 177, in compile
+        module, _ctx = triton_bridge.make_ttir(fn, sig, {})
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/triton_bridge.py", line 34, in make_ttir
+        module = src.make_ir(GPUTarget(backend_name, 0, 32),
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/compiler.py", line 80, in make_ir
+        return ast_to_ttir(self.fn, self, context=context, options=options, codegen_fns=codegen_fns,
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 1699, in ast_to_ttir
+        generator.visit(fn.parse())
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 1595, in visit
+        ret = super().visit(node)
+              ^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/ast.py", line 407, in visit
+        return visitor(node)
+               ^^^^^^^^^^^^^
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 520, in visit_Module
+        ast.NodeVisitor.generic_visit(self, node)
+      File "/usr/lib/python3.12/ast.py", line 415, in generic_visit
+        self.visit(item)
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 1595, in visit
+        ret = super().visit(node)
+              ^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/ast.py", line 407, in visit
+        return visitor(node)
+               ^^^^^^^^^^^^^
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 667, in visit_FunctionDef
+        self.visit_compound_statement(node.body)
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 513, in visit_compound_statement
+        self.visit(stmt)
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 1595, in visit
+        ret = super().visit(node)
+              ^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/ast.py", line 407, in visit
+        return visitor(node)
+               ^^^^^^^^^^^^^
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 1558, in visit_Expr
+        ast.NodeVisitor.generic_visit(self, node)
+      File
+  FAIL test_log1p (test_std_math.StdMathTests.test_log1p)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_std_math.py", line 220, in test_log1p
+        cg, asm = self.compile(k_log1p, dict(X='*fp32', O='*fp32'))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_std_math.py", line 177, in compile
+        module, _ctx = triton_bridge.make_ttir(fn, sig, {})
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/triton_bridge.py", line 34, in make_ttir
+        module = src.make_ir(GPUTarget(backend_name, 0, 32),
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/compiler.py", line 80, in make_ir
+        return ast_to_ttir(self.fn, self, context=context, options=options, codegen_fns=codegen_fns,
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 1699, in ast_to_ttir
+        generator.visit(fn.parse())
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 1595, in visit
+        ret = super().visit(node)
+              ^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/ast.py", line 407, in visit
+        return visitor(node)
+               ^^^^^^^^^^^^^
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 520, in visit_Module
+        ast.NodeVisitor.generic_visit(self, node)
+      File "/usr/lib/python3.12/ast.py", line 415, in generic_visit
+        self.visit(item)
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 1595, in visit
+        ret = super().visit(node)
+              ^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/ast.py", line 407, in visit
+        return visitor(node)
+               ^^^^^^^^^^^^^
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 667, in visit_FunctionDef
+        self.visit_compound_statement(node.body)
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 513, in visit_compound_statement
+        self.visit(stmt)
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 1595, in visit
+        ret = super().visit(node)
+              ^^^^^^^^^^^^^^^^^^^
+      File "/usr/lib/python3.12/ast.py", line 407, in visit
+        return visitor(node)
+               ^^^^^^^^^^^^^
+      File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/compiler/code_generator.py", line 1558, in visit_Expr
+        ast.NodeVisitor.generic_visit(self, node)
+    
+  FAIL test_resource_ledger_counts_implicit_window_registers (test_window_lifetime.TestWindowLifetime.test_resource_ledger_counts_implicit_window_registers)
+    Traceback (most recent call last):
+      File "/home/zhongchun/r41bw_res_18d045c53b8b/compiler/test/test_window_lifetime.py", line 64, in test_resource_ledger_counts_implicit_window_registers
+        measured = measure_resources(cg.b.text(), cg.target, include_windows=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    TypeError: measure_resources() got an unexpected keyword argument 'include_windows'
+  compiler-unit          FAIL   16/157 failed
+make: *** [Makefile:974: compiler] Error 1
+
+real	0m2.799s
+user	0m3.856s
+sys	0m0.085s

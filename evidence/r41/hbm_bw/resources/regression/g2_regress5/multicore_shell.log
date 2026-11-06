@@ -1,0 +1,28 @@
+GRID DEADLINE PASS
+tb/tb_grid_deadline.v:21: $finish called at 360000 (1ps)
+MULTICORE SHELL GRID PASS N=1 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=1 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=1 id=13 status=2 cycles=1667
+MULTICORE SHELL GRID PASS N=1 id=11 status=0 cycles=39639
+MULTICORE SHELL GRID PASS N=1 id=12 status=0 cycles=75351
+MULTICORE PERSISTENT SHELL PASS N=1
+tb/device/tb_multicore_shell.v:83: $finish called at 809840000 (1ps)
+MULTICORE SHELL GRID PASS N=3 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=3 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=3 id=13 status=2 cycles=1683
+MULTICORE SHELL GRID PASS N=3 id=11 status=0 cycles=14826
+MULTICORE SHELL GRID PASS N=3 id=12 status=0 cycles=27137
+MULTICORE PERSISTENT SHELL PASS N=3
+tb/device/tb_multicore_shell.v:83: $finish called at 336680000 (1ps)
+MULTICORE SHELL GRID PASS N=8 id=9 status=3 cycles=1552
+MULTICORE SHELL GRID PASS N=8 id=10 status=3 cycles=1560
+MULTICORE SHELL GRID PASS N=8 id=13 status=2 cycles=1715
+MULTICORE SHELL GRID PASS N=8 id=11 status=0 cycles=7808
+MULTICORE SHELL GRID PASS N=8 id=12 status=0 cycles=13507
+MULTICORE PERSISTENT SHELL PASS N=8
+tb/device/tb_multicore_shell.v:83: $finish called at 209520000 (1ps)
+r40-multicore-shell-tests PASS
+
+real	8m28.723s
+user	8m26.701s
+sys	0m2.263s

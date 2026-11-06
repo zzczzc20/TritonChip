@@ -1,0 +1,33 @@
+---- nuca slice ----
+seed=20260918 trace_hash=d256443f854f7fe5 writes=1015
+issued=4096 reads_checked=3081 inflight_left=0
+hit=860 miss=3099 merge=137 wb=751 mshr_full=118 target_full=0 hit_past_block=23
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=3035 dead_evict=0 gear=8
+PASS
+tb/nuca/tb_nuca_wide.v:459: $finish called at 266046000 (1ps)
+HOME SERVICE mode=2 word_bytes=64 accepted=4096 responses=4096 span_cycles=27511 hit=0 miss=4096 fast_fills=4096
+---- nuca slice ----
+seed=20260918 trace_hash=910aaeb6dd1e6325 writes=0
+issued=4096 reads_checked=4096 inflight_left=0
+hit=0 miss=4096 merge=0 wb=0 mshr_full=726 target_full=0 hit_past_block=93
+OWNER_EPOCH retries=0
+policy=0 bypass=0 evict=4032 dead_evict=0 gear=8
+PASS
+tb/nuca/tb_nuca_wide.v:459: $finish called at 275156000 (1ps)
+---- nuca slice ----
+seed=20260918 trace_hash=d256443f854f7fe5 writes=1015
+issued=4096 reads_checked=3081 inflight_left=0
+hit=865 miss=3099 merge=132 wb=751 mshr_full=78 target_full=0 hit_past_block=16
+OWNER_EPOCH retries=756
+policy=0 bypass=0 evict=3035 dead_evict=0 gear=8
+PASS
+tb/nuca/tb_nuca_wide.v:459: $finish called at 279466000 (1ps)
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+  File "/home/zhongchun/r41-hbmbw/tools/r41/wide_home_tests.py", line 13, in run_case
+    result=subprocess.run(['vvp',binary,*args],cwd=ROOT,text=True,capture_output=True,check=True,timeout=120)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['vvp', '/tmp/r41-bg-home.vvp', '+nreq=4096', '+min_wb=0']' returned non-zero exit status 1.

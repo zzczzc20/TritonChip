@@ -89,6 +89,20 @@ def mma_shape_of(attrs, *, m=16, n=16):
     return m, n, MMA_K_STEPS[k_name], MMA_DTYPE_BITS[dt]
 
 
+def mma_dp_group(a_format, b_format):
+    """Products summed per rounding step by m.mma.dp.async (ISA sec 9C.4).
+
+    4 for E4M3 x E4M3, whose group sum is exact in 38 bits; 2 for every other
+    pair. A function of the two operand formats and nothing else.
+    """
+    for f in (a_format, b_format):
+        if f not in MMA_DTYPE_BITS:
+            raise Diagnostic(f"unknown fragment dtype {f!r}",
+                             because=f"ISA sec 9C allocates {sorted(MMA_DTYPE_BITS)}",
+                             source='ISA sec 9C.4')
+    return 4 if (a_format == 'e4m3' and b_format == 'e4m3') else 2
+
+
 def fragment_registers(rows, k, dtype_bits=16):
     """How many vector registers a `rows` x `k` fragment occupies.
 

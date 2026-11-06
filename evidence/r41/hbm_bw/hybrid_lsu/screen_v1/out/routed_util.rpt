@@ -1,0 +1,36 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2023.2 (lin64) Build 4029153 Fri Oct 13 20:13:54 MDT 2023
+| Date         : Mon Oct 26 21:00:07 2026
+| Host         : acf3019 running 64-bit Ubuntu 22.04.5 LTS
+| Command      : report_utilization -hierarchical -file /home/zzhouch/r41_hbmbw_hybrid_lsu_v1/out/routed_util.rpt
+| Design       : tnca_lsu_hybrid
+| Device       : xcu280-fsvh2892-2L-e
+| Speed File   : -2L
+| Design State : Routed
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++---------------------+------------------------+------------+------------+---------+------+-------+--------+--------+------+------------+
+|       Instance      |         Module         | Total LUTs | Logic LUTs | LUTRAMs | SRLs |  FFs  | RAMB36 | RAMB18 | URAM | DSP Blocks |
++---------------------+------------------------+------------+------------+---------+------+-------+--------+--------+------+------------+
+| tnca_lsu_hybrid     |                  (top) |      30429 |      30043 |     386 |    0 | 15247 |      0 |      0 |    0 |          0 |
+|   (tnca_lsu_hybrid) |                  (top) |          7 |          7 |       0 |    0 |   760 |      0 |      0 |    0 |          0 |
+|   adapter           | tnca_word_line_adapter |       2980 |       2976 |       4 |    0 |     0 |      0 |      0 |    0 |          0 |
+|   fast              |          tnca_lsu_line |       5083 |       4761 |     322 |    0 |   803 |      0 |      0 |    0 |          0 |
+|   slow              |          tnca_lsu_pair |      22362 |      22302 |      60 |    0 | 13684 |      0 |      0 |    0 |          0 |
+|     (slow)          |          tnca_lsu_pair |          0 |          0 |       0 |    0 |     1 |      0 |      0 |    0 |          0 |
+|     g_unit[0].u     |               tnca_lsu |      11506 |      11476 |      30 |    0 |  6841 |      0 |      0 |    0 |          0 |
+|     g_unit[1].u     |             tnca_lsu_0 |      10857 |      10827 |      30 |    0 |  6842 |      0 |      0 |    0 |          0 |
++---------------------+------------------------+------------+------------+---------+------+-------+--------+--------+------+------------+
+* Note: The sum of lower-level cells may be larger than their parent cells total, due to cross-hierarchy LUT combining
+
+

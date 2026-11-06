@@ -1,0 +1,153 @@
+{
+ "domain": "board",
+ "archive": "evidence/r41/chat/board-51aef19.tgz",
+ "archive_sha256": "a8d14f9792a18249f7a08f8fcda4ac75a588cb6ebaeeb08bd3e7da7749a1a068",
+ "steps": [
+  {
+   "step": "q35-full-chat",
+   "status": "failed",
+   "returncode": 1,
+   "host_wall_seconds": 20.013412851840258,
+   "started_utc": "2026-10-28T08:15:20.724910+00:00",
+   "ended_utc": "2026-10-28T08:15:40.742256+00:00",
+   "image_sha256": "30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de",
+   "image_uuid": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+   "clock_hz": 100000000,
+   "uuid_before": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+   "uuid_after": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+   "clock_mhz_before": 100,
+   "clock_mhz_after": 100,
+   "stderr_tail": "lovedheart/Qwen3.5-4B-FP8@752f65fd155dd34323cfc22d6143df1d48ce3c28 is not in /home/zzhouch/r41s2_fp8_inputs/hf/hub (tools/models/fetch_qwen_fp8.py)\n"
+  },
+  {
+   "step": "vl-full-chat",
+   "status": "completed",
+   "returncode": 0,
+   "host_wall_seconds": 1395.2937188758515,
+   "started_utc": "2026-10-28T07:52:05.018713+00:00",
+   "ended_utc": "2026-10-28T08:15:20.314403+00:00",
+   "image_sha256": "30e79769c128668ac8f1d0d9017f6ea8d22b8335b8fee18cbe374f4bdef4e5de",
+   "image_uuid": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+   "clock_hz": 100000000,
+   "uuid_before": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+   "uuid_after": "49964b17-e0b4-5bd2-dd40-7fc37b1205d3",
+   "clock_mhz_before": 100,
+   "clock_mhz_after": 100,
+   "chat": {
+    "status": "pass",
+    "model": "qwen3vl-2b-fp8",
+    "model_scope": "full-checkpoint",
+    "decoder_layers": 28,
+    "prompt_tokens": 11,
+    "generated_tokens": [
+     9707,
+     0,
+     2585,
+     646
+    ],
+    "generated_text": "Hello! How can",
+    "statistics": {
+     "generated_tokens": 4,
+     "decode_steps": 3,
+     "prefill_seconds": 413.42981309397146,
+     "decode_seconds": 473.82116845529526,
+     "mean_decode_seconds_per_token": 157.94038948509842,
+     "decode_tokens_per_second": 0.00633150268439948,
+     "generation_seconds": 887.2509815492667
+    },
+    "steady_decode_seconds": [
+     63.094938225112855,
+     64.12581400899217
+    ],
+    "steps": [
+     {
+      "step": 0,
+      "kind": "prefill",
+      "seconds": 413.42981309397146,
+      "new_graphs": 1,
+      "device_cycles": 4238154739,
+      "launches": 701,
+      "host_read_calls": 84,
+      "host_write_bytes": 1320,
+      "code_store": null,
+      "device_seconds_at_clock": 42.38154739
+     },
+     {
+      "step": 1,
+      "kind": "decode",
+      "seconds": 346.60041622119024,
+      "new_graphs": 1,
+      "device_cycles": 4065580434,
+      "launches": 563,
+      "host_read_calls": 84,
+      "host_write_bytes": 712,
+      "code_store": null,
+      "device_seconds_at_clock": 40.65580434
+     },
+     {
+      "step": 2,
+      "kind": "decode",
+      "seconds": 63.094938225112855,
+      "new_graphs": 0,
+      "device_cycles": 4065511739,
+      "launches": 563,
+      "host_read_calls": 0,
+      "host_write_bytes": 40,
+      "code_store": null,
+      "device_seconds_at_clock": 40.65511739
+     },
+     {
+      "step": 3,
+      "kind": "decode",
+      "seconds": 64.12581400899217,
+      "new_graphs": 0,
+      "device_cycles": 4065552515,
+      "launches": 563,
+      "host_read_calls": 0,
+      "host_write_bytes": 40,
+      "code_store": null,
+      "device_seconds_at_clock": 40.65552515
+     }
+    ],
+    "teacher_forced": {
+     "reference_tokens": [
+      9707,
+      0
+     ],
+     "checked_tokens": 2,
+     "max_allowed_rel_l2": 0.05,
+     "cpu_floor_multiplier": 2.0,
+     "passed": true,
+     "steps": [
+      {
+       "step": 0,
+       "rel_l2": 0.03492688958696281,
+       "reference_argmax": 9707,
+       "candidate_argmax": 9707,
+       "argmax_equal": true,
+       "cpu_scale_rounding_floor": 0.04223258092923073,
+       "allowed_rel_l2": 0.08446516185846147
+      },
+      {
+       "step": 1,
+       "rel_l2": 0.03500718871823851,
+       "reference_argmax": 0,
+       "candidate_argmax": 0,
+       "argmax_equal": true,
+       "cpu_scale_rounding_floor": 0.03358039675799175,
+       "allowed_rel_l2": 0.0671607935159835
+      }
+     ],
+     "interpretation": "Reference tokens feed the device; each allowance is the configured minimum or the logged CPU reciprocal-scale floor times the configured multiplier, whichever is larger"
+    },
+    "persistent_session_check": null,
+    "device_memory": {
+     "device_peak": 2662758040,
+     "device_live": 2662182368
+    },
+    "decode_weight_bytes": 2654538240,
+    "steady_decode_tokens_per_second": 0.015720705662231143
+   }
+  }
+ ]
+}

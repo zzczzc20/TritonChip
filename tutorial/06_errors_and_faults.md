@@ -34,8 +34,7 @@ at compile time:
                                                [COMPILE_FAILED] unknown compile option(s): optimise_level
   a profile that does not exist                [PROFILE_MISMATCH]
                                                [PROFILE_MISMATCH] no profile 'core-imaginary'
-  a block wider than one element per lane      [UNSUPPORTED]
-                                               [UNSUPPORTED] a block of 256 spans 16 vector registers
+  an invalid value for a known option          ValueError: window_reuse must be one of (0, 1)
 ```
 
 `optimise_level` is a typo for `opt_level`. A driver that ignored
@@ -43,9 +42,8 @@ unknown options would compile at O0 and hand you an artifact you
 believed was optimised; every measurement after that would be of the
 wrong thing. So an unknown option is an error, not a shrug.
 
-`BLOCK=256` on a machine with 16 lanes needs a tensor spread over 16
-vector registers with its index mapping intact. That is not built, so it
-is refused rather than half-done.
+`window_reuse` accepts only 0 or 1. An invalid value is rejected before
+compilation. Wider blocks are supported and are not an error example.
 
 ## Load and launch time
 

@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "/home/zhongchun/r41-hbmbw/tools/r41/hybrid_torch_rtl.py", line 24, in <module>
+    from tnca.triton_backend.driver import launch_log
+  File "/home/zhongchun/r41-hbmbw/python/tnca/triton_backend/driver.py", line 47, in <module>
+    from triton.backends.compiler import GPUTarget
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/__init__.py", line 8, in <module>
+    from .runtime import (
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/runtime/__init__.py", line 1, in <module>
+    from .autotuner import (Autotuner, Config, Heuristics, autotune, heuristics)
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/runtime/autotuner.py", line 12, in <module>
+    from .jit import KernelInterface, JITFunction
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/runtime/jit.py", line 15, in <module>
+    from triton.backends import BaseBackend
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/backends/__init__.py", line 66, in <module>
+    backends: dict[str, Backend] = _discover_backends()
+                                   ^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/backends/__init__.py", line 62, in _discover_backends
+    _find_concrete_subclasses(driver, DriverBase))  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zhongchun/tc_env/torchenv/lib/python3.12/site-packages/triton/backends/__init__.py", line 26, in _find_concrete_subclasses
+    raise RuntimeError(f"Found 0 concrete subclasses of {base_class} in {module}: {ret}")
+RuntimeError: Found 0 concrete subclasses of <class 'triton.backends.driver.DriverBase'> in <module 'tnca.triton_backend.driver' from '/home/zhongchun/r41-hbmbw/python/tnca/triton_backend/driver.py'>: []

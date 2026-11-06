@@ -86,10 +86,50 @@ _INCLUDE_RE = re.compile(r'^\s*`include\s+"([^"]+)"', re.M)
 # Without it the pattern matched `case (op)` as the module `cas` being
 # instantiated as `e`, and the manifest filled up with unresolved
 # references to fragments of keywords.
-_INST_RE = re.compile(
-    r'^[ \t]*([A-Za-z_]\w*)'
-    r'(?:[ \t]*#[ \t]*\((?:[^()]|\([^()]*\))*\)[ \t]*|[ \t]+)'
-    r'([A-Za-z_]\w*)[ \t]*\(', re.M)
+_INST_HEAD_RE = re.compile(r'^[ \t]*([A-Za-z_]\w*)[ \t]*', re.M)
+_INSTANCE_NAME_RE = re.compile(r'([A-Za-z_]\w*)\s*\(')
+
+
+def _instances(body):
+    """Yield module names from instantiations, including nested parameters."""
+    for match in _INST_HEAD_RE.finditer(body):
+        name = match.group(1)
+        if name in _KEYWORDS:
+            continue
+        pos = match.end()
+        while pos < len(body) and body[pos].isspace():
+            pos += 1
+        if pos < len(body) and body[pos] == '#':
+            pos += 1
+            while pos < len(body) and body[pos].isspace():
+                pos += 1
+            if pos >= len(body) or body[pos] != '(':
+                continue
+            depth, quoted, escaped = 1, False, False
+            pos += 1
+            while pos < len(body) and depth:
+                char = body[pos]
+                if quoted:
+                    if escaped:
+                        escaped = False
+                    elif char == '\\':
+                        escaped = True
+                    elif char == '"':
+                        quoted = False
+                elif char == '"':
+                    quoted = True
+                elif char == '(':
+                    depth += 1
+                elif char == ')':
+                    depth -= 1
+                pos += 1
+            if depth:
+                raise ValueError(f'unclosed parameter list for {name}')
+            while pos < len(body) and body[pos].isspace():
+                pos += 1
+        if _INSTANCE_NAME_RE.match(body, pos):
+            yield name
+
 
 _TASKFN_RE = re.compile(r'^\s*(?:task|function)\b[^;]*?([A-Za-z_]\w*)\s*[;(]',
                         re.M)
@@ -124,8 +164,8 @@ def _needs(path):
     # is instantiated and are not modules.
     local = set(_TASKFN_RE.findall(body))
     inst = set()
-    for name, _label in _INST_RE.findall(body):
-        if name not in _KEYWORDS and name not in local:
+    for name in _instances(body):
+        if name not in local:
             inst.add(name)
     return inst, set(_INCLUDE_RE.findall(body))
 
@@ -527,7 +567,8 @@ def export(outdir, *, program_words, result_addr, expected):
                        == os.path.join(ROOT, 'rtl')})
     # Everything the simulation binding needs that the synthesizable set
     # does not already have.
-    sim_only = {k: v for k, v in sim_files.items() if k not in synth_files}
+    synth_paths = set(synth_files.values())
+    sim_only = {k: v for k, v in sim_files.items() if v not in synth_paths}
     sim_only_incs = {k: v for k, v in sim_incs.items()
                      if k not in synth_incs}
 
@@ -552,9 +593,14 @@ def export(outdir, *, program_words, result_addr, expected):
         'unresolved': [], 'simulation_only_behaviour': [],
     }
 
+    copied = {}
+
     def copy(src, sub):
         name = os.path.basename(src)
         dst = os.path.join(outdir, sub, name)
+        prior = copied.setdefault((sub, name), os.path.realpath(src))
+        if prior != os.path.realpath(src):
+            raise ValueError(f'export basename collision for {sub}/{name}: {prior} and {src}')
         shutil.copy2(src, dst)
         return {'file': f"{sub}/{name}", 'sha256_16': _sha(src),
                 'bytes': os.path.getsize(src)}
@@ -569,6 +615,18 @@ def export(outdir, *, program_words, result_addr, expected):
     for name in sorted(sim_only):
         manifest['sim'].append(dict(module=name,
                                     **copy(sim_only[name], 'sim')))
+
+    # One Verilog file can define several reachable modules. Compile each
+    # physical file once, while retaining every module name in the manifest.
+    for section in ('rtl', 'sim'):
+        unique = {}
+        for entry in manifest[section]:
+            if entry['file'] in unique:
+                first = unique[entry['file']]
+                first.setdefault('modules', [first['module']]).append(entry['module'])
+            else:
+                unique[entry['file']] = entry
+        manifest[section] = list(unique.values())
 
     for a, b, why in synth_edges + sim_edges:
         if why != 'module':
@@ -724,17 +782,15 @@ def export(outdir, *, program_words, result_addr, expected):
     with open(os.path.join(outdir, 'tnca_smoke.v'), 'w') as fh:
         fh.write(tb)
 
-    rtl_list = ' '.join(f"rtl/{os.path.basename(p)}"
-                        for p in sorted(synth_files.values()))
+    rtl_list = ' '.join(entry['file'] for entry in manifest['rtl'])
     # The reference transport binding has its own top and its own
     # `initial` block, so it is built separately from the smoke test.
     # Handing both to one elaboration lets the simulator choose a top,
     # and it chose the binding -- which then asked for the plusargs the
     # smoke test does not pass.
     binding = os.path.basename(sim_only[SIM_TOP])
-    support = ' '.join(f"sim/{os.path.basename(p)}"
-                       for name, p in sorted(sim_only.items())
-                       if name != SIM_TOP)
+    support = ' '.join(entry['file'] for entry in manifest['sim']
+                       if entry['module'] != SIM_TOP and SIM_TOP not in entry.get('modules', []))
 
     with open(os.path.join(outdir, 'elaborate.sh'), 'w') as fh:
         fh.write(f"""#!/bin/sh
@@ -746,7 +802,7 @@ def export(outdir, *, program_words, result_addr, expected):
 set -e
 cd "$(dirname "$0")"
 iverilog -g2005 -I rtl -t null -s {SYNTH_TOP} {rtl_list}
-echo "elaborate: {len(synth_files)} synthesizable file(s), top {SYNTH_TOP}"
+echo "elaborate: {len(manifest['rtl'])} synthesizable file(s), top {SYNTH_TOP}"
 """)
     with open(os.path.join(outdir, 'run_smoke.sh'), 'w') as fh:
         fh.write(f"""#!/bin/sh

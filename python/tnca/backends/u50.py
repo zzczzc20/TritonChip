@@ -254,6 +254,12 @@ class U50Backend(Transport):
     name = 'fpga-u50'
     state = _backend.REFERENCE_AVAILABLE
     launch_is_idempotent = False
+    # Only images whose MMIO contract guarantees auto-increment may opt in.
+    sequential_payload_window = False
+    code_payload_shadow = False
+    # _put_request snapshots deadline_cycles into R_REQ_DEADLINE for each
+    # command, and response polling reads host_timeout for that command.
+    bounded_launch_limits = True
 
     def __init__(self, link, *, epoch=0, host_timeout=30.0,
                  deadline_cycles=2_000_000, poll_interval=0.001,
@@ -312,6 +318,11 @@ class U50Backend(Transport):
         # operations still need the same payload/sequence transaction lock.
         import threading
         self._io_lock = threading.RLock()
+        # Only the multicore image enables this: its code RAM is written
+        # solely through the host window and the XRT context is exclusive.
+        self._code_window_shadow = {}
+        self.code_words_written = 0
+        self.code_words_skipped = 0
         self.opened = False
         # R40-04: an image with an AXI window (R_AXI_STAT) gets its memory
         # here at start(). How much: hbm_bytes, or TNCA_HBM_BYTES, or 1 GiB.
@@ -333,6 +344,7 @@ class U50Backend(Transport):
         # was never reached, `close()` was never called, and the device
         # stayed running. It was found by looking for it with the driver
         # long gone, which is a poor way to find one.
+        self._code_window_shadow.clear()
         try:
             self.link.open()
             self.opened = True
@@ -594,20 +606,23 @@ class U50Backend(Transport):
                        'board, so a transfer past the end is not a way to '
                        'place a sentinel')
 
-    def _window(self, addr, word, *, write):
+    def _window(self, addr, word, *, write, set_address=True):
         """One word through the payload window.
 
-        The address is written every time rather than leaned on. The RTL
-        advances `host_addr` by eight after each completed access, so a
-        host that left it alone would walk forward on its own -- and a
-        burst that walked forward on its own is a burst where one refused
-        or dropped access silently shifts every word after it. Writing the
-        address each time costs one register write per word and makes each
-        access independently checkable, which is the trade this makes
-        deliberately rather than by omission.
+        Sequential writes are used only by an image with a verified window
+        auto-increment contract, while holding the transport I/O lock. Each
+        word must complete successfully before submitting the next one: an
+        error or missing completion aborts the transfer instead of allowing
+        the addresses of subsequent words to shift.
         """
+        shadowable = (self.code_payload_shadow and self.local_limit is not None
+                      and 0 <= addr < self.local_limit)
+        if write and shadowable:
+            # A failed or interrupted transfer leaves this word unknown.
+            self._code_window_shadow.pop(addr, None)
         w = self.link.write_reg
-        w(R_HOST_ADDR, addr)
+        if set_address:
+            w(R_HOST_ADDR, addr)
         if write:
             w(R_HOST_DATA, word)
         w(R_HOST_CTRL, CTRL_START | (CTRL_WE if write else 0))
@@ -618,7 +633,8 @@ class U50Backend(Transport):
                 raise DeviceLost(
                     'the medium stopped answering mid-transfer',
                     detail=dict(self._gone_detail(), tail=self._log_tail()))
-            st = self.link.read_reg(R_HOST_STATUS)
+            read_status = getattr(self.link, 'read_host_status', None)
+            st = read_status() if read_status is not None else self.link.read_reg(R_HOST_STATUS)
             if not st & ST_BUSY:
                 break
             if time.time() > deadline:
@@ -640,7 +656,28 @@ class U50Backend(Transport):
                        'memory there is. The device is right: '
                        'DEFAULT_WORDS must equal the WORDS parameter the '
                        'RTL was built with')
+        if not st & ST_VALID:
+            raise DeviceLost('the payload window did not acknowledge the transfer',
+                             detail=dict(self._gone_detail(), addr=addr, status=st))
+        if write and shadowable:
+            self._code_window_shadow[addr] = word
+            self.code_words_written += 1
         return None if write else self.link.read_reg(R_HOST_DATA)
+
+    def _put_window_words(self, addr, words):
+        """Write changed local words, restarting the address after any gap."""
+        contiguous = False
+        shadow = self._code_window_shadow
+        for i, word in enumerate(words):
+            at = addr + i * WORD
+            if (self.code_payload_shadow and self.local_limit is not None
+                    and at < self.local_limit and shadow.get(at) == word):
+                self.code_words_skipped += 1
+                contiguous = False
+                continue
+            self._window(at, word, write=True,
+                         set_address=not self.sequential_payload_window or not contiguous)
+            contiguous = True
 
     def _dma_split(self, addr, nwords):
         """How many of the words from `addr` go through the register window:
@@ -653,11 +690,30 @@ class U50Backend(Transport):
     def _put_payload(self, addr, words):
         self._check_window(addr, len(words), 'upload')
         k = self._dma_split(addr, len(words))
-        for i, word in enumerate(words[:k]):
-            self._window(addr + i * WORD, word, write=True)
+        self._put_window_words(addr, words[:k])
         if k < len(words):
             data = b''.join(int(w).to_bytes(WORD, 'little') for w in words[k:])
             self.link.hbm_write(addr + k * WORD - self.local_limit, data)
+
+    #: Largest piece one DMA write moves; bounds the host-side staging copy.
+    DMA_CHUNK_BYTES = 1 << 26
+
+    def _put_payload_bytes(self, addr, data):
+        """`_put_payload` for a bytes-like payload: the words below the AXI
+        window's local limit go through the register window one at a time as
+        before; the rest goes to DMA as bytes, in bounded chunks, never as a
+        list of integers."""
+        nwords = len(data) // WORD
+        self._check_window(addr, nwords, 'upload')
+        k = self._dma_split(addr, nwords)
+        self._put_window_words(addr,
+            (int.from_bytes(data[i * WORD:(i + 1) * WORD], 'little') for i in range(k)))
+        start = k * WORD
+        base = addr + start - (self.local_limit or 0)
+        while start < len(data):
+            end = min(len(data), start + self.DMA_CHUNK_BYTES)
+            self.link.hbm_write(base + start - k * WORD, data[start:end])
+            start = end
 
     def _get_payload(self, addr, nwords):
         self._check_window(addr, nwords, 'download')
@@ -1321,6 +1377,13 @@ class _XRTRegisters:
                        'at other offsets still work')
 
 
+# These command descriptor registers are host-owned and persist until reset
+# in both MMIO implementations. Sequence and doorbell are deliberately absent:
+# every command must publish a new sequence and ring a new doorbell.
+_REQUEST_DESCRIPTOR_REGISTERS = frozenset((R_REQ_OP, R_REQ_A0, R_REQ_A1, R_REQ_A2,
+                                           R_REQ_A3, R_REQ_A4, R_REQ_A5, R_REQ_DEADLINE))
+
+
 class XDMALink(U50Link):
     """The board itself. NOT EXERCISED, and this docstring says so first.
 
@@ -1364,16 +1427,26 @@ class XDMALink(U50Link):
         self._accessor = accessor
         self._what = what or f'U50 index {index}'
         self._device = None
+        # Only an XRT context opened by us can establish exclusive ownership;
+        # externally supplied accessors retain the conservative write path.
+        self._request_register_shadow = None
+        self.request_register_writes = 0
+        self.request_register_reuses = 0
 
     def describe(self):
         return self._what
 
     def open(self):
         if self._accessor is None:
+            # _open_access obtains an exclusive IP context. In that context
+            # no other XRT client may alter the request descriptor registers.
             self._accessor = self._open_access()
+            if os.environ.get('TNCA_MMIO_DESCRIPTOR_CACHE', '1') == '1':
+                self._request_register_shadow = {}
         return self
 
     def close(self):
+        self._request_register_shadow = None
         acc, self._accessor = self._accessor, None
         if acc is not None and hasattr(acc, 'close'):
             try:
@@ -1394,11 +1467,37 @@ class XDMALink(U50Link):
                              detail={'medium': self._what})
         return self._accessor.read(offset) & 0xFFFF_FFFF_FFFF_FFFF
 
+    def read_host_status(self):
+        """The window status uses only bits 0..2; one XRT read suffices."""
+        if self._accessor is None:
+            raise DeviceLost('the board is not open', detail={'medium': self._what})
+        read32 = getattr(self._accessor, '_read32', None)
+        if read32 is None:
+            return self.read_reg(R_HOST_STATUS)
+        return read32(R_HOST_STATUS)
+
     def write_reg(self, offset, value):
         if self._accessor is None:
             raise DeviceLost('the board is not open',
                              detail={'medium': self._what})
-        self._accessor.write(offset, int(value) & 0xFFFF_FFFF_FFFF_FFFF)
+        value = int(value) & 0xFFFF_FFFF_FFFF_FFFF
+        shadow = self._request_register_shadow
+        if shadow is not None and offset in _REQUEST_DESCRIPTOR_REGISTERS:
+            if offset in shadow and shadow[offset] == value:
+                self.request_register_reuses += 1
+                return
+        try:
+            # Each 64-bit register write remains the required low/high pair.
+            # In particular the sequence and doorbell always reach the device.
+            self._accessor.write(offset, value)
+        except BaseException:
+            # A failed two-part transaction may leave any prior state unknown.
+            if shadow is not None:
+                shadow.clear()
+            raise
+        self.request_register_writes += 1
+        if shadow is not None and offset in _REQUEST_DESCRIPTOR_REGISTERS:
+            shadow[offset] = value
 
     # ---- R40-04: the AXI window's memory, through XRT ----------------------
     def hbm_open(self, nbytes):

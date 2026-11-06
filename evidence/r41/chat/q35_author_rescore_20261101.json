@@ -1,0 +1,197 @@
+{
+  "schema": "r41-legacy-q35-author-rescore/1",
+  "results": {
+    "segment": {
+      "schema": "r41-deadline-quality-rescore/1",
+      "status": "unverified",
+      "model": "qwen3.5-4b-fp8",
+      "checkpoint_identity": "legacy pinned snapshot name and matching checkpoint index SHA-256",
+      "original_status": "failed-chat-quality",
+      "missing_prompts": [
+        "arith",
+        "fact",
+        "instruct",
+        "reason"
+      ],
+      "scope": "separate rescore; original device and CPU records remain unchanged",
+      "prompts": [
+        {
+          "id": "multiturn",
+          "turns": [
+            {
+              "score": {
+                "passed": true,
+                "content_pass": true,
+                "first_token": 40,
+                "first_token_pass": true,
+                "first_token_rule": "CPU top five or within 0.5 logit",
+                "old_score": {
+                  "passed": false,
+                  "required_keywords": [],
+                  "keywords_missing_in_reference": [],
+                  "keywords_ok": true,
+                  "containment": false,
+                  "tokens_equal": false,
+                  "common_prefix_tokens": 0,
+                  "device_tokens": 11,
+                  "reference_tokens": 12
+                }
+              },
+              "no_fallback": true,
+              "prior_assistant_text_matches_cpu": true,
+              "original_score": {
+                "passed": false,
+                "required_keywords": [],
+                "keywords_missing_in_reference": [],
+                "keywords_ok": true,
+                "containment": false,
+                "tokens_equal": false,
+                "common_prefix_tokens": 0,
+                "device_tokens": 11,
+                "reference_tokens": 12
+              }
+            },
+            {
+              "score": {
+                "passed": true,
+                "content_pass": true,
+                "first_token": 59605,
+                "first_token_pass": true,
+                "first_token_rule": "equal to CPU greedy first token",
+                "old_score": {
+                  "passed": true,
+                  "required_keywords": [
+                    "alice"
+                  ],
+                  "keywords_missing_in_reference": [],
+                  "keywords_ok": true,
+                  "containment": true,
+                  "tokens_equal": true,
+                  "common_prefix_tokens": 4,
+                  "device_tokens": 4,
+                  "reference_tokens": 4
+                }
+              },
+              "no_fallback": true,
+              "prior_assistant_text_matches_cpu": false,
+              "original_score": {
+                "passed": true,
+                "required_keywords": [
+                  "alice"
+                ],
+                "keywords_missing_in_reference": [],
+                "keywords_ok": true,
+                "containment": true,
+                "tokens_equal": true,
+                "common_prefix_tokens": 4,
+                "device_tokens": 4,
+                "reference_tokens": 4
+              }
+            }
+          ]
+        }
+      ],
+      "input_sha256": {
+        "device": "57783b175a1aa58f473cc7e07111a926b453a49b47571937b54ac0fabec27864",
+        "cpu_reference": "0d4706917531741c7f650315e01ebc0e2becdbdcbb97808f9d9b43c60576d912",
+        "spec": "4c6944f5552538a06d8453c325a61ad5a36f4fe5c40664ffb01f88501a502365"
+      }
+    },
+    "whole": {
+      "schema": "r41-deadline-quality-rescore/1",
+      "status": "unverified",
+      "model": "qwen3.5-4b-fp8",
+      "checkpoint_identity": "legacy pinned snapshot name and matching checkpoint index SHA-256",
+      "original_status": "failed-chat-quality",
+      "missing_prompts": [
+        "arith",
+        "fact",
+        "instruct",
+        "reason"
+      ],
+      "scope": "separate rescore; original device and CPU records remain unchanged",
+      "prompts": [
+        {
+          "id": "multiturn",
+          "turns": [
+            {
+              "score": {
+                "passed": true,
+                "content_pass": true,
+                "first_token": 40,
+                "first_token_pass": true,
+                "first_token_rule": "CPU top five or within 0.5 logit",
+                "old_score": {
+                  "passed": false,
+                  "required_keywords": [],
+                  "keywords_missing_in_reference": [],
+                  "keywords_ok": true,
+                  "containment": false,
+                  "tokens_equal": false,
+                  "common_prefix_tokens": 0,
+                  "device_tokens": 11,
+                  "reference_tokens": 12
+                }
+              },
+              "no_fallback": true,
+              "prior_assistant_text_matches_cpu": true,
+              "original_score": {
+                "passed": false,
+                "required_keywords": [],
+                "keywords_missing_in_reference": [],
+                "keywords_ok": true,
+                "containment": false,
+                "tokens_equal": false,
+                "common_prefix_tokens": 0,
+                "device_tokens": 11,
+                "reference_tokens": 12
+              }
+            },
+            {
+              "score": {
+                "passed": true,
+                "content_pass": true,
+                "first_token": 59605,
+                "first_token_pass": true,
+                "first_token_rule": "equal to CPU greedy first token",
+                "old_score": {
+                  "passed": true,
+                  "required_keywords": [
+                    "alice"
+                  ],
+                  "keywords_missing_in_reference": [],
+                  "keywords_ok": true,
+                  "containment": true,
+                  "tokens_equal": true,
+                  "common_prefix_tokens": 4,
+                  "device_tokens": 4,
+                  "reference_tokens": 4
+                }
+              },
+              "no_fallback": true,
+              "prior_assistant_text_matches_cpu": false,
+              "original_score": {
+                "passed": true,
+                "required_keywords": [
+                  "alice"
+                ],
+                "keywords_missing_in_reference": [],
+                "keywords_ok": true,
+                "containment": true,
+                "tokens_equal": true,
+                "common_prefix_tokens": 4,
+                "device_tokens": 4,
+                "reference_tokens": 4
+              }
+            }
+          ]
+        }
+      ],
+      "input_sha256": {
+        "device": "f0dc4d50a54d9e59cb158c107ff9122eb05d35a9d940d22378e1c10003f6ce3c",
+        "cpu_reference": "0d4706917531741c7f650315e01ebc0e2becdbdcbb97808f9d9b43c60576d912",
+        "spec": "4c6944f5552538a06d8453c325a61ad5a36f4fe5c40664ffb01f88501a502365"
+      }
+    }
+  }
+}

@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from .adapters.u50 import CommandResult, execute_command
+from .board_lease import shared_r41_device
 from .schema import dump_json
 from .toolroots import tool_roots
 
@@ -185,6 +186,9 @@ def board_preflight(*, root: Path, profile: Any, manifest: Mapping[str, Any]) ->
 
     def add(name: str, ok: bool, detail: Any) -> None:
         checks.append({"name": name, "ok": bool(ok), "detail": str(detail), "severity": "error"})
+
+    if shared_r41_device(str(profile.data.get("board", "unknown")), config.get("bdf")):
+        add("shared_r41_queue", False, "use the board-queue command for the shared R41 U280")
 
     program = config.get("program", True)
     if program and not (isinstance(program, dict) and program.get("command")):
@@ -524,6 +528,10 @@ def measure_board(
         raise MeasurementError(f"cannot measure without a non-empty xclbin: {xclbin}")
 
     board = str(profile.data.get("board", "unknown"))
+    if shared_r41_device(board, config.get("bdf")):
+        raise MeasurementError(
+            "the shared R41 U280 must use the FPGA harness board-queue command; "
+            "direct measurement cannot bypass the existing queue and idle checks")
     backend = str(config.get("backend", f"fpga-{board}"))
     expected_backend = f"fpga-{board}"
     if backend != expected_backend:

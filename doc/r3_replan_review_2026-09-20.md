@@ -1,55 +1,55 @@
-# R3 重规划：当前状态与收敛依据
+# R3 Replan: Current State and Basis for Convergence
 
-日期：2026-09-20。检查提交：`71317b35afb9d2602b0510da84188a0fbde15e29`。
-范围：源码、合同、状态文件、已提交证据，以及四组本地定向检查。
-**这不是当前提交的 R1/R2/R3 全量验收，也没有重新验证远端双环境原始工件。**
+Date: 2026-09-20. Inspected commit: `71317b35afb9d2602b0510da84188a0fbde15e29`.
+Scope: Source code, contracts, status documents, committed evidence, and four sets of targeted local checks.
+**This is not full R1/R2/R3 acceptance of the current commit, nor does it re-verify original remote dual-environment artifacts.**
 
-## 1. 当前可以成立的结论
+## 1. Conclusions That Currently Hold
 
-| 阶段 | 证据与实现 | 当前判断 |
+| Phase | Evidence & Implementation | Current Assessment |
 |---|---|---|
-| R1 | [历史联合判决](evidence/r1-combined-verdict.json) 记录 `97c0cf90` 两环境各 173/173，通过 19 个规范化工件比较 | 历史基线已签收；不能推广成当前 HEAD 已签收 |
-| R2 | `python/tnca` 已有 AOT、artifact、ABI、cache、session、transport；状态文件记载安装后动态参数、多次 launch 和设备内链式执行 | 已有可用单核产品路径，尚未完成原 R2；本次没有重跑这些产品测试 |
-| R2 缺口 | `device.py` 的设备表只有 `core-sim`；grid/memory tests 明确列出未实现系统项；状态文件列 MLIR 主路径和发布未开始 | 四 tile 持久 runtime、完成边界、MLIR 和双环境发布不能当作 R3 随手可复用的前置 |
-| R3 存储 | `tnca_vrf_banked`、`tnca_rf_bank`、collector 已存在；本地 RF 测试通过 | 有组件基础，尚无有限端口单核闭环 |
-| R3 集成 | `tnca_core.v` 仍例化 `tnca_vector_rf`；matrix 的 VRF 接口仍为地址/组合数据；`tnca_acc_rf.v` 仍异步读、全数组 reset | 新 VRF 未接 core；ARF 同步化也未交付 |
-| R3 性能 | 模型手算测试通过；已有计数器与结构综合工具 | 尚未证明真实程序的模型精度、端口成本和资源进展 |
+| R1 | [Historical combined verdict](evidence/r1-combined-verdict.json) records `97c0cf90` with 173/173 passing in both environments across 19 normalized artifact comparisons | Historical baseline is signed off; cannot be generalized to claim current HEAD is signed off |
+| R2 | `python/tnca` already includes AOT, artifact, ABI, cache, session, and transport; status document records post-installation dynamic parameters, multiple launches, and chained in-device execution | Usable single-core product path exists, but original R2 is not yet complete; these product tests were not rerun during this check |
+| R2 gaps | Device table in `device.py` contains only `core-sim`; grid/memory tests explicitly list unimplemented system items; status document lists MLIR main path and release as not started | Four-tile persistent runtime, completion boundaries, MLIR, and dual-environment release cannot be treated as readily reusable prerequisites for R3 |
+| R3 storage | `tnca_vrf_banked`, `tnca_rf_bank`, and collector exist; local RF tests pass | Component foundations exist, but no finite-port single-core closed loop exists |
+| R3 integration | `tnca_core.v` still instantiates `tnca_vector_rf`; matrix VRF interface remains address/combinational data; `tnca_acc_rf.v` still uses asynchronous reads and full-array reset | New VRF is not connected to core; ARF synchronization has also not been delivered |
+| R3 performance | Model hand-calculation tests pass; counters and structural synthesis tooling exist | Model accuracy, port costs, and resource progression on real programs remain unproven |
 
-## 2. 状态、测试与合同之间的差距
+## 2. Gaps Between Status, Tests, and Contracts
 
-1. **PLAN-01 检查不足。** `tools/r3/plan.py` 读取历史联合文件中的 `verdict` 即通过；没有验证当前提交、R2 前置或证据完整性。此次 exit=0 不证明旧 PLAN-01 成立。
-2. **32 次的含义变了。** 旧合同规定 16 workload × reference/candidate；`spec/r3_workloads.json` 与 `check_expansion()` 实际统计 workload × fast/slow/ooo。数量相等不能证明对照实现存在。
-3. **unit 合同未冻结。** PLAN-04 允许 7 个参数未测量并返回通过。这适合作为调研进度，不能证明原合同要求的 candidate 端口、延迟、队列和吞吐公式齐备。
-4. **综合范围不足。** `synth_tests.py` SYN-01 检查 VRF/ARF memory 位数，但 SYN-02 的同步读和端口约束只检查 banked VRF。ARF 保留 memory 对象不等于 ARF 已成为同步有限端口实现；R3-10 的 DELIVERED 不能覆盖原合同全部要求。
-5. **组件语义不能代替架构语义。** RF-03 验证未写 bank 读为 X；原 core 的初始化行为还需要 valid/zero 或有界 scrub 实现。直接接入会改变软件可见行为的风险尚未闭合。
-6. **模型自测不是模型校准。** 手工 DAG 有限资源检查有价值，但没有建立实际编译产物到模型的完整映射，也没有留出 RTL 误差证据。
-7. **文档汇总过时。** R2 状态开头称 11 包已满足，而表内实际为 7 DELIVERED、5 PARTIAL、2 NOT STARTED；R3 开头称 4 包部分满足，表内为 5。逐包状态和实际 case 才是依据。
+1. **PLAN-01 check is insufficient.** `tools/r3/plan.py` passes simply by reading `verdict` from the historical combined file; it does not verify the current commit, R2 prerequisites, or evidence completeness. An exit code of 0 here does not prove that legacy PLAN-01 holds.
+2. **The meaning of 32 runs has changed.** The legacy contract specified 16 workloads × reference/candidate; `spec/r3_workloads.json` and `check_expansion()` actually count workloads × fast/slow/ooo. Equal counts do not prove that a comparison implementation exists.
+3. **Unit contracts are not frozen.** PLAN-04 allows 7 parameters to be unmeasured and returns PASS. While suitable as exploration progress, this fails to prove that candidate ports, latencies, queues, and throughput formulas required by the original contract are complete.
+4. **Synthesis scope is insufficient.** `synth_tests.py` SYN-01 checks VRF/ARF memory bit widths, but SYN-02 synchronous read and port constraints only check banked VRF. Retaining memory objects for ARF does not mean ARF has become a synchronous finite-port implementation; DELIVERED for R3-10 cannot cover all requirements of the original contract.
+5. **Component semantics cannot replace architectural semantics.** RF-03 verifies that unwritten banks read as X; the original core initialization behavior still requires valid/zero bits or a bounded scrub implementation. The risk of directly integrating this and altering software-visible behavior has not been closed out.
+6. **Model self-testing is not model calibration.** Finite-resource checks on hand-crafted DAGs are valuable, but no complete mapping from actual compilation artifacts to the model has been established, nor is there RTL error evidence.
+7. **Document summaries are outdated.** The R2 status header initially claimed 11 packages met, whereas the table actually recorded 7 DELIVERED, 5 PARTIAL, 2 NOT STARTED; the R3 header claimed 4 packages partially met, whereas the table recorded 5. Package-by-package status and actual test cases remain the true basis.
 
-这些差距主要是集成路径、验收语义和依赖组织问题。解决方式是缩小一次交付的范围，并让 checker 覆盖所声明的性质；不能只改 PASS 数量或改状态文字。
+These gaps primarily concern integration paths, acceptance semantics, and dependency structure. The solution is to narrow the scope of a single delivery and ensure checkers cover the claimed properties, rather than merely adjusting PASS counts or editing status text.
 
-## 3. 本次执行与限制
+## 3. Current Execution and Limitations
 
-执行记录：[checks.json](audit/2026-09-20-r3-replan/checks.json)。原始输出：
+Execution record: [checks.json](audit/2026-09-20-r3-replan/checks.json). Raw output:
 
-| 入口 | 结果 | 能证明什么 |
+| Entry Point | Result | What It Proves |
 |---|---|---|
-| `python3 tools/r3/plan.py` | exit 0，4 PASS | 当前脚本接受当前清单；存在上节列出的语义缺口 |
-| `python3 tools/r3/model_tests.py` | exit 0，5 PASS | 有限资源模型的现有自测通过 |
-| `python3 tools/r3/rf_tests.py` | exit 0，5 PASS | banked VRF 组件当前定向/随机比对通过 |
-| `python3 tools/r3/flow_tests.py` | exit 1，4 PASS、FLOW-03 NOT RUN | collector 已实现部分通过；返回/写回闭环仍缺失 |
+| `python3 tools/r3/plan.py` | exit 0, 4 PASS | Current script accepts current manifest; semantic gaps listed in previous section remain |
+| `python3 tools/r3/model_tests.py` | exit 0, 5 PASS | Existing self-tests of finite-resource model pass |
+| `python3 tools/r3/rf_tests.py` | exit 0, 5 PASS | Banked VRF component currently passes directed/random comparisons |
+| `python3 tools/r3/flow_tests.py` | exit 1, 4 PASS, FLOW-03 NOT RUN | Implemented parts of collector pass; return/writeback closed loop remains missing |
 
-原始日志分别为 [plan](audit/2026-09-20-r3-replan/plan.log)、[model](audit/2026-09-20-r3-replan/model_tests.log)、[RF](audit/2026-09-20-r3-replan/rf_tests.log)、[flow](audit/2026-09-20-r3-replan/flow_tests.log)。本次没有重跑综合、系统 RTL、Triton 产品矩阵或远端发布。
+Raw logs are available at [plan](audit/2026-09-20-r3-replan/plan.log), [model](audit/2026-09-20-r3-replan/model_tests.log), [RF](audit/2026-09-20-r3-replan/rf_tests.log), and [flow](audit/2026-09-20-r3-replan/flow_tests.log). Synthesis, system RTL, Triton product matrix, and remote release were not rerun in this check.
 
-已有 [timing scout](evidence/r3-timing-scout-macos.json) 记录 core-matrix 3513 cycles/6.316 s、system 18673 cycles/76.306 s。它们是历史 macOS 测量，并非当前 candidate 的速率保证。新阶段不再把整机性能矩阵和新增算子作为有限端口单核集成的前置。
+The existing [timing scout](evidence/r3-timing-scout-macos.json) records core-matrix at 3513 cycles / 6.316 s and system at 18673 cycles / 76.306 s. These are historical macOS measurements, not throughput guarantees for the current candidate. The new phase no longer treats full-system performance matrices or new operators as prerequisites for finite-port single-core integration.
 
-## 4. 合理的下一阶段目标
+## 4. Reasonable Next-Phase Objectives
 
-新的 [R3 v2 tasks & acceptance](phase3_tasks_and_acceptance.md) 聚焦：**一个实验性单核实现，把现有 banked VRF/collector 和全部 VRF 客户端接通，完成写回反压、所有权、有限小程序与安装后 runtime 闭环。**
+The new [R3 v2 tasks & acceptance](phase3_tasks_and_acceptance.md) focuses on: **an experimental single-core implementation connecting the existing banked VRF/collector to all VRF clients, closing the loop on writeback backpressure, ownership, a limited set of small programs, and post-installation runtime.**
 
-- R1：保留历史签收；本阶段对候选提交做影响范围回归。生产发布仍须按原合同重新签收。
-- R2：继续单独完成 MLIR、四 tile runtime、host 完成边界与发布。本阶段只依赖已实现的单核路径，不要求整个 R2 先结束。
-- R3 v2：交付上述单核实验实现，不修改既有稳定 profile 的默认实现。
-- 后续 R3B：同步 ARF、全部计算单元吞吐、模型与编译成本闭合。
-- 后续 R3C：等 R2 系统 runtime 完成，再做四 tile、Norm、系统校准和完整发布。
+- R1: Retain historical sign-off; execute blast-radius regressions on candidate commits during this phase. Production release must still be signed off according to the original contract.
+- R2: Continue completing MLIR, four-tile runtime, host completion boundaries, and release separately. This phase depends only on the already-implemented single-core path and does not require all of R2 to finish first.
+- R3 v2: Deliver the aforementioned single-core experimental implementation without modifying default implementations of established stable profiles.
+- Follow-up R3B: Synchronous ARF, full compute unit throughput, closing the loop on model and compilation costs.
+- Follow-up R3C: Await completion of R2 system runtime before pursuing four-tile integration, Norm operators, system calibration, and full release.
 
-旧 [R3 v1](phase3_tasks_and_acceptance_v1.md) 保留供追溯；未完成要求明确转入后续，不能追认旧 R3 ACCEPTED，也不能据新版局部签收宣称项目已生产级。
+Legacy [R3 v1](phase3_tasks_and_acceptance_v1.md) is preserved for traceability; unmet requirements are explicitly deferred to follow-up phases. Legacy R3 ACCEPTED cannot be claimed retroactively, nor can partial sign-off under the new version be used to claim production readiness for the project.

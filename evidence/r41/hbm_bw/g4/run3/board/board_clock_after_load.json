@@ -1,0 +1,46 @@
+{
+  "schema": "tnca-loaded-clock-capture/1",
+  "observed_utc": "2026-10-30T17:27:15.931802+00:00",
+  "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "loaded_xclbin_uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+  "device": "0000:04:00.1",
+  "counter_path": "/sys/bus/pci/devices/0000:04:00.0/clock_freq_counter.m.28311552/clock_counter_freqs",
+  "counter_samples": [
+    {
+      "raw": "100\n500\n430\n0\n",
+      "frequencies_mhz": [
+        100,
+        500,
+        430,
+        0
+      ]
+    },
+    {
+      "raw": "100\n500\n430\n0\n",
+      "frequencies_mhz": [
+        100,
+        500,
+        430,
+        0
+      ]
+    },
+    {
+      "raw": "100\n500\n430\n0\n",
+      "frequencies_mhz": [
+        100,
+        500,
+        430,
+        0
+      ]
+    }
+  ],
+  "icap_readback": {
+    "/sys/bus/pci/devices/0000:04:00.0/icap.m.22020096/clock_freqs": "100\n500\n430\n0\n",
+    "/sys/bus/pci/devices/0000:04:00.1/icap.u.22020096/clock_freqs": "100\n500\n430\n0\n"
+  },
+  "clock_hz": 100000000,
+  "physical_core_clock_divider": 1,
+  "clock_source": "measured-board-counter",
+  "measurement_resolution_hz": 1000000,
+  "scope": "DATA clock counter index 0 (v++ clock ID 0, DATA_CLK); undivided core clock; integer MHz readout; read-only sysfs, captured after program.sh loaded the image"
+}

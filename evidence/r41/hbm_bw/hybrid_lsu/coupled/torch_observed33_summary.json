@@ -1,0 +1,785 @@
+{
+  "evidence": "RTL-observation-only",
+  "operator_labels_available": false,
+  "board_speedup_measured": false,
+  "grids": [
+    {
+      "sequence": 10,
+      "request_cycle": 31920,
+      "observation_cycle": 32461,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 14,
+      "request_cycle": 42062,
+      "observation_cycle": 42494,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 18,
+      "request_cycle": 51856,
+      "observation_cycle": 52291,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 22,
+      "request_cycle": 61650,
+      "observation_cycle": 62176,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 26,
+      "request_cycle": 71618,
+      "observation_cycle": 72157,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 30,
+      "request_cycle": 81876,
+      "observation_cycle": 82375,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 34,
+      "request_cycle": 91844,
+      "observation_cycle": 92366,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 38,
+      "request_cycle": 101899,
+      "observation_cycle": 102372,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 42,
+      "request_cycle": 111867,
+      "observation_cycle": 112364,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 46,
+      "request_cycle": 122096,
+      "observation_cycle": 122528,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 50,
+      "request_cycle": 131890,
+      "observation_cycle": 132325,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 54,
+      "request_cycle": 141684,
+      "observation_cycle": 142122,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 59,
+      "request_cycle": 168880,
+      "observation_cycle": 169419,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 63,
+      "request_cycle": 179051,
+      "observation_cycle": 179483,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 67,
+      "request_cycle": 188845,
+      "observation_cycle": 189280,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 71,
+      "request_cycle": 198639,
+      "observation_cycle": 199163,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 75,
+      "request_cycle": 208607,
+      "observation_cycle": 209149,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 79,
+      "request_cycle": 218836,
+      "observation_cycle": 219334,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 83,
+      "request_cycle": 228804,
+      "observation_cycle": 229326,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 87,
+      "request_cycle": 238859,
+      "observation_cycle": 239332,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 91,
+      "request_cycle": 248827,
+      "observation_cycle": 249323,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 95,
+      "request_cycle": 258795,
+      "observation_cycle": 259227,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 99,
+      "request_cycle": 268589,
+      "observation_cycle": 269024,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 103,
+      "request_cycle": 278383,
+      "observation_cycle": 278821,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 107,
+      "request_cycle": 288177,
+      "observation_cycle": 288609,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 111,
+      "request_cycle": 298261,
+      "observation_cycle": 298760,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 0,
+          "slow": 18,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 115,
+      "request_cycle": 310352,
+      "observation_cycle": 310773,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 9,
+          "slow": 9,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 120,
+      "request_cycle": 323610,
+      "observation_cycle": 324007,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 9,
+          "slow": 9,
+          "retired": 18
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 125,
+      "request_cycle": 338885,
+      "observation_cycle": 339399,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 6,
+          "slow": 6,
+          "retired": 12
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 130,
+      "request_cycle": 364926,
+      "observation_cycle": 366026,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 6,
+          "slow": 6,
+          "retired": 12
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    },
+    {
+      "sequence": 135,
+      "request_cycle": 378783,
+      "observation_cycle": 379063,
+      "per_core": [
+        {
+          "core": 0,
+          "fast": 6,
+          "slow": 6,
+          "retired": 12
+        },
+        {
+          "core": 1,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        },
+        {
+          "core": 2,
+          "fast": 0,
+          "slow": 0,
+          "retired": 0
+        }
+      ]
+    }
+  ],
+  "fast": 36,
+  "slow": 504,
+  "retired": 540
+}

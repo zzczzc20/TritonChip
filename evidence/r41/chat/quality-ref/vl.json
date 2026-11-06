@@ -1,0 +1,579 @@
+{
+ "schema": "tnca-chat-quality-result/1",
+ "spec": "quality-v1",
+ "spec_path": "spec/r41/chat/quality-v1.json",
+ "model": "qwen3vl-2b-fp8",
+ "device": "cpu",
+ "model_scope": "full-checkpoint",
+ "reference": null,
+ "prompts": [
+  {
+   "id": "fact",
+   "kind": "factual QA",
+   "keywords": [
+    "paris"
+   ],
+   "turns": [
+    {
+     "user": "What is the capital of France? Answer with one word.",
+     "text": "Paris",
+     "tokens": [
+      59604,
+      151645
+     ],
+     "statistics": {
+      "generated_tokens": 2,
+      "decode_steps": 1,
+      "prefill_seconds": 2.510983589105308,
+      "decode_seconds": 0.957166145555675,
+      "mean_decode_seconds_per_token": 0.957166145555675,
+      "decode_tokens_per_second": 1.044750699388201,
+      "generation_seconds": 3.468149734660983
+     },
+     "session": {
+      "prompt_index": 1,
+      "cache_resets": 0,
+      "new_graphs_this_prompt": 0,
+      "unique_graphs_total": 0
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 2.510983589105308,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.957166145555675,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      }
+     ]
+    }
+   ],
+   "reference_keywords_present": [
+    "paris"
+   ]
+  },
+  {
+   "id": "arith",
+   "kind": "arithmetic",
+   "keywords": [
+    "42"
+   ],
+   "turns": [
+    {
+     "user": "What is 17 + 25? Answer with the number only.",
+     "text": "42",
+     "tokens": [
+      19,
+      17,
+      151645
+     ],
+     "statistics": {
+      "generated_tokens": 3,
+      "decode_steps": 2,
+      "prefill_seconds": 2.245896373875439,
+      "decode_seconds": 1.8946469565853477,
+      "mean_decode_seconds_per_token": 0.9473234782926738,
+      "decode_tokens_per_second": 1.0556056330433856,
+      "generation_seconds": 4.140543330460787
+     },
+     "session": {
+      "prompt_index": 2,
+      "cache_resets": 1,
+      "new_graphs_this_prompt": 0,
+      "unique_graphs_total": 0
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 2.245896373875439,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9396945098415017,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9549524467438459,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      }
+     ]
+    }
+   ],
+   "reference_keywords_present": [
+    "42"
+   ]
+  },
+  {
+   "id": "reason",
+   "kind": "reasoning",
+   "keywords": [
+    "bob"
+   ],
+   "turns": [
+    {
+     "user": "Tom is taller than Ann. Ann is taller than Bob. Who is the shortest? Answer with one name.",
+     "text": "Bob is the shortest.  \n\nHere's the reasoning:  \n",
+     "tokens": [
+      32388,
+      374,
+      279,
+      39143,
+      13,
+      18611,
+      8420,
+      594,
+      279,
+      32711,
+      25,
+      2303
+     ],
+     "statistics": {
+      "generated_tokens": 12,
+      "decode_steps": 11,
+      "prefill_seconds": 2.645971054211259,
+      "decode_seconds": 10.533233523368835,
+      "mean_decode_seconds_per_token": 0.9575666839426215,
+      "decode_tokens_per_second": 1.044313692998034,
+      "generation_seconds": 13.179204577580094
+     },
+     "session": {
+      "prompt_index": 3,
+      "cache_resets": 2,
+      "new_graphs_this_prompt": 0,
+      "unique_graphs_total": 0
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 2.645971054211259,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9612359059974551,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9688969245180488,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9713533157482743,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9547433536499739,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9497965266928077,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 1.0004873583093286,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9716678252443671,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9504617257043719,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9461418697610497,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.938226705417037,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9202220123261213,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      }
+     ]
+    }
+   ],
+   "reference_keywords_present": [
+    "bob"
+   ]
+  },
+  {
+   "id": "instruct",
+   "kind": "instruction following",
+   "keywords": [
+    "OK"
+   ],
+   "turns": [
+    {
+     "user": "Reply with exactly the word OK in capital letters and nothing else.",
+     "text": "OK",
+     "tokens": [
+      3925,
+      151645
+     ],
+     "statistics": {
+      "generated_tokens": 2,
+      "decode_steps": 1,
+      "prefill_seconds": 2.21855975035578,
+      "decode_seconds": 0.9528203401714563,
+      "mean_decode_seconds_per_token": 0.9528203401714563,
+      "decode_tokens_per_second": 1.0495157983508767,
+      "generation_seconds": 3.1713800905272365
+     },
+     "session": {
+      "prompt_index": 4,
+      "cache_resets": 3,
+      "new_graphs_this_prompt": 0,
+      "unique_graphs_total": 0
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 2.21855975035578,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9528203401714563,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      }
+     ]
+    }
+   ],
+   "reference_keywords_present": [
+    "OK"
+   ]
+  },
+  {
+   "id": "multiturn",
+   "kind": "multi-turn follow-up",
+   "keywords": [
+    "alice"
+   ],
+   "turns": [
+    {
+     "user": "My name is Alice. Please remember it and reply with one short sentence.",
+     "text": "Got it, Alice!",
+     "tokens": [
+      32462,
+      432,
+      11,
+      29405,
+      0,
+      151645
+     ],
+     "statistics": {
+      "generated_tokens": 6,
+      "decode_steps": 5,
+      "prefill_seconds": 2.3045883057639003,
+      "decode_seconds": 5.5744624165818095,
+      "mean_decode_seconds_per_token": 1.1148924833163618,
+      "decode_tokens_per_second": 0.8969474769669247,
+      "generation_seconds": 7.87905072234571
+     },
+     "session": {
+      "prompt_index": 5,
+      "cache_resets": 4,
+      "new_graphs_this_prompt": 0,
+      "unique_graphs_total": 0
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 2.3045883057639003,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 1.1291268458589911,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 1.1118296636268497,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 1.111764500848949,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 1.1163560571148992,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 1.1053853491321206,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      }
+     ]
+    },
+    {
+     "user": "What is my name? Answer with one word.",
+     "text": "Alice.",
+     "tokens": [
+      61686,
+      13,
+      151645
+     ],
+     "statistics": {
+      "generated_tokens": 3,
+      "decode_steps": 2,
+      "prefill_seconds": 2.4862755555659533,
+      "decode_seconds": 2.1310911579057574,
+      "mean_decode_seconds_per_token": 1.0655455789528787,
+      "decode_tokens_per_second": 0.9384863676903517,
+      "generation_seconds": 4.617366713471711
+     },
+     "session": {
+      "prompt_index": 6,
+      "cache_resets": 4,
+      "new_graphs_this_prompt": 0,
+      "unique_graphs_total": 0
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 2.4862755555659533,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": 28
+      },
+      {
+       "kind": "decode",
+       "seconds": 1.135419367812574,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9956717900931835,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      }
+     ]
+    }
+   ],
+   "reference_keywords_present": [
+    "alice"
+   ]
+  },
+  {
+   "id": "image",
+   "kind": "image description",
+   "keywords": [
+    "circle",
+    "triangle"
+   ],
+   "turns": [
+    {
+     "user": "Which shapes are in this image? Answer with a short list.",
+     "text": " circle, square, triangle",
+     "tokens": [
+      12671,
+      11,
+      9334,
+      11,
+      21495,
+      151645
+     ],
+     "statistics": {
+      "generated_tokens": 6,
+      "decode_steps": 5,
+      "prefill_seconds": 5.47556715272367,
+      "decode_seconds": 4.739944811910391,
+      "mean_decode_seconds_per_token": 0.9479889623820782,
+      "decode_tokens_per_second": 1.054864602523673,
+      "generation_seconds": 10.21551196463406
+     },
+     "session": {
+      "prompt_index": 7,
+      "cache_resets": 5,
+      "new_graphs_this_prompt": 0,
+      "unique_graphs_total": 0
+     },
+     "steps": [
+      {
+       "kind": "prefill",
+       "seconds": 5.47556715272367,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": 0
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.951075634919107,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.938501451164484,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9390020649880171,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9578188918530941,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      },
+      {
+       "kind": "decode",
+       "seconds": 0.9535467689856887,
+       "new_graphs": 0,
+       "code_store": null,
+       "reused_cached_tokens": null
+      }
+     ]
+    }
+   ],
+   "reference_keywords_present": [
+    "circle",
+    "triangle"
+   ]
+  }
+ ],
+ "status": "reference-recorded",
+ "versions": {
+  "python": "3.12.3",
+  "torch": "2.14.0+cu130",
+  "transformers": "5.20.2",
+  "accelerate": "1.15.0",
+  "safetensors": "0.8.0",
+  "tokenizers": "0.23.3",
+  "huggingface_hub": "1.33.0",
+  "numpy": "2.5.3",
+  "machine": "aarch64",
+  "cpu_capability": "SVE128",
+  "threads": 4,
+  "torchvision": "0.29.0+cu130",
+  "kernels": "0.17.2"
+ },
+ "load": {
+  "format": {
+   "quant_method": "fp8",
+   "fmt": "e4m3",
+   "activation_scheme": "dynamic",
+   "weight_block_size": [
+    128,
+    128
+   ],
+   "scale_fmt": "float",
+   "modules_not_converted": 245
+  },
+  "weights": "fp8",
+  "quantizer": {
+   "registry_keys": [
+    "fp8",
+    "mxfp8"
+   ],
+   "requested_dequantize": false,
+   "library_validate_environment_dequantize": true,
+   "torch_cuda_is_available": false
+  },
+  "load_seconds": 0.936,
+  "unscaled_modules_not_converted": [],
+  "snapshot_view": null,
+  "loading_info": {
+   "missing_keys": [],
+   "unexpected_keys": [],
+   "mismatched_keys": [],
+   "error_msgs": []
+  },
+  "attn_implementation": "sdpa",
+  "fp8_linear_modules": 196,
+  "fp8_linear_shells_with_unquantized_weight": {},
+  "fp8_linear": {
+   "weight_dtype": "torch.float8_e4m3fn",
+   "scale_dtype": "torch.float32",
+   "block_size": [
+    128,
+    128
+   ],
+   "activation_scheme": "dynamic"
+  },
+  "tied_embeddings": true
+ }
+}

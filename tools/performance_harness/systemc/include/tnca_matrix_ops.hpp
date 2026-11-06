@@ -4,6 +4,7 @@
 // products) over the sec 9C.2 flat row-major fragment layout, and the sec 9B
 // accumulator row operations, all through tnca_fpu_multi's widen + fma.
 #include "tnca_numeric.hpp"
+#include "tnca_matrix_dp.hpp"
 #include <array>
 #include <stdexcept>
 #include <vector>
@@ -30,6 +31,23 @@ inline void mma(Tile& C,const std::vector<Vector>& A,const std::vector<Vector>& 
     for(unsigned m=0;m<16;++m)for(unsigned n=0;n<16;++n){
         U32 v=C[m][n];
         for(unsigned k=0;k<K;++k)v=tnca_numeric::fma32(a[m*K+k],b[k*16+n],v);
+        C[m][n]=v;
+    }
+}
+// m.mma.dp.async (ISA sec 9C.4): dtype codes are the mod[3:2] / mod[6:5] fields.
+// A and B are read at their own element widths (the layout rule of sec 9C.2
+// applies to each fragment separately).
+inline void mma_dp(Tile& C,const std::vector<Vector>& A,const std::vector<Vector>& B,unsigned K,unsigned dta,unsigned dtb){
+    unsigned fa=format_of(dta),fb=format_of(dtb),ba=element_bytes(dta),bb=element_bytes(dtb);
+    unsigned g=tnca_matrix_dp::group_size(fa,fb);
+    if(K%g)throw std::runtime_error("m.mma.dp K is not a whole number of groups");
+    for(unsigned m=0;m<16;++m)for(unsigned n=0;n<16;++n){
+        U32 v=C[m][n];
+        for(unsigned k0=0;k0<K;k0+=g){
+            U32 a[4],b[4];
+            for(unsigned j=0;j<g;++j){a[j]=element(A,m*K+k0+j,ba);b[j]=element(B,(k0+j)*16+n,bb);}
+            v=tnca_matrix_dp::group_step(fa,fb,a,b,g,v);
+        }
         C[m][n]=v;
     }
 }

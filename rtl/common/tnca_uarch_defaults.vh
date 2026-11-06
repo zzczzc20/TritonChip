@@ -56,6 +56,14 @@
 `ifndef TNCA_UARCH_USE_BANKED_VRF
 `define TNCA_UARCH_USE_BANKED_VRF 0
 `endif
+// The physically timed R41 path is the default; legacy simulation profiles
+// explicitly select zero to retain their frozen single-cycle timing contract.
+`ifndef TNCA_UARCH_VALU_LATE
+`define TNCA_UARCH_VALU_LATE 2
+`endif
+`ifndef TNCA_UARCH_TENSOR_MUL_PIPE
+`define TNCA_UARCH_TENSOR_MUL_PIPE 1
+`endif
 `ifndef TNCA_UARCH_VRF_BYPASS
 `define TNCA_UARCH_VRF_BYPASS 0
 `endif
@@ -85,4 +93,23 @@
 `endif
 `ifndef TNCA_UARCH_HAS_TENSOR_XPOSE
 `define TNCA_UARCH_HAS_TENSOR_XPOSE 0
+`endif
+
+`ifndef TNCA_UARCH_BAR_N
+`define TNCA_UARCH_BAR_N 32
+`endif
+`ifndef TNCA_UARCH_BAR_W
+`define TNCA_UARCH_BAR_W 5
+`endif
+`ifndef TNCA_UARCH_BAR_EPOCH_W
+`define TNCA_UARCH_BAR_EPOCH_W 48
+`endif
+`ifndef TNCA_UARCH_FMA_IMPL
+`define TNCA_UARCH_FMA_IMPL 0
+`endif
+`ifndef TNCA_UARCH_MAC_DP
+`define TNCA_UARCH_MAC_DP 0
+`endif
+`ifndef TNCA_UARCH_MAC_CUTS
+`define TNCA_UARCH_MAC_CUTS 29
 `endif

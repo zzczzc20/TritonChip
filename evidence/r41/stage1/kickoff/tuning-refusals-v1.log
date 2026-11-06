@@ -1,0 +1,10 @@
+test_alias_views (__main__.PublicSelectionRefusals.test_alias_views) ... ok
+test_capture (__main__.PublicSelectionRefusals.test_capture) ... ok
+test_disabled_device_clock_is_not_a_zero_timing (__main__.PublicSelectionRefusals.test_disabled_device_clock_is_not_a_zero_timing) ... ok
+test_mutation (__main__.PublicSelectionRefusals.test_mutation) ... ok
+test_unknown_descriptor_metadata (__main__.PublicSelectionRefusals.test_unknown_descriptor_metadata) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 3.410s
+
+OK

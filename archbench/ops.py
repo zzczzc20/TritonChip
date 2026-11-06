@@ -317,7 +317,11 @@ for tier, (b, h, s, d) in PREFILL.items():
        note='causal: only the s(s+1)/2 unmasked scores are work')
 
 DECODE = dict(tiny=(1, 2, 16, 16), small=(1, 4, 256, 32), medium=(1, 8, 256, 32), large=(1, 32, 2048, 64))
-for tier, (b, h, l, d) in DECODE.items():
+# A second small shape with a 64-entry cache: the same one-query kernel as the
+# l256 point at about a quarter of its cycles (262k on the R41 board), for a
+# scoring set that is run many times; the l256 point stays for the final set.
+DECODE_SHORT = [('small', (1, 4, 64, 32))]
+for tier, (b, h, l, d) in list(DECODE.items()) + DECODE_SHORT:
     op('attention_decode', tier, 'fp16', dict(b=b, h=h, l=l, d=d),
        lambda seed, b=b, h=h, l=l, d=d: (DecodeAttention(), (
            randn(gen(seed), (b, h, 1, d), 'fp16'),

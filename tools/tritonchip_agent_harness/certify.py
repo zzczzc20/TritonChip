@@ -57,7 +57,8 @@ from .task import Task
 from .workspace import apply_candidate, base_tree, export, git, under
 
 STANDS = ("not-needed", "certified")   # not-needed: records written before 2026-11-06 only
-BOARD_BACKEND = {"u280": "fpga-u280"}
+# The card backend of each FPGA harness target a task may certify on.
+BOARD_BACKEND = {"u280": "fpga-u280", "u280-multicore-r41": "fpga-u280-multicore"}
 # The FPGA harness's statuses for a build that ran and failed, as opposed to one that could not run.
 INFEASIBLE = ("BUILD_FAIL", "TIMING_FAIL")
 
@@ -148,10 +149,19 @@ def manifest(task: Task, label: str, commit: str) -> dict:
         "clock_mhz": cert["clock_mhz"], "source_commit": commit,
         "hypothesis": f"{label} of {task.task_id}: its machine ({profile}) fits the {cert['target']}, closes "
                       f"{cert['clock_mhz']} MHz, and counts on the card the cycles simulation counted.",
-        "image": {"profile": profile},
+        # A multicore machine is its device description (spec/devices), whose per-core profile is the scored one.
+        "image": {"device": task.evaluation["device"]} if task.evaluation.get("device") else {"profile": profile},
         "board": {"backend": BOARD_BACKEND[cert["target"]], "profile": profile, "program": True, "conformance": True,
                   "archbench": {"points": points(task), "jobs": 1, "counters": True, "timeout_s": 7200}},
     }
+
+
+def xclbin_name(repo: Path, task: Task) -> str:
+    """The image file the target's build leaves, as the pinned platform's target names it."""
+    cert = config(task)
+    target = json.loads(git("-C", str(repo), "show",
+                            f"{cert['commit']}:tools/tritonchip_fpga_harness/targets/{cert['target']}.json"))
+    return str(target.get("xclbin_name") or next(a for a in target["expected_artifacts"] if a.endswith(".xclbin")))
 
 
 def compare(sim: dict, board: list) -> list:
@@ -400,3 +410,87 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
 __all__ = ["CertifyError", "base_image", "build_tree", "certified_score", "certify", "compare", "config", "manifest",
            "measure_on_image",
            "simulated_from_baseline", "simulated_from_run", "verdict"]
+
+
+def _board_rows(sim: dict, got: dict) -> list:
+    """Every point simulation passed, against the card's count of it (board.py: the relay's log)."""
+    rows = []
+    for p, s in sim.items():
+        if not s["passed"]:
+            rows.append({"point": p, "sim_cycles": s["done_cycles"], "board_cycles": None, "problem": None,
+                         "note": "failed in simulation"})
+            continue
+        r = got.get(p)
+        cycles = ((r or {}).get("observer") or {}).get("done_cycles")
+        if r is None:
+            problem = "no board record"
+        elif r.get("status") != "pass":
+            problem = f"board status {r.get('status')}"
+        elif r.get("fallbacks"):
+            problem = "part of it ran on the host"
+        elif cycles != s["done_cycles"]:
+            problem = "cycles differ"
+        else:
+            problem = None
+        rows.append({"point": p, "sim_cycles": s["done_cycles"], "board_cycles": cycles, "problem": problem})
+    return rows
+
+
+def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, images: dict) -> dict:
+    """The run's candidate on the card, by the harness, once the run is over (report section 8.9: B1, B10).
+
+    Its machine is built unless this run already built exactly this hardware (an in-run slow request's
+    image is reused) or it kept the base's (the base's image); then every validation and final point
+    runs through the relay (board.py), and the task's board checks with them. The verdicts are this
+    module's: certified, infeasible, board-fail (the card refused the image), board-disagrees (a point
+    or a board check), no-verdict (the infrastructure: run it again)."""
+    import secrets
+    from . import board, fpga_slow
+    cfg = (task.services or {}).get("fpga_slow") or {}
+    candidate = run_dir / "candidate" if record["gate"]["taken"] else None
+    names = points(task)
+    sim = simulated_from_run(record, names)
+    job = {"id": "certify", "remote_id": f"tnca-{secrets.token_hex(8)}",
+           "containers": f"tnca-cert-{secrets.token_hex(6)}"}
+    work = run_dir / "certification"
+    out: dict = {"started": time.time(), "hardware_changed": record["hardware"]["changed"]}
+    if record["hardware"]["changed"]:
+        digest = fpga_slow.hardware_digest(candidate)
+        built = images.get(digest)
+        if built:
+            out["image_from"] = "an in-run slow request"
+            image = built.get("card") or board.put_image(site, built["build_run"], built["sha256"], built["xclbin"],
+                                                         job["remote_id"])
+        else:
+            b = fpga_slow.build(site, repo, task, candidate, work, job, int(float(cfg.get("flow_minutes", 480)) * 60))
+            out["build"] = {k: v for k, v in b.items() if k != "visible"}
+            if b["outcome"] != "ok":
+                out.update(verdict="infeasible" if b["outcome"] == "design" else "no-verdict",
+                           why=f"build {b['pipeline'].get('status')}: {(b['pipeline'].get('build') or {}).get('error')}",
+                           finished=time.time())
+                return out
+            image = board.put_image(site, b["run_id"], b["pipeline"]["build"]["xclbin_sha256"],
+                                    xclbin_name(repo, task), job["remote_id"])
+    else:
+        image = board.base_image(site, task)
+    out["image"] = image
+    rec = board.measure(site, repo, task, candidate, image, names, work / "card", job["containers"],
+                        job["remote_id"], float(cfg.get("board_minutes", 120)) * 60)
+    out["card"] = rec
+    status = (rec.get("session") or {}).get("status")
+    if status == "refused-admission":
+        out.update(verdict="board-fail", why=(rec.get("session") or {}).get("detail"))
+    elif not board.ok(rec):
+        out.update(verdict="no-verdict", why=f"card session {status}")
+    else:
+        rows = _board_rows(sim, rec["points"])
+        checks = {n: c for n, c in (((rec.get("measured") or {}).get("checks")) or {}).items() if c.get("exit") != 0}
+        bad = [r for r in rows if r["problem"]]
+        out["rows"] = rows
+        if bad or checks:
+            why = [f"{r['point']}: {r['problem']}" for r in bad[:5]] + [f"board check {n} did not pass" for n in checks]
+            out.update(verdict="board-disagrees", why="; ".join(why))
+        else:
+            out.update(verdict="certified", why=None)
+    out["finished"] = time.time()
+    return out

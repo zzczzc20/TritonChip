@@ -176,7 +176,21 @@ def load_site(path: Optional[Path] = None) -> Site:
     pipeline = value.get("fpga_pipeline")
     if pipeline is not None:
         _keys("fpga_pipeline", pipeline, {"hosts", "build_host"},
-              {"board_host", "allow_candidate_host_code"})
+              {"board_host", "allow_candidate_host_code", "card"})
+        card = pipeline.get("card")
+        if card is not None:
+            # The card host's board sessions (board.py): the card's PCI function, how long it must have been
+            # idle, where the card host keeps the images tasks name by hash, and what a board check reads here.
+            _keys("fpga_pipeline.card", card, {"bdf"}, {"idle_seconds", "images", "check_mounts"})
+            if not re.fullmatch(r"[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]", str(card["bdf"])):
+                raise SiteError("fpga_pipeline.card.bdf must be a PCI address")
+            if not isinstance(card.get("idle_seconds", 900), int) or card.get("idle_seconds", 900) < 60:
+                raise SiteError("fpga_pipeline.card.idle_seconds must be at least 60")
+            for key in ("images", "check_mounts"):
+                if not isinstance(card.get(key, {}), dict) or not all(
+                        isinstance(k, str) and isinstance(v, str) and v.startswith("/")
+                        for k, v in card.get(key, {}).items()):
+                    raise SiteError(f"fpga_pipeline.card.{key} must map names to absolute paths")
         hosts = _path(pipeline["hosts"], "fpga_pipeline.hosts")
         if not all(isinstance(pipeline[k], str) and pipeline[k] for k in ("build_host",)):
             raise SiteError("fpga_pipeline.build_host must be a non-empty name")
@@ -187,7 +201,7 @@ def load_site(path: Optional[Path] = None) -> Site:
         if not isinstance(allow_code, bool):
             raise SiteError("fpga_pipeline.allow_candidate_host_code must be boolean")
         pipeline = {"hosts": hosts, "build_host": pipeline["build_host"],
-                    "board_host": board_host, "allow_candidate_host_code": allow_code}
+                    "board_host": board_host, "allow_candidate_host_code": allow_code, "card": card}
 
     return Site(
         path=path, provider=value["provider"], images=dict(images),

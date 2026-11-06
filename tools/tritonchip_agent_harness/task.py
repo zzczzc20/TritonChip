@@ -99,24 +99,49 @@ def load_task(path: Path) -> Task:
         raise TaskError(f"{path}: unknown services {sorted(unknown_services)}")
     slow = services.get("fpga_slow")
     if slow is not None:
-        if not isinstance(slow, dict) or set(slow) != {"minutes", "job_minutes", "mode"}:
-            raise TaskError(f"{path}: services.fpga_slow needs minutes, job_minutes and mode")
-        for key in ("minutes", "job_minutes"):
-            if (not isinstance(slow[key], (int, float)) or isinstance(slow[key], bool)
-                    or slow[key] <= 0):
-                raise TaskError(f"{path}: services.fpga_slow.{key} must be positive")
-        if slow["job_minutes"] > slow["minutes"]:
-            raise TaskError(f"{path}: fpga_slow.job_minutes exceeds its total budget")
-        if slow["mode"] not in ("build", "board"):
-            raise TaskError(f"{path}: services.fpga_slow.mode must be build or board")
-        if int(v["budget"]["wall_seconds"]) < slow["job_minutes"] * 60:
-            raise TaskError(f"{path}: agent wall budget is shorter than one FPGA slow request")
+        _check_slow(path, slow, ev)
     ref = path.parent / v["reference"] if v.get("reference") else None
     return Task(task_id=v["task_id"], kind=v["kind"], base_commit=v["base_commit"], design=tuple(v["design"]),
                 evaluator_owned=tuple(v.get("evaluator_owned", ())), hide=tuple(v["hide"]), instruction=(path.parent / v["instruction"]).read_text(encoding="utf-8"),
                 reference=ref, wall_seconds=int(v["budget"]["wall_seconds"]), evaluation=dict(ev),
                 services=services,
                 path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest(), skills=tuple(skills))
+
+
+_CHECK_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
+
+
+def _check_slow(path: Path, slow, ev: dict) -> None:
+    """services.fpga_slow (report section 8.9): counts, not minutes, for the run; caps for one request."""
+    required = {"mode", "flows", "board_runs", "flow_minutes", "board_minutes"}
+    optional = {"base_image_sha256", "board_checks", "certify_after_run"}
+    if not isinstance(slow, dict) or not required <= set(slow) or set(slow) - required - optional:
+        raise TaskError(f"{path}: services.fpga_slow needs {', '.join(sorted(required))} "
+                        f"(and may have {', '.join(sorted(optional))})")
+    if slow["mode"] not in ("build", "board"):
+        raise TaskError(f"{path}: services.fpga_slow.mode must be build or board")
+    for key in ("flows", "board_runs"):
+        if not isinstance(slow[key], int) or isinstance(slow[key], bool) or slow[key] < 0:
+            raise TaskError(f"{path}: services.fpga_slow.{key} must be a count")
+    for key in ("flow_minutes", "board_minutes"):
+        if not isinstance(slow[key], (int, float)) or isinstance(slow[key], bool) or slow[key] <= 0:
+            raise TaskError(f"{path}: services.fpga_slow.{key} must be positive")
+    sha = slow.get("base_image_sha256")
+    if sha is not None and not (isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{64}", sha)):
+        raise TaskError(f"{path}: services.fpga_slow.base_image_sha256 must be a sha256")
+    checks = slow.get("board_checks", [])
+    if not isinstance(checks, list):
+        raise TaskError(f"{path}: services.fpga_slow.board_checks must be a list")
+    for c in checks:
+        if (not isinstance(c, dict) or not _CHECK_NAME.match(str(c.get("name", "")))
+                or not isinstance(c.get("command"), list) or not c["command"]
+                or not all(isinstance(a, str) for a in c["command"])
+                or not isinstance(c.get("env", {}), dict) or set(c) - {"name", "command", "env", "timeout_seconds"}):
+            raise TaskError(f"{path}: each services.fpga_slow.board_checks entry needs a name and a command list")
+    if not isinstance(slow.get("certify_after_run", False), bool):
+        raise TaskError(f"{path}: services.fpga_slow.certify_after_run must be boolean")
+    if slow["mode"] == "board" and not isinstance(ev.get("platform"), dict):
+        raise TaskError(f"{path}: board mode needs evaluation.platform: the card host runs its code only")
 
 
 def render(task: Task, mode: str, skills: Iterable[str] = ()) -> str:
@@ -159,7 +184,8 @@ def _services_text(cfg: dict) -> str:
              "From your shell, `tnca-service` asks the evaluator to measure a snapshot of your working directory "
              "the way the final evaluation will (only changes under the paths it takes count). Whether and when "
              "to use it is up to you. Requests run in the background and your time keeps running while they do. "
-             "A request still running when you stop is cancelled, and its result is lost.", ""]
+             "A request still running when you stop is cancelled, and its result is lost (a board request "
+             "excepted, below).", ""]
     if score:
         lines.append(f"- `tnca-service submit score`: the hidden validation set, in simulation. You get how many "
                      f"points passed, the geometric-mean speedup over the points that passed, and the share of all "
@@ -176,16 +202,31 @@ def _services_text(cfg: dict) -> str:
                      f"{float(fpga.get('minutes', 0)):g} minutes of FPGA time in total, charged as used; one request "
                      f"at a time, and one that could run past what is left is refused. Post-synthesis timing is "
                      f"optimistic: routing adds delay.")
-    if slow:
-        action = ("full implementation and validation-set board measurement" if slow["mode"] == "board"
-                  else "full implementation and routed timing, without the board stage")
-        lines.append(f"- `tnca-service submit fpga-slow`: {action}, using the FPGA harness. "
-                     f"One request may take up to {float(slow['job_minutes']):g} minutes; the total slow-tier "
-                     f"budget is {float(slow['minutes']):g} minutes, charged as used. The request runs in the "
-                     f"background; it is cancelled if your agent run ends before it finishes. "
-                     f"If a board stage would execute candidate host code, the site must explicitly permit it. "
-                     f"You see build/timing information" +
-                     (" and only an aggregate for the hidden validation set." if slow["mode"] == "board" else "."))
+    if slow and slow["mode"] == "build":
+        lines.append(f"- `tnca-service submit fpga-slow`: the full implementation of your machine on the FPGA "
+                     f"(place and route at the target clock, one Vivado flow of up to "
+                     f"{float(slow['flow_minutes']):g} minutes), and its routed timing. You have "
+                     f"{int(slow['flows'])} such flows in this run.")
+    elif slow:
+        lines.append(
+            f"- `tnca-service submit fpga-slow`: the real card. Board time is precious: a request that changed "
+            f"the machine (RTL, the profile's parameters, the device description) is first fully implemented "
+            f"(one Vivado flow, which takes hours; up to {float(slow['flow_minutes']):g} minutes), and you have "
+            f"{int(slow['flows'])} flows in this run. Accumulate enough hardware change, and be confident in it, "
+            f"before you ask. A request that kept the machine (compiler and software only), or that asks again "
+            f"for hardware this run already built, needs no flow and runs on the card directly; you have "
+            f"{int(slow['board_runs'])} such board runs. Before anything is charged, the snapshot's validation "
+            f"set must pass in simulation, and a hardware request needs an `fpga-quick` result of this run on "
+            f"exactly that hardware that met timing; otherwise it is refused and not charged. A flow that fails "
+            f"on your design (timing or place-and-route does not converge, it does not fit, DRC) counts; one "
+            f"that fails on the infrastructure does not, and is retried for you. One slow request at a time; "
+            f"the quick tier stays open while it runs. The card is shared: a request waits until the card has "
+            f"been idle for a while, and that wait is part of its time. On the card you get the hidden "
+            f"validation set's aggregate against the base on the card (as the score service gives it), how "
+            f"many points counted the cycles simulation counted, and any board check (such as FP8 bit "
+            f"alignment) that did not pass; for a flow that failed, why: the failing stage, slack, the worst "
+            f"paths and whether they cross an SLR, utilisation per SLR, the DRC rules that failed. A board "
+            f"request still running when you stop runs to its end, but you will not see its result.")
     lines += ["- `tnca-service budget`, `tnca-service status [ID]`, `tnca-service result ID`, "
               "`tnca-service wait ID`: what is left, and the results."]
     return "\n".join(lines)

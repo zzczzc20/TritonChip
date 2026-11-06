@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from . import __version__, evaluator, occupancy, runner
+from . import __version__, certify, evaluator, occupancy, runner
 from .services import Broker
 from .siteconfig import Site, SiteError
 from . import skills as skills_
@@ -59,6 +59,7 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
     }
     record["workspace"] = exported
 
+    broker = None
     if agent == "noop":
         record["agent_result"] = {"pseudo": "noop"}
     elif agent == "reference" or agent.startswith("patch:"):
@@ -74,6 +75,10 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
         record["agent_result"] = runner.run_agent(site, account, prompt, mode, run_dir, workspace,
                                                   timeout=float(task.wall_seconds), services=broker,
                                                   skills=names)
+        if broker is not None and broker.wait_outlived():
+            # A slow request the agent left running ran to its end (report section 8.9, B10): its record,
+            # unseen by the agent, joins the run's, and its image may serve the certification below.
+            record["agent_result"]["services"] = broker.record()
 
     g = gate(repo, task.base_commit, task.hide, task.design, workspace, out=run_dir / "candidate",
              evaluator_owned=task.evaluator_owned)
@@ -107,7 +112,17 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
             record["validity"] = "budget-exhausted"
         else:
             record["validity"] = "valid"
+        slow = (task.services or {}).get("fpga_slow") or {}
+        if (slow.get("certify_after_run") and slow.get("mode") == "board" and record["validity"] != "infra-invalid"
+                and not pseudo):
+            # The harness certifies the run's candidate on the card itself (report section 8.9, B1).
+            try:
+                record["certification"] = certify.after_run(site, repo, task, record, run_dir,
+                                                            broker.images if broker is not None else {})
+            except Exception as exc:  # noqa: BLE001 -- the run's record is kept; certify by hand
+                record["certification"] = {"verdict": "no-verdict", "why": f"{type(exc).__name__}: {str(exc)[:300]}"}
     record["occupancy"] = occupancy.of_run(site, task, record["agent_result"], evaluated)
+    record["occupancy"] += occupancy.certification(site, record.get("certification"))
     record["finished"] = time.time()
     (run_dir / "run.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     record["run_dir"] = str(run_dir)

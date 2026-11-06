@@ -26,22 +26,25 @@ def task() -> Task:
 
 
 class SlowService(unittest.TestCase):
-    def test_task_opt_in_requires_a_long_enough_agent_run(self):
+    def test_task_config_counts_flows_and_board_runs(self):
         source = HERE / "tasks" / "r39-v5-main-pilot"
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "instruction.md").write_text("Improve the design.\n")
             value = json.loads((source / "task.json").read_text())
-            value["services"]["fpga_slow"] = {"mode": "build", "minutes": 180,
-                                                "job_minutes": 180}
+            value["services"]["fpga_slow"] = {"mode": "board", "minutes": 180, "job_minutes": 180}
             path = root / "task.json"
             path.write_text(json.dumps(value))
-            with self.assertRaisesRegex(TaskError, "wall budget is shorter"):
+            with self.assertRaisesRegex(TaskError, "fpga_slow needs"):
                 load_task(path)
-            value["budget"]["wall_seconds"] = 14400
+            value["services"]["fpga_slow"] = {"mode": "board", "flows": 3, "board_runs": 6,
+                                                "flow_minutes": 480, "board_minutes": 120}
+            value["evaluation"]["platform"] = {"commit": "b" * 40, "paths": []}
             path.write_text(json.dumps(value))
-            loaded = load_task(path)
-            self.assertIn("tnca-service submit fpga-slow", render(loaded, "offline"))
+            text = render(load_task(path), "offline")
+            self.assertIn("tnca-service submit fpga-slow", text)
+            self.assertIn("Board time is precious", text)
+            self.assertIn("3 flows in this run", text)
 
     def test_manifest_exposes_only_validation_on_the_board(self):
         board = fpga_slow.manifest(task(), "l1", "c" * 40, board=True)
@@ -53,64 +56,54 @@ class SlowService(unittest.TestCase):
     def test_board_result_returns_only_an_aggregate_to_the_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            config = {"hosts": root / "hosts.json", "build_host": "build", "board_host": "card",
-                      "allow_candidate_host_code": False}
-            site = types.SimpleNamespace(fpga_pipeline=config)
-            job = {"id": "l1", "remote_id": "agent-slow-1", "containers": "tnca-test"}
+            site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "hosts.json", "build_host": "build",
+                                                        "board_host": "card", "card": {"bdf": "0000:04:00.1"}})
+            job = {"id": "l1", "remote_id": "agent-slow-1", "containers": "tnca-test", "kind": "software"}
             sim = {"aggregate": {"n": 1, "passed": 1},
-                   "full": {"points": {"secret.validation": {"status": "pass", "record_cycles": 42}}}}
-
-            class Finished:
-                def wait(self, timeout):
-                    (root / "job" / "pipeline.json").write_text(json.dumps({
-                        "status": "PASS", "run_id": "agent-slow-1", "build": {"status": "PASS",
-                            "timing": {"wns_ns": 0.2}, "observed_clock_mhz": 100},
-                        "board": {"status": "PASS"}}))
-                    return 0
-
+                   "full": {"points": [{"point": "secret.validation", "failure": None, "done_cycles": 42}]}}
+            card = {"session": {"status": "ok"}, "measured": {"checks": {"fp8": {"exit": 1, "log_tail": ["x"]}}},
+                    "points": {"secret.validation": {"status": "pass", "cycles": 40, "record_cycles": 42,
+                                                     "fallbacks": [], "observer": {"done_cycles": 42}}}}
+            base = {"points": {"secret.validation": {"status": "pass", "cycles": 80}}}
             with (mock.patch.object(fpga_slow.evaluator, "measure_validation", return_value=sim),
-                  mock.patch.object(fpga_slow.certify, "build_tree", return_value="c" * 40),
-                  mock.patch.object(fpga_slow.certify, "fetch_board_records", return_value=[
-                      {"point_id": "secret.validation", "status": "pass", "fallbacks": [],
-                       "time": {"device": 42}}]),
-                  mock.patch.object(fpga_slow.subprocess, "Popen", return_value=Finished()) as popen):
-                visible, full = fpga_slow.run(site, root, task(), None, root / "job", job, 120,
-                                              board=True)
-            argv = popen.call_args.args[0]
-            self.assertEqual(argv[argv.index("--run-id") + 1], "agent-slow-1")
-            self.assertEqual(argv[argv.index("--board-host") + 1], "card")
-            self.assertEqual(visible["board"], {"verdict": "certified", "validation_passed": 1,
-                                                "validation_n": 1})
+                  mock.patch.object(fpga_slow.board, "measure", return_value=card),
+                  mock.patch.object(fpga_slow.board, "baseline", return_value=base)):
+                visible, full = fpga_slow.run(site, root, task(), None, root / "job", job, with_board=True,
+                                              image={"path": "/x", "sha256": "c" * 64}, flow_seconds=60,
+                                              board_seconds=60)
+            self.assertEqual(visible["board"]["validation"]["speedup_geomean"], 2.0)
+            self.assertEqual(visible["board"]["counted_as_in_simulation"], 1)
+            self.assertEqual(visible["board"]["checks"]["fp8"]["status"], "fail")
+            self.assertEqual(visible["charged"], "board_run")
             self.assertNotIn("secret.validation", json.dumps(visible))
             self.assertNotIn("secret.final", json.dumps(visible))
-            self.assertEqual(full["comparison"][0]["point"], "secret.validation")
 
-    def test_failed_pipeline_cannot_be_reported_as_certified(self):
+    def test_a_snapshot_failing_in_simulation_is_refused_uncharged(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            cfg = {"hosts": root / "hosts.json", "build_host": "build", "board_host": "card",
-                   "allow_candidate_host_code": False}
-            site = types.SimpleNamespace(fpga_pipeline=cfg)
-            job = {"id": "l1", "remote_id": "agent-slow-2", "containers": "tnca-test"}
-            sim = {"full": {"points": {"secret.validation": {"status": "pass", "record_cycles": 42}}}}
-
-            class Finished:
-                def wait(self, timeout):
-                    (root / "job" / "pipeline.json").write_text(json.dumps({
-                        "status": "BOARD_FAIL", "run_id": "agent-slow-2", "build": {"status": "PASS"},
-                        "board": {"status": "BOARD_FAIL"}}))
-                    return 0
-
+            site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "h", "build_host": "build"})
+            job = {"id": "l1", "remote_id": "r", "containers": "c", "kind": "hardware"}
+            sim = {"aggregate": {"n": 2, "passed": 1}, "failures": {"numeric-error": 1}}
             with (mock.patch.object(fpga_slow.evaluator, "measure_validation", return_value=sim),
-                  mock.patch.object(fpga_slow.certify, "build_tree", return_value="c" * 40),
-                  mock.patch.object(fpga_slow.certify, "fetch_board_records", return_value=[
-                      {"point_id": "secret.validation", "status": "pass", "fallbacks": [],
-                       "time": {"device": 42}}]),
-                  mock.patch.object(fpga_slow.subprocess, "Popen", return_value=Finished()),
-                  mock.patch.object(fpga_slow, "cancel", return_value={})):
-                visible, _ = fpga_slow.run(site, root, task(), None, root / "job", job, 120,
-                                           board=True)
-            self.assertEqual(visible["board"]["verdict"], "board-fail")
+                  mock.patch.object(fpga_slow, "build") as build):
+                visible, _ = fpga_slow.run(site, root, task(), None, root / "job", job, with_board=True,
+                                           image=None, flow_seconds=60, board_seconds=60)
+            build.assert_not_called()
+            self.assertEqual((visible["status"], visible["charged"], job["outcome"]), ("refused", None, "refused"))
+
+    def test_a_failed_flow_is_the_designs_or_the_infrastructures(self):
+        self.assertEqual(fpga_slow.classify({"status": "PASS", "build": {"status": "PASS", "xclbin_sha256": "x"}}), "ok")
+        self.assertEqual(fpga_slow.classify({"status": "BUILD_FAIL", "build": {"status": "TIMING_FAIL"}}), "design")
+        self.assertEqual(fpga_slow.classify({"status": "BUILD_FAIL", "build": {
+            "status": "BUILD_FAIL", "timing": {"metrics": {"wns_ns": -0.08}}}}), "design")
+        self.assertEqual(fpga_slow.classify({"status": "BUILD_FAIL", "build": {
+            "status": "BUILD_FAIL", "observed_clock_mhz": 91}}, 100), "design")
+        self.assertEqual(fpga_slow.classify({"status": "BUILD_FAIL", "build": {
+            "status": "BUILD_FAIL", "log_tail": ["ERROR: [Place 30-640] Place Check : This design requires more"]}}),
+            "design")
+        self.assertEqual(fpga_slow.classify({"status": "BUILD_FAIL", "build": {
+            "status": "BUILD_FAIL", "log_tail": ["ERROR: license checkout failed"]}}), "infra")
+        self.assertEqual(fpga_slow.classify({"status": "PIPELINE_FAIL"}), "infra")
 
     def test_build_only_cancel_reconciles_no_card_host(self):
         from tritonchip_fpga_harness import hosts, pipeline

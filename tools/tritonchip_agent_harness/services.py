@@ -9,17 +9,24 @@ side. One JSON line in, one JSON line out.
                          way the final evaluator measures (P2.1 included); the
                          agent sees an aggregate only (README section 6.4)
     submit fpga-quick    out-of-context synthesis and timing of the device
-    submit fpga-slow     full link, optionally followed by validation-set board
-                         measurement, if both task and site enable it
+    submit fpga-slow     the full link and the card (fpga_slow.py, report section 8.9):
+                         a hardware request is one Vivado flow, a software one a card
+                         run only; each kind has its own count for the run
     status, result, budget
 
 A request is a snapshot: the same gate as the final evaluation, so only
 changes under the design paths count, and a rejected snapshot or RTL that
 fails the check is refused before anything is charged. Budgets: a number of
-scoring requests, charged when one is accepted; FPGA minutes, charged as the
-worker's actual time, with one FPGA request at a time and none accepted that
-could run past what is left. Everything asked and answered, and the full
-results the agent does not see, go into the run record.
+scoring requests, charged when one is accepted; quick-tier minutes, charged as
+the worker's actual time, one quick request at a time and none accepted that
+could run past what is left; slow-tier flows and card runs, reserved when a
+request is accepted and given back when it was refused by its gate or failed
+on the infrastructure. One slow request at a time (one Vivado flow, one card);
+the quick tier stays open while a slow request runs, since iterating on
+hardware while a flow runs is what the slow tier's asynchrony is for. A slow
+request still running when the agent stops runs to its end, unseen by the
+agent, for the certification after the run. Everything asked and answered,
+and the full results the agent does not see, go into the run record.
 """
 
 from __future__ import annotations
@@ -34,7 +41,7 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-from . import evaluator, fpga_quick, fpga_slow, provider
+from . import board, evaluator, fpga_quick, fpga_slow, provider
 from .siteconfig import Site
 from .task import Task
 from .workspace import apply_candidate, export, gate
@@ -60,9 +67,13 @@ class Broker:
         self.fpga_job = float(fq.get("job_minutes", 30)) * 60.0
         self.period = float(fq.get("period_ns", 10.0))
         fs = cfg.get("fpga_slow") or {}
-        self.slow_left = float(fs.get("minutes", 0)) * 60.0
-        self.slow_job = float(fs.get("job_minutes", 0)) * 60.0
         self.slow_mode = fs.get("mode", "board")
+        self.flows_left = int(fs.get("flows", 0))
+        self.board_runs_left = int(fs.get("board_runs", 0))
+        self.flow_seconds = int(float(fs.get("flow_minutes", 480)) * 60)
+        self.board_seconds = int(float(fs.get("board_minutes", 120)) * 60)
+        # Hardware this run built (fpga_slow.hardware_digest -> its image): asked for again, it needs no flow.
+        self.images: dict = {}
         self.runners: dict = runners or {"score": self._run_score, "fpga-quick": self._run_fpga,
                                          "fpga-slow": self._run_slow}
         self.jobs: dict = {}
@@ -95,16 +106,23 @@ class Broker:
         return self.socket_dir
 
     def stop(self) -> None:
-        """At the end of the run: no new requests, and what is still running is stopped and charged."""
+        """At the end of the run: no new requests; a slow request runs to its end, unseen by the agent, for
+        the certification after the run (report section 8.9, B10); anything else still running is stopped."""
         if self._server is not None:
             self._server.shutdown()
             self._server.server_close()
             self._server = None
         with self.lock:
             running = [j for j in self.jobs.values() if j["state"] in ("queued", "running")]
+        stopped = []
         for job in running:
+            if job["service"] == "fpga-slow" and job["state"] == "running":
+                job["outlived_run"] = True
+                job["note"] = "still running when the agent stopped; it ran to its end, unseen by the agent"
+                continue
             job["state"] = "cancelled"
             job["note"] = "still running when the agent stopped; its result is not kept"
+            stopped.append(job)
             if job["service"] == "fpga-quick" and self.site.fpga_worker:
                 fpga_quick.cancel(self.site.fpga_worker, job["remote_id"])
             elif job["service"] == "fpga-slow" and getattr(self.site, "fpga_pipeline", None):
@@ -113,11 +131,20 @@ class Broker:
                 for name in provider.docker("ps", "-a", "--format", "{{.Names}}", check=False).stdout.split():
                     if name.startswith(job["containers"]):
                         provider.remove(name)
-        for job in running:
+        for job in stopped:
             if job.get("thread"):
                 job["thread"].join(timeout=180)
         if self.socket_dir is not None:
             shutil.rmtree(self.socket_dir, ignore_errors=True)
+
+    def wait_outlived(self) -> list:
+        """The slow requests that outlived the agent, waited for to their end; their ids."""
+        with self.lock:
+            outlived = [j for j in self.jobs.values() if j.get("outlived_run")]
+        for job in outlived:
+            if job.get("thread"):
+                job["thread"].join()
+        return [j["id"] for j in outlived]
 
     # -- the protocol ----------------------------------------------------------------
     def handle(self, request: dict) -> dict:
@@ -139,8 +166,8 @@ class Broker:
         return {"score_requests_left": self.score_left,
                 "fpga_minutes_left": round(self.fpga_left / 60.0, 1),
                 "fpga_minutes_per_request": round(self.fpga_job / 60.0, 1),
-                "fpga_slow_minutes_left": round(self.slow_left / 60.0, 1),
-                "fpga_slow_minutes_per_request": round(self.slow_job / 60.0, 1),
+                "fpga_slow_flows_left": self.flows_left,
+                "fpga_slow_board_runs_left": self.board_runs_left,
                 "busy": sorted(self.busy)}
 
     def submit(self, service) -> dict:
@@ -165,30 +192,68 @@ class Broker:
                 self.busy.pop(service, None)
             return {"refused": "the snapshot cannot be measured", "rejected": g["rejected"][:20] or problems,
                     "snapshot": snapshot, **self.budget()}
-        if (service == "fpga-slow" and self.slow_mode == "board" and fpga_slow.host_code_paths(candidate)
-                and not self.site.fpga_pipeline.get("allow_candidate_host_code", False)):
-            with self.lock:
-                self.busy.pop(service, None)
-            return {"refused": "the card host is not configured for candidate host code; "
-                    "use a hardware-only snapshot or an isolated card host", "snapshot": snapshot, **self.budget()}
         job = {"id": job_id, "service": service, "state": "queued", "submitted": time.time(),
                "snapshot": snapshot, "containers": f"tnca-svc-{self.run_id}-{job_id}",
                "remote_id": f"tnca-{secrets.token_hex(8)}"}
+        if service in ("fpga-quick", "fpga-slow"):
+            job["hardware"] = fpga_slow.hardware_digest(candidate)
         if service == "fpga-slow":
             job["mode"] = self.slow_mode
+            refused = self._slow_kind(job, candidate)
+            if refused:
+                with self.lock:
+                    self.busy.pop(service, None)
+                return {"refused": refused, "snapshot": snapshot, **self.budget()}
         with self.lock:
             if service == "score":
                 self.score_left -= 1
+            elif service == "fpga-slow":
+                if job["charge"] == "flow":
+                    self.flows_left -= 1
+                else:
+                    self.board_runs_left -= 1
             self.jobs[job_id] = job
         job["thread"] = threading.Thread(target=self._run, args=(job, candidate, job_dir), daemon=True)
         job["thread"].start()
         return {"id": job_id, "state": "queued", "snapshot": snapshot, **self.budget()}
 
+    def _slow_kind(self, job: dict, candidate: Optional[Path]) -> Optional[str]:
+        """Which kind a slow request is, what it is charged to, and why it is refused if it is."""
+        changed = evaluator.hardware_changed(self.repo, self.task, candidate)["changed"]
+        built = self.images.get(job["hardware"])
+        if self.slow_mode == "build" or (changed and built is None):
+            job["kind"], job["charge"] = "hardware", "flow"
+            if self.flows_left <= 0:
+                return "no Vivado flows left for this run"
+            if changed and not self._timing_met(job["hardware"]):
+                return ("a hardware request needs an fpga-quick result of this run on exactly this hardware "
+                        "that met timing; ask the quick tier first")
+            return None
+        job["kind"], job["charge"] = "software", "board_run"
+        job["image"] = built
+        if self.board_runs_left <= 0:
+            return "no board runs left for this run"
+        if built is None:
+            try:
+                job["base_image"] = board.base_image(self.site, self.task)
+            except board.BoardError as exc:
+                return f"the base's image is not available on the card host: {exc}"
+        return None
+
+    def _timing_met(self, digest: str) -> bool:
+        with self.lock:
+            quick = [j for j in self.jobs.values()
+                     if j["service"] == "fpga-quick" and j.get("hardware") == digest and j["state"] == "done"]
+        for j in quick:
+            r = j.get("full") or {}
+            wns, failing = r.get("wns_ns"), r.get("failing_endpoints")
+            if isinstance(wns, (int, float)) and wns >= 0 and not failing:
+                return True
+        return False
+
     def _refusal(self, service: str) -> Optional[str]:
         if service in self.busy:
             return f"a {service} request is already running ({self.busy[service]}); one at a time"
-        if service.startswith("fpga-") and any(s.startswith("fpga-") for s in self.busy):
-            return "another FPGA request is running; one at a time across both tiers"
         if service == "score" and self.score_left <= 0:
             return "no scoring requests left"
         if service == "fpga-quick":
@@ -202,11 +267,11 @@ class Broker:
                 return "this task does not enable the FPGA slow service"
             if not getattr(self.site, "fpga_pipeline", None):
                 return "this site has no FPGA pipeline"
-            if self.slow_mode == "board" and not self.site.fpga_pipeline.get("board_host"):
-                return "the FPGA pipeline has no board host"
-            if self.slow_left < self.slow_job:
-                return (f"an FPGA slow request may take up to {self.slow_job / 60:.0f} min and "
-                        f"{self.slow_left / 60:.1f} min is left")
+            if self.slow_mode == "board" and not (self.site.fpga_pipeline.get("board_host")
+                                                  and self.site.fpga_pipeline.get("card")):
+                return "the FPGA pipeline has no card host for board sessions"
+            if self.flows_left <= 0 and self.board_runs_left <= 0:
+                return "no Vivado flows and no board runs left for this run"
         return None
 
     def _run(self, job: dict, candidate: Optional[Path], job_dir: Path) -> None:
@@ -268,16 +333,33 @@ class Broker:
         return visible, r
 
     def _run_slow(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
-        started = time.monotonic()
-        seconds = int(min(self.slow_job, self.slow_left))
+        """The request, and its charge settled: kept when it was the candidate's (a flow that ran, a card
+        run that measured or refused the image), given back when the gate refused it or the
+        infrastructure failed it."""
         try:
-            return fpga_slow.run(self.site, self.repo, self.task, candidate, job_dir,
-                                 job, seconds, board=self.slow_mode == "board")
+            image = job.get("base_image")
+            if job.get("image"):   # hardware an earlier request of this run built: its image, on the card host
+                image = job["image"].get("card") or board.put_image(
+                    self.site, job["image"]["build_run"], job["image"]["sha256"], job["image"]["xclbin"],
+                    job["remote_id"])
+            visible, full = fpga_slow.run(self.site, self.repo, self.task, candidate, job_dir, job,
+                                          with_board=self.slow_mode == "board", image=image,
+                                          flow_seconds=self.flow_seconds, board_seconds=self.board_seconds)
+        except Exception:
+            job["outcome"] = "infra"
+            raise
         finally:
-            charged = min(seconds, time.monotonic() - started)
+            kept = job.get("outcome") in ("ok", "design")
             with self.lock:
-                job["charged_seconds"] = round(charged, 1)
-                self.slow_left = max(0.0, self.slow_left - charged)
+                job["charged"] = job["charge"] if kept else None
+                if not kept:
+                    if job["charge"] == "flow":
+                        self.flows_left += 1
+                    else:
+                        self.board_runs_left += 1
+                if job.get("kind") == "hardware" and job.get("image") and job.get("outcome") == "ok":
+                    self.images[job["hardware"]] = job["image"]
+        return visible, full
 
     # -- views ---------------------------------------------------------------------------
     def _summary(self, job: dict) -> dict:

@@ -4,7 +4,7 @@
     tnca-service budget                what is left
     tnca-service submit score          the hidden validation set, in simulation: an aggregate
     tnca-service submit fpga-quick     synthesis and timing of the whole device on the FPGA part
-    tnca-service submit fpga-slow      full link; optional validation-set board measurement
+    tnca-service submit fpga-slow      the card: a hardware change is first fully linked (a flow)
     tnca-service status [ID]           one request, or all of them
     tnca-service result ID             a finished request's result
     tnca-service wait ID [SECONDS]     wait for a request to finish, then print its result

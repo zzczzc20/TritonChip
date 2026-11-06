@@ -874,48 +874,73 @@ are not one series. The agent is not shown them.
 - A job still running when the agent stops is stopped (`pkill` on the worker, with a pattern that cannot match its own command line) and charged.
 - Queue waits are not charged; the run's wall clock goes on.
 
-**Enable the slow tier.** `tasks/r39-v5-main-pilot/task.json` keeps its current
-45-minute agent budget and does not enable this hours-long service. For a task
-that can wait for full implementation, set its wall budget to at least one
-slow request and add, for example:
+**Enable the slow tier** (report section 8.9, decided 2026-11-06/07). The
+agent asks for the card; the request is asynchronous and the agent keeps
+iterating. A snapshot that changed the machine and whose hardware this run has
+not built is a *hardware* request: one Vivado flow on the build host, then, in
+board mode, its validation points on the card on the image it built. Any other
+(software only, or hardware this run already built) is a *software* request: the
+card only, on the base's image or that one. Each kind has its own count for the
+run:
 
 ```json
-"budget": {"wall_seconds": 14400},
 "services": {
-  "fpga_slow": {"mode": "build", "minutes": 180, "job_minutes": 180}
+  "fpga_slow": {"mode": "board", "flows": 3, "board_runs": 6, "flow_minutes": 480, "board_minutes": 120,
+                "base_image_sha256": "<the base image's sha256>",
+                "board_checks": [{"name": "fp8", "command": ["/opt/torchenv/bin/python",
+                                  "tools/performance_harness/fp8_cases.py", "--out", "/out/checks/fp8", "--quick"]}],
+                "certify_after_run": true}
 }
 ```
 
-`mode: "build"` returns the full-link result without touching the card.
-`mode: "board"` also runs conformance and hidden validation points on the
-card. Add this block to the operator's private `site.json` (the host names
-must exist in the FPGA harness's separate `hosts.json`):
+- **Gate**, before anything is charged: the validation set passes in
+  simulation; a hardware request also needs an `fpga-quick` result of this run
+  on exactly that hardware that met timing. A refused request is not charged.
+- **Charging**: a flow that failed on the candidate's design (timing or
+  place-and-route did not converge, it does not fit, DRC, a lowered clock, the
+  card refused the image) counts; one that failed on the infrastructure does
+  not and is retried (`fpga_slow.classify`, from the build record, never the
+  agent's account).
+- **One slow request at a time** (one Vivado flow, one card). The quick tier
+  stays open while a slow request runs.
+- **What the agent sees**: for a failed flow, the quick tier's fields plus the
+  routed design's (failing stage, hold slack, per-SLR utilisation, SLR
+  crossings on the worst paths, failing DRC rules), host paths and names
+  scrubbed; on the card, the validation set's aggregate against the base on the
+  card, how many points counted what simulation counted, and each board check
+  that did not pass. Point names, cycles and records stay in the run record.
+- **At the run's end** a slow request still running runs to its end, unseen by
+  the agent; with `certify_after_run` the harness then certifies the run's
+  candidate on the card itself (`certify.after_run`: all validation and final
+  points and the board checks; an in-run image of the same hardware is reused).
+
+**No candidate code on the card host** (`board.py`). The card host runs only
+the platform's code, from a clean checkout of `evaluation.platform.commit`
+(synced the FPGA harness's way): `tritonchip_fpga_harness.board_session` waits
+for the card to be continuously idle, takes the shared lease, loads the image
+unless its UUID is already loaded (a measured image stays; the next session
+overwrites it), and runs the board relay (`tnca.backends.board_relay`), which
+owns the card and executes link operations only. The candidate's compiler and
+runtime run in the evaluator's container here, with no network, and reach the
+relay through an SSH-forwarded Unix socket. The relay writes each launch's count
+(the control block's own launch timestamps and done count) to a log on the card
+host: that log is the score, as the bench's observer is in simulation. The card
+has no drain observation, so `not-drained` stays simulation's. The site names
+the card:
 
 ```json
 "fpga_pipeline": {
   "hosts": "/absolute/path/to/hosts.json",
   "build_host": "builder",
   "board_host": "card",
-  "allow_candidate_host_code": false
+  "card": {"bdf": "0000:04:00.1", "idle_seconds": 900,
+           "images": {"<sha256>": "/path/on/the/card/host/base.xclbin"},
+           "check_mounts": {}}
 }
 ```
 
-The agent sees `tnca-service submit fpga-slow` in its task instructions and
-chooses whether to call it. The broker gates a snapshot, runs one FPGA
-request across both tiers at a time, charges elapsed time against the slow
-budget, and cancels detached remote work if the agent stops or the request
-times out. A build failure and routed timing concern the candidate's own
-design. Board point names, cycles, records and logs remain in the private run
-record; the agent gets only a verdict and pass count. The final point set is
-never sent to the in-loop board stage.
-
-The card host currently lacks the planned isolation for candidate compiler
-code. A board request with candidate host-code changes is refused by default;
-an operator may set `allow_candidate_host_code: true` only on a host prepared
-to run that code. Hardware-only snapshots can use board mode with the pinned
-base compiler. The shared card still needs a scheduled slot and cleanup
-between owners (§12.5). This service has mock split-host tests; it has not
-yet completed an in-loop run on the actual FPGA hosts.
+Not yet run against the real hosts: the relay and the session are written
+against the U280's link and control block but have not touched a card.
 
 **Synthesis estimates are optimistic.** Before routing, delays leave out most
 of the wire: on this design the routed worst path was about 1.6 times the
@@ -1044,7 +1069,7 @@ one entry per segment of the run.
 | `final-evaluation` | the evaluation after the agent stops, both sets together | null | the same, with every point |
 | `fpga-quick` | one quick-tier request | `fpga_worker.ssh` | `{"cpus": fpga_worker.threads}` (default 4) |
 | `fpga-slow-build` | a slow-tier request's link: its pipeline's `build:submit` and `build` steps | `fpga_pipeline.build_host` | null |
-| `fpga-slow-board` | its board stage: `board:measure` and `board` | `fpga_pipeline.board_host` | `{"cards": 1}` |
+| `fpga-slow-board` | its card session (`board.py`), the wait for an idle card included; older records: `board:measure` and `board` | `fpga_pipeline.board_host` | `{"cards": 1}` |
 | `certify-link` | certification's link, the same steps of its own pipeline (in `certification.json`) | `--build-host` | null |
 | `certify-board` | certification's board stage (in `certification.json`) | `--board-host` | `{"cards": 1}` |
 
@@ -1205,7 +1230,7 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Services | Scoring service | done | §19: 48 s, the aggregate equal to the reference's validation numbers |
 | Services | FPGA quick tier: license and isolation feasibility | done | OOC synthesis with no license and no network, with a control (§12.5) |
 | Services | FPGA quick tier service: bubblewrap on the build worker, the agent's configuration, an enforced budget | done | §19: `ok` in 11.8 min, +2.313 ns at 10 ns |
-| Services | FPGA slow tier | built, opt-in | `fpga_slow.py`, `services.py`, split-host tests; build-only or validation-board mode; actual in-loop FPGA run pending a configured site and card slot |
+| Services | FPGA slow tier: agent-requested flows and card runs (report section 8.9) | built, opt-in | `fpga_slow.py`, `board.py`, `services.py`; counts per run, gate, design/infrastructure charging, routed failure report, card through the relay, run-end certification; not yet run on the real hosts |
 | FPGA harness | The Vivado flow on the build worker, the board stage on the card host (`pipeline`, `sync`, `import`, host tool roots) | done | `tools/tritonchip_fpga_harness/tests/test_split_hosts.py`; between the two servers with a played build and no load; a 2022.2 build loaded on the card by hand (§12.5) |
 | FPGA harness | `pipeline` between the two servers, a real candidate | done | 2026-10-17: the base hardware (v2, 100 MHz) linked on the build worker in 105 min, ap_clk WNS +0.138 ns; loaded on the card, conformance 5/5, ArchBench tiny 27/27, every point's cycles equal to the 2023.2 build's (both compiled with the card host's installed tree) |
 | FPGA harness | The board stage compiles with the checkout's runtime and compiler, and refuses an interpreter that imports them from elsewhere | done | `969201b`; found by the v5 base certification (§19) |

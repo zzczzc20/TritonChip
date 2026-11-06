@@ -459,12 +459,15 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
             "score": full, "visible": visible}
 
 
-def _base_xclbin(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict) -> Optional[str]:
+def base_xclbin(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict) -> Optional[str]:
     """The base's image on the card host, for the session to compare HBM maps with -- only for a built image
     whose device description kept the base's (the map follows the description)."""
     if image.get("kind") != "built":
         return None
-    if evaluator.hardware_changed(repo, task, candidate).get("device"):
+    changed = evaluator.hardware_changed(repo, task, candidate).get("device") or {}
+    # The HBM map follows the memory side of the description (ports, AXI, HBM); other uncore changes
+    # (cache sets, ways, contexts) leave it as the base's, so the base's map is the one to match.
+    if any(w in str(k).upper() for k in changed for w in ("MEM", "AXI", "HBM", "PORT")):
         return None
     try:
         return board.base_image(site, task)["path"]
@@ -529,7 +532,7 @@ def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: 
     elif not with_board:
         raise SlowError("a request that needs no flow has nothing to do without the board")
     card = on_card(site, repo, task, candidate, image, sim, job_dir, job, board_seconds,
-                   base_xclbin=_base_xclbin(site, repo, task, candidate, image))
+                   base_xclbin=base_xclbin(site, repo, task, candidate, image))
     full["card"] = {k: v for k, v in card.items() if k != "visible"}
     visible["board"] = card["visible"]
     if job["kind"] == "software":

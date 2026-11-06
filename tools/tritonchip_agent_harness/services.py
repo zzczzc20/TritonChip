@@ -112,25 +112,27 @@ class Broker:
             self._server.shutdown()
             self._server.server_close()
             self._server = None
-        with self.lock:
-            running = [j for j in self.jobs.values() if j["state"] in ("queued", "running")]
         stopped = []
-        for job in running:
-            if job["service"] == "fpga-slow" and job["state"] == "running":
-                job["outlived_run"] = True
-                job["note"] = "still running when the agent stopped; it ran to its end, unseen by the agent"
-                continue
-            if job["service"] == "fpga-slow" and job.get("charge"):
-                # Queued, never started: its reservation goes back.
-                with self.lock:
+        with self.lock:
+            # Decided under the lock that _run takes to start a job, so a queued request is either
+            # cancelled here (and its reservation given back once) or started there -- never both.
+            for job in self.jobs.values():
+                if job["state"] not in ("queued", "running"):
+                    continue
+                if job["service"] == "fpga-slow" and job["state"] == "running":
+                    job["outlived_run"] = True
+                    job["note"] = "still running when the agent stopped; it ran to its end, unseen by the agent"
+                    continue
+                if job["service"] == "fpga-slow" and job["state"] == "queued" and job.get("charge"):
                     if job["charge"] == "flow":
                         self.flows_left += 1
                     else:
                         self.board_runs_left += 1
                     job["charged"] = None
-            job["state"] = "cancelled"
-            job["note"] = "still running when the agent stopped; its result is not kept"
-            stopped.append(job)
+                job["state"] = "cancelled"
+                job["note"] = "still running when the agent stopped; its result is not kept"
+                stopped.append(job)
+        for job in stopped:
             if job["service"] == "fpga-quick" and self.site.fpga_worker:
                 fpga_quick.cancel(self.site.fpga_worker, job["remote_id"])
             elif job["service"] == "fpga-slow" and getattr(self.site, "fpga_pipeline", None):

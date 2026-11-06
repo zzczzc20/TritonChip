@@ -490,7 +490,8 @@ def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, broker=
         out["reused"] = {"request": reused["id"], "points": sorted(got)}
     if todo:
         rec = board.measure(site, repo, task, candidate, image, todo, work / "card", job["containers"],
-                            job["remote_id"], float(cfg.get("board_minutes", 120)) * 60, with_checks=not reused)
+                            job["remote_id"], float(cfg.get("board_minutes", 120)) * 60, with_checks=not reused,
+                            base_xclbin=fpga_slow.base_xclbin(site, repo, task, candidate, image))
         out["card"] = rec
         state = board.status(rec)
         if state != "ok":

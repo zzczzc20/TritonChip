@@ -181,7 +181,7 @@ def load_site(path: Optional[Path] = None) -> Site:
         if card is not None:
             # The card host's board sessions (board.py): the card's PCI function, how long it must have been
             # idle, where the card host keeps the images tasks name by hash, and what a board check reads here.
-            _keys("fpga_pipeline.card", card, {"bdf"}, {"idle_seconds", "images", "check_mounts"})
+            _keys("fpga_pipeline.card", card, {"bdf"}, {"idle_seconds", "max_wait_seconds", "images", "check_mounts"})
             if not re.fullmatch(r"[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]", str(card["bdf"])):
                 raise SiteError("fpga_pipeline.card.bdf must be a PCI address")
             if not isinstance(card.get("idle_seconds", 900), int) or card.get("idle_seconds", 900) < 60:

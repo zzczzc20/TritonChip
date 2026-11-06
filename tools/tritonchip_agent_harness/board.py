@@ -136,7 +136,7 @@ def put_image(site: Site, build_run: str, sha256: str, xclbin_name: str, tag: st
     return {"path": path, "sha256": sha256, "kind": "built", "build_run": build_run}
 
 
-def _forward(card, local: Path, remote_socket: str) -> subprocess.Popen:
+def _forward(card, local: Path, remote_socket: str, log: Path) -> subprocess.Popen:
     """The relay's socket here: an SSH local forward of a Unix socket, connectable by the container's user."""
     from tritonchip_fpga_harness.pipeline import CONNECT_TIMEOUT, SSH_OPTIONS
     from tritonchip_fpga_harness.worker import ssh_prefix
@@ -146,12 +146,12 @@ def _forward(card, local: Path, remote_socket: str) -> subprocess.Popen:
                                              "StreamLocalBindMask=0111"))
     cut = argv.index("--")
     argv = argv[:cut] + ["-N", "-L", f"{local}:{remote_socket}"] + argv[cut:]
-    proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    with open(log, "ab") as err:   # a file, never a pipe nobody reads: a full pipe would stall the forward
+        proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=err)
     deadline = time.time() + 60
     while time.time() < deadline and not local.exists():
         if proc.poll() is not None:
-            raise BoardError(f"the socket forward to the card host exited: "
-                             f"{(proc.stderr.read() or b'').decode(errors='replace')[-300:]}")
+            raise BoardError(f"the socket forward to the card host exited: {_text(log)[-300:]}")
         time.sleep(0.5)
     if not local.exists():
         _stop(proc)
@@ -205,6 +205,9 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
     sock = f"/tmp/tnca-relay-{tag}.sock"
     q = shlex.quote
     started = time.time()
+    # The wait for an idle card is the other users' doing: it has its own cap, and the measurement gets its
+    # whole `deadline_s` from the moment the card is ready (the review's N2).
+    wait_cap = float(cfg.get("max_wait_seconds", 4 * 3600))
     _remote(card, ["mkdir", "-p", folder])
     extra = ""
     if device is not None:
@@ -218,7 +221,7 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
               f"nohup {q(card.python)} -m tritonchip_fpga_harness.board_session --xclbin {q(image['path'])} "
               f"--sha256 {q(image['sha256'])} --bdf {q(cfg['bdf'])} --socket {q(sock)} --out {q(folder)} "
               f"--stop {q(folder + '/stop')} --idle-seconds {int(cfg.get('idle_seconds', IDLE_SECONDS))} "
-              f"--deadline-seconds {int(deadline_s)} {extra}"
+              f"--deadline-seconds {int(deadline_s + wait_cap)} {extra}"
               # One point's compile may keep the relay without a client for a while: the task's own limit.
               f"--relay-idle-seconds {int(float(task.evaluation['timeout_seconds']))} "
               f"> {q(folder + '/session.log')} 2>&1 < /dev/null &")
@@ -227,7 +230,7 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
     record = {"host": card.name, "folder": folder, "platform_commit": platform, "sync": synced,
               "image": image, "started_at": started}
     ready = None
-    while time.time() - started < deadline_s:
+    while time.time() - started < wait_cap + 600:
         raw = _cat(card, f"{folder}/ready.json")
         if raw:
             ready = json.loads(raw)
@@ -240,8 +243,8 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
         time.sleep(POLL_SECONDS)
     if ready is None:
         _remote(card, ["touch", f"{folder}/stop"], check=False)
-        record.update(session={"status": "timeout", "detail": "the card host gave no session in time"},
-                      finished_at=time.time())
+        record.update(session={"status": "busy-timeout", "cause": "infrastructure",
+                               "detail": "the card host gave no session in time"}, finished_at=time.time())
         return record
     record["ready"] = ready
     record["ready_at"] = time.time()
@@ -249,8 +252,9 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
     local_dir.chmod(0o755)
     forward = None
     try:
-        forward = _forward(card, local_dir / "relay.sock", sock)
-        s = Session(card, folder, forward, local_dir, ready, started + deadline_s - MARGIN)
+        forward = _forward(card, local_dir / "relay.sock", sock, job_dir / "forward.log")
+        s = Session(card, folder, forward, local_dir, ready,
+                    min(record["ready_at"] + deadline_s, started + deadline_s + wait_cap) - MARGIN)
         record["measured"] = measure(s)
     finally:
         _stop(forward)
@@ -264,7 +268,8 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
             break
         time.sleep(5)
     else:
-        record["session"] = {"status": "timeout", "detail": "the card session did not end after its stop"}
+        record["session"] = {"status": "no-session-record", "cause": "infrastructure",
+                             "detail": "the card session left no record after its stop"}
     observe = job_dir / "observe"
     observe.mkdir(exist_ok=True)
     for label in labels:
@@ -419,15 +424,18 @@ def measure(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
 
 
 def status(record: dict) -> str:
-    """'ok', 'candidate' (its image or its host side: charged) or 'infra' (tried again, not charged)."""
-    st = (record.get("session") or {}).get("status")
+    """'ok', 'candidate' (its image or its host side: charged) or 'infra' (tried again, not charged).
+
+    The card session says why it ended (`cause`, board_session.py): only the image's own failures are the
+    candidate's, and only for an image the candidate built -- the base's image failing is never its fault. A
+    measurement that ran out of its own time (counted from the moment the card was ready) is the candidate's."""
+    sess = record.get("session") or {}
+    st = sess.get("status")
     if st == "ok" and "measured" in record:
-        if (record["measured"] or {}).get("stopped"):
-            return "candidate"   # its host side used up the session
-        return "ok"
-    if st in CANDIDATE_STATUSES:
+        return "candidate" if (record["measured"] or {}).get("stopped") else "ok"
+    if "measured" in record and (record["measured"] or {}).get("stopped") and st in ("timeout", "ok"):
         return "candidate"
-    if st == "timeout" and "ready" in record and "measured" in record:
+    if st in CANDIDATE_STATUSES and sess.get("cause", "image") == "image" and (record.get("image") or {}).get("kind") == "built":
         return "candidate"
     return "infra"
 
@@ -446,12 +454,12 @@ def baseline(site: Site, repo: Path, task: Task) -> dict:
     root = site.state_dir / "board-baselines"
     cache = root / f"{key}.json"
     if cache.exists():
-        return json.loads(cache.read_text(encoding="utf-8"))
+        return _base_value(cache)
     root.mkdir(parents=True, exist_ok=True)
     with open(root / f"{key}.lock", "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         if cache.exists():
-            return json.loads(cache.read_text(encoding="utf-8"))
+            return _base_value(cache)
         work = Path(tempfile.mkdtemp(prefix="tnca-board-base-", dir=str(site.state_dir)))
         try:
             cfg = (task.services or {}).get("fpga_slow") or {}
@@ -461,14 +469,25 @@ def baseline(site: Site, repo: Path, task: Task) -> dict:
         finally:
             shutil.rmtree(work, ignore_errors=True)
         failed = [p for p in points if (rec["points"].get(p) or {}).get("status") != "pass"]
-        if not ok(rec) or failed:
-            raise BoardError(f"the base did not run on its image: session {(rec.get('session') or {}).get('status')}, "
-                             f"{len(failed)} of {len(points)} points failed")
+        if not ok(rec):
+            raise BoardError(f"the base's card session failed: {(rec.get('session') or {}).get('status')}")
         value = {"image": image, "points": rec["points"], "session": rec.get("session")}
+        if failed:
+            # A base point that fails on a session that ran is the base's on this card: kept, so that no
+            # later request pays for another base session; delete the file to measure again.
+            value["failed"] = failed
         tmp = cache.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         tmp.replace(cache)
-        return value
+        return _base_value(cache)
+
+
+def _base_value(cache: Path) -> dict:
+    value = json.loads(cache.read_text(encoding="utf-8"))
+    if value.get("failed"):
+        raise BoardError(f"{len(value['failed'])} base points fail on the card ({cache.name}); "
+                         "delete it to measure the base again")
+    return value
 
 
 __all__ = ["BACKEND", "BoardError", "Session", "base_image", "baseline", "measure", "ok", "put_image",

@@ -228,7 +228,10 @@ class MulticoreMMIOLink(SimLink):
         if self.device is not None:
             bench['AXI_ID_W'] = devices.derived(self.device['uncore'])['AXI_ID_W']
             bench['AXI_OUT_N'] = self.device['uncore']['AXI_OUT_N']
-            bench['AXI_DATA_W'] = self.device['uncore'].get('AXI_DATA_W', 256)
+            # The outlet width is a platform field (devices.PLATFORM_FIELDS), not
+            # an uncore one: R41's description says 512, and the stand-in's own
+            # AXI side must be as wide as the image's.
+            bench['AXI_DATA_W'] = self.device['platform'].get('AXI_DATA_W', 256)
             header = Path(self.dir) / 'tnca_image_params.vh'
             header.write_text(self.image_header(), encoding='utf-8')
         for name, value in bench.items():

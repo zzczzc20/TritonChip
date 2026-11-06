@@ -236,8 +236,12 @@ class Broker:
     def _run_score(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
         r = evaluator.measure_validation(self.site, self.repo, self.task, candidate, job_dir, job["containers"])
         visible = {"validation": r["aggregate"]}
-        if r.get("device_build_errors"):
-            visible["device_build_errors"] = r["device_build_errors"]
+        # On failure, what may be said of why (README section 6.4): failed points counted by
+        # kind, and the logs of what failed before any point ran (a device that did not
+        # build, staging that stopped the host). Never a point's name or its own log.
+        for key in ("failures", "device_build_errors", "stage_errors"):
+            if r.get(key):
+                visible[key] = r[key]
         return visible, r
 
     def _run_fpga(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:

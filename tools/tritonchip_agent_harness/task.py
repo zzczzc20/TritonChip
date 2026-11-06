@@ -163,7 +163,10 @@ def _services_text(cfg: dict) -> str:
     if score:
         lines.append(f"- `tnca-service submit score`: the hidden validation set, in simulation. You get how many "
                      f"points passed, the geometric-mean speedup over the points that passed, and the share of all "
-                     f"points that passed and got faster. No point names, shapes or errors. You have "
+                     f"points that passed and got faster. When points fail, how many failed of each kind (such as "
+                     f"numeric-error, timeout or measurement-rejected), and when your device did not build or "
+                     f"staging stopped before any point ran, the last lines of that log. Never which point, its "
+                     f"shape or its own error text. You have "
                      f"{int(score.get('requests', 0))} such requests.")
     if fpga:
         lines.append(f"- `tnca-service submit fpga-quick`: out-of-context synthesis and timing of the whole device "

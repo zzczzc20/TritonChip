@@ -97,9 +97,10 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
         started = time.time()
         record["evaluation"] = evaluator.evaluate(site, repo, task, candidate, run_dir)
         evaluated = (started, time.time())
-        # A changed machine's score stands once certify.py has run it on the card.
+        # A score stands once certify.py has run it on the card: a changed machine is built
+        # first, one that kept the base's runs on the base's image (README section 10.4).
         record["hardware"] = evaluator.hardware_changed(repo, task, candidate)
-        record["certification"] = "pending" if record["hardware"]["changed"] else "not-needed"
+        record["certification"] = "pending"
         if not record["evaluation"]["valid"]:
             record["validity"] = "infra-invalid"
         elif not pseudo and record["agent_result"].get("stop_reason") == "timeout":

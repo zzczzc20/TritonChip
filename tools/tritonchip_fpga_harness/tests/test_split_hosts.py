@@ -503,6 +503,51 @@ class PipelineRecovery(unittest.TestCase):
         result = load_json(self.tmp / "card-state" / "runs" / first["run_id"] / "result.json")
         self.assertEqual(result["board_config_source"], "measure")
 
+    def software_change(self) -> str:
+        """A second commit that changes only software: the machine stays the first commit's."""
+        (self.repo / "compiler").mkdir(exist_ok=True)
+        (self.repo / "compiler" / "pass.py").write_text("FUSE = True\n", encoding="utf-8")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-q", "-m", "compiler only")
+        return git(self.repo, "rev-parse", "HEAD")
+
+    def test_a_software_change_is_measured_on_the_image_it_shares(self) -> None:
+        # The base is built and measured once; a commit that changed only software
+        # is then measured on that image, with its own checkout driving the card.
+        first = self.pipe(self.manifest())
+        self.assertEqual(first["status"], "PASS", first.get("error"))
+        image = first["build"]["xclbin_sha256"]
+        changed = self.software_change()
+        again = self.pipe(dict(self.manifest(), source_commit=changed), build_host=None,
+                          measure_run=first["run_id"], expect_xclbin_sha256=image)
+        self.assertEqual(again["status"], "PASS", again.get("error"))
+        self.assertEqual([s["name"] for s in again["steps"]], ["sync:card", "doctor:card", "board:measure", "board"])
+        self.assertEqual(again["board"]["xclbin_sha256"], image)
+        self.assertEqual((again["board"]["software"]["commit"], again["board"]["software"]["relation"]),
+                         (changed, "differs"))
+        self.assertEqual(again["build"], {"status": "PASS", "run_id": first["run_id"], "reused": True,
+                                          "host": None, "xclbin_sha256": image})
+        self.assertFalse((self.tmp / "builder" / "checkouts" / changed).exists())   # no build server involved
+
+    def test_measuring_another_image_than_expected_fails(self) -> None:
+        first = self.pipe(self.manifest())
+        changed = self.software_change()
+        wrong = self.pipe(dict(self.manifest(), source_commit=changed), build_host=None,
+                          measure_run=first["run_id"], expect_xclbin_sha256="0" * 64)
+        self.assertEqual(wrong["status"], "PIPELINE_FAIL")
+        self.assertIn("not the expected", wrong["error"])
+
+    def test_measure_run_names_the_runs_own_candidate(self) -> None:
+        first = self.pipe(self.manifest())
+        changed = self.software_change()
+        other = self.pipe(dict(self.manifest(candidate="rec-2"), source_commit=changed), build_host=None,
+                          measure_run=first["run_id"])
+        # The card server refuses before measuring anything: the run was built as another candidate.
+        self.assertEqual(other["status"], "FAILED_TO_START")
+        self.assertIn("names candidate_id 'rec-2'", json.dumps(other["board"]))
+        with self.assertRaises(Exception):
+            self.pipe(self.manifest(), measure_run=first["run_id"], build_run=first["run_id"])
+
     def test_build_run_must_be_this_candidate(self) -> None:
         first = self.pipe(self.manifest(), skip_board=True)
         other = self.pipe(self.manifest(candidate="rec-2"), build_run=first["run_id"])

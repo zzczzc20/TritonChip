@@ -33,6 +33,8 @@ DEFAULT_PART = "xcu280-fsvh2892-2L-e"
 # Parameters of the top that are not the machine's: the platform's own.
 NOT_MACHINE = {"CORE_ID", "NUM_CORES", "HOST_TAG", "WORDS", "ADDR_W", "ADDR_BITS", "PHYS_VREGS", "PHYS_W"}
 
+# Vivado's banner, the first lines of its log: "****** Vivado v2023.2 (64-bit)".
+_VIVADO_VERSION = re.compile(r"\bVivado v(\d{4}\.\d+(?:\.\d+)?)\b")
 _DEFINE = re.compile(r"`define\s+TNCA_(?:IF|UARCH)_([A-Z][A-Z0-9_]*)\s+(-?\d+)\s*$", re.M)
 _PARAM = re.compile(r"^\s*parameter\s+([A-Z][A-Z0-9_]*)\s*=", re.M)
 
@@ -112,6 +114,15 @@ def _ns(word: str) -> Optional[float]:
         return None
 
 
+def vivado_version(job_dir: Path) -> Optional[str]:
+    """The Vivado release that ran the job, from its own log's banner; None when there is no log."""
+    for log in sorted((job_dir / "ooc").glob("*/vivado.log")) if (job_dir / "ooc").exists() else []:
+        m = _VIVADO_VERSION.search(log.read_text(errors="replace")[:4096])
+        if m:
+            return m.group(1)
+    return None
+
+
 def threads(worker: dict) -> int:
     """Vivado's thread limit for a job on the worker: the site's `threads`, else 4."""
     return int(worker.get("threads", 4))
@@ -163,8 +174,10 @@ def run(worker: dict, tree: Path, profile: str, period: float, seconds: int, job
     generics = effective_params(tree, profile)
     remote = f"{worker['workdir'].rstrip('/')}/{job_id}"
     ssh = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", worker["ssh"]]
+    # Which worker and which Vivado: estimates from two releases (or two
+    # machines) are not one series, and a site may switch workers.
     result: dict = {"profile": profile, "period_ns": period, "part": worker.get("part", DEFAULT_PART),
-                    "parameters": generics}
+                    "parameters": generics, "worker": worker["ssh"], "vivado_settings": worker["vivado_settings"]}
     started = time.time()
     try:
         subprocess.run(ssh + [f"mkdir -p {shlex.quote(remote)}"], check=True, capture_output=True, timeout=60)
@@ -183,6 +196,7 @@ def run(worker: dict, tree: Path, profile: str, period: float, seconds: int, job
     finally:
         result["seconds"] = round(time.time() - started, 1)
         subprocess.run(ssh + [f"rm -rf {shlex.quote(remote)}"], capture_output=True, timeout=60)
+    result["vivado_version"] = vivado_version(job_dir)
     reports = next((d for d in (job_dir / "ooc").glob("*") if (d / f"{TOP}_summary.rpt").exists()), None) \
         if (job_dir / "ooc").exists() else None
     if reports is None:
@@ -210,4 +224,5 @@ def cancel(worker: dict, job_id: str) -> None:
                     f"pkill -f {shlex.quote(pattern)}"], capture_output=True, timeout=60)
 
 
-__all__ = ["cancel", "effective_params", "parse_paths", "parse_summary", "parse_util", "run", "threads"]
+__all__ = ["cancel", "effective_params", "parse_paths", "parse_summary", "parse_util", "run", "threads",
+           "vivado_version"]

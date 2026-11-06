@@ -19,6 +19,7 @@ Each switch is listed here, so a run record can name the configuration it ran un
 from __future__ import annotations
 
 import json
+import re
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -218,6 +219,58 @@ def tokens(cli: str, usage: Optional[dict], model_usage: Optional[dict] = None) 
     return {**counts, "by_model": by_model}
 
 
+# Throttling, by the provider rather than by the agent: what each CLI prints
+# when a request was refused for rate, load or quota. Matched only in error
+# context (error events, a failed result, stderr), never in the agent's own
+# text, which may well talk about rate limits. Most specific first. The
+# patterns are the providers' documented error texts (HTTP 429/529, Anthropic's
+# rate_limit_error and overloaded_error, OpenAI's insufficient_quota, GLM's codes
+# 1113/1302/1305); no throttled run of the pinned CLIs has been recorded yet.
+_THROTTLE = (
+    ("usage-limit", re.compile(r"(?i)usage limit|(?:5-hour|weekly|daily|session) limit reached"
+                               r"|insufficient[_ ]quota|exceeded your current quota"
+                               r"|\\?\"code\\?\"\s*:\s*\\?\"?1113\b|余额不足")),
+    ("overloaded", re.compile(r"(?i)\b529\b|overloaded")),
+    ("rate-limit", re.compile(r"(?i)\b429\b|rate[_ ]?limit|too many requests"
+                              r"|\\?\"code\\?\"\s*:\s*\\?\"?130[25]\b|速率限制|限流|并发|访问量过大|请求过于频繁")),
+)
+
+
+def _error_context(account: Account, out: str, err: str) -> list:
+    """The texts in which a refusal by the provider would show: never the agent's own messages."""
+    texts = []
+    for e in _events(out):
+        kind = f"{e.get('type', '')} {e.get('subtype', '')}".lower()
+        if account.cli == "claude-code" and e.get("type") == "result":
+            if e.get("is_error") or e.get("subtype") != "success":
+                texts.append(json.dumps(e.get("result")) + " " + str(e.get("subtype")))
+        elif "error" in kind or "retry" in kind or "failed" in kind:
+            texts.append(json.dumps(e, ensure_ascii=False))
+    # What the CLI printed outside its JSON stream (an error it gave up with), never the agent's messages.
+    plain = [line for line in out.splitlines() if line.strip() and not line.lstrip().startswith("{")]
+    texts.append("\n".join(plain[-20:]))
+    texts.append((err or "")[-4000:])
+    return texts
+
+
+def throttle(account: Account, out: str, err: str) -> Optional[dict]:
+    """Whether the provider refused the run's requests for rate, load or quota; None if nothing says so.
+
+    A throttled run is not an agent that gave up or crashed: the record keeps
+    the two apart, and a controller that resumes runs waits instead of counting
+    it as idle. `retries` counts the retry events a CLI printed on its own
+    (retrying inside one invocation); `evidence` is a short excerpt."""
+    texts = _error_context(account, out, err)
+    for kind, pattern in _THROTTLE:
+        for text in texts:
+            m = pattern.search(text)
+            if m:
+                lo = max(0, m.start() - 80)
+                retries = sum(1 for e in _events(out) if "retry" in f"{e.get('type', '')} {e.get('subtype', '')}".lower())
+                return {"kind": kind, "evidence": text[lo:lo + 200], "retries": retries}
+    return None
+
+
 def parse(account: Account, out: str, run_dir: Path, export_session=None) -> dict:
     """What the CLI answered last, which models served it, the usage it reported, and that usage in one schema."""
     r = _read(account, out, run_dir, export_session)
@@ -284,4 +337,4 @@ def _read(account: Account, out: str, run_dir: Path, export_session=None) -> dic
 
 
 __all__ = ["CODEX_HOME", "Launch", "MODES", "SKILLS_DIR", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch",
-           "opencode_config", "parse", "tokens"]
+           "opencode_config", "parse", "throttle", "tokens"]

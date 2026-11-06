@@ -198,6 +198,8 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         exporter = (lambda sid: _exec(agent, ["opencode", "export", sid], timeout=120).stdout) \
             if account.cli == "opencode" else None
         result.update(adapters.parse(account, stdout or "", run_dir, exporter))
+        # Refused by the provider (rate, load, quota), not stopped by the agent: kept apart in the record.
+        result["throttled"] = adapters.throttle(account, stdout or "", stderr or "")
         _collect(agent, account, out_dir / "transcript")
     finally:
         provider.remove(agent)

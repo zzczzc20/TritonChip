@@ -70,6 +70,8 @@ def main(argv=None) -> int:
     k.add_argument("--build-host")
     k.add_argument("--board-host")
     k.add_argument("--build-run", help="attach to the pipeline's build already started (its run id)")
+    k.add_argument("--base-image", type=Path, help="the base's certification record: a candidate that kept the "
+                   "base's machine runs on that image, on the card server that holds it")
     k.add_argument("--work", type=Path, help="where the tree is built (default: beside the record)")
     k.add_argument("--yes", action="store_true", help="run the pipeline; without it, only build the tree and say what would run")
     k.add_argument("--json", action="store_true")
@@ -136,7 +138,8 @@ def main(argv=None) -> int:
 def _certify(args) -> int:
     value = certify.certify(args.repo.resolve(), load_task(args.task), run_dir=args.run, baseline=args.base,
                             hosts=args.hosts, build_host=args.build_host, board_host=args.board_host,
-                            work=args.work, yes=args.yes, build_run=args.build_run)
+                            work=args.work, yes=args.yes, build_run=args.build_run,
+                            base_image_record=args.base_image)
     if args.json:
         print(json.dumps(value, indent=2, sort_keys=True))
     elif value.get("dry_run"):

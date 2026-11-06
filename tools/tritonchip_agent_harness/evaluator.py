@@ -557,25 +557,103 @@ def baseline_key(task: Task) -> str:
 
 
 def baseline(site: Site, repo: Path, task: Task) -> dict:
-    """The base's own cycles, measured once per baseline_key and kept."""
+    """The base's own cycles, measured once per baseline_key and kept.
+
+    Two runs of the same task, in one process or two, may ask at once. The
+    measurement owns a fixed directory and a fixed container name, so it holds
+    a lock per key: the second caller waits, then finds the first one's result
+    kept. The lock is the operating system's (flock), so a caller that dies
+    releases it."""
+    import fcntl
     key = baseline_key(task)
-    cache = site.state_dir / "baselines" / f"{key}.json"
+    root = site.state_dir / "baselines"
+    cache = root / f"{key}.json"
     if cache.exists():
         return json.loads(cache.read_text(encoding="utf-8"))
-    work = site.state_dir / "baselines" / key
-    shutil.rmtree(work, ignore_errors=True)
-    host, dev = _trees(repo, task, None, work)
-    result = _measure_trees(site, host, dev, task, work / "out", f"tnca-eval-base-{key}", repo)
-    shutil.rmtree(host, ignore_errors=True)
-    if dev is not None:
-        shutil.rmtree(dev, ignore_errors=True)
-    if not result["missing"] and all(p["status"] == "pass" for p in result["points"].values()):
-        cache.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return result
+    root.mkdir(parents=True, exist_ok=True)
+    with open(root / f"{key}.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if cache.exists():                      # measured while this caller waited
+            return json.loads(cache.read_text(encoding="utf-8"))
+        work = root / key
+        shutil.rmtree(work, ignore_errors=True)
+        host, dev = _trees(repo, task, None, work)
+        result = _measure_trees(site, host, dev, task, work / "out", f"tnca-eval-base-{key}", repo)
+        shutil.rmtree(host, ignore_errors=True)
+        if dev is not None:
+            shutil.rmtree(dev, ignore_errors=True)
+        if not result["missing"] and all(p["status"] == "pass" for p in result["points"].values()):
+            tmp = cache.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            tmp.replace(cache)                  # a reader never sees half a file
+        return result
+
+
+# What a failed point may be called in the agent's reply (README section 6.4).
+# The candidate's compiler runs in the process that writes a point's record, so
+# a status is only ever one of these names: anything else would be a channel
+# out of the hidden set (a status spelling a shape) and is reported as "other".
+FAILURE_NAMES = {"missing", "no-status", "fallback", "no-cycles", "no-observation", "device-fault",
+                 "numeric-error", "unsupported", "not-measured", "runtime-fault", "timeout"}
+# The anti-tamper checks' verdicts: the agent learns that a measurement was
+# rejected, never which check rejected it.
+REJECTED = {"record-disagrees", "activity-outside-launch", "not-drained"}
+
+
+def failure_counts(scored: dict) -> dict:
+    """How many of a set's points failed, by kind: counts only, never which point."""
+    counts: dict = {}
+    for row in scored["points"]:
+        f = row.get("failure")
+        if not f:
+            continue
+        f = "measurement-rejected" if f in REJECTED else f if f in FAILURE_NAMES else "other"
+        counts[f] = counts.get(f, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def scrubbed(lines: list, task: Task, keep: int = 20) -> list:
+    """A log's last lines as the agent may see them: no point's name, no line past 300 characters."""
+    names = sorted(set(task.evaluation["validation"]) | set(task.evaluation["final"]), key=len, reverse=True)
+    out = []
+    for line in [l for l in lines if l.strip()][-keep:]:
+        for p in names:
+            line = line.replace(p, "<point>")
+        out.append(line[:300])
+    return out
+
+
+def _read_lines(path: Path) -> list:
+    return path.read_text(encoding="utf-8", errors="replace").splitlines() if path.is_file() else []
+
+
+def point_independent_errors(out: Path, task: Task, got: dict) -> dict:
+    """The failures that happened before any point was run, so their logs say nothing of the
+    hidden set: the multicore device that did not elaborate (each device container builds the
+    candidate's RTL before it serves a point), and staging or preparing that stopped the host before
+    its first point. A point's own log is never returned."""
+    errors = {}
+    if task.evaluation.get("device") and not got.get("device_problems"):
+        for log in sorted(out.glob("dev*.log")):
+            lines = _read_lines(log)
+            at = next((i for i, l in enumerate(lines) if "the device did not build" in l), None)
+            if at is not None:
+                errors["device_build_errors"] = scrubbed(lines[at:], task, keep=30)
+                break
+    if got.get("points") == {} and got.get("missing"):
+        # Staging (the host's, or a single-core task's) and, without an observer, the device's
+        # prepare: both run before ArchBench is handed a point. The first log with anything in it.
+        for log in (out / "host" / "stage.log", out / "stage.log", out / "prepare.log"):
+            lines = _read_lines(log)
+            if any(l.strip() for l in lines):
+                errors["stage_errors"] = scrubbed(lines, task)
+                break
+    return errors
 
 
 def measure_validation(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, name: str) -> dict:
-    """The scoring service: the validation set alone, the final evaluator's way; an aggregate for the agent."""
+    """The scoring service: the validation set alone, the final evaluator's way; an aggregate for the agent,
+    and when it failed, what may be said of why (README section 6.4)."""
     import dataclasses
     base = baseline(site, repo, task)
     host, dev = _trees(repo, task, candidate, job_dir)
@@ -591,9 +669,11 @@ def measure_validation(site: Site, repo: Path, task: Task, candidate: Optional[P
         build = list(got["device_problems"])
     elif got.get("device_build") == "failed":
         log = job_dir / "eval" / "device-build" / "prepare.log"
-        build = (log.read_text(errors="replace").splitlines()[-20:] if log.exists() else ["the device did not build"])
+        build = scrubbed(_read_lines(log), task) or ["the device did not build"]
+    early = point_independent_errors(job_dir / "eval", task, got)   # task: scrub the final set's names too
     return {"aggregate": {k: full[k] for k in ("n", "passed", "speedup_geomean", "fast_1")},
-            "device_build_errors": build, "full": full}
+            "device_build_errors": build or early.get("device_build_errors"),
+            "stage_errors": early.get("stage_errors"), "failures": failure_counts(full), "full": full}
 
 
 def _rtl_parameters(profiles_json: str, name: str) -> dict:

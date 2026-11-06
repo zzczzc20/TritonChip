@@ -4,6 +4,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import tempfile
+import json
 import threading
 import time
 import types
@@ -86,6 +87,17 @@ class Services(unittest.TestCase):
         self.wait_done("s2")
         self.assertEqual(self.broker.submit("score")["refused"], "no scoring requests left")
         self.assertEqual(self.seen, [("score", True), ("score", True)])
+
+    def test_a_failed_score_says_what_it_may_and_keeps_the_rest(self):
+        r = {"aggregate": {"n": 3, "passed": 1, "speedup_geomean": 1.1, "fast_1": 0.33},
+             "failures": {"numeric-error": 1, "measurement-rejected": 1}, "device_build_errors": None,
+             "stage_errors": None, "full": {"points": [{"point": "op.hidden_point", "failure": "numeric-error"}]}}
+        with mock.patch("tritonchip_agent_harness.services.evaluator.measure_validation", return_value=r):
+            visible, full = self.broker._run_score({"containers": "c"}, None, Path(tempfile.mkdtemp()))
+        self.assertEqual(visible, {"validation": r["aggregate"],
+                                   "failures": {"numeric-error": 1, "measurement-rejected": 1}})
+        self.assertIs(full, r)
+        self.assertNotIn("op.hidden_point", json.dumps(visible))
 
     def test_fpga_time_must_cover_a_whole_request(self):
         self.broker.fpga_left = 15 * 60

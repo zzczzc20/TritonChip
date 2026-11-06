@@ -2,8 +2,8 @@
 
 The score is simulated device cycles on the task's profile, and at the
 target's fixed clock (the U280 at 100 MHz) cycles are latency. A candidate
-that changed the machine -- an RTL file, or its profile's parameters -- keeps
-its score only once that machine is shown to be real:
+keeps its score only once it is shown on the card. One that changed the
+machine -- an RTL file, or its profile's parameters -- is built and run:
 
 1. Its tree is the base commit with nothing hidden, every file the gate took
    from the candidate on top (compiler and hardware alike: the code that was
@@ -18,7 +18,14 @@ its score only once that machine is shown to be real:
    fallback, and the device's own count (`time.device`) equal to the one
    simulation recorded for it.
 
-    not-needed       the machine is the base's: the score stands
+One that kept the base's machine (it changed only software: the compiler, the
+runtime) is not built again: its points run on the base's own image, which the
+base's certification left on the card server, with the candidate's tree
+driving the card (`--base-image`, the base's certification record; step 2
+becomes the FPGA harness's measure-only pipeline). Step 3 is the same.
+
+    not-needed       an older record's verdict, from before software-only
+                     candidates were run on the card: the score stood
     certified        1-3 held: the score stands
     infeasible       the build failed -- it does not fit or does not close the
                      clock -- or the profile cannot be built as the image
@@ -49,7 +56,7 @@ from . import evaluator, occupancy
 from .task import Task
 from .workspace import apply_candidate, base_tree, export, git, under
 
-STANDS = ("not-needed", "certified")
+STANDS = ("not-needed", "certified")   # not-needed: records written before 2026-11-06 only
 BOARD_BACKEND = {"u280": "fpga-u280"}
 # The FPGA harness's statuses for a build that ran and failed, as opposed to one that could not run.
 INFEASIBLE = ("BUILD_FAIL", "TIMING_FAIL")
@@ -230,6 +237,48 @@ def run_pipeline(tree: Path, manifest_path: Path, record_path: Path, hosts: Path
     return json.loads(record_path.read_text(encoding="utf-8"))
 
 
+def measure_on_image(tree: Path, manifest: dict, record_path: Path, hosts: Path, board_host: str,
+                     run_id: str, xclbin_sha256: str) -> dict:
+    """The board stage of the tree on an image already on the card server (the FPGA harness's
+    measure-only pipeline). The controller is this checkout's; the card server runs the tree's own
+    harness, as a full pipeline's would."""
+    from tritonchip_fpga_harness.hosts import load_hosts
+    from tritonchip_fpga_harness.pipeline import run_pipeline as fpga_pipeline
+    record = fpga_pipeline(local_repo=tree, hosts=load_hosts(hosts), manifest=manifest, build_host=None,
+                           board_host=board_host, measure_run=run_id, expect_xclbin_sha256=xclbin_sha256)
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    record_path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return record
+
+
+def base_image(path: Path, task: Task, cert: dict) -> dict:
+    """The base's certification record, as the image a software-only candidate runs on: certified, for
+    this task's base and platform, with the run and the image hash it was measured with."""
+    rec = json.loads(Path(path).read_text(encoding="utf-8"))
+    pipe = rec.get("pipeline") or {}
+    image = {"record": str(path), "run_id": pipe.get("run_id"),
+             "xclbin_sha256": (pipe.get("build") or {}).get("xclbin_sha256"),
+             "board_host": (pipe.get("board") or {}).get("host"),
+             "candidate_id": (rec.get("manifest") or {}).get("candidate_id"),
+             "image_parameters": rec.get("image_parameters")}
+    problems = []
+    if "baseline" not in rec:
+        problems.append("it is not the base's certification (certify --base)")
+    if rec.get("verdict") != "certified":
+        problems.append(f"its verdict is {rec.get('verdict')!r}, not certified")
+    if (rec.get("task") or {}).get("base_commit") != task.base_commit:
+        problems.append("it certified another base commit")
+    for key, want in (("platform_commit", cert["commit"]), ("target", cert["target"]),
+                      ("clock_mhz", cert["clock_mhz"]), ("profile", task.evaluation["profile"])):
+        if rec.get(key) != want:
+            problems.append(f"its {key} is {rec.get(key)!r}, not {want!r}")
+    problems += [f"it records no {k}" for k in ("run_id", "xclbin_sha256", "board_host", "candidate_id",
+                                                   "image_parameters") if not image[k]]
+    if problems:
+        raise CertifyError(f"{path} cannot be the base's image: " + "; ".join(problems))
+    return image
+
+
 def fetch_board_records(hosts: Path, board_host: str, run_id: str) -> list:
     """The board stage's ArchBench records, read from the card server's run."""
     from tritonchip_fpga_harness.hosts import host_for, load_hosts
@@ -244,10 +293,13 @@ def fetch_board_records(hosts: Path, board_host: str, run_id: str) -> list:
 def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline: Optional[Path] = None,
             hosts: Optional[Path] = None, build_host: Optional[str] = None, board_host: Optional[str] = None,
             work: Optional[Path] = None, out: Optional[Path] = None, yes: bool = False,
-            build_run: Optional[str] = None,
+            build_run: Optional[str] = None, base_image_record: Optional[Path] = None,
             pipeline: Callable[..., dict] = run_pipeline,
+            measure: Callable[..., dict] = measure_on_image,
             fetch: Callable[[Path, str, str], list] = fetch_board_records) -> dict:
-    """Certify one run's candidate (`run_dir`: its run.json and candidate/) or the base (`baseline`)."""
+    """Certify one run's candidate (`run_dir`: its run.json and candidate/) or the base (`baseline`).
+    A candidate that kept the base's machine runs on the base's image: `base_image_record` is the
+    base's certification record."""
     if (run_dir is None) == (baseline is None):
         raise CertifyError("certify a run (its directory) or the base (the evaluator's baseline), not both")
     cert = config(task)
@@ -283,8 +335,13 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
         out.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         return record
 
+    image = None
     if not hw["changed"]:
-        return finish("not-needed")
+        if base_image_record is None:
+            raise CertifyError("this candidate kept the base's machine, so it runs on the base's image: certify "
+                               "the base first (--base), then name that record with --base-image")
+        image = base_image(base_image_record, task, cert)
+        record["image"] = {k: image[k] for k in ("record", "run_id", "xclbin_sha256")}
     problems = evaluator.rtl_check(candidate, repo)
     if problems:
         raise CertifyError("the candidate's RTL does not pass the gate's check: " + "; ".join(problems[:3]))
@@ -292,6 +349,11 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
     tree = work / "tree"
     commit = build_tree(repo, task, candidate, tree)
     m = manifest(task, label, commit)
+    if image is not None:
+        # The card server measures the base's run, so the manifest names that run's candidate.
+        m = dict(m, candidate_id=image["candidate_id"],
+                 hypothesis=f"{label} of {task.task_id}: its software, on the base's image "
+                            f"({image['xclbin_sha256'][:12]}), counts on the card the cycles simulation counted.")
     work.mkdir(parents=True, exist_ok=True)
     (work / "manifest.json").write_text(json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     taken = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))["taken"] if candidate else []
@@ -306,13 +368,25 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
         return finish("infeasible", f"the profile cannot be built as the image: {exc}")
     except (OSError, KeyError, ValueError) as exc:
         raise CertifyError(f"the tree has no image build to certify with: {exc}") from exc
+    if image is not None and record["image_parameters"] != image["image_parameters"]:
+        raise CertifyError("the candidate's image parameters are not the base's, though its machine was judged "
+                           "unchanged: it cannot run on the base's image")
     if not yes:
         record["dry_run"] = True
         return record
-    if not (hosts and build_host and board_host):
+    if image is not None:
+        if not (hosts and board_host):
+            raise CertifyError("name the FPGA hosts file and the board host")
+        if board_host != image["board_host"]:
+            raise CertifyError(f"the base's image is on {image['board_host']!r}, not {board_host!r}")
+        build_host = None
+    elif not (hosts and build_host and board_host):
         raise CertifyError("name the FPGA hosts file, the build host and the board host")
     started = time.time()
-    pipe = pipeline(tree, work / "manifest.json", work / "pipeline.json", hosts, build_host, board_host, build_run)
+    if image is not None:
+        pipe = measure(tree, m, work / "pipeline.json", hosts, board_host, image["run_id"], image["xclbin_sha256"])
+    else:
+        pipe = pipeline(tree, work / "manifest.json", work / "pipeline.json", hosts, build_host, board_host, build_run)
     record["occupancy"] = occupancy.stages(pipe, build_host, board_host, ("certify-link", "certify-board")) or [
         occupancy.entry("certify", None, started, time.time(), covers=occupancy.WHOLE_CERTIFY)]
     record["pipeline"] = {"status": pipe.get("status"), "run_id": pipe.get("run_id"), "error": pipe.get("error"),
@@ -323,5 +397,6 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
     return finish(*verdict(pipe, rows, board))
 
 
-__all__ = ["CertifyError", "build_tree", "certified_score", "certify", "compare", "config", "manifest",
+__all__ = ["CertifyError", "base_image", "build_tree", "certified_score", "certify", "compare", "config", "manifest",
+           "measure_on_image",
            "simulated_from_baseline", "simulated_from_run", "verdict"]

@@ -290,6 +290,25 @@ never contains a point's name, shape, cycles or error text: an error such as
 alone, an aggregate still says how many points a request broke; the size of
 the validation set bounds what that teaches (O17).
 
+**When points fail** (decided 2026-11-06), the reply says why as far as it
+can without naming the question:
+
+- **Failed points, counted by kind**: `failures`, for example
+  `{"numeric-error": 1, "timeout": 1}`. Never which point. A kind is one of a
+  fixed list (`evaluator.FAILURE_NAMES`); anything else is reported as
+  `other`, because the candidate's compiler runs in the process that writes a
+  point's record and could otherwise spell a shape in a status. The
+  anti-tamper checks' verdicts (`record-disagrees`, `activity-outside-launch`,
+  `not-drained`) are all `measurement-rejected`: the agent learns that a
+  measurement was rejected, not which check rejected it.
+- **What failed before any point ran**, with its log's last lines: a device
+  that did not build (`device_build_errors`; for a multicore task, each device
+  container elaborates the candidate's RTL before it serves a point) and
+  staging that stopped the host before its first point (`stage_errors`).
+  Those logs come from before the hidden points were handed over, and every
+  point name is still scrubbed out of them. A point's own log is never
+  returned.
+
 ### 6.5 Leak audit (2026-10-15)
 
 **Method.** The workspace `replay-mzero` exported was audited by four
@@ -578,7 +597,8 @@ taken.
 
 `certify` (`certify.py`) shows that a candidate's machine is real: that it
 fits the U280, closes 100 MHz, and counts on the card the cycles simulation
-counted. It runs on the **controller**, the one machine that reaches both FPGA
+counted. Every final candidate runs on the card, a software-only one too
+(below). It runs on the **controller**, the one machine that reaches both FPGA
 servers; the servers never connect to each other, and the evaluation host does
 not reach the card server. It needs no site configuration, only the FPGA
 harness's hosts file and a clone with the task's commits.
@@ -602,9 +622,22 @@ harness's hosts file and a clone with the task's commits.
    device's own count that simulation recorded (`done_cycles` in the run's
    score rows; the observer checks that count against the record, §11).
 
+**A candidate that kept the base's machine** (it changed only software: the
+compiler, the runtime) is not linked again, and still runs on the card
+(decided 2026-11-06: the FPGA score always comes from the card). Its points
+run on the base's own image, the one the base's certification left on the
+card server, with the candidate's tree driving the card. `--base-image` names
+the base's certification record; it must be `certified`, for this task's base
+commit, platform, target, clock and profile, and the candidate's image
+parameters must equal the base's. Step 2 becomes the FPGA harness's
+measure-only pipeline (`pipeline --measure-run`, its README): no build server,
+the card server measures the base's run with `--allow-source-mismatch`
+(recorded), and the image it measures must hash to the base's. Step 3 is the
+same. Without `--base-image` such a candidate is refused, not passed.
+
 | Verdict | When | The score |
 |---|---|---|
-| `not-needed` | the machine is the base's | stands |
+| `not-needed` | only in records from before 2026-11-06: the machine was the base's | stood |
 | `certified` | 1-3 held | stands |
 | `infeasible` | the build failed: it does not fit or does not close 100 MHz, or the profile cannot be built as the image | every point fails |
 | `board-fail` | the image did not load, or the board stage did not reach the points | every point fails |
@@ -621,7 +654,8 @@ machine every candidate is compared with must itself fit, close and agree.
 candidate's compiler, and its sandbox is not built yet (§12.5). Until it is,
 that is code the operator runs having read it: `certify` without `--yes`
 builds the tree, lists the candidate's files that run on the card server, and
-builds nothing. A hardware-only candidate, and the base, run none.
+builds nothing. A hardware-only candidate, and the base, run none; a
+software-only one runs only its own code there, on the base's image.
 
 ### 10.5 Final human review before accepting a score
 
@@ -801,9 +835,13 @@ side: `budget`, `submit score`, `submit fpga-quick`, `submit fpga-slow`, `status
 
 Measures the validation set the final evaluator's way, P2.1 included
 (`evaluator.measure_validation`), and returns the aggregate of §6.4: points,
-passed, `speedup_geomean`, `fast_1`. If the candidate's device does not build,
-the build's last lines come back, since they concern only its own RTL. A
-request is charged when it is accepted.
+passed, `speedup_geomean`, `fast_1`. When points fail, it adds what §6.4
+allows: the failed points counted by kind, and the last lines of a device
+build or staging that failed before any point ran (for a multicore task too:
+until 2026-11-06 a device that did not elaborate came back only as
+`passed 0/n`). A request is charged when it is accepted. The base it is
+compared with is measured once per `baseline_key` and kept; two runs that ask
+for it at once take a lock, and the second reads the first one's result.
 
 ### 12.4 The FPGA service
 
@@ -822,7 +860,10 @@ candidate's profile to it as `NAME=VALUE`: the defaults in
 `rtl/common/tnca_uarch_defaults.vh`, then the profile's own values, limited to
 parameters the top has. It calls the Tcl script directly, into a short output
 directory: `vivado_ooc.sh` names its output after every pair, and a whole
-profile's worth is longer than a file name may be.
+profile's worth is longer than a file name may be. Each result records which
+worker ran it (`worker`, `vivado_settings`) and the Vivado release its log's
+banner names (`vivado_version`): estimates from two releases, or two workers,
+are not one series. The agent is not shown them.
 
 **Enforcement (built).**
 
@@ -968,7 +1009,8 @@ One JSON per run (`run.json`), written outside the sandbox:
 - **services:** every request with its times, snapshot, charge, the result the agent saw and the full result it did not (`agent_result.services`, §12.2);
 - **candidate:** the gate's verdict, the files taken, dropped, evaluator-owned changes, rejections;
 - **evaluation:** both sets, point by point (with the device's own count, `done_cycles`) and in aggregate; machine changes; the validity class;
-- **hardware:** whether the candidate changed the machine (the RTL files, the profile's changed parameters), and `certification`: `not-needed` or `pending`. Certification writes its own record, `certification.json`, beside this one (§10.4).
+- **hardware:** whether the candidate changed the machine (the RTL files, the profile's changed parameters), and `certification`: `pending` (it was `not-needed` for an unchanged machine before 2026-11-06; now every candidate runs on the card, an unchanged machine on the base's image). Certification writes its own record, `certification.json`, beside this one (§10.4);
+- **throttling:** `agent_result.throttled`, when the provider refused the run's requests for rate (`rate-limit`), load (`overloaded`) or quota (`usage-limit`): the kind, a short excerpt and how many retry events the CLI printed; null otherwise. Matched only where a CLI reports errors (error events, a failed result, text outside its JSON stream, stderr), never in the agent's own messages, so a run the provider cut short is not read as an agent that gave up. The patterns are the providers' documented errors; no throttled run of the pinned CLIs has been recorded yet.
 
 **Tokens in one schema** (`agent_result.tokens`, `adapters.tokens`):
 `input_uncached`, `cache_write`, `cache_read`, `output`, `reasoning` and
@@ -1289,6 +1331,13 @@ PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_ag
 The verdict and the score after certification are in
 `runs/<run_id>/certification.json`. `--base <baseline json>` (from
 `<state_dir>/baselines/` on the evaluation host) certifies the base instead.
+A candidate that changed only software runs on the base's image: certify the
+base first, then name its record (no build host; the board host must be the
+one that holds the base's image):
+
+```bash
+PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_agent_harness/tasks/r39-v5-main-pilot --run runs/<run_id> --base-image <state_dir>/baselines/<key>.certification.json --hosts ~/.config/tritonchip-fpga-harness/hosts.json --board-host <card host> --yes
+```
 
 **6. Summarise runs per agent framework:** the run count, and the totals and
 means of tokens and of each role's occupancy, as JSON, with no point ids or

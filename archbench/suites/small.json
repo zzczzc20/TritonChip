@@ -110,6 +110,16 @@
   },
   {
    "dtype": "fp16",
+   "family": "attention_decode",
+   "id": "op.attention_decode/small/fp16-b1-h4-l64-d32",
+   "kind": "op",
+   "sha256": "68905d888421a568fef02f7cc1cbe771491b5f9bb94fa4d0b27aa70773295277",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
    "family": "attention_prefill",
    "id": "op.attention_prefill/small/fp16-b1-h4-s64-d32",
    "kind": "op",
@@ -282,6 +292,6 @@
   }
  ],
  "schema": "archbench-suite/1",
- "sha256": "23dba4b762efc003e0728c6396344ad331e44c0bc16e15834381b65b16d876bc",
+ "sha256": "ae3acd3f815d1327b657524df0432454d2a4c89aa130d413b7647a4ed298bc89",
  "tier": "small"
 }

@@ -286,7 +286,7 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
 
     L, binding, terms = tnca_bound(point, profile)
     rec['bound'] = dict(version=VERSION, unit='cycles', value=L, binding=binding, terms=terms,
-                        peak=tnca_peak(profile)['rates'])
+                        peak=tnca_peak(profile, point.dtype)['rates'])
     if rec['status'] == 'pass' and cycles:
         rec['eta'] = L / cycles
         if rec['eta'] > 1:

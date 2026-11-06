@@ -335,6 +335,9 @@ def stand_in(**kwargs):
         kwargs.setdefault('image_profile', desc['per_core_profile'])
         kwargs.setdefault('core_count', desc['platform']['core_count'])
         kwargs.setdefault('memory_ports', desc['uncore']['MEM_PORTS'])
+        # The HBM the runtime opens is the described machine's, as on the board
+        # (devices.backend_args): a striped machine must open its whole window.
+        kwargs.setdefault('hbm_bytes', desc['platform']['hbm_bytes'])
         device = desc
     core_count = kwargs.pop('core_count', 3)
     memory_ports = kwargs.pop('memory_ports', min(3, core_count))

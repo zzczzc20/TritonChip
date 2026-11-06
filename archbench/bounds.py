@@ -47,15 +47,19 @@ _r38_peaks = _r38('peaks')
 r38_score = _r38('score')
 
 
-def tnca_peak(profile):
+def tnca_peak(profile, mma_dtype=None):
+    """spec_peak of a profile. `mma_dtype` is the matrix operand format of
+    the point being bounded (its registry dtype): on a profile with the
+    matrix_dp capability the matrix engine's rate depends on it
+    (tools/r38/archbench/peaks.py mma_rate), elsewhere it changes nothing."""
     if profile.endswith('/hbm'):
         from tnca.device import base_profile
         # HBM changes the backing memory, while this profile still has
         # the same single core and its shared 64-bit memory ingress.
-        peak = _r38_peaks.spec_peak(base_profile(profile))
+        peak = _r38_peaks.spec_peak(base_profile(profile), mma_dtype=mma_dtype)
         peak['profile'] = profile
         return peak
-    return _r38_peaks.spec_peak(profile)
+    return _r38_peaks.spec_peak(profile, mma_dtype=mma_dtype)
 
 
 def tnca_bound(point, profile):
@@ -64,7 +68,7 @@ def tnca_bound(point, profile):
     w = _r38_bounds.Workload(point.id, point.family, point.kind,
                              fp_ops=d.macs + d.fp_ops, macs=d.macs, sfu_ops=d.sfu_ops,
                              read_bytes=d.read_bytes, write_bytes=d.write_bytes)
-    return _r38_bounds.lower_bound(w, tnca_peak(profile))
+    return _r38_bounds.lower_bound(w, tnca_peak(profile, point.dtype))
 
 
 def gpu_spec(name='gb10'):
@@ -80,7 +84,10 @@ def gpu_bound(point, name='gb10'):
         # cores cannot serve these MACs.
         tensor, simt = 0.0, r['fp32_fma']
     else:
-        tensor = r['tensor_bf16_mac'] if point.dtype == 'bf16' else r['tensor_fp16_mac']
+        # The tensor-core rate of the point's operand format; an FP8 point's
+        # operands are FP8 (its bf16 result does not set the rate).
+        tensor = r[{'bf16': 'tensor_bf16_mac', 'e4m3': 'tensor_fp8_mac',
+                    'e5m2': 'tensor_fp8_mac'}.get(point.dtype, 'tensor_fp16_mac')]
         simt = r['fp16_fma_simt']
     other = d.fp_ops + d.sfu_ops
     terms = {}

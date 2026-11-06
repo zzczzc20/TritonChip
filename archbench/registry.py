@@ -7,9 +7,12 @@ reference -- runs the SAME point object, built from the same seed, so the
 values compared and the work bounded cannot differ between platforms.
 
 Point ids are `<kind>.<family>/<tier>/<variant>`, e.g.
-`op.matmul/tiny/fp16-m16k32n16`. A point's definition (its parameters, dtype,
-tolerance and demand) is hashed into the frozen suite files under
-archbench/suites/, so a changed definition is a different suite.
+`op.matmul/tiny/fp16-m16k32n16`. A point whose result has another dtype than
+its operands names both, operands first, the way archbench/membound.py names
+a cast: `op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64` is an E4M3 GEMM with a
+bf16 result. A point's definition (its parameters, dtype, tolerance and
+demand) is hashed into the frozen suite files under archbench/suites/, so a
+changed definition is a different suite.
 
 Tiers say where a point can be measured, not how important it is:
 
@@ -44,7 +47,14 @@ TIERS = ('tiny', 'small', 'medium', 'large', 'hbm', 'membound')
 # arithmetic's, not the reference's.
 TOLERANCE = {'fp32': 2e-4, 'fp16': 2e-2, 'bf16': 6e-2}
 
-TORCH_DTYPE = {'fp32': 'float32', 'fp16': 'float16', 'bf16': 'bfloat16'}
+TORCH_DTYPE = {'fp32': 'float32', 'fp16': 'float16', 'bf16': 'bfloat16',
+               # The two OCP FP8 encodings (ISA sec 9C's 8-bit matrix
+               # formats). GEMM operand formats only: a point in one of them
+               # writes bf16 or fp16, named by its out_dtype, and is judged at
+               # that dtype's tolerance (Point.tolerance) -- TOLERANCE has no
+               # FP8 entry on purpose.
+               'e4m3': 'float8_e4m3fn', 'e5m2': 'float8_e5m2'}
+FP8_DTYPES = ('e4m3', 'e5m2')
 
 
 @dataclass(frozen=True)
@@ -90,16 +100,34 @@ class Point:
     track: tuple = ('llm',)   # 'llm' and/or 'general'
     tol: float = None
     note: str = ''
+    out_dtype: str = None     # the result's dtype where it is not `dtype` (an FP8 GEMM writes bf16/fp16)
 
     @property
     def tolerance(self):
-        return self.tol if self.tol is not None else TOLERANCE[self.dtype]
+        if self.tol is not None:
+            return self.tol
+        # An FP8 point is judged at its OUTPUT dtype's tolerance (bf16 6e-2,
+        # fp16 2e-2), never bit-exactly. Its FP8 operands widen to binary32
+        # exactly, so the two sides differ only in how they accumulate: the
+        # CPU reference (torch's own _scaled_mm, archbench/platforms/common.py)
+        # adds every product in binary32, while the device's m.mma.dp.async
+        # (ISA sec 9C.4) rounds once per group of four E4M3 x E4M3 products
+        # (two for any other pair) and once more to the output dtype. That is
+        # an fp32-accumulated GEMM compared at its output's precision -- the
+        # same case as an fp16 point against the fp32 reference -- so the
+        # output dtype's tolerance is the one that applies.
+        return TOLERANCE[self.out_dtype or self.dtype]
 
     def definition(self):
         """What the suite hash covers: everything that changes the point."""
-        return dict(id=self.id, kind=self.kind, family=self.family, tier=self.tier,
-                    dtype=self.dtype, params=self.params, demand=self.demand.as_dict(),
-                    track=list(self.track), tolerance=self.tolerance)
+        d = dict(id=self.id, kind=self.kind, family=self.family, tier=self.tier,
+                 dtype=self.dtype, params=self.params, demand=self.demand.as_dict(),
+                 track=list(self.track), tolerance=self.tolerance)
+        if self.out_dtype:
+            # Only a point with a separate result dtype carries the key, so
+            # the hash of every other point is what it was.
+            d['out_dtype'] = self.out_dtype
+        return d
 
     def definition_sha256(self):
         blob = json.dumps(self.definition(), sort_keys=True)

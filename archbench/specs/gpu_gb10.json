@@ -54,6 +54,11 @@
    "unit": "MAC/s",
    "derivation": "as tensor_fp16_mac"
   },
+  "tensor_fp8_mac": {
+   "value": 155250000000000.0,
+   "unit": "MAC/s",
+   "derivation": "the FP8 step of tensor_fp16_mac's chain: 5e14 FP4 dense FLOPS halves once to 2.5e14 FP8 dense FLOPS at the 2418 MHz default; scaled to 3003 MHz = 3.105e14 FLOPS = 1.5525e14 MAC/s, twice tensor_fp16_mac. Read only for the FP8 points (registry dtype e4m3/e5m2); no other point's bound changes"
+  },
   "sfu": {
    "value": 2305900000000.0,
    "unit": "op/s",

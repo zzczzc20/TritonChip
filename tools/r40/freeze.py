@@ -40,6 +40,7 @@ sys.path.insert(0, str(ROOT))
 from archbench import registry     # noqa: E402
 
 EXISTING = ('tiny', 'small', 'medium')
+FP8_FAMILIES = ('scaled_mm', 'w8a8_linear', 'wfp8_linear')
 POINTWISE = ('add', 'silu', 'gelu_tanh', 'swiglu', 'copy', 'softmax', 'rmsnorm', 'layernorm',
              'argmax', 'cumsum', 'rope')
 GEMM = ('matmul', 'linear', 'gemv', 'bmm', 'mlp')
@@ -121,7 +122,11 @@ def subsets():
         S[name] = dict(schema='tnca-r40-subset/1', name=name, rule=rule,
                        points=[pt_entry(p) for p in chosen])
 
-    existing = [p for t in EXISTING for p in by_tier.get(t, [])]
+    # R40's subsets predate the FP8 GEMM points (archbench/ops.py scaled_mm,
+    # w8a8_linear and wfp8_linear, registered 2026-11-06 for the R41 start of
+    # the agent harness): those are R41's points, not R40 acceptance points,
+    # so the frozen spec/r40 suites keep their membership.
+    existing = [p for t in EXISTING for p in by_tier.get(t, []) if p.family not in FP8_FAMILIES]
     large, hbm = by_tier.get('large', []), by_tier.get('hbm', [])
     add('existing', 'every point of tiny, small and medium', existing)
     add('large', 'every point of the original large tier, unshrunk', large)

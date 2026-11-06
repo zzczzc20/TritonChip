@@ -20,10 +20,13 @@
   "resnet_block",
   "rmsnorm",
   "rope",
+  "scaled_mm",
   "silu",
   "softmax",
   "swiglu",
-  "transpose"
+  "transpose",
+  "w8a8_linear",
+  "wfp8_linear"
  ],
  "points": [
   {
@@ -251,6 +254,16 @@
    ]
   },
   {
+   "dtype": "e4m3",
+   "family": "scaled_mm",
+   "id": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+   "kind": "op",
+   "sha256": "e9bfa1c1faeffccec93ca09d9c5039b97ed58fe604a34431cd84d61bdb9b09f3",
+   "track": [
+    "llm"
+   ]
+  },
+  {
    "dtype": "fp16",
    "family": "silu",
    "id": "op.silu/tiny/fp16-n256",
@@ -299,9 +312,29 @@
    "track": [
     "general"
    ]
+  },
+  {
+   "dtype": "e4m3",
+   "family": "w8a8_linear",
+   "id": "op.w8a8_linear/tiny/e4m3-to-bf16-m16-k64-n64",
+   "kind": "op",
+   "sha256": "da701e2c0be43333ea984f8ba457c9765881c10878ca6799428d812e25aa2086",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "bf16",
+   "family": "wfp8_linear",
+   "id": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+   "kind": "op",
+   "sha256": "aa0583fe085bc1e2b7ec8c7ba9ee0c3a08f48b78705f3d42b82dd132b48aea17",
+   "track": [
+    "llm"
+   ]
   }
  ],
  "schema": "archbench-suite/1",
- "sha256": "26cfbf20dfd81d6baef4fdc66b0c890ee8cfebba676568cbaede12c0b79033cc",
+ "sha256": "39597117dd09044894eb015c2c377adbc51ba1ff39dde8e931864443497f474b",
  "tier": "tiny"
 }

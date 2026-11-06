@@ -255,6 +255,36 @@ def gemm_16x16x16_fp16_hand_computed():
 
 
 @test
+def mma_rate_follows_the_matrix_dp_capability():
+    """Without matrix_dp every operand format gets VLEN matrix MACs per cycle
+    and the peak is unchanged; with it the tnca_mac_lane's group per cycle
+    (rtl/core/tnca_matrix.v MAC_DP): FP32 1x, FP16/BF16/E5M2 2x, E4M3 4x."""
+    fmts = ('fp32', 'fp16', 'bf16', 'e5m2', 'e4m3')
+    for f in fmts + (None,):
+        assert P.spec_peak('core-sim', mma_dtype=f) == PEAK
+    dp = {f: P.spec_peak('core-sim-dp', mma_dtype=f)['rates'] for f in fmts}
+    assert [dp[f]['mma_mac'] for f in fmts] == [16, 32, 32, 32, 64]
+    assert [dp[f]['fp_lane'] for f in fmts] == [32, 48, 48, 48, 80]
+    assert P.spec_peak('core-sim-dp')['rates']['mma_mac'] == 64      # no format: the generous end
+    try:
+        P.spec_peak('core-sim-dp', mma_dtype='i8')
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('an unknown operand format got a rate')
+    # An E4M3 16x16x64 GEMM with a bf16 result on the dp profile: 16384 MACs
+    # over 16 + 64 lanes = 204.8 cycles; bytes A 1024 + B 1024 + C 512 = 2560
+    # over 8 per cycle = 320 cycles, binding. Without the capability the
+    # same GEMM is 16384 / 32 = 512 cycles, compute-bound.
+    g = B.gemm('g', 'gemm', 16, 16, 64, in_dtype='e4m3', out_dtype='bf16')
+    L, binding, terms = B.lower_bound(g, P.spec_peak('core-sim-dp', mma_dtype='e4m3'))
+    assert close(terms['fp_lane'], 16384 / 80) and terms['mem_bytes'] == 320
+    assert L == 320 and binding == 'mem_bytes'
+    L0, binding0, _ = B.lower_bound(g, PEAK)
+    assert L0 == 512 and binding0 == 'fp_lane'
+
+
+@test
 def unavailable_bounds_are_refused_not_invented():
     w = r37_workloads.build()
     try:

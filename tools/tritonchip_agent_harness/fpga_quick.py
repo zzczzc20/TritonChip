@@ -118,7 +118,8 @@ def threads(worker: dict) -> int:
 
 
 def _sandboxed(worker: dict, remote: str, period: float, generics: dict, seconds: int) -> str:
-    """The command the build worker runs: the flow's own script, inside bubblewrap, with a hard deadline."""
+    """The command the build worker runs: the flow's own script, inside bubblewrap (or `unshare` on a worker
+    without it), with a hard deadline."""
     binds = ["--ro-bind", "/usr", "/usr", "--ro-bind-try", "/lib", "/lib", "--ro-bind-try", "/lib64", "/lib64",
              "--ro-bind-try", "/lib32", "/lib32", "--ro-bind", "/bin", "/bin", "--ro-bind-try", "/sbin", "/sbin",
              "--ro-bind", "/etc", "/etc"]
@@ -128,17 +129,32 @@ def _sandboxed(worker: dict, remote: str, period: float, generics: dict, seconds
     # after every NAME=VALUE pair, and a whole profile's worth of them is longer than a file name may be.
     out = f"{remote}/sim/build/ooc/{TOP}"
     files = "$(cd rtl && ls common/*.v core/*.v gen/*.v nuca/*.v noc/*.v tile/*.v fpga/*.v *.v)"
+    # OOC_SV=1: the flow reads the sources as SystemVerilog, as the board build does
+    # (flow/synth/vivado_ooc_timing.tcl since R41); the same files either way for earlier trees.
     inner = (f"source {shlex.quote(worker['vivado_settings'])} >/dev/null 2>&1; mkdir -p {out} && "
-             f"OOC_GENERICS={shlex.quote(' '.join(f'{k}={v}' for k, v in generics.items()))} "
+             f"OOC_SV=1 OOC_GENERICS={shlex.quote(' '.join(f'{k}={v}' for k, v in generics.items()))} "
              f"vivado -mode batch -nojournal -nolog -source flow/synth/vivado_ooc_timing.tcl -tclargs "
              f"{TOP} {period:g} {shlex.quote(worker.get('part', DEFAULT_PART))} {out} {remote}/rtl {files} "
              f"> {out}/vivado.log 2>&1")
-    bwrap = (["timeout", "--kill-after=30", str(seconds), "bwrap", "--unshare-all", "--die-with-parent", "--new-session"]
-             + binds + ["--bind", remote, remote, "--tmpfs", "/tmp", "--tmpfs", "/home/sandbox",
-                        "--setenv", "HOME", "/home/sandbox", "--proc", "/proc", "--dev", "/dev", "--chdir", remote,
-                        "/bin/bash", "-c", inner])
+    if worker.get("sandbox", "bwrap") == "unshare":
+        # A worker without bubblewrap (the author's shared x86 Vivado machine,
+        # 2026-11-06): a user and network namespace keep the job offline and
+        # unprivileged, with no filesystem view of its own. The tree it runs is
+        # the base's flow with the candidate's hardware applied (services.py:
+        # apply_candidate only=HARDWARE), so the candidate supplies RTL and
+        # parameters, never the script; the job is niced, as the author's own
+        # OOC screens are, and stays one at a time (services: one FPGA request
+        # across both tiers).
+        sandbox = ["timeout", "--kill-after=30", str(seconds), "nice", "-n", "10", "unshare", "-Urn",
+                   "/bin/bash", "-c", f"cd {shlex.quote(remote)} && {inner}"]
+    else:
+        sandbox = (["timeout", "--kill-after=30", str(seconds), "bwrap", "--unshare-all", "--die-with-parent",
+                    "--new-session"]
+                   + binds + ["--bind", remote, remote, "--tmpfs", "/tmp", "--tmpfs", "/home/sandbox",
+                              "--setenv", "HOME", "/home/sandbox", "--proc", "/proc", "--dev", "/dev",
+                              "--chdir", remote, "/bin/bash", "-c", inner])
     return (f"cd {shlex.quote(remote)} && sed -i 's/maxThreads 8/maxThreads {threads(worker)}/' "
-            f"flow/synth/vivado_ooc_timing.tcl && {' '.join(shlex.quote(a) for a in bwrap)} > run.log 2>&1")
+            f"flow/synth/vivado_ooc_timing.tcl && {' '.join(shlex.quote(a) for a in sandbox)} > run.log 2>&1")
 
 
 def run(worker: dict, tree: Path, profile: str, period: float, seconds: int, job_dir: Path, job_id: str) -> dict:

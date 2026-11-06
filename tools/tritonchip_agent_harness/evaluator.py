@@ -349,9 +349,14 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
             args = {"board_top": True, "device": desc, "inbox": f"/mb/in/{i}", "outbox": f"/mb/out/{i}",
                     "memory_bytes": memory, "hbm_dma": True}
             (hostout / f"backend-{i}.json").write_text(json.dumps(args), encoding="utf-8")
-        lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
+        # The persistent Inductor graph cache (r41's python/tnca/compile_cache.py, on by
+        # default, keyed on sources and options) lives under this evaluation's own
+        # output, never in a home directory shared between candidates or runs.
+        lines = ["set -e", "cd /work", "mkdir -p /out/caches",
+                 "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
                  "run() {",
                  f'  TNCA_BACKEND=fpga-multicore-sim TNCA_BACKEND_ARGS="$(cat /out/backend-$1.json)" '
+                 f'TNCA_COMPILE_CACHE_DIR=/out/caches/tnca-inductor '
                  f'TNCA_ACTIVE_CORES={cores} TNCA_HOST_TIMEOUT={timeout:g} /opt/torchenv/bin/python -m archbench.run '
                  f'--platform tnca '
                  f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',

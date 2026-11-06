@@ -61,5 +61,26 @@ class Parameters(unittest.TestCase):
         self.assertEqual(effective_params(t, "p"), {"MTX_ABUF": 1, "NUM_RCTX": 2, "USE_BANKED_VRF": 0})
 
 
+class Sandboxes(unittest.TestCase):
+    """The worker's command: bubblewrap by default; `unshare` for a worker without it."""
+    WORKER = {"ssh": "w", "workdir": "/jobs", "vivado_settings": "/x/settings64.sh", "threads": 6}
+
+    def test_bwrap_is_the_default(self):
+        from tritonchip_agent_harness.fpga_quick import _sandboxed
+        cmd = _sandboxed(self.WORKER, "/jobs/j1", 10.0, {"NUM_RCTX": 4}, 1800)
+        self.assertIn("bwrap --unshare-all", cmd)
+        self.assertNotIn("unshare -Urn", cmd)
+        self.assertIn("maxThreads 6", cmd)
+        self.assertIn("OOC_SV=1 OOC_GENERICS=NUM_RCTX=4", cmd)
+
+    def test_unshare_keeps_the_job_offline_and_niced(self):
+        from tritonchip_agent_harness.fpga_quick import _sandboxed
+        cmd = _sandboxed(dict(self.WORKER, sandbox="unshare"), "/jobs/j1", 10.0, {"NUM_RCTX": 4}, 1800)
+        self.assertNotIn("bwrap", cmd)
+        self.assertIn("timeout --kill-after=30 1800 nice -n 10 unshare -Urn /bin/bash -c", cmd)
+        self.assertIn("cd /jobs/j1 && source /x/settings64.sh", cmd)
+        self.assertIn("vivado -mode batch", cmd)
+
+
 if __name__ == "__main__":
     unittest.main()

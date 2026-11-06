@@ -165,11 +165,13 @@ def load_site(path: Optional[Path] = None) -> Site:
 
     worker = value.get("fpga_worker")
     if worker is not None:
-        _keys("fpga_worker", worker, {"ssh", "workdir", "vivado_settings"}, {"ro_binds", "threads", "part"})
+        _keys("fpga_worker", worker, {"ssh", "workdir", "vivado_settings"}, {"ro_binds", "threads", "part", "sandbox"})
         if not all(isinstance(worker[k], str) and worker[k] for k in ("ssh", "workdir", "vivado_settings")):
             raise SiteError("fpga_worker: ssh, workdir and vivado_settings must be strings")
         if not isinstance(worker.get("ro_binds", []), list):
             raise SiteError("fpga_worker.ro_binds must be a list of paths")
+        if worker.get("sandbox", "bwrap") not in ("bwrap", "unshare"):
+            raise SiteError("fpga_worker.sandbox must be bwrap (default) or unshare (a worker without bubblewrap)")
 
     pipeline = value.get("fpga_pipeline")
     if pipeline is not None:

@@ -104,7 +104,7 @@
     "max_restarts": 2
   },
   "budget": {
-    "wall_seconds": 43200
+    "wall_seconds": 86400
   },
   "evaluation": {
     "profile": "core-vrf-sync-v5-x8-g2c4-dp-board",
@@ -183,7 +183,8 @@
     },
     "fpga_slow": {
       "mode": "board",
-      "flows": 2,
+      "flows": 3,
+      "flows_at_once": 2,
       "board_runs": 10,
       "flow_minutes": 480,
       "board_minutes": 240,

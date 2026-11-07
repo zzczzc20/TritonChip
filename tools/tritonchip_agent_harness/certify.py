@@ -50,7 +50,9 @@ nothing without --yes.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -428,8 +430,8 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
 
 
 __all__ = ["CertifyError", "base_image", "board_cycles", "build_tree", "certified_score", "certify", "compare", "config",
-           "manifest",
-           "measure_on_image",
+           "cycle_ratios", "manifest",
+           "measure_on_image", "rejudge", "rejudge_run",
            "simulated_from_baseline", "simulated_from_run", "verdict"]
 
 
@@ -525,13 +527,112 @@ def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, broker=
         got.update(rec["points"])
         checks.update(((rec.get("measured") or {}).get("checks")) or {})
     rows = _board_rows(sim, got, board_cycles(task))
+    out["rows"] = rows
+    # Kept so that the run can be judged again from its record (rejudge).
+    out["checks"] = {n: {"exit": c.get("exit")} for n, c in checks.items()}
+    verdict_, why = _judge(rows, checks)
+    out.update(verdict=verdict_, why=why, finished=time.time())
+    return out
+
+
+def _judge(rows: list, checks: dict) -> tuple:
+    """(verdict, why) once the card ran the points: every row without a problem and every board check passed."""
     failed_checks = sorted(n for n, c in checks.items() if c.get("exit") != 0)
     bad = [r for r in rows if r["problem"]]
-    out["rows"] = rows
-    if bad or failed_checks:
-        why = [f"{r['point']}: {r['problem']}" for r in bad[:5]] + [f"board check {n} did not pass" for n in failed_checks]
-        out.update(verdict="board-disagrees", why="; ".join(why))
+    if not (bad or failed_checks):
+        return "certified", None
+    why = [f"{r['point']}: {r['problem']}" for r in bad[:5]] + [f"board check {n} did not pass" for n in failed_checks]
+    return "board-disagrees", "; ".join(why)
+
+
+def cycle_ratios(ratios: list) -> dict:
+    """Board over simulation, in aggregate: how many points, their geometric mean and range."""
+    ratios = sorted(r for r in ratios if r and r > 0)
+    if not ratios:
+        return {"points": 0}
+    return {"points": len(ratios),
+            "board_over_simulation_geomean": round(math.exp(sum(map(math.log, ratios)) / len(ratios)), 4),
+            "board_over_simulation_range": [round(ratios[0], 4), round(ratios[-1], 4)]}
+
+
+def _row_again(row: dict, rule: str) -> dict:
+    """One stored row under `rule`: only whether its cycles are a problem can change."""
+    if row.get("note") or row.get("problem") not in (None, "cycles differ"):
+        return row
+    differ = row.get("board_cycles") != row.get("sim_cycles")
+    return dict(row, problem="cycles differ" if rule == "equal" and differ else None)
+
+
+def _again(cert, rule: str, requests: dict) -> dict:
+    """One stored after-run certification judged again under `rule`, from what it stored."""
+    if not isinstance(cert, dict) or "rows" not in cert:
+        # Its verdict came before the card ran the points (the build, the card session): no rule changes it.
+        verdict_ = cert.get("verdict") if isinstance(cert, dict) else cert
+        return {"was": verdict_, "verdict": verdict_, "why": cert.get("why") if isinstance(cert, dict) else None,
+                "judged_again": False}
+    if "checks" in cert:
+        checks = dict(cert["checks"])
     else:
-        out.update(verdict="certified", why=None)
-    out["finished"] = time.time()
+        # Written before after_run kept the checks: the reused request's, then the card session's, as after_run took them.
+        checks = {}
+        reused = cert.get("reused")
+        if reused:
+            found = [j for j in requests.get(reused["request"], [])
+                     if (((j.get("full") or {}).get("card") or {}).get("outcome")) == "ok"]
+            if len(found) != 1:
+                return {"was": cert.get("verdict"), "verdict": cert.get("verdict"), "why": cert.get("why"),
+                        "judged_again": False,
+                        "note": f"the reused request {reused['request']}'s board checks are not one record in the run"}
+            checks.update(((found[0]["full"]["card"].get("record") or {}).get("measured") or {}).get("checks") or {})
+        checks.update((((cert.get("card") or {}).get("measured") or {}).get("checks")) or {})
+    rows = [_row_again(r, rule) for r in cert["rows"]]
+    verdict_, why = _judge(rows, checks)
+    return {"was": cert.get("verdict"), "verdict": verdict_, "why": why, "judged_again": True, "rows": rows,
+            "checks": {n: {"exit": c.get("exit")} for n, c in checks.items()},
+            "cycles_on_card": cycle_ratios([r["board_cycles"] / r["sim_cycles"] for r in rows
+                                            if not r.get("note") and r.get("board_cycles") and r.get("sim_cycles")])}
+
+
+def rejudge(run: dict, rule: str) -> dict:
+    """A finished run's after-run certifications judged again under board_cycles `rule`, from the rows and
+    board checks they stored: no build and no card time. For a run that started before its task said how the
+    card's cycles are judged (R41's first formal run: user's decision of 2026-11-07). Champions are taken in
+    rank order and the first certified one is the run's result, as _champions would have stopped there."""
+    if rule not in BOARD_CYCLES:
+        raise CertifyError(f"board_cycles {rule!r}: one of {', '.join(BOARD_CYCLES)}")
+    requests: dict = {}
+    sources = [((r.get("agent_result") or {}).get("services") or {}) for r in (run.get("islands") or {}).get("islands") or []]
+    sources.append(((run.get("agent_result") or {}).get("services")) or {})
+    for s in sources:
+        for j in s.get("requests") or []:
+            requests.setdefault(j.get("id"), []).append(j)
+    out: dict = {"schema": "tritonchip-agent-certification-again/1", "run_id": run.get("run_id"), "board_cycles": rule,
+                 "task_at_run": run.get("task"), "judged": time.time(), "certifications": [], "result": None}
+    if run.get("champions") is not None:
+        certs = [({"rank": c["rank"], "id": c["id"]}, c.get("certification")) for c in run["champions"]
+                 if c.get("certification") is not None]
+    elif isinstance(run.get("certification"), dict):
+        certs = [({"rank": 1, "id": run.get("run_id")}, run["certification"])]
+    else:
+        raise CertifyError(f"the run's certification is {run.get('certification')!r}: there is nothing to judge again")
+    for who, cert in certs:
+        row = {**who, **_again(cert, rule, requests)}
+        out["certifications"].append(row)
+        if out["result"] is None and row["verdict"] == "certified":
+            out["result"] = who
     return out
+
+
+def rejudge_run(task: Task, run_dir: Path, out: Optional[Path] = None) -> dict:
+    """rejudge on a run's directory under the task's board_cycles rule; written beside run.json, which is
+    left as the run wrote it."""
+    raw = (run_dir / "run.json").read_bytes()
+    run = json.loads(raw)
+    if (run.get("task") or {}).get("id") != task.task_id:
+        raise CertifyError(f"the run is of task {(run.get('task') or {}).get('id')!r}, not {task.task_id!r}")
+    value = rejudge(run, board_cycles(task))
+    value.update(task={"id": task.task_id, "sha256": task.sha256}, run_json_sha256=hashlib.sha256(raw).hexdigest())
+    out = out or run_dir / "certification-again.json"
+    value["output"] = str(out)
+    out.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return value

@@ -74,6 +74,10 @@ def main(argv=None) -> int:
                    "base's machine runs on that image, on the card server that holds it")
     k.add_argument("--work", type=Path, help="where the tree is built (default: beside the record)")
     k.add_argument("--yes", action="store_true", help="run the pipeline; without it, only build the tree and say what would run")
+    k.add_argument("--again", action="store_true",
+                   help="with --run: judge the run's after-run certification again under the task's board_cycles rule, "
+                        "from the rows and board checks it stored (no build, no card); written to "
+                        "certification-again.json beside run.json, which is left as it was")
     k.add_argument("--json", action="store_true")
     st = sub.add_parser("stats", help="runs, tokens and server occupancy per agent framework, as JSON "
                                       "(no point ids, no per-point results; no site configuration)")
@@ -146,6 +150,25 @@ def main(argv=None) -> int:
 
 
 def _certify(args) -> int:
+    if args.again:
+        if args.run is None:
+            raise certify.CertifyError("--again judges a run's stored certification again: name the run with --run")
+        value = certify.rejudge_run(load_task(args.task), args.run)
+        if args.json:
+            print(json.dumps(value, indent=2, sort_keys=True))
+        else:
+            # Verdicts and aggregates only: the rows name the final points (they stay in the record).
+            for c in value["certifications"]:
+                cyc = c.get("cycles_on_card") or {}
+                print(f"  {c['rank']} ({c['id']}): {c['was']} -> {c['verdict']}"
+                      + (f"; board/sim geomean {cyc['board_over_simulation_geomean']} over {cyc['points']} points"
+                         if cyc.get("points") else "")
+                      + ("" if c["judged_again"] else f" (not judged again{': ' + c['note'] if c.get('note') else ''})"))
+            result = value["result"]
+            print(f"{value['run_id']} under board_cycles={value['board_cycles']}: "
+                  + (f"certified, champion {result['rank']} ({result['id']})" if result else "nothing certified"))
+            print(f"  record: {value['output']}")
+        return 0 if value["result"] else 1
     value = certify.certify(args.repo.resolve(), load_task(args.task), run_dir=args.run, baseline=args.base,
                             hosts=args.hosts, build_host=args.build_host, board_host=args.board_host,
                             work=args.work, yes=args.yes, build_run=args.build_run,

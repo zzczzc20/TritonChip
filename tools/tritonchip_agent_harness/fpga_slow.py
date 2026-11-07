@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
 import os
 import re
 import signal
@@ -417,12 +416,7 @@ def _cycles_view(points: list, got: dict, sim_rows: dict) -> dict:
         o, s = (card.get("observer") or {}).get("done_cycles"), simulated.get("done_cycles")
         if card.get("status") == "pass" and simulated.get("failure") is None and o and s:
             ratios.append(o / s)
-    if not ratios:
-        return {"points": 0}
-    ratios.sort()
-    return {"points": len(ratios),
-            "board_over_simulation_geomean": round(math.exp(sum(map(math.log, ratios)) / len(ratios)), 4),
-            "board_over_simulation_range": [round(ratios[0], 4), round(ratios[-1], 4)]}
+    return certify.cycle_ratios(ratios)
 
 
 def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict, sim: dict,

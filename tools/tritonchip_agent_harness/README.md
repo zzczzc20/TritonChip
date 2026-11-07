@@ -655,6 +655,17 @@ record, and an in-run board reply gives the agent their ratio in aggregate
 (`cycles_on_card`: the geometric mean and range of board over simulation)
 instead of `counted_as_in_simulation`. The R41 tasks set it.
 
+A run that started before its task set the rule (R41's first formal run)
+is judged again from its record, with no build and no card time:
+`certify TASK --run RUN_DIR --again` re-applies the task's `board_cycles` to
+the rows and board checks each after-run certification stored, takes the
+champions in rank order (the first certified one is the run's result), and
+writes `certification-again.json` beside `run.json`, which is left as it
+was. A verdict reached before the card ran the points (`infeasible`,
+`board-fail`, `no-verdict`) is kept. On the island pilot's record both
+champions become `certified`, the card counting 0.91 and 0.92 of
+simulation's cycles in geometric mean.
+
 The record, `certification.json` beside `run.json`, keeps the verdict and its
 reason, the tree's commit, the image's parameters, the build's timing, each
 point's two counts, and the run's score after certification. The base is

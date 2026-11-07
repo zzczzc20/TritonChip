@@ -295,23 +295,32 @@ for tier, (m, k, n) in FP8_GEMM.items():
 # Decode-shaped block-scaled FP8: the format the FP8 checkpoints are stored in
 # (E4M3 weights with one fp32 scale per 128x128 block) and how a decode step
 # runs it: one token row, the activation quantised dynamically per 1x128
-# group, a blockwise torch._scaled_mm (v1 scale shapes: scale_a (M, K/128),
-# scale_b (K/128, N/128), as tools/performance_harness/fp8_blockwise_cases.py
-# drives it), bf16 out. N is a multiple of 128 and K of 128; the weight is
-# larger than the 48 KiB NUCA, so it streams.
+# group, a blockwise scaled mm through the v2 API with explicit recipes
+# (F.scaled_mm, BlockWise1x128 x BlockWise128x128) and CUDA's scale layouts,
+# as tools/performance_harness/fp8_blockwise_cases.py drives its M=1 case:
+# scale_a (M, K/128) with stride (1, M), scale_b (round_up(K/128, 4), N/128)
+# with stride (1, round_up(K/128, 4)). The v1 _scaled_mm tells recipes apart
+# by scale shape, and with one row a (1, K/128) scale_a is no recipe (or, at
+# K = 128, a tensorwise singleton). bf16 out. N and K are multiples of 128;
+# the weight is larger than the 48 KiB NUCA, so it streams.
 
 TILE_FP8 = 128
 
 
+def _kb_padded(k):
+    return -(-(k // TILE_FP8) // 4) * 4
+
+
 class W8A8BlockLinear(torch.nn.Module):
     """Dynamic W8A8 with block scales: the activation quantised per 1x128
-    group (amax / 448), the E4M3 weight (n, k) with fp32 scales (k/128,
-    n/128), a blockwise _scaled_mm, bf16 out. CPU eager refuses blockwise
-    scales, so the eager CPU call (the reference) runs the same block form
-    in fp32, K blocks ascending. The test is "eager on the CPU", not "on the
-    CPU": the tnca platform's default path compiles CPU tensors and offloads
-    them (platforms/tnca.py), and that compiled program must be the
-    _scaled_mm."""
+    group (amax / 448), the E4M3 weight (n, k) with one fp32 scale per
+    128x128 block, stored (n/128, round_up(k/128, 4)) as the CUDA kernels
+    lay it out (columns past k/128 are padding, never read), a blockwise
+    F.scaled_mm, bf16 out. CPU eager refuses blockwise scales, so the eager
+    CPU call (the reference) runs the same block form in fp32, K blocks
+    ascending. The test is "eager on the CPU", not "on the CPU": the tnca
+    platform's default path compiles CPU tensors and offloads them
+    (platforms/tnca.py), and that compiled program must be the scaled mm."""
     def forward(self, x, w, ws):
         m, k = x.shape
         g = x.float().reshape(m, k // TILE_FP8, TILE_FP8)
@@ -322,9 +331,11 @@ class W8A8BlockLinear(torch.nn.Module):
             for kb in range(k // TILE_FP8):
                 s = slice(kb * TILE_FP8, (kb + 1) * TILE_FP8)
                 part = q[:, s].float() @ w[:, s].float().t()
-                out = out + part * sa[:, kb:kb + 1] * ws[kb].repeat_interleave(TILE_FP8)[None, :]
+                out = out + part * sa[:, kb:kb + 1] * ws[:, kb].repeat_interleave(TILE_FP8)[None, :]
             return out.to(torch.bfloat16)
-        return torch._scaled_mm(q, w.t(), scale_a=sa, scale_b=ws, out_dtype=torch.bfloat16)
+        st = F.ScalingType
+        return F.scaled_mm(q, w.t(), sa.t().contiguous().t(), st.BlockWise1x128,
+                           ws.t(), st.BlockWise128x128, output_dtype=torch.bfloat16)
 
 
 # validation: small (one program per core, two K blocks, 96 KiB of weight);
@@ -337,7 +348,7 @@ for tier, shapes in FP8_BLOCK_DECODE.items():
             x = randn(g, (m, k), 'bf16', 2.0)
             w = (torch.randn(n, k, generator=g)
                  * torch.pow(2.0, torch.randint(-2, 3, (n, k), generator=g).float())).to(torch.float8_e4m3fn)
-            ws = torch.rand(k // TILE_FP8, n // TILE_FP8, generator=g) * 0.02 + 0.005
+            ws = torch.rand(n // TILE_FP8, _kb_padded(k), generator=g) * 0.02 + 0.005
             return W8A8BlockLinear(), (x, w, ws)
         kb = k // TILE_FP8
         op('w8a8_block_linear', tier, 'e4m3', dict(m=m, k=k, n=n), mk_w8a8_block,

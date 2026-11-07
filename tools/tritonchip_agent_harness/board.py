@@ -118,11 +118,13 @@ def base_image(site: Site, task: Task) -> dict:
     return {"path": images[sha], "sha256": sha, "kind": "base"}
 
 
-def put_image(site: Site, build_run: str, sha256: str, xclbin_name: str, tag: str) -> dict:
-    """A built image, from the build host's run to the card host, by its hash."""
+def put_image(site: Site, build_run: str, sha256: str, xclbin_name: str, tag: str,
+              build_host: Optional[str] = None) -> dict:
+    """A built image, from the build host's run to the card host, by its hash. `build_host`: the machine
+    that built it (an image recorded before there were several has none: the site's first)."""
     from tritonchip_fpga_harness.hosts import host_for
     hosts, card = _card(site)
-    builder = host_for(hosts, site.fpga_pipeline["build_host"], "build")
+    builder = host_for(hosts, build_host or site.fpga_pipeline["build_host"], "build")
     data = _cat(builder, f"{builder.state_dir}/runs/{build_run}/artifacts/{xclbin_name}")
     if data is None:
         raise BoardError(f"the build host has no {xclbin_name} for run {build_run}")

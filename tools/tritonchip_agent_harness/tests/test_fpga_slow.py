@@ -1,6 +1,7 @@
 """The optional slow service keeps its pipeline and hidden-point evidence separate."""
 from __future__ import annotations
 
+import dataclasses
 import json
 import sys
 import tempfile
@@ -45,6 +46,16 @@ class SlowService(unittest.TestCase):
             self.assertIn("tnca-service submit fpga-slow", text)
             self.assertIn("Board time is precious", text)
             self.assertIn("3 flows in this run", text)
+            self.assertIn("One slow request at a time; the quick tier stays open while it runs.", text)
+            value["services"]["fpga_slow"]["flows_at_once"] = 2
+            path.write_text(json.dumps(value))
+            text = render(load_task(path), "offline")
+            self.assertIn("Up to 2 slow requests at a time, each flow on a build machine of its own", text)
+            self.assertNotIn("One slow request at a time", text)
+            value["services"]["fpga_slow"]["flows_at_once"] = 0
+            path.write_text(json.dumps(value))
+            with self.assertRaisesRegex(TaskError, "flows_at_once must be an integer >= 1"):
+                load_task(path)
 
     def test_manifest_exposes_only_validation_on_the_board(self):
         board = fpga_slow.manifest(task(), "l1", "c" * 40, board=True)
@@ -162,18 +173,143 @@ class SlowService(unittest.TestCase):
                                             cli=lambda commit: f"/repo/{commit}/cli.py",
                                             checkout=lambda commit: f"/repo/{commit}")
         job = {"mode": "build", "remote_id": "agent-slow-3", "tree_commit": "c" * 40,
-               "containers": "tnca-test"}
-        cfg = {"hosts": Path("/hosts.json"), "build_host": "build", "board_host": "card"}
+               "containers": "tnca-test", "build_host": "second"}
+        cfg = {"hosts": Path("/hosts.json"), "build_host": "build", "build_hosts": ["build", "second"],
+               "board_host": "card"}
         with (mock.patch.object(fpga_slow.provider, "docker", return_value=types.SimpleNamespace(stdout="")),
               mock.patch.object(hosts, "load_hosts", return_value={}),
               mock.patch.object(hosts, "host_for", return_value=remote_host) as choose,
               mock.patch.object(pipeline, "remote", return_value=types.SimpleNamespace(
                   returncode=0, stdout=b"terminated")) as remote):
             result = fpga_slow.cancel(job, cfg)
+            # A request that never got a machine ran nothing anywhere: nothing to reconcile.
+            waiting = fpga_slow.cancel({**job, "build_host": None}, cfg)
         self.assertEqual(choose.call_count, 1)
-        self.assertEqual(choose.call_args.args[2], "build")
+        # Reconciled on the machine its flow ran on, not the site's first.
+        self.assertEqual(choose.call_args.args[1:], ("second", "build"))
         self.assertEqual(remote.call_count, 1)
         self.assertEqual(result["build"]["exit"], 0)
+        self.assertEqual(waiting, {"remote": "not-started"})
+
+
+def slow_task(**slow) -> Task:
+    return dataclasses.replace(task(), wall_seconds=1440 * 60, services={"fpga_slow": {
+        "mode": "board", "flows": 3, "board_runs": 2, "flow_minutes": 480, "board_minutes": 240, **slow}})
+
+
+class Placement(unittest.TestCase):
+    """Which build machine a flow runs on: one flow on each, the first free in the site's order."""
+
+    def setUp(self):
+        fpga_slow._HELD.clear()
+        self.addCleanup(fpga_slow._HELD.clear)
+        self.site = types.SimpleNamespace(fpga_pipeline={
+            "hosts": Path("/hosts.json"), "build_host": "a", "build_hosts": ["a", "b"],
+            "shared_slots": {"a": ["/home/owner/.slot.0", "/home/owner/.slot.1"]}})
+        self.hosts = {n: types.SimpleNamespace(name=n, state_dir=f"/state/{n}") for n in ("a", "b")}
+        self.busy = {}
+        self.holds = []
+        from tritonchip_fpga_harness import hosts
+        for p in (mock.patch.object(hosts, "load_hosts", return_value=self.hosts),
+                  mock.patch.object(hosts, "host_for", side_effect=lambda h, n, role: h[n]),
+                  mock.patch.object(fpga_slow, "busy", side_effect=self.probe),
+                  mock.patch.object(fpga_slow, "_hold_slot", side_effect=self.hold),
+                  mock.patch.object(fpga_slow, "POLL_SECONDS", 0)):
+            p.start()
+            self.addCleanup(p.stop)
+
+    def probe(self, cfg, host, processes=False):
+        why = self.busy.get(host.name, [])
+        return why() if callable(why) else list(why)
+
+    def hold(self, cfg, host):
+        self.holds.append(host.name)
+        if host.name in cfg.get("shared_slots", {}):
+            return ("connection", True) if host.name not in self.busy.get("slots-taken", ()) else (None, False)
+        return None, True
+
+    def test_one_flow_on_each_machine_in_the_sites_order(self):
+        first, second, third = {"remote_id": "r1"}, {"remote_id": "r2"}, {"remote_id": "r3"}
+        self.assertEqual(fpga_slow.place(self.site, first, 60), ("a", "connection"))
+        self.assertEqual(fpga_slow.place(self.site, second, 60), ("b", None))
+        # Both held by this process: a third waits, and ends when its cap does.
+        self.assertEqual(fpga_slow.place(self.site, third, 0), (None, None))
+        self.assertEqual(third["build_hosts_busy"], {"a": ["another flow of this run"],
+                                                     "b": ["another flow of this run"]})
+        fpga_slow._release("r1", "a")
+        self.assertEqual(fpga_slow.place(self.site, third, 60)[0], "a")
+        self.assertEqual((first["build_host"], second["build_host"], third["build_host"]), ("a", "b", "a"))
+        self.assertNotIn("waiting_for_build_host", third)
+
+    def test_a_machine_busy_from_outside_is_skipped_and_the_wait_recorded(self):
+        self.busy["a"] = ["full.lock is held"]
+        job = {"remote_id": "r1"}
+        self.assertEqual(fpga_slow.place(self.site, job, 60)[0], "b")
+        # Every machine busy: the request waits until one is free; the wait is its outside wait.
+        rounds = iter([["full.lock is held"], ["full.lock is held"], []])
+        self.busy.update(a=lambda: next(rounds, []), b=[".slot.0 is held"])
+        later = {"remote_id": "r2"}
+        self.assertEqual(fpga_slow.place(self.site, later, 60)[0], "a")
+        self.assertIn("outside_wait_seconds", later)
+        self.assertNotIn("waiting_for_build_host", later)
+
+    def test_slots_taken_since_the_look_send_the_flow_to_the_next_machine(self):
+        self.busy["slots-taken"] = ("a",)
+        job = {"remote_id": "r1"}
+        self.assertEqual(fpga_slow.place(self.site, job, 60), ("b", None))
+        self.assertEqual(self.holds, ["a", "b"])
+        self.assertNotIn("a", fpga_slow._HELD)
+
+    def test_a_cancel_ends_the_wait(self):
+        self.busy.update(a=["full.lock is held"], b=["full.lock is held"])
+        job = {"remote_id": "r1", "_cancel_requested": True}
+        self.assertEqual(fpga_slow.place(self.site, job, 3600), (None, None))
+        self.assertEqual(fpga_slow._HELD, {})
+
+    def test_the_run_must_have_room_for_its_flows(self):
+        fit = fpga_slow.budget_fit(slow_task(flows_at_once=2))
+        self.assertEqual((fit["rounds"], fit["minutes_needed"], fit["fits"]), (2, 1200.0, True))
+        self.assertFalse(fpga_slow.budget_fit(slow_task())["fits"])   # 3 x 480 + 240 > 1440
+
+    def test_preflight_needs_a_machine_per_flow_and_every_machine_idle(self):
+        with self.assertRaisesRegex(fpga_slow.SlowError, "3 flows at once and the site has 2"):
+            fpga_slow.preflight(self.site, slow_task(flows_at_once=3))
+        self.busy["b"] = ["Vivado is running there"]
+        with self.assertRaisesRegex(fpga_slow.SlowError, "b: Vivado is running there"):
+            fpga_slow.preflight(self.site, slow_task(flows_at_once=2))
+        self.busy.clear()
+        got = fpga_slow.preflight(self.site, slow_task(flows_at_once=2))
+        self.assertEqual((got["build_hosts"], got["busy"], got["budget"]["fits"]), (["a", "b"], {}, True))
+
+    def test_a_retry_after_an_infrastructure_failure_takes_a_machine_again(self):
+        places = iter([("a", "connection"), ("b", None)])
+        records = iter([{"status": "BUILD_FAIL", "build": {"status": "BUILD_FAIL", "preflight_failed": True}},
+                        {"status": "PASS", "run_id": "tnca-x-r1",
+                         "build": {"status": "PASS", "xclbin_sha256": "d" * 64}}])
+
+        class Proc:
+            def __init__(self, argv, **kw):
+                out = Path(argv[argv.index("--output") + 1])
+                out.write_text(json.dumps(next(records)))
+                self.host = argv[argv.index("--build-host") + 1]
+
+            def wait(self, timeout=None):
+                return 0
+
+        seen = []
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(fpga_slow.certify, "build_tree", return_value="c" * 40), \
+                mock.patch.object(fpga_slow, "place", side_effect=lambda s, j, sec: (
+                    j.__setitem__("build_host", (p := next(places))[0]) or p)), \
+                mock.patch.object(fpga_slow, "_drop_slot", side_effect=lambda h: "held" if h else None), \
+                mock.patch.object(fpga_slow.subprocess, "Popen", side_effect=lambda argv, **kw: (
+                    seen.append(argv[argv.index("--build-host") + 1]) or Proc(argv, **kw))):
+            job = {"id": "l1", "remote_id": "tnca-x"}
+            got = fpga_slow.build(self.site, Path(tmp), task(), None, Path(tmp), job, 600)
+        self.assertEqual(seen, ["a", "b"])
+        self.assertEqual([(a["build_host"], a["outcome"]) for a in got["attempts"]], [("a", "infra"), ("b", "ok")])
+        self.assertEqual(got["attempts"][0]["shared_slot"], "held")
+        self.assertEqual((got["outcome"], got["build_host"]), ("ok", "b"))
 
 
 if __name__ == "__main__":

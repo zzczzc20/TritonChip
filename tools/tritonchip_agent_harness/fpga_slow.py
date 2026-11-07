@@ -99,13 +99,180 @@ def manifest(task: Task, label: str, commit: str, *, board: bool) -> dict:
     return value
 
 
-def _pipeline_args(tree: Path, mpath: Path, output: Path, cfg: dict, remote_id: str, *, command_timeout: int) -> list:
+def _pipeline_args(tree: Path, mpath: Path, output: Path, cfg: dict, remote_id: str, build_host: str, *,
+                   command_timeout: int) -> list:
     """The link alone: the card stage is board.py's, through the relay."""
     cli = Path(__file__).resolve().parents[1] / "tritonchip_fpga_harness" / "cli.py"
     return [sys.executable, str(cli), "--repo", str(tree), "pipeline", str(mpath),
-            "--hosts", str(cfg["hosts"]), "--build-host", cfg["build_host"],
+            "--hosts", str(cfg["hosts"]), "--build-host", build_host,
             "--run-id", remote_id, "--timeout", str(command_timeout),
             "--poll", "30", "--output", str(output), "--skip-board"]
+
+
+# -- the build machines: which one a flow runs on, one flow on each at a time ----------------------------
+#
+# The FPGA harness on a build machine takes its own full lease (`<state_dir>/leases/full.lock`) for a link
+# and fails at once when it is held; it is the task's pinned platform code and stays as it is. So the
+# machine is chosen here, before the link starts: the first, in the site's order, that no flow of this
+# process holds and whose locks are free -- that lease, and the `shared_slots` another user's own Vivado
+# jobs take there (flock). A flow on a machine with shared slots holds one of them while it runs, through
+# an SSH connection of its own, so the other user's jobs see it. With every machine busy the flow waits:
+# its outside wait, recorded apart.
+
+POLL_SECONDS = 60        # how often a flow waiting for a free build machine looks again
+_PLACING = threading.Lock()
+_HELD: dict = {}         # build machine -> the request (remote id) of this process's flow on it
+
+# The held locks, one path a line; a file that is not there is free.
+_PROBE = 'for f in "$@"; do [ -e "$f" ] || continue; flock -n "$f" true 2>/dev/null || printf "%s\\n" "$f"; done'
+# Vivado or v++ under the account at all: a flow that outlived an earlier run, the owner's job outside the slots.
+_RUNNING = 'if pgrep -u "$(id -u)" -x "vivado|v\\+\\+" >/dev/null; then echo vivado-running; fi'
+# Takes the first free slot and keeps it until the controller closes the connection (its stdin).
+_HOLD = ('for f in "$@"; do exec 9>>"$f" || continue; if flock -n 9; then echo held; cat >/dev/null; exit 0; fi; '
+         'exec 9>&-; done; echo none')
+
+
+def build_hosts(cfg: dict) -> list:
+    """The site's build machines, in the order a flow tries them."""
+    return list(cfg.get("build_hosts") or [cfg["build_host"]])
+
+
+def _locks(cfg: dict, host) -> list:
+    return [f"{host.state_dir}/leases/full.lock", *((cfg.get("shared_slots") or {}).get(host.name) or [])]
+
+
+def busy(cfg: dict, host, *, processes: bool = False) -> list:
+    """Why `host` cannot take a flow now, [] when it can: the locks held there, and with `processes`
+    Vivado running under the account."""
+    from tritonchip_fpga_harness.pipeline import remote
+    script = _PROBE + (f"; {_RUNNING}" if processes else "")
+    done = remote(host, ["sh", "-c", script, "sh", *_locks(cfg, host)], check=False, timeout=90)
+    if done.returncode != 0:
+        return [f"could not be checked (exit {done.returncode})"]
+    words = done.stdout.decode(errors="replace").split()
+    return ["Vivado is running there" if w == "vivado-running" else f"{Path(w).name} is held" for w in words]
+
+
+def _hold_slot(cfg: dict, host) -> tuple:
+    """One of the shared slots on `host`, for a flow: (the connection holding it, True); (None, True) when the
+    machine has none; (None, False) when every one was taken since it was looked at."""
+    slots = (cfg.get("shared_slots") or {}).get(host.name)
+    if not slots:
+        return None, True
+    from tritonchip_fpga_harness.pipeline import _remote_argv
+    proc = subprocess.Popen(_remote_argv(host, ["sh", "-c", _HOLD, "sh", *slots], "ssh"), stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, start_new_session=True)
+    if proc.stdout.readline().strip() == b"held":
+        return proc, True
+    _drop_slot(proc)
+    return None, False
+
+
+def _drop_slot(proc) -> Optional[str]:
+    """The shared slot given back: 'held' when the connection kept it to the end, 'lost' when it had ended."""
+    if proc is None:
+        return None
+    lost = proc.poll() is not None
+    try:
+        proc.stdin.close()
+    except OSError:
+        pass
+    try:
+        proc.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(timeout=10)
+    return "lost" if lost else "held"
+
+
+def place(site: Site, job: dict, seconds: int) -> tuple:
+    """The build machine for one attempt of a flow, taken for the request: (its name, the connection holding
+    its shared slot or None). With every machine busy the request waits, looking again every POLL_SECONDS;
+    the wait adds to job["outside_wait_seconds"], is never more than `seconds`, and a cancel ends it:
+    then (None, None)."""
+    from tritonchip_fpga_harness.hosts import host_for, load_hosts
+    cfg = site.fpga_pipeline
+    names = build_hosts(cfg)
+    loaded = load_hosts(cfg["hosts"])
+    hosts = {n: host_for(loaded, n, "build") for n in names}
+    started = time.monotonic()
+
+    def waited() -> None:
+        job["outside_wait_seconds"] = round(job.get("outside_wait_seconds", 0.0) + time.monotonic() - started, 1)
+        job.pop("waiting_for_build_host", None)
+
+    while True:
+        seen = {}
+        for name in names:
+            with _PLACING:
+                if name in _HELD:
+                    seen[name] = ["another flow of this run"]
+                    continue
+            why = busy(cfg, hosts[name])
+            if why:
+                seen[name] = why
+                continue
+            with _PLACING:
+                if name in _HELD:
+                    seen[name] = ["another flow of this run"]
+                    continue
+                _HELD[name] = job["remote_id"]
+            holder, ok = _hold_slot(cfg, hosts[name])
+            if not ok:
+                _release(job["remote_id"], name)
+                seen[name] = ["its shared slots were taken"]
+                continue
+            job["build_host"], job["flow_started"] = name, time.time()
+            waited()
+            return name, holder
+        job["waiting_for_build_host"], job["build_hosts_busy"] = True, seen
+        for _ in range(POLL_SECONDS):
+            if job.get("_cancel_requested") or time.monotonic() - started >= seconds:
+                waited()
+                return None, None
+            time.sleep(1)
+        if job.get("_cancel_requested") or time.monotonic() - started >= seconds:
+            waited()
+            return None, None
+
+
+def _release(remote_id: str, name: Optional[str]) -> None:
+    with _PLACING:
+        if name and _HELD.get(name) == remote_id:
+            del _HELD[name]
+
+
+def budget_fit(task: Task) -> dict:
+    """Whether the run's flows can come back within its time when each takes its cap: rounds of at most
+    flows_at_once flows, then the card once."""
+    slow = (task.services or {}).get("fpga_slow") or {}
+    flows, at_once = int(slow.get("flows", 0)), int(slow.get("flows_at_once", 1))
+    rounds = -(-flows // at_once) if flows else 0
+    need = rounds * float(slow.get("flow_minutes", 0)) + (
+        float(slow.get("board_minutes", 0)) if slow.get("mode") == "board" and rounds else 0.0)
+    wall = task.wall_seconds / 60.0
+    return {"rounds": rounds, "minutes_needed": need, "minutes_of_run": wall, "fits": need <= wall}
+
+
+def preflight(site: Site, task: Task) -> dict:
+    """Before a run that may ask for flows: the task's flows at once fit the site's build machines, and every
+    one is idle -- no lock held, no Vivado of the account running (a flow that outlived an earlier run, the
+    owner's own job). Raises SlowError when the run should not start. Also how the flows fit the run's time."""
+    from tritonchip_fpga_harness.hosts import host_for, load_hosts
+    slow = (task.services or {}).get("fpga_slow") or {}
+    cfg = site.fpga_pipeline
+    names = build_hosts(cfg)
+    at_once = int(slow.get("flows_at_once", 1))
+    if at_once > len(names):
+        raise SlowError(f"the task runs up to {at_once} flows at once and the site has {len(names)} build "
+                        f"machine(s): one flow on each at a time")
+    loaded = load_hosts(cfg["hosts"])
+    seen = {n: busy(cfg, host_for(loaded, n, "build"), processes=True) for n in names}
+    out = {"build_hosts": names, "flows_at_once": at_once, "busy": {n: w for n, w in seen.items() if w},
+           "budget": budget_fit(task)}
+    if out["busy"]:
+        raise SlowError("build machines not idle: " + "; ".join(f"{n}: {', '.join(w)}" for n, w in out["busy"].items()))
+    return out
 
 
 def _terminate_local(job: dict) -> None:
@@ -132,14 +299,15 @@ def cancel(job: dict, cfg: dict) -> dict:
     except (provider.ProviderError, OSError, subprocess.SubprocessError):
         pass
     _terminate_local(job)
-    commit = job.get("tree_commit")
-    if not commit:
-        return {"remote": "not-started"}
+    commit, name = job.get("tree_commit"), job.get("build_host")
+    if not commit or not name:
+        return {"remote": "not-started"}   # no machine taken yet: nothing ran there
     from tritonchip_fpga_harness.hosts import host_for, load_hosts
     from tritonchip_fpga_harness.pipeline import remote
 
     try:
-        host = host_for(load_hosts(cfg["hosts"]), cfg["build_host"], "build")
+        # The machine the request's flow ran on, not the site's first.
+        host = host_for(load_hosts(cfg["hosts"]), name, "build")
         argv = [host.python, host.cli(commit), "--repo", host.checkout(commit),
                 "reconcile", job["remote_id"], "--state-dir", host.state_dir, "--terminate"]
         reply = remote(host, argv, check=False, timeout=90)
@@ -176,7 +344,7 @@ def classify(pipe: dict, clock_mhz: Optional[float] = None) -> str:
 
 def _host_words(site: Site) -> list:
     cfg = site.fpga_pipeline or {}
-    words = [cfg.get("build_host"), cfg.get("board_host")]
+    words = [cfg.get("build_host"), *(cfg.get("build_hosts") or []), cfg.get("board_host")]
     try:
         from tritonchip_fpga_harness.hosts import load_hosts
         for h in load_hosts(cfg["hosts"]).values():
@@ -297,13 +465,13 @@ def failing_stage(pipe: dict) -> Optional[str]:
     return None
 
 
-def routed_report(site: Site, run_id: str) -> dict:
+def routed_report(site: Site, run_id: str, build_host: Optional[str] = None) -> dict:
     """What only the routed design says, from the build host's reports for the run: worst paths (setup and
     hold, SLR crossings), utilisation per SLR, the DRC rules that failed."""
     from tritonchip_fpga_harness.hosts import host_for, load_hosts
     from tritonchip_fpga_harness.pipeline import remote
     cfg = site.fpga_pipeline
-    host = host_for(load_hosts(cfg["hosts"]), cfg["build_host"], "build")
+    host = host_for(load_hosts(cfg["hosts"]), build_host or cfg["build_host"], "build")
     found = remote(host, ["find", f"{host.state_dir}/runs/{run_id}", "-name", "*.rpt", "-size", "-64M"],
                    check=False, timeout=120)
     files = found.stdout.decode(errors="replace").split() if found.returncode == 0 else []
@@ -359,41 +527,57 @@ def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict) -> dict:
 
 def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, job: dict,
           seconds: int) -> dict:
-    """One Vivado flow, tried again on an infrastructure failure. {outcome, pipeline, visible, ...}."""
+    """One Vivado flow, tried again on an infrastructure failure, each attempt on a build machine taken for it
+    (place). {outcome, pipeline, visible, build_host, ...}."""
     cfg = site.fpga_pipeline
     tree = job_dir / "tree"
     commit = certify.build_tree(repo, task, candidate, tree)
     job["tree_commit"] = commit
     attempts = []
+    m = manifest(task, job["id"], commit, board=False)
     for attempt in range(RETRIES + 1):
         remote_id = job["remote_id"] if attempt == 0 else f"{job['remote_id']}-r{attempt}"
-        m = manifest(task, job["id"], commit, board=False)
-        mpath, output = job_dir / f"manifest-{attempt}.json", job_dir / f"pipeline-{attempt}.json"
-        mpath.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        argv = _pipeline_args(tree, mpath, output, cfg, remote_id, command_timeout=seconds)
-        with (job_dir / f"pipeline-{attempt}.log").open("wb") as log:
-            proc = subprocess.Popen(argv, cwd=tree, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
-                                    env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
-            job["_process"] = proc
-            try:
-                proc.wait(timeout=seconds + 600)
-                timed_out = False
-            except subprocess.TimeoutExpired:
-                job["cleanup"] = cancel(job, cfg)
-                timed_out = True
-        job.pop("_process", None)
+        host, holder = place(site, job, seconds)
+        if host is None:
+            # No machine became free within the flow's cap (or the request was cancelled while it waited).
+            pipe, outcome = {"status": "NO_BUILD_HOST", "error": "no build machine became free"}, "infra"
+            attempts.append({"remote_id": remote_id, "status": pipe["status"], "outcome": outcome,
+                             "build_host": None, "busy": job.get("build_hosts_busy")})
+            break
+        try:
+            mpath, output = job_dir / f"manifest-{attempt}.json", job_dir / f"pipeline-{attempt}.json"
+            mpath.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            argv = _pipeline_args(tree, mpath, output, cfg, remote_id, host, command_timeout=seconds)
+            with (job_dir / f"pipeline-{attempt}.log").open("wb") as log:
+                proc = subprocess.Popen(argv, cwd=tree, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
+                                        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
+                job["_process"] = proc
+                try:
+                    proc.wait(timeout=seconds + 600)
+                    timed_out = False
+                except subprocess.TimeoutExpired:
+                    job["cleanup"] = cancel(job, cfg)
+                    timed_out = True
+            job.pop("_process", None)
+        finally:
+            slot = _drop_slot(holder)
+            _release(job["remote_id"], host)
         pipe = json.loads(output.read_text(encoding="utf-8")) if output.exists() else {
             "status": "PIPELINE_FAIL", "error": "the controller wrote no pipeline record"}
         if timed_out:
             pipe["status"] = "TIMEOUT"
         outcome = classify(pipe, (task.evaluation.get("certify") or {}).get("clock_mhz"))
-        attempts.append({"remote_id": remote_id, "status": pipe.get("status"), "outcome": outcome})
+        attempts.append({"remote_id": remote_id, "status": pipe.get("status"), "outcome": outcome,
+                         "build_host": host, **({"shared_slot": slot} if slot else {})})
         if outcome != "infra" or job.get("_cancel_requested"):
             break
-    routed = routed_report(site, pipe.get("run_id") or remote_id) if outcome == "design" else {}
+    job["flow_finished"] = time.time()
+    routed = (routed_report(site, pipe.get("run_id") or remote_id, job.get("build_host"))
+              if outcome == "design" else {})
     return {"outcome": outcome, "pipeline": pipe, "attempts": attempts, "tree_commit": commit, "manifest": m,
             "routed": routed, "visible": _build_visible(site, pipe, outcome, routed),
-            "run_id": pipe.get("run_id") or remote_id}
+            "run_id": pipe.get("run_id") or remote_id, "build_host": job.get("build_host"),
+            "outside_wait_seconds": job.get("outside_wait_seconds", 0.0)}
 
 
 # -- the card ----------------------------------------------------------------------------------------
@@ -531,14 +715,15 @@ def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: 
             visible.update(status="infeasible", charged="flow")
             return visible, full
         pipe = built["pipeline"]
+        # Which machine built it: its run and artifacts stay there, for the card host to fetch.
         job["image"] = {"build_run": built["run_id"], "sha256": pipe["build"]["xclbin_sha256"],
-                        "xclbin": certify.xclbin_name(repo, task)}
+                        "xclbin": certify.xclbin_name(repo, task), "build_host": built["build_host"]}
         visible["charged"] = "flow"
         if not with_board:
             return visible, full
         try:
             image = board.put_image(site, built["run_id"], job["image"]["sha256"], job["image"]["xclbin"],
-                                    job["remote_id"])
+                                    job["remote_id"], build_host=built["build_host"])
         except Exception as exc:  # noqa: BLE001 -- the flow ran and is charged; its image waits on the build host
             full["card"] = {"error": f"{type(exc).__name__}: {exc}"}
             visible["board"] = {"status": "not measured", "why": "the image could not reach the card host; "
@@ -559,5 +744,6 @@ def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: 
     return visible, full
 
 
-__all__ = ["SlowError", "build", "cancel", "classify", "hardware_digest", "snapshot_digest", "manifest", "on_card", "run",
-           "routed_report", "worst_paths", "slr_utilization", "drc_rules"]
+__all__ = ["SlowError", "budget_fit", "build", "build_hosts", "busy", "cancel", "classify", "hardware_digest",
+           "snapshot_digest", "manifest", "on_card", "place", "preflight", "run", "routed_report", "worst_paths",
+           "slr_utilization", "drc_rules"]

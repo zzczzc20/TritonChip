@@ -86,7 +86,8 @@ def services(site, task, requests) -> list:
             cfg = site.fpga_pipeline or {}
             full = job.get("full") or {}
             # The link from its pipeline's steps; the card from its session (board.py), wait for idle included.
-            got = stages((full.get("build") or {}).get("pipeline") or full.get("pipeline"), cfg.get("build_host"),
+            got = stages((full.get("build") or {}).get("pipeline") or full.get("pipeline"),
+                         job.get("build_host") or cfg.get("build_host"),
                          cfg.get("board_host"), ("fpga-slow-build", "fpga-slow-board"), job["id"])
             got += _card(((full.get("card") or {}).get("record")), "fpga-slow-board", job["id"])
             out += got or [entry("fpga-slow", None, *times, **common, covers=WHOLE_SLOW)]
@@ -106,7 +107,7 @@ def certification(site, cert) -> list:
     if not isinstance(cert, dict):
         return []
     cfg = site.fpga_pipeline or {}
-    out = stages(((cert.get("build") or {}).get("pipeline")), cfg.get("build_host"), None,
+    out = stages(((cert.get("build") or {}).get("pipeline")), cert.get("build_host") or cfg.get("build_host"), None,
                  ("certify-build", "certify-board"), None)
     return out + _card(cert.get("card"), "certify-board")
 

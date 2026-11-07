@@ -16,6 +16,7 @@ import hashlib
 import json
 import secrets
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Optional
@@ -37,6 +38,18 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
     if site.repository is None:
         raise SiteError("site.json has no `repository`: the clone workspaces are exported from")
     repo = site.repository
+    slow = (task.services or {}).get("fpga_slow") or {}
+    preflight = None
+    if (slow.get("flows") and getattr(site, "fpga_pipeline", None)
+            and agent not in PSEUDO and not agent.startswith("patch:")):
+        from . import fpga_slow
+        # Before anything starts: the task's flows at once fit the build machines, and every one is idle.
+        preflight = fpga_slow.preflight(site, task)
+        fit = preflight["budget"]
+        if not fit["fits"]:
+            print(f"warning: {slow['flows']} flows, {fit['rounds']} round(s) of up to "
+                  f"{int(slow.get('flows_at_once', 1))} at once, need up to {fit['minutes_needed']:g} minutes; "
+                  f"the run has {fit['minutes_of_run']:g}", file=sys.stderr)
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + secrets.token_hex(2)
     label = f"patch-{Path(agent.split(':', 1)[1]).stem}" if agent.startswith("patch:") else agent
     run_dir = site.state_dir / "runs" / f"{task.task_id}-{label}-{stamp}"
@@ -60,6 +73,8 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
         "started": time.time(),
     }
     record["workspace"] = exported
+    if preflight is not None:
+        record["fpga_build_hosts"] = preflight
 
     broker = None
     if island_run:

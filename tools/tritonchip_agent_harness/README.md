@@ -993,6 +993,47 @@ Vivado settings script, read-only binds, threads, part).
 - **Versions (decided 2026-10-17, was O13).** The Vivado flow runs on the build worker with its Vitis 2022.2; the card host only loads and measures. Validated once: `b5c606d` linked on the build worker in 103 minutes (213 on the card host with 2023.2, an earlier link), closed 100 MHz with ap_clk WNS +0.138 ns (2023.2: +0.177), and its XCLBIN loaded on the card's 2023.2/XRT 2.16 shell, whose gates check only the platform's interface UUID. The U280 target accepts images from 2022.2 and 2023.2, and the build worker's installation overrides the target's default path.
 - **How a candidate crosses (built, FPGA harness).** `pipeline` in `tools/tritonchip_fpga_harness` (its README §11.2) runs one candidate across the two: a clean checkout of the commit on each from a git bundle, the build detached on the build worker, a light packet of the image and records streamed through the controller into the card host, where every file's hash is checked before the run is installed, and the board stage there. The servers never connect to each other. A real candidate ran through it on 2026-10-17: the base hardware linked on the build worker in 105 minutes (ap_clk WNS +0.138 ns), loaded on the card, conformance 5 of 5, ArchBench tiny 27 of 27 with every point's cycles equal to the same design built with 2023.2 on the card host. (Both board stages compiled with the card host's installed `tnca`, an older tree, not the checkout's; found and fixed on 2026-10-18, `969201b`, §19.)
 
+### 12.5b Several build machines (2026-11-07)
+
+A site may name more than one build machine; a task says how many of its flows may run at once.
+
+```json
+"fpga_pipeline": {
+  "hosts": "/absolute/path/to/hosts.json",
+  "build_hosts": ["x86vivado", "rscl"],
+  "shared_slots": {"x86vivado": ["/home/vivado/.r41s2int_slot.0", "/home/vivado/.r41s2int_slot.1"]},
+  ...
+}
+```
+
+- **One flow on each machine at a time.** `services.fpga_slow.flows_at_once` (default 1) caps a run's flows
+  running at once, and may not exceed the site's build machines: a run that asks for more does not start.
+  Over the cap a hardware request is refused, as one was when a flow ran; `flows` stays the run's count. A
+  hardware request for exactly the hardware a running flow builds is refused too (it would build one image
+  twice). One machine (`build_host`, the old form) and one at a time is what every task had before.
+- **Which machine (`fpga_slow.place`).** Before each attempt of a flow, the first machine, in the site's
+  order, that no flow of this process holds and whose locks are free: the FPGA harness's full lease there
+  (`<state_dir>/leases/full.lock`, which the harness itself takes and, when held, fails on at once) and the
+  machine's `shared_slots`. The harness on the machine is the task's pinned platform code, so the choice is
+  made here, before the link starts, and a retry after an infrastructure failure chooses again.
+- **Another user's jobs.** `shared_slots` are the lock files another user's own Vivado jobs take on that
+  machine (on x86vivado, the author's `slot.sh`: at most two Vivado jobs). The machine counts as free only
+  when every one is; while our flow runs, an SSH connection of its own holds one of them, so their jobs see
+  it. If that connection ends early the attempt records `shared_slot: "lost"`.
+- **Every machine busy.** The request waits, looking again every minute, never longer than its flow's cap;
+  the agent's `status` says `waiting_for_a_build_machine`, never which machine. The wait is recorded as
+  the request's `outside_wait_seconds`, apart from its own time, so whether the run stays comparable can be
+  judged afterwards. A request still waiting when the agent stops is cancelled and not charged, as a queued
+  one is; a flow already running runs to its end, unseen.
+- **Before the run.** `run_task` checks every build machine is idle: no lock held, and no Vivado or `v++`
+  running under the account (a flow that outlived an earlier run, the owner's own job outside the slots).
+  If one is not, the run does not start. The result, and whether the flows fit the run's time (rounds of
+  `flows_at_once` flows at `flow_minutes` each, then the card once), go in `run.json` as
+  `fpga_build_hosts`; a run whose flows cannot fit is warned about.
+- **The record.** Each request and certification names its `build_host`, each attempt its machine; an image
+  names the machine that built it, and the card host fetches it from there. `cancel` reconciles on that
+  machine. A running flow's `status` says within how many minutes it ends at the latest (its caps).
+
 ### 12.5a Early-exit resume for a plain run (2026-11-07)
 
 A plain run (no `islands`) whose task has `"resume": {"max_idle_turns": 3, "max_restarts": 2}` is kept going
@@ -1153,7 +1194,7 @@ one entry per segment of the run.
 | `score` | one scoring request, on the evaluation containers | null | the host container's CPUs, plus one per validation point's device container |
 | `final-evaluation` | the evaluation after the agent stops, both sets together | null | the same, with every point |
 | `fpga-quick` | one quick-tier request | `fpga_worker.ssh` | `{"cpus": fpga_worker.threads}` (default 4) |
-| `fpga-slow-build` | a slow-tier request's link: its pipeline's `build:submit` and `build` steps | `fpga_pipeline.build_host` | null |
+| `fpga-slow-build` | a slow-tier request's link: its pipeline's `build:submit` and `build` steps | the build machine its flow ran on (the request's `build_host`; older records: `fpga_pipeline.build_host`) | null |
 | `fpga-slow-board` | its card session (`board.py`), the wait for an idle card included; older records: `board:measure` and `board` | `fpga_pipeline.board_host` | `{"cards": 1}` |
 | `certify-link` | certification's link, the same steps of its own pipeline (in `certification.json`) | `--build-host` | null |
 | `certify-board` | certification's board stage (in `certification.json`) | `--board-host` | `{"cards": 1}` |
@@ -1247,6 +1288,7 @@ service request's snapshot; each role's CPU time.
 | 2026-10-28 | Server occupancy is wall-clock time, per role and per machine: which machine (the operator's label from the site configuration, never a name looked up at run time), start, end and seconds; the queue wait apart; the resources the harness reserved for the role (container CPU limits, the job's threads, one card). CPU use comes later; no cgroup accounting now. Seven segments, one entry per instance: the sandbox, each scoring request, the final evaluation (both sets together), each quick-tier request, each slow-tier request's build on the build worker and its board stage on the card host (one entry for the whole request where no split is recorded), and certification's link and board stage, in `certification.json` (§14). Decided by the user |
 | 2026-10-28 | The skill is machine-independent, as ArchBench is. It defines what is measured (each launch's cycles from start to end, summed; the correctness protocol; the roofline bound), and the machine that is measured on is the environment's: the task text names the machine and the backend settings that select it, and the script takes them from the shell as the agent's own Python would, setting only the profile and the optimisation level. The bound stays the evaluation's per-profile `spec_peak`, so L and η are one core's on every machine and the script says so beside every L; how a candidate stands against the base machine is the ratio of their cycles on the same case, which the skill tells the agent to measure first and keep. The evaluation's `/hbm` branch of `tnca_peak` is copied, with its test. `r40-multicore-pilot`'s instruction marks only its Python example as the skill's to replace; the environment settings above it stay in both arms, and a test holds that for every task. This corrects the skill's wording, which had taken the single-core machine's way of running a grid (`serial-grid`, PROTOCOL.md) for part of the definition; nothing in the delivery changes. Decided by the user after the branch was checked against PR #9's head (3e54d3c3, merged into `testcase-skill`) |
 | 2026-11-03 | Which skills a run gets: three layers (§6.3). The catalog is the `skills/` directory, each skill self-describing by its front matter, the hash over all of it the skills' environment version; a task declares its default set in `task.json` (`skills`; none declared, none given); a run may override it (`--skills a,b`, `--no-skills`). Only the selected skills are staged, mounted and linked; the prompt names them from their front matter; the record names the set, its source, each hash and the catalog version. Tools travel inside skills; what needs its own mount is the environment's. The skills mechanism goes to main as one pull request. Decided by the user |
+| 2026-11-07 | Build machines as a pool (§12.5b): a site may list several (`build_hosts`), one flow on each at a time; a task caps its flows at once (`flows_at_once`, default 1, at most the machines); a busy machine is skipped and, with all busy, the request waits and the wait is recorded apart; every machine must be idle before a run starts; another user's lock files (`shared_slots`) count, and our flow holds one. For now one run at a time; parallel runs later, and another run's waits must not count against a run. R41's formal task: 24 h, 3 flows, 2 at once. The quick tier may move to RSCL by site configuration. Decided by the user |
 
 **Open.**
 

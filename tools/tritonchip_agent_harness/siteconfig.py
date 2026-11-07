@@ -180,8 +180,8 @@ def load_site(path: Optional[Path] = None) -> Site:
 
     pipeline = value.get("fpga_pipeline")
     if pipeline is not None:
-        _keys("fpga_pipeline", pipeline, {"hosts", "build_host"},
-              {"board_host", "allow_candidate_host_code", "card"})
+        _keys("fpga_pipeline", pipeline, {"hosts"},
+              {"build_host", "build_hosts", "shared_slots", "board_host", "allow_candidate_host_code", "card"})
         card = pipeline.get("card")
         if card is not None:
             # The card host's board sessions (board.py): the card's PCI function, how long it must have been
@@ -197,15 +197,29 @@ def load_site(path: Optional[Path] = None) -> Site:
                         for k, v in card.get(key, {}).items()):
                     raise SiteError(f"fpga_pipeline.card.{key} must map names to absolute paths")
         hosts = _path(pipeline["hosts"], "fpga_pipeline.hosts")
-        if not all(isinstance(pipeline[k], str) and pipeline[k] for k in ("build_host",)):
-            raise SiteError("fpga_pipeline.build_host must be a non-empty name")
+        # The machines a Vivado flow may run on, in the order they are tried (fpga_slow.place): one flow on
+        # each at a time. `build_host` is the one-machine form.
+        if ("build_host" in pipeline) == ("build_hosts" in pipeline):
+            raise SiteError("fpga_pipeline needs build_host (one machine) or build_hosts (a list), not both")
+        builders = pipeline["build_hosts"] if "build_hosts" in pipeline else [pipeline["build_host"]]
+        if (not isinstance(builders, list) or not builders or len(set(map(str, builders))) != len(builders)
+                or not all(isinstance(b, str) and b for b in builders)):
+            raise SiteError("fpga_pipeline.build_host must be a non-empty name, build_hosts a list of distinct names")
+        # Lock files another user's own Vivado jobs take on a build machine (flock): the machine counts as
+        # free only when every one is, and a flow of ours holds one while it runs, so theirs see it.
+        slots = pipeline.get("shared_slots", {})
+        if (not isinstance(slots, dict) or set(slots) - set(builders)
+                or not all(isinstance(v, list) and v and all(isinstance(p, str) and p.startswith("/") for p in v)
+                           for v in slots.values())):
+            raise SiteError("fpga_pipeline.shared_slots must map build hosts to lists of absolute lock-file paths")
         board_host = pipeline.get("board_host")
         if board_host is not None and (not isinstance(board_host, str) or not board_host):
             raise SiteError("fpga_pipeline.board_host must be a non-empty name")
         allow_code = pipeline.get("allow_candidate_host_code", False)
         if not isinstance(allow_code, bool):
             raise SiteError("fpga_pipeline.allow_candidate_host_code must be boolean")
-        pipeline = {"hosts": hosts, "build_host": pipeline["build_host"],
+        pipeline = {"hosts": hosts, "build_host": builders[0], "build_hosts": list(builders),
+                    "shared_slots": {k: list(v) for k, v in slots.items()},
                     "board_host": board_host, "allow_candidate_host_code": allow_code, "card": card}
 
     return Site(

@@ -145,6 +145,75 @@ class Services(unittest.TestCase):
         self.assertEqual((reply["id"], reply["fpga_slow_flows_left"]), ("l2", 2))
         self.wait_done("l2")
 
+    def two_at_once(self, runners=True):
+        """The same broker, with a task that runs up to two flows at once."""
+        import dataclasses
+        slow = {**self.task.services["fpga_slow"], "flows_at_once": 2}
+        task = dataclasses.replace(self.task, services={**self.task.services, "fpga_slow": slow})
+        broker = Broker(self.broker.site, self.repo, task, self.ws, Path(tempfile.mkdtemp()) / "run",
+                        runners=self.broker.runners if runners else None)
+        self.addCleanup(broker.stop)
+        return broker
+
+    def test_up_to_flows_at_once_hardware_requests_run_and_never_the_same_hardware_twice(self):
+        broker = self.two_at_once()
+        (self.ws / "rtl/core/x.v").write_text("module x; wire a; endmodule\n")
+        with mock.patch.object(broker, "_timing_met", return_value=True):
+            self.assertEqual(broker.submit("fpga-slow")["id"], "l1")
+            # The same machine again while its flow runs would build one image twice.
+            self.assertIn("already building exactly this hardware", broker.submit("fpga-slow")["refused"])
+            (self.ws / "rtl/core/x.v").write_text("module x; wire b; endmodule\n")
+            second = broker.submit("fpga-slow")
+            self.assertEqual((second["id"], second["fpga_slow_flows_left"]), ("l2", 1))
+            (self.ws / "rtl/core/x.v").write_text("module x; wire c; endmodule\n")
+            self.assertIn("at most 2 at once", broker.submit("fpga-slow")["refused"])
+        self.assertEqual(len(broker.shared.flows), 2)
+        self.gate_open.set()
+        for job in ("l1", "l2"):
+            for _ in range(100):
+                if broker.handle({"op": "result", "id": job})["state"] == "done":
+                    break
+                time.sleep(0.05)
+        self.assertEqual((broker.shared.flows, broker.busy), (set(), {}))
+
+    def test_a_flow_waiting_for_a_build_machine_when_the_agent_stops_is_cancelled_and_not_charged(self):
+        broker = self.two_at_once(runners=False)
+        waiting = threading.Event()
+
+        def run(site, repo, task, candidate, job_dir, job, **kw):
+            job["waiting_for_build_host"] = True
+            waiting.set()
+            for _ in range(100):
+                if job.get("_cancel_requested"):
+                    break
+                time.sleep(0.05)
+            job["outcome"] = "infra"
+            return {"status": "not built"}, {}
+
+        (self.ws / "rtl/core/x.v").write_text("module x; wire a; endmodule\n")
+        with mock.patch.object(broker, "_timing_met", return_value=True), \
+                mock.patch("tritonchip_agent_harness.services.fpga_slow.run", side_effect=run), \
+                mock.patch("tritonchip_agent_harness.services.fpga_slow.cancel", return_value={}):
+            self.assertEqual(broker.submit("fpga-slow")["id"], "l1")
+            self.assertTrue(waiting.wait(5))
+            self.assertTrue(broker._summary(broker.jobs["l1"])["waiting_for_a_build_machine"])
+            broker.stop()
+        (job,) = broker.record()["requests"]
+        self.assertEqual(job["state"], "cancelled")
+        self.assertIn("waiting for a free build machine", job["note"])
+        self.assertNotIn("outlived_run", job)
+        self.assertEqual((broker.flows_left, job["charged"]), (3, None))
+
+    def test_a_running_flow_says_within_how_many_minutes_it_ends(self):
+        now = time.time()
+        job = {"id": "l1", "service": "fpga-slow", "state": "running", "submitted": now - 60,
+               "kind": "hardware", "flow_started": now - 30 * 60}
+        # 180 min flow cap and 60 min card cap, half an hour in: 210 left; never which machine.
+        self.assertEqual(self.broker._summary(job)["ends_within_minutes"], 210)
+        self.assertEqual(self.broker._summary({**job, "flow_finished": now})["ends_within_minutes"], 60)
+        self.assertNotIn("ends_within_minutes", self.broker._summary({**job, "flow_started": None}))
+        self.assertNotIn("build_host", json.dumps(self.broker._summary({**job, "build_host": "a"})))
+
     def test_a_snapshot_with_forbidden_rtl_is_refused_and_not_charged(self):
         (self.ws / "rtl/core/x.v").write_text('module x; initial $system("id"); endmodule\n')
         reply = self.broker.submit("score")

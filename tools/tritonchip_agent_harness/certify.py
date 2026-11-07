@@ -490,17 +490,18 @@ def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, broker=
         if built:
             out["image_from"] = "an in-run slow request"
             image = built.get("card") or board.put_image(site, built["build_run"], built["sha256"], built["xclbin"],
-                                                         job["remote_id"])
+                                                         job["remote_id"], build_host=built.get("build_host"))
         else:
             b = fpga_slow.build(site, repo, task, candidate, work, job, int(float(cfg.get("flow_minutes", 480)) * 60))
             out["build"] = {k: v for k, v in b.items() if k != "visible"}
+            out["build_host"] = b.get("build_host")
             if b["outcome"] != "ok":
                 out.update(verdict="infeasible" if b["outcome"] == "design" else "no-verdict",
                            why=f"build {b['pipeline'].get('status')}: {(b['pipeline'].get('build') or {}).get('error')}",
                            finished=time.time())
                 return out
             image = board.put_image(site, b["run_id"], b["pipeline"]["build"]["xclbin_sha256"],
-                                    xclbin_name(repo, task), job["remote_id"])
+                                    xclbin_name(repo, task), job["remote_id"], build_host=b.get("build_host"))
     else:
         image = board.base_image(site, task)
     out["image"] = image

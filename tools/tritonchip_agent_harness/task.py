@@ -179,7 +179,7 @@ _CHECK_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
 def _check_slow(path: Path, slow, ev: dict) -> None:
     """services.fpga_slow (report section 8.9): counts, not minutes, for the run; caps for one request."""
     required = {"mode", "flows", "board_runs", "flow_minutes", "board_minutes"}
-    optional = {"base_image_sha256", "board_checks", "certify_after_run"}
+    optional = {"base_image_sha256", "board_checks", "certify_after_run", "flows_at_once"}
     if not isinstance(slow, dict) or not required <= set(slow) or set(slow) - required - optional:
         raise TaskError(f"{path}: services.fpga_slow needs {', '.join(sorted(required))} "
                         f"(and may have {', '.join(sorted(optional))})")
@@ -191,6 +191,10 @@ def _check_slow(path: Path, slow, ev: dict) -> None:
     for key in ("flow_minutes", "board_minutes"):
         if not isinstance(slow[key], (int, float)) or isinstance(slow[key], bool) or slow[key] <= 0:
             raise TaskError(f"{path}: services.fpga_slow.{key} must be positive")
+    # How many of the run's flows may run at once, each on its own build machine (default one).
+    at_once = slow.get("flows_at_once", 1)
+    if not isinstance(at_once, int) or isinstance(at_once, bool) or at_once < 1:
+        raise TaskError(f"{path}: services.fpga_slow.flows_at_once must be an integer >= 1")
     sha = slow.get("base_image_sha256")
     if sha is not None and not (isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{64}", sha)):
         raise TaskError(f"{path}: services.fpga_slow.base_image_sha256 must be a sha256")
@@ -277,6 +281,12 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
     if not cfg:
         return ""
     score, fpga, slow = cfg.get("score") or {}, cfg.get("fpga_quick") or {}, cfg.get("fpga_slow") or {}
+    at_once = int(slow.get("flows_at_once", 1)) if slow else 1
+    # One at a time keeps the text it always had; more says how many, and that a flow may wait for a machine.
+    concurrency = ("One slow request at a time; the quick tier stays open while it runs." if at_once == 1 else
+                   f"Up to {at_once} slow requests at a time, each flow on a build machine of its own (a flow "
+                   f"may wait for one to be free, and `tnca-service status` says when it does); the quick tier "
+                   f"stays open while they run.")
     lines = ["", "", "## Measurements you can ask for", "",
              "From your shell, `tnca-service` asks the evaluator to measure a snapshot of your working directory "
              "the way the final evaluation will (only changes under the paths it takes count). Whether and when "
@@ -307,7 +317,8 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
         lines.append(f"- `tnca-service submit fpga-slow`: the full implementation of your machine on the FPGA "
                      f"(place and route at the target clock, one Vivado flow of up to "
                      f"{float(slow['flow_minutes']):g} minutes), and its routed timing. You have "
-                     f"{int(slow['flows'])} such flows in this run.")
+                     f"{int(slow['flows'])} such flows in this run."
+                     + (f" Up to {at_once} at a time, each on a build machine of its own." if at_once > 1 else ""))
     elif slow:
         lines.append(
             f"- `tnca-service submit fpga-slow`: the real card. Board time is precious: a request that changed "
@@ -320,8 +331,8 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
             f"set must pass in simulation, and a hardware request needs an `fpga-quick` result of this run on "
             f"exactly that hardware that met timing; otherwise it is refused and not charged. A flow that fails "
             f"on your design (timing or place-and-route does not converge, it does not fit, DRC) counts; one "
-            f"that fails on the infrastructure does not, and is retried for you. One slow request at a time; "
-            f"the quick tier stays open while it runs. The card is shared: a request waits until the card has "
+            f"that fails on the infrastructure does not, and is retried for you. {concurrency} "
+            f"The card is shared: a request waits until the card has "
             f"been idle for a while, and that wait is part of its time. On the card you get the hidden "
             f"validation set's aggregate against the base on the card (as the score service gives it), "
             + ("how many points counted the cycles simulation counted"

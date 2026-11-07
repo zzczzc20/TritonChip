@@ -64,9 +64,11 @@ class Shared:
         self.flows_left = int(fs.get("flows", 0))
         self.board_runs_left = int(fs.get("board_runs", 0))
         self.images: dict = {}
-        # One Vivado flow at a time per run (B8): the hardware request holding it. Card runs are serial on
+        # The run's Vivado flows running now (the hardware requests holding them): at most flows_at_once,
+        # each on a build machine of its own (fpga_slow.place); one by default (B8). Card runs are serial on
         # the card host anyway (its lease and idle wait).
-        self.flow: Optional[str] = None
+        self.flows: set = set()
+        self.flows_at_once = int(fs.get("flows_at_once", 1))
         # The quick tier's worker is one shared machine: one job at a time across islands (D8a), queued.
         self.quick = threading.BoundedSemaphore(1)
         self.lock = threading.Lock()
@@ -146,6 +148,15 @@ class Broker:
             for job in self.jobs.values():
                 if job["state"] not in ("queued", "running"):
                     continue
+                if job["service"] == "fpga-slow" and job["state"] == "running" and job.get("waiting_for_build_host"):
+                    # It never got a build machine: cancelled as a queued one is; its charge goes back when its
+                    # thread ends (the flow did not run).
+                    job["_cancel_requested"] = True
+                    job["state"] = "cancelled"
+                    job["note"] = "waiting for a free build machine when the agent stopped; not built, not charged"
+                    self._release_flow(job)
+                    stopped.append(job)
+                    continue
                 if job["service"] == "fpga-slow" and job["state"] == "running":
                     job["outlived_run"] = True
                     job["note"] = "still running when the agent stopped; it ran to its end, unseen by the agent"
@@ -224,15 +235,27 @@ class Broker:
             n = len(self.jobs) + 1
             job_id = f"{'s' if service == 'score' else 'f' if service == 'fpga-quick' else 'l'}{n}"
             job_dir = self.dir / job_id
-            self.busy[service] = job_id
+            self.busy.setdefault(service, []).append(job_id)
         try:
             return self._submit(service, message, job_id, job_dir)
         except Exception:
             # Whatever failed after the reservation (a gate on a broken tree, a description that does not
             # parse) gives it back: one bad snapshot never blocks a service for the rest of the run.
             with self.lock:
-                self.busy.pop(service, None)
+                self._unbusy(service, job_id)
             raise
+
+    def _unbusy(self, service: str, job_id: str) -> None:
+        """Under the lock: the request no longer counts as one of the service's running ones."""
+        running = self.busy.get(service) or []
+        if job_id in running:
+            running.remove(job_id)
+        if not running:
+            self.busy.pop(service, None)
+
+    def _at_once(self, service: str) -> int:
+        """How many of a service's requests may run at once: the run's flows at once for the slow tier, else one."""
+        return max(1, self.shared.flows_at_once) if service == "fpga-slow" else 1
 
     def _submit(self, service: str, message, job_id: str, job_dir: Path) -> dict:
         g = gate(self.repo, self.task.base_commit, self.task.hide, self.task.design, self.workspace,
@@ -243,7 +266,7 @@ class Broker:
                     "dropped": [c["path"] for c in g["dropped"]][:50]}
         if g["verdict"] != "PASS" or problems:
             with self.lock:
-                self.busy.pop(service, None)
+                self._unbusy(service, job_id)
             return {"refused": "the snapshot cannot be measured", "rejected": g["rejected"][:20] or problems,
                     "snapshot": snapshot, **self.budget()}
         job = {"id": job_id, "service": service, "state": "queued", "submitted": time.time(),
@@ -263,15 +286,24 @@ class Broker:
             refused = self._slow_kind(job, candidate)
             if refused:
                 with self.lock:
-                    self.busy.pop(service, None)
+                    self._unbusy(service, job_id)
                 return {"refused": refused, "snapshot": snapshot, **self.budget()}
         with self.lock:
             if service == "fpga-slow" and job["kind"] == "hardware":
-                if self.shared.flow:
-                    self.busy.pop(service, None)
-                    return {"refused": "another Vivado flow of this run is running; one at a time per run",
-                            "snapshot": snapshot, **self.budget()}
-                self.shared.flow = f"{self.run_id}:{job_id}"
+                at_once = max(1, self.shared.flows_at_once)
+                refused = None
+                if len(self.shared.flows) >= at_once:
+                    refused = ("another Vivado flow of this run is running; one at a time per run" if at_once == 1
+                               else f"{at_once} Vivado flows of this run are running; at most {at_once} at once")
+                elif any(j.get("hardware") == job["hardware"] and j.get("kind") == "hardware"
+                         and j["state"] in ("queued", "running") for j in self.jobs.values()):
+                    # Two flows of the same machine would build one image twice.
+                    refused = ("a flow of this run is already building exactly this hardware; ask again when it "
+                               "is done, and it will need no flow")
+                if refused:
+                    self._unbusy(service, job_id)
+                    return {"refused": refused, "snapshot": snapshot, **self.budget()}
+                self.shared.flows.add(f"{self.run_id}:{job_id}")
             if service == "score":
                 self.score_left -= 1
             elif service == "fpga-slow":
@@ -285,9 +317,8 @@ class Broker:
         return {"id": job_id, "state": "queued", "snapshot": snapshot, **self.budget()}
 
     def _release_flow(self, job: dict) -> None:
-        """Under the lock: the run's one Vivado flow, given back by the request that held it."""
-        if self.shared.flow == f"{self.run_id}:{job['id']}":
-            self.shared.flow = None
+        """Under the lock: the request's Vivado flow, given back to the run."""
+        self.shared.flows.discard(f"{self.run_id}:{job['id']}")
 
     def _slow_kind(self, job: dict, candidate: Optional[Path]) -> Optional[str]:
         """Which kind a slow request is, what it is charged to, and why it is refused if it is."""
@@ -324,8 +355,11 @@ class Broker:
         return False
 
     def _refusal(self, service: str) -> Optional[str]:
-        if service in self.busy:
-            return f"a {service} request is already running ({self.busy[service]}); one at a time"
+        running, at_once = self.busy.get(service) or [], self._at_once(service)
+        if len(running) >= at_once:
+            if at_once == 1:
+                return f"a {service} request is already running ({running[0]}); one at a time"
+            return f"{len(running)} {service} requests are already running ({', '.join(running)}); at most {at_once} at once"
         if service == "score" and self.archive is not None and self.archive.halt.is_set():
             return "the run has ended (its target was reached): no more commits"
         if service == "score" and self.score_left <= 0:
@@ -351,7 +385,7 @@ class Broker:
     def _run(self, job: dict, candidate: Optional[Path], job_dir: Path) -> None:
         with self.lock:
             if job["state"] != "queued":  # cancelled before it started
-                self.busy.pop(job["service"], None)
+                self._unbusy(job["service"], job["id"])
                 self._release_flow(job)
                 return
             job["state"], job["started"] = "running", time.time()
@@ -376,7 +410,7 @@ class Broker:
         finally:
             job["finished"] = time.time()
             with self.lock:
-                self.busy.pop(job["service"], None)
+                self._unbusy(job["service"], job["id"])
                 self._release_flow(job)
 
     def _run_score(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
@@ -445,7 +479,7 @@ class Broker:
             if job.get("image"):   # hardware an earlier request of this run built: its image, on the card host
                 image = job["image"].get("card") or board.put_image(
                     self.site, job["image"]["build_run"], job["image"]["sha256"], job["image"]["xclbin"],
-                    job["remote_id"])
+                    job["remote_id"], build_host=job["image"].get("build_host"))
             visible, full = fpga_slow.run(self.site, self.repo, self.task, candidate, job_dir, job,
                                           with_board=self.slow_mode == "board", image=image,
                                           flow_seconds=self.flow_seconds, board_seconds=self.board_seconds)
@@ -467,8 +501,23 @@ class Broker:
 
     # -- views ---------------------------------------------------------------------------
     def _summary(self, job: dict) -> dict:
-        return {"id": job["id"], "service": job["service"], "state": job["state"],
-                "seconds": round((job.get("finished") or time.time()) - job["submitted"], 1)}
+        out = {"id": job["id"], "service": job["service"], "state": job["state"],
+               "seconds": round((job.get("finished") or time.time()) - job["submitted"], 1)}
+        if job["service"] == "fpga-slow" and job["state"] == "running":
+            # Never which machine: whether the flow waits for one, and once it runs, within how many minutes
+            # from now the request ends at the latest (the flow's cap, then the card's in board mode).
+            if job.get("waiting_for_build_host"):
+                out["waiting_for_a_build_machine"] = True
+            board_s = self.board_seconds if self.slow_mode == "board" else 0
+            if job.get("flow_started") and not job.get("flow_finished"):
+                end = job["flow_started"] + self.flow_seconds + board_s
+            elif job.get("flow_finished") and board_s:
+                end = job["flow_finished"] + board_s
+            else:
+                end = None
+            if end is not None:
+                out["ends_within_minutes"] = max(0, round((end - time.time()) / 60.0))
+        return out
 
     def _view(self, job_id, with_result: bool) -> dict:
         with self.lock:

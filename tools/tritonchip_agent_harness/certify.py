@@ -16,7 +16,13 @@ machine -- an RTL file, or its profile's parameters -- is built and run:
    the card server.
 3. Every point that passed in simulation must pass on the card, with no
    fallback, and the device's own count (`time.device`) equal to the one
-   simulation recorded for it.
+   simulation recorded for it. A task whose simulation is not cycle-exact with
+   its card sets `evaluation.certify.board_cycles` to "record" (R41, whose
+   simulation's HBM is a stand-in: the card counts 1-20 % fewer cycles, the
+   base included; user's decision of 2026-11-07): the card's counts are then
+   kept beside simulation's and reported, never compared, and the points
+   passing on the card with no fallback and the board checks are what is
+   certified. "equal", the default, compares them.
 
 One that kept the base's machine (it changed only software: the compiler, the
 runtime) is not built again: its points run on the base's own image, which the
@@ -31,6 +37,7 @@ becomes the FPGA harness's measure-only pipeline). Step 3 is the same.
                      clock -- or the profile cannot be built as the image
     board-fail       the image did not load or the board stage did not reach the points
     board-disagrees  a point failed on the card, or counted other cycles
+                     (where the task compares them)
     no-verdict       the pipeline or a server failed: run it again
 
 Every other verdict fails every point of the candidate's score.
@@ -76,7 +83,20 @@ def config(task: Task) -> dict:
         raise CertifyError(f"evaluation.certify is missing {', '.join(missing)}")
     if cert["target"] not in BOARD_BACKEND:
         raise CertifyError(f"evaluation.certify.target {cert['target']!r}: certify knows {sorted(BOARD_BACKEND)}")
+    board_cycles(task)
     return cert
+
+
+BOARD_CYCLES = ("equal", "record")
+
+
+def board_cycles(task: Task) -> str:
+    """How the card's cycle counts are judged: "equal" (the default), each must be simulation's exactly;
+    "record", they are kept beside simulation's and reported but never fail a point (module docstring, 3)."""
+    rule = (task.evaluation.get("certify") or {}).get("board_cycles", "equal")
+    if rule not in BOARD_CYCLES:
+        raise CertifyError(f"evaluation.certify.board_cycles {rule!r}: one of {', '.join(BOARD_CYCLES)}")
+    return rule
 
 
 def points(task: Task) -> list:
@@ -164,8 +184,8 @@ def xclbin_name(repo: Path, task: Task) -> str:
     return str(target.get("xclbin_name") or next(a for a in target["expected_artifacts"] if a.endswith(".xclbin")))
 
 
-def compare(sim: dict, board: list) -> list:
-    """Every point simulation passed, against its board record."""
+def compare(sim: dict, board: list, rule: str = "equal") -> list:
+    """Every point simulation passed, against its board record (`rule`: board_cycles)."""
     got = {r.get("point_id"): r for r in board}
     rows = []
     for p, s in sim.items():
@@ -182,7 +202,7 @@ def compare(sim: dict, board: list) -> list:
             problem = f"board status {r.get('status')}"
         elif r.get("fallbacks"):
             problem = "part of it ran on the host"
-        elif cycles != s["done_cycles"]:
+        elif rule == "equal" and cycles != s["done_cycles"]:
             problem = "cycles differ"
         else:
             problem = None
@@ -402,18 +422,20 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
     record["pipeline"] = {"status": pipe.get("status"), "run_id": pipe.get("run_id"), "error": pipe.get("error"),
                           "build": pipe.get("build"), "board": pipe.get("board"), "record": str(work / "pipeline.json")}
     board = fetch(hosts, board_host, pipe["run_id"]) if pipe.get("board") and pipe.get("run_id") else []
-    rows = compare(sim, board)
+    rows = compare(sim, board, board_cycles(task))
     record["points"] = rows
     return finish(*verdict(pipe, rows, board))
 
 
-__all__ = ["CertifyError", "base_image", "build_tree", "certified_score", "certify", "compare", "config", "manifest",
+__all__ = ["CertifyError", "base_image", "board_cycles", "build_tree", "certified_score", "certify", "compare", "config",
+           "manifest",
            "measure_on_image",
            "simulated_from_baseline", "simulated_from_run", "verdict"]
 
 
-def _board_rows(sim: dict, got: dict) -> list:
-    """Every point simulation passed, against the card's count of it (board.py: the relay's log)."""
+def _board_rows(sim: dict, got: dict, rule: str = "equal") -> list:
+    """Every point simulation passed, against the card's count of it (board.py: the relay's log; `rule`:
+    board_cycles)."""
     rows = []
     for p, s in sim.items():
         if not s["passed"]:
@@ -428,7 +450,7 @@ def _board_rows(sim: dict, got: dict) -> list:
             problem = f"board status {r.get('status')}"
         elif r.get("fallbacks"):
             problem = "part of it ran on the host"
-        elif cycles != s["done_cycles"]:
+        elif rule == "equal" and cycles != s["done_cycles"]:
             problem = "cycles differ"
         else:
             problem = None
@@ -502,7 +524,7 @@ def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, broker=
             return out
         got.update(rec["points"])
         checks.update(((rec.get("measured") or {}).get("checks")) or {})
-    rows = _board_rows(sim, got)
+    rows = _board_rows(sim, got, board_cycles(task))
     failed_checks = sorted(n for n, c in checks.items() if c.get("exit") != 0)
     bad = [r for r in rows if r["problem"]]
     out["rows"] = rows

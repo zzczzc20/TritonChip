@@ -168,7 +168,8 @@
         "tools/tritonchip_fpga_harness/"
       ],
       "target": "u280-multicore-r41",
-      "clock_mhz": 100
+      "clock_mhz": 100,
+      "board_cycles": "record"
     }
   },
   "services": {

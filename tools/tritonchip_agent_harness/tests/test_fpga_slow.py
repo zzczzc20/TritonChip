@@ -78,6 +78,35 @@ class SlowService(unittest.TestCase):
             self.assertNotIn("secret.validation", json.dumps(visible))
             self.assertNotIn("secret.final", json.dumps(visible))
 
+    def test_a_task_that_records_board_cycles_reports_their_ratio_in_aggregate(self):
+        recording = task()
+        recording.evaluation["certify"]["board_cycles"] = "record"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "hosts.json", "build_host": "build",
+                                                        "board_host": "card", "card": {"bdf": "0000:04:00.1"}})
+            job = {"id": "l1", "remote_id": "agent-slow-1", "containers": "tnca-test", "kind": "software"}
+            sim = {"aggregate": {"n": 1, "passed": 1},
+                   "full": {"points": [{"point": "secret.validation", "failure": None, "done_cycles": 42}]}}
+            card = {"session": {"status": "ok"}, "measured": {"checks": {"fp8": {"exit": 1, "log_tail": ["x"]}}},
+                    "points": {"secret.validation": {"status": "pass", "cycles": 40, "record_cycles": 42,
+                                                     "fallbacks": [], "observer": {"done_cycles": 21}}}}
+            base = {"points": {"secret.validation": {"status": "pass", "cycles": 80}}}
+            with (mock.patch.object(fpga_slow.evaluator, "measure_validation", return_value=sim),
+                  mock.patch.object(fpga_slow.board, "measure", return_value=card),
+                  mock.patch.object(fpga_slow.board, "baseline", return_value=base)):
+                visible, full = fpga_slow.run(site, root, recording, None, root / "job", job, with_board=True,
+                                              image={"path": "/x", "sha256": "c" * 64}, flow_seconds=60,
+                                              board_seconds=60)
+            self.assertEqual(visible["board"]["validation"]["speedup_geomean"], 2.0)
+            self.assertNotIn("counted_as_in_simulation", visible["board"])
+            self.assertEqual(visible["board"]["cycles_on_card"],
+                             {"points": 1, "board_over_simulation_geomean": 0.5, "board_over_simulation_range": [0.5, 0.5]})
+            self.assertEqual(visible["board"]["checks"], {"fp8": "fail"})
+            self.assertEqual(visible["charged"], "board_run")
+            self.assertNotIn("secret.validation", json.dumps(visible))
+            self.assertNotIn("secret.final", json.dumps(visible))
+
     def test_a_snapshot_failing_in_simulation_is_refused_uncharged(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

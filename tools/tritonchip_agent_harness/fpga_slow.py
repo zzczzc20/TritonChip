@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import signal
@@ -406,6 +407,24 @@ def _check_view(ran: dict) -> str:
     return "did not finish" if ran.get("timed_out") or ran.get("exit") is None else "fail"
 
 
+def _cycles_view(points: list, got: dict, sim_rows: dict) -> dict:
+    """The card's cycle counts against simulation's, over the points that passed in both, for a task that
+    records them (certify.board_cycles "record"): ratios in aggregate, never which point, as every view of the
+    validation set is."""
+    ratios = []
+    for p in points:
+        card, simulated = got.get(p) or {}, sim_rows.get(p) or {}
+        o, s = (card.get("observer") or {}).get("done_cycles"), simulated.get("done_cycles")
+        if card.get("status") == "pass" and simulated.get("failure") is None and o and s:
+            ratios.append(o / s)
+    if not ratios:
+        return {"points": 0}
+    ratios.sort()
+    return {"points": len(ratios),
+            "board_over_simulation_geomean": round(math.exp(sum(map(math.log, ratios)) / len(ratios)), 4),
+            "board_over_simulation_range": [round(ratios[0], 4), round(ratios[-1], 4)]}
+
+
 def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict, sim: dict,
             job_dir: Path, job: dict, seconds: int, base_xclbin: Optional[str] = None) -> dict:
     """The validation points (and the task's board checks) on `image`, tried again on an infrastructure
@@ -448,9 +467,12 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
         visible["validation"] = {"n": len(points), "passed": passed, "note": "no base measured on the card to compare with"}
         job["baseline_error"] = f"{type(exc).__name__}: {exc}"
     sim_rows = {r["point"]: r for r in (((sim or {}).get("full") or {}).get("points") or [])}
-    agree = sum(1 for p in points if (got.get(p) or {}).get("status") == "pass" and sim_rows.get(p, {}).get("failure")
-                is None and ((got[p].get("observer") or {}).get("done_cycles") == sim_rows[p].get("done_cycles")))
-    visible["counted_as_in_simulation"] = agree
+    if certify.board_cycles(task) == "equal":
+        agree = sum(1 for p in points if (got.get(p) or {}).get("status") == "pass" and sim_rows.get(p, {}).get(
+            "failure") is None and ((got[p].get("observer") or {}).get("done_cycles") == sim_rows[p].get("done_cycles")))
+        visible["counted_as_in_simulation"] = agree
+    else:
+        visible["cycles_on_card"] = _cycles_view(points, got, sim_rows)
     checks = ((rec.get("measured") or {}).get("checks")) or {}
     if checks:
         bad = {name: _check_view(ran) for name, ran in checks.items() if _check_view(ran) != "pass"}

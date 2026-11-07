@@ -223,7 +223,8 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
     design = ", ".join(f"`{d}`" for d in task.design)
     skill_text = catalog_.prompt_lines(selected)
     services = _services_text(task.services, islands=island is not None and bool(task.islands),
-                              resumed=bool(task.resume))
+                              resumed=bool(task.resume),
+                              board_cycles=((task.evaluation or {}).get("certify") or {}).get("board_cycles", "equal"))
     return instruction.rstrip() + services + f"""
 
 ## The rules of this run
@@ -271,7 +272,7 @@ def _ending(task: Task, island: Optional[int]) -> str:
             f"{cfg['max_idle_turns']} idle turns in a row end your island.\n")
 
 
-def _services_text(cfg: dict, islands: bool = False, resumed: bool = False) -> str:
+def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, board_cycles: str = "equal") -> str:
     """How the agent may ask the evaluator for a measurement, and how much it may ask."""
     if not cfg:
         return ""
@@ -322,8 +323,12 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False) -> s
             f"that fails on the infrastructure does not, and is retried for you. One slow request at a time; "
             f"the quick tier stays open while it runs. The card is shared: a request waits until the card has "
             f"been idle for a while, and that wait is part of its time. On the card you get the hidden "
-            f"validation set's aggregate against the base on the card (as the score service gives it), how "
-            f"many points counted the cycles simulation counted, and any board check (such as FP8 bit "
+            f"validation set's aggregate against the base on the card (as the score service gives it), "
+            + ("how many points counted the cycles simulation counted"
+               if board_cycles == "equal" else
+               "the card's cycle counts against simulation's in aggregate (the geometric mean and range of "
+               "board over simulation)")
+            + f", and any board check (such as FP8 bit "
             f"alignment) that did not pass; for a flow that failed, why: the failing stage, slack, the worst "
             f"paths and whether they cross an SLR, utilisation per SLR, the DRC rules that failed. A board "
             f"request still running when you stop runs to its end, but you will not see its result.")

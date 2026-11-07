@@ -641,8 +641,19 @@ same. Without `--base-image` such a candidate is refused, not passed.
 | `certified` | 1-3 held | stands |
 | `infeasible` | the build failed: it does not fit or does not close 100 MHz, or the profile cannot be built as the image | every point fails |
 | `board-fail` | the image did not load, or the board stage did not reach the points | every point fails |
-| `board-disagrees` | a point failed on the card, fell back to the host, or counted other cycles | every point fails |
+| `board-disagrees` | a point failed on the card, fell back to the host, or counted other cycles (where the task compares them) | every point fails |
 | `no-verdict` | the pipeline or a server failed | re-run |
+
+**Cycles that are recorded, not compared** (`evaluation.certify.board_cycles`:
+`"record"`; the default `"equal"` compares). R41's simulation models its HBM
+with a stand-in, and the card counts 1-20 % fewer cycles than simulation on
+every point, the unchanged base included: the island pilot's two champions
+came back `board-disagrees` on that alone (2026-11-07). The user's decision of
+2026-11-07: for R41 a point is certified when it passes on the card with no
+fallback and the board checks pass; each point's two counts are kept in the
+record, and an in-run board reply gives the agent their ratio in aggregate
+(`cycles_on_card`: the geometric mean and range of board over simulation)
+instead of `counted_as_in_simulation`. The R41 tasks set it.
 
 The record, `certification.json` beside `run.json`, keeps the verdict and its
 reason, the tree's commit, the image's parameters, the build's timing, each

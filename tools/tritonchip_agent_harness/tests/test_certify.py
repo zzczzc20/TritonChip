@@ -296,6 +296,34 @@ class Certify(unittest.TestCase):
             self.assertEqual((s["passed"], s["speedup_geomean"], s["fast_1"]), (0, None, 0.0))
             self.assertEqual({r["failure"] for r in s["points"]}, {"hardware-board-disagrees"})
 
+    def test_a_task_that_records_board_cycles_certifies_on_passing_points(self):
+        # R41: simulation's HBM is a stand-in and the card counts fewer cycles (user's decision of 2026-11-07).
+        self.task.evaluation["certify"]["board_cycles"] = "record"
+        run_dir = make_run(self.repo, self.task, {"rtl/core/x.v": "module x; endmodule\n"})
+        value = self.certify(run_dir, records=board({"a": 90, "b": 201, "c": 250}))
+        self.assertEqual(value["verdict"], "certified")
+        self.assertEqual([r["problem"] for r in value["points"]], [None, None, None])
+        self.assertEqual([r["board_cycles"] for r in value["points"]], [90, 201, 250])
+
+    def test_recording_board_cycles_still_fails_a_fallback(self):
+        self.task.evaluation["certify"]["board_cycles"] = "record"
+        run_dir = make_run(self.repo, self.task, {"rtl/core/x.v": "module x; endmodule\n"})
+        value = self.certify(run_dir, records=board({"a": 90, "b": 201, "c": 250}, fallbacks=["host"]))
+        self.assertEqual(value["verdict"], "board-disagrees")
+        self.assertIn("part of it ran on the host", value["why"])
+
+    def test_an_unknown_board_cycles_rule_is_refused(self):
+        self.task.evaluation["certify"]["board_cycles"] = "close"
+        with self.assertRaisesRegex(certify.CertifyError, "board_cycles"):
+            certify.config(self.task)
+
+    def test_the_card_sessions_rows_follow_the_same_rule(self):
+        sim = {"p": {"passed": True, "done_cycles": 100}}
+        got = {"p": {"status": "pass", "fallbacks": [], "observer": {"done_cycles": 90}}}
+        self.assertEqual(certify._board_rows(sim, got)[0]["problem"], "cycles differ")
+        row = certify._board_rows(sim, got, "record")[0]
+        self.assertEqual((row["problem"], row["sim_cycles"], row["board_cycles"]), (None, 100, 90))
+
     def test_a_fallback_or_a_failed_point_on_the_card_disagrees(self):
         run_dir = make_run(self.repo, self.task, {"rtl/core/x.v": "module x; endmodule\n"})
         records = board(SIM)

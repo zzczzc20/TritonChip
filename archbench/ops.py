@@ -307,14 +307,17 @@ class W8A8BlockLinear(torch.nn.Module):
     """Dynamic W8A8 with block scales: the activation quantised per 1x128
     group (amax / 448), the E4M3 weight (n, k) with fp32 scales (k/128,
     n/128), a blockwise _scaled_mm, bf16 out. CPU eager refuses blockwise
-    scales, so on the CPU (the reference) the same block form runs in fp32,
-    K blocks ascending."""
+    scales, so the eager CPU call (the reference) runs the same block form
+    in fp32, K blocks ascending. The test is "eager on the CPU", not "on the
+    CPU": the tnca platform's default path compiles CPU tensors and offloads
+    them (platforms/tnca.py), and that compiled program must be the
+    _scaled_mm."""
     def forward(self, x, w, ws):
         m, k = x.shape
         g = x.float().reshape(m, k // TILE_FP8, TILE_FP8)
         sa = g.abs().amax(-1).clamp(min=1e-12) / 448.0
         q = (g / sa[..., None]).clamp(-448.0, 448.0).reshape(m, k).to(torch.float8_e4m3fn)
-        if q.device.type == 'cpu':
+        if q.device.type == 'cpu' and not torch.compiler.is_compiling():
             out = torch.zeros(m, w.shape[0])
             for kb in range(k // TILE_FP8):
                 s = slice(kb * TILE_FP8, (kb + 1) * TILE_FP8)

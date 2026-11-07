@@ -361,6 +361,7 @@ def stand_in(**kwargs):
                             trace=kwargs.pop('trace', False),
                             device=device, _explicit=explicit, inbox=kwargs.pop('inbox', None),
                             outbox=kwargs.pop('outbox', None),
+                            harness=kwargs.pop('harness', None),   # a prebuilt bench (an observation build), else _build()
                             host_timeout=kwargs.get('host_timeout', 30.0))
     return MulticoreMMIOBackend(link, core_count=core_count,
                                memory_ports=memory_ports, **kwargs)

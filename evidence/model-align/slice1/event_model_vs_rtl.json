@@ -1,0 +1,9507 @@
+{
+ "aggregates": {
+  "aligned": 0,
+  "diverged": 27,
+  "median_abs_cycle_error": 0.09601667067404024,
+  "missing": 0,
+  "p95_abs_cycle_error": 1.4130604418156067,
+  "points": 27
+ },
+ "options": {
+  "data": false,
+  "order_only": false
+ },
+ "points": {
+  "model.gpt2_block_tiny_fp16-d64-h4-b1-s16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.7406970207982012,
+   "cycles_a": 462540,
+   "cycles_b": 805142,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 420,
+      "b": 436
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000039000",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000039000",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000038f00"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000000038f00"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 418,
+      "b": 420
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000039000",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000039000",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 419,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000039000",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000039000",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 420,
+      "b": 375
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000039100",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000039100",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000038fc0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000038fc0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 419,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000039100",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000039100",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000039000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000039000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 155,
+   "launches_a": 155,
+   "launches_b": 270,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 420,
+     "b": 436,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000039000",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000039000",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000038f00"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000000038f00"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16": {
+   "aligned_launches": 0,
+   "cycle_error": 1.4130604418156067,
+   "cycles_a": 616411,
+   "cycles_b": 1487437,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 426,
+      "b": 424
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000055500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000055500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "00000000000553c0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "00000000000553c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 420,
+      "b": 432
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000055500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000055500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000055400"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000055400"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 422,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000055500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000055500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000055440"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000055440"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 421,
+      "b": 427
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000055500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000055500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000055480"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000055480"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 422,
+      "b": 383
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000055600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000055600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "00000000000554c0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "00000000000554c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 163,
+   "launches_a": 163,
+   "launches_b": 340,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 426,
+     "b": 424,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000055500",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000055500",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "00000000000553c0"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "00000000000553c0"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "model.llama_prefill_tiny_fp16-b1-s16": {
+   "aligned_launches": 0,
+   "cycle_error": 3.436018222890669,
+   "cycles_a": 503323,
+   "cycles_b": 2232750,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 421,
+      "b": 442
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000054800",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000054800",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000054780"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000054780"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 423,
+      "b": 384
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000054900",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000054900",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "00000000000547c0"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "00000000000547c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 422,
+      "b": 427
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000054900",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000054900",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000054800"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000054800"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 422,
+      "b": 427
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000054900",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000054900",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000054840"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000054840"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "request": {
+      "a": {
+       "addr": "0000000000054900",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000054900",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000054880"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000054880"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 148,
+   "launches_a": 148,
+   "launches_b": 564,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 421,
+     "b": 442,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000054800",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000054800",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000054780"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "0000000000054780"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "model.mlp_tiny_fp16-t16-d64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.20981094480157506,
+   "cycles_a": 337256,
+   "cycles_b": 266496,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 420,
+      "b": 436
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000030c00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000030c00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000030b00"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000000030b00"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 419,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000030c00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000030c00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 422,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000030c00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000030c00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 420,
+      "b": 375
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000030d00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000030d00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000030bc0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000030bc0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 419,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000030d00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000030d00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000030c00"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000030c00"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 46,
+   "launches_a": 46,
+   "launches_b": 46,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 420,
+     "b": 436,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000030c00",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000030c00",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000030b00"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000000030b00"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "model.resnet_block_tiny_fp32-n1-c8-hw8": {
+   "aligned_launches": 0,
+   "cycle_error": -0.12825734557392005,
+   "cycles_a": 859327,
+   "cycles_b": 749112,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 439,
+      "b": 443
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021d00"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000021d00"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 436,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021d40"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021d40"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 441,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021d80"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021d80"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 421,
+      "b": 377
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021f00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021f00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000021dc0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000021dc0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 422,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021f00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021f00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000021e00"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000021e00"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 54,
+   "launches_a": 54,
+   "launches_b": 54,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 439,
+     "b": 443,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000021e00",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000021e00",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000021d00"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000021d00"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.add_tiny_fp16-n1000": {
+   "aligned_launches": 0,
+   "cycle_error": -0.09601667067404024,
+   "cycles_a": 24954,
+   "cycles_b": 22558,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 421,
+      "b": 437
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021100",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021100",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021080"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000021080"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 428,
+      "b": 377
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "00000000000210c0"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "00000000000210c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 439,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021100"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021100"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 436,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021140"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021140"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 439,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021180"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021180"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 421,
+     "b": 437,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000021100",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000021100",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000021080"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000021080"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.add_tiny_fp32-n256": {
+   "aligned_launches": 0,
+   "cycle_error": -0.08856428477431241,
+   "cycles_a": 15198,
+   "cycles_b": 13852,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 419,
+      "b": 430
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020900",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020900",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020880"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000020880"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 432,
+      "b": 383
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "00000000000208c0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "00000000000208c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 434,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020900"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020900"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 438,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020940"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020940"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 438,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020980"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020980"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 419,
+     "b": 430,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020900",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020900",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000020880"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "0000000000020880"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.argmax_tiny_fp16-r2-v256": {
+   "aligned_launches": 0,
+   "cycle_error": -0.07855432675863641,
+   "cycles_a": 17542,
+   "cycles_b": 16164,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 421,
+      "b": 437
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020480"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000020480"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 429,
+      "b": 377
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "00000000000204c0"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "00000000000204c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 438,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020500"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020500"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 436,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020540"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020540"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 439,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020580"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020580"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 421,
+     "b": 437,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020500",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020500",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000020480"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000020480"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.attention_decode_tiny_fp16-b1-h2-l16-d16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.23683147223038495,
+   "cycles_a": 54448,
+   "cycles_b": 67343,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 432,
+      "b": 442
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "00000000000208c0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "00000000000208c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 434,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020900"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020900"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 435,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020940"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020940"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 438,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020980"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020980"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 422,
+      "b": 383
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020b00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020b00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "00000000000209c0"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "00000000000209c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 76,
+   "launches_a": 76,
+   "launches_b": 76,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 432,
+     "b": 442,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020a00",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020a00",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "00000000000208c0"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "00000000000208c0"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.attention_prefill_tiny_fp16-b1-h2-s16-d16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.05212719902396788,
+   "cycles_a": 152454,
+   "cycles_b": 160401,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 422,
+      "b": 442
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020d00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020d00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000020c80"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000000020c80"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 429,
+      "b": 375
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000020cc0"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000000020cc0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 436,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 438,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 434,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020e00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 118,
+   "launches_a": 118,
+   "launches_b": 118,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 422,
+     "b": 442,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020d00",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020d00",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000020c80"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000000020c80"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.bmm_tiny_fp16-b2-m16-k16-n16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.03117541766109785,
+   "cycles_a": 20112,
+   "cycles_b": 20739,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 419,
+      "b": 430
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020900",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020900",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020880"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000020880"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 432,
+      "b": 383
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "00000000000208c0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "00000000000208c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 437,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020900"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020900"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 436,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020940"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020940"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 437,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020980"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020980"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 419,
+     "b": 430,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020900",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020900",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000020880"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "0000000000020880"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.conv2d_tiny_fp32-n1-cin4-h8-w8-cout8": {
+   "aligned_launches": 0,
+   "cycle_error": -0.22039691289966923,
+   "cycles_a": 444430,
+   "cycles_b": 346479,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 437,
+      "b": 436
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020900"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000020900"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 435,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020940"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020940"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 438,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020980"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020980"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 422,
+      "b": 383
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020b00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020b00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "00000000000209c0"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "00000000000209c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 420,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020b00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020b00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 38,
+   "launches_a": 38,
+   "launches_b": 38,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 437,
+     "b": 436,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020a00",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020a00",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000020900"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "0000000000020900"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.cumsum_tiny_fp32-r4-c64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.09676831490705869,
+   "cycles_a": 16462,
+   "cycles_b": 14869,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 421,
+      "b": 437
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020480"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000020480"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 429,
+      "b": 377
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "00000000000204c0"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "00000000000204c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 438,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020500"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020500"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 436,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020540"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020540"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 439,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020580"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020580"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 421,
+     "b": 437,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020500",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020500",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000020480"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000020480"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.embedding_tiny_fp16-v256-d64-t16": {
+   "aligned_launches": 0,
+   "cycle_error": -0.044533827681213646,
+   "cycles_a": 117596,
+   "cycles_b": 112359,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 437,
+      "b": 436
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000028200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000028200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000028100"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000028100"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 435,
+      "b": 420
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000028200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000028200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000028140"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000028140"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 438,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000028200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000028200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000028180"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000028180"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 422,
+      "b": 383
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000028300",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000028300",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "00000000000281c0"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "00000000000281c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 420,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000028300",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000028300",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 437,
+     "b": 436,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000028200",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000028200",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000028100"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "0000000000028100"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.gelu_tanh_tiny_fp16-n256": {
+   "aligned_launches": 0,
+   "cycle_error": -0.060885934466733335,
+   "cycles_a": 16999,
+   "cycles_b": 15964,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 421,
+      "b": 437
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020300",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020300",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020280"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000020280"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 429,
+      "b": 376
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "00000000000202c0"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "00000000000202c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 438,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 435,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 438,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 29,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 421,
+     "b": 437,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020300",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020300",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000020280"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000020280"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.gemv_tiny_fp16-k64-n64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.07578006320825549,
+   "cycles_a": 57271,
+   "cycles_b": 52931,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "request": {
+      "a": {
+       "addr": "0000000000022200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000022100"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000022100"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 438,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000022140"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000022140"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 438,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000022180"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000022180"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 422,
+      "b": 383
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022300",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022300",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "00000000000221c0"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "00000000000221c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 420,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022300",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022300",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 438,
+     "b": 426,
+     "launch": 1
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000022200",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000022200",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000022100"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "0000000000022100"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.layernorm_tiny_fp16-r4-d64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.10762748960385204,
+   "cycles_a": 18276,
+   "cycles_b": 16309,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 437,
+      "b": 430
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000020380"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000000020380"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 427,
+      "b": 376
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "00000000000203c0"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "00000000000203c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 420,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020400"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020400"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 423,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020440"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020440"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "request": {
+      "a": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020480"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020480"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 437,
+     "b": 430,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020400",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020400",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000020380"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000000020380"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.linear_tiny_fp16-m16-k64-n64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.15083564289913495,
+   "cycles_a": 47628,
+   "cycles_b": 40444,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 438,
+      "b": 443
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000022900"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000022900"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 438,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000022940"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000022940"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 436,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000022980"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000022980"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 421,
+      "b": 377
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022b00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022b00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "00000000000229c0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "00000000000229c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 422,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022b00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022b00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000022a00"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000022a00"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 438,
+     "b": 443,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000022a00",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000022a00",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000022900"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000022900"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.015368615669054772,
+   "cycles_a": 17308,
+   "cycles_b": 17574,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 419,
+      "b": 430
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020900",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020900",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020880"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000020880"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 432,
+      "b": 383
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "00000000000208c0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "00000000000208c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 435,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020900"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020900"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 438,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020940"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020940"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 437,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020980"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020980"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 419,
+     "b": 430,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020900",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020900",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000020880"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "0000000000020880"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.matmul_tiny_fp32-m16-k32-n16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.00011546899657441977,
+   "cycles_a": 25981,
+   "cycles_b": 25984,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 421,
+      "b": 437
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021100",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021100",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021080"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000021080"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 430,
+      "b": 377
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "00000000000210c0"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "00000000000210c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 438,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021100"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021100"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 436,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021140"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021140"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 436,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021180"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021180"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 421,
+     "b": 437,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000021100",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000021100",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000021080"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000021080"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.rmsnorm_tiny_fp16-r4-d64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.11844913445577425,
+   "cycles_a": 16868,
+   "cycles_b": 14870,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 438,
+      "b": 442
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000020300"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000000020300"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 434,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 36,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 438,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 427,
+      "b": 376
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "00000000000203c0"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "00000000000203c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 420,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020400"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020400"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 438,
+     "b": 442,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020400",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020400",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000020300"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000000020300"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.rope_tiny_fp16-b1-h2-s16-d16": {
+   "aligned_launches": 0,
+   "cycle_error": -0.14839699863574352,
+   "cycles_a": 29320,
+   "cycles_b": 24969,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 419,
+      "b": 430
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020900",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020900",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020880"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000000020880"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 432,
+      "b": 383
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "00000000000208c0"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "00000000000208c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 435,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020900"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020900"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 436,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020940"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020940"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 437,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020a00",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000020980"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000020980"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 419,
+     "b": 430,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020900",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020900",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000020880"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "0000000000020880"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.silu_tiny_fp16-n256": {
+   "aligned_launches": 0,
+   "cycle_error": -0.07216625483114744,
+   "cycles_a": 15783,
+   "cycles_b": 14644,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 421,
+      "b": 437
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020300",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020300",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020280"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000020280"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 428,
+      "b": 376
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "00000000000202c0"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "00000000000202c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 438,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 435,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 437,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 29,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 421,
+     "b": 437,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020300",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020300",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000020280"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000020280"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.softmax_tiny_fp16-r4-c64": {
+   "aligned_launches": 0,
+   "cycle_error": 0.05269409864107194,
+   "cycles_a": 21046,
+   "cycles_b": 22155,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 421,
+      "b": 437
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020300",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020300",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020280"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000020280"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 428,
+      "b": 376
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "00000000000202c0"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "00000000000202c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 437,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 434,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 438,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 421,
+     "b": 437,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020300",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020300",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000020280"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000020280"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.softmax_tiny_fp32-r3-c37": {
+   "aligned_launches": 0,
+   "cycle_error": -0.08172854212163325,
+   "cycles_a": 15111,
+   "cycles_b": 13876,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 423,
+      "b": 443
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020300",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020300",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020240"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000020240"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "request": {
+      "a": {
+       "addr": "0000000000020300",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020300",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020280"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020280"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 436,
+      "b": 376
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "00000000000202c0"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "00000000000202c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 437,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 435,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020400",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 423,
+     "b": 443,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020300",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020300",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000020240"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000020240"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.swiglu_tiny_fp16-n256": {
+   "aligned_launches": 0,
+   "cycle_error": -0.08471939691276774,
+   "cycles_a": 16714,
+   "cycles_b": 15298,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 421,
+      "b": 437
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020500",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020480"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000020480"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 431,
+      "b": 377
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "00000000000204c0"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "00000000000204c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 439,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020500"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020500"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 436,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020540"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020540"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 437,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000020600",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000020580"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000020580"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 421,
+     "b": 437,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000020500",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020500",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000020480"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000020480"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  },
+  "op.transpose_tiny_fp32-r32-c32": {
+   "aligned_launches": 0,
+   "cycle_error": -0.1538675570395103,
+   "cycles_a": 25158,
+   "cycles_b": 21287,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 0,
+     "length": {
+      "a": 421,
+      "b": 437
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021100",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021100",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021080"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000000021080"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 1,
+     "length": {
+      "a": 429,
+      "b": 377
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "00000000000210c0"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "00000000000210c0"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 2,
+     "length": {
+      "a": 440,
+      "b": 433
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021100"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021100"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 3,
+     "length": {
+      "a": 436,
+      "b": 421
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021140"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021140"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 5,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 1,
+       "pc": "0000000000000000",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 0
+     },
+     "launch": 4,
+     "length": {
+      "a": 439,
+      "b": 426
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 92,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000021200",
+       "amo": 0,
+       "be": null,
+       "cycle": 81,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     },
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000021180"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000000021180"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 5,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 1,
+      "pc": "0000000000000000",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 0,
+     "launch": 0
+    },
+    "length": {
+     "a": 421,
+     "b": 437,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000021100",
+      "amo": 0,
+      "be": null,
+      "cycle": 92,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000021100",
+      "amo": 0,
+      "be": null,
+      "cycle": 81,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000021080"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000000021080"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 0,
+     "launch": 0
+    }
+   }
+  }
+ },
+ "reason": "27 of 27 point(s) diverge",
+ "schema": "tnca-core-alignment/1",
+ "verdict": "diverged"
+}

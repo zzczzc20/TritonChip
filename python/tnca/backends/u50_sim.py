@@ -199,6 +199,9 @@ class SimLink(U50Link):
         if self.trace:
             argv.append('+trace')
         argv += list(getattr(self, 'plusargs', ()))
+        # Debugging only, as in tnca.transport: more plusargs for the bench
+        # (e.g. an observation top's +core_trace=), never product behaviour.
+        argv += os.environ.get('TNCA_DEVICE_PLUSARGS', '').split()
         journal = getattr(self, 'journal_dir', None)
         if journal:
             os.makedirs(journal, exist_ok=False)

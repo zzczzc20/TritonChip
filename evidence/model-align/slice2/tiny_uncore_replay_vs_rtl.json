@@ -1,0 +1,1936 @@
+{
+ "aggregates": {
+  "aligned": 108,
+  "diverged": 0,
+  "median_abs_cycle_error": 0.0,
+  "missing": 0,
+  "p95_abs_cycle_error": 0.0,
+  "points": 108
+ },
+ "options": {
+  "data": false,
+  "order_only": false
+ },
+ "points": {
+  "model.gpt2_block_tiny_fp16-d64-h4-b1-s16": {
+   "aligned_launches": 270,
+   "cycle_error": 0.0,
+   "cycles_a": 853522,
+   "cycles_b": 853522,
+   "divergences": [],
+   "equal": true,
+   "launches": 270,
+   "launches_a": 270,
+   "launches_b": 270,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.gpt2_block_tiny_fp16-d64-h4-b1-s16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.gpt2_block_tiny_fp16-d64-h4-b1-s16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.gpt2_block_tiny_fp16-d64-h4-b1-s16.uncore": {
+   "aligned_launches": 270,
+   "cycles_a": 4229512,
+   "cycles_b": 30282715,
+   "divergences": [],
+   "equal": true,
+   "launches": 270,
+   "launches_a": 270,
+   "launches_b": 270,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16": {
+   "aligned_launches": 340,
+   "cycle_error": 0.0,
+   "cycles_a": 1733212,
+   "cycles_b": 1733212,
+   "divergences": [],
+   "equal": true,
+   "launches": 340,
+   "launches_a": 340,
+   "launches_b": 340,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16.uncore": {
+   "aligned_launches": 340,
+   "cycles_a": 7370786,
+   "cycles_b": 60644189,
+   "divergences": [],
+   "equal": true,
+   "launches": 340,
+   "launches_a": 340,
+   "launches_b": 340,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "model.llama_prefill_tiny_fp16-b1-s16": {
+   "aligned_launches": 564,
+   "cycle_error": 0.0,
+   "cycles_a": 2487188,
+   "cycles_b": 2487188,
+   "divergences": [],
+   "equal": true,
+   "launches": 564,
+   "launches_a": 564,
+   "launches_b": 564,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.llama_prefill_tiny_fp16-b1-s16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.llama_prefill_tiny_fp16-b1-s16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.llama_prefill_tiny_fp16-b1-s16.uncore": {
+   "aligned_launches": 564,
+   "cycles_a": 11541128,
+   "cycles_b": 68518886,
+   "divergences": [],
+   "equal": true,
+   "launches": 564,
+   "launches_a": 564,
+   "launches_b": 564,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "model.mlp_tiny_fp16-t16-d64": {
+   "aligned_launches": 46,
+   "cycle_error": 0.0,
+   "cycles_a": 337256,
+   "cycles_b": 337256,
+   "divergences": [],
+   "equal": true,
+   "launches": 46,
+   "launches_a": 46,
+   "launches_b": 46,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.mlp_tiny_fp16-t16-d64.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.mlp_tiny_fp16-t16-d64.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.mlp_tiny_fp16-t16-d64.uncore": {
+   "aligned_launches": 46,
+   "cycles_a": 1718895,
+   "cycles_b": 15699261,
+   "divergences": [],
+   "equal": true,
+   "launches": 46,
+   "launches_a": 46,
+   "launches_b": 46,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "model.resnet_block_tiny_fp32-n1-c8-hw8": {
+   "aligned_launches": 54,
+   "cycle_error": 0.0,
+   "cycles_a": 982677,
+   "cycles_b": 982677,
+   "divergences": [],
+   "equal": true,
+   "launches": 54,
+   "launches_a": 54,
+   "launches_b": 54,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.resnet_block_tiny_fp32-n1-c8-hw8.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.resnet_block_tiny_fp32-n1-c8-hw8.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "model.resnet_block_tiny_fp32-n1-c8-hw8.uncore": {
+   "aligned_launches": 54,
+   "cycles_a": 1767402,
+   "cycles_b": 17764440,
+   "divergences": [],
+   "equal": true,
+   "launches": 54,
+   "launches_a": 54,
+   "launches_b": 54,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.add_tiny_fp16-n1000": {
+   "aligned_launches": 58,
+   "cycle_error": 0.0,
+   "cycles_a": 24953,
+   "cycles_b": 24953,
+   "divergences": [],
+   "equal": true,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.add_tiny_fp16-n1000.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.add_tiny_fp16-n1000.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.add_tiny_fp16-n1000.uncore": {
+   "aligned_launches": 58,
+   "cycles_a": 167252,
+   "cycles_b": 11683845,
+   "divergences": [],
+   "equal": true,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.add_tiny_fp32-n256": {
+   "aligned_launches": 34,
+   "cycle_error": 0.0,
+   "cycles_a": 15183,
+   "cycles_b": 15183,
+   "divergences": [],
+   "equal": true,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.add_tiny_fp32-n256.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.add_tiny_fp32-n256.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.add_tiny_fp32-n256.uncore": {
+   "aligned_launches": 34,
+   "cycles_a": 109123,
+   "cycles_b": 11584885,
+   "divergences": [],
+   "equal": true,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.argmax_tiny_fp16-r2-v256": {
+   "aligned_launches": 28,
+   "cycle_error": 0.0,
+   "cycles_a": 17517,
+   "cycles_b": 17517,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.argmax_tiny_fp16-r2-v256.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.argmax_tiny_fp16-r2-v256.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.argmax_tiny_fp16-r2-v256.uncore": {
+   "aligned_launches": 28,
+   "cycles_a": 80832,
+   "cycles_b": 11539044,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.attention_decode_tiny_fp16-b1-h2-l16-d16": {
+   "aligned_launches": 76,
+   "cycle_error": 0.0,
+   "cycles_a": 54465,
+   "cycles_b": 54465,
+   "divergences": [],
+   "equal": true,
+   "launches": 76,
+   "launches_a": 76,
+   "launches_b": 76,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.attention_decode_tiny_fp16-b1-h2-l16-d16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.attention_decode_tiny_fp16-b1-h2-l16-d16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.attention_decode_tiny_fp16-b1-h2-l16-d16.uncore": {
+   "aligned_launches": 76,
+   "cycles_a": 160963,
+   "cycles_b": 13306515,
+   "divergences": [],
+   "equal": true,
+   "launches": 76,
+   "launches_a": 76,
+   "launches_b": 76,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.attention_prefill_tiny_fp16-b1-h2-s16-d16": {
+   "aligned_launches": 118,
+   "cycle_error": 0.0,
+   "cycles_a": 152382,
+   "cycles_b": 152382,
+   "divergences": [],
+   "equal": true,
+   "launches": 118,
+   "launches_a": 118,
+   "launches_b": 118,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.attention_prefill_tiny_fp16-b1-h2-s16-d16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.attention_prefill_tiny_fp16-b1-h2-s16-d16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.attention_prefill_tiny_fp16-b1-h2-s16-d16.uncore": {
+   "aligned_launches": 118,
+   "cycles_a": 699237,
+   "cycles_b": 17807798,
+   "divergences": [],
+   "equal": true,
+   "launches": 118,
+   "launches_a": 118,
+   "launches_b": 118,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.bmm_tiny_fp16-b2-m16-k16-n16": {
+   "aligned_launches": 30,
+   "cycle_error": 0.0,
+   "cycles_a": 20118,
+   "cycles_b": 20118,
+   "divergences": [],
+   "equal": true,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.bmm_tiny_fp16-b2-m16-k16-n16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.bmm_tiny_fp16-b2-m16-k16-n16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.bmm_tiny_fp16-b2-m16-k16-n16.uncore": {
+   "aligned_launches": 30,
+   "cycles_a": 126012,
+   "cycles_b": 11630330,
+   "divergences": [],
+   "equal": true,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.conv2d_tiny_fp32-n1-cin4-h8-w8-cout8": {
+   "aligned_launches": 38,
+   "cycle_error": 0.0,
+   "cycles_a": 442022,
+   "cycles_b": 442022,
+   "divergences": [],
+   "equal": true,
+   "launches": 38,
+   "launches_a": 38,
+   "launches_b": 38,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.conv2d_tiny_fp32-n1-cin4-h8-w8-cout8.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.conv2d_tiny_fp32-n1-cin4-h8-w8-cout8.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.conv2d_tiny_fp32-n1-cin4-h8-w8-cout8.uncore": {
+   "aligned_launches": 38,
+   "cycles_a": 756374,
+   "cycles_b": 14285072,
+   "divergences": [],
+   "equal": true,
+   "launches": 38,
+   "launches_a": 38,
+   "launches_b": 38,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.cumsum_tiny_fp32-r4-c64": {
+   "aligned_launches": 28,
+   "cycle_error": 0.0,
+   "cycles_a": 16485,
+   "cycles_b": 16485,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.cumsum_tiny_fp32-r4-c64.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.cumsum_tiny_fp32-r4-c64.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.cumsum_tiny_fp32-r4-c64.uncore": {
+   "aligned_launches": 28,
+   "cycles_a": 95644,
+   "cycles_b": 11559139,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.embedding_tiny_fp16-v256-d64-t16": {
+   "aligned_launches": 58,
+   "cycle_error": 0.0,
+   "cycles_a": 117585,
+   "cycles_b": 117585,
+   "divergences": [],
+   "equal": true,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.embedding_tiny_fp16-v256-d64-t16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.embedding_tiny_fp16-v256-d64-t16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.embedding_tiny_fp16-v256-d64-t16.uncore": {
+   "aligned_launches": 58,
+   "cycles_a": 705891,
+   "cycles_b": 12681571,
+   "divergences": [],
+   "equal": true,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.gelu_tanh_tiny_fp16-n256": {
+   "aligned_launches": 34,
+   "cycle_error": 0.0,
+   "cycles_a": 16990,
+   "cycles_b": 16990,
+   "divergences": [],
+   "equal": true,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.gelu_tanh_tiny_fp16-n256.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.gelu_tanh_tiny_fp16-n256.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.gelu_tanh_tiny_fp16-n256.uncore": {
+   "aligned_launches": 34,
+   "cycles_a": 78349,
+   "cycles_b": 11526781,
+   "divergences": [],
+   "equal": true,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.gemv_tiny_fp16-k64-n64": {
+   "aligned_launches": 30,
+   "cycle_error": 0.0,
+   "cycles_a": 57187,
+   "cycles_b": 57187,
+   "divergences": [],
+   "equal": true,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.gemv_tiny_fp16-k64-n64.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.gemv_tiny_fp16-k64-n64.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.gemv_tiny_fp16-k64-n64.uncore": {
+   "aligned_launches": 30,
+   "cycles_a": 255737,
+   "cycles_b": 11857693,
+   "divergences": [],
+   "equal": true,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.layernorm_tiny_fp16-r4-d64": {
+   "aligned_launches": 28,
+   "cycle_error": 0.0,
+   "cycles_a": 18359,
+   "cycles_b": 18359,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.layernorm_tiny_fp16-r4-d64.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.layernorm_tiny_fp16-r4-d64.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.layernorm_tiny_fp16-r4-d64.uncore": {
+   "aligned_launches": 28,
+   "cycles_a": 86623,
+   "cycles_b": 11538527,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.linear_tiny_fp16-m16-k64-n64": {
+   "aligned_launches": 30,
+   "cycle_error": 0.0,
+   "cycles_a": 47546,
+   "cycles_b": 47546,
+   "divergences": [],
+   "equal": true,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.linear_tiny_fp16-m16-k64-n64.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.linear_tiny_fp16-m16-k64-n64.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.linear_tiny_fp16-m16-k64-n64.uncore": {
+   "aligned_launches": 30,
+   "cycles_a": 301434,
+   "cycles_b": 11946213,
+   "divergences": [],
+   "equal": true,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16": {
+   "aligned_launches": 28,
+   "cycle_error": 0.0,
+   "cycles_a": 17301,
+   "cycles_b": 17301,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16.uncore": {
+   "aligned_launches": 28,
+   "cycles_a": 115455,
+   "cycles_b": 11610520,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.matmul_tiny_fp32-m16-k32-n16": {
+   "aligned_launches": 28,
+   "cycle_error": 0.0,
+   "cycles_a": 25970,
+   "cycles_b": 25970,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.matmul_tiny_fp32-m16-k32-n16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.matmul_tiny_fp32-m16-k32-n16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.matmul_tiny_fp32-m16-k32-n16.uncore": {
+   "aligned_launches": 28,
+   "cycles_a": 167441,
+   "cycles_b": 11730316,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.rmsnorm_tiny_fp16-r4-d64": {
+   "aligned_launches": 28,
+   "cycle_error": 0.0,
+   "cycles_a": 16773,
+   "cycles_b": 16773,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.rmsnorm_tiny_fp16-r4-d64.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.rmsnorm_tiny_fp16-r4-d64.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.rmsnorm_tiny_fp16-r4-d64.uncore": {
+   "aligned_launches": 28,
+   "cycles_a": 81404,
+   "cycles_b": 11531381,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.rope_tiny_fp16-b1-h2-s16-d16": {
+   "aligned_launches": 58,
+   "cycle_error": 0.0,
+   "cycles_a": 29251,
+   "cycles_b": 29251,
+   "divergences": [],
+   "equal": true,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.rope_tiny_fp16-b1-h2-s16-d16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.rope_tiny_fp16-b1-h2-s16-d16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.rope_tiny_fp16-b1-h2-s16-d16.uncore": {
+   "aligned_launches": 58,
+   "cycles_a": 198915,
+   "cycles_b": 13407417,
+   "divergences": [],
+   "equal": true,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.silu_tiny_fp16-n256": {
+   "aligned_launches": 34,
+   "cycle_error": 0.0,
+   "cycles_a": 15798,
+   "cycles_b": 15798,
+   "divergences": [],
+   "equal": true,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.silu_tiny_fp16-n256.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.silu_tiny_fp16-n256.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.silu_tiny_fp16-n256.uncore": {
+   "aligned_launches": 34,
+   "cycles_a": 77183,
+   "cycles_b": 11524407,
+   "divergences": [],
+   "equal": true,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.softmax_tiny_fp16-r4-c64": {
+   "aligned_launches": 30,
+   "cycle_error": 0.0,
+   "cycles_a": 21026,
+   "cycles_b": 21026,
+   "divergences": [],
+   "equal": true,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.softmax_tiny_fp16-r4-c64.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.softmax_tiny_fp16-r4-c64.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.softmax_tiny_fp16-r4-c64.uncore": {
+   "aligned_launches": 30,
+   "cycles_a": 102486,
+   "cycles_b": 11574661,
+   "divergences": [],
+   "equal": true,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.softmax_tiny_fp32-r3-c37": {
+   "aligned_launches": 28,
+   "cycle_error": 0.0,
+   "cycles_a": 15019,
+   "cycles_b": 15019,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.softmax_tiny_fp32-r3-c37.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.softmax_tiny_fp32-r3-c37.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.softmax_tiny_fp32-r3-c37.uncore": {
+   "aligned_launches": 28,
+   "cycles_a": 74633,
+   "cycles_b": 11522832,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.swiglu_tiny_fp16-n256": {
+   "aligned_launches": 34,
+   "cycle_error": 0.0,
+   "cycles_a": 16730,
+   "cycles_b": 16730,
+   "divergences": [],
+   "equal": true,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.swiglu_tiny_fp16-n256.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.swiglu_tiny_fp16-n256.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.swiglu_tiny_fp16-n256.uncore": {
+   "aligned_launches": 34,
+   "cycles_a": 87234,
+   "cycles_b": 11541077,
+   "divergences": [],
+   "equal": true,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.transpose_tiny_fp32-r32-c32": {
+   "aligned_launches": 30,
+   "cycle_error": 0.0,
+   "cycles_a": 25134,
+   "cycles_b": 25134,
+   "divergences": [],
+   "equal": true,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.transpose_tiny_fp32-r32-c32.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.transpose_tiny_fp32-r32-c32.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.transpose_tiny_fp32-r32-c32.uncore": {
+   "aligned_launches": 30,
+   "cycles_a": 205554,
+   "cycles_b": 11761104,
+   "divergences": [],
+   "equal": true,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  }
+ },
+ "reason": "all 108 point(s) equal in every compared stream",
+ "schema": "tnca-core-alignment/1",
+ "verdict": "aligned"
+}

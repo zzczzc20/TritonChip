@@ -87,6 +87,19 @@ struct Config {
             "vrf_prefetch","fp_reduction_vector_extra","time_quantum",
             // M3: DRAM path (include/tnca_dram.hpp)
             "dram_path","dram_fixed_cycles","dram_clock_ratio","dram_max_passes","dram_tolerance_ppm"};
+        // core_model (optional, default 0): 1 selects the cycle-level core (src/cycle_core.inc).
+        u64 core_model=0;if(v.count("core_model")){core_model=v.at("core_model");v.erase("core_model");}
+        require(core_model<=1,"core_model is 0 (event-driven core) or 1 (cycle-level core)");
+        // uncore_model (optional, default 0): 1 selects the cycle-level uncore (src/cycle_uncore.inc); needs core_model=1.
+        u64 uncore_model=0;if(v.count("uncore_model")){uncore_model=v.at("uncore_model");v.erase("uncore_model");}
+        require(uncore_model<=1 && (uncore_model==0 || core_model==1),"uncore_model is 0 or 1 and needs core_model=1");
+        // uncore_board (optional, default 0): 1 = the board's memory side (home and outlet links, one port per
+        // home, tnca_line_axi adapters, dispatch link stages; align/UNCORE_TIMING_BOARD.md); 0 = the simulation
+        // bench's (PORTS=1, tnca_dram_model). With it, optional uncore_axi_latency (25), uncore_axi_latency_step
+        // (19 per port) and uncore_axi_write_delay (15) describe the AXI slave (the bench's line model by default).
+        u64 uncore_board=0;if(v.count("uncore_board")){uncore_board=v.at("uncore_board");v.erase("uncore_board");}
+        require(uncore_board<=1 && (uncore_board==0 || uncore_model==1),"uncore_board is 0 or 1 and needs uncore_model=1");
+        std::map<std::string,u64> axi;for(const char* k:{"uncore_axi_latency","uncore_axi_latency_step","uncore_axi_write_delay"})if(v.count(k)){axi[k]=v.at(k);v.erase(k);}
         // Optional what-if keys, absent from every shipped configuration; an
         // absent key takes its default and leaves the model unchanged.
         //   mtx_dp_group_16 / mtx_dp_group_8 (default 1): a hypothetical packed
@@ -134,6 +147,8 @@ struct Config {
         require(get("mtx_abuf")<=1 && get("lsu_slots")<=64 && get("lsu_beat_slots")<=64,"invalid core engine configuration");
         require(get("memory_model")<=1,"memory_model is 0 (detailed TLM) or 1 (timeline)");
         require(get("time_quantum")==0 || get("memory_model")==1,"time_quantum needs the timeline memory (memory_model=1)");
+        require(core_model==0 || get("memory_model")==1,"core_model=1 needs the timeline memory (memory_model=1)");
+        v["core_model"]=core_model;v["uncore_model"]=uncore_model;v["uncore_board"]=uncore_board;for(auto& kv:axi)v[kv.first]=kv.second;
         require(get("nx")*get("ny")<=16,"at most 16 homes");
         require(get("sets")<=65536 && (get("sets")&(get("sets")-1))==0,"sets must be power of two <=65536");
         require(get("ways")<=32 && get("mshrs")<=256 && get("targets")<=4096,"unreasonable cache geometry");

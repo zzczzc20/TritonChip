@@ -104,44 +104,91 @@ def build_bench(out, *, core_count, memory_bytes, memory_ports, traced_core, ove
                 board=BOARD if bench == 'board' else None)
 
 
+def build_described(out, *, device, memory_bytes):
+    """The board-top stand-in of a device description (R41 on), elaborated by the product's own build
+    (MulticoreMMIOLink._build: the image's parameters, striped HBM, the AXI width) with the monitor as an
+    observation top -- the bench the agent harness's evaluator runs, plus a monitor that only listens."""
+    sys.path.insert(0, str(ROOT / 'python'))
+    from tnca import devices
+    from tnca.backends.multicore_mmio_sim import MulticoreMMIOLink
+    desc = devices.load(str(ROOT / device))
+    cores, ports = desc['platform']['core_count'], desc['uncore']['MEM_PORTS']
+    out.mkdir(parents=True, exist_ok=True)
+    link = MulticoreMMIOLink(board_top=True, device=desc, memory_bytes=memory_bytes, workdir=str(out),
+                             observe=dict(tops=['tnca_core_trace'],
+                                          sources=[str((HERE / 'tnca_core_trace.v').relative_to(ROOT))],
+                                          defines=['TNCA_TRACE_BOARD', f'TNCA_TRACE_CORES={cores}',
+                                                   f'TNCA_TRACE_PORTS={ports}']))
+    target = Path(link._build())
+    version = subprocess.run([shutil.which('iverilog') or 'iverilog', '-V'], capture_output=True,
+                             text=True).stdout.splitlines()[0]
+    return dict(path=str(target), sha256=file_sha(target), compiler_version=version, core_count=cores,
+                memory_bytes=memory_bytes, memory_ports=ports, bench='described', device=device,
+                device_name=desc['name'], profile=desc['per_core_profile'])
+
+
+# The agent harness's evaluator runs a described machine's point exactly so (tritonchip_agent_harness
+# evaluator.py, the multicore path): the product's defaults for every compile knob, the backend in the
+# environment, the scored profile on the command line, no warm-up or timed calls of its own.
+def evaluator_env(*, device, memory_bytes, bench_path, active_cores, timeout, work):
+    args = dict(board_top=True, device=str(ROOT / device), memory_bytes=memory_bytes, hbm_dma=True,
+                harness=str(bench_path))
+    return dict(TNCA_BACKEND='fpga-multicore-sim', TNCA_BACKEND_ARGS=json.dumps(args),
+                TNCA_COMPILE_CACHE_DIR=str(work / 'tnca-inductor'), TNCA_ACTIVE_CORES=str(active_cores),
+                TNCA_HOST_TIMEOUT=f'{timeout:g}')
+
+
 def suite_points(path, tier):
     suite = json.loads(Path(path).read_text())
-    return [p['id'] for p in suite['points'] if not tier or p.get('tier') in tier]
+    # spec/r40 suites tag every point with its tier; archbench/suites/<tier>.json (R41) tag the suite.
+    return [p['id'] for p in suite['points'] if not tier or p.get('tier', suite.get('tier')) in tier]
 
 
 def run_point(point, *, python, bench, out, core_count, memory_ports, timeout, extra_env, warmup=0, timed=1,
-              torch_device='native', active_cores=1, bench_kind='device'):
+              torch_device='native', active_cores=1, bench_kind='device', device=None, profile=None,
+              memory_bytes=None):
     trace = out / 'traces' / f'{slug(point)}.trace'
     log = out / 'logs' / f'{slug(point)}.log'
     rec = out / 'records' / f'{slug(point)}.jsonl'
     for p in (trace.parent, log.parent, rec.parent):
         p.mkdir(parents=True, exist_ok=True)
     env = {k: v for k, v in os.environ.items() if not k.startswith(('TNCA_', 'TRITON_', 'TORCHINDUCTOR_'))}
-    env.update(HARNESS)
-    env.update(RUNTIME)
-    env.update(knobs_for(point, None))
-    env.update(extra_env)
-    env['TNCA_ACTIVE_CORES'] = str(active_cores)
-    env['TNCA_TORCH_DEVICE'] = torch_device   # run_graphs.py --torch-device: native tensors, as the model runs
+    work = out / 'work' / slug(point)
+    if bench_kind == 'described':
+        # The evaluator's environment, nothing of run_graphs.py's.
+        env.update(evaluator_env(device=device, memory_bytes=memory_bytes, bench_path=bench,
+                                 active_cores=active_cores, timeout=timeout, work=work))
+        env.update(extra_env)
+    else:
+        env.update(HARNESS)
+        env.update(RUNTIME)
+        env.update(knobs_for(point, None))
+        env.update(extra_env)
+        env['TNCA_ACTIVE_CORES'] = str(active_cores)
+        env['TNCA_TORCH_DEVICE'] = torch_device   # run_graphs.py --torch-device: native tensors, as the model runs
     utrace = out / 'traces' / f'{slug(point)}.uncore.trace'
     plusargs = [f'+core_trace={trace}'] + [f'+core_trace{c}={trace}.core{c}' for c in range(1, core_count)] + [f'+uncore_trace={utrace}']
     env['TNCA_DEVICE_PLUSARGS'] = ' '.join(plusargs)
-    work = out / 'work' / slug(point)
     for d in ('triton_cache', 'triton_home', 'inductor_cache', 'tmp', 'dump'):
         (work / d).mkdir(parents=True, exist_ok=True)
     env.update(TRITON_CACHE_DIR=str(work / 'triton_cache'), TRITON_HOME=str(work / 'triton_home'),
                TORCHINDUCTOR_CACHE_DIR=str(work / 'inductor_cache'), TMPDIR=str(work / 'tmp'),
                TNCA_DUMP_DIR=str(work / 'dump'))
-    if bench_kind == 'board':
-        backend = 'fpga-multicore-sim'
-        backend_args = json.dumps(dict(harness=str(bench), core_count=core_count, **BOARD))
+    if bench_kind == 'described':
+        # the evaluator's command line: the backend comes from the environment
+        cmd = [python, '-m', 'archbench.run', '--platform', 'tnca', '--profile', profile,
+               '--point', point, '--out', str(rec)]
     else:
-        backend = 'sim-multicore'
-        backend_args = json.dumps(dict(bench=str(bench), core_count=core_count, memory_ports=memory_ports))
-    cmd = [python, '-m', 'archbench.run', '--platform', 'tnca', '--profile', PROFILE,
-           '--backend', backend, '--backend-args', backend_args, '--opt-level', '2', '--seed', '0',
-           '--warmup', str(warmup), '--timed', str(timed),
-           '--point', point, '--out', str(rec), '--timeout', str(timeout)]
+        if bench_kind == 'board':
+            backend = 'fpga-multicore-sim'
+            backend_args = json.dumps(dict(harness=str(bench), core_count=core_count, **BOARD))
+        else:
+            backend = 'sim-multicore'
+            backend_args = json.dumps(dict(bench=str(bench), core_count=core_count, memory_ports=memory_ports))
+        cmd = [python, '-m', 'archbench.run', '--platform', 'tnca', '--profile', PROFILE,
+               '--backend', backend, '--backend-args', backend_args, '--opt-level', '2', '--seed', '0',
+               '--warmup', str(warmup), '--timed', str(timed),
+               '--point', point, '--out', str(rec), '--timeout', str(timeout)]
     t0 = time.time()
     with log.open('w') as f:
         f.write(' '.join(cmd) + '\n')
@@ -185,7 +232,15 @@ def main():
     ap.add_argument('--timed', type=int, default=1, help='timed calls (as run_graphs.py)')
     ap.add_argument('--torch-device', default='native', help='TNCA_TORCH_DEVICE (as run_graphs.py)')
     ap.add_argument('--reuse-bench', action='store_true', help='keep RUN_DIR/bench/device.vvp if present')
+    ap.add_argument('--device', help='a device description (spec/devices/*.json, tree-relative): its board-top '
+                                     'stand-in by the product\'s own build, run in the agent harness evaluator\'s '
+                                     'environment (overrides --bench, --core-count, --memory-ports)')
+    ap.add_argument('--profile', help='with --device: the scored profile (default: the description\'s per-core profile)')
     args = ap.parse_args()
+    if args.device:
+        args.bench = 'described'
+        if args.memory_bytes == 8 * 1024 * 1024:
+            args.memory_bytes = 16 << 20   # the evaluator's MULTICORE_MEMORY
     if not args.iverilog:
         sys.exit('iverilog not found')
     points = list(args.point) + (suite_points(args.suite, set(args.tier)) if args.suite else [])
@@ -200,24 +255,39 @@ def main():
                                                    'MTX_ABUF', 'LSU_INFLIGHT', 'FPU_OVERLAP'):
             overrides[k[9:]] = v
     bench_dir = out / 'bench'
-    if args.reuse_bench and (bench_dir / 'device.vvp').exists() and (bench_dir / 'bench.json').exists():
+    if args.reuse_bench and (bench_dir / 'bench.json').exists() and Path(
+            json.loads((bench_dir / 'bench.json').read_text())['path']).exists():
         bench = json.loads((bench_dir / 'bench.json').read_text())
+    elif args.device:
+        bench = build_described(bench_dir, device=args.device, memory_bytes=args.memory_bytes)
+        (bench_dir / 'bench.json').write_text(json.dumps(bench, indent=1) + '\n')
     else:
         bench = build_bench(bench_dir, core_count=args.core_count, memory_bytes=args.memory_bytes,
                             memory_ports=args.memory_ports, traced_core=0,
                             overrides=overrides, iverilog=args.iverilog, bench=args.bench)
         (bench_dir / 'bench.json').write_text(json.dumps(bench, indent=1) + '\n')
+    if args.device:
+        args.core_count, args.memory_ports = bench['core_count'], bench['memory_ports']
+        profile = args.profile or bench['profile']
+    else:
+        profile = PROFILE
     head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, capture_output=True, text=True)
     dirty = subprocess.run(['git', 'status', '--porcelain', '--', 'rtl', 'tb', 'python', 'archbench', 'compiler'],
                            cwd=ROOT, capture_output=True, text=True)
     source = dict(root=str(ROOT), commit=head.stdout.strip() if head.returncode == 0 else None,
                   dirty=bool(dirty.stdout.strip()) if dirty.returncode == 0 else None)
-    environment = dict(HARNESS, **RUNTIME)
-    environment.update(extra_env)
+    if args.device:
+        environment = evaluator_env(device=args.device, memory_bytes=args.memory_bytes, bench_path=bench['path'],
+                                    active_cores=args.active_cores, timeout=args.timeout, work=out / 'work' / '<point>')
+        environment.update(extra_env)
+        knobs, warmup, timed, torch_device = 'the product\'s defaults (the evaluator\'s)', None, None, None
+    else:
+        environment = dict(HARNESS, **RUNTIME)
+        environment.update(extra_env)
+        knobs, warmup, timed, torch_device = 'run_graphs.knobs_for (B40N)', args.warmup, args.timed, args.torch_device
     manifest = dict(schema='tnca-core-trace-run/2', source=source,
-                    bench=bench, profile=PROFILE, active_cores=args.active_cores, points=points, environment=environment,
-                    compile_knobs='run_graphs.knobs_for (B40N)', warmup=args.warmup, timed=args.timed,
-                    torch_device=args.torch_device,
+                    bench=bench, profile=profile, active_cores=args.active_cores, points=points, environment=environment,
+                    compile_knobs=knobs, warmup=warmup, timed=timed, torch_device=torch_device,
                     python=args.python, started=time.strftime('%Y-%m-%dT%H:%M:%S'))
     (out / 'manifest.json').write_text(json.dumps(manifest, indent=1) + '\n')
     results = []
@@ -226,7 +296,8 @@ def main():
                                core_count=args.core_count, memory_ports=args.memory_ports,
                                timeout=args.timeout, extra_env=extra_env, warmup=args.warmup,
                                timed=args.timed, torch_device=args.torch_device,
-                               active_cores=args.active_cores, bench_kind=args.bench): p for p in points}
+                               active_cores=args.active_cores, bench_kind=args.bench, device=args.device,
+                               profile=profile, memory_bytes=args.memory_bytes): p for p in points}
         for fut in cf.as_completed(futures):
             s = fut.result()
             results.append(s)

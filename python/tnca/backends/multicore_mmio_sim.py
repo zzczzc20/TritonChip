@@ -69,7 +69,17 @@ class _ExternalDevice:
 
 class MulticoreMMIOLink(SimLink):
     def __init__(self, *, core_count=3, memory_ports=3,
-                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, hybrid_lsu=False, sfu_lanes=1, home_background_reads=False, cache_sets=None, rtl_params=None, stage_probes=False, device=None, inbox=None, outbox=None, **kwargs):
+                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, hybrid_lsu=False, sfu_lanes=1, home_background_reads=False, cache_sets=None, rtl_params=None, stage_probes=False, device=None, inbox=None, outbox=None, observe=None, **kwargs):
+        # Observation builds only (tools/performance_harness/align/record_rtl.py): further
+        # tops, sources and defines elaborated with this very bench -- a monitor that reads
+        # the device through hierarchical references. None is the product's bench.
+        self.observe = None
+        if observe is not None:
+            if (not isinstance(observe, dict) or set(observe) - {'tops', 'sources', 'defines'}
+                    or not all(isinstance(v, (list, tuple)) and all(isinstance(x, str) for x in v)
+                               for v in observe.values())):
+                raise ArgumentError('observe takes lists of tops, sources and defines')
+            self.observe = {k: list(observe.get(k, ())) for k in ('tops', 'sources', 'defines')}
         if type(journal) is not bool or (journal and not board_top):
             raise ArgumentError('journal requires a boolean and the board-top stand-in')
         if type(hybrid_lsu) is not bool or type(home_background_reads) is not bool or sfu_lanes not in (1, 2, 3, 4, 8):
@@ -316,6 +326,11 @@ class MulticoreMMIOLink(SimLink):
         if header is not None:
             command += [str(header)]
         command += [f'tb/fpga/{top}.v']
+        if self.observe:
+            for extra in self.observe['tops']:
+                command[command.index('-o'):command.index('-o')] = ['-s', extra]
+            command[1:1] = [f'-D{d}' for d in self.observe['defines']]
+            command += self.observe['sources']
         result = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=1800)
         if result.returncode:
             raise DependencyFailed('multicore MMIO harness did not elaborate',

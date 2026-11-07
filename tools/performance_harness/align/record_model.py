@@ -86,17 +86,27 @@ def main():
     ap.add_argument('--replay-level', choices=['core', 'uncore'], default='core',
                     help="core: the core's port (TNCA_MODEL_CORE_REPLAY, first slice); uncore: the device's "
                          "memory port (TNCA_MODEL_UNCORE_REPLAY, second slice, needs uncore_model=1)")
+    ap.add_argument('--evaluator-env', action='store_true',
+                    help='the agent harness evaluator\'s environment and one cold call (run_graphs.py --evaluator-env '
+                         '--timed 0), to replay a record_rtl.py --device recording')
+    ap.add_argument('--profile', help='run_graphs.py --profile (with --evaluator-env: the recording\'s profile)')
     args = ap.parse_args()
     out = Path(args.out).resolve()
     points = list(args.point)
     if args.suite:
         suite = json.loads(Path(args.suite).read_text())
-        points += [p['id'] for p in suite['points'] if not args.tier or p.get('tier') in set(args.tier)]
+        points += [p['id'] for p in suite['points'] if not args.tier or p.get('tier', suite.get('tier')) in set(args.tier)]
+    if args.evaluator_env and args.replay and not args.profile:
+        args.profile = json.loads((Path(args.replay) / 'manifest.json').read_text())['profile']
 
     def run_graphs(run_out, pts, env):
         cmd = [args.python, str(SYSTEMC / 'run_graphs.py'), '--source-root', str(ROOT), '--binary', args.binary,
                '--config', args.config, '--out', str(run_out), '--jobs', str(args.jobs), '--timeout', str(args.timeout),
                '--active-cores', str(args.active_cores), '--env', 'TNCA_MODEL_CORE_TRACE=1']
+        if args.evaluator_env:
+            cmd += ['--evaluator-env', '--timed', '0']
+        if args.profile:
+            cmd += ['--profile', args.profile]
         for kv in list(args.env) + env:
             cmd += ['--env', kv]
         for p in pts:

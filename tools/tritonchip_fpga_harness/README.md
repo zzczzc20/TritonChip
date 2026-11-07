@@ -816,8 +816,11 @@ resolves (user, key, jump host: the harness adds none), its `roles` (`build`,
 `workspace`, a `state_dir`, and for a build server the `vitis_root` it keeps.
 `environment` passes further variables to every command the controller runs
 there: on a build server a `PATH` with Vivado's and Vitis's `bin` first (a
-remote command does not read the login shell's profile), on a card server the
-ArchBench interpreter. Every value is one shell-safe token that does not start
+remote command does not read the login shell's profile) that also reaches a
+system `unzip`, which `v++ --link` calls to unpack the kernel `.xo` and
+settings64 does not provide (the doctor checks it; x86vivado has none, so its
+`PATH` ends in a directory that holds one), on a card server the ArchBench
+interpreter. Every value is one shell-safe token that does not start
 with `-`; anything else is refused when the file is read. The harness passes
 `--` before the destination, and quotes for the remote shell every word it did
 not take from the hosts file.

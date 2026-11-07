@@ -426,6 +426,15 @@ class U50Adapter:
                     warnings.append(f"{tool} unavailable before settings64 (planning mode)")
                 add(tool, bool(found) or dry_run or not require_vendor_tools, found or tool,
                     "warning" if (dry_run or not require_vendor_tools) and not found else "error")
+            # v++ --link unpacks the kernel .xo with the system's unzip, which
+            # settings64 does not provide: a build server without it passes
+            # every other check and fails hours later at the link (x86vivado,
+            # 2026-11-07, "command not found: unzip").
+            found = shutil.which("unzip")
+            if not found and (dry_run or not require_vendor_tools):
+                warnings.append("unzip unavailable (planning mode): v++ --link needs it to unpack the .xo")
+            add("unzip", bool(found) or dry_run or not require_vendor_tools, found or "unzip",
+                "warning" if (dry_run or not require_vendor_tools) and not found else "error")
 
         if stage == "full":
             existing = _existing_vendor_processes()

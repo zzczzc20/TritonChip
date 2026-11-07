@@ -62,7 +62,7 @@ class U50MockFlowTests(unittest.TestCase):
     def _config(self, root: Path) -> tuple[U50Config, Path]:
         bin_dir = root / "bin"
         bin_dir.mkdir()
-        for tool in ("vivado", "v++", "xclbinutil"):
+        for tool in ("vivado", "v++", "xclbinutil", "unzip"):
             _fake_tool(bin_dir, tool)
         vitis = root / "vitis"
         (vitis / "settings64.sh").parent.mkdir(parents=True)
@@ -104,6 +104,27 @@ class U50MockFlowTests(unittest.TestCase):
         # A plan is not a build: no .xo/.xclbin must be reported as valid.
         self.assertIsNotNone(result.artifacts)
         self.assertFalse(result.artifacts.ok)
+
+    def test_link_preflight_needs_the_system_unzip(self) -> None:
+        # v++ --link unpacks the .xo with the system unzip; a build server
+        # without it must fail the doctor, not the link hours later.
+        with tempfile.TemporaryDirectory(prefix="tnca-harness-mock-") as td:
+            root = Path(td)
+            config, bin_dir = self._config(root)
+            old_path = os.environ.get("PATH", "")
+            try:
+                os.environ["PATH"] = str(bin_dir)
+                with_unzip = U50Adapter(config).preflight(root / "run", stage="link")
+                (bin_dir / "unzip").unlink()
+                without = U50Adapter(config).preflight(root / "run", stage="link")
+            finally:
+                os.environ["PATH"] = old_path
+        def unzip(result):
+            return next(c for c in result.checks if c.name == "unzip")
+        self.assertTrue(unzip(with_unzip).ok)
+        self.assertFalse(unzip(without).ok)
+        self.assertEqual(unzip(without).severity, "error")
+        self.assertFalse(without.ok)
 
     def test_mock_package_and_link_pass_end_to_end(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tnca-harness-mock-") as td:

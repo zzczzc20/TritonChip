@@ -1,0 +1,205 @@
+{
+  "schema": "tritonchip-skill-benchmark-cases/1",
+  "seed": 0,
+  "source_commit": "a3e73d08f865dfc4f03fee038cd2d692b000183b",
+  "cases": [
+    {
+      "point": "op.add/tiny/fp32-n256",
+      "file": "add_tiny_fp32_n256.py",
+      "kind": "op",
+      "family": "add",
+      "tier": "tiny",
+      "dtype": "fp32",
+      "out_dtype": null,
+      "tolerance": 0.0002,
+      "draft": false
+    },
+    {
+      "point": "op.argmax/tiny/fp16-r2-v256",
+      "file": "argmax_tiny_fp16_r2_v256.py",
+      "kind": "op",
+      "family": "argmax",
+      "tier": "tiny",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.0,
+      "draft": false
+    },
+    {
+      "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+      "file": "attention_decode_tiny_fp16_b1_h2_l16_d16.py",
+      "kind": "op",
+      "family": "attention_decode",
+      "tier": "tiny",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+      "file": "attention_prefill_tiny_fp16_b1_h2_s16_d16.py",
+      "kind": "op",
+      "family": "attention_prefill",
+      "tier": "tiny",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.embedding/tiny/fp16-v256-d64-t16",
+      "file": "embedding_tiny_fp16_v256_d64_t16.py",
+      "kind": "op",
+      "family": "embedding",
+      "tier": "tiny",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.0,
+      "draft": false
+    },
+    {
+      "point": "op.gemv/tiny/fp16-k64-n64",
+      "file": "gemv_tiny_fp16_k64_n64.py",
+      "kind": "op",
+      "family": "gemv",
+      "tier": "tiny",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.layernorm/small/fp16-r64-d256",
+      "file": "layernorm_small_fp16_r64_d256.py",
+      "kind": "op",
+      "family": "layernorm",
+      "tier": "small",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.linear/small/fp16-m64-k256-n256",
+      "file": "linear_small_fp16_m64_k256_n256.py",
+      "kind": "op",
+      "family": "linear",
+      "tier": "small",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.matmul/tiny/fp16-m16-k32-n16",
+      "file": "matmul_tiny_fp16_m16_k32_n16.py",
+      "kind": "op",
+      "family": "matmul",
+      "tier": "tiny",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.rmsnorm/tiny/fp16-r4-d64",
+      "file": "rmsnorm_tiny_fp16_r4_d64.py",
+      "kind": "op",
+      "family": "rmsnorm",
+      "tier": "tiny",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.rope/medium/fp16-b1-h8-s128-d32",
+      "file": "rope_medium_fp16_b1_h8_s128_d32.py",
+      "kind": "op",
+      "family": "rope",
+      "tier": "medium",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.silu/tiny/fp16-n256",
+      "file": "silu_tiny_fp16_n256.py",
+      "kind": "op",
+      "family": "silu",
+      "tier": "tiny",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.softmax/tiny/fp32-r3-c37",
+      "file": "softmax_tiny_fp32_r3_c37.py",
+      "kind": "op",
+      "family": "softmax",
+      "tier": "tiny",
+      "dtype": "fp32",
+      "out_dtype": null,
+      "tolerance": 0.0002,
+      "draft": false
+    },
+    {
+      "point": "op.softmax/medium/fp16-r80-c512",
+      "file": "softmax_medium_fp16_r80_c512.py",
+      "kind": "op",
+      "family": "softmax",
+      "tier": "medium",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.swiglu/tiny/fp16-n256",
+      "file": "swiglu_tiny_fp16_n256.py",
+      "kind": "op",
+      "family": "swiglu",
+      "tier": "tiny",
+      "dtype": "fp16",
+      "out_dtype": null,
+      "tolerance": 0.02,
+      "draft": false
+    },
+    {
+      "point": "op.transpose/medium/fp32-r160-c256",
+      "file": "transpose_medium_fp32_r160_c256.py",
+      "kind": "op",
+      "family": "transpose",
+      "tier": "medium",
+      "dtype": "fp32",
+      "out_dtype": null,
+      "tolerance": 0.0,
+      "draft": false
+    },
+    {
+      "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+      "file": "w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py",
+      "kind": "op",
+      "family": "w8a8_block_linear",
+      "tier": "small",
+      "dtype": "e4m3",
+      "out_dtype": "bf16",
+      "tolerance": 0.06,
+      "draft": true
+    },
+    {
+      "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+      "file": "wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py",
+      "kind": "op",
+      "family": "wfp8_linear",
+      "tier": "tiny",
+      "dtype": "bf16",
+      "out_dtype": null,
+      "tolerance": 0.06,
+      "draft": false
+    }
+  ]
+}

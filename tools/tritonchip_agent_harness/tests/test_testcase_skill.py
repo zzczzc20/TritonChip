@@ -1,12 +1,15 @@
 """The test-case skill (skills/testcase-design): equal to the evaluation's own code, free of
 the benchmark, and delivered to every run the same way.
 
-Two kinds of check. Equivalence: the skill's copies of the protocol's `compare`, the
-reference, the bound and `spec_peak` give the same answers as ArchBench's originals on
-the same fixtures, so what an agent measures with the skill is what the evaluation
-measures. Leak: nothing in the skill directory names a point, its parameters, its actual
-input shapes or a tier size, and no worked example is a point's workload. The leak check
-draws its catalog from the live registry, so a point added later is covered. Delivery:
+Equivalence: the skill's copies of the protocol's `compare`, the reference, the bound and
+`spec_peak` give the same answers as ArchBench's originals on the same fixtures, and each
+benchmark case (benchmark_cases/) is its point bit for bit, so what an agent measures with
+the skill is what the evaluation measures. Leak: the skill gives the points in its own
+INDEX.json and the classes in classes.json; nothing in it names any other point, its
+parameters, its actual input shapes or a tier size, no class it does not list, and no
+worked example is a hidden point's workload. No task that gives the skill by default hides
+a given point. The leak check draws its catalog from the live registry, so a point added
+later is covered. Delivery:
 the skill never enters a workspace (it reaches the container by mount), every CLI has a
 skills directory to link it into, and the prompt names it at the mounted path.
 
@@ -88,6 +91,12 @@ def built_points():
         from archbench import registry
         _BUILT = [(p, *p.make(0)) for p in registry.points()]
     return _BUILT
+
+
+CASES_DIR = SKILL / "benchmark_cases"
+INDEX = json.loads((CASES_DIR / "INDEX.json").read_text(encoding="utf-8"))
+VISIBLE = {c["point"] for c in INDEX["cases"]}
+CLASSES = json.loads((SKILL / "classes.json").read_text(encoding="utf-8"))["classes"]
 
 
 def skill_text() -> str:
@@ -233,72 +242,175 @@ class ProtocolEquivalence(unittest.TestCase):
 
 
 class Leak(unittest.TestCase):
-    """Nothing in the skill directory names the benchmark."""
+    """Nothing in the skill directory names a point it does not give. The skill gives the points in
+    benchmark_cases/ (INDEX.json) and the classes in classes.json; every other point is hidden, and so is
+    every class not listed. The hidden set is derived from the skill's own index: no test names it."""
 
     TIER_CONSTANTS = ("384 KiB", "384 KB", "352 KiB", "352 KB", "512 KiB", "500 target cycles", "500 cycles",
                       "~500", "400,000", "400 000")
 
     def setUp(self):
-        self.text = skill_text()
+        text = skill_text()
+        # What the skill may name: the given points' ids and variant strings, removed before looking for the rest.
+        for pid in sorted(VISIBLE, key=len, reverse=True):
+            variant = pid.rsplit("/", 1)[1]
+            text = text.replace(pid, " ").replace(variant, " ")
+        self.text = text
 
-    def test_no_point_id_or_parameter_string(self):
-        for pt in suite_points():
-                pid = pt["id"]
-                self.assertNotIn(pid, self.text, pid)
-                variant = pid.rsplit("/", 1)[1]                      # e.g. fp16-m16-k32-n16
-                params = variant.split("-", 1)[1] if "-" in variant else variant
+    def test_no_hidden_point_id_or_parameter_string(self):
+        given = set()
+        for pid in VISIBLE:
+            variant = pid.rsplit("/", 1)[1]
+            given |= {variant, variant.split("-", 1)[1] if "-" in variant else variant}
+        hidden = [pt for pt in suite_points() if pt["id"] not in VISIBLE]
+        self.assertTrue(hidden)
+        for pt in hidden:
+            pid = pt["id"]
+            self.assertNotIn(pid, self.text, pid)
+            variant = pid.rsplit("/", 1)[1]                      # e.g. fp16-m16-k32-n16
+            params = variant.split("-", 1)[1] if "-" in variant else variant
+            if variant not in given:
                 self.assertNotIn(variant, self.text, pid)
-                if re.search(r"[a-z]", params):
-                    self.assertNotIn(params, self.text, pid)
+            if re.search(r"[a-z]", params) and params not in given:
+                self.assertNotIn(params, self.text, pid)
 
     def test_no_tier_constant(self):
         for c in self.TIER_CONSTANTS:
             self.assertNotIn(c, self.text, c)
 
-    def test_no_family_list(self):
-        """The method names dimensions, not ArchBench's family table."""
-        families = {pt["family"] for pt in suite_points()}
-        for word in ("gelu_tanh", "attention_prefill", "attention_decode", "llama_prefill", "llama_decode",
-                     "gpt2_block", "resnet_block", "rmsnorm", "layernorm", "swiglu"):
-            self.assertIn(word, families)
-            self.assertNotIn(word, self.text, word)
+    def test_no_class_that_is_not_listed(self):
+        """A class of the benchmark the skill does not list is not named anywhere in it."""
+        listed = {c["class"] for c in CLASSES}
+        # The tiers' classes. The membound sweep's are another suite's (casts, sums, maxima: common words) and
+        # not split into given and held out.
+        families = set()
+        for suite in sorted((ROOT / "archbench" / "suites").glob("*.json")):
+            data = json.loads(suite.read_text(encoding="utf-8"))
+            if data.get("tier") != "membound":
+                families |= {(pt["kind"], pt["family"]) for pt in data["points"]}
+        unlisted = [(k, f) for k, f in families if f"{k}.{f}" not in listed]
+        self.assertTrue(unlisted, "every class is listed: nothing is held out")
+        # A PyTorch call of the same name (torch.bmm in the batch-dimension example) is the public API, not the
+        # benchmark's class: it is not counted.
+        text = re.sub(r"\b(?:torch|F|nn)\.\w+", " ", self.text)
+        for kind, fam in unlisted:
+            self.assertNotIn(f"{kind}.{fam}", self.text, fam)
+            self.assertIsNone(re.search(rf"\b{re.escape(fam)}\b", text), fam)
 
     @unittest.skipUnless(HAVE_TORCH, "torch is not installed here; run where it is")
-    def test_no_point_input_shape(self):
-        spellings = []
+    def test_no_hidden_point_input_shape(self):
+        given, spellings = set(), []
         for p, m, ins in built_points():
             for t in list(ins) + list(m.parameters()):
                 shape = tuple(t.shape)
                 if len(shape) < 2:
+                    continue
+                if p.id in VISIBLE:
+                    given.add(shape)
                     continue
                 spellings.append((p.id, shape, [str(shape), "(" + ", ".join(map(str, shape)) + ")",
                                                 "x".join(map(str, shape)), "×".join(map(str, shape)),
                                                 "[" + ", ".join(map(str, shape)) + "]"]))
         self.assertTrue(spellings)
         for pid, shape, forms in spellings:
+            if shape in given:
+                continue
             for f in forms:
-                self.assertNotIn(f, self.text, f"{pid}: {shape} as {f!r}")
+                if re.fullmatch(r"[\d]+(?:[x×][\d]+)+", f):
+                    # 16x16 is a shape; the 16x16 inside 16x160 or 1x128 is not
+                    self.assertIsNone(re.search(rf"(?<!\d){re.escape(f)}(?!\d)", self.text), f"{pid}: {shape} as {f!r}")
+                else:
+                    self.assertNotIn(f, self.text, f"{pid}: {shape} as {f!r}")
 
     @unittest.skipUnless(HAVE_TORCH, "torch is not installed here; run where it is")
-    def test_no_example_is_a_point(self):
-        """A worked example's inputs (shapes and dtypes) may not equal any point's."""
+    def test_no_example_is_a_hidden_point(self):
+        """A worked example's inputs (shapes and dtypes) may not equal a hidden point's."""
         import torch
 
         def signature(m, ins):
             return tuple((tuple(t.shape), str(t.dtype)) for t in ins if isinstance(t, torch.Tensor)) + \
                 tuple((tuple(t.shape), str(t.dtype)) for t in m.parameters())
-        points = {}
+        points, given = {}, set()
         for p, m, ins in built_points():
-            points.setdefault(signature(m, ins), []).append(p.id)
-            points.setdefault(signature(m, ins)[:len(ins)], []).append(p.id + " (inputs)")
+            sig = signature(m, ins)
+            if p.id in VISIBLE:
+                given |= {sig, sig[:len(ins)]}
+                continue
+            points.setdefault(sig, []).append(p.id)
+            points.setdefault(sig[:len(ins)], []).append(p.id + " (inputs)")
         examples = sorted((SKILL / "examples").glob("*.py"))
         self.assertTrue(examples)
         for ex in examples:
             mod = load(f"ex_{ex.stem}", ex)
             m, ins = mod.make()
             sig = signature(m, tuple(ins))
-            self.assertNotIn(sig, points, f"{ex.name} is the workload of {points.get(sig)}")
-            self.assertNotIn(sig[:len(ins)], points, f"{ex.name} has the inputs of {points.get(sig[:len(ins)])}")
+            if sig not in given:
+                self.assertNotIn(sig, points, f"{ex.name} is the workload of {points.get(sig)}")
+            if sig[:len(ins)] not in given:
+                self.assertNotIn(sig[:len(ins)], points, f"{ex.name} has the inputs of {points.get(sig[:len(ins)])}")
+
+
+class BenchmarkCases(unittest.TestCase):
+    """The points the skill gives (benchmark_cases/): listed once, each its point bit for bit, none hidden by a
+    task that gives the skill by default."""
+
+    def test_index_files_and_classes_agree(self):
+        files = {c["file"] for c in INDEX["cases"]}
+        self.assertEqual(files, {f.name for f in CASES_DIR.glob("*.py")})
+        self.assertEqual(len(files), len(INDEX["cases"]))
+        listed = {c["class"]: c for c in CLASSES}
+        for c in INDEX["cases"]:
+            src = (CASES_DIR / c["file"]).read_text(encoding="utf-8")
+            self.assertIn(f"POINT = {c['point']!r}", src, c["file"])
+            cls = f"{c['kind']}.{c['family']}"
+            self.assertIn(cls, listed, c["point"])
+            self.assertIn(c["file"], listed[cls]["cases"], c["point"])
+        for cls, entry in listed.items():
+            for f in entry["cases"]:
+                self.assertIn(f, files, f"{cls}: {f}")
+
+    def test_no_task_that_gives_the_skill_hides_a_given_point(self):
+        for task_dir in sorted((HERE / "tasks").iterdir()):
+            task = load_task(task_dir)
+            if SKILL.name not in task.skills:
+                continue
+            ev = task.evaluation
+            hidden = set(ev.get("validation", [])) | set(ev.get("final", [])) | set(ev.get("board_validation", []))
+            self.assertFalse(VISIBLE & hidden, f"{task.task_id} hides {sorted(VISIBLE & hidden)}")
+
+    @unittest.skipUnless(HAVE_TORCH, "torch is not installed here; run where it is")
+    def test_each_case_is_its_point(self):
+        import torch
+        from archbench import registry
+        if str(SKILL / "scripts") not in sys.path:
+            sys.path.insert(0, str(SKILL / "scripts"))     # a case imports bound, as tnca_case.py lets it
+
+        def same(a, b):
+            if isinstance(a, torch.Tensor):
+                bits = (lambda t: t.view(torch.uint8) if t.element_size() == 1 else t)
+                return isinstance(b, torch.Tensor) and a.dtype == b.dtype and a.shape == b.shape and \
+                    torch.equal(bits(a), bits(b))
+            if isinstance(a, (tuple, list)):
+                return type(a) is type(b) and len(a) == len(b) and all(same(x, y) for x, y in zip(a, b))
+            return a == b
+        for c in INDEX["cases"]:
+            with self.subTest(case=c["file"]):
+                try:
+                    p = registry.get(c["point"])
+                except KeyError:
+                    self.assertTrue(c["draft"], f"{c['point']} is not in this tree's registry and not a draft")
+                    self.skipTest(f"{c['point']}: a draft point, not in this tree's registry")
+                mod = load(f"case_{Path(c['file']).stem}", CASES_DIR / c["file"])
+                m, ins = mod.make()
+                pm, pins = p.make(INDEX["seed"])
+                self.assertEqual(type(m).__name__, type(pm).__name__)
+                self.assertTrue(same(tuple(ins), tuple(pins)), "inputs")
+                self.assertTrue(same(tuple(m.state_dict().values()), tuple(pm.state_dict().values())), "parameters")
+                with torch.no_grad():
+                    self.assertTrue(same(m(*ins), pm(*pins)), "output")
+                self.assertEqual(mod.TOL, p.tolerance)
+                self.assertEqual(mod.DEMAND.as_dict(), p.demand.as_dict())
+                self.assertEqual(bool(getattr(mod, "MODEL", False)), p.kind == "model")
 
 
 class Delivery(unittest.TestCase):
@@ -356,7 +468,7 @@ class Delivery(unittest.TestCase):
         self.assertEqual(len(manifest[SKILL.name]), 64)
 
     def test_render_names_the_skill_and_drops_the_control_example(self):
-        task = load_task(HERE / "tasks" / "replay-mzero")
+        task = load_task(HERE / "tasks" / "r41-dp-formal")
         self.assertIn("<!-- without-skill -->", task.instruction)
         self.assertEqual(task.skills, (SKILL.name,))
         with_skill = render(task, "offline", skills=task.skills)

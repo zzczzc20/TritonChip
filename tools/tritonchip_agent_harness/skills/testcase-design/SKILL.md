@@ -1,22 +1,23 @@
 ---
 name: testcase-design
-description: Design test cases of your own for a TNCA compiler or machine change and measure them the way the hidden evaluation does (its correctness protocol, its device-cycle timing, its roofline bound). Use when writing, choosing or running test cases, when judging whether a result is correct, or when deciding what a change must be measured on.
+description: Measure a TNCA compiler or machine change the way the hidden evaluation does (its correctness protocol, its device-cycle timing, its roofline bound), on points of the benchmark itself and on test cases of your own across the workload classes it lists. Use when writing, choosing or running test cases, when judging whether a result is correct, or when deciding what a change must be measured on.
 ---
 
 # Designing and measuring test cases of your own
 
-You are measured on a benchmark you are not shown. What you are shown is the
-class of workloads and the rules by which a program is judged, timed and
-scored. This skill (at `/opt/tnca-skills/testcase-design`) is how to turn those rules into test cases of your own,
-and how to measure a case exactly the way the evaluation would, so that what
-you see in your sandbox predicts how the hidden benchmark will see your
-change. It names no benchmark program; it gives you the method the benchmark
-is built with.
+You are measured on a benchmark you are mostly not shown. What you are shown
+is some of its own points, the classes of workload it measures, and the rules
+by which a program is judged, timed and scored. This skill (at `/opt/tnca-skills/testcase-design`) is how to
+measure a case exactly the way the evaluation would, and how to turn those
+classes and rules into test cases of your own, so that what you see in your
+sandbox predicts how the hidden benchmark will see your change.
 
 ```text
 scripts/protocol.py   the evaluation's correctness protocol: reference, criterion, tolerances
 scripts/bound.py      the evaluation's roofline bound: demand, spec_peak, L, eta
 scripts/tnca_case.py  measures a case file the evaluation's way (verdict, cycles, fallbacks, eta)
+benchmark_cases/      points of the benchmark itself, as the evaluation runs them (section 7)
+classes.json          the classes of workload you are given, and their dimensions (section 7)
 examples/             the matrix-multiply class expanded into its dimensions, as runnable cases
 ```
 
@@ -119,7 +120,7 @@ method has cases in both.
 
 ## 4. Designing the set
 
-Start from the class the task names. Ask what the class varies in, and write
+Start from the classes in `classes.json` and the class the task names. Ask what a class varies in, and write
 one small case per answer, so that a change is measured on each dimension
 and not on the one shape you happened to try first. The dimensions that make
 a compiler or a machine behave differently are few and general:
@@ -175,8 +176,51 @@ A case file is a module with `make() -> (module, inputs)` and optionally
 
 ## 6. What this does not tell you
 
-It does not tell you the benchmark's programs, shapes or sizes, and nothing
-here is derived from them. The method is the benchmark's; the cases are
-yours. A change that is good on cases built this way, across the dimensions
-of the class, is what the evaluation is designed to reward; a change that is
-good on one shape is what it is designed not to.
+Apart from the points in `benchmark_cases/`, it does not tell you the
+benchmark's programs, shapes or sizes. The benchmark has other shapes of the
+classes you are given, and points of classes you are not; none of them is
+named here. A change that is good across the dimensions of the classes is
+what the evaluation is designed to reward; a change that is good on the given
+points, or on one shape, is what the points you are not shown are there to
+catch.
+
+## 7. The benchmark's own cases, and covering the classes
+
+**`benchmark_cases/`** holds points of the benchmark itself, each as a case
+file: the point's module and its `make()` copied as the benchmark defines
+them, called with the evaluation's seed, judged at the point's own tolerance
+(`TOL`), its demand the one the benchmark declares (`DEMAND`). `INDEX.json`
+lists them with their class. Measure them with `scripts/tnca_case.py` like
+any case; together they are a regression set you can run in one command:
+
+    python /opt/tnca-skills/testcase-design/scripts/tnca_case.py /opt/tnca-skills/testcase-design/benchmark_cases/*.py --profile <the profile you are scored on> --json base.json
+
+Run them on the base before you change anything, and keep the numbers. To
+vary a dimension, copy a file and change the defaults of its `_point_make`:
+the generator, the seed and the module stay what they are.
+
+**`classes.json`** lists the classes of workload you are given: what each
+computes, the regime it usually sits in, the dimensions that matter in it,
+and its cases in `benchmark_cases/`. A class without a case is still
+measured; build its cases yourself as section 4 says.
+
+**Covering them.** You need not measure every class after every change: work
+on one class for as many rounds as it takes. But at these points, measure
+every class, with the benchmark cases and your own cases for the classes
+without one, against your base numbers:
+
+- before you ask for a hardware flow: it costs hours, and a regression in a
+  class you did not look at is built into the image;
+- before you treat a snapshot as your best;
+- after you change the machine (the RTL, a profile, a device description).
+
+Nothing checks that you do; the hidden validation and the final evaluation
+span the classes, so a regression you did not measure is one they find.
+
+**FP8.** Three FP8 forms are among the classes: a product of FP8 operands
+with per-tensor scales (`op.scaled_mm`, `op.w8a8_linear`), FP8 weights alone
+(`op.wfp8_linear`), and the form FP8 model checkpoints are stored in
+(`op.w8a8_block_linear`): E4M3 weights with one fp32 scale per block of 128
+by 128, the activation quantised per group of 128 at run time, at decode one
+row against the weight. An FP8 case is judged at its result's tolerance
+(bf16), never bit for bit.

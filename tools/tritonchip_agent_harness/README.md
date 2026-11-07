@@ -207,6 +207,18 @@ tier size. A test-case skill carries that method into every run's container
 Nothing of the final set ever reaches the agent. Of the validation set it gets
 only budgeted aggregates (§6.4): a channel that is narrowed, not closed.
 
+**A visible set, from the next R41 round (decided 2026-11-08).** The agent is
+given some of the benchmark's own points, as the evaluation runs them, in the
+test-case skill (`skills/testcase-design/benchmark_cases/`, §6.3), together with
+the classes it is given (`classes.json`). Every other point stays hidden: other
+shapes of those classes, and seven classes held out entirely, which appear in no
+visible file and only in the held-out sets, so that a gain built on the given
+modules rather than the machine shows as a gap there. The validation set is
+still scored in aggregate only, and nothing of the final set reaches the agent.
+The split (visible, validation and held-out, in simulation and on the card) is
+the operator's (`reports/archbench_point_split_20261108.md` in the developers'
+checkout, outside every workspace).
+
 The reason is generality. A method that is only good on the points it was shown
 is not a result (§10.3). An agent that cannot see a single point can only make
 general improvements.
@@ -256,9 +268,16 @@ names the selected set, where it came from (the task or the run), each
 skill's hash and the catalog's version. Adding a skill is adding a directory
 under `skills/` and naming it in the tasks that want it; no task's base
 commit is involved. Tools travel inside a skill (`scripts/`); what needs a
-mount of its own is the environment's, not a skill. The skill names
-no point, family list or tier size; a harness test checks that against the
-live registry (§17). It is machine-independent, as ArchBench is: it defines
+mount of its own is the environment's, not a skill. The skill gives the
+visible set's points (`benchmark_cases/`, written by `skill_cases.py`: each
+point's module and `make()` copied from archbench, seed 0, the registry's
+tolerance and declared demand, and checked bit for bit against the point) and
+the classes in `classes.json`, with a rule for covering them (measure every
+class before asking for a hardware flow, before treating a snapshot as the
+best, after changing the machine; not enforced). It names no other point, no
+class it does not list and no tier size; harness tests check that against the
+live registry, and that no task giving the skill by default hides a given
+point (§17). It is machine-independent, as ArchBench is: it defines
 what is measured (each launch's cycles from start to end, summed; the
 protocol; the bound), and the machine that is measured on is the
 environment's, selected by the backend settings the task text gives. The
@@ -1289,6 +1308,7 @@ service request's snapshot; each role's CPU time.
 | 2026-10-28 | The skill is machine-independent, as ArchBench is. It defines what is measured (each launch's cycles from start to end, summed; the correctness protocol; the roofline bound), and the machine that is measured on is the environment's: the task text names the machine and the backend settings that select it, and the script takes them from the shell as the agent's own Python would, setting only the profile and the optimisation level. The bound stays the evaluation's per-profile `spec_peak`, so L and η are one core's on every machine and the script says so beside every L; how a candidate stands against the base machine is the ratio of their cycles on the same case, which the skill tells the agent to measure first and keep. The evaluation's `/hbm` branch of `tnca_peak` is copied, with its test. `r40-multicore-pilot`'s instruction marks only its Python example as the skill's to replace; the environment settings above it stay in both arms, and a test holds that for every task. This corrects the skill's wording, which had taken the single-core machine's way of running a grid (`serial-grid`, PROTOCOL.md) for part of the definition; nothing in the delivery changes. Decided by the user after the branch was checked against PR #9's head (3e54d3c3, merged into `testcase-skill`) |
 | 2026-11-03 | Which skills a run gets: three layers (§6.3). The catalog is the `skills/` directory, each skill self-describing by its front matter, the hash over all of it the skills' environment version; a task declares its default set in `task.json` (`skills`; none declared, none given); a run may override it (`--skills a,b`, `--no-skills`). Only the selected skills are staged, mounted and linked; the prompt names them from their front matter; the record names the set, its source, each hash and the catalog version. Tools travel inside skills; what needs its own mount is the environment's. The skills mechanism goes to main as one pull request. Decided by the user |
 | 2026-11-07 | Build machines as a pool (§12.5b): a site may list several (`build_hosts`), one flow on each at a time; a task caps its flows at once (`flows_at_once`, default 1, at most the machines); a busy machine is skipped and, with all busy, the request waits and the wait is recorded apart; every machine must be idle before a run starts; another user's lock files (`shared_slots`) count, and our flow holds one. For now one run at a time; parallel runs later, and another run's waits must not count against a run. R41's formal task: 24 h, 3 flows, 2 at once. The quick tier may move to RSCL by site configuration. Decided by the user |
+| 2026-11-08 | The test-case skill carries a visible set: points of the benchmark itself (`benchmark_cases/`, 18 for the next R41 round, one an unfrozen FP8 draft), exported by `skill_cases.py` and checked bit for bit, and the classes the agent is given (`classes.json`) with a rule for covering them at milestones. Seven classes are held out entirely (none of their points or names in the skill). The leak tests now forbid every point the skill does not give and every class it does not list, derived from its own index. The test tasks `replay-mzero` and `r39-v5-main-pilot` no longer default to the skill. Decided by the user (§6.1) |
 
 **Open.**
 
@@ -1341,7 +1361,7 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Visibility | TileBench in the image checked against ArchBench | planned | — |
 | Visibility | Test-case skill: an Agent Skill in the harness (`skills/testcase-design/`), mounted read-only into every run's container and linked into each CLI's skills directory; named by `task.render`, which then drops the syllabus's measuring example; listed by hash in the run record | done | branch `testcase-skill`: the six example cases pass end to end in the toolchain container on core-vrf-sync-v5 (2026-10-27); `smoke --probe skills` on Myserver the same day: Claude Code 2.1.287, Codex 0.162.1 and opencode 1.19.0 each link `testcase-design` into their skills directory and name it when asked to list their skills, all three records carrying the same directory hash; merged with PR #9's head 3e54d3c3 and its wording made machine-independent, the per-core L labelled (2026-10-28) |
 | Visibility | Equivalence test of the skill's copied code against ArchBench's; leak check of the skill directory against the live registry; delivery checks (never in a workspace, mounted read-only at the path the prompt names, every CLI has a skills directory, manifest, both arms of every task's prompt, the `/hbm` peak) | done | `tests/test_testcase_skill.py`: 22 tests, the 6 that need torch run on the U280 host |
-| Visibility | Which skills a run gets: the catalog, the task's default set, the run's override; staged, mounted and linked per run; named in the prompt from the front matter; in the record with hashes and the catalog version | done | `skills.py`; `tests/test_skills.py`; every shipped task declares `testcase-design` except `r41-dp-pilot`, whose baseline runs without skills (the skill arm: `--skills testcase-design`, user 2026-11-06) |
+| Visibility | Which skills a run gets: the catalog, the task's default set, the run's override; staged, mounted and linked per run; named in the prompt from the front matter; in the record with hashes and the catalog version | done | `skills.py`; `tests/test_skills.py`; every R41 formal task declares `testcase-design`; `r41-dp-pilot` and `r41-dp-island1` declare none (the skill arm: `--skills testcase-design`, user 2026-11-06), and the test tasks `replay-mzero` and `r39-v5-main-pilot` declare none since 2026-11-08 (two of their hidden points are in the visible set) |
 | Pilots | Pilot 3: `replay-mzero` with and without the skill, Claude Code and Codex, test behaviour recorded | planned | — |
 | Evaluator | CHIA-level evaluator: base plus overlay, own copies | done | noop 1.000; reference 1.016 / 1.010 |
 | Evaluator | The evaluator's platform from a pinned commit, laid over every tree | done | `task.json` `evaluation.platform` |

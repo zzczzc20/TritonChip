@@ -295,47 +295,38 @@ for tier, (m, k, n) in FP8_GEMM.items():
 # Decode-shaped block-scaled FP8: the format the FP8 checkpoints are stored in
 # (E4M3 weights with one fp32 scale per 128x128 block) and how a decode step
 # runs it: one token row, the activation quantised dynamically per 1x128
-# group, a blockwise scaled mm through the v2 API with explicit recipes
-# (F.scaled_mm, BlockWise1x128 x BlockWise128x128) and CUDA's scale layouts,
-# as tools/performance_harness/fp8_blockwise_cases.py drives its M=1 case:
-# scale_a (M, K/128) with stride (1, M), scale_b (round_up(K/128, 4), N/128)
-# with stride (1, round_up(K/128, 4)). The v1 _scaled_mm tells recipes apart
-# by scale shape, and with one row a (1, K/128) scale_a is no recipe (or, at
-# K = 128, a tensorwise singleton). bf16 out. N and K are multiples of 128;
-# the weight is larger than the 48 KiB NUCA, so it streams.
+# group, one FP8 GEMM per 128-deep K block with the block's activation and
+# weight scales applied to its fp32 partial, bf16 out. The block GEMMs are
+# tensorwise torch._scaled_mm calls with unit scales: the platform's default
+# path compiles CPU tensors (platforms/tnca.py), where tracing accepts only
+# tensorwise and rowwise recipes, so a single blockwise _scaled_mm / F.scaled_mm
+# cannot be compiled there; and the CPU reference is then torch's own op, as
+# for the other FP8 points. N and K are multiples of 128; the weight is larger
+# than the 48 KiB NUCA, so it streams.
 
 TILE_FP8 = 128
-
-
-def _kb_padded(k):
-    return -(-(k // TILE_FP8) // 4) * 4
 
 
 class W8A8BlockLinear(torch.nn.Module):
     """Dynamic W8A8 with block scales: the activation quantised per 1x128
     group (amax / 448), the E4M3 weight (n, k) with one fp32 scale per
-    128x128 block, stored (n/128, round_up(k/128, 4)) as the CUDA kernels
-    lay it out (columns past k/128 are padding, never read), a blockwise
-    F.scaled_mm, bf16 out. CPU eager refuses blockwise scales, so the eager
-    CPU call (the reference) runs the same block form in fp32, K blocks
-    ascending. The test is "eager on the CPU", not "on the CPU": the tnca
-    platform's default path compiles CPU tensors and offloads them
-    (platforms/tnca.py), and that compiled program must be the scaled mm."""
+    128x128 block in the checkpoints' (n/128, k/128) layout, per K block an
+    FP8 GEMM to fp32 scaled by the block's activation scale and weight
+    scales, summed in K order, bf16 out."""
     def forward(self, x, w, ws):
         m, k = x.shape
         g = x.float().reshape(m, k // TILE_FP8, TILE_FP8)
         sa = g.abs().amax(-1).clamp(min=1e-12) / 448.0
         q = (g / sa[..., None]).clamp(-448.0, 448.0).reshape(m, k).to(torch.float8_e4m3fn)
-        if q.device.type == 'cpu' and not torch.compiler.is_compiling():
-            out = torch.zeros(m, w.shape[0])
-            for kb in range(k // TILE_FP8):
-                s = slice(kb * TILE_FP8, (kb + 1) * TILE_FP8)
-                part = q[:, s].float() @ w[:, s].float().t()
-                out = out + part * sa[:, kb:kb + 1] * ws[:, kb].repeat_interleave(TILE_FP8)[None, :]
-            return out.to(torch.bfloat16)
-        st = F.ScalingType
-        return F.scaled_mm(q, w.t(), sa.t().contiguous().t(), st.BlockWise1x128,
-                           ws.t(), st.BlockWise128x128, output_dtype=torch.bfloat16)
+        one = torch.ones((), dtype=torch.float32, device=x.device)
+        out = None
+        for kb in range(k // TILE_FP8):
+            s = slice(kb * TILE_FP8, (kb + 1) * TILE_FP8)
+            part = torch._scaled_mm(q[:, s], w[:, s].t(), scale_a=one, scale_b=one,
+                                    out_dtype=torch.float32)
+            part = part * sa[:, kb:kb + 1] * ws[:, kb].repeat_interleave(TILE_FP8)[None, :]
+            out = part if out is None else out + part
+        return out.to(torch.bfloat16)
 
 
 # validation: small (one program per core, two K blocks, 96 KiB of weight);
@@ -348,7 +339,7 @@ for tier, shapes in FP8_BLOCK_DECODE.items():
             x = randn(g, (m, k), 'bf16', 2.0)
             w = (torch.randn(n, k, generator=g)
                  * torch.pow(2.0, torch.randint(-2, 3, (n, k), generator=g).float())).to(torch.float8_e4m3fn)
-            ws = torch.rand(n // TILE_FP8, _kb_padded(k), generator=g) * 0.02 + 0.005
+            ws = torch.rand(n // TILE_FP8, k // TILE_FP8, generator=g) * 0.02 + 0.005
             return W8A8BlockLinear(), (x, w, ws)
         kb = k // TILE_FP8
         op('w8a8_block_linear', tier, 'e4m3', dict(m=m, k=k, n=n), mk_w8a8_block,

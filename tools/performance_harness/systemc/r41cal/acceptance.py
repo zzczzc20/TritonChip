@@ -4,7 +4,8 @@
     python3 acceptance.py --store ~/tritonchip-rtl-truth --model base=DIR [--model lsu2=DIR ...] \
         --items items/visible17.json --items items/holdout.json [--out report.json]
 
-DIR is a model.py output (results.json) for that variant. RTL cycles are the
+DIR is a model.py output (results.json) for that variant; a variant may be
+given several times (its visible and its holdout runs), and the runs merge. RTL cycles are the
 records' record_cycles (the device's count as the driver sees it, what the
 model emulates).
 
@@ -64,7 +65,8 @@ def model_table(spec):
     for s in spec:
         v, d = s.split("=", 1)
         res = json.loads((Path(d) / "results.json").read_text())["items"]
-        out[v] = {k: int(x["cycles"]) for k, x in res.items() if x.get("status") == "pass" and x.get("cycles")}
+        out.setdefault(v, {}).update(
+            {k: int(x["cycles"]) for k, x in res.items() if x.get("status") == "pass" and x.get("cycles")})
     return out
 
 

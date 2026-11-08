@@ -43,11 +43,15 @@ sends a contiguous vector access as one 64-byte request (64 slots, completion
 round robin), the word path as one unit with the two-entry request queue, a
 completion register in front of the writeback port, and the LSU ahead of the
 transfer engine on the port (`core_tensor_line=1`). The 64-byte port is traced
-in the RTL monitor's 512-bit form. With the switch off the R40 rules stand
-unchanged. Not yet in the model: TENSOR_LINE's line-wide multi-command transfer
-engine (`tnca_tensor` LINE_ENGINE: the engine still issues 8-byte beats), the
-matrix operand register (MTX_VRF_REG), the G2 FMA rebuild (FMA_IMPL 1), line
-requests in the cycle uncore (slice 2).
+in the RTL monitor's 512-bit form. The transfer engine is R41's line-wide,
+multi-command one (`core_tensor_line=1`, CORE_TIMING 4.4: line loads and stores
+through 64 line slots with up to eight commands in flight after the walk is
+free, the four-line TensorMap load, the transposed walk's line buffer, 1-byte
+transposes, the registered address multiply); the vector multiply family and
+the integer reductions write back a cycle after X (`core_valu_late=1`, 2.12).
+With the switches off the R40 rules stand unchanged. Not yet in the model: R41's
+matrix engine (MTX_VRF_REG, the packed MAC lanes), the G2 FMA rebuild
+(FMA_IMPL 1), line requests in the cycle uncore (slice 2).
 
 Validation path: `record_model.py --replay RTL_RUN` gives every point's
 model process the RTL trace of that point; the replay port checks each LSU

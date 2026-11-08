@@ -171,7 +171,11 @@ struct Config {
             "tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine",
             // The cycle core (core_model=1) on R41: the hybrid LSU (HYBRID_LSU, its line path's LINE_SLOTS) and the
             // line-wide tensor engine's port priority (TENSOR_LINE: the LSU first, tnca_mem_mux A_FIRST).
-            "core_lsu_hybrid","core_lsu_line_slots","core_tensor_line"};return k;}
+            "core_lsu_hybrid","core_lsu_line_slots","core_tensor_line",
+            // the transfer engine's registered coordinate product (tnca_tensor.v MUL_PIPE, R41 board builds)
+            "core_tensor_mul_pipe",
+            // R41 F04: the vector multiply family and the integer reductions write back one cycle after X (VALU_LATE)
+            "core_valu_late"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

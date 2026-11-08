@@ -365,6 +365,18 @@ drives the RF write ports (scalar/predicate files are write-first:
 scoreboard bit of `w_*` is released (2473-2480); during `t+1` `WB_HIT` exempts a
 consumer in R.
 
+**R41 F04 (VALU_LATE != 0; model `core_valu_late=1`).** `v.mul`, `v.muli`,
+`v.mulh.s`, `v.mulh.u` (major VINT, func 0x03-0x05, 0x22) and the integer
+reductions (major RED, func < FADD) write back one cycle after X through
+`vl_*` (`tnca_core.v` 1532-1543, 2008-2014): they defer like the scalar
+multiply with `r_wb_delay = 1`, so they book the reservation slot one ahead
+(`stall_rsv` against an X-result instruction behind them), hold their
+destination's scoreboard bit to the WB stage and are not forwarded from X.
+On the port `ws_vl` follows `ws_fp` and `ws_mul` and precedes `ws_x`
+(2310-2316; one at a time by the reservation). Seen as an X-result
+instruction behind a vector multiply issuing a cycle later than R40's rules
+gave.
+
 ### 2.13 Result latencies (consumer-visible)
 
 Producer in X at cycle x. "Consumer X" is the earliest cycle a dependent
@@ -680,6 +692,57 @@ the core port ahead of the LSU every cycle they are valid (3.1).
 | `mtx_done` at cycle t | every parked context wakes; `sb_acc[slot]` released |
 | `mb.arrive` of the issuing context (RPAIR) | waits for the engine command its own context issued (`arr_mtx`, `arr_txf`) |
 | completion -> barrier | `mtx_done && mtx_done_bar_en` / `mtx_free` / `txf_done && txf_done_bar_en` are counted in the pulse cycle (5.2) |
+
+### 4.4 R41: the line-wide, multi-command transfer engine (TENSOR_LINE)
+
+`tnca_tensor.v` with LINE_ENGINE (core: TENSOR_LINE && HYBRID_LSU; model
+`core_tensor_line=1`, `core_tensor_mul_pipe=1`) owns the core's 64-byte port
+(3.6: the LSU before it). Tags: line slot `{1, slot}` (LSLOT_N = LINE_SLOTS,
+64), TensorMap line `{0, 1, line}`, word walk `{0, 0, tag}`.
+
+**Address multiply** (S_TMUL, MUL_PIPE 1 on every R41 build): one product a
+cycle, registered, so S_TMUL lasts `rank + 1` cycles (one for rank 1), not
+`rank`.
+
+**TensorMap** (S_IDLE, 1239): at a line-aligned address td.load issues its
+four lines back to back (S_LDLOAD, all in flight), waits for the fourth
+response (S_LDWAIT: `dlr == 4` before the edge), folds the box element count
+one dimension a step (S_LDFOLD, five cycles), then S_DPARSE and S_DONE as
+before. Any other address takes R40's 32-word sequence, each word placed in
+its line.
+
+**Which transfers go by lines** (`le_elig`, 932-937, decided in S_TMUL's last
+cycle): not transposed; row 0 starts on a line (`(t_acc + t_CB) mod 64 = 0`);
+every outer stride a multiple of 64; the row a whole number of lines; the box
+inside the tensor in every dimension (`0 <= c`, `c + block <= extent`). Then
+the command takes a free record (CMD_N 8; none free: S_TMUL repeats its last
+cycle), the barrier signal moves to the record, and the walk goes to S_LRUN
+(load) or S_LSREAD (store). Everything else is the R40 word walk.
+
+| state | per cycle |
+|---|---|
+| S_LRUN | with a free line slot, request line `t_line` of the row (`l_addr = t_ps + 64 t_line`, all 64 bytes enabled); on the port's acceptance the slot is taken (`{cid, register = window base + t_flat/64 + t_line}`) and the walk steps (next line; at the row's end the odometer; after the last row S_LEND) |
+| S_LSREAD | the engine read port (port 4) asks for the line's register; `vr_valid` -> `sr_data`, S_LSRUN |
+| S_LSRUN | as S_LRUN with the register in hand as the write data; meanwhile port 4 reads the next line's register ahead (`pf_req = !pf_v && l_more`). On a fire with the next register neither held (`pf_v`) nor arriving: S_LSREAD. So a store line goes every other cycle unless the port holds it longer |
+| S_LEND | the record is closed (`cm_open <= 0`); S_IDLE: the walk takes the next command while the lines are in flight |
+
+Line slots: a store's response frees its slot; a load's response marks it
+ready, and its whole register is written through the window port in the next
+cycle the word walk does not use it (`lw_fire = lrdy && !vw_hold &&
+!legacy_vw`, the lowest ready slot). A record counts +1 per line issued, -1
+per store response and per load register write; a closed record at zero
+signals its barrier (`done`) unless the walk signals its own completion that
+cycle. The core's `txf_busy` is the walk only (`stall_txf`, wakes); `mb.arrive`
+also waits for its context's records (`inflight_rctx`, RPAIR); `core_idle`
+waits for everything (`busy_any`).
+
+**Transposed walk** (g_line_port 830-889): each word read that goes to memory
+allocates the buffer entry of its source row (16) and fills it with the whole
+line on its response; a later unit of the same line in that row is answered
+from the entry (no port request; the answer is presented the next cycle and
+yields to a memory response). Any write request, and S_TSETUP, empty the
+buffer. 1-byte elements (HAS_XPOSE 2): eight destination rows a column block,
+a row R bytes.
 
 ## 5. Barriers (`tnca_barrier.v`)
 

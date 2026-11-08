@@ -24,7 +24,7 @@ struct CycleCore {
     unsigned of_got=0,pf_tag=0;bool adv_q=false;unsigned vrf_rr=0;   // [1.3]
     struct BankRsp {bool valid=false;unsigned port=0;unsigned phys=0;};std::array<BankRsp,4> bank_rsp{};
     bool sb_s[4][64]={},sb_v[4][64]={},sb_p[4][16]={},sb_acc[16]={};unsigned wb_rsv=0;   // [1.4]
-    struct Result {u64 port=0;unsigned cls=0,rctx=0,idx=0,mask=0,src=0;u64 sdata=0;PhysicalRegisters::Vector vdata{};}; // cls 1 S,2 V,3 P; src 0 single,1 fpnorm,2 mul
+    struct Result {u64 port=0;unsigned cls=0,rctx=0,idx=0,mask=0,src=0;u64 sdata=0;PhysicalRegisters::Vector vdata{};}; // cls 1 S,2 V,3 P; src 0 single,1 fpnorm,2 mul,3 vector late (R41 F04)
     std::vector<Result> sched;                            // fp_v / mu_v tag pipelines
     struct WBStage {bool en=false;Result res;} w;         // w_*
     Result out_res;                                       // the hybrid's completion register (out_*) [3.6]
@@ -98,6 +98,8 @@ struct CycleCore {
             case 2:{auto& sl=txf.sl[tg.a];sl.rsp_hi=when;sl.dhi=data;break;}
             case 3:{auto& g=txf.tg[tg.a];g.rsp=when;u64 keepm=0;for(unsigned j=0;j<8;++j)if((g.xkeep>>j)&1)keepm|=255ULL<<(j*8);g.data=data&keepm;break;}
             case 4:txf.dl_rsp=when;txf.dl_data=data;break;
+            case 6:txf.ls[tg.a].rsp=when;break;          // R41 G4: an engine line slot (data captured at issue)
+            case 7:txf.dl_lrsp[tg.a]=when;break;         // R41 G4: a TensorMap line
             case 5:lines[tg.a].rsp=when;break;          // a line request: its data was captured at issue
         }
         if(c.core_trace){
@@ -132,6 +134,8 @@ struct CycleCore {
             u64 n=x.c.get_or("core_lsu_line_slots",64);require(n>=2 && n<=64 && (n&(n-1))==0,"core_lsu_line_slots is a power of two, 2..64");
             lines.resize(n);
         }
+        valu_late=x.c.get_or("core_valu_late",0)!=0;
+        txf.configure(lsu_first,unsigned(x.c.get_or("core_lsu_line_slots",64)),x.c.get_or("core_tensor_mul_pipe",0)!=0);
     }
     //------------------------------------------------------------ helpers
     static bool is_fpnorm(const Inst& in){return in.kind==K::Cvt || (in.kind==K::Vfp);} // VFP incl. vf.cmp, CVT [2.11]
@@ -159,8 +163,13 @@ struct CycleCore {
         }
     }
     // the X stage's single-cycle destination (not deferred to a pipeline/unit)
-    static bool x_defers(const Inst& in){return is_mul(in) || is_fpnorm(in) || is_fpmc(in) || is_mem(in);}
-    static unsigned wb_delay(const Inst& in){return is_mul(in)?3:is_fpnorm(in)?2:0;}
+    // R41 F04 (core_valu_late=1, VALU_LATE): the vector multiply family and the integer reductions write back
+    // one cycle after X, scheduled like the scalar multiply with writeback delay 1 [2.12]
+    bool valu_late=false;
+    bool is_vlate(const Inst& in)const{return valu_late && ((in.kind==K::Vint && in.major==16 && (in.func==3 || in.func==4 || in.func==5 || in.func==34))
+                                                          || (in.kind==K::Reduce && in.func<8));}
+    bool x_defers(const Inst& in)const{return is_mul(in) || is_fpnorm(in) || is_fpmc(in) || is_mem(in) || is_vlate(in);}
+    unsigned wb_delay(const Inst& in)const{return is_mul(in)?3:is_vlate(in)?1:is_fpnorm(in)?2:0;}
     static bool books_wb(const Inst& in){unsigned dc=dest_class(in);return (dc==1 || dc==2 || dc==3) && !(is_mem(in) || is_fpmc(in));}
     // Sources read through the scoreboards (decoder o_*_en) [2.7]
     // vector sources carry their read port: the decoder binds by field (a: va = port 0, b: vb = 1, c: vc = 2; a vector
@@ -233,7 +242,7 @@ struct CycleCore {
         auto wV=[&](unsigned idx,unsigned mask,const PhysicalRegisters::Vector& v){single(2,idx,0,mask,&v);};
         auto defer=[&](unsigned cls,unsigned idx,unsigned src,u64 s,unsigned mask,const PhysicalRegisters::Vector* v){
             if(cls!=2 && !idx)return;
-            e.deferred.push_back(Result{t+(src==2?MUL_LAT:FP_LAT),cls,rc,idx,mask,src,s,v?*v:PhysicalRegisters::Vector{}});};
+            e.deferred.push_back(Result{t+(src==2?MUL_LAT:src==3?1:FP_LAT),cls,rc,idx,mask,src,s,v?*v:PhysicalRegisters::Vector{}});};
         unsigned mask=65535;if(in.major>=16){mask=rP(rc,in.pred);if(in.invert)mask^=65535;}
         u64 next=xb.pc+8;
         switch(in.kind){
@@ -303,7 +312,7 @@ struct CycleCore {
                 else{u64 right=immediate?(zero_extended_immediate(func)?in.imm:in.simm):vbv[lane];value=alu(immediate?immediate_alu(func):func,va[lane],right,32,mod&15);}
                 if(cmp){if(value)comparison|=1<<lane;}else out[lane]=std::uint32_t(value);
             }
-            if(cmp){wP(dd,comparison);}else {wV(dd,func==25?65535:mask,out);}break;}
+            if(cmp){wP(dd,comparison);}else if(is_vlate(in)){defer(2,dd,3,0,func==25?65535:mask,&out);}else {wV(dd,func==25?65535:mask,out);}break;}
         case K::Vfp:{
             PhysicalRegisters::Vector va=rV(rc,a),vbv{},vc{},out{};if(func!=24)out=rV(rc,dd);
             if(func!=20 && func!=21)vbv=rV(rc,b);
@@ -344,7 +353,8 @@ struct CycleCore {
                 if(mod&1){PhysicalRegisters::Vector out;out.fill(reduced);e.redres=Result{0,2,rc,dd,65535,0,0,out};}
                 else e.redres=Result{0,1,rc,dd,0,0,reduced,{}};
             }else{
-                if(mod&1){PhysicalRegisters::Vector out;out.fill(reduced);wV(dd,65535,out);}else wS(dd,reduced);
+                if(mod&1){PhysicalRegisters::Vector out;out.fill(reduced);if(is_vlate(in)){defer(2,dd,3,0,65535,&out);}else wV(dd,65535,out);}
+                else if(is_vlate(in))defer(1,dd,3,reduced,0,nullptr);else wS(dd,reduced);
             }
             break;}
         case K::Sfu:{
@@ -440,6 +450,28 @@ struct CycleCore {
         if(c.core_trace){c.core_trace.QW(at,s.store,s.addr,s.be,id,s.store?s.wdata:std::array<u64,8>{});wide_rsp[id]=s.store?std::array<u64,8>{}:s.rdata;}
         schedule(id,when,0);
     }
+    // One line request of the transfer engine (R41 G4 LINE_ENGINE) at cycle `at` [4.4]: the functional
+    // access now (a store writes its enabled bytes, a load's line lands in its slot or the TensorMap buffer),
+    // the response by the memory timing in force.
+    u64 issue_engine_line(const CycleTensor::Req& r,u64 at,bool replayed,u64 latency,Target target){
+        const u64 id=(next_id++<<5)|16;targets[id]=target;
+        require(!uncore || replayed,"the cycle uncore has no line requests yet (R41 slice 2)");
+        std::array<u64,8> rd{};u64 when=0;
+        if(replayed){
+            for(unsigned w=0;w<8;++w){unsigned be=unsigned((r.lbe>>(8*w))&255);
+                if(r.we){if(be)c.tm->access(r.addr+8*w,true,r.ldata[w],be);}else rd[w]=c.tm->access(r.addr+8*w,false,0,255);}
+            when=at+latency;
+        }else{
+            require(x.c.get_or("tl_core_beat_bytes",8)==64,"line requests on the timeline need tl_core_beat_bytes=64");
+            std::vector<TimelineMemory::WideWord> words;
+            for(unsigned w=0;w<8;++w){unsigned be=unsigned((r.lbe>>(8*w))&255);if(!r.we || be)words.push_back({r.addr+8*w,r.ldata[w],r.we?be:255U});}
+            when=c.tm->wide(c.id,words,r.we,at);
+            if(!r.we)for(auto& w:words)rd[unsigned((w.address&63)>>3)]=w.result;
+        }
+        if(!r.we)txf.line_data(target,rd);
+        if(c.core_trace){c.core_trace.QW(at,r.we,r.addr,r.lbe,id,r.we?r.ldata:std::array<u64,8>{});wide_rsp[id]=r.we?std::array<u64,8>{}:rd;}
+        schedule(id,when,0);return id;
+    }
     // A completion's writeback: the word unit's (lanes assembled from its beats) or a line slot's.
     Result unit_result(const Unit& u,bool& has){
         has=!u.store;if(u.store)return Result{};   // a load always takes the port: with no active lane it writes nothing but releases its scoreboard bit [2.12]
@@ -492,7 +524,7 @@ struct CycleCore {
     bool rctx_wr_busy(unsigned rc)const{for(unsigned i=1;i<64;++i){if(sb_s[rc][i])return true;}for(unsigned i=0;i<64;++i){if(sb_v[rc][i])return true;}for(unsigned i=1;i<16;++i){if(sb_p[rc][i])return true;}return false;}
     bool core_idle()const{
         return !any_running() && !f1.valid && !fb.valid && !d.valid && !r.valid && !xb.valid && lsu_req_ready() && !lsu_cpl_valid()
-            && !fpu_busy() && !red_pend && !w.en && !mtx_busy() && !txf_busy() && wb_rsv==0;}
+            && !fpu_busy() && !red_pend && !w.en && !mtx_busy() && !txf.busy_any() && wb_rsv==0;}   // busy_any: line commands in flight [4.4]
 
     // The hybrid LSU's edge [3.6]. Every decision reads the pre-edge state; `out_ack` is the writeback
     // port taking the completion register (ws_lsu), `fq_fired` / `sq_popped` the port taking the line
@@ -555,9 +587,10 @@ struct CycleCore {
             x_is_fpred=xin->kind==K::Reduce && xin->func>=8;x_mtx_cmd=is_matrix_fu(*xin) && xin->kind!=K::AVread;x_txf_cmd=xin->kind==K::Desc || xin->kind==K::Xfer;x_mem=is_mem(*xin);}
         // scheduled writebacks this cycle [2.12]
         int fp_wb=-1,mul_wb=-1;
-        for(size_t i=0;i<sched.size();++i)if(sched[i].port==t){if(sched[i].src==1){fp_wb=int(i);}else {mul_wb=int(i);}}
+        int vl_wb=-1;
+        for(size_t i=0;i<sched.size();++i)if(sched[i].port==t){if(sched[i].src==1){fp_wb=int(i);}else if(sched[i].src==2){mul_wb=int(i);}else {vl_wb=int(i);}}
         bool fp_inflight=false;for(auto& s:sched)if(s.src==1)fp_inflight=true;
-        bool sched_wb=x_has_dest || fp_wb>=0 || mul_wb>=0;
+        bool sched_wb=x_has_dest || fp_wb>=0 || mul_wb>=0 || vl_wb>=0;
         bool wb_steal=(lsu_cpl_valid() || red_pend) && sched_wb;
         bool mtx_done=mtx.done_at==t;bool fpu_done_now=fpu_done();const bool mtx_busy_now=mtx_busy(),txf_busy_now=txf_busy();
         // ---- R hazards and stalls [2.7][2.8]
@@ -587,7 +620,7 @@ struct CycleCore {
             if(in.kind==K::Fence && (!lsu_req_ready() || lsu_cpl_valid() || rctx_wr_busy(rc) || x_claim))stall_fence=true;
             if(in.kind==K::Barrier && in.func==2){
                 bool arr_mtx=(mtx_busy_now && mtx_rctx==rc) || (x_mtx_cmd && xb.rctx==rc);
-                bool arr_txf=(txf_busy_now && txf_rctx==rc) || (x_txf_cmd && xb.rctx==rc);
+                bool arr_txf=(txf_busy_now && txf_rctx==rc) || txf.inflight(rc) || (x_txf_cmd && xb.rctx==rc);   // inflight: R41 G4 line commands of this context
                 if(rctx_wr_busy(rc) || !lsu_req_ready() || x_claim || arr_mtx || arr_txf)stall_arrive=true;}
             if(books_wb(in) && (wb_rsv>>(wb_delay(in)+1))&1)stall_rsv=true;
         }
@@ -606,7 +639,7 @@ struct CycleCore {
         bool pf_go=d.valid && pf_need && of_want==0 && !(r.valid && r_vsrc_haz) && !pf_haz;
         // ---- bank arbiter: ports 0..2 (3 and 4 not modelled) [2.9]
         unsigned req_mask=pf_go?pf_need:of_want;unsigned req_rctx=pf_go?d.rctx:r.rctx;const unsigned* req_idx=pf_go?pf_idx:need_idx;
-        bool p4_req=txf.st==CycleTensor::SREAD && !txf.sread_pending;unsigned p4_phys=p4_req?phys(txf.cmd.rctx,txf.st_vreg()):0;
+        unsigned p4_idx=0;bool p4_req=txf.vr_req(p4_idx) && !txf.sread_pending;unsigned p4_phys=p4_req?phys(txf.cmd.rctx,p4_idx):0;   // rq_v[4] = vr_req && !vr_valid
         unsigned p3_idx=mtx.read_index();bool p3_req=p3_idx!=~0u;unsigned p3_phys=p3_req?phys(mtx.cmd.rctx,p3_idx):0;
         // last cycle's port-3 read answers now
         bool p3_data_now=false;PhysicalRegisters::Vector p3_data{};
@@ -655,7 +688,7 @@ struct CycleCore {
         bool issue=!stall_front && r.valid && !kill_r;
         // ---- writeback port arbitration [2.12]
         bool have_nw=false;Result nw;int cpl_unit=-1;bool red_grant=false,out_ack=false;
-        if(sched_wb){have_nw=true;if(fp_wb>=0)nw=sched[fp_wb];else if(mul_wb>=0){nw=sched[mul_wb];}else {nw=e.single;}}
+        if(sched_wb){have_nw=true;if(fp_wb>=0)nw=sched[fp_wb];else if(mul_wb>=0){nw=sched[mul_wb];}else if(vl_wb>=0){nw=sched[vl_wb];}else {nw=e.single;}}   // ws_fp, ws_mul, ws_vl, ws_x
         else if(hybrid && out_valid){out_ack=true;if(out_has){have_nw=true;nw=out_res;nw.port=t;}}   // ws_lsu: the completion register [3.6]
         else if(lsu_cpl_valid()){cpl_unit=units[old].cpl?int(old):int(1-old);bool has;Result res=unit_result(units[cpl_unit],has);
             if(has){have_nw=true;nw=res;}}
@@ -667,7 +700,8 @@ struct CycleCore {
         bool fq_fired=false,sq_popped=false;
         auto engine_go=[&]{u64 latency;bool replayed;
             if(mem_ready && replay_allows(latency,replayed)){if(replay)replay->advance(er.we,er.addr);
-                eid=issue_beat(er.addr,er.we,er.data,er.be,t,replayed,latency,true,txf.request_target(er));efired=true;port_used=true;}};
+                eid=er.line?issue_engine_line(er,t,replayed,latency,txf.request_target(er)):issue_beat(er.addr,er.we,er.data,er.be,t,replayed,latency,true,txf.request_target(er));
+                efired=true;port_used=true;}};
         if(hybrid){
             // tnca_mem_mux.v: with TENSOR_LINE the LSU first (A_FIRST), else the LSU only when the engine has
             // no request; inside the hybrid the line path's request register before the word queue's head [3.6]
@@ -718,7 +752,7 @@ struct CycleCore {
         }
         const bool w_pre_en=w.en;const unsigned w_pre_rctx=w.res.rctx;
         // the engine's register read answered this cycle (port 4), then its edge [4.2]
-        for(auto& br:bank_rsp)if(br.valid && br.port==4){txf.sread_response(F(txf.cmd.rctx).physical->read(phys(txf.cmd.rctx,txf.st_vreg()),sc_time_stamp(),txf.owner));}
+        for(auto& br:bank_rsp)if(br.valid && br.port==4){txf.vr_response(F(txf.cmd.rctx).physical->read(br.phys,sc_time_stamp(),txf.owner));}
         txf.edge(efired,eid);
         if(dbg_core==long(c.id) && dbg_launch+1==long(launch_n) && t-launch_cycle>=dbg_from && t-launch_cycle<=dbg_to){
             dbg<<(t-launch_cycle)<<" req="<<er.valid<<"/"<<std::hex<<er.addr<<std::dec<<" ready="<<mem_ready<<" fired="<<efired<<" w="<<w_pre_en<<"/"<<w.res.cls<<"/"<<w.res.idx<<" "<<txf.dump()<<"\n";}
@@ -735,7 +769,7 @@ struct CycleCore {
         w.en=have_nw;if(have_nw)w.res=nw;
         if(red_grant)red_pend=false;
         // retire the scheduled pipeline entries that took the port
-        if(fp_wb>=0 || mul_wb>=0){int k=fp_wb>=0?fp_wb:mul_wb;sched.erase(sched.begin()+k);}
+        if(fp_wb>=0 || mul_wb>=0 || vl_wb>=0){int k=fp_wb>=0?fp_wb:mul_wb>=0?mul_wb:vl_wb;sched.erase(sched.begin()+k);}
         for(auto& dres:e.deferred)sched.push_back(dres);
         // FP sequencer [2.13][2.15]
         if(fpu_done_now && !red_pend){red_pend=true;}       // red_pend from done+1
@@ -797,7 +831,7 @@ struct CycleCore {
         pf_tag=pf_go?(accepted&pf_need):0;adv_q=!stall_front && d.valid && !kill_d;
         for(auto& br:bank_rsp)br.valid=false;
         for(unsigned p=0;p<3;++p)if((accepted>>p)&1){unsigned bk=phys(req_rctx,req_idx[p])%4;bank_rsp[bk].valid=true;bank_rsp[bk].port=p;}
-        if((accepted>>4)&1){unsigned bk=p4_phys%4;bank_rsp[bk].valid=true;bank_rsp[bk].port=4;txf.sread_pending=true;}
+        if((accepted>>4)&1){unsigned bk=p4_phys%4;bank_rsp[bk].valid=true;bank_rsp[bk].port=4;bank_rsp[bk].phys=p4_phys;txf.sread_pending=true;}
         if((accepted>>3)&1){unsigned bk=p3_phys%4;bank_rsp[bk].valid=true;bank_rsp[bk].port=3;bank_rsp[bk].phys=p3_phys;}
         if(first_served>=0)vrf_rr=(unsigned(first_served)+1)%NPORT;
         f1=nf1;fb=nfb;d=nd;r=nr;xb=nx;

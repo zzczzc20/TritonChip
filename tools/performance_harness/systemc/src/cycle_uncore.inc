@@ -94,6 +94,7 @@ struct CycleUncore : sc_module {
     struct Req {unsigned core;u64 id,at,addr;bool store;u64 be;u64 got;bool engine;unsigned tag;};
     std::deque<Req> incoming;u64 t=0;UncoreTrace trace;u64 last_launch=0;std::ofstream port_debug;   // TNCA_MODEL_PORT_DEBUG=<path>: why an adapter refuses
     u64 *c_hits,*c_misses,*c_merges,*c_blocked,*c_wb,*c_dram_reads,*c_dram_writes,*c_rsq_full,*c_mreq_stall;
+    u64 *c_installs,*c_replays,*c_s2_holds,*c_fill_chains,*c_wbq_full;   // the home pipe's paths (coverage)
     CycleUncore(sc_module_name n,Context& ctx,unsigned cores_):sc_module(n),x(ctx),ncores(cores_){
         nx=unsigned(x.c.get("nx"));ny=unsigned(x.c.get("ny"));sets=unsigned(x.c.get("sets"));ways=unsigned(x.c.get("ways"));
         set_w=0;while((1u<<set_w)<sets){++set_w;}link_stages=x.c.v.count("tl_noc_link_stages")?unsigned(x.c.get("tl_noc_link_stages")):0;
@@ -133,6 +134,8 @@ struct CycleUncore : sc_module {
         }
         c_hits=&x.counts["uncore_hits"];c_misses=&x.counts["uncore_misses"];c_merges=&x.counts["uncore_merges"];c_blocked=&x.counts["uncore_blocked"];
         c_wb=&x.counts["uncore_writebacks"];c_dram_reads=&x.counts["uncore_dram_reads"];c_dram_writes=&x.counts["uncore_dram_writes"];c_rsq_full=&x.counts["uncore_rsq_full"];c_mreq_stall=&x.counts["uncore_mreq_stall"];
+        if(home_pipe){c_installs=&x.counts["uncore_installs"];c_replays=&x.counts["uncore_replays"];c_s2_holds=&x.counts["uncore_s2_holds"];
+            c_fill_chains=&x.counts["uncore_fill_chains"];c_wbq_full=&x.counts["uncore_wbq_full"];}
         trace.open(x,ncores);
         rp=UncoreReplay::open();replaying=bool(rp);if(rp)rp->ports(unsigned(ports.size()));
         if(const char* p=std::getenv("TNCA_MODEL_PORT_DEBUG")){if(*p)port_debug.open(p);}
@@ -478,6 +481,11 @@ struct CycleUncore : sc_module {
             else{kind=K_ALLOC;s2=(ms_free<0 || tg_free<0)?S2_BLOCK:S2_ACT;}
         }
         const bool s2_hold=s2==S2_HOLD;
+        if(s2==S2_REPLAY){++*c_replays;}
+        if(s2_hold){++*c_s2_holds;}
+        if(s3_push && rsq_full){++*c_rsq_full;}
+        if(s3.v && s3.wb && wbq_full){++*c_wbq_full;}
+        if(!granted && s.mreq.valid){++*c_mreq_stall;}
         // the arbiter's pick (pre-edge: S1's request is busy, S2's still valid and shadows its line) [10.2.1]
         const int sel=s2_hold?-1:select_request(s);
         //==== the edge
@@ -491,7 +499,7 @@ struct CycleUncore : sc_module {
             Flit r=f;r.dst=f.src;s.rsq.push_back(r);fu.first=false;
             if(fu_last){const unsigned i=m.set*ways+m.way;s.valid[i]=true;s.claimed[i]=false;s.dirty[i]=fu.dirty || f.we;
                 m.st=HP_FREE;m.targets.clear();free_resources=true;
-                if(fill_chain && fill_next>=0){fu.ms=unsigned(fill_next);fu.pos=0;fu.first=true;fu.dirty=false;}else fu.v=false;}
+                if(fill_chain && fill_next>=0){fu.ms=unsigned(fill_next);fu.pos=0;fu.first=true;fu.dirty=false;++*c_fill_chains;}else fu.v=false;}
             else{fu.dirty=fu.dirty || f.we;++fu.pos;}}
         // ---- S3: the response, the victim's writeback [10.2.3]
         if(s3_go){if(s3_push){Flit r=s3.f;r.dst=s3.f.src;s.rsq.push_back(r);}if(s3.wb)s.wbq.push_back(s3.wb_line);}
@@ -506,7 +514,7 @@ struct CycleUncore : sc_module {
                 else if(kind==K_INSTALL || kind==K_ALLOC){const unsigned i=set*ways+vic_way;s3.index=i;
                     s3.wb=s.valid[i] && s.dirty[i];s3.wb_line=(s.tag[i]<<set_w)|set;
                     s.victim_ptr[set]=(vic_way+1)%ways;s.tag[i]=tag_of(f.addr);++*c_misses;
-                    if(kind==K_INSTALL){s.valid[i]=true;s.dirty[i]=true;}
+                    if(kind==K_INSTALL){s.valid[i]=true;s.dirty[i]=true;++*c_installs;}
                     else{s.valid[i]=false;s.dirty[i]=false;s.claimed[i]=true;
                         Mshr& m=s.ms[ms_free];m.st=HP_REQ;m.line=f.addr>>6;m.set=set;m.way=vic_way;m.targets.assign(1,unsigned(tg_free));
                         s.tg[tg_free].v=true;s.tg[tg_free].f=f;}}}

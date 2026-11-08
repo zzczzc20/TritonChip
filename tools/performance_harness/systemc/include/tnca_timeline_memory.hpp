@@ -64,12 +64,19 @@ struct TimelineMemory {
         std::array<u64*,11> slots{};
     };
     std::vector<Home> homes;
-    struct Outlet {Timeline issue;std::vector<u64> inflight;u64 *reads=nullptr,*writes=nullptr,*peak=nullptr,*waited=nullptr;unsigned peak_n=0;};
+    struct Outlet {Timeline issue;std::vector<u64> inflight;std::vector<u64> slot;u64 *reads=nullptr,*writes=nullptr,*peak=nullptr,*waited=nullptr;unsigned peak_n=0;};
     std::vector<Outlet> outlets;std::vector<u64*> pc_bytes;
     std::map<std::tuple<unsigned,unsigned,unsigned>,ParallelTimeline> links;std::map<std::tuple<unsigned,unsigned,unsigned>,u64*> link_bytes;
     unsigned nx,ways;u64 hop,inject,eject,hit_occ,hit_lat,miss_occ,mreq_occ,fill_occ,wake_occ,wb_occ,to_outlet,from_outlet,
         read_issue,write_issue,beats_extra,latency,write_latency,mshrs,active_outlets,noutlets,outstanding,base,pc_first,pc_size;
     FastDram fast_dram{c};DramPath* dram=&fast_dram; // Model points it at the slow path when selected
+    // tl_tb_hbm=1: the R41 RTL simulation's HBM stand-ins (tb/common/tnca_axi_line_model.v,
+    // tb/fpga/tnca_multicore_board_regs.v) instead of one latency: outlet p answers a read
+    // LATENCY_p + (id*11)%31 cycles after AR (+2 to the adapter's registered response) and a
+    // write LATENCY_p + 15 + (id*7)%23 after AW and W (+1 for B), LATENCY_p = base + step*p;
+    // the AXI id is the slot the adapter admits the line into, the lowest free one
+    // (tnca_line_axi.v). tl_tb_read_wait / tl_tb_write_wait: the random ready stalls' means.
+    bool tb_hbm=false;u64 tb_base=25,tb_step=19,tb_rwait=0,tb_wwait=1;
     const DramAddressMap* physical_map=nullptr;
     TimelineMemory(const Config& cfg,Context& ctx,Store& backing):c(cfg),x(ctx),store(backing){
         auto g=[&](const char* k){return c.get(k);};
@@ -95,6 +102,10 @@ struct TimelineMemory {
             outlets[p].reads=&x.counts[k+"_reads"];outlets[p].writes=&x.counts[k+"_writes"];
             outlets[p].peak=&x.counts[k+"_peak_outstanding"];outlets[p].waited=&x.counts[k+"_wait_cycles"];}
         pc_bytes.assign(g("pc_count"),nullptr);
+        tb_hbm=c.get_or("tl_tb_hbm",0)!=0;
+        if(tb_hbm){tb_base=c.get_or("tl_tb_latency_base",25);tb_step=c.get_or("tl_tb_latency_step",19);
+            tb_rwait=c.get_or("tl_tb_read_wait",0);tb_wwait=c.get_or("tl_tb_write_wait",1);
+            for(auto& o:outlets)o.slot.assign(outstanding,0);}
     }
     u64& hc(unsigned h,unsigned i){
         static const char* names[11]={"writebacks","target_full_events","merges","hits","mshr_full_events","set_busy_events",
@@ -128,6 +139,20 @@ struct TimelineMemory {
         unsigned port=active_outlets==1?0:(noutlets>c.cores()?pc%noutlets:unsigned(home%noutlets));auto& o=outlets[port];
         auto& f=o.inflight;f.erase(std::remove_if(f.begin(),f.end(),[t](u64 d){return d<=t;}),f.end());
         u64 arrival=t;
+        if(tb_hbm){
+            auto& sl=o.slot;size_t k=sl.size();
+            for(size_t i=0;i<sl.size();++i)if(sl[i]<=t){k=i;break;}
+            if(k==sl.size()){t=std::max(t,*std::min_element(sl.begin(),sl.end()));
+                for(size_t i=0;i<sl.size();++i)if(sl[i]<=t){k=i;break;}}
+            *o.waited+=t-arrival;
+            u64 issue=write?write_issue:read_issue,b=o.issue.reserve(t,issue,now),lat=tb_base+tb_step*port;
+            u64 done=b+issue+lat+(write?16+(k*7)%23+tb_wwait:2+(k*11)%31+tb_rwait);
+            sl[k]=done;
+            if(pc<pc_bytes.size()){if(!pc_bytes[pc])pc_bytes[pc]=&x.counts["pc_"+std::to_string(pc)+"_bytes"];*pc_bytes[pc]+=64;}
+            f.push_back(done);o.peak_n=std::max<unsigned>(o.peak_n,unsigned(f.size()));*o.peak=o.peak_n;
+            ++*(write?o.writes:o.reads);
+            return done;
+        }
         while(f.size()>=outstanding){auto m=std::min_element(f.begin(),f.end());t=std::max(t,*m);f.erase(m);}
         *o.waited+=t-arrival;
         u64 issue=write?write_issue:read_issue;

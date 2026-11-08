@@ -5,7 +5,6 @@
  "_profile": "core-vrf-sync-v5-x8-g2c4-dp-board",
  "_not_expressible": {
   "home same-line spacing": "two requests to one line at least 2 cycles apart; RQ_N 16 request buffer",
-  "per-outlet testbench latency": "25 / 44 / 63 + slot jitter by lowest free slot; one hbm_latency_cycles is a mean",
   "FP-reduction fold occupancy, VALU late class, writeback-slot reservation": "core datapath details"
  },
  "nx": {
@@ -292,6 +291,31 @@
   "value": 72,
   "class": "testbench",
   "source": "mean LATENCY + 15 + 1 + mean (id*7)%23 (11.0) + mean AW/W wait 1.08"
+ },
+ "tl_tb_hbm": {
+  "value": 1,
+  "class": "testbench",
+  "source": "per outlet: LATENCY 25+19p (board_regs) + slot jitter (id*11)%31 read, 15+(id*7)%23 write (tnca_axi_line_model.v), slot = lowest free (tnca_line_axi.v); hbm_latency_cycles above is then unused"
+ },
+ "tl_tb_latency_base": {
+  "value": 25,
+  "class": "testbench",
+  "source": "tnca_multicore_board_regs.v: LATENCY(25+p*19)"
+ },
+ "tl_tb_latency_step": {
+  "value": 19,
+  "class": "testbench",
+  "source": "tnca_multicore_board_regs.v: LATENCY(25+p*19)"
+ },
+ "tl_tb_read_wait": {
+  "value": 0,
+  "class": "testbench",
+  "source": "arready true 69 % of cycles: mean wait 0.45, rounded"
+ },
+ "tl_tb_write_wait": {
+  "value": 1,
+  "class": "testbench",
+  "source": "awready 64 %, wready 59 %: mean wait 1.08, rounded"
  },
  "host_launch_cycles": {
   "value": 0,

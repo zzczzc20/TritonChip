@@ -134,6 +134,12 @@ def config(desc, prof):
         " per-outlet latency and slot identity: stage B")
     put("tl_hbm_write_latency_cycles", round(sum(lat) / cores + 16 + jit_w + 1.08), "testbench",
         f"mean LATENCY + 15 + 1 + mean (id*7)%23 ({jit_w:.1f}) + mean AW/W wait 1.08")
+    put("tl_tb_hbm", 1, "testbench", "per outlet: LATENCY 25+19p (board_regs) + slot jitter (id*11)%31 read, 15+(id*7)%23 write"
+        " (tnca_axi_line_model.v), slot = lowest free (tnca_line_axi.v); hbm_latency_cycles above is then unused")
+    put("tl_tb_latency_base", 25, "testbench", "tnca_multicore_board_regs.v: LATENCY(25+p*19)")
+    put("tl_tb_latency_step", 19, "testbench", "tnca_multicore_board_regs.v: LATENCY(25+p*19)")
+    put("tl_tb_read_wait", 0, "testbench", "arready true 69 % of cycles: mean wait 0.45, rounded")
+    put("tl_tb_write_wait", 1, "testbench", "awready 64 %, wready 59 %: mean wait 1.08, rounded")
     put("host_launch_cycles", 0, "testbench", "the count runs from MMIO decode to done: host time is outside it")
     put("host_transfer_cycles", 0, "testbench", "as host_launch_cycles")
     put("host_transfer_cycles_per_kib", 0, "testbench", "as host_launch_cycles")
@@ -147,7 +153,6 @@ def config(desc, prof):
 
 NOT_EXPRESSIBLE = {
     "home same-line spacing": "two requests to one line at least 2 cycles apart; RQ_N 16 request buffer",
-    "per-outlet testbench latency": "25 / 44 / 63 + slot jitter by lowest free slot; one hbm_latency_cycles is a mean",
     "FP-reduction fold occupancy, VALU late class, writeback-slot reservation": "core datapath details",
 }
 

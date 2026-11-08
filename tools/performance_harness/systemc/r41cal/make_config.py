@@ -121,7 +121,10 @@ def config(desc, prof):
         ("barrier_latency", 1, "mb.arm / mb.test write in X"),
         ("reduction_vector_extra", 1, "integer reduction broadcast in the late class"),
         ("dispatch_cycles", 6, "per-program dispatch (R40 derivation, path unchanged), DISPATCH_STAGES 2"),
-        ("launch_cycles", 5, "per program (grid admission +4 per grid launch: stage B)"),
+        ("launch_cycles", 5, "per program; grid admission is tl_grid_admission_cycles"),
+        ("tl_fp_fold", 1, "red_busy_next: a reduction or SFU pass waits for FP ops in flight; FP ops wait behind a reduction"),
+        ("tl_fp_fold_fp_wait", 14, "after a reduction in X, an ordinary FP op waits about 14 cycles (sub-read, inferred count)"),
+        ("tl_fp_fold_next", 16, "after a reduction in X, the next reduction or SFU pass waits 16 (4 levels x (FP_LAT+1))"),
     ]:
         put(k, v, "derived", src)
 
@@ -153,7 +156,7 @@ def config(desc, prof):
 
 NOT_EXPRESSIBLE = {
     "home same-line spacing": "two requests to one line at least 2 cycles apart; RQ_N 16 request buffer",
-    "FP-reduction fold occupancy, VALU late class, writeback-slot reservation": "core datapath details",
+    "VALU late class, writeback-slot reservation": "core datapath details",
 }
 
 

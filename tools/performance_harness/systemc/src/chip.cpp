@@ -268,6 +268,11 @@ struct Outcome {unsigned status=STATUS_OK,code=0;u64 pc=0,retired=0;std::string 
 struct Core : sc_module {
     tlm_utils::simple_initiator_socket<Core> memory;
     Context& x;unsigned id;CodeCache& code;sc_time cycle;Resource issue;Limit lsu;sc_time sfu_available=SC_ZERO_TIME;
+    // tl_fp_fold=1 (tnca_core.v red_busy_next): after an FP reduction reaches X an
+    // ordinary FP op waits tl_fp_fold_fp_wait cycles and the next reduction or SFU
+    // pass tl_fp_fold_next; a reduction or SFU pass also waits for the FP ops in
+    // flight (one completion port, the FMA array's operands).
+    bool fold=false;u64 t_fold_fp=14,t_fold_next=16;sc_time fold_fp_free=SC_ZERO_TIME,fold_next_free=SC_ZERO_TIME,fp_busy_until=SC_ZERO_TIME;
     std::array<BarrierModel,32> barriers;
     TensorEngine tensor;Pool beats;
     std::shared_ptr<PhysicalRegisters> vrf=std::make_shared<PhysicalRegisters>();
@@ -357,6 +362,7 @@ struct Core : sc_module {
         t_lsu_complete=g("lsu_complete_cycles");t_lsu_wb=g("lsu_writeback_cycles");t_fcmp=g("fp_compare_latency");
         t_shuf_s=g("shuffle_scalar_latency");t_red_vec=g("reduction_vector_extra");t_fred_vec=g("fp_reduction_vector_extra");
         vrf_pf=g("vrf_prefetch")!=0;quantum=g("time_quantum");quantum_t=x.cycles(quantum);
+        fold=x.c.get_or("tl_fp_fold",0)!=0;t_fold_fp=x.c.get_or("tl_fp_fold_fp_wait",14);t_fold_next=x.c.get_or("tl_fp_fold_next",16);
         c_freeze=&x.counts[key("pipeline_freeze_cycles")];c_park=&x.counts[key("context_park_cycles")];
         c_bank=&x.counts[key("vrf_bank_conflict_cycles")];c_branch=&x.counts[key("branch_refetch_cycles")];
         port.service=&x.counts[key("memory_port_service_cycles")];port.queue=&x.counts[key("memory_port_queue_cycles")];
@@ -683,32 +689,38 @@ struct Core : sc_module {
                         // A path is entered only once the other is empty
                         // (tnca_lsu_hybrid.v mode switch). A wait holds R: every
                         // context of the core stalls.
-                        u64 at=std::max(now,mem_next),gap=at;
                         line_path=vector && !gather && size<=4 && (base&63)+16*u64(size)<=64 && base<(1ULL<<33);
-                        u64 mode=at;
-                        if(line_path){
-                            for(auto& u:units)mode=std::max(mode,u.free);
-                            at=mode;
-                            line_inflight.erase(std::remove_if(line_inflight.begin(),line_inflight.end(),[&](u64 v){return v<=at;}),line_inflight.end());
-                            if(line_inflight.size()>=t_line_slots){
-                                std::nth_element(line_inflight.begin(),line_inflight.begin()+(line_inflight.size()-t_line_slots),line_inflight.end());
-                                u64 m=line_inflight[line_inflight.size()-t_line_slots];*c_slot_wait+=m-at;at=m;
-                                line_inflight.erase(std::remove_if(line_inflight.begin(),line_inflight.end(),[&](u64 v){return v<=at;}),line_inflight.end());
+                        // Re-evaluated after every wait: another context of this core
+                        // may have taken the issue gap, a word unit or line slots while
+                        // this one waited (they all wake at the same free cycle).
+                        for(;;){
+                            u64 at=std::max(now,mem_next),gap=at,mode=at;
+                            if(line_path){
+                                for(auto& u:units)mode=std::max(mode,u.free);
+                                at=mode;
+                                std::vector<u64> live;for(auto v:line_inflight)if(v>at)live.push_back(v);
+                                if(live.size()>=t_line_slots){
+                                    std::nth_element(live.begin(),live.begin()+(live.size()-t_line_slots),live.end());
+                                    u64 m=live[live.size()-t_line_slots];*c_slot_wait+=m-at;at=m;
+                                }
+                            }else{
+                                for(auto v:line_inflight)mode=std::max(mode,v);
+                                u64 best=UINT64_MAX;
+                                for(unsigned i=0;i<units.size();++i){
+                                    u64 a=std::max(mode,units[i].free);
+                                    for(unsigned j=0;j<units.size();++j)if(j!=i)a=std::max(a,units[j].drained);
+                                    if(a<best){best=a;unit_index=i;}
+                                }
+                                at=best;
                             }
-                            ++*c_line_acc;
-                        }else{
-                            for(auto v:line_inflight)mode=std::max(mode,v);
-                            line_inflight.clear();
-                            u64 best=UINT64_MAX;
-                            for(unsigned i=0;i<units.size();++i){
-                                u64 a=std::max(mode,units[i].free);
-                                for(unsigned j=0;j<units.size();++j)if(j!=i)a=std::max(a,units[j].drained);
-                                if(a<best){best=a;unit_index=i;}
-                            }
-                            at=best;++*c_word_acc;
+                            *c_gap_wait+=gap-now;*c_mode_wait+=mode-gap;
+                            if(at<=now)break;
+                            *c_lsu_wait+=at-now;freeze(f,x.cycles(at));now=lnow(f);
                         }
-                        *c_gap_wait+=gap-now;*c_mode_wait+=mode-gap;
-                        if(at>now){*c_lsu_wait+=at-now;freeze(f,x.cycles(at));now=lnow(f);}
+                        if(line_path){
+                            line_inflight.erase(std::remove_if(line_inflight.begin(),line_inflight.end(),[&](u64 v){return v<=now;}),line_inflight.end());
+                            ++*c_line_acc;
+                        }else{line_inflight.clear();++*c_word_acc;}
                         mem_next=now+t_mem_gap;
                     }else if(pipe){
                         // A busy unit holds the access in R: every context stalls.
@@ -767,6 +779,9 @@ struct Core : sc_module {
                         }
                     }
                     if(pipe && hybrid){
+                        static const bool lsu_log=std::getenv("TNCA_MODEL_LSU_LOG")!=nullptr; // debugging only
+                        if(lsu_log)std::fprintf(stderr,"LSU core %u x %llu %s %s addr %llx req %llu done %llu\n",id,(unsigned long long)now,
+                            line_path?"line":"word",store?"st":"ld",(unsigned long long)base,(unsigned long long)(t-1),(unsigned long long)complete);
                         // A line slot frees when its completion leaves; a word unit is
                         // held until its completion is accepted. Loads and stores share
                         // the one completion register and the writeback port (wb_steal).
@@ -843,6 +858,7 @@ struct Core : sc_module {
                 else publish(f,d,func==25?65535:mask,t_vint);
                 break;}
             case K::Vfp:{
+                if(fold && pipe && !x.functional){freeze(f,fold_fp_free);fp_busy_until=std::max(fp_busy_until,lt(f)+x.cycles(t_vfp));}
                 rv(a);if(func!=24)rv(d);
                 if(func!=20 && func!=21)rv(b);
                 if(func==6 || func==7)rv(c);
@@ -885,6 +901,10 @@ struct Core : sc_module {
             case K::Insert:{rv(d);auto value=std::uint32_t(rs(a));if(mask&(1<<(mod&15)))f.v[d][mod&15]=value;publish(f,d,mask&(1<<(mod&15)),t_shuf);break;}
             case K::Reduce:{
                 rv(a);
+                if(fold && pipe && func>=8 && !x.functional){
+                    freeze(f,std::max(fold_next_free,fp_busy_until));
+                    fold_fp_free=lt(f)+x.cycles(t_fold_fp);fold_next_free=lt(f)+x.cycles(t_fold_next);
+                }
                 std::uint32_t reduced=tnca_vector_ops::reduce(func,f.v[a],mask);
                 u64 latency=func>=8?t_fred:t_red;
                 if(mod&1){if(pipe)latency+=func>=8?t_fred_vec:t_red_vec;rv(d);f.v[d].fill(reduced);publish(f,d,65535,latency);}
@@ -893,7 +913,9 @@ struct Core : sc_module {
             case K::Sfu:{
                 rv(a);rv(d);
                 if(!x.functional){
-                auto waiting=lt(f);if(pipe)freeze(f,sfu_available);else ready(f,sfu_available);
+                auto waiting=lt(f);
+                if(pipe)freeze(f,fold?std::max(sfu_available,std::max(fold_next_free,fp_busy_until)):sfu_available);
+                else ready(f,sfu_available);
                 *c_sfu_queue+=cycles_of(lt(f)-waiting);
                 sfu_available=lt(f)+x.cycles(t_sfu_occ);}
                 for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane))f.v[d][lane]=tnca_sfu::evaluate(func,f.v[a][lane]);

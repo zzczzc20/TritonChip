@@ -170,7 +170,9 @@ struct Config {
             // R41 line engine as built (default off): eligibility, setup after the previous issue, snapshot cost.
             "dma_line_rtl",
             // R41 RTL simulation's testbench HBM (default off): per-outlet latency and slot jitter.
-            "tl_tb_hbm","tl_tb_latency_base","tl_tb_latency_step","tl_tb_read_wait","tl_tb_write_wait"};return k;}
+            "tl_tb_hbm","tl_tb_latency_base","tl_tb_latency_step","tl_tb_read_wait","tl_tb_write_wait",
+            // R41 FP-reduction fold occupancy (default off).
+            "tl_fp_fold","tl_fp_fold_fp_wait","tl_fp_fold_next"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

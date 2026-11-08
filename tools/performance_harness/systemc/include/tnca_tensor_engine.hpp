@@ -196,6 +196,20 @@ struct TensorEngine : sc_module {
     Timeline line_rf,line_rf_read; // the window port's write side (loads) and read side (stores)
     struct LineResult {u64 issue_end=0,rf_end=0,end=0;std::vector<std::shared_ptr<Held>> held;};
     bool line_mode()const{return tm && !x.functional && x.c.get_or("dma_line_engine",0)!=0;}
+    // dma_line_rtl=1: the R41 line engine as built (tnca_tensor.v). Only an
+    // eligible box takes the line path (le_elig: not transposed, the row start
+    // line-aligned, outer strides multiples of 64, rows whole lines, inside the
+    // tensor); a command's setup (rank + 3, + TENSOR_MUL_PIPE) starts after the
+    // previous command's line issue ends; a snapshot of a line-aligned map is
+    // its 4 lines + 6 fold/parse cycles, of an unaligned one 32 serial words.
+    bool line_rtl()const{return x.c.get_or("dma_line_rtl",0)!=0;}
+    static bool line_eligible(const TensorMapModel& d,const std::array<u64,5>& c,unsigned bytes){
+        if(!d.inside(c))return false;
+        u64 a=d.base;for(unsigned k=0;k<d.rank;++k)a+=c[k]*d.stride[k];
+        if(a&63)return false;
+        for(unsigned k=0;k+1<d.rank;++k)if(d.stride[k]&63)return false;
+        return (u64(d.block[d.rank-1])*bytes)%64==0;
+    }
     u64 take_buffer(u64 t,u64 now){
         unsigned cap=unsigned(x.c.get_or("dma_line_buffers",64));
         line_release.erase(std::remove_if(line_release.begin(),line_release.end(),[now](u64 d){return d<=now;}),line_release.end());
@@ -361,12 +375,16 @@ struct TensorEngine : sc_module {
             if(function==0){
                 require(address%8==0,"unaligned TensorMap snapshot address is not implemented");
                 std::array<unsigned char,256> data{};
-                if(line_mode()){
+                if(line_mode() && line_rtl() && address%64!=0){
+                    // R41: an unaligned map is read as 32 word requests, each after the previous one
+                    for(unsigned i=0;i<32;++i){u64 value=word(address+8*i,false,0,255);for(unsigned b=0;b<8;++b)data[i*8+b]=static_cast<unsigned char>(value>>(b*8));}
+                    ++x.counts[key("word_snapshots")];
+                }else if(line_mode()){
                     // the line engine reads the 256-byte map as whole lines, all in flight at once
-                    u64 now=x.now(),t=now,done=now;std::map<u64,std::vector<TimelineMemory::WideWord>> lines;
+                    u64 now=x.now(),t=now,done=now+(line_rtl()?6:0);std::map<u64,std::vector<TimelineMemory::WideWord>> lines;
                     for(unsigned i=0;i<32;++i)lines[(address+8*i)&~63ULL].push_back({address+8*i,0,255,0});
                     std::map<u64,u64> value;
-                    for(auto& [l,words]:lines){u64 at=0;done=std::max(done,issue_line(words,false,t,now,at));t=at+1;for(auto& w:words)value[w.address]=w.result;}
+                    for(auto& [l,words]:lines){u64 at=0;done=std::max(done,issue_line(words,false,t,now,at)+(line_rtl()?6:0));t=at+1;for(auto& w:words)value[w.address]=w.result;}
                     for(unsigned i=0;i<32;++i){u64 v=value[address+8*i];for(unsigned b=0;b<8;++b)data[i*8+b]=static_cast<unsigned char>(v>>(b*8));}
                     ++x.counts[key("line_snapshots")];
                     if(done>now)wait(x.cycles(done-now));
@@ -478,14 +496,20 @@ struct TensorEngine : sc_module {
         }catch(...){admission.release();throw;}
         ++x.counts[key("commands_issued")];require(role<4,"transfer issuer context");++outstanding[role];
         // Admitted commands run in order on one persistent controller process.
-        if(active && !transpose && line_mode()){
+        if(active && !transpose && line_mode() && (!line_rtl() || line_eligible(*descriptor,coordinates,bytes))){
             ++queued;
             command_worker.submit([=](){
                 controller.lock();--queued;auto start=sc_time_stamp();LineResult lr;
                 try{
-                    // command decode overlaps the previous command's line issue (pipelined front end)
                     u64 setup=x.c.get("dma_setup_cycles")+(rtl?descriptor->rank:0),now0=x.now();
-                    if(now0<last_issue_end+setup){u64 ready=last_issue_end;if(ready>now0)wait(x.cycles(ready-now0));}
+                    if(line_rtl()){
+                        // R41: setup 1, check 1, multiply rank+1 (+ TENSOR_MUL_PIPE), after the
+                        // previous command's line issue has ended (the walk is free one cycle later)
+                        u64 s=(descriptor->rank>=2?3:2)+descriptor->rank+1,ready=std::max(now0,last_issue_end)+s;
+                        if(ready>now0)wait(x.cycles(ready-now0));
+                    }
+                    // command decode overlaps the previous command's line issue (pipelined front end)
+                    else if(now0<last_issue_end+setup){u64 ready=last_issue_end;if(ready>now0)wait(x.cycles(ready-now0));}
                     else wait(x.cycles(setup));
                     lr=line_transfer(*descriptor,coordinates,bytes,total,store,bank,base,owner);
                     u64 now=x.now();if(lr.issue_end>now)wait(x.cycles(lr.issue_end-now));

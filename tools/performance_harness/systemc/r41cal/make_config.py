@@ -92,6 +92,9 @@ def config(desc, prof):
         put("dma_line_buffers", u.get("LINE_SLOTS", 64), "derived",
             "LSLOT_N = 2^(MTAG_W-1), the port tag width from LINE_SLOTS (inferred)")
         put("dma_queue", 8, "derived", "line-eligible transfer commands overlap up to CMD_N 8 (word walk: 1)")
+        put("dma_line_rtl", 1, "derived",
+            "le_elig (not transposed, row start line-aligned, outer strides x64, whole-line rows, inside) else the word walk;"
+            " setup rank+3 (+TENSOR_MUL_PIPE) after the previous issue; snapshot 4 lines + 6, unaligned 32 serial words (tnca_tensor.v)")
 
     # --- the image: per-core profile (rtl_parameters / elaboration) ---
     if el.get("MAC_DP"):
@@ -145,7 +148,6 @@ def config(desc, prof):
 NOT_EXPRESSIBLE = {
     "home same-line spacing": "two requests to one line at least 2 cycles apart; RQ_N 16 request buffer",
     "per-outlet testbench latency": "25 / 44 / 63 + slot jitter by lowest free slot; one hbm_latency_cycles is a mean",
-    "line-engine eligibility": "only aligned whole-line boxes take the line path",
     "FP-reduction fold occupancy, VALU late class, writeback-slot reservation": "core datapath details",
 }
 

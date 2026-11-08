@@ -166,7 +166,9 @@ struct Config {
             "tl_hybrid_lsu","tl_word_units","tl_line_slots","tl_mem_issue_gap","tl_word_setup_cycles",
             // R41 launch boundaries (default off): grid admission cycles before the first program
             // (tnca_grid_dispatch.v) and done waiting for every outlet write response (memory_drained).
-            "tl_grid_admission_cycles","tl_launch_drain"};return k;}
+            "tl_grid_admission_cycles","tl_launch_drain",
+            // R41 line engine as built (default off): eligibility, setup after the previous issue, snapshot cost.
+            "dma_line_rtl"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

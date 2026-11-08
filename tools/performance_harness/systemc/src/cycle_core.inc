@@ -767,6 +767,11 @@ struct CycleCore {
         const bool w_pre_en=w.en;const unsigned w_pre_rctx=w.res.rctx;
         // the engine's register read answered this cycle (port 4), then its edge [4.2]
         for(auto& br:bank_rsp)if(br.valid && br.port==4){txf.vr_response(F(txf.cmd.rctx).physical->read(br.phys,sc_time_stamp(),txf.owner));}
+        // the completion pulse valid during t was registered at the previous edge: latch it before the engine's
+        // edge, which may register the next one (two line commands closing in consecutive cycles) [4.4]
+        const bool txf_done_now=txf.done_at==t,txf_done_bar=txf.done_bar,txf_done_err=txf.done_err;
+        const u64 txf_done_token=txf.done_token;const unsigned txf_fault_rctx=txf.cmd.rctx,txf_fault_code=txf.fault_code;
+        const u64 txf_fault_pc=txf.cmd.pc;const std::string txf_fault_why=txf_done_now && txf_done_err?txf.fault_why:std::string();
         txf.edge(efired,eid);
         if(dbg_core==long(c.id) && dbg_launch+1==long(launch_n) && t-launch_cycle>=dbg_from && t-launch_cycle<=dbg_to){
             dbg<<(t-launch_cycle)<<" req="<<er.valid<<"/"<<std::hex<<er.addr<<std::dec<<" ready="<<mem_ready<<" fired="<<efired<<" w="<<w_pre_en<<"/"<<w.res.cls<<"/"<<w.res.idx<<" "<<txf.dump()<<"\n";}
@@ -789,8 +794,8 @@ struct CycleCore {
         if(fpu_done_now && !red_pend){red_pend=true;}       // red_pend from done+1
         if(e.red_start){fpu_red=!e.red_is_sfu;fpu_start=t;fpu_busy_until=e.red_is_sfu?t+23:t+12;fpu_done_at=e.red_done;red=e.redres;red.port=0;}
         // transfer engine completion pulse (high during this cycle) [5.2]
-        if(txf.done_at==t){if(txf.done_bar)c.complete_async(txf.done_token,txf.done_err);
-            if(txf.done_err){Ctx& q=ctx[txf.cmd.rctx];q.running=false;q.faulted=true;record(STATUS_FAULT,txf.fault_code,txf.cmd.pc,txf.fault_why);}}
+        if(txf_done_now){if(txf_done_bar)c.complete_async(txf_done_token,txf_done_err);
+            if(txf_done_err){Ctx& q=ctx[txf_fault_rctx];q.running=false;q.faulted=true;record(STATUS_FAULT,txf_fault_code,txf_fault_pc,txf_fault_why);}}
         // matrix engine [4.1]
         if(mtx_done){sb_acc[mtx.done_slot]=false;if(mtx.done_bar)c.complete_async(mtx.done_token,false);}
         if(mtx.srcfree_at==t && mtx.srcfree_token){c.complete_async(mtx.srcfree_token,false);mtx.srcfree_token=0;}

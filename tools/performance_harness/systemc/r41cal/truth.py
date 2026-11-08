@@ -159,14 +159,13 @@ def main(argv=None):
 
     candidate = args.candidate.resolve() if args.candidate else None
     hw, sw = candidate_digests(candidate)
-    work = args.work.resolve()
-    work.mkdir(parents=True, exist_ok=True)
-    host, dev = E._trees(repo, task, candidate, work)
-    desc = json.loads((dev / E.device_path(task)).read_text())
+    # The machine's core count, read before any tree is built: the keys and claims come first, so a
+    # process that finds everything claimed never touches a tree another process is measuring with.
+    dname_ = E.device_path(task)
+    cand_dev = None if candidate is None else candidate / "files" / dname_
+    desc = json.loads(cand_dev.read_text() if cand_dev is not None and cand_dev.exists()
+                      else E.git("-C", str(repo), "show", f"{task.base_commit}:{dname_}"))
     cores = int(desc["platform"]["core_count"])
-    problems = E.device_check(repo, task, dev)
-    if problems:
-        raise SystemExit("device check: " + "; ".join(problems))
 
     todo = []
     for it in items:
@@ -184,6 +183,20 @@ def main(argv=None):
     if not todo:
         log("nothing to run")
         return 0
+
+    work = args.work.resolve() / f"p{os.getpid()}"            # this process's own trees
+    work.mkdir(parents=True, exist_ok=True)
+    try:
+        host, dev = E._trees(repo, task, candidate, work)
+        problems = E.device_check(repo, task, dev)
+    except BaseException:
+        for k, _ in todo:
+            (store / "claims" / f"{k}.claim").unlink(missing_ok=True)
+        raise
+    if problems:
+        for k, _ in todo:
+            (store / "claims" / f"{k}.claim").unlink(missing_ok=True)
+        raise SystemExit("device check: " + "; ".join(problems))
 
     out = work / "measure"
     shutil.rmtree(out, ignore_errors=True)

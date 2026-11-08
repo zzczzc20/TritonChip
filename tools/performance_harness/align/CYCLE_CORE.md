@@ -49,9 +49,11 @@ through 64 line slots with up to eight commands in flight after the walk is
 free, the four-line TensorMap load, the transposed walk's line buffer, 1-byte
 transposes, the registered address multiply); the vector multiply family and
 the integer reductions write back a cycle after X (`core_valu_late=1`, 2.12).
-With the switches off the R40 rules stand unchanged. Not yet in the model: R41's
-matrix engine (MTX_VRF_REG, the packed MAC lanes), the G2 FMA rebuild
-(FMA_IMPL 1), line requests in the cycle uncore (slice 2).
+The matrix engine is R41's (CORE_TIMING 4.1): `m.mma.dp` with its k step of two
+or four, the MAC lanes' five-cycle result pipeline (`core_mtx_pipe=5`) and the
+registered port-3 response (`core_mtx_vrf_reg=1`). With the switches off the
+R40 rules stand unchanged. Not yet in the model: line requests in the cycle
+uncore (slice 2); anything else R41 changed shows up as the gate reaches it.
 
 Validation path: `record_model.py --replay RTL_RUN` gives every point's
 model process the RTL trace of that point; the replay port checks each LSU

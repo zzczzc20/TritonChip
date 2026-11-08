@@ -9,7 +9,9 @@ struct CycleMatrix {
     enum St {IDLE,ZERO,LOADA,LOADB,MAC,ROW,DRAIN,DONE};
     St st=IDLE;
     struct Cmd {unsigned op=1;unsigned slot=0,va=0,vb=0,K=16,dt=0,rctx=0,rowop=0,row=0;bool bar_en=false,sf_en=false;u64 token=0,sf_token=0;
-                bool elem8=false;unsigned a_regs=0;bool use_abuf=false;PhysicalRegisters::Vector vdata{};std::uint32_t scale=0;unsigned mask=0;} cmd;
+                bool elem8=false;unsigned a_regs=0;bool use_abuf=false;PhysicalRegisters::Vector vdata{};std::uint32_t scale=0;unsigned mask=0;
+                // R41 G2 m.mma.dp (MAC_DP lanes): B's own format, and the k step (two products a MAC, four for E4M3 x E4M3)
+                bool dp=false,elemB8=false;unsigned bdt=0,kstep=1;} cmd;
     unsigned kk=0,mm=0,la=0,drain=0;bool pending=false;   // pending: a port-3 read issued this cycle, data next cycle
     std::vector<PhysicalRegisters::Vector> A,B;std::vector<bool> a_have,b_have;
     u64 done_at=0,srcfree_at=0;unsigned done_slot=0;bool done_bar=false;u64 done_token=0,srcfree_token=0;
@@ -21,7 +23,7 @@ struct CycleMatrix {
     unsigned read_index()const{
         if(pending)return ~0u;
         if(st==LOADA)return cmd.va+la;
-        if(st==LOADB)return cmd.vb+(cmd.elem8?kk/4:kk/2);
+        if(st==LOADB)return cmd.vb+(cmd.elemB8?kk/4:kk/2);
         if(st==MAC && !cmd.use_abuf){unsigned a_flat=mm*k_limit()+kk;return cmd.va+(cmd.elem8?a_flat/64:a_flat/32);}
         return ~0u;
     }
@@ -31,8 +33,10 @@ struct CycleMatrix {
         if(cmd.op==0){st=ZERO;return;}
         if(cmd.op==2){st=ROW;return;}
         cmd.elem8=cmd.dt>=2;cmd.a_regs=cmd.elem8?cmd.K/4:cmd.K/2;
+        if(!cmd.dp)cmd.bdt=cmd.dt;
+        cmd.elemB8=cmd.bdt>=2;cmd.kstep=!cmd.dp?1:(cmd.dt==3 && cmd.bdt==3)?4:2;
         cmd.use_abuf=k.c.abuf && (cmd.elem8?cmd.K!=64:cmd.K==16);
-        unsigned b_regs=tnca_matrix_ops::fragment_registers(cmd.K,16,cmd.dt);
+        unsigned b_regs=tnca_matrix_ops::fragment_registers(cmd.K,16,cmd.bdt);
         A.assign(cmd.a_regs,PhysicalRegisters::Vector{});a_have.assign(cmd.a_regs,false);
         B.assign(b_regs,PhysicalRegisters::Vector{});b_have.assign(b_regs,false);
         st=cmd.use_abuf?LOADA:LOADB;
@@ -47,15 +51,15 @@ struct CycleMatrix {
         case IDLE:break;
         case ZERO:if(mm==15){mm=0;st=DONE;}else ++mm;break;
         case LOADA:if(have){if(la<A.size()){A[la]=data;a_have[la]=true;}if(la+1==cmd.a_regs){st=LOADB;}else ++la;}break;
-        case LOADB:if(have){unsigned bi=cmd.elem8?kk/4:kk/2;if(bi<B.size()){B[bi]=data;b_have[bi]=true;}mm=0;st=MAC;}break;
+        case LOADB:if(have){unsigned bi=cmd.elemB8?kk/4:kk/2;if(bi<B.size()){B[bi]=data;b_have[bi]=true;}mm=0;st=MAC;}break;
         case MAC:if(cmd.use_abuf || have){
                 if(!cmd.use_abuf){unsigned a_flat=mm*k_limit()+kk;unsigned ai=cmd.elem8?a_flat/64:a_flat/32;if(ai<A.size() && !a_have[ai]){A[ai]=data;a_have[ai]=true;}}
                 if(mm==15){mm=0;
-                    if(kk==k_limit()-1){if(cmd.sf_en){srcfree_at=t+1;srcfree_token=cmd.sf_token;}drain=CycleCore::PIPE+1;finish_product();st=DRAIN;}
-                    else{++kk;st=LOADB;}
+                    if(kk==k_limit()-cmd.kstep){if(cmd.sf_en){srcfree_at=t+1;srcfree_token=cmd.sf_token;}drain=k.mtx_pipe+1;finish_product();st=DRAIN;}
+                    else{kk+=cmd.kstep;st=LOADB;}
                 }else ++mm;
             }break;
-        case ROW:if(cmd.rowop==0){st=DONE;}else{drain=CycleCore::PIPE+1;st=DRAIN;}break;
+        case ROW:if(cmd.rowop==0){st=DONE;}else{drain=k.mtx_pipe+1;st=DRAIN;}break;
         case DRAIN:if(drain==0){st=DONE;}else --drain;break;
         case DONE:done_at=t+1;done_slot=cmd.slot;done_bar=cmd.bar_en;done_token=cmd.token;st=IDLE;break;
         }
@@ -65,6 +69,7 @@ struct CycleMatrix {
         Frame& f=k.F(cmd.rctx);
         for(unsigned i=0;i<A.size();++i)if(!a_have[i])A[i]=f.physical->read(f.vbase+cmd.va+i,sc_time_stamp());
         for(unsigned i=0;i<B.size();++i)if(!b_have[i])B[i]=f.physical->read(f.vbase+cmd.vb+i,sc_time_stamp());
-        tnca_matrix_ops::mma(k.c.acc[cmd.slot],A,B,cmd.K,cmd.dt);
+        if(cmd.dp)tnca_matrix_ops::mma_dp(k.c.acc[cmd.slot],A,B,cmd.K,cmd.dt,cmd.bdt);
+        else tnca_matrix_ops::mma(k.c.acc[cmd.slot],A,B,cmd.K,cmd.dt);
     }
 };

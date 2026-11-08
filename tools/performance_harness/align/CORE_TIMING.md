@@ -652,6 +652,22 @@ as the execute ports; each refused cycle adds one cycle to S_LOADA/S_LOADB
 (or to every MAC when unbuffered). D's prefetch re-asking every stalled
 cycle competes on the same banks.
 
+**R41 (MAC_DP 1, MTX_VRF_REG 1; model `core_mtx_pipe=5`, `core_mtx_vrf_reg=1`).**
+
+- Every MAC is a `tnca_mac_lane`, so `PIPE = OPND_REG + popcount(MAC_CUTS)` =
+  1 + 4 = 5 for every command (m.mma, m.mma.dp, the row ops), not
+  `FMA_LAT + OPND_REG` = 3: S_DRAIN lasts PIPE + 1 = 6 cycles.
+- `m.mma.dp.async` (major MATRIX func 2, ISA 9C.4; B's format in `mod[6:5]`)
+  steps k by the group size: 4 for E4M3 x E4M3, else 2 (`kstep`, 206-207).
+  So a command is K/kstep LOADB + 16-cycle sweeps, ending when
+  `kk == K - kstep`. B's register for k is `vb + kk/4` (8-bit B) or `kk/2`, by
+  B's own format. A's addressing and the ABUF choice are m.mma's (A's format).
+- MTX_VRF_REG (`tnca_core.v` 948-960) registers the banked file's port-3
+  response: the matrix takes its data two cycles after the grant, and asks
+  for nothing in either cycle (`rq_v[3] = req && !rsp_valid && !valid_q`). So
+  every fragment read (LOADA, LOADB, an unbuffered MAC's A) costs three
+  cycles, not two.
+
 ### 4.2 Transfer engine (`tnca_tensor.v`)
 
 `busy = st != S_IDLE` (292). Command in X at c; `cfg` ops 1..3 (td.release,

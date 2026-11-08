@@ -12,7 +12,11 @@
 
 struct CycleCore {
     Core& c;Context& x;
-    static constexpr unsigned FP_LAT=2,MUL_LAT=3,WB_DEPTH=8,NBEAT=8,PIPE=3,NPORT=5;
+    static constexpr unsigned FP_LAT=2,MUL_LAT=3,WB_DEPTH=8,NBEAT=8,NPORT=5;
+    // the matrix engine's result pipeline (tnca_matrix.v PIPE: FMA_LAT + OPND_REG = 3; R41's MAC_DP lanes
+    // OPND_REG + popcount(MAC_CUTS) = 5, core_mtx_pipe) and MTX_VRF_REG (core_mtx_vrf_reg: the banked file's
+    // port-3 response registered, the matrix takes its data a cycle later) [4.1]
+    unsigned mtx_pipe=3;bool mtx_vrf_reg=false;bool p3q_v=false;PhysicalRegisters::Vector p3q_data{};
     //-------------------------------------------------------------- state [1]
     struct Ctx {
         u64 pc=0;bool running=false,faulted=false,blocked=false,parked=false,launched=false;u64 instret=0;
@@ -135,6 +139,8 @@ struct CycleCore {
             lines.resize(n);
         }
         valu_late=x.c.get_or("core_valu_late",0)!=0;
+        mtx_pipe=unsigned(x.c.get_or("core_mtx_pipe",3));mtx_vrf_reg=x.c.get_or("core_mtx_vrf_reg",0)!=0;
+        require(mtx_pipe>=1 && mtx_pipe<=8,"core_mtx_pipe is 1..8");
         txf.configure(lsu_first,unsigned(x.c.get_or("core_lsu_line_slots",64)),x.c.get_or("core_tensor_mul_pipe",0)!=0);
     }
     //------------------------------------------------------------ helpers
@@ -382,17 +388,19 @@ struct CycleCore {
             break;}
         case K::MZero:case K::AZero:{unsigned slot=Core::sliced(f,dd,4);c.acc[slot]={};e.mtx_cmd=true;e.mtx_slot=slot;e.mtx_busy=17;e.mcmd.op=0;e.mcmd.slot=slot;e.mcmd.rctx=rc;break;}
         case K::Mma:{
-            unsigned slot=Core::sliced(f,dd,4),K=16U<<(mod&3),dt=(mod>>2)&3,bytes=tnca_matrix_ops::element_bytes(dt);
+            const bool dp=func==2;   // m.mma.dp.async (ISA 9C.4): B in its own format, mod[6:5]
+            if(dp && !c.mdp)throw ArchFault(trapcode::illegal,"ILLEGAL_INSTRUCTION: m.mma.dp.async without CAPABILITY0.MATRIX_DP");
+            unsigned slot=Core::sliced(f,dd,4),K=16U<<(mod&3),dt=(mod>>2)&3,bytes=tnca_matrix_ops::element_bytes(dt),dtb=dp?(mod>>5)&3:dt;
             bool source_free=mod&16;
             u64 token=c.token_of(f,rS(rc,cc)),sf_token=source_free?c.token_of(f,rS(rc,(cc+1)&63)):0;
-            unsigned a_regs=tnca_matrix_ops::fragment_registers(16,K,dt),b_regs=tnca_matrix_ops::fragment_registers(K,16,dt);
+            unsigned a_regs=tnca_matrix_ops::fragment_registers(16,K,dt),b_regs=tnca_matrix_ops::fragment_registers(K,16,dtb);
             c.verify_async_token(token);if(source_free)c.verify_async_token(sf_token);
             for(unsigned rr=0;rr<a_regs;++rr){unsigned p=f.vbase+a+rr;require(p<256,"MMA A fragment beyond the physical file");}
             for(unsigned rr=0;rr<b_regs;++rr){unsigned p=f.vbase+b+rr;require(p<256,"MMA B fragment beyond the physical file");}
             (void)bytes;
             e.mtx_cmd=true;e.mtx_slot=slot;e.token=token;e.bar_en=true;
             e.mcmd.op=1;e.mcmd.slot=slot;e.mcmd.va=a;e.mcmd.vb=b;e.mcmd.K=K;e.mcmd.dt=dt;e.mcmd.rctx=rc;e.mcmd.bar_en=true;e.mcmd.token=token;
-            e.mcmd.sf_en=source_free;e.mcmd.sf_token=sf_token;
+            e.mcmd.sf_en=source_free;e.mcmd.sf_token=sf_token;e.mcmd.dp=dp;e.mcmd.bdt=dtb;
             break;}
         case K::ARow:{
             u64 row=rS(rc,a)&15;std::uint32_t scale=0;PhysicalRegisters::Vector vbv{};
@@ -642,8 +650,9 @@ struct CycleCore {
         unsigned p4_idx=0;bool p4_req=txf.vr_req(p4_idx) && !txf.sread_pending;unsigned p4_phys=p4_req?phys(txf.cmd.rctx,p4_idx):0;   // rq_v[4] = vr_req && !vr_valid
         unsigned p3_idx=mtx.read_index();bool p3_req=p3_idx!=~0u;unsigned p3_phys=p3_req?phys(mtx.cmd.rctx,p3_idx):0;
         // last cycle's port-3 read answers now
-        bool p3_data_now=false;PhysicalRegisters::Vector p3_data{};
-        for(auto& br:bank_rsp)if(br.valid && br.port==3){p3_data_now=true;p3_data=F(mtx.cmd.rctx).physical->read(br.phys,sc_time_stamp());}
+        bool p3_raw=false;PhysicalRegisters::Vector p3_raw_data{};
+        for(auto& br:bank_rsp)if(br.valid && br.port==3){p3_raw=true;p3_raw_data=F(mtx.cmd.rctx).physical->read(br.phys,sc_time_stamp());}
+        const bool p3_data_now=mtx_vrf_reg?p3q_v:p3_raw;const PhysicalRegisters::Vector p3_data=mtx_vrf_reg?p3q_data:p3_raw_data;
         unsigned accepted=0;bool bank_taken[4]={};int first_served=-1;
         for(unsigned k=0;k<NPORT;++k){unsigned p=(vrf_rr+k)%NPORT;
             unsigned bk;
@@ -781,6 +790,7 @@ struct CycleCore {
         if(mtx_done){sb_acc[mtx.done_slot]=false;if(mtx.done_bar)c.complete_async(mtx.done_token,false);}
         if(mtx.srcfree_at==t && mtx.srcfree_token){c.complete_async(mtx.srcfree_token,false);mtx.srcfree_token=0;}
         mtx.edge((accepted>>3)&1,p3_data_now,p3_data);
+        if(mtx_vrf_reg){p3q_v=p3_raw;if(p3_raw)p3q_data=p3_raw_data;}
         if(e.mtx_cmd){mtx_rctx=xr;mtx.issue(e.mcmd);}
         if(e.txf_cmd)txf_rctx=xr;
         // wakes [2.16]: any WB write to the context, any mtx_done, any engine freed

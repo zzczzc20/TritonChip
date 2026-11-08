@@ -175,7 +175,9 @@ struct Config {
             // the transfer engine's registered coordinate product (tnca_tensor.v MUL_PIPE, R41 board builds)
             "core_tensor_mul_pipe",
             // R41 F04: the vector multiply family and the integer reductions write back one cycle after X (VALU_LATE)
-            "core_valu_late"};return k;}
+            "core_valu_late",
+            // the matrix engine's result pipeline (5 with R41's MAC_DP lanes) and its registered port-3 response (MTX_VRF_REG)
+            "core_mtx_pipe","core_mtx_vrf_reg"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

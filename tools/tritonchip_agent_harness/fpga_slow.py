@@ -16,7 +16,10 @@ this run on the same hardware that met timing. A refused request is not charged.
 Charging: a flow that failed on the candidate's own design (timing or place-and-route did not
 converge, it does not fit, DRC, a lowered clock, the card refused the image) counts; one that
 failed on the infrastructure (a host, the licence, a disk, the harness) does not, and is retried
-by itself. The classification reads the build record's own checks, never the agent's account.
+by itself on another build machine, never on one that failed it. The classification reads the
+build record's own checks, never the agent's account. A flow that wrote no image (an
+infrastructure failure after routing, or its cap reached) still tells the agent the routed
+design's timing when it got that far.
 
 What the agent sees: on a failed flow, the quick tier's fields plus what only the routed design has
 (the failing stage, hold slack, utilisation per SLR, whether the worst paths cross an SLR, the DRC
@@ -185,14 +188,16 @@ def _drop_slot(proc) -> Optional[str]:
     return "lost" if lost else "held"
 
 
-def place(site: Site, job: dict, seconds: int) -> tuple:
+def place(site: Site, job: dict, seconds: int, avoid=()) -> tuple:
     """The build machine for one attempt of a flow, taken for the request: (its name, the connection holding
     its shared slot or None). With every machine busy the request waits, looking again every POLL_SECONDS;
     the wait adds to job["outside_wait_seconds"], is never more than `seconds`, and a cancel ends it:
-    then (None, None)."""
+    then (None, None). The machines in `avoid` are never taken (each failed this flow already)."""
     from tritonchip_fpga_harness.hosts import host_for, load_hosts
     cfg = site.fpga_pipeline
-    names = build_hosts(cfg)
+    names = [n for n in build_hosts(cfg) if n not in avoid]
+    if not names:
+        return None, None
     loaded = load_hosts(cfg["hosts"])
     hosts = {n: host_for(loaded, n, "build") for n in names}
     started = time.monotonic()
@@ -499,6 +504,44 @@ def routed_report(site: Site, run_id: str, build_host: Optional[str] = None) -> 
     return out
 
 
+def design_timing(text: str) -> dict:
+    """The routed report's Design Timing Summary (the FPGA harness's own reading of it) and whether it is clean
+    by the harness's design-wide rule: WNS, TNS, WHS, THS and WPWS all >= 0 and no failing endpoint. {} when
+    the report has no such table. The harness's own verdict may also exempt clocks a target declares; that
+    verdict needs the finished build, which a flow without an image does not have."""
+    from tritonchip_fpga_harness.adapters.u50 import U50Adapter
+    metrics = U50Adapter._design_timing_summary(text) or {}
+    if not all(k in metrics for k in ("wns_ns", "tns_ns", "whs_ns", "ths_ns", "failing_endpoints")):
+        return {}
+    keep = {k: metrics[k] for k in ("wns_ns", "tns_ns", "whs_ns", "ths_ns", "wpws_ns", "failing_endpoints")
+            if k in metrics}
+    keep["clean"] = (all(metrics[k] >= 0 for k in ("wns_ns", "tns_ns", "whs_ns", "ths_ns"))
+                     and metrics.get("wpws_ns", 0) >= 0 and metrics["failing_endpoints"] == 0)
+    return keep
+
+
+def routed_timing(site: Site, run_id: str, build_host: Optional[str]) -> dict:
+    """What the routed design's timing came to, for a flow that wrote no image (an infrastructure failure
+    after routing, or the flow's cap reached in write_bitstream): design_timing of the run's routed timing
+    summary on its build machine; {} when the flow never got that far or the machine cannot be read."""
+    if not build_host:
+        return {}
+    try:
+        from tritonchip_fpga_harness.hosts import host_for, load_hosts
+        from tritonchip_fpga_harness.pipeline import remote
+        cfg = site.fpga_pipeline
+        host = host_for(load_hosts(cfg["hosts"]), build_host, "build")
+        found = remote(host, ["find", f"{host.state_dir}/runs/{run_id}", "-name", "*timing_summary_routed*.rpt",
+                              "-size", "-64M"], check=False, timeout=120)
+        files = sorted(found.stdout.decode(errors="replace").split(), key=len) if found.returncode == 0 else []
+        if not files:
+            return {}
+        done = remote(host, ["head", "-c", str(REPORT_BYTES), files[0]], check=False, timeout=180)
+        return design_timing(done.stdout.decode(errors="replace")) if done.returncode == 0 else {}
+    except Exception:  # noqa: BLE001 -- the flow's outcome stands without it
+        return {}
+
+
 def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict) -> dict:
     build = pipe.get("build") or {}
     metrics = ((build.get("timing") or {}).get("metrics")) or {}
@@ -507,6 +550,10 @@ def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict) -> dict:
     for key in ("wns_ns", "tns_ns", "whs_ns", "ths_ns", "failing_endpoints"):
         if key in metrics:
             visible[key] = metrics[key]
+    if outcome in ("infra", "timeout") and routed.get("routed_timing"):
+        # The design was routed and no image came: the agent still learns whether it met timing.
+        visible["routed_timing"] = {**routed["routed_timing"],
+                                    "note": "the routed design's Design Timing Summary; no image was written"}
     if outcome == "design":
         words = _host_words(site)
         visible["stage"] = failing_stage(pipe)
@@ -533,11 +580,17 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
     tree = job_dir / "tree"
     commit = certify.build_tree(repo, task, candidate, tree)
     job["tree_commit"] = commit
-    attempts = []
+    attempts, failed_on = [], []
     m = manifest(task, job["id"], commit, board=False)
     for attempt in range(RETRIES + 1):
         remote_id = job["remote_id"] if attempt == 0 else f"{job['remote_id']}-r{attempt}"
-        host, holder = place(site, job, seconds)
+        if failed_on and not [n for n in build_hosts(cfg) if n not in failed_on]:
+            # Every build machine has failed this flow on the infrastructure: a machine's own fault (a missing
+            # part, a missing tool) would only repeat there, as RSCL's missing bitstream data did (2026-11-08).
+            attempts.append({"remote_id": None, "status": "NOT_RETRIED", "outcome": "infra",
+                             "why": "every build machine failed this flow already: " + ", ".join(failed_on)})
+            break
+        host, holder = place(site, job, seconds, avoid=failed_on)
         if host is None:
             # No machine became free within the flow's cap (or the request was cancelled while it waited).
             pipe, outcome = {"status": "NO_BUILD_HOST", "error": "no build machine became free"}, "infra"
@@ -569,11 +622,21 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
         outcome = classify(pipe, (task.evaluation.get("certify") or {}).get("clock_mhz"))
         attempts.append({"remote_id": remote_id, "status": pipe.get("status"), "outcome": outcome,
                          "build_host": host, **({"shared_slot": slot} if slot else {})})
+        if outcome in ("infra", "timeout"):
+            # No image, but the design may have been routed: what its timing came to is kept.
+            summary = routed_timing(site, pipe.get("run_id") or remote_id, host)
+            if summary:
+                attempts[-1]["routed_timing"] = summary
         if outcome != "infra" or job.get("_cancel_requested"):
             break
+        failed_on.append(host)
     job["flow_finished"] = time.time()
     routed = (routed_report(site, pipe.get("run_id") or remote_id, job.get("build_host"))
               if outcome == "design" else {})
+    if outcome in ("infra", "timeout"):
+        kept = [a["routed_timing"] for a in attempts if a.get("routed_timing")]
+        if kept:
+            routed = {"routed_timing": kept[-1]}
     return {"outcome": outcome, "pipeline": pipe, "attempts": attempts, "tree_commit": commit, "manifest": m,
             "routed": routed, "visible": _build_visible(site, pipe, outcome, routed),
             "run_id": pipe.get("run_id") or remote_id, "build_host": job.get("build_host"),
@@ -746,6 +809,6 @@ def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: 
     return visible, full
 
 
-__all__ = ["SlowError", "budget_fit", "build", "build_hosts", "busy", "cancel", "classify", "hardware_digest",
-           "snapshot_digest", "manifest", "on_card", "place", "preflight", "run", "routed_report", "worst_paths",
+__all__ = ["SlowError", "budget_fit", "build", "build_hosts", "busy", "cancel", "classify", "design_timing", "hardware_digest",
+           "snapshot_digest", "manifest", "on_card", "place", "preflight", "run", "routed_report", "routed_timing", "worst_paths",
            "slr_utilization", "drc_rules"]

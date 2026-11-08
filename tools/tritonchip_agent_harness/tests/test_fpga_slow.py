@@ -361,20 +361,73 @@ class Placement(unittest.TestCase):
             def wait(self, timeout=None):
                 return 0
 
-        seen = []
+        seen, avoided = [], []
         with tempfile.TemporaryDirectory() as tmp, \
                 mock.patch.object(fpga_slow.certify, "build_tree", return_value="c" * 40), \
-                mock.patch.object(fpga_slow, "place", side_effect=lambda s, j, sec: (
-                    j.__setitem__("build_host", (p := next(places))[0]) or p)), \
+                mock.patch.object(fpga_slow, "place", side_effect=lambda s, j, sec, avoid=(): (
+                    avoided.append(list(avoid)) or j.__setitem__("build_host", (p := next(places))[0]) or p)), \
+                mock.patch.object(fpga_slow, "routed_timing", return_value={}), \
                 mock.patch.object(fpga_slow, "_drop_slot", side_effect=lambda h: "held" if h else None), \
                 mock.patch.object(fpga_slow.subprocess, "Popen", side_effect=lambda argv, **kw: (
                     seen.append(argv[argv.index("--build-host") + 1]) or Proc(argv, **kw))):
             job = {"id": "l1", "remote_id": "tnca-x"}
             got = fpga_slow.build(self.site, Path(tmp), task(), None, Path(tmp), job, 600)
         self.assertEqual(seen, ["a", "b"])
+        # The retry never goes back to the machine that failed.
+        self.assertEqual(avoided, [[], ["a"]])
         self.assertEqual([(a["build_host"], a["outcome"]) for a in got["attempts"]], [("a", "infra"), ("b", "ok")])
         self.assertEqual(got["attempts"][0]["shared_slot"], "held")
         self.assertEqual((got["outcome"], got["build_host"]), ("ok", "b"))
+
+    def test_a_retry_never_takes_a_machine_that_failed_the_flow(self):
+        self.assertEqual(fpga_slow.place(self.site, {"remote_id": "r1"}, 60, avoid=["a"]), ("b", None))
+        self.assertEqual(fpga_slow.place(self.site, {"remote_id": "r2"}, 60, avoid=["a", "b"]), (None, None))
+
+    def test_when_every_machine_failed_the_flow_is_not_tried_again_and_keeps_its_routed_timing(self):
+        # RSCL, 2026-11-08: routed and met timing, then could not write the part's bitstream.
+        places = iter([("a", None), ("b", None)])
+        failed = {"status": "BUILD_FAIL", "build": {"status": "BUILD_FAIL",
+                                                   "error": "Bitstream generation is not supported for part"}}
+        timing = {"a": {"wns_ns": 0.007, "tns_ns": 0.0, "whs_ns": 0.01, "ths_ns": 0.0, "failing_endpoints": 0,
+                        "clean": True}, "b": {}}
+
+        class Proc:
+            def __init__(self, argv, **kw):
+                Path(argv[argv.index("--output") + 1]).write_text(json.dumps(failed))
+
+            def wait(self, timeout=None):
+                return 0
+
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(fpga_slow.certify, "build_tree", return_value="c" * 40), \
+                mock.patch.object(fpga_slow, "place", side_effect=lambda s, j, sec, avoid=(): (
+                    j.__setitem__("build_host", (p := next(places))[0]) or p)), \
+                mock.patch.object(fpga_slow, "routed_timing", side_effect=lambda s, run_id, host: timing[host]), \
+                mock.patch.object(fpga_slow, "_drop_slot", return_value=None), \
+                mock.patch.object(fpga_slow.subprocess, "Popen", side_effect=Proc):
+            got = fpga_slow.build(self.site, Path(tmp), task(), None, Path(tmp), {"id": "l1", "remote_id": "x"}, 600)
+        self.assertEqual([(a.get("build_host"), a["outcome"]) for a in got["attempts"]],
+                         [("a", "infra"), ("b", "infra"), (None, "infra")])
+        self.assertEqual(got["attempts"][2]["status"], "NOT_RETRIED")
+        self.assertEqual(got["outcome"], "infra")
+        self.assertEqual(got["attempts"][0]["routed_timing"]["wns_ns"], 0.007)
+        self.assertTrue(got["visible"]["routed_timing"]["clean"])
+        self.assertEqual(got["visible"]["routed_timing"]["wns_ns"], 0.007)
+
+    def test_the_routed_design_timing_summary_is_read_as_the_fpga_harness_reads_it(self):
+        cols = ("    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)"
+                "  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints"
+                "  TPWS Total Endpoints  \n    -------      -------  ---------------------  -------------------"
+                "      -------      -------  ---------------------  -------------------     --------     --------"
+                "  ----------------------  --------------------  \n")
+        report = ("| Design Timing Summary\n\n" + cols +
+                  "     -0.176      -93.900                    819               584460        0.010        0.000"
+                  "                      0               584428        0.000        0.000                       0"
+                  "                212345  \n")
+        got = fpga_slow.design_timing(report)
+        self.assertEqual((got["wns_ns"], got["tns_ns"], got["failing_endpoints"], got["clean"]),
+                         (-0.176, -93.9, 819, False))
+        self.assertEqual(fpga_slow.design_timing("no table here"), {})
 
 
 if __name__ == "__main__":

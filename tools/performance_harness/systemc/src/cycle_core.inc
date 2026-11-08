@@ -138,7 +138,7 @@ struct CycleCore {
             u64 n=x.c.get_or("core_lsu_line_slots",64);require(n>=2 && n<=64 && (n&(n-1))==0,"core_lsu_line_slots is a power of two, 2..64");
             lines.resize(n);
         }
-        valu_late=x.c.get_or("core_valu_late",0)!=0;
+        valu_late=x.c.get_or("core_valu_late",0)!=0;switch_opcode=x.c.get_or("core_switch_opcode",0)!=0;
         mtx_pipe=unsigned(x.c.get_or("core_mtx_pipe",3));mtx_vrf_reg=x.c.get_or("core_mtx_vrf_reg",0)!=0;
         require(mtx_pipe>=1 && mtx_pipe<=8,"core_mtx_pipe is 1..8");
         txf.configure(lsu_first,unsigned(x.c.get_or("core_lsu_line_slots",64)),x.c.get_or("core_tensor_mul_pipe",0)!=0);
@@ -171,7 +171,7 @@ struct CycleCore {
     // the X stage's single-cycle destination (not deferred to a pipeline/unit)
     // R41 F04 (core_valu_late=1, VALU_LATE): the vector multiply family and the integer reductions write back
     // one cycle after X, scheduled like the scalar multiply with writeback delay 1 [2.12]
-    bool valu_late=false;
+    bool valu_late=false,switch_opcode=false;
     bool is_vlate(const Inst& in)const{return valu_late && ((in.kind==K::Vint && in.major==16 && (in.func==3 || in.func==4 || in.func==5 || in.func==34))
                                                           || (in.kind==K::Reduce && in.func<8));}
     bool x_defers(const Inst& in)const{return is_mul(in) || is_fpnorm(in) || is_fpmc(in) || is_mem(in) || is_vlate(in);}
@@ -678,7 +678,10 @@ struct CycleCore {
             try{execute(e);}
             catch(const ArchFault& ex){e.trap=true;e.redirect=true;e.code=ex.code;e.why=ex.what();}
         }
-        if(rp_go && e.redirect)rp_go=false;  // x_redirect blocks rp_go [2.1]
+        // x_redirect blocks rp_go [2.1]; R41 F01 (core_switch_opcode=1): X's opcode does -- any instruction that may
+        // redirect (branch, exit, trap, atomic, mb.wait), whether or not it does
+        if(rp_go && (switch_opcode?(xin && (xin->kind==K::Branch || xin->kind==K::Exit || xin->kind==K::Trap || xin->kind==K::Atomic
+                                            || (xin->kind==K::Barrier && xin->func==4))):e.redirect))rp_go=false;
         bool stall_front=stall_raw && !rp_go;
         if(any_running()){if(stall_raw){++*c_stall;}if(hazard)++*c_hazard;else if(stall_lsu)++*c_lsu;else if(stall_fpu)++*c_fpu;else if(stall_mtx)++*c_mtx;else if(stall_txf)++*c_txf;
             else if(stall_fence)++*c_fence;else if(stall_arrive)++*c_arrive;else if(stall_rsv)++*c_rsv;else if(wb_steal)++*c_steal;else if(vrf_stall)++*c_vrf;}

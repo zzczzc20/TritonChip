@@ -145,6 +145,14 @@ registers; at `E_t` these registers change".
 even when R is empty. Every other `stall_other` term requires `r_valid`.
 `vrf_stall` requires `r_valid` through `of_enable` (746, 806).
 
+**R41 F01 (model `core_switch_opcode=1`).** `rp_go` is blocked by
+`x_may_redirect` instead of `x_redirect` (`tnca_core.v` 2609-2615): X holds a
+branch, an exit, a trap, an illegal instruction, an atomic or an `mb.wait`,
+whether or not it redirects. A context waiting on the transfer engine
+therefore gives way one cycle later when the instruction in X is an `mb.wait`
+that passes or a branch that falls through. The memory claim (`x_mem_claim`,
+3.6) is likewise X's opcode.
+
 ### 2.2 F: context selection and fetch issue
 
 Lines 399-411, 2081-2083, 2310-2316.

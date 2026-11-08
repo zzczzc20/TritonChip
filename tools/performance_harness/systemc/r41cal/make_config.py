@@ -76,9 +76,17 @@ def config(desc, prof):
         put("tl_slice_writeback_occupancy", 0, "derived", "victims queue in S3 (4-entry WBQ), issued before reads")
         put("tl_full_line_nofill", u.get("HOME_LINE_WRITE_NOFILL", 0), "image", "device HOME_LINE_WRITE_NOFILL")
     if hybrid:
-        put("tl_core_beat_bytes", 64, "image",
-            "HYBRID_LSU: 512-bit core port, one line request per line-eligible access (the model applies it to every access: stage B)")
+        put("tl_core_beat_bytes", 64, "image", "HYBRID_LSU: 512-bit core port")
         put("tl_noc_payload_bytes", 64, "derived", "one 64-byte line per NoC flit (NOC_PAYLOAD_W)")
+        put("tl_hybrid_lsu", 1, "image", "device HYBRID_LSU: line path for line-eligible accesses, word path for the rest")
+        put("tl_line_slots", u.get("LINE_SLOTS", 64), "image", "device LINE_SLOTS: line-path slots per core")
+        put("tl_word_units", 2 if int(rp.get("LSU_INFLIGHT", 2)) >= 2 else 1, "image",
+            "profile LSU_INFLIGHT -> SLOW_UNITS = LSU_INFLIGHT>=2 ? 2 : 1 word-path units (tnca_core.v)")
+        put("tl_mem_issue_gap", 3, "derived",
+            "x_mem_claim blocks R in X, the landing register in X+1: one memory instruction per 3 cycles")
+        put("tl_word_setup_cycles", 3, "derived", "word unit: first beat at X+4 (tnca_lsu.v; inferred count)")
+    put("tl_grid_admission_cycles", 4, "derived", "tnca_grid_dispatch.v: four registered cycles before the first command")
+    put("tl_launch_drain", 1, "derived", "done waits for memory_drained: every outlet transaction complete (tnca_multicore_axi.v)")
     if u.get("TENSOR_LINE"):
         put("dma_line_engine", 1, "image", "device TENSOR_LINE -> transfer engine LINE_ENGINE (eligibility: stage B)")
         put("dma_line_buffers", u.get("LINE_SLOTS", 64), "derived",
@@ -135,14 +143,9 @@ def config(desc, prof):
 
 
 NOT_EXPRESSIBLE = {
-    "LSU_INFLIGHT": "word-path units of the hybrid LSU (tl_lsu_units refuses 1 and applies to every access)",
-    "HYBRID_LSU line eligibility": "only aligned vector accesses inside one line take the line path; the rest take the word unit",
-    "memory issue limit": "one memory instruction per 3 cycles per core",
-    "path-switch drain": "switching between line and word paths drains the other",
     "home same-line spacing": "two requests to one line at least 2 cycles apart; RQ_N 16 request buffer",
     "per-outlet testbench latency": "25 / 44 / 63 + slot jitter by lowest free slot; one hbm_latency_cycles is a mean",
     "line-engine eligibility": "only aligned whole-line boxes take the line path",
-    "grid admission and outlet drain": "+4 per grid launch; done waits for every outlet write response",
     "FP-reduction fold occupancy, VALU late class, writeback-slot reservation": "core datapath details",
 }
 

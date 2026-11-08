@@ -4,14 +4,9 @@
  "_device": "u280-3core-r41",
  "_profile": "core-vrf-sync-v5-x8-g2c4-dp-board",
  "_not_expressible": {
-  "LSU_INFLIGHT": "word-path units of the hybrid LSU (tl_lsu_units refuses 1 and applies to every access)",
-  "HYBRID_LSU line eligibility": "only aligned vector accesses inside one line take the line path; the rest take the word unit",
-  "memory issue limit": "one memory instruction per 3 cycles per core",
-  "path-switch drain": "switching between line and word paths drains the other",
   "home same-line spacing": "two requests to one line at least 2 cycles apart; RQ_N 16 request buffer",
   "per-outlet testbench latency": "25 / 44 / 63 + slot jitter by lowest free slot; one hbm_latency_cycles is a mean",
   "line-engine eligibility": "only aligned whole-line boxes take the line path",
-  "grid admission and outlet drain": "+4 per grid launch; done waits for every outlet write response",
   "FP-reduction fold occupancy, VALU late class, writeback-slot reservation": "core datapath details"
  },
  "nx": {
@@ -137,12 +132,47 @@
  "tl_core_beat_bytes": {
   "value": 64,
   "class": "image",
-  "source": "HYBRID_LSU: 512-bit core port, one line request per line-eligible access (the model applies it to every access: stage B)"
+  "source": "HYBRID_LSU: 512-bit core port"
  },
  "tl_noc_payload_bytes": {
   "value": 64,
   "class": "derived",
   "source": "one 64-byte line per NoC flit (NOC_PAYLOAD_W)"
+ },
+ "tl_hybrid_lsu": {
+  "value": 1,
+  "class": "image",
+  "source": "device HYBRID_LSU: line path for line-eligible accesses, word path for the rest"
+ },
+ "tl_line_slots": {
+  "value": 64,
+  "class": "image",
+  "source": "device LINE_SLOTS: line-path slots per core"
+ },
+ "tl_word_units": {
+  "value": 1,
+  "class": "image",
+  "source": "profile LSU_INFLIGHT -> SLOW_UNITS = LSU_INFLIGHT>=2 ? 2 : 1 word-path units (tnca_core.v)"
+ },
+ "tl_mem_issue_gap": {
+  "value": 3,
+  "class": "derived",
+  "source": "x_mem_claim blocks R in X, the landing register in X+1: one memory instruction per 3 cycles"
+ },
+ "tl_word_setup_cycles": {
+  "value": 3,
+  "class": "derived",
+  "source": "word unit: first beat at X+4 (tnca_lsu.v; inferred count)"
+ },
+ "tl_grid_admission_cycles": {
+  "value": 4,
+  "class": "derived",
+  "source": "tnca_grid_dispatch.v: four registered cycles before the first command"
+ },
+ "tl_launch_drain": {
+  "value": 1,
+  "class": "derived",
+  "source": "done waits for memory_drained: every outlet transaction complete (tnca_multicore_axi.v)"
  },
  "dma_line_engine": {
   "value": 1,

@@ -110,6 +110,13 @@ struct Config {
         {auto n=get_or("tl_lsu_units",2);
          require(n==2 || n==4 || n==8 || n==16 || n==32 || n==64,"exploratory LSU units must be 2|4|8|16|32|64");
          require(n==2 || (get("memory_model")==1 && get("core_pipeline")==1),"LSU unit hypothesis needs timeline core pipeline");}
+        if(get_or("tl_hybrid_lsu",0)){
+            require(get("memory_model")==1 && get("core_pipeline")==1 && get_or("tl_core_beat_bytes",8)==64,
+                    "tl_hybrid_lsu needs timeline memory, the core pipeline and a 64-byte core beat");
+            auto w=get_or("tl_word_units",1),s=get_or("tl_line_slots",64);
+            require(w==1 || w==2,"tl_word_units is LSU_INFLIGHT's word-path unit count: 1|2");
+            require(s>=1 && s<=1024 && get_or("tl_mem_issue_gap",3)>=1,"tl_line_slots 1..1024, tl_mem_issue_gap >= 1");
+        }
         {auto n=get_or("tl_memory_lanes",1);
          require(n==1 || n==2 || n==4 || n==8,"exploratory NoC/home lanes must be 1|2|4|8");
          require(n==1 || get("memory_model")==1,"parallel memory lanes require timeline memory");}
@@ -153,7 +160,13 @@ struct Config {
         static const std::vector<std::string> k={"mtx_dp","mtx_dp_extra_latency","mtx_dp_prefetch","mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units","tl_memory_lanes","tl_lsu_shared_issue","tl_pc_stripe_bytes","tl_prefetch_lines",
             // R41 G4 what-ifs (default off): full-line writes allocate without a memory read
             // (HOME_LINE_WRITE_NOFILL); the line-wide multi-command tensor engine.
-            "tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine"};return k;}
+            "tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine",
+            // R41 HYBRID_LSU as built (default off): line path + LSU_INFLIGHT word units, a core-wide
+            // memory issue gap and a drain on every path switch (tnca_lsu_hybrid.v, tnca_core.v).
+            "tl_hybrid_lsu","tl_word_units","tl_line_slots","tl_mem_issue_gap","tl_word_setup_cycles",
+            // R41 launch boundaries (default off): grid admission cycles before the first program
+            // (tnca_grid_dispatch.v) and done waiting for every outlet write response (memory_drained).
+            "tl_grid_admission_cycles","tl_launch_drain"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

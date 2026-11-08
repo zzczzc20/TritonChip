@@ -272,6 +272,10 @@ struct TimelineMemory {
         if(write)for(unsigned bb=0;bb<8;++bb)if(be&(1U<<bb))l[off+bb]=static_cast<unsigned char>(data>>(8*bb));
         return old;
     }
+    // The cycle by which every accepted outlet transaction (read or write,
+    // write responses included) has completed: R41's memory_drained, which a
+    // launch's done waits for (tnca_multicore_axi.v).
+    u64 outlets_idle()const{u64 d=0;for(const auto& o:outlets)for(u64 c:o.inflight)d=std::max(d,c);return d;}
     // Write back every dirty line and invalidate (maintenance); returns completion.
     u64 flush(u64 t){
         u64 now=x.now(),done=t;

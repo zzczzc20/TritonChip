@@ -307,6 +307,12 @@ struct Core : sc_module {
     // last response is back (+lsu_complete_cycles); the second unit takes
     // an access only after the first has sent all of its beats.
     struct LsuUnit {u64 free=0,drained=0;};std::vector<LsuUnit> units;
+    // tl_hybrid_lsu=1: R41's HYBRID_LSU (tnca_lsu_hybrid.v). `units` are then
+    // the word path's LSU_INFLIGHT units (tl_word_units); line_inflight holds
+    // the completions of line-path accesses (tl_line_slots slots); mem_next
+    // is the earliest cycle the next memory instruction may reach X.
+    bool hybrid=false;u64 t_mem_gap=3,t_line_slots=64,t_word_setup=3,mem_next=0;std::vector<u64> line_inflight;
+    u64 *c_line_acc=nullptr,*c_word_acc=nullptr,*c_mode_wait=nullptr,*c_slot_wait=nullptr,*c_gap_wait=nullptr;
     std::vector<u64> steals; // LSU completions taking the one writeback port
     unsigned holds=0;sc_event unhold; // a fence/arrive held in R freezes every context
     // time_quantum > 0: conservative lookahead. A context whose next wait
@@ -337,6 +343,15 @@ struct Core : sc_module {
         if(dp_g16>1 || dp_g8>1 || dp_pf)c_dp=&x.counts[key("matrix_dp_whatif_commands")];
         issue_time=x.cycles(t_issue);lsu_key=key("lsu");t_lsu_slots=g("lsu_slots");t_beat_slots=g("lsu_beat_slots");
         units.resize(x.c.get_or("tl_lsu_units",2));
+        hybrid=x.c.get_or("tl_hybrid_lsu",0)!=0;
+        if(hybrid){
+            units.assign(x.c.get_or("tl_word_units",1),LsuUnit{});
+            t_line_slots=x.c.get_or("tl_line_slots",64);t_mem_gap=x.c.get_or("tl_mem_issue_gap",3);
+            t_word_setup=x.c.get_or("tl_word_setup_cycles",3);
+            c_line_acc=&x.counts[key("lsu_line_accesses")];c_word_acc=&x.counts[key("lsu_word_accesses")];
+            c_mode_wait=&x.counts[key("lsu_mode_wait_cycles")];c_slot_wait=&x.counts[key("lsu_line_slot_wait_cycles")];
+            c_gap_wait=&x.counts[key("lsu_issue_gap_wait_cycles")];
+        }
         pipe=g("core_pipeline")!=0;t_branch=g("branch_taken_cycles");t_park=g("park_refetch_cycles");n_banks=g("vrf_banks");
         t_bank=g("vrf_bank_conflict_cycles");t_lsu_setup=g("lsu_setup_cycles");t_vload_extra=g("lsu_vector_load_extra");
         t_lsu_complete=g("lsu_complete_cycles");t_lsu_wb=g("lsu_writeback_cycles");t_fcmp=g("fp_compare_latency");
@@ -413,7 +428,13 @@ struct Core : sc_module {
         if(--holds==0)unhold.notify(SC_ZERO_TIME);
         *c_freeze+=cycles_of(sc_time_stamp()-t);
     }
-    u64 lsu_idle()const{u64 m=0;for(auto v:lsu_inflight)m=std::max(m,v);for(auto& u:units)m=std::max(m,u.free);return m;}
+    u64 lsu_idle()const{
+        u64 m=0;
+        for(auto v:lsu_inflight)m=std::max(m,v);
+        for(auto v:line_inflight)m=std::max(m,v);
+        for(auto& u:units)m=std::max(m,u.free);
+        return m;
+    }
     // RSLICE (tnca_core.v): an index the instruction names gets the slice
     // number ORed into its top bits -- accumulators (ACC_W 4), barriers
     // (BAR_W 5), descriptors and windows (DESC_W 4).
@@ -649,8 +670,47 @@ struct Core : sc_module {
                     // core-wide; beats leave the core port one per cycle with at
                     // most lsu_beat_slots words outstanding; a load's
                     // destination is scoreboarded until its last word returns.
-                    u64 now=lnow(f),gnow=x.now();unsigned unit_index=0;
-                    if(pipe){
+                    u64 now=lnow(f),gnow=x.now();unsigned unit_index=0;bool line_path=false;
+                    if(pipe && hybrid){
+                        // R41 HYBRID_LSU. One memory instruction reaches X at most
+                        // every tl_mem_issue_gap cycles core-wide (x_mem_claim, then
+                        // the landing register: tnca_core.v lsu_free_next). A vector,
+                        // non-indexed access of elements <= 4 bytes whose 16 lanes lie
+                        // in one 64-byte line below 2^33 takes the line path
+                        // (tnca_lsu_line.v req_eligible): one request, one line slot
+                        // until it completes. Anything else takes the word path: 8-byte
+                        // requests on the LSU_INFLIGHT units, each held to completion.
+                        // A path is entered only once the other is empty
+                        // (tnca_lsu_hybrid.v mode switch). A wait holds R: every
+                        // context of the core stalls.
+                        u64 at=std::max(now,mem_next),gap=at;
+                        line_path=vector && !gather && size<=4 && (base&63)+16*u64(size)<=64 && base<(1ULL<<33);
+                        u64 mode=at;
+                        if(line_path){
+                            for(auto& u:units)mode=std::max(mode,u.free);
+                            at=mode;
+                            line_inflight.erase(std::remove_if(line_inflight.begin(),line_inflight.end(),[&](u64 v){return v<=at;}),line_inflight.end());
+                            if(line_inflight.size()>=t_line_slots){
+                                std::nth_element(line_inflight.begin(),line_inflight.begin()+(line_inflight.size()-t_line_slots),line_inflight.end());
+                                u64 m=line_inflight[line_inflight.size()-t_line_slots];*c_slot_wait+=m-at;at=m;
+                                line_inflight.erase(std::remove_if(line_inflight.begin(),line_inflight.end(),[&](u64 v){return v<=at;}),line_inflight.end());
+                            }
+                            ++*c_line_acc;
+                        }else{
+                            for(auto v:line_inflight)mode=std::max(mode,v);
+                            line_inflight.clear();
+                            u64 best=UINT64_MAX;
+                            for(unsigned i=0;i<units.size();++i){
+                                u64 a=std::max(mode,units[i].free);
+                                for(unsigned j=0;j<units.size();++j)if(j!=i)a=std::max(a,units[j].drained);
+                                if(a<best){best=a;unit_index=i;}
+                            }
+                            at=best;++*c_word_acc;
+                        }
+                        *c_gap_wait+=gap-now;*c_mode_wait+=mode-gap;
+                        if(at>now){*c_lsu_wait+=at-now;freeze(f,x.cycles(at));now=lnow(f);}
+                        mem_next=now+t_mem_gap;
+                    }else if(pipe){
                         // A busy unit holds the access in R: every context stalls.
                         u64 best=UINT64_MAX;
                         for(unsigned i=0;i<units.size();++i){
@@ -669,7 +729,8 @@ struct Core : sc_module {
                         *c_lsu_wait+=m-now;ready(f,x.cycles(m));now=lnow(f);prune();}
                     }
                     gnow=x.now();
-                    std::array<u64,16> values{};std::vector<u64> window;u64 t=pipe?now+1+t_lsu_setup:now,complete=now;
+                    std::array<u64,16> values{};std::vector<u64> window;
+                    u64 t=pipe?now+1+(hybrid && !line_path?t_word_setup:t_lsu_setup):now,complete=now;
                     std::map<u64,std::pair<std::pair<u64,unsigned>,std::vector<Part>>> plan2;
                     for(unsigned lane=0;lane<(vector?16U:1U);++lane){
                         if(!(active&(1<<lane)))continue;
@@ -687,7 +748,9 @@ struct Core : sc_module {
                     // Group only addresses sharing one aligned hypothetical core
                     // beat. Each group still consumes a finite LSU slot, core
                     // issue slot, NoC capacity, home engine and outlet service.
-                    const u64 width=x.c.get_or("tl_core_beat_bytes",8);
+                    // The hybrid LSU's word path sends 8-byte requests on the 512-bit
+                    // port (tnca_word_line_adapter.v); its line path one line.
+                    const u64 width=hybrid?(line_path?64:8):x.c.get_or("tl_core_beat_bytes",8);
                     for(auto it=plan2.begin();it!=plan2.end();){
                         auto end=it;u64 region=it->first&~(width-1);
                         std::vector<TimelineMemory::WideWord> words;
@@ -703,7 +766,14 @@ struct Core : sc_module {
                             values[part.lane]|=((words[wi].result>>(part.offset*8))&part_mask)<<part.shift;
                         }
                     }
-                    if(pipe){units[unit_index].drained=t;units[unit_index].free=complete+t_lsu_complete;
+                    if(pipe && hybrid){
+                        // A line slot frees when its completion leaves; a word unit is
+                        // held until its completion is accepted. Loads and stores share
+                        // the one completion register and the writeback port (wb_steal).
+                        if(line_path)line_inflight.push_back(complete);
+                        else{units[unit_index].drained=t;units[unit_index].free=complete+t_lsu_complete;}
+                        if(t_lsu_wb)steals.push_back(complete+t_load-1);
+                    }else if(pipe){units[unit_index].drained=t;units[unit_index].free=complete+t_lsu_complete;
                         if(t_lsu_wb && !store)steals.push_back(complete+t_load-1);}
                     else lsu_inflight.push_back(complete);
                     role_lsu_done[f.role]=std::max(role_lsu_done[f.role],complete);
@@ -947,7 +1017,7 @@ struct Chip : sc_module {
     struct Command {bool grid=false;Launch launch;u64 stride=0,core_mask=1,deadline=0;unsigned gx=1,gy=1,gz=1,group=1;};
     std::unique_ptr<Command> pending;bool command_done=false,flush_request=false,shutdown=false;
     Outcome result;u64 start_cycle=0,end_cycle=0,launches=0;sc_event wake;
-    u64 *c_grid_launches,*c_single_launches,*c_host_cycles;
+    u64 *c_grid_launches,*c_single_launches,*c_host_cycles,*c_drain_cycles;
     Chip(sc_module_name n,Context& ctx,HBM& mem,Network& net,std::vector<std::unique_ptr<Slice>>& s):
         sc_module(n),x(ctx),hbm(mem),caches(s){
         code.read_word=[this](u64 pc){u64 v=0;unsigned char bytes[8];host_read(pc,bytes,8);for(unsigned b=0;b<8;++b)v|=u64(bytes[b])<<(8*b);return v;};
@@ -956,6 +1026,8 @@ struct Chip : sc_module {
             cores.back()->memory.bind(net.target);cores.back()->tensor.memory.bind(net.target);
         }
         c_grid_launches=&x.counts["chip_grid_launches"];c_single_launches=&x.counts["chip_single_launches"];
+        // Bound only when the R41 launch drain is on, so default counters are unchanged.
+        c_drain_cycles=x.c.get_or("tl_launch_drain",0)?&x.counts["chip_launch_drain_cycles"]:nullptr;
         c_host_cycles=&x.counts["chip_host_gap_cycles"];
         SC_THREAD(run);
     }
@@ -1032,10 +1104,18 @@ struct Chip : sc_module {
         else if(serving){u64 d=host_debt+x.c.get("host_launch_cycles");host_debt=0;if(d)wait(x.cycles(d));*c_host_cycles+=d;}
         for(auto& core:cores)core->deadline=cmd.deadline?sc_time_stamp()+x.cycles(cmd.deadline):SC_ZERO_TIME;
         start_cycle=x.now();Outcome out;
-        if(cmd.grid){++*c_grid_launches;out=dispatch(cmd);}
+        if(cmd.grid){++*c_grid_launches;
+            // R41 tnca_grid_dispatch.v: registered admission cycles before the first program.
+            if(!x.functional){u64 adm=x.c.get_or("tl_grid_admission_cycles",0);if(adm)wait(x.cycles(adm));}
+            out=dispatch(cmd);}
         else{
             ++*c_single_launches;if(!x.functional)wait(x.cycles(cores[0]->t_launch));
             Launch l=cmd.launch;out=cores[0]->program(l);
+        }
+        // R41: done waits for memory_drained, every outlet transaction complete
+        // (write responses of the launch's stores and evictions included).
+        if(tm && !x.functional && x.c.get_or("tl_launch_drain",0)){
+            u64 d=tm->outlets_idle(),n=x.now();if(d>n){*c_drain_cycles+=d-n;wait(x.cycles(d-n));}
         }
         end_cycle=x.now();++launches;
         // Post-hoc check as well: a launch that finished past its deadline is

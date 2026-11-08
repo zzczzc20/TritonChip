@@ -433,7 +433,8 @@ struct CycleCore {
                 if(!store){const u64 base=addr&~63ULL;for(unsigned k=0;k<8;++k)line[k]=c.tm->access(base+8*k,false,0,0);}
                 wide_rsp[id]=line;}
             else c.core_trace.Q(at,store,addr,store?be:0U,id,data);}
-        if(uncore && !replayed)uncore_request(id,at,addr,store,be,got);
+        // the uncore sees a hybrid word's bytes at their place in the line (tnca_word_line_adapter.v)
+        if(uncore && !replayed)uncore_request(id,at,addr,store,hybrid?u64(be&255)<<(addr&63):u64(be),got);
         else schedule(id,when,got);
         return id;
     }
@@ -442,9 +443,8 @@ struct CycleCore {
     // memory timing in force.
     void issue_line(unsigned k,u64 at,bool replayed,u64 latency){
         Line& s=lines[k];const u64 id=next_id++<<5;targets[id]=Target{5,k,0};s.issued=true;s.rsp=0;
-        require(!uncore || replayed,"the cycle uncore has no line requests yet (R41 slice 2)");
         u64 when=0;
-        if(replayed){
+        if(replayed || uncore){   // the cycle uncore times it (uncore_request below); the data are functional now
             for(unsigned w=0;w<8;++w){unsigned be=unsigned((s.be>>(8*w))&255);
                 if(s.store){if(be)c.tm->access(s.addr+8*w,true,s.wdata[w],be);}else s.rdata[w]=c.tm->access(s.addr+8*w,false,0,255);}
             when=at+latency;
@@ -456,16 +456,16 @@ struct CycleCore {
             if(!s.store)for(auto& w:words)s.rdata[unsigned((w.address&63)>>3)]=w.result;
         }
         if(c.core_trace){c.core_trace.QW(at,s.store,s.addr,s.be,id,s.store?s.wdata:std::array<u64,8>{});wide_rsp[id]=s.store?std::array<u64,8>{}:s.rdata;}
-        schedule(id,when,0);
+        if(uncore && !replayed)uncore_request(id,at,s.addr,s.store,s.be,0);
+        else schedule(id,when,0);
     }
     // One line request of the transfer engine (R41 G4 LINE_ENGINE) at cycle `at` [4.4]: the functional
     // access now (a store writes its enabled bytes, a load's line lands in its slot or the TensorMap buffer),
     // the response by the memory timing in force.
     u64 issue_engine_line(const CycleTensor::Req& r,u64 at,bool replayed,u64 latency,Target target){
         const u64 id=(next_id++<<5)|16;targets[id]=target;
-        require(!uncore || replayed,"the cycle uncore has no line requests yet (R41 slice 2)");
         std::array<u64,8> rd{};u64 when=0;
-        if(replayed){
+        if(replayed || uncore){   // the cycle uncore times it (uncore_request below); the data are functional now
             for(unsigned w=0;w<8;++w){unsigned be=unsigned((r.lbe>>(8*w))&255);
                 if(r.we){if(be)c.tm->access(r.addr+8*w,true,r.ldata[w],be);}else rd[w]=c.tm->access(r.addr+8*w,false,0,255);}
             when=at+latency;
@@ -478,7 +478,9 @@ struct CycleCore {
         }
         if(!r.we)txf.line_data(target,rd);
         if(c.core_trace){c.core_trace.QW(at,r.we,r.addr,r.lbe,id,r.we?r.ldata:std::array<u64,8>{});wide_rsp[id]=r.we?std::array<u64,8>{}:rd;}
-        schedule(id,when,0);return id;
+        if(uncore && !replayed)uncore_request(id,at,r.addr,r.we,r.lbe,0);
+        else schedule(id,when,0);
+        return id;
     }
     // A completion's writeback: the word unit's (lanes assembled from its beats) or a line slot's.
     Result unit_result(const Unit& u,bool& has){
@@ -500,7 +502,7 @@ struct CycleCore {
             out[lane]=std::uint32_t(v);}
         return Result{t,2,s.rctx,s.dst,s.active,0,0,out};
     }
-    void uncore_request(u64 id,u64 at,u64 addr,bool store,unsigned be,u64 got);   // defined after CycleUncore
+    void uncore_request(u64 id,u64 at,u64 addr,bool store,u64 be,u64 got);   // defined after CycleUncore
     bool uncore_ready()const;
     void uncore_launch(u64 pc,unsigned roles);
     void port_issue(Beat& beat,unsigned unit,unsigned index,u64 at,bool replayed,u64 latency){

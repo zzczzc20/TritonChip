@@ -179,7 +179,16 @@ struct Config {
             // the matrix engine's result pipeline (5 with R41's MAC_DP lanes) and its registered port-3 response (MTX_VRF_REG)
             "core_mtx_pipe","core_mtx_vrf_reg",
             // R41 F01: a context gives way (RCTX_SWITCH) unless X holds an instruction that may redirect
-            "core_switch_opcode"};return k;}
+            "core_switch_opcode",
+            // The cycle uncore (uncore_model=1) on R41 (UNCORE_TIMING 10, UNCORE_TIMING_BOARD 9): the
+            // pipelined home (HOME_LINE_PIPE with core_lsu_hybrid; 2 = chained fills), HOME_MSHR_N,
+            // HOME_LINE_WRITE_NOFILL; the line adapter's OUT_N slots, AXI_DATA_W and PIPELINED_ISSUE; the
+            // grid dispatcher's admission stages (R41 F06)
+            "uncore_home_line_pipe","uncore_home_mshr_n","uncore_home_line_write_nofill",
+            "uncore_axi_slots","uncore_axi_data_w","uncore_axi_pipelined_issue","uncore_dispatch_admission",
+            // the R41 runtime's HBM DMA: host transfers from LOCAL_LIMIT up hand the range off (write back,
+            // invalidate) instead of passing through the homes (UNCORE_TIMING 10.3)
+            "uncore_host_dma"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

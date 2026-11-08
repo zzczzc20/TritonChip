@@ -160,3 +160,22 @@ invisible under core-level replay because the replayed port hid them):
   it the first three-way tie of a launch could be granted in the wrong order
   (one launch of one point: 1,2,0 recorded, 2,0,1 modelled, a pure relabelling
   of the three slices from then on).
+
+**R41 (`configs/r41-board-cycle.cfg`, UNCORE_TIMING 10, UNCORE_TIMING_BOARD
+9).** The board-top bench now elaborates the image's own parameters, so the
+R41 configuration is the image's uncore: the pipelined home
+(`uncore_home_line_pipe=2`, 16 request entries, 64 MSHRs, 128 targets, full-line
+store installs), the line adapter with 32 slots, one 512-bit beat per line and
+pipelined issue, the dispatcher's four admission stages, the core's 64-byte
+line requests on the NoC, and the runtime's DMA ownership handoff instead of
+the host warming the homes (`uncore_host_dma=1`). Validation as before:
+`--replay-level uncore` replays each adapter's accepts and responses. On the
+R41 base every point of the suite's smallest tier with one active core, and a
+subset of that tier recorded with three active cores, align exactly in every
+core stream and every uncore stream on every launch (2026-11-09). Exercised:
+hits, merges into an MSHR, misses, full-line installs, three cores sharing the
+homes. Not yet compared with a recording: victim writebacks (no dirty line is
+evicted in these points), blocked requests, a full response queue, and the
+transfer engine's line stores. The first gate also showed one rule the
+replayed port had hidden: with the R41 runtime the homes are cold for every
+range the host moved (the handoff), not warmed by the host's words.

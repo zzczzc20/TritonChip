@@ -636,3 +636,125 @@ Checklist against `tools/performance_harness/systemc/configs/r40-board-m2.cfg`
 | DRAM model | n/a (board constants) | sim: `lfsr[5]` ready, LATENCY+1, one response per cycle, LFSR-ordered among eligible | **sim alignment needs the DRAM rule or replay** |
 | host transfers (`access()`) | place the line untimed, `ready = 0`, `dirty` on write, rr advance | same placement rule and `victim_ptr` advance (slice 1341); but the real transfer also evicts (dirty -> DRAM) and the sim bench's 512 B slices evict almost everything | agrees on state transitions |
 | dispatch (`dispatch_cycles=6`, `launch_cycles=5`) | 6 | board: `cmd` accepted at L -> core launch at L+4 (first core), done at i+3; sim: L+2, i+1 | **check which the 6 means**; sec 6.3 has the exact values |
+
+## 10. R41 (a076cd64): what changed, as the cycle uncore follows it
+
+The R41 image's uncore is R40's mesh, links, slice network interfaces, home
+links and memory mode with three changes this section describes: the core's
+port carries lines, the home is a new pipelined module, and the host moves
+data by DMA after an ownership handoff. The board side (the adapter, the
+dispatcher's admission) is UNCORE_TIMING_BOARD sec 9. Model switches:
+`uncore_home_line_pipe`, `uncore_home_mshr_n`, `uncore_home_line_write_nofill`,
+`uncore_host_dma` (`configs/r41-board-cycle.cfg`). Line numbers are
+`rtl/nuca/tnca_home_pipe.v` at a076cd64 unless named otherwise.
+
+### 10.1 The core port: line requests
+
+With HYBRID_LSU the core's port is a 64-byte line: 512-bit data, a 64-bit
+byte enable, an 8-bit tag (LINE_SLOTS 64). A word of the hybrid's word path
+keeps its address and puts its byte enables at their place in the line
+(`tnca_word_line_adapter.v`); the line path and the line-wide transfer engine
+send one line per request. Still one flit per packet, the same home hash
+(2.2), the same zero-cycle host mux during a launch. The slice-side records
+(S) carry the request's address as sent (a word's own address, a line's base)
+and no byte enables.
+
+### 10.2 The pipelined home (`tnca_home_pipe.v`)
+
+`tnca_tile.v` builds `tnca_home_pipe` instead of `tnca_nuca_slice` when
+`HOME_LINE_PIPE && HYBRID_LSU`; the slice is not elaborated and the NUCA_*
+and DCO range parameters have no effect. With HOME_MSHR_N 64,
+`tnca_shell.v:181` gives MSHR_N 64, TARGET_N 128, RQ_N 16; the writeback and
+response queues are 4 deep. Replacement is invalid-first then round robin
+(DCO policy 0).
+
+#### 10.2.1 Request buffer and arbiter (211-248)
+
+A request is accepted into the lowest free entry when one is free (`req_ready
+= rq_has_free`, pre-edge). The arbiter takes the oldest entry that is valid,
+not blocked, not in the pipe (`busy`) and not shadowed by an older valid entry
+of the same line; an entry stays valid until S2 completes it or merges it.
+Hence a younger request to a line whose older request is in S2 is taken one
+cycle after S2 completes the older one: same-line requests start two cycles
+apart.
+
+#### 10.2.2 S1 and S2 (311-399, 513-553, 653-737)
+
+At the edge a request is taken (`take = sel_valid && !s2_hold`) its set's
+tags are read into S1 and the entry is marked busy. During the next cycle S2
+decides combinationally over S1, with the live valid / dirty / claimed bits:
+
+1. S1 stale (S2 claimed a way of this set at the edge S1 read the tags): the
+   request is replayed (busy cleared, retaken from the buffer: 2 cycles).
+2. S3 holds: S2 holds, and so do S1 and the arbiter.
+3. A TMU register address: done in S3 (a response; a store waits for the TMU).
+4. An MSHR of any non-free state holds the line: merge (a target appended in
+   arrival order); held while the fill unit is on that MSHR; blocked without
+   a free target.
+5. A hit: S3 reads (load) or merges (store; dirty set by S2).
+6. Every way of the set claimed (no victim): blocked.
+7. A store with all 64 byte enables (HOME_LINE_WRITE_NOFILL): the line is
+   installed over the victim (valid, dirty) with no MSHR; S3 writes it,
+   answers and writes the victim back if dirty.
+8. Otherwise a miss: an MSHR (lowest free) and a target (lowest free) are
+   allocated, the victim way claimed (valid and dirty cleared) and its tag
+   written; S3 queues the victim's writeback if it was dirty. Blocked without
+   a free MSHR or target.
+
+The victim is the lowest way neither valid nor claimed, else the first
+unclaimed way from the set's pointer; an install or allocation sets the
+pointer to the way after it. S2 writes a tag only when it claims a way, so
+the live tag array equals S1's registered read whenever S2 decides (case 1
+covers the one exception). A blocked entry is retried after any MSHR's last
+fill (`free_resources` clears every block, over a block of the same edge).
+
+#### 10.2.3 S3 (404-425, 704-725)
+
+S3 pushes the response of a hit, an install or a TMU access into the response
+queue and queues the victim's writeback of an install or allocation. It holds
+when the response queue is full (for a pushing kind), the writeback queue is
+full (with a writeback) or a TMU store is not taken; S3 is loaded only from
+S2's completed non-merging requests. A hit taken at E_a answers during a+3
+(`rsp_valid`), one request per cycle.
+
+#### 10.2.4 The fill unit (427-465, 629-651)
+
+A memory response during r sets its MSHR to FILL at E_r. With the unit idle
+it starts on the lowest FILL MSHR at the next edge (no push that cycle), then
+answers one target per cycle in arrival order: a step needs the response
+queue not full, S3 not pushing, and on the last target neither an S3 data
+write nor an S3 writeback of the same way. The last target installs the line
+(valid, unclaimed, dirty if any target wrote), frees the MSHR and, with
+FILL_CHAIN (HOME_LINE_PIPE 2), moves to the lowest other FILL MSHR at the same
+edge. A single-target miss answers during r+3.
+
+#### 10.2.5 Memory requests (467-496, 617-627)
+
+Presented during t from the pre-edge state: the choice locked by a refusal,
+else the writeback queue's head, else the lowest MS_REQ MSHR with no queued
+writeback (nor S3's) of the same line. A writeback's tag is 0, a read's its
+MSHR. `mem_req_ready` is the home link's first stage (UNCORE_TIMING_BOARD
+1.2), which a home presenting one request per cycle can fill. A miss taken at
+E_a has its MSHR in MS_REQ from E_{a+1} and its read presented during a+2;
+the victim's writeback reaches the queue at E_{a+2} and is presented during
+a+3, after the read (R40: the writeback first).
+
+### 10.3 Host transfers: DMA and the ownership handoff
+
+The R41 runtime (`multicore_mmio.py`, `u50.py` `_dma_split`) moves every word
+at or above LOCAL_LIMIT (`R_AXI_STAT` 63:32, MEM_BASE 0x20000, the code
+store's end) by HBM DMA, and before each transfer of a range (upload or
+download) runs OP_CACHE_HANDOFF over it: every home's maintenance scan writes
+back the dirty lines overlapping the range and invalidates them; replacement
+pointers stay. So between launches no data word is placed in a home (sec 7's
+warming does not apply): a launch finds the lines of every range the host
+moved since they were last touched invalid. The model applies the handoff in
+zero time (`uncore_host_dma=1`); with every outlet active no arbiter keeps a
+memory of the writebacks.
+
+### 10.4 What R41 leaves as in R40
+
+The mesh, routers, elastic links (2.4-2.6), the slice network interfaces (now
+wider), the home and outlet links and the memory mode (UNCORE_TIMING_BOARD
+1-2), the address fold (PHYS_ADDR_W 35 leaves every address below 2^34
+unchanged), the trace monitor's records.

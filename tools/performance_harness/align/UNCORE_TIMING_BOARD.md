@@ -614,3 +614,55 @@ adds them.
 6. The AXI-Lite cycle counts of sec 6 (10 / 4 cycles per bus write) depend
    on the bench task's negedge/posedge sequencing (bus_write, 207-220) and
    were derived, not simulated; they do not affect any offset after `L`.
+
+## 9. R41 (a076cd64)
+
+### 9.1 The bench is the image
+
+`record_rtl.py --device` builds the board-top bench with
+`tnca_image_params.vh` (`TNCA_IMAGE_PARAMS`), so the dut takes the image's
+own parameter list: 32 sets x 8 ways and every NUCA / DCO value. Sec 0's
+bench-versus-image difference no longer exists; what aligns against this
+bench is the image's uncore. The runtime sets the memory mode to every outlet
+with OUT_N lines admitted (`multicore_mmio.py`: `physical_ports`,
+`maximum_outstanding`) unless TNCA_RTL_MEM_PORTS / TNCA_RTL_OUTSTANDING say
+otherwise.
+
+### 9.2 The adapter: OUT_N 32, one beat per line, pipelined issue
+
+`tnca_line_axi.v` with AXI_OUT_N 32 (5-bit IDs), AXI_DATA_W 512 (BEATS 1) and
+PIPELINED_ISSUE 1:
+
+- `req_ready = !pending_valid && free slot && !hazard && legal && admission`
+  (124): the issue register no longer refuses a request; a one-entry pending
+  slot takes a request accepted while the issue register is busy and not
+  finishing.
+- A read is AR plus one R beat; a write is AW plus one W with `wlast`; with
+  every AXI ready high an issue finishes in the cycle it is valid, so the
+  pending slot is never occupied and the adapter accepts one request per
+  cycle (R40: a read every 2, a write every 3 cycles).
+- The read's response is the cycle after its single R beat; B is still
+  refused while a final R beat arrives (145); a write's slot is held until
+  its B.
+- HBM_STRIPED changes only the AXI address (a bijection of the 8 GiB window);
+  the hazard check compares the logical line address (35 bits).
+- The skews of sec 4 extend to 32 IDs: reads `(id*11) % 31`, writes
+  `(id*7) % 23`; the line model's latencies stay 25 / 44 / 63.
+
+The model's adapter keeps sec 3's structure with `uncore_axi_slots`,
+`uncore_axi_data_w` and `uncore_axi_pipelined_issue`; under replay X / Y are
+the recorded accept and response cycles, as before.
+
+### 9.3 Dispatch admission (R41 F06)
+
+`tnca_grid_dispatch.v` validates a launch in four registered stages after the
+accepting edge before the first enqueue: the first enqueue moves from L+1 to
+L+5 and the first core launch from L+4 to L+8; re-launch (i+6) and done (i+3)
+are unchanged (model: `uncore_dispatch_admission=4`).
+
+### 9.4 Not reproduced
+
+The bench's line model now reloads its seed at every launch (the edge ending
+L+1, from a separate `always` block racing the model's own draws); prediction
+does not reproduce the line model's random readies at all, and replay takes
+the recorded accept and response cycles, so neither depends on the order.

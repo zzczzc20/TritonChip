@@ -37,7 +37,12 @@ struct Chip : sc_module {
         require(!(address<0x7fff1000ULL && address+n>0x7fff0000ULL),"TMU MMIO is not ordinary model memory");
         if(write)code.invalidate(address,n);
         // The code store (tnca_multicore_shell.v: CODE_WORDS words at 0) is not memory: host words below it never reach a slice.
-        if(uncore)for(u64 a=std::max<u64>(address&~7ULL,16384ULL*8);a<address+n;a+=8)uncore->host_touch(a,write);
+        // With the R41 runtime's HBM DMA (uncore_host_dma=1) every word from LOCAL_LIMIT (= MEM_BASE, the code
+        // store's end) goes by DMA after the ownership handoff, which writes back and invalidates the range in
+        // the homes; without it every word goes through a home (UNCORE_TIMING 10.3, 7).
+        if(uncore && address+n>16384ULL*8){
+            if(uncore->host_dma)uncore->host_handoff(std::max<u64>(address,16384ULL*8),address+n);
+            else for(u64 a=std::max<u64>(address&~7ULL,16384ULL*8);a<address+n;a+=8)uncore->host_touch(a,write);}
         u64 done=0;
         while(done<n){
             u64 a=address+done,line=a&~63ULL;unsigned off=unsigned(a&63),len=unsigned(std::min<u64>(64-off,n-done));
@@ -102,7 +107,8 @@ struct Chip : sc_module {
             require(live>0 || total==0,"no active core for the grid");
             unsigned rr=0;
             if(total){
-                u64 first_at=start_cycle+1;if(x.now()<first_at)wait(x.cycles(first_at-x.now()));   // the first enqueue at L+1
+                // the first enqueue at L+1, after R41's admission stages at L+1+A (F06: A = 4, first launch L+8) [BOARD 9.3]
+                u64 first_at=start_cycle+1+uncore->dispatch_admission;if(x.now()<first_at)wait(x.cycles(first_at-x.now()));
                 while(issued<total && !faulted){
                     int choice=-1;
                     for(unsigned j=0;j<n && choice<0;++j){unsigned c=(rr+j)%n;if(active[c] && !busy[c] && ready_at[c]<=x.now())choice=c;}

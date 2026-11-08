@@ -162,18 +162,19 @@ struct UncoreReplay {
     }
     void ports(unsigned n){pxi.assign(n,0);pyi.assign(n,0);}
     void start_launch(){if(open_){++launch;}open_=true;xi=yi=0;for(auto& c:pxi)c=0;for(auto& c:pyi)c=0;}
-    // the single port's next recorded X / Y
-    const X* next_x()const{if(launch>=rx.size() || xi>=rx[launch].size())return nullptr;return &rx[launch][xi];}
-    const Y* next_y()const{if(launch>=ry.size() || yi>=ry[launch].size())return nullptr;return &ry[launch][yi];}
+    // the single port's next recorded X / Y; none before the first launch (the records are launch-relative,
+    // and the cycles before it would otherwise be compared with the first launch's records)
+    const X* next_x()const{if(!open_ || launch>=rx.size() || xi>=rx[launch].size())return nullptr;return &rx[launch][xi];}
+    const Y* next_y()const{if(!open_ || launch>=ry.size() || yi>=ry[launch].size())return nullptr;return &ry[launch][yi];}
     void take_x(){++xi;}void take_y(){++yi;}
     // board port p's next recorded X / Y: the records whose home maps to p (port_of)
     template<class F> const X* next_x(unsigned p,F port_of){
-        if(launch>=rx.size()){return nullptr;}
+        if(!open_ || launch>=rx.size()){return nullptr;}
         auto& v=rx[launch];unsigned& c=pxi[p];
         while(c<v.size() && port_of(v[c].src)!=p){++c;}
         return c<v.size()?&v[c]:nullptr;}
     template<class F> const Y* next_y(unsigned p,F port_of){
-        if(launch>=ry.size()){return nullptr;}
+        if(!open_ || launch>=ry.size()){return nullptr;}
         auto& v=ry[launch];unsigned& c=pyi[p];
         while(c<v.size() && port_of(v[c].src)!=p){++c;}
         return c<v.size()?&v[c]:nullptr;}

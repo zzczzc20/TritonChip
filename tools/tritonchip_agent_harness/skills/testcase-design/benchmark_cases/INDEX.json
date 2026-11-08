@@ -1,7 +1,7 @@
 {
   "schema": "tritonchip-skill-benchmark-cases/1",
   "seed": 0,
-  "source_commit": "a3e73d08f865dfc4f03fee038cd2d692b000183b",
+  "source_commit": "dc80a07ca01244074797691a0142d2c179ce3602",
   "cases": [
     {
       "point": "op.add/tiny/fp32-n256",

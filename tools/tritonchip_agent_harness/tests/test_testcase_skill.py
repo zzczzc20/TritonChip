@@ -220,6 +220,21 @@ class ProtocolEquivalence(unittest.TestCase):
         for a, b in zip(mine, theirs):
             self.assertTrue(torch.equal(a, b))
 
+    def test_reference_of_every_fp8_point_equals_the_evaluators(self):
+        # The evaluator keeps OCP FP8 operands FP8 (torch._scaled_mm takes nothing else); a skill that
+        # upcast them would refuse every FP8 case. Each registered FP8 point, both ways.
+        torch = self.torch
+        from archbench import registry
+        fp8 = [p for p in registry.points() if p.dtype in ("e4m3", "e5m2")]
+        self.assertTrue(fp8, "the registry has FP8 points")
+        for p in fp8:
+            m, ins = p.make(0)
+            mine = self.skill.reference(m, ins)
+            theirs = self.theirs.reference(p, 0)
+            self.assertEqual(len(mine), len(theirs), p.id)
+            for a, b in zip(mine, theirs):
+                self.assertTrue(torch.equal(a, b), p.id)
+
     def test_tolerances_are_the_registrys(self):
         from archbench import registry, models
         self.assertEqual(self.skill.TOLERANCE, registry.TOLERANCE)

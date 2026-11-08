@@ -5,7 +5,7 @@ and inputs make() returns are the point's own (seed 0), judged at TOL, and DEMAN
 benchmark declares for it. Measure it with scripts/tnca_case.py like any case; copy it to vary a
 dimension.
 
-Generated from the benchmark at a3e73d08f865; regenerated, not edited.
+Generated from the benchmark at dc80a07ca012; regenerated, not edited.
 """
 import torch
 import bound  # this skill's scripts/: tnca_case.py puts it on the path
@@ -20,7 +20,7 @@ TORCH_DTYPE = {'fp32': 'float32', 'fp16': 'float16', 'bf16': 'bfloat16', 'e4m3':
 def _linear(k, n, dtype, g, bias):
     lin = torch.nn.Linear(k, n, bias=bias)
     with torch.no_grad():
-        lin.weight.copy_(randn(g, (n, k), 'fp32', k ** -0.5))
+        lin.weight.copy_(randn(g, (n, k), 'fp32', k ** (-0.5)))
         if bias:
             lin.bias.copy_(randn(g, (n,), 'fp32', 0.1))
     return lin.to(getattr(torch, TORCH_DTYPE[dtype]))

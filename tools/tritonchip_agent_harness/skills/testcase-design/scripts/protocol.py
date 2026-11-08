@@ -7,7 +7,8 @@ copy is the original; a test in the harness keeps the two equal.
 Reference   eager PyTorch in binary32 on the CPU, from the same module and
             inputs, every low-precision weight and input upcast exactly, TF32
             off. The tolerance therefore measures the device's arithmetic,
-            not the reference's.
+            not the reference's. FP8 operands stay FP8 (see to_fp32): the
+            reference of an FP8 case is torch's own CPU _scaled_mm.
 Criterion   max |got - ref| / max(max |ref|, 1) over every output <= tol.
             NaN positions must agree. Integer outputs must be exact.
 Tolerance   by the dtype the case computes in (TOLERANCE); a whole model in
@@ -40,9 +41,18 @@ def flatten(out):
     raise TypeError(f'output of type {type(out).__name__}')
 
 
+# OCP FP8 operands are not upcast: torch._scaled_mm is defined on FP8 operands
+# only, and torch's CPU kernel widens them to binary32 exactly before a
+# binary32 matmul -- the upcast reference by another route. Keep an FP8
+# tensor as an input, not a parameter: module.float() would upcast a
+# parameter, and _scaled_mm would then refuse it.
+FP8 = (torch.float8_e4m3fn, torch.float8_e5m2)
+
+
 def to_fp32(module, inputs, device='cpu'):
     module = module.float().to(device)
-    ins = tuple(t.float().to(device) if t.is_floating_point() else t.to(device) for t in inputs)
+    ins = tuple(t.float().to(device) if t.is_floating_point() and t.dtype not in FP8 else t.to(device)
+                for t in inputs)
     return module, ins
 
 

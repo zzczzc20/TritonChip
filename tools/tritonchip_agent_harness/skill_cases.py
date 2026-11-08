@@ -1,7 +1,8 @@
 """Export ArchBench points as the test-case skill's benchmark cases (skills/testcase-design/benchmark_cases/).
 
 A benchmark case is a point of the benchmark given to the agent as the evaluation runs it: the module's
-class and the point's own make(), copied from archbench with their defaults bound, called with seed 0 (the
+class and the point's own make(), copied from archbench as code only (no docstrings or comments: the
+benchmark's free text can name other points' shapes) with their defaults bound, called with seed 0 (the
 evaluation's), judged at the registry's tolerance, its demand the registry's declared one. Under the same
 torch the case builds bit for bit the module and inputs the point does (tests/test_testcase_skill.py checks
 this where torch is installed). Which points are given is the experiment's decision (the visible set); every
@@ -43,6 +44,22 @@ def file_name(point_id: str) -> str:
     head, rest = point_id.split(".", 1)
     stem = re.sub(r"[^a-z0-9]+", "_", (rest if head == "op" else point_id).lower()).strip("_")
     return stem + ".py"
+
+
+def _drop_docstrings(tree: ast.AST) -> ast.AST:
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            first = node.body[0] if node.body else None
+            if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str):
+                node.body = node.body[1:] or [ast.Pass()]
+    return tree
+
+
+def code_only(source: str) -> str:
+    """A definition's code without the benchmark's free text: its docstrings, and its comments (ast.unparse
+    keeps none). Free text can name other points' shapes (a block "128x128" that is also a hidden point's
+    input); what a class is, classes.json says."""
+    return ast.unparse(_drop_docstrings(ast.parse(textwrap.dedent(source)))).rstrip() + "\n"
 
 
 def _literal(value) -> bool:
@@ -108,7 +125,7 @@ class Bundle:
                         self.need(attr)
             else:
                 self.need(obj)
-            self.defs[name] = textwrap.dedent(inspect.getsource(obj)).rstrip() + "\n"
+            self.defs[name] = code_only(inspect.getsource(obj))
             return
         if _literal(obj):
             self.consts[name] = repr(obj)
@@ -140,7 +157,7 @@ def _function_node(fn) -> ast.FunctionDef:
 
 def point_make_source(fn, bundle: Bundle) -> str:
     """The point's make(), renamed _point_make, its defaults bound to their values (they were the loop's)."""
-    node = _function_node(fn)
+    node = _drop_docstrings(_function_node(fn))
     node.name = "_point_make"
     node.decorator_list = []
     node.args.defaults = [ast.parse(repr(v), mode="eval").body for v in (fn.__defaults__ or ())]

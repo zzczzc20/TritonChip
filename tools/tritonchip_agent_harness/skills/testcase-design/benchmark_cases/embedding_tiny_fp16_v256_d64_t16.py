@@ -5,7 +5,7 @@ module and inputs make() returns are the point's own (seed 0), judged at TOL, an
 demand the benchmark declares for it. Measure it with scripts/tnca_case.py like any case; copy it to
 vary a dimension.
 
-Generated from the benchmark at a3e73d08f865; regenerated, not edited.
+Generated from the benchmark at dc80a07ca012; regenerated, not edited.
 """
 import torch
 import torch.nn.functional as F
@@ -19,6 +19,7 @@ TORCH_DTYPE = {'fp32': 'float32', 'fp16': 'float16', 'bf16': 'bfloat16', 'e4m3':
 
 
 class Embedding(torch.nn.Module):
+
     def __init__(self, v, d, dtype, g):
         super().__init__()
         self.weight = torch.nn.Parameter(randn(g, (v, d), dtype))

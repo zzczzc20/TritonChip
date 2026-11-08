@@ -5,7 +5,7 @@ and inputs make() returns are the point's own (seed 0), judged at TOL, and DEMAN
 benchmark declares for it. Measure it with scripts/tnca_case.py like any case; copy it to vary a
 dimension.
 
-Generated from the benchmark at a3e73d08f865; regenerated, not edited.
+Generated from the benchmark at dc80a07ca012; regenerated, not edited.
 """
 import torch
 import bound  # this skill's scripts/: tnca_case.py puts it on the path
@@ -18,6 +18,7 @@ TORCH_DTYPE = {'fp32': 'float32', 'fp16': 'float16', 'bf16': 'bfloat16', 'e4m3':
 
 
 class Rope(torch.nn.Module):
+
     def forward(self, x, cos, sin):
         return x * cos + rotate_half(x) * sin
 
@@ -36,12 +37,12 @@ def randn(g, shape, dtype, scale=1.0):
 
 
 def rope_tables(s, d, dtype, offset=0, theta=10000.0):
-    inv = 1.0 / (theta ** (torch.arange(0, d, 2, dtype=torch.float32) / d))
+    inv = 1.0 / theta ** (torch.arange(0, d, 2, dtype=torch.float32) / d)
     t = torch.arange(offset, offset + s, dtype=torch.float32)
     f = torch.outer(t, inv)
     emb = torch.cat((f, f), dim=-1)
     dt = getattr(torch, TORCH_DTYPE[dtype])
-    return emb.cos().to(dt), emb.sin().to(dt)
+    return (emb.cos().to(dt), emb.sin().to(dt))
 
 
 def _point_make(seed, b=1, h=8, s=128, d=32):

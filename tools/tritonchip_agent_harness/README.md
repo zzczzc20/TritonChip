@@ -270,8 +270,10 @@ under `skills/` and naming it in the tasks that want it; no task's base
 commit is involved. Tools travel inside a skill (`scripts/`); what needs a
 mount of its own is the environment's, not a skill. The skill gives the
 visible set's points (`benchmark_cases/`, written by `skill_cases.py`: each
-point's module and `make()` copied from archbench, seed 0, the registry's
-tolerance and declared demand, and checked bit for bit against the point) and
+point's module and `make()` copied from archbench as code only, without the
+benchmark's docstrings, comments or notes, whose free text can name other
+points' shapes; seed 0, the registry's tolerance and declared demand, and
+checked bit for bit against the point) and
 the classes in `classes.json`, with a rule for covering them (measure every
 class before asking for a hardware flow, before treating a snapshot as the
 best, after changing the machine; not enforced). It names no other point, no
@@ -1333,6 +1335,7 @@ service request's snapshot; each role's CPU time.
 | 2026-11-07 | Build machines as a pool (§12.5b): a site may list several (`build_hosts`), one flow on each at a time; a task caps its flows at once (`flows_at_once`, default 1, at most the machines); a busy machine is skipped and, with all busy, the request waits and the wait is recorded apart; every machine must be idle before a run starts; another user's lock files (`shared_slots`) count, and our flow holds one. For now one run at a time; parallel runs later, and another run's waits must not count against a run. R41's formal task: 24 h, 3 flows, 2 at once. The quick tier may move to RSCL by site configuration. Decided by the user |
 | 2026-11-08 | The test-case skill carries a visible set: points of the benchmark itself (`benchmark_cases/`, 18 for the next R41 round, one an unfrozen FP8 draft), exported by `skill_cases.py` and checked bit for bit, and the classes the agent is given (`classes.json`) with a rule for covering them at milestones. Seven classes are held out entirely (none of their points or names in the skill). The leak tests now forbid every point the skill does not give and every class it does not list, derived from its own index. The test tasks `replay-mzero` and `r39-v5-main-pilot` no longer default to the skill. Decided by the user (§6.1) |
 | 2026-11-08 | R41's formal task takes the new split: simulation validation 18 (the 10 kept), final 25 (the 7 kept, 11 of them from the seven held-out classes), and the card's own sets, `board_validation` 18 (one per visible class, its largest shape under a minute of device time) and `board_final` 40 (after the run, with the 113-point board run). An in-run board request measures `board_validation`. The two FP8 block-scaled drafts wait for the base commit's registry. Decided by the user (§6.4) |
+| 2026-11-08 | The skill's protocol keeps OCP FP8 operands FP8 in the reference, as ArchBench's has since 089ba6db (2026-11-06): its copy still upcast them, so `torch._scaled_mm` refused every FP8 case in the skill. Its equivalence test now compares the reference on every registered FP8 point, not only an fp16 module. The visible cases are re-exported from the FP8 branch's tip dc80a07c (still a draft) as code only. Found by running benchmark cases the agent's way on R41 (user: "Do both", §6.3) |
 
 **Open.**
 

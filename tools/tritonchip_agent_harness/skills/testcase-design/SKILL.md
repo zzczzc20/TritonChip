@@ -31,6 +31,8 @@ and run once. Nothing is hand-written below PyTorch.
 **Reference.** Eager PyTorch in binary32 on the CPU, from the same module and
 inputs with every low-precision weight and input upcast exactly, TF32 off.
 The tolerance therefore measures the device's arithmetic, not the reference's.
+FP8 operands are the exception: they stay FP8, and the reference of an FP8
+case is torch's own CPU `torch._scaled_mm`, which widens them exactly.
 
 **Criterion.** `max |got − ref| / max(max |ref|, 1) ≤ tol` over every
 output. NaN positions must agree. Integer outputs (an argmax, gathered
@@ -223,4 +225,7 @@ with per-tensor scales (`op.scaled_mm`, `op.w8a8_linear`), FP8 weights alone
 (`op.w8a8_block_linear`): E4M3 weights with one fp32 scale per block of 128
 by 128, the activation quantised per group of 128 at run time, at decode one
 row against the weight. An FP8 case is judged at its result's tolerance
-(bf16), never bit for bit.
+(bf16), never bit for bit. In a case of your own, pass every FP8 tensor
+(weights included) as an input of `make()`, not as a parameter of the
+module: the reference upcasts parameters, and `torch._scaled_mm` refuses
+anything but FP8 operands. The FP8 cases in `benchmark_cases/` do this.

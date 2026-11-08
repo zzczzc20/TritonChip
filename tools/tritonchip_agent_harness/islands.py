@@ -402,7 +402,8 @@ def run(site, task: Task, account, mode: str, run_dir: Path, repo: Path, names: 
             (idir / "prompt.md").write_text(prompt, encoding="utf-8")
             turns = Turns(i, task, broker, archive, prompt)
             agent = runner.run_agent(site, account, prompt, mode, idir, workspace, timeout=float(task.wall_seconds),
-                                     services=broker, skills=names, turns=turns, name=f"{run_dir.name}-i{i}")
+                                     services=broker, skills=names, turns=turns, name=f"{run_dir.name}-i{i}",
+                                     **({"models": True} if task.models else {}))
         except Exception as exc:  # noqa: BLE001 -- one island failing ends that island, not the run (D7)
             agent = {**agent, "error": f"{type(exc).__name__}: {exc}"}
         results[i] = {"island": i, "workspace": exported, "agent_result": agent, "broker": broker,

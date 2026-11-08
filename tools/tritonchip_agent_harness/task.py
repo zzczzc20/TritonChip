@@ -61,6 +61,10 @@ class Task:
     skills: tuple = ()
     islands: Optional[dict] = None
     resume: Optional[dict] = None
+    # The performance models (tools/performance_harness/systemc) are the agent's tools in this task: the run
+    # mounts the site's SystemC and the model hook (runner.MODELS_DIR). Decided 2026-11-08 for R41's second
+    # formal run; a task that does not ask gets neither.
+    models: bool = False
 
 
 def load_task(path: Path) -> Task:
@@ -70,7 +74,8 @@ def load_task(path: Path) -> Task:
     raw = path.read_bytes()
     v = json.loads(raw)
     required = {"schema", "task_id", "kind", "base_commit", "design", "hide", "instruction", "budget", "evaluation"}
-    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services", "skills", "islands", "resume"}
+    unknown = set(v) - required - {"note", "reference", "evaluator_owned", "services", "skills", "islands", "resume",
+                                      "models"}
     missing = required - set(v)
     if missing or unknown:
         raise TaskError(f"{path}: missing {sorted(missing)}, unknown {sorted(unknown)}")
@@ -112,12 +117,16 @@ def load_task(path: Path) -> Task:
         _check_slow(path, slow, ev)
     islands = _check_islands(path, v.get("islands"), services)
     resume = _check_resume(path, v.get("resume"))
+    models = v.get("models", False)
+    if not isinstance(models, bool):
+        raise TaskError(f"{path}: models must be true or false")
     ref = path.parent / v["reference"] if v.get("reference") else None
     return Task(task_id=v["task_id"], kind=v["kind"], base_commit=v["base_commit"], design=tuple(v["design"]),
                 evaluator_owned=tuple(v.get("evaluator_owned", ())), hide=tuple(v["hide"]), instruction=(path.parent / v["instruction"]).read_text(encoding="utf-8"),
                 reference=ref, wall_seconds=int(v["budget"]["wall_seconds"]), evaluation=dict(ev),
                 services=services,
-                path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest(), skills=tuple(skills), islands=islands, resume=resume)
+                path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest(), skills=tuple(skills), islands=islands, resume=resume,
+                models=models)
 
 
 POINT_SETS = ("validation", "final", "board_validation", "board_final")

@@ -67,6 +67,10 @@ class Site:
     fpga_pipeline: Optional[dict] = None
     # How many evaluations may run at once on this host (islands share it; report section 8.8 P10).
     evaluations: Optional[int] = None
+    # A SystemC installation (include/, lib/, lib/cmake/SystemCLanguage) the performance models in
+    # tools/performance_harness/systemc build against: mounted read-only at runner.SYSTEMC_DIR for a
+    # task that asks for the models (`models`, 2026-11-08). None: this site cannot run such a task.
+    systemc: Optional[Path] = None
 
     def account(self, label: str) -> Account:
         if label not in self.accounts:
@@ -98,7 +102,7 @@ def load_site(path: Optional[Path] = None) -> Site:
     except (OSError, json.JSONDecodeError) as exc:
         raise SiteError(f"cannot read site configuration {path}: {exc}") from exc
     _keys(str(path), value, {"schema", "provider", "images", "resources", "state_dir", "network", "accounts"},
-          {"repository", "fpga_worker", "fpga_pipeline"})
+          {"repository", "fpga_worker", "fpga_pipeline", "systemc"})
     if value["schema"] != SCHEMA:
         raise SiteError(f"{path}: schema must be {SCHEMA}")
     if value["provider"] != "docker":
@@ -232,7 +236,18 @@ def load_site(path: Optional[Path] = None) -> Site:
         fpga_worker=dict(worker) if worker else None,
         fpga_pipeline=pipeline,
         evaluations=res.get("evaluations"),
+        systemc=_systemc(value.get("systemc")),
     )
+
+
+def _systemc(value: Any) -> Optional[Path]:
+    """The site's SystemC installation, checked for what CMake's find_package(SystemCLanguage) reads."""
+    if value is None:
+        return None
+    root = _path(value, "systemc")
+    if not (root / "lib" / "cmake" / "SystemCLanguage").is_dir() or not (root / "include" / "systemc.h").is_file():
+        raise SiteError(f"systemc: {root} is not a SystemC installation (lib/cmake/SystemCLanguage, include/systemc.h)")
+    return root
 
 
 def _private(path: Path) -> list[str]:

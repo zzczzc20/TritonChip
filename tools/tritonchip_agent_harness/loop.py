@@ -106,6 +106,8 @@ def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str
     if site.repository is None:
         raise SiteError("site.json has no `repository`: the clone workspaces are exported from")
     repo = site.repository
+    if task.models and site.systemc is None:
+        raise SiteError("the task asks for the performance models (`models`) and site.json names no `systemc`")
     slow = (task.services or {}).get("fpga_slow") or {}
     preflight = None
     if (slow.get("flows") and getattr(site, "fpga_pipeline", None)
@@ -138,6 +140,7 @@ def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str
         "agent": agent, "mode": mode, "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
         "skills": {"selected": names, "source": source, "hashes": skills_.manifest(selected),
                    "catalog": skills_.version()},
+        "models": runner.models_manifest(site) if task.models else None,
         "started": time.time(),
     }
     record["workspace"] = exported
@@ -171,7 +174,8 @@ def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str
         try:
             record["agent_result"] = runner.run_agent(site, account, prompt, mode, run_dir, workspace,
                                                       timeout=float(task.wall_seconds), services=broker,
-                                                      skills=names, **({"turns": turns} if turns else {}))
+                                                      skills=names, **({"turns": turns} if turns else {}),
+                                                      **({"models": True} if task.models else {}))
         except KeyboardInterrupt as exc:
             record["agent_result"] = {"stop_reason": "operator",
                                       **({"services": broker.record()} if broker is not None else {})}

@@ -36,22 +36,49 @@ SKILLS_SOURCE = skills_.SOURCE
 # The agent's side of the in-run services (services.py), and where their socket appears.
 SERVICE_CLI = "/usr/local/bin/tnca-service"
 SERVICE_DIR = "/run/tnca-service"
+# The performance models' environment (task `models`, 2026-11-08): the site's SystemC installation and the
+# harness's model hook (models/sitecustomize.py), both read-only. The models themselves are the agent's
+# tools/performance_harness/systemc; their environment is the harness's, as the skills' tools are not.
+SYSTEMC_DIR = "/opt/systemc"
+MODELS_DIR = "/opt/tnca-models"
+MODELS_SOURCE = Path(__file__).resolve().parent / "models"
 # A Codex credential the CLI refreshed is copied back only if it still looks like one.
 AUTH_JSON_LIMIT = 64 * 1024
 # Where each CLI keeps its transcript inside the container (collected at the end).
 TRANSCRIPTS = {"claude-code": ".claude-run/projects", "opencode": ".local/share/opencode"}
 
 
-def agent_mounts(socket_dir: Path, workspace: Path, extra=(), skills: Optional[Path] = None) -> list:
+def agent_mounts(socket_dir: Path, workspace: Path, extra=(), skills: Optional[Path] = None,
+                 systemc: Optional[Path] = None) -> list:
     """Everything a run's agent container sees from the host, and nothing else.
 
     `skills`: the run's staged skills directory (skills.stage), mounted read-only; None mounts no skill.
+    `systemc`: the site's SystemC installation when the task asks for the models; with it, the model hook.
     """
     mounts = [Mount(doctor.HERE / "bridge.py", BRIDGE_SCRIPT), Mount(socket_dir, doctor.SOCKET_DIR),
               Mount(workspace, adapters.WORKDIR, read_only=False)]
     if skills is not None:
         mounts.append(Mount(skills, adapters.SKILLS_DIR))
+    if systemc is not None:
+        mounts += [Mount(systemc, SYSTEMC_DIR), Mount(MODELS_SOURCE, MODELS_DIR)]
     return mounts + list(extra)
+
+
+def models_env(site: Site) -> dict:
+    """The model environment's variables: where SystemC is (CMake's SystemCLanguage_DIR, the loader's path)
+    and where the hook is. Raises when the site has no SystemC installation."""
+    if site.systemc is None:
+        raise RuntimeError("the task asks for the performance models and site.json names no `systemc`")
+    return {"SYSTEMC_HOME": SYSTEMC_DIR, "SystemCLanguage_DIR": f"{SYSTEMC_DIR}/lib/cmake/SystemCLanguage",
+            "TNCA_MODEL_HOOK": MODELS_DIR}
+
+
+def models_manifest(site: Site) -> dict:
+    """For the run record: the SystemC installation mounted and the hook's hash."""
+    h = hashlib.sha256()
+    for f in sorted(MODELS_SOURCE.rglob("*.py")):
+        h.update(f.relative_to(MODELS_SOURCE).as_posix().encode() + b"\0" + f.read_bytes())
+    return {"systemc": str(site.systemc), "hook_sha256": h.hexdigest()}
 
 
 def link_skills(name: str, skills_dir: str, timeout: float = 60) -> dict:
@@ -151,7 +178,7 @@ def _turn(agent: str, account: Account, command: list, timeout: float) -> tuple:
 
 def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Path,
               workspace: Optional[Path], timeout: float, services=None, skills: Optional[list] = None,
-              turns=None, name: Optional[str] = None) -> dict:
+              turns=None, name: Optional[str] = None, models: bool = False) -> dict:
     """`services`, when given, is a started-on-demand services.Broker the agent reaches with `tnca-service`.
 
     `turns`, an island's controller: called after each CLI run with that turn's record and the seconds left;
@@ -159,8 +186,10 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
     `name`: the sandbox's name suffix when several run at once (islands); the run's id otherwise.
 
     `skills`: the names of the skills this run gets (skills.select), staged and mounted; none by default.
+    `models`: the task asks for the performance models' environment (SYSTEMC_DIR, MODELS_DIR).
     """
     selected = skills_.select(skills or [])
+    model_env = models_env(site) if models else {}
     run_id = name or run_dir.name
     gw, agent = f"tnca-gw-{run_id}", f"tnca-agent-{run_id}"
     result: dict = {"label": account.label, "cli": account.cli, "auth": account.auth, "mode": mode,
@@ -185,12 +214,15 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
     container_started = None
     try:
         socket_dir, log = doctor.start_gateway(site, run_dir, gw, list(account.hosts), open_route=open_route)
-        extra, env = list(launch.mounts), dict(launch.env)
+        extra, env = list(launch.mounts), {**dict(launch.env), **model_env}
         if services is not None:
             extra += [Mount(services.start(), SERVICE_DIR), Mount(doctor.HERE / "service_cli.py", SERVICE_CLI)]
             env["TNCA_SERVICE"] = f"{SERVICE_DIR}/service.sock"
         staged = skills_.stage(selected, run_dir / "skills") if selected else None
-        mounts = agent_mounts(socket_dir, workspace, extra, skills=staged)
+        mounts = agent_mounts(socket_dir, workspace, extra, skills=staged,
+                              systemc=site.systemc if models else None)
+        if models:
+            result["models"] = models_manifest(site)
         c = AgentContainer(name=agent, image=site.images["agent"], cpus=site.cpus, memory=site.memory,
                            pids=site.pids, mounts=mounts, env=env, env_files=launch.env_files,
                            labels={"tritonchip-agent-harness": "agent", "run": run_id}, workdir=adapters.WORKDIR)
@@ -275,5 +307,5 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
     return result
 
 
-__all__ = ["BRIDGE_SCRIPT", "SERVICE_CLI", "SKILLS_SOURCE", "agent_mounts", "codex_auth_ok", "link_skills",
-           "proxy_env", "run_agent"]
+__all__ = ["BRIDGE_SCRIPT", "MODELS_DIR", "SERVICE_CLI", "SKILLS_SOURCE", "SYSTEMC_DIR", "agent_mounts",
+           "codex_auth_ok", "link_skills", "models_env", "models_manifest", "proxy_env", "run_agent"]

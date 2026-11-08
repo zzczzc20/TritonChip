@@ -23,7 +23,8 @@
   "silu",
   "softmax",
   "swiglu",
-  "transpose"
+  "transpose",
+  "w8a8_block_linear"
  ],
  "points": [
   {
@@ -289,9 +290,29 @@
    "track": [
     "general"
    ]
+  },
+  {
+   "dtype": "e4m3",
+   "family": "w8a8_block_linear",
+   "id": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+   "kind": "op",
+   "sha256": "eb73a8a4f4818f81385b6163ccb59508ef32cc3db2dfb056baf8698d86bed4c9",
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "e4m3",
+   "family": "w8a8_block_linear",
+   "id": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k256-n384",
+   "kind": "op",
+   "sha256": "abeb30d25a371bbc42ba52a27c8d6d4ef95268e4766b98178bf4edca5439f91b",
+   "track": [
+    "llm"
+   ]
   }
  ],
  "schema": "archbench-suite/1",
- "sha256": "ae3acd3f815d1327b657524df0432454d2a4c89aa130d413b7647a4ed298bc89",
+ "sha256": "956a76812b22b3c28ce67a82a9ab29bbc71e2d3a791da47f8ce41e7e24085e3b",
  "tier": "small"
 }

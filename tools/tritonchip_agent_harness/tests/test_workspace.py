@@ -144,7 +144,7 @@ class TheAgentsTreeBuildsTest(unittest.TestCase):
     staged data first, so what it leaves is half a package. Run 6180's agent met this with spec/r40/ hidden
     whole. The tasks of runs to come are held to it; a finished run's task stays what that run saw."""
 
-    TASKS = ("r41-dp-formal",)
+    TASKS = ("r41-dp-formal", "r41-dp-island1")
 
     def test_every_staged_source_is_in_the_agents_tree(self):
         from tritonchip_agent_harness.task import load_task

@@ -49,12 +49,15 @@ port requests and responses and every uncore stream (home requests and
 responses, memory requests and responses, the adapters' accepts and
 responses) equal the recording on every launch.
 
-Standalone (nothing replayed), three active cores, the same 12 visible
-points against the same recordings: median absolute error 2.0 %, worst
-+17.3 % (a memory-bound matrix-vector product), the rest within +7.7 %; the
-model's count was above the simulator's on 10 of 12. This is a spot check on small cases, not a
-calibration: larger cases spend a larger share of their time in memory,
-where the approximation sits.
+Standalone (nothing replayed), three active cores:
+
+| items | against | median abs error | worst |
+|---|---|---|---|
+| the same 12 visible points | the recordings above | 2.0 % | +17.3 % (a memory-bound matrix-vector product); the rest within +7.7 % |
+| the test-case skill's 8 examples | the RTL cycles of the same programs (the evaluator's path) | 0.4 % | +3.0 % |
+
+These are spot checks on small cases, not a calibration: larger cases spend
+a larger share of their time in memory, where the approximation sits.
 
 ## Not exercised by any recording yet
 

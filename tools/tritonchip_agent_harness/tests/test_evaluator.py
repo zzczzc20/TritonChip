@@ -460,7 +460,24 @@ class ObserversOutOfReach(unittest.TestCase):
         # The runtime takes the host's wait from its environment; a backend
         # argument of the same name is passed twice and every point fails.
         self.assertNotIn("host_timeout", json.loads((self.out / "host" / "backend-0.json").read_text()))
-        self.assertIn("TNCA_HOST_TIMEOUT=60", (self.out / "host" / "evaluate.sh").read_text())
+        self.assertIn("TNCA_HOST_TIMEOUT=60", (self.out / "host" / "run-point.sh").read_text())
+        self.assertIn("xargs -P", (self.out / "host" / "evaluate.sh").read_text())
+
+    def test_points_run_as_a_pool_not_in_batches(self):
+        # A long point does not hold back the rest: the next starts as soon as any one ends.
+        with tempfile.TemporaryDirectory() as tmp:
+            out, log = Path(tmp), Path(tmp) / "log"
+            body = (f'echo "start $1 $2" >> {log}; if [ "$1" = 0 ]; then sleep 1; fi; '
+                    f'echo "end $1" >> {log}')
+            lines = evaluator._pool(out, body, ["op.a/tiny/x", "op.b/tiny/y", "op.c/tiny/z", "op.d/tiny/w"], 2)
+            script = "\n".join(lines).replace("/out/", f"{out}/")
+            subprocess.run(["sh", "-c", script], check=True, timeout=30)
+            events = log.read_text().splitlines()
+        self.assertEqual(sorted(e for e in events if e.startswith("start")),
+                         ["start 0 op.a/tiny/x", "start 1 op.b/tiny/y", "start 2 op.c/tiny/z", "start 3 op.d/tiny/w"])
+        self.assertLess(events.index("start 3 op.d/tiny/w"), events.index("end 0"))
+        with self.assertRaises(ValueError):
+            evaluator._pool(Path(tempfile.mkdtemp()), "true", ["op.a/tiny/x y"], 2)
 
     def test_a_host_that_runs_too_long_leaves_no_container(self):
         def docker(*args, **kw):

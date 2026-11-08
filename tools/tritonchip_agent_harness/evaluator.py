@@ -51,6 +51,22 @@ make -s python/tnca/data/.staged > /out/stage.log 2>&1
 """
 
 
+_POINT_ID = re.compile(r"[A-Za-z0-9_./=+:,-]+")
+
+
+def _pool(hostout: Path, body: str, points: list, jobs: int) -> list:
+    """The evaluation script's lines that measure every point, at most `jobs` at once: a pool that starts the
+    next point as soon as one ends, in the list's order, never batches that wait for their slowest point
+    (2026-11-08: two batches of 12 cost a validation request about 10 minutes, the final set about an hour).
+    `body` is one point's command, $1 its index and $2 its id; it goes into /out/run-point.sh."""
+    for p in points:
+        if not _POINT_ID.fullmatch(p):
+            raise ValueError(f"a point id the evaluation script cannot pass as one word: {p!r}")
+    (hostout / "run-point.sh").write_text(body + "\n", encoding="utf-8")
+    listing = " ".join(f"'{i} {p}'" for i, p in enumerate(points))
+    return [f"printf '%s\\n' {listing} | xargs -P {max(1, int(jobs))} -n 2 sh /out/run-point.sh || true"]
+
+
 # The candidate's paths the device is built from. Everything else in the
 # device's tree is the base's, so building it runs no candidate code.
 HARDWARE = ("rtl/", "spec/r1_profiles.json", "spec/devices/")
@@ -353,17 +369,14 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
         # default, keyed on sources and options) lives under this evaluation's own
         # output, never in a home directory shared between candidates or runs.
         lines = ["set -e", "cd /work", "mkdir -p /out/caches",
-                 "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
-                 "run() {",
-                 f'  TNCA_BACKEND=fpga-multicore-sim TNCA_BACKEND_ARGS="$(cat /out/backend-$1.json)" '
-                 f'TNCA_COMPILE_CACHE_DIR=/out/caches/tnca-inductor '
-                 f'TNCA_ACTIVE_CORES={cores} TNCA_HOST_TIMEOUT={timeout:g} /opt/torchenv/bin/python -m archbench.run '
-                 f'--platform tnca '
-                 f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
-                 "}"]
-        jobs = max(1, int(ev["jobs"]))
-        for k in range(0, len(points), jobs):
-            lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
+                 "make -s python/tnca/data/.staged > /out/stage.log 2>&1"]
+        lines += _pool(hostout, f'TNCA_BACKEND=fpga-multicore-sim TNCA_BACKEND_ARGS="$(cat /out/backend-$1.json)" '
+                                f'TNCA_COMPILE_CACHE_DIR=/out/caches/tnca-inductor '
+                                f'TNCA_ACTIVE_CORES={cores} TNCA_HOST_TIMEOUT={timeout:g} '
+                                f'/opt/torchenv/bin/python -m archbench.run --platform tnca '
+                                f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl '
+                                f'> /out/archbench-$1.log 2>&1 || true',
+                       points, int(ev["jobs"]))
         (hostout / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
         h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
                            pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False),
@@ -443,15 +456,12 @@ def _measure_observed(site: Site, hosttree: Path, devtree: Path, task: Task, out
                                          "--unix", f"{SOCKETS}/{i}.sock", "--workdir", "/tmp/dev",
                                          "--deadline", str(DEADLINE), "--idle-timeout", f"{timeout:g}"],
                                         detach=True, remove=False))
-        lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
-                 "run() {",
-                 f'  TNCA_BACKEND=sim-socket TNCA_BACKEND_ARGS="{{\\"address\\": \\"{SOCKETS}/$1.sock\\", '
-                 f'\\"bench\\": \\"device-container\\"}}" /opt/torchenv/bin/python -m archbench.run --platform tnca '
-                 f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
-                 "}"]
-        jobs = max(1, int(ev["jobs"]))
-        for k in range(0, len(points), jobs):
-            lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
+        lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1"]
+        lines += _pool(hostout, f'TNCA_BACKEND=sim-socket TNCA_BACKEND_ARGS="{{\\"address\\": \\"{SOCKETS}/$1.sock\\", '
+                                f'\\"bench\\": \\"device-container\\"}}" /opt/torchenv/bin/python -m archbench.run '
+                                f'--platform tnca --profile {ev["profile"]} --point "$2" '
+                                f'--out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
+                       points, int(ev["jobs"]))
         (hostout / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
         h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
                            pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False),

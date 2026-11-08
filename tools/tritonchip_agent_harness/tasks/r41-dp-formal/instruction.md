@@ -200,7 +200,7 @@ with the model's hook first on `PYTHONPATH` and the model as the backend:
   every cycle of every recorded stream. On its own, the memory behind the
   adapters (HBM, the AXI slave) is a fixed-latency stand-in, and that is where
   its error comes from: on small visible cases a median of 2 %, +17 % at worst
-  (a memory-bound case). It follows the compiler fully (it runs your program
+  (a memory-bound case); on the test-case skill's eight examples within 3 %. It follows the compiler fully (it runs your program
   instruction by instruction, register banks included), so it sees what the
   Event Model cannot; it follows the hardware only through its configuration's
   keys. Some mechanisms no recording has reached yet (a dirty line's eviction,
